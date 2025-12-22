@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Training Validator PoC</string>
+    <string name="camera_permission_required">Camera permission is required for pose detection</string>
+    <string name="grant_permission">Grant Permission</string>
+    <string name="pose_not_detected">No pose detected</string>
+    <string name="ready_to_start">Ready to start!</string>
+    <string name="analyzing">Analyzing pose...</string>
+</resources>
