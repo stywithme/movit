@@ -88,3 +88,6 @@ hs_err_pid*
 
 # Generated files
 *.generated.*
+
+# Example/Sample directories
+google-mediapipe-sample/
