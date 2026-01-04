@@ -13,6 +13,8 @@ import com.trainingvalidator.poc.analysis.SmoothedLandmark
 import com.trainingvalidator.poc.training.engine.ArrowDirection
 import com.trainingvalidator.poc.training.engine.JointArrowInfo
 import com.trainingvalidator.poc.training.engine.JointZone
+import com.trainingvalidator.poc.training.engine.PositionError
+import com.trainingvalidator.poc.training.models.CheckSeverity
 import com.trainingvalidator.poc.training.models.MovingSegment
 import kotlin.math.atan2
 import kotlin.math.cos
@@ -56,6 +58,8 @@ class SkeletonOverlayView @JvmOverloads constructor(
         private val COLOR_DEFAULT = Color.YELLOW
         private val COLOR_CORRECT = Color.parseColor("#00E676")     // Green
         private val COLOR_ERROR = Color.parseColor("#FF5252")       // Red
+        private val COLOR_WARNING = Color.parseColor("#FFC107")     // Amber/Yellow for position warnings
+        private val COLOR_POSITION_ERROR = Color.parseColor("#E91E63") // Pink for position errors
         private val COLOR_TRACKED = Color.parseColor("#2196F3")     // Blue
         private val COLOR_LINE_DEFAULT = Color.CYAN
         private val COLOR_LINE_TRACKED = Color.parseColor("#64B5F6") // Light Blue
@@ -100,6 +104,29 @@ class SkeletonOverlayView @JvmOverloads constructor(
         isAntiAlias = true
     }
     
+    // Paint for position error indicators
+    private val positionErrorPaint = Paint().apply {
+        color = COLOR_POSITION_ERROR
+        strokeWidth = 6f
+        style = Paint.Style.STROKE
+        isAntiAlias = true
+        pathEffect = android.graphics.DashPathEffect(floatArrayOf(20f, 10f), 0f)
+    }
+    
+    private val positionWarningPaint = Paint().apply {
+        color = COLOR_WARNING
+        strokeWidth = 4f
+        style = Paint.Style.STROKE
+        isAntiAlias = true
+        pathEffect = android.graphics.DashPathEffect(floatArrayOf(15f, 8f), 0f)
+    }
+    
+    private val positionErrorFillPaint = Paint().apply {
+        color = Color.argb(80, 233, 30, 99) // Semi-transparent pink
+        style = Paint.Style.FILL
+        isAntiAlias = true
+    }
+    
     private val trackedPointPaint = Paint().apply {
         color = COLOR_TRACKED
         strokeWidth = TRACKED_LANDMARK_STROKE_WIDTH
@@ -123,6 +150,9 @@ class SkeletonOverlayView @JvmOverloads constructor(
     
     // Error state - which joints have errors
     private var errorJointCodes: Set<String> = emptySet()
+    
+    // Position-based errors (knee-over-toe, alignment, etc.)
+    private var positionErrors: List<PositionError> = emptyList()
     
     // Scaling
     private var imageWidth: Int = 1
@@ -158,13 +188,15 @@ class SkeletonOverlayView @JvmOverloads constructor(
         inputImageWidth: Int = 1,
         inputImageHeight: Int = 1,
         angles: JointAngles? = null,
-        arrowInfos: Map<String, JointArrowInfo>
+        arrowInfos: Map<String, JointArrowInfo>,
+        positionErrors: List<PositionError> = emptyList()
     ) {
         landmarks = smoothedLandmarks
         imageWidth = inputImageWidth
         imageHeight = inputImageHeight
         jointAngles = angles
         jointArrowInfos = arrowInfos
+        this.positionErrors = positionErrors
         scaleFactor = max(width.toFloat() / imageWidth, height.toFloat() / imageHeight)
         
         // Collect error joints (TOO_HIGH or TOO_LOW zones)
@@ -214,6 +246,7 @@ class SkeletonOverlayView @JvmOverloads constructor(
         jointArrowInfos = emptyMap()
         errorJointCodes = emptySet()
         movingSegments = emptyMap()
+        positionErrors = emptyList()
         invalidate()
     }
 
@@ -231,6 +264,11 @@ class SkeletonOverlayView @JvmOverloads constructor(
         // Draw arrows on moving segments based on zone
         if (showArrows && isTrainingMode) {
             drawZoneBasedArrows(canvas, currentLandmarks)
+        }
+        
+        // Draw position errors (knee-over-toe, alignment, etc.)
+        if (isTrainingMode && positionErrors.isNotEmpty()) {
+            drawPositionErrors(canvas, currentLandmarks)
         }
         
         // Draw angles if enabled
@@ -500,5 +538,114 @@ class SkeletonOverlayView @JvmOverloads constructor(
         
         canvas.drawText("%.0f°".format(angle), x, y, textPaint)
         textPaint.color = Color.WHITE
+    }
+    
+    // ==================== Position Error Drawing ====================
+    
+    /**
+     * Draw visual indicators for position errors
+     * 
+     * For example:
+     * - Knee-over-toe: Draw dashed line between knee and toe with warning color
+     * - Alignment issues: Highlight misaligned landmarks with circles
+     */
+    private fun drawPositionErrors(canvas: Canvas, landmarks: List<SmoothedLandmark>) {
+        for (error in positionErrors) {
+            // Get landmark indices for this error
+            val landmark1Idx = landmarkNameToIndex(error.landmark1)
+            val landmark2Idx = landmarkNameToIndex(error.landmark2)
+            
+            if (landmark1Idx != null && landmark2Idx != null &&
+                landmark1Idx < landmarks.size && landmark2Idx < landmarks.size) {
+                
+                val lm1 = landmarks[landmark1Idx]
+                val lm2 = landmarks[landmark2Idx]
+                
+                // Check visibility
+                if (lm1.visibility >= VISIBILITY_THRESHOLD && 
+                    lm2.visibility >= VISIBILITY_THRESHOLD) {
+                    
+                    val x1 = lm1.x * imageWidth * scaleFactor
+                    val y1 = lm1.y * imageHeight * scaleFactor
+                    val x2 = lm2.x * imageWidth * scaleFactor
+                    val y2 = lm2.y * imageHeight * scaleFactor
+                    
+                    // Choose paint based on severity
+                    val paint = when (error.severity) {
+                        CheckSeverity.ERROR -> positionErrorPaint
+                        CheckSeverity.WARNING -> positionWarningPaint
+                        CheckSeverity.TIP -> positionWarningPaint
+                    }
+                    
+                    // Draw dashed line between the two landmarks
+                    canvas.drawLine(x1, y1, x2, y2, paint)
+                    
+                    // Draw circles at both landmarks to highlight them
+                    val circleRadius = if (error.severity == CheckSeverity.ERROR) 25f else 20f
+                    val circlePaint = if (error.severity == CheckSeverity.ERROR) {
+                        positionErrorPaint
+                    } else {
+                        positionWarningPaint
+                    }
+                    
+                    canvas.drawCircle(x1, y1, circleRadius, circlePaint)
+                    canvas.drawCircle(x2, y2, circleRadius, circlePaint)
+                    
+                    // For ERROR severity, also draw a filled circle with transparency
+                    if (error.severity == CheckSeverity.ERROR) {
+                        canvas.drawCircle(x1, y1, circleRadius - 5f, positionErrorFillPaint)
+                        canvas.drawCircle(x2, y2, circleRadius - 5f, positionErrorFillPaint)
+                    }
+                }
+            }
+        }
+    }
+    
+    /**
+     * Convert landmark name (from position check) to MediaPipe landmark index
+     */
+    private fun landmarkNameToIndex(name: String): Int? {
+        return when (name.lowercase()) {
+            // Head
+            "nose" -> 0
+            "left_eye_inner" -> 1
+            "left_eye" -> 2
+            "left_eye_outer" -> 3
+            "right_eye_inner" -> 4
+            "right_eye" -> 5
+            "right_eye_outer" -> 6
+            "left_ear" -> 7
+            "right_ear" -> 8
+            "mouth_left" -> 9
+            "mouth_right" -> 10
+            
+            // Upper body
+            "left_shoulder" -> 11
+            "right_shoulder" -> 12
+            "left_elbow" -> 13
+            "right_elbow" -> 14
+            "left_wrist" -> 15
+            "right_wrist" -> 16
+            "left_pinky" -> 17
+            "right_pinky" -> 18
+            "left_index" -> 19
+            "right_index" -> 20
+            "left_thumb" -> 21
+            "right_thumb" -> 22
+            
+            // Lower body
+            "left_hip" -> 23
+            "right_hip" -> 24
+            "left_knee" -> 25
+            "right_knee" -> 26
+            "left_ankle" -> 27
+            "right_ankle" -> 28
+            "left_heel" -> 29
+            "right_heel" -> 30
+            "left_foot_index", "left_toe" -> 31
+            "right_foot_index", "right_toe" -> 32
+            
+            else -> null
+        }
     }
 }

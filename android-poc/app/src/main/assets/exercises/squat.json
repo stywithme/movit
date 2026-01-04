@@ -29,18 +29,93 @@
         "en": "Side View"
       },
       "cameraPosition": "side_view",
+      "expectedFacingDirection": "auto_detect",
+      "positionChecks": [
+        {
+          "id": "knee_over_toe",
+          "type": "forward_comparison",
+          "landmarks": {
+            "primary": "left_knee",
+            "secondary": "left_foot_index"
+          },
+          "condition": {
+            "operator": "should_not_exceed",
+            "thresholds": {
+              "beginner": 0.08,
+              "normal": 0.05,
+              "advanced": 0.03
+            }
+          },
+          "activePhases": ["down", "bottom"],
+          "errorMessage": {
+            "ar": "لا تدع ركبتك تتجاوز أصابع قدميك",
+            "en": "Don't let your knee go past your toes"
+          },
+          "severity": "warning",
+          "cooldownMs": 2000,
+          "minErrorFrames": 5
+        },
+        {
+          "id": "hip_behind_knee",
+          "type": "forward_comparison",
+          "landmarks": {
+            "primary": "left_hip",
+            "secondary": "left_knee"
+          },
+          "condition": {
+            "operator": "should_exceed",
+            "thresholds": {
+              "beginner": 0.05,
+              "normal": 0.03,
+              "advanced": 0.02
+            }
+          },
+          "activePhases": ["bottom"],
+          "errorMessage": {
+            "ar": "ادفع الورك للخلف أكثر",
+            "en": "Push your hips back more"
+          },
+          "severity": "warning",
+          "cooldownMs": 2000,
+          "minErrorFrames": 4
+        },
+        {
+          "id": "shoulder_knee_alignment",
+          "type": "vertical_alignment",
+          "landmarks": {
+            "primary": "left_shoulder",
+            "secondary": "left_knee"
+          },
+          "condition": {
+            "operator": "approximately_equal",
+            "thresholds": {
+              "beginner": 0.15,
+              "normal": 0.10,
+              "advanced": 0.08
+            }
+          },
+          "activePhases": ["bottom"],
+          "errorMessage": {
+            "ar": "حافظ على محاذاة الكتف مع الركبة",
+            "en": "Keep shoulder aligned with knee"
+          },
+          "severity": "tip",
+          "cooldownMs": 3000,
+          "minErrorFrames": 6
+        }
+      ],
       "trackedJoints": [
         {
           "joint": "left_knee",
           "role": "primary",
           "startPose": {
-            "min": 160,
+            "min": 120,
             "max": 180
           },
           "upRange": {
-            "beginner": { "min": 155, "max": 180 },
-            "normal":   { "min": 160, "max": 180 },
-            "advanced": { "min": 165, "max": 180 }
+            "beginner": { "min": 125, "max": 180 },
+            "normal":   { "min": 130, "max": 180 },
+            "advanced": { "min": 135, "max": 180 }
           },
           "downRange": {
             "beginner": { "min": 70, "max": 110 },
@@ -67,13 +142,13 @@
           "joint": "right_knee",
           "role": "primary",
           "startPose": {
-            "min": 160,
+            "min": 120,
             "max": 180
           },
           "upRange": {
-            "beginner": { "min": 155, "max": 180 },
-            "normal":   { "min": 160, "max": 180 },
-            "advanced": { "min": 165, "max": 180 }
+            "beginner": { "min": 125, "max": 180 },
+            "normal":   { "min": 130, "max": 180 },
+            "advanced": { "min": 135, "max": 180 }
           },
           "downRange": {
             "beginner": { "min": 70, "max": 110 },
@@ -100,7 +175,7 @@
           "joint": "left_hip",
           "role": "secondary",
           "startPose": {
-            "min": 160,
+            "min": 120,
             "max": 180
           },
           "upRange": {

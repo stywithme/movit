@@ -1,0 +1,215 @@
+{
+  "name": {
+    "ar": "الجلوس على الحائط",
+    "en": "Wall Sit"
+  },
+  "description": {
+    "ar": "تمرين ثبات لتقوية عضلات الفخذ والقدرة على التحمل",
+    "en": "Isometric exercise to strengthen quadriceps and build endurance"
+  },
+  "instructions": {
+    "ar": "اسند ظهرك على الحائط وانزل حتى تصبح ركبتيك بزاوية 90 درجة كأنك جالس على كرسي غير مرئي",
+    "en": "Lean back against a wall and lower until knees are at 90 degrees like sitting on an invisible chair"
+  },
+  "category": {
+    "code": "legs",
+    "name": {
+      "ar": "تمارين الأرجل",
+      "en": "Legs"
+    }
+  },
+  "countingMethod": "hold",
+  "muscles": ["quadriceps", "glutes", "hamstrings", "core"],
+  "equipment": ["bodyweight"],
+  "tags": ["isometric", "endurance", "no-equipment"],
+  "poseVariants": [
+    {
+      "name": {
+        "ar": "زاوية جانبية",
+        "en": "Side View"
+      },
+      "cameraPosition": "side_view",
+      "expectedFacingDirection": "auto_detect",
+      "positionChecks": [
+        {
+          "id": "back_against_wall",
+          "type": "vertical_alignment",
+          "landmarks": {
+            "primary": "left_shoulder",
+            "secondary": "left_hip"
+          },
+          "condition": {
+            "operator": "approximately_equal",
+            "thresholds": {
+              "beginner": 0.08,
+              "normal": 0.05,
+              "advanced": 0.03
+            }
+          },
+          "activePhases": ["count", "hold"],
+          "errorMessage": {
+            "ar": "اسند ظهرك بالكامل على الحائط",
+            "en": "Press your back fully against the wall"
+          },
+          "severity": "error",
+          "cooldownMs": 2000,
+          "minErrorFrames": 5
+        },
+        {
+          "id": "knee_over_ankle",
+          "type": "vertical_alignment",
+          "landmarks": {
+            "primary": "left_knee",
+            "secondary": "left_ankle"
+          },
+          "condition": {
+            "operator": "approximately_equal",
+            "thresholds": {
+              "beginner": 0.10,
+              "normal": 0.07,
+              "advanced": 0.05
+            }
+          },
+          "activePhases": ["count", "hold"],
+          "errorMessage": {
+            "ar": "حافظ على الركبة فوق الكاحل مباشرة",
+            "en": "Keep knee directly over ankle"
+          },
+          "severity": "warning",
+          "cooldownMs": 2000,
+          "minErrorFrames": 4
+        }
+      ],
+      "trackedJoints": [
+        {
+          "joint": "left_knee",
+          "role": "primary",
+          "startPose": {
+            "min": 75,
+            "max": 110
+          },
+          "upRange": {
+            "beginner": { "min": 80, "max": 110 },
+            "normal": { "min": 85, "max": 100 },
+            "advanced": { "min": 88, "max": 95 }
+          },
+          "downRange": {
+            "beginner": { "min": 80, "max": 110 },
+            "normal": { "min": 85, "max": 100 },
+            "advanced": { "min": 88, "max": 95 }
+          },
+          "errorMessages": {
+            "tooLow": {
+              "ar": "لا تنزل أكثر من 90 درجة",
+              "en": "Don't go below 90 degrees"
+            },
+            "tooHigh": {
+              "ar": "انزل أكثر - ركبتيك بزاوية 90 درجة",
+              "en": "Lower down - knees at 90 degrees"
+            }
+          },
+          "pairedWith": "right_knee"
+        },
+        {
+          "joint": "right_knee",
+          "role": "primary",
+          "startPose": {
+            "min": 75,
+            "max": 110
+          },
+          "upRange": {
+            "beginner": { "min": 80, "max": 110 },
+            "normal": { "min": 85, "max": 100 },
+            "advanced": { "min": 88, "max": 95 }
+          },
+          "downRange": {
+            "beginner": { "min": 80, "max": 110 },
+            "normal": { "min": 85, "max": 100 },
+            "advanced": { "min": 88, "max": 95 }
+          },
+          "errorMessages": {
+            "tooLow": {
+              "ar": "لا تنزل كثيراً",
+              "en": "Don't go too low"
+            },
+            "tooHigh": {
+              "ar": "انزل للوضع الصحيح",
+              "en": "Lower to the correct position"
+            }
+          },
+          "pairedWith": "left_knee"
+        },
+        {
+          "joint": "left_hip",
+          "role": "secondary",
+          "startPose": {
+            "min": 75,
+            "max": 110
+          },
+          "upRange": {
+            "beginner": { "min": 80, "max": 110 },
+            "normal": { "min": 85, "max": 100 },
+            "advanced": { "min": 88, "max": 95 }
+          },
+          "downRange": {
+            "beginner": { "min": 80, "max": 110 },
+            "normal": { "min": 85, "max": 100 },
+            "advanced": { "min": 88, "max": 95 }
+          },
+          "errorMessages": {
+            "tooLow": {
+              "ar": "لا تجلس منخفضاً جداً",
+              "en": "Don't sit too low"
+            },
+            "tooHigh": {
+              "ar": "انزل حتى الفخذين موازيين للأرض",
+              "en": "Lower until thighs parallel to floor"
+            }
+          }
+        }
+      ],
+      "feedbackMessages": {
+        "motivational": [
+          { "ar": "استمر! أنت قوي!", "en": "Hold on! You're strong!" },
+          { "ar": "لا تستسلم!", "en": "Don't give up!" },
+          { "ar": "ثابر! أوشكت على الانتهاء!", "en": "Persist! Almost done!" }
+        ],
+        "common_mistake": [
+          { "ar": "لا تدع ركبتيك تتجاوز أصابع قدميك", "en": "Don't let knees go past toes" },
+          { "ar": "اسند ظهرك بالكامل على الحائط", "en": "Press your entire back against wall" },
+          { "ar": "لا ترفع كعبيك عن الأرض", "en": "Keep heels on the ground" }
+        ],
+        "tip": [
+          { "ar": "تنفس بانتظام ولا تحبس أنفاسك", "en": "Breathe steadily, don't hold breath" },
+          { "ar": "انظر للأمام لتحسين التركيز", "en": "Look forward to improve focus" }
+        ]
+      },
+      "difficultyLevels": [
+        {
+          "level": "beginner",
+          "repCountingConfig": {
+            "duration": 30,
+            "gracePeriodMs": 3000
+          },
+          "phases": ["start", "hold"]
+        },
+        {
+          "level": "normal",
+          "repCountingConfig": {
+            "duration": 45,
+            "gracePeriodMs": 2500
+          },
+          "phases": ["start", "hold"]
+        },
+        {
+          "level": "advanced",
+          "repCountingConfig": {
+            "duration": 60,
+            "gracePeriodMs": 2000
+          },
+          "phases": ["start", "hold"]
+        }
+      ]
+    }
+  ]
+}

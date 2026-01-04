@@ -1,0 +1,189 @@
+{
+  "name": {
+    "ar": "اختبار اليد (مكتب)",
+    "en": "Desk Hand Test"
+  },
+  "description": {
+    "ar": "تمرين سريع لاختبار صحة الوضعية باستخدام اليدين فقط",
+    "en": "Quick hand exercise to test position validation"
+  },
+  "instructions": {
+    "ar": "ارفع يديك بجانب رأسك (شكل حرف W). حافظ على تماثل اليدين.",
+    "en": "Raise hands beside head (W shape). Keep hands symmetrical."
+  },
+  "category": {
+    "code": "test",
+    "name": {
+      "ar": "اختبار",
+      "en": "Test"
+    }
+  },
+  "countingMethod": "hold",
+  "muscles": ["shoulders"],
+  "equipment": ["bodyweight"],
+  "tags": ["test", "desk"],
+  "poseVariants": [
+    {
+      "name": {
+        "ar": "أمام الكاميرا",
+        "en": "Front View"
+      },
+      "cameraPosition": "front_view",
+      "expectedFacingDirection": "facing_camera",
+      "positionChecks": [
+        {
+          "id": "wrist_symmetry",
+          "type": "horizontal_alignment",
+          "landmarks": {
+            "primary": "left_wrist",
+            "secondary": "right_wrist"
+          },
+          "condition": {
+            "operator": "approximately_equal",
+            "thresholds": {
+              "beginner": 0.15,
+              "normal": 0.10,
+              "advanced": 0.05
+            }
+          },
+          "activePhases": ["idle", "start", "count"],
+          "errorMessage": {
+            "ar": "اجعل اليدين في مستوى واحد",
+            "en": "Keep wrists level"
+          },
+          "severity": "warning",
+          "cooldownMs": 500,
+          "minErrorFrames": 2
+        },
+        {
+          "id": "hands_high_enough",
+          "type": "vertical_comparison",
+          "landmarks": {
+            "primary": "left_wrist",
+            "secondary": "nose"
+          },
+          "condition": {
+            "operator": "should_not_exceed", 
+            "thresholds": {
+              "beginner": 0.0,
+              "normal": -0.05,
+              "advanced": -0.1
+            }
+          },
+          "activePhases": ["idle", "start", "count"],
+          "errorMessage": {
+            "ar": "ارفع يديك أعلى من مستوى الأنف",
+            "en": "Raise hands above nose level"
+          },
+          "severity": "error",
+          "cooldownMs": 500,
+          "minErrorFrames": 2
+        },
+        {
+          "id": "elbow_alignment",
+          "type": "vertical_alignment",
+          "landmarks": {
+            "primary": "right_elbow",
+            "secondary": "right_shoulder"
+          },
+          "condition": {
+            "operator": "approximately_equal",
+            "thresholds": {
+              "beginner": 0.2,
+              "normal": 0.15,
+              "advanced": 0.1
+            }
+          },
+          "activePhases": ["idle", "start", "count"],
+          "errorMessage": {
+            "ar": "حاول محاذاة الكوع مع الكتف رأسياً",
+            "en": "Align elbow under shoulder"
+          },
+          "severity": "tip",
+          "cooldownMs": 1000,
+          "minErrorFrames": 2
+        },
+        {
+          "id": "elbows_level_check",
+          "type": "horizontal_alignment",
+          "landmarks": {
+            "primary": "left_elbow",
+            "secondary": "right_elbow"
+          },
+          "condition": {
+            "operator": "approximately_equal",
+            "thresholds": {
+              "beginner": 0.15,
+              "normal": 0.10,
+              "advanced": 0.05
+            }
+          },
+          "activePhases": ["idle", "start", "count"],
+          "errorMessage": {
+            "ar": "اجعل الكوعين في مستوى واحد",
+            "en": "Keep both elbows at the same level"
+          },
+          "severity": "warning",
+          "cooldownMs": 500,
+          "minErrorFrames": 2
+        }
+      ],
+      "trackedJoints": [
+        {
+          "joint": "right_elbow",
+          "role": "primary",
+          "startPose": { "min": 0, "max": 180 },
+          "upRange": {
+            "beginner": { "min": 0, "max": 180 },
+            "normal":   { "min": 0, "max": 180 },
+            "advanced": { "min": 0, "max": 180 }
+          },
+          "downRange": {
+            "beginner": { "min": 10, "max": 170 },
+            "normal":   { "min": 20, "max": 160 },
+            "advanced": { "min": 30, "max": 150 }
+          },
+          "movingSegment": {
+            "from": "right_shoulder",
+            "to": "right_elbow"
+          },
+          "errorMessages": {
+            "tooLow": { "ar": "", "en": "" },
+            "tooHigh": { "ar": "", "en": "" }
+          }
+        }
+      ],
+      "feedbackMessages": {
+        "motivational": [],
+        "common_mistake": [],
+        "tip": []
+      },
+      "difficultyLevels": [
+        {
+          "level": "beginner",
+          "repCountingConfig": {
+            "duration": 15,
+            "gracePeriodMs": 3000
+          },
+          "phases": ["start", "hold"]
+        },
+        {
+          "level": "normal",
+          "repCountingConfig": {
+            "duration": 20,
+            "gracePeriodMs": 2000
+          },
+          "phases": ["start", "hold"]
+        },
+        {
+          "level": "advanced",
+          "repCountingConfig": {
+            "duration": 30,
+            "gracePeriodMs": 1000
+          },
+          "phases": ["start", "hold"]
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,202 @@
+{
+  "name": {
+    "ar": "تمرين الترايسبس (الغطس)",
+    "en": "Tricep Dips"
+  },
+  "description": {
+    "ar": "تمرين لتقوية عضلة الترايسبس الخلفية للذراع باستخدام كرسي أو مقعد",
+    "en": "Exercise to strengthen triceps using a chair or bench"
+  },
+  "instructions": {
+    "ar": "اجلس على حافة كرسي، ضع يديك بجانب جسمك، ثم انزل بجسمك للأسفل واصعد بالدفع",
+    "en": "Sit on edge of chair, place hands beside body, lower yourself down and push back up"
+  },
+  "category": {
+    "code": "arms",
+    "name": {
+      "ar": "تمارين الذراعين",
+      "en": "Arms"
+    }
+  },
+  "countingMethod": "up_down",
+  "muscles": ["triceps", "chest", "shoulders"],
+  "equipment": ["chair", "bench", "parallel_bars"],
+  "tags": ["compound", "upper-body", "bodyweight"],
+  "poseVariants": [
+    {
+      "name": {
+        "ar": "زاوية جانبية",
+        "en": "Side View"
+      },
+      "cameraPosition": "side_view",
+      "expectedFacingDirection": "auto_detect",
+      "positionChecks": [
+        {
+          "id": "shoulders_stable",
+          "type": "horizontal_alignment",
+          "landmarks": {
+            "primary": "left_shoulder",
+            "secondary": "right_shoulder"
+          },
+          "condition": {
+            "operator": "approximately_equal",
+            "thresholds": {
+              "beginner": 0.12,
+              "normal": 0.08,
+              "advanced": 0.05
+            }
+          },
+          "activePhases": ["down", "bottom", "up"],
+          "errorMessage": {
+            "ar": "حافظ على الكتفين في مستوى واحد",
+            "en": "Keep shoulders level"
+          },
+          "severity": "warning",
+          "cooldownMs": 2000,
+          "minErrorFrames": 4
+        }
+      ],
+      "trackedJoints": [
+        {
+          "joint": "left_elbow",
+          "role": "primary",
+          "startPose": {
+            "min": 150,
+            "max": 180
+          },
+          "upRange": {
+            "beginner": { "min": 145, "max": 180 },
+            "normal": { "min": 155, "max": 180 },
+            "advanced": { "min": 160, "max": 180 }
+          },
+          "downRange": {
+            "beginner": { "min": 70, "max": 110 },
+            "normal": { "min": 75, "max": 100 },
+            "advanced": { "min": 80, "max": 95 }
+          },
+          "movingSegment": {
+            "from": "left_elbow",
+            "to": "left_shoulder"
+          },
+          "errorMessages": {
+            "tooLow": {
+              "ar": "لا تنزل كثيراً - حافظ على سلامة كتفك",
+              "en": "Don't go too low - protect your shoulders"
+            },
+            "tooHigh": {
+              "ar": "انزل أكثر - اثني مرفقك لـ 90 درجة",
+              "en": "Go lower - bend elbow to 90 degrees"
+            }
+          },
+          "pairedWith": "right_elbow"
+        },
+        {
+          "joint": "right_elbow",
+          "role": "primary",
+          "startPose": {
+            "min": 150,
+            "max": 180
+          },
+          "upRange": {
+            "beginner": { "min": 145, "max": 180 },
+            "normal": { "min": 155, "max": 180 },
+            "advanced": { "min": 160, "max": 180 }
+          },
+          "downRange": {
+            "beginner": { "min": 70, "max": 110 },
+            "normal": { "min": 75, "max": 100 },
+            "advanced": { "min": 80, "max": 95 }
+          },
+          "movingSegment": {
+            "from": "right_elbow",
+            "to": "right_shoulder"
+          },
+          "errorMessages": {
+            "tooLow": {
+              "ar": "لا تنزل كثيراً",
+              "en": "Don't go too low"
+            },
+            "tooHigh": {
+              "ar": "انزل أكثر",
+              "en": "Go lower"
+            }
+          },
+          "pairedWith": "left_elbow"
+        },
+        {
+          "joint": "left_shoulder",
+          "role": "secondary",
+          "startPose": {
+            "min": 0,
+            "max": 30
+          },
+          "upRange": {
+            "beginner": { "min": 0, "max": 40 },
+            "normal": { "min": 0, "max": 30 },
+            "advanced": { "min": 0, "max": 25 }
+          },
+          "downRange": {
+            "beginner": { "min": 10, "max": 50 },
+            "normal": { "min": 15, "max": 45 },
+            "advanced": { "min": 20, "max": 40 }
+          },
+          "errorMessages": {
+            "tooLow": {
+              "ar": "تقدم قليلاً",
+              "en": "Move forward slightly"
+            },
+            "tooHigh": {
+              "ar": "لا تدع كتفيك يرتفعان كثيراً",
+              "en": "Don't let shoulders rise too much"
+            }
+          }
+        }
+      ],
+      "feedbackMessages": {
+        "motivational": [
+          { "ar": "ممتاز! ذراعان قويتان!", "en": "Excellent! Strong arms!" },
+          { "ar": "استمر! أنت تفعلها!", "en": "Keep going! You're doing it!" },
+          { "ar": "رائع!", "en": "Great!" }
+        ],
+        "common_mistake": [
+          { "ar": "لا تدع كتفيك يرتفعان نحو أذنيك", "en": "Don't let shoulders shrug up to ears" },
+          { "ar": "حافظ على مرفقيك للخلف وليس للجانب", "en": "Keep elbows back, not flared out" },
+          { "ar": "لا تنزل أكثر من اللازم", "en": "Don't go lower than needed" }
+        ],
+        "tip": [
+          { "ar": "شد عضلات بطنك للثبات", "en": "Engage core for stability" },
+          { "ar": "تنفس: زفير عند الصعود", "en": "Breathe: exhale going up" }
+        ]
+      },
+      "difficultyLevels": [
+        {
+          "level": "beginner",
+          "repCountingConfig": {
+            "reps": 8,
+            "minRepIntervalMs": 1800,
+            "maxRepIntervalMs": 5500
+          },
+          "phases": ["start", "down", "bottom", "up"]
+        },
+        {
+          "level": "normal",
+          "repCountingConfig": {
+            "reps": 12,
+            "minRepIntervalMs": 1500,
+            "maxRepIntervalMs": 4500
+          },
+          "phases": ["start", "down", "bottom", "up"]
+        },
+        {
+          "level": "advanced",
+          "repCountingConfig": {
+            "reps": 15,
+            "minRepIntervalMs": 1200,
+            "maxRepIntervalMs": 4000
+          },
+          "phases": ["start", "down", "bottom", "up"]
+        }
+      ]
+    }
+  ]
+}

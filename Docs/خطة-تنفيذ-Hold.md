@@ -700,15 +700,3 @@ formQuality = (totalHoldMs - errorMs) / totalHoldMs
 | `plank.json` | **جديد** | تمرين تجريبي |
 
 ---
-
-## الوقت المتوقع
-
-| المرحلة | الوقت |
-|---------|-------|
-| Step 1: Models | ~30 min |
-| Step 2: HoldTimer | ~1 hour |
-| Step 3: TrainingEngine | ~1 hour |
-| Step 4: UI | ~1 hour |
-| Step 5: FeedbackManager | ~30 min |
-| Step 6: Testing | ~30 min |
-| **المجموع** | **~4.5 hours** |

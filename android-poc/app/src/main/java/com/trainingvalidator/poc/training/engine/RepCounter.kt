@@ -5,6 +5,7 @@ import com.trainingvalidator.poc.training.config.SettingsManager
 import com.trainingvalidator.poc.training.models.JointError
 import com.trainingvalidator.poc.training.models.RepCountingConfig
 import com.trainingvalidator.poc.training.models.RepResult
+import com.trainingvalidator.poc.training.models.CheckSeverity
 
 /**
  * RepCounter - Counts and tracks repetitions
@@ -63,9 +64,15 @@ class RepCounter(
     val repResults: List<RepResult> get() = _repResults.toList()
     
     /**
-     * Errors accumulated during current rep
+     * Errors accumulated during current rep (angle-based)
      */
     private val currentRepErrors = mutableListOf<JointError>()
+    
+    /**
+     * Position errors accumulated during current rep
+     * Only ERROR severity position errors are tracked here
+     */
+    private val currentPositionErrors = mutableListOf<PositionError>()
     
     /**
      * Phase timings for current rep
@@ -101,6 +108,21 @@ class RepCounter(
     }
     
     /**
+     * Add a position error to current rep
+     * Only ERROR severity position errors should be added (not WARNING or TIP)
+     */
+    fun addPositionError(error: PositionError) {
+        // Only add ERROR severity position errors (they affect rep correctness)
+        if (error.severity != CheckSeverity.ERROR) return
+        
+        // Avoid duplicates
+        val exists = currentPositionErrors.any { it.checkId == error.checkId }
+        if (!exists) {
+            currentPositionErrors.add(error)
+        }
+    }
+    
+    /**
      * Set phase timings for current rep
      */
     fun setPhaseTimings(timings: Map<Phase, Long>) {
@@ -126,8 +148,8 @@ class RepCounter(
         lastRepTime = now
         count++
         
-        // Determine if rep was correct (no high-priority errors)
-        val isCorrect = currentRepErrors.isEmpty()
+        // Determine if rep was correct (no angle errors AND no position errors)
+        val isCorrect = currentRepErrors.isEmpty() && currentPositionErrors.isEmpty()
         
         if (isCorrect) {
             correctCount++
@@ -135,20 +157,23 @@ class RepCounter(
             incorrectCount++
         }
         
-        // Create rep result
+        // Create rep result with both angle and position errors
         val result = RepResult(
             repNumber = count,
             isCorrect = isCorrect,
             errors = currentRepErrors.toList(),
+            positionErrors = currentPositionErrors.toList(),
             phaseTimings = currentPhaseTimings
         )
         
         _repResults.add(result)
         
-        Log.d(TAG, "Rep $count completed. Correct: $isCorrect, Errors: ${currentRepErrors.size}, Interval: ${timeSinceLastRep}ms")
+        val totalErrors = currentRepErrors.size + currentPositionErrors.size
+        Log.d(TAG, "Rep $count completed. Correct: $isCorrect, AngleErrors: ${currentRepErrors.size}, PositionErrors: ${currentPositionErrors.size}, Interval: ${timeSinceLastRep}ms")
         
         // Clear for next rep
         currentRepErrors.clear()
+        currentPositionErrors.clear()
         currentPhaseTimings = emptyMap()
         
         // Notify listeners
@@ -213,6 +238,7 @@ class RepCounter(
         incorrectCount = 0
         _repResults.clear()
         currentRepErrors.clear()
+        currentPositionErrors.clear()
         currentPhaseTimings = emptyMap()
         lastRepTime = 0L
         targetReachedEmitted = false

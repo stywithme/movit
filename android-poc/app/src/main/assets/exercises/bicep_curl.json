@@ -1,0 +1,202 @@
+{
+  "name": {
+    "ar": "ثني الذراعين (بايسبس)",
+    "en": "Bicep Curl"
+  },
+  "description": {
+    "ar": "تمرين لتقوية عضلة البايسبس الأمامية للذراع",
+    "en": "Exercise to strengthen the biceps muscle"
+  },
+  "instructions": {
+    "ar": "قف بشكل مستقيم، ذراعيك بجانب جسمك، ثم اثني مرفقيك لرفع الوزن نحو الكتفين",
+    "en": "Stand straight with arms at sides, then bend elbows to curl weight toward shoulders"
+  },
+  "category": {
+    "code": "arms",
+    "name": {
+      "ar": "تمارين الذراعين",
+      "en": "Arms"
+    }
+  },
+  "countingMethod": "up_down",
+  "muscles": ["biceps", "forearms"],
+  "equipment": ["dumbbell", "barbell", "resistance_band"],
+  "tags": ["isolation", "upper-body", "beginner-friendly"],
+  "poseVariants": [
+    {
+      "name": {
+        "ar": "زاوية جانبية",
+        "en": "Side View"
+      },
+      "cameraPosition": "side_view",
+      "expectedFacingDirection": "auto_detect",
+      "positionChecks": [
+        {
+          "id": "elbow_stable",
+          "type": "vertical_alignment",
+          "landmarks": {
+            "primary": "left_elbow",
+            "secondary": "left_hip"
+          },
+          "condition": {
+            "operator": "approximately_equal",
+            "thresholds": {
+              "beginner": 0.12,
+              "normal": 0.08,
+              "advanced": 0.05
+            }
+          },
+          "activePhases": ["up", "down"],
+          "errorMessage": {
+            "ar": "ثبّت مرفقك بجانب جسمك",
+            "en": "Keep your elbow close to your body"
+          },
+          "severity": "warning",
+          "cooldownMs": 2000,
+          "minErrorFrames": 4
+        }
+      ],
+      "trackedJoints": [
+        {
+          "joint": "left_elbow",
+          "role": "primary",
+          "startPose": {
+            "min": 150,
+            "max": 180
+          },
+          "upRange": {
+            "beginner": { "min": 150, "max": 180 },
+            "normal": { "min": 160, "max": 180 },
+            "advanced": { "min": 165, "max": 180 }
+          },
+          "downRange": {
+            "beginner": { "min": 30, "max": 60 },
+            "normal": { "min": 25, "max": 50 },
+            "advanced": { "min": 20, "max": 40 }
+          },
+          "movingSegment": {
+            "from": "left_wrist",
+            "to": "left_elbow"
+          },
+          "errorMessages": {
+            "tooLow": {
+              "ar": "لا تثني كثيراً",
+              "en": "Don't curl too much"
+            },
+            "tooHigh": {
+              "ar": "ارفع الوزن أكثر",
+              "en": "Curl up more"
+            }
+          },
+          "pairedWith": "right_elbow"
+        },
+        {
+          "joint": "right_elbow",
+          "role": "primary",
+          "startPose": {
+            "min": 150,
+            "max": 180
+          },
+          "upRange": {
+            "beginner": { "min": 150, "max": 180 },
+            "normal": { "min": 160, "max": 180 },
+            "advanced": { "min": 165, "max": 180 }
+          },
+          "downRange": {
+            "beginner": { "min": 30, "max": 60 },
+            "normal": { "min": 25, "max": 50 },
+            "advanced": { "min": 20, "max": 40 }
+          },
+          "movingSegment": {
+            "from": "right_wrist",
+            "to": "right_elbow"
+          },
+          "errorMessages": {
+            "tooLow": {
+              "ar": "لا تثني كثيراً",
+              "en": "Don't curl too much"
+            },
+            "tooHigh": {
+              "ar": "ارفع الوزن أكثر",
+              "en": "Curl up more"
+            }
+          },
+          "pairedWith": "left_elbow"
+        },
+        {
+          "joint": "left_shoulder",
+          "role": "secondary",
+          "startPose": {
+            "min": 0,
+            "max": 30
+          },
+          "upRange": {
+            "beginner": { "min": 0, "max": 40 },
+            "normal": { "min": 0, "max": 30 },
+            "advanced": { "min": 0, "max": 20 }
+          },
+          "downRange": {
+            "beginner": { "min": 0, "max": 40 },
+            "normal": { "min": 0, "max": 30 },
+            "advanced": { "min": 0, "max": 20 }
+          },
+          "errorMessages": {
+            "tooLow": {
+              "ar": "ممتاز - الكتف ثابت",
+              "en": "Great - shoulder is stable"
+            },
+            "tooHigh": {
+              "ar": "لا ترفع كتفك - ثبّته",
+              "en": "Don't lift your shoulder - keep it stable"
+            }
+          }
+        }
+      ],
+      "feedbackMessages": {
+        "motivational": [
+          { "ar": "ممتاز! استمر!", "en": "Excellent! Keep going!" },
+          { "ar": "عضلات قوية!", "en": "Strong muscles!" },
+          { "ar": "أداء رائع!", "en": "Great form!" }
+        ],
+        "common_mistake": [
+          { "ar": "لا تحرك مرفقك - ثبّته بجانبك", "en": "Don't swing your elbow - keep it at your side" },
+          { "ar": "لا تستخدم جسمك للمساعدة", "en": "Don't use momentum from your body" },
+          { "ar": "تحكم في الحركة عند النزول", "en": "Control the weight on the way down" }
+        ],
+        "tip": [
+          { "ar": "اعصر عضلة البايسبس في أعلى الحركة", "en": "Squeeze bicep at the top" },
+          { "ar": "تنفس: زفير عند الرفع، شهيق عند النزول", "en": "Breathe: exhale lifting, inhale lowering" }
+        ]
+      },
+      "difficultyLevels": [
+        {
+          "level": "beginner",
+          "repCountingConfig": {
+            "reps": 10,
+            "minRepIntervalMs": 1500,
+            "maxRepIntervalMs": 5000
+          },
+          "phases": ["start", "up", "top", "down"]
+        },
+        {
+          "level": "normal",
+          "repCountingConfig": {
+            "reps": 12,
+            "minRepIntervalMs": 1200,
+            "maxRepIntervalMs": 4000
+          },
+          "phases": ["start", "up", "top", "down"]
+        },
+        {
+          "level": "advanced",
+          "repCountingConfig": {
+            "reps": 15,
+            "minRepIntervalMs": 1000,
+            "maxRepIntervalMs": 3500
+          },
+          "phases": ["start", "up", "top", "down"]
+        }
+      ]
+    }
+  ]
+}

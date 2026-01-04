@@ -1,5 +1,7 @@
 package com.trainingvalidator.poc.training.models
 
+import com.trainingvalidator.poc.training.engine.PositionError
+
 /**
  * TrainingSession - Holds the current training session state
  * 
@@ -108,14 +110,23 @@ data class TrainingSession(
 
 /**
  * RepResult - Result of a single repetition
+ * 
+ * @param errors Angle-based errors from FormValidator
+ * @param positionErrors Position-based errors from PositionValidator (severity: ERROR only)
  */
 data class RepResult(
     val repNumber: Int,
     val isCorrect: Boolean,
     val errors: List<JointError> = emptyList(),
-    val phaseTimings: Map<String, Long> = emptyMap(),  // Phase to duration
+    val positionErrors: List<PositionError> = emptyList(),
+    val phaseTimings: Map<String, Long> = emptyMap(),
     val timestamp: Long = System.currentTimeMillis()
-)
+) {
+    /**
+     * Get total error count (angle + position)
+     */
+    fun getTotalErrorCount(): Int = errors.size + positionErrors.size
+}
 
 /**
  * JointError - Error detected on a joint

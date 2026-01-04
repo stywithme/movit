@@ -1,0 +1,155 @@
+{
+  "name": {
+    "ar": "الرفعة الميتة",
+    "en": "Deadlift"
+  },
+  "description": {
+    "ar": "تمرين مركب لتقوية الظهر والأرجل والجذع بالكامل",
+    "en": "Compound exercise to strengthen back, legs, and entire core"
+  },
+  "instructions": {
+    "ar": "قف أمام البار، انحني لإمساكه، ثم ارفعه بدفع الوركين للأمام والوقوف",
+    "en": "Stand in front of bar, bend to grip it, lift by driving hips forward"
+  },
+  "category": {
+    "code": "back",
+    "name": {
+      "ar": "تمارين الظهر",
+      "en": "Back"
+    }
+  },
+  "countingMethod": "up_down",
+  "muscles": ["hamstrings", "glutes", "lower_back", "traps", "forearms"],
+  "equipment": ["barbell", "dumbbell", "kettlebell"],
+  "tags": ["compound", "strength", "full-body"],
+  "poseVariants": [
+    {
+      "name": {
+        "ar": "زاوية جانبية",
+        "en": "Side View"
+      },
+      "cameraPosition": "side_view",
+      "expectedFacingDirection": "auto_detect",
+      "positionChecks": [
+        {
+          "id": "back_straight",
+          "type": "vertical_alignment",
+          "landmarks": {
+            "primary": "left_shoulder",
+            "secondary": "left_hip"
+          },
+          "condition": {
+            "operator": "approximately_equal",
+            "thresholds": {
+              "beginner": 0.12,
+              "normal": 0.08,
+              "advanced": 0.05
+            }
+          },
+          "activePhases": ["up", "down"],
+          "errorMessage": {
+            "ar": "حافظ على استقامة ظهرك - لا تقوسه",
+            "en": "Keep back straight - don't round it"
+          },
+          "severity": "error",
+          "cooldownMs": 2000,
+          "minErrorFrames": 4
+        }
+      ],
+      "trackedJoints": [
+        {
+          "joint": "left_hip",
+          "role": "primary",
+          "startPose": { "min": 160, "max": 180 },
+          "upRange": {
+            "beginner": { "min": 155, "max": 180 },
+            "normal": { "min": 165, "max": 180 },
+            "advanced": { "min": 170, "max": 180 }
+          },
+          "downRange": {
+            "beginner": { "min": 70, "max": 110 },
+            "normal": { "min": 75, "max": 100 },
+            "advanced": { "min": 80, "max": 95 }
+          },
+          "movingSegment": { "from": "left_hip", "to": "left_shoulder" },
+          "errorMessages": {
+            "tooLow": { "ar": "انزل أكثر", "en": "Go lower" },
+            "tooHigh": { "ar": "قف بشكل مستقيم", "en": "Stand fully upright" }
+          },
+          "pairedWith": "right_hip"
+        },
+        {
+          "joint": "right_hip",
+          "role": "primary",
+          "startPose": { "min": 160, "max": 180 },
+          "upRange": {
+            "beginner": { "min": 155, "max": 180 },
+            "normal": { "min": 165, "max": 180 },
+            "advanced": { "min": 170, "max": 180 }
+          },
+          "downRange": {
+            "beginner": { "min": 70, "max": 110 },
+            "normal": { "min": 75, "max": 100 },
+            "advanced": { "min": 80, "max": 95 }
+          },
+          "movingSegment": { "from": "right_hip", "to": "right_shoulder" },
+          "errorMessages": {
+            "tooLow": { "ar": "انزل أكثر", "en": "Lower more" },
+            "tooHigh": { "ar": "قف مستقيماً", "en": "Stand tall" }
+          },
+          "pairedWith": "left_hip"
+        },
+        {
+          "joint": "left_knee",
+          "role": "secondary",
+          "startPose": { "min": 160, "max": 180 },
+          "upRange": {
+            "beginner": { "min": 160, "max": 180 },
+            "normal": { "min": 165, "max": 180 },
+            "advanced": { "min": 170, "max": 180 }
+          },
+          "downRange": {
+            "beginner": { "min": 100, "max": 140 },
+            "normal": { "min": 110, "max": 135 },
+            "advanced": { "min": 115, "max": 130 }
+          },
+          "errorMessages": {
+            "tooLow": { "ar": "لا تثني ركبتيك كثيراً", "en": "Don't over-bend knees" },
+            "tooHigh": { "ar": "ثني ركبتيك قليلاً", "en": "Bend knees slightly" }
+          }
+        }
+      ],
+      "feedbackMessages": {
+        "motivational": [
+          { "ar": "قوة هائلة!", "en": "Massive strength!" },
+          { "ar": "ممتاز!", "en": "Excellent!" }
+        ],
+        "common_mistake": [
+          { "ar": "لا تقوس ظهرك أبداً", "en": "Never round your back" },
+          { "ar": "ابدأ الحركة بدفع الوركين", "en": "Initiate with hip drive" }
+        ],
+        "tip": [
+          { "ar": "شد عضلات البطن لحماية ظهرك", "en": "Brace core to protect back" },
+          { "ar": "أبقِ البار قريباً من جسمك", "en": "Keep bar close to body" }
+        ]
+      },
+      "difficultyLevels": [
+        {
+          "level": "beginner",
+          "repCountingConfig": { "reps": 8, "minRepIntervalMs": 2500, "maxRepIntervalMs": 7000 },
+          "phases": ["start", "up", "top", "down"]
+        },
+        {
+          "level": "normal",
+          "repCountingConfig": { "reps": 10, "minRepIntervalMs": 2000, "maxRepIntervalMs": 6000 },
+          "phases": ["start", "up", "top", "down"]
+        },
+        {
+          "level": "advanced",
+          "repCountingConfig": { "reps": 12, "minRepIntervalMs": 1800, "maxRepIntervalMs": 5000 },
+          "phases": ["start", "up", "top", "down"]
+        }
+      ]
+    }
+  ]
+}

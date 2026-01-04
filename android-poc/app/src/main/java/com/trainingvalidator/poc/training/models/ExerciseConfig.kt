@@ -92,11 +92,17 @@ enum class CountingMethod {
 
 /**
  * Pose variant - represents one camera angle/view
+ * 
+ * @param cameraPosition Expected camera position: "side_view", "front_view", "back_view"
+ * @param expectedFacingDirection Expected body facing direction for position checks
+ * @param positionChecks Position-based validation checks (knee-over-toe, alignment, etc.)
  */
 data class PoseVariant(
     val name: LocalizedText,
     val cameraPosition: String,
+    val expectedFacingDirection: FacingDirection? = null,
     val trackedJoints: List<TrackedJoint> = emptyList(),
+    val positionChecks: List<PositionCheck> = emptyList(),
     val feedbackMessages: FeedbackMessages = FeedbackMessages(),
     val difficultyLevels: List<DifficultyLevel> = emptyList()
 ) {
@@ -378,4 +384,152 @@ data class RepCountingConfig(
      * Check if this config is for a hold exercise (has duration set)
      */
     fun isHoldConfig(): Boolean = duration != null
+}
+
+// ==================== Position-Based Validation Models ====================
+
+/**
+ * Expected facing direction of the person in the frame
+ * Required for accurate position comparisons in side view
+ */
+enum class FacingDirection {
+    @SerializedName("facing_right")
+    FACING_RIGHT,     // Person facing right (left side closer to camera)
+    
+    @SerializedName("facing_left")
+    FACING_LEFT,      // Person facing left (right side closer to camera)
+    
+    @SerializedName("facing_camera")
+    FACING_CAMERA,    // Person facing the camera (front view)
+    
+    @SerializedName("facing_away")
+    FACING_AWAY,      // Person's back to camera (back view)
+    
+    @SerializedName("auto_detect")
+    AUTO_DETECT       // Automatically detect facing direction
+}
+
+/**
+ * Position-based validation check
+ * Works alongside angle-based validation (FormValidator)
+ * 
+ * @param id Unique identifier for the check (e.g., "left_knee_over_toe")
+ * @param type Type of position check
+ * @param landmarks Landmarks to compare
+ * @param condition Comparison condition with thresholds
+ * @param activePhases Phases where this check is active (e.g., ["down", "bottom"])
+ * @param errorMessage Error messages for feedback
+ * @param severity Error severity (affects scoring)
+ * @param cooldownMs Cooldown between repeated errors (prevents spam)
+ */
+data class PositionCheck(
+    val id: String,
+    val type: PositionCheckType,
+    val landmarks: LandmarkGroup,
+    val condition: PositionCondition,
+    val activePhases: List<String>,
+    val errorMessage: LocalizedText,
+    val severity: CheckSeverity = CheckSeverity.WARNING,
+    val cooldownMs: Long = 2000,
+    val minErrorFrames: Int = 3  // Number of consecutive frames to confirm error
+)
+
+/**
+ * Position check types
+ */
+enum class PositionCheckType {
+    @SerializedName("forward_comparison")
+    FORWARD_COMPARISON,       // Compare on forward axis (X in side_view, Z in front_view)
+    
+    @SerializedName("vertical_comparison")
+    VERTICAL_COMPARISON,      // Compare on Y axis (works in all views)
+    
+    @SerializedName("sideways_comparison")
+    SIDEWAYS_COMPARISON,      // Compare on sideways axis (Z in side_view, X in front_view)
+    
+    @SerializedName("distance_ratio")
+    DISTANCE_RATIO,           // Ratio of distances between landmark pairs
+    
+    @SerializedName("horizontal_alignment")
+    HORIZONTAL_ALIGNMENT,     // Check if points are on same horizontal line
+    
+    @SerializedName("vertical_alignment")
+    VERTICAL_ALIGNMENT,       // Check if points are on same vertical line
+    
+    @SerializedName("depth_alignment")
+    DEPTH_ALIGNMENT           // Check if points are at same depth from camera
+}
+
+/**
+ * Landmark group for comparison
+ * Supports 2-4 landmarks depending on check type
+ */
+data class LandmarkGroup(
+    val primary: String,              // Primary landmark (e.g., "left_knee")
+    val secondary: String,            // Secondary landmark for comparison (e.g., "left_foot_index")
+    val tertiary: String? = null,     // Optional - for alignment checks (3 points)
+    val quaternary: String? = null    // Optional - for distance ratio (second pair)
+)
+
+/**
+ * Position condition with difficulty-aware thresholds
+ */
+data class PositionCondition(
+    val operator: PositionOperator,
+    val thresholds: DifficultyThresholds
+)
+
+/**
+ * Threshold values per difficulty level
+ * Similar pattern to DifficultyRanges but for single values
+ */
+data class DifficultyThresholds(
+    val beginner: Double,
+    val normal: Double,
+    val advanced: Double
+) {
+    /**
+     * Get threshold for specific difficulty
+     */
+    fun getForDifficulty(difficulty: DifficultyType): Double {
+        return when (difficulty) {
+            DifficultyType.BEGINNER -> beginner
+            DifficultyType.NORMAL -> normal
+            DifficultyType.ADVANCED -> advanced
+        }
+    }
+}
+
+/**
+ * Position comparison operators
+ */
+enum class PositionOperator {
+    @SerializedName("should_not_exceed")
+    SHOULD_NOT_EXCEED,        // Primary should not exceed secondary by more than threshold
+    
+    @SerializedName("should_exceed")
+    SHOULD_EXCEED,            // Primary should exceed secondary by at least threshold
+    
+    @SerializedName("approximately_equal")
+    APPROXIMATELY_EQUAL,      // Difference should be less than threshold
+    
+    @SerializedName("greater_than_ratio")
+    GREATER_THAN_RATIO,       // Ratio should be greater than threshold
+    
+    @SerializedName("less_than_ratio")
+    LESS_THAN_RATIO           // Ratio should be less than threshold
+}
+
+/**
+ * Check severity - affects scoring
+ */
+enum class CheckSeverity {
+    @SerializedName("error")
+    ERROR,      // Affects rep correctness (like angle errors)
+    
+    @SerializedName("warning")
+    WARNING,    // Form feedback only - doesn't affect counting
+    
+    @SerializedName("tip")
+    TIP         // Improvement suggestion only
 }

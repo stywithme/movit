@@ -1,0 +1,112 @@
+{
+  "name": {
+    "ar": "تمرين البطن (كرانش)",
+    "en": "Crunch"
+  },
+  "description": {
+    "ar": "تمرين كلاسيكي لتقوية عضلات البطن العلوية",
+    "en": "Classic exercise to strengthen upper abdominal muscles"
+  },
+  "instructions": {
+    "ar": "استلقِ على ظهرك مع ثني الركبتين، ثم ارفع كتفيك عن الأرض نحو ركبتيك",
+    "en": "Lie on back with knees bent, lift shoulders off floor toward knees"
+  },
+  "category": {
+    "code": "core",
+    "name": {
+      "ar": "تمارين الجذع",
+      "en": "Core"
+    }
+  },
+  "countingMethod": "up_down",
+  "muscles": ["abs", "core"],
+  "equipment": ["bodyweight"],
+  "tags": ["isolation", "core", "no-equipment", "beginner-friendly"],
+  "poseVariants": [
+    {
+      "name": {
+        "ar": "زاوية جانبية",
+        "en": "Side View"
+      },
+      "cameraPosition": "side_view",
+      "expectedFacingDirection": "auto_detect",
+      "trackedJoints": [
+        {
+          "joint": "spine",
+          "role": "primary",
+          "startPose": { "min": 0, "max": 20 },
+          "upRange": {
+            "beginner": { "min": 30, "max": 50 },
+            "normal": { "min": 35, "max": 55 },
+            "advanced": { "min": 40, "max": 60 }
+          },
+          "downRange": {
+            "beginner": { "min": 0, "max": 25 },
+            "normal": { "min": 0, "max": 20 },
+            "advanced": { "min": 0, "max": 15 }
+          },
+          "errorMessages": {
+            "tooLow": {
+              "ar": "ارفع كتفيك عن الأرض",
+              "en": "Lift shoulders off the floor"
+            },
+            "tooHigh": {
+              "ar": "لا ترفع كثيراً - هذا ليس sit-up",
+              "en": "Don't go too high - this is a crunch, not sit-up"
+            }
+          }
+        },
+        {
+          "joint": "left_knee",
+          "role": "secondary",
+          "startPose": { "min": 80, "max": 110 },
+          "upRange": {
+            "beginner": { "min": 75, "max": 115 },
+            "normal": { "min": 80, "max": 110 },
+            "advanced": { "min": 85, "max": 105 }
+          },
+          "downRange": {
+            "beginner": { "min": 75, "max": 115 },
+            "normal": { "min": 80, "max": 110 },
+            "advanced": { "min": 85, "max": 105 }
+          },
+          "errorMessages": {
+            "tooLow": { "ar": "ثني ركبتيك أكثر", "en": "Bend knees more" },
+            "tooHigh": { "ar": "أبقِ ركبتيك مثنيتين", "en": "Keep knees bent" }
+          }
+        }
+      ],
+      "feedbackMessages": {
+        "motivational": [
+          { "ar": "بطن قوية!", "en": "Strong abs!" },
+          { "ar": "ممتاز! استمر!", "en": "Excellent! Keep going!" }
+        ],
+        "common_mistake": [
+          { "ar": "لا تشد على رقبتك - اترك مسافة بين ذقنك وصدرك", "en": "Don't pull on neck - keep chin off chest" },
+          { "ar": "ركز على عضلات البطن وليس الرقبة", "en": "Focus on abs, not neck" }
+        ],
+        "tip": [
+          { "ar": "زفير عند الصعود، شهيق عند النزول", "en": "Exhale going up, inhale going down" },
+          { "ar": "تخيل أنك تقرب أضلاعك من حوضك", "en": "Imagine bringing ribs to pelvis" }
+        ]
+      },
+      "difficultyLevels": [
+        {
+          "level": "beginner",
+          "repCountingConfig": { "reps": 15, "minRepIntervalMs": 1000, "maxRepIntervalMs": 3500 },
+          "phases": ["start", "up", "top", "down"]
+        },
+        {
+          "level": "normal",
+          "repCountingConfig": { "reps": 20, "minRepIntervalMs": 800, "maxRepIntervalMs": 3000 },
+          "phases": ["start", "up", "top", "down"]
+        },
+        {
+          "level": "advanced",
+          "repCountingConfig": { "reps": 30, "minRepIntervalMs": 600, "maxRepIntervalMs": 2500 },
+          "phases": ["start", "up", "top", "down"]
+        }
+      ]
+    }
+  ]
+}

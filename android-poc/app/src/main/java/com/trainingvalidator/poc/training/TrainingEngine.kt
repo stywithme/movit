@@ -2,6 +2,7 @@ package com.trainingvalidator.poc.training
 
 import android.util.Log
 import com.trainingvalidator.poc.analysis.JointAngles
+import com.trainingvalidator.poc.analysis.SmoothedLandmark
 import com.trainingvalidator.poc.training.config.SettingsManager
 import com.trainingvalidator.poc.training.engine.*
 import com.trainingvalidator.poc.training.feedback.FeedbackEvent
@@ -67,6 +68,29 @@ class TrainingEngine(
         targetReps = targetReps,
         repCountingConfig = difficultyLevel.repCountingConfig
     )
+
+    /**
+     * Per-check cooldown for emitting feedback events (visual overlay stays active, but events are throttled).
+     */
+    private val positionChecksById: Map<String, PositionCheck> =
+        poseVariant.positionChecks.associateBy { it.id }
+
+    private val lastPositionEventTimes = mutableMapOf<String, Long>()
+    
+    // ==================== Position Validator ====================
+    
+    /**
+     * Position validator for position-based checks (knee-over-toe, alignment, etc.)
+     * Null if no position checks are configured
+     */
+    private val positionValidator: PositionValidator? = 
+        poseVariant.positionChecks.takeIf { it.isNotEmpty() }?.let {
+            PositionValidator(
+                positionChecks = it,
+                expectedCameraPosition = poseVariant.cameraPosition,
+                expectedFacingDirection = poseVariant.expectedFacingDirection
+            )
+        }
     
     // ==================== Hold Timer (for HOLD exercises only) ====================
     
@@ -118,6 +142,20 @@ class TrainingEngine(
     
     private val _currentAngles = MutableStateFlow<Map<String, Double>>(emptyMap())
     val currentAngles: StateFlow<Map<String, Double>> = _currentAngles
+    
+    // ==================== Position Validation State Flows ====================
+    
+    /**
+     * Position errors from PositionValidator (severity: ERROR + WARNING)
+     */
+    private val _positionErrors = MutableStateFlow<List<PositionError>>(emptyList())
+    val positionErrors: StateFlow<List<PositionError>> = _positionErrors
+    
+    /**
+     * Camera position warning (if detected camera doesn't match expected)
+     */
+    private val _cameraWarning = MutableStateFlow<CameraPositionWarning?>(null)
+    val cameraWarning: StateFlow<CameraPositionWarning?> = _cameraWarning
     
     // ==================== Hold-specific State Flows ====================
     
@@ -235,10 +273,16 @@ class TrainingEngine(
         stateMachine.reset()
         repCounter.reset()
         holdTimer?.reset()
+        positionValidator?.clearCooldowns()
+        lastPositionEventTimes.clear()
         
         _currentPhase.value = Phase.IDLE
         _repCount.value = 0
         _isCompleted.value = false
+        
+        // Reset position validation state
+        _positionErrors.value = emptyList()
+        _cameraWarning.value = null
         
         // Reset hold-specific state
         if (isHoldExercise) {
@@ -255,6 +299,9 @@ class TrainingEngine(
         ))
         
         Log.d(TAG, "Training started (${if (isHoldExercise) "HOLD" else "REPS"} mode)")
+        if (positionValidator != null) {
+            Log.d(TAG, "Position checks enabled: ${poseVariant.positionChecks.size} checks")
+        }
     }
     
     /**
@@ -299,12 +346,13 @@ class TrainingEngine(
     }
     
     /**
-     * Process a frame with joint angles
+     * Process a frame with joint angles and optional landmarks
      * This is called every frame from the camera/pose detection pipeline
      * 
      * @param angles JointAngles from AngleCalculator
+     * @param landmarks Optional smoothed landmarks for position-based validation
      */
-    fun processFrame(angles: JointAngles) {
+    fun processFrame(angles: JointAngles, landmarks: List<SmoothedLandmark>? = null) {
         if (!isRunning || isPaused) return
         
         // 1. Extract tracked joint angles
@@ -326,7 +374,7 @@ class TrainingEngine(
         val currentPhase = stateMachine.update(primaryAngles)
         _currentPhase.value = currentPhase
         
-        // 5. Validate form and detect errors
+        // 5. Validate form (angle-based)
         val validation = formValidator.validate(trackedAngles, currentPhase)
         lastValidationResult = validation
         _jointStatuses.value = validation.jointStatuses
@@ -334,7 +382,19 @@ class TrainingEngine(
         // 6. Update arrow infos for visual feedback
         _arrowInfos.value = formValidator.getJointArrowInfos(trackedAngles)
         
-        // 7. Handle errors (add to current rep for rep-based, track for hold)
+        // 7. Position validation (if landmarks provided and validator exists)
+        val positionValidation = if (landmarks != null && positionValidator != null) {
+            positionValidator.validate(landmarks, currentPhase, difficulty)
+        } else null
+        
+        // Update position-related state flows
+        positionValidation?.let {
+            // Include tips too so UI overlay can visualize them (different severity)
+            _positionErrors.value = it.errors + it.warnings + it.tips
+            _cameraWarning.value = it.cameraWarning
+        }
+        
+        // 8. Handle form errors (add to current rep for rep-based)
         for (error in validation.errors) {
             if (!isHoldExercise) {
                 repCounter.addError(error)
@@ -343,7 +403,34 @@ class TrainingEngine(
             emitEvent(FeedbackEvent.JointErrorDetected(error))
         }
         
-        // 8. Handle based on counting method
+        // 9. Handle position errors
+        positionValidation?.errors?.forEach { error ->
+            // Only ERROR severity affects rep correctness
+            if (!isHoldExercise) {
+                repCounter.addPositionError(error)
+            }
+            if (shouldEmitPositionEvent(error.checkId)) {
+                emitEvent(FeedbackEvent.PositionErrorDetected(error))
+            }
+        }
+        
+        positionValidation?.warnings?.forEach { error ->
+            if (shouldEmitPositionEvent(error.checkId)) {
+                emitEvent(FeedbackEvent.PositionWarningDetected(error))
+            }
+        }
+
+        positionValidation?.tips?.forEach { tip ->
+            if (shouldEmitPositionEvent(tip.checkId)) {
+                emitEvent(FeedbackEvent.PositionTipDetected(tip))
+            }
+        }
+        
+        positionValidation?.cameraWarning?.let { warning ->
+            emitEvent(FeedbackEvent.CameraPositionWarning(warning))
+        }
+        
+        // 10. Handle based on counting method
         if (isHoldExercise) {
             // Update hold timer based on current phase
             // Phase.COUNT means user is in hold zone (downRange)
@@ -472,6 +559,19 @@ class TrainingEngine(
     private fun emitEvent(event: FeedbackEvent) {
         _events.tryEmit(event)
     }
+
+    /**
+     * Throttle position feedback events per check using the check's cooldownMs.
+     * Visual overlay is driven by state flows and remains visible while the issue persists.
+     */
+    private fun shouldEmitPositionEvent(checkId: String): Boolean {
+        val now = System.currentTimeMillis()
+        val cooldown = positionChecksById[checkId]?.cooldownMs ?: 1500L
+        val lastTime = lastPositionEventTimes[checkId] ?: 0L
+        if (now - lastTime < cooldown) return false
+        lastPositionEventTimes[checkId] = now
+        return true
+    }
     
     // ==================== Getters ====================
     
@@ -540,4 +640,22 @@ class TrainingEngine(
      * Get number of grace periods used
      */
     fun getGracePeriodCount(): Int = holdTimer?.getGracePeriodCount() ?: 0
+    
+    // ==================== Position Validation Getters ====================
+    
+    /**
+     * Check if position validation is enabled for this exercise
+     */
+    fun hasPositionChecks(): Boolean = positionValidator != null
+    
+    /**
+     * Get current position errors
+     */
+    fun getCurrentPositionErrors(): List<PositionError> = _positionErrors.value
+    
+    /**
+     * Get last detected camera result
+     */
+    fun getLastCameraResult(): CameraPositionDetector.CameraDetectionResult? = 
+        positionValidator?.getLastCameraResult()
 }

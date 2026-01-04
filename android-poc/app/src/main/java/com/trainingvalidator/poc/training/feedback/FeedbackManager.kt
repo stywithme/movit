@@ -7,6 +7,8 @@ import android.os.Vibrator
 import android.os.VibratorManager
 import android.speech.tts.TextToSpeech
 import android.util.Log
+import com.trainingvalidator.poc.training.engine.PositionError
+import com.trainingvalidator.poc.training.models.CheckSeverity
 import com.trainingvalidator.poc.training.models.JointError
 import com.trainingvalidator.poc.training.models.LocalizedText
 import kotlinx.coroutines.flow.MutableSharedFlow
@@ -113,6 +115,12 @@ class FeedbackManager(
             is FeedbackEvent.HoldResumed -> handleHoldResumed(event)
             is FeedbackEvent.HoldCompleted -> handleHoldCompleted(event)
             is FeedbackEvent.HoldFailed -> handleHoldFailed(event)
+            
+            // Position events
+            is FeedbackEvent.PositionErrorDetected -> handlePositionError(event)
+            is FeedbackEvent.PositionWarningDetected -> handlePositionWarning(event)
+            is FeedbackEvent.PositionTipDetected -> handlePositionTip(event)
+            is FeedbackEvent.CameraPositionWarning -> handleCameraWarning(event)
             
             else -> {}
         }
@@ -240,6 +248,80 @@ class FeedbackManager(
             vibrateError()
         }
         Log.d(TAG, "Hold failed - error haptic sent")
+    }
+    
+    // ==================== Position Event Handlers ====================
+    
+    /**
+     * Handle position error (severity: ERROR)
+     */
+    private fun handlePositionError(event: FeedbackEvent.PositionErrorDetected) {
+        val errorKey = "position:${event.error.checkId}"
+        val now = System.currentTimeMillis()
+        val lastTime = lastErrorTimes[errorKey] ?: 0
+        
+        // Check cooldown
+        if (now - lastTime < config.errorCooldownMs) {
+            return
+        }
+        
+        lastErrorTimes[errorKey] = now
+        
+        // Haptic feedback for position errors
+        if (config.enableHaptic) {
+            vibrateError()
+        }
+        
+        Log.d(TAG, "Position error: ${event.error.checkId}")
+    }
+    
+    /**
+     * Handle position warning (severity: WARNING)
+     */
+    private fun handlePositionWarning(event: FeedbackEvent.PositionWarningDetected) {
+        val errorKey = "position_warn:${event.error.checkId}"
+        val now = System.currentTimeMillis()
+        val lastTime = lastErrorTimes[errorKey] ?: 0
+        
+        // Check cooldown (longer for warnings)
+        if (now - lastTime < config.errorCooldownMs * 1.5) {
+            return
+        }
+        
+        lastErrorTimes[errorKey] = now
+        
+        // Light haptic feedback for warnings
+        if (config.enableHaptic) {
+            vibrateWarning()
+        }
+        
+        Log.d(TAG, "Position warning: ${event.error.checkId}")
+    }
+
+    /**
+     * Handle position tip (severity: TIP)
+     * No haptic by default; just log (UI overlay shows it).
+     */
+    private fun handlePositionTip(event: FeedbackEvent.PositionTipDetected) {
+        val errorKey = "position_tip:${event.error.checkId}"
+        val now = System.currentTimeMillis()
+        val lastTime = lastErrorTimes[errorKey] ?: 0
+
+        // Light throttling to avoid log spam
+        if (now - lastTime < config.errorCooldownMs * 2) {
+            return
+        }
+
+        lastErrorTimes[errorKey] = now
+        Log.d(TAG, "Position tip: ${event.error.checkId}")
+    }
+    
+    /**
+     * Handle camera position warning
+     */
+    private fun handleCameraWarning(event: FeedbackEvent.CameraPositionWarning) {
+        // Only log - UI will show visual warning
+        Log.d(TAG, "Camera warning: expected=${event.warning.expectedPosition}, detected=${event.warning.detectedPosition}")
     }
     
     /**

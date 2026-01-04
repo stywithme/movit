@@ -33,6 +33,8 @@ import com.trainingvalidator.poc.training.models.CountingMethod
 import com.trainingvalidator.poc.training.models.DifficultyType
 import com.trainingvalidator.poc.training.models.ExerciseConfig
 import com.trainingvalidator.poc.training.models.JointRole
+import com.trainingvalidator.poc.training.engine.PositionError
+import com.trainingvalidator.poc.training.engine.CameraPositionWarning
 import com.trainingvalidator.poc.analysis.JointAngles
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.collectLatest
@@ -634,8 +636,38 @@ class TrainingActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetection
                 binding.tvRepCount.setTextColor(getColor(android.R.color.white))
             }
             
+            // ==================== Position Events ====================
+            
+            is FeedbackEvent.PositionErrorDetected -> {
+                // Visual feedback handled by SkeletonOverlayView
+                Log.d(TAG, "Position error: ${event.error.checkId}")
+            }
+            
+            is FeedbackEvent.PositionWarningDetected -> {
+                // Visual feedback handled by SkeletonOverlayView
+                Log.d(TAG, "Position warning: ${event.error.checkId}")
+            }
+            
+            is FeedbackEvent.CameraPositionWarning -> {
+                // Show camera position warning to user
+                Log.d(TAG, "Camera warning: ${event.warning.message.en}")
+                showCameraWarning(event.warning)
+            }
+            
             else -> {}
         }
+    }
+    
+    /**
+     * Show camera position warning to user
+     */
+    private fun showCameraWarning(warning: CameraPositionWarning) {
+        // Show as toast for now - could be enhanced with a persistent banner
+        Toast.makeText(
+            this,
+            warning.message.en,
+            Toast.LENGTH_LONG
+        ).show()
     }
 
     private fun checkCameraPermission() {
@@ -746,7 +778,13 @@ class TrainingActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetection
                 
                 TrainingState.TRAINING -> {
                     // Process frame through training engine
-                    trainingEngine?.processFrame(angles)
+                    // Pass landmarks for position-based validation
+                    //
+                    // IMPORTANT:
+                    // Use normalized smoothedLandmarks here (not worldLandmarks) because:
+                    // - worldLandmarks often have visibility/presence missing (0), causing checks to be skipped
+                    // - position check thresholds in JSON are tuned for normalized coordinates (0..1-ish), not world units
+                    trainingEngine?.processFrame(angles, smoothedLandmarks)
                 }
                 
                 else -> {}
@@ -755,13 +793,17 @@ class TrainingActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetection
             // Get arrow infos for visual feedback
             val arrowInfos = trainingEngine?.arrowInfos?.value ?: emptyMap()
             
-            // Update skeleton overlay with arrow infos
+            // Get position errors for visual feedback
+            val positionErrors = trainingEngine?.positionErrors?.value ?: emptyList()
+            
+            // Update skeleton overlay with arrow infos and position errors
             binding.skeletonOverlay.updateWithArrowInfos(
                 smoothedLandmarks = smoothedLandmarks,
                 inputImageWidth = result.imageWidth,
                 inputImageHeight = result.imageHeight,
                 angles = angles,
-                arrowInfos = arrowInfos
+                arrowInfos = arrowInfos,
+                positionErrors = positionErrors
             )
         }
     }

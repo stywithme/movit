@@ -1,6 +1,8 @@
 package com.trainingvalidator.poc.training.feedback
 
+import com.trainingvalidator.poc.training.engine.CameraPositionWarning
 import com.trainingvalidator.poc.training.engine.Phase
+import com.trainingvalidator.poc.training.engine.PositionError
 import com.trainingvalidator.poc.training.models.JointError
 import com.trainingvalidator.poc.training.models.LocalizedText
 
@@ -152,6 +154,44 @@ sealed class FeedbackEvent {
         val gracePeriodCount: Int,
         override val timestamp: Long = System.currentTimeMillis(),
         override val priority: FeedbackPriority = FeedbackPriority.HIGH
+    ) : FeedbackEvent()
+    
+    // ==================== Position-based Events ====================
+    
+    /**
+     * Position error detected (severity: ERROR - affects rep correctness)
+     */
+    data class PositionErrorDetected(
+        val error: PositionError,
+        override val timestamp: Long = System.currentTimeMillis(),
+        override val priority: FeedbackPriority = FeedbackPriority.HIGH
+    ) : FeedbackEvent()
+    
+    /**
+     * Position warning detected (severity: WARNING - form feedback only)
+     */
+    data class PositionWarningDetected(
+        val error: PositionError,
+        override val timestamp: Long = System.currentTimeMillis(),
+        override val priority: FeedbackPriority = FeedbackPriority.MEDIUM
+    ) : FeedbackEvent()
+    
+    /**
+     * Position tip detected (severity: TIP - improvement suggestion)
+     */
+    data class PositionTipDetected(
+        val error: PositionError,
+        override val timestamp: Long = System.currentTimeMillis(),
+        override val priority: FeedbackPriority = FeedbackPriority.LOW
+    ) : FeedbackEvent()
+    
+    /**
+     * Camera position warning - detected camera doesn't match expected
+     */
+    data class CameraPositionWarning(
+        val warning: com.trainingvalidator.poc.training.engine.CameraPositionWarning,
+        override val timestamp: Long = System.currentTimeMillis(),
+        override val priority: FeedbackPriority = FeedbackPriority.MEDIUM
     ) : FeedbackEvent()
 }
 

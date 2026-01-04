@@ -1,0 +1,243 @@
+{
+  "name": {
+    "ar": "تمرين سوبرمان",
+    "en": "Superman Hold"
+  },
+  "description": {
+    "ar": "تمرين لتقوية عضلات أسفل الظهر والمؤخرة والكتفين",
+    "en": "Exercise to strengthen lower back, glutes, and shoulders"
+  },
+  "instructions": {
+    "ar": "استلقِ على بطنك، ثم ارفع ذراعيك وساقيك عن الأرض معاً وثبّت",
+    "en": "Lie face down, then lift arms and legs off the ground simultaneously and hold"
+  },
+  "category": {
+    "code": "back",
+    "name": {
+      "ar": "تمارين الظهر",
+      "en": "Back"
+    }
+  },
+  "countingMethod": "hold",
+  "muscles": ["lower_back", "glutes", "hamstrings", "shoulders"],
+  "equipment": ["bodyweight"],
+  "tags": ["isometric", "back", "no-equipment", "rehab"],
+  "poseVariants": [
+    {
+      "name": {
+        "ar": "زاوية جانبية",
+        "en": "Side View"
+      },
+      "cameraPosition": "side_view",
+      "expectedFacingDirection": "auto_detect",
+      "positionChecks": [
+        {
+          "id": "arms_extended",
+          "type": "vertical_comparison",
+          "landmarks": {
+            "primary": "left_wrist",
+            "secondary": "left_shoulder"
+          },
+          "condition": {
+            "operator": "should_not_exceed",
+            "thresholds": {
+              "beginner": 0.05,
+              "normal": 0.02,
+              "advanced": 0.0
+            }
+          },
+          "activePhases": ["count", "hold"],
+          "errorMessage": {
+            "ar": "ارفع ذراعيك أعلى",
+            "en": "Raise arms higher"
+          },
+          "severity": "warning",
+          "cooldownMs": 2000,
+          "minErrorFrames": 5
+        },
+        {
+          "id": "legs_extended",
+          "type": "vertical_comparison",
+          "landmarks": {
+            "primary": "left_ankle",
+            "secondary": "left_hip"
+          },
+          "condition": {
+            "operator": "should_not_exceed",
+            "thresholds": {
+              "beginner": 0.10,
+              "normal": 0.05,
+              "advanced": 0.02
+            }
+          },
+          "activePhases": ["count", "hold"],
+          "errorMessage": {
+            "ar": "ارفع ساقيك أعلى",
+            "en": "Raise legs higher"
+          },
+          "severity": "warning",
+          "cooldownMs": 2000,
+          "minErrorFrames": 5
+        }
+      ],
+      "trackedJoints": [
+        {
+          "joint": "left_shoulder",
+          "role": "primary",
+          "startPose": {
+            "min": 150,
+            "max": 180
+          },
+          "upRange": {
+            "beginner": { "min": 145, "max": 180 },
+            "normal": { "min": 155, "max": 180 },
+            "advanced": { "min": 165, "max": 180 }
+          },
+          "downRange": {
+            "beginner": { "min": 145, "max": 180 },
+            "normal": { "min": 155, "max": 180 },
+            "advanced": { "min": 165, "max": 180 }
+          },
+          "errorMessages": {
+            "tooLow": {
+              "ar": "افرد ذراعيك أمامك",
+              "en": "Extend arms in front"
+            },
+            "tooHigh": {
+              "ar": "ممتاز!",
+              "en": "Great!"
+            }
+          },
+          "pairedWith": "right_shoulder"
+        },
+        {
+          "joint": "right_shoulder",
+          "role": "primary",
+          "startPose": {
+            "min": 150,
+            "max": 180
+          },
+          "upRange": {
+            "beginner": { "min": 145, "max": 180 },
+            "normal": { "min": 155, "max": 180 },
+            "advanced": { "min": 165, "max": 180 }
+          },
+          "downRange": {
+            "beginner": { "min": 145, "max": 180 },
+            "normal": { "min": 155, "max": 180 },
+            "advanced": { "min": 165, "max": 180 }
+          },
+          "errorMessages": {
+            "tooLow": {
+              "ar": "افرد ذراعيك",
+              "en": "Extend arms"
+            },
+            "tooHigh": {
+              "ar": "ممتاز!",
+              "en": "Excellent!"
+            }
+          },
+          "pairedWith": "left_shoulder"
+        },
+        {
+          "joint": "left_hip",
+          "role": "secondary",
+          "startPose": {
+            "min": 160,
+            "max": 180
+          },
+          "upRange": {
+            "beginner": { "min": 155, "max": 180 },
+            "normal": { "min": 165, "max": 180 },
+            "advanced": { "min": 170, "max": 180 }
+          },
+          "downRange": {
+            "beginner": { "min": 155, "max": 180 },
+            "normal": { "min": 165, "max": 180 },
+            "advanced": { "min": 170, "max": 180 }
+          },
+          "errorMessages": {
+            "tooLow": {
+              "ar": "ارفع ساقيك",
+              "en": "Raise your legs"
+            },
+            "tooHigh": {
+              "ar": "ممتاز!",
+              "en": "Great!"
+            }
+          }
+        },
+        {
+          "joint": "left_knee",
+          "role": "secondary",
+          "startPose": {
+            "min": 165,
+            "max": 180
+          },
+          "upRange": {
+            "beginner": { "min": 160, "max": 180 },
+            "normal": { "min": 168, "max": 180 },
+            "advanced": { "min": 172, "max": 180 }
+          },
+          "downRange": {
+            "beginner": { "min": 160, "max": 180 },
+            "normal": { "min": 168, "max": 180 },
+            "advanced": { "min": 172, "max": 180 }
+          },
+          "errorMessages": {
+            "tooLow": {
+              "ar": "افرد ساقيك",
+              "en": "Straighten legs"
+            },
+            "tooHigh": {
+              "ar": "ممتاز!",
+              "en": "Excellent!"
+            }
+          }
+        }
+      ],
+      "feedbackMessages": {
+        "motivational": [
+          { "ar": "ظهر قوي!", "en": "Strong back!" },
+          { "ar": "ممتاز! استمر!", "en": "Excellent! Keep holding!" },
+          { "ar": "أنت سوبرمان حقيقي!", "en": "You're a real Superman!" }
+        ],
+        "common_mistake": [
+          { "ar": "لا تحني رقبتك للخلف", "en": "Don't hyperextend neck" },
+          { "ar": "افرد ذراعيك تماماً", "en": "Fully extend your arms" },
+          { "ar": "ارفع ذراعيك وساقيك معاً", "en": "Lift arms and legs simultaneously" }
+        ],
+        "tip": [
+          { "ar": "انظر للأسفل للحفاظ على رقبتك", "en": "Look down to protect your neck" },
+          { "ar": "تنفس بانتظام أثناء الثبات", "en": "Breathe steadily while holding" }
+        ]
+      },
+      "difficultyLevels": [
+        {
+          "level": "beginner",
+          "repCountingConfig": {
+            "duration": 10,
+            "gracePeriodMs": 3000
+          },
+          "phases": ["start", "hold"]
+        },
+        {
+          "level": "normal",
+          "repCountingConfig": {
+            "duration": 20,
+            "gracePeriodMs": 2500
+          },
+          "phases": ["start", "hold"]
+        },
+        {
+          "level": "advanced",
+          "repCountingConfig": {
+            "duration": 30,
+            "gracePeriodMs": 2000
+          },
+          "phases": ["start", "hold"]
+        }
+      ]
+    }
+  ]
+}
