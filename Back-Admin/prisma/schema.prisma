@@ -1,0 +1,302 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ============================================
+// ATTRIBUTES (Lookup Tables)
+// ============================================
+
+/// Attribute types (category, muscle, equipment, tag, counting_method, etc.)
+model Attribute {
+  id          String   @id @default(uuid())
+  code        String   @unique
+  name        Json     // { "ar": "...", "en": "..." }
+  description String?
+  sortOrder   Int      @default(0)
+  isSystem    Boolean  @default(false)
+  createdAt   DateTime @default(now())
+
+  values AttributeValue[]
+
+  @@map("attributes")
+}
+
+/// Attribute values (legs, chest, beginner, left_knee, etc.)
+model AttributeValue {
+  id          String   @id @default(uuid())
+  attributeId String
+  code        String   @unique
+  name        Json     // { "ar": "...", "en": "..." }
+  description Json?    // { "ar": "...", "en": "..." }
+  icon        String?
+  color       String?
+  sortOrder   Int      @default(0)
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+
+  attribute Attribute @relation(fields: [attributeId], references: [id], onDelete: Cascade)
+
+  // Relations to exercises
+  exercisesAsCategory      Exercise[]          @relation("ExerciseCategory")
+  exercisesAsCountingMethod Exercise[]         @relation("ExerciseCountingMethod")
+  exerciseAttributes       ExerciseAttribute[]
+  difficultyLevelsAsType   DifficultyLevel[]   @relation("DifficultyLevelType")
+  angleRulesAsJoint        AngleRule[]         @relation("AngleRuleJoint")
+  cameraPositionJoints     CameraPositionJoint[] @relation("CameraPositionJoint")
+
+  @@index([attributeId])
+  @@map("attribute_values")
+}
+
+// ============================================
+// EXERCISES
+// ============================================
+
+/// Main exercise entity
+model Exercise {
+  id               String    @id @default(uuid())
+  categoryId       String
+  countingMethodId String
+  name             Json      // { "ar": "...", "en": "..." }
+  description      Json?     // { "ar": "...", "en": "..." }
+  instructions     Json?     // { "ar": "...", "en": "..." }
+  slug             String    @unique
+  status           String    @default("draft") // draft, published
+  publishedAt      DateTime?
+  createdBy        String?
+  updatedBy        String?
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+  deletedAt        DateTime?
+
+  category       AttributeValue      @relation("ExerciseCategory", fields: [categoryId], references: [id])
+  countingMethod AttributeValue      @relation("ExerciseCountingMethod", fields: [countingMethodId], references: [id])
+  attributes     ExerciseAttribute[]
+  media          ExerciseMedia[]
+  poseVariants   PoseVariant[]
+
+  @@index([categoryId])
+  @@index([countingMethodId])
+  @@index([status])
+  @@index([deletedAt])
+  @@map("exercises")
+}
+
+/// Exercise attributes (muscles, equipment, tags - many-to-many)
+model ExerciseAttribute {
+  id               String   @id @default(uuid())
+  exerciseId       String
+  attributeValueId String
+  createdAt        DateTime @default(now())
+
+  exercise       Exercise       @relation(fields: [exerciseId], references: [id], onDelete: Cascade)
+  attributeValue AttributeValue @relation(fields: [attributeValueId], references: [id], onDelete: Cascade)
+
+  @@unique([exerciseId, attributeValueId])
+  @@index([exerciseId])
+  @@index([attributeValueId])
+  @@map("exercise_attributes")
+}
+
+/// Exercise media (images, videos)
+model ExerciseMedia {
+  id         String   @id @default(uuid())
+  exerciseId String
+  type       String   // image, video
+  url        String
+  altText    String?
+  sortOrder  Int      @default(0)
+  isPrimary  Boolean  @default(false)
+  createdAt  DateTime @default(now())
+
+  exercise Exercise @relation(fields: [exerciseId], references: [id], onDelete: Cascade)
+
+  @@index([exerciseId])
+  @@map("exercise_media")
+}
+
+// ============================================
+// CAMERA POSITIONS
+// ============================================
+
+/// Camera positions (front, side, back, etc.)
+model CameraPosition {
+  id          String   @id @default(uuid())
+  code        String   @unique
+  name        Json     // { "ar": "...", "en": "..." }
+  description Json?    // { "ar": "...", "en": "..." }
+  imageUrl    String?
+  isActive    Boolean  @default(true)
+  sortOrder   Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  joints       CameraPositionJoint[]
+  poseVariants PoseVariant[]
+
+  @@map("camera_positions")
+}
+
+/// Joints required for each camera position
+model CameraPositionJoint {
+  id               String   @id @default(uuid())
+  cameraPositionId String
+  jointId          String
+  createdAt        DateTime @default(now())
+
+  cameraPosition CameraPosition @relation(fields: [cameraPositionId], references: [id], onDelete: Cascade)
+  joint          AttributeValue @relation("CameraPositionJoint", fields: [jointId], references: [id])
+
+  @@unique([cameraPositionId, jointId])
+  @@index([cameraPositionId])
+  @@index([jointId])
+  @@map("camera_position_joints")
+}
+
+// ============================================
+// POSE VARIANTS
+// ============================================
+
+/// Pose variants (different camera positions for an exercise)
+model PoseVariant {
+  id                   String   @id @default(uuid())
+  exerciseId           String
+  cameraPositionId     String
+  name                 Json     // { "ar": "...", "en": "..." }
+  description          Json?    // { "ar": "...", "en": "..." }
+  referenceImageUrl    String?
+  startPoseAngles      Json?    // { "left_knee": { min: 160, max: 180 }, ... } - Start pose angle ranges
+  primaryJoint         String?  // Comma-separated primary joint codes (e.g., "left_knee,right_knee")
+  trackedJointsConfig  Json?    // Full tracked joints configuration with tolerances and error messages
+  sortOrder            Int      @default(0)
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+
+  exercise         Exercise          @relation(fields: [exerciseId], references: [id], onDelete: Cascade)
+  cameraPosition   CameraPosition    @relation(fields: [cameraPositionId], references: [id])
+  difficultyLevels DifficultyLevel[]
+
+  @@index([exerciseId])
+  @@index([cameraPositionId])
+  @@map("pose_variants")
+}
+
+// ============================================
+// DIFFICULTY LEVELS
+// ============================================
+
+/// Difficulty levels for each pose variant
+model DifficultyLevel {
+  id               String   @id @default(uuid())
+  poseVariantId    String
+  difficultyTypeId String
+  name             Json     // { "ar": "...", "en": "..." }
+  description      Json?    // { "ar": "...", "en": "..." }
+  romConfig        Json?    // { "targetAngle": 90, "tolerance": 10 } - Range of motion config
+  repCountingConfig Json?   // { "reps": 10, "duration": null, "eccentricThreshold": 100, "concentricThreshold": 160 }
+  sortOrder        Int      @default(0)
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  poseVariant      PoseVariant       @relation(fields: [poseVariantId], references: [id], onDelete: Cascade)
+  difficultyType   AttributeValue    @relation("DifficultyLevelType", fields: [difficultyTypeId], references: [id])
+  phases           Phase[]
+  feedbackMessages FeedbackMessage[]
+
+  @@index([poseVariantId])
+  @@index([difficultyTypeId])
+  @@map("difficulty_levels")
+}
+
+// ============================================
+// PHASES
+// ============================================
+
+/// Phases for each difficulty level (auto-generated from counting method)
+model Phase {
+  id                String   @id @default(uuid())
+  difficultyLevelId String
+  code              String   // start, eccentric, concentric, end, push, pull, hold
+  name              Json     // { "ar": "...", "en": "..." }
+  sortOrder         Int      @default(0)
+  createdAt         DateTime @default(now())
+
+  difficultyLevel DifficultyLevel @relation(fields: [difficultyLevelId], references: [id], onDelete: Cascade)
+  angleRules      AngleRule[]
+
+  @@index([difficultyLevelId])
+  @@map("phases")
+}
+
+// ============================================
+// ANGLE RULES
+// ============================================
+
+/// Angle rules for each phase
+model AngleRule {
+  id               String   @id @default(uuid())
+  phaseId          String
+  jointId          String
+  minAngle         Float
+  maxAngle         Float
+  errorMessageOver Json?    // { "ar": "...", "en": "..." }
+  errorMessageUnder Json?   // { "ar": "...", "en": "..." }
+  priority         String   @default("medium") // high, medium, low
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  phase Phase          @relation(fields: [phaseId], references: [id], onDelete: Cascade)
+  joint AttributeValue @relation("AngleRuleJoint", fields: [jointId], references: [id])
+
+  @@index([phaseId])
+  @@index([jointId])
+  @@map("angle_rules")
+}
+
+// ============================================
+// FEEDBACK MESSAGES
+// ============================================
+
+/// Feedback messages (motivational, tips, common mistakes)
+model FeedbackMessage {
+  id                String   @id @default(uuid())
+  difficultyLevelId String
+  type              String   // motivational, common_mistake, tip
+  message           Json     // { "ar": "...", "en": "..." }
+  audioUrl          String?
+  sortOrder         Int      @default(0)
+  createdAt         DateTime @default(now())
+
+  difficultyLevel DifficultyLevel @relation(fields: [difficultyLevelId], references: [id], onDelete: Cascade)
+
+  @@index([difficultyLevelId])
+  @@index([type])
+  @@map("feedback_messages")
+}
+
+// ============================================
+// ADMIN USERS (for audit trail)
+// ============================================
+
+/// Admin users for the dashboard
+model Admin {
+  id        String    @id @default(uuid())
+  email     String    @unique
+  password  String
+  name      String
+  role      String    @default("admin") // admin, super_admin
+  isActive  Boolean   @default(true)
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+
+  @@map("admins")
+}

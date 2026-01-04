@@ -1,0 +1,283 @@
+{
+  "name": {
+    "ar": "تمرين الضغط",
+    "en": "Push-up"
+  },
+  "description": {
+    "ar": "تمرين كلاسيكي لتقوية الصدر والكتفين والذراعين",
+    "en": "Classic exercise to strengthen chest, shoulders and arms"
+  },
+  "instructions": {
+    "ar": "ابدأ بوضع اللوح الخشبي مع الذراعين ممدودتين، ثم انزل بصدرك نحو الأرض واصعد",
+    "en": "Start in plank position with arms extended, lower your chest toward the floor, then push back up"
+  },
+  "category": {
+    "code": "chest",
+    "name": {
+      "ar": "تمارين الصدر",
+      "en": "Chest"
+    }
+  },
+  "countingMethod": "push_pull",
+  "muscles": ["chest", "shoulders", "triceps", "core"],
+  "equipment": ["bodyweight"],
+  "tags": ["compound", "upper-body", "no-equipment"],
+  "poseVariants": [
+    {
+      "name": {
+        "ar": "زاوية جانبية",
+        "en": "Side View"
+      },
+      "cameraPosition": "side_view",
+      "trackedJoints": [
+        {
+          "joint": "left_elbow",
+          "role": "primary",
+          "startPose": {
+            "min": 150,
+            "max": 180
+          },
+          "upRange": {
+            "beginner": { "min": 150, "max": 180 },
+            "normal": { "min": 160, "max": 180 },
+            "advanced": { "min": 165, "max": 180 }
+          },
+          "downRange": {
+            "beginner": { "min": 70, "max": 110 },
+            "normal": { "min": 60, "max": 90 },
+            "advanced": { "min": 50, "max": 80 }
+          },
+          "movingSegment": {
+            "from": "left_elbow",
+            "to": "left_shoulder"
+          },
+          "errorMessages": {
+            "tooLow": {
+              "ar": "لا تنزل كثيراً - حافظ على استقامة الجسم",
+              "en": "Don't go too low - keep your body straight"
+            },
+            "tooHigh": {
+              "ar": "انزل أكثر - قرّب صدرك من الأرض",
+              "en": "Go lower - bring your chest closer to the floor"
+            }
+          },
+          "pairedWith": "right_elbow"
+        },
+        {
+          "joint": "right_elbow",
+          "role": "primary",
+          "startPose": {
+            "min": 150,
+            "max": 180
+          },
+          "upRange": {
+            "beginner": { "min": 150, "max": 180 },
+            "normal": { "min": 160, "max": 180 },
+            "advanced": { "min": 165, "max": 180 }
+          },
+          "downRange": {
+            "beginner": { "min": 70, "max": 110 },
+            "normal": { "min": 60, "max": 90 },
+            "advanced": { "min": 50, "max": 80 }
+          },
+          "movingSegment": {
+            "from": "right_elbow",
+            "to": "right_shoulder"
+          },
+          "errorMessages": {
+            "tooLow": {
+              "ar": "لا تنزل كثيراً",
+              "en": "Don't go too low"
+            },
+            "tooHigh": {
+              "ar": "انزل أكثر",
+              "en": "Go lower"
+            }
+          },
+          "pairedWith": "left_elbow"
+        },
+        {
+          "joint": "left_hip",
+          "role": "secondary",
+          "startPose": {
+            "min": 160,
+            "max": 180
+          },
+          "upRange": {
+            "beginner": { "min": 155, "max": 180 },
+            "normal": { "min": 165, "max": 180 },
+            "advanced": { "min": 170, "max": 180 }
+          },
+          "downRange": {
+            "beginner": { "min": 155, "max": 180 },
+            "normal": { "min": 165, "max": 180 },
+            "advanced": { "min": 170, "max": 180 }
+          },
+          "movingSegment": {
+            "from": "left_hip",
+            "to": "left_shoulder"
+          },
+          "errorMessages": {
+            "tooLow": {
+              "ar": "ارفع وسطك - لا تدع ظهرك ينحني",
+              "en": "Raise your hips - don't let your back sag"
+            },
+            "tooHigh": {
+              "ar": "اخفض وسطك - حافظ على استقامة الجسم",
+              "en": "Lower your hips - keep your body straight"
+            }
+          }
+        }
+      ],
+      "feedbackMessages": {
+        "motivational": [
+          { "ar": "ممتاز! استمر!", "en": "Excellent! Keep going!" },
+          { "ar": "أداء رائع!", "en": "Great performance!" },
+          { "ar": "قوي! لا تتوقف!", "en": "Strong! Don't stop!" }
+        ],
+        "common_mistake": [
+          { "ar": "حافظ على استقامة ظهرك", "en": "Keep your back straight" },
+          { "ar": "لا تدع وسطك ينخفض", "en": "Don't let your hips drop" },
+          { "ar": "المرفقان بزاوية 45 درجة وليس للخارج", "en": "Elbows at 45 degrees, not flared out" }
+        ],
+        "tip": [
+          { "ar": "تنفس: زفير عند الصعود، شهيق عند النزول", "en": "Breathe: exhale going up, inhale going down" },
+          { "ar": "انظر للأمام قليلاً وليس للأسفل", "en": "Look slightly forward, not straight down" },
+          { "ar": "شد عضلات بطنك طوال الحركة", "en": "Keep your core engaged throughout" }
+        ]
+      },
+      "difficultyLevels": [
+        {
+          "level": "beginner",
+          "repCountingConfig": {
+            "reps": 8,
+            "minRepIntervalMs": 2000,
+            "maxRepIntervalMs": 6000
+          },
+          "phases": ["start", "push", "extended", "pull"]
+        },
+        {
+          "level": "normal",
+          "repCountingConfig": {
+            "reps": 12,
+            "minRepIntervalMs": 1500,
+            "maxRepIntervalMs": 5000
+          },
+          "phases": ["start", "push", "extended", "pull"]
+        },
+        {
+          "level": "advanced",
+          "repCountingConfig": {
+            "reps": 20,
+            "minRepIntervalMs": 1000,
+            "maxRepIntervalMs": 4000
+          },
+          "phases": ["start", "push", "extended", "pull"]
+        }
+      ]
+    },
+    {
+      "name": {
+        "ar": "زاوية أمامية",
+        "en": "Front View"
+      },
+      "cameraPosition": "front_view",
+      "trackedJoints": [
+        {
+          "joint": "left_elbow",
+          "role": "primary",
+          "startPose": {
+            "min": 150,
+            "max": 180
+          },
+          "upRange": {
+            "beginner": { "min": 150, "max": 180 },
+            "normal": { "min": 160, "max": 180 },
+            "advanced": { "min": 165, "max": 180 }
+          },
+          "downRange": {
+            "beginner": { "min": 70, "max": 110 },
+            "normal": { "min": 60, "max": 90 },
+            "advanced": { "min": 50, "max": 80 }
+          },
+          "errorMessages": {
+            "tooLow": {
+              "ar": "لا تنزل كثيراً",
+              "en": "Don't go too low"
+            },
+            "tooHigh": {
+              "ar": "انزل أكثر",
+              "en": "Go lower"
+            }
+          },
+          "pairedWith": "right_elbow"
+        },
+        {
+          "joint": "right_elbow",
+          "role": "primary",
+          "startPose": {
+            "min": 150,
+            "max": 180
+          },
+          "upRange": {
+            "beginner": { "min": 150, "max": 180 },
+            "normal": { "min": 160, "max": 180 },
+            "advanced": { "min": 165, "max": 180 }
+          },
+          "downRange": {
+            "beginner": { "min": 70, "max": 110 },
+            "normal": { "min": 60, "max": 90 },
+            "advanced": { "min": 50, "max": 80 }
+          },
+          "errorMessages": {
+            "tooLow": {
+              "ar": "لا تنزل كثيراً",
+              "en": "Don't go too low"
+            },
+            "tooHigh": {
+              "ar": "انزل أكثر",
+              "en": "Go lower"
+            }
+          },
+          "pairedWith": "left_elbow"
+        }
+      ],
+      "feedbackMessages": {
+        "motivational": [
+          { "ar": "ممتاز!", "en": "Excellent!" }
+        ],
+        "common_mistake": [],
+        "tip": []
+      },
+      "difficultyLevels": [
+        {
+          "level": "beginner",
+          "repCountingConfig": {
+            "reps": 8,
+            "minRepIntervalMs": 2000,
+            "maxRepIntervalMs": 6000
+          },
+          "phases": ["start", "push", "extended", "pull"]
+        },
+        {
+          "level": "normal",
+          "repCountingConfig": {
+            "reps": 12,
+            "minRepIntervalMs": 1500,
+            "maxRepIntervalMs": 5000
+          },
+          "phases": ["start", "push", "extended", "pull"]
+        },
+        {
+          "level": "advanced",
+          "repCountingConfig": {
+            "reps": 20,
+            "minRepIntervalMs": 1000,
+            "maxRepIntervalMs": 4000
+          },
+          "phases": ["start", "push", "extended", "pull"]
+        }
+      ]
+    }
+  ]
+}

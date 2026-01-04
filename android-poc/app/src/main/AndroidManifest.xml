@@ -5,6 +5,9 @@
     <!-- Camera Permission -->
     <uses-feature android:name="android.hardware.camera" android:required="true" />
     <uses-permission android:name="android.permission.CAMERA" />
+    
+    <!-- Vibration Permission (for haptic feedback) -->
+    <uses-permission android:name="android.permission.VIBRATE" />
 
     <application
         android:allowBackup="true"
@@ -15,8 +18,9 @@
         android:theme="@style/Theme.TrainingValidatorPoC"
         tools:targetApi="31">
         
+        <!-- Exercise List - LAUNCHER -->
         <activity
-            android:name=".ui.MainActivity"
+            android:name=".ui.ExerciseListActivity"
             android:exported="true"
             android:screenOrientation="portrait"
             android:theme="@style/Theme.TrainingValidatorPoC">
@@ -25,6 +29,27 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+        
+        <!-- Exercise Detail -->
+        <activity
+            android:name=".ui.ExerciseDetailActivity"
+            android:exported="false"
+            android:screenOrientation="portrait"
+            android:theme="@style/Theme.TrainingValidatorPoC" />
+        
+        <!-- Training Activity -->
+        <activity
+            android:name=".ui.TrainingActivity"
+            android:exported="false"
+            android:screenOrientation="portrait"
+            android:theme="@style/Theme.TrainingValidatorPoC" />
+        
+        <!-- Original MainActivity (Demo Mode) -->
+        <activity
+            android:name=".ui.MainActivity"
+            android:exported="false"
+            android:screenOrientation="portrait"
+            android:theme="@style/Theme.TrainingValidatorPoC" />
         
     </application>
 

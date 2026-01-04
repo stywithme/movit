@@ -1,6 +1,7 @@
 package com.trainingvalidator.poc.ui
 
 import android.Manifest
+import android.content.Intent
 import android.content.pm.PackageManager
 import android.os.Bundle
 import android.util.Log
@@ -13,6 +14,7 @@ import androidx.core.content.ContextCompat
 import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.WindowInsetsControllerCompat
+import android.graphics.Color
 import com.trainingvalidator.poc.analysis.AngleCalculator
 import com.trainingvalidator.poc.analysis.LandmarkSmoother
 import com.trainingvalidator.poc.camera.CameraManager
@@ -46,7 +48,7 @@ class MainActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetectionList
     private val mainScope = CoroutineScope(Dispatchers.Main + SupervisorJob())
     
     // Landmark smoothing for stable visualization
-    private val landmarkSmoother = LandmarkSmoother(smoothingFactor = 0.5f)
+    private val landmarkSmoother = LandmarkSmoother()
     
     // State
     private var useFrontCamera = true
@@ -121,6 +123,23 @@ class MainActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetectionList
         binding.btnGrantPermission.setOnClickListener {
             cameraPermissionLauncher.launch(Manifest.permission.CAMERA)
         }
+        
+        // Start Training button
+        binding.btnStartTraining.setOnClickListener {
+            startTrainingActivity()
+        }
+    }
+    
+    /**
+     * Start Training Activity with default exercise
+     */
+    private fun startTrainingActivity() {
+        val intent = Intent(this, TrainingActivity::class.java).apply {
+            putExtra(TrainingActivity.EXTRA_EXERCISE_NAME, "squat")
+            putExtra(TrainingActivity.EXTRA_DIFFICULTY, "beginner")
+            putExtra(TrainingActivity.EXTRA_POSE_VARIANT, 0)
+        }
+        startActivity(intent)
     }
 
     private fun switchModel(modelType: ModelType) {
@@ -206,13 +225,33 @@ class MainActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetectionList
             // Update Model Name UI
             binding.tvModelType.text = "Model: ${result.modelType}"
             
-            // Apply landmark smoothing
-            val smoothedLandmarks = landmarkSmoother.smooth(result.landmarks)
+            // Apply LIGHTWEIGHT smoothing (simple EMA) for drawing
+            val smoothedLandmarks = landmarkSmoother.smooth(
+                result.landmarks,
+                result.timestampMs
+            )
             
-            // Calculate angles using smoothed landmarks (with visibility check)
-            val angles = AngleCalculator.calculateAllAnglesSmoothed(smoothedLandmarks)
+            // Convert world landmarks WITHOUT smoothing (they're already stable)
+            val worldLandmarks = result.worldLandmarks?.let {
+                landmarkSmoother.convertWorld(it)
+            }
             
-            // Update skeleton overlay with smoothed landmarks
+            // Calculate angles using world landmarks (3D) if available
+            // Using lower visibility threshold (0.3) for angles to show more often
+            val angles = if (worldLandmarks != null) {
+                AngleCalculator.calculateAllAnglesSmoothed(
+                    worldLandmarks, 
+                    visibilityThreshold = 0.3f,
+                    use3D = true
+                )
+            } else {
+                AngleCalculator.calculateAllAnglesSmoothed(
+                    smoothedLandmarks,
+                    visibilityThreshold = 0.3f
+                )
+            }
+            
+            // Update skeleton overlay
             binding.skeletonOverlay.updateSkeleton(
                 smoothedLandmarks = smoothedLandmarks,
                 inputImageWidth = result.imageWidth,
@@ -220,11 +259,13 @@ class MainActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetectionList
                 angles = angles
             )
             
-            // Update angles panel
-            updateAnglesDisplay(angles)
+            // Update angles panel (every 3 frames to reduce UI updates)
+            if (frameCount % 3 == 0) {
+                updateAnglesDisplay(angles)
+            }
             
-            // Update status
-            if (frameCount % 10 == 0) {
+            // Update status (every 30 frames)
+            if (frameCount % 30 == 0) {
                 updateStatus("Tracking pose ✓")
             }
         }

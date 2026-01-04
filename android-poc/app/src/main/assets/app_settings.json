@@ -1,0 +1,21 @@
+{
+  "version": "1.0.0",
+  "angleDetection": {
+    "hysteresisDegrees": 5.0,
+    "boundaryBufferDegrees": 3.0,
+    "extremeErrorThresholdDegrees": 10.0
+  },
+  "movementDetection": {
+    "smoothingWindowSize": 3,
+    "angleChangeThresholdDegrees": 2.0
+  },
+  "defaults": {
+    "minRepIntervalMs": 400,
+    "maxRepIntervalMs": 5000,
+    "minPhaseDurationMs": 100
+  },
+  "holdDefaults": {
+    "defaultDurationSeconds": 30,
+    "defaultGracePeriodMs": 3000
+  }
+}

@@ -56,6 +56,9 @@ class PoseLandmarkerHelper(
     // Store last image dimensions for result callback
     private var lastImageWidth = 0
     private var lastImageHeight = 0
+    
+    // Reusable bitmap buffer to reduce GC pressure
+    private var bitmapBuffer: Bitmap? = null
 
     /**
      * Initialize the pose landmarker with optimal settings
@@ -118,16 +121,18 @@ class PoseLandmarkerHelper(
             // Use SystemClock.uptimeMillis() for consistent timestamps (Google's approach)
             val frameTime = SystemClock.uptimeMillis()
             
-            // Create bitmap buffer matching the ImageProxy dimensions
-            val bitmapBuffer = Bitmap.createBitmap(
+            // Get or create bitmap buffer matching the ImageProxy dimensions
+            val buffer = bitmapBuffer?.takeIf { 
+                it.width == imageProxy.width && it.height == imageProxy.height 
+            } ?: Bitmap.createBitmap(
                 imageProxy.width,
                 imageProxy.height,
                 Bitmap.Config.ARGB_8888
-            )
+            ).also { bitmapBuffer = it }
             
             // Copy pixels directly from buffer (faster than toBitmap())
             imageProxy.use { 
-                bitmapBuffer.copyPixelsFromBuffer(imageProxy.planes[0].buffer) 
+                buffer.copyPixelsFromBuffer(imageProxy.planes[0].buffer) 
             }
             
             // Apply rotation and mirroring
@@ -146,8 +151,8 @@ class PoseLandmarkerHelper(
             }
             
             val rotatedBitmap = Bitmap.createBitmap(
-                bitmapBuffer, 0, 0,
-                bitmapBuffer.width, bitmapBuffer.height,
+                buffer, 0, 0,
+                buffer.width, buffer.height,
                 matrix, true
             )
             

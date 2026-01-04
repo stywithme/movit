@@ -48,18 +48,36 @@ object AngleCalculator {
     }
 
     /**
-     * Calculate angle from NormalizedLandmark (MediaPipe raw output)
+     * Calculate 3D angle between three points (in degrees)
      */
-    fun calculateAngle(
-        pointA: NormalizedLandmark,
-        pointB: NormalizedLandmark,
-        pointC: NormalizedLandmark
+    private fun calculateAngleFromCoords3D(
+        ax: Float, ay: Float, az: Float,
+        bx: Float, by: Float, bz: Float,
+        cx: Float, cy: Float, cz: Float
     ): Double {
-        return calculateAngleFromCoords(
-            pointA.x(), pointA.y(),
-            pointB.x(), pointB.y(),
-            pointC.x(), pointC.y()
-        )
+        // Vector BA
+        val baX = ax - bx
+        val baY = ay - by
+        val baZ = az - bz
+        
+        // Vector BC
+        val bcX = cx - bx
+        val bcY = cy - by
+        val bcZ = cz - bz
+        
+        // Dot product
+        val dot = baX * bcX + baY * bcY + baZ * bcZ
+        
+        // Magnitudes
+        val magBA = kotlin.math.sqrt(baX * baX + baY * baY + baZ * baZ)
+        val magBC = kotlin.math.sqrt(bcX * bcX + bcY * bcY + bcZ * bcZ)
+        
+        if (magBA == 0f || magBC == 0f) return 0.0
+        
+        val cosAngle = dot / (magBA * magBC)
+        val angle = Math.toDegrees(kotlin.math.acos(cosAngle.coerceIn(-1f, 1f).toDouble()))
+        
+        return angle
     }
 
     /**
@@ -78,21 +96,17 @@ object AngleCalculator {
     }
 
     /**
-     * Calculate angle using landmark indices (NormalizedLandmark)
+     * Calculate 3D angle from SmoothedLandmark
      */
-    fun calculateAngle(
-        landmarks: List<NormalizedLandmark>,
-        indexA: Int,
-        indexB: Int,
-        indexC: Int
-    ): Double? {
-        if (landmarks.size <= maxOf(indexA, indexB, indexC)) {
-            return null
-        }
-        return calculateAngle(
-            landmarks[indexA],
-            landmarks[indexB],
-            landmarks[indexC]
+    fun calculateAngle3D(
+        pointA: SmoothedLandmark,
+        pointB: SmoothedLandmark,
+        pointC: SmoothedLandmark
+    ): Double {
+        return calculateAngleFromCoords3D(
+            pointA.x, pointA.y, pointA.z,
+            pointB.x, pointB.y, pointB.z,
+            pointC.x, pointC.y, pointC.z
         )
     }
 
@@ -104,7 +118,8 @@ object AngleCalculator {
         indexA: Int,
         indexB: Int,
         indexC: Int,
-        visibilityThreshold: Float = 0.5f
+        visibilityThreshold: Float = 0.5f,
+        use3D: Boolean = false
     ): Double? {
         if (landmarks.size <= maxOf(indexA, indexB, indexC)) {
             return null
@@ -121,31 +136,43 @@ object AngleCalculator {
             return null
         }
         
-        return calculateAngle(a, b, c)
+        return if (use3D) {
+            calculateAngle3D(a, b, c)
+        } else {
+            calculateAngle(a, b, c)
+        }
     }
 
     /**
      * Calculate all angles from SmoothedLandmark list
+     * 
+     * @param applyRemapping If true, applies non-linear range remapping to correct
+     *                       for MediaPipe landmark placement errors at full flexion
      */
     fun calculateAllAnglesSmoothed(
         landmarks: List<SmoothedLandmark>,
-        visibilityThreshold: Float = 0.5f
+        visibilityThreshold: Float = 0.5f,
+        use3D: Boolean = false,
+        applyRemapping: Boolean = true
     ): JointAngles {
-        return JointAngles(
+        // Calculate raw angles first
+        val rawAngles = JointAngles(
             // Elbows
             leftElbow = calculateAngleSmoothed(
                 landmarks,
                 BodyLandmarks.LEFT_SHOULDER,
                 BodyLandmarks.LEFT_ELBOW,
                 BodyLandmarks.LEFT_WRIST,
-                visibilityThreshold
+                visibilityThreshold,
+                use3D
             ),
             rightElbow = calculateAngleSmoothed(
                 landmarks,
                 BodyLandmarks.RIGHT_SHOULDER,
                 BodyLandmarks.RIGHT_ELBOW,
                 BodyLandmarks.RIGHT_WRIST,
-                visibilityThreshold
+                visibilityThreshold,
+                use3D
             ),
             
             // Shoulders
@@ -154,14 +181,16 @@ object AngleCalculator {
                 BodyLandmarks.LEFT_ELBOW,
                 BodyLandmarks.LEFT_SHOULDER,
                 BodyLandmarks.LEFT_HIP,
-                visibilityThreshold
+                visibilityThreshold,
+                use3D
             ),
             rightShoulder = calculateAngleSmoothed(
                 landmarks,
                 BodyLandmarks.RIGHT_ELBOW,
                 BodyLandmarks.RIGHT_SHOULDER,
                 BodyLandmarks.RIGHT_HIP,
-                visibilityThreshold
+                visibilityThreshold,
+                use3D
             ),
             
             // Hips
@@ -170,14 +199,16 @@ object AngleCalculator {
                 BodyLandmarks.LEFT_SHOULDER,
                 BodyLandmarks.LEFT_HIP,
                 BodyLandmarks.LEFT_KNEE,
-                visibilityThreshold
+                visibilityThreshold,
+                use3D
             ),
             rightHip = calculateAngleSmoothed(
                 landmarks,
                 BodyLandmarks.RIGHT_SHOULDER,
                 BodyLandmarks.RIGHT_HIP,
                 BodyLandmarks.RIGHT_KNEE,
-                visibilityThreshold
+                visibilityThreshold,
+                use3D
             ),
             
             // Knees
@@ -186,14 +217,16 @@ object AngleCalculator {
                 BodyLandmarks.LEFT_HIP,
                 BodyLandmarks.LEFT_KNEE,
                 BodyLandmarks.LEFT_ANKLE,
-                visibilityThreshold
+                visibilityThreshold,
+                use3D
             ),
             rightKnee = calculateAngleSmoothed(
                 landmarks,
                 BodyLandmarks.RIGHT_HIP,
                 BodyLandmarks.RIGHT_KNEE,
                 BodyLandmarks.RIGHT_ANKLE,
-                visibilityThreshold
+                visibilityThreshold,
+                use3D
             ),
             
             // Ankles
@@ -202,22 +235,31 @@ object AngleCalculator {
                 BodyLandmarks.LEFT_KNEE,
                 BodyLandmarks.LEFT_ANKLE,
                 BodyLandmarks.LEFT_FOOT_INDEX,
-                visibilityThreshold
+                visibilityThreshold,
+                use3D
             ),
             rightAnkle = calculateAngleSmoothed(
                 landmarks,
                 BodyLandmarks.RIGHT_KNEE,
                 BodyLandmarks.RIGHT_ANKLE,
                 BodyLandmarks.RIGHT_FOOT_INDEX,
-                visibilityThreshold
+                visibilityThreshold,
+                use3D
             ),
             
             // Neck - using midpoints (simplified for smoothed version)
             neck = null, // Skip for smoothed version to avoid complexity
             
             // Spine
-            spine = calculateSpineAngleSmoothed(landmarks, visibilityThreshold)
+            spine = calculateSpineAngleSmoothed(landmarks, visibilityThreshold, use3D)
         )
+        
+        // Apply remapping if enabled to correct for landmark placement errors
+        return if (applyRemapping) {
+            AngleRemapper.remapAllAngles(rawAngles)
+        } else {
+            rawAngles
+        }
     }
 
     /**
@@ -225,7 +267,8 @@ object AngleCalculator {
      */
     private fun calculateSpineAngleSmoothed(
         landmarks: List<SmoothedLandmark>,
-        visibilityThreshold: Float
+        visibilityThreshold: Float,
+        use3D: Boolean = false
     ): Double? {
         if (landmarks.size <= maxOf(
             BodyLandmarks.LEFT_SHOULDER, BodyLandmarks.RIGHT_SHOULDER,
@@ -243,165 +286,47 @@ object AngleCalculator {
             return null
         }
         
-        // Calculate midpoints
-        val shoulderMidX = (ls.x + rs.x) / 2
-        val shoulderMidY = (ls.y + rs.y) / 2
-        val hipMidX = (lh.x + rh.x) / 2
-        val hipMidY = (lh.y + rh.y) / 2
-        
-        // Calculate angle from vertical
-        val dx = shoulderMidX - hipMidX
-        val dy = shoulderMidY - hipMidY
-        
-        val angleFromVertical = 90 - abs(Math.toDegrees(atan2(dy.toDouble(), dx.toDouble())))
-        
-        return abs(angleFromVertical)
-    }
-
-    /**
-     * Calculate all important joint angles for a pose
-     */
-    fun calculateAllAngles(landmarks: List<NormalizedLandmark>): JointAngles {
-        return JointAngles(
-            // Elbows
-            leftElbow = calculateAngle(
-                landmarks,
-                BodyLandmarks.LEFT_SHOULDER,
-                BodyLandmarks.LEFT_ELBOW,
-                BodyLandmarks.LEFT_WRIST
-            ),
-            rightElbow = calculateAngle(
-                landmarks,
-                BodyLandmarks.RIGHT_SHOULDER,
-                BodyLandmarks.RIGHT_ELBOW,
-                BodyLandmarks.RIGHT_WRIST
-            ),
+        if (use3D) {
+            // Use 3D calculation for accurate spine angle
+            val shoulderMidX = (ls.x + rs.x) / 2
+            val shoulderMidY = (ls.y + rs.y) / 2
+            val shoulderMidZ = (ls.z + rs.z) / 2
+            val hipMidX = (lh.x + rh.x) / 2
+            val hipMidY = (lh.y + rh.y) / 2
+            val hipMidZ = (lh.z + rh.z) / 2
             
-            // Shoulders
-            leftShoulder = calculateAngle(
-                landmarks,
-                BodyLandmarks.LEFT_ELBOW,
-                BodyLandmarks.LEFT_SHOULDER,
-                BodyLandmarks.LEFT_HIP
-            ),
-            rightShoulder = calculateAngle(
-                landmarks,
-                BodyLandmarks.RIGHT_ELBOW,
-                BodyLandmarks.RIGHT_SHOULDER,
-                BodyLandmarks.RIGHT_HIP
-            ),
+            // Calculate angle from vertical using 3D vectors
+            val dx = shoulderMidX - hipMidX
+            val dy = shoulderMidY - hipMidY
+            val dz = shoulderMidZ - hipMidZ
             
-            // Hips
-            leftHip = calculateAngle(
-                landmarks,
-                BodyLandmarks.LEFT_SHOULDER,
-                BodyLandmarks.LEFT_HIP,
-                BodyLandmarks.LEFT_KNEE
-            ),
-            rightHip = calculateAngle(
-                landmarks,
-                BodyLandmarks.RIGHT_SHOULDER,
-                BodyLandmarks.RIGHT_HIP,
-                BodyLandmarks.RIGHT_KNEE
-            ),
+            // Angle from vertical (0, -1, 0) direction
+            val verticalDot = -dy
+            val magnitude = kotlin.math.sqrt(dx * dx + dy * dy + dz * dz)
             
-            // Knees
-            leftKnee = calculateAngle(
-                landmarks,
-                BodyLandmarks.LEFT_HIP,
-                BodyLandmarks.LEFT_KNEE,
-                BodyLandmarks.LEFT_ANKLE
-            ),
-            rightKnee = calculateAngle(
-                landmarks,
-                BodyLandmarks.RIGHT_HIP,
-                BodyLandmarks.RIGHT_KNEE,
-                BodyLandmarks.RIGHT_ANKLE
-            ),
+            if (magnitude == 0f) return null
             
-            // Ankles
-            leftAnkle = calculateAngle(
-                landmarks,
-                BodyLandmarks.LEFT_KNEE,
-                BodyLandmarks.LEFT_ANKLE,
-                BodyLandmarks.LEFT_FOOT_INDEX
-            ),
-            rightAnkle = calculateAngle(
-                landmarks,
-                BodyLandmarks.RIGHT_KNEE,
-                BodyLandmarks.RIGHT_ANKLE,
-                BodyLandmarks.RIGHT_FOOT_INDEX
-            ),
+            val cosAngle = verticalDot / magnitude
+            val angleFromVertical = Math.toDegrees(kotlin.math.acos(cosAngle.coerceIn(-1f, 1f).toDouble()))
             
-            // Neck (head tilt relative to shoulders)
-            neck = calculateAngle(
-                landmarks[BodyLandmarks.NOSE],
-                midpoint(landmarks[BodyLandmarks.LEFT_SHOULDER], landmarks[BodyLandmarks.RIGHT_SHOULDER]),
-                midpoint(landmarks[BodyLandmarks.LEFT_HIP], landmarks[BodyLandmarks.RIGHT_HIP])
-            ),
+            return abs(angleFromVertical)
+        } else {
+            // 2D calculation (original)
+            val shoulderMidX = (ls.x + rs.x) / 2
+            val shoulderMidY = (ls.y + rs.y) / 2
+            val hipMidX = (lh.x + rh.x) / 2
+            val hipMidY = (lh.y + rh.y) / 2
             
-            // Spine angle (torso lean)
-            spine = calculateSpineAngle(landmarks)
-        )
-    }
-
-    /**
-     * Calculate spine angle (how much the torso is leaning)
-     * 0 = upright, 90 = horizontal
-     */
-    private fun calculateSpineAngle(landmarks: List<NormalizedLandmark>): Double? {
-        val shoulderMid = midpoint(
-            landmarks[BodyLandmarks.LEFT_SHOULDER],
-            landmarks[BodyLandmarks.RIGHT_SHOULDER]
-        )
-        val hipMid = midpoint(
-            landmarks[BodyLandmarks.LEFT_HIP],
-            landmarks[BodyLandmarks.RIGHT_HIP]
-        )
-        
-        // Calculate angle from vertical
-        val dx = shoulderMid.x() - hipMid.x()
-        val dy = shoulderMid.y() - hipMid.y()
-        
-        // atan2 gives angle from horizontal, we want from vertical
-        val angleFromVertical = 90 - abs(Math.toDegrees(atan2(dy.toDouble(), dx.toDouble())))
-        
-        return abs(angleFromVertical)
-    }
-
-    /**
-     * Create a virtual midpoint landmark between two landmarks
-     */
-    private fun midpoint(a: NormalizedLandmark, b: NormalizedLandmark): NormalizedLandmark {
-        return NormalizedLandmark.create(
-            (a.x() + b.x()) / 2,
-            (a.y() + b.y()) / 2,
-            (a.z() + b.z()) / 2
-        )
-    }
-
-    /**
-     * Apply smoothing filter to reduce jitter
-     * Uses simple exponential moving average
-     */
-    class AngleSmoother(private val smoothingFactor: Float = 0.3f) {
-        private val previousAngles = mutableMapOf<String, Double>()
-        
-        fun smooth(angleName: String, currentAngle: Double): Double {
-            val previous = previousAngles[angleName]
-            val smoothed = if (previous != null) {
-                previous + smoothingFactor * (currentAngle - previous)
-            } else {
-                currentAngle
-            }
-            previousAngles[angleName] = smoothed
-            return smoothed
-        }
-        
-        fun reset() {
-            previousAngles.clear()
+            // Calculate angle from vertical
+            val dx = shoulderMidX - hipMidX
+            val dy = shoulderMidY - hipMidY
+            
+            val angleFromVertical = 90 - abs(Math.toDegrees(atan2(dy.toDouble(), dx.toDouble())))
+            
+            return abs(angleFromVertical)
         }
     }
+
 }
 
 /**

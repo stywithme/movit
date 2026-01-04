@@ -1,48 +1,50 @@
 package com.trainingvalidator.poc.analysis
 
 import com.google.mediapipe.tasks.components.containers.NormalizedLandmark
+import com.google.mediapipe.tasks.components.containers.Landmark
 
 /**
- * LandmarkSmoother - Smooths landmark positions to reduce jitter
+ * LandmarkSmoother - LIGHTWEIGHT smoothing for landmark positions
  * 
- * Uses Exponential Moving Average (EMA) for each landmark position.
- * This reduces the "jumping" effect when landmarks are detected with slight variations.
+ * Uses simple Exponential Moving Average (EMA) which is:
+ * - Very fast (just multiplication and addition)
+ * - Good enough for reducing jitter
+ * - No lag when alpha is properly tuned
  */
 class LandmarkSmoother(
-    private val smoothingFactor: Float = 0.4f // 0 = no smoothing, 1 = no change
+    private val alpha: Float = 0.7f  // Higher = more responsive, Lower = smoother
 ) {
     private var previousLandmarks: MutableList<SmoothedLandmark>? = null
     
     /**
-     * Smooth a list of landmarks
-     * 
-     * @param landmarks Raw landmarks from MediaPipe
-     * @return Smoothed landmarks
+     * Smooth a list of landmarks using simple EMA
+     * This is O(n) with minimal computation per landmark
      */
-    fun smooth(landmarks: List<NormalizedLandmark>): List<SmoothedLandmark> {
-        val previous = previousLandmarks
+    fun smooth(landmarks: List<NormalizedLandmark>, timestamp: Long): List<SmoothedLandmark> {
+        val prev = previousLandmarks
         
-        val smoothed = if (previous == null || previous.size != landmarks.size) {
-            // First frame or landmark count changed - no smoothing
-            landmarks.map { landmark ->
+        val smoothed = landmarks.mapIndexed { index, landmark ->
+            val visibility = landmark.visibility().orElse(0f)
+            val presence = landmark.presence().orElse(0f)
+            
+            if (prev == null || index >= prev.size) {
+                // First frame - no smoothing
                 SmoothedLandmark(
                     x = landmark.x(),
                     y = landmark.y(),
                     z = landmark.z(),
-                    visibility = landmark.visibility().orElse(0f),
-                    presence = landmark.presence().orElse(0f)
+                    visibility = visibility,
+                    presence = presence
                 )
-            }
-        } else {
-            // Apply smoothing
-            landmarks.mapIndexed { index, landmark ->
-                val prev = previous[index]
+            } else {
+                val p = prev[index]
+                // Simple EMA: new = alpha * current + (1-alpha) * previous
                 SmoothedLandmark(
-                    x = prev.x + smoothingFactor * (landmark.x() - prev.x),
-                    y = prev.y + smoothingFactor * (landmark.y() - prev.y),
-                    z = prev.z + smoothingFactor * (landmark.z() - prev.z),
-                    visibility = landmark.visibility().orElse(0f),
-                    presence = landmark.presence().orElse(0f)
+                    x = alpha * landmark.x() + (1 - alpha) * p.x,
+                    y = alpha * landmark.y() + (1 - alpha) * p.y,
+                    z = alpha * landmark.z() + (1 - alpha) * p.z,
+                    visibility = visibility,  // Don't smooth visibility
+                    presence = presence
                 )
             }
         }.toMutableList()
@@ -52,8 +54,21 @@ class LandmarkSmoother(
     }
     
     /**
-     * Reset the smoother (call when switching cameras or restarting)
+     * Convert world landmarks to SmoothedLandmark WITHOUT smoothing
+     * World landmarks are already relatively stable
      */
+    fun convertWorld(landmarks: List<Landmark>): List<SmoothedLandmark> {
+        return landmarks.map { landmark ->
+            SmoothedLandmark(
+                x = landmark.x(),
+                y = landmark.y(),
+                z = landmark.z(),
+                visibility = landmark.visibility().orElse(0f),
+                presence = landmark.presence().orElse(0f)
+            )
+        }
+    }
+
     fun reset() {
         previousLandmarks = null
     }
@@ -66,20 +81,9 @@ data class SmoothedLandmark(
     val x: Float,
     val y: Float,
     val z: Float,
-    val visibility: Float,  // 0-1, how likely the landmark is visible
-    val presence: Float     // 0-1, how likely the landmark is present in the image
+    val visibility: Float,
+    val presence: Float
 ) {
-    /**
-     * Check if landmark is visible enough to draw
-     */
-    fun isVisible(threshold: Float = 0.5f): Boolean {
-        return visibility >= threshold
-    }
-    
-    /**
-     * Check if landmark is present enough to use
-     */
-    fun isPresent(threshold: Float = 0.5f): Boolean {
-        return presence >= threshold
-    }
+    fun isVisible(threshold: Float = 0.5f): Boolean = visibility >= threshold
+    fun isPresent(threshold: Float = 0.5f): Boolean = presence >= threshold
 }

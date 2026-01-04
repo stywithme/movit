@@ -1,470 +1,580 @@
-# 🚀 Training Validator - Improvements Roadmap
+# Training Validator - Improvements Roadmap
 
-## 📋 Overview
-This document outlines all potential improvements identified through:
-1. Code review comparison with Google's official MediaPipe sample
-2. Analysis of Medium article: "How to Improve MediaPipe Skeletons Recognition"
-3. Performance optimization opportunities
-
-**Status Legend:**
-- ✅ **Implemented** - Already done
-- 🔄 **In Progress** - Currently being worked on
-- 📝 **Planned** - Documented, ready to implement
-- 💡 **Future** - Nice to have, lower priority
+## Document Info
+- **Created**: December 2024
+- **Purpose**: Technical roadmap for improving pose estimation accuracy and performance
+- **Status**: Active Development
 
 ---
 
-## 1. ✅ COMPLETED IMPROVEMENTS
+## 📊 Current Implementation Status
 
-### 1.1 Library Updates
-- ✅ Updated MediaPipe from `0.10.9` → `0.10.21`
-- ✅ Updated CameraX from `1.3.1` → `1.4.2`
-- ✅ Added ViewModel support (`lifecycle-viewmodel-ktx`)
+### ✅ Completed Features
 
-### 1.2 Visibility Filtering
-- ✅ Added visibility threshold check (`VISIBILITY_THRESHOLD = 0.5f`)
-- ✅ Only draw landmarks with `visibility >= 0.5`
-- ✅ Only calculate angles when all 3 landmarks are visible
-- ✅ Prevents drawing joints behind objects (e.g., legs under desk)
+| Feature | Implementation | File |
+|---------|---------------|------|
+| EMA Landmark Smoothing | `smoothingFactor = 0.5f` | `LandmarkSmoother.kt` |
+| Visibility Filtering | `threshold = 0.5f` | `SkeletonOverlayView.kt` |
+| Presence vs Visibility | Separate fields in `SmoothedLandmark` | `LandmarkSmoother.kt` |
+| Fast Bitmap Conversion | `copyPixelsFromBuffer()` | `PoseLandmarkerHelper.kt` |
+| Accurate Timestamps | `SystemClock.uptimeMillis()` | `PoseLandmarkerHelper.kt` |
+| Model Switching | Full ↔ Heavy runtime switch | `MainActivity.kt` |
+| Scale Factor Calculation | FILL_START mode support | `SkeletonOverlayView.kt` |
+| GPU Acceleration | With CPU fallback | `PoseLandmarkerHelper.kt` |
 
-### 1.3 Landmark Smoothing
-- ✅ Created `LandmarkSmoother` class with EMA (Exponential Moving Average)
-- ✅ Smoothing factor: `0.5f` (configurable)
-- ✅ Reduces jitter between frames
-- ✅ Auto-reset when switching cameras/models
+### ❌ Known Issues
 
-### 1.4 Proper Scaling
-- ✅ Fixed `scaleFactor` calculation for `FILL_START` mode
-- ✅ Changed PreviewView from `fillCenter` → `fillStart`
-- ✅ Proper coordinate transformation matching Google's implementation
-
-### 1.5 Image Processing Optimization
-- ✅ Using `copyPixelsFromBuffer()` instead of `toBitmap()` (faster)
-- ✅ Using `SystemClock.uptimeMillis()` for accurate timestamps
-- ✅ Proper matrix transformation for rotation and mirroring
+1. **Jitter with Lag**: EMA smoothing causes noticeable lag during fast movements
+2. **Memory Pressure**: New Bitmap created every frame → GC stutters
+3. **Perspective Distortion**: Using NormalizedLandmarks for angle calculation
+4. **No Frame Validation**: No check if body is fully visible in camera
+5. **Invisible Landmarks Drawn**: Sometimes landmarks appear where body parts are hidden
 
 ---
 
-## 2. 📝 HIGH PRIORITY IMPROVEMENTS
+## 🎯 Improvement Pipeline
 
-### 2.1 One Euro Filter (Advanced Smoothing) 🧠
+### Critical Principle: Filter Ordering
 
-**Problem:** Current EMA smoothing is "dumb" - it either:
-- Smooths too much → Lag (delayed response)
-- Smooths too little → Jitter (jumpy movement)
+```
+⚠️ IMPORTANT: Do not stack multiple filters on the same signal!
 
-**Solution:** One Euro Filter algorithm
-- **Adaptive smoothing:** More smoothing when stationary, less when moving fast
-- **Industry standard** for AR/VR applications
-- **Zero lag** for fast movements, **zero jitter** for slow movements
+Pipeline Design:
+┌─────────────────────────────────────────────────────────────────┐
+│ RAW LANDMARKS                                                    │
+│      │                                                           │
+│      ▼                                                           │
+│ ┌──────────────────┐                                            │
+│ │ One Euro Filter  │ ← For drawing (reduces jitter, minimal lag)│
+│ └────────┬─────────┘                                            │
+│          │                                                       │
+│          ▼                                                       │
+│   SMOOTHED LANDMARKS → SkeletonOverlayView                       │
+│                                                                  │
+├─────────────────────────────────────────────────────────────────┤
+│ WORLD LANDMARKS                                                  │
+│      │                                                           │
+│      ▼                                                           │
+│ ┌──────────────────┐                                            │
+│ │ Angle Calculation │ ← 3D space (no perspective distortion)    │
+│ └────────┬─────────┘                                            │
+│          │                                                       │
+│          ▼                                                       │
+│ ┌──────────────────┐                                            │
+│ │ Savitzky-Golay   │ ← For rep counting (smooth curves)         │
+│ └────────┬─────────┘                                            │
+│          │                                                       │
+│          ▼                                                       │
+│   SMOOTHED ANGLES → Rep Detection & Validation                   │
+│                                                                  │
+├─────────────────────────────────────────────────────────────────┤
+│ OUTLIER REJECTION (Applied at raw stage)                        │
+│   • Velocity Check → Reject sudden teleportation                │
+│   • Bone Length Gates → Reject physically impossible poses      │
+└─────────────────────────────────────────────────────────────────┘
+```
 
-**Implementation:**
+### Key Rules
+
+1. **Drawing** → Use `NormalizedLandmarks` (screen-space coordinates)
+2. **Angle Calculation** → Use `WorldLandmarks` (3D physical space)
+3. **One Filter Per Signal** → Don't combine EMA + One Euro + Savitzky
+4. **Outlier Rejection First** → Before any smoothing
+5. **Joint Limits for Validation Only** → Don't auto-correct values
+
+---
+
+## 📋 Prioritized Improvements
+
+### Phase 1: Critical Fixes 🔴 (Immediate)
+
+#### 1.1 Bitmap Reuse
+**Problem**: Creating new `Bitmap.createBitmap()` every frame causes GC pressure.
+
+**Solution**:
+```kotlin
+// In PoseLandmarkerHelper
+private var bitmapBuffer: Bitmap? = null
+
+fun detectPose(imageProxy: ImageProxy, isFrontCamera: Boolean) {
+    // Reuse bitmap if dimensions match
+    val buffer = bitmapBuffer?.takeIf { 
+        it.width == imageProxy.width && it.height == imageProxy.height 
+    } ?: Bitmap.createBitmap(
+        imageProxy.width, imageProxy.height, Bitmap.Config.ARGB_8888
+    ).also { bitmapBuffer = it }
+    
+    buffer.copyPixelsFromBuffer(imageProxy.planes[0].buffer)
+    // ... rest of processing
+}
+```
+
+**Impact**: Reduces GC pauses, smoother FPS
+
+---
+
+#### 1.2 One Euro Filter (Replace EMA)
+**Problem**: EMA with fixed factor causes either jitter (low factor) or lag (high factor).
+
+**Solution**: One Euro Filter adapts based on movement speed.
+
 ```kotlin
 class OneEuroFilter(
-    private val minCutoff: Double = 1.0,      // Minimum cutoff frequency
-    private val beta: Double = 0.007,        // Speed coefficient
-    private val dCutoff: Double = 1.0        // Derivative cutoff
+    private val minCutoff: Float = 1.0f,      // Minimum cutoff frequency
+    private val beta: Float = 0.007f,          // Speed coefficient
+    private val dCutoff: Float = 1.0f          // Derivative cutoff
 ) {
-    private val xFilters = mutableMapOf<Int, LowPassFilter>()
-    private val yFilters = mutableMapOf<Int, LowPassFilter>()
-    
-    fun filter(landmarkIndex: Int, x: Float, y: Float, timestamp: Long): Pair<Float, Float> {
+    private var xPrev: Float? = null
+    private var dxPrev: Float = 0f
+    private var tPrev: Long = 0L
+
+    fun filter(x: Float, timestamp: Long): Float {
+        val tE = if (tPrev == 0L) 1f / 30f else (timestamp - tPrev) / 1000f
+        tPrev = timestamp
+
+        // Derivative estimation
+        val dx = if (xPrev == null) 0f else (x - xPrev!!) / tE
+        val edx = exponentialSmoothing(dx, dxPrev, alpha(tE, dCutoff))
+        dxPrev = edx
+
         // Adaptive cutoff based on speed
-        val cutoff = minCutoff + beta * abs(speed)
-        // Apply low-pass filter with adaptive cutoff
-        // ...
+        val cutoff = minCutoff + beta * abs(edx)
+        
+        // Filter the signal
+        val result = if (xPrev == null) x 
+                     else exponentialSmoothing(x, xPrev!!, alpha(tE, cutoff))
+        xPrev = result
+        return result
+    }
+
+    private fun alpha(tE: Float, cutoff: Float): Float {
+        val tau = 1f / (2 * PI.toFloat() * cutoff)
+        return 1f / (1f + tau / tE)
+    }
+
+    private fun exponentialSmoothing(x: Float, xPrev: Float, alpha: Float) = 
+        alpha * x + (1 - alpha) * xPrev
+}
+```
+
+**Usage**:
+```kotlin
+class LandmarkSmoother {
+    private val filters = Array(33) { 
+        Triple(OneEuroFilter(), OneEuroFilter(), OneEuroFilter()) // x, y, z
+    }
+    
+    fun smooth(index: Int, landmark: NormalizedLandmark, timestamp: Long): SmoothedLandmark {
+        val (fx, fy, fz) = filters[index]
+        return SmoothedLandmark(
+            x = fx.filter(landmark.x(), timestamp),
+            y = fy.filter(landmark.y(), timestamp),
+            z = fz.filter(landmark.z(), timestamp),
+            visibility = landmark.visibility().orElse(0f),
+            presence = landmark.presence().orElse(0f)
+        )
     }
 }
 ```
 
-**Benefits:**
-- ✅ Natural, responsive movement
-- ✅ No lag for fast gestures
-- ✅ No jitter when standing still
-- ✅ Better than EMA for real-time applications
-
-**Priority:** 🔥 **HIGH** - Will dramatically improve user experience
+**Impact**: Fast movements = less smoothing, slow movements = more smoothing
 
 ---
 
-### 2.2 Bitmap Reuse (Memory Optimization) 📉
+#### 1.3 Camera Framing Validation
+**Problem**: No feedback when body is cut off or too close/far from camera.
 
-**Problem:** Creating new Bitmap every frame (30 times/second)
-- Causes memory churn
-- Triggers frequent GC pauses → Frame drops
+**Solution**: Check landmark positions relative to frame edges.
 
-**Current Code:**
 ```kotlin
-// ❌ Creates new Bitmap every frame
-val bitmapBuffer = Bitmap.createBitmap(
-    imageProxy.width,
-    imageProxy.height,
-    Bitmap.Config.ARGB_8888
+object FramingValidator {
+    private const val EDGE_MARGIN = 0.05f  // 5% from edges
+    private const val MIN_BODY_SIZE = 0.3f // Body should be at least 30% of frame
+    private const val MAX_BODY_SIZE = 0.95f // Body shouldn't exceed 95%
+
+    data class FramingResult(
+        val isValid: Boolean,
+        val issues: List<FramingIssue>
+    )
+
+    enum class FramingIssue {
+        HEAD_CUT_OFF,
+        FEET_CUT_OFF,
+        LEFT_ARM_CUT_OFF,
+        RIGHT_ARM_CUT_OFF,
+        TOO_CLOSE,
+        TOO_FAR,
+        MOVE_LEFT,
+        MOVE_RIGHT
+    }
+
+    fun validate(landmarks: List<SmoothedLandmark>): FramingResult {
+        val issues = mutableListOf<FramingIssue>()
+        
+        // Check head visibility (nose, eyes)
+        val nose = landmarks[BodyLandmarks.NOSE]
+        if (nose.y < EDGE_MARGIN) issues.add(FramingIssue.HEAD_CUT_OFF)
+        
+        // Check feet
+        val leftAnkle = landmarks[BodyLandmarks.LEFT_ANKLE]
+        val rightAnkle = landmarks[BodyLandmarks.RIGHT_ANKLE]
+        if (leftAnkle.y > 1 - EDGE_MARGIN || rightAnkle.y > 1 - EDGE_MARGIN) {
+            issues.add(FramingIssue.FEET_CUT_OFF)
+        }
+        
+        // Check body size (distance from head to feet)
+        val bodyHeight = maxOf(leftAnkle.y, rightAnkle.y) - nose.y
+        if (bodyHeight < MIN_BODY_SIZE) issues.add(FramingIssue.TOO_FAR)
+        if (bodyHeight > MAX_BODY_SIZE) issues.add(FramingIssue.TOO_CLOSE)
+        
+        // Check horizontal centering
+        val centerX = (landmarks[BodyLandmarks.LEFT_HIP].x + 
+                       landmarks[BodyLandmarks.RIGHT_HIP].x) / 2
+        if (centerX < 0.3f) issues.add(FramingIssue.MOVE_RIGHT)
+        if (centerX > 0.7f) issues.add(FramingIssue.MOVE_LEFT)
+        
+        return FramingResult(
+            isValid = issues.isEmpty(),
+            issues = issues
+        )
+    }
+}
+```
+
+**Impact**: Better user guidance, more reliable detection
+
+---
+
+### Phase 2: Accuracy Improvements 🟡 (Next Sprint)
+
+#### 2.1 WorldLandmarks for Angle Calculation
+**Problem**: NormalizedLandmarks have perspective distortion (foreshortening).
+
+**Current** (Incorrect for tilted poses):
+```kotlin
+val angle = calculateAngle(
+    landmarks[SHOULDER],  // 2D normalized
+    landmarks[ELBOW],
+    landmarks[WRIST]
 )
 ```
 
-**Solution:** Reuse Bitmap buffer
+**Solution**:
 ```kotlin
-class PoseLandmarkerHelper {
-    private var bitmapBuffer: Bitmap? = null
-    
-    fun detectPose(imageProxy: ImageProxy, ...) {
-        val width = imageProxy.width
-        val height = imageProxy.height
+object AngleCalculator {
+    // Use WorldLandmarks for accurate 3D angle calculation
+    fun calculateAngle3D(
+        a: Landmark,  // WorldLandmark (3D)
+        b: Landmark,
+        c: Landmark
+    ): Double {
+        val ba = floatArrayOf(a.x() - b.x(), a.y() - b.y(), a.z() - b.z())
+        val bc = floatArrayOf(c.x() - b.x(), c.y() - b.y(), c.z() - b.z())
         
-        // ✅ Reuse existing bitmap if size matches
-        if (bitmapBuffer == null || 
-            bitmapBuffer?.width != width || 
-            bitmapBuffer?.height != height) {
-            bitmapBuffer?.recycle() // Free old bitmap
-            bitmapBuffer = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
-        }
+        val dot = ba[0]*bc[0] + ba[1]*bc[1] + ba[2]*bc[2]
+        val magBA = sqrt(ba[0]*ba[0] + ba[1]*ba[1] + ba[2]*ba[2])
+        val magBC = sqrt(bc[0]*bc[0] + bc[1]*bc[1] + bc[2]*bc[2])
         
-        // Use existing bitmapBuffer
-        imageProxy.use { 
-            bitmapBuffer?.copyPixelsFromBuffer(it.planes[0].buffer) 
-        }
-        // ...
-    }
-    
-    fun close() {
-        bitmapBuffer?.recycle()
-        bitmapBuffer = null
+        val cosAngle = dot / (magBA * magBC)
+        return Math.toDegrees(acos(cosAngle.coerceIn(-1f, 1f).toDouble()))
     }
 }
 ```
 
-**Benefits:**
-- ✅ Reduces memory allocations by 99%
-- ✅ Eliminates GC pauses
-- ✅ Smoother frame rate
-- ✅ Lower battery consumption
+**⚠️ Note**: WorldLandmarks Z-axis can be noisy. Apply smoothing before use.
 
-**Priority:** 🔥 **HIGH** - Critical for performance
+**Impact**: Accurate angles regardless of camera perspective
 
 ---
 
-### 2.3 Bone Length Consistency Check 🦴
+#### 2.2 Velocity Check (Teleportation Prevention)
+**Problem**: Occasional frame-to-frame jumps when detection temporarily fails.
 
-**Concept from Medium Article:** Human bone lengths don't change during exercise.
-
-**Problem:** MediaPipe sometimes "hallucinates" and makes bones longer/shorter suddenly.
-
-**Solution:** Calibration + Validation
-
-**Phase 1: Calibration (First 3 seconds)**
+**Solution**:
 ```kotlin
-class BoneLengthCalibrator {
-    private val boneLengths = mutableMapOf<String, MutableList<Float>>()
-    
-    fun calibrate(landmarks: List<SmoothedLandmark>) {
-        // Calculate bone lengths for first 90 frames (3 seconds @ 30fps)
-        val leftForearm = calculateDistance(
-            landmarks[LEFT_ELBOW],
-            landmarks[LEFT_WRIST]
-        )
-        boneLengths["left_forearm"]?.add(leftForearm)
-        // ... repeat for all bones
-    }
-    
-    fun getAverageLength(boneName: String): Float {
-        return boneLengths[boneName]?.average()?.toFloat() ?: 0f
-    }
-}
-```
+class VelocityFilter(
+    private val maxVelocity: Float = 0.5f // Max 50% of screen per frame
+) {
+    private var previousLandmarks: List<SmoothedLandmark>? = null
+    private var previousTimestamp: Long = 0L
 
-**Phase 2: Validation (During exercise)**
-```kotlin
-class PoseValidator {
-    private val boneLengths: Map<String, Float> // From calibration
-    private val tolerance = 0.15f // 15% tolerance
-    
-    fun validateFrame(landmarks: List<SmoothedLandmark>): Boolean {
-        // Check each bone length
-        val currentLength = calculateDistance(
-            landmarks[LEFT_ELBOW],
-            landmarks[LEFT_WRIST]
-        )
-        val expectedLength = boneLengths["left_forearm"]!!
-        val deviation = abs(currentLength - expectedLength) / expectedLength
+    fun filter(
+        landmarks: List<SmoothedLandmark>,
+        timestamp: Long
+    ): List<SmoothedLandmark> {
+        val prev = previousLandmarks
+        val dt = if (previousTimestamp == 0L) 33f else (timestamp - previousTimestamp).toFloat()
         
-        if (deviation > tolerance) {
-            // Bone length changed too much → Invalid frame
-            return false
+        val filtered = if (prev == null) {
+            landmarks
+        } else {
+            landmarks.mapIndexed { i, current ->
+                val previous = prev[i]
+                val dx = current.x - previous.x
+                val dy = current.y - previous.y
+                val velocity = sqrt(dx * dx + dy * dy) / (dt / 1000f)
+                
+                if (velocity > maxVelocity) {
+                    // Teleportation detected - use previous position
+                    previous.copy(
+                        visibility = current.visibility * 0.5f // Mark as suspicious
+                    )
+                } else {
+                    current
+                }
+            }
         }
-        return true
+        
+        previousLandmarks = filtered
+        previousTimestamp = timestamp
+        return filtered
     }
 }
 ```
 
-**Benefits:**
-- ✅ Filters out "impossible" poses
-- ✅ Prevents sudden jumps in skeleton
-- ✅ More stable visualization
-- ✅ Can correct landmark positions using expected bone length
-
-**Priority:** 🔥 **HIGH** - Addresses core issue mentioned by user
+**Impact**: No sudden jumps in skeleton
 
 ---
 
-### 2.4 Velocity Check (Teleportation Prevention) 🚀
+#### 2.3 Occlusion Visualization
+**Problem**: Semi-visible landmarks drawn with same style as visible ones.
 
-**Concept from Medium Article:** Body parts can't teleport.
-
-**Problem:** Sometimes a landmark jumps from one side to another instantly.
-
-**Solution:** Check movement speed between frames
-
-```kotlin
-class VelocityValidator {
-    private val previousPositions = mutableMapOf<Int, Pair<Float, Float>>()
-    private val maxVelocity = 0.1f // Max normalized distance per frame
-    
-    fun validateMovement(
-        landmarkIndex: Int,
-        currentX: Float,
-        currentY: Float
-    ): Boolean {
-        val previous = previousPositions[landmarkIndex]
-        
-        if (previous == null) {
-            previousPositions[landmarkIndex] = Pair(currentX, currentY)
-            return true
-        }
-        
-        val distance = sqrt(
-            (currentX - previous.first).pow(2) + 
-            (currentY - previous.second).pow(2)
-        )
-        
-        if (distance > maxVelocity) {
-            // Movement too fast → Use previous position
-            return false
-        }
-        
-        previousPositions[landmarkIndex] = Pair(currentX, currentY)
-        return true
-    }
-}
-```
-
-**Benefits:**
-- ✅ Prevents sudden jumps
-- ✅ Smoother tracking
-- ✅ Can use previous position if current is invalid
-
-**Priority:** 🟡 **MEDIUM** - Good addition, but smoothing already helps
-
----
-
-## 3. 🟡 MEDIUM PRIORITY IMPROVEMENTS
-
-### 3.1 Z-Axis Visualization (Depth) 🧊
-
-**Current:** Only using X, Y coordinates
-
-**Enhancement:** Use Z coordinate for depth visualization
-
-**Implementation:**
+**Solution**:
 ```kotlin
 // In SkeletonOverlayView
-private fun getLandmarkColor(landmark: SmoothedLandmark): Int {
-    // Z is negative when closer, positive when farther
-    val depth = landmark.z
-    
-    // Closer = brighter, farther = darker
-    val alpha = (255 * (1 - (depth + 1) / 2)).toInt().coerceIn(100, 255)
-    
-    return Color.argb(alpha, 255, 255, 0) // Yellow with depth-based alpha
+private val dashedLinePaint = Paint().apply {
+    color = Color.argb(150, 0, 255, 255)
+    strokeWidth = LINE_WIDTH
+    style = Paint.Style.STROKE
+    pathEffect = DashPathEffect(floatArrayOf(15f, 10f), 0f)
 }
 
-private fun getLandmarkSize(landmark: SmoothedLandmark): Float {
-    // Closer = bigger circle
-    val depth = landmark.z
-    val baseSize = LANDMARK_STROKE_WIDTH / 2
-    val depthMultiplier = 1.0f - (depth + 1) / 2 // 0 to 1
-    return baseSize * (1 + depthMultiplier * 0.5f) // 1x to 1.5x size
-}
-```
-
-**Benefits:**
-- ✅ Visual depth perception
-- ✅ Know which arm/leg is in front
-- ✅ Better for exercises like Side Plank, Lunge
-
-**Priority:** 🟡 **MEDIUM** - Nice visual enhancement
-
----
-
-### 3.2 ViewModel Architecture 🏗️
-
-**Current:** All logic in MainActivity
-
-**Enhancement:** Move pose detection logic to ViewModel
-
-**Structure:**
-```kotlin
-class PoseDetectionViewModel : ViewModel() {
-    private var poseLandmarkerHelper: PoseLandmarkerHelper? = null
-    private val landmarkSmoother = LandmarkSmoother()
-    private val poseValidator = PoseValidator()
-    
-    private val _poseResult = MutableLiveData<PoseResult>()
-    val poseResult: LiveData<PoseResult> = _poseResult
-    
-    fun initializePoseDetection(context: Context, modelType: ModelType) {
-        // Initialize helper
-    }
-    
-    fun processFrame(imageProxy: ImageProxy, isFrontCamera: Boolean) {
-        // Process frame, validate, smooth, emit result
-    }
-    
-    override fun onCleared() {
-        poseLandmarkerHelper?.close()
+private fun drawConnections(canvas: Canvas, landmarks: List<SmoothedLandmark>) {
+    POSE_LANDMARKS.forEach { connection ->
+        val start = landmarks[connection.start()]
+        val end = landmarks[connection.end()]
+        
+        val paint = when {
+            start.isVisible() && end.isVisible() -> linePaint // Solid
+            start.isPresent() && end.isPresent() -> dashedLinePaint // Dashed (estimated)
+            else -> return@forEach // Don't draw
+        }
+        
+        canvas.drawLine(
+            getScreenX(start.x), getScreenY(start.y),
+            getScreenX(end.x), getScreenY(end.y),
+            paint
+        )
     }
 }
 ```
 
-**Benefits:**
-- ✅ Survives screen rotation
-- ✅ Better testability
-- ✅ Separation of concerns
-- ✅ Matches Google's architecture
+**UX Label**: Show "Estimated" indicator when using dashed lines.
 
-**Priority:** 🟡 **MEDIUM** - Good practice, but not urgent for PoC
+**Impact**: Clear visual feedback about detection confidence
 
 ---
 
-### 3.3 Settings UI (Confidence Controls) ⚙️
+### Phase 3: Advanced Features 🟢 (Future)
 
-**Enhancement:** Add bottom sheet like Google's sample
+#### 3.1 Savitzky-Golay Filter for Rep Counting
+**When**: During rep detection implementation.
 
-**Features:**
-- Sliders for Detection Confidence (0.2 - 0.8)
-- Sliders for Tracking Confidence (0.2 - 0.8)
-- Sliders for Presence Confidence (0.2 - 0.8)
-- Model selector (Lite/Full/Heavy)
-- Delegate selector (CPU/GPU)
-
-**Benefits:**
-- ✅ User can tune for their environment
-- ✅ Better results in different lighting conditions
-- ✅ Debugging tool for developers
-
-**Priority:** 🟡 **MEDIUM** - Useful but not critical for MVP
-
----
-
-## 4. 💡 FUTURE ENHANCEMENTS
-
-### 4.1 Joint Constraints (Physical Limits) 🛑
-
-**Concept from Medium Article:** Human joints have physical limits.
-
-**Example:** Knee can't bend backwards beyond ~180°.
-
-**Implementation:**
 ```kotlin
-class JointConstraintValidator {
-    private val constraints = mapOf(
-        "left_knee" to AngleRange(min = 0.0, max = 180.0),
-        "right_knee" to AngleRange(min = 0.0, max = 180.0),
-        "left_elbow" to AngleRange(min = 0.0, max = 180.0),
-        // ...
+class SavitzkyGolayFilter(
+    private val windowSize: Int = 5,
+    private val polynomialOrder: Int = 2
+) {
+    private val buffer = ArrayDeque<Double>(windowSize)
+    
+    fun filter(value: Double): Double {
+        buffer.addLast(value)
+        if (buffer.size > windowSize) buffer.removeFirst()
+        if (buffer.size < windowSize) return value
+        
+        // Apply Savitzky-Golay coefficients
+        return applySGCoefficients(buffer.toList())
+    }
+}
+```
+
+**Use For**: Angle signals before peak detection (reps).
+
+---
+
+#### 3.2 Bone Length Consistency
+**When**: After calibration system is in place.
+
+```kotlin
+object BoneLengthValidator {
+    // Use WorldLandmarks to avoid perspective issues
+    fun validateBoneLengths(
+        worldLandmarks: List<Landmark>,
+        calibratedLengths: Map<String, Float>
+    ): Map<String, Float> {
+        val confidenceScores = mutableMapOf<String, Float>()
+        
+        BONE_CONNECTIONS.forEach { (name, startIdx, endIdx) ->
+            val start = worldLandmarks[startIdx]
+            val end = worldLandmarks[endIdx]
+            
+            val currentLength = sqrt(
+                (end.x() - start.x()).pow(2) +
+                (end.y() - start.y()).pow(2) +
+                (end.z() - start.z()).pow(2)
+            )
+            
+            val expected = calibratedLengths[name] ?: return@forEach
+            val deviation = abs(currentLength - expected) / expected
+            
+            // Allow 15% deviation (accounts for measurement noise)
+            confidenceScores[name] = if (deviation < 0.15f) 1f else (1f - deviation).coerceAtLeast(0f)
+        }
+        
+        return confidenceScores
+    }
+}
+```
+
+**⚠️ Important**: Apply on WorldLandmarks ONLY. NormalizedLandmarks will give false rejections due to foreshortening.
+
+---
+
+#### 3.3 Joint Angle Limits (Validation Only)
+**Purpose**: Detect physically impossible poses.
+
+```kotlin
+object JointLimits {
+    // Human joint ROM (Range of Motion)
+    val LIMITS = mapOf(
+        "elbow" to 0.0..150.0,      // Can't hyperextend
+        "knee" to 0.0..160.0,        // Slight hyperextension possible
+        "shoulder" to 0.0..180.0,
+        "hip" to 0.0..120.0
     )
     
-    fun validateAngle(jointName: String, angle: Double): Boolean {
-        val range = constraints[jointName] ?: return true
-        return angle >= range.min && angle <= range.max
+    fun validate(angles: JointAngles): Map<String, ValidationResult> {
+        return angles.toMap().mapValues { (joint, angle) ->
+            val limit = LIMITS[joint.substringAfter("_")] ?: return@mapValues ValidationResult.UNKNOWN
+            when {
+                angle in limit -> ValidationResult.VALID
+                else -> ValidationResult.SUSPICIOUS // Don't auto-correct!
+            }
+        }
+    }
+    
+    enum class ValidationResult {
+        VALID,
+        SUSPICIOUS,  // Flag for review, don't override
+        UNKNOWN
     }
 }
 ```
 
-**Priority:** 💡 **LOW** - Angle calculator already handles this implicitly
+**⚠️ Rule**: Mark as suspicious, NEVER auto-correct the landmark position. Auto-correction hides real detection problems.
 
 ---
 
-### 4.2 Multi-Person Support 👥
+#### 3.4 Adaptive Resolution (Performance Optimization)
+**When**: Supporting low-end devices.
 
-**Current:** Single person only
+```kotlin
+object AdaptiveResolution {
+    fun getOptimalResolution(
+        deviceTier: DeviceTier,
+        currentFps: Int,
+        targetFps: Int = 25
+    ): Resolution {
+        return when {
+            currentFps >= targetFps -> Resolution.HIGH // 720p
+            deviceTier == DeviceTier.LOW -> Resolution.LOW // 480p
+            else -> Resolution.MEDIUM // 540p
+        }
+    }
+}
+```
 
-**Enhancement:** Track multiple people
-
-**Complexity:** High - requires:
-- Person ID tracking
-- Separate smoothing per person
-- UI updates for multiple skeletons
-
-**Priority:** 💡 **LOW** - Not needed for MVP (single user training)
-
----
-
-### 4.3 Recording & Playback 📹
-
-**Enhancement:** Record pose data, replay later
-
-**Use Cases:**
-- Compare form over time
-- Share with trainer
-- Debugging
-
-**Priority:** 💡 **LOW** - Future feature
+**⚠️ Avoid**: Downscaling below 480p for full-body poses (extremities get lost).
 
 ---
 
-## 5. 📊 IMPLEMENTATION PRIORITY MATRIX
+## 📌 Implementation Notes
 
-| Improvement | Impact | Effort | Priority | Status |
-|------------|--------|--------|----------|--------|
-| **One Euro Filter** | 🔥 High | Medium | **P0** | 📝 Planned |
-| **Bitmap Reuse** | 🔥 High | Low | **P0** | 📝 Planned |
-| **Bone Length Check** | 🔥 High | Medium | **P0** | 📝 Planned |
-| **Velocity Check** | 🟡 Medium | Low | **P1** | 📝 Planned |
-| **Z-Axis Visualization** | 🟡 Medium | Low | **P1** | 📝 Planned |
-| **ViewModel Architecture** | 🟡 Medium | High | **P2** | 📝 Planned |
-| **Settings UI** | 🟡 Medium | Medium | **P2** | 📝 Planned |
-| **Joint Constraints** | 💡 Low | Low | **P3** | 📝 Planned |
+### Distance Estimation
+**Don't use**: WorldLandmarks for absolute distance (unreliable across devices/lenses).
 
----
+**Do use**: Combination of:
+- Body bounding box size relative to frame
+- Presence scores of extremities (head, hands, feet)
+- Landmark proximity to frame edges
 
-## 6. 🎯 RECOMMENDED IMPLEMENTATION ORDER
-
-### Phase 1: Performance (Week 1)
-1. ✅ Bitmap Reuse (Quick win, high impact)
-2. ✅ One Euro Filter (Better smoothing)
-
-### Phase 2: Stability (Week 2)
-3. ✅ Bone Length Calibration & Validation
-4. ✅ Velocity Check
-
-### Phase 3: Polish (Week 3)
-5. ✅ Z-Axis Visualization
-6. ✅ Settings UI
-
-### Phase 4: Architecture (Week 4)
-7. ✅ ViewModel Migration
+```kotlin
+fun estimateDistance(landmarks: List<SmoothedLandmark>): DistanceEstimate {
+    val bbox = calculateBoundingBox(landmarks)
+    val bodyRatio = bbox.height / 1.0f // Relative to frame height
+    
+    return when {
+        bodyRatio > 0.9f -> DistanceEstimate.TOO_CLOSE
+        bodyRatio < 0.4f -> DistanceEstimate.TOO_FAR
+        else -> DistanceEstimate.OPTIMAL
+    }
+}
+```
 
 ---
 
-## 7. 📚 REFERENCES
+### Presence vs Visibility
 
-- [Google MediaPipe Samples](https://github.com/google-ai-edge/mediapipe-samples)
-- [Medium: How to Improve MediaPipe Skeletons Recognition](https://medium.com/@zlodeibaal/how-to-improve-mediapipe-skeletons-recognition-7c3009774dd4)
-- [One Euro Filter Paper](https://cristal.univ-lille.fr/~casiez/1euro/)
-- [MediaPipe Pose Documentation](https://ai.google.dev/edge/mediapipe/solutions/vision/pose_landmarker)
+| Property | Meaning | Use Case |
+|----------|---------|----------|
+| **Visibility** | Landmark is visible in frame | Drawing decisions |
+| **Presence** | Landmark exists (even if occluded) | Pose completeness check |
+
+```kotlin
+// Example: Leg behind desk
+leftKnee.visibility = 0.2f  // Not visible (hidden by desk)
+leftKnee.presence = 0.9f    // But we know it's there
+
+// UI Decision:
+if (isPresent && !isVisible) {
+    drawDashedLine() // Estimated position
+    showLabel("Estimated")
+}
+```
 
 ---
 
-## 8. 📝 NOTES
+## 📅 Implementation Timeline
 
-- All improvements are **backward compatible** - can be added incrementally
-- Test each improvement **individually** before combining
-- Monitor **FPS** and **memory usage** after each change
-- Keep **Google's sample** as reference for best practices
+```
+Week 1-2: Phase 1 (Critical Fixes)
+├── Bitmap Reuse
+├── One Euro Filter
+└── Camera Framing Validation
+
+Week 3-4: Phase 2 (Accuracy)
+├── WorldLandmarks for Angles
+├── Velocity Check
+└── Occlusion Visualization
+
+Week 5+: Phase 3 (As Needed)
+├── Savitzky-Golay (with rep counting)
+├── Bone Length (with calibration)
+└── Adaptive Resolution (for device support)
+```
 
 ---
 
-**Last Updated:** 2025-01-XX  
-**Status:** 📝 Planning Phase  
-**Next Steps:** Implement Phase 1 improvements
+## 📚 References
+
+- [One Euro Filter Paper](http://cristal.univ-lille.fr/~casiez/1euro/)
+- [MediaPipe Pose Landmarker](https://developers.google.com/mediapipe/solutions/vision/pose_landmarker)
+- [Savitzky-Golay Filter](https://docs.scipy.org/doc/scipy/reference/generated/scipy.signal.savgol_filter.html)
+
+---
+
+## ✏️ Revision History
+
+| Date | Changes |
+|------|---------|
+| Dec 2024 | Initial roadmap based on code review and community feedback |

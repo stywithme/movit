@@ -57,10 +57,10 @@ After the session:
 A mobile‑only fitness application that validates exercise performance in real time using on‑device pose estimation, provides instant feedback, and generates a structured post‑training report.
 
 ### Key Characteristics
-- **Hybrid Mobile Architecture:** Flutter (UI/Orchestration) + Native Modules (Core Logic).
+- **Native Mobile Architecture:** Two separate native applications (Android Kotlin / iOS Swift).
 - **Offline‑first:** (cache → compute → sync).
 - **On‑device computation:** All training logic runs natively (Kotlin/Swift).
-- **Backend:** Orchestration, configuration, and reporting only.
+- **Backend:** Next.js monorepo (API + Admin Dashboard) for orchestration, configuration, and reporting.
 
 ### Primary Users
 - **End User (Trainee):** Performs exercises and receives feedback.
@@ -84,9 +84,9 @@ A mobile‑only fitness application that validates exercise performance in real 
 ```
 [User]
   ↓
-[Mobile App (Hybrid)]
+[Mobile Apps (Android Kotlin / iOS Swift)]
   ↓ (sync results / fetch configs)
-[Backend API]
+[Next.js Backend (API + Admin Dashboard)]
   ↓
 [PostgreSQL Database]
   ↓
@@ -97,10 +97,10 @@ A mobile‑only fitness application that validates exercise performance in real 
 
 ## 3. Container View (C4 – Level 3)
 
-### 3.1 Mobile Application (Hybrid: Flutter + Native)
-**Architecture:** Flutter Shell with Native Modules via Platform Channels.
+### 3.1 Mobile Applications (Native: Android Kotlin / iOS Swift)
+**Architecture:** Two separate native applications sharing the same core logic and API contracts.
 
-**A. Flutter Layer (Dart)**
+**A. Android Application (Kotlin)**
 - **Responsibilities:**
     - App Navigation & Auth
     - Exercise Selection & Lists
@@ -108,10 +108,7 @@ A mobile‑only fitness application that validates exercise performance in real 
     - Local Database (Results & History)
     - Sync Management with Backend
     - Admin-defined rules caching
-
-**B. Native Layer (Kotlin - Android / Swift - iOS)**
-- **Responsibilities:**
-    - High-performance Camera access
+    - High-performance Camera access (CameraX)
     - MediaPipe BlazePose execution (GPU Accelerated)
     - **Training Engine (The "Brain"):**
         - Angle Calculation
@@ -120,8 +117,27 @@ A mobile‑only fitness application that validates exercise performance in real 
         - Error Detection
     - Real-time Skeleton Overlay Rendering
 
-### 3.2 Backend API (NestJS)
-- **Responsibilities:** Authentication, Subscription, Exercise definitions distribution, Results ingestion, LLM Orchestration.
+**B. iOS Application (Swift)**
+- **Responsibilities:**
+    - App Navigation & Auth
+    - Exercise Selection & Lists
+    - Post-workout Reports & Dashboard
+    - Local Database (Results & History)
+    - Sync Management with Backend
+    - Admin-defined rules caching
+    - High-performance Camera access (AVFoundation)
+    - MediaPipe BlazePose execution (GPU Accelerated)
+    - **Training Engine (The "Brain"):**
+        - Angle Calculation
+        - Rep Counting Logic
+        - Phase Recognition State Machine
+        - Error Detection
+    - Real-time Skeleton Overlay Rendering
+
+### 3.2 Backend & Admin Dashboard (Next.js)
+- **Architecture:** Monorepo containing both API routes and Admin Dashboard frontend.
+- **API Responsibilities:** Authentication, Subscription, Exercise definitions distribution, Results ingestion, LLM Orchestration.
+- **Admin Dashboard Responsibilities:** Exercise management, Rule configuration, User management, Analytics.
 - **Non‑Responsibilities:** Real‑time processing, Exercise validation.
 
 ### 3.3 Database (PostgreSQL)
@@ -135,70 +151,67 @@ A mobile‑only fitness application that validates exercise performance in real 
 ### 4.1 High‑Level Component Breakdown
 
 ```
-Mobile App Structure
+Mobile App Structure (Android Kotlin / iOS Swift)
 │
-├── Flutter Layer (Dart)
-│   ├── UI Components
-│   │   ├── Auth Screens
-│   │   ├── Exercise List
-│   │   └── Report Viewer
-│   │
-│   ├── Data Layer
-│   │   ├── Local Storage (Hive/SQLite)
-│   │   └── API Client (Sync)
-│   │
-│   └── Interface Layer
-│       └── MethodChannels (Bridge to Native)
+├── UI Layer
+│   ├── Auth Screens
+│   ├── Exercise List
+│   └── Report Viewer
 │
-└── Native Layer (Kotlin / Swift)
-    ├── Camera Manager (CameraX / AVFoundation)
-    │
-    ├── AI Processor
-    │   └── MediaPipe BlazePose SDK
-    │
-    └── Training Logic Engine (Core Business Logic)
-        ├── Skeleton Normalizer
-        ├── Angle Calculator (Geometry)
-        ├── State Machine (Idle -> Down -> Up)
-        ├── Rep Counter
-        └── Error Detector (Compares stream vs Rules)
+├── Data Layer
+│   ├── Local Storage (Room / Core Data)
+│   └── API Client (Sync)
+│
+├── Camera Manager
+│   └── CameraX (Android) / AVFoundation (iOS)
+│
+├── AI Processor
+│   └── MediaPipe BlazePose SDK
+│
+└── Training Logic Engine (Core Business Logic)
+    ├── Skeleton Normalizer
+    ├── Angle Calculator (Geometry)
+    ├── State Machine (Idle -> Down -> Up)
+    ├── Rep Counter
+    └── Error Detector (Compares stream vs Rules)
 ```
 
 ### 4.2 Data Flow during Workout
-1.  **Flutter:** User selects exercise → Sends "Exercise Config & Rules" to Native via Channel.
-2.  **Native:** Opens Camera view.
-3.  **Native:** MediaPipe processes frames → Generates Landmarks.
-4.  **Native (Training Engine):**
+1.  **Mobile App:** User selects exercise → Loads "Exercise Config & Rules" from local cache or API.
+2.  **Mobile App:** Opens Camera view.
+3.  **Mobile App:** MediaPipe processes frames → Generates Landmarks.
+4.  **Mobile App (Training Engine):**
     *   Calculates Angles.
     *   Checks against Rules.
     *   Updates State (Rep Count).
     *   Triggers Feedback (Audio/Haptic).
-5.  **Native:** Renders Overlay on top of camera feed.
-6.  **Native:** On finish → Sends "Session Summary" back to Flutter.
-7.  **Flutter:** Saves to DB & Syncs.
+5.  **Mobile App:** Renders Overlay on top of camera feed.
+6.  **Mobile App:** On finish → Saves "Session Summary" to local DB.
+7.  **Mobile App:** Syncs results to Backend API.
 
 ---
 
 ## 5. Core Training Workflow (Primary Focus)
 
 ### 5.1 Exercise Execution Flow
-1.  User selects an exercise manually (Flutter).
-2.  App passes exercise JSON (angles, phases, errors) to Native Module.
-3.  **Native Layer takes over:**
+1.  User selects an exercise manually (Mobile App).
+2.  App loads exercise JSON (angles, phases, errors) from local cache or fetches from API.
+3.  **Mobile App takes over:**
     -   Initializes Camera & MediaPipe.
     -   Runs **Environment Check** (Light/Distance).
     -   Starts Training Loop.
-4.  **Real-time Logic (Native):**
+4.  **Real-time Logic (Mobile App):**
     -   Compute Joint Angles.
     -   Determine Motion Phase.
     -   Count Reps.
     -   Detect Errors based on Admin Rules.
-5.  **UI Feedback (Native Overlay):**
+5.  **UI Feedback (Mobile App Overlay):**
     -   Skeleton overlay.
     -   Green/Red indicators.
     -   Rep Counter.
 6.  **Completion:**
-    -   Native returns control to Flutter with result object.
+    -   Mobile App saves result object to local database.
+    -   Syncs results to Backend API in background.
 
 ### 5.2 Real‑Time Feedback Rules
 -   **Priority System:**
@@ -236,10 +249,11 @@ Mobile App Structure
 
 | Area | Decision | Reason |
 | :--- | :--- | :--- |
-| **Mobile Architecture** | **Hybrid (Flutter + Native)** | Single codebase for UI, Max performance for AI. |
+| **Mobile Architecture** | **Native (Android Kotlin / iOS Swift)** | Maximum performance, platform-specific optimizations, direct access to native APIs. |
 | **Pose Estimation** | **MediaPipe (Native SDK)** | Best-in-class performance & accuracy. |
 | **Training Logic** | **Native (Kotlin/Swift)** | Zero-latency feedback, direct access to AI stream. |
 | **Data Strategy** | Offline‑first | Reliability in gyms/basements. |
+| **Backend Architecture** | **Next.js Monorepo (API + Admin Dashboard)** | Unified codebase, shared types, efficient development workflow. |
 | **Backend Role** | Orchestration only | Scalability & Cost. |
 | **Video Storage** | **None** | Privacy & Cost. |
 

@@ -1,0 +1,252 @@
+{
+  "name": {
+    "ar": "الاندفاع الأمامي",
+    "en": "Forward Lunge"
+  },
+  "description": {
+    "ar": "تمرين لتقوية عضلات الأرجل والتوازن",
+    "en": "Exercise to strengthen leg muscles and improve balance"
+  },
+  "instructions": {
+    "ar": "قف بشكل مستقيم، ثم اخطو للأمام واثني ركبتك حتى 90 درجة",
+    "en": "Stand straight, step forward and bend your knee to 90 degrees"
+  },
+  "category": {
+    "code": "legs",
+    "name": {
+      "ar": "تمارين الأرجل",
+      "en": "Legs"
+    }
+  },
+  "countingMethod": "up_down",
+  "muscles": ["quadriceps", "glutes", "hamstrings", "calves"],
+  "equipment": ["bodyweight", "dumbbell"],
+  "tags": ["unilateral", "balance", "functional"],
+  "poseVariants": [
+    {
+      "name": {
+        "ar": "زاوية جانبية - الرجل اليسرى",
+        "en": "Side View - Left Leg"
+      },
+      "cameraPosition": "side_view",
+      "trackedJoints": [
+        {
+          "joint": "left_knee",
+          "role": "primary",
+          "startPose": {
+            "min": 160,
+            "max": 180
+          },
+          "upRange": {
+            "beginner": { "min": 155, "max": 180 },
+            "normal": { "min": 160, "max": 180 },
+            "advanced": { "min": 165, "max": 180 }
+          },
+          "downRange": {
+            "beginner": { "min": 80, "max": 110 },
+            "normal": { "min": 85, "max": 100 },
+            "advanced": { "min": 88, "max": 95 }
+          },
+          "movingSegment": {
+            "from": "left_knee",
+            "to": "left_hip"
+          },
+          "errorMessages": {
+            "tooLow": {
+              "ar": "لا تثني ركبتك كثيراً",
+              "en": "Don't bend your knee too much"
+            },
+            "tooHigh": {
+              "ar": "اثني ركبتك أكثر",
+              "en": "Bend your knee more"
+            }
+          }
+        },
+        {
+          "joint": "left_hip",
+          "role": "secondary",
+          "startPose": {
+            "min": 160,
+            "max": 180
+          },
+          "upRange": {
+            "beginner": { "min": 155, "max": 180 },
+            "normal": { "min": 165, "max": 180 },
+            "advanced": { "min": 170, "max": 180 }
+          },
+          "downRange": {
+            "beginner": { "min": 155, "max": 180 },
+            "normal": { "min": 165, "max": 180 },
+            "advanced": { "min": 170, "max": 180 }
+          },
+          "movingSegment": {
+            "from": "left_hip",
+            "to": "left_shoulder"
+          },
+          "errorMessages": {
+            "tooLow": {
+              "ar": "حافظ على استقامة ظهرك",
+              "en": "Keep your back straight"
+            },
+            "tooHigh": {
+              "ar": "لا تميل للخلف",
+              "en": "Don't lean back"
+            }
+          }
+        }
+      ],
+      "feedbackMessages": {
+        "motivational": [
+          { "ar": "ممتاز! استمر!", "en": "Excellent! Keep going!" },
+          { "ar": "توازن رائع!", "en": "Great balance!" }
+        ],
+        "common_mistake": [
+          { "ar": "لا تدع ركبتك تتجاوز أصابع قدميك", "en": "Don't let your knee go past your toes" },
+          { "ar": "حافظ على استقامة ظهرك", "en": "Keep your torso upright" }
+        ],
+        "tip": [
+          { "ar": "انظر للأمام لتحسين التوازن", "en": "Look forward to improve balance" },
+          { "ar": "ادفع من كعبك للعودة للوضع الأصلي", "en": "Push through your heel to return to start" }
+        ]
+      },
+      "difficultyLevels": [
+        {
+          "level": "beginner",
+          "repCountingConfig": {
+            "reps": 8,
+            "minRepIntervalMs": 2500,
+            "maxRepIntervalMs": 7000
+          },
+          "phases": ["start", "down", "bottom", "up"]
+        },
+        {
+          "level": "normal",
+          "repCountingConfig": {
+            "reps": 10,
+            "minRepIntervalMs": 2000,
+            "maxRepIntervalMs": 6000
+          },
+          "phases": ["start", "down", "bottom", "up"]
+        },
+        {
+          "level": "advanced",
+          "repCountingConfig": {
+            "reps": 12,
+            "minRepIntervalMs": 1500,
+            "maxRepIntervalMs": 5000
+          },
+          "phases": ["start", "down", "bottom", "up"]
+        }
+      ]
+    },
+    {
+      "name": {
+        "ar": "زاوية جانبية - الرجل اليمنى",
+        "en": "Side View - Right Leg"
+      },
+      "cameraPosition": "side_view",
+      "trackedJoints": [
+        {
+          "joint": "right_knee",
+          "role": "primary",
+          "startPose": {
+            "min": 160,
+            "max": 180
+          },
+          "upRange": {
+            "beginner": { "min": 155, "max": 180 },
+            "normal": { "min": 160, "max": 180 },
+            "advanced": { "min": 165, "max": 180 }
+          },
+          "downRange": {
+            "beginner": { "min": 80, "max": 110 },
+            "normal": { "min": 85, "max": 100 },
+            "advanced": { "min": 88, "max": 95 }
+          },
+          "movingSegment": {
+            "from": "right_knee",
+            "to": "right_hip"
+          },
+          "errorMessages": {
+            "tooLow": {
+              "ar": "لا تثني ركبتك كثيراً",
+              "en": "Don't bend your knee too much"
+            },
+            "tooHigh": {
+              "ar": "اثني ركبتك أكثر",
+              "en": "Bend your knee more"
+            }
+          }
+        },
+        {
+          "joint": "right_hip",
+          "role": "secondary",
+          "startPose": {
+            "min": 160,
+            "max": 180
+          },
+          "upRange": {
+            "beginner": { "min": 155, "max": 180 },
+            "normal": { "min": 165, "max": 180 },
+            "advanced": { "min": 170, "max": 180 }
+          },
+          "downRange": {
+            "beginner": { "min": 155, "max": 180 },
+            "normal": { "min": 165, "max": 180 },
+            "advanced": { "min": 170, "max": 180 }
+          },
+          "movingSegment": {
+            "from": "right_hip",
+            "to": "right_shoulder"
+          },
+          "errorMessages": {
+            "tooLow": {
+              "ar": "حافظ على استقامة ظهرك",
+              "en": "Keep your back straight"
+            },
+            "tooHigh": {
+              "ar": "لا تميل للخلف",
+              "en": "Don't lean back"
+            }
+          }
+        }
+      ],
+      "feedbackMessages": {
+        "motivational": [
+          { "ar": "ممتاز!", "en": "Excellent!" }
+        ],
+        "common_mistake": [],
+        "tip": []
+      },
+      "difficultyLevels": [
+        {
+          "level": "beginner",
+          "repCountingConfig": {
+            "reps": 8,
+            "minRepIntervalMs": 2500,
+            "maxRepIntervalMs": 7000
+          },
+          "phases": ["start", "down", "bottom", "up"]
+        },
+        {
+          "level": "normal",
+          "repCountingConfig": {
+            "reps": 10,
+            "minRepIntervalMs": 2000,
+            "maxRepIntervalMs": 6000
+          },
+          "phases": ["start", "down", "bottom", "up"]
+        },
+        {
+          "level": "advanced",
+          "repCountingConfig": {
+            "reps": 12,
+            "minRepIntervalMs": 1500,
+            "maxRepIntervalMs": 5000
+          },
+          "phases": ["start", "down", "bottom", "up"]
+        }
+      ]
+    }
+  ]
+}

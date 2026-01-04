@@ -1,0 +1,208 @@
+{
+  "name": {
+    "ar": "القرفصاء",
+    "en": "Squat"
+  },
+  "description": {
+    "ar": "تمرين لتقوية عضلات الأرجل والمؤخرة",
+    "en": "Exercise to strengthen legs and glutes"
+  },
+  "instructions": {
+    "ar": "قف بشكل مستقيم، ثم انزل ببطء حتى تصل ركبتيك لزاوية 90 درجة",
+    "en": "Stand straight, then slowly lower until your knees reach 90 degrees"
+  },
+  "category": {
+    "code": "legs",
+    "name": {
+      "ar": "تمارين الأرجل",
+      "en": "Legs"
+    }
+  },
+  "countingMethod": "up_down",
+  "muscles": ["quadriceps", "glutes", "hamstrings"],
+  "equipment": ["bodyweight", "barbell"],
+  "tags": [],
+  "poseVariants": [
+    {
+      "name": {
+        "ar": "زاوية جانبية",
+        "en": "Side View"
+      },
+      "cameraPosition": "side_view",
+      "trackedJoints": [
+        {
+          "joint": "left_knee",
+          "role": "primary",
+          "startPose": {
+            "min": 160,
+            "max": 180
+          },
+          "upRange": {
+            "beginner": { "min": 155, "max": 180 },
+            "normal":   { "min": 160, "max": 180 },
+            "advanced": { "min": 165, "max": 180 }
+          },
+          "downRange": {
+            "beginner": { "min": 70, "max": 110 },
+            "normal":   { "min": 80, "max": 100 },
+            "advanced": { "min": 85, "max": 95 }
+          },
+          "movingSegment": {
+            "from": "left_knee",
+            "to": "left_hip"
+          },
+          "errorMessages": {
+            "tooLow": {
+              "ar": "لا تنزل كثيراً",
+              "en": "Don't go too low"
+            },
+            "tooHigh": {
+              "ar": "انزل أكثر",
+              "en": "Go lower"
+            }
+          },
+          "pairedWith": "right_knee"
+        },
+        {
+          "joint": "right_knee",
+          "role": "primary",
+          "startPose": {
+            "min": 160,
+            "max": 180
+          },
+          "upRange": {
+            "beginner": { "min": 155, "max": 180 },
+            "normal":   { "min": 160, "max": 180 },
+            "advanced": { "min": 165, "max": 180 }
+          },
+          "downRange": {
+            "beginner": { "min": 70, "max": 110 },
+            "normal":   { "min": 80, "max": 100 },
+            "advanced": { "min": 85, "max": 95 }
+          },
+          "movingSegment": {
+            "from": "right_knee",
+            "to": "right_hip"
+          },
+          "errorMessages": {
+            "tooLow": {
+              "ar": "لا تنزل كثيراً",
+              "en": "Don't go too low"
+            },
+            "tooHigh": {
+              "ar": "انزل أكثر",
+              "en": "Go lower"
+            }
+          },
+          "pairedWith": "left_knee"
+        },
+        {
+          "joint": "left_hip",
+          "role": "secondary",
+          "startPose": {
+            "min": 160,
+            "max": 180
+          },
+          "upRange": {
+            "beginner": { "min": 155, "max": 180 },
+            "normal":   { "min": 160, "max": 180 },
+            "advanced": { "min": 165, "max": 180 }
+          },
+          "downRange": {
+            "beginner": { "min": 60, "max": 100 },
+            "normal":   { "min": 70, "max": 90 },
+            "advanced": { "min": 75, "max": 85 }
+          },
+          "movingSegment": {
+            "from": "left_hip",
+            "to": "left_shoulder"
+          },
+          "errorMessages": {
+            "tooLow": {
+              "ar": "لا تدفع الورك للخلف كثيراً",
+              "en": "Don't push your hips back too much"
+            },
+            "tooHigh": {
+              "ar": "ادفع الورك للخلف أكثر",
+              "en": "Push your hips back more"
+            }
+          }
+        },
+        {
+          "joint": "spine",
+          "role": "secondary",
+          "startPose": {
+            "min": 0,
+            "max": 15
+          },
+          "upRange": {
+            "beginner": { "min": 0, "max": 20 },
+            "normal":   { "min": 0, "max": 15 },
+            "advanced": { "min": 0, "max": 10 }
+          },
+          "downRange": {
+            "beginner": { "min": 0, "max": 45 },
+            "normal":   { "min": 0, "max": 35 },
+            "advanced": { "min": 0, "max": 30 }
+          },
+          "errorMessages": {
+            "tooLow": {
+              "ar": "ممتاز - ظهرك مستقيم",
+              "en": "Great - back is straight"
+            },
+            "tooHigh": {
+              "ar": "لا تميل للأمام كثيراً - حافظ على استقامة الجذع",
+              "en": "Don't lean forward too much - keep your torso upright"
+            }
+          }
+        }
+      ],
+      "feedbackMessages": {
+        "motivational": [
+          { "ar": "ممتاز! استمر!", "en": "Excellent! Keep going!" },
+          { "ar": "أداء رائع!", "en": "Great form!" },
+          { "ar": "قوي! لا تتوقف!", "en": "Strong! Don't stop!" }
+        ],
+        "common_mistake": [
+          { "ar": "لا تدع ركبتيك تتجاوز أصابع قدميك", "en": "Don't let your knees go past your toes" },
+          { "ar": "حافظ على استقامة ظهرك", "en": "Keep your back straight" },
+          { "ar": "لا ترفع كعبيك عن الأرض", "en": "Keep your heels on the ground" }
+        ],
+        "tip": [
+          { "ar": "ادفع من كعبيك للصعود", "en": "Push through your heels to stand up" },
+          { "ar": "انظر للأمام وليس للأسفل", "en": "Look forward, not down" },
+          { "ar": "شد عضلات بطنك طوال الحركة", "en": "Keep your core engaged throughout" }
+        ]
+      },
+      "difficultyLevels": [
+        {
+          "level": "beginner",
+          "repCountingConfig": {
+            "reps": 10,
+            "minRepIntervalMs": 2000,
+            "maxRepIntervalMs": 6000
+          },
+          "phases": ["start", "down", "bottom", "up"]
+        },
+        {
+          "level": "normal",
+          "repCountingConfig": {
+            "reps": 12,
+            "minRepIntervalMs": 1600,
+            "maxRepIntervalMs": 5000
+          },
+          "phases": ["start", "down", "bottom", "up"]
+        },
+        {
+          "level": "advanced",
+          "repCountingConfig": {
+            "reps": 15,
+            "minRepIntervalMs": 1200,
+            "maxRepIntervalMs": 4000
+          },
+          "phases": ["start", "down", "bottom", "up"]
+        }
+      ]
+    }
+  ]
+}

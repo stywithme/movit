@@ -1,0 +1,161 @@
+{
+  "name": {
+    "ar": "تمرين البلانك",
+    "en": "Plank"
+  },
+  "description": {
+    "ar": "تمرين لتقوية عضلات البطن والجذع عن طريق الثبات في وضع معين",
+    "en": "Core strengthening exercise by holding a stable position"
+  },
+  "instructions": {
+    "ar": "ارتكز على ساعديك وأصابع قدميك، حافظ على استقامة الجسم من الرأس للكعب",
+    "en": "Rest on your forearms and toes, keep your body straight from head to heels"
+  },
+  "category": {
+    "code": "core",
+    "name": {
+      "ar": "تمارين الجذع",
+      "en": "Core"
+    }
+  },
+  "countingMethod": "hold",
+  "muscles": ["abs", "core", "shoulders", "back"],
+  "equipment": ["bodyweight"],
+  "tags": ["isometric", "beginner-friendly", "no-equipment"],
+  "poseVariants": [
+    {
+      "name": {
+        "ar": "زاوية جانبية",
+        "en": "Side View"
+      },
+      "cameraPosition": "side_view",
+      "trackedJoints": [
+        {
+          "joint": "left_hip",
+          "role": "primary",
+          "startPose": {
+            "min": 150,
+            "max": 180
+          },
+          "upRange": {
+            "beginner": { "min": 150, "max": 180 },
+            "normal": { "min": 160, "max": 180 },
+            "advanced": { "min": 165, "max": 180 }
+          },
+          "downRange": {
+            "beginner": { "min": 150, "max": 180 },
+            "normal": { "min": 160, "max": 180 },
+            "advanced": { "min": 165, "max": 180 }
+          },
+          "errorMessages": {
+            "tooLow": {
+              "ar": "ارفع الوسط قليلاً - لا تدع ظهرك ينحني",
+              "en": "Raise your hips - don't let your back sag"
+            },
+            "tooHigh": {
+              "ar": "اخفض الوسط قليلاً - حافظ على استقامة الجسم",
+              "en": "Lower your hips - keep your body straight"
+            }
+          }
+        },
+        {
+          "joint": "left_shoulder",
+          "role": "secondary",
+          "startPose": {
+            "min": 70,
+            "max": 110
+          },
+          "upRange": {
+            "beginner": { "min": 60, "max": 120 },
+            "normal": { "min": 70, "max": 110 },
+            "advanced": { "min": 80, "max": 100 }
+          },
+          "downRange": {
+            "beginner": { "min": 60, "max": 120 },
+            "normal": { "min": 70, "max": 110 },
+            "advanced": { "min": 80, "max": 100 }
+          },
+          "errorMessages": {
+            "tooLow": {
+              "ar": "تقدم قليلاً للأمام",
+              "en": "Move your shoulders forward slightly"
+            },
+            "tooHigh": {
+              "ar": "ارجع قليلاً للخلف",
+              "en": "Move your shoulders back slightly"
+            }
+          }
+        },
+        {
+          "joint": "left_knee",
+          "role": "secondary",
+          "startPose": {
+            "min": 160,
+            "max": 180
+          },
+          "upRange": {
+            "beginner": { "min": 155, "max": 180 },
+            "normal": { "min": 165, "max": 180 },
+            "advanced": { "min": 170, "max": 180 }
+          },
+          "downRange": {
+            "beginner": { "min": 155, "max": 180 },
+            "normal": { "min": 165, "max": 180 },
+            "advanced": { "min": 170, "max": 180 }
+          },
+          "errorMessages": {
+            "tooLow": {
+              "ar": "افرد ركبتيك",
+              "en": "Straighten your knees"
+            },
+            "tooHigh": {
+              "ar": "حافظ على استقامة الساقين",
+              "en": "Keep your legs straight"
+            }
+          }
+        }
+      ],
+      "feedbackMessages": {
+        "motivational": [
+          { "ar": "استمر! أنت تفعلها!", "en": "Keep going! You're doing great!" },
+          { "ar": "ممتاز! حافظ على الوضع!", "en": "Excellent! Hold that position!" },
+          { "ar": "قوي! لا تستسلم!", "en": "Strong! Don't give up!" }
+        ],
+        "common_mistake": [
+          { "ar": "لا تدع ظهرك ينحني للأسفل", "en": "Don't let your back sag down" },
+          { "ar": "لا ترفع مؤخرتك للأعلى", "en": "Don't raise your hips too high" }
+        ],
+        "tip": [
+          { "ar": "تنفس بانتظام ولا تحبس أنفاسك", "en": "Breathe steadily, don't hold your breath" },
+          { "ar": "شد عضلات بطنك طوال التمرين", "en": "Keep your core engaged throughout" }
+        ]
+      },
+      "difficultyLevels": [
+        {
+          "level": "beginner",
+          "repCountingConfig": {
+            "duration": 20,
+            "gracePeriodMs": 3000
+          },
+          "phases": ["hold"]
+        },
+        {
+          "level": "normal",
+          "repCountingConfig": {
+            "duration": 30,
+            "gracePeriodMs": 2500
+          },
+          "phases": ["hold"]
+        },
+        {
+          "level": "advanced",
+          "repCountingConfig": {
+            "duration": 45,
+            "gracePeriodMs": 2000
+          },
+          "phases": ["hold"]
+        }
+      ]
+    }
+  ]
+}

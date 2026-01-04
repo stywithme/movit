@@ -1,0 +1,114 @@
+{
+  "name": {
+    "ar": "ثني الذراع",
+    "en": "Bicep Curl"
+  },
+  "description": {
+    "ar": "تمرين لتقوية عضلات الذراع الأمامية",
+    "en": "Exercise to strengthen bicep muscles"
+  },
+  "instructions": {
+    "ar": "قف بشكل مستقيم، الذراعين ممدودتين للأسفل، ثم اثني المرفق لرفع الساعد",
+    "en": "Stand straight with arms extended down, then bend elbows to curl forearms up"
+  },
+  "category": {
+    "code": "arms",
+    "name": {
+      "ar": "تمارين الذراعين",
+      "en": "Arms"
+    }
+  },
+  "countingMethod": "up_down",
+  "muscles": ["biceps", "forearms"],
+  "equipment": ["bodyweight", "dumbbell"],
+  "tags": [],
+  "poseVariants": [
+    {
+      "name": {
+        "ar": "زاوية جانبية",
+        "en": "Side View"
+      },
+      "cameraPosition": "side_view",
+      "trackedJoints": [
+        {
+          "joint": "right_elbow",
+          "role": "primary",
+          "startPose": {
+            "min": 50,
+            "max": 130
+          },
+          "upRange": {
+            "beginner": { "min": 110, "max": 130 },
+            "normal":   { "min": 150, "max": 180 },
+            "advanced": { "min": 160, "max": 180 }
+          },
+          "downRange": {
+            "beginner": { "min": 30, "max": 70 },
+            "normal":   { "min": 35, "max": 60 },
+            "advanced": { "min": 40, "max": 50 }
+          },
+          "movingSegment": {
+            "from": "right_elbow",
+            "to": "right_wrist"
+          },
+          "errorMessages": {
+            "tooLow": {
+              "ar": "لا تثني المرفق كثيراً",
+              "en": "Don't bend your elbow too much"
+            },
+            "tooHigh": {
+              "ar": "اثني المرفق أكثر",
+              "en": "Bend your elbow more"
+            }
+          }
+        }
+      ],
+      "feedbackMessages": {
+        "motivational": [
+          { "ar": "ممتاز! عضلات قوية!", "en": "Excellent! Strong muscles!" },
+          { "ar": "أداء رائع!", "en": "Great performance!" },
+          { "ar": "استمر! أنت تتحسن!", "en": "Keep it up! You're improving!" }
+        ],
+        "common_mistake": [
+          { "ar": "لا تحرك مرفقك - فقط الساعد", "en": "Don't move your elbow - only the forearm" },
+          { "ar": "لا تستخدم جسمك للمساعدة", "en": "Don't use your body to help" },
+          { "ar": "تحكم في الحركة ولا تستعجل", "en": "Control the movement, don't rush" }
+        ],
+        "tip": [
+          { "ar": "حافظ على ثبات مرفقك بجانب جسمك", "en": "Keep your elbow fixed at your side" },
+          { "ar": "تنفس: زفير عند الرفع، شهيق عند الإنزال", "en": "Breathe: exhale lifting, inhale lowering" },
+          { "ar": "ركز على انقباض العضلة في أعلى الحركة", "en": "Focus on squeezing at the top" }
+        ]
+      },
+      "difficultyLevels": [
+        {
+          "level": "beginner",
+          "repCountingConfig": {
+            "reps": 10,
+            "minRepIntervalMs": 1500,
+            "maxRepIntervalMs": 5000
+          },
+          "phases": ["start", "down", "bottom", "up"]
+        },
+        {
+          "level": "normal",
+          "repCountingConfig": {
+            "reps": 12,
+            "minRepIntervalMs": 1200,
+            "maxRepIntervalMs": 4000
+          },
+          "phases": ["start", "down", "bottom", "up"]
+        },
+        {
+          "level": "advanced",
+          "repCountingConfig": {
+            "reps": 15,
+            "minRepIntervalMs": 800,
+            "maxRepIntervalMs": 3000
+          },
+          "phases": ["start", "down", "bottom", "up"]
+        }
+      ]
+    }
+  ]
+}

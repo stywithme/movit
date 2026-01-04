@@ -1,0 +1,99 @@
+{
+  "name": {
+    "ar": "ثبات الذراع المرفوعة",
+    "en": "Arm Hold"
+  },
+  "description": {
+    "ar": "تمرين بسيط لاختبار الثبات - ارفع ذراعك اليمنى للأعلى وابقِها مرفوعة",
+    "en": "Simple hold test - raise your right arm up and keep it raised"
+  },
+  "instructions": {
+    "ar": "قف بشكل مستقيم وارفع ذراعك اليمنى للأعلى بشكل مستقيم فوق رأسك",
+    "en": "Stand straight and raise your right arm straight up above your head"
+  },
+  "category": {
+    "code": "test",
+    "name": {
+      "ar": "اختبار",
+      "en": "Test"
+    }
+  },
+  "countingMethod": "hold",
+  "muscles": ["shoulders", "arms"],
+  "equipment": ["bodyweight"],
+  "tags": ["test", "easy", "hold"],
+  "poseVariants": [
+    {
+      "name": {
+        "ar": "زاوية أمامية",
+        "en": "Front View"
+      },
+      "cameraPosition": "front_view",
+      "trackedJoints": [
+        {
+          "joint": "right_shoulder",
+          "role": "primary",
+          "startPose": {
+            "min": 150,
+            "max": 180
+          },
+          "upRange": {
+            "beginner": { "min": 140, "max": 180 },
+            "normal": { "min": 150, "max": 180 },
+            "advanced": { "min": 160, "max": 180 }
+          },
+          "downRange": {
+            "beginner": { "min": 140, "max": 180 },
+            "normal": { "min": 150, "max": 180 },
+            "advanced": { "min": 160, "max": 180 }
+          },
+          "errorMessages": {
+            "tooLow": {
+              "ar": "ارفع ذراعك أكثر للأعلى",
+              "en": "Raise your arm higher"
+            },
+            "tooHigh": {
+              "ar": "ممتاز - حافظ على الوضع",
+              "en": "Great - maintain position"
+            }
+          }
+        }
+      ],
+      "feedbackMessages": {
+        "motivational": [
+          { "ar": "استمر! ذراعك مرفوعة!", "en": "Keep going! Arm up!" },
+          { "ar": "ممتاز! حافظ على الوضع!", "en": "Excellent! Hold it!" }
+        ],
+        "tip": [
+          { "ar": "حافظ على استقامة الذراع", "en": "Keep your arm straight" }
+        ]
+      },
+      "difficultyLevels": [
+        {
+          "level": "beginner",
+          "repCountingConfig": {
+            "duration": 10,
+            "gracePeriodMs": 3000
+          },
+          "phases": ["hold"]
+        },
+        {
+          "level": "normal",
+          "repCountingConfig": {
+            "duration": 15,
+            "gracePeriodMs": 2500
+          },
+          "phases": ["hold"]
+        },
+        {
+          "level": "advanced",
+          "repCountingConfig": {
+            "duration": 20,
+            "gracePeriodMs": 2000
+          },
+          "phases": ["hold"]
+        }
+      ]
+    }
+  ]
+}
