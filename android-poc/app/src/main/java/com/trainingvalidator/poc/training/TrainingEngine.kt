@@ -71,9 +71,10 @@ class TrainingEngine(
 
     /**
      * Per-check cooldown for emitting feedback events (visual overlay stays active, but events are throttled).
+     * Note: positionChecks may be null from Gson parsing even with default value
      */
     private val positionChecksById: Map<String, PositionCheck> =
-        poseVariant.positionChecks.associateBy { it.id }
+        (poseVariant.positionChecks ?: emptyList()).associateBy { it.id }
 
     private val lastPositionEventTimes = mutableMapOf<String, Long>()
     
@@ -84,7 +85,7 @@ class TrainingEngine(
      * Null if no position checks are configured
      */
     private val positionValidator: PositionValidator? = 
-        poseVariant.positionChecks.takeIf { it.isNotEmpty() }?.let {
+        poseVariant.positionChecks?.takeIf { it.isNotEmpty() }?.let {
             PositionValidator(
                 positionChecks = it,
                 expectedCameraPosition = poseVariant.cameraPosition,
@@ -300,7 +301,7 @@ class TrainingEngine(
         
         Log.d(TAG, "Training started (${if (isHoldExercise) "HOLD" else "REPS"} mode)")
         if (positionValidator != null) {
-            Log.d(TAG, "Position checks enabled: ${poseVariant.positionChecks.size} checks")
+            Log.d(TAG, "Position checks enabled: ${poseVariant.positionChecks?.size ?: 0} checks")
         }
     }
     

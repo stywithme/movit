@@ -73,6 +73,12 @@ dependencies {
     // JSON Parsing
     implementation("com.google.code.gson:gson:2.11.0")
 
+    // ExoPlayer (Media3) - For video playback and analysis
+    val media3Version = "1.5.0"
+    implementation("androidx.media3:media3-exoplayer:$media3Version")
+    implementation("androidx.media3:media3-ui:$media3Version")
+    implementation("androidx.media3:media3-common:$media3Version")
+
     // Testing
     testImplementation("junit:junit:4.13.2")
     androidTestImplementation("androidx.test.ext:junit:1.2.1")

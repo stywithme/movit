@@ -36,6 +36,12 @@ import com.trainingvalidator.poc.training.models.JointRole
 import com.trainingvalidator.poc.training.engine.PositionError
 import com.trainingvalidator.poc.training.engine.CameraPositionWarning
 import com.trainingvalidator.poc.analysis.JointAngles
+import com.trainingvalidator.poc.video.VideoManager
+import com.trainingvalidator.poc.video.VideoAnalysisResult
+import com.trainingvalidator.poc.video.toVideoAnalysisResult
+import com.trainingvalidator.poc.storage.AnalysisResultStorage
+import android.net.Uri
+import android.widget.SeekBar
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
@@ -58,6 +64,12 @@ class TrainingActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetection
         const val EXTRA_EXERCISE_NAME = "exercise_name"
         const val EXTRA_DIFFICULTY = "difficulty"
         const val EXTRA_POSE_VARIANT = "pose_variant"
+        const val EXTRA_TRAINING_MODE = "training_mode"
+        const val EXTRA_VIDEO_URI = "video_uri"
+        
+        // Training modes
+        const val MODE_CAMERA = "camera"
+        const val MODE_VIDEO = "video"
         
         // Defaults
         private const val DEFAULT_EXERCISE = "squat"
@@ -77,6 +89,13 @@ class TrainingActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetection
     private var feedbackManager: FeedbackManager? = null
     private var difficulty: DifficultyType = DifficultyType.BEGINNER
     private var poseVariantIndex: Int = 0
+    
+    // Video mode components
+    private var trainingMode: String = MODE_CAMERA
+    private var videoUri: Uri? = null
+    private var videoManager: VideoManager? = null
+    private var analysisResultStorage: AnalysisResultStorage? = null
+    private var isVideoMode: Boolean = false
     
     // Landmark smoothing
     private val landmarkSmoother = LandmarkSmoother()
@@ -137,11 +156,34 @@ class TrainingActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetection
         val difficultyStr = intent.getStringExtra(EXTRA_DIFFICULTY) ?: DEFAULT_DIFFICULTY
         poseVariantIndex = intent.getIntExtra(EXTRA_POSE_VARIANT, 0)
         
+        // Get training mode (camera or video)
+        trainingMode = intent.getStringExtra(EXTRA_TRAINING_MODE) ?: MODE_CAMERA
+        isVideoMode = trainingMode == MODE_VIDEO
+        videoUri = if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.TIRAMISU) {
+            intent.getParcelableExtra(EXTRA_VIDEO_URI, Uri::class.java)
+        } else {
+            @Suppress("DEPRECATION")
+            intent.getParcelableExtra(EXTRA_VIDEO_URI)
+        }
+        
+        // Validate video mode
+        if (isVideoMode && videoUri == null) {
+            Toast.makeText(this, "No video selected", Toast.LENGTH_LONG).show()
+            finish()
+            return
+        }
+        
         // Load exercise and initialize
         loadExercise(exerciseName, difficultyStr)
         
         setupUI()
-        checkCameraPermission()
+        
+        // Initialize based on mode
+        if (isVideoMode) {
+            setupVideoMode()
+        } else {
+            checkCameraPermission()
+        }
     }
 
     private fun setupFullscreen() {
@@ -848,13 +890,363 @@ class TrainingActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetection
         }
     }
 
+    // ==================== VIDEO MODE ====================
+    
+    /**
+     * Setup video mode - Initialize video playback and analysis
+     */
+    private fun setupVideoMode() {
+        Log.d(TAG, "Setting up VIDEO mode with URI: $videoUri")
+        
+        // Hide camera preview, show video TextureView
+        binding.previewView.visibility = View.GONE
+        binding.videoTextureView.visibility = View.VISIBLE
+        
+        // Hide camera-specific controls
+        binding.btnSwitchCamera.visibility = View.GONE
+        
+        // Show video controls
+        binding.videoControlsPanel.visibility = View.VISIBLE
+        
+        // Hide setup pose panel for video (start directly)
+        binding.setupPosePanel.visibility = View.GONE
+        
+        // Show save button in completed panel
+        binding.btnSaveResults.visibility = View.VISIBLE
+        
+        // Initialize storage
+        analysisResultStorage = AnalysisResultStorage(this)
+        
+        // Initialize pose detection for VIDEO mode
+        initializePoseDetectionForVideo()
+        
+        // Setup video controls
+        setupVideoControls()
+        
+        // Initialize VideoManager
+        initializeVideoManager()
+    }
+    
+    /**
+     * Initialize pose detection for VIDEO mode
+     */
+    private fun initializePoseDetectionForVideo() {
+        poseLandmarkerHelper = PoseLandmarkerHelper(
+            context = applicationContext,
+            listener = this
+        )
+        
+        lifecycleScope.launch(Dispatchers.IO) {
+            poseLandmarkerHelper?.initializeForVideo(modelType = ModelType.FULL, useGpu = true)
+            
+            launch(Dispatchers.Main) {
+                if (poseLandmarkerHelper?.isVideoModeReady() == true) {
+                    Log.d(TAG, "Pose detection VIDEO mode ready")
+                }
+            }
+        }
+    }
+    
+    /**
+     * Setup video playback controls
+     */
+    private fun setupVideoControls() {
+        // Play/Pause button
+        binding.btnVideoPlayPause.setOnClickListener {
+            videoManager?.togglePlayPause()
+        }
+        
+        // Rewind button (-10s)
+        binding.btnVideoRewind.setOnClickListener {
+            videoManager?.rewind(10_000)
+        }
+        
+        // Forward button (+10s)
+        binding.btnVideoForward.setOnClickListener {
+            videoManager?.fastForward(10_000)
+        }
+        
+        // SeekBar
+        binding.videoSeekBar.setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
+            private var wasPlaying = false
+            
+            override fun onProgressChanged(seekBar: SeekBar?, progress: Int, fromUser: Boolean) {
+                if (fromUser) {
+                    val duration = videoManager?.getDuration() ?: 0L
+                    val position = (progress / 100f * duration).toLong()
+                    binding.tvVideoCurrentTime.text = formatTimeMs(position)
+                }
+            }
+            
+            override fun onStartTrackingTouch(seekBar: SeekBar?) {
+                wasPlaying = videoManager?.isPlaying() ?: false
+                videoManager?.pause()
+            }
+            
+            override fun onStopTrackingTouch(seekBar: SeekBar?) {
+                val progress = seekBar?.progress ?: 0
+                val duration = videoManager?.getDuration() ?: 0L
+                val position = (progress / 100f * duration).toLong()
+                videoManager?.seekTo(position)
+                
+                if (wasPlaying) {
+                    videoManager?.play()
+                }
+            }
+        })
+        
+        // Save results button
+        binding.btnSaveResults.setOnClickListener {
+            saveVideoAnalysisResults()
+        }
+    }
+    
+    /**
+     * Initialize VideoManager for playback
+     */
+    private fun initializeVideoManager() {
+        val uri = videoUri ?: return
+        
+        videoManager = VideoManager(
+            context = this,
+            textureView = binding.videoTextureView,
+            onFrameAvailable = { bitmap, timestampMs ->
+                processVideoFrame(bitmap, timestampMs)
+            },
+            onPlaybackStateChanged = { state ->
+                handleVideoPlaybackState(state)
+            },
+            onProgressChanged = { currentMs, durationMs ->
+                updateVideoProgress(currentMs, durationMs)
+            },
+            onSeekPerformed = {
+                handleVideoSeek()
+            },
+            onVideoEnded = {
+                handleVideoEnded()
+            }
+        )
+        
+        videoManager?.loadVideo(uri)
+    }
+    
+    /**
+     * Process a video frame for pose analysis
+     */
+    private fun processVideoFrame(bitmap: android.graphics.Bitmap, timestampMs: Long) {
+        // Only process if in training state
+        if (trainingState != TrainingState.TRAINING) return
+        
+        // Detect pose from bitmap (synchronous for VIDEO mode)
+        val poseResult = poseLandmarkerHelper?.detectPoseFromBitmap(bitmap, timestampMs)
+        
+        if (poseResult != null) {
+            lifecycleScope.launch(Dispatchers.Main) {
+                updateFps()
+                
+                // Smooth landmarks
+                val smoothedLandmarks = landmarkSmoother.smooth(
+                    poseResult.landmarks,
+                    timestampMs
+                )
+                
+                // Get world landmarks for 3D angle calculation
+                val worldLandmarks = poseResult.worldLandmarks?.let {
+                    landmarkSmoother.convertWorld(it)
+                }
+                
+                // Calculate angles
+                val angles = if (worldLandmarks != null) {
+                    AngleCalculator.calculateAllAnglesSmoothed(
+                        worldLandmarks,
+                        visibilityThreshold = 0.3f,
+                        use3D = true
+                    )
+                } else {
+                    AngleCalculator.calculateAllAnglesSmoothed(
+                        smoothedLandmarks,
+                        visibilityThreshold = 0.3f
+                    )
+                }
+                
+                currentAngles = angles
+                
+                // Process frame through training engine
+                trainingEngine?.processFrame(angles, smoothedLandmarks)
+                
+                // Get arrow infos for visual feedback
+                val arrowInfos = trainingEngine?.arrowInfos?.value ?: emptyMap()
+                
+                // Get position errors for visual feedback
+                val positionErrors = trainingEngine?.positionErrors?.value ?: emptyList()
+                
+                // Update skeleton overlay
+                binding.skeletonOverlay.updateWithArrowInfos(
+                    smoothedLandmarks = smoothedLandmarks,
+                    inputImageWidth = poseResult.imageWidth,
+                    inputImageHeight = poseResult.imageHeight,
+                    angles = angles,
+                    arrowInfos = arrowInfos,
+                    positionErrors = positionErrors
+                )
+            }
+        } else {
+            lifecycleScope.launch(Dispatchers.Main) {
+                binding.skeletonOverlay.clear()
+            }
+        }
+    }
+    
+    /**
+     * Handle video playback state changes
+     */
+    private fun handleVideoPlaybackState(state: VideoManager.PlaybackState) {
+        Log.d(TAG, "Video playback state: $state")
+        
+        when (state) {
+            VideoManager.PlaybackState.READY -> {
+                // Video loaded, update duration
+                val duration = videoManager?.getDuration() ?: 0L
+                binding.tvVideoDuration.text = formatTimeMs(duration)
+                
+                // Show ready state
+                Toast.makeText(this, "Video ready. Press play to start analysis.", Toast.LENGTH_SHORT).show()
+            }
+            
+            VideoManager.PlaybackState.PLAYING -> {
+                // Update play/pause button
+                binding.btnVideoPlayPause.setImageResource(android.R.drawable.ic_media_pause)
+                
+                // Start training if not already started
+                if (trainingState != TrainingState.TRAINING && trainingState != TrainingState.COMPLETED) {
+                    startVideoTraining()
+                }
+            }
+            
+            VideoManager.PlaybackState.PAUSED -> {
+                binding.btnVideoPlayPause.setImageResource(android.R.drawable.ic_media_play)
+            }
+            
+            VideoManager.PlaybackState.ENDED -> {
+                binding.btnVideoPlayPause.setImageResource(android.R.drawable.ic_media_play)
+            }
+            
+            VideoManager.PlaybackState.ERROR -> {
+                Toast.makeText(this, "Error playing video", Toast.LENGTH_LONG).show()
+            }
+            
+            else -> {}
+        }
+    }
+    
+    /**
+     * Start training for video mode (no setup pose or countdown)
+     */
+    private fun startVideoTraining() {
+        updateUIForState(TrainingState.TRAINING)
+        trainingEngine?.start()
+        
+        // Enable training mode in skeleton overlay
+        val trackedIndices = trainingEngine?.getTrackedLandmarkIndices()?.toSet() ?: emptySet()
+        val movingSegments = getMovingSegments()
+        binding.skeletonOverlay.setTrainingMode(true, trackedIndices, movingSegments)
+        
+        // Observe training state
+        observeTrainingState()
+        
+        Log.d(TAG, "Video training started")
+    }
+    
+    /**
+     * Update video progress UI
+     */
+    private fun updateVideoProgress(currentMs: Long, durationMs: Long) {
+        binding.tvVideoCurrentTime.text = formatTimeMs(currentMs)
+        
+        if (durationMs > 0) {
+            val progress = (currentMs.toFloat() / durationMs.toFloat() * 100).toInt()
+            binding.videoSeekBar.progress = progress
+        }
+    }
+    
+    /**
+     * Handle video seek - reset analysis state
+     * 
+     * IMPORTANT: MediaPipe VIDEO mode expects monotonically increasing timestamps.
+     * When seeking, we must reset the landmarker and training state.
+     */
+    private fun handleVideoSeek() {
+        Log.d(TAG, "Video seek performed - resetting analysis state")
+        
+        // Reset PoseLandmarker for VIDEO mode
+        poseLandmarkerHelper?.resetForVideo()
+        
+        // Reset LandmarkSmoother
+        landmarkSmoother.reset()
+        
+        // Reset TrainingEngine
+        trainingEngine?.stop()
+        trainingEngine?.start()
+        
+        // Show message to user
+        Toast.makeText(this, "Analysis reset", Toast.LENGTH_SHORT).show()
+    }
+    
+    /**
+     * Handle video ended - complete training
+     */
+    private fun handleVideoEnded() {
+        Log.d(TAG, "Video ended - completing training")
+        
+        if (trainingState == TrainingState.TRAINING) {
+            completeTraining()
+        }
+    }
+    
+    /**
+     * Save video analysis results
+     */
+    private fun saveVideoAnalysisResults() {
+        val engine = trainingEngine ?: return
+        val config = exerciseConfig ?: return
+        val uri = videoUri?.toString() ?: return
+        
+        val summary = engine.stop()
+        
+        // Create VideoAnalysisResult
+        val result = summary.toVideoAnalysisResult(
+            exerciseId = config.fileName,
+            exerciseName = config.name,
+            videoUri = uri,
+            videoDurationMs = videoManager?.getDuration() ?: 0L,
+            difficulty = difficulty,
+            holdDurationMs = if (engine.isHoldExercise) engine.holdElapsedMs.value else null,
+            holdTargetMs = if (engine.isHoldExercise) engine.getTargetDurationMs() else null,
+            gracePeriodsUsed = if (engine.isHoldExercise) engine.getGracePeriodCount() else null,
+            holdCompleted = if (engine.isHoldExercise) engine.isHoldCompleted() else null
+        )
+        
+        // Save to storage
+        val saved = analysisResultStorage?.save(result) ?: false
+        
+        if (saved) {
+            Toast.makeText(this, "Results saved!", Toast.LENGTH_SHORT).show()
+            binding.btnSaveResults.isEnabled = false
+            binding.btnSaveResults.text = "Saved ✓"
+        } else {
+            Toast.makeText(this, "Failed to save results", Toast.LENGTH_SHORT).show()
+        }
+    }
+
     // ==================== Lifecycle ====================
 
     override fun onDestroy() {
         super.onDestroy()
         countdownTimer?.cancel()
         cameraManager?.stopCamera()
+        videoManager?.release()
         poseLandmarkerHelper?.close()
+        poseLandmarkerHelper?.closeVideoMode()
         feedbackManager?.release()
     }
 }

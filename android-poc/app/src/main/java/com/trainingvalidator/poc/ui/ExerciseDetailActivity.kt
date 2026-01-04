@@ -1,10 +1,19 @@
 package com.trainingvalidator.poc.ui
 
+import android.Manifest
 import android.content.Intent
+import android.content.pm.PackageManager
+import android.net.Uri
+import android.os.Build
 import android.os.Bundle
+import android.provider.MediaStore
 import android.view.View
 import android.widget.Toast
+import androidx.activity.result.ActivityResultLauncher
+import androidx.activity.result.PickVisualMediaRequest
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.content.ContextCompat
 import com.trainingvalidator.poc.databinding.ActivityExerciseDetailBinding
 import com.trainingvalidator.poc.training.loader.ExerciseLoader
 import com.trainingvalidator.poc.training.models.CountingMethod
@@ -32,6 +41,59 @@ class ExerciseDetailActivity : AppCompatActivity() {
     private var exerciseConfig: ExerciseConfig? = null
     private var selectedDifficulty: DifficultyType = DifficultyType.BEGINNER
     private var selectedVariantIndex: Int = 0
+    
+    // Modern Photo Picker (Android 13+ with backport) - Opens Gallery directly
+    private val photoPickerLauncher = registerForActivityResult(
+        ActivityResultContracts.PickVisualMedia()
+    ) { uri: Uri? ->
+        handleVideoSelection(uri)
+    }
+    
+    // Legacy video picker for older devices - Opens Gallery
+    private val legacyPickerLauncher = registerForActivityResult(
+        ActivityResultContracts.StartActivityForResult()
+    ) { result ->
+        if (result.resultCode == RESULT_OK) {
+            handleVideoSelection(result.data?.data)
+        } else {
+            Toast.makeText(this, "No video selected", Toast.LENGTH_SHORT).show()
+        }
+    }
+    
+    // Permission request launcher
+    private val permissionLauncher = registerForActivityResult(
+        ActivityResultContracts.RequestPermission()
+    ) { isGranted ->
+        if (isGranted) {
+            launchVideoPicker()
+        } else {
+            Toast.makeText(
+                this, 
+                "Permission required to access videos", 
+                Toast.LENGTH_LONG
+            ).show()
+        }
+    }
+    
+    /**
+     * Handle video selection from any picker
+     */
+    private fun handleVideoSelection(uri: Uri?) {
+        if (uri != null) {
+            // Grant read permission for the URI
+            try {
+                contentResolver.takePersistableUriPermission(
+                    uri,
+                    Intent.FLAG_GRANT_READ_URI_PERMISSION
+                )
+            } catch (e: Exception) {
+                // Permission might not be persistable, continue anyway
+            }
+            startVideoTraining(uri)
+        } else {
+            Toast.makeText(this, "No video selected", Toast.LENGTH_SHORT).show()
+        }
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -94,9 +156,19 @@ class ExerciseDetailActivity : AppCompatActivity() {
         // Setup tracked joints display
         displayTrackedJoints()
         
-        // Start button
+        // Camera mode button
+        binding.btnStartCamera.setOnClickListener {
+            startCameraTraining()
+        }
+        
+        // Video mode button
+        binding.btnStartVideo.setOnClickListener {
+            openVideoPicker()
+        }
+        
+        // Legacy start button (hidden)
         binding.btnStart.setOnClickListener {
-            startTraining()
+            startCameraTraining()
         }
     }
 
@@ -232,14 +304,92 @@ class ExerciseDetailActivity : AppCompatActivity() {
             .joinToString(" ") { it.replaceFirstChar { c -> c.uppercase() } }
     }
 
-    private fun startTraining() {
+    /**
+     * Open video picker to select a video for analysis
+     * Checks for required permissions first
+     */
+    private fun openVideoPicker() {
+        val permission = getRequiredVideoPermission()
+        
+        when {
+            // Permission already granted
+            ContextCompat.checkSelfPermission(this, permission) == PackageManager.PERMISSION_GRANTED -> {
+                launchVideoPicker()
+            }
+            // Should show rationale
+            shouldShowRequestPermissionRationale(permission) -> {
+                Toast.makeText(
+                    this,
+                    "Video access permission is needed to analyze exercise videos",
+                    Toast.LENGTH_LONG
+                ).show()
+                permissionLauncher.launch(permission)
+            }
+            // Request permission
+            else -> {
+                permissionLauncher.launch(permission)
+            }
+        }
+    }
+    
+    /**
+     * Get the required permission based on Android version
+     */
+    private fun getRequiredVideoPermission(): String {
+        return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            Manifest.permission.READ_MEDIA_VIDEO
+        } else {
+            Manifest.permission.READ_EXTERNAL_STORAGE
+        }
+    }
+    
+    /**
+     * Launch the actual video picker after permission is granted
+     * Uses Photo Picker on supported devices, falls back to ACTION_PICK
+     */
+    private fun launchVideoPicker() {
+        // Check if Photo Picker is available (Android 11+ with Google Play services backport)
+        if (ActivityResultContracts.PickVisualMedia.isPhotoPickerAvailable(this)) {
+            // Use modern Photo Picker - shows Gallery with recent videos
+            photoPickerLauncher.launch(
+                PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.VideoOnly)
+            )
+        } else {
+            // Fallback to legacy ACTION_PICK - also opens Gallery
+            val intent = Intent(Intent.ACTION_PICK, MediaStore.Video.Media.EXTERNAL_CONTENT_URI).apply {
+                type = "video/*"
+            }
+            legacyPickerLauncher.launch(intent)
+        }
+    }
+    
+    /**
+     * Start camera-based training
+     */
+    private fun startCameraTraining() {
         val exercise = exerciseConfig ?: return
         
         val intent = Intent(this, TrainingActivity::class.java).apply {
-            // Use the stored file name
             putExtra(TrainingActivity.EXTRA_EXERCISE_NAME, exercise.fileName)
             putExtra(TrainingActivity.EXTRA_DIFFICULTY, selectedDifficulty.name.lowercase())
             putExtra(TrainingActivity.EXTRA_POSE_VARIANT, selectedVariantIndex)
+            putExtra(TrainingActivity.EXTRA_TRAINING_MODE, TrainingActivity.MODE_CAMERA)
+        }
+        startActivity(intent)
+    }
+    
+    /**
+     * Start video-based training
+     */
+    private fun startVideoTraining(videoUri: Uri) {
+        val exercise = exerciseConfig ?: return
+        
+        val intent = Intent(this, TrainingActivity::class.java).apply {
+            putExtra(TrainingActivity.EXTRA_EXERCISE_NAME, exercise.fileName)
+            putExtra(TrainingActivity.EXTRA_DIFFICULTY, selectedDifficulty.name.lowercase())
+            putExtra(TrainingActivity.EXTRA_POSE_VARIANT, selectedVariantIndex)
+            putExtra(TrainingActivity.EXTRA_TRAINING_MODE, TrainingActivity.MODE_VIDEO)
+            putExtra(TrainingActivity.EXTRA_VIDEO_URI, videoUri)
         }
         startActivity(intent)
     }
