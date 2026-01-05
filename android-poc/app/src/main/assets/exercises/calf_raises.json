@@ -76,7 +76,8 @@
           },
           "movingSegment": {
             "from": "left_ankle",
-            "to": "left_heel"
+            "to": "left_heel",
+            "invertArrow": false
           },
           "errorMessages": {
             "tooLow": {
@@ -109,7 +110,8 @@
           },
           "movingSegment": {
             "from": "right_ankle",
-            "to": "right_heel"
+            "to": "right_heel",
+            "invertArrow": false
           },
           "errorMessages": {
             "tooLow": {

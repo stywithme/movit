@@ -145,7 +145,8 @@
           },
           "movingSegment": {
             "from": "right_shoulder",
-            "to": "right_elbow"
+            "to": "right_elbow",
+            "invertArrow": false
           },
           "errorMessages": {
             "tooLow": { "ar": "", "en": "" },

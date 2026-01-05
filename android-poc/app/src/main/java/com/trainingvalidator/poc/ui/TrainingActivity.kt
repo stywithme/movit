@@ -2,6 +2,7 @@ package com.trainingvalidator.poc.ui
 
 import android.Manifest
 import android.content.pm.PackageManager
+import android.graphics.Color
 import android.os.Bundle
 import android.os.CountDownTimer
 import android.util.Log
@@ -36,6 +37,9 @@ import com.trainingvalidator.poc.training.models.JointRole
 import com.trainingvalidator.poc.training.engine.PositionError
 import com.trainingvalidator.poc.training.engine.CameraPositionWarning
 import com.trainingvalidator.poc.analysis.JointAngles
+import com.trainingvalidator.poc.ui.components.AnimationUtils
+import com.trainingvalidator.poc.ui.components.GlassmorphicMessageView
+import com.trainingvalidator.poc.ui.components.VignetteOverlayView
 import com.trainingvalidator.poc.video.VideoManager
 import com.trainingvalidator.poc.video.VideoAnalysisResult
 import com.trainingvalidator.poc.video.toVideoAnalysisResult
@@ -47,13 +51,18 @@ import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 
 /**
- * TrainingActivity - Main training screen with exercise validation
+ * TrainingActivity - Professional Training Screen with Glassmorphic UI
+ * 
+ * Features:
+ * - Mode-aware feedback (Camera: Audio + Haptic, Video: Glassmorphic)
+ * - Smart animations (Slot counter, Ambient alerts, Countdown)
+ * - Minimalist design with focus system
  * 
  * Flow:
  * 1. SETUP_POSE: Show required pose, validate user is in correct position
- * 2. COUNTDOWN: 3-2-1 countdown when pose is correct
- * 3. TRAINING: Active training with rep counting
- * 4. COMPLETED: Show summary
+ * 2. COUNTDOWN: 3-2-1 countdown with animated numbers
+ * 3. TRAINING: Active training with visual/audio feedback
+ * 4. COMPLETED: Show summary with celebration
  */
 class TrainingActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetectionListener {
 
@@ -77,6 +86,12 @@ class TrainingActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetection
         
         // Countdown
         private const val COUNTDOWN_SECONDS = 3
+        
+        // Colors
+        private val COLOR_CORRECT = Color.parseColor("#00E676")
+        private val COLOR_WARNING = Color.parseColor("#FFC107")
+        private val COLOR_ERROR = Color.parseColor("#FF5252")
+        private val COLOR_DEFAULT = Color.WHITE
     }
 
     private lateinit var binding: ActivityTrainingBinding
@@ -105,11 +120,11 @@ class TrainingActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetection
     
     // State machine
     private enum class TrainingState {
-        SETUP_POSE,     // Waiting for user to get into position
-        COUNTDOWN,      // 3-2-1 countdown
-        TRAINING,       // Active training
-        PAUSED,         // Paused
-        COMPLETED       // Training completed
+        SETUP_POSE,
+        COUNTDOWN,
+        TRAINING,
+        PAUSED,
+        COMPLETED
     }
     private var trainingState = TrainingState.SETUP_POSE
     
@@ -119,6 +134,7 @@ class TrainingActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetection
     
     // State
     private var useFrontCamera = true
+    private var lastRepCount = 0
     
     // FPS calculation
     private var frameCount = 0
@@ -127,7 +143,7 @@ class TrainingActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetection
     
     // Pose validation
     private var poseValidFrames = 0
-    private val requiredValidFrames = 10 // ~0.3 seconds at 30fps
+    private val requiredValidFrames = 10
 
     // Permission launcher
     private val cameraPermissionLauncher = registerForActivityResult(
@@ -184,6 +200,9 @@ class TrainingActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetection
         } else {
             checkCameraPermission()
         }
+        
+        // Observe visual messages for Glassmorphic UI
+        observeVisualMessages()
     }
 
     private fun setupFullscreen() {
@@ -195,7 +214,6 @@ class TrainingActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetection
     }
     
     private fun loadExercise(exerciseName: String, difficultyStr: String) {
-        // Load exercise config from assets
         exerciseConfig = ExerciseLoader.load(assets, exerciseName)
         
         if (exerciseConfig == null) {
@@ -218,7 +236,7 @@ class TrainingActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetection
             poseVariantIndex = poseVariantIndex
         )
         
-        // Initialize feedback manager
+        // Initialize feedback manager with mode awareness
         feedbackManager = FeedbackManager(
             context = this,
             config = FeedbackConfig(
@@ -226,11 +244,12 @@ class TrainingActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetection
                 enableHaptic = true,
                 language = "en"
             )
-        )
+        ).apply {
+            this.isVideoMode = this@TrainingActivity.isVideoMode
+        }
         feedbackManager?.initialize()
         
-        Log.d(TAG, "Loaded exercise: ${exerciseConfig!!.name.en}")
-        Log.d(TAG, "Difficulty: $difficulty")
+        Log.d(TAG, "Loaded exercise: ${exerciseConfig!!.name.en}, Mode: $trainingMode")
     }
 
     private fun setupUI() {
@@ -263,6 +282,39 @@ class TrainingActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetection
         showPoseRequirements()
     }
     
+    /**
+     * Observe visual messages from FeedbackManager for Glassmorphic UI
+     */
+    private fun observeVisualMessages() {
+        lifecycleScope.launch {
+            feedbackManager?.visualMessages?.collectLatest { message ->
+                showGlassmorphicMessage(message)
+            }
+        }
+    }
+    
+    /**
+     * Show message using Glassmorphic UI component
+     */
+    private fun showGlassmorphicMessage(message: FeedbackManager.VisualMessage) {
+        val type = when (message.type) {
+            FeedbackManager.MessageType.TIP -> GlassmorphicMessageView.TYPE_TIP
+            FeedbackManager.MessageType.WARNING -> GlassmorphicMessageView.TYPE_WARNING
+            FeedbackManager.MessageType.ERROR -> GlassmorphicMessageView.TYPE_ERROR
+            FeedbackManager.MessageType.MOTIVATION -> GlassmorphicMessageView.TYPE_MOTIVATION
+            FeedbackManager.MessageType.INFO -> GlassmorphicMessageView.TYPE_INFO
+        }
+        
+        binding.glassmorphicMessage.showMessage(message.text, type, message.durationMs)
+        
+        // Also trigger vignette for warnings/errors
+        when (message.type) {
+            FeedbackManager.MessageType.ERROR -> binding.vignetteOverlay.showError()
+            FeedbackManager.MessageType.WARNING -> binding.vignetteOverlay.showWarning()
+            else -> {}
+        }
+    }
+    
     private fun showPoseRequirements() {
         val variant = exerciseConfig?.poseVariants?.getOrNull(poseVariantIndex) ?: return
         val primaryJoints = variant.getPrimaryJoints()
@@ -293,15 +345,19 @@ class TrainingActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetection
             TrainingState.SETUP_POSE -> {
                 binding.setupPosePanel.visibility = View.VISIBLE
                 binding.countdownPanel.visibility = View.GONE
-                binding.trainingPanel.visibility = View.GONE
+                binding.heroCounterContainer.visibility = View.GONE
+                binding.tvProgress.visibility = View.GONE
                 binding.completedPanel.visibility = View.GONE
                 binding.btnPauseResume.visibility = View.GONE
+                binding.progressContainer.visibility = View.GONE
             }
             
             TrainingState.COUNTDOWN -> {
-                binding.setupPosePanel.visibility = View.GONE
-                binding.countdownPanel.visibility = View.VISIBLE
-                binding.trainingPanel.visibility = View.GONE
+                AnimationUtils.slideOutPanel(binding.setupPosePanel, AnimationUtils.Direction.BOTTOM) {
+                    binding.countdownPanel.visibility = View.VISIBLE
+                }
+                binding.heroCounterContainer.visibility = View.GONE
+                binding.tvProgress.visibility = View.GONE
                 binding.completedPanel.visibility = View.GONE
                 binding.btnPauseResume.visibility = View.GONE
             }
@@ -309,10 +365,16 @@ class TrainingActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetection
             TrainingState.TRAINING -> {
                 binding.setupPosePanel.visibility = View.GONE
                 binding.countdownPanel.visibility = View.GONE
-                binding.trainingPanel.visibility = View.VISIBLE
+                
+                // Show hero counter with animation
+                AnimationUtils.bounceIn(binding.heroCounterContainer)
+                binding.heroCounterContainer.visibility = View.VISIBLE
+                binding.tvProgress.visibility = View.VISIBLE
+                
                 binding.completedPanel.visibility = View.GONE
                 binding.btnPauseResume.visibility = View.VISIBLE
                 binding.btnPauseResume.text = "Pause"
+                binding.progressContainer.visibility = View.VISIBLE
             }
             
             TrainingState.PAUSED -> {
@@ -320,11 +382,16 @@ class TrainingActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetection
             }
             
             TrainingState.COMPLETED -> {
+                AnimationUtils.slideOutPanel(binding.heroCounterContainer, AnimationUtils.Direction.TOP)
                 binding.setupPosePanel.visibility = View.GONE
                 binding.countdownPanel.visibility = View.GONE
-                binding.trainingPanel.visibility = View.GONE
+                binding.tvProgress.visibility = View.GONE
                 binding.completedPanel.visibility = View.VISIBLE
                 binding.btnPauseResume.visibility = View.GONE
+                binding.progressContainer.visibility = View.GONE
+                
+                // Clear any alerts
+                binding.vignetteOverlay.clear()
             }
         }
     }
@@ -338,23 +405,18 @@ class TrainingActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetection
         val statusText = StringBuilder()
         
         for (joint in primaryJoints) {
-            val angle = trainingEngine?.let { engine ->
-                val trackedAngles = mutableMapOf<String, Double>()
-                // Get angle for this joint
-                val angleValue = when (joint.joint) {
-                    "left_shoulder" -> angles.leftShoulder
-                    "right_shoulder" -> angles.rightShoulder
-                    "left_elbow" -> angles.leftElbow
-                    "right_elbow" -> angles.rightElbow
-                    "left_hip" -> angles.leftHip
-                    "right_hip" -> angles.rightHip
-                    "left_knee" -> angles.leftKnee
-                    "right_knee" -> angles.rightKnee
-                    "left_ankle" -> angles.leftAnkle
-                    "right_ankle" -> angles.rightAnkle
-                    else -> null
-                }
-                angleValue
+            val angle = when (joint.joint) {
+                "left_shoulder" -> angles.leftShoulder
+                "right_shoulder" -> angles.rightShoulder
+                "left_elbow" -> angles.leftElbow
+                "right_elbow" -> angles.rightElbow
+                "left_hip" -> angles.leftHip
+                "right_hip" -> angles.rightHip
+                "left_knee" -> angles.leftKnee
+                "right_knee" -> angles.rightKnee
+                "left_ankle" -> angles.leftAnkle
+                "right_ankle" -> angles.rightAnkle
+                else -> null
             }
             
             if (angle == null) {
@@ -384,20 +446,29 @@ class TrainingActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetection
         countdownTimer = object : CountDownTimer((COUNTDOWN_SECONDS * 1000).toLong(), 1000) {
             override fun onTick(millisUntilFinished: Long) {
                 countdownValue = (millisUntilFinished / 1000).toInt() + 1
-                binding.tvCountdown.text = countdownValue.toString()
                 
-                // Vibrate
-                feedbackManager?.speak(countdownValue.toString())
+                // Animate countdown number
+                AnimationUtils.animateCountdown(binding.tvCountdown, countdownValue.toString())
+                
+                // Audio feedback
+                feedbackManager?.speakCountdown(countdownValue)
             }
             
             override fun onFinish() {
-                startTraining()
+                // Animate "GO!"
+                AnimationUtils.animateGoText(binding.tvCountdown) {
+                    startTraining()
+                }
+                feedbackManager?.speakGo()
             }
         }.start()
     }
     
     private fun startTraining() {
         updateUIForState(TrainingState.TRAINING)
+        
+        // Reset message anti-spam state at the start of each training session
+        feedbackManager?.resetMessageStates()
         trainingEngine?.start()
         
         // Enable training mode in skeleton overlay with moving segments
@@ -407,13 +478,8 @@ class TrainingActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetection
         
         // Observe training state
         observeTrainingState()
-        
-        feedbackManager?.speak("Go!")
     }
     
-    /**
-     * Get moving segments from exercise config
-     */
     private fun getMovingSegments(): Map<String, com.trainingvalidator.poc.training.models.MovingSegment> {
         val variant = exerciseConfig?.poseVariants?.getOrNull(poseVariantIndex) ?: return emptyMap()
         val segments = mutableMapOf<String, com.trainingvalidator.poc.training.models.MovingSegment>()
@@ -448,7 +514,6 @@ class TrainingActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetection
         
         // Show summary based on exercise type
         if (engine.isHoldExercise) {
-            // Hold exercise summary
             val holdElapsed = engine.holdElapsedMs.value ?: 0L
             val targetMs = engine.getTargetDurationMs()
             
@@ -457,7 +522,6 @@ class TrainingActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetection
             binding.tvSummaryAccuracy.text = "Grace periods: ${engine.getGracePeriodCount()}"
             binding.tvSummaryDuration.text = summary.getFormattedDuration()
         } else {
-            // Rep-based exercise summary
             binding.tvSummaryReps.text = "${summary.totalReps}"
             binding.tvSummaryCorrect.text = "${summary.correctReps} correct"
             binding.tvSummaryAccuracy.text = "${String.format("%.0f", summary.accuracy)}%"
@@ -473,19 +537,18 @@ class TrainingActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetection
         val engine = trainingEngine ?: return
         
         if (engine.isHoldExercise) {
-            // Hold exercise: Observe hold-specific flows
             observeHoldState(engine)
         } else {
-            // Rep-based exercise: Observe rep count
             observeRepState(engine)
         }
         
-        // Common observations for both modes
-        
-        // Observe phase
+        // Observe phase with animation
         lifecycleScope.launch {
             engine.currentPhase.collectLatest { phase ->
-                binding.tvPhase.text = getPhaseDisplayName(phase, engine.isHoldExercise)
+                AnimationUtils.crossfadeText(
+                    binding.tvPhase,
+                    getPhaseDisplayName(phase, engine.isHoldExercise)
+                )
             }
         }
         
@@ -493,6 +556,14 @@ class TrainingActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetection
         lifecycleScope.launch {
             engine.arrowInfos.collectLatest { arrowInfos ->
                 binding.skeletonOverlay.setArrowInfos(arrowInfos)
+                
+                // Update vignette based on error state
+                val hasErrors = arrowInfos.any { it.value.isError }
+                if (hasErrors) {
+                    binding.vignetteOverlay.showError()
+                } else {
+                    binding.vignetteOverlay.clear()
+                }
             }
         }
         
@@ -514,50 +585,50 @@ class TrainingActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetection
         }
     }
     
-    /**
-     * Observe rep-based exercise state
-     */
     private fun observeRepState(engine: TrainingEngine) {
         lifecycleScope.launch {
             engine.repCount.collectLatest { count ->
-                binding.tvRepCount.text = count.toString()
+                // Animate counter change (Slot Machine effect)
+                if (count != lastRepCount && count > 0) {
+                    AnimationUtils.animateCounterChange(
+                        binding.tvRepCount,
+                        count.toString(),
+                        AnimationUtils.SlideDirection.UP
+                    )
+                } else {
+                    binding.tvRepCount.text = count.toString()
+                }
+                lastRepCount = count
                 
                 // Update progress
                 val target = engine.getTargetReps()
                 binding.tvProgress.text = "$count / $target"
+                
+                // Update progress bar
+                val progress = if (target > 0) (count.toFloat() / target * 100).toInt() else 0
+                binding.progressBar.progress = progress
+                binding.tvProgressPercent.text = "$progress%"
             }
         }
     }
     
-    /**
-     * Observe hold exercise state
-     */
     private fun observeHoldState(engine: TrainingEngine) {
-        // Observe hold elapsed/remaining time
         lifecycleScope.launch {
             engine.holdElapsedMs.collectLatest { elapsedMs ->
                 elapsedMs?.let {
-                    val remainingMs = engine.holdRemainingMs.value ?: 0L
                     val targetMs = engine.getTargetDurationMs()
                     
-                    // Update time display
                     binding.tvRepCount.text = formatTimeMs(it)
                     binding.tvProgress.text = "${formatTimeMs(it)} / ${formatTimeMs(targetMs)}"
+                    
+                    // Update progress
+                    val progress = if (targetMs > 0) (it.toFloat() / targetMs * 100).toInt().coerceAtMost(100) else 0
+                    binding.progressBar.progress = progress
+                    binding.tvProgressPercent.text = "$progress%"
                 }
             }
         }
         
-        // Observe hold progress
-        lifecycleScope.launch {
-            engine.holdProgress.collectLatest { progress ->
-                progress?.let {
-                    // Could update a progress bar here if available
-                    // binding.holdProgressBar.progress = (it * 100).toInt()
-                }
-            }
-        }
-        
-        // Observe hold state for UI updates
         lifecycleScope.launch {
             engine.holdState.collectLatest { holdState ->
                 holdState?.let {
@@ -566,47 +637,30 @@ class TrainingActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetection
             }
         }
         
-        // Observe grace period
         lifecycleScope.launch {
             engine.graceRemainingMs.collectLatest { graceMs ->
                 if (graceMs != null && graceMs > 0) {
-                    // Show grace period warning
                     binding.tvPhase.text = "⚠️ Return! ${String.format("%.1f", graceMs / 1000f)}s"
-                    binding.tvPhase.setTextColor(getColor(android.R.color.holo_orange_light))
+                    binding.tvPhase.setTextColor(COLOR_WARNING)
+                    binding.vignetteOverlay.showWarning()
                 } else {
-                    // Reset phase text color
-                    binding.tvPhase.setTextColor(getColor(android.R.color.white))
+                    binding.tvPhase.setTextColor(COLOR_DEFAULT)
                 }
             }
         }
     }
     
-    /**
-     * Update UI based on hold state
-     */
     private fun updateUIForHoldState(holdState: HoldState) {
-        when (holdState) {
-            HoldState.IDLE -> {
-                binding.tvRepCount.setTextColor(getColor(android.R.color.white))
-            }
-            HoldState.HOLDING -> {
-                binding.tvRepCount.setTextColor(getColor(android.R.color.holo_green_light))
-            }
-            HoldState.GRACE_PERIOD -> {
-                binding.tvRepCount.setTextColor(getColor(android.R.color.holo_orange_light))
-            }
-            HoldState.COMPLETED -> {
-                binding.tvRepCount.setTextColor(getColor(android.R.color.holo_green_light))
-            }
-            HoldState.FAILED -> {
-                binding.tvRepCount.setTextColor(getColor(android.R.color.holo_red_light))
-            }
+        val color = when (holdState) {
+            HoldState.IDLE -> COLOR_DEFAULT
+            HoldState.HOLDING -> COLOR_CORRECT
+            HoldState.GRACE_PERIOD -> COLOR_WARNING
+            HoldState.COMPLETED -> COLOR_CORRECT
+            HoldState.FAILED -> COLOR_ERROR
         }
+        binding.tvRepCount.setTextColor(color)
     }
     
-    /**
-     * Format milliseconds to mm:ss format
-     */
     private fun formatTimeMs(ms: Long): String {
         val totalSeconds = ms / 1000
         val minutes = totalSeconds / 60
@@ -631,36 +685,27 @@ class TrainingActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetection
     private fun handleFeedbackEvent(event: FeedbackEvent) {
         when (event) {
             is FeedbackEvent.RepCompleted -> {
-                val color = if (event.isCorrect) {
-                    getColor(android.R.color.holo_green_light)
-                } else {
-                    getColor(android.R.color.holo_orange_light)
-                }
-                binding.tvRepCount.setTextColor(color)
-                
-                // Reset color after 500ms
-                binding.tvRepCount.postDelayed({
-                    binding.tvRepCount.setTextColor(getColor(android.R.color.white))
-                }, 500)
+                // Pulse animation on rep complete
+                val color = if (event.isCorrect) COLOR_CORRECT else COLOR_WARNING
+                AnimationUtils.repCompletedPulse(
+                    binding.tvRepCount,
+                    event.isCorrect,
+                    COLOR_CORRECT,
+                    COLOR_WARNING,
+                    COLOR_DEFAULT
+                )
             }
             
             is FeedbackEvent.JointErrorDetected -> {
-                // DISABLED: Text messages replaced with visual arrows
-                // The SkeletonOverlayView now shows:
-                // - Green arrows for correct movement direction
-                // - Red arrows for error direction
-                // - Red colored connections for error joints
+                // Visual feedback handled by SkeletonOverlay and Vignette
             }
-            
-            // ==================== Hold Events ====================
             
             is FeedbackEvent.HoldStarted -> {
                 Log.d(TAG, "Hold started!")
             }
             
             is FeedbackEvent.HoldGraceStarted -> {
-                // Grace period warning - visual feedback handled by observeHoldState
-                Log.d(TAG, "Grace period started: ${event.gracePeriodMs}ms")
+                AnimationUtils.shake(binding.tvRepCount)
             }
             
             is FeedbackEvent.HoldResumed -> {
@@ -668,31 +713,25 @@ class TrainingActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetection
             }
             
             is FeedbackEvent.HoldCompleted -> {
-                Log.d(TAG, "Hold completed! Total: ${event.totalMs}ms, Quality: ${event.formQuality}")
+                Log.d(TAG, "Hold completed! Total: ${event.totalMs}ms")
             }
             
             is FeedbackEvent.HoldFailed -> {
                 Log.d(TAG, "Hold failed at ${event.elapsedBeforeFailMs}ms")
-                // Reset UI for retry
+                AnimationUtils.shake(binding.tvRepCount, 15f)
                 binding.tvRepCount.text = "00:00"
-                binding.tvRepCount.setTextColor(getColor(android.R.color.white))
+                binding.tvRepCount.setTextColor(COLOR_DEFAULT)
             }
             
-            // ==================== Position Events ====================
-            
             is FeedbackEvent.PositionErrorDetected -> {
-                // Visual feedback handled by SkeletonOverlayView
                 Log.d(TAG, "Position error: ${event.error.checkId}")
             }
             
             is FeedbackEvent.PositionWarningDetected -> {
-                // Visual feedback handled by SkeletonOverlayView
                 Log.d(TAG, "Position warning: ${event.error.checkId}")
             }
             
             is FeedbackEvent.CameraPositionWarning -> {
-                // Show camera position warning to user
-                Log.d(TAG, "Camera warning: ${event.warning.message.en}")
                 showCameraWarning(event.warning)
             }
             
@@ -700,16 +739,15 @@ class TrainingActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetection
         }
     }
     
-    /**
-     * Show camera position warning to user
-     */
     private fun showCameraWarning(warning: CameraPositionWarning) {
-        // Show as toast for now - could be enhanced with a persistent banner
-        Toast.makeText(
-            this,
-            warning.message.en,
-            Toast.LENGTH_LONG
-        ).show()
+        if (isVideoMode) {
+            binding.glassmorphicMessage.showMessage(
+                warning.message.en,
+                GlassmorphicMessageView.TYPE_INFO
+            )
+        } else {
+            feedbackManager?.speak(warning.message.en)
+        }
     }
 
     private fun checkCameraPermission() {
@@ -765,18 +803,15 @@ class TrainingActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetection
         lifecycleScope.launch(Dispatchers.Main) {
             updateFps()
             
-            // Smooth landmarks
             val smoothedLandmarks = landmarkSmoother.smooth(
                 result.landmarks,
                 result.timestampMs
             )
             
-            // Get world landmarks for 3D angle calculation
             val worldLandmarks = result.worldLandmarks?.let {
                 landmarkSmoother.convertWorld(it)
             }
             
-            // Calculate angles
             val angles = if (worldLandmarks != null) {
                 AngleCalculator.calculateAllAnglesSmoothed(
                     worldLandmarks, 
@@ -792,10 +827,8 @@ class TrainingActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetection
             
             currentAngles = angles
             
-            // Handle based on current state
             when (trainingState) {
                 TrainingState.SETUP_POSE -> {
-                    // Validate pose
                     val isValid = validateStartPose()
                     
                     if (isValid) {
@@ -809,7 +842,6 @@ class TrainingActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetection
                 }
                 
                 TrainingState.COUNTDOWN -> {
-                    // Check pose is still valid during countdown
                     val isValid = validateStartPose()
                     if (!isValid) {
                         countdownTimer?.cancel()
@@ -819,26 +851,15 @@ class TrainingActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetection
                 }
                 
                 TrainingState.TRAINING -> {
-                    // Process frame through training engine
-                    // Pass landmarks for position-based validation
-                    //
-                    // IMPORTANT:
-                    // Use normalized smoothedLandmarks here (not worldLandmarks) because:
-                    // - worldLandmarks often have visibility/presence missing (0), causing checks to be skipped
-                    // - position check thresholds in JSON are tuned for normalized coordinates (0..1-ish), not world units
                     trainingEngine?.processFrame(angles, smoothedLandmarks)
                 }
                 
                 else -> {}
             }
             
-            // Get arrow infos for visual feedback
             val arrowInfos = trainingEngine?.arrowInfos?.value ?: emptyMap()
-            
-            // Get position errors for visual feedback
             val positionErrors = trainingEngine?.positionErrors?.value ?: emptyList()
             
-            // Update skeleton overlay with arrow infos and position errors
             binding.skeletonOverlay.updateWithArrowInfos(
                 smoothedLandmarks = smoothedLandmarks,
                 inputImageWidth = result.imageWidth,
@@ -855,13 +876,11 @@ class TrainingActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetection
             updateFps()
             binding.skeletonOverlay.clear()
             
-            // Reset pose validation
             if (trainingState == TrainingState.SETUP_POSE) {
                 poseValidFrames = 0
                 binding.tvPoseStatus.text = "❌ No pose detected\nMake sure your full body is visible"
             }
             
-            // Cancel countdown if pose lost
             if (trainingState == TrainingState.COUNTDOWN) {
                 countdownTimer?.cancel()
                 poseValidFrames = 0
@@ -892,44 +911,23 @@ class TrainingActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetection
 
     // ==================== VIDEO MODE ====================
     
-    /**
-     * Setup video mode - Initialize video playback and analysis
-     */
     private fun setupVideoMode() {
         Log.d(TAG, "Setting up VIDEO mode with URI: $videoUri")
         
-        // Hide camera preview, show video TextureView
         binding.previewView.visibility = View.GONE
         binding.videoTextureView.visibility = View.VISIBLE
-        
-        // Hide camera-specific controls
         binding.btnSwitchCamera.visibility = View.GONE
-        
-        // Show video controls
         binding.videoControlsPanel.visibility = View.VISIBLE
-        
-        // Hide setup pose panel for video (start directly)
         binding.setupPosePanel.visibility = View.GONE
-        
-        // Show save button in completed panel
         binding.btnSaveResults.visibility = View.VISIBLE
         
-        // Initialize storage
         analysisResultStorage = AnalysisResultStorage(this)
         
-        // Initialize pose detection for VIDEO mode
         initializePoseDetectionForVideo()
-        
-        // Setup video controls
         setupVideoControls()
-        
-        // Initialize VideoManager
         initializeVideoManager()
     }
     
-    /**
-     * Initialize pose detection for VIDEO mode
-     */
     private fun initializePoseDetectionForVideo() {
         poseLandmarkerHelper = PoseLandmarkerHelper(
             context = applicationContext,
@@ -947,26 +945,19 @@ class TrainingActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetection
         }
     }
     
-    /**
-     * Setup video playback controls
-     */
     private fun setupVideoControls() {
-        // Play/Pause button
         binding.btnVideoPlayPause.setOnClickListener {
             videoManager?.togglePlayPause()
         }
         
-        // Rewind button (-10s)
         binding.btnVideoRewind.setOnClickListener {
             videoManager?.rewind(10_000)
         }
         
-        // Forward button (+10s)
         binding.btnVideoForward.setOnClickListener {
             videoManager?.fastForward(10_000)
         }
         
-        // SeekBar
         binding.videoSeekBar.setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
             private var wasPlaying = false
             
@@ -995,15 +986,11 @@ class TrainingActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetection
             }
         })
         
-        // Save results button
         binding.btnSaveResults.setOnClickListener {
             saveVideoAnalysisResults()
         }
     }
     
-    /**
-     * Initialize VideoManager for playback
-     */
     private fun initializeVideoManager() {
         val uri = videoUri ?: return
         
@@ -1030,32 +1017,24 @@ class TrainingActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetection
         videoManager?.loadVideo(uri)
     }
     
-    /**
-     * Process a video frame for pose analysis
-     */
     private fun processVideoFrame(bitmap: android.graphics.Bitmap, timestampMs: Long) {
-        // Only process if in training state
         if (trainingState != TrainingState.TRAINING) return
         
-        // Detect pose from bitmap (synchronous for VIDEO mode)
         val poseResult = poseLandmarkerHelper?.detectPoseFromBitmap(bitmap, timestampMs)
         
         if (poseResult != null) {
             lifecycleScope.launch(Dispatchers.Main) {
                 updateFps()
                 
-                // Smooth landmarks
                 val smoothedLandmarks = landmarkSmoother.smooth(
                     poseResult.landmarks,
                     timestampMs
                 )
                 
-                // Get world landmarks for 3D angle calculation
                 val worldLandmarks = poseResult.worldLandmarks?.let {
                     landmarkSmoother.convertWorld(it)
                 }
                 
-                // Calculate angles
                 val angles = if (worldLandmarks != null) {
                     AngleCalculator.calculateAllAnglesSmoothed(
                         worldLandmarks,
@@ -1071,16 +1050,11 @@ class TrainingActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetection
                 
                 currentAngles = angles
                 
-                // Process frame through training engine
                 trainingEngine?.processFrame(angles, smoothedLandmarks)
                 
-                // Get arrow infos for visual feedback
                 val arrowInfos = trainingEngine?.arrowInfos?.value ?: emptyMap()
-                
-                // Get position errors for visual feedback
                 val positionErrors = trainingEngine?.positionErrors?.value ?: emptyList()
                 
-                // Update skeleton overlay
                 binding.skeletonOverlay.updateWithArrowInfos(
                     smoothedLandmarks = smoothedLandmarks,
                     inputImageWidth = poseResult.imageWidth,
@@ -1097,27 +1071,23 @@ class TrainingActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetection
         }
     }
     
-    /**
-     * Handle video playback state changes
-     */
     private fun handleVideoPlaybackState(state: VideoManager.PlaybackState) {
         Log.d(TAG, "Video playback state: $state")
         
         when (state) {
             VideoManager.PlaybackState.READY -> {
-                // Video loaded, update duration
                 val duration = videoManager?.getDuration() ?: 0L
                 binding.tvVideoDuration.text = formatTimeMs(duration)
                 
-                // Show ready state
-                Toast.makeText(this, "Video ready. Press play to start analysis.", Toast.LENGTH_SHORT).show()
+                binding.glassmorphicMessage.showMessage(
+                    "Video ready. Press play to start.",
+                    GlassmorphicMessageView.TYPE_INFO
+                )
             }
             
             VideoManager.PlaybackState.PLAYING -> {
-                // Update play/pause button
                 binding.btnVideoPlayPause.setImageResource(android.R.drawable.ic_media_pause)
                 
-                // Start training if not already started
                 if (trainingState != TrainingState.TRAINING && trainingState != TrainingState.COMPLETED) {
                     startVideoTraining()
                 }
@@ -1132,34 +1102,26 @@ class TrainingActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetection
             }
             
             VideoManager.PlaybackState.ERROR -> {
-                Toast.makeText(this, "Error playing video", Toast.LENGTH_LONG).show()
+                binding.glassmorphicMessage.showError("Error playing video")
             }
             
             else -> {}
         }
     }
     
-    /**
-     * Start training for video mode (no setup pose or countdown)
-     */
     private fun startVideoTraining() {
         updateUIForState(TrainingState.TRAINING)
         trainingEngine?.start()
         
-        // Enable training mode in skeleton overlay
         val trackedIndices = trainingEngine?.getTrackedLandmarkIndices()?.toSet() ?: emptySet()
         val movingSegments = getMovingSegments()
         binding.skeletonOverlay.setTrainingMode(true, trackedIndices, movingSegments)
         
-        // Observe training state
         observeTrainingState()
         
         Log.d(TAG, "Video training started")
     }
     
-    /**
-     * Update video progress UI
-     */
     private fun updateVideoProgress(currentMs: Long, durationMs: Long) {
         binding.tvVideoCurrentTime.text = formatTimeMs(currentMs)
         
@@ -1169,32 +1131,18 @@ class TrainingActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetection
         }
     }
     
-    /**
-     * Handle video seek - reset analysis state
-     * 
-     * IMPORTANT: MediaPipe VIDEO mode expects monotonically increasing timestamps.
-     * When seeking, we must reset the landmarker and training state.
-     */
     private fun handleVideoSeek() {
         Log.d(TAG, "Video seek performed - resetting analysis state")
         
-        // Reset PoseLandmarker for VIDEO mode
         poseLandmarkerHelper?.resetForVideo()
-        
-        // Reset LandmarkSmoother
         landmarkSmoother.reset()
         
-        // Reset TrainingEngine
         trainingEngine?.stop()
         trainingEngine?.start()
         
-        // Show message to user
-        Toast.makeText(this, "Analysis reset", Toast.LENGTH_SHORT).show()
+        binding.glassmorphicMessage.showMessage("Analysis reset", GlassmorphicMessageView.TYPE_INFO)
     }
     
-    /**
-     * Handle video ended - complete training
-     */
     private fun handleVideoEnded() {
         Log.d(TAG, "Video ended - completing training")
         
@@ -1203,9 +1151,6 @@ class TrainingActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetection
         }
     }
     
-    /**
-     * Save video analysis results
-     */
     private fun saveVideoAnalysisResults() {
         val engine = trainingEngine ?: return
         val config = exerciseConfig ?: return
@@ -1213,7 +1158,6 @@ class TrainingActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetection
         
         val summary = engine.stop()
         
-        // Create VideoAnalysisResult
         val result = summary.toVideoAnalysisResult(
             exerciseId = config.fileName,
             exerciseName = config.name,
@@ -1226,15 +1170,14 @@ class TrainingActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetection
             holdCompleted = if (engine.isHoldExercise) engine.isHoldCompleted() else null
         )
         
-        // Save to storage
         val saved = analysisResultStorage?.save(result) ?: false
         
         if (saved) {
-            Toast.makeText(this, "Results saved!", Toast.LENGTH_SHORT).show()
+            binding.glassmorphicMessage.showMotivation("Results saved!")
             binding.btnSaveResults.isEnabled = false
             binding.btnSaveResults.text = "Saved ✓"
         } else {
-            Toast.makeText(this, "Failed to save results", Toast.LENGTH_SHORT).show()
+            binding.glassmorphicMessage.showError("Failed to save results")
         }
     }
 

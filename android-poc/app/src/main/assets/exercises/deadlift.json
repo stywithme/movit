@@ -71,7 +71,7 @@
             "normal": { "min": 75, "max": 100 },
             "advanced": { "min": 80, "max": 95 }
           },
-          "movingSegment": { "from": "left_hip", "to": "left_shoulder" },
+          "movingSegment": { "from": "left_hip", "to": "left_shoulder", "invertArrow": false },
           "errorMessages": {
             "tooLow": { "ar": "انزل أكثر", "en": "Go lower" },
             "tooHigh": { "ar": "قف بشكل مستقيم", "en": "Stand fully upright" }
@@ -92,7 +92,7 @@
             "normal": { "min": 75, "max": 100 },
             "advanced": { "min": 80, "max": 95 }
           },
-          "movingSegment": { "from": "right_hip", "to": "right_shoulder" },
+          "movingSegment": { "from": "right_hip", "to": "right_shoulder", "invertArrow": false },
           "errorMessages": {
             "tooLow": { "ar": "انزل أكثر", "en": "Lower more" },
             "tooHigh": { "ar": "قف مستقيماً", "en": "Stand tall" }

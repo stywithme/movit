@@ -100,7 +100,8 @@
           },
           "movingSegment": {
             "from": "left_shoulder",
-            "to": "left_elbow"
+            "to": "left_elbow",
+            "invertArrow": false
           },
           "errorMessages": {
             "tooLow": {
@@ -133,7 +134,8 @@
           },
           "movingSegment": {
             "from": "right_shoulder",
-            "to": "right_elbow"
+            "to": "right_elbow",
+            "invertArrow": false
           },
           "errorMessages": {
             "tooLow": {

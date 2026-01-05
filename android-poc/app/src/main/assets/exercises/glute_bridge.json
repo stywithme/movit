@@ -76,7 +76,8 @@
           },
           "movingSegment": {
             "from": "left_hip",
-            "to": "left_knee"
+            "to": "left_knee",
+            "invertArrow": false
           },
           "errorMessages": {
             "tooLow": {
@@ -109,7 +110,8 @@
           },
           "movingSegment": {
             "from": "right_hip",
-            "to": "right_knee"
+            "to": "right_knee",
+            "invertArrow": false
           },
           "errorMessages": {
             "tooLow": {

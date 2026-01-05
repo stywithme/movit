@@ -1,5 +1,6 @@
 package com.trainingvalidator.poc.training.engine
 
+import android.util.Log
 import com.trainingvalidator.poc.training.config.SettingsManager
 import com.trainingvalidator.poc.training.models.*
 
@@ -32,7 +33,14 @@ class FormValidator(
     
     companion object {
         private const val TAG = "FormValidator"
+        
+        // Hysteresis to prevent zone flickering at boundaries
+        // Zone won't change unless angle crosses boundary by this amount
+        private const val ZONE_HYSTERESIS = 2.0
     }
+    
+    // Previous zones for hysteresis (prevents flickering)
+    private val previousZones = mutableMapOf<String, JointZone>()
     
     // ==================== Configurable Thresholds ====================
     
@@ -363,9 +371,16 @@ class FormValidator(
      * 
      * NOTE: Uses BOUNDARY_BUFFER for consistency with validation logic
      * to prevent UI flicker where arrows show error but validation shows correct
+     * 
+     * PRE-WARNING: When user is within warningThreshold of the boundary,
+     * we show a warning (amber) instead of waiting for error (red).
+     * This implements "Prevent, don't punish" principle.
      */
     fun getJointArrowInfos(currentAngles: Map<String, Double>): Map<String, JointArrowInfo> {
         val arrowInfos = mutableMapOf<String, JointArrowInfo>()
+        
+        // Warning threshold: how close to boundary before warning (degrees)
+        val warningThreshold = 5.0
         
         for (joint in trackedJoints) {
             val currentAngle = currentAngles[joint.joint] ?: continue
@@ -378,14 +393,51 @@ class FormValidator(
             val downMinWithBuffer = downRange.min - boundaryBuffer
             val downMaxWithBuffer = downRange.max + boundaryBuffer
             
-            // Determine zone (with buffer for consistency with validation)
-            val zone = when {
+            // Determine zone (with buffer and hysteresis for smooth transitions)
+            val previousZone = previousZones[joint.joint]
+            val rawZone = when {
                 currentAngle > upMaxWithBuffer -> JointZone.TOO_HIGH
                 currentAngle >= upMinWithBuffer -> JointZone.UP_ZONE
                 currentAngle > downMaxWithBuffer -> JointZone.TRANSITION
                 currentAngle >= downMinWithBuffer -> JointZone.DOWN_ZONE
                 else -> JointZone.TOO_LOW
             }
+            
+            // Apply hysteresis: only change zone if crossed boundary by ZONE_HYSTERESIS
+            val zone = if (previousZone != null && previousZone != rawZone) {
+                // Check if we've crossed far enough to justify zone change
+                val shouldChange = when {
+                    // Entering error zones: change immediately (safety)
+                    rawZone == JointZone.TOO_HIGH || rawZone == JointZone.TOO_LOW -> true
+                    
+                    // Exiting error zones: require hysteresis
+                    previousZone == JointZone.TOO_HIGH && rawZone == JointZone.UP_ZONE ->
+                        currentAngle < upMaxWithBuffer - ZONE_HYSTERESIS
+                    previousZone == JointZone.TOO_LOW && rawZone == JointZone.DOWN_ZONE ->
+                        currentAngle > downMinWithBuffer + ZONE_HYSTERESIS
+                    
+                    // UP_ZONE ↔ TRANSITION: require hysteresis
+                    previousZone == JointZone.UP_ZONE && rawZone == JointZone.TRANSITION ->
+                        currentAngle < upMinWithBuffer - ZONE_HYSTERESIS
+                    previousZone == JointZone.TRANSITION && rawZone == JointZone.UP_ZONE ->
+                        currentAngle > upMinWithBuffer + ZONE_HYSTERESIS
+                    
+                    // DOWN_ZONE ↔ TRANSITION: require hysteresis
+                    previousZone == JointZone.DOWN_ZONE && rawZone == JointZone.TRANSITION ->
+                        currentAngle > downMaxWithBuffer + ZONE_HYSTERESIS
+                    previousZone == JointZone.TRANSITION && rawZone == JointZone.DOWN_ZONE ->
+                        currentAngle < downMaxWithBuffer - ZONE_HYSTERESIS
+                    
+                    else -> true  // Other transitions: allow
+                }
+                
+                if (shouldChange) rawZone else previousZone
+            } else {
+                rawZone
+            }
+            
+            // Store zone for next frame
+            previousZones[joint.joint] = zone
             
             // Determine arrow direction based on zone
             val arrowDirection = when (zone) {
@@ -399,11 +451,28 @@ class FormValidator(
             // Is it an error?
             val isError = zone == JointZone.TOO_HIGH || zone == JointZone.TOO_LOW
             
+            // PRE-WARNING: Check if approaching boundary
+            // Only applicable when NOT in error (already in valid zone)
+            val isWarning = when {
+                isError -> false  // Already in error, no need for warning
+                zone == JointZone.UP_ZONE -> {
+                    // Warning if approaching TOO_HIGH boundary
+                    currentAngle > upMaxWithBuffer - warningThreshold
+                }
+                zone == JointZone.DOWN_ZONE -> {
+                    // Warning if approaching TOO_LOW boundary
+                    currentAngle < downMinWithBuffer + warningThreshold
+                }
+                else -> false
+            }
+            
             arrowInfos[joint.joint] = JointArrowInfo(
                 jointCode = joint.joint,
                 zone = zone,
                 arrowDirection = arrowDirection,
                 isError = isError,
+                isWarning = isWarning,
+                isPrimary = joint.role == JointRole.PRIMARY,
                 currentAngle = currentAngle,
                 upRangeMin = upRange.min,
                 upRangeMax = upRange.max,
@@ -413,6 +482,14 @@ class FormValidator(
         }
         
         return arrowInfos
+    }
+    
+    /**
+     * Reset state (call when training starts/restarts)
+     */
+    fun reset() {
+        previousZones.clear()
+        Log.d(TAG, "FormValidator state reset")
     }
 }
 
@@ -489,12 +566,23 @@ enum class ArrowDirection {
 
 /**
  * JointArrowInfo - Complete info for drawing an arrow on a joint's moving segment
+ * 
+ * States:
+ * - isError: User is in error zone (TOO_HIGH or TOO_LOW)
+ * - isWarning: User is approaching boundary (within warningThreshold of error)
+ * - normal: User is in correct zone with no imminent risk
+ * 
+ * Priority factors:
+ * - isPrimary: Primary joints (for rep counting) have higher priority
+ * - isError > isWarning > normal
  */
 data class JointArrowInfo(
     val jointCode: String,
     val zone: JointZone,
     val arrowDirection: ArrowDirection,
     val isError: Boolean,
+    val isWarning: Boolean = false,  // Near-boundary warning
+    val isPrimary: Boolean = true,   // Primary joint (for focus ranking)
     val currentAngle: Double,
     val upRangeMin: Double,
     val upRangeMax: Double,
@@ -502,23 +590,24 @@ data class JointArrowInfo(
     val downRangeMax: Double
 ) {
     /**
-     * Should show arrow? (show in UP_ZONE and DOWN_ZONE from middle, and always in error zones)
+     * Should show arrow? (show in UP_ZONE and DOWN_ZONE from middle, and always in error/warning zones)
      */
     fun shouldShowArrow(): Boolean {
-        return when (zone) {
-            JointZone.TOO_HIGH -> true
-            JointZone.TOO_LOW -> true
-            JointZone.UP_ZONE -> {
+        return when {
+            isError -> true
+            isWarning -> true  // Always show arrow when warning
+            zone == JointZone.UP_ZONE -> {
                 // Show when past middle of up range (moving towards down)
                 val upMid = (upRangeMin + upRangeMax) / 2
                 currentAngle <= upMid
             }
-            JointZone.DOWN_ZONE -> {
+            zone == JointZone.DOWN_ZONE -> {
                 // Show when past middle of down range (moving towards up)
                 val downMid = (downRangeMin + downRangeMax) / 2
                 currentAngle >= downMid
             }
-            JointZone.TRANSITION -> false
+            zone == JointZone.TRANSITION -> false
+            else -> false
         }
     }
 }

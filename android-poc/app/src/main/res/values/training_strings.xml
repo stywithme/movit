@@ -1,0 +1,68 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Training UI Strings -->
+    
+    <!-- Phases -->
+    <string name="phase_get_ready">Get Ready</string>
+    <string name="phase_ready">Ready</string>
+    <string name="phase_going_down">Going Down</string>
+    <string name="phase_hold">Hold</string>
+    <string name="phase_going_up">Going Up</string>
+    <string name="phase_push">Push</string>
+    <string name="phase_extended">Extended</string>
+    <string name="phase_pull">Pull</string>
+    <string name="phase_counting">Counting</string>
+    <string name="phase_holding">Holding...</string>
+    <string name="phase_get_into_position">Get into Position</string>
+    
+    <!-- Setup -->
+    <string name="setup_title">Setup Position</string>
+    <string name="setup_requirements_loading">Loading requirements...</string>
+    <string name="setup_current_status">Current Status:</string>
+    <string name="setup_waiting_for_pose">Waiting for pose...</string>
+    <string name="setup_no_pose_detected">No pose detected\nMake sure your full body is visible</string>
+    <string name="setup_get_into_starting_position">Get into starting position:</string>
+    
+    <!-- Countdown -->
+    <string name="countdown_get_ready">Get Ready!</string>
+    <string name="countdown_go">GO!</string>
+    
+    <!-- Training -->
+    <string name="training_pause">Pause</string>
+    <string name="training_resume">Resume</string>
+    <string name="training_grace_return">Return! %1$.1fs</string>
+    
+    <!-- Completion -->
+    <string name="completion_title">Workout Complete!</string>
+    <string name="completion_total_reps">Total Reps</string>
+    <string name="completion_correct">Correct</string>
+    <string name="completion_accuracy">Accuracy</string>
+    <string name="completion_duration">Duration</string>
+    <string name="completion_done">Done</string>
+    <string name="completion_save">Save</string>
+    <string name="completion_saved">Saved ✓</string>
+    
+    <!-- Video Mode -->
+    <string name="video_ready">Video ready. Press play to start.</string>
+    <string name="video_analysis_reset">Analysis reset</string>
+    <string name="video_error">Error playing video</string>
+    <string name="video_results_saved">Results saved!</string>
+    <string name="video_results_save_failed">Failed to save results</string>
+    
+    <!-- Feedback -->
+    <string name="feedback_good">Good</string>
+    <string name="feedback_great_job">Great job!</string>
+    <string name="feedback_excellent">Excellent!</string>
+    <string name="feedback_keep_going">Keep going!</string>
+    <string name="feedback_great_form">Great form!</string>
+    <string name="feedback_halfway_there">Halfway there!</string>
+    <string name="feedback_almost_done">Almost done!</string>
+    
+    <!-- Hold Exercises -->
+    <string name="hold_stay_in_position">Stay in position!</string>
+    <string name="hold_good_keep_holding">Good, keep holding</string>
+    <string name="hold_position_lost">Position lost. Try again</string>
+    <string name="hold_completed">Great job! Held for %1$d seconds</string>
+    <string name="hold_target">Target: %1$s</string>
+    <string name="hold_grace_periods">Grace periods: %1$d</string>
+</resources>

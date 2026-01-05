@@ -73,6 +73,7 @@ class TrainingEngine(
      * Per-check cooldown for emitting feedback events (visual overlay stays active, but events are throttled).
      * Note: positionChecks may be null from Gson parsing even with default value
      */
+    @Suppress("UNNECESSARY_SAFE_CALL", "USELESS_ELVIS")
     private val positionChecksById: Map<String, PositionCheck> =
         (poseVariant.positionChecks ?: emptyList()).associateBy { it.id }
 
@@ -84,6 +85,7 @@ class TrainingEngine(
      * Position validator for position-based checks (knee-over-toe, alignment, etc.)
      * Null if no position checks are configured
      */
+    @Suppress("UNNECESSARY_SAFE_CALL")
     private val positionValidator: PositionValidator? = 
         poseVariant.positionChecks?.takeIf { it.isNotEmpty() }?.let {
             PositionValidator(
@@ -275,6 +277,7 @@ class TrainingEngine(
         repCounter.reset()
         holdTimer?.reset()
         positionValidator?.clearCooldowns()
+        formValidator.reset()  // Reset zone hysteresis state
         lastPositionEventTimes.clear()
         
         _currentPhase.value = Phase.IDLE
@@ -301,7 +304,7 @@ class TrainingEngine(
         
         Log.d(TAG, "Training started (${if (isHoldExercise) "HOLD" else "REPS"} mode)")
         if (positionValidator != null) {
-            Log.d(TAG, "Position checks enabled: ${poseVariant.positionChecks?.size ?: 0} checks")
+            Log.d(TAG, "Position checks enabled: ${poseVariant.positionChecks.size} checks")
         }
     }
     

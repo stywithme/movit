@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Training UI Color Palette -->
+    <!-- NOTE: skeleton_correct, skeleton_warning, skeleton_error, skeleton_default 
+         are already defined in colors.xml - do not duplicate -->
+    
+    <!-- Feedback Colors (for UI components) -->
+    <color name="feedback_correct">#00E676</color>      <!-- Green -->
+    <color name="feedback_warning">#FFC107</color>      <!-- Amber -->
+    <color name="feedback_error">#FF5252</color>        <!-- Red -->
+    <color name="feedback_tip">#2196F3</color>          <!-- Blue -->
+    <color name="feedback_info">#9E9E9E</color>         <!-- Gray -->
+    
+    <!-- Skeleton Overlay Colors (specific to SkeletonOverlayView) -->
+    <color name="overlay_tracked">#64B5F6</color>       <!-- Light Blue -->
+    <color name="overlay_faint">#40FFFFFF</color>       <!-- Faint White -->
+    <color name="overlay_glow">#4000E676</color>        <!-- Green Glow -->
+    <color name="overlay_position_error">#E91E63</color><!-- Pink -->
+    
+    <!-- Glass UI Colors -->
+    <color name="glass_background">#40000000</color>    <!-- 25% Black -->
+    <color name="glass_background_dark">#26000000</color><!-- 15% Black -->
+    <color name="glass_border">#33FFFFFF</color>        <!-- 20% White -->
+    <color name="glass_border_subtle">#1AFFFFFF</color> <!-- 10% White -->
+    
+    <!-- Text Colors -->
+    <color name="text_primary">#FFFFFF</color>
+    <color name="text_secondary">#CCFFFFFF</color>
+    <color name="text_hint">#80FFFFFF</color>
+    <color name="text_disabled">#66FFFFFF</color>
+</resources>
