@@ -41,7 +41,8 @@ import com.trainingvalidator.poc.training.models.TrackedJoint
  *   UP → START:    angle enters upRange (>= upRange.min) → REP COMPLETED!
  * 
  * Configurable Settings:
- *   - Global: hysteresis, smoothingWindowSize (from app_settings.json)
+ *   - Global: hysteresis (from app_settings.json)
+ *   - Smoothing: Handled centrally by AngleSmoother (Single Source of Truth)
  *   - Per-Exercise: minRepInterval, maxRepInterval (from exercise JSON)
  *   - Calculated: minPhaseDuration = minRepInterval / numberOfPhases
  */
@@ -64,10 +65,8 @@ class PhaseStateMachine(
      */
     private val hysteresis: Double = SettingsManager.getHysteresis()
     
-    /**
-     * Smoothing window size from global settings
-     */
-    private val smoothingWindowSize: Int = SettingsManager.getSmoothingWindowSize()
+    // NOTE: Smoothing is now handled centrally by AngleSmoother in TrainingEngine
+    // PhaseStateMachine receives pre-smoothed angles for consistency with FormValidator
     
     /**
      * Minimum rep interval from exercise config or global default
@@ -134,10 +133,6 @@ class PhaseStateMachine(
      */
     private var lastRepCompletedTime: Long = 0L
     
-    /**
-     * Angle smoothing buffer for stability
-     */
-    private val angleHistory = mutableListOf<Double>()
     
     init {
         val joint = primaryJoints.first()
@@ -157,7 +152,7 @@ class PhaseStateMachine(
         Log.d(TAG, "  Transition Zone: $downRangeMax - $upRangeMin")
         Log.d(TAG, "  Settings (configurable):")
         Log.d(TAG, "    Hysteresis: $hysteresis°")
-        Log.d(TAG, "    Smoothing Window: $smoothingWindowSize")
+        Log.d(TAG, "    Smoothing: Handled by central AngleSmoother")
         Log.d(TAG, "    Min Rep Interval: ${minRepIntervalMs}ms")
         Log.d(TAG, "    Min Phase Duration: ${minPhaseDurationMs}ms (calculated)")
     }
@@ -165,7 +160,10 @@ class PhaseStateMachine(
     /**
      * Update the state machine with new angles
      * 
-     * @param primaryAngles Map of primary joint codes to their current angles
+     * NOTE: Expects pre-smoothed angles from AngleSmoother (via TrainingEngine)
+     * This ensures consistency with FormValidator which uses the same smoothed angles.
+     * 
+     * @param primaryAngles Map of primary joint codes to their current (smoothed) angles
      * @return Current phase after update
      */
     fun update(primaryAngles: Map<String, Double>): Phase {
@@ -174,10 +172,8 @@ class PhaseStateMachine(
         }
         
         // Calculate average angle of primary joints
-        val rawAngle = calculateAverageAngle(primaryAngles)
-        
-        // Apply smoothing to reduce noise
-        val angle = smoothAngle(rawAngle)
+        // NOTE: Angles are already smoothed by AngleSmoother
+        val angle = calculateAverageAngle(primaryAngles)
         
         // Determine next phase based on counting method
         val nextPhase = when (countingMethod) {
@@ -192,17 +188,6 @@ class PhaseStateMachine(
         }
         
         return currentPhase
-    }
-    
-    /**
-     * Apply moving average smoothing to reduce noise and flickering
-     */
-    private fun smoothAngle(angle: Double): Double {
-        angleHistory.add(angle)
-        if (angleHistory.size > smoothingWindowSize) {
-            angleHistory.removeAt(0)
-        }
-        return angleHistory.average()
     }
     
     /**
@@ -501,7 +486,7 @@ class PhaseStateMachine(
         phaseEntryTime = System.currentTimeMillis()
         repCountedThisCycle = false
         lastRepCompletedTime = 0L
-        angleHistory.clear()
+        // NOTE: Angle smoothing history is now managed by AngleSmoother
     }
     
     /**

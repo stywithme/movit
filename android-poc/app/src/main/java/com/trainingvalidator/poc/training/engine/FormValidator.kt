@@ -89,6 +89,14 @@ class FormValidator(
     
     /**
      * Validate a single joint based on current phase
+     * 
+     * ZONE-AWARE VALIDATION:
+     * First checks the actual zone of the angle. If angle is in TRANSITION zone
+     * (between downRange.max and upRange.min), we don't report errors.
+     * This is correct because TRANSITION is valid movement between positions.
+     * 
+     * NOTE: Both PhaseStateMachine and FormValidator now receive the same
+     * smoothed angles from AngleSmoother (Single Source of Truth).
      */
     private fun validateJoint(
         joint: TrackedJoint,
@@ -98,15 +106,42 @@ class FormValidator(
         val upRange = joint.getUpRange(difficulty)
         val downRange = joint.getDownRange(difficulty)
         
+        // First, determine the actual zone of the angle
+        // This prevents errors during natural movement through TRANSITION zone
+        val actualZone = determineZone(angle, upRange, downRange)
+        
+        // If angle is in TRANSITION zone, don't report errors
+        // (User is moving between positions - this is correct behavior)
+        if (actualZone == JointZone.TRANSITION) {
+            return JointStatus(
+                jointCode = joint.joint,
+                isCorrect = true,
+                currentAngle = angle,
+                error = null
+            )
+        }
+        
         return when (phase) {
             // ===== PHASES WITH UP RANGE VALIDATION =====
             Phase.IDLE, Phase.START -> {
-                validateAgainstUpRange(joint, angle, upRange)
+                // Only validate if actually in or near UP zone
+                // If in DOWN zone during START phase, it's a sync issue - use extreme check
+                if (actualZone == JointZone.DOWN_ZONE) {
+                    checkExtremeErrors(joint, angle, upRange, downRange)
+                } else {
+                    validateAgainstUpRange(joint, angle, upRange)
+                }
             }
             
             // ===== PHASES WITH DOWN RANGE VALIDATION =====
             Phase.BOTTOM, Phase.EXTENDED, Phase.COUNT -> {
-                validateAgainstDownRange(joint, angle, downRange)
+                // Only validate if actually in or near DOWN zone
+                // If in UP zone during BOTTOM phase, it's a sync issue - use extreme check
+                if (actualZone == JointZone.UP_ZONE) {
+                    checkExtremeErrors(joint, angle, upRange, downRange)
+                } else {
+                    validateAgainstDownRange(joint, angle, downRange)
+                }
             }
             
             // ===== TRANSITION PHASES - NO VALIDATION =====
@@ -114,6 +149,24 @@ class FormValidator(
                 // Check for extreme errors only
                 checkExtremeErrors(joint, angle, upRange, downRange)
             }
+        }
+    }
+    
+    /**
+     * Determine which zone an angle belongs to
+     * Used internally to check actual position before applying phase-based validation
+     */
+    private fun determineZone(
+        angle: Double,
+        upRange: AngleRange,
+        downRange: AngleRange
+    ): JointZone {
+        return when {
+            angle > upRange.max -> JointZone.TOO_HIGH
+            angle >= upRange.min -> JointZone.UP_ZONE
+            angle > downRange.max -> JointZone.TRANSITION
+            angle >= downRange.min -> JointZone.DOWN_ZONE
+            else -> JointZone.TOO_LOW
         }
     }
     
@@ -366,11 +419,11 @@ class FormValidator(
     }
     
     /**
-     * Get arrow info for all tracked joints
-     * This determines the zone and arrow direction for each joint
+     * Get visual info for all tracked joints
+     * This determines the current zone and severity for each joint
      * 
      * NOTE: Uses BOUNDARY_BUFFER for consistency with validation logic
-     * to prevent UI flicker where arrows show error but validation shows correct
+     * to prevent UI flicker where visuals show error but validation shows correct
      * 
      * PRE-WARNING: When user is within warningThreshold of the boundary,
      * we show a warning (amber) instead of waiting for error (red).
@@ -439,15 +492,6 @@ class FormValidator(
             // Store zone for next frame
             previousZones[joint.joint] = zone
             
-            // Determine arrow direction based on zone
-            val arrowDirection = when (zone) {
-                JointZone.TOO_HIGH -> ArrowDirection.DOWN   // Need to go down to enter UP zone
-                JointZone.UP_ZONE -> ArrowDirection.DOWN    // Encourage moving to DOWN zone
-                JointZone.TRANSITION -> ArrowDirection.NONE // Moving, no arrow needed
-                JointZone.DOWN_ZONE -> ArrowDirection.UP    // Encourage moving back to UP zone
-                JointZone.TOO_LOW -> ArrowDirection.UP      // Need to go up to enter DOWN zone
-            }
-            
             // Is it an error?
             val isError = zone == JointZone.TOO_HIGH || zone == JointZone.TOO_LOW
             
@@ -469,7 +513,6 @@ class FormValidator(
             arrowInfos[joint.joint] = JointArrowInfo(
                 jointCode = joint.joint,
                 zone = zone,
-                arrowDirection = arrowDirection,
                 isError = isError,
                 isWarning = isWarning,
                 isPrimary = joint.role == JointRole.PRIMARY,
@@ -550,22 +593,13 @@ enum class JointColor {
 enum class JointZone {
     TOO_HIGH,       // angle > upRange.max → Error: need to move down
     UP_ZONE,        // upRange.min <= angle <= upRange.max → Ready, move down
-    TRANSITION,     // downRange.max < angle < upRange.min → Moving, no arrow
+    TRANSITION,     // downRange.max < angle < upRange.min → Moving (no validation)
     DOWN_ZONE,      // downRange.min <= angle <= downRange.max → At target, move up
     TOO_LOW         // angle < downRange.min → Error: need to move up
 }
 
 /**
- * Arrow direction for visual feedback
- */
-enum class ArrowDirection {
-    UP,     // Arrow pointing up (angle should increase)
-    DOWN,   // Arrow pointing down (angle should decrease)
-    NONE    // No arrow needed
-}
-
-/**
- * JointArrowInfo - Complete info for drawing an arrow on a joint's moving segment
+ * JointArrowInfo - Visual info for a joint (zone + severity + ranges)
  * 
  * States:
  * - isError: User is in error zone (TOO_HIGH or TOO_LOW)
@@ -579,7 +613,6 @@ enum class ArrowDirection {
 data class JointArrowInfo(
     val jointCode: String,
     val zone: JointZone,
-    val arrowDirection: ArrowDirection,
     val isError: Boolean,
     val isWarning: Boolean = false,  // Near-boundary warning
     val isPrimary: Boolean = true,   // Primary joint (for focus ranking)
@@ -588,26 +621,4 @@ data class JointArrowInfo(
     val upRangeMax: Double,
     val downRangeMin: Double,
     val downRangeMax: Double
-) {
-    /**
-     * Should show arrow? (show in UP_ZONE and DOWN_ZONE from middle, and always in error/warning zones)
-     */
-    fun shouldShowArrow(): Boolean {
-        return when {
-            isError -> true
-            isWarning -> true  // Always show arrow when warning
-            zone == JointZone.UP_ZONE -> {
-                // Show when past middle of up range (moving towards down)
-                val upMid = (upRangeMin + upRangeMax) / 2
-                currentAngle <= upMid
-            }
-            zone == JointZone.DOWN_ZONE -> {
-                // Show when past middle of down range (moving towards up)
-                val downMid = (downRangeMin + downRangeMax) / 2
-                currentAngle >= downMid
-            }
-            zone == JointZone.TRANSITION -> false
-            else -> false
-        }
-    }
-}
+)

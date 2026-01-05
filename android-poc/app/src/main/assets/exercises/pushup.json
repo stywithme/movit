@@ -47,11 +47,6 @@
             "normal": { "min": 60, "max": 90 },
             "advanced": { "min": 50, "max": 80 }
           },
-          "movingSegment": {
-            "from": "left_elbow",
-            "to": "left_shoulder",
-            "invertArrow": true
-          },
           "errorMessages": {
             "tooLow": {
               "ar": "لا تنزل كثيراً - حافظ على استقامة الجسم",
@@ -81,11 +76,6 @@
             "normal": { "min": 60, "max": 90 },
             "advanced": { "min": 50, "max": 80 }
           },
-          "movingSegment": {
-            "from": "right_elbow",
-            "to": "right_shoulder",
-            "invertArrow": true
-          },
           "errorMessages": {
             "tooLow": {
               "ar": "لا تنزل كثيراً",
@@ -114,11 +104,6 @@
             "beginner": { "min": 155, "max": 180 },
             "normal": { "min": 165, "max": 180 },
             "advanced": { "min": 170, "max": 180 }
-          },
-          "movingSegment": {
-            "from": "left_hip",
-            "to": "left_shoulder",
-            "invertArrow": true
           },
           "errorMessages": {
             "tooLow": {

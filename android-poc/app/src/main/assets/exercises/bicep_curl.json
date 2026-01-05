@@ -74,11 +74,6 @@
             "normal": { "min": 25, "max": 50 },
             "advanced": { "min": 20, "max": 40 }
           },
-          "movingSegment": {
-            "from": "left_wrist",
-            "to": "left_elbow",
-            "invertArrow": true
-          },
           "errorMessages": {
             "tooLow": {
               "ar": "لا تثني كثيراً",
@@ -107,11 +102,6 @@
             "beginner": { "min": 30, "max": 60 },
             "normal": { "min": 25, "max": 50 },
             "advanced": { "min": 20, "max": 40 }
-          },
-          "movingSegment": {
-            "from": "right_wrist",
-            "to": "right_elbow",
-            "invertArrow": true
           },
           "errorMessages": {
             "tooLow": {

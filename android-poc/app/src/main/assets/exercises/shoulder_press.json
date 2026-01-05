@@ -98,11 +98,6 @@
             "normal": { "min": 80, "max": 100 },
             "advanced": { "min": 85, "max": 95 }
           },
-          "movingSegment": {
-            "from": "left_elbow",
-            "to": "left_wrist",
-            "invertArrow": false
-          },
           "errorMessages": {
             "tooLow": {
               "ar": "انزل أكثر لمستوى الكتف",
@@ -131,11 +126,6 @@
             "beginner": { "min": 70, "max": 110 },
             "normal": { "min": 80, "max": 100 },
             "advanced": { "min": 85, "max": 95 }
-          },
-          "movingSegment": {
-            "from": "right_elbow",
-            "to": "right_wrist",
-            "invertArrow": false
           },
           "errorMessages": {
             "tooLow": {

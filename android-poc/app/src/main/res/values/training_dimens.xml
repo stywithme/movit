@@ -19,9 +19,6 @@
     <dimen name="skeleton_line_width_error">10dp</dimen>
     <dimen name="skeleton_landmark_size">10dp</dimen>
     <dimen name="skeleton_landmark_size_tracked">14dp</dimen>
-    <dimen name="skeleton_arrow_length">90dp</dimen>
-    <dimen name="skeleton_arrow_shaft_width">12dp</dimen>
-    <dimen name="skeleton_arrow_head_length">40dp</dimen>
     
     <!-- Spacing -->
     <dimen name="spacing_xs">4dp</dimen>

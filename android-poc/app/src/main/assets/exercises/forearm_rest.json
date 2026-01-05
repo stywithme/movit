@@ -38,7 +38,7 @@
             "max": 130
           },
           "upRange": {
-            "beginner": { "min": 110, "max": 130 },
+            "beginner": { "min": 120, "max": 150 },
             "normal":   { "min": 150, "max": 180 },
             "advanced": { "min": 160, "max": 180 }
           },
@@ -46,11 +46,6 @@
             "beginner": { "min": 30, "max": 70 },
             "normal":   { "min": 35, "max": 60 },
             "advanced": { "min": 40, "max": 50 }
-          },
-          "movingSegment": {
-            "from": "right_elbow",
-            "to": "right_wrist",
-            "invertArrow": true
           },
           "errorMessages": {
             "tooLow": {

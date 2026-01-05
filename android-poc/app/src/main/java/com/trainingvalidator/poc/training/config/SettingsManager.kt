@@ -116,4 +116,46 @@ object SettingsManager {
      * Get default grace period in milliseconds for hold exercises
      */
     fun getDefaultGracePeriod(): Long = settings.holdDefaults.defaultGracePeriodMs
+    
+    // ==================== Visual Settings ====================
+    
+    /**
+     * Get visual settings object
+     */
+    fun getVisualSettings(): VisualSettings = settings.visual
+    
+    /**
+     * Whether to show arc range indicators around tracked joints
+     */
+    fun getShowArcIndicators(): Boolean = settings.visual.showArcRangeIndicators
+    
+    /**
+     * Arc indicator radius in dp
+     */
+    fun getArcIndicatorRadiusDp(): Float = settings.visual.arcIndicatorRadiusDp
+    
+    /**
+     * Arc indicator stroke width in dp
+     */
+    fun getArcIndicatorStrokeWidthDp(): Float = settings.visual.arcIndicatorStrokeWidthDp
+    
+    /**
+     * Whether to show current position indicator on arc
+     */
+    fun getArcShowCurrentIndicator(): Boolean = settings.visual.arcShowCurrentIndicator
+    
+    /**
+     * Only show arc when joint is in error/warning state
+     */
+    fun getArcShowOnlyOnError(): Boolean = settings.visual.arcShowOnlyOnError
+    
+    /**
+     * Only show arc for primary joints
+     */
+    fun getArcShowOnlyPrimary(): Boolean = settings.visual.arcShowOnlyPrimary
+    
+    /**
+     * Arc opacity (0.0 - 1.0)
+     */
+    fun getArcOpacity(): Float = settings.visual.arcOpacity
 }

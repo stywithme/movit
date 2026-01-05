@@ -11,7 +11,8 @@ data class AppSettings(
     val angleDetection: AngleDetectionSettings = AngleDetectionSettings(),
     val movementDetection: MovementDetectionSettings = MovementDetectionSettings(),
     val defaults: DefaultTimingSettings = DefaultTimingSettings(),
-    val holdDefaults: HoldDefaults = HoldDefaults()
+    val holdDefaults: HoldDefaults = HoldDefaults(),
+    val visual: VisualSettings = VisualSettings()
 )
 
 /**
@@ -60,4 +61,28 @@ data class DefaultTimingSettings(
 data class HoldDefaults(
     val defaultDurationSeconds: Int = 30,
     val defaultGracePeriodMs: Long = 3000
+)
+
+/**
+ * Visual settings - Controls visual feedback elements
+ * 
+ * Arc Range Indicator settings control the gradient arc displayed around
+ * tracked joints showing valid angle ranges.
+ * 
+ * @param showArcRangeIndicators Whether to show arc indicators around joints
+ * @param arcIndicatorRadiusDp Arc radius in dp
+ * @param arcIndicatorStrokeWidthDp Arc stroke width in dp
+ * @param arcShowCurrentIndicator Whether to show current position indicator on arc
+ * @param arcShowOnlyOnError Only show arc when joint is in error/warning state
+ * @param arcShowOnlyPrimary Only show arc for primary joints (used for rep counting)
+ * @param arcOpacity Arc opacity (0.0 - 1.0)
+ */
+data class VisualSettings(
+    val showArcRangeIndicators: Boolean = true,
+    val arcIndicatorRadiusDp: Float = 45f,
+    val arcIndicatorStrokeWidthDp: Float = 6f,
+    val arcShowCurrentIndicator: Boolean = true,
+    val arcShowOnlyOnError: Boolean = false,
+    val arcShowOnlyPrimary: Boolean = true,
+    val arcOpacity: Float = 0.9f
 )

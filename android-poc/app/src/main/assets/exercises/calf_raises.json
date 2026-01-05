@@ -74,11 +74,6 @@
             "normal": { "min": 75, "max": 95 },
             "advanced": { "min": 80, "max": 90 }
           },
-          "movingSegment": {
-            "from": "left_ankle",
-            "to": "left_heel",
-            "invertArrow": false
-          },
           "errorMessages": {
             "tooLow": {
               "ar": "ارتفع على أصابع قدميك",
@@ -107,11 +102,6 @@
             "beginner": { "min": 70, "max": 100 },
             "normal": { "min": 75, "max": 95 },
             "advanced": { "min": 80, "max": 90 }
-          },
-          "movingSegment": {
-            "from": "right_ankle",
-            "to": "right_heel",
-            "invertArrow": false
           },
           "errorMessages": {
             "tooLow": {

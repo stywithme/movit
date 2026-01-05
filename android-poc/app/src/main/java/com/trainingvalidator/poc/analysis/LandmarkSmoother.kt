@@ -12,7 +12,7 @@ import com.google.mediapipe.tasks.components.containers.Landmark
  * - No lag when alpha is properly tuned
  */
 class LandmarkSmoother(
-    private val alpha: Float = 0.7f  // Higher = more responsive, Lower = smoother
+    private val alpha: Float = 0.6f  // Reduced from 0.7 for smoother skeleton (Lower = smoother)
 ) {
     private var previousLandmarks: MutableList<SmoothedLandmark>? = null
     

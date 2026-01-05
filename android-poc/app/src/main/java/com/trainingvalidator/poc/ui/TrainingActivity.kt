@@ -44,6 +44,7 @@ import com.trainingvalidator.poc.video.VideoManager
 import com.trainingvalidator.poc.video.VideoAnalysisResult
 import com.trainingvalidator.poc.video.toVideoAnalysisResult
 import com.trainingvalidator.poc.storage.AnalysisResultStorage
+import com.trainingvalidator.poc.R
 import android.net.Uri
 import android.widget.SeekBar
 import kotlinx.coroutines.Dispatchers
@@ -268,12 +269,18 @@ class TrainingActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetection
             landmarkSmoother.reset()
         }
         
-        // Pause/Resume button
-        binding.btnPauseResume.setOnClickListener {
-            when (trainingState) {
-                TrainingState.TRAINING -> pauseTraining()
-                TrainingState.PAUSED -> resumeTraining()
-                else -> {}
+        // Play/Pause button (unified for camera and video modes)
+        binding.btnPlayPause.setOnClickListener {
+            if (isVideoMode) {
+                // Video mode: toggle video playback + analysis
+                toggleVideoPlayback()
+            } else {
+                // Camera mode: toggle training pause/resume
+                when (trainingState) {
+                    TrainingState.TRAINING -> pauseTraining()
+                    TrainingState.PAUSED -> resumeTraining()
+                    else -> {}
+                }
             }
         }
         
@@ -348,8 +355,9 @@ class TrainingActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetection
                 binding.heroCounterContainer.visibility = View.GONE
                 binding.tvProgress.visibility = View.GONE
                 binding.completedPanel.visibility = View.GONE
-                binding.btnPauseResume.visibility = View.GONE
                 binding.progressContainer.visibility = View.GONE
+                // Show play button in setup state
+                updatePlayPauseIcon(isPlaying = false)
             }
             
             TrainingState.COUNTDOWN -> {
@@ -359,7 +367,6 @@ class TrainingActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetection
                 binding.heroCounterContainer.visibility = View.GONE
                 binding.tvProgress.visibility = View.GONE
                 binding.completedPanel.visibility = View.GONE
-                binding.btnPauseResume.visibility = View.GONE
             }
             
             TrainingState.TRAINING -> {
@@ -372,13 +379,15 @@ class TrainingActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetection
                 binding.tvProgress.visibility = View.VISIBLE
                 
                 binding.completedPanel.visibility = View.GONE
-                binding.btnPauseResume.visibility = View.VISIBLE
-                binding.btnPauseResume.text = "Pause"
                 binding.progressContainer.visibility = View.VISIBLE
+                
+                // Show pause icon when training is active
+                updatePlayPauseIcon(isPlaying = true)
             }
             
             TrainingState.PAUSED -> {
-                binding.btnPauseResume.text = "Resume"
+                // Show play icon when paused
+                updatePlayPauseIcon(isPlaying = false)
             }
             
             TrainingState.COMPLETED -> {
@@ -387,8 +396,10 @@ class TrainingActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetection
                 binding.countdownPanel.visibility = View.GONE
                 binding.tvProgress.visibility = View.GONE
                 binding.completedPanel.visibility = View.VISIBLE
-                binding.btnPauseResume.visibility = View.GONE
                 binding.progressContainer.visibility = View.GONE
+                
+                // Show play icon (can restart or is finished)
+                updatePlayPauseIcon(isPlaying = false)
                 
                 // Clear any alerts
                 binding.vignetteOverlay.clear()
@@ -471,26 +482,12 @@ class TrainingActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetection
         feedbackManager?.resetMessageStates()
         trainingEngine?.start()
         
-        // Enable training mode in skeleton overlay with moving segments
+        // Enable training mode in skeleton overlay
         val trackedIndices = trainingEngine?.getTrackedLandmarkIndices()?.toSet() ?: emptySet()
-        val movingSegments = getMovingSegments()
-        binding.skeletonOverlay.setTrainingMode(true, trackedIndices, movingSegments)
+        binding.skeletonOverlay.setTrainingMode(true, trackedIndices)
         
         // Observe training state
         observeTrainingState()
-    }
-    
-    private fun getMovingSegments(): Map<String, com.trainingvalidator.poc.training.models.MovingSegment> {
-        val variant = exerciseConfig?.poseVariants?.getOrNull(poseVariantIndex) ?: return emptyMap()
-        val segments = mutableMapOf<String, com.trainingvalidator.poc.training.models.MovingSegment>()
-        
-        for (joint in variant.trackedJoints) {
-            joint.movingSegment?.let { segment ->
-                segments[joint.joint] = segment
-            }
-        }
-        
-        return segments
     }
     
     private fun pauseTraining() {
@@ -501,6 +498,28 @@ class TrainingActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetection
     private fun resumeTraining() {
         updateUIForState(TrainingState.TRAINING)
         trainingEngine?.resume()
+    }
+    
+    /**
+     * Update Play/Pause button icon based on current state
+     */
+    private fun updatePlayPauseIcon(isPlaying: Boolean) {
+        val iconRes = if (isPlaying) R.drawable.ic_pause else R.drawable.ic_play
+        binding.btnPlayPause.setImageResource(iconRes)
+    }
+    
+    /**
+     * Toggle video playback and analysis (Video mode)
+     */
+    private fun toggleVideoPlayback() {
+        val isPlaying = videoManager?.isPlaying() ?: false
+        if (isPlaying) {
+            videoManager?.pause()
+            updatePlayPauseIcon(false)
+        } else {
+            videoManager?.play()
+            updatePlayPauseIcon(true)
+        }
     }
     
     private fun completeTraining() {
@@ -946,17 +965,8 @@ class TrainingActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetection
     }
     
     private fun setupVideoControls() {
-        binding.btnVideoPlayPause.setOnClickListener {
-            videoManager?.togglePlayPause()
-        }
-        
-        binding.btnVideoRewind.setOnClickListener {
-            videoManager?.rewind(10_000)
-        }
-        
-        binding.btnVideoForward.setOnClickListener {
-            videoManager?.fastForward(10_000)
-        }
+        // Play/Pause is now handled by the unified btnPlayPause in bottomDeck
+        // Rewind/Forward buttons removed - use SeekBar instead
         
         binding.videoSeekBar.setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
             private var wasPlaying = false
@@ -1086,7 +1096,7 @@ class TrainingActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetection
             }
             
             VideoManager.PlaybackState.PLAYING -> {
-                binding.btnVideoPlayPause.setImageResource(android.R.drawable.ic_media_pause)
+                updatePlayPauseIcon(isPlaying = true)
                 
                 if (trainingState != TrainingState.TRAINING && trainingState != TrainingState.COMPLETED) {
                     startVideoTraining()
@@ -1094,11 +1104,11 @@ class TrainingActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetection
             }
             
             VideoManager.PlaybackState.PAUSED -> {
-                binding.btnVideoPlayPause.setImageResource(android.R.drawable.ic_media_play)
+                updatePlayPauseIcon(isPlaying = false)
             }
             
             VideoManager.PlaybackState.ENDED -> {
-                binding.btnVideoPlayPause.setImageResource(android.R.drawable.ic_media_play)
+                updatePlayPauseIcon(isPlaying = false)
             }
             
             VideoManager.PlaybackState.ERROR -> {
@@ -1114,8 +1124,7 @@ class TrainingActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetection
         trainingEngine?.start()
         
         val trackedIndices = trainingEngine?.getTrackedLandmarkIndices()?.toSet() ?: emptySet()
-        val movingSegments = getMovingSegments()
-        binding.skeletonOverlay.setTrainingMode(true, trackedIndices, movingSegments)
+        binding.skeletonOverlay.setTrainingMode(true, trackedIndices)
         
         observeTrainingState()
         

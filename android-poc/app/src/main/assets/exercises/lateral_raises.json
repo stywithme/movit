@@ -98,11 +98,6 @@
             "normal": { "min": 0, "max": 20 },
             "advanced": { "min": 0, "max": 15 }
           },
-          "movingSegment": {
-            "from": "left_shoulder",
-            "to": "left_elbow",
-            "invertArrow": false
-          },
           "errorMessages": {
             "tooLow": {
               "ar": "ارفع ذراعيك أعلى",
@@ -131,11 +126,6 @@
             "beginner": { "min": 0, "max": 30 },
             "normal": { "min": 0, "max": 20 },
             "advanced": { "min": 0, "max": 15 }
-          },
-          "movingSegment": {
-            "from": "right_shoulder",
-            "to": "right_elbow",
-            "invertArrow": false
           },
           "errorMessages": {
             "tooLow": {

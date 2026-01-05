@@ -159,7 +159,6 @@ data class TrackedJoint(
     val startPose: AngleRange,              // For pre-training position check (independent)
     val upRange: DifficultyRanges,          // Range for UP/START position
     val downRange: DifficultyRanges,        // Range for DOWN/BOTTOM position
-    val movingSegment: MovingSegment? = null, // The segment that moves (for arrow display)
     val errorMessages: ErrorMessages,       // Error messages for feedback
     val pairedWith: String? = null          // Paired joint code (for symmetry)
 ) {
@@ -240,31 +239,6 @@ enum class ErrorZone {
     TOO_HIGH,   // Above upRange.max
     TOO_LOW     // Below downRange.min
 }
-
-/**
- * Moving segment - defines which body segment moves during the exercise
- * Used to draw direction arrows on the correct body part
- * 
- * Example for Bicep Curl:
- *   from: "right_elbow"  (fixed point)
- *   to: "right_wrist"    (moving point)
- *   The arrow will be drawn along this segment showing movement direction
- * 
- * Arrow Direction Logic:
- *   - When angle needs to DECREASE: Arrow shows "decreasing" direction
- *   - When angle needs to INCREASE: Arrow shows "increasing" direction
- *   - invertArrow: Flips the arrow direction when the default is wrong
- * 
- * How Admin determines invertArrow:
- *   1. Run exercise with invertArrow = false (default)
- *   2. When in UP_ZONE (start position), if arrow points AWAY from target movement → set invertArrow = true
- *   3. Example: Bicep Curl - if arrow points down when arm should curl UP → invertArrow = true
- */
-data class MovingSegment(
-    val from: String,   // Starting joint code (the pivot/fixed point)
-    val to: String,     // Ending joint code (the moving point)
-    val invertArrow: Boolean = false  // If true, flip arrow direction (use when default is wrong)
-)
 
 /**
  * Angle range (min/max)

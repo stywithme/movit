@@ -14,34 +14,22 @@ import android.view.animation.AccelerateDecelerateInterpolator
 import com.google.mediapipe.tasks.vision.poselandmarker.PoseLandmarker
 import com.trainingvalidator.poc.analysis.JointAngles
 import com.trainingvalidator.poc.analysis.SmoothedLandmark
-import com.trainingvalidator.poc.training.engine.ArrowDirection
 import com.trainingvalidator.poc.training.engine.JointArrowInfo
 import com.trainingvalidator.poc.training.engine.JointZone
 import com.trainingvalidator.poc.training.engine.PositionError
 import com.trainingvalidator.poc.training.models.CheckSeverity
-import com.trainingvalidator.poc.training.models.MovingSegment
-import kotlin.math.atan2
-import kotlin.math.cos
+import com.trainingvalidator.poc.training.config.SettingsManager
 import kotlin.math.max
 import kotlin.math.sin
 
 /**
- * SkeletonOverlayView - Professional skeleton drawing with zone-based arrow feedback
+ * SkeletonOverlayView - Professional skeleton drawing with zone-based color feedback
  * 
  * Minimalist Design Principles:
  * - Tracked joints only: Non-tracked joints are faint (15-20% opacity)
  * - Angle labels only on Error/Critical: No clutter in normal state
- * - Focus system: Max 2 arrows visible at once (highest priority)
- * - Flow animation: Skeleton has subtle shimmer in movement direction
- * 
- * Arrow Logic:
- *   Zone        | Arrow Color | Arrow Direction | When Shown
- *   ------------|-------------|-----------------|------------------
- *   TOO_HIGH    | Red         | DOWN ↓          | Always
- *   UP_ZONE     | Green       | DOWN ↓          | From middle of range
- *   TRANSITION  | None        | -               | Never (moving)
- *   DOWN_ZONE   | Green       | UP ↑            | From middle of range
- *   TOO_LOW     | Red         | UP ↑            | Always
+ * - Color gradient: Shows position quality (green = good, yellow/orange = warning, red = error)
+ * - Flow animation: Skeleton has subtle shimmer when form is correct
  */
 class SkeletonOverlayView @JvmOverloads constructor(
     context: Context,
@@ -60,15 +48,6 @@ class SkeletonOverlayView @JvmOverloads constructor(
         
         // Non-tracked skeleton opacity (Minimalist: faint but visible)
         private const val NON_TRACKED_OPACITY = 0.18f
-        
-        // Arrow settings - LARGE and visible
-        private const val ARROW_SHAFT_WIDTH = 12f
-        private const val ARROW_HEAD_LENGTH = 40f
-        private const val ARROW_LENGTH = 90f
-        private const val ARROW_OFFSET = 45f
-        
-        // Focus system: max arrows visible
-        private const val MAX_VISIBLE_ARROWS = 2
         
         // Colors (Modern palette)
         private val COLOR_DEFAULT = Color.parseColor("#80FFFFFF")          // Faint white
@@ -115,21 +94,6 @@ class SkeletonOverlayView @JvmOverloads constructor(
         isAntiAlias = true
         textAlign = Paint.Align.CENTER
         setShadowLayer(4f, 1f, 1f, Color.BLACK)
-    }
-    
-    private val arrowPaint = Paint().apply {
-        color = COLOR_CORRECT
-        strokeWidth = ARROW_SHAFT_WIDTH
-        style = Paint.Style.STROKE
-        isAntiAlias = true
-        strokeCap = Paint.Cap.ROUND
-        strokeJoin = Paint.Join.ROUND
-    }
-    
-    private val arrowFillPaint = Paint().apply {
-        color = COLOR_CORRECT
-        style = Paint.Style.FILL
-        isAntiAlias = true
     }
     
     // Paint for position error indicators
@@ -180,10 +144,7 @@ class SkeletonOverlayView @JvmOverloads constructor(
     private var trackedLandmarkIndices: Set<Int> = emptySet()
     private var isTrainingMode: Boolean = false
     
-    // Moving segments for arrow drawing
-    private var movingSegments: Map<String, MovingSegment> = emptyMap()
-    
-    // Arrow info for each joint (calculated by FormValidator)
+    // Joint info for each tracked joint (calculated by FormValidator)
     private var jointArrowInfos: Map<String, JointArrowInfo> = emptyMap()
     
     // Error state - which joints have errors
@@ -199,7 +160,6 @@ class SkeletonOverlayView @JvmOverloads constructor(
     
     // Settings
     private var showAngles = true
-    private var showArrows = true
     private var showAnglesOnlyOnError = true  // Only show angles on error/critical
     
     // Color smoothing state (prevents flickering)
@@ -210,10 +170,33 @@ class SkeletonOverlayView @JvmOverloads constructor(
     private var flowAnimator: ValueAnimator? = null
     private var flowPhase: Float = 0f
     private var isFlowAnimating = false
+    
+    // Arc Range Indicator
+    private val arcRangeIndicator = ArcRangeIndicator()
+    private var showArcIndicators = true
+    private var arcConfig = ArcConfig()
 
     init {
         // Start flow animation
         startFlowAnimation()
+        
+        // Load arc settings from SettingsManager
+        loadArcSettings()
+    }
+    
+    /**
+     * Load arc indicator settings from SettingsManager
+     */
+    private fun loadArcSettings() {
+        showArcIndicators = SettingsManager.getShowArcIndicators()
+        arcConfig = ArcConfig(
+            radiusDp = SettingsManager.getArcIndicatorRadiusDp(),
+            strokeWidthDp = SettingsManager.getArcIndicatorStrokeWidthDp(),
+            showCurrentIndicator = SettingsManager.getArcShowCurrentIndicator(),
+            showOnlyOnError = SettingsManager.getArcShowOnlyOnError(),
+            showOnlyPrimary = SettingsManager.getArcShowOnlyPrimary(),
+            arcOpacity = SettingsManager.getArcOpacity()
+        )
     }
     
     /**
@@ -279,16 +262,14 @@ class SkeletonOverlayView @JvmOverloads constructor(
     }
     
     /**
-     * Set training mode with tracked landmarks and moving segments
+     * Set training mode with tracked landmarks
      */
     fun setTrainingMode(
         enabled: Boolean, 
-        trackedIndices: Set<Int> = emptySet(),
-        segments: Map<String, MovingSegment> = emptyMap()
+        trackedIndices: Set<Int> = emptySet()
     ) {
         isTrainingMode = enabled
         trackedLandmarkIndices = trackedIndices
-        movingSegments = segments
         
         // Control flow animation
         if (enabled && !isFlowAnimating) {
@@ -316,19 +297,29 @@ class SkeletonOverlayView @JvmOverloads constructor(
         invalidate()
     }
     
-    fun setShowArrows(show: Boolean) {
-        showArrows = show
+    fun setShowLowVisibility(show: Boolean) {}
+    
+    /**
+     * Enable/disable arc range indicators around joints
+     */
+    fun setShowArcIndicators(show: Boolean) {
+        showArcIndicators = show
         invalidate()
     }
     
-    fun setShowLowVisibility(show: Boolean) {}
+    /**
+     * Set arc indicator configuration
+     */
+    fun setArcConfig(config: ArcConfig) {
+        arcConfig = config
+        invalidate()
+    }
 
     fun clear() {
         landmarks = null
         jointAngles = null
         jointArrowInfos = emptyMap()
         errorJointCodes = emptySet()
-        movingSegments = emptyMap()
         positionErrors = emptyList()
         
         // Reset color smoothing state
@@ -354,9 +345,9 @@ class SkeletonOverlayView @JvmOverloads constructor(
         // Draw landmark points
         drawLandmarks(canvas, currentLandmarks)
         
-        // Draw arrows on moving segments based on zone (with focus system)
-        if (showArrows && isTrainingMode) {
-            drawZoneBasedArrows(canvas, currentLandmarks)
+        // Draw Arc Range Indicators for tracked joints
+        if (isTrainingMode && showArcIndicators && jointArrowInfos.isNotEmpty()) {
+            drawArcRangeIndicators(canvas, currentLandmarks)
         }
         
         // Draw position errors (knee-over-toe, alignment, etc.)
@@ -652,133 +643,6 @@ class SkeletonOverlayView @JvmOverloads constructor(
     }
     
     /**
-     * Draw arrows based on current zone with FOCUS system (max 2 arrows)
-     * 
-     * Priority ranking:
-     * 1. Errors (red) - highest priority
-     * 2. Warnings (amber) - approaching boundary
-     * 3. Guidance (green) - normal movement direction
-     */
-    private fun drawZoneBasedArrows(canvas: Canvas, landmarks: List<SmoothedLandmark>) {
-        // Sort arrows by priority: 
-        // 1. Primary joints before Secondary
-        // 2. Errors > Warnings > Normal
-        val sortedArrows = jointArrowInfos.entries
-            .filter { it.value.arrowDirection != ArrowDirection.NONE && it.value.shouldShowArrow() }
-            .sortedByDescending { info ->
-                val basePriority = when {
-                    info.value.isError -> 100    // Highest priority
-                    info.value.isWarning -> 75   // Pre-warning: amber
-                    else -> 50                   // Normal guidance
-                }
-                // Primary joints get +20 priority boost
-                if (info.value.isPrimary) basePriority + 20 else basePriority
-            }
-            .take(MAX_VISIBLE_ARROWS)  // Focus: only show top 2
-        
-        for ((jointCode, arrowInfo) in sortedArrows) {
-            // Get moving segment
-            val segment = movingSegments[jointCode] ?: continue
-            
-            val fromIdx = jointCodeToLandmarkIndex(segment.from) ?: continue
-            val toIdx = jointCodeToLandmarkIndex(segment.to) ?: continue
-            
-            if (fromIdx >= landmarks.size || toIdx >= landmarks.size) continue
-            
-            val fromLandmark = landmarks[fromIdx]
-            val toLandmark = landmarks[toIdx]
-            
-            if (fromLandmark.visibility < VISIBILITY_THRESHOLD || 
-                toLandmark.visibility < VISIBILITY_THRESHOLD) continue
-            
-            // Get segment coordinates
-            val fromX = fromLandmark.x * imageWidth * scaleFactor
-            val fromY = fromLandmark.y * imageHeight * scaleFactor
-            val toX = toLandmark.x * imageWidth * scaleFactor
-            val toY = toLandmark.y * imageHeight * scaleFactor
-            
-            // Calculate midpoint of segment
-            val midX = (fromX + toX) / 2
-            val midY = (fromY + toY) / 2
-            
-            // Calculate segment angle (from → to)
-            val segmentAngle = atan2((toY - fromY).toDouble(), (toX - fromX).toDouble())
-            
-            // Calculate perpendicular angle (90° to segment)
-            // This is the direction the arrow will point - PUSHING the segment
-            val perpAngle = segmentAngle + Math.PI / 2
-            
-            // Apply invertArrow to flip both position and direction
-            val shouldInvert = segment.invertArrow
-            
-            // Arrow points PERPENDICULAR to segment (pushing motion)
-            // DOWN = angle should decrease = push one way
-            // UP = angle should increase = push opposite way
-            val baseArrowAngle = when (arrowInfo.arrowDirection) {
-                ArrowDirection.DOWN -> perpAngle
-                ArrowDirection.UP -> perpAngle + Math.PI
-                ArrowDirection.NONE -> continue
-            }
-            
-            // Apply inversion if needed
-            val arrowAngle = if (shouldInvert) baseArrowAngle + Math.PI else baseArrowAngle
-            
-            // Position arrow on the segment itself (at midpoint)
-            // Slight offset in opposite direction of arrow so it appears to push
-            val offsetDistance = ARROW_OFFSET * 0.3f  // Smaller offset, closer to segment
-            val arrowX = midX - offsetDistance * cos(arrowAngle).toFloat()
-            val arrowY = midY - offsetDistance * sin(arrowAngle).toFloat()
-            
-            // Color based on state: Error (red) > Warning (amber) > Correct (green)
-            val color = when {
-                arrowInfo.isError -> COLOR_ERROR
-                arrowInfo.isWarning -> COLOR_WARNING  // PRE-WARNING: Amber
-                else -> COLOR_CORRECT
-            }
-            
-            // Draw the arrow
-            drawLargeArrow(canvas, arrowX, arrowY, arrowAngle.toFloat(), color)
-        }
-    }
-    
-    /**
-     * Draw a large, visible arrow
-     */
-    private fun drawLargeArrow(canvas: Canvas, x: Float, y: Float, angle: Float, color: Int) {
-        arrowPaint.color = color
-        arrowFillPaint.color = color
-        
-        // Calculate arrow end point
-        val endX = x + ARROW_LENGTH * cos(angle)
-        val endY = y + ARROW_LENGTH * sin(angle)
-        
-        // Draw arrow shaft (thick line)
-        arrowPaint.strokeWidth = ARROW_SHAFT_WIDTH
-        canvas.drawLine(x, y, endX, endY, arrowPaint)
-        
-        // Draw arrow head (filled triangle)
-        val headAngle1 = angle + Math.toRadians(150.0).toFloat()
-        val headAngle2 = angle - Math.toRadians(150.0).toFloat()
-        
-        val head1X = endX + ARROW_HEAD_LENGTH * cos(headAngle1)
-        val head1Y = endY + ARROW_HEAD_LENGTH * sin(headAngle1)
-        val head2X = endX + ARROW_HEAD_LENGTH * cos(headAngle2)
-        val head2Y = endY + ARROW_HEAD_LENGTH * sin(headAngle2)
-        
-        val path = Path().apply {
-            moveTo(endX, endY)
-            lineTo(head1X, head1Y)
-            lineTo(head2X, head2Y)
-            close()
-        }
-        canvas.drawPath(path, arrowFillPaint)
-        
-        // Add outline to arrow head
-        arrowPaint.strokeWidth = 2f
-        canvas.drawPath(path, arrowPaint)
-    }
-    
-    /**
      * Convert landmark index to joint code
      */
     private fun landmarkIndexToJointCode(index: Int): String? {
@@ -817,6 +681,54 @@ class SkeletonOverlayView @JvmOverloads constructor(
             "left_ankle" -> 27
             "right_ankle" -> 28
             else -> null
+        }
+    }
+    
+    // ==================== Arc Range Indicator Drawing ====================
+    
+    /**
+     * Draw Arc Range Indicators for all tracked joints
+     * 
+     * Shows a gradient arc around each tracked joint indicating:
+     * - Valid UP range (green at center, orange at edges)
+     * - Valid DOWN range (green at center, orange at edges)
+     * - Transition zone (blue)
+     * - Error zones (red)
+     * - Current position indicator (dot with glow)
+     */
+    private fun drawArcRangeIndicators(
+        canvas: Canvas,
+        landmarks: List<SmoothedLandmark>
+    ) {
+        val density = resources.displayMetrics.density
+        
+        for ((jointCode, arrowInfo) in jointArrowInfos) {
+            // Get landmark index for this joint
+            val landmarkIndex = jointCodeToLandmarkIndex(jointCode) ?: continue
+            if (landmarkIndex >= landmarks.size) continue
+            
+            val landmark = landmarks[landmarkIndex]
+            if (landmark.visibility < VISIBILITY_THRESHOLD) continue
+            
+            // Calculate center position in screen coordinates
+            val centerX = landmark.x * imageWidth * scaleFactor
+            val centerY = landmark.y * imageHeight * scaleFactor
+            
+            // Create arc data from arrow info
+            val arcData = ArcRangeData.fromArrowInfo(
+                jointCode = jointCode,
+                centerX = centerX,
+                centerY = centerY,
+                arrowInfo = arrowInfo
+            )
+            
+            // Check if arc should be shown based on config
+            if (!arcRangeIndicator.shouldShowArc(arcData, arcConfig)) {
+                continue
+            }
+            
+            // Draw the arc
+            arcRangeIndicator.draw(canvas, arcData, arcConfig, density)
         }
     }
 

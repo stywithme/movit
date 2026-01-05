@@ -51,6 +51,12 @@ class TrainingEngine(
     
     private val jointTracker = JointAngleTracker(trackedJoints)
     
+    /**
+     * Centralized angle smoother - Single Source of Truth for smoothed angles
+     * All components use smoothed angles from here for consistency
+     */
+    private val angleSmoother = AngleSmoother()
+    
     private val stateMachine = PhaseStateMachine(
         countingMethod = exerciseConfig.countingMethod,
         primaryJoints = primaryJoints,
@@ -273,6 +279,7 @@ class TrainingEngine(
     fun start() {
         isRunning = true
         isPaused = false
+        angleSmoother.reset()  // Reset smoothing history for fresh start
         stateMachine.reset()
         repCounter.reset()
         holdTimer?.reset()
@@ -359,32 +366,38 @@ class TrainingEngine(
     fun processFrame(angles: JointAngles, landmarks: List<SmoothedLandmark>? = null) {
         if (!isRunning || isPaused) return
         
-        // 1. Extract tracked joint angles
-        val trackedAngles = jointTracker.extractTrackedAngles(angles)
-        _currentAngles.value = trackedAngles
+        // 1. Extract tracked joint angles (raw)
+        val rawTrackedAngles = jointTracker.extractTrackedAngles(angles)
         
-        if (trackedAngles.isEmpty()) {
+        if (rawTrackedAngles.isEmpty()) {
             return
         }
         
-        // 2. Extract primary joint angles for state machine
-        val primaryAngles = jointTracker.extractPrimaryAngles(angles)
+        // 2. Apply centralized smoothing - SINGLE SOURCE OF TRUTH
+        // All components use these smoothed angles for consistency
+        val smoothedAngles = angleSmoother.smooth(rawTrackedAngles)
+        _currentAngles.value = smoothedAngles
         
-        // 3. Check if in start position (before training starts)
-        val inStartPos = formValidator.isInStartPosition(trackedAngles)
+        // 3. Extract primary joint angles (from smoothed)
+        val primaryAngles = smoothedAngles.filterKeys { jointCode ->
+            primaryJoints.any { it.joint == jointCode }
+        }
+        
+        // 4. Check if in start position (using smoothed angles)
+        val inStartPos = formValidator.isInStartPosition(smoothedAngles)
         _isInStartPosition.value = inStartPos
         
-        // 4. Update state machine
+        // 5. Update state machine (using smoothed angles - no internal smoothing needed)
         val currentPhase = stateMachine.update(primaryAngles)
         _currentPhase.value = currentPhase
         
-        // 5. Validate form (angle-based)
-        val validation = formValidator.validate(trackedAngles, currentPhase)
+        // 6. Validate form (using same smoothed angles - consistent with state machine)
+        val validation = formValidator.validate(smoothedAngles, currentPhase)
         lastValidationResult = validation
         _jointStatuses.value = validation.jointStatuses
         
-        // 6. Update arrow infos for visual feedback
-        _arrowInfos.value = formValidator.getJointArrowInfos(trackedAngles)
+        // 7. Update arrow infos for visual feedback (using smoothed angles)
+        _arrowInfos.value = formValidator.getJointArrowInfos(smoothedAngles)
         
         // 7. Position validation (if landmarks provided and validator exists)
         val positionValidation = if (landmarks != null && positionValidator != null) {
