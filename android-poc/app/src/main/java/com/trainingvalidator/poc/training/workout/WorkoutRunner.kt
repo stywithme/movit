@@ -8,25 +8,33 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 
 /**
- * WorkoutRunner - Orchestrates a sequence of exercises
+ * WorkoutRunner - Orchestrates a sequence of exercises for SEQUENTIAL mode
  * 
- * Supports two execution modes:
+ * This class is used by WorkoutActivity to manage workouts where each exercise
+ * is run in a SEPARATE TrainingActivity launch. After each exercise completes,
+ * the user returns to WorkoutActivity which shows rest periods and progress.
  * 
- * 1. SEQUENTIAL (default):
+ * Execution Modes:
+ * 
+ * 1. SEQUENTIAL (primary use case for this class):
  *    Complete all reps of Exercise 1, then rest, then Exercise 2, etc.
  *    Ex1 (10 reps) → Rest → Ex2 (10 reps) → Rest → Ex3 (10 reps)
+ *    Each exercise launches a separate TrainingActivity instance.
  * 
- * 2. ALTERNATING:
- *    Alternate between exercises based on repsPerSwitch.
- *    repsPerSwitch=1: Ex1 (1 rep) → Ex2 (1 rep) → Ex3 (1 rep) → Ex1 (1 rep) → ...
- *    repsPerSwitch=3: Ex1 (3 reps) → Ex2 (3 reps) → Ex1 (3 reps) → ...
+ * 2. ALTERNATING (handled by WorkoutTrainingEngine instead):
+ *    For true alternating workouts (1 rep left, 1 rep right), use 
+ *    WorkoutTrainingEngine with Hot-Swap for seamless camera-continuous switching.
+ * 
+ * Architecture Note:
+ *   - WorkoutRunner: Sequential mode orchestration (multiple TrainingActivity launches)
+ *   - WorkoutTrainingEngine: Hot-Swap mode (single TrainingActivity, engine swapping)
  * 
  * Usage:
  * 1. Create WorkoutRunner with WorkoutConfig
  * 2. Call start() to begin
  * 3. Observe currentExercise, state, and progress flows
- * 4. Call onExerciseCompleted() or onRepsCompleted() based on mode
- * 5. Handle rest periods in UI (if any)
+ * 4. Call onExerciseCompleted() when TrainingActivity returns
+ * 5. Handle rest periods in UI
  * 6. Repeat until isCompleted
  */
 class WorkoutRunner(

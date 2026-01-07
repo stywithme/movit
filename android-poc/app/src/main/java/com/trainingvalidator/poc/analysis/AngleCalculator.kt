@@ -397,4 +397,36 @@ data class JointAngles(
             appendLine("Spine: ${spine?.let { "%.1f°".format(it) } ?: "N/A"}")
         }
     }
+    
+    /**
+     * Create a mirrored version of these angles (swap LEFT ↔ RIGHT)
+     * 
+     * This is used for front camera correction:
+     * When using front camera, the image is mirrored before pose detection,
+     * causing LEFT/RIGHT joints to be swapped. This function corrects that.
+     * 
+     * @return New JointAngles with LEFT and RIGHT swapped
+     */
+    fun mirrored(): JointAngles {
+        return JointAngles(
+            // Swap elbows
+            leftElbow = rightElbow,
+            rightElbow = leftElbow,
+            // Swap shoulders
+            leftShoulder = rightShoulder,
+            rightShoulder = leftShoulder,
+            // Swap hips
+            leftHip = rightHip,
+            rightHip = leftHip,
+            // Keep neck and spine as-is (center joints)
+            neck = neck,
+            spine = spine,
+            // Swap knees
+            leftKnee = rightKnee,
+            rightKnee = leftKnee,
+            // Swap ankles
+            leftAnkle = rightAnkle,
+            rightAnkle = leftAnkle
+        )
+    }
 }

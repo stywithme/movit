@@ -70,6 +70,11 @@ class PoseLandmarkerHelper(
     private var lastImageWidth = 0
     private var lastImageHeight = 0
     
+    // Store front camera state for result callback
+    // This is needed to correctly swap LEFT/RIGHT landmarks for angle calculation
+    @Volatile
+    private var lastIsFrontCamera = false
+    
     // Reusable bitmap buffer to reduce GC pressure
     private var bitmapBuffer: Bitmap? = null
 
@@ -131,6 +136,9 @@ class PoseLandmarkerHelper(
         }
 
         try {
+            // Store front camera state for result callback
+            lastIsFrontCamera = isFrontCamera
+            
             // Use SystemClock.uptimeMillis() for consistent timestamps (Google's approach)
             val frameTime = SystemClock.uptimeMillis()
             
@@ -214,7 +222,8 @@ class PoseLandmarkerHelper(
                 inferenceTimeMs = inferenceTime,
                 imageWidth = input.width,
                 imageHeight = input.height,
-                modelType = currentModelType.displayName
+                modelType = currentModelType.displayName,
+                isFrontCamera = lastIsFrontCamera
             )
         )
     }
@@ -421,5 +430,11 @@ data class PoseResult(
     val inferenceTimeMs: Long,
     val imageWidth: Int,
     val imageHeight: Int,
-    val modelType: String
+    val modelType: String,
+    /**
+     * Whether this result is from front camera.
+     * When true, landmarks need to be swapped (LEFT ↔ RIGHT) for correct angle calculation
+     * because the image was mirrored before pose detection.
+     */
+    val isFrontCamera: Boolean = false
 )

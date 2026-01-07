@@ -14,6 +14,7 @@ import android.view.animation.AccelerateDecelerateInterpolator
 import com.google.mediapipe.tasks.vision.poselandmarker.PoseLandmarker
 import com.trainingvalidator.poc.analysis.JointAngles
 import com.trainingvalidator.poc.analysis.SmoothedLandmark
+import com.trainingvalidator.poc.pose.BodyLandmarks
 import com.trainingvalidator.poc.pose.JointLandmarkMapping
 import com.trainingvalidator.poc.training.engine.JointArrowInfo
 import com.trainingvalidator.poc.training.engine.JointZone
@@ -148,7 +149,9 @@ class SkeletonOverlayView @JvmOverloads constructor(
     
     // Training data
     private var trackedLandmarkIndices: Set<Int> = emptySet()
+    private var rawTrackedLandmarkIndices: Set<Int> = emptySet()  // Original (non-mirrored) indices
     private var isTrainingMode: Boolean = false
+    private var isFrontCamera: Boolean = false  // For mirroring tracked indices
     
     // Joint info for each tracked joint (calculated by FormValidator)
     private var jointArrowInfos: Map<String, JointArrowInfo> = emptyMap()
@@ -269,13 +272,27 @@ class SkeletonOverlayView @JvmOverloads constructor(
     
     /**
      * Set training mode with tracked landmarks
+     * 
+     * @param enabled Whether training mode is enabled
+     * @param trackedIndices Set of landmark indices to track (from exercise config)
+     * @param useFrontCamera Whether using front camera (for mirroring indices)
      */
     fun setTrainingMode(
         enabled: Boolean, 
-        trackedIndices: Set<Int> = emptySet()
+        trackedIndices: Set<Int> = emptySet(),
+        useFrontCamera: Boolean = false
     ) {
         isTrainingMode = enabled
-        trackedLandmarkIndices = trackedIndices
+        isFrontCamera = useFrontCamera
+        rawTrackedLandmarkIndices = trackedIndices
+        
+        // For front camera, mirror the tracked indices since the image is mirrored
+        // e.g., if tracking right_elbow (14), we need to highlight left_elbow (13) in the image
+        trackedLandmarkIndices = if (useFrontCamera) {
+            trackedIndices.map { BodyLandmarks.getMirroredIndex(it) }.toSet()
+        } else {
+            trackedIndices
+        }
         
         // Control flow animation
         if (enabled && !isFlowAnimating) {
@@ -705,8 +722,18 @@ class SkeletonOverlayView @JvmOverloads constructor(
      * Convert joint code to landmark index
      * Uses JointLandmarkMapping as single source of truth
      */
+    /**
+     * Convert joint code to landmark index
+     * For front camera, applies mirroring since the image is mirrored
+     */
     private fun jointCodeToLandmarkIndex(jointCode: String): Int? {
-        return JointLandmarkMapping.jointToLandmark(jointCode)
+        val index = JointLandmarkMapping.jointToLandmark(jointCode) ?: return null
+        // Apply mirroring for front camera
+        return if (isFrontCamera) {
+            BodyLandmarks.getMirroredIndex(index)
+        } else {
+            index
+        }
     }
     
     // ==================== Arc Range Indicator Drawing ====================
@@ -881,8 +908,18 @@ class SkeletonOverlayView @JvmOverloads constructor(
      * Convert landmark name to MediaPipe landmark index
      * Uses JointLandmarkMapping as single source of truth
      */
+    /**
+     * Convert landmark name to index
+     * For front camera, applies mirroring since the image is mirrored
+     */
     private fun landmarkNameToIndex(name: String): Int? {
-        return JointLandmarkMapping.jointToLandmark(name)
+        val index = JointLandmarkMapping.jointToLandmark(name) ?: return null
+        // Apply mirroring for front camera
+        return if (isFrontCamera) {
+            BodyLandmarks.getMirroredIndex(index)
+        } else {
+            index
+        }
     }
     
     override fun onDetachedFromWindow() {

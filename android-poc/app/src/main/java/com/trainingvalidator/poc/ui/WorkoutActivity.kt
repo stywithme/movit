@@ -420,10 +420,10 @@ class WorkoutActivity : AppCompatActivity() {
             
             // Pass target override if specified (for sequential mode)
             exercise.workoutExercise.target.reps?.let {
-                putExtra("target_reps_override", it)
+                putExtra(TrainingActivity.EXTRA_TARGET_REPS_OVERRIDE, it)
             }
             exercise.workoutExercise.target.durationSec?.let {
-                putExtra("target_duration_override", it)
+                putExtra(TrainingActivity.EXTRA_TARGET_DURATION_OVERRIDE, it)
             }
         }
         

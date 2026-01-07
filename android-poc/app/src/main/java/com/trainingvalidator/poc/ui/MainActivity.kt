@@ -253,7 +253,7 @@ class MainActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetectionList
             
             // Calculate angles using world landmarks (3D) if available
             // Using lower visibility threshold (0.3) for angles to show more often
-            val angles = if (worldLandmarks != null) {
+            val rawAngles = if (worldLandmarks != null) {
                 AngleCalculator.calculateAllAnglesSmoothed(
                     worldLandmarks, 
                     visibilityThreshold = 0.3f,
@@ -265,6 +265,10 @@ class MainActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetectionList
                     visibilityThreshold = 0.3f
                 )
             }
+            
+            // Apply front camera correction: swap LEFT/RIGHT angles
+            // because the image was mirrored before pose detection
+            val angles = if (result.isFrontCamera) rawAngles.mirrored() else rawAngles
             
             // Update skeleton overlay
             binding.skeletonOverlay.updateSkeleton(

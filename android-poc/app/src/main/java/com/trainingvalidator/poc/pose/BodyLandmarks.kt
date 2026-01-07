@@ -165,4 +165,57 @@ object BodyLandmarks {
         LEFT_WRIST, RIGHT_WRIST,
         LEFT_HIP, RIGHT_HIP
     )
+    
+    /**
+     * Mapping from LEFT landmarks to their RIGHT counterparts
+     * Used for front camera mirroring correction
+     */
+    private val LEFT_TO_RIGHT_MAP = mapOf(
+        LEFT_EYE_INNER to RIGHT_EYE_INNER,
+        LEFT_EYE to RIGHT_EYE,
+        LEFT_EYE_OUTER to RIGHT_EYE_OUTER,
+        LEFT_EAR to RIGHT_EAR,
+        MOUTH_LEFT to MOUTH_RIGHT,
+        LEFT_SHOULDER to RIGHT_SHOULDER,
+        LEFT_ELBOW to RIGHT_ELBOW,
+        LEFT_WRIST to RIGHT_WRIST,
+        LEFT_PINKY to RIGHT_PINKY,
+        LEFT_INDEX to RIGHT_INDEX,
+        LEFT_THUMB to RIGHT_THUMB,
+        LEFT_HIP to RIGHT_HIP,
+        LEFT_KNEE to RIGHT_KNEE,
+        LEFT_ANKLE to RIGHT_ANKLE,
+        LEFT_HEEL to RIGHT_HEEL,
+        LEFT_FOOT_INDEX to RIGHT_FOOT_INDEX
+    )
+    
+    /**
+     * Full swap map (includes both LEFT→RIGHT and RIGHT→LEFT)
+     */
+    private val SWAP_MAP: Map<Int, Int> by lazy {
+        val map = mutableMapOf<Int, Int>()
+        LEFT_TO_RIGHT_MAP.forEach { (left, right) ->
+            map[left] = right
+            map[right] = left
+        }
+        map
+    }
+    
+    /**
+     * Get the mirrored landmark index for front camera correction
+     * Swaps LEFT ↔ RIGHT landmarks
+     * 
+     * @param index Original landmark index
+     * @return Mirrored landmark index (or same index if no swap needed, e.g., NOSE)
+     */
+    fun getMirroredIndex(index: Int): Int {
+        return SWAP_MAP[index] ?: index
+    }
+    
+    /**
+     * Check if a landmark needs to be swapped for front camera
+     */
+    fun needsSwap(index: Int): Boolean {
+        return SWAP_MAP.containsKey(index)
+    }
 }

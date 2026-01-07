@@ -193,6 +193,51 @@ sealed class FeedbackEvent {
         override val timestamp: Long = System.currentTimeMillis(),
         override val priority: FeedbackPriority = FeedbackPriority.MEDIUM
     ) : FeedbackEvent()
+    
+    // ==================== Visibility-based Events ====================
+    
+    /**
+     * Visibility warning - some required joints not visible
+     * Training continues but user is warned
+     */
+    data class VisibilityWarning(
+        val message: LocalizedText,
+        val remainingBeforePauseMs: Long,
+        val invisibleJoints: List<String>,
+        override val timestamp: Long = System.currentTimeMillis(),
+        override val priority: FeedbackPriority = FeedbackPriority.HIGH
+    ) : FeedbackEvent()
+    
+    /**
+     * Visibility paused - training paused due to joints not visible
+     * State is saved for resume
+     */
+    data class VisibilityPaused(
+        val savedRepCount: Int,
+        val savedPhase: Phase,
+        val message: LocalizedText,
+        override val timestamp: Long = System.currentTimeMillis(),
+        override val priority: FeedbackPriority = FeedbackPriority.HIGH
+    ) : FeedbackEvent()
+    
+    /**
+     * Visibility resume countdown - joints visible again, starting countdown
+     */
+    data class VisibilityResumeCountdown(
+        val resumeFromRep: Int,
+        val resumeFromPhase: Phase,
+        override val timestamp: Long = System.currentTimeMillis(),
+        override val priority: FeedbackPriority = FeedbackPriority.HIGH
+    ) : FeedbackEvent()
+    
+    /**
+     * Visibility resumed - countdown finished, training resumed
+     */
+    data class VisibilityResumed(
+        val repCount: Int,
+        override val timestamp: Long = System.currentTimeMillis(),
+        override val priority: FeedbackPriority = FeedbackPriority.MEDIUM
+    ) : FeedbackEvent()
 }
 
 /**

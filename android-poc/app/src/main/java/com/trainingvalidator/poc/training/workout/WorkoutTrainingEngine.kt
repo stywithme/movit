@@ -1,8 +1,6 @@
 package com.trainingvalidator.poc.training.workout
 
 import android.util.Log
-import com.trainingvalidator.poc.analysis.JointAngles
-import com.trainingvalidator.poc.analysis.SmoothedLandmark
 import com.trainingvalidator.poc.training.TrainingEngine
 import com.trainingvalidator.poc.training.models.*
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -12,19 +10,29 @@ import kotlinx.coroutines.flow.StateFlow
  * WorkoutTrainingEngine - Hot-swap capable wrapper for TrainingEngine
  * 
  * This engine supports switching between exercises WITHOUT recreating the camera
- * or pose detection pipeline. Used for alternating mode workouts.
+ * or pose detection pipeline. Used for ALTERNATING mode workouts where fast,
+ * seamless transitions are essential (e.g., alternating left/right arm exercises).
  * 
  * Key Features:
- * - Hot-swap: Switch exercise config instantly
- * - Preserves camera/pose detection state
- * - Manages exercise sequence for alternating mode
- * - Tracks progress across all exercises
+ * - Hot-swap: Switch exercise config instantly without camera restart
+ * - Preserves camera/pose detection state across exercise switches
+ * - Manages exercise sequence and cycling for alternating mode
+ * - Tracks cumulative progress (reps, correct reps, accuracy) across all exercises
+ * - Applies WorkoutExercise.target overrides to each TrainingEngine
+ * 
+ * Architecture Note:
+ *   - WorkoutRunner: For SEQUENTIAL mode (separate TrainingActivity per exercise)
+ *   - WorkoutTrainingEngine: For ALTERNATING/Hot-Swap mode (single TrainingActivity)
+ * 
+ * This class is instantiated and managed by TrainingActivity when launched in 
+ * Workout Mode (EXTRA_IS_WORKOUT_MODE = true, EXTRA_WORKOUT_NAME set).
  * 
  * Usage:
- * 1. Create with list of exercises
- * 2. Call start() to begin with first exercise
- * 3. Call switchToNextExercise() when rep limit is reached
- * 4. Continue until all exercises complete their targets
+ * 1. Create with list of LoadedExercise and WorkoutConfig
+ * 2. Call start() to begin with first exercise (returns TrainingEngine)
+ * 3. TrainingActivity calls onRepsCompleted() when session rep limit is reached
+ * 4. Based on SwitchResult, call switchToNextExercise() for hot-swap
+ * 5. Continue until WorkoutComplete is returned
  */
 class WorkoutTrainingEngine(
     private val exercises: List<LoadedExercise>,
@@ -42,6 +50,7 @@ class WorkoutTrainingEngine(
     private var _exerciseRepsCompleted = mutableMapOf<Int, Int>()  // index -> reps done
     private var _exerciseRepsTargets = mutableMapOf<Int, Int>()    // index -> target reps
     private var _totalRepsCompleted = 0
+    private var _totalCorrectReps = 0  // Track correct reps for accuracy calculation
     private var _currentRound = 1
     
     // ==================== State Flows ====================
@@ -145,18 +154,22 @@ class WorkoutTrainingEngine(
     
     /**
      * Called when reps are completed in the current session
-     * Returns true if should switch to next exercise
+     * 
+     * @param reps Number of reps completed in this session
+     * @param correctReps Number of correct reps (for accuracy tracking)
+     * @return SwitchResult indicating next action
      */
-    fun onRepsCompleted(reps: Int): SwitchResult {
+    fun onRepsCompleted(reps: Int, correctReps: Int = reps): SwitchResult {
         // Update completed reps for current exercise
         val currentCompleted = _exerciseRepsCompleted[currentExerciseIndex] ?: 0
         val newCompleted = currentCompleted + reps
         _exerciseRepsCompleted[currentExerciseIndex] = newCompleted
         _totalRepsCompleted += reps
+        _totalCorrectReps += correctReps
         
         val target = _exerciseRepsTargets[currentExerciseIndex] ?: 0
         
-        Log.d(TAG, "Exercise $currentExerciseIndex: $newCompleted/$target reps completed")
+        Log.d(TAG, "Exercise $currentExerciseIndex: $newCompleted/$target reps completed (correct: $correctReps)")
         
         if (!isAlternatingMode) {
             // Sequential mode: check if current exercise is done
@@ -168,6 +181,14 @@ class WorkoutTrainingEngine(
         
         // Alternating mode: always switch after session reps
         return handleAlternatingSwitch()
+    }
+    
+    /**
+     * Get overall accuracy percentage (0-100)
+     */
+    fun getOverallAccuracy(): Float {
+        if (_totalRepsCompleted == 0) return 100f
+        return (_totalCorrectReps.toFloat() / _totalRepsCompleted.toFloat()) * 100f
     }
     
     /**
@@ -228,8 +249,13 @@ class WorkoutTrainingEngine(
     
     /**
      * Get progress info for UI
+     * 
+     * totalRepsTarget accounts for all rounds (sum per round * total rounds)
      */
     fun getProgressInfo(): WorkoutProgressInfo {
+        val repsPerRound = _exerciseRepsTargets.values.sum()
+        val totalRepsAcrossAllRounds = repsPerRound * workoutConfig.rounds
+        
         return WorkoutProgressInfo(
             currentExerciseIndex = currentExerciseIndex,
             totalExercises = exercises.size,
@@ -237,7 +263,7 @@ class WorkoutTrainingEngine(
             currentExerciseReps = _exerciseRepsCompleted[currentExerciseIndex] ?: 0,
             currentExerciseTarget = _exerciseRepsTargets[currentExerciseIndex] ?: 0,
             totalRepsCompleted = _totalRepsCompleted,
-            totalRepsTarget = _exerciseRepsTargets.values.sum(),
+            totalRepsTarget = totalRepsAcrossAllRounds,
             currentRound = _currentRound,
             totalRounds = workoutConfig.rounds,
             repsThisSession = getRepsForCurrentSession()
@@ -255,11 +281,20 @@ class WorkoutTrainingEngine(
     
     // ==================== Private Methods ====================
     
+    /**
+     * Create TrainingEngine with target overrides from workout config
+     */
     private fun createEngine(exercise: LoadedExercise): TrainingEngine {
+        // Get target overrides from workout exercise
+        val targetRepsOverride = exercise.workoutExercise.target.reps
+        val targetDurationMsOverride = exercise.workoutExercise.target.getDurationMs()
+        
         return TrainingEngine(
             exerciseConfig = exercise.config,
             difficulty = exercise.difficulty,
-            poseVariantIndex = exercise.workoutExercise.variantIndex
+            poseVariantIndex = exercise.workoutExercise.variantIndex,
+            targetRepsOverride = targetRepsOverride,
+            targetDurationMsOverride = targetDurationMsOverride
         )
     }
     

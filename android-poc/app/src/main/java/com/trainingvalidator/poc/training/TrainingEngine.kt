@@ -29,7 +29,17 @@ import kotlinx.coroutines.flow.StateFlow
 class TrainingEngine(
     private val exerciseConfig: ExerciseConfig,
     private val difficulty: DifficultyType,
-    private val poseVariantIndex: Int = 0
+    private val poseVariantIndex: Int = 0,
+    /**
+     * Override target reps from workout config (null = use exercise default)
+     * Used in Workout Mode to apply WorkoutExercise.target.reps
+     */
+    private val targetRepsOverride: Int? = null,
+    /**
+     * Override target duration from workout config in milliseconds (null = use exercise default)
+     * Used in Workout Mode to apply WorkoutExercise.target.durationSec
+     */
+    private val targetDurationMsOverride: Long? = null
 ) {
     
     companion object {
@@ -45,7 +55,12 @@ class TrainingEngine(
     
     private val trackedJoints: List<TrackedJoint> = poseVariant.trackedJoints
     private val primaryJoints: List<TrackedJoint> = poseVariant.getPrimaryJoints()
-    private val targetReps: Int = difficultyLevel.repCountingConfig.reps
+    
+    /**
+     * Effective target reps: override takes precedence, then exercise config
+     */
+    private val targetReps: Int = targetRepsOverride 
+        ?: difficultyLevel.repCountingConfig.reps
     
     // ==================== Components ====================
     
@@ -108,6 +123,22 @@ class TrainingEngine(
             )
         }
     
+    // ==================== Visibility Monitor ====================
+    
+    /**
+     * Visibility monitor for tracking required joints visibility
+     * Handles auto-pause when joints become invisible and resume when visible again
+     */
+    private val visibilityMonitor: VisibilityMonitor = VisibilityMonitor(
+        requiredJoints = poseVariant.trackedJoints
+            .filter { it.role == JointRole.PRIMARY }
+            .map { it.joint },
+        minVisibility = 0.3f,       // Lowered from 0.5f - more tolerant
+        graceDurationMs = 1000,     // 1s - ignore brief glitches (was 0.5s)
+        warningDurationMs = 2000,   // 2s - show warning (was 1.5s)
+        pauseAfterMs = 4000         // 4s - pause training (was 3s)
+    )
+    
     // ==================== Hold Timer (for HOLD exercises only) ====================
     
     /**
@@ -118,10 +149,14 @@ class TrainingEngine(
     /**
      * Target duration for hold exercises (null for rep-based)
      */
+    /**
+     * Effective target duration for hold exercises: override takes precedence, then exercise config
+     */
     val targetDurationMs: Long? = if (isHoldExercise) {
-        difficultyLevel.repCountingConfig.getDurationMs(
-            SettingsManager.getDefaultHoldDuration()
-        )
+        targetDurationMsOverride 
+            ?: difficultyLevel.repCountingConfig.getDurationMs(
+                SettingsManager.getDefaultHoldDuration()
+            )
     } else null
     
     /**
@@ -183,6 +218,20 @@ class TrainingEngine(
      */
     private val _cameraWarning = MutableStateFlow<CameraPositionWarning?>(null)
     val cameraWarning: StateFlow<CameraPositionWarning?> = _cameraWarning
+    
+    // ==================== Visibility State Flows ====================
+    
+    /**
+     * Current visibility state
+     */
+    private val _visibilityState = MutableStateFlow(VisibilityState.VISIBLE)
+    val visibilityState: StateFlow<VisibilityState> = _visibilityState
+    
+    /**
+     * Whether training is paused due to visibility (not manual pause)
+     */
+    private val _isVisibilityPaused = MutableStateFlow(false)
+    val isVisibilityPaused: StateFlow<Boolean> = _isVisibilityPaused
     
     // ==================== Hold-specific State Flows ====================
     
@@ -351,6 +400,12 @@ class TrainingEngine(
             _positionErrors.value = emptyList()
             _cameraWarning.value = null
             
+            // Reset visibility monitor
+            visibilityMonitor.reset()
+            visibilityMonitor.resetStats()
+            _visibilityState.value = VisibilityState.VISIBLE
+            _isVisibilityPaused.value = false
+            
             // Reset hold-specific state
             if (isHoldExercise) {
                 _holdState.value = HoldState.IDLE
@@ -398,6 +453,56 @@ class TrainingEngine(
     }
     
     /**
+     * Resume from visibility pause
+     * Called when user's joints become visible again after auto-pause
+     * 
+     * This method:
+     * 1. Resets the state machine to START phase (user needs to get back in position)
+     * 2. Resets form validator and smoothers for fresh tracking
+     * 3. PRESERVES the rep count (continues from where paused)
+     * 4. Notifies visibility monitor that resume is complete
+     * 
+     * Thread safety: Uses synchronized block to coordinate with processFrame
+     */
+    fun resumeFromVisibilityPause() {
+        synchronized(stateLock) {
+            // Reset state machine to START (like beginning of training)
+            // User needs to get back into start position
+            stateMachine.reset()
+            
+            // Reset smoothing for fresh data
+            angleSmoother.reset()
+            
+            // Reset form validator state
+            formValidator.reset()
+            
+            // Clear position validation cooldowns
+            positionValidator?.clearCooldowns()
+            lastPositionEventTimes.clear()
+            
+            // Reset visibility-related state
+            _isVisibilityPaused.value = false
+            _visibilityState.value = VisibilityState.VISIBLE
+            
+            // Notify visibility monitor
+            visibilityMonitor.onResumeCountdownComplete()
+            
+            // DON'T reset repCounter - keep the count!
+            // The user continues from where they paused
+            
+            // Reset phase to IDLE (will transition to START when in position)
+            _currentPhase.value = Phase.IDLE
+            
+            // Clear current errors (fresh start)
+            _positionErrors.value = emptyList()
+            _cameraWarning.value = null
+        }
+        
+        emitEvent(FeedbackEvent.VisibilityResumed(repCount = repCounter.count))
+        Log.d(TAG, "Resumed from visibility pause at rep ${repCounter.count}")
+    }
+    
+    /**
      * Stop training and get summary
      * Thread safety: Uses synchronized block to coordinate with processFrame
      */
@@ -430,10 +535,11 @@ class TrainingEngine(
      * Thread Safety: Uses synchronized block to prevent concurrent modifications
      * when called from background thread (video mode) or camera callback thread.
      * 
-     * @param angles JointAngles from AngleCalculator
+     * @param angles JointAngles from AngleCalculator (already mirrored for front camera)
      * @param landmarks Optional smoothed landmarks for position-based validation
+     * @param isFrontCamera Whether using front camera (for visibility check mirroring)
      */
-    fun processFrame(angles: JointAngles, landmarks: List<SmoothedLandmark>? = null) {
+    fun processFrame(angles: JointAngles, landmarks: List<SmoothedLandmark>? = null, isFrontCamera: Boolean = false) {
         // Early return outside lock for performance
         if (!isRunning || isPaused) return
         
@@ -443,7 +549,7 @@ class TrainingEngine(
             // Double-check after acquiring lock
             if (!isRunning || isPaused) return
             
-            // 1. Extract tracked joint angles (raw)
+            // 1. Extract tracked joint angles (raw) - MUST happen first for arrowInfos
             val rawTrackedAngles = jointTracker.extractTrackedAngles(angles)
             
             if (rawTrackedAngles.isEmpty()) {
@@ -474,7 +580,64 @@ class TrainingEngine(
             _jointStatuses.value = validation.jointStatuses
             
             // 7. Update arrow infos for visual feedback (using smoothed angles)
+            // This MUST happen before visibility check so skeleton overlay always shows correct joints
             _arrowInfos.value = formValidator.getJointArrowInfos(smoothedAngles)
+            
+            // 7.5. Check visibility of required joints (after arrowInfos update for UI)
+            if (landmarks != null) {
+                val visibilityResult = visibilityMonitor.checkVisibility(
+                    landmarks = landmarks,
+                    currentRepCount = repCounter.count,
+                    currentPhase = stateMachine.currentPhase,
+                    isFrontCamera = isFrontCamera
+                )
+                
+                // Update visibility state
+                _visibilityState.value = visibilityMonitor.state.value
+                
+                // Handle visibility result
+                when (visibilityResult) {
+                    is VisibilityCheckResult.PauseTraining -> {
+                        // Pause training due to visibility - but arrowInfos already updated
+                        _isVisibilityPaused.value = true
+                        emitEvent(FeedbackEvent.VisibilityPaused(
+                            savedRepCount = visibilityResult.savedRepCount,
+                            savedPhase = visibilityResult.savedPhase,
+                            message = visibilityResult.message
+                        ))
+                        return  // Don't process rep counting while paused
+                    }
+                    
+                    is VisibilityCheckResult.ShowWarning -> {
+                        // Show warning but continue processing
+                        emitEvent(FeedbackEvent.VisibilityWarning(
+                            message = visibilityResult.message,
+                            remainingBeforePauseMs = visibilityResult.remainingBeforePause,
+                            invisibleJoints = visibilityResult.invisibleJoints
+                        ))
+                        // Continue processing below...
+                    }
+                    
+                    is VisibilityCheckResult.StartResumeCountdown -> {
+                        // Joints visible again after pause - trigger resume countdown
+                        emitEvent(FeedbackEvent.VisibilityResumeCountdown(
+                            resumeFromRep = visibilityResult.resumeFromRep,
+                            resumeFromPhase = visibilityResult.resumeFromPhase
+                        ))
+                        return  // Don't process frame during countdown
+                    }
+                    
+                    is VisibilityCheckResult.ContinueCountdown -> {
+                        // In resume countdown, don't process frame
+                        return
+                    }
+                    
+                    is VisibilityCheckResult.ContinueTraining -> {
+                        // Normal flow - continue processing
+                        _isVisibilityPaused.value = false
+                    }
+                }
+            }
             
             // 8. Position validation (if landmarks provided and validator exists)
             val positionValidation = if (landmarks != null && positionValidator != null) {
@@ -834,4 +997,21 @@ class TrainingEngine(
      */
     fun getLastCameraResult(): CameraPositionDetector.CameraDetectionResult? = 
         positionValidator?.getLastCameraResult()
+    
+    // ==================== Visibility Getters ====================
+    
+    /**
+     * Check if currently paused due to visibility
+     */
+    fun isVisibilityPausedNow(): Boolean = _isVisibilityPaused.value
+    
+    /**
+     * Get current visibility state
+     */
+    fun getVisibilityState(): VisibilityState = _visibilityState.value
+    
+    /**
+     * Get visibility statistics
+     */
+    fun getVisibilityStats(): VisibilityStats = visibilityMonitor.getStats()
 }

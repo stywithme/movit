@@ -28,8 +28,8 @@
         "ar": "زاوية جانبية - الذراع الشمال",
         "en": "Side View - Left Arm"
       },
-      "cameraPosition": "side_view",
-      "expectedFacingDirection": "auto_detect",
+      "cameraPosition": "front_view",
+      "expectedFacingDirection": "facing_camera",
       "positionChecks": [
         {
           "id": "elbow_stable_left",
