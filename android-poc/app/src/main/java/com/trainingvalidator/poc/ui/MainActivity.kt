@@ -22,6 +22,7 @@ import com.trainingvalidator.poc.databinding.ActivityMainBinding
 import com.trainingvalidator.poc.pose.ModelType
 import com.trainingvalidator.poc.pose.PoseLandmarkerHelper
 import com.trainingvalidator.poc.pose.PoseResult
+import com.trainingvalidator.poc.training.config.SettingsManager
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -47,8 +48,9 @@ class MainActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetectionList
     
     private val mainScope = CoroutineScope(Dispatchers.Main + SupervisorJob())
     
-    // Landmark smoothing for stable visualization
-    private val landmarkSmoother = LandmarkSmoother()
+    // Landmark smoothing - uses One Euro Filter for responsive, jitter-free tracking
+    // Must be initialized AFTER SettingsManager in onCreate()
+    private lateinit var landmarkSmoother: LandmarkSmoother
     
     // State
     private var useFrontCamera = true
@@ -73,6 +75,17 @@ class MainActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetectionList
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        
+        // Initialize SettingsManager FIRST (loads app_settings.json)
+        try {
+            SettingsManager.initialize(this)
+            // Now create landmarkSmoother with loaded settings
+            landmarkSmoother = LandmarkSmoother.createFromSettings()
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed to initialize settings, using defaults", e)
+            // Fallback to default smoother
+            landmarkSmoother = LandmarkSmoother.createBalanced()
+        }
         
         setupFullscreen()
         
@@ -220,6 +233,8 @@ class MainActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetectionList
 
     override fun onPoseDetected(result: PoseResult) {
         mainScope.launch(Dispatchers.Main) {
+            if (!::landmarkSmoother.isInitialized) return@launch
+            
             updateFps()
             
             // Update Model Name UI

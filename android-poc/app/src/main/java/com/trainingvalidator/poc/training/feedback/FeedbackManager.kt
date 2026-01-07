@@ -458,14 +458,15 @@ class FeedbackManager(
         val message = event.warning.message.get(config.language)
         
         // Use MessageOrchestrator for smart delivery
-        // Use expectedPosition as unique identifier for camera warnings
+        // Use WARNING category so user hears it at least once, then reduces
+        // Camera warnings are important but shouldn't spam
         val decision = messageOrchestrator.decide(
             messageKey = "camera:${event.warning.expectedPosition}",
-            category = MessageOrchestrator.Category.INFO,
+            category = MessageOrchestrator.Category.WARNING,  // Changed from INFO for better handling
             messageText = message
         )
         
-        deliverMessage(message, decision, MessageType.INFO)
+        deliverMessage(message, decision, MessageType.WARNING)
     }
     
     // ==================== Visual Message Emission ====================

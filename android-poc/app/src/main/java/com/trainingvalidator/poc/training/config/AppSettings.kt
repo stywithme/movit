@@ -12,7 +12,8 @@ data class AppSettings(
     val movementDetection: MovementDetectionSettings = MovementDetectionSettings(),
     val defaults: DefaultTimingSettings = DefaultTimingSettings(),
     val holdDefaults: HoldDefaults = HoldDefaults(),
-    val visual: VisualSettings = VisualSettings()
+    val visual: VisualSettings = VisualSettings(),
+    val smoothing: SmoothingSettings = SmoothingSettings()
 )
 
 /**
@@ -85,4 +86,30 @@ data class VisualSettings(
     val arcShowOnlyOnError: Boolean = false,
     val arcShowOnlyPrimary: Boolean = true,
     val arcOpacity: Float = 0.9f
+)
+
+/**
+ * Landmark smoothing settings - Controls skeleton tracking smoothness
+ * 
+ * Uses One Euro Filter algorithm for adaptive smoothing:
+ * - Fast movements → responsive tracking (low smoothing)
+ * - Slow/stationary → stable tracking (high smoothing, no jitter)
+ * 
+ * Presets:
+ * - "responsive" → Fast tracking (minCutoff=2.5, beta=0.02)
+ * - "balanced"   → Default (minCutoff=1.5, beta=0.01)
+ * - "smooth"     → Slow exercises (minCutoff=0.8, beta=0.005)
+ * 
+ * @param preset Quick configuration ("responsive", "balanced", "smooth", "custom")
+ * @param minCutoff Base smoothness. Lower = smoother but more lag. Range: 0.5-3.0
+ * @param beta Speed adaptation. Higher = more responsive to fast movements. Range: 0.0-0.5
+ * @param useLegacyEMA Use simple EMA instead of One Euro (for comparison only)
+ * @param legacyAlpha EMA alpha if useLegacyEMA is true
+ */
+data class SmoothingSettings(
+    val preset: String = "balanced",
+    val minCutoff: Float = 1.5f,
+    val beta: Float = 0.01f,
+    val useLegacyEMA: Boolean = false,
+    val legacyAlpha: Float = 0.6f
 )

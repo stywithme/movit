@@ -35,8 +35,8 @@ object ArcColorCalculator {
     /** At boundary color (edge of valid zones) - Near error threshold */
     val COLOR_BOUNDARY = Color.parseColor("#FF9800")
     
-    /** Transition zone color - TRANSITION state in Engine */
-    val COLOR_TRANSITION = Color.parseColor("#81D4FA")
+    /** Transition zone color - TRANSITION state in Engine - YELLOW as requested */
+    val COLOR_TRANSITION = Color.parseColor("#FFEB3B")
     
     /** Warning color (approaching error) */
     val COLOR_WARNING = Color.parseColor("#FFC107")
@@ -139,13 +139,13 @@ object ArcColorCalculator {
             JointZone.TOO_HIGH, JointZone.TOO_LOW -> COLOR_ERROR
             
             JointZone.UP_ZONE -> {
-                // Apply gradient within UP zone
-                getGradientColorInZone(angle, upRangeMin, upRangeMax)
+                // Apply gradient within UP zone (Asymmetric)
+                getGradientColorInZone(angle, upRangeMin, upRangeMax, JointZone.UP_ZONE)
             }
             
             JointZone.DOWN_ZONE -> {
-                // Apply gradient within DOWN zone
-                getGradientColorInZone(angle, downRangeMin, downRangeMax)
+                // Apply gradient within DOWN zone (Asymmetric)
+                getGradientColorInZone(angle, downRangeMin, downRangeMax, JointZone.DOWN_ZONE)
             }
             
             JointZone.TRANSITION -> COLOR_TRANSITION
@@ -153,39 +153,31 @@ object ArcColorCalculator {
     }
     
     /**
-     * Calculate gradient color within a valid zone
+     * Calculate gradient color within a valid zone with ASYMMETRIC logic
      * 
-     * Color distribution:
-     * - 0% - 40% from center: Pure green (optimal)
-     * - 40% - 70% from center: Green → Yellow gradient
-     * - 70% - 100% from center: Yellow → Orange gradient
-     * 
-     * @param angle Current angle
-     * @param min Zone minimum
-     * @param max Zone maximum
-     * @return Interpolated color based on position within zone
+     * Logic:
+     * - Outer side (towards error): Green -> Yellow -> Orange
+     * - Inner side (towards transition): Green -> Yellow (stays yellow)
      */
-    private fun getGradientColorInZone(angle: Double, min: Double, max: Double): Int {
-        return getColorForAngleInRange(angle, min, max)
+    private fun getGradientColorInZone(
+        angle: Double, 
+        min: Double, 
+        max: Double,
+        zone: JointZone
+    ): Int {
+        return getColorForAngleInRange(angle, min, max, zone)
     }
     
     /**
-     * Get color for an angle within a specific range (public version)
-     * 
-     * Used by ArcRangeIndicator to calculate color for each sub-segment
-     * based on actual distance from center of the range.
-     * 
-     * Color distribution:
-     * - 0% - 40% from center: Pure green (optimal)
-     * - 40% - 70% from center: Green → Yellow gradient
-     * - 70% - 100% from center: Yellow → Orange gradient
-     * 
-     * @param angle Current angle
-     * @param rangeMin Range minimum
-     * @param rangeMax Range maximum
-     * @return Interpolated color based on position within range
+     * Get color for an angle within a specific range
+     * Now supports ASYMMETRIC coloring based on zone type
      */
-    fun getColorForAngleInRange(angle: Double, rangeMin: Double, rangeMax: Double): Int {
+    fun getColorForAngleInRange(
+        angle: Double, 
+        rangeMin: Double, 
+        rangeMax: Double,
+        zone: JointZone? = null // Optional for backward compatibility
+    ): Int {
         val center = (rangeMin + rangeMax) / 2
         val halfRange = (rangeMax - rangeMin) / 2
         
@@ -195,20 +187,34 @@ object ArcColorCalculator {
         val distFromCenter = kotlin.math.abs(angle - center)
         val normalizedDist = (distFromCenter / halfRange).coerceIn(0.0, 1.0)
         
+        // Determine if we are on the "Outer" side (towards error) or "Inner" side (towards transition)
+        val isOuterSide = when (zone) {
+            JointZone.UP_ZONE -> angle > center    // UpZone: Higher angles are outer (towards TOO_HIGH)
+            JointZone.DOWN_ZONE -> angle < center  // DownZone: Lower angles are outer (towards TOO_LOW)
+            else -> true // Default to symmetric behavior if zone not specified
+        }
+
         return when {
             // Center 40% - pure optimal green
             normalizedDist < 0.4 -> COLOR_OPTIMAL
             
-            // 40% - 70% - gradient from green to yellow
+            // 40% - 70% - gradient from green to yellow (Both sides)
             normalizedDist < 0.7 -> {
                 val t = ((normalizedDist - 0.4) / 0.3).toFloat()
                 interpolateColor(COLOR_OPTIMAL, COLOR_NEAR_BOUNDARY, t)
             }
             
-            // 70% - 100% - gradient from yellow to orange
+            // 70% - 100% - Outer Edge
             else -> {
-                val t = ((normalizedDist - 0.7) / 0.3).toFloat()
-                interpolateColor(COLOR_NEAR_BOUNDARY, COLOR_BOUNDARY, t)
+                if (isOuterSide) {
+                    // Outer side: Yellow -> Orange (Warning/Danger)
+                    val t = ((normalizedDist - 0.7) / 0.3).toFloat()
+                    interpolateColor(COLOR_NEAR_BOUNDARY, COLOR_BOUNDARY, t)
+                } else {
+                    // Inner side: Stay Yellow (Safe transition)
+                    // We keep it at COLOR_NEAR_BOUNDARY (Yellow)
+                    COLOR_NEAR_BOUNDARY
+                }
             }
         }
     }

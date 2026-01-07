@@ -92,12 +92,7 @@
             "min": 70,
             "max": 110
           },
-          "upRange": {
-            "beginner": { "min": 70, "max": 120 },
-            "normal": { "min": 80, "max": 110 },
-            "advanced": { "min": 85, "max": 100 }
-          },
-          "downRange": {
+          "Range": {
             "beginner": { "min": 70, "max": 120 },
             "normal": { "min": 80, "max": 110 },
             "advanced": { "min": 85, "max": 100 }
@@ -120,12 +115,7 @@
             "min": 165,
             "max": 180
           },
-          "upRange": {
-            "beginner": { "min": 160, "max": 180 },
-            "normal": { "min": 168, "max": 180 },
-            "advanced": { "min": 172, "max": 180 }
-          },
-          "downRange": {
+          "Range": {
             "beginner": { "min": 160, "max": 180 },
             "normal": { "min": 168, "max": 180 },
             "advanced": { "min": 172, "max": 180 }
@@ -254,12 +244,7 @@
             "min": 70,
             "max": 110
           },
-          "upRange": {
-            "beginner": { "min": 70, "max": 120 },
-            "normal": { "min": 80, "max": 110 },
-            "advanced": { "min": 85, "max": 100 }
-          },
-          "downRange": {
+          "Range": {
             "beginner": { "min": 70, "max": 120 },
             "normal": { "min": 80, "max": 110 },
             "advanced": { "min": 85, "max": 100 }

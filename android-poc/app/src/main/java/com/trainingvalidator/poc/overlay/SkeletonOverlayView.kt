@@ -14,6 +14,7 @@ import android.view.animation.AccelerateDecelerateInterpolator
 import com.google.mediapipe.tasks.vision.poselandmarker.PoseLandmarker
 import com.trainingvalidator.poc.analysis.JointAngles
 import com.trainingvalidator.poc.analysis.SmoothedLandmark
+import com.trainingvalidator.poc.pose.JointLandmarkMapping
 import com.trainingvalidator.poc.training.engine.JointArrowInfo
 import com.trainingvalidator.poc.training.engine.JointZone
 import com.trainingvalidator.poc.training.engine.PositionError
@@ -49,6 +50,11 @@ class SkeletonOverlayView @JvmOverloads constructor(
         // Non-tracked skeleton opacity (Minimalist: faint but visible)
         private const val NON_TRACKED_OPACITY = 0.18f
         
+        // Tracked skeleton opacity based on state
+        // Lower opacity for correct state to reduce visual noise and focus on Arc
+        private const val TRACKED_OPACITY_CORRECT = 0.50f    // Green/Yellow - 50%
+        private const val TRACKED_OPACITY_ERROR = 0.75f      // Orange/Red - 75%
+        
         // Colors (Modern palette)
         private val COLOR_DEFAULT = Color.parseColor("#80FFFFFF")          // Faint white
         private val COLOR_CORRECT = Color.parseColor("#00E676")            // Green
@@ -65,7 +71,7 @@ class SkeletonOverlayView @JvmOverloads constructor(
         private val COLOR_NEAR_BOUNDARY = Color.parseColor("#FFEB3B")      // Yellow - approaching limit
         private val COLOR_BOUNDARY = Color.parseColor("#FF9800")           // Orange - at boundary
         private val COLOR_OUT_OF_RANGE = Color.parseColor("#FF5252")       // Red - outside range
-        private val COLOR_TRANSITION = Color.parseColor("#81D4FA")         // Light Blue - natural movement
+        private val COLOR_TRANSITION = Color.parseColor("#FFEB3B")         // Yellow - Safe transition path (was blue)
         
         // Color smoothing constants (prevents flickering)
         const val COLOR_LERP_FACTOR = 0.25f  // How fast to transition (0.1 = slow, 0.5 = fast)
@@ -297,7 +303,7 @@ class SkeletonOverlayView @JvmOverloads constructor(
         invalidate()
     }
     
-    fun setShowLowVisibility(show: Boolean) {}
+    // NOTE: Removed empty setShowLowVisibility() - was unused/unimplemented
     
     /**
      * Enable/disable arc range indicators around joints
@@ -389,25 +395,43 @@ class SkeletonOverlayView @JvmOverloads constructor(
                         val isTrackedConnection = isTrainingMode && 
                             (startIdx in trackedLandmarkIndices || endIdx in trackedLandmarkIndices)
                         
-                        // Get gradient color for tracked joints
-                        val gradientColor = relevantJointCode?.let { 
-                            jointArrowInfos[it]?.let { info -> 
-                                getGradientColorForPosition(info) 
-                            }
+                        // Get gradient color and state for tracked joints
+                        val arrowInfo = relevantJointCode?.let { jointArrowInfos[it] }
+                        val gradientColor = arrowInfo?.let { getGradientColorForPosition(it) }
+                        
+                        // Determine opacity based on joint state
+                        // Lower opacity (50%) for correct/warning state to focus on Arc
+                        // Higher opacity (75%) for error state to draw attention
+                        val trackedOpacity = when {
+                            arrowInfo?.isError == true -> TRACKED_OPACITY_ERROR  // Orange/Red = 75%
+                            arrowInfo?.isWarning == true -> TRACKED_OPACITY_ERROR // Warning = 75%
+                            else -> TRACKED_OPACITY_CORRECT  // Green/Yellow = 50%
                         }
                         
                         // Set color, width, and opacity based on state
-                        val (color, width, alpha) = when {
-                            // Use gradient color for tracked joints
-                            gradientColor != null -> Triple(gradientColor, TRACKED_LINE_WIDTH, 1f)
-                            isTrackedConnection -> Triple(COLOR_LINE_TRACKED, TRACKED_LINE_WIDTH, 1f)
-                            isTrainingMode -> Triple(COLOR_LINE_DEFAULT, LINE_WIDTH, NON_TRACKED_OPACITY)
-                            else -> Triple(COLOR_LINE_DEFAULT, LINE_WIDTH, 0.6f)
+                        // Using inline assignments to avoid Triple allocation per frame
+                        when {
+                            gradientColor != null -> {
+                                linePaint.color = gradientColor
+                                linePaint.strokeWidth = TRACKED_LINE_WIDTH
+                                linePaint.alpha = (trackedOpacity * 255).toInt()
+                            }
+                            isTrackedConnection -> {
+                                linePaint.color = COLOR_LINE_TRACKED
+                                linePaint.strokeWidth = TRACKED_LINE_WIDTH
+                                linePaint.alpha = (TRACKED_OPACITY_CORRECT * 255).toInt()
+                            }
+                            isTrainingMode -> {
+                                linePaint.color = COLOR_LINE_DEFAULT
+                                linePaint.strokeWidth = LINE_WIDTH
+                                linePaint.alpha = (NON_TRACKED_OPACITY * 255).toInt()
+                            }
+                            else -> {
+                                linePaint.color = COLOR_LINE_DEFAULT
+                                linePaint.strokeWidth = LINE_WIDTH
+                                linePaint.alpha = 153 // 0.6f * 255
+                            }
                         }
-                        
-                        linePaint.color = color
-                        linePaint.strokeWidth = width
-                        linePaint.alpha = (alpha * 255).toInt()
                         
                         canvas.drawLine(
                             start.x * imageWidth * scaleFactor,
@@ -494,7 +518,10 @@ class SkeletonOverlayView @JvmOverloads constructor(
                 val distFromCenter = kotlin.math.abs(currentAngle - center)
                 val normalizedDist = (distFromCenter / (rangeSize / 2)).coerceIn(0.0, 1.0)
                 
-                getColorForNormalizedPosition(normalizedDist)
+                // Outer side check: DOWN_ZONE outer side is LOWER angles (towards TOO_LOW)
+                val isOuterSide = currentAngle < center
+                
+                getColorForNormalizedPosition(normalizedDist, isOuterSide)
             }
             
             JointZone.UP_ZONE -> {
@@ -506,24 +533,15 @@ class SkeletonOverlayView @JvmOverloads constructor(
                 val distFromCenter = kotlin.math.abs(currentAngle - center)
                 val normalizedDist = (distFromCenter / (rangeSize / 2)).coerceIn(0.0, 1.0)
                 
-                getColorForNormalizedPosition(normalizedDist)
+                // Outer side check: UP_ZONE outer side is HIGHER angles (towards TOO_HIGH)
+                val isOuterSide = currentAngle > center
+                
+                getColorForNormalizedPosition(normalizedDist, isOuterSide)
             }
             
             JointZone.TRANSITION -> {
-                // TRANSITION: blend based on position between zones
-                // Closer to DOWN_ZONE → more green, closer to UP_ZONE → more green
-                // In the middle → neutral blue-green blend
-                val transitionSize = upMin - downMax
-                if (transitionSize <= 0) return COLOR_TRANSITION
-                
-                val posInTransition = (currentAngle - downMax) / transitionSize
-                
-                // Near edges of transition (close to valid zones) → greenish
-                // In middle of transition → bluish
-                val distFromEdge = kotlin.math.min(posInTransition, 1.0 - posInTransition) * 2
-                
-                // Blend between transition blue and optimal green based on edge proximity
-                interpolateColor(COLOR_OPTIMAL, COLOR_TRANSITION, distFromEdge.toFloat())
+                // TRANSITION: Always Yellow as requested (Safe transition path)
+                COLOR_NEAR_BOUNDARY
             }
             
             else -> COLOR_OPTIMAL
@@ -532,19 +550,28 @@ class SkeletonOverlayView @JvmOverloads constructor(
     
     /**
      * Get color for normalized position (0 = center, 1 = edge)
+     * Supports ASYMMETRIC coloring:
+     * - Outer side: Green -> Yellow -> Orange
+     * - Inner side: Green -> Yellow (stays yellow)
      */
-    private fun getColorForNormalizedPosition(normalizedDist: Double): Int {
+    private fun getColorForNormalizedPosition(normalizedDist: Double, isOuterSide: Boolean = true): Int {
         return when {
             normalizedDist < 0.4 -> COLOR_OPTIMAL  // Center 40% = pure green
             normalizedDist < 0.7 -> {
-                // 40-70% = green → yellow
+                // 40-70% = green → yellow (Both sides)
                 val t = ((normalizedDist - 0.4) / 0.3).toFloat()
                 interpolateColor(COLOR_OPTIMAL, COLOR_NEAR_BOUNDARY, t)
             }
             else -> {
-                // 70-100% = yellow → orange
-                val t = ((normalizedDist - 0.7) / 0.3).toFloat()
-                interpolateColor(COLOR_NEAR_BOUNDARY, COLOR_BOUNDARY, t)
+                // 70-100% - Edge
+                if (isOuterSide) {
+                    // Outer side: Yellow → Orange (Warning/Danger)
+                    val t = ((normalizedDist - 0.7) / 0.3).toFloat()
+                    interpolateColor(COLOR_NEAR_BOUNDARY, COLOR_BOUNDARY, t)
+                } else {
+                    // Inner side: Stay Yellow (Safe transition)
+                    COLOR_NEAR_BOUNDARY
+                }
             }
         }
     }
@@ -588,35 +615,59 @@ class SkeletonOverlayView @JvmOverloads constructor(
                 val jointCode = landmarkIndexToJointCode(index)
                 val isTracked = index in trackedLandmarkIndices
                 
-                // Get gradient color for tracked joints
-                val gradientColor = jointCode?.let { 
-                    jointArrowInfos[it]?.let { info -> 
-                        getGradientColorForPosition(info) 
-                    }
+                // Get gradient color and state for tracked joints
+                val arrowInfo = jointCode?.let { jointArrowInfos[it] }
+                val gradientColor = arrowInfo?.let { getGradientColorForPosition(it) }
+                
+                // Determine opacity based on joint state (consistent with lines)
+                // Lower opacity (50%) for correct state to focus on Arc
+                // Higher opacity (75%) for error/warning state
+                val trackedOpacity = when {
+                    arrowInfo?.isError == true -> TRACKED_OPACITY_ERROR
+                    arrowInfo?.isWarning == true -> TRACKED_OPACITY_ERROR
+                    else -> TRACKED_OPACITY_CORRECT
                 }
                 
                 // Determine appearance based on state
-                val (color, radius, alpha) = when {
-                    // Use gradient color for tracked joints
-                    gradientColor != null -> Triple(gradientColor, TRACKED_LANDMARK_STROKE_WIDTH / 2, 1f)
-                    isTracked -> Triple(COLOR_TRACKED, TRACKED_LANDMARK_STROKE_WIDTH / 2, 1f)
-                    isTrainingMode -> Triple(COLOR_DEFAULT, LANDMARK_STROKE_WIDTH / 2, NON_TRACKED_OPACITY)
-                    else -> Triple(COLOR_DEFAULT, LANDMARK_STROKE_WIDTH / 2, 0.6f)
+                // Using inline assignments to avoid Triple allocation per frame
+                val radius: Float
+                when {
+                    gradientColor != null -> {
+                        pointPaint.color = gradientColor
+                        pointPaint.alpha = (trackedOpacity * 255).toInt()
+                        radius = TRACKED_LANDMARK_STROKE_WIDTH / 2
+                    }
+                    isTracked -> {
+                        pointPaint.color = COLOR_TRACKED
+                        pointPaint.alpha = (TRACKED_OPACITY_CORRECT * 255).toInt()
+                        radius = TRACKED_LANDMARK_STROKE_WIDTH / 2
+                    }
+                    isTrainingMode -> {
+                        pointPaint.color = COLOR_DEFAULT
+                        pointPaint.alpha = (NON_TRACKED_OPACITY * 255).toInt()
+                        radius = LANDMARK_STROKE_WIDTH / 2
+                    }
+                    else -> {
+                        pointPaint.color = COLOR_DEFAULT
+                        pointPaint.alpha = 153 // 0.6f * 255
+                        radius = LANDMARK_STROKE_WIDTH / 2
+                    }
                 }
                 
-                pointPaint.color = color
-                pointPaint.alpha = (alpha * 255).toInt()
                 canvas.drawCircle(x, y, radius, pointPaint)
-                pointPaint.alpha = 255
                 
-                // Draw outer ring for tracked joints
+                // Draw outer ring for tracked joints (with same opacity)
                 if (isTrainingMode && isTracked) {
                     linePaint.style = Paint.Style.STROKE
                     linePaint.strokeWidth = 2f
-                    linePaint.color = color
+                    linePaint.color = pointPaint.color  // Use same color as the point
+                    linePaint.alpha = pointPaint.alpha  // Use same opacity
                     canvas.drawCircle(x, y, radius + 4f, linePaint)
                     linePaint.style = Paint.Style.STROKE
                 }
+                
+                // Reset alpha
+                pointPaint.alpha = 255
             }
         }
     }
@@ -644,44 +695,18 @@ class SkeletonOverlayView @JvmOverloads constructor(
     
     /**
      * Convert landmark index to joint code
+     * Uses JointLandmarkMapping as single source of truth
      */
     private fun landmarkIndexToJointCode(index: Int): String? {
-        return when (index) {
-            11 -> "left_shoulder"
-            12 -> "right_shoulder"
-            13 -> "left_elbow"
-            14 -> "right_elbow"
-            15 -> "left_wrist"
-            16 -> "right_wrist"
-            23 -> "left_hip"
-            24 -> "right_hip"
-            25 -> "left_knee"
-            26 -> "right_knee"
-            27 -> "left_ankle"
-            28 -> "right_ankle"
-            else -> null
-        }
+        return JointLandmarkMapping.landmarkToJoint(index)
     }
     
     /**
      * Convert joint code to landmark index
+     * Uses JointLandmarkMapping as single source of truth
      */
     private fun jointCodeToLandmarkIndex(jointCode: String): Int? {
-        return when (jointCode) {
-            "left_shoulder" -> 11
-            "right_shoulder" -> 12
-            "left_elbow" -> 13
-            "right_elbow" -> 14
-            "left_wrist" -> 15
-            "right_wrist" -> 16
-            "left_hip" -> 23
-            "right_hip" -> 24
-            "left_knee" -> 25
-            "right_knee" -> 26
-            "left_ankle" -> 27
-            "right_ankle" -> 28
-            else -> null
-        }
+        return JointLandmarkMapping.jointToLandmark(jointCode)
     }
     
     // ==================== Arc Range Indicator Drawing ====================
@@ -854,44 +879,10 @@ class SkeletonOverlayView @JvmOverloads constructor(
     
     /**
      * Convert landmark name to MediaPipe landmark index
+     * Uses JointLandmarkMapping as single source of truth
      */
     private fun landmarkNameToIndex(name: String): Int? {
-        return when (name.lowercase()) {
-            "nose" -> 0
-            "left_eye_inner" -> 1
-            "left_eye" -> 2
-            "left_eye_outer" -> 3
-            "right_eye_inner" -> 4
-            "right_eye" -> 5
-            "right_eye_outer" -> 6
-            "left_ear" -> 7
-            "right_ear" -> 8
-            "mouth_left" -> 9
-            "mouth_right" -> 10
-            "left_shoulder" -> 11
-            "right_shoulder" -> 12
-            "left_elbow" -> 13
-            "right_elbow" -> 14
-            "left_wrist" -> 15
-            "right_wrist" -> 16
-            "left_pinky" -> 17
-            "right_pinky" -> 18
-            "left_index" -> 19
-            "right_index" -> 20
-            "left_thumb" -> 21
-            "right_thumb" -> 22
-            "left_hip" -> 23
-            "right_hip" -> 24
-            "left_knee" -> 25
-            "right_knee" -> 26
-            "left_ankle" -> 27
-            "right_ankle" -> 28
-            "left_heel" -> 29
-            "right_heel" -> 30
-            "left_foot_index", "left_toe" -> 31
-            "right_foot_index", "right_toe" -> 32
-            else -> null
-        }
+        return JointLandmarkMapping.jointToLandmark(name)
     }
     
     override fun onDetachedFromWindow() {

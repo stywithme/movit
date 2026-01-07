@@ -90,7 +90,11 @@ class FormValidator(
     /**
      * Validate a single joint based on current phase
      * 
-     * ZONE-AWARE VALIDATION:
+     * ROLE-AWARE VALIDATION:
+     * - PRIMARY joints: Phase-based validation (up/down ranges based on current phase)
+     * - SECONDARY joints: HOLD validation (must stay in upRange throughout exercise)
+     * 
+     * ZONE-AWARE VALIDATION (for PRIMARY):
      * First checks the actual zone of the angle. If angle is in TRANSITION zone
      * (between downRange.max and upRange.min), we don't report errors.
      * This is correct because TRANSITION is valid movement between positions.
@@ -103,6 +107,15 @@ class FormValidator(
         angle: Double,
         phase: Phase
     ): JointStatus {
+        // ===== SECONDARY JOINTS: HOLD VALIDATION =====
+        // Secondary joints must stay stable (in their Range) throughout the exercise
+        // They don't follow phase-based up/down logic
+        if (joint.role == JointRole.SECONDARY) {
+            return validateSecondaryJoint(joint, angle, phase)
+        }
+        
+        // ===== PRIMARY JOINTS: PHASE-BASED VALIDATION =====
+        
         val upRange = joint.getUpRange(difficulty)
         val downRange = joint.getDownRange(difficulty)
         
@@ -150,6 +163,55 @@ class FormValidator(
                 checkExtremeErrors(joint, angle, upRange, downRange)
             }
         }
+    }
+    
+    /**
+     * Validate SECONDARY joint - HOLD behavior
+     * 
+     * Secondary joints must stay stable in their "hold range" (using Range field)
+     * throughout the exercise, regardless of the current phase.
+     * 
+     * Example: In bicep curl, the non-active arm should stay extended (~150-180°)
+     */
+    private fun validateSecondaryJoint(
+        joint: TrackedJoint,
+        angle: Double,
+        phase: Phase
+    ): JointStatus {
+        val holdRange = joint.getHoldRange(difficulty)
+        val minWithBuffer = holdRange.min - boundaryBuffer
+        val maxWithBuffer = holdRange.max + boundaryBuffer
+        
+        // Check if within hold range
+        if (angle >= minWithBuffer && angle <= maxWithBuffer) {
+            return JointStatus(
+                jointCode = joint.joint,
+                isCorrect = true,
+                currentAngle = angle,
+                error = null
+            )
+        }
+        
+        // Determine error type
+        val (errorType, errorMessage) = if (angle > maxWithBuffer) {
+            ErrorType.TOO_HIGH to joint.errorMessages.tooHigh
+        } else {
+            ErrorType.TOO_LOW to joint.errorMessages.tooLow
+        }
+        
+        return JointStatus(
+            jointCode = joint.joint,
+            isCorrect = false,
+            currentAngle = angle,
+            error = JointError(
+                jointCode = joint.joint,
+                errorType = errorType,
+                actualAngle = angle,
+                expectedMin = holdRange.min,
+                expectedMax = holdRange.max,
+                message = errorMessage
+            )
+        )
     }
     
     /**
@@ -422,6 +484,10 @@ class FormValidator(
      * Get visual info for all tracked joints
      * This determines the current zone and severity for each joint
      * 
+     * ROLE-AWARE VISUALS:
+     * - PRIMARY joints: Show zone based on up/down ranges (UP_ZONE, TRANSITION, DOWN_ZONE)
+     * - SECONDARY joints: Show based on hold range only (in range = UP_ZONE, out = error)
+     * 
      * NOTE: Uses BOUNDARY_BUFFER for consistency with validation logic
      * to prevent UI flicker where visuals show error but validation shows correct
      * 
@@ -437,6 +503,48 @@ class FormValidator(
         
         for (joint in trackedJoints) {
             val currentAngle = currentAngles[joint.joint] ?: continue
+            
+            // ===== SECONDARY JOINTS: HOLD VISUALS =====
+            // Secondary joints only have a hold range (using Range field)
+            if (joint.role == JointRole.SECONDARY) {
+                val holdRange = joint.getHoldRange(difficulty)
+                val holdMinWithBuffer = holdRange.min - boundaryBuffer
+                val holdMaxWithBuffer = holdRange.max + boundaryBuffer
+                
+                val isInHoldRange = currentAngle >= holdMinWithBuffer && currentAngle <= holdMaxWithBuffer
+                val zone = when {
+                    currentAngle > holdMaxWithBuffer -> JointZone.TOO_HIGH
+                    currentAngle < holdMinWithBuffer -> JointZone.TOO_LOW
+                    else -> JointZone.UP_ZONE  // In hold range = stable
+                }
+                
+                val isError = !isInHoldRange
+                val isWarning = when {
+                    isError -> false
+                    currentAngle > holdMaxWithBuffer - warningThreshold -> true
+                    currentAngle < holdMinWithBuffer + warningThreshold -> true
+                    else -> false
+                }
+                
+                previousZones[joint.joint] = zone
+                
+                arrowInfos[joint.joint] = JointArrowInfo(
+                    jointCode = joint.joint,
+                    zone = zone,
+                    isError = isError,
+                    isWarning = isWarning,
+                    isPrimary = false,
+                    currentAngle = currentAngle,
+                    upRangeMin = holdRange.min,
+                    upRangeMax = holdRange.max,
+                    downRangeMin = holdRange.min,  // Same as up for HOLD
+                    downRangeMax = holdRange.max   // Same as up for HOLD
+                )
+                continue
+            }
+            
+            // ===== PRIMARY JOINTS: PHASE-BASED VISUALS =====
+            
             val upRange = joint.getUpRange(difficulty)
             val downRange = joint.getDownRange(difficulty)
             
@@ -515,7 +623,7 @@ class FormValidator(
                 zone = zone,
                 isError = isError,
                 isWarning = isWarning,
-                isPrimary = joint.role == JointRole.PRIMARY,
+                isPrimary = true,
                 currentAngle = currentAngle,
                 upRangeMin = upRange.min,
                 upRangeMax = upRange.max,

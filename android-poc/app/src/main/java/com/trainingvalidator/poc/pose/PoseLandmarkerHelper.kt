@@ -143,22 +143,26 @@ class PoseLandmarkerHelper(
                 Bitmap.Config.ARGB_8888
             ).also { bitmapBuffer = it }
             
-            // Copy pixels directly from buffer (faster than toBitmap())
-            imageProxy.use { 
-                buffer.copyPixelsFromBuffer(imageProxy.planes[0].buffer) 
-            }
+            // Store rotation before closing imageProxy
+            val rotationDegrees = imageProxy.imageInfo.rotationDegrees
+            val proxyWidth = imageProxy.width
+            val proxyHeight = imageProxy.height
             
-            // Apply rotation and mirroring
+            // Copy pixels and close imageProxy immediately (single close point)
+            buffer.copyPixelsFromBuffer(imageProxy.planes[0].buffer)
+            imageProxy.close()
+            
+            // Apply rotation and mirroring (after imageProxy is closed)
             val matrix = Matrix().apply {
                 // Rotate based on image rotation
-                postRotate(imageProxy.imageInfo.rotationDegrees.toFloat())
+                postRotate(rotationDegrees.toFloat())
                 
                 // Mirror for front camera
                 if (isFrontCamera) {
                     postScale(
                         -1f, 1f,
-                        imageProxy.width.toFloat(),
-                        imageProxy.height.toFloat()
+                        proxyWidth.toFloat(),
+                        proxyHeight.toFloat()
                     )
                 }
             }
@@ -179,8 +183,8 @@ class PoseLandmarkerHelper(
             
         } catch (e: Exception) {
             Log.e(TAG, "Error during pose detection: ${e.message}")
-        } finally {
-            imageProxy.close()
+            // Ensure imageProxy is closed even on error
+            try { imageProxy.close() } catch (_: Exception) {}
         }
     }
 

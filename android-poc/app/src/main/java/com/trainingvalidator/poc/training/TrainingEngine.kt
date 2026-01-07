@@ -85,6 +85,13 @@ class TrainingEngine(
 
     private val lastPositionEventTimes = mutableMapOf<String, Long>()
     
+    /**
+     * Last time camera warning was emitted (to prevent spam)
+     * Camera warnings use a longer cooldown (5 seconds) since they're less actionable
+     */
+    private var lastCameraWarningTime: Long = 0L
+    private val cameraWarningCooldownMs: Long = 5000L  // 5 seconds between camera warnings
+    
     // ==================== Position Validator ====================
     
     /**
@@ -119,15 +126,26 @@ class TrainingEngine(
     
     /**
      * Hold timer instance (null for rep-based exercises)
+     * Uses safe null-check: holdTimer exists only if targetDurationMs is not null
      */
-    private val holdTimer: HoldTimer? = if (isHoldExercise) {
+    private val holdTimer: HoldTimer? = targetDurationMs?.let { duration ->
         HoldTimer(
-            targetDurationMs = targetDurationMs!!,
+            targetDurationMs = duration,
             gracePeriodMs = difficultyLevel.repCountingConfig.getGracePeriod(
                 SettingsManager.getDefaultGracePeriod()
             )
         )
-    } else null
+    }
+    
+    // ==================== Hold Form Quality Tracking ====================
+    
+    /**
+     * Track form errors during hold exercises
+     * These are used to calculate form quality (percentage of time with correct form)
+     */
+    private var holdErrorFrameCount: Int = 0
+    private var holdTotalFrameCount: Int = 0
+    private val holdJointErrors = mutableMapOf<String, Int>() // joint -> error count
     
     // ==================== State Flows ====================
     
@@ -198,6 +216,25 @@ class TrainingEngine(
     private val _graceRemainingMs = MutableStateFlow<Long?>(null)
     val graceRemainingMs: StateFlow<Long?> = _graceRemainingMs
     
+    /**
+     * Form quality during hold (0.0 - 1.0, null for rep-based exercises)
+     * Represents percentage of time with correct form
+     */
+    private val _holdFormQuality = MutableStateFlow<Float?>(null)
+    val holdFormQuality: StateFlow<Float?> = _holdFormQuality
+    
+    /**
+     * Number of frames with errors during hold (null for rep-based exercises)
+     */
+    private val _holdErrorCount = MutableStateFlow<Int?>(null)
+    val holdErrorCount: StateFlow<Int?> = _holdErrorCount
+    
+    /**
+     * Map of joint codes to their error counts during hold (null for rep-based exercises)
+     */
+    private val _holdJointErrorMap = MutableStateFlow<Map<String, Int>?>(null)
+    val holdJointErrorMap: StateFlow<Map<String, Int>?> = _holdJointErrorMap
+    
     // ==================== Events ====================
     
     private val _events = MutableSharedFlow<FeedbackEvent>(
@@ -207,15 +244,25 @@ class TrainingEngine(
     val events: SharedFlow<FeedbackEvent> = _events
     
     // ==================== State ====================
+    // NOTE: These flags are marked @Volatile for thread safety.
+    // processFrame() can be called from background threads (video mode)
+    // while start/pause/resume/stop are called from Main thread.
     
+    @Volatile
     private var isRunning = false
+    
+    @Volatile
     private var isPaused = false
+    
+    @Volatile
     private var lastValidationResult: ValidationResult? = null
     
     /**
      * Flag to defer rep completion until after validation and error collection.
      * This ensures errors from the current frame are included in the rep that just completed.
+     * Thread safety: marked @Volatile as it's read/written from different threads.
      */
+    @Volatile
     private var pendingRepCompletion = false
     
     // ==================== Initialization ====================
@@ -271,37 +318,48 @@ class TrainingEngine(
         Log.d(TAG, "Primary Joints: ${primaryJoints.map { it.joint }}")
     }
     
+    // ==================== Thread Safety ====================
+    
+    // Lock object for thread-safe state modifications
+    // Used by start/pause/resume/stop and processFrame
+    private val stateLock = Any()
+    
     // ==================== Public API ====================
     
     /**
      * Start the training session
+     * Thread safety: Uses synchronized block to coordinate with processFrame
      */
     fun start() {
-        isRunning = true
-        isPaused = false
-        angleSmoother.reset()  // Reset smoothing history for fresh start
-        stateMachine.reset()
-        repCounter.reset()
-        holdTimer?.reset()
-        positionValidator?.clearCooldowns()
-        formValidator.reset()  // Reset zone hysteresis state
-        lastPositionEventTimes.clear()
-        
-        _currentPhase.value = Phase.IDLE
-        _repCount.value = 0
-        _isCompleted.value = false
-        
-        // Reset position validation state
-        _positionErrors.value = emptyList()
-        _cameraWarning.value = null
-        
-        // Reset hold-specific state
-        if (isHoldExercise) {
-            _holdState.value = HoldState.IDLE
-            _holdElapsedMs.value = 0L
-            _holdRemainingMs.value = targetDurationMs
-            _holdProgress.value = 0f
-            _graceRemainingMs.value = null
+        synchronized(stateLock) {
+            isRunning = true
+            isPaused = false
+            angleSmoother.reset()  // Reset smoothing history for fresh start
+            stateMachine.reset()
+            repCounter.reset()
+            holdTimer?.reset()
+            positionValidator?.clearCooldowns()
+            formValidator.reset()  // Reset zone hysteresis state
+            lastPositionEventTimes.clear()
+            lastCameraWarningTime = 0L  // Reset camera warning throttle
+            
+            _currentPhase.value = Phase.IDLE
+            _repCount.value = 0
+            _isCompleted.value = false
+            
+            // Reset position validation state
+            _positionErrors.value = emptyList()
+            _cameraWarning.value = null
+            
+            // Reset hold-specific state
+            if (isHoldExercise) {
+                _holdState.value = HoldState.IDLE
+                _holdElapsedMs.value = 0L
+                _holdRemainingMs.value = targetDurationMs
+                _holdProgress.value = 0f
+                _graceRemainingMs.value = null
+                resetHoldTracking()
+            }
         }
         
         emitEvent(FeedbackEvent.TrainingStarted(
@@ -317,28 +375,37 @@ class TrainingEngine(
     
     /**
      * Pause training
+     * Thread safety: Uses synchronized block to coordinate with processFrame
      */
     fun pause() {
-        isPaused = true
+        synchronized(stateLock) {
+            isPaused = true
+        }
         emitEvent(FeedbackEvent.TrainingPaused(repCounter.count))
         Log.d(TAG, "Training paused at rep ${repCounter.count}")
     }
     
     /**
      * Resume training
+     * Thread safety: Uses synchronized block to coordinate with processFrame
      */
     fun resume() {
-        isPaused = false
+        synchronized(stateLock) {
+            isPaused = false
+        }
         emitEvent(FeedbackEvent.TrainingResumed())
         Log.d(TAG, "Training resumed")
     }
     
     /**
      * Stop training and get summary
+     * Thread safety: Uses synchronized block to coordinate with processFrame
      */
     fun stop(): SessionSummary {
-        isRunning = false
-        isPaused = false
+        synchronized(stateLock) {
+            isRunning = false
+            isPaused = false
+        }
         
         val summary = SessionSummary(
             exerciseName = exerciseConfig.name.en,
@@ -360,107 +427,146 @@ class TrainingEngine(
      * Process a frame with joint angles and optional landmarks
      * This is called every frame from the camera/pose detection pipeline
      * 
+     * Thread Safety: Uses synchronized block to prevent concurrent modifications
+     * when called from background thread (video mode) or camera callback thread.
+     * 
      * @param angles JointAngles from AngleCalculator
      * @param landmarks Optional smoothed landmarks for position-based validation
      */
     fun processFrame(angles: JointAngles, landmarks: List<SmoothedLandmark>? = null) {
+        // Early return outside lock for performance
         if (!isRunning || isPaused) return
         
-        // 1. Extract tracked joint angles (raw)
-        val rawTrackedAngles = jointTracker.extractTrackedAngles(angles)
-        
-        if (rawTrackedAngles.isEmpty()) {
-            return
-        }
-        
-        // 2. Apply centralized smoothing - SINGLE SOURCE OF TRUTH
-        // All components use these smoothed angles for consistency
-        val smoothedAngles = angleSmoother.smooth(rawTrackedAngles)
-        _currentAngles.value = smoothedAngles
-        
-        // 3. Extract primary joint angles (from smoothed)
-        val primaryAngles = smoothedAngles.filterKeys { jointCode ->
-            primaryJoints.any { it.joint == jointCode }
-        }
-        
-        // 4. Check if in start position (using smoothed angles)
-        val inStartPos = formValidator.isInStartPosition(smoothedAngles)
-        _isInStartPosition.value = inStartPos
-        
-        // 5. Update state machine (using smoothed angles - no internal smoothing needed)
-        val currentPhase = stateMachine.update(primaryAngles)
-        _currentPhase.value = currentPhase
-        
-        // 6. Validate form (using same smoothed angles - consistent with state machine)
-        val validation = formValidator.validate(smoothedAngles, currentPhase)
-        lastValidationResult = validation
-        _jointStatuses.value = validation.jointStatuses
-        
-        // 7. Update arrow infos for visual feedback (using smoothed angles)
-        _arrowInfos.value = formValidator.getJointArrowInfos(smoothedAngles)
-        
-        // 7. Position validation (if landmarks provided and validator exists)
-        val positionValidation = if (landmarks != null && positionValidator != null) {
-            positionValidator.validate(landmarks, currentPhase, difficulty)
-        } else null
-        
-        // Update position-related state flows
-        positionValidation?.let {
-            // Include tips too so UI overlay can visualize them (different severity)
-            _positionErrors.value = it.errors + it.warnings + it.tips
-            _cameraWarning.value = it.cameraWarning
-        }
-        
-        // 8. Handle form errors (add to current rep for rep-based)
-        for (error in validation.errors) {
-            if (!isHoldExercise) {
-                repCounter.addError(error)
+        // Synchronized block to prevent concurrent frame processing
+        // Uses same lock as start/pause/resume/stop for proper coordination
+        synchronized(stateLock) {
+            // Double-check after acquiring lock
+            if (!isRunning || isPaused) return
+            
+            // 1. Extract tracked joint angles (raw)
+            val rawTrackedAngles = jointTracker.extractTrackedAngles(angles)
+            
+            if (rawTrackedAngles.isEmpty()) {
+                return
             }
-            // Emit error event for real-time feedback
-            emitEvent(FeedbackEvent.JointErrorDetected(error))
-        }
-        
-        // 9. Handle position errors
-        positionValidation?.errors?.forEach { error ->
-            // Only ERROR severity affects rep correctness
-            if (!isHoldExercise) {
-                repCounter.addPositionError(error)
+            
+            // 2. Apply centralized smoothing - SINGLE SOURCE OF TRUTH
+            // All components use these smoothed angles for consistency
+            val smoothedAngles = angleSmoother.smooth(rawTrackedAngles)
+            _currentAngles.value = smoothedAngles
+            
+            // 3. Extract primary joint angles (from smoothed)
+            val primaryAngles = smoothedAngles.filterKeys { jointCode ->
+                primaryJoints.any { it.joint == jointCode }
             }
-            if (shouldEmitPositionEvent(error.checkId)) {
-                emitEvent(FeedbackEvent.PositionErrorDetected(error))
+            
+            // 4. Check if in start position (using smoothed angles)
+            val inStartPos = formValidator.isInStartPosition(smoothedAngles)
+            _isInStartPosition.value = inStartPos
+            
+            // 5. Update state machine (using smoothed angles - no internal smoothing needed)
+            val currentPhase = stateMachine.update(primaryAngles)
+            _currentPhase.value = currentPhase
+            
+            // 6. Validate form (using same smoothed angles - consistent with state machine)
+            val validation = formValidator.validate(smoothedAngles, currentPhase)
+            lastValidationResult = validation
+            _jointStatuses.value = validation.jointStatuses
+            
+            // 7. Update arrow infos for visual feedback (using smoothed angles)
+            _arrowInfos.value = formValidator.getJointArrowInfos(smoothedAngles)
+            
+            // 8. Position validation (if landmarks provided and validator exists)
+            val positionValidation = if (landmarks != null && positionValidator != null) {
+                positionValidator.validate(landmarks, currentPhase, difficulty)
+            } else null
+            
+            // Update position-related state flows
+            positionValidation?.let {
+                // Include tips too so UI overlay can visualize them (different severity)
+                _positionErrors.value = it.errors + it.warnings + it.tips
+                _cameraWarning.value = it.cameraWarning
             }
-        }
-        
-        positionValidation?.warnings?.forEach { error ->
-            if (shouldEmitPositionEvent(error.checkId)) {
-                emitEvent(FeedbackEvent.PositionWarningDetected(error))
+            
+            // 9. Handle form errors (add to current rep for rep-based, track for hold)
+            for (error in validation.errors) {
+                if (!isHoldExercise) {
+                    repCounter.addError(error)
+                } else {
+                    // Track errors for hold exercises to calculate form quality
+                    if (_holdState.value == HoldState.HOLDING) {
+                        holdErrorFrameCount++
+                        holdJointErrors[error.jointCode] = 
+                            (holdJointErrors[error.jointCode] ?: 0) + 1
+                    }
+                }
+                // Emit error event for real-time feedback
+                emitEvent(FeedbackEvent.JointErrorDetected(error))
             }
-        }
+            
+            // 10. Handle position errors
+            positionValidation?.errors?.forEach { error ->
+                // Only ERROR severity affects rep correctness
+                if (!isHoldExercise) {
+                    repCounter.addPositionError(error)
+                } else {
+                    // Track position errors for hold exercises too
+                    if (_holdState.value == HoldState.HOLDING) {
+                        holdErrorFrameCount++
+                        // Track by check ID for position errors
+                        val jointKey = "position:${error.checkId}"
+                        holdJointErrors[jointKey] = 
+                            (holdJointErrors[jointKey] ?: 0) + 1
+                    }
+                }
+                if (shouldEmitPositionEvent(error.checkId)) {
+                    emitEvent(FeedbackEvent.PositionErrorDetected(error))
+                }
+            }
+            
+            positionValidation?.warnings?.forEach { error ->
+                if (shouldEmitPositionEvent(error.checkId)) {
+                    emitEvent(FeedbackEvent.PositionWarningDetected(error))
+                }
+            }
 
-        positionValidation?.tips?.forEach { tip ->
-            if (shouldEmitPositionEvent(tip.checkId)) {
-                emitEvent(FeedbackEvent.PositionTipDetected(tip))
+            positionValidation?.tips?.forEach { tip ->
+                if (shouldEmitPositionEvent(tip.checkId)) {
+                    emitEvent(FeedbackEvent.PositionTipDetected(tip))
+                }
             }
-        }
-        
-        positionValidation?.cameraWarning?.let { warning ->
-            emitEvent(FeedbackEvent.CameraPositionWarning(warning))
-        }
-        
-        // 10. Handle based on counting method
-        if (isHoldExercise) {
-            // Update hold timer based on current phase
-            // Phase.COUNT means user is in hold zone (downRange)
-            val isInHoldZone = (currentPhase == Phase.COUNT)
-            updateHoldTimer(isInHoldZone)
-        } else {
-            // Rep-based: Handle pending rep completion AFTER validation and error collection
-            // This ensures all errors from the final frame are included in the completed rep
-            if (pendingRepCompletion) {
-                pendingRepCompletion = false
-                handleRepCompleted()
+            
+            positionValidation?.cameraWarning?.let { warning ->
+                if (shouldEmitCameraWarning()) {
+                    emitEvent(FeedbackEvent.CameraPositionWarning(warning))
+                }
             }
-        }
+            
+            // 11. Handle based on counting method
+            if (isHoldExercise) {
+                // Update hold timer based on current phase
+                // Phase.COUNT means user is in hold zone (downRange)
+                val isInHoldZone = (currentPhase == Phase.COUNT)
+                updateHoldTimer(isInHoldZone)
+                
+                // Track form quality during hold
+                if (_holdState.value == HoldState.HOLDING) {
+                    holdTotalFrameCount++
+                    // Update form quality state flows
+                    val quality = calculateFormQuality()
+                    _holdFormQuality.value = quality
+                    _holdErrorCount.value = holdErrorFrameCount
+                    _holdJointErrorMap.value = holdJointErrors.toMap()
+                }
+            } else {
+                // Rep-based: Handle pending rep completion AFTER validation and error collection
+                // This ensures all errors from the final frame are included in the completed rep
+                if (pendingRepCompletion) {
+                    pendingRepCompletion = false
+                    handleRepCompleted()
+                }
+            }
+        } // End synchronized(stateLock)
     }
     
     /**
@@ -492,6 +598,8 @@ class TrainingEngine(
             }
             
             timer.onHoldStarted = {
+                // Reset tracking when hold starts
+                resetHoldTracking()
                 emitEvent(FeedbackEvent.HoldStarted())
                 Log.d(TAG, "Hold started!")
             }
@@ -514,14 +622,19 @@ class TrainingEngine(
             
             timer.onCompleted = { totalMs, gracePeriodsUsed ->
                 _isCompleted.value = true
+                // Calculate final form quality before completion
                 val formQuality = calculateFormQuality()
+                _holdFormQuality.value = formQuality
+                _holdErrorCount.value = holdErrorFrameCount
+                _holdJointErrorMap.value = holdJointErrors.toMap()
+                
                 emitEvent(FeedbackEvent.HoldCompleted(
                     totalMs = totalMs,
                     targetMs = targetDurationMs ?: 0L,
                     formQuality = formQuality,
                     gracePeriodsUsed = gracePeriodsUsed
                 ))
-                Log.d(TAG, "★ Hold COMPLETED! (totalMs: $totalMs, formQuality: $formQuality)")
+                Log.d(TAG, "★ Hold COMPLETED! (totalMs: $totalMs, formQuality: $formQuality, errorFrames: $holdErrorFrameCount/$holdTotalFrameCount)")
             }
             
             timer.onFailed = { elapsedMs, gracePeriodsUsed ->
@@ -539,6 +652,7 @@ class TrainingEngine(
                 _holdRemainingMs.value = targetDurationMs
                 _holdProgress.value = 0f
                 _graceRemainingMs.value = null
+                resetHoldTracking()
             }
         }
     }
@@ -562,12 +676,30 @@ class TrainingEngine(
     
     /**
      * Calculate form quality for hold exercises
-     * Currently returns 1.0 (perfect) - can be enhanced to track form errors
+     * Returns percentage of frames with correct form (0.0 - 1.0)
+     * 
+     * Formula: formQuality = (totalFrames - errorFrames) / totalFrames
+     * 
+     * @return Form quality as float between 0.0 (all errors) and 1.0 (perfect)
      */
     private fun calculateFormQuality(): Float {
-        // TODO: Track form errors during hold and calculate quality
-        // For now, return 1.0 (perfect form)
-        return 1.0f
+        if (holdTotalFrameCount == 0) return 1.0f // No frames yet = perfect (initial state)
+        val correctFrames = holdTotalFrameCount - holdErrorFrameCount
+        return (correctFrames.toFloat() / holdTotalFrameCount.toFloat()).coerceIn(0f, 1f)
+    }
+    
+    /**
+     * Reset hold form quality tracking
+     * Called when hold starts or resets
+     */
+    private fun resetHoldTracking() {
+        holdErrorFrameCount = 0
+        holdTotalFrameCount = 0
+        holdJointErrors.clear()
+        _holdFormQuality.value = 1.0f // Start with perfect quality
+        _holdErrorCount.value = 0
+        _holdJointErrorMap.value = emptyMap()
+        Log.d(TAG, "Hold form tracking reset")
     }
     
     /**
@@ -587,6 +719,18 @@ class TrainingEngine(
         val lastTime = lastPositionEventTimes[checkId] ?: 0L
         if (now - lastTime < cooldown) return false
         lastPositionEventTimes[checkId] = now
+        return true
+    }
+    
+    /**
+     * Throttle camera position warning events.
+     * Uses a longer cooldown (5 seconds) since camera position doesn't change frequently
+     * and the user needs time to adjust their position.
+     */
+    private fun shouldEmitCameraWarning(): Boolean {
+        val now = System.currentTimeMillis()
+        if (now - lastCameraWarningTime < cameraWarningCooldownMs) return false
+        lastCameraWarningTime = now
         return true
     }
     
@@ -620,6 +764,21 @@ class TrainingEngine(
      * Get all tracked landmark indices
      */
     fun getTrackedLandmarkIndices(): List<Int> = jointTracker.getTrackedLandmarkIndices()
+    
+    // ==================== Hot-Swap Support ====================
+    
+    /**
+     * Check if this engine can be hot-swapped to a new exercise
+     * Hot-swap is supported when the new exercise uses the same counting method
+     */
+    fun canHotSwapTo(newConfig: ExerciseConfig): Boolean {
+        return newConfig.countingMethod == exerciseConfig.countingMethod
+    }
+    
+    /**
+     * Get current exercise config (for comparison during hot-swap)
+     */
+    fun getCurrentExerciseConfig(): ExerciseConfig = exerciseConfig
     
     // ==================== Hold-specific Getters ====================
     

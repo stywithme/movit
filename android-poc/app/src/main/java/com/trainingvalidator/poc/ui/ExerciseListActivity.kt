@@ -49,6 +49,16 @@ class ExerciseListActivity : AppCompatActivity() {
         binding.rvExercises.adapter = ExerciseAdapter(exercises) { exercise ->
             openExerciseDetail(exercise)
         }
+        
+        // Workout Programs button
+        binding.btnWorkouts.setOnClickListener {
+            openWorkoutList()
+        }
+    }
+    
+    private fun openWorkoutList() {
+        val intent = Intent(this, WorkoutListActivity::class.java)
+        startActivity(intent)
     }
 
     private fun loadExercises() {

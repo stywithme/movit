@@ -43,9 +43,9 @@
             "advanced": { "min": 160, "max": 180 }
           },
           "downRange": {
-            "beginner": { "min": 30, "max": 70 },
-            "normal":   { "min": 35, "max": 60 },
-            "advanced": { "min": 40, "max": 50 }
+            "beginner": { "min": 70, "max": 90 },
+            "normal":   { "min": 65, "max": 80 },
+            "advanced": { "min": 60, "max": 70 }
           },
           "errorMessages": {
             "tooLow": {

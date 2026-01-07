@@ -45,8 +45,12 @@ class VideoManager(
     companion object {
         private const val TAG = "VideoManager"
         
-        // Frame extraction interval (~30 fps)
-        private const val FRAME_INTERVAL_MS = 33L
+        // Frame extraction interval (~60 fps target)
+        // Lower = more frames, but depends on processing speed
+        private const val FRAME_INTERVAL_MS = 16L
+        
+        // Minimum time between processed frames to prevent queue buildup
+        private const val MIN_PROCESS_INTERVAL_MS = 20L
     }
     
     /**
@@ -72,6 +76,16 @@ class VideoManager(
     
     // Coroutine scope for frame extraction
     private val extractorScope = CoroutineScope(Dispatchers.Default + SupervisorJob())
+    
+    // Performance optimization: track last processed time to skip frames if processing is slow
+    @Volatile
+    private var lastProcessedTimeMs: Long = 0L
+    
+    @Volatile
+    private var isProcessingFrame: Boolean = false
+    
+    // Reusable bitmap to reduce allocations (optional optimization)
+    private var reusableBitmap: Bitmap? = null
     
     /**
      * Load video from URI
@@ -209,15 +223,21 @@ class VideoManager(
     /**
      * Start frame extraction loop
      * 
+     * OPTIMIZED VERSION:
+     * - Uses async processing to avoid blocking the extraction loop
+     * - Implements frame skipping when processing is slower than extraction
+     * - Reduces allocations by reusing bitmaps where possible
+     * 
      * IMPORTANT: ExoPlayer must be accessed from the Main thread only.
-     * We use Dispatchers.Main for the entire loop to avoid threading issues.
      */
     private fun startFrameExtraction() {
         stopFrameExtraction()
+        lastProcessedTimeMs = 0L
+        isProcessingFrame = false
         
-        // Use Main dispatcher to ensure all player access is on main thread
+        // Use Main dispatcher for player access, but process frames async
         frameExtractorJob = extractorScope.launch(Dispatchers.Main) {
-            Log.d(TAG, "Frame extraction started")
+            Log.d(TAG, "Frame extraction started (optimized)")
             
             while (isActive) {
                 try {
@@ -228,11 +248,20 @@ class VideoManager(
                     val timestampMs = player?.currentPosition ?: 0L
                     val duration = player?.duration ?: 0L
                     
-                    // Extract frame from TextureView (already on main thread)
-                    extractAndProcessFrame(timestampMs)
+                    // Update progress on main thread
                     onProgressChanged(timestampMs, duration)
                     
-                    // Wait for next frame
+                    // Smart frame skipping: skip if still processing previous frame
+                    // or if not enough time has passed since last processed frame
+                    val currentTime = System.currentTimeMillis()
+                    val timeSinceLastProcess = currentTime - lastProcessedTimeMs
+                    
+                    if (!isProcessingFrame && timeSinceLastProcess >= MIN_PROCESS_INTERVAL_MS) {
+                        // Extract frame on main thread (required for TextureView)
+                        extractAndProcessFrameAsync(timestampMs)
+                    }
+                    
+                    // Wait for next frame interval
                     delay(FRAME_INTERVAL_MS)
                     
                 } catch (e: CancellationException) {
@@ -248,23 +277,53 @@ class VideoManager(
     }
     
     /**
-     * Extract frame from TextureView and send for processing
+     * Extract frame from TextureView and send for ASYNC processing
+     * 
+     * This method:
+     * 1. Extracts bitmap on Main thread (required by TextureView)
+     * 2. Copies bitmap data to avoid holding TextureView's buffer
+     * 3. Sends to processing on a background thread (non-blocking)
      */
-    private fun extractAndProcessFrame(timestampMs: Long) {
+    private fun extractAndProcessFrameAsync(timestampMs: Long) {
         try {
-            // Get bitmap from TextureView
-            var bitmap = textureView.getBitmap() ?: return
+            // Get bitmap from TextureView (must be on main thread)
+            val sourceBitmap = textureView.getBitmap() ?: return
             
-            // Apply rotation if needed
-            if (videoRotation != 0) {
-                bitmap = rotateBitmap(bitmap, videoRotation)
+            // Mark as processing
+            isProcessingFrame = true
+            
+            // Launch async processing on Default dispatcher (background thread)
+            extractorScope.launch(Dispatchers.Default) {
+                try {
+                    // Copy bitmap to avoid blocking TextureView's buffer
+                    // This is important for performance
+                    var processedBitmap = sourceBitmap.copy(Bitmap.Config.ARGB_8888, false)
+                    
+                    // Apply rotation if needed
+                    if (videoRotation != 0) {
+                        val rotated = rotateBitmap(processedBitmap, videoRotation)
+                        if (rotated !== processedBitmap) {
+                            processedBitmap.recycle()
+                            processedBitmap = rotated
+                        }
+                    }
+                    
+                    // Send frame for analysis (callback handles its own threading)
+                    onFrameAvailable(processedBitmap, timestampMs)
+                    
+                    // Update last processed time
+                    lastProcessedTimeMs = System.currentTimeMillis()
+                    
+                } catch (e: Exception) {
+                    Log.e(TAG, "Error processing frame: ${e.message}")
+                } finally {
+                    isProcessingFrame = false
+                }
             }
             
-            // Send frame for analysis
-            onFrameAvailable(bitmap, timestampMs)
-            
         } catch (e: Exception) {
-            Log.e(TAG, "Error in extractAndProcessFrame: ${e.message}")
+            Log.e(TAG, "Error in extractAndProcessFrameAsync: ${e.message}")
+            isProcessingFrame = false
         }
     }
     

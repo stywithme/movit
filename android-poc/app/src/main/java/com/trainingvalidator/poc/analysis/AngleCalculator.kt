@@ -145,15 +145,11 @@ object AngleCalculator {
 
     /**
      * Calculate all angles from SmoothedLandmark list
-     * 
-     * @param applyRemapping If true, applies non-linear range remapping to correct
-     *                       for MediaPipe landmark placement errors at full flexion
      */
     fun calculateAllAnglesSmoothed(
         landmarks: List<SmoothedLandmark>,
         visibilityThreshold: Float = 0.5f,
-        use3D: Boolean = false,
-        applyRemapping: Boolean = true
+        use3D: Boolean = false
     ): JointAngles {
         // Calculate raw angles first
         val rawAngles = JointAngles(
@@ -254,12 +250,7 @@ object AngleCalculator {
             spine = calculateSpineAngleSmoothed(landmarks, visibilityThreshold, use3D)
         )
         
-        // Apply remapping if enabled to correct for landmark placement errors
-        return if (applyRemapping) {
-            AngleRemapper.remapAllAngles(rawAngles)
-        } else {
-            rawAngles
-        }
+        return rawAngles
     }
 
     /**

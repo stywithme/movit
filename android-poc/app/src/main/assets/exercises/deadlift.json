@@ -101,19 +101,14 @@
           "joint": "left_knee",
           "role": "secondary",
           "startPose": { "min": 160, "max": 180 },
-          "upRange": {
+          "Range": {
             "beginner": { "min": 160, "max": 180 },
             "normal": { "min": 165, "max": 180 },
             "advanced": { "min": 170, "max": 180 }
           },
-          "downRange": {
-            "beginner": { "min": 100, "max": 140 },
-            "normal": { "min": 110, "max": 135 },
-            "advanced": { "min": 115, "max": 130 }
-          },
           "errorMessages": {
-            "tooLow": { "ar": "لا تثني ركبتيك كثيراً", "en": "Don't over-bend knees" },
-            "tooHigh": { "ar": "ثني ركبتيك قليلاً", "en": "Bend knees slightly" }
+            "tooLow": { "ar": "حافظ على ثبات الركبة", "en": "Keep knee stable" },
+            "tooHigh": { "ar": "ممتاز - الركبة ثابتة", "en": "Great - knee is stable" }
           }
         }
       ],

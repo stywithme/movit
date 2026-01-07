@@ -143,46 +143,75 @@ enum class JointRole {
  * Tracked joint configuration - NEW STRUCTURE with upRange/downRange
  * 
  * The exercise movement is divided into clear zones:
- * - upRange: Valid range for UP/START position (standing, extended)
- * - downRange: Valid range for DOWN/BOTTOM position (bent, lowered)
+ * - upRange: Valid range for UP/START position (standing, extended) - PRIMARY only
+ * - downRange: Valid range for DOWN/BOTTOM position (bent, lowered) - PRIMARY only
+ * - range: Single hold range for SECONDARY joints (must stay stable)
  * - Transition Zone: Between upRange.min and downRange.max (movement allowed)
  * - Error Zones: Above upRange.max or below downRange.min
  * 
  * Example for Bicep Curl:
- *   upRange:   { min: 150, max: 180 }  → arm extended
- *   downRange: { min: 30,  max: 70  }  → arm bent
- *   Transition: 70° - 150° → moving (no validation)
+ *   PRIMARY (left_elbow):
+ *     upRange:   { min: 150, max: 180 }  → arm extended
+ *     downRange: { min: 30,  max: 70  }  → arm bent
+ *   SECONDARY (right_elbow):
+ *     range:     { min: 150, max: 180 }  → must stay extended (HOLD)
  */
 data class TrackedJoint(
     val joint: String,                      // Joint code (e.g., "left_elbow")
     val role: JointRole,                    // primary or secondary
     val startPose: AngleRange,              // For pre-training position check (independent)
-    val upRange: DifficultyRanges,          // Range for UP/START position
-    val downRange: DifficultyRanges,        // Range for DOWN/BOTTOM position
+    val upRange: DifficultyRanges? = null,  // Range for UP/START position (PRIMARY only)
+    val downRange: DifficultyRanges? = null, // Range for DOWN/BOTTOM position (PRIMARY only)
+    @SerializedName("Range")
+    val range: DifficultyRanges? = null,    // Single hold range (SECONDARY only)
     val errorMessages: ErrorMessages,       // Error messages for feedback
     val pairedWith: String? = null          // Paired joint code (for symmetry)
 ) {
     /**
-     * Get UP range for a specific difficulty level
+     * Get UP range for a specific difficulty level (PRIMARY only)
      */
     fun getUpRange(level: DifficultyType): AngleRange {
+        val ranges = upRange ?: throw IllegalStateException("upRange is required for PRIMARY joints")
         return when (level) {
-            DifficultyType.BEGINNER -> upRange.beginner
-            DifficultyType.NORMAL -> upRange.normal
-            DifficultyType.ADVANCED -> upRange.advanced
+            DifficultyType.BEGINNER -> ranges.beginner
+            DifficultyType.NORMAL -> ranges.normal
+            DifficultyType.ADVANCED -> ranges.advanced
         }
     }
     
     /**
-     * Get DOWN range for a specific difficulty level
+     * Get DOWN range for a specific difficulty level (PRIMARY only)
      */
     fun getDownRange(level: DifficultyType): AngleRange {
+        val ranges = downRange ?: throw IllegalStateException("downRange is required for PRIMARY joints")
         return when (level) {
-            DifficultyType.BEGINNER -> downRange.beginner
-            DifficultyType.NORMAL -> downRange.normal
-            DifficultyType.ADVANCED -> downRange.advanced
+            DifficultyType.BEGINNER -> ranges.beginner
+            DifficultyType.NORMAL -> ranges.normal
+            DifficultyType.ADVANCED -> ranges.advanced
         }
     }
+    
+    /**
+     * Get hold range for SECONDARY joint (single range for HOLD behavior)
+     */
+    fun getHoldRange(level: DifficultyType): AngleRange {
+        val ranges = range ?: throw IllegalStateException("range is required for SECONDARY joints")
+        return when (level) {
+            DifficultyType.BEGINNER -> ranges.beginner
+            DifficultyType.NORMAL -> ranges.normal
+            DifficultyType.ADVANCED -> ranges.advanced
+        }
+    }
+    
+    /**
+     * Check if this joint has a hold range (SECONDARY)
+     */
+    fun hasHoldRange(): Boolean = range != null
+    
+    /**
+     * Check if this joint has up/down ranges (PRIMARY)
+     */
+    fun hasUpDownRanges(): Boolean = upRange != null && downRange != null
     
     /**
      * Check if angle is in startPose range (pre-training check)
@@ -192,7 +221,7 @@ data class TrackedJoint(
     }
     
     /**
-     * Check if angle is in UP range (start position)
+     * Check if angle is in UP range (start position) - PRIMARY only
      */
     fun isInUpRange(angle: Double, level: DifficultyType): Boolean {
         val range = getUpRange(level)
@@ -200,7 +229,7 @@ data class TrackedJoint(
     }
     
     /**
-     * Check if angle is in DOWN range (target position)
+     * Check if angle is in DOWN range (target position) - PRIMARY only
      */
     fun isInDownRange(angle: Double, level: DifficultyType): Boolean {
         val range = getDownRange(level)
@@ -208,7 +237,15 @@ data class TrackedJoint(
     }
     
     /**
-     * Check if angle is in transition zone (between UP and DOWN)
+     * Check if angle is in hold range - SECONDARY only
+     */
+    fun isInHoldRange(angle: Double, level: DifficultyType): Boolean {
+        val holdRange = getHoldRange(level)
+        return angle >= holdRange.min && angle <= holdRange.max
+    }
+    
+    /**
+     * Check if angle is in transition zone (between UP and DOWN) - PRIMARY only
      */
     fun isInTransition(angle: Double, level: DifficultyType): Boolean {
         val up = getUpRange(level)
@@ -220,13 +257,23 @@ data class TrackedJoint(
      * Check if angle is in error zone (too high or too low)
      */
     fun isInErrorZone(angle: Double, level: DifficultyType): ErrorZone {
-        val up = getUpRange(level)
-        val down = getDownRange(level)
-        
-        return when {
-            angle > up.max -> ErrorZone.TOO_HIGH
-            angle < down.min -> ErrorZone.TOO_LOW
-            else -> ErrorZone.NONE
+        return if (hasHoldRange()) {
+            // SECONDARY: Check against hold range
+            val holdRange = getHoldRange(level)
+            when {
+                angle > holdRange.max -> ErrorZone.TOO_HIGH
+                angle < holdRange.min -> ErrorZone.TOO_LOW
+                else -> ErrorZone.NONE
+            }
+        } else {
+            // PRIMARY: Check against up/down ranges
+            val up = getUpRange(level)
+            val down = getDownRange(level)
+            when {
+                angle > up.max -> ErrorZone.TOO_HIGH
+                angle < down.min -> ErrorZone.TOO_LOW
+                else -> ErrorZone.NONE
+            }
         }
     }
 }

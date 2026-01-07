@@ -137,7 +137,8 @@ class ArcRangeIndicator {
                 canvas, data,
                 data.downRangeMin, data.downRangeMax,
                 ArcColorCalculator.getZoneColor(JointZone.DOWN_ZONE),
-                strokeWidth, alpha
+                strokeWidth, alpha,
+                JointZone.DOWN_ZONE
             )
         }
         
@@ -156,7 +157,8 @@ class ArcRangeIndicator {
                 canvas, data,
                 data.upRangeMin, data.upRangeMax,
                 ArcColorCalculator.getZoneColor(JointZone.UP_ZONE),
-                strokeWidth, alpha
+                strokeWidth, alpha,
+                JointZone.UP_ZONE
             )
         }
         
@@ -215,7 +217,8 @@ class ArcRangeIndicator {
         rangeMax: Double,
         centerColor: Int,
         strokeWidth: Float,
-        alpha: Int
+        alpha: Int,
+        zone: JointZone? = null
     ) {
         val totalRange = rangeMax - rangeMin
         
@@ -236,7 +239,7 @@ class ArcRangeIndicator {
             val midAngle = (currentAngle + nextAngle) / 2
             
             // Calculate color based on position in range (uses Engine-compatible logic)
-            val color = ArcColorCalculator.getColorForAngleInRange(midAngle, rangeMin, rangeMax)
+            val color = ArcColorCalculator.getColorForAngleInRange(midAngle, rangeMin, rangeMax, zone)
             
             drawSubSegment(canvas, data, currentAngle, nextAngle, color, strokeWidth, alpha)
             

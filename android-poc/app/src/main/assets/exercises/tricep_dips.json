@@ -122,24 +122,19 @@
             "min": 0,
             "max": 30
           },
-          "upRange": {
+          "Range": {
             "beginner": { "min": 0, "max": 40 },
             "normal": { "min": 0, "max": 30 },
             "advanced": { "min": 0, "max": 25 }
           },
-          "downRange": {
-            "beginner": { "min": 10, "max": 50 },
-            "normal": { "min": 15, "max": 45 },
-            "advanced": { "min": 20, "max": 40 }
-          },
           "errorMessages": {
             "tooLow": {
-              "ar": "تقدم قليلاً",
-              "en": "Move forward slightly"
+              "ar": "حافظ على ثبات الكتف",
+              "en": "Keep shoulder stable"
             },
             "tooHigh": {
-              "ar": "لا تدع كتفيك يرتفعان كثيراً",
-              "en": "Don't let shoulders rise too much"
+              "ar": "ممتاز - الكتف ثابت",
+              "en": "Great - shoulder is stable"
             }
           }
         }

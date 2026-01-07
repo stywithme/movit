@@ -2,7 +2,7 @@ package com.trainingvalidator.poc.training.engine
 
 import android.util.Log
 import com.trainingvalidator.poc.analysis.SmoothedLandmark
-import com.trainingvalidator.poc.pose.BodyLandmarks
+import com.trainingvalidator.poc.pose.JointLandmarkMapping
 import com.trainingvalidator.poc.training.models.*
 import kotlin.math.abs
 import kotlin.math.sqrt
@@ -31,42 +31,8 @@ class PositionValidator(
     companion object {
         private const val TAG = "PositionValidator"
         
-        // Landmark name to index mapping
-        val LANDMARK_INDEX_MAP = mapOf(
-            "nose" to BodyLandmarks.NOSE,
-            "left_eye_inner" to BodyLandmarks.LEFT_EYE_INNER,
-            "left_eye" to BodyLandmarks.LEFT_EYE,
-            "left_eye_outer" to BodyLandmarks.LEFT_EYE_OUTER,
-            "right_eye_inner" to BodyLandmarks.RIGHT_EYE_INNER,
-            "right_eye" to BodyLandmarks.RIGHT_EYE,
-            "right_eye_outer" to BodyLandmarks.RIGHT_EYE_OUTER,
-            "left_ear" to BodyLandmarks.LEFT_EAR,
-            "right_ear" to BodyLandmarks.RIGHT_EAR,
-            "mouth_left" to BodyLandmarks.MOUTH_LEFT,
-            "mouth_right" to BodyLandmarks.MOUTH_RIGHT,
-            "left_shoulder" to BodyLandmarks.LEFT_SHOULDER,
-            "right_shoulder" to BodyLandmarks.RIGHT_SHOULDER,
-            "left_elbow" to BodyLandmarks.LEFT_ELBOW,
-            "right_elbow" to BodyLandmarks.RIGHT_ELBOW,
-            "left_wrist" to BodyLandmarks.LEFT_WRIST,
-            "right_wrist" to BodyLandmarks.RIGHT_WRIST,
-            "left_pinky" to BodyLandmarks.LEFT_PINKY,
-            "right_pinky" to BodyLandmarks.RIGHT_PINKY,
-            "left_index" to BodyLandmarks.LEFT_INDEX,
-            "right_index" to BodyLandmarks.RIGHT_INDEX,
-            "left_thumb" to BodyLandmarks.LEFT_THUMB,
-            "right_thumb" to BodyLandmarks.RIGHT_THUMB,
-            "left_hip" to BodyLandmarks.LEFT_HIP,
-            "right_hip" to BodyLandmarks.RIGHT_HIP,
-            "left_knee" to BodyLandmarks.LEFT_KNEE,
-            "right_knee" to BodyLandmarks.RIGHT_KNEE,
-            "left_ankle" to BodyLandmarks.LEFT_ANKLE,
-            "right_ankle" to BodyLandmarks.RIGHT_ANKLE,
-            "left_heel" to BodyLandmarks.LEFT_HEEL,
-            "right_heel" to BodyLandmarks.RIGHT_HEEL,
-            "left_foot_index" to BodyLandmarks.LEFT_FOOT_INDEX,
-            "right_foot_index" to BodyLandmarks.RIGHT_FOOT_INDEX
-        )
+        // NOTE: Using JointLandmarkMapping as Single Source of Truth for landmark mapping
+        // Removed duplicate LANDMARK_INDEX_MAP - use JointLandmarkMapping.jointToLandmark() instead
         
         // Hysteresis buffer to prevent flickering
         private const val HYSTERESIS_BUFFER = 0.02f
@@ -100,7 +66,7 @@ class PositionValidator(
         
         // 1. Detect camera position and facing
         cachedCameraResult = CameraPositionDetector.detect(landmarks)
-        val cameraResult = cachedCameraResult!!
+        val cameraResult = cachedCameraResult ?: return PositionValidationResult.empty()
         
         // 2. Check if camera position matches expected
         val cameraWarning = checkCameraPosition(cameraResult)
@@ -132,7 +98,7 @@ class PositionValidator(
                 
                 // After confirmation, keep returning the issue every frame (visual overlay stays visible)
                 if (frameCount >= requiredFrames) {
-                    val error = result.error!!
+                    val error = result.error ?: continue  // Skip if error is unexpectedly null
                     when (check.severity) {
                         CheckSeverity.ERROR -> errors.add(error)
                         CheckSeverity.WARNING -> warnings.add(error)
@@ -517,7 +483,8 @@ class PositionValidator(
     // ==================== Helper Methods ====================
     
     private fun getLandmark(name: String, landmarks: List<SmoothedLandmark>): SmoothedLandmark? {
-        val index = LANDMARK_INDEX_MAP[name] ?: return null
+        // Use JointLandmarkMapping as Single Source of Truth
+        val index = JointLandmarkMapping.jointToLandmark(name) ?: return null
         return landmarks.getOrNull(index)
     }
     

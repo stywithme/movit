@@ -1,7 +1,7 @@
 package com.trainingvalidator.poc.training.engine
 
 import com.trainingvalidator.poc.analysis.JointAngles
-import com.trainingvalidator.poc.pose.BodyLandmarks
+import com.trainingvalidator.poc.pose.JointLandmarkMapping
 import com.trainingvalidator.poc.training.models.TrackedJoint
 
 /**
@@ -11,6 +11,8 @@ import com.trainingvalidator.poc.training.models.TrackedJoint
  * to only the joints that are being tracked for this exercise.
  * 
  * It also converts joint codes (e.g., "left_knee") to actual angle values.
+ * 
+ * Note: Uses JointLandmarkMapping as single source of truth for joint↔landmark mapping.
  */
 class JointAngleTracker(
     private val trackedJoints: List<TrackedJoint>
@@ -39,24 +41,6 @@ class JointAngleTracker(
             "right_knee" to { angles: JointAngles -> angles.rightKnee },
             "left_ankle" to { angles: JointAngles -> angles.leftAnkle },
             "right_ankle" to { angles: JointAngles -> angles.rightAnkle }
-        )
-        
-        /**
-         * Map of joint codes to BodyLandmarks index for skeleton drawing
-         */
-        val JOINT_LANDMARK_MAP = mapOf(
-            "left_shoulder" to BodyLandmarks.LEFT_SHOULDER,
-            "right_shoulder" to BodyLandmarks.RIGHT_SHOULDER,
-            "left_elbow" to BodyLandmarks.LEFT_ELBOW,
-            "right_elbow" to BodyLandmarks.RIGHT_ELBOW,
-            "left_wrist" to BodyLandmarks.LEFT_WRIST,
-            "right_wrist" to BodyLandmarks.RIGHT_WRIST,
-            "left_hip" to BodyLandmarks.LEFT_HIP,
-            "right_hip" to BodyLandmarks.RIGHT_HIP,
-            "left_knee" to BodyLandmarks.LEFT_KNEE,
-            "right_knee" to BodyLandmarks.RIGHT_KNEE,
-            "left_ankle" to BodyLandmarks.LEFT_ANKLE,
-            "right_ankle" to BodyLandmarks.RIGHT_ANKLE
         )
     }
     
@@ -150,16 +134,17 @@ class JointAngleTracker(
     
     /**
      * Get landmark index for a joint (for skeleton overlay)
+     * Uses JointLandmarkMapping as single source of truth
      */
     fun getLandmarkIndex(jointCode: String): Int? {
-        return JOINT_LANDMARK_MAP[jointCode]
+        return JointLandmarkMapping.jointToLandmark(jointCode)
     }
     
     /**
      * Get all landmark indices for tracked joints
      */
     fun getTrackedLandmarkIndices(): List<Int> {
-        return trackedJoints.mapNotNull { getLandmarkIndex(it.joint) }
+        return trackedJoints.mapNotNull { JointLandmarkMapping.jointToLandmark(it.joint) }
     }
 }
 

@@ -1,6 +1,7 @@
 package com.trainingvalidator.poc.training.engine
 
 import com.trainingvalidator.poc.training.config.SettingsManager
+import java.util.ArrayDeque
 
 /**
  * AngleSmoother - Centralized angle smoothing layer
@@ -11,7 +12,11 @@ import com.trainingvalidator.poc.training.config.SettingsManager
  * 
  * Smoothing Algorithm:
  * Uses moving average with configurable window size.
- * Each joint has its own history buffer for independent smoothing.
+ * Each joint has its own circular buffer for independent smoothing.
+ * 
+ * Performance:
+ * - Uses ArrayDeque for O(1) add/remove operations
+ * - Maintains running sum for O(1) average calculation
  * 
  * Usage:
  * ```kotlin
@@ -29,7 +34,7 @@ import com.trainingvalidator.poc.training.config.SettingsManager
  * - Consistent angles across all components
  * - No Phase/Validation desynchronization
  * - Single place to tune smoothing parameters
- * - Easy to debug and test
+ * - O(1) operations for high-frequency frame processing
  */
 class AngleSmoother(
     private val windowSize: Int = SettingsManager.getSmoothingWindowSize()
@@ -40,10 +45,44 @@ class AngleSmoother(
     }
     
     /**
-     * History buffer per joint code
-     * Each joint maintains its own history for independent smoothing
+     * Circular buffer per joint code using ArrayDeque for O(1) operations
      */
-    private val jointHistories = mutableMapOf<String, MutableList<Double>>()
+    private val jointBuffers = mutableMapOf<String, CircularAngleBuffer>()
+    
+    /**
+     * Circular buffer with running sum for O(1) average calculation
+     */
+    private inner class CircularAngleBuffer {
+        private val buffer = ArrayDeque<Double>(windowSize)
+        private var runningSum = 0.0
+        
+        fun add(value: Double): Double {
+            // Remove oldest if at capacity
+            if (buffer.size >= windowSize) {
+                runningSum -= buffer.removeFirst()
+            }
+            
+            // Add new value
+            buffer.addLast(value)
+            runningSum += value
+            
+            // Return average (O(1) calculation)
+            return runningSum / buffer.size
+        }
+        
+        fun average(): Double? {
+            return if (buffer.isEmpty()) null else runningSum / buffer.size
+        }
+        
+        fun size(): Int = buffer.size
+        
+        fun toList(): List<Double> = buffer.toList()
+        
+        fun clear() {
+            buffer.clear()
+            runningSum = 0.0
+        }
+    }
     
     /**
      * Smooth a map of joint angles
@@ -64,25 +103,15 @@ class AngleSmoother(
     /**
      * Smooth a single joint's angle
      * 
-     * Uses moving average: adds new value, removes oldest if over window size
+     * Uses circular buffer with running sum for O(1) operations
      * 
      * @param jointCode Unique identifier for the joint
      * @param rawAngle Raw angle value from AngleCalculator
      * @return Smoothed angle value
      */
     private fun smoothJoint(jointCode: String, rawAngle: Double): Double {
-        val history = jointHistories.getOrPut(jointCode) { mutableListOf() }
-        
-        // Add new value
-        history.add(rawAngle)
-        
-        // Remove oldest if over window size
-        while (history.size > windowSize) {
-            history.removeAt(0)
-        }
-        
-        // Return average
-        return history.average()
+        val buffer = jointBuffers.getOrPut(jointCode) { CircularAngleBuffer() }
+        return buffer.add(rawAngle)
     }
     
     /**
@@ -93,7 +122,7 @@ class AngleSmoother(
      * @return Last smoothed angle or null
      */
     fun getSmoothedAngle(jointCode: String): Double? {
-        return jointHistories[jointCode]?.average()
+        return jointBuffers[jointCode]?.average()
     }
     
     /**
@@ -103,7 +132,7 @@ class AngleSmoother(
      * @return List of recent angle values
      */
     fun getHistory(jointCode: String): List<Double> {
-        return jointHistories[jointCode]?.toList() ?: emptyList()
+        return jointBuffers[jointCode]?.toList() ?: emptyList()
     }
     
     /**
@@ -111,7 +140,8 @@ class AngleSmoother(
      * Call when training restarts or exercise changes
      */
     fun reset() {
-        jointHistories.clear()
+        jointBuffers.values.forEach { it.clear() }
+        jointBuffers.clear()
     }
     
     /**
@@ -120,7 +150,8 @@ class AngleSmoother(
      * @param jointCode Joint identifier
      */
     fun resetJoint(jointCode: String) {
-        jointHistories.remove(jointCode)
+        jointBuffers[jointCode]?.clear()
+        jointBuffers.remove(jointCode)
     }
     
     /**
@@ -130,8 +161,8 @@ class AngleSmoother(
      * @return True if history is at least half the window size
      */
     fun isStable(jointCode: String): Boolean {
-        val history = jointHistories[jointCode] ?: return false
-        return history.size >= windowSize / 2
+        val buffer = jointBuffers[jointCode] ?: return false
+        return buffer.size() >= windowSize / 2
     }
     
     /**

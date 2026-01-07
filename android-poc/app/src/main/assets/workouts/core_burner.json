@@ -1,0 +1,47 @@
+{
+  "name": {
+    "ar": "تمرين حرق عضلات البطن",
+    "en": "Core Burner"
+  },
+  "description": {
+    "ar": "تمارين مركزة على عضلات البطن والجذع",
+    "en": "Focused workout for abs and core muscles"
+  },
+  "type": "circuit",
+  "executionMode": "sequential",
+  "rounds": 2,
+  "restBetweenExercisesMs": 10000,
+  "restBetweenRoundsMs": 45000,
+  "exercises": [
+    {
+      "exercise": "plank",
+      "variantIndex": 0,
+      "difficulty": "normal",
+      "target": { "durationSec": 30 },
+      "notes": {
+        "ar": "شد عضلات البطن طوال الوقت",
+        "en": "Engage your core throughout"
+      }
+    },
+    {
+      "exercise": "crunch",
+      "variantIndex": 0,
+      "difficulty": "beginner",
+      "target": { "reps": 15 },
+      "notes": {
+        "ar": "تحكم في الحركة - لا تندفع",
+        "en": "Control the movement - don't rush"
+      }
+    },
+    {
+      "exercise": "superman",
+      "variantIndex": 0,
+      "difficulty": "beginner",
+      "target": { "reps": 10 },
+      "notes": {
+        "ar": "ارفع الذراعين والساقين معاً",
+        "en": "Lift arms and legs together"
+      }
+    }
+  ]
+}

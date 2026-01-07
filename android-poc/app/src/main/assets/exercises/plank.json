@@ -29,6 +29,81 @@
         "en": "Side View"
       },
       "cameraPosition": "side_view",
+      "expectedFacingDirection": "auto_detect",
+      "positionChecks": [
+        {
+          "id": "body_alignment",
+          "type": "vertical_alignment",
+          "landmarks": {
+            "primary": "left_shoulder",
+            "secondary": "left_hip"
+          },
+          "condition": {
+            "operator": "approximately_equal",
+            "thresholds": {
+              "beginner": 0.12,
+              "normal": 0.08,
+              "advanced": 0.05
+            }
+          },
+          "activePhases": ["count", "hold"],
+          "errorMessage": {
+            "ar": "حافظ على استقامة جسمك من الكتف للورك",
+            "en": "Keep your body aligned from shoulder to hip"
+          },
+          "severity": "warning",
+          "cooldownMs": 2000,
+          "minErrorFrames": 5
+        },
+        {
+          "id": "hip_sag_check",
+          "type": "vertical_comparison",
+          "landmarks": {
+            "primary": "left_hip",
+            "secondary": "left_ankle"
+          },
+          "condition": {
+            "operator": "approximately_equal",
+            "thresholds": {
+              "beginner": 0.15,
+              "normal": 0.10,
+              "advanced": 0.07
+            }
+          },
+          "activePhases": ["count", "hold"],
+          "errorMessage": {
+            "ar": "لا تدع وسطك ينحني - شد عضلات البطن",
+            "en": "Don't let your hips sag - engage your core"
+          },
+          "severity": "error",
+          "cooldownMs": 2000,
+          "minErrorFrames": 4
+        },
+        {
+          "id": "hip_pike_check",
+          "type": "vertical_comparison",
+          "landmarks": {
+            "primary": "left_shoulder",
+            "secondary": "left_hip"
+          },
+          "condition": {
+            "operator": "should_not_exceed",
+            "thresholds": {
+              "beginner": 0.12,
+              "normal": 0.08,
+              "advanced": 0.05
+            }
+          },
+          "activePhases": ["count", "hold"],
+          "errorMessage": {
+            "ar": "لا ترفع مؤخرتك للأعلى - حافظ على خط مستقيم",
+            "en": "Don't pike your hips up - maintain a straight line"
+          },
+          "severity": "warning",
+          "cooldownMs": 2500,
+          "minErrorFrames": 4
+        }
+      ],
       "trackedJoints": [
         {
           "joint": "left_hip",
@@ -65,12 +140,7 @@
             "min": 70,
             "max": 110
           },
-          "upRange": {
-            "beginner": { "min": 60, "max": 120 },
-            "normal": { "min": 70, "max": 110 },
-            "advanced": { "min": 80, "max": 100 }
-          },
-          "downRange": {
+          "Range": {
             "beginner": { "min": 60, "max": 120 },
             "normal": { "min": 70, "max": 110 },
             "advanced": { "min": 80, "max": 100 }
@@ -93,12 +163,7 @@
             "min": 160,
             "max": 180
           },
-          "upRange": {
-            "beginner": { "min": 155, "max": 180 },
-            "normal": { "min": 165, "max": 180 },
-            "advanced": { "min": 170, "max": 180 }
-          },
-          "downRange": {
+          "Range": {
             "beginner": { "min": 155, "max": 180 },
             "normal": { "min": 165, "max": 180 },
             "advanced": { "min": 170, "max": 180 }

@@ -180,9 +180,10 @@ class GlassmorphicMessageView @JvmOverloads constructor(
         // Show with animation
         visibility = View.VISIBLE
         animateIn {
-            // Schedule auto-dismiss
-            dismissRunnable = Runnable { hide() }
-            postDelayed(dismissRunnable!!, durationMs)
+            // Schedule auto-dismiss (using local val for null-safety)
+            val runnable = Runnable { hide() }
+            dismissRunnable = runnable
+            postDelayed(runnable, durationMs)
         }
     }
     

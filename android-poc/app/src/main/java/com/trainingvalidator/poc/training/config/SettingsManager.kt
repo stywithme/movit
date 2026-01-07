@@ -17,13 +17,28 @@ object SettingsManager {
     private const val TAG = "SettingsManager"
     private const val SETTINGS_FILE = "app_settings.json"
     
+    @Volatile
     private var _settings: AppSettings? = null
+    
+    // Default settings instance (created once, reused if not initialized)
+    private val defaultSettings = AppSettings()
     
     /**
      * Current app settings (cached)
+     * Thread-safe: uses volatile field and returns immutable data class
+     * 
+     * Note: Returns default settings if not initialized. This is safe but
+     * may not reflect user's app_settings.json configuration.
      */
     val settings: AppSettings
-        get() = _settings ?: AppSettings()
+        get() {
+            val current = _settings
+            if (current == null) {
+                Log.w(TAG, "SettingsManager accessed before initialization - using defaults")
+                return defaultSettings
+            }
+            return current
+        }
     
     /**
      * Check if settings have been loaded
@@ -51,6 +66,12 @@ object SettingsManager {
             Log.d(TAG, "  Hysteresis: ${settings.angleDetection.hysteresisDegrees}°")
             Log.d(TAG, "  Boundary Buffer: ${settings.angleDetection.boundaryBufferDegrees}°")
             Log.d(TAG, "  Smoothing Window: ${settings.movementDetection.smoothingWindowSize}")
+            Log.d(TAG, "  Smoothing Settings:")
+            Log.d(TAG, "    Preset: ${settings.smoothing.preset}")
+            Log.d(TAG, "    Use Legacy EMA: ${settings.smoothing.useLegacyEMA}")
+            Log.d(TAG, "    MinCutoff: ${settings.smoothing.minCutoff}")
+            Log.d(TAG, "    Beta: ${settings.smoothing.beta}")
+            Log.d(TAG, "    Legacy Alpha: ${settings.smoothing.legacyAlpha}")
             
             true
         } catch (e: Exception) {
@@ -158,4 +179,53 @@ object SettingsManager {
      * Arc opacity (0.0 - 1.0)
      */
     fun getArcOpacity(): Float = settings.visual.arcOpacity
+    
+    // ==================== Smoothing Settings ====================
+    
+    /**
+     * Get smoothing settings object
+     */
+    fun getSmoothingSettings(): SmoothingSettings = settings.smoothing
+    
+    /**
+     * Get smoothing preset name
+     * @return One of: "responsive", "balanced", "smooth", "custom"
+     */
+    fun getSmoothingPreset(): String = settings.smoothing.preset
+    
+    /**
+     * Get One Euro Filter minCutoff parameter
+     * Lower = smoother but more lag
+     */
+    fun getSmoothingMinCutoff(): Float {
+        return when (settings.smoothing.preset) {
+            "responsive" -> 2.5f
+            "balanced" -> 1.5f
+            "smooth" -> 0.8f
+            else -> settings.smoothing.minCutoff
+        }
+    }
+    
+    /**
+     * Get One Euro Filter beta parameter
+     * Higher = more responsive to fast movements
+     */
+    fun getSmoothingBeta(): Float {
+        return when (settings.smoothing.preset) {
+            "responsive" -> 0.02f
+            "balanced" -> 0.01f
+            "smooth" -> 0.005f
+            else -> settings.smoothing.beta
+        }
+    }
+    
+    /**
+     * Whether to use legacy EMA instead of One Euro Filter
+     */
+    fun useLegacySmoothing(): Boolean = settings.smoothing.useLegacyEMA
+    
+    /**
+     * Get legacy EMA alpha value
+     */
+    fun getLegacySmoothingAlpha(): Float = settings.smoothing.legacyAlpha
 }

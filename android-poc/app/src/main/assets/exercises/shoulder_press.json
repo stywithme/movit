@@ -146,24 +146,19 @@
             "min": 70,
             "max": 110
           },
-          "upRange": {
+          "Range": {
             "beginner": { "min": 160, "max": 180 },
             "normal": { "min": 165, "max": 180 },
             "advanced": { "min": 170, "max": 180 }
           },
-          "downRange": {
-            "beginner": { "min": 70, "max": 110 },
-            "normal": { "min": 80, "max": 100 },
-            "advanced": { "min": 85, "max": 95 }
-          },
           "errorMessages": {
             "tooLow": {
-              "ar": "ارفع كوعك لمستوى الكتف",
-              "en": "Raise elbow to shoulder level"
+              "ar": "حافظ على ثبات الكتف",
+              "en": "Keep shoulder stable"
             },
             "tooHigh": {
-              "ar": "ممتاز!",
-              "en": "Great!"
+              "ar": "ممتاز - الكتف ثابت",
+              "en": "Great - shoulder is stable"
             }
           }
         }

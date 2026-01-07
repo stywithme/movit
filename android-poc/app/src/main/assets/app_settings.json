@@ -17,5 +17,12 @@
   "holdDefaults": {
     "defaultDurationSeconds": 30,
     "defaultGracePeriodMs": 3000
+  },
+  "smoothing": {
+    "preset": "custom",
+    "minCutoff": 3.0,
+    "beta": 0.05,
+    "useLegacyEMA": false,
+    "legacyAlpha": 1.0
   }
 }

@@ -58,6 +58,20 @@
             android:screenOrientation="portrait"
             android:theme="@style/Theme.TrainingValidatorPoC" />
         
+        <!-- Workout List Activity -->
+        <activity
+            android:name=".ui.WorkoutListActivity"
+            android:exported="false"
+            android:screenOrientation="portrait"
+            android:theme="@style/Theme.TrainingValidatorPoC" />
+        
+        <!-- Workout Activity (runs workout sessions) -->
+        <activity
+            android:name=".ui.WorkoutActivity"
+            android:exported="false"
+            android:screenOrientation="portrait"
+            android:theme="@style/Theme.TrainingValidatorPoC" />
+        
     </application>
 
 </manifest>

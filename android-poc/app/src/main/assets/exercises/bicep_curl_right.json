@@ -1,15 +1,15 @@
 {
   "name": {
-    "ar": "ثني الذراعين (بايسبس)",
-    "en": "Bicep Curl"
+    "ar": "ثني الذراع اليمين (بايسبس)",
+    "en": "Bicep Curl - Right Arm"
   },
   "description": {
-    "ar": "تمرين لتقوية عضلة البايسبس الأمامية للذراع",
-    "en": "Exercise to strengthen the biceps muscle"
+    "ar": "تمرين لتقوية عضلة البايسبس للذراع اليمين فقط",
+    "en": "Exercise to strengthen the right arm biceps only"
   },
   "instructions": {
-    "ar": "قف بشكل مستقيم، ذراعيك بجانب جسمك، ثم اثني مرفقيك لرفع الوزن نحو الكتفين",
-    "en": "Stand straight with arms at sides, then bend elbows to curl weight toward shoulders"
+    "ar": "قف بشكل مستقيم، اثني مرفقك اليمين لرفع الوزن نحو الكتف. الذراع الشمال ثابتة.",
+    "en": "Stand straight, bend right elbow to curl weight toward shoulder. Keep left arm still."
   },
   "category": {
     "code": "arms",
@@ -20,23 +20,23 @@
   },
   "countingMethod": "up_down",
   "muscles": ["biceps", "forearms"],
-  "equipment": ["dumbbell", "barbell", "resistance_band"],
-  "tags": ["isolation", "upper-body", "beginner-friendly"],
+  "equipment": ["dumbbell"],
+  "tags": ["isolation", "upper-body", "single-arm", "right"],
   "poseVariants": [
     {
       "name": {
-        "ar": "زاوية جانبية",
-        "en": "Side View"
+        "ar": "زاوية جانبية - الذراع اليمين",
+        "en": "Side View - Right Arm"
       },
       "cameraPosition": "side_view",
       "expectedFacingDirection": "auto_detect",
       "positionChecks": [
         {
-          "id": "elbow_stable",
+          "id": "elbow_stable_right",
           "type": "vertical_alignment",
           "landmarks": {
-            "primary": "left_elbow",
-            "secondary": "left_hip"
+            "primary": "right_elbow",
+            "secondary": "right_hip"
           },
           "condition": {
             "operator": "approximately_equal",
@@ -48,8 +48,8 @@
           },
           "activePhases": ["up", "down"],
           "errorMessage": {
-            "ar": "ثبّت مرفقك بجانب جسمك",
-            "en": "Keep your elbow close to your body"
+            "ar": "ثبّت مرفقك اليمين بجانب جسمك",
+            "en": "Keep your right elbow close to your body"
           },
           "severity": "warning",
           "cooldownMs": 2000,
@@ -58,35 +58,6 @@
       ],
       "trackedJoints": [
         {
-          "joint": "left_elbow",
-          "role": "primary",
-          "startPose": {
-            "min": 150,
-            "max": 180
-          },
-          "upRange": {
-            "beginner": { "min": 150, "max": 180 },
-            "normal": { "min": 160, "max": 180 },
-            "advanced": { "min": 165, "max": 180 }
-          },
-          "downRange": {
-            "beginner": { "min": 30, "max": 60 },
-            "normal": { "min": 25, "max": 50 },
-            "advanced": { "min": 20, "max": 40 }
-          },
-          "errorMessages": {
-            "tooLow": {
-              "ar": "لا تثني كثيراً",
-              "en": "Don't curl too much"
-            },
-            "tooHigh": {
-              "ar": "ارفع الوزن أكثر",
-              "en": "Curl up more"
-            }
-          },
-          "pairedWith": "right_elbow"
-        },
-        {
           "joint": "right_elbow",
           "role": "primary",
           "startPose": {
@@ -94,14 +65,14 @@
             "max": 180
           },
           "upRange": {
-            "beginner": { "min": 150, "max": 180 },
-            "normal": { "min": 160, "max": 180 },
-            "advanced": { "min": 165, "max": 180 }
+            "beginner": { "min": 140, "max": 180 },
+            "normal": { "min": 150, "max": 180 },
+            "advanced": { "min": 155, "max": 180 }
           },
           "downRange": {
-            "beginner": { "min": 30, "max": 60 },
-            "normal": { "min": 25, "max": 50 },
-            "advanced": { "min": 20, "max": 40 }
+            "beginner": { "min": 70, "max": 110 },
+            "normal": { "min": 65, "max": 100 },
+            "advanced": { "min": 60, "max": 90 }
           },
           "errorMessages": {
             "tooLow": {
@@ -112,20 +83,42 @@
               "ar": "ارفع الوزن أكثر",
               "en": "Curl up more"
             }
-          },
-          "pairedWith": "left_elbow"
+          }
         },
         {
-          "joint": "left_shoulder",
+          "joint": "left_elbow",
+          "role": "secondary",
+          "startPose": {
+            "min": 150,
+            "max": 180
+          },
+          "Range": {
+            "beginner": { "min": 100, "max": 180 },
+            "normal": { "min": 100, "max": 180 },
+            "advanced": { "min": 100, "max": 180 }
+          },
+          "errorMessages": {
+            "tooLow": {
+              "ar": "حافظ على ثبات الذراع الشمال",
+              "en": "Keep left arm still"
+            },
+            "tooHigh": {
+              "ar": "ممتاز - الذراع الشمال ثابتة",
+              "en": "Good - left arm is stable"
+            }
+          }
+        },
+        {
+          "joint": "right_shoulder",
           "role": "secondary",
           "startPose": {
             "min": 0,
             "max": 30
           },
           "Range": {
-            "beginner": { "min": 0, "max": 40 },
-            "normal": { "min": 0, "max": 30 },
-            "advanced": { "min": 0, "max": 20 }
+            "beginner": { "min": 0, "max": 60 },
+            "normal": { "min": 0, "max": 50 },
+            "advanced": { "min": 0, "max": 55 }
           },
           "errorMessages": {
             "tooLow": {
@@ -141,14 +134,12 @@
       ],
       "feedbackMessages": {
         "motivational": [
-          { "ar": "ممتاز! استمر!", "en": "Excellent! Keep going!" },
-          { "ar": "عضلات قوية!", "en": "Strong muscles!" },
-          { "ar": "أداء رائع!", "en": "Great form!" }
+          { "ar": "ممتاز! الذراع اليمين قوية!", "en": "Excellent! Strong right arm!" },
+          { "ar": "استمر! أداء رائع!", "en": "Keep going! Great form!" }
         ],
         "common_mistake": [
           { "ar": "لا تحرك مرفقك - ثبّته بجانبك", "en": "Don't swing your elbow - keep it at your side" },
-          { "ar": "لا تستخدم جسمك للمساعدة", "en": "Don't use momentum from your body" },
-          { "ar": "تحكم في الحركة عند النزول", "en": "Control the weight on the way down" }
+          { "ar": "لا تحرك الذراع الشمال", "en": "Don't move your left arm" }
         ],
         "tip": [
           { "ar": "اعصر عضلة البايسبس في أعلى الحركة", "en": "Squeeze bicep at the top" },

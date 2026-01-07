@@ -113,14 +113,14 @@
             "max": 180
           },
           "upRange": {
-            "beginner": { "min": 125, "max": 180 },
-            "normal":   { "min": 130, "max": 180 },
-            "advanced": { "min": 135, "max": 180 }
+            "beginner": { "min": 135, "max": 180 },
+            "normal":   { "min": 140, "max": 180 },
+            "advanced": { "min": 145, "max": 180 }
           },
           "downRange": {
-            "beginner": { "min": 70, "max": 110 },
-            "normal":   { "min": 80, "max": 100 },
-            "advanced": { "min": 85, "max": 95 }
+            "beginner": { "min": 50, "max": 110 },
+            "normal":   { "min": 40, "max": 100 },
+            "advanced": { "min": 35, "max": 95 }
           },
           "errorMessages": {
             "tooLow": {
@@ -142,14 +142,14 @@
             "max": 180
           },
           "upRange": {
-            "beginner": { "min": 125, "max": 180 },
-            "normal":   { "min": 130, "max": 180 },
-            "advanced": { "min": 135, "max": 180 }
+            "beginner": { "min": 135, "max": 180 },
+            "normal":   { "min": 140, "max": 180 },
+            "advanced": { "min": 145, "max": 180 }
           },
           "downRange": {
-            "beginner": { "min": 70, "max": 110 },
-            "normal":   { "min": 80, "max": 100 },
-            "advanced": { "min": 85, "max": 95 }
+            "beginner": { "min": 50, "max": 110 },
+            "normal":   { "min": 40, "max": 100 },
+            "advanced": { "min": 35, "max": 95 }
           },
           "errorMessages": {
             "tooLow": {
@@ -170,24 +170,19 @@
             "min": 120,
             "max": 180
           },
-          "upRange": {
+          "Range": {
             "beginner": { "min": 155, "max": 180 },
             "normal":   { "min": 160, "max": 180 },
             "advanced": { "min": 165, "max": 180 }
           },
-          "downRange": {
-            "beginner": { "min": 60, "max": 100 },
-            "normal":   { "min": 70, "max": 90 },
-            "advanced": { "min": 75, "max": 85 }
-          },
           "errorMessages": {
             "tooLow": {
-              "ar": "لا تدفع الورك للخلف كثيراً",
-              "en": "Don't push your hips back too much"
+              "ar": "حافظ على استقامة الورك",
+              "en": "Keep your hips aligned"
             },
             "tooHigh": {
-              "ar": "ادفع الورك للخلف أكثر",
-              "en": "Push your hips back more"
+              "ar": "ممتاز - الورك ثابت",
+              "en": "Great - hips are stable"
             }
           }
         },
@@ -198,15 +193,10 @@
             "min": 0,
             "max": 15
           },
-          "upRange": {
+          "Range": {
             "beginner": { "min": 0, "max": 20 },
             "normal":   { "min": 0, "max": 15 },
             "advanced": { "min": 0, "max": 10 }
-          },
-          "downRange": {
-            "beginner": { "min": 0, "max": 45 },
-            "normal":   { "min": 0, "max": 35 },
-            "advanced": { "min": 0, "max": 30 }
           },
           "errorMessages": {
             "tooLow": {
@@ -214,8 +204,8 @@
               "en": "Great - back is straight"
             },
             "tooHigh": {
-              "ar": "لا تميل للأمام كثيراً - حافظ على استقامة الجذع",
-              "en": "Don't lean forward too much - keep your torso upright"
+              "ar": "حافظ على استقامة الجذع",
+              "en": "Keep your torso upright"
             }
           }
         }

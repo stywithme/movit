@@ -122,12 +122,7 @@
             "min": 80,
             "max": 110
           },
-          "upRange": {
-            "beginner": { "min": 80, "max": 110 },
-            "normal": { "min": 85, "max": 100 },
-            "advanced": { "min": 88, "max": 95 }
-          },
-          "downRange": {
+          "Range": {
             "beginner": { "min": 80, "max": 110 },
             "normal": { "min": 85, "max": 100 },
             "advanced": { "min": 88, "max": 95 }

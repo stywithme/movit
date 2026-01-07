@@ -1,0 +1,154 @@
+package com.trainingvalidator.poc.analysis
+
+import kotlin.math.abs
+
+/**
+ * OneEuroFilter - Adaptive low-pass filter for smooth, responsive tracking
+ * 
+ * The One Euro Filter is the gold standard for filtering noisy position data
+ * while maintaining responsiveness. It's used in:
+ * - MediaPipe's internal smoothing
+ * - Apple ARKit
+ * - Microsoft Kinect
+ * - Most VR/AR tracking systems
+ * 
+ * Key Innovation:
+ * - When movement is SLOW → applies more smoothing (reduces jitter)
+ * - When movement is FAST → applies less smoothing (reduces lag)
+ * 
+ * Parameters:
+ * @param minCutoff Minimum cutoff frequency (Hz). Lower = smoother but more lag.
+ *                  Typical range: 0.5 - 2.0. Default: 1.0
+ * @param beta Speed coefficient. Higher = more responsive to fast movements.
+ *             Typical range: 0.0 - 1.0. Default: 0.007
+ * @param dCutoff Derivative cutoff frequency. Usually keep at 1.0.
+ * 
+ * Tuning Guide:
+ * - Reduce minCutoff to reduce jitter (but adds lag for slow movements)
+ * - Increase beta to reduce lag during fast movements
+ * - Start with minCutoff=1.0, beta=0.007, then adjust
+ * 
+ * Reference: http://cristal.univ-lille.fr/~casiez/1euro/
+ */
+class OneEuroFilter(
+    private val minCutoff: Float = 1.0f,
+    private val beta: Float = 0.007f,
+    private val dCutoff: Float = 1.0f
+) {
+    private var xFilter: LowPassFilter? = null
+    private var dxFilter: LowPassFilter? = null
+    private var lastTime: Long = 0
+    private var lastValue: Float? = null
+    
+    /**
+     * Filter a new value
+     * 
+     * @param value The raw input value
+     * @param timestamp Current timestamp in milliseconds
+     * @return Filtered value
+     */
+    fun filter(value: Float, timestamp: Long): Float {
+        // Calculate time delta
+        val dt = if (lastTime == 0L) {
+            1.0f / 30.0f  // Assume 30 FPS for first frame
+        } else {
+            ((timestamp - lastTime) / 1000.0f).coerceIn(0.001f, 0.1f)
+        }
+        lastTime = timestamp
+        
+        // Initialize filters on first call
+        if (xFilter == null) {
+            xFilter = LowPassFilter(computeAlpha(minCutoff, dt), value)
+            dxFilter = LowPassFilter(computeAlpha(dCutoff, dt), 0f)
+            lastValue = value
+            return value
+        }
+        
+        // Calculate derivative (speed of change)
+        val dx = (value - (lastValue ?: value)) / dt
+        lastValue = value
+        
+        // Filter the derivative
+        val filteredDx = dxFilter!!.filter(dx, computeAlpha(dCutoff, dt))
+        
+        // Adaptive cutoff based on speed
+        // Fast movement → higher cutoff → less smoothing → more responsive
+        // Slow movement → lower cutoff → more smoothing → less jitter
+        val cutoff = minCutoff + beta * abs(filteredDx)
+        
+        // Apply the main filter with adaptive cutoff
+        return xFilter!!.filter(value, computeAlpha(cutoff, dt))
+    }
+    
+    /**
+     * Reset the filter state
+     * Call this when there's a discontinuity (e.g., new pose detection)
+     */
+    fun reset() {
+        xFilter = null
+        dxFilter = null
+        lastTime = 0
+        lastValue = null
+    }
+    
+    /**
+     * Compute alpha for low-pass filter from cutoff frequency
+     */
+    private fun computeAlpha(cutoff: Float, dt: Float): Float {
+        val tau = 1.0f / (2.0f * Math.PI.toFloat() * cutoff)
+        return 1.0f / (1.0f + tau / dt)
+    }
+    
+    /**
+     * Simple low-pass filter
+     */
+    private class LowPassFilter(
+        private var alpha: Float,
+        private var previousValue: Float
+    ) {
+        fun filter(value: Float, alpha: Float): Float {
+            this.alpha = alpha
+            val result = alpha * value + (1 - alpha) * previousValue
+            previousValue = result
+            return result
+        }
+    }
+}
+
+/**
+ * OneEuroFilter3D - One Euro Filter for 3D coordinates
+ * 
+ * Applies independent filtering to X, Y, Z axes.
+ * Each axis adapts independently based on its movement speed.
+ */
+class OneEuroFilter3D(
+    minCutoff: Float = 1.0f,
+    beta: Float = 0.007f,
+    dCutoff: Float = 1.0f
+) {
+    private val xFilter = OneEuroFilter(minCutoff, beta, dCutoff)
+    private val yFilter = OneEuroFilter(minCutoff, beta, dCutoff)
+    private val zFilter = OneEuroFilter(minCutoff, beta, dCutoff)
+    
+    /**
+     * Filter a 3D point
+     * 
+     * @return Filtered (x, y, z) as Triple
+     */
+    fun filter(x: Float, y: Float, z: Float, timestamp: Long): Triple<Float, Float, Float> {
+        return Triple(
+            xFilter.filter(x, timestamp),
+            yFilter.filter(y, timestamp),
+            zFilter.filter(z, timestamp)
+        )
+    }
+    
+    /**
+     * Reset all axis filters
+     */
+    fun reset() {
+        xFilter.reset()
+        yFilter.reset()
+        zFilter.reset()
+    }
+}

@@ -146,12 +146,7 @@
             "min": 150,
             "max": 180
           },
-          "upRange": {
-            "beginner": { "min": 140, "max": 180 },
-            "normal": { "min": 150, "max": 180 },
-            "advanced": { "min": 160, "max": 180 }
-          },
-          "downRange": {
+          "Range": {
             "beginner": { "min": 150, "max": 180 },
             "normal": { "min": 160, "max": 180 },
             "advanced": { "min": 165, "max": 180 }
@@ -162,8 +157,8 @@
               "en": "Keep arm slightly extended"
             },
             "tooHigh": {
-              "ar": "ممتاز!",
-              "en": "Great!"
+              "ar": "ممتاز - المرفق ثابت",
+              "en": "Great - elbow is stable"
             }
           }
         }

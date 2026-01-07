@@ -30,12 +30,18 @@ import com.trainingvalidator.poc.training.feedback.FeedbackConfig
 import com.trainingvalidator.poc.training.feedback.FeedbackEvent
 import com.trainingvalidator.poc.training.feedback.FeedbackManager
 import com.trainingvalidator.poc.training.loader.ExerciseLoader
+import com.trainingvalidator.poc.training.loader.WorkoutLoader
 import com.trainingvalidator.poc.training.models.CountingMethod
 import com.trainingvalidator.poc.training.models.DifficultyType
 import com.trainingvalidator.poc.training.models.ExerciseConfig
 import com.trainingvalidator.poc.training.models.JointRole
+import com.trainingvalidator.poc.training.models.WorkoutConfig
+import com.trainingvalidator.poc.training.workout.LoadedExercise
+import com.trainingvalidator.poc.training.workout.WorkoutTrainingEngine
+import com.trainingvalidator.poc.training.workout.SwitchResult
 import com.trainingvalidator.poc.training.engine.PositionError
 import com.trainingvalidator.poc.training.engine.CameraPositionWarning
+import com.trainingvalidator.poc.training.config.SettingsManager
 import com.trainingvalidator.poc.analysis.JointAngles
 import com.trainingvalidator.poc.ui.components.AnimationUtils
 import com.trainingvalidator.poc.ui.components.GlassmorphicMessageView
@@ -50,6 +56,7 @@ import android.widget.SeekBar
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 /**
  * TrainingActivity - Professional Training Screen with Glassmorphic UI
@@ -76,6 +83,21 @@ class TrainingActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetection
         const val EXTRA_POSE_VARIANT = "pose_variant"
         const val EXTRA_TRAINING_MODE = "training_mode"
         const val EXTRA_VIDEO_URI = "video_uri"
+        
+        // Workout integration extras (old method - launches multiple activities)
+        const val EXTRA_MAX_REPS_THIS_SESSION = "max_reps_this_session"
+        const val EXTRA_TARGET_REPS_OVERRIDE = "target_reps_override"
+        const val EXTRA_TARGET_DURATION_OVERRIDE = "target_duration_override"
+        
+        // NEW: Workout Mode extras (Hot-Swap - single activity)
+        const val EXTRA_WORKOUT_NAME = "workout_name"
+        const val EXTRA_IS_WORKOUT_MODE = "is_workout_mode"
+        
+        // Result extras (for WorkoutActivity)
+        const val RESULT_REPS_COMPLETED = "reps_completed"
+        const val RESULT_DURATION_MS = "duration_ms"
+        const val RESULT_ACCURACY = "accuracy"
+        const val RESULT_IS_COMPLETED = "is_completed"
         
         // Training modes
         const val MODE_CAMERA = "camera"
@@ -113,8 +135,9 @@ class TrainingActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetection
     private var analysisResultStorage: AnalysisResultStorage? = null
     private var isVideoMode: Boolean = false
     
-    // Landmark smoothing
-    private val landmarkSmoother = LandmarkSmoother()
+    // Landmark smoothing - uses One Euro Filter for responsive, jitter-free tracking
+    // Must be initialized AFTER SettingsManager in onCreate()
+    private lateinit var landmarkSmoother: LandmarkSmoother
     
     // Current angles for pose validation
     private var currentAngles: JointAngles? = null
@@ -136,6 +159,19 @@ class TrainingActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetection
     // State
     private var useFrontCamera = true
     private var lastRepCount = 0
+    
+    // Workout integration - for alternating mode (old method)
+    private var maxRepsThisSession: Int? = null
+    private var sessionStartTime: Long = 0L
+    
+    // NEW: Workout Mode with Hot-Swap
+    private var isWorkoutMode = false
+    private var workoutConfig: WorkoutConfig? = null
+    private var workoutTrainingEngine: WorkoutTrainingEngine? = null
+    private var currentRepsInSession = 0
+    
+    // Job to cancel observers on hot-swap
+    private var workoutObserverJob: kotlinx.coroutines.Job? = null
     
     // FPS calculation
     private var frameCount = 0
@@ -160,6 +196,25 @@ class TrainingActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetection
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        
+        // Initialize SettingsManager FIRST (loads app_settings.json)
+        try {
+            SettingsManager.initialize(this)
+            // Now create landmarkSmoother with loaded settings
+            landmarkSmoother = LandmarkSmoother.createFromSettings()
+            
+            // DEBUG: Show current smoothing settings
+            val smoothingInfo = if (SettingsManager.useLegacySmoothing()) {
+                "Legacy EMA (alpha=${SettingsManager.getLegacySmoothingAlpha()})"
+            } else {
+                "One Euro (minCutoff=${SettingsManager.getSmoothingMinCutoff()}, beta=${SettingsManager.getSmoothingBeta()})"
+            }
+            Log.i(TAG, "Smoothing: $smoothingInfo")
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed to initialize settings, using defaults", e)
+            // Fallback to default smoother
+            landmarkSmoother = LandmarkSmoother.createBalanced()
+        }
         
         setupFullscreen()
         
@@ -190,8 +245,26 @@ class TrainingActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetection
             return
         }
         
-        // Load exercise and initialize
-        loadExercise(exerciseName, difficultyStr)
+        // Get workout integration extras (for alternating mode)
+        maxRepsThisSession = intent.getIntExtra(EXTRA_MAX_REPS_THIS_SESSION, -1)
+            .takeIf { it > 0 }
+        sessionStartTime = System.currentTimeMillis()
+        
+        if (maxRepsThisSession != null) {
+            Log.d(TAG, "Workout mode: maxRepsThisSession = $maxRepsThisSession")
+        }
+        
+        // NEW: Check for Workout Mode (Hot-Swap)
+        val workoutName = intent.getStringExtra(EXTRA_WORKOUT_NAME)
+        isWorkoutMode = intent.getBooleanExtra(EXTRA_IS_WORKOUT_MODE, false) || workoutName != null
+        
+        if (isWorkoutMode && workoutName != null) {
+            // Workout Mode: Load workout and use WorkoutTrainingEngine
+            loadWorkout(workoutName, difficultyStr)
+        } else {
+            // Single Exercise Mode
+            loadExercise(exerciseName, difficultyStr)
+        }
         
         setupUI()
         
@@ -217,7 +290,8 @@ class TrainingActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetection
     private fun loadExercise(exerciseName: String, difficultyStr: String) {
         exerciseConfig = ExerciseLoader.load(assets, exerciseName)
         
-        if (exerciseConfig == null) {
+        // Use local val for null-safety (avoids force unwrap)
+        val config = exerciseConfig ?: run {
             Toast.makeText(this, "Failed to load exercise: $exerciseName", Toast.LENGTH_LONG).show()
             finish()
             return
@@ -230,9 +304,9 @@ class TrainingActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetection
             else -> DifficultyType.BEGINNER
         }
         
-        // Initialize training engine
+        // Initialize training engine (using local val for null-safety)
         trainingEngine = TrainingEngine(
-            exerciseConfig = exerciseConfig!!,
+            exerciseConfig = config,
             difficulty = difficulty,
             poseVariantIndex = poseVariantIndex
         )
@@ -250,7 +324,104 @@ class TrainingActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetection
         }
         feedbackManager?.initialize()
         
-        Log.d(TAG, "Loaded exercise: ${exerciseConfig!!.name.en}, Mode: $trainingMode")
+        Log.d(TAG, "Loaded exercise: ${config.name.en}, Mode: $trainingMode")
+    }
+    
+    /**
+     * Load workout for Workout Mode (Hot-Swap)
+     */
+    private fun loadWorkout(workoutName: String, difficultyStr: String) {
+        workoutConfig = WorkoutLoader.load(assets, workoutName)
+        
+        val config = workoutConfig ?: run {
+            Toast.makeText(this, "Failed to load workout: $workoutName", Toast.LENGTH_LONG).show()
+            finish()
+            return
+        }
+        
+        difficulty = when (difficultyStr.lowercase()) {
+            "beginner" -> DifficultyType.BEGINNER
+            "normal" -> DifficultyType.NORMAL
+            "advanced" -> DifficultyType.ADVANCED
+            else -> DifficultyType.BEGINNER
+        }
+        
+        // Load all exercises for the workout
+        val loadedExercises = config.exercises.mapIndexed { index, workoutExercise ->
+            val exerciseConfig = ExerciseLoader.load(assets, workoutExercise.exercise)
+            if (exerciseConfig == null) {
+                Log.e(TAG, "Failed to load exercise: ${workoutExercise.exercise}")
+                return@mapIndexed null
+            }
+            
+            LoadedExercise(
+                config = exerciseConfig,
+                workoutExercise = workoutExercise,
+                difficulty = workoutExercise.difficulty ?: difficulty,
+                round = 1,
+                indexInRound = index,
+                totalInRound = config.exercises.size,
+                maxRepsThisSession = null
+            )
+        }.filterNotNull()
+        
+        if (loadedExercises.isEmpty()) {
+            Toast.makeText(this, "No valid exercises in workout", Toast.LENGTH_LONG).show()
+            finish()
+            return
+        }
+        
+        // Create WorkoutTrainingEngine
+        workoutTrainingEngine = WorkoutTrainingEngine(
+            exercises = loadedExercises,
+            workoutConfig = config,
+            defaultDifficulty = difficulty
+        ).apply {
+            setupWorkoutCallbacks(this)
+        }
+        
+        // Get first exercise for initial UI setup
+        val firstExercise = loadedExercises.first()
+        exerciseConfig = firstExercise.config
+        poseVariantIndex = firstExercise.workoutExercise.variantIndex
+        
+        // Initialize feedback manager
+        feedbackManager = FeedbackManager(
+            context = this,
+            config = FeedbackConfig(
+                enableAudio = true,
+                enableHaptic = true,
+                language = "en"
+            )
+        ).apply {
+            this.isVideoMode = this@TrainingActivity.isVideoMode
+        }
+        feedbackManager?.initialize()
+        
+        Log.d(TAG, "Loaded workout: ${config.name.en} with ${loadedExercises.size} exercises (Hot-Swap mode)")
+    }
+    
+    /**
+     * Setup callbacks for WorkoutTrainingEngine
+     */
+    private fun setupWorkoutCallbacks(engine: WorkoutTrainingEngine) {
+        engine.onExerciseSwitched = { fromExercise, toExercise, repsThisSession ->
+            runOnUiThread {
+                showExerciseSwitchIndicator(fromExercise, toExercise, repsThisSession)
+            }
+        }
+        
+        engine.onWorkoutCompleted = { totalReps, rounds ->
+            runOnUiThread {
+                completeWorkout()
+            }
+        }
+        
+        engine.onRoundCompleted = { roundNumber, totalRounds ->
+            runOnUiThread {
+                showRoundCompleteIndicator(roundNumber, totalRounds)
+            }
+        }
     }
 
     private fun setupUI() {
@@ -266,7 +437,9 @@ class TrainingActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetection
         binding.btnSwitchCamera.setOnClickListener {
             useFrontCamera = !useFrontCamera
             cameraManager?.switchCamera(useFrontCamera)
-            landmarkSmoother.reset()
+            if (::landmarkSmoother.isInitialized) {
+                landmarkSmoother.reset()
+            }
         }
         
         // Play/Pause button (unified for camera and video modes)
@@ -323,6 +496,7 @@ class TrainingActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetection
     }
     
     private fun showPoseRequirements() {
+        // Use exerciseConfig which is already set (either from loadExercise or loadWorkout)
         val variant = exerciseConfig?.poseVariants?.getOrNull(poseVariantIndex) ?: return
         val primaryJoints = variant.getPrimaryJoints()
         
@@ -408,6 +582,8 @@ class TrainingActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetection
     }
     
     private fun validateStartPose(): Boolean {
+        // Use exerciseConfig which is already set (either from loadExercise or loadWorkout)
+        // In Workout Mode, exerciseConfig and poseVariantIndex are updated on each hot-swap
         val variant = exerciseConfig?.poseVariants?.getOrNull(poseVariantIndex) ?: return false
         val primaryJoints = variant.getPrimaryJoints()
         val angles = currentAngles ?: return false
@@ -480,14 +656,305 @@ class TrainingActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetection
         
         // Reset message anti-spam state at the start of each training session
         feedbackManager?.resetMessageStates()
+        
+        if (isWorkoutMode) {
+            // Workout Mode: Start with WorkoutTrainingEngine
+            startWorkoutTraining()
+        } else {
+            // Single Exercise Mode
+            trainingEngine?.start()
+            
+            // Enable training mode in skeleton overlay
+            val trackedIndices = trainingEngine?.getTrackedLandmarkIndices()?.toSet() ?: emptySet()
+            binding.skeletonOverlay.setTrainingMode(true, trackedIndices)
+            
+            // Observe training state
+            observeTrainingState()
+        }
+    }
+    
+    /**
+     * Start training in Workout Mode (Hot-Swap)
+     */
+    private fun startWorkoutTraining() {
+        val workoutEngine = workoutTrainingEngine ?: return
+        
+        // Start and get the first TrainingEngine
+        trainingEngine = workoutEngine.start()
         trainingEngine?.start()
+        
+        Log.d(TAG, "Workout training engine created: ${trainingEngine != null}")
+        Log.d(TAG, "Exercise config: ${trainingEngine?.getExerciseConfig()?.name?.en}")
+        Log.d(TAG, "Tracked joints: ${trainingEngine?.getTrackedJointCodes()}")
+        Log.d(TAG, "Primary joints: ${trainingEngine?.getPrimaryJointCodes()}")
+        
+        // Update UI with current exercise
+        updateWorkoutUI()
         
         // Enable training mode in skeleton overlay
         val trackedIndices = trainingEngine?.getTrackedLandmarkIndices()?.toSet() ?: emptySet()
         binding.skeletonOverlay.setTrainingMode(true, trackedIndices)
         
-        // Observe training state
-        observeTrainingState()
+        // Observe training state with workout-aware handling
+        observeWorkoutTrainingState()
+        
+        // Reset session rep count
+        currentRepsInSession = 0
+        
+        Log.d(TAG, "Workout training started with: ${workoutEngine.currentExercise.value?.getDisplayName()}")
+    }
+    
+    /**
+     * Update UI for current workout exercise
+     */
+    private fun updateWorkoutUI() {
+        val workoutEngine = workoutTrainingEngine ?: return
+        val progressInfo = workoutEngine.getProgressInfo()
+        
+        // Update exercise name
+        binding.tvExerciseName.text = progressInfo.currentExerciseName
+        
+        // Show workout progress with TOTAL reps
+        if (workoutEngine.isAlternatingMode) {
+            binding.tvProgress.text = "${progressInfo.totalRepsCompleted} / ${progressInfo.totalRepsTarget}"
+            binding.tvRepCount.text = progressInfo.totalRepsCompleted.toString()
+        }
+    }
+    
+    /**
+     * Observe training state in Workout Mode
+     * Handles hot-swap when rep limit is reached
+     */
+    private fun observeWorkoutTrainingState() {
+        // Cancel previous observers to prevent duplicate observations
+        workoutObserverJob?.cancel()
+        
+        val engine = trainingEngine ?: run {
+            Log.e(TAG, "observeWorkoutTrainingState: trainingEngine is null!")
+            return
+        }
+        val workoutEngine = workoutTrainingEngine ?: return
+        
+        Log.d(TAG, "observeWorkoutTrainingState: Starting observations for ${engine.getExerciseConfig().name.en}")
+        
+        // Create a new job that contains all observers
+        workoutObserverJob = lifecycleScope.launch {
+            // Observe rep count for switching in alternating mode
+            launch {
+                engine.repCount.collect { count ->
+                    Log.d(TAG, "Rep count changed: $count (currentRepsInSession: $currentRepsInSession)")
+                    
+                    // Calculate TOTAL reps across all exercises
+                    val progressInfo = workoutEngine.getProgressInfo()
+                    val displayCount = progressInfo.totalRepsCompleted + count
+                    
+                    // Update UI with TOTAL count (cumulative across all exercises)
+                    binding.tvRepCount.text = displayCount.toString()
+                    
+                    // Animate counter change for visual feedback
+                    if (count > 0) {
+                        AnimationUtils.bounceIn(binding.tvRepCount)
+                    }
+                    
+                    // Show progress: current total / overall target
+                    if (workoutEngine.isAlternatingMode) {
+                        binding.tvProgress.text = "$displayCount / ${progressInfo.totalRepsTarget}"
+                    }
+                    
+                    // Check if we need to switch exercises (only when count increases)
+                    if (count > 0 && count > currentRepsInSession) {
+                        currentRepsInSession = count
+                        
+                        val repsLimit = workoutEngine.getRepsForCurrentSession()
+                        Log.d(TAG, "Checking switch: count=$count, repsLimit=$repsLimit, trainingState=$trainingState")
+                        
+                        if (count >= repsLimit && trainingState == TrainingState.TRAINING) {
+                            // Delay to let the user see the rep count before switching
+                            kotlinx.coroutines.delay(500)
+                            handleWorkoutRepLimitReached(count)
+                        }
+                    }
+                }
+            }
+            
+            // Observe phase for debugging
+            launch {
+                engine.currentPhase.collect { phase ->
+                    Log.d(TAG, "Phase changed: $phase")
+                    AnimationUtils.crossfadeText(
+                        binding.tvPhase,
+                        getPhaseDisplayName(phase, engine.isHoldExercise)
+                    )
+                }
+            }
+            
+            // Observe arrow infos
+            launch {
+                engine.arrowInfos.collect { arrowInfos ->
+                    binding.skeletonOverlay.setArrowInfos(arrowInfos)
+                    
+                    val hasErrors = arrowInfos.any { it.value.isError }
+                    if (hasErrors) {
+                        binding.vignetteOverlay.showError()
+                    } else {
+                        binding.vignetteOverlay.clear()
+                    }
+                }
+            }
+            
+            // Observe feedback events
+            launch {
+                engine.events.collect { event ->
+                    feedbackManager?.emit(event)
+                    handleFeedbackEvent(event)
+                }
+            }
+        }
+    }
+    
+    /**
+     * Handle when rep limit is reached in workout mode
+     * Triggers hot-swap to next exercise
+     */
+    private fun handleWorkoutRepLimitReached(completedReps: Int) {
+        val workoutEngine = workoutTrainingEngine ?: return
+        
+        // Notify workout engine and get switch result
+        val result = workoutEngine.onRepsCompleted(completedReps)
+        
+        when (result) {
+            is SwitchResult.Continue -> {
+                // Continue with current exercise
+            }
+            
+            is SwitchResult.SwitchNow -> {
+                // Hot-swap to next exercise
+                performHotSwap(result.nextExerciseName, result.repsThisSession)
+            }
+            
+            is SwitchResult.RoundComplete -> {
+                // Show round complete, then continue
+                showRoundCompleteIndicator(result.roundNumber, result.totalRounds)
+                // Rest period can be handled here if needed
+            }
+            
+            is SwitchResult.WorkoutComplete -> {
+                // Complete the workout
+                completeWorkout()
+            }
+        }
+    }
+    
+    /**
+     * Perform hot-swap to next exercise
+     * Camera and pose detection continue running
+     */
+    private fun performHotSwap(nextExerciseName: String, repsThisSession: Int) {
+        val workoutEngine = workoutTrainingEngine ?: return
+        val previousName = trainingEngine?.getExerciseConfig()?.name?.en ?: ""
+        
+        // Stop current engine (but NOT camera/pose detection)
+        trainingEngine?.stop()
+        
+        // Switch to next exercise and get new engine
+        val newEngine = workoutEngine.switchToNextExercise()
+        
+        if (newEngine == null) {
+            // Workout complete
+            completeWorkout()
+            return
+        }
+        
+        // Update training engine reference
+        trainingEngine = newEngine
+        
+        // Start new engine
+        newEngine.start()
+        
+        // Reset session rep count
+        currentRepsInSession = 0
+        
+        // Update UI with new exercise
+        val currentExercise = workoutEngine.currentExercise.value
+        exerciseConfig = currentExercise?.config
+        poseVariantIndex = currentExercise?.workoutExercise?.variantIndex ?: 0
+        
+        updateWorkoutUI()
+        
+        // Update skeleton overlay with new tracked joints
+        val trackedIndices = newEngine.getTrackedLandmarkIndices().toSet()
+        binding.skeletonOverlay.setTrainingMode(true, trackedIndices)
+        
+        // Re-observe the new engine
+        observeWorkoutTrainingState()
+        
+        // Note: showExerciseSwitchIndicator is called via onExerciseSwitched callback
+        // from WorkoutTrainingEngine.switchToNextExercise()
+        
+        Log.d(TAG, "Hot-swapped from $previousName to $nextExerciseName")
+    }
+    
+    /**
+     * Show exercise switch indicator (quick flash)
+     */
+    private fun showExerciseSwitchIndicator(fromExercise: String, toExercise: String, repsThisSession: Int) {
+        // Quick glassmorphic message
+        val message = if (repsThisSession == 1) {
+            "→ $toExercise"
+        } else {
+            "→ $toExercise ($repsThisSession reps)"
+        }
+        
+        binding.glassmorphicMessage.showMessage(
+            message,
+            GlassmorphicMessageView.TYPE_INFO,
+            durationMs = 800
+        )
+        
+        // Update exercise name with animation
+        AnimationUtils.crossfadeText(binding.tvExerciseName, toExercise)
+        
+        // Note: We don't reset tvRepCount here because we show TOTAL reps across all exercises
+        // The observer will update the display with the correct cumulative count
+    }
+    
+    /**
+     * Show round complete indicator
+     */
+    private fun showRoundCompleteIndicator(roundNumber: Int, totalRounds: Int) {
+        binding.glassmorphicMessage.showMotivation(
+            "Round $roundNumber Complete! ${totalRounds - roundNumber} more to go"
+        )
+    }
+    
+    /**
+     * Complete workout (all exercises done)
+     */
+    private fun completeWorkout() {
+        val workoutEngine = workoutTrainingEngine ?: return
+        val progressInfo = workoutEngine.getProgressInfo()
+        
+        updateUIForState(TrainingState.COMPLETED)
+        
+        // Disable training mode in skeleton overlay
+        binding.skeletonOverlay.setTrainingMode(false)
+        
+        // Show workout summary
+        binding.tvSummaryReps.text = "${progressInfo.totalRepsCompleted}"
+        binding.tvSummaryCorrect.text = "${progressInfo.totalExercises} exercises"
+        binding.tvSummaryAccuracy.text = "${progressInfo.currentRound} rounds"
+        
+        val durationMs = System.currentTimeMillis() - sessionStartTime
+        val minutes = (durationMs / 60000).toInt()
+        val seconds = ((durationMs % 60000) / 1000).toInt()
+        binding.tvSummaryDuration.text = String.format("%02d:%02d", minutes, seconds)
+        
+        binding.btnFinish.setOnClickListener {
+            finishWithResult()
+        }
+        
+        // Celebration
+        binding.glassmorphicMessage.showMotivation("🎉 Workout Complete!")
     }
     
     private fun pauseTraining() {
@@ -548,8 +1015,40 @@ class TrainingActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetection
         }
         
         binding.btnFinish.setOnClickListener {
-            finish()
+            finishWithResult()
         }
+    }
+    
+    /**
+     * Complete session and return result to WorkoutActivity
+     * Used in alternating mode when session rep limit is reached
+     */
+    private fun completeSessionWithResult() {
+        val engine = trainingEngine ?: return
+        
+        // Stop training but don't show completed panel
+        engine.stop()
+        
+        // Return result to WorkoutActivity
+        finishWithResult()
+    }
+    
+    /**
+     * Finish activity with result data for WorkoutActivity
+     */
+    private fun finishWithResult() {
+        val engine = trainingEngine
+        val sessionDuration = System.currentTimeMillis() - sessionStartTime
+        
+        val resultIntent = android.content.Intent().apply {
+            putExtra(RESULT_REPS_COMPLETED, engine?.getCurrentRep() ?: 0)
+            putExtra(RESULT_DURATION_MS, sessionDuration)
+            putExtra(RESULT_ACCURACY, engine?.getAccuracy() ?: 0f)
+            putExtra(RESULT_IS_COMPLETED, engine?.isCompleted?.value ?: false)
+        }
+        
+        setResult(RESULT_OK, resultIntent)
+        finish()
     }
     
     private fun observeTrainingState() {
@@ -586,11 +1085,24 @@ class TrainingActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetection
             }
         }
         
-        // Observe completion
+        // Observe completion (either target reached or session limit in alternating mode)
         lifecycleScope.launch {
             engine.isCompleted.collectLatest { isCompleted ->
                 if (isCompleted && trainingState == TrainingState.TRAINING) {
                     completeTraining()
+                }
+            }
+        }
+        
+        // Observe rep count for session limit (alternating mode)
+        if (maxRepsThisSession != null) {
+            lifecycleScope.launch {
+                engine.repCount.collectLatest { repCount ->
+                    val limit = maxRepsThisSession ?: return@collectLatest
+                    if (repCount >= limit && trainingState == TrainingState.TRAINING) {
+                        Log.d(TAG, "Session limit reached: $repCount >= $limit")
+                        completeSessionWithResult()
+                    }
                 }
             }
         }
@@ -667,6 +1179,33 @@ class TrainingActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetection
                 }
             }
         }
+        
+        // Observe form quality for hold exercises
+        lifecycleScope.launch {
+            engine.holdFormQuality.collectLatest { quality ->
+                quality?.let {
+                    updateFormQualityIndicator(it)
+                }
+            }
+        }
+    }
+    
+    private fun updateFormQualityIndicator(quality: Float) {
+        // Update UI to show form quality
+        // Format: "Form: 95%" with color coding
+        val qualityPercent = (quality * 100).toInt()
+        val color = when {
+            quality >= 0.9f -> COLOR_CORRECT  // Green: Excellent (90%+)
+            quality >= 0.7f -> COLOR_WARNING  // Amber: Good (70-89%)
+            else -> COLOR_ERROR                // Red: Needs improvement (<70%)
+        }
+        
+        // Log for debugging
+        Log.d(TAG, "Hold Form Quality: $qualityPercent% (${if (quality >= 0.9f) "Excellent" else if (quality >= 0.7f) "Good" else "Needs Improvement"})")
+        
+        // Note: If there's a TextView for form quality in the layout, update it here
+        // Example: binding.tvFormQuality?.text = "Form: $qualityPercent%"
+        // binding.tvFormQuality?.setTextColor(color)
     }
     
     private fun updateUIForHoldState(holdState: HoldState) {
@@ -751,7 +1290,9 @@ class TrainingActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetection
             }
             
             is FeedbackEvent.CameraPositionWarning -> {
-                showCameraWarning(event.warning)
+                // Handled by FeedbackManager via MessageOrchestrator (smart throttling)
+                // No direct handling here to avoid duplicate audio messages
+                Log.d(TAG, "Camera warning: ${event.warning.expectedPosition}")
             }
             
             else -> {}
@@ -820,6 +1361,8 @@ class TrainingActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetection
 
     override fun onPoseDetected(result: PoseResult) {
         lifecycleScope.launch(Dispatchers.Main) {
+            if (!::landmarkSmoother.isInitialized) return@launch
+            
             updateFps()
             
             val smoothedLandmarks = landmarkSmoother.smooth(
@@ -870,7 +1413,17 @@ class TrainingActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetection
                 }
                 
                 TrainingState.TRAINING -> {
-                    trainingEngine?.processFrame(angles, smoothedLandmarks)
+                    if (isWorkoutMode) {
+                        // Debug logging for workout mode
+                        val engine = trainingEngine
+                        if (engine != null) {
+                            engine.processFrame(angles, smoothedLandmarks)
+                        } else {
+                            Log.e(TAG, "TrainingEngine is null in TRAINING state!")
+                        }
+                    } else {
+                        trainingEngine?.processFrame(angles, smoothedLandmarks)
+                    }
                 }
                 
                 else -> {}
@@ -1027,56 +1580,81 @@ class TrainingActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetection
         videoManager?.loadVideo(uri)
     }
     
+    /**
+     * Process video frame - OPTIMIZED for high FPS
+     * 
+     * Key optimizations:
+     * 1. Pose detection runs on background thread (IO dispatcher)
+     * 2. Only UI updates happen on Main thread
+     * 3. Frame processing is non-blocking
+     */
     private fun processVideoFrame(bitmap: android.graphics.Bitmap, timestampMs: Long) {
         if (trainingState != TrainingState.TRAINING) return
+        if (!::landmarkSmoother.isInitialized) return
         
-        val poseResult = poseLandmarkerHelper?.detectPoseFromBitmap(bitmap, timestampMs)
-        
-        if (poseResult != null) {
-            lifecycleScope.launch(Dispatchers.Main) {
-                updateFps()
+        // Run heavy pose detection on background thread
+        lifecycleScope.launch(Dispatchers.Default) {
+            try {
+                // Pose detection (CPU/GPU intensive) - runs on background thread
+                val poseResult = poseLandmarkerHelper?.detectPoseFromBitmap(bitmap, timestampMs)
                 
-                val smoothedLandmarks = landmarkSmoother.smooth(
-                    poseResult.landmarks,
-                    timestampMs
-                )
-                
-                val worldLandmarks = poseResult.worldLandmarks?.let {
-                    landmarkSmoother.convertWorld(it)
-                }
-                
-                val angles = if (worldLandmarks != null) {
-                    AngleCalculator.calculateAllAnglesSmoothed(
-                        worldLandmarks,
-                        visibilityThreshold = 0.3f,
-                        use3D = true
+                if (poseResult != null) {
+                    // Pre-process on background thread
+                    val smoothedLandmarks = landmarkSmoother.smooth(
+                        poseResult.landmarks,
+                        timestampMs
                     )
+                    
+                    val worldLandmarks = poseResult.worldLandmarks?.let {
+                        landmarkSmoother.convertWorld(it)
+                    }
+                    
+                    val angles = if (worldLandmarks != null) {
+                        AngleCalculator.calculateAllAnglesSmoothed(
+                            worldLandmarks,
+                            visibilityThreshold = 0.3f,
+                            use3D = true
+                        )
+                    } else {
+                        AngleCalculator.calculateAllAnglesSmoothed(
+                            smoothedLandmarks,
+                            visibilityThreshold = 0.3f
+                        )
+                    }
+                    
+                    // Process training logic on background thread
+                    trainingEngine?.processFrame(angles, smoothedLandmarks)
+                    
+                    val arrowInfos = trainingEngine?.arrowInfos?.value ?: emptyMap()
+                    val positionErrors = trainingEngine?.positionErrors?.value ?: emptyList()
+                    
+                    // Only UI updates on Main thread (minimal work)
+                    withContext(Dispatchers.Main) {
+                        updateFps()
+                        currentAngles = angles
+                        
+                        binding.skeletonOverlay.updateWithArrowInfos(
+                            smoothedLandmarks = smoothedLandmarks,
+                            inputImageWidth = poseResult.imageWidth,
+                            inputImageHeight = poseResult.imageHeight,
+                            angles = angles,
+                            arrowInfos = arrowInfos,
+                            positionErrors = positionErrors
+                        )
+                    }
                 } else {
-                    AngleCalculator.calculateAllAnglesSmoothed(
-                        smoothedLandmarks,
-                        visibilityThreshold = 0.3f
-                    )
+                    withContext(Dispatchers.Main) {
+                        binding.skeletonOverlay.clear()
+                    }
                 }
                 
-                currentAngles = angles
-                
-                trainingEngine?.processFrame(angles, smoothedLandmarks)
-                
-                val arrowInfos = trainingEngine?.arrowInfos?.value ?: emptyMap()
-                val positionErrors = trainingEngine?.positionErrors?.value ?: emptyList()
-                
-                binding.skeletonOverlay.updateWithArrowInfos(
-                    smoothedLandmarks = smoothedLandmarks,
-                    inputImageWidth = poseResult.imageWidth,
-                    inputImageHeight = poseResult.imageHeight,
-                    angles = angles,
-                    arrowInfos = arrowInfos,
-                    positionErrors = positionErrors
-                )
-            }
-        } else {
-            lifecycleScope.launch(Dispatchers.Main) {
-                binding.skeletonOverlay.clear()
+            } catch (e: Exception) {
+                Log.e(TAG, "Error processing video frame: ${e.message}")
+            } finally {
+                // Recycle bitmap after processing to free memory
+                if (!bitmap.isRecycled) {
+                    bitmap.recycle()
+                }
             }
         }
     }
@@ -1144,7 +1722,9 @@ class TrainingActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetection
         Log.d(TAG, "Video seek performed - resetting analysis state")
         
         poseLandmarkerHelper?.resetForVideo()
-        landmarkSmoother.reset()
+        if (::landmarkSmoother.isInitialized) {
+            landmarkSmoother.reset()
+        }
         
         trainingEngine?.stop()
         trainingEngine?.start()
@@ -1195,10 +1775,13 @@ class TrainingActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetection
     override fun onDestroy() {
         super.onDestroy()
         countdownTimer?.cancel()
+        workoutObserverJob?.cancel()
         cameraManager?.stopCamera()
         videoManager?.release()
         poseLandmarkerHelper?.close()
         poseLandmarkerHelper?.closeVideoMode()
         feedbackManager?.release()
+        workoutTrainingEngine?.stop()
     }
 }
+
