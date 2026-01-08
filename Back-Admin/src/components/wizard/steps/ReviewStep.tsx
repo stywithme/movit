@@ -1,307 +1,217 @@
 'use client';
 
-import { useState } from 'react';
-import { LocalizedText } from '@/lib/types/localized';
+/**
+ * Step 8: Review & Publish
+ * ========================
+ */
 
-interface ExerciseData {
-  basicInfo: {
-    name: LocalizedText;
-    description: LocalizedText;
-    instructions: LocalizedText;
-    categoryId: string;
-    countingMethodId: string;
-  };
-  attributes: {
-    muscles: string[];
-    equipment: string[];
-    tags: string[];
-  };
-  poseVariants: Array<{
-    id: string;
-    name: LocalizedText;
-    description: LocalizedText;
-    cameraPositionId: string;
-    referenceImageUrl: string;
-  }>;
-  difficultyLevels: Array<{
-    id: string;
-    poseVariantId: string;
-    difficultyTypeId: string;
-    name: LocalizedText;
-    description: LocalizedText;
-  }>;
-  startPoseAngles: Record<string, Record<string, { min: number; max: number }>>;
-  phaseRules: Record<string, Array<{
-    code: string;
-    name: LocalizedText;
-    rules: Array<{
-      jointId: string;
-      minAngle: number;
-      maxAngle: number;
-      errorMessageOver: LocalizedText;
-      errorMessageUnder: LocalizedText;
-      priority: string;
-    }>;
-  }>>;
-  repCountingConfigs: Record<string, {
-    primaryJoint: string;
-    eccentricThreshold: number;
-    concentricThreshold: number;
-  }>;
-  feedbackMessages: Record<string, Array<{
-    type: string;
-    message: LocalizedText;
-  }>>;
-}
+import { useState } from 'react';
+import { useWizardStore, useStepComplete } from '../WizardContext';
+import { canPublish } from '@/modules/exercises/exercises.validation';
 
 interface ReviewStepProps {
-  data: ExerciseData;
-  onPublish: () => void;
-  onSaveDraft: () => void;
-  saving: boolean;
-  categories: Array<{ id: string; code: string; name: LocalizedText }>;
-  countingMethods: Array<{ id: string; code: string; name: LocalizedText }>;
+  onSaveDraft: () => Promise<void>;
+  onPublish: () => Promise<void>;
 }
 
-export function ReviewStep({
-  data,
-  onPublish,
-  onSaveDraft,
-  saving,
-  categories,
-  countingMethods,
-}: ReviewStepProps) {
+export function ReviewStep({ onSaveDraft, onPublish }: ReviewStepProps) {
+  const store = useWizardStore();
   const [showJson, setShowJson] = useState(false);
-
-  const getCategoryName = () => {
-    return categories.find((c) => c.id === data.basicInfo.categoryId)?.name.en || 'Not selected';
-  };
-
-  const getCountingMethodName = () => {
-    return countingMethods.find((c) => c.id === data.basicInfo.countingMethodId)?.name.en || 'Not selected';
-  };
-
-  const validateExercise = () => {
-    const errors: string[] = [];
-
-    if (!data.basicInfo.name.en) errors.push('Exercise name (English) is required');
-    if (!data.basicInfo.categoryId) errors.push('Category is required');
-    if (!data.basicInfo.countingMethodId) errors.push('Counting method is required');
-    if (data.poseVariants.length === 0) errors.push('At least one pose variant is required');
-    if (data.difficultyLevels.length === 0) errors.push('At least one difficulty level is required');
-
-    return errors;
-  };
-
-  const errors = validateExercise();
-  const canPublish = errors.length === 0;
-
-  // Build JSON output for preview
-  const buildExportJson = () => {
-    const countingMethod = countingMethods.find((c) => c.id === data.basicInfo.countingMethodId);
-    const category = categories.find((c) => c.id === data.basicInfo.categoryId);
-
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  
+  // Check step completion
+  const stepsComplete = [1, 2, 3, 4, 5, 6, 7].map(step => ({
+    step,
+    complete: useStepComplete(step),
+  }));
+  
+  const { valid: canPublishNow, missingSteps } = canPublish({
+    basicInfo: store.basicInfo as Parameters<typeof canPublish>[0]['basicInfo'],
+    countingMethod: store.countingMethod as Parameters<typeof canPublish>[0]['countingMethod'],
+    cameraPosition: store.cameraPosition as Parameters<typeof canPublish>[0]['cameraPosition'],
+    jointConfig: store.jointConfig as Parameters<typeof canPublish>[0]['jointConfig'],
+    positionChecks: store.positionChecks as Parameters<typeof canPublish>[0]['positionChecks'],
+    repConfig: store.repConfig as Parameters<typeof canPublish>[0]['repConfig'],
+    extras: store.extras as Parameters<typeof canPublish>[0]['extras'],
+  });
+  
+  const stepNames = ['Basic Info', 'Exercise Type', 'Camera', 'Joints', 'Position Checks', 'Reps', 'Extras'];
+  
+  // Build summary JSON
+  const buildSummaryJson = () => {
     return {
-      name: data.basicInfo.name,
-      description: data.basicInfo.description,
-      instructions: data.basicInfo.instructions,
-      category: category ? { code: category.code, name: category.name } : null,
-      countingMethod: countingMethod?.code,
-      poseVariants: data.poseVariants.map((pv) => ({
-        name: pv.name,
-        cameraPosition: pv.cameraPositionId,
-        referenceImage: pv.referenceImageUrl || null,
-        difficultyLevels: data.difficultyLevels
-          .filter((dl) => dl.poseVariantId === pv.id)
-          .map((dl) => ({
-            name: dl.name,
-            startPoseAngles: data.startPoseAngles[dl.id] || {},
-            repCountingConfig: data.repCountingConfigs[dl.id] || null,
-            phases: data.phaseRules[dl.id] || [],
-            feedbackMessages: data.feedbackMessages[dl.id] || [],
-          })),
+      name: store.basicInfo.name,
+      countingMethod: store.countingMethod.countingMethodCode,
+      cameraPositions: store.cameraPosition.cameraPositionIds?.length || 0,
+      expectedFacingDirection: store.cameraPosition.expectedFacingDirection,
+      trackedJoints: store.jointConfig.trackedJoints?.map(j => ({
+        joint: j.joint,
+        role: j.role,
       })),
+      positionChecks: store.positionChecks.positionChecks?.length || 0,
+      repConfig: store.repConfig,
+      muscles: store.extras.muscles?.length || 0,
+      equipment: store.extras.equipment?.length || 0,
+      feedbackMessages: store.extras.feedbackMessages?.length || 0,
     };
   };
-
-  const copyToClipboard = () => {
-    const json = JSON.stringify(buildExportJson(), null, 2);
-    navigator.clipboard.writeText(json);
-    alert('JSON copied to clipboard!');
+  
+  const handleSaveDraft = async () => {
+    setIsSubmitting(true);
+    try {
+      await onSaveDraft();
+    } finally {
+      setIsSubmitting(false);
+    }
   };
-
+  
+  const handlePublish = async () => {
+    setIsSubmitting(true);
+    try {
+      await onPublish();
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+  
   return (
-    <div className="space-y-6">
-      <div className="border-b border-gray-200 pb-4">
-        <h2 className="text-lg font-semibold text-gray-900">Review & Publish</h2>
-        <p className="text-sm text-gray-500 mt-1">
-          Review your exercise configuration before publishing.
-        </p>
+    <div className="space-y-8 max-w-4xl mx-auto">
+      <div>
+        <h2 className="text-2xl font-bold text-gray-900 mb-2">Review & Publish</h2>
+        <p className="text-gray-500">Review your exercise configuration before publishing.</p>
       </div>
-
-      {/* Validation Errors */}
-      {errors.length > 0 && (
-        <div className="bg-red-50 border border-red-200 rounded-lg p-4">
-          <h3 className="font-medium text-red-800 mb-2">Please fix the following issues:</h3>
-          <ul className="text-sm text-red-700 list-disc ml-4 space-y-1">
-            {errors.map((error, i) => (
-              <li key={i}>{error}</li>
-            ))}
-          </ul>
-        </div>
-      )}
-
-      {/* Summary */}
-      <div className="bg-white border border-gray-200 rounded-lg divide-y divide-gray-200">
-        {/* Basic Info */}
-        <div className="p-4">
-          <h3 className="font-medium text-gray-900 mb-3">Basic Information</h3>
-          <dl className="grid grid-cols-2 gap-4 text-sm">
-            <div>
-              <dt className="text-gray-500">Name (EN)</dt>
-              <dd className="font-medium">{data.basicInfo.name.en || '-'}</dd>
-            </div>
-            <div>
-              <dt className="text-gray-500">Name (AR)</dt>
-              <dd className="font-medium" dir="rtl">{data.basicInfo.name.ar || '-'}</dd>
-            </div>
-            <div>
-              <dt className="text-gray-500">Category</dt>
-              <dd className="font-medium">{getCategoryName()}</dd>
-            </div>
-            <div>
-              <dt className="text-gray-500">Counting Method</dt>
-              <dd className="font-medium">{getCountingMethodName()}</dd>
-            </div>
-          </dl>
-        </div>
-
-        {/* Attributes */}
-        <div className="p-4">
-          <h3 className="font-medium text-gray-900 mb-3">Attributes</h3>
-          <dl className="grid grid-cols-3 gap-4 text-sm">
-            <div>
-              <dt className="text-gray-500">Muscles</dt>
-              <dd className="font-medium">{data.attributes.muscles.length} selected</dd>
-            </div>
-            <div>
-              <dt className="text-gray-500">Equipment</dt>
-              <dd className="font-medium">{data.attributes.equipment.length} selected</dd>
-            </div>
-            <div>
-              <dt className="text-gray-500">Tags</dt>
-              <dd className="font-medium">{data.attributes.tags.length} selected</dd>
-            </div>
-          </dl>
-        </div>
-
-        {/* Pose Variants */}
-        <div className="p-4">
-          <h3 className="font-medium text-gray-900 mb-3">Pose Variants</h3>
-          <p className="text-sm text-gray-600">
-            {data.poseVariants.length} variant(s) configured
-          </p>
-          {data.poseVariants.length > 0 && (
-            <ul className="mt-2 text-sm space-y-1">
-              {data.poseVariants.map((pv) => (
-                <li key={pv.id} className="flex justify-between">
-                  <span>{pv.name.en || 'Untitled'}</span>
-                  <span className="text-gray-500">
-                    {data.difficultyLevels.filter((dl) => dl.poseVariantId === pv.id).length} levels
-                  </span>
-                </li>
-              ))}
-            </ul>
-          )}
-        </div>
-
-        {/* Configuration Stats */}
-        <div className="p-4">
-          <h3 className="font-medium text-gray-900 mb-3">Configuration Stats</h3>
-          <dl className="grid grid-cols-4 gap-4 text-sm">
-            <div>
-              <dt className="text-gray-500">Difficulty Levels</dt>
-              <dd className="font-medium">{data.difficultyLevels.length}</dd>
-            </div>
-            <div>
-              <dt className="text-gray-500">Start Angles</dt>
-              <dd className="font-medium">{Object.keys(data.startPoseAngles).length} configured</dd>
-            </div>
-            <div>
-              <dt className="text-gray-500">Phase Rules</dt>
-              <dd className="font-medium">{Object.keys(data.phaseRules).length} configured</dd>
-            </div>
-            <div>
-              <dt className="text-gray-500">Messages</dt>
-              <dd className="font-medium">
-                {Object.values(data.feedbackMessages).reduce((acc, msgs) => acc + msgs.length, 0)}
-              </dd>
-            </div>
-          </dl>
+      
+      {/* Exercise Summary */}
+      <div className="bg-white border rounded-xl p-6 space-y-4">
+        <h3 className="font-semibold text-gray-900 text-lg">Exercise Summary</h3>
+        
+        <div className="grid grid-cols-2 gap-4">
+          <div>
+            <span className="text-sm text-gray-500">Name</span>
+            <p className="font-medium">{store.basicInfo.name?.en || '-'} / {store.basicInfo.name?.ar || '-'}</p>
+          </div>
+          <div>
+            <span className="text-sm text-gray-500">Type</span>
+            <p className="font-medium uppercase">{store.countingMethod.countingMethodCode || '-'}</p>
+          </div>
+          <div>
+            <span className="text-sm text-gray-500">Camera Positions</span>
+            <p className="font-medium">{store.cameraPosition.cameraPositionIds?.length || 0} selected</p>
+          </div>
+          <div>
+            <span className="text-sm text-gray-500">Facing Direction</span>
+            <p className="font-medium capitalize">{store.cameraPosition.expectedFacingDirection?.replace(/_/g, ' ') || 'Auto'}</p>
+          </div>
+          <div>
+            <span className="text-sm text-gray-500">Tracked Joints</span>
+            <p className="font-medium">
+              {store.jointConfig.trackedJoints?.filter(j => j.role === 'primary').length || 0} primary, 
+              {' '}{store.jointConfig.trackedJoints?.filter(j => j.role === 'secondary').length || 0} secondary
+            </p>
+          </div>
+          <div>
+            <span className="text-sm text-gray-500">Position Checks</span>
+            <p className="font-medium">{store.positionChecks.positionChecks?.length || 0}</p>
+          </div>
         </div>
       </div>
-
+      
+      {/* Validation Status */}
+      <div className="bg-white border rounded-xl p-6 space-y-4">
+        <h3 className="font-semibold text-gray-900 text-lg">Validation</h3>
+        
+        <div className="space-y-2">
+          {stepsComplete.map(({ step, complete }) => (
+            <div key={step} className="flex items-center gap-3">
+              <div className={`w-5 h-5 rounded-full flex items-center justify-center ${complete ? 'bg-green-100' : 'bg-amber-100'}`}>
+                {complete ? (
+                  <svg className="w-3 h-3 text-green-600" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                  </svg>
+                ) : (
+                  <svg className="w-3 h-3 text-amber-600" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                  </svg>
+                )}
+              </div>
+              <span className={complete ? 'text-gray-700' : 'text-amber-700'}>
+                Step {step}: {stepNames[step - 1]}
+              </span>
+              {!complete && step <= 4 && (
+                <span className="text-xs text-amber-600">(Required)</span>
+              )}
+              {!complete && step > 4 && (
+                <span className="text-xs text-gray-400">(Optional)</span>
+              )}
+            </div>
+          ))}
+        </div>
+      </div>
+      
       {/* JSON Preview */}
-      <div className="bg-gray-50 border border-gray-200 rounded-lg overflow-hidden">
+      <div className="bg-white border rounded-xl overflow-hidden">
         <button
           type="button"
           onClick={() => setShowJson(!showJson)}
-          className="w-full px-4 py-3 flex justify-between items-center text-sm font-medium text-gray-700 hover:bg-gray-100"
+          className="w-full px-6 py-4 flex items-center justify-between hover:bg-gray-50"
         >
-          <span>JSON Preview</span>
-          <svg
-            className={`w-5 h-5 transform transition-transform ${showJson ? 'rotate-180' : ''}`}
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
-          >
+          <span className="font-semibold text-gray-900">Android JSON Preview</span>
+          <svg className={`w-5 h-5 text-gray-400 transition-transform ${showJson ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
           </svg>
         </button>
         
         {showJson && (
-          <div className="border-t border-gray-200">
-            <div className="px-4 py-2 bg-gray-100 border-b border-gray-200 flex justify-end">
-              <button
-                type="button"
-                onClick={copyToClipboard}
-                className="text-sm text-blue-600 hover:text-blue-800 flex items-center gap-1"
-              >
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
-                </svg>
-                Copy JSON
-              </button>
-            </div>
-            <pre className="p-4 text-xs overflow-x-auto max-h-96 overflow-y-auto">
-              {JSON.stringify(buildExportJson(), null, 2)}
+          <div className="px-6 pb-6">
+            <pre className="bg-gray-900 text-green-400 p-4 rounded-lg text-sm overflow-x-auto max-h-96">
+              {JSON.stringify(buildSummaryJson(), null, 2)}
             </pre>
+            <button
+              type="button"
+              onClick={() => navigator.clipboard.writeText(JSON.stringify(buildSummaryJson(), null, 2))}
+              className="mt-2 text-sm text-blue-600 hover:text-blue-700"
+            >
+              📋 Copy JSON
+            </button>
           </div>
         )}
       </div>
-
-      {/* Action Buttons */}
-      <div className="flex gap-4 pt-4">
+      
+      {/* Actions */}
+      <div className="flex items-center justify-between pt-6 border-t">
         <button
           type="button"
-          onClick={onSaveDraft}
-          disabled={saving}
-          className="flex-1 py-3 px-4 border border-gray-300 rounded-lg text-gray-700 font-medium hover:bg-gray-50 disabled:opacity-50"
+          onClick={handleSaveDraft}
+          disabled={isSubmitting}
+          className="px-6 py-3 border-2 border-gray-300 rounded-xl text-gray-700 hover:bg-gray-50 disabled:opacity-50"
         >
-          {saving ? 'Saving...' : 'Save as Draft'}
+          Save as Draft
         </button>
+        
         <button
           type="button"
-          onClick={onPublish}
-          disabled={saving || !canPublish}
-          className="flex-1 py-3 px-4 bg-green-600 text-white rounded-lg font-medium hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed"
+          onClick={handlePublish}
+          disabled={isSubmitting || !canPublishNow}
+          className={`
+            px-8 py-3 rounded-xl font-semibold transition-colors
+            ${canPublishNow 
+              ? 'bg-green-600 text-white hover:bg-green-700' 
+              : 'bg-gray-200 text-gray-500 cursor-not-allowed'
+            }
+            disabled:opacity-50
+          `}
         >
-          {saving ? 'Publishing...' : 'Publish Exercise'}
+          {isSubmitting ? 'Publishing...' : '✓ Publish'}
         </button>
       </div>
+      
+      {!canPublishNow && (
+        <p className="text-sm text-amber-600 text-center">
+          Complete required steps ({missingSteps.map(s => stepNames[s - 1]).join(', ')}) to publish
+        </p>
+      )}
     </div>
   );
 }
 
 export default ReviewStep;
-

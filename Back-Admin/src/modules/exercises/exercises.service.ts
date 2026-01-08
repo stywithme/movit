@@ -1,14 +1,126 @@
 import { getPrisma } from '@/lib/prisma/client';
-import { 
-  CreateExerciseInput, 
-  UpdateExerciseInput, 
-  CompleteExerciseInput,
-  DifficultyLevelFullInput 
-} from './exercises.types';
+import { getPhaseCodesForCountingMethod } from './phase-templates';
+import type { CountingMethodCode, PhaseName } from '@/lib/types/localized';
 
-/**
- * Generate a URL-friendly slug from exercise name
- */
+// ============================================
+// TYPES
+// ============================================
+
+interface LocalizedText {
+  ar: string;
+  en: string;
+}
+
+interface TrackedJointInput {
+  joint: string;
+  role: 'primary' | 'secondary';
+  startPose: { min: number; max: number };
+  upRange?: {
+    beginner: { min: number; max: number };
+    normal: { min: number; max: number };
+    advanced: { min: number; max: number };
+  };
+  downRange?: {
+    beginner: { min: number; max: number };
+    normal: { min: number; max: number };
+    advanced: { min: number; max: number };
+  };
+  Range?: {
+    beginner: { min: number; max: number };
+    normal: { min: number; max: number };
+    advanced: { min: number; max: number };
+  };
+  errorMessages: {
+    tooLow: LocalizedText;
+    tooHigh: LocalizedText;
+  };
+  pairedWith?: string;
+}
+
+interface PositionCheckInput {
+  checkId: string;
+  type: string;
+  landmarks: {
+    primary: string;
+    secondary: string;
+    tertiary?: string;
+    quaternary?: string;
+  };
+  condition: {
+    operator: string;
+    thresholds: {
+      beginner: number;
+      normal: number;
+      advanced: number;
+    };
+  };
+  activePhases: PhaseName[];
+  errorMessage: LocalizedText;
+  severity?: string;
+  cooldownMs?: number;
+  minErrorFrames?: number;
+  sortOrder?: number;
+}
+
+interface FeedbackMessageInput {
+  type: 'motivational' | 'common_mistake' | 'tip';
+  message: LocalizedText;
+  audioUrl?: string;
+  sortOrder?: number;
+}
+
+interface RepCountingConfigInput {
+  reps?: number;
+  duration?: number;
+  minRepIntervalMs?: number;
+  maxRepIntervalMs?: number;
+  gracePeriodMs?: number;
+}
+
+interface DifficultyLevelInput {
+  difficultyTypeCode: 'beginner' | 'normal' | 'advanced';
+  name: LocalizedText;
+  description?: LocalizedText;
+  repCountingConfig: RepCountingConfigInput;
+  phases?: PhaseName[];
+}
+
+interface PoseVariantInput {
+  id?: string;
+  tempId?: string;
+  name: LocalizedText;
+  description?: LocalizedText;
+  cameraPositionId: string;
+  referenceImageUrl?: string;
+  expectedFacingDirection?: string;
+  trackedJointsConfig?: TrackedJointInput[];
+  positionChecks?: PositionCheckInput[];
+  feedbackMessages?: FeedbackMessageInput[];
+  difficultyLevels?: DifficultyLevelInput[];
+  sortOrder?: number;
+}
+
+interface CreateExerciseInput {
+  name: LocalizedText;
+  description?: LocalizedText;
+  instructions?: LocalizedText;
+  categoryId: string;
+  countingMethodId: string;
+  slug?: string;
+  muscles?: string[];
+  equipment?: string[];
+  tags?: string[];
+  poseVariants?: PoseVariantInput[];
+}
+
+interface UpdateExerciseInput extends Partial<CreateExerciseInput> {
+  status?: 'draft' | 'published';
+}
+
+// ============================================
+// HELPERS
+// ============================================
+
 function generateSlug(name: { en?: string; ar?: string }): string {
   const baseName = name.en || name.ar || 'exercise';
   return baseName
@@ -18,9 +130,10 @@ function generateSlug(name: { en?: string; ar?: string }): string {
     + '-' + Date.now().toString(36);
 }
 
-/**
- * Exercise Service - handles all exercise-related database operations
- */
+// ============================================
+// SERVICE
+// ============================================
+
 export const exerciseService = {
   /**
    * List all exercises with optional filters
@@ -122,23 +235,16 @@ export const exerciseService = {
                 },
               },
             },
+            positionChecks: {
+              orderBy: { sortOrder: 'asc' },
+            },
+            feedbackMessages: {
+              orderBy: { sortOrder: 'asc' },
+            },
             difficultyLevels: {
               orderBy: { sortOrder: 'asc' },
               include: {
                 difficultyType: true,
-                phases: {
-                  orderBy: { sortOrder: 'asc' },
-                  include: {
-                    angleRules: {
-                      include: {
-                        joint: true,
-                      },
-                    },
-                  },
-                },
-                feedbackMessages: {
-                  orderBy: { sortOrder: 'asc' },
-                },
               },
             },
           },
@@ -148,11 +254,18 @@ export const exerciseService = {
   },
 
   /**
-   * Create a new exercise (basic creation)
+   * Create a new exercise (basic creation - draft)
    */
   async create(data: CreateExerciseInput, createdBy?: string) {
     const prisma = await getPrisma();
     const slug = data.slug || generateSlug(data.name);
+
+    // Get counting method code for phase generation
+    const countingMethod = await prisma.attributeValue.findUnique({
+      where: { id: data.countingMethodId },
+      select: { code: true },
+    });
+    const countingMethodCode = (countingMethod?.code || 'up_down') as CountingMethodCode;
 
     const exercise = await prisma.exercise.create({
       data: {
@@ -188,215 +301,148 @@ export const exerciseService = {
       });
     }
 
-    // Add pose variants if provided (with full tracked joints configuration)
-    if (data.poseVariants && data.poseVariants.length > 0) {
-      await prisma.poseVariant.createMany({
-        data: data.poseVariants.map((pv, index) => ({
-          exerciseId: exercise.id,
-          cameraPositionId: pv.cameraPositionId,
-          name: pv.name,
-          description: pv.description || undefined,
-          referenceImageUrl: pv.referenceImageUrl || undefined,
-          startPoseAngles: pv.startPoseAngles || undefined,
-          primaryJoint: pv.primaryJoint || undefined,
-          trackedJointsConfig: pv.trackedJointsConfig || undefined,
-          sortOrder: pv.sortOrder ?? index + 1,
-        })),
-      });
-    }
-
-    // Return exercise with all relations
-    return prisma.exercise.findUnique({
-      where: { id: exercise.id },
-      include: {
-        category: true,
-        countingMethod: true,
-        poseVariants: {
-          include: {
-            cameraPosition: true,
-          },
-          orderBy: { sortOrder: 'asc' },
-        },
-      },
-    });
-  },
-
-  /**
-   * Create a complete exercise with all nested data (wizard flow)
-   */
-  async createComplete(data: CompleteExerciseInput, createdBy?: string) {
-    const prisma = await getPrisma();
-    const slug = generateSlug(data.name);
-
-    // Create exercise
-    const exercise = await prisma.exercise.create({
-      data: {
-        name: data.name,
-        description: data.description || undefined,
-        instructions: data.instructions || undefined,
-        categoryId: data.categoryId,
-        countingMethodId: data.countingMethodId,
-        slug,
-        status: 'draft',
-        createdBy,
-        updatedBy: createdBy,
-      },
-    });
-
-    // Add attributes
-    const attributeIds = [
-      ...(data.muscles || []),
-      ...(data.equipment || []),
-      ...(data.tags || []),
-    ];
-
-    if (attributeIds.length > 0) {
-      await prisma.exerciseAttribute.createMany({
-        data: attributeIds.map((attributeValueId) => ({
-          exerciseId: exercise.id,
-          attributeValueId,
-        })),
-      });
-    }
-
-    // Create pose variants and their nested data
+    // Create pose variants if provided
     if (data.poseVariants && data.poseVariants.length > 0) {
       for (let pvIndex = 0; pvIndex < data.poseVariants.length; pvIndex++) {
         const pv = data.poseVariants[pvIndex];
-        const poseVariant = await prisma.poseVariant.create({
-          data: {
-            exerciseId: exercise.id,
-            cameraPositionId: pv.cameraPositionId,
-            name: pv.name,
-            description: pv.description || undefined,
-            referenceImageUrl: pv.referenceImageUrl || undefined,
-            startPoseAngles: pv.startPoseAngles || undefined,
-            primaryJoint: pv.primaryJoint || undefined,
-            trackedJointsConfig: pv.trackedJointsConfig || undefined,
-            sortOrder: pv.sortOrder ?? pvIndex + 1,
-          },
-        });
-
-        // Find difficulty levels for this pose variant by matching temp IDs
-        const variantLevels = (data.difficultyLevels || []).filter(
-          (dl) => dl.poseVariantId === pv.tempId || dl.poseVariantId === pv.id
-        );
-
-        // Create difficulty levels
-        for (let dlIndex = 0; dlIndex < variantLevels.length; dlIndex++) {
-          const dl = variantLevels[dlIndex];
-          await this.createDifficultyLevel(prisma, poseVariant.id, dl, dlIndex);
-        }
+        await this.createPoseVariant(prisma, exercise.id, pv, pvIndex, countingMethodCode);
       }
     }
 
-    // Return complete exercise
     return this.getById(exercise.id);
   },
 
   /**
-   * Helper: Create a difficulty level with all nested data
+   * Create a pose variant with all nested data
    */
-  async createDifficultyLevel(
+  async createPoseVariant(
     prisma: Awaited<ReturnType<typeof getPrisma>>,
-    poseVariantId: string,
-    data: DifficultyLevelFullInput,
-    sortOrder: number
+    exerciseId: string,
+    pv: PoseVariantInput,
+    sortOrder: number,
+    countingMethodCode: CountingMethodCode
   ) {
-    // If difficultyTypeCode is provided, look up the ID
-    let difficultyTypeId = data.difficultyTypeId;
-    if (!difficultyTypeId && data.difficultyTypeCode) {
-      const difficultyType = await prisma.attributeValue.findFirst({
-        where: {
-          code: data.difficultyTypeCode,
-          attribute: { code: 'difficulty_type' },
-        },
-      });
-      difficultyTypeId = difficultyType?.id;
-    }
-
-    // If still no ID, try to find by name matching
-    if (!difficultyTypeId) {
-      const difficultyType = await prisma.attributeValue.findFirst({
-        where: {
-          attribute: { code: 'difficulty_type' },
-        },
-        orderBy: { sortOrder: 'asc' },
-      });
-      difficultyTypeId = difficultyType?.id;
-    }
-
-    // Ensure we have a valid difficultyTypeId before creating
-    if (!difficultyTypeId) {
-      throw new Error(
-        `Cannot create difficulty level: No difficulty type found. ` +
-        `Please ensure difficulty types (beginner, normal, advanced) exist in the database.`
-      );
-    }
-
-    const difficultyLevel = await prisma.difficultyLevel.create({
+    // Create pose variant
+    const poseVariant = await prisma.poseVariant.create({
       data: {
-        poseVariantId,
-        difficultyTypeId,
-        name: data.name,
-        description: data.description || undefined,
-        romConfig: data.romConfig || undefined,
-        repCountingConfig: data.repCountingConfig || undefined,
-        sortOrder: sortOrder + 1,
+        exerciseId,
+        cameraPositionId: pv.cameraPositionId,
+        name: pv.name,
+        description: pv.description || undefined,
+        referenceImageUrl: pv.referenceImageUrl || undefined,
+        expectedFacingDirection: pv.expectedFacingDirection || 'auto_detect',
+        trackedJointsConfig: pv.trackedJointsConfig || undefined,
+        sortOrder: pv.sortOrder ?? sortOrder + 1,
       },
     });
 
-    // Create phases
-    if (data.phases && data.phases.length > 0) {
-      for (let phaseIndex = 0; phaseIndex < data.phases.length; phaseIndex++) {
-        const phase = data.phases[phaseIndex];
-        const createdPhase = await prisma.phase.create({
-          data: {
-            difficultyLevelId: difficultyLevel.id,
-            code: phase.code,
-            name: phase.name,
-            sortOrder: phase.sortOrder ?? phaseIndex + 1,
-          },
-        });
-
-        // Create angle rules
-        if (phase.angleRules && phase.angleRules.length > 0) {
-          await prisma.angleRule.createMany({
-            data: phase.angleRules.map((rule) => ({
-              phaseId: createdPhase.id,
-              jointId: rule.jointId,
-              minAngle: rule.minAngle,
-              maxAngle: rule.maxAngle,
-              errorMessageOver: rule.errorMessageOver || undefined,
-              errorMessageUnder: rule.errorMessageUnder || undefined,
-              priority: rule.priority || 'medium',
-            })),
-          });
-        }
-      }
-    }
-
-    // Create feedback messages
-    if (data.feedbackMessages && data.feedbackMessages.length > 0) {
-      await prisma.feedbackMessage.createMany({
-        data: data.feedbackMessages.map((msg, index) => ({
-          difficultyLevelId: difficultyLevel.id,
-          type: msg.type,
-          message: msg.message,
-          audioUrl: msg.audioUrl || undefined,
-          sortOrder: msg.sortOrder ?? index + 1,
+    // Create position checks
+    if (pv.positionChecks && pv.positionChecks.length > 0) {
+      await prisma.positionCheck.createMany({
+        data: pv.positionChecks.map((pc, idx) => ({
+          poseVariantId: poseVariant.id,
+          checkId: pc.checkId,
+          type: pc.type,
+          landmarks: pc.landmarks,
+          condition: pc.condition,
+          activePhases: pc.activePhases,
+          errorMessage: pc.errorMessage,
+          severity: pc.severity || 'warning',
+          cooldownMs: pc.cooldownMs ?? 2000,
+          minErrorFrames: pc.minErrorFrames ?? 3,
+          sortOrder: pc.sortOrder ?? idx + 1,
         })),
       });
     }
 
-    return difficultyLevel;
+    // Create feedback messages
+    if (pv.feedbackMessages && pv.feedbackMessages.length > 0) {
+      await prisma.feedbackMessage.createMany({
+        data: pv.feedbackMessages.map((fm, idx) => ({
+          poseVariantId: poseVariant.id,
+          type: fm.type,
+          message: fm.message,
+          audioUrl: fm.audioUrl || undefined,
+          sortOrder: fm.sortOrder ?? idx + 1,
+        })),
+      });
+    }
+
+    // Create difficulty levels
+    if (pv.difficultyLevels && pv.difficultyLevels.length > 0) {
+      for (let dlIndex = 0; dlIndex < pv.difficultyLevels.length; dlIndex++) {
+        const dl = pv.difficultyLevels[dlIndex];
+        await this.createDifficultyLevel(prisma, poseVariant.id, dl, dlIndex, countingMethodCode);
+      }
+    }
+
+    return poseVariant;
   },
 
   /**
-   * Update an exercise (basic update)
+   * Create a difficulty level
+   */
+  async createDifficultyLevel(
+    prisma: Awaited<ReturnType<typeof getPrisma>>,
+    poseVariantId: string,
+    data: DifficultyLevelInput,
+    sortOrder: number,
+    countingMethodCode: CountingMethodCode
+  ) {
+    // Look up difficulty type ID
+    const difficultyType = await prisma.attributeValue.findFirst({
+      where: {
+        code: data.difficultyTypeCode,
+        attribute: { code: 'difficulty_type' },
+      },
+    });
+
+    if (!difficultyType) {
+      throw new Error(`Difficulty type not found: ${data.difficultyTypeCode}`);
+    }
+
+    // Use provided phases or generate from counting method
+    const phases = data.phases || getPhaseCodesForCountingMethod(countingMethodCode);
+
+    return prisma.difficultyLevel.create({
+      data: {
+        poseVariantId,
+        difficultyTypeId: difficultyType.id,
+        name: data.name,
+        description: data.description || undefined,
+        repCountingConfig: data.repCountingConfig,
+        phases,
+        sortOrder: sortOrder + 1,
+      },
+    });
+  },
+
+  /**
+   * Update an exercise
    */
   async update(id: string, data: UpdateExerciseInput, updatedBy?: string) {
     const prisma = await getPrisma();
+    
+    // Get current exercise for counting method
+    const currentExercise = await prisma.exercise.findUnique({
+      where: { id },
+      include: { countingMethod: true },
+    });
+
+    if (!currentExercise) {
+      throw new Error('Exercise not found');
+    }
+
+    // Get counting method code
+    let countingMethodCode = currentExercise.countingMethod.code as CountingMethodCode;
+    if (data.countingMethodId) {
+      const newMethod = await prisma.attributeValue.findUnique({
+        where: { id: data.countingMethodId },
+        select: { code: true },
+      });
+      countingMethodCode = (newMethod?.code || countingMethodCode) as CountingMethodCode;
+    }
+
     const updateData: Record<string, unknown> = {
       updatedBy,
     };
@@ -408,13 +454,9 @@ export const exerciseService = {
     if (data.countingMethodId !== undefined) updateData.countingMethodId = data.countingMethodId;
     if (data.status !== undefined) updateData.status = data.status;
 
-    const exercise = await prisma.exercise.update({
+    await prisma.exercise.update({
       where: { id },
       data: updateData,
-      include: {
-        category: true,
-        countingMethod: true,
-      },
     });
 
     // Update attributes if provided
@@ -425,16 +467,14 @@ export const exerciseService = {
     ];
 
     if (data.muscles || data.equipment || data.tags) {
-      // Remove old attributes
       await prisma.exerciseAttribute.deleteMany({
         where: { exerciseId: id },
       });
 
-      // Add new attributes
       if (attributeIds.length > 0) {
         await prisma.exerciseAttribute.createMany({
           data: attributeIds.map((attributeValueId) => ({
-            exerciseId: exercise.id,
+            exerciseId: id,
             attributeValueId,
           })),
         });
@@ -443,121 +483,18 @@ export const exerciseService = {
 
     // Update pose variants if provided
     if (data.poseVariants !== undefined) {
-      // Remove old pose variants (cascades to difficulty levels, phases, etc.)
+      // Delete existing pose variants (cascades to nested data)
       await prisma.poseVariant.deleteMany({
         where: { exerciseId: id },
       });
 
-      // Add new pose variants with full tracked joints configuration
-      if (data.poseVariants.length > 0) {
-        await prisma.poseVariant.createMany({
-          data: data.poseVariants.map((pv, index) => ({
-            exerciseId: id,
-            cameraPositionId: pv.cameraPositionId,
-            name: pv.name,
-            description: pv.description || undefined,
-            referenceImageUrl: pv.referenceImageUrl || undefined,
-            startPoseAngles: pv.startPoseAngles || undefined,
-            primaryJoint: pv.primaryJoint || undefined,
-            trackedJointsConfig: pv.trackedJointsConfig || undefined,
-            sortOrder: pv.sortOrder ?? index + 1,
-          })),
-        });
-      }
-    }
-
-    // Return exercise with all relations
-    return prisma.exercise.findUnique({
-      where: { id },
-      include: {
-        category: true,
-        countingMethod: true,
-        poseVariants: {
-          include: {
-            cameraPosition: true,
-          },
-          orderBy: { sortOrder: 'asc' },
-        },
-      },
-    });
-  },
-
-  /**
-   * Update a complete exercise with all nested data (wizard flow)
-   */
-  async updateComplete(id: string, data: CompleteExerciseInput, updatedBy?: string) {
-    const prisma = await getPrisma();
-
-    // Update basic exercise data
-    await prisma.exercise.update({
-      where: { id },
-      data: {
-        name: data.name,
-        description: data.description || undefined,
-        instructions: data.instructions || undefined,
-        categoryId: data.categoryId,
-        countingMethodId: data.countingMethodId,
-        updatedBy,
-      },
-    });
-
-    // Update attributes
-    const attributeIds = [
-      ...(data.muscles || []),
-      ...(data.equipment || []),
-      ...(data.tags || []),
-    ];
-
-    await prisma.exerciseAttribute.deleteMany({
-      where: { exerciseId: id },
-    });
-
-    if (attributeIds.length > 0) {
-      await prisma.exerciseAttribute.createMany({
-        data: attributeIds.map((attributeValueId) => ({
-          exerciseId: id,
-          attributeValueId,
-        })),
-      });
-    }
-
-    // Delete all existing pose variants (cascades to difficulty levels, phases, etc.)
-    await prisma.poseVariant.deleteMany({
-      where: { exerciseId: id },
-    });
-
-    // Create new pose variants and their nested data
-    if (data.poseVariants && data.poseVariants.length > 0) {
+      // Create new pose variants
       for (let pvIndex = 0; pvIndex < data.poseVariants.length; pvIndex++) {
         const pv = data.poseVariants[pvIndex];
-        const poseVariant = await prisma.poseVariant.create({
-          data: {
-            exerciseId: id,
-            cameraPositionId: pv.cameraPositionId,
-            name: pv.name,
-            description: pv.description || undefined,
-            referenceImageUrl: pv.referenceImageUrl || undefined,
-            startPoseAngles: pv.startPoseAngles || undefined,
-            primaryJoint: pv.primaryJoint || undefined,
-            trackedJointsConfig: pv.trackedJointsConfig || undefined,
-            sortOrder: pv.sortOrder ?? pvIndex + 1,
-          },
-        });
-
-        // Find difficulty levels for this pose variant
-        const variantLevels = (data.difficultyLevels || []).filter(
-          (dl) => dl.poseVariantId === pv.tempId || dl.poseVariantId === pv.id
-        );
-
-        // Create difficulty levels
-        for (let dlIndex = 0; dlIndex < variantLevels.length; dlIndex++) {
-          const dl = variantLevels[dlIndex];
-          await this.createDifficultyLevel(prisma, poseVariant.id, dl, dlIndex);
-        }
+        await this.createPoseVariant(prisma, id, pv, pvIndex, countingMethodCode);
       }
     }
 
-    // Return complete exercise
     return this.getById(id);
   },
 
@@ -624,77 +561,5 @@ export const exerciseService = {
         },
       },
     });
-  },
-
-  /**
-   * Get full exercise config for mobile (single exercise)
-   */
-  async getFullConfig(id: string) {
-    const exercise = await this.getById(id);
-    if (!exercise || exercise.status !== 'published') {
-      return null;
-    }
-
-    // Transform to mobile-friendly format with new structure
-    return {
-      id: exercise.id,
-      name: exercise.name,
-      description: exercise.description,
-      instructions: exercise.instructions,
-      category: {
-        code: exercise.category.code,
-        name: exercise.category.name,
-      },
-      countingMethod: exercise.countingMethod.code,
-      updatedAt: exercise.updatedAt.toISOString(),
-      primaryImage: exercise.media[0]?.url || null,
-      muscles: exercise.attributes
-        .filter((a) => a.attributeValue.attribute.code === 'muscle')
-        .map((a) => a.attributeValue.code),
-      equipment: exercise.attributes
-        .filter((a) => a.attributeValue.attribute.code === 'equipment')
-        .map((a) => a.attributeValue.code),
-      poseVariants: exercise.poseVariants.map((pv) => ({
-        id: pv.id,
-        name: pv.name,
-        cameraPosition: pv.cameraPosition.code,
-        referenceImage: pv.referenceImageUrl,
-        requiredJoints: pv.cameraPosition.joints.map((j) => j.joint.code),
-        startPoseAngles: pv.startPoseAngles,
-        primaryJoint: pv.primaryJoint,
-        trackedJointsConfig: pv.trackedJointsConfig,
-        difficultyLevels: pv.difficultyLevels.map((dl) => ({
-          id: dl.id,
-          level: dl.difficultyType.code,
-          name: dl.name,
-          description: dl.description,
-          romConfig: dl.romConfig,
-          repCountingConfig: dl.repCountingConfig,
-          phases: dl.phases.map((phase) => ({
-            code: phase.code,
-            name: phase.name,
-            rules: phase.angleRules.map((rule) => ({
-              joint: rule.joint.code,
-              min: rule.minAngle,
-              max: rule.maxAngle,
-              errorOver: rule.errorMessageOver,
-              errorUnder: rule.errorMessageUnder,
-              priority: rule.priority,
-            })),
-          })),
-          feedbackMessages: {
-            motivational: dl.feedbackMessages
-              .filter((m) => m.type === 'motivational')
-              .map((m) => m.message),
-            common_mistake: dl.feedbackMessages
-              .filter((m) => m.type === 'common_mistake')
-              .map((m) => m.message),
-            tip: dl.feedbackMessages
-              .filter((m) => m.type === 'tip')
-              .map((m) => m.message),
-          },
-        })),
-      })),
-    };
   },
 };

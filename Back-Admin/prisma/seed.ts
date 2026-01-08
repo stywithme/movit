@@ -26,7 +26,6 @@ async function main() {
     { code: 'equipment', name: { ar: 'المعدات', en: 'Equipment' }, description: 'Required equipment', isSystem: true, sortOrder: 3 },
     { code: 'tag', name: { ar: 'وسم', en: 'Tag' }, description: 'Search tags', isSystem: true, sortOrder: 4 },
     { code: 'counting_method', name: { ar: 'طريقة العد', en: 'Counting Method' }, description: 'Rep counting methods', isSystem: true, sortOrder: 5 },
-    // camera_position is now a separate table (CameraPosition)
     { code: 'difficulty_type', name: { ar: 'مستوى الصعوبة', en: 'Difficulty Type' }, description: 'Difficulty levels', isSystem: true, sortOrder: 6 },
     { code: 'joint', name: { ar: 'المفصل', en: 'Joint' }, description: 'Body joints', isSystem: true, sortOrder: 8 },
     { code: 'priority', name: { ar: 'الأولوية', en: 'Priority' }, description: 'Error priorities', isSystem: true, sortOrder: 9 },
@@ -52,7 +51,6 @@ async function main() {
   const muscleAttr = await prisma.attribute.findUnique({ where: { code: 'muscle' } });
   const equipmentAttr = await prisma.attribute.findUnique({ where: { code: 'equipment' } });
   const countingMethodAttr = await prisma.attribute.findUnique({ where: { code: 'counting_method' } });
-  // camera_position is now a separate table, not an attribute
   const difficultyTypeAttr = await prisma.attribute.findUnique({ where: { code: 'difficulty_type' } });
   const jointAttr = await prisma.attribute.findUnique({ where: { code: 'joint' } });
   const priorityAttr = await prisma.attribute.findUnique({ where: { code: 'priority' } });
@@ -125,22 +123,51 @@ async function main() {
     });
   }
 
-  // Counting Methods (3 types only)
+  // ============================================
+  // COUNTING METHODS (3 types - ALIGNED WITH ANDROID CONTRACT)
+  // ============================================
+  // IMPORTANT: These codes MUST match the Android JSON schema exactly:
+  // - up_down: For exercises like Squat, Lunge, Bicep Curl
+  // - push_pull: For exercises like Push-up, Pull-up
+  // - hold: For isometric exercises like Plank, Wall Sit
   const countingMethods = [
-    { code: 'counter', name: { ar: 'عداد', en: 'Counter' }, description: { ar: 'عداد بسيط - يعد التكرارات بناءً على حركة واحدة', en: 'Simple counter - counts reps based on a single movement' }, sortOrder: 1 },
-    { code: 'up_down', name: { ar: 'أعلى وأسفل', en: 'Up & Down' }, description: { ar: 'يعد التكرارات عند النزول والصعود (مثل السكوات)', en: 'Counts reps on down and up movement (like squat)' }, sortOrder: 2 },
-    { code: 'push_pull', name: { ar: 'دفع وسحب', en: 'Push & Pull' }, description: { ar: 'يعد التكرارات عند الدفع والسحب (مثل تمارين الضغط)', en: 'Counts reps on push and pull movement (like push-ups)' }, sortOrder: 3 },
+    { 
+      code: 'up_down', 
+      name: { ar: 'أعلى وأسفل', en: 'Up & Down' }, 
+      description: { ar: 'يعد التكرارات عند النزول والصعود (مثل السكوات)', en: 'Counts reps on down and up movement (like squat)' }, 
+      sortOrder: 1 
+    },
+    { 
+      code: 'push_pull', 
+      name: { ar: 'دفع وسحب', en: 'Push & Pull' }, 
+      description: { ar: 'يعد التكرارات عند الدفع والسحب (مثل تمارين الضغط)', en: 'Counts reps on push and pull movement (like push-ups)' }, 
+      sortOrder: 2 
+    },
+    { 
+      code: 'hold', 
+      name: { ar: 'ثبات', en: 'Hold' }, 
+      description: { ar: 'تمارين الثبات - يحسب الوقت بدلاً من التكرارات (مثل البلانك)', en: 'Isometric exercises - counts time instead of reps (like plank)' }, 
+      sortOrder: 3 
+    },
   ];
 
   for (const cm of countingMethods) {
     await prisma.attributeValue.upsert({
       where: { code: cm.code },
-      update: {},
+      update: { name: cm.name, description: cm.description }, // Update existing if code changed
       create: { ...cm, attributeId: countingMethodAttr!.id },
     });
   }
 
-  // Camera Positions are now in separate table - will be created below
+  // Delete old 'counter' code if exists (migrating to 'hold')
+  try {
+    await prisma.attributeValue.deleteMany({
+      where: { code: 'counter', attributeId: countingMethodAttr!.id },
+    });
+    console.log('🔄 Migrated counting method: counter → hold');
+  } catch {
+    // Ignore if doesn't exist
+  }
 
   // Difficulty Types (Fixed 3 levels: beginner, normal, advanced)
   const difficultyTypes = [
@@ -157,7 +184,13 @@ async function main() {
     });
   }
 
-  // Joints (matching MediaPipe Pose landmarks 11-32 + custom spine)
+  // ============================================
+  // JOINTS (MediaPipe Pose landmarks + custom)
+  // ============================================
+  // IMPORTANT: These are split into two categories:
+  // 1. ANGLE_JOINTS: Can be used for trackedJoints (angle-based tracking)
+  // 2. LANDMARKS: Full list for positionChecks (position-based validation)
+
   const joints = [
     // Upper body - Shoulders (11-12)
     { code: 'left_shoulder', name: { ar: 'الكتف الأيسر', en: 'Left Shoulder' }, sortOrder: 11 },
@@ -237,8 +270,10 @@ async function main() {
   console.log('✅ Attribute values created');
 
   // ============================================
-  // CAMERA POSITIONS (Separate Table)
+  // CAMERA POSITIONS (With schemaCode for Android export)
   // ============================================
+  // Internal codes (side_left, side_right, front, back) are more specific
+  // schemaCode maps to Android contract (side_view, front_view, back_view)
 
   // Get joint IDs for camera position joints
   const leftKnee = await prisma.attributeValue.findUnique({ where: { code: 'left_knee' } });
@@ -256,9 +291,10 @@ async function main() {
   // Camera Position: Side View (Left side visible)
   const sideViewLeft = await prisma.cameraPosition.upsert({
     where: { code: 'side_left' },
-    update: {},
+    update: { schemaCode: 'side_view' },
     create: {
       code: 'side_left',
+      schemaCode: 'side_view', // Android contract code
       name: { ar: 'جانبي أيسر', en: 'Left Side View' },
       description: { ar: 'عرض جانبي للجسم من الناحية اليسرى', en: 'Side view from the left' },
       sortOrder: 1,
@@ -280,9 +316,10 @@ async function main() {
   // Camera Position: Side View (Right side visible)
   const sideViewRight = await prisma.cameraPosition.upsert({
     where: { code: 'side_right' },
-    update: {},
+    update: { schemaCode: 'side_view' },
     create: {
       code: 'side_right',
+      schemaCode: 'side_view', // Android contract code
       name: { ar: 'جانبي أيمن', en: 'Right Side View' },
       description: { ar: 'عرض جانبي للجسم من الناحية اليمنى', en: 'Side view from the right' },
       sortOrder: 2,
@@ -304,9 +341,10 @@ async function main() {
   // Camera Position: Front View
   const frontView = await prisma.cameraPosition.upsert({
     where: { code: 'front' },
-    update: {},
+    update: { schemaCode: 'front_view' },
     create: {
       code: 'front',
+      schemaCode: 'front_view', // Android contract code
       name: { ar: 'أمامي', en: 'Front View' },
       description: { ar: 'عرض أمامي للجسم', en: 'Front view of the body' },
       sortOrder: 3,
@@ -328,9 +366,10 @@ async function main() {
   // Camera Position: Back View
   const backView = await prisma.cameraPosition.upsert({
     where: { code: 'back' },
-    update: {},
+    update: { schemaCode: 'back_view' },
     create: {
       code: 'back',
+      schemaCode: 'back_view', // Android contract code
       name: { ar: 'خلفي', en: 'Back View' },
       description: { ar: 'عرض خلفي للجسم', en: 'Back view of the body' },
       sortOrder: 4,
@@ -362,4 +401,3 @@ main()
   .finally(async () => {
     await prisma.$disconnect();
   });
-

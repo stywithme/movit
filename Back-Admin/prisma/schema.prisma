@@ -49,7 +49,6 @@ model AttributeValue {
   exercisesAsCountingMethod Exercise[]         @relation("ExerciseCountingMethod")
   exerciseAttributes       ExerciseAttribute[]
   difficultyLevelsAsType   DifficultyLevel[]   @relation("DifficultyLevelType")
-  angleRulesAsJoint        AngleRule[]         @relation("AngleRuleJoint")
   cameraPositionJoints     CameraPositionJoint[] @relation("CameraPositionJoint")
 
   @@index([attributeId])
@@ -131,6 +130,7 @@ model ExerciseMedia {
 model CameraPosition {
   id          String   @id @default(uuid())
   code        String   @unique
+  schemaCode  String?  // exported/mobile: side_view, front_view, back_view
   name        Json     // { "ar": "...", "en": "..." }
   description Json?    // { "ar": "...", "en": "..." }
   imageUrl    String?
@@ -167,26 +167,60 @@ model CameraPositionJoint {
 
 /// Pose variants (different camera positions for an exercise)
 model PoseVariant {
-  id                   String   @id @default(uuid())
-  exerciseId           String
-  cameraPositionId     String
-  name                 Json     // { "ar": "...", "en": "..." }
-  description          Json?    // { "ar": "...", "en": "..." }
-  referenceImageUrl    String?
-  startPoseAngles      Json?    // { "left_knee": { min: 160, max: 180 }, ... } - Start pose angle ranges
-  primaryJoint         String?  // Comma-separated primary joint codes (e.g., "left_knee,right_knee")
-  trackedJointsConfig  Json?    // Full tracked joints configuration with tolerances and error messages
-  sortOrder            Int      @default(0)
-  createdAt            DateTime @default(now())
-  updatedAt            DateTime @updatedAt
+  id                      String   @id @default(uuid())
+  exerciseId              String
+  cameraPositionId        String
+  name                    Json     // { "ar": "...", "en": "..." }
+  description             Json?    // { "ar": "...", "en": "..." }
+  referenceImageUrl       String?
+  
+  expectedFacingDirection String?  // 'facing_right' | 'facing_left' | 'facing_camera' | 'facing_away' | 'auto_detect'
+  
+  // CORE CONFIGURATION (Source of Truth)
+  // Contains: Primary/Secondary joints, Start Pose, Up/Down Ranges per difficulty
+  trackedJointsConfig     Json?    
+
+  sortOrder               Int      @default(0)
+  createdAt               DateTime @default(now())
+  updatedAt               DateTime @updatedAt
 
   exercise         Exercise          @relation(fields: [exerciseId], references: [id], onDelete: Cascade)
   cameraPosition   CameraPosition    @relation(fields: [cameraPositionId], references: [id])
+  
   difficultyLevels DifficultyLevel[]
+  positionChecks   PositionCheck[]   
+  feedbackMessages FeedbackMessage[] 
 
   @@index([exerciseId])
   @@index([cameraPositionId])
   @@map("pose_variants")
+}
+
+/// Position-based validation checks (knee over toe, hip alignment, etc.)
+model PositionCheck {
+  id              String   @id @default(uuid())
+  poseVariantId   String
+  checkId         String   // Unique within variant (e.g., "knee_over_toe")
+  
+  type            String   // PositionCheckType enum as string
+  landmarks       Json     // { "primary": "left_knee", "secondary": "left_foot_index", ... }
+  condition       Json     // { "operator": "should_not_exceed", "thresholds": { ... } }
+  activePhases    Json     // ["down", "bottom"]
+  errorMessage    Json     // { "ar": "...", "en": "..." }
+  
+  severity        String   @default("warning") // 'error' | 'warning' | 'tip'
+  cooldownMs      Int      @default(2000)
+  minErrorFrames  Int      @default(3)
+  sortOrder       Int      @default(0)
+  
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  poseVariant PoseVariant @relation(fields: [poseVariantId], references: [id], onDelete: Cascade)
+
+  @@unique([poseVariantId, checkId])
+  @@index([poseVariantId])
+  @@map("position_checks")
 }
 
 // ============================================
@@ -200,65 +234,21 @@ model DifficultyLevel {
   difficultyTypeId String
   name             Json     // { "ar": "...", "en": "..." }
   description      Json?    // { "ar": "...", "en": "..." }
-  romConfig        Json?    // { "targetAngle": 90, "tolerance": 10 } - Range of motion config
-  repCountingConfig Json?   // { "reps": 10, "duration": null, "eccentricThreshold": 100, "concentricThreshold": 160 }
+  
+  repCountingConfig Json?   // { "reps": 12, "duration": 30, ... }
+  phases            Json?   // ["start", "down", "up"] - Just the list required by Android
+  romConfig         Json?   // Optional: General ROM info if needed
+  
   sortOrder        Int      @default(0)
   createdAt        DateTime @default(now())
   updatedAt        DateTime @updatedAt
 
   poseVariant      PoseVariant       @relation(fields: [poseVariantId], references: [id], onDelete: Cascade)
   difficultyType   AttributeValue    @relation("DifficultyLevelType", fields: [difficultyTypeId], references: [id])
-  phases           Phase[]
-  feedbackMessages FeedbackMessage[]
 
   @@index([poseVariantId])
   @@index([difficultyTypeId])
   @@map("difficulty_levels")
-}
-
-// ============================================
-// PHASES
-// ============================================
-
-/// Phases for each difficulty level (auto-generated from counting method)
-model Phase {
-  id                String   @id @default(uuid())
-  difficultyLevelId String
-  code              String   // start, eccentric, concentric, end, push, pull, hold
-  name              Json     // { "ar": "...", "en": "..." }
-  sortOrder         Int      @default(0)
-  createdAt         DateTime @default(now())
-
-  difficultyLevel DifficultyLevel @relation(fields: [difficultyLevelId], references: [id], onDelete: Cascade)
-  angleRules      AngleRule[]
-
-  @@index([difficultyLevelId])
-  @@map("phases")
-}
-
-// ============================================
-// ANGLE RULES
-// ============================================
-
-/// Angle rules for each phase
-model AngleRule {
-  id               String   @id @default(uuid())
-  phaseId          String
-  jointId          String
-  minAngle         Float
-  maxAngle         Float
-  errorMessageOver Json?    // { "ar": "...", "en": "..." }
-  errorMessageUnder Json?   // { "ar": "...", "en": "..." }
-  priority         String   @default("medium") // high, medium, low
-  createdAt        DateTime @default(now())
-  updatedAt        DateTime @updatedAt
-
-  phase Phase          @relation(fields: [phaseId], references: [id], onDelete: Cascade)
-  joint AttributeValue @relation("AngleRuleJoint", fields: [jointId], references: [id])
-
-  @@index([phaseId])
-  @@index([jointId])
-  @@map("angle_rules")
 }
 
 // ============================================
@@ -267,17 +257,17 @@ model AngleRule {
 
 /// Feedback messages (motivational, tips, common mistakes)
 model FeedbackMessage {
-  id                String   @id @default(uuid())
-  difficultyLevelId String
-  type              String   // motivational, common_mistake, tip
-  message           Json     // { "ar": "...", "en": "..." }
-  audioUrl          String?
-  sortOrder         Int      @default(0)
-  createdAt         DateTime @default(now())
+  id            String   @id @default(uuid())
+  poseVariantId String
+  type          String   // motivational, common_mistake, tip
+  message       Json     // { "ar": "...", "en": "..." }
+  audioUrl      String?
+  sortOrder     Int      @default(0)
+  createdAt     DateTime @default(now())
 
-  difficultyLevel DifficultyLevel @relation(fields: [difficultyLevelId], references: [id], onDelete: Cascade)
+  poseVariant PoseVariant @relation(fields: [poseVariantId], references: [id], onDelete: Cascade)
 
-  @@index([difficultyLevelId])
+  @@index([poseVariantId])
   @@index([type])
   @@map("feedback_messages")
 }

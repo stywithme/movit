@@ -1,98 +1,140 @@
 'use client';
 
-interface Step {
-  id: string;
-  title: string;
-  description?: string;
+/**
+ * Wizard Stepper Component
+ * ========================
+ * 
+ * Visual step indicator for the 8-step exercise wizard.
+ */
+
+import { useWizardStore, useStepComplete } from './WizardContext';
+
+const STEPS = [
+  { id: 1, name: 'Basic Info', shortName: 'Basic' },
+  { id: 2, name: 'Exercise Type', shortName: 'Type' },
+  { id: 3, name: 'Camera Position', shortName: 'Camera' },
+  { id: 4, name: 'Joint Config', shortName: 'Joints' },
+  { id: 5, name: 'Position Checks', shortName: 'Checks' },
+  { id: 6, name: 'Rep Config', shortName: 'Reps' },
+  { id: 7, name: 'Extras', shortName: 'Extras' },
+  { id: 8, name: 'Review', shortName: 'Review' },
+];
+
+interface StepIndicatorProps {
+  step: typeof STEPS[number];
+  isActive: boolean;
+  isComplete: boolean;
+  onClick: () => void;
 }
 
-interface WizardStepperProps {
-  steps: Step[];
-  currentStep: number;
-  onStepClick?: (stepIndex: number) => void;
-}
-
-export function WizardStepper({ steps, currentStep, onStepClick }: WizardStepperProps) {
+function StepIndicator({ step, isActive, isComplete, onClick }: StepIndicatorProps) {
   return (
-    <nav aria-label="Progress" className="mb-8">
-      <ol className="flex items-center">
-        {steps.map((step, index) => {
-          const isCompleted = index < currentStep;
-          const isCurrent = index === currentStep;
-
-          return (
-            <li key={step.id} className={`relative ${index !== steps.length - 1 ? 'pr-8 sm:pr-20 flex-1' : ''}`}>
-              {/* Connector Line */}
-              {index !== steps.length - 1 && (
-                <div
-                  className="absolute top-4 left-8 -ml-px mt-0.5 h-0.5 w-full"
-                  aria-hidden="true"
-                >
-                  <div
-                    className={`h-full ${isCompleted ? 'bg-blue-600' : 'bg-gray-200'}`}
-                  />
-                </div>
-              )}
-
-              <button
-                type="button"
-                onClick={() => onStepClick?.(index)}
-                disabled={!onStepClick || index > currentStep}
-                className="group relative flex items-start"
-              >
-                <span className="flex h-9 items-center" aria-hidden="true">
-                  <span
-                    className={`relative z-10 flex h-8 w-8 items-center justify-center rounded-full ${
-                      isCompleted
-                        ? 'bg-blue-600 hover:bg-blue-800'
-                        : isCurrent
-                        ? 'border-2 border-blue-600 bg-white'
-                        : 'border-2 border-gray-300 bg-white'
-                    }`}
-                  >
-                    {isCompleted ? (
-                      <svg
-                        className="h-5 w-5 text-white"
-                        viewBox="0 0 20 20"
-                        fill="currentColor"
-                      >
-                        <path
-                          fillRule="evenodd"
-                          d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
-                          clipRule="evenodd"
-                        />
-                      </svg>
-                    ) : (
-                      <span
-                        className={`text-sm ${
-                          isCurrent ? 'text-blue-600' : 'text-gray-500'
-                        }`}
-                      >
-                        {index + 1}
-                      </span>
-                    )}
-                  </span>
-                </span>
-                <span className="ml-3 flex min-w-0 flex-col">
-                  <span
-                    className={`text-sm font-medium ${
-                      isCurrent ? 'text-blue-600' : isCompleted ? 'text-gray-900' : 'text-gray-500'
-                    }`}
-                  >
-                    {step.title}
-                  </span>
-                  {step.description && (
-                    <span className="text-xs text-gray-500 hidden sm:block">{step.description}</span>
-                  )}
-                </span>
-              </button>
-            </li>
-          );
-        })}
-      </ol>
-    </nav>
+    <button
+      type="button"
+      onClick={onClick}
+      className={`
+        flex flex-col items-center gap-1 transition-all duration-200
+        ${isActive ? 'scale-110' : 'hover:scale-105'}
+      `}
+    >
+      {/* Circle */}
+      <div
+        className={`
+          w-10 h-10 rounded-full flex items-center justify-center
+          font-semibold text-sm transition-all duration-200
+          ${isActive 
+            ? 'bg-blue-600 text-white ring-4 ring-blue-200' 
+            : isComplete 
+              ? 'bg-green-500 text-white' 
+              : 'bg-gray-200 text-gray-500'
+          }
+        `}
+      >
+        {isComplete && !isActive ? (
+          <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+            <path
+              fillRule="evenodd"
+              d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+              clipRule="evenodd"
+            />
+          </svg>
+        ) : (
+          step.id
+        )}
+      </div>
+      
+      {/* Label */}
+      <span
+        className={`
+          text-xs font-medium transition-colors
+          ${isActive ? 'text-blue-600' : isComplete ? 'text-green-600' : 'text-gray-400'}
+        `}
+      >
+        {step.shortName}
+      </span>
+    </button>
   );
 }
 
-export default WizardStepper;
+interface ConnectorProps {
+  isComplete: boolean;
+}
 
+function Connector({ isComplete }: ConnectorProps) {
+  return (
+    <div
+      className={`
+        flex-1 h-0.5 mx-1 transition-colors duration-200
+        ${isComplete ? 'bg-green-500' : 'bg-gray-200'}
+      `}
+    />
+  );
+}
+
+export function WizardStepper() {
+  const { currentStep, setStep } = useWizardStore();
+  
+  return (
+    <div className="w-full px-4 py-6">
+      <div className="flex items-center justify-between max-w-4xl mx-auto">
+        {STEPS.map((step, index) => (
+          <div key={step.id} className="flex items-center flex-1 last:flex-none">
+            <StepIndicatorWrapper step={step} currentStep={currentStep} setStep={setStep} />
+            {index < STEPS.length - 1 && (
+              <ConnectorWrapper stepId={step.id} currentStep={currentStep} />
+            )}
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// Wrapper components to use hooks
+function StepIndicatorWrapper({ 
+  step, 
+  currentStep, 
+  setStep 
+}: { 
+  step: typeof STEPS[number]; 
+  currentStep: number; 
+  setStep: (step: number) => void;
+}) {
+  const isComplete = useStepComplete(step.id);
+  
+  return (
+    <StepIndicator
+      step={step}
+      isActive={currentStep === step.id}
+      isComplete={isComplete && currentStep > step.id}
+      onClick={() => setStep(step.id)}
+    />
+  );
+}
+
+function ConnectorWrapper({ stepId, currentStep }: { stepId: number; currentStep: number }) {
+  const isComplete = useStepComplete(stepId);
+  return <Connector isComplete={isComplete && currentStep > stepId} />;
+}
+
+export default WizardStepper;

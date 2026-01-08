@@ -242,7 +242,8 @@ export function MovementConfigStep({
     updateTrackedJoint(pairedJoint.jointCode, copiedJoint);
   };
 
-  const getJointName = (jointCode: string) => {
+  const getJointName = (jointCode: string | undefined) => {
+    if (!jointCode) return 'Unknown Joint';
     const joint = joints.find((j) => j.code === jointCode);
     return joint?.name.en || jointCode.replace(/_/g, ' ');
   };

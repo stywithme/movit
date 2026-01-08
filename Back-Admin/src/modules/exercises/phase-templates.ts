@@ -1,10 +1,10 @@
-import { LocalizedText, CountingMethodCode } from '@/lib/types/localized';
+import { LocalizedText, CountingMethodCode, PhaseName } from '@/lib/types/localized';
 
 /**
  * Phase template for auto-generating phases based on counting method
  */
 export type PhaseTemplate = {
-  code: string;
+  code: PhaseName;
   name: LocalizedText;
   sortOrder: number;
 };
@@ -12,18 +12,12 @@ export type PhaseTemplate = {
 /**
  * Phase templates for each counting method
  * 
- * 1. Counter - Simple counting without phases (just start/end)
- * 2. Up and Down - Eccentric (down) and Concentric (up) phases
- * 3. Push and Pull - Push and Pull phases
+ * ALIGNED WITH ANDROID CONTRACT:
+ * 1. up_down - Eccentric (down) and Concentric (up) phases (Squat, Lunge, etc.)
+ * 2. push_pull - Push and Pull phases (Push-up, Pull-up, etc.)
+ * 3. hold - Isometric exercises (Plank, Wall Sit, etc.)
  */
 export const phaseTemplates: Record<CountingMethodCode, PhaseTemplate[]> = {
-  // Counter: Simple counting - no intermediate phases
-  counter: [
-    { code: 'start', name: { ar: 'وضعية البداية', en: 'Starting Position' }, sortOrder: 1 },
-    { code: 'count', name: { ar: 'العد', en: 'Counting' }, sortOrder: 2 },
-    { code: 'end', name: { ar: 'النهاية', en: 'End Position' }, sortOrder: 3 },
-  ],
-  
   // Up and Down: Like squat - going down (eccentric) and up (concentric)
   up_down: [
     { code: 'start', name: { ar: 'وضعية البداية', en: 'Starting Position' }, sortOrder: 1 },
@@ -39,23 +33,34 @@ export const phaseTemplates: Record<CountingMethodCode, PhaseTemplate[]> = {
     { code: 'extended', name: { ar: 'الامتداد', en: 'Extended Position' }, sortOrder: 3 },
     { code: 'pull', name: { ar: 'السحب', en: 'Pull' }, sortOrder: 4 },
   ],
+  
+  // Hold: Isometric exercises - single phase for holding position
+  // Android engine uses 'count' phase internally for HOLD timing
+  hold: [
+    { code: 'hold', name: { ar: 'الثبات', en: 'Hold' }, sortOrder: 1 },
+  ],
 };
 
 /**
- * Get phase templates for a counting method
+ * Get phase codes (simple string array) for a counting method
+ * This is what gets stored in the database and sent to Android
+ */
+export function getPhaseCodesForCountingMethod(countingMethodCode: CountingMethodCode): PhaseName[] {
+  const templates = phaseTemplates[countingMethodCode] || phaseTemplates.up_down;
+  return templates.map(t => t.code);
+}
+
+/**
+ * Get phase templates for a counting method (full objects with names)
  */
 export function getPhasesForCountingMethod(countingMethodCode: CountingMethodCode): PhaseTemplate[] {
-  return phaseTemplates[countingMethodCode] || phaseTemplates.counter;
+  return phaseTemplates[countingMethodCode] || phaseTemplates.up_down;
 }
 
 /**
  * Get counting method description
  */
 export const countingMethodDescriptions: Record<CountingMethodCode, LocalizedText> = {
-  counter: {
-    ar: 'عداد بسيط - يعد التكرارات بناءً على حركة واحدة',
-    en: 'Simple counter - counts reps based on a single movement',
-  },
   up_down: {
     ar: 'أعلى وأسفل - يعد التكرارات عند النزول والصعود (مثل السكوات)',
     en: 'Up & Down - counts reps on down and up movement (like squat)',
@@ -64,4 +69,31 @@ export const countingMethodDescriptions: Record<CountingMethodCode, LocalizedTex
     ar: 'دفع وسحب - يعد التكرارات عند الدفع والسحب (مثل تمارين الضغط)',
     en: 'Push & Pull - counts reps on push and pull movement (like push-ups)',
   },
+  hold: {
+    ar: 'ثبات - تمارين الثبات تحسب الوقت بدلاً من التكرارات (مثل البلانك)',
+    en: 'Hold - isometric exercises count time instead of reps (like plank)',
+  },
 };
+
+/**
+ * Get default rep/duration values per difficulty for a counting method
+ */
+export function getDefaultRepConfig(countingMethodCode: CountingMethodCode): {
+  beginner: { reps?: number; duration?: number };
+  normal: { reps?: number; duration?: number };
+  advanced: { reps?: number; duration?: number };
+} {
+  if (countingMethodCode === 'hold') {
+    return {
+      beginner: { duration: 15 },
+      normal: { duration: 30 },
+      advanced: { duration: 60 },
+    };
+  }
+  
+  return {
+    beginner: { reps: 8 },
+    normal: { reps: 12 },
+    advanced: { reps: 16 },
+  };
+}
