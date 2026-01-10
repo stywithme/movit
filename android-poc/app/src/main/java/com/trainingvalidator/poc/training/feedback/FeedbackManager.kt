@@ -129,7 +129,7 @@ class FeedbackManager(
         tts = TextToSpeech(context) { status ->
             if (status == TextToSpeech.SUCCESS) {
                 val locale = if (config.language == "ar") {
-                    Locale("ar")
+                    Locale.forLanguageTag("ar")
                 } else {
                     Locale.US
                 }
@@ -174,6 +174,11 @@ class FeedbackManager(
             is FeedbackEvent.PositionWarningDetected -> handlePositionWarning(event)
             is FeedbackEvent.PositionTipDetected -> handlePositionTip(event)
             is FeedbackEvent.CameraPositionWarning -> handleCameraWarning(event)
+            
+            // Visibility events (Camera mode audio feedback)
+            is FeedbackEvent.VisibilityWarning -> handleVisibilityWarning(event)
+            is FeedbackEvent.VisibilityPaused -> handleVisibilityPaused(event)
+            is FeedbackEvent.VisibilityResumed -> handleVisibilityResumed(event)
             
             else -> {}
         }
@@ -243,7 +248,16 @@ class FeedbackManager(
                 if (isVideoMode) {
                     emitVisualMessage(message, messageType)
                 } else {
-                    speak(message)
+                    // Determine speech priority based on message type
+                    // Errors and warnings can interrupt, motivation waits in queue
+                    val speechPriority = when (messageType) {
+                        MessageType.ERROR -> SpeakPriority.HIGH      // Can interrupt
+                        MessageType.WARNING -> SpeakPriority.HIGH    // Can interrupt
+                        MessageType.MOTIVATION -> SpeakPriority.NORMAL // Waits in queue
+                        MessageType.TIP -> SpeakPriority.LOW         // Skip if busy
+                        MessageType.INFO -> SpeakPriority.NORMAL     // Waits in queue
+                    }
+                    speak(message, speechPriority)
                     if (isHapticEnabled) {
                         when (messageType) {
                             MessageType.ERROR -> vibrateError()
@@ -299,9 +313,9 @@ class FeedbackManager(
                 if (event.isCorrect) vibrateSuccess() else vibrateWarning()
             }
             
-            // Announce rep count every N reps
+            // Announce rep count every N reps (NORMAL priority - shouldn't interrupt errors)
             if (event.repNumber - lastAnnouncedRep >= REP_AUDIO_INTERVAL) {
-                speak("${event.repNumber}")
+                speak("${event.repNumber}", SpeakPriority.NORMAL)
                 lastAnnouncedRep = event.repNumber
             }
         }
@@ -319,7 +333,8 @@ class FeedbackManager(
         if (isVideoMode) {
             emitVisualMessage(message, MessageType.MOTIVATION, 4000L)
         } else {
-            speak(message)
+            // HIGH priority - target completion is important announcement
+            speak(message, SpeakPriority.HIGH)
             if (isHapticEnabled) vibrateComplete()
         }
     }
@@ -369,17 +384,22 @@ class FeedbackManager(
     }
     
     private suspend fun handleHoldGraceStarted(event: FeedbackEvent.HoldGraceStarted) {
+        val message = if (config.language == "ar") "ابق ثابتاً!" else "Stay in position!"
+        
         if (isVideoMode) {
-            emitVisualMessage("Stay in position!", MessageType.WARNING)
+            emitVisualMessage(message, MessageType.WARNING)
         } else {
-            speak("Stay in position")
+            // HIGH priority - warning should interrupt other messages
+            speak(message, SpeakPriority.HIGH)
             if (isHapticEnabled) vibrateWarning()
         }
     }
     
     private fun handleHoldResumed(event: FeedbackEvent.HoldResumed) {
         if (!isVideoMode) {
-            speak("Good, keep holding")
+            val message = if (config.language == "ar") "أحسنت، استمر" else "Good, keep holding"
+            // NORMAL priority - encouragement shouldn't interrupt warnings
+            speak(message, SpeakPriority.NORMAL)
             if (isHapticEnabled) vibrateSuccess()
         }
     }
@@ -395,14 +415,17 @@ class FeedbackManager(
         if (isVideoMode) {
             emitVisualMessage(message, MessageType.MOTIVATION, 4000L)
         } else {
-            speak(message)
+            // HIGH priority - completion is important announcement
+            speak(message, SpeakPriority.HIGH)
             if (isHapticEnabled) vibrateComplete()
         }
     }
     
     private fun handleHoldFailed(event: FeedbackEvent.HoldFailed) {
         if (!isVideoMode) {
-            speak("Position lost. Try again")
+            val message = if (config.language == "ar") "فقدت الوضعية. حاول مجدداً" else "Position lost. Try again"
+            // HIGH priority - failure is important feedback
+            speak(message, SpeakPriority.HIGH)
             if (isHapticEnabled) vibrateError()
         }
     }
@@ -469,6 +492,54 @@ class FeedbackManager(
         deliverMessage(message, decision, MessageType.WARNING)
     }
     
+    // ==================== Visibility Event Handlers ====================
+    
+    private suspend fun handleVisibilityWarning(event: FeedbackEvent.VisibilityWarning) {
+        val message = event.message.get(config.language)
+        
+        // Use MessageOrchestrator for smart delivery
+        // Visibility warnings are important - user needs to adjust position
+        val decision = messageOrchestrator.decide(
+            messageKey = "visibility:warning",
+            category = MessageOrchestrator.Category.WARNING,
+            messageText = message
+        )
+        
+        deliverMessage(message, decision, MessageType.WARNING)
+    }
+    
+    private suspend fun handleVisibilityPaused(event: FeedbackEvent.VisibilityPaused) {
+        val message = event.message.get(config.language)
+        
+        // Visibility paused is CRITICAL - training stopped, user must act
+        // Use CRITICAL category to ensure it's always heard
+        val decision = messageOrchestrator.decide(
+            messageKey = "visibility:paused",
+            category = MessageOrchestrator.Category.CRITICAL,
+            messageText = message
+        )
+        
+        deliverMessage(message, decision, MessageType.ERROR)
+        
+        // Extra haptic feedback for critical visibility loss
+        if (!isVideoMode && isHapticEnabled) {
+            vibrateError()
+        }
+    }
+    
+    private fun handleVisibilityResumed(event: FeedbackEvent.VisibilityResumed) {
+        // Only provide feedback in camera mode
+        if (!isVideoMode) {
+            // Short positive feedback when visibility restored
+            if (isHapticEnabled) {
+                vibrateSuccess()
+            }
+            // Reset visibility message state so next warning is treated as new
+            messageOrchestrator.reset("visibility:warning")
+            messageOrchestrator.reset("visibility:paused")
+        }
+    }
+    
     // ==================== Visual Message Emission ====================
     
     private suspend fun emitVisualMessage(text: String, type: MessageType, durationMs: Long = 3000L) {
@@ -478,36 +549,72 @@ class FeedbackManager(
     // ==================== Audio (TTS) ====================
     
     /**
-     * Speak text using TTS (Camera mode only)
+     * Speech priority determines queue behavior:
+     * - HIGH: Interrupts any current speech (QUEUE_FLUSH) - for errors/warnings
+     * - NORMAL: Waits for current speech to finish (QUEUE_ADD) - for rep counts, motivation
+     * - LOW: Only speaks if nothing else is playing, skips otherwise
      */
-    fun speak(text: String) {
+    enum class SpeakPriority {
+        HIGH,    // Interrupts current speech (errors, warnings, visibility)
+        NORMAL,  // Waits in queue (rep counts, motivation)
+        LOW      // Skip if busy (tips, info)
+    }
+    
+    // Track if TTS is currently speaking (for LOW priority decisions)
+    private var isSpeaking = false
+    
+    /**
+     * Speak text using TTS (Camera mode only)
+     * @param text The text to speak
+     * @param priority Determines if this can interrupt other speech
+     */
+    fun speak(text: String, priority: SpeakPriority = SpeakPriority.HIGH) {
         if (!isTtsEnabled || !isTtsReady) return
         
         val now = System.currentTimeMillis()
-        if (now - lastSpeakTime < minSpeakInterval) {
+        
+        // For LOW priority, skip if something is currently speaking
+        if (priority == SpeakPriority.LOW && isSpeaking) {
+            Log.d(TAG, "Skipping low-priority speech (busy): $text")
+            return
+        }
+        
+        // Cooldown check (skip for HIGH priority - important messages should not be throttled)
+        if (priority != SpeakPriority.HIGH && now - lastSpeakTime < minSpeakInterval) {
             return
         }
         
         lastSpeakTime = now
         
-        tts?.speak(text, TextToSpeech.QUEUE_FLUSH, null, "feedback_${now}")
-        Log.d(TAG, "Speaking: $text")
+        val queueMode = when (priority) {
+            SpeakPriority.HIGH -> TextToSpeech.QUEUE_FLUSH  // Interrupt
+            SpeakPriority.NORMAL, SpeakPriority.LOW -> TextToSpeech.QUEUE_ADD  // Wait
+        }
+        
+        isSpeaking = true
+        tts?.speak(text, queueMode, null, "feedback_${now}")
+        Log.d(TAG, "Speaking ($priority): $text")
     }
     
     /**
      * Speak countdown number with emphasis
+     * Uses HIGH priority - countdown should interrupt other messages
      */
     fun speakCountdown(number: Int) {
         if (!isTtsEnabled || !isTtsReady) return
+        isSpeaking = true
         tts?.speak(number.toString(), TextToSpeech.QUEUE_FLUSH, null, "countdown_$number")
     }
     
     /**
-     * Speak "Go!" with energy
+     * Speak "Go!" with energy (localized)
+     * Uses HIGH priority - start signal is critical
      */
     fun speakGo() {
         if (!isTtsEnabled || !isTtsReady) return
-        tts?.speak("Go!", TextToSpeech.QUEUE_FLUSH, null, "go")
+        val goText = if (config.language == "ar") "ابدأ!" else "Go!"
+        isSpeaking = true
+        tts?.speak(goText, TextToSpeech.QUEUE_FLUSH, null, "go")
     }
     
     // ==================== Haptic (Vibration) ====================
@@ -559,7 +666,7 @@ class FeedbackManager(
     }
     
     fun setLanguage(language: String) {
-        val locale = if (language == "ar") Locale("ar") else Locale.US
+        val locale = if (language == "ar") Locale.forLanguageTag("ar") else Locale.US
         tts?.setLanguage(locale)
     }
     

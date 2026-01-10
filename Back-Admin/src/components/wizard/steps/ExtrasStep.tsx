@@ -6,6 +6,8 @@
  */
 
 import { useWizardStore } from '../WizardContext';
+import { Card, CardHeader, CardTitle, CardContent, Button, Badge, Input, Label } from '@/components/ui';
+import { Plus, X } from 'lucide-react';
 import type { FeedbackMessageData } from '@/modules/exercises/exercises.validation';
 
 interface ExtrasStepProps {
@@ -38,167 +40,164 @@ export function ExtrasStep({ muscles, equipment, tags }: ExtrasStepProps) {
     <div className="space-y-8 max-w-4xl mx-auto">
       <div>
         <h2 className="text-2xl font-bold text-gray-900 mb-2">Attributes & Feedback</h2>
-        <p className="text-gray-500">Add muscles, equipment, and feedback messages.</p>
+        <p className="text-gray-500">Add metadata and user feedback messages.</p>
       </div>
       
-      {/* Target Muscles */}
-      <div className="space-y-3">
-        <h3 className="font-semibold text-gray-900">Target Muscles</h3>
-        <div className="flex flex-wrap gap-2">
-          {muscles.map((muscle) => {
-            const isSelected = (extras.muscles || []).includes(muscle.id);
-            return (
-              <button
-                key={muscle.id}
-                type="button"
-                onClick={() => toggleAttribute('muscles', muscle.id)}
-                className={`
-                  px-3 py-1.5 rounded-full text-sm transition-colors
-                  ${isSelected 
-                    ? 'bg-purple-100 text-purple-700 ring-2 ring-purple-300' 
-                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                  }
-                `}
-              >
-                {isSelected && '✓ '}{muscle.name.en}
-              </button>
-            );
-          })}
-        </div>
-      </div>
-      
-      {/* Equipment */}
-      <div className="space-y-3">
-        <h3 className="font-semibold text-gray-900">Equipment</h3>
-        <div className="flex flex-wrap gap-2">
-          {equipment.map((eq) => {
-            const isSelected = (extras.equipment || []).includes(eq.id);
-            return (
-              <button
-                key={eq.id}
-                type="button"
-                onClick={() => toggleAttribute('equipment', eq.id)}
-                className={`
-                  px-3 py-1.5 rounded-full text-sm transition-colors
-                  ${isSelected 
-                    ? 'bg-orange-100 text-orange-700 ring-2 ring-orange-300' 
-                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                  }
-                `}
-              >
-                {isSelected && '✓ '}{eq.name.en}
-              </button>
-            );
-          })}
-        </div>
-      </div>
-      
-      {/* Tags */}
-      {tags.length > 0 && (
-        <div className="space-y-3">
-          <h3 className="font-semibold text-gray-900">Tags</h3>
-          <div className="flex flex-wrap gap-2">
-            {tags.map((tag) => {
-              const isSelected = (extras.tags || []).includes(tag.id);
-              return (
-                <button
-                  key={tag.id}
-                  type="button"
-                  onClick={() => toggleAttribute('tags', tag.id)}
-                className={`
-                  px-3 py-1.5 rounded-full text-sm transition-colors
-                  ${isSelected 
-                    ? 'bg-teal-100 text-teal-700 ring-2 ring-teal-300' 
-                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                  }
-                `}
-                >
-                  {isSelected && '✓ '}{tag.name.en}
-                </button>
-              );
-            })}
-          </div>
-        </div>
-      )}
-      
-      {/* Divider */}
-      <hr className="border-gray-200" />
-      
-      {/* Feedback Messages */}
-      <div className="space-y-4">
-        <h3 className="font-semibold text-gray-900">Feedback Messages</h3>
+      {/* Attributes Section */}
+      <div className="grid gap-6">
+        <Card>
+          <CardHeader>
+            <div className="flex items-center gap-2">
+              <CardTitle>Target Muscles</CardTitle>
+              <Label tooltip="Select the primary muscles worked by this exercise." />
+            </div>
+          </CardHeader>
+          <CardContent>
+            <div className="flex flex-wrap gap-2">
+              {muscles.map((muscle) => {
+                const isSelected = (extras.muscles || []).includes(muscle.id);
+                return (
+                  <Badge
+                    key={muscle.id}
+                    variant={isSelected ? 'purple' : 'default'}
+                    className={`cursor-pointer px-3 py-1.5 ${!isSelected && 'hover:bg-gray-200'}`}
+                    onClick={() => toggleAttribute('muscles', muscle.id)}
+                  >
+                    {isSelected && '✓ '}{muscle.name.en}
+                  </Badge>
+                );
+              })}
+            </div>
+          </CardContent>
+        </Card>
         
-        {/* Message Types */}
-        {(['motivational', 'common_mistake', 'tip'] as const).map((type) => {
-          const typeMessages = feedbackMessages.filter(m => m.type === type);
-          const typeLabels = {
-            motivational: { label: '💪 Motivational', color: 'green' },
-            common_mistake: { label: '⚠️ Common Mistakes', color: 'amber' },
-            tip: { label: '💡 Tips', color: 'blue' },
-          };
-          const { label, color } = typeLabels[type];
-          
-          return (
-            <div key={type} className="space-y-2">
-              <div className="flex items-center justify-between">
-                <h4 className="font-medium text-gray-700">{label}</h4>
-                <button
-                  type="button"
-                  onClick={() => addNewMessage(type)}
-                  className="text-sm text-blue-600 hover:text-blue-700"
-                >
-                  + Add
-                </button>
+        <Card>
+          <CardHeader>
+            <div className="flex items-center gap-2">
+              <CardTitle>Equipment</CardTitle>
+              <Label tooltip="Select any equipment required to perform this exercise." />
+            </div>
+          </CardHeader>
+          <CardContent>
+            <div className="flex flex-wrap gap-2">
+              {equipment.map((eq) => {
+                const isSelected = (extras.equipment || []).includes(eq.id);
+                return (
+                  <Badge
+                    key={eq.id}
+                    variant={isSelected ? 'orange' : 'default'}
+                    className={`cursor-pointer px-3 py-1.5 ${!isSelected && 'hover:bg-gray-200'}`}
+                    onClick={() => toggleAttribute('equipment', eq.id)}
+                  >
+                    {isSelected && '✓ '}{eq.name.en}
+                  </Badge>
+                );
+              })}
+            </div>
+          </CardContent>
+        </Card>
+        
+        {tags.length > 0 && (
+          <Card>
+            <CardHeader>
+              <div className="flex items-center gap-2">
+                <CardTitle>Tags</CardTitle>
+                <Label tooltip="Add tags to help users filter and find this exercise." />
               </div>
-              
-              <div className="space-y-2">
-                {typeMessages.map((msg, idx) => {
-                  const globalIndex = feedbackMessages.indexOf(msg);
+            </CardHeader>
+            <CardContent>
+              <div className="flex flex-wrap gap-2">
+                {tags.map((tag) => {
+                  const isSelected = (extras.tags || []).includes(tag.id);
                   return (
-                    <div key={idx} className={`flex gap-2 p-3 bg-${color}-50 rounded-lg`}>
-                      <div className="flex-1 grid grid-cols-2 gap-2">
-                        <input
-                          type="text"
-                          value={msg.message.en}
-                          onChange={(e) => updateFeedbackMessage(globalIndex, {
-                            ...msg,
-                            message: { ...msg.message, en: e.target.value },
-                          })}
-                          placeholder="English message"
-                          className="px-3 py-2 border rounded text-sm text-gray-900 placeholder:text-gray-500"
-                        />
-                        <input
-                          type="text"
-                          dir="rtl"
-                          value={msg.message.ar}
-                          onChange={(e) => updateFeedbackMessage(globalIndex, {
-                            ...msg,
-                            message: { ...msg.message, ar: e.target.value },
-                          })}
-                          placeholder="الرسالة بالعربية"
-                          className="px-3 py-2 border rounded text-sm text-gray-900 placeholder:text-gray-500"
-                        />
-                      </div>
-                      <button
-                        type="button"
-                        onClick={() => removeFeedbackMessage(globalIndex)}
-                        className="text-red-500 hover:text-red-700 p-1"
-                      >
-                        <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                        </svg>
-                      </button>
-                    </div>
+                    <Badge
+                      key={tag.id}
+                      variant={isSelected ? 'teal' : 'default'}
+                      className={`cursor-pointer px-3 py-1.5 ${!isSelected && 'hover:bg-gray-200'}`}
+                      onClick={() => toggleAttribute('tags', tag.id)}
+                    >
+                      {isSelected && '✓ '}{tag.name.en}
+                    </Badge>
                   );
                 })}
-                
-                {typeMessages.length === 0 && (
-                  <p className="text-sm text-gray-400 italic">No {type.replace('_', ' ')} messages</p>
-                )}
               </div>
-            </div>
-          );
-        })}
+            </CardContent>
+          </Card>
+        )}
+      </div>
+      
+      {/* Feedback Messages */}
+      <div className="space-y-4 pt-6 border-t">
+        <div className="flex items-center gap-2">
+          <h3 className="text-xl font-bold text-gray-900">Feedback Messages</h3>
+          <Label tooltip="Messages shown to the user during or after the exercise." />
+        </div>
+        
+        <div className="grid gap-4">
+          {/* Message Types */}
+          {(['motivational', 'common_mistake', 'tip'] as const).map((type) => {
+            const typeMessages = feedbackMessages.filter(m => m.type === type);
+            const typeConfig = {
+              motivational: { label: '💪 Motivational', variant: 'success' as const },
+              common_mistake: { label: '⚠️ Common Mistakes', variant: 'warning' as const },
+              tip: { label: '💡 Tips', variant: 'primary' as const },
+            };
+            const { label, variant } = typeConfig[type];
+            
+            return (
+              <Card key={type}>
+                <CardHeader className="pb-3">
+                  <div className="flex items-center justify-between">
+                    <CardTitle className="text-lg">{label}</CardTitle>
+                    <Button variant="ghost" size="sm" onClick={() => addNewMessage(type)} icon={<Plus className="h-4 w-4" />}>
+                      Add
+                    </Button>
+                  </div>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  {typeMessages.map((msg, idx) => {
+                    const globalIndex = feedbackMessages.indexOf(msg);
+                    return (
+                      <div key={idx} className="flex gap-2 items-start">
+                        <div className="flex-1 grid grid-cols-2 gap-2">
+                          <Input
+                            value={msg.message.en}
+                            onChange={(e) => updateFeedbackMessage(globalIndex, {
+                              ...msg,
+                              message: { ...msg.message, en: e.target.value },
+                            })}
+                            placeholder="English message"
+                          />
+                          <Input
+                            dir="rtl"
+                            value={msg.message.ar}
+                            onChange={(e) => updateFeedbackMessage(globalIndex, {
+                              ...msg,
+                              message: { ...msg.message, ar: e.target.value },
+                            })}
+                            placeholder="الرسالة بالعربية"
+                          />
+                        </div>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => removeFeedbackMessage(globalIndex)}
+                          className="text-red-500 hover:text-red-700"
+                        >
+                          <X className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    );
+                  })}
+                  
+                  {typeMessages.length === 0 && (
+                    <p className="text-sm text-gray-400 italic text-center py-2">No {type.replace('_', ' ')} messages</p>
+                  )}
+                </CardContent>
+              </Card>
+            );
+          })}
+        </div>
       </div>
     </div>
   );

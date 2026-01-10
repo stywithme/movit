@@ -4,20 +4,20 @@
  * Wizard Stepper Component
  * ========================
  * 
- * Visual step indicator for the 8-step exercise wizard.
+ * Visual step indicator for the exercise creation wizard.
  */
 
 import { useWizardStore, useStepComplete } from './WizardContext';
 
+// Default 7 steps (Type is now combined with Basic Info)
 const STEPS = [
-  { id: 1, name: 'Basic Info', shortName: 'Basic' },
-  { id: 2, name: 'Exercise Type', shortName: 'Type' },
-  { id: 3, name: 'Camera Position', shortName: 'Camera' },
-  { id: 4, name: 'Joint Config', shortName: 'Joints' },
-  { id: 5, name: 'Position Checks', shortName: 'Checks' },
-  { id: 6, name: 'Rep Config', shortName: 'Reps' },
-  { id: 7, name: 'Extras', shortName: 'Extras' },
-  { id: 8, name: 'Review', shortName: 'Review' },
+  { id: 1, name: 'Basic Info & Type', shortName: 'Basic' },
+  { id: 2, name: 'Camera Position', shortName: 'Camera' },
+  { id: 3, name: 'Joint Config', shortName: 'Joints' },
+  { id: 4, name: 'Position Checks', shortName: 'Checks' },
+  { id: 5, name: 'Rep Config', shortName: 'Reps' },
+  { id: 6, name: 'Extras', shortName: 'Extras' },
+  { id: 7, name: 'Review', shortName: 'Review' },
 ];
 
 interface StepIndicatorProps {
@@ -91,16 +91,23 @@ function Connector({ isComplete }: ConnectorProps) {
   );
 }
 
-export function WizardStepper() {
+interface WizardStepperProps {
+  totalSteps?: number;
+}
+
+export function WizardStepper({ totalSteps = 7 }: WizardStepperProps) {
   const { currentStep, setStep } = useWizardStore();
+  
+  // Use only the steps up to totalSteps
+  const stepsToShow = STEPS.slice(0, totalSteps);
   
   return (
     <div className="w-full px-4 py-6">
       <div className="flex items-center justify-between max-w-4xl mx-auto">
-        {STEPS.map((step, index) => (
+        {stepsToShow.map((step, index) => (
           <div key={step.id} className="flex items-center flex-1 last:flex-none">
             <StepIndicatorWrapper step={step} currentStep={currentStep} setStep={setStep} />
-            {index < STEPS.length - 1 && (
+            {index < stepsToShow.length - 1 && (
               <ConnectorWrapper stepId={step.id} currentStep={currentStep} />
             )}
           </div>

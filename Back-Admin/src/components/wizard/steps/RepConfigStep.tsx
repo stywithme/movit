@@ -6,21 +6,17 @@
  */
 
 import { useWizardStore } from '../WizardContext';
+import { Card, CardHeader, CardTitle, CardContent, Input, Label, Badge } from '@/components/ui';
 
 export function RepConfigStep() {
   const { countingMethod, repConfig, setRepConfig } = useWizardStore();
   
   const isHold = countingMethod.countingMethodCode === 'hold';
   const difficulties = ['beginner', 'normal', 'advanced'] as const;
-  const difficultyColors = {
-    beginner: 'green',
-    normal: 'blue',
-    advanced: 'red',
-  };
-  const difficultyEmojis = {
-    beginner: '🟢',
-    normal: '🔵',
-    advanced: '🔴',
+  const difficultyConfig = {
+    beginner: { color: 'success' as const, emoji: '🟢' },
+    normal: { color: 'primary' as const, emoji: '🔵' },
+    advanced: { color: 'error' as const, emoji: '🔴' },
   };
   
   const updateDifficultyConfig = (
@@ -40,9 +36,12 @@ export function RepConfigStep() {
   return (
     <div className="space-y-8 max-w-4xl mx-auto">
       <div>
-        <h2 className="text-2xl font-bold text-gray-900 mb-2">
-          {isHold ? 'Duration Configuration' : 'Rep Configuration'}
-        </h2>
+        <div className="flex items-center gap-2 mb-2">
+          <h2 className="text-2xl font-bold text-gray-900">
+            {isHold ? 'Duration Configuration' : 'Rep Configuration'}
+          </h2>
+          <Label tooltip={isHold ? 'Set hold times for isometric exercises.' : 'Set target repetitions for dynamic exercises.'} />
+        </div>
         <p className="text-gray-500">
           {isHold 
             ? 'Set the target hold duration for each difficulty level.'
@@ -54,116 +53,114 @@ export function RepConfigStep() {
       {/* Main Config Grid */}
       <div className="grid md:grid-cols-3 gap-6">
         {difficulties.map((diff) => (
-          <div
-            key={diff}
-            className={`
-              p-6 rounded-xl border-2 bg-gradient-to-br
-              ${diff === 'beginner' ? 'border-green-200 from-green-50 to-white' : ''}
-              ${diff === 'normal' ? 'border-blue-200 from-blue-50 to-white' : ''}
-              ${diff === 'advanced' ? 'border-red-200 from-red-50 to-white' : ''}
-            `}
-          >
-            {/* Header */}
-            <div className="flex items-center gap-2 mb-6">
-              <span className="text-2xl">{difficultyEmojis[diff]}</span>
-              <h3 className="text-lg font-bold text-gray-900 capitalize">{diff}</h3>
-            </div>
-            
-            {/* Reps or Duration */}
-            {isHold ? (
-              <div className="space-y-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Duration (seconds)
-                  </label>
-                  <div className="flex items-center gap-2">
-                    <input
-                      type="number"
-                      min={1}
-                      value={repConfig[diff]?.duration || ''}
-                      onChange={(e) => updateDifficultyConfig(diff, 'duration', e.target.value ? Number(e.target.value) : undefined)}
-                      className="w-24 px-4 py-3 text-xl font-bold text-center border-2 rounded-lg text-gray-900 placeholder:text-gray-500"
-                      placeholder="30"
-                    />
-                    <span className="text-gray-500">sec</span>
-                  </div>
+          <Card key={diff} className={`border-t-4 ${
+            diff === 'beginner' ? 'border-t-green-500' : 
+            diff === 'normal' ? 'border-t-blue-500' : 
+            'border-t-red-500'
+          }`}>
+            <CardHeader className="pb-4">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <span className="text-xl">{difficultyConfig[diff].emoji}</span>
+                  <CardTitle className="capitalize">{diff}</CardTitle>
                 </div>
-                
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Grace Period (ms)
-                  </label>
-                  <input
-                    type="number"
-                    min={0}
-                    step={100}
-                    value={repConfig[diff]?.gracePeriodMs || ''}
-                    onChange={(e) => updateDifficultyConfig(diff, 'gracePeriodMs', e.target.value ? Number(e.target.value) : undefined)}
-                    className="w-full px-3 py-2 border rounded-lg text-gray-900 placeholder:text-gray-500"
-                    placeholder="2500"
-                  />
-                  <p className="text-xs text-gray-500 mt-1">Allowed break time</p>
-                </div>
+                <Badge variant={difficultyConfig[diff].color}>{diff}</Badge>
               </div>
-            ) : (
-              <div className="space-y-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Target Reps
-                  </label>
-                  <div className="flex items-center gap-2">
-                    <input
-                      type="number"
-                      min={1}
-                      value={repConfig[diff]?.reps || ''}
-                      onChange={(e) => updateDifficultyConfig(diff, 'reps', e.target.value ? Number(e.target.value) : undefined)}
-                      className="w-24 px-4 py-3 text-xl font-bold text-center border-2 rounded-lg text-gray-900 placeholder:text-gray-500"
-                      placeholder="12"
-                    />
-                    <span className="text-gray-500">reps</span>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {/* Reps or Duration */}
+              {isHold ? (
+                <>
+                  <div>
+                    <Label tooltip="How long should the user hold this position">
+                      Duration (seconds)
+                    </Label>
+                    <div className="flex items-center gap-2 mt-1">
+                      <Input
+                        type="number"
+                        min={1}
+                        value={repConfig[diff]?.duration || ''}
+                        onChange={(e) => updateDifficultyConfig(diff, 'duration', e.target.value ? Number(e.target.value) : undefined)}
+                        className="text-center font-bold text-lg"
+                        placeholder="30"
+                      />
+                      <span className="text-gray-500 text-sm">sec</span>
+                    </div>
                   </div>
-                </div>
-                
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Min Rep Interval (ms)
-                  </label>
-                  <input
-                    type="number"
-                    min={0}
-                    step={100}
-                    value={repConfig[diff]?.minRepIntervalMs || ''}
-                    onChange={(e) => updateDifficultyConfig(diff, 'minRepIntervalMs', e.target.value ? Number(e.target.value) : undefined)}
-                    className="w-full px-3 py-2 border rounded-lg text-gray-900 placeholder:text-gray-500"
-                    placeholder="1500"
-                  />
-                </div>
-                
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Max Rep Interval (ms)
-                  </label>
-                  <input
-                    type="number"
-                    min={0}
-                    step={100}
-                    value={repConfig[diff]?.maxRepIntervalMs || ''}
-                    onChange={(e) => updateDifficultyConfig(diff, 'maxRepIntervalMs', e.target.value ? Number(e.target.value) : undefined)}
-                    className="w-full px-3 py-2 border rounded-lg text-gray-900 placeholder:text-gray-500"
-                    placeholder="5000"
-                  />
-                </div>
-              </div>
-            )}
-          </div>
+                  
+                  <div>
+                    <Label tooltip="Allowed break time if the user briefly loses form.">
+                      Grace Period (ms)
+                    </Label>
+                    <Input
+                      type="number"
+                      min={0}
+                      step={100}
+                      value={repConfig[diff]?.gracePeriodMs || ''}
+                      onChange={(e) => updateDifficultyConfig(diff, 'gracePeriodMs', e.target.value ? Number(e.target.value) : undefined)}
+                      placeholder="2500"
+                    />
+                  </div>
+                </>
+              ) : (
+                <>
+                  <div>
+                    <Label tooltip="Target number of repetitions">
+                      Target Reps
+                    </Label>
+                    <div className="flex items-center gap-2 mt-1">
+                      <Input
+                        type="number"
+                        min={1}
+                        value={repConfig[diff]?.reps || ''}
+                        onChange={(e) => updateDifficultyConfig(diff, 'reps', e.target.value ? Number(e.target.value) : undefined)}
+                        className="text-center font-bold text-lg"
+                        placeholder="12"
+                      />
+                      <span className="text-gray-500 text-sm">reps</span>
+                    </div>
+                  </div>
+                  
+                  <div>
+                    <Label tooltip="Minimum time between reps (prevents counting too fast)">
+                      Min Rep Interval (ms)
+                    </Label>
+                    <Input
+                      type="number"
+                      min={0}
+                      step={100}
+                      value={repConfig[diff]?.minRepIntervalMs || ''}
+                      onChange={(e) => updateDifficultyConfig(diff, 'minRepIntervalMs', e.target.value ? Number(e.target.value) : undefined)}
+                      placeholder="1500"
+                    />
+                  </div>
+                  
+                  <div>
+                    <Label tooltip="Maximum time between reps (resets if exceeded)">
+                      Max Rep Interval (ms)
+                    </Label>
+                    <Input
+                      type="number"
+                      min={0}
+                      step={100}
+                      value={repConfig[diff]?.maxRepIntervalMs || ''}
+                      onChange={(e) => updateDifficultyConfig(diff, 'maxRepIntervalMs', e.target.value ? Number(e.target.value) : undefined)}
+                      placeholder="5000"
+                    />
+                  </div>
+                </>
+              )}
+            </CardContent>
+          </Card>
         ))}
       </div>
       
       {/* Info */}
-      <div className="bg-gray-50 rounded-lg p-4">
-        <p className="text-sm text-gray-600">
-          💡 These values are stored in each difficulty level's <code className="bg-gray-200 px-1 rounded">repCountingConfig</code>
-          {' '}and sent to the Android app as configured.
+      <div className="flex items-start gap-2 bg-gray-50 rounded-lg p-4 text-sm text-gray-600">
+        <span className="text-lg">💡</span>
+        <p>
+          These values are stored in each difficulty level's <code className="bg-gray-200 px-1 rounded">repCountingConfig</code> JSON field
+          and are sent directly to the Android app engine for validation.
         </p>
       </div>
     </div>

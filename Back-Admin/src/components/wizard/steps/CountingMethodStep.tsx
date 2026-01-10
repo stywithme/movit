@@ -6,6 +6,8 @@
  */
 
 import { useWizardStore } from '../WizardContext';
+import { Card, Badge, Label } from '@/components/ui';
+import { Check } from 'lucide-react';
 import type { CountingMethodCode } from '@/lib/types/localized';
 
 interface CountingMethodStepProps {
@@ -56,27 +58,25 @@ export function CountingMethodStep({ countingMethods }: CountingMethodStepProps)
   return (
     <div className="space-y-8 max-w-4xl mx-auto">
       <div>
-        <h2 className="text-2xl font-bold text-gray-900 mb-2">Exercise Type</h2>
+        <div className="flex items-center gap-2 mb-2">
+          <h2 className="text-2xl font-bold text-gray-900">Exercise Type</h2>
+          <Label tooltip="Select how repetitions are counted for this exercise. This determines the movement phases and validation logic." />
+        </div>
         <p className="text-gray-500">How is this exercise counted? This affects the phases and configuration.</p>
       </div>
       
-      <div className="grid gap-6">
+      <div className="grid gap-4">
         {countingMethods.map((method) => {
           const details = METHOD_DETAILS[method.code as CountingMethodCode];
           const isSelected = countingMethod.countingMethodId === method.id;
           
           return (
-            <button
+            <Card
               key={method.id}
-              type="button"
+              interactive
+              selected={isSelected}
+              className="p-6"
               onClick={() => handleSelect(method)}
-              className={`
-                w-full text-left p-6 rounded-xl border-2 transition-all duration-200 text-gray-900
-                ${isSelected 
-                  ? 'border-blue-500 bg-blue-50 ring-2 ring-blue-200' 
-                  : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50'
-                }
-              `}
             >
               <div className="flex items-start gap-4">
                 {/* Icon */}
@@ -91,24 +91,16 @@ export function CountingMethodStep({ countingMethods }: CountingMethodStepProps)
                       <span className="text-gray-400 font-normal ml-2">/ {method.name.ar}</span>
                     </h3>
                     <div className={`
-                      w-6 h-6 rounded-full border-2 flex items-center justify-center
+                      w-6 h-6 rounded-full border-2 flex items-center justify-center transition-colors
                       ${isSelected ? 'border-blue-500 bg-blue-500' : 'border-gray-300'}
                     `}>
-                      {isSelected && (
-                        <svg className="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 20 20">
-                          <path
-                            fillRule="evenodd"
-                            d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
-                            clipRule="evenodd"
-                          />
-                        </svg>
-                      )}
+                      {isSelected && <Check className="w-4 h-4 text-white" />}
                     </div>
                   </div>
                   
                   {/* Flow */}
                   {details && (
-                    <div className="font-mono text-sm bg-gray-100 rounded-lg px-3 py-2 text-gray-700">
+                    <div className="font-mono text-sm bg-gray-100 rounded-lg px-3 py-2 text-gray-700 inline-block">
                       {details.flow}
                     </div>
                   )}
@@ -116,19 +108,20 @@ export function CountingMethodStep({ countingMethods }: CountingMethodStepProps)
                   {/* Examples */}
                   {details && (
                     <p className="text-sm text-gray-500">
-                      <span className="font-medium">Examples:</span> {details.examples}
+                      <span className="font-medium text-gray-700">Examples:</span> {details.examples}
                     </p>
                   )}
                   
                   {/* Config hint */}
                   {details && isSelected && (
-                    <p className="text-sm text-blue-600 bg-blue-50 rounded-lg px-3 py-2">
-                      💡 {details.configHint}
-                    </p>
+                    <div className="flex items-center gap-2 text-sm text-blue-700 bg-blue-50 rounded-lg px-3 py-2">
+                      <span>💡</span>
+                      {details.configHint}
+                    </div>
                   )}
                 </div>
               </div>
-            </button>
+            </Card>
           );
         })}
       </div>

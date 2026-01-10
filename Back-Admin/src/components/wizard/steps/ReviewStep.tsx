@@ -8,6 +8,8 @@
 import { useState } from 'react';
 import { useWizardStore, useStepComplete } from '../WizardContext';
 import { canPublish } from '@/modules/exercises/exercises.validation';
+import { Card, CardHeader, CardTitle, CardContent, Button, Badge, Label } from '@/components/ui';
+import { Check, AlertTriangle, ChevronDown, ChevronUp, Copy } from 'lucide-react';
 
 interface ReviewStepProps {
   onSaveDraft: () => Promise<void>;
@@ -82,134 +84,144 @@ export function ReviewStep({ onSaveDraft, onPublish }: ReviewStepProps) {
       </div>
       
       {/* Exercise Summary */}
-      <div className="bg-white border rounded-xl p-6 space-y-4">
-        <h3 className="font-semibold text-gray-900 text-lg">Exercise Summary</h3>
-        
-        <div className="grid grid-cols-2 gap-4">
-          <div>
-            <span className="text-sm text-gray-500">Name</span>
-            <p className="font-medium">{store.basicInfo.name?.en || '-'} / {store.basicInfo.name?.ar || '-'}</p>
+      <Card>
+        <CardHeader>
+          <CardTitle>Exercise Summary</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-2 gap-6">
+            <div>
+              <span className="text-sm text-gray-500 block mb-1">Name</span>
+              <p className="font-medium text-gray-900">{store.basicInfo.name?.en || '-'} / {store.basicInfo.name?.ar || '-'}</p>
+            </div>
+            <div>
+              <span className="text-sm text-gray-500 block mb-1">Type</span>
+              <Badge variant="primary" className="uppercase">{store.countingMethod.countingMethodCode || '-'}</Badge>
+            </div>
+            <div>
+              <span className="text-sm text-gray-500 block mb-1">Camera Positions</span>
+              <p className="font-medium text-gray-900">{store.cameraPosition.cameraPositionIds?.length || 0} selected</p>
+            </div>
+            <div>
+              <span className="text-sm text-gray-500 block mb-1">Facing Direction</span>
+              <p className="font-medium capitalize text-gray-900">{store.cameraPosition.expectedFacingDirection?.replace(/_/g, ' ') || 'Auto'}</p>
+            </div>
+            <div>
+              <span className="text-sm text-gray-500 block mb-1">Tracked Joints</span>
+              <div className="flex gap-2">
+                <Badge variant="primary">{store.jointConfig.trackedJoints?.filter(j => j.role === 'primary').length || 0} Primary</Badge>
+                <Badge variant="outline">{store.jointConfig.trackedJoints?.filter(j => j.role === 'secondary').length || 0} Secondary</Badge>
+              </div>
+            </div>
+            <div>
+              <span className="text-sm text-gray-500 block mb-1">Position Checks</span>
+              <p className="font-medium text-gray-900">{store.positionChecks.positionChecks?.length || 0}</p>
+            </div>
           </div>
-          <div>
-            <span className="text-sm text-gray-500">Type</span>
-            <p className="font-medium uppercase">{store.countingMethod.countingMethodCode || '-'}</p>
-          </div>
-          <div>
-            <span className="text-sm text-gray-500">Camera Positions</span>
-            <p className="font-medium">{store.cameraPosition.cameraPositionIds?.length || 0} selected</p>
-          </div>
-          <div>
-            <span className="text-sm text-gray-500">Facing Direction</span>
-            <p className="font-medium capitalize">{store.cameraPosition.expectedFacingDirection?.replace(/_/g, ' ') || 'Auto'}</p>
-          </div>
-          <div>
-            <span className="text-sm text-gray-500">Tracked Joints</span>
-            <p className="font-medium">
-              {store.jointConfig.trackedJoints?.filter(j => j.role === 'primary').length || 0} primary, 
-              {' '}{store.jointConfig.trackedJoints?.filter(j => j.role === 'secondary').length || 0} secondary
-            </p>
-          </div>
-          <div>
-            <span className="text-sm text-gray-500">Position Checks</span>
-            <p className="font-medium">{store.positionChecks.positionChecks?.length || 0}</p>
-          </div>
-        </div>
-      </div>
+        </CardContent>
+      </Card>
       
       {/* Validation Status */}
-      <div className="bg-white border rounded-xl p-6 space-y-4">
-        <h3 className="font-semibold text-gray-900 text-lg">Validation</h3>
-        
-        <div className="space-y-2">
-          {stepsComplete.map(({ step, complete }) => (
-            <div key={step} className="flex items-center gap-3">
-              <div className={`w-5 h-5 rounded-full flex items-center justify-center ${complete ? 'bg-green-100' : 'bg-amber-100'}`}>
-                {complete ? (
-                  <svg className="w-3 h-3 text-green-600" fill="currentColor" viewBox="0 0 20 20">
-                    <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                  </svg>
-                ) : (
-                  <svg className="w-3 h-3 text-amber-600" fill="currentColor" viewBox="0 0 20 20">
-                    <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
-                  </svg>
-                )}
+      <Card>
+        <CardHeader>
+          <div className="flex items-center gap-2">
+            <CardTitle>Validation</CardTitle>
+            {canPublishNow ? (
+              <Badge variant="success">Ready to Publish</Badge>
+            ) : (
+              <Badge variant="warning">Incomplete</Badge>
+            )}
+          </div>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-3">
+            {stepsComplete.map(({ step, complete }) => (
+              <div key={step} className="flex items-center justify-between p-2 rounded-lg hover:bg-gray-50">
+                <div className="flex items-center gap-3">
+                  <div className={`w-6 h-6 rounded-full flex items-center justify-center ${complete ? 'bg-green-100' : 'bg-amber-100'}`}>
+                    {complete ? (
+                      <Check className="w-4 h-4 text-green-600" />
+                    ) : (
+                      <AlertTriangle className="w-4 h-4 text-amber-600" />
+                    )}
+                  </div>
+                  <span className={complete ? 'text-gray-900' : 'text-amber-700 font-medium'}>
+                    Step {step}: {stepNames[step - 1]}
+                  </span>
+                </div>
+                <div className="flex items-center gap-2">
+                  {!complete && step <= 4 && <Badge variant="warning">Required</Badge>}
+                  {!complete && step > 4 && <Badge variant="outline">Optional</Badge>}
+                  {complete && <Badge variant="success">Complete</Badge>}
+                </div>
               </div>
-              <span className={complete ? 'text-gray-700' : 'text-amber-700'}>
-                Step {step}: {stepNames[step - 1]}
-              </span>
-              {!complete && step <= 4 && (
-                <span className="text-xs text-amber-600">(Required)</span>
-              )}
-              {!complete && step > 4 && (
-                <span className="text-xs text-gray-400">(Optional)</span>
-              )}
-            </div>
-          ))}
-        </div>
-      </div>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
       
       {/* JSON Preview */}
-      <div className="bg-white border rounded-xl overflow-hidden">
-        <button
-          type="button"
+      <Card className="overflow-hidden">
+        <div 
+          className="flex items-center justify-between p-4 bg-gray-50 cursor-pointer border-b hover:bg-gray-100 transition-colors"
           onClick={() => setShowJson(!showJson)}
-          className="w-full px-6 py-4 flex items-center justify-between hover:bg-gray-50"
         >
-          <span className="font-semibold text-gray-900">Android JSON Preview</span>
-          <svg className={`w-5 h-5 text-gray-400 transition-transform ${showJson ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-          </svg>
-        </button>
+          <div className="flex items-center gap-2">
+            <span className="font-semibold text-gray-900">Android JSON Preview</span>
+            <Label tooltip="Preview the exact JSON structure that will be sent to the Android app." />
+          </div>
+          {showJson ? <ChevronUp className="h-5 w-5 text-gray-500" /> : <ChevronDown className="h-5 w-5 text-gray-500" />}
+        </div>
         
         {showJson && (
-          <div className="px-6 pb-6">
-            <pre className="bg-gray-900 text-green-400 p-4 rounded-lg text-sm overflow-x-auto max-h-96">
-              {JSON.stringify(buildSummaryJson(), null, 2)}
-            </pre>
-            <button
-              type="button"
-              onClick={() => navigator.clipboard.writeText(JSON.stringify(buildSummaryJson(), null, 2))}
-              className="mt-2 text-sm text-blue-600 hover:text-blue-700"
-            >
-              📋 Copy JSON
-            </button>
-          </div>
+          <CardContent className="p-0">
+            <div className="relative bg-gray-900">
+              <pre className="text-green-400 p-6 text-sm overflow-x-auto max-h-96 font-mono">
+                {JSON.stringify(buildSummaryJson(), null, 2)}
+              </pre>
+              <button
+                type="button"
+                onClick={() => navigator.clipboard.writeText(JSON.stringify(buildSummaryJson(), null, 2))}
+                className="absolute top-4 right-4 p-2 bg-white/10 hover:bg-white/20 rounded-lg text-white transition-colors"
+                title="Copy JSON"
+              >
+                <Copy className="h-4 w-4" />
+              </button>
+            </div>
+          </CardContent>
         )}
-      </div>
+      </Card>
       
       {/* Actions */}
-      <div className="flex items-center justify-between pt-6 border-t">
-        <button
-          type="button"
+      <div className="flex items-center justify-between pt-4">
+        <Button
+          variant="outline"
           onClick={handleSaveDraft}
           disabled={isSubmitting}
-          className="px-6 py-3 border-2 border-gray-300 rounded-xl text-gray-700 hover:bg-gray-50 disabled:opacity-50"
+          loading={isSubmitting}
+          size="lg"
         >
           Save as Draft
-        </button>
+        </Button>
         
-        <button
-          type="button"
-          onClick={handlePublish}
-          disabled={isSubmitting || !canPublishNow}
-          className={`
-            px-8 py-3 rounded-xl font-semibold transition-colors
-            ${canPublishNow 
-              ? 'bg-green-600 text-white hover:bg-green-700' 
-              : 'bg-gray-200 text-gray-500 cursor-not-allowed'
-            }
-            disabled:opacity-50
-          `}
-        >
-          {isSubmitting ? 'Publishing...' : '✓ Publish'}
-        </button>
+        <div className="flex flex-col items-end gap-2">
+          <Button
+            variant={canPublishNow ? 'success' : 'secondary'}
+            onClick={handlePublish}
+            disabled={isSubmitting || !canPublishNow}
+            loading={isSubmitting}
+            size="lg"
+            icon={<Check className="h-5 w-5" />}
+          >
+            Publish Exercise
+          </Button>
+          {!canPublishNow && (
+            <p className="text-sm text-amber-600">
+              Complete required steps to publish
+            </p>
+          )}
+        </div>
       </div>
-      
-      {!canPublishNow && (
-        <p className="text-sm text-amber-600 text-center">
-          Complete required steps ({missingSteps.map(s => stepNames[s - 1]).join(', ')}) to publish
-        </p>
-      )}
     </div>
   );
 }

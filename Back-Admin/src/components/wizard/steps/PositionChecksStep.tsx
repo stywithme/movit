@@ -3,10 +3,14 @@
 /**
  * Step 5: Position Checks (Optional)
  * ==================================
+ * 
+ * No modals - all inline configuration
  */
 
 import { useState } from 'react';
 import { useWizardStore } from '../WizardContext';
+import { Card, CardHeader, CardTitle, CardContent, Button, Badge, Input, Select, Label } from '@/components/ui';
+import { Plus, X, ChevronDown, ChevronUp, Copy } from 'lucide-react';
 import type { PositionCheckData } from '@/modules/exercises/exercises.validation';
 import type { PhaseName, PositionCheckType } from '@/lib/types/localized';
 
@@ -76,9 +80,16 @@ const POSITION_CHECK_TYPES: Array<{ value: PositionCheckType; label: string }> =
 
 const PHASE_OPTIONS: PhaseName[] = ['start', 'down', 'bottom', 'up', 'push', 'extended', 'pull', 'hold', 'count'];
 
+const AVAILABLE_LANDMARKS = [
+  'left_knee', 'right_knee', 'left_hip', 'right_hip',
+  'left_shoulder', 'right_shoulder', 'left_ankle', 'right_ankle',
+  'left_elbow', 'right_elbow', 'left_wrist', 'right_wrist',
+  'left_foot_index', 'right_foot_index', 'nose', 'left_ear', 'right_ear',
+];
+
 export function PositionChecksStep() {
   const { positionChecks, addPositionCheck, updatePositionCheck, removePositionCheck } = useWizardStore();
-  const [showAddModal, setShowAddModal] = useState(false);
+  const [showAddForm, setShowAddForm] = useState(false);
   
   const checks = positionChecks.positionChecks || [];
   
@@ -88,37 +99,46 @@ export function PositionChecksStep() {
       checkId: `${template.id}_${Date.now()}`,
     };
     addPositionCheck(check);
-    setShowAddModal(false);
   };
   
   return (
     <div className="space-y-8 max-w-4xl mx-auto">
       <div>
-        <h2 className="text-2xl font-bold text-gray-900 mb-2">Position Checks</h2>
+        <div className="flex items-center gap-2 mb-2">
+          <h2 className="text-2xl font-bold text-gray-900">Position Checks</h2>
+          <Badge variant="outline">Optional</Badge>
+          <Label tooltip="Add optional position-based validation for better form feedback. These checks run in real-time on the user's device." />
+        </div>
         <p className="text-gray-500">Add optional position-based validation for better form feedback.</p>
       </div>
       
       {/* Info Banner */}
       <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
         <p className="text-sm text-blue-700">
-          💡 Position checks validate body positioning beyond angles. They provide real-time form feedback during exercise. 
-          <strong> This step is optional</strong> - you can skip it if angle-based tracking is sufficient.
+          💡 Position checks validate body positioning beyond angles. They provide real-time form feedback. 
+          <strong> This step is optional</strong> - skip if angle-based tracking is sufficient.
         </p>
       </div>
       
       {/* Quick Templates */}
       <div className="space-y-3">
-        <h3 className="font-medium text-gray-700">Quick Templates</h3>
-        <div className="flex flex-wrap gap-2">
+        <Label tooltip="Pre-configured checks for common exercises. Click to add.">Quick Templates</Label>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
           {TEMPLATES.map((template) => (
-            <button
+            <Card
               key={template.id}
-              type="button"
+              interactive
+              className="p-3"
               onClick={() => addFromTemplate(template)}
-              className="px-3 py-1.5 bg-gray-100 hover:bg-gray-200 rounded-full text-sm transition-colors text-gray-900"
             >
-              {template.name}
-            </button>
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="font-medium text-gray-900">{template.name}</p>
+                  <p className="text-xs text-gray-500 line-clamp-1">{template.description}</p>
+                </div>
+                <Copy className="h-4 w-4 text-gray-400" />
+              </div>
+            </Card>
           ))}
         </div>
       </div>
@@ -136,31 +156,31 @@ export function PositionChecksStep() {
         ))}
         
         {checks.length === 0 && (
-          <div className="border-2 border-dashed border-gray-200 rounded-xl p-8 text-center">
+          <Card className="p-8 text-center border-dashed">
             <p className="text-gray-500">No position checks added</p>
-            <p className="text-sm text-gray-400 mt-1">Use the templates above or add a custom check</p>
-          </div>
+            <p className="text-sm text-gray-400 mt-1">Use templates above or add a custom check</p>
+          </Card>
         )}
       </div>
       
-      {/* Add Custom Button */}
-      <button
-        type="button"
-        onClick={() => setShowAddModal(true)}
-        className="px-4 py-2 border-2 border-dashed border-gray-300 text-gray-700 rounded-lg hover:border-gray-400 hover:text-gray-900 transition-colors w-full"
-      >
-        + Add Custom Position Check
-      </button>
-      
-      {/* Add Custom Modal */}
-      {showAddModal && (
-        <AddPositionCheckModal
+      {/* Add Custom Form (Inline - No Modal) */}
+      {showAddForm ? (
+        <AddPositionCheckForm 
           onAdd={(check) => {
             addPositionCheck(check);
-            setShowAddModal(false);
+            setShowAddForm(false);
           }}
-          onClose={() => setShowAddModal(false)}
+          onCancel={() => setShowAddForm(false)}
         />
+      ) : (
+        <Button 
+          variant="outline" 
+          className="w-full border-dashed"
+          onClick={() => setShowAddForm(true)}
+          icon={<Plus className="h-4 w-4" />}
+        >
+          Add Custom Position Check
+        </Button>
       )}
     </div>
   );
@@ -178,59 +198,57 @@ function PositionCheckCard({ check, index, onUpdate, onRemove }: PositionCheckCa
   const [expanded, setExpanded] = useState(false);
   
   const severityColors = {
-    error: 'bg-red-100 text-red-700',
-    warning: 'bg-yellow-100 text-yellow-700',
-    tip: 'bg-blue-100 text-blue-700',
+    error: 'error' as const,
+    warning: 'warning' as const,
+    tip: 'primary' as const,
   };
   
   return (
-    <div className="border rounded-xl bg-white shadow-sm overflow-hidden">
-      {/* Header */}
-      <div className="flex items-center justify-between p-4 cursor-pointer" onClick={() => setExpanded(!expanded)}>
-        <div className="flex items-center gap-3">
-          <span className={`px-2 py-1 text-xs font-medium rounded ${severityColors[check.severity]}`}>
-            {check.severity.toUpperCase()}
-          </span>
-          <div>
-            <h4 className="font-medium text-gray-900">{check.checkId.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}</h4>
-            <p className="text-sm text-gray-500">{check.type.replace(/_/g, ' ')}</p>
+    <Card>
+      <CardHeader>
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <Badge variant={severityColors[check.severity]}>
+              {check.severity.toUpperCase()}
+            </Badge>
+            <div>
+              <h4 className="font-medium text-gray-900">
+                {check.checkId.replace(/_\d+$/, '').replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
+              </h4>
+              <p className="text-sm text-gray-500">{check.type.replace(/_/g, ' ')}</p>
+            </div>
+          </div>
+          <div className="flex items-center gap-1">
+            <Button variant="ghost" size="icon" onClick={() => setExpanded(!expanded)}>
+              {expanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+            </Button>
+            <Button variant="ghost" size="icon" onClick={() => onRemove(index)}>
+              <X className="h-4 w-4 text-red-500" />
+            </Button>
           </div>
         </div>
-        <div className="flex items-center gap-2">
-          <button
-            type="button"
-            onClick={(e) => { e.stopPropagation(); onRemove(index); }}
-            className="text-red-500 hover:text-red-700 p-1"
-          >
-            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-            </svg>
-          </button>
-          <svg className={`w-5 h-5 text-gray-400 transition-transform ${expanded ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-          </svg>
-        </div>
-      </div>
+      </CardHeader>
       
-      {/* Expanded Content */}
       {expanded && (
-        <div className="p-4 border-t bg-gray-50 space-y-4">
+        <CardContent className="space-y-4">
           {/* Landmarks */}
           <div>
-            <label className="text-sm font-medium text-gray-700">Landmarks</label>
-            <p className="text-sm text-gray-600">
-              Primary: <code>{check.landmarks.primary}</code> | Secondary: <code>{check.landmarks.secondary}</code>
-            </p>
+            <Label>Landmarks</Label>
+            <div className="text-sm bg-gray-50 p-2 rounded border border-gray-200 mt-1">
+              <span className="text-gray-500">Primary:</span> <code className="text-blue-600">{check.landmarks.primary}</code>
+              <span className="mx-2 text-gray-300">|</span>
+              <span className="text-gray-500">Secondary:</span> <code className="text-blue-600">{check.landmarks.secondary}</code>
+            </div>
           </div>
           
           {/* Thresholds */}
           <div>
-            <label className="text-sm font-medium text-gray-700">Thresholds</label>
+            <Label tooltip="Threshold values for each difficulty level">Thresholds</Label>
             <div className="flex gap-4 mt-1">
               {(['beginner', 'normal', 'advanced'] as const).map((level) => (
-                <div key={level} className="flex items-center gap-1">
-                  <span className="text-xs text-gray-500 capitalize">{level}:</span>
-                  <input
+                <div key={level} className="flex items-center gap-2 bg-white p-1 rounded border border-gray-200">
+                  <Badge variant="outline" className="capitalize">{level}</Badge>
+                  <Input
                     type="number"
                     step="0.01"
                     value={check.condition.thresholds[level]}
@@ -241,7 +259,7 @@ function PositionCheckCard({ check, index, onUpdate, onRemove }: PositionCheckCa
                         thresholds: { ...check.condition.thresholds, [level]: Number(e.target.value) },
                       },
                     })}
-                    className="w-16 px-2 py-1 border rounded text-sm text-center text-gray-900"
+                    className="w-20"
                   />
                 </div>
               ))}
@@ -250,7 +268,7 @@ function PositionCheckCard({ check, index, onUpdate, onRemove }: PositionCheckCa
           
           {/* Active Phases */}
           <div>
-            <label className="text-sm font-medium text-gray-700">Active Phases</label>
+            <Label tooltip="Which exercise phases should trigger this check">Active Phases</Label>
             <div className="flex flex-wrap gap-2 mt-1">
               {PHASE_OPTIONS.map((phase) => (
                 <button
@@ -263,10 +281,10 @@ function PositionCheckCard({ check, index, onUpdate, onRemove }: PositionCheckCa
                       : [...current, phase];
                     onUpdate(index, { ...check, activePhases: updated });
                   }}
-                  className={`px-2 py-1 text-xs rounded ${
+                  className={`px-2 py-1 text-xs rounded transition-colors ${
                     check.activePhases.includes(phase)
-                      ? 'bg-blue-100 text-blue-700'
-                      : 'bg-gray-100 text-gray-700'
+                      ? 'bg-blue-100 text-blue-700 font-medium'
+                      : 'bg-gray-100 text-gray-500 hover:bg-gray-200'
                   }`}
                 >
                   {phase}
@@ -277,20 +295,17 @@ function PositionCheckCard({ check, index, onUpdate, onRemove }: PositionCheckCa
           
           {/* Error Message */}
           <div>
-            <label className="text-sm font-medium text-gray-700">Error Message</label>
+            <Label>Error Message</Label>
             <div className="grid grid-cols-2 gap-2 mt-1">
-              <input
-                type="text"
+              <Input
                 value={check.errorMessage.en}
                 onChange={(e) => onUpdate(index, {
                   ...check,
                   errorMessage: { ...check.errorMessage, en: e.target.value },
                 })}
                 placeholder="English message"
-                className="px-3 py-2 border rounded text-sm text-gray-900 placeholder:text-gray-500"
               />
-              <input
-                type="text"
+              <Input
                 dir="rtl"
                 value={check.errorMessage.ar}
                 onChange={(e) => onUpdate(index, {
@@ -298,23 +313,22 @@ function PositionCheckCard({ check, index, onUpdate, onRemove }: PositionCheckCa
                   errorMessage: { ...check.errorMessage, ar: e.target.value },
                 })}
                 placeholder="الرسالة بالعربية"
-                className="px-3 py-2 border rounded text-sm text-gray-900 placeholder:text-gray-500"
               />
             </div>
           </div>
-        </div>
+        </CardContent>
       )}
-    </div>
+    </Card>
   );
 }
 
-// Add Position Check Modal
-interface AddPositionCheckModalProps {
+// Add Position Check Form (Inline)
+interface AddPositionCheckFormProps {
   onAdd: (check: PositionCheckData) => void;
-  onClose: () => void;
+  onCancel: () => void;
 }
 
-function AddPositionCheckModal({ onAdd, onClose }: AddPositionCheckModalProps) {
+function AddPositionCheckForm({ onAdd, onCancel }: AddPositionCheckFormProps) {
   const [formData, setFormData] = useState<Omit<PositionCheckData, 'checkId'>>({
     type: 'forward_comparison',
     landmarks: { primary: '', secondary: '' },
@@ -331,12 +345,10 @@ function AddPositionCheckModal({ onAdd, onClose }: AddPositionCheckModalProps) {
   
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    
     if (!formData.landmarks.primary || !formData.landmarks.secondary) {
       alert('Please select primary and secondary landmarks');
       return;
     }
-    
     if (!formData.errorMessage.en || !formData.errorMessage.ar) {
       alert('Please enter error messages in both languages');
       return;
@@ -346,285 +358,128 @@ function AddPositionCheckModal({ onAdd, onClose }: AddPositionCheckModalProps) {
       ...formData,
       checkId: `custom_${Date.now()}`,
     };
-    
     onAdd(check);
   };
   
-  // Get available landmarks (you might want to fetch these from props or API)
-  const availableLandmarks = [
-    'left_knee', 'right_knee', 'left_hip', 'right_hip',
-    'left_shoulder', 'right_shoulder', 'left_elbow', 'right_elbow',
-    'left_ankle', 'right_ankle', 'left_foot_index', 'right_foot_index',
-    'left_wrist', 'right_wrist', 'spine',
-  ];
-  
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50" onClick={onClose}>
-      <div 
-        className="bg-white rounded-xl p-6 max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto" 
-        onClick={e => e.stopPropagation()}
-      >
-        <div className="flex items-center justify-between mb-6">
-          <h3 className="text-xl font-bold text-gray-900">Add Custom Position Check</h3>
-          <button
-            type="button"
-            onClick={onClose}
-            className="text-gray-400 hover:text-gray-600"
-          >
-            <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-            </svg>
-          </button>
+    <Card>
+      <CardHeader>
+        <div className="flex items-center justify-between">
+          <CardTitle>Add Custom Check</CardTitle>
+          <Button variant="ghost" size="icon" onClick={onCancel}>
+            <X className="h-4 w-4" />
+          </Button>
         </div>
-        
-        <form onSubmit={handleSubmit} className="space-y-6">
-          {/* Type */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Check Type *
-            </label>
-            <select
-              value={formData.type}
-              onChange={(e) => setFormData({ ...formData, type: e.target.value as PositionCheckType })}
-              className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-900 bg-white"
-            >
-              {POSITION_CHECK_TYPES.map((type) => (
-                <option key={type.value} value={type.value}>
-                  {type.label}
-                </option>
-              ))}
-            </select>
-          </div>
-          
-          {/* Landmarks */}
+      </CardHeader>
+      <CardContent>
+        <form onSubmit={handleSubmit} className="space-y-4">
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Primary Landmark *
-              </label>
-              <select
+              <Label required>Check Type</Label>
+              <Select
+                value={formData.type}
+                onChange={(e) => setFormData({ ...formData, type: e.target.value as PositionCheckType })}
+                options={POSITION_CHECK_TYPES}
+              />
+            </div>
+            <div>
+              <Label required>Condition Operator</Label>
+              <Select
+                value={formData.condition.operator}
+                onChange={(e) => setFormData({
+                  ...formData,
+                  condition: { ...formData.condition, operator: e.target.value as string },
+                })}
+                options={[
+                  { value: 'should_not_exceed', label: 'Should NOT Exceed' },
+                  { value: 'should_exceed', label: 'Should Exceed' },
+                  { value: 'should_be_within', label: 'Should Be Within' },
+                  { value: 'should_equal', label: 'Should Equal' },
+                ]}
+              />
+            </div>
+          </div>
+          
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <Label required>Primary Landmark</Label>
+              <Select
                 value={formData.landmarks.primary}
                 onChange={(e) => setFormData({
                   ...formData,
                   landmarks: { ...formData.landmarks, primary: e.target.value },
                 })}
-                className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 text-gray-900 bg-white"
-              >
-                <option value="">Select...</option>
-                {availableLandmarks.map((landmark) => (
-                  <option key={landmark} value={landmark}>
-                    {landmark.replace(/_/g, ' ')}
-                  </option>
-                ))}
-              </select>
+                placeholder="Select..."
+                options={AVAILABLE_LANDMARKS.map(l => ({ value: l, label: l.replace(/_/g, ' ') }))}
+              />
             </div>
-            
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Secondary Landmark *
-              </label>
-              <select
+              <Label required>Secondary Landmark</Label>
+              <Select
                 value={formData.landmarks.secondary}
                 onChange={(e) => setFormData({
                   ...formData,
                   landmarks: { ...formData.landmarks, secondary: e.target.value },
                 })}
-                className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 text-gray-900 bg-white"
-              >
-                <option value="">Select...</option>
-                {availableLandmarks.map((landmark) => (
-                  <option key={landmark} value={landmark}>
-                    {landmark.replace(/_/g, ' ')}
-                  </option>
-                ))}
-              </select>
+                placeholder="Select..."
+                options={AVAILABLE_LANDMARKS.map(l => ({ value: l, label: l.replace(/_/g, ' ') }))}
+              />
             </div>
           </div>
           
-          {/* Condition Operator */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Condition Operator *
-            </label>
-            <select
-              value={formData.condition.operator}
-              onChange={(e) => setFormData({
-                ...formData,
-                condition: { ...formData.condition, operator: e.target.value as any },
-              })}
-              className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 text-gray-900 bg-white"
-            >
-              <option value="should_not_exceed">Should NOT Exceed</option>
-              <option value="should_exceed">Should Exceed</option>
-              <option value="should_be_within">Should Be Within</option>
-              <option value="should_equal">Should Equal</option>
-            </select>
-          </div>
-          
-          {/* Thresholds */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Thresholds *
-            </label>
-            <div className="grid grid-cols-3 gap-4">
-              {(['beginner', 'normal', 'advanced'] as const).map((level) => (
-                <div key={level}>
-                  <label className="block text-xs text-gray-500 mb-1 capitalize">{level}</label>
-                  <input
-                    type="number"
-                    step="0.01"
-                    value={formData.condition.thresholds[level]}
-                    onChange={(e) => setFormData({
-                      ...formData,
-                      condition: {
-                        ...formData.condition,
-                        thresholds: {
-                          ...formData.condition.thresholds,
-                          [level]: Number(e.target.value),
-                        },
-                      },
-                    })}
-                    className="w-full px-3 py-2 border rounded-lg text-sm text-gray-900 bg-white placeholder:text-gray-400"
-                    placeholder="0.05"
-                  />
-                </div>
-              ))}
-            </div>
-          </div>
-          
-          {/* Active Phases */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Active Phases *
-            </label>
-            <div className="flex flex-wrap gap-2">
-              {PHASE_OPTIONS.map((phase) => (
-                <button
-                  key={phase}
-                  type="button"
-                  onClick={() => {
-                    const current = formData.activePhases;
-                    const updated = current.includes(phase)
-                      ? current.filter(p => p !== phase)
-                      : [...current, phase];
-                    setFormData({ ...formData, activePhases: updated });
-                  }}
-                  className={`px-3 py-1.5 text-sm rounded-lg transition-colors ${
-                    formData.activePhases.includes(phase)
-                      ? 'bg-blue-100 text-blue-700 border-2 border-blue-300'
-                      : 'bg-gray-100 text-gray-600 border-2 border-transparent hover:bg-gray-200'
-                  }`}
-                >
-                  {phase}
-                </button>
-              ))}
-            </div>
-          </div>
-          
-          {/* Severity */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Severity *
-            </label>
-            <div className="flex gap-4">
-              {(['error', 'warning', 'tip'] as const).map((severity) => (
-                <button
-                  key={severity}
-                  type="button"
-                  onClick={() => setFormData({ ...formData, severity })}
-                  className={`px-4 py-2 rounded-lg border-2 transition-colors ${
-                    formData.severity === severity
-                      ? 'border-blue-500 bg-blue-50 text-blue-700'
-                      : 'border-gray-200 text-gray-600 hover:border-gray-300'
-                  }`}
-                >
-                  {severity.charAt(0).toUpperCase() + severity.slice(1)}
-                </button>
-              ))}
-            </div>
-          </div>
-          
-          {/* Error Messages */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Error Messages *
-            </label>
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <input
-                  type="text"
-                  value={formData.errorMessage.en}
+          <div className="grid grid-cols-3 gap-4">
+            {(['beginner', 'normal', 'advanced'] as const).map((level) => (
+              <div key={level}>
+                <Label>{level.charAt(0).toUpperCase() + level.slice(1)} Threshold</Label>
+                <Input
+                  type="number"
+                  step="0.01"
+                  value={formData.condition.thresholds[level]}
                   onChange={(e) => setFormData({
                     ...formData,
-                    errorMessage: { ...formData.errorMessage, en: e.target.value },
+                    condition: {
+                      ...formData.condition,
+                      thresholds: { ...formData.condition.thresholds, [level]: Number(e.target.value) },
+                    },
                   })}
-                  placeholder="English message"
-                  className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 text-gray-900 bg-white placeholder:text-gray-400"
                 />
               </div>
-              <div>
-                <input
-                  type="text"
-                  dir="rtl"
-                  value={formData.errorMessage.ar}
-                  onChange={(e) => setFormData({
-                    ...formData,
-                    errorMessage: { ...formData.errorMessage, ar: e.target.value },
-                  })}
-                  placeholder="الرسالة بالعربية"
-                  className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 text-gray-900 bg-white placeholder:text-gray-400"
-                />
-              </div>
-            </div>
+            ))}
           </div>
           
-          {/* Advanced Settings */}
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Cooldown (ms)
-              </label>
-              <input
-                type="number"
-                min={0}
-                value={formData.cooldownMs}
-                onChange={(e) => setFormData({ ...formData, cooldownMs: Number(e.target.value) })}
-                className="w-full px-4 py-2 border rounded-lg text-gray-900 bg-white placeholder:text-gray-400"
+              <Label required>Error Message (English)</Label>
+              <Input
+                value={formData.errorMessage.en}
+                onChange={(e) => setFormData({
+                  ...formData,
+                  errorMessage: { ...formData.errorMessage, en: e.target.value },
+                })}
+                placeholder="Keep your knee behind your toes"
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Min Error Frames
-              </label>
-              <input
-                type="number"
-                min={1}
-                value={formData.minErrorFrames}
-                onChange={(e) => setFormData({ ...formData, minErrorFrames: Number(e.target.value) })}
-                className="w-full px-4 py-2 border rounded-lg text-gray-900 bg-white placeholder:text-gray-400"
+              <Label required>Error Message (Arabic)</Label>
+              <Input
+                dir="rtl"
+                value={formData.errorMessage.ar}
+                onChange={(e) => setFormData({
+                  ...formData,
+                  errorMessage: { ...formData.errorMessage, ar: e.target.value },
+                })}
+                placeholder="حافظ على ركبتك خلف أصابع قدميك"
               />
             </div>
           </div>
           
-          {/* Actions */}
           <div className="flex gap-4 pt-4 border-t">
-            <button
-              type="button"
-              onClick={onClose}
-              className="flex-1 px-4 py-2 border-2 border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors"
-            >
-              Cancel
-            </button>
-            <button
-              type="submit"
-              className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-            >
-              Add Check
-            </button>
+            <Button variant="outline" onClick={onCancel} className="flex-1">Cancel</Button>
+            <Button type="submit" className="flex-1">Add Check</Button>
           </div>
         </form>
-      </div>
-    </div>
+      </CardContent>
+    </Card>
   );
 }
 

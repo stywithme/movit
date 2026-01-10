@@ -57,6 +57,29 @@
               "en": "Bend your elbow more"
             }
           }
+        },
+        {
+          "joint": "right_shoulder",
+          "role": "secondary",
+          "startPose": {
+            "min": 0,
+            "max": 60
+          },
+          "Range": {
+            "beginner": { "min": 0, "max": 60 },
+            "normal":   { "min": 0, "max": 60 },
+            "advanced": { "min": 0, "max": 60 }
+          },
+          "errorMessages": {
+            "tooHigh": {
+              "ar": "اجعل ذراعك بجانب جسمك",
+              "en": "Keep your arm close to your body"
+            },
+            "tooLow": {
+              "ar": "وضع جيد",
+              "en": "Good position"
+            }
+          }
         }
       ],
       "feedbackMessages": {

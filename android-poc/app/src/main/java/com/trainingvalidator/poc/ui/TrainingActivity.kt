@@ -41,6 +41,12 @@ import android.net.Uri
 import android.widget.SeekBar
 import com.trainingvalidator.poc.training.engine.HoldState
 import com.trainingvalidator.poc.training.engine.Phase
+import com.trainingvalidator.poc.training.report.CaptureType
+import com.trainingvalidator.poc.training.report.FrameCaptureManager
+import com.trainingvalidator.poc.training.report.ReportGenerator
+import com.trainingvalidator.poc.storage.ReportStorage
+import com.trainingvalidator.poc.training.report.PostTrainingReport
+import com.trainingvalidator.poc.ui.report.ReportActivity
 import com.trainingvalidator.poc.video.VideoManager
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.collectLatest
@@ -61,7 +67,7 @@ import kotlinx.coroutines.launch
  * - Camera/Pose detection setup
  * - User interactions
  */
-class TrainingActivityRefactored : AppCompatActivity(), PoseLandmarkerHelper.PoseDetectionListener {
+class TrainingActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetectionListener {
 
     companion object {
         private const val TAG = "TrainingActivity"
@@ -121,6 +127,13 @@ class TrainingActivityRefactored : AppCompatActivity(), PoseLandmarkerHelper.Pos
     private var videoUri: Uri? = null
     private var lastRepCount = 0
     
+    // Report & Frame Capture
+    private var frameCaptureManager: FrameCaptureManager? = null
+    private var reportStorage: ReportStorage? = null
+    private var sessionId: String = java.util.UUID.randomUUID().toString()
+    private var lastCapturedPhase: Phase? = null
+    private var generatedReportId: String? = null
+    
     // FPS calculation
     private var frameCount = 0
     private var lastFpsUpdateTime = System.currentTimeMillis()
@@ -152,6 +165,7 @@ class TrainingActivityRefactored : AppCompatActivity(), PoseLandmarkerHelper.Pos
         parseIntentExtras()
         setupUI()
         setupCountdownController()
+        initializeReportSystem()
         observeViewModel()
         
         // Initialize based on mode
@@ -286,6 +300,20 @@ class TrainingActivityRefactored : AppCompatActivity(), PoseLandmarkerHelper.Pos
         })
     }
     
+    private fun initializeReportSystem() {
+        // Generate new session ID for each training
+        sessionId = java.util.UUID.randomUUID().toString()
+        
+        // Initialize frame capture manager
+        frameCaptureManager = FrameCaptureManager(this, sessionId)
+        frameCaptureManager?.cleanupOldSessions(5)  // Keep last 5 sessions
+        
+        // Initialize report storage
+        reportStorage = ReportStorage(this)
+        
+        // Intentionally no verbose logs here (kept clean for production)
+    }
+    
     // ==================== ViewModel Observers ====================
     
     private fun observeViewModel() {
@@ -333,13 +361,21 @@ class TrainingActivityRefactored : AppCompatActivity(), PoseLandmarkerHelper.Pos
             }
         }
         
-        // Observe phase
+        // Observe phase - also capture peak frames
         lifecycleScope.launch {
             viewModel.currentPhase.collectLatest { phase ->
                 AnimationUtils.crossfadeText(
                     binding.tvPhase,
                     getPhaseDisplayName(phase, viewModel.isHoldExercise())
                 )
+                
+                // Capture peak frame when entering BOTTOM or EXTENDED phase
+                if (phase != lastCapturedPhase) {
+                    if (phase == Phase.BOTTOM || phase == Phase.EXTENDED) {
+                        capturePeakFrame(phase)
+                    }
+                    lastCapturedPhase = phase
+                }
             }
         }
         
@@ -382,9 +418,31 @@ class TrainingActivityRefactored : AppCompatActivity(), PoseLandmarkerHelper.Pos
             }
         }
         
-        // Observe arrow infos
-        lifecycleScope.launch {
-            viewModel.trainingEngine?.arrowInfos?.collectLatest { arrowInfos ->
+        // Note: arrowInfos observer is set up in observeTrainingEngineState()
+        // because trainingEngine is null at this point
+    }
+    
+    /**
+     * Observe training engine arrowInfos for visual feedback (Arc, colors)
+     * Called AFTER trainingEngine is created (in startVideoTraining or after countdown)
+     * 
+     * Note: Other engine state (phase, repCount, events) is handled via ViewModel StateFlows
+     * Only arrowInfos needs direct observation because ViewModel doesn't relay it
+     */
+    private var arrowInfosObserverJob: kotlinx.coroutines.Job? = null
+    
+    private fun observeTrainingEngineState() {
+        // Cancel previous observer to avoid duplicates
+        arrowInfosObserverJob?.cancel()
+        
+        val engine = viewModel.trainingEngine ?: run {
+            Log.e(TAG, "observeTrainingEngineState: trainingEngine is null!")
+            return
+        }
+        
+        arrowInfosObserverJob = lifecycleScope.launch {
+            // Observe arrow infos for visual feedback (Arc, colors)
+            engine.arrowInfos.collectLatest { arrowInfos ->
                 binding.skeletonOverlay.setArrowInfos(arrowInfos)
                 
                 val hasErrors = arrowInfos.any { it.value.isError }
@@ -395,6 +453,8 @@ class TrainingActivityRefactored : AppCompatActivity(), PoseLandmarkerHelper.Pos
                 }
             }
         }
+        
+        // Intentionally no verbose logs here (kept clean for production)
     }
     
     private fun handleUIEvent(event: TrainingUIEvent) {
@@ -601,24 +661,20 @@ class TrainingActivityRefactored : AppCompatActivity(), PoseLandmarkerHelper.Pos
     // ==================== Completion ====================
     
     private fun completeTraining() {
-        val summary = viewModel.stopTraining()
-        
         binding.skeletonOverlay.setTrainingMode(false)
+        binding.vignetteOverlay.clear()
         
-        if (viewModel.isHoldExercise()) {
-            val holdElapsed = viewModel.holdElapsedMs.value ?: 0L
-            binding.tvSummaryReps.text = formatTimeMs(holdElapsed)
-            binding.tvSummaryCorrect.text = "Target: ${formatTimeMs(viewModel.getTargetDurationMs())}"
-            binding.tvSummaryAccuracy.text = "Grace periods: ${viewModel.trainingEngine?.getGracePeriodCount() ?: 0}"
-        } else {
-            binding.tvSummaryReps.text = "${summary?.totalReps ?: 0}"
-            binding.tvSummaryCorrect.text = "${summary?.correctReps ?: 0} correct"
-            binding.tvSummaryAccuracy.text = "${String.format("%.0f", summary?.accuracy ?: 0f)}%"
-        }
+        // Hide the completed panel - we'll navigate to ReportActivity instead
+        binding.completedPanel.visibility = View.GONE
         
-        binding.tvSummaryDuration.text = summary?.getFormattedDuration() ?: "00:00"
+        // Log capture stats
+        val captureCount = frameCaptureManager?.getCaptureCount() ?: 0
+        val storageSize = frameCaptureManager?.getFormattedStorageSize() ?: "0 B"
+        Log.d(TAG, "Training completed. Captured $captureCount frames ($storageSize)")
         
-        binding.btnFinish.setOnClickListener { finishWithResult() }
+        // Generate report and navigate directly to ReportActivity
+        // Note: ReportGenerator.generateFromEngine() calls engine.stop() internally
+        generateReportAndNavigate()
     }
     
     private fun completeWorkout(totalReps: Int, accuracy: Float, durationMs: Long) {
@@ -670,9 +726,8 @@ class TrainingActivityRefactored : AppCompatActivity(), PoseLandmarkerHelper.Pos
         binding.vignetteOverlay.showError()
         binding.tvRepCount.text = event.savedRepCount.toString()
         
-        if (!isVideoMode) {
-            viewModel.feedbackManager?.speak("Training paused. Step back into frame.")
-        }
+        // Audio feedback now handled by FeedbackManager via VisibilityPaused event
+        // This ensures proper orchestration and prevents message conflicts
         
         Log.d(TAG, "Visibility paused - saved rep: ${event.savedRepCount}")
     }
@@ -713,6 +768,20 @@ class TrainingActivityRefactored : AppCompatActivity(), PoseLandmarkerHelper.Pos
                     COLOR_WARNING,
                     COLOR_DEFAULT
                 )
+                
+                // Mark as best rep if correct
+                if (event.isCorrect) {
+                    frameCaptureManager?.markAsBestRep(event.repNumber)
+                }
+            }
+            
+            is FeedbackEvent.JointErrorDetected -> {
+                // Capture error frame (first occurrence per error type)
+                val errorKey = "${event.error.jointCode}:${event.error.errorType}"
+                val currentRep = (viewModel.trainingEngine?.getCurrentRep() ?: 0) + 1
+                val phase = viewModel.currentPhase.value
+                
+                captureErrorFrame(currentRep, phase, errorKey)
             }
             
             is FeedbackEvent.HoldGraceStarted -> {
@@ -736,6 +805,186 @@ class TrainingActivityRefactored : AppCompatActivity(), PoseLandmarkerHelper.Pos
             
             else -> {}
         }
+    }
+    
+    // ==================== Frame Capture ====================
+    
+    /**
+     * Capture peak frame when reaching BOTTOM/EXTENDED phase
+     */
+    private fun capturePeakFrame(phase: Phase) {
+        // Only capture during active training
+        if (viewModel.stateManager.currentState != TrainingStateManager.TrainingState.TRAINING) {
+            return
+        }
+        
+        val bitmap = if (isVideoMode) {
+            // For video mode, we would need to get bitmap from VideoModeController
+            // This requires additional integration - skipped for now
+            null
+        } else {
+            // For camera mode, get bitmap from PreviewView
+            binding.previewView.bitmap
+        }
+        
+        bitmap?.let { bmp ->
+            val currentRep = (viewModel.trainingEngine?.getCurrentRep() ?: 0) + 1
+            val angles = viewModel.trainingEngine?.currentAngles?.value ?: emptyMap()
+            
+            frameCaptureManager?.capturePeakFrame(
+                bitmap = bmp,
+                repNumber = currentRep,
+                phase = phase,
+                angles = angles
+            )
+            
+            Log.d(TAG, "Captured peak frame for rep $currentRep at phase ${phase.name}")
+        }
+    }
+    
+    /**
+     * Capture error frame when error detected
+     */
+    private fun captureErrorFrame(repNumber: Int, phase: Phase, errorKey: String) {
+        // Only capture during active training
+        if (viewModel.stateManager.currentState != TrainingStateManager.TrainingState.TRAINING) {
+            return
+        }
+        
+        val bitmap = if (isVideoMode) {
+            null
+        } else {
+            binding.previewView.bitmap
+        }
+        
+        bitmap?.let { bmp ->
+            val angles = viewModel.trainingEngine?.currentAngles?.value ?: emptyMap()
+            
+            val captured = frameCaptureManager?.captureErrorFrame(
+                bitmap = bmp,
+                repNumber = repNumber,
+                phase = phase,
+                errorKey = errorKey,
+                angles = angles
+            )
+            
+            if (captured != null) {
+                Log.d(TAG, "Captured error frame for $errorKey at rep $repNumber")
+            }
+        }
+    }
+    
+    /**
+     * Generate report and navigate directly to ReportActivity
+     */
+    private fun generateReportAndNavigate() {
+        // Intentionally no verbose logs here (kept clean for production)
+        
+        val engine = viewModel.trainingEngine
+        if (engine == null) {
+            Log.e(TAG, "TrainingEngine is null!")
+            showFallbackSummary()
+            return
+        }
+        
+        val exerciseConfig = viewModel.exerciseConfig.value
+        if (exerciseConfig == null) {
+            Log.e(TAG, "ExerciseConfig is null!")
+            showFallbackSummary()
+            return
+        }
+        
+        val frameCaptures = frameCaptureManager?.getAllCaptures() ?: emptyList()
+        Log.d(TAG, "Frame captures count: ${frameCaptures.size}")
+        
+        // Show loading state
+        binding.heroCounterContainer.visibility = View.GONE
+        binding.progressContainer.visibility = View.GONE
+        binding.completedPanel.visibility = View.GONE
+        
+        binding.glassmorphicMessage.showMessage(
+            "📊 Generating report...",
+            GlassmorphicMessageView.TYPE_INFO,
+            durationMs = -1
+        )
+        
+        lifecycleScope.launch(Dispatchers.IO) {
+            try {
+                Log.d(TAG, "Generating report in background...")
+                
+                val report = ReportGenerator.generateFromEngine(
+                    engine = engine,
+                    exerciseConfig = exerciseConfig,
+                    sessionDurationMs = viewModel.getSessionDurationMs(),
+                    frameCaptures = frameCaptures
+                )
+                
+                Log.d(TAG, "Report generated: id=${report.id}, accuracy=${report.summary.accuracy}%")
+                
+                val saved = reportStorage?.save(report) ?: false
+                Log.d(TAG, "Report saved: $saved")
+                
+                launch(Dispatchers.Main) {
+                    binding.glassmorphicMessage.hide()
+                    
+                    if (saved) {
+                        Log.d(TAG, "Navigating to ReportActivity with id: ${report.id}")
+                        
+                        try {
+                            val intent = ReportActivity.createIntent(this@TrainingActivity, report.id).apply {
+                                putExtra(ReportActivity.EXTRA_EXERCISE_NAME, viewModel.exerciseName.value)
+                            }
+                            startActivity(intent)
+                            finish()
+                        } catch (e: Exception) {
+                            Log.e(TAG, "Failed to start ReportActivity: ${e.message}", e)
+                            showFallbackSummary()
+                        }
+                    } else {
+                        Log.e(TAG, "Failed to save report, showing fallback")
+                        showFallbackSummary()
+                    }
+                }
+            } catch (e: Exception) {
+                Log.e(TAG, "Error generating report: ${e.message}", e)
+                e.printStackTrace()
+                launch(Dispatchers.Main) {
+                    binding.glassmorphicMessage.hide()
+                    Toast.makeText(
+                        this@TrainingActivity,
+                        "Error: ${e.message}",
+                        Toast.LENGTH_LONG
+                    ).show()
+                    showFallbackSummary()
+                }
+            }
+        }
+    }
+    
+    /**
+     * Show fallback summary screen if report generation fails
+     */
+    private fun showFallbackSummary() {
+        val summary = viewModel.trainingEngine?.stop()
+        
+        binding.skeletonOverlay.setTrainingMode(false)
+        viewModel.stateManager.transitionTo(TrainingStateManager.TrainingState.COMPLETED)
+        
+        if (viewModel.isHoldExercise()) {
+            val holdElapsed = viewModel.holdElapsedMs.value ?: 0L
+            binding.tvSummaryReps.text = formatTimeMs(holdElapsed)
+            binding.tvSummaryCorrect.text = "Target: ${formatTimeMs(viewModel.getTargetDurationMs())}"
+            binding.tvSummaryAccuracy.text = "Grace periods: ${viewModel.trainingEngine?.getGracePeriodCount() ?: 0}"
+        } else {
+            binding.tvSummaryReps.text = "${summary?.totalReps ?: 0}"
+            binding.tvSummaryCorrect.text = "${summary?.correctReps ?: 0} correct"
+            binding.tvSummaryAccuracy.text = "${String.format("%.0f", summary?.accuracy ?: 0f)}%"
+        }
+        
+        binding.tvSummaryDuration.text = summary?.getFormattedDuration() ?: "00:00"
+        binding.completedPanel.visibility = android.view.View.VISIBLE
+        
+        binding.btnFinish.setOnClickListener { finishWithResult() }
     }
     
     // ==================== Camera & Pose Detection ====================
@@ -854,7 +1103,7 @@ class TrainingActivityRefactored : AppCompatActivity(), PoseLandmarkerHelper.Pos
 
     override fun onError(message: String) {
         lifecycleScope.launch(Dispatchers.Main) {
-            Toast.makeText(this@TrainingActivityRefactored, message, Toast.LENGTH_SHORT).show()
+            Toast.makeText(this@TrainingActivity, message, Toast.LENGTH_SHORT).show()
             Log.e(TAG, "Pose detection error: $message")
         }
     }
@@ -981,7 +1230,7 @@ class TrainingActivityRefactored : AppCompatActivity(), PoseLandmarkerHelper.Pos
             }
             
             override fun onError(message: String) {
-                Toast.makeText(this@TrainingActivityRefactored, message, Toast.LENGTH_SHORT).show()
+                Toast.makeText(this@TrainingActivity, message, Toast.LENGTH_SHORT).show()
             }
         }
     }
@@ -1026,11 +1275,16 @@ class TrainingActivityRefactored : AppCompatActivity(), PoseLandmarkerHelper.Pos
     }
     
     private fun startVideoTraining() {
-        viewModel.stateManager.transitionTo(TrainingStateManager.TrainingState.TRAINING)
-        viewModel.trainingEngine?.start()
+        // Use startVideoModeTraining() to skip SETUP_POSE and countdown
+        // In video mode, we start training directly without pose validation
+        viewModel.startVideoModeTraining()
         
         val trackedIndices = viewModel.getTrackedLandmarkIndices()
         binding.skeletonOverlay.setTrainingMode(true, trackedIndices, useFrontCamera = false)
+        
+        // Set up observers on the training engine (arrowInfos, phase, events)
+        // This must be called AFTER trainingEngine is created
+        observeTrainingEngineState()
         
         Log.d(TAG, "Video training started")
     }

@@ -1,0 +1,75 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="horizontal"
+    android:gravity="center_vertical"
+    android:paddingVertical="12dp"
+    android:paddingHorizontal="8dp"
+    android:background="?attr/selectableItemBackground">
+
+    <!-- Rep Number -->
+    <TextView
+        android:id="@+id/tvRepNumber"
+        android:layout_width="32dp"
+        android:layout_height="wrap_content"
+        android:textColor="#B0B0B0"
+        android:textSize="14sp"
+        android:gravity="center"
+        tools:text="1"/>
+
+    <!-- Status Icon -->
+    <TextView
+        android:id="@+id/tvStatus"
+        android:layout_width="32dp"
+        android:layout_height="wrap_content"
+        android:textSize="18sp"
+        android:gravity="center"
+        tools:text="✓"
+        tools:textColor="#4CAF50"/>
+
+    <!-- Timeline Line -->
+    <View
+        android:layout_width="0dp"
+        android:layout_height="4dp"
+        android:layout_weight="1"
+        android:background="#404040"
+        android:layout_marginHorizontal="8dp"/>
+
+    <!-- Error Summary (if any) -->
+    <TextView
+        android:id="@+id/tvErrors"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:background="#33FFC107"
+        android:paddingHorizontal="8dp"
+        android:paddingVertical="2dp"
+        android:textColor="#FFC107"
+        android:textSize="11sp"
+        android:visibility="gone"
+        tools:visibility="visible"
+        tools:text="knee↑"/>
+
+    <!-- Duration -->
+    <TextView
+        android:id="@+id/tvDuration"
+        android:layout_width="48dp"
+        android:layout_height="wrap_content"
+        android:textColor="#B0B0B0"
+        android:textSize="12sp"
+        android:gravity="end"
+        android:layout_marginStart="8dp"
+        tools:text="2.3s"/>
+
+    <!-- Best Rep Badge -->
+    <ImageView
+        android:id="@+id/ivBadge"
+        android:layout_width="20dp"
+        android:layout_height="20dp"
+        android:layout_marginStart="4dp"
+        android:src="@drawable/ic_star_gold"
+        android:visibility="gone"
+        tools:visibility="visible"/>
+</LinearLayout>

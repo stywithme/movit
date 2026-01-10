@@ -1,8 +1,10 @@
 'use client';
 
 /**
- * Step 1: Basic Information
- * =========================
+ * Step 1: Basic Information + Exercise Type
+ * ==========================================
+ * 
+ * Combines basic info and counting method selection in one step.
  */
 
 import { useForm } from 'react-hook-form';
@@ -10,6 +12,9 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { useEffect } from 'react';
 import { useWizardStore } from '../WizardContext';
 import { BasicInfoSchema, type BasicInfoData } from '@/modules/exercises/exercises.validation';
+import { Input, Textarea, Select, Label, Card, Badge } from '@/components/ui';
+import { Check } from 'lucide-react';
+import type { CountingMethodCode } from '@/lib/types/localized';
 
 interface BasicInfoStepProps {
   categories: Array<{
@@ -17,10 +22,38 @@ interface BasicInfoStepProps {
     code: string;
     name: { ar: string; en: string };
   }>;
+  countingMethods: Array<{
+    id: string;
+    code: string;
+    name: { ar: string; en: string };
+    description?: { ar: string; en: string };
+  }>;
 }
 
-export function BasicInfoStep({ categories }: BasicInfoStepProps) {
-  const { basicInfo, setBasicInfo } = useWizardStore();
+const METHOD_DETAILS: Record<CountingMethodCode, {
+  icon: string;
+  flow: string;
+  examples: string;
+}> = {
+  up_down: {
+    icon: '🔄',
+    flow: 'START → DOWN → UP → START',
+    examples: 'Squat, Lunge, Bicep Curl',
+  },
+  push_pull: {
+    icon: '🔃',
+    flow: 'START → PUSH → PULL → START',
+    examples: 'Push-up, Pull-up, Bench Press',
+  },
+  hold: {
+    icon: '⏱️',
+    flow: 'IDLE ↔ COUNT (timer)',
+    examples: 'Plank, Wall Sit, Dead Hang',
+  },
+};
+
+export function BasicInfoStep({ categories, countingMethods }: BasicInfoStepProps) {
+  const { basicInfo, setBasicInfo, countingMethod, setCountingMethod } = useWizardStore();
   
   const {
     register,
@@ -36,130 +69,152 @@ export function BasicInfoStep({ categories }: BasicInfoStepProps) {
     },
   });
   
-  // Sync form changes to store using subscription
+  // Sync form changes to store
   useEffect(() => {
     const subscription = watch((data) => {
-      setBasicInfo(data as BasicInfoData);
+      setBasicInfo(data as Partial<BasicInfoData>);
     });
     return () => subscription.unsubscribe();
   }, [watch, setBasicInfo]);
   
+  const handleSelectType = (method: typeof countingMethods[number]) => {
+    setCountingMethod({
+      countingMethodId: method.id,
+      countingMethodCode: method.code as CountingMethodCode,
+    });
+  };
+  
   return (
-    <div className="space-y-8 max-w-3xl mx-auto">
+    <div className="space-y-8 max-w-4xl mx-auto">
       <div>
         <h2 className="text-2xl font-bold text-gray-900 mb-2">Basic Information</h2>
-        <p className="text-gray-500">Enter the exercise name and description in both languages.</p>
+        <p className="text-gray-500">Enter exercise details and select the counting type.</p>
       </div>
       
       {/* Exercise Name */}
-      <div className="space-y-4">
-        <label className="block text-sm font-semibold text-gray-700">
-          Exercise Name <span className="text-red-500">*</span>
-        </label>
+      <div className="space-y-2">
+        <Label required tooltip="The exercise name displayed to users in both languages.">
+          Exercise Name
+        </Label>
         <div className="grid grid-cols-2 gap-4">
-          <div>
-            <input
-              type="text"
-              placeholder="English name"
-              {...register('name.en')}
-              className={`
-                w-full px-4 py-3 rounded-lg border-2 transition-colors
-                text-gray-900 placeholder:text-gray-500
-                focus:outline-none focus:ring-2 focus:ring-blue-500
-                ${errors.name?.en ? 'border-red-300 bg-red-50' : 'border-gray-200'}
-              `}
-            />
-            {errors.name?.en && (
-              <p className="mt-1 text-sm text-red-500">{errors.name.en.message}</p>
-            )}
-          </div>
+          <Input
+            placeholder="English name"
+            error={!!errors.name?.en}
+            helperText={errors.name?.en?.message}
+            {...register('name.en')}
+          />
           <div dir="rtl">
-            <input
-              type="text"
+            <Input
               placeholder="الاسم بالعربية"
+              error={!!errors.name?.ar}
+              helperText={errors.name?.ar?.message}
               {...register('name.ar')}
-              className={`
-                w-full px-4 py-3 rounded-lg border-2 transition-colors
-                text-gray-900 placeholder:text-gray-500
-                focus:outline-none focus:ring-2 focus:ring-blue-500
-                ${errors.name?.ar ? 'border-red-300 bg-red-50' : 'border-gray-200'}
-              `}
             />
-            {errors.name?.ar && (
-              <p className="mt-1 text-sm text-red-500">{errors.name.ar.message}</p>
-            )}
           </div>
-        </div>
-      </div>
-      
-      {/* Description */}
-      <div className="space-y-4">
-        <label className="block text-sm font-semibold text-gray-700">
-          Description
-        </label>
-        <div className="grid grid-cols-2 gap-4">
-          <textarea
-            placeholder="English description"
-            rows={3}
-            {...register('description.en')}
-            className="w-full px-4 py-3 rounded-lg border-2 border-gray-200 text-gray-900 placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
-          />
-          <textarea
-            dir="rtl"
-            placeholder="الوصف بالعربية"
-            rows={3}
-            {...register('description.ar')}
-            className="w-full px-4 py-3 rounded-lg border-2 border-gray-200 text-gray-900 placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
-          />
-        </div>
-      </div>
-      
-      {/* Instructions */}
-      <div className="space-y-4">
-        <label className="block text-sm font-semibold text-gray-700">
-          Instructions
-        </label>
-        <div className="grid grid-cols-2 gap-4">
-          <textarea
-            placeholder="English instructions"
-            rows={4}
-            {...register('instructions.en')}
-            className="w-full px-4 py-3 rounded-lg border-2 border-gray-200 text-gray-900 placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
-          />
-          <textarea
-            dir="rtl"
-            placeholder="التعليمات بالعربية"
-            rows={4}
-            {...register('instructions.ar')}
-            className="w-full px-4 py-3 rounded-lg border-2 border-gray-200 text-gray-900 placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
-          />
         </div>
       </div>
       
       {/* Category */}
-      <div className="space-y-4">
-        <label className="block text-sm font-semibold text-gray-700">
-          Category <span className="text-red-500">*</span>
-        </label>
-        <select
+      <div className="space-y-2">
+        <Label required tooltip="Select the main category for this exercise.">
+          Category
+        </Label>
+        <Select
+          error={!!errors.categoryId}
+          helperText={errors.categoryId?.message}
+          placeholder="Select a category"
+          options={categories.map(cat => ({
+            value: cat.id,
+            label: `${cat.name.en} / ${cat.name.ar}`,
+          }))}
           {...register('categoryId')}
-          className={`
-            w-full px-4 py-3 rounded-lg border-2 transition-colors
-            text-gray-900
-            focus:outline-none focus:ring-2 focus:ring-blue-500
-            ${errors.categoryId ? 'border-red-300 bg-red-50' : 'border-gray-200'}
-          `}
-        >
-          <option value="">Select a category</option>
-          {categories.map((cat) => (
-            <option key={cat.id} value={cat.id}>
-              {cat.name.en} / {cat.name.ar}
-            </option>
-          ))}
-        </select>
-        {errors.categoryId && (
-          <p className="mt-1 text-sm text-red-500">{errors.categoryId.message}</p>
-        )}
+        />
+      </div>
+      
+      {/* Exercise Type Selection */}
+      <div className="space-y-3 pt-4 border-t">
+        <Label required tooltip="How repetitions are counted - determines phases and validation logic.">
+          Exercise Type
+        </Label>
+        <div className="grid grid-cols-3 gap-4">
+          {countingMethods.map((method) => {
+            const details = METHOD_DETAILS[method.code as CountingMethodCode];
+            const isSelected = countingMethod.countingMethodId === method.id;
+            
+            return (
+              <Card
+                key={method.id}
+                interactive
+                selected={isSelected}
+                className="p-4 relative"
+                onClick={() => handleSelectType(method)}
+              >
+                {/* Selected check */}
+                {isSelected && (
+                  <div className="absolute top-2 right-2 w-5 h-5 bg-blue-500 rounded-full flex items-center justify-center">
+                    <Check className="w-3 h-3 text-white" />
+                  </div>
+                )}
+                
+                <div className="text-center space-y-2">
+                  <span className="text-3xl">{details?.icon || '📊'}</span>
+                  <h4 className="font-semibold text-gray-900">{method.name.en}</h4>
+                  <p className="text-xs text-gray-500">{method.name.ar}</p>
+                  {details && (
+                    <div className="font-mono text-xs bg-gray-100 rounded px-2 py-1 text-gray-600">
+                      {details.flow}
+                    </div>
+                  )}
+                  {details && (
+                    <p className="text-xs text-gray-400">{details.examples}</p>
+                  )}
+                </div>
+              </Card>
+            );
+          })}
+        </div>
+      </div>
+      
+      {/* Description (Optional) */}
+      <div className="space-y-2 pt-4 border-t">
+        <Label tooltip="Optional: Brief description of this exercise.">
+          Description
+        </Label>
+        <div className="grid grid-cols-2 gap-4">
+          <Textarea
+            placeholder="English description"
+            rows={2}
+            {...register('description.en')}
+          />
+          <div dir="rtl">
+            <Textarea
+              placeholder="الوصف بالعربية"
+              rows={2}
+              {...register('description.ar')}
+            />
+          </div>
+        </div>
+      </div>
+      
+      {/* Instructions (Optional) */}
+      <div className="space-y-2">
+        <Label tooltip="Optional: How to perform this exercise correctly.">
+          Instructions
+        </Label>
+        <div className="grid grid-cols-2 gap-4">
+          <Textarea
+            placeholder="English instructions"
+            rows={3}
+            {...register('instructions.en')}
+          />
+          <div dir="rtl">
+            <Textarea
+              placeholder="التعليمات بالعربية"
+              rows={3}
+              {...register('instructions.ar')}
+            />
+          </div>
+        </div>
       </div>
     </div>
   );

@@ -4,7 +4,16 @@
  * Exercise Creation Wizard Page
  * =============================
  * 
- * 8-step wizard for creating exercises that match the Android JSON schema.
+ * 7-step wizard for creating exercises that match the Android JSON schema.
+ * 
+ * Steps:
+ * 1. Basic Info + Type (combined)
+ * 2. Camera Position
+ * 3. Joint Configuration  
+ * 4. Position Checks (optional)
+ * 5. Rep/Duration Config
+ * 6. Extras (attributes + feedback)
+ * 7. Review & Publish
  */
 
 import { useEffect, useState, useCallback } from 'react';
@@ -14,7 +23,6 @@ import { WizardStepper } from '@/components/wizard/WizardStepper';
 import { AutoSaveIndicator } from '@/components/wizard/AutoSaveIndicator';
 import {
   BasicInfoStep,
-  CountingMethodStep,
   CameraPositionStep,
   JointConfigStep,
   PositionChecksStep,
@@ -22,6 +30,9 @@ import {
   ExtrasStep,
   ReviewStep,
 } from '@/components/wizard/steps';
+
+// Total number of steps (now 7 instead of 8)
+const TOTAL_STEPS = 7;
 
 // Lookup data types
 interface LookupData {
@@ -36,7 +47,7 @@ interface LookupData {
 
 export default function NewExercisePage() {
   const router = useRouter();
-  const { currentStep, setStep, nextStep, prevStep, resetWizard, exerciseId, setSaveStatus, markAsSaved, setExerciseId } = useWizardStore();
+  const { currentStep, setStep, resetWizard, exerciseId, setSaveStatus, markAsSaved, setExerciseId } = useWizardStore();
   
   const [lookupData, setLookupData] = useState<LookupData | null>(null);
   const [loading, setLoading] = useState(true);
@@ -60,16 +71,10 @@ export default function NewExercisePage() {
     fetchLookupData();
   }, []);
   
-  // Reset wizard on unmount
-  useEffect(() => {
-    return () => {
-      // Optionally reset on leave - commented out to preserve state
-      // resetWizard();
-    };
-  }, []);
-  
   // Auto-save on step change
   const handleStepChange = useCallback(async (newStep: number) => {
+    if (newStep < 1 || newStep > TOTAL_STEPS) return;
+    
     const store = useWizardStore.getState();
     
     // Only auto-save if dirty and has basic info
@@ -78,14 +83,12 @@ export default function NewExercisePage() {
       
       try {
         if (store.exerciseId) {
-          // Update existing draft
           await fetch(`/api/exercises/${store.exerciseId}`, {
             method: 'PUT',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(buildPayload(store)),
           });
         } else {
-          // Create new draft
           const response = await fetch('/api/exercises', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -126,7 +129,7 @@ export default function NewExercisePage() {
           sortOrder: idx + 1,
         })),
         feedbackMessages: store.extras.feedbackMessages,
-        difficultyLevels: ['beginner', 'normal', 'advanced'].map((level, dlIndex) => ({
+        difficultyLevels: ['beginner', 'normal', 'advanced'].map((level) => ({
           difficultyTypeCode: level,
           name: { ar: level === 'beginner' ? 'مبتدئ' : level === 'normal' ? 'عادي' : 'محترف', en: level.charAt(0).toUpperCase() + level.slice(1) },
           repCountingConfig: store.repConfig[level as keyof typeof store.repConfig],
@@ -173,7 +176,6 @@ export default function NewExercisePage() {
     try {
       let id = exerciseId;
       
-      // Save first if needed
       if (!id) {
         const response = await fetch('/api/exercises', {
           method: 'POST',
@@ -191,12 +193,8 @@ export default function NewExercisePage() {
         });
       }
       
-      // Publish
       if (id) {
-        await fetch(`/api/exercises/${id}/publish`, {
-          method: 'POST',
-        });
-        
+        await fetch(`/api/exercises/${id}/publish`, { method: 'POST' });
         markAsSaved();
         resetWizard();
         router.push('/admin/exercises');
@@ -253,43 +251,43 @@ export default function NewExercisePage() {
       
       {/* Stepper */}
       <div className="bg-white border-b">
-        <WizardStepper />
+        <WizardStepper totalSteps={TOTAL_STEPS} />
       </div>
       
       {/* Content */}
       <main className="max-w-7xl mx-auto px-4 py-8">
         {currentStep === 1 && (
-          <BasicInfoStep categories={lookupData.categories} />
+          <BasicInfoStep 
+            categories={lookupData.categories} 
+            countingMethods={lookupData.countingMethods}
+          />
         )}
         {currentStep === 2 && (
-          <CountingMethodStep countingMethods={lookupData.countingMethods} />
-        )}
-        {currentStep === 3 && (
           <CameraPositionStep cameraPositions={lookupData.cameraPositions} />
         )}
-        {currentStep === 4 && (
+        {currentStep === 3 && (
           <JointConfigStep joints={lookupData.joints} />
         )}
-        {currentStep === 5 && (
+        {currentStep === 4 && (
           <PositionChecksStep />
         )}
-        {currentStep === 6 && (
+        {currentStep === 5 && (
           <RepConfigStep />
         )}
-        {currentStep === 7 && (
+        {currentStep === 6 && (
           <ExtrasStep 
             muscles={lookupData.muscles} 
             equipment={lookupData.equipment} 
             tags={lookupData.tags} 
           />
         )}
-        {currentStep === 8 && (
+        {currentStep === 7 && (
           <ReviewStep onSaveDraft={handleSaveDraft} onPublish={handlePublish} />
         )}
       </main>
       
       {/* Footer Navigation */}
-      {currentStep < 8 && (
+      {currentStep < TOTAL_STEPS && (
         <footer className="fixed bottom-0 left-0 right-0 bg-white border-t py-4 px-4">
           <div className="max-w-7xl mx-auto flex items-center justify-between">
             <button
@@ -308,7 +306,7 @@ export default function NewExercisePage() {
             </button>
             
             <span className="text-sm text-gray-500">
-              Step {currentStep} of 8
+              Step {currentStep} of {TOTAL_STEPS}
             </span>
             
             <button

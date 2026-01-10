@@ -100,12 +100,8 @@ class TrainingEngine(
 
     private val lastPositionEventTimes = mutableMapOf<String, Long>()
     
-    /**
-     * Last time camera warning was emitted (to prevent spam)
-     * Camera warnings use a longer cooldown (5 seconds) since they're less actionable
-     */
-    private var lastCameraWarningTime: Long = 0L
-    private val cameraWarningCooldownMs: Long = 5000L  // 5 seconds between camera warnings
+    // NOTE: Camera warning throttling is now handled exclusively by MessageOrchestrator
+    // in FeedbackManager for consistent message management
     
     // ==================== Position Validator ====================
     
@@ -390,7 +386,7 @@ class TrainingEngine(
             positionValidator?.clearCooldowns()
             formValidator.reset()  // Reset zone hysteresis state
             lastPositionEventTimes.clear()
-            lastCameraWarningTime = 0L  // Reset camera warning throttle
+            // Camera warning throttle is now handled by MessageOrchestrator
             
             _currentPhase.value = Phase.IDLE
             _repCount.value = 0
@@ -700,9 +696,8 @@ class TrainingEngine(
             }
             
             positionValidation?.cameraWarning?.let { warning ->
-                if (shouldEmitCameraWarning()) {
-                    emitEvent(FeedbackEvent.CameraPositionWarning(warning))
-                }
+                // Always emit - throttling is handled by MessageOrchestrator in FeedbackManager
+                emitEvent(FeedbackEvent.CameraPositionWarning(warning))
             }
             
             // 11. Handle based on counting method
@@ -885,17 +880,7 @@ class TrainingEngine(
         return true
     }
     
-    /**
-     * Throttle camera position warning events.
-     * Uses a longer cooldown (5 seconds) since camera position doesn't change frequently
-     * and the user needs time to adjust their position.
-     */
-    private fun shouldEmitCameraWarning(): Boolean {
-        val now = System.currentTimeMillis()
-        if (now - lastCameraWarningTime < cameraWarningCooldownMs) return false
-        lastCameraWarningTime = now
-        return true
-    }
+    // NOTE: shouldEmitCameraWarning() removed - throttling now handled by MessageOrchestrator
     
     // ==================== Getters ====================
     

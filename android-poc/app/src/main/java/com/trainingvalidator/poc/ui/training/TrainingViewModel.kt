@@ -268,6 +268,29 @@ class TrainingViewModel(
         }
     }
     
+    /**
+     * Start training for video mode - skips SETUP_POSE and countdown
+     * In video mode, we don't need pose validation before starting
+     */
+    fun startVideoModeTraining() {
+        sessionStartTime = System.currentTimeMillis()
+        feedbackManager?.resetMessageStates()
+        
+        trainingEngine?.start()
+        observeTrainingEngine()
+        
+        // Video mode starts immediately (skip SETUP_POSE and COUNTDOWN).
+        // TrainingStateManager doesn't allow SETUP_POSE -> TRAINING via transitionTo(),
+        // so we force the state here intentionally.
+        stateManager.forceState(TrainingStateManager.TrainingState.TRAINING)
+        
+        viewModelScope.launch {
+            _events.emit(TrainingUIEvent.TrainingStarted)
+        }
+        
+        // Intentionally no verbose logs here (kept clean for production)
+    }
+    
     private fun startWorkoutTraining() {
         val workoutEngine = workoutTrainingEngine ?: return
         
@@ -331,6 +354,11 @@ class TrainingViewModel(
         when (stateManager.currentState) {
             TrainingStateManager.TrainingState.SETUP_POSE,
             TrainingStateManager.TrainingState.VISIBILITY_SETUP_POSE -> {
+                // Skip pose validation in video mode - no countdown needed
+                if (_isVideoMode.value) {
+                    return
+                }
+                
                 val result = poseValidator.validate(
                     angles = angles,
                     exerciseConfig = _exerciseConfig.value,
@@ -355,6 +383,11 @@ class TrainingViewModel(
             }
             
             TrainingStateManager.TrainingState.COUNTDOWN -> {
+                // Skip countdown validation in video mode
+                if (_isVideoMode.value) {
+                    return
+                }
+                
                 val result = poseValidator.validate(
                     angles = angles,
                     exerciseConfig = _exerciseConfig.value,

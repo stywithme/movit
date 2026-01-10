@@ -335,32 +335,40 @@ export function useWizardFormData() {
 
 /**
  * Check if a step is complete
+ * 
+ * Steps (7 total):
+ * 1. Basic Info + Type
+ * 2. Camera Position
+ * 3. Joint Configuration
+ * 4. Position Checks (optional)
+ * 5. Rep/Duration Config
+ * 6. Extras (optional)
+ * 7. Review
  */
 export function useStepComplete(step: number): boolean {
   const store = useWizardStore();
   
   switch (step) {
-    case 1:
+    case 1: // Basic Info + Type
       return !!(
         store.basicInfo.name?.en && 
         store.basicInfo.name?.ar && 
-        store.basicInfo.categoryId
+        store.basicInfo.categoryId &&
+        store.countingMethod.countingMethodId
       );
-    case 2:
-      return !!store.countingMethod.countingMethodId;
-    case 3:
+    case 2: // Camera Position
       return (store.cameraPosition.cameraPositionIds?.length ?? 0) > 0;
-    case 4:
+    case 3: // Joint Configuration
       return (store.jointConfig.trackedJoints?.length ?? 0) > 0 &&
         (store.jointConfig.trackedJoints?.some(j => j.role === 'primary') ?? false);
-    case 5:
-      return true; // Optional step
-    case 6:
+    case 4: // Position Checks (optional)
+      return true;
+    case 5: // Rep/Duration Config
       return true; // Has defaults
-    case 7:
-      return true; // Optional step
-    case 8:
-      return true; // Review step
+    case 6: // Extras (optional)
+      return true;
+    case 7: // Review
+      return true;
     default:
       return false;
   }
