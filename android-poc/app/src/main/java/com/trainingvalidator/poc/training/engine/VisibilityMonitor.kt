@@ -85,7 +85,17 @@ class VisibilityMonitor(
     }
     
     /**
-     * Check visibility of each required joint
+     * All landmark indices required for angle calculation
+     * Includes all 3 points needed for each tracked joint's angle
+     */
+    private val requiredLandmarkIndices: Set<Int> = 
+        JointLandmarkMapping.getAllLandmarksForAngles(requiredJoints)
+    
+    /**
+     * Check visibility of each required joint and its dependencies
+     * 
+     * For each tracked joint (e.g., right_elbow), we need to check visibility of
+     * all 3 landmarks used to calculate its angle (shoulder, elbow, wrist).
      * 
      * For front camera, we mirror the landmark index because:
      * - The image is mirrored before pose detection
@@ -96,16 +106,17 @@ class VisibilityMonitor(
         landmarks: List<SmoothedLandmark>,
         isFrontCamera: Boolean
     ): List<JointVisibility> {
-        return requiredJoints.map { jointName ->
-            val rawIndex = JointLandmarkMapping.jointToLandmark(jointName)
+        // Check all required landmarks (not just the joint itself)
+        return requiredLandmarkIndices.map { rawIndex ->
             // For front camera, check the mirrored landmark index
-            val effectiveIndex = if (isFrontCamera && rawIndex != null) {
+            val effectiveIndex = if (isFrontCamera) {
                 BodyLandmarks.getMirroredIndex(rawIndex)
             } else {
                 rawIndex
             }
-            val landmark = effectiveIndex?.let { landmarks.getOrNull(it) }
+            val landmark = landmarks.getOrNull(effectiveIndex)
             val visibility = landmark?.visibility ?: 0f
+            val jointName = JointLandmarkMapping.landmarkToJoint(rawIndex) ?: "landmark_$rawIndex"
             
             JointVisibility(
                 jointName = jointName,

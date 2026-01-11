@@ -2,7 +2,6 @@ package com.trainingvalidator.poc.ui.training
 
 import android.content.Context
 import android.content.res.AssetManager
-import android.net.Uri
 import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
@@ -21,6 +20,11 @@ import com.trainingvalidator.poc.training.loader.WorkoutLoader
 import com.trainingvalidator.poc.training.models.DifficultyType
 import com.trainingvalidator.poc.training.models.ExerciseConfig
 import com.trainingvalidator.poc.training.models.WorkoutConfig
+import com.trainingvalidator.poc.training.session.PauseReason
+import com.trainingvalidator.poc.training.session.SessionState
+import com.trainingvalidator.poc.training.session.SessionSupervisor
+import com.trainingvalidator.poc.training.session.SupervisorAction
+import com.trainingvalidator.poc.training.session.SupervisorSignal
 import com.trainingvalidator.poc.training.workout.LoadedExercise
 import com.trainingvalidator.poc.training.workout.SwitchResult
 import com.trainingvalidator.poc.training.workout.WorkoutTrainingEngine
@@ -38,7 +42,7 @@ import kotlinx.coroutines.launch
  * TrainingViewModel - Central state management for training
  * 
  * Manages:
- * - Training state machine
+ * - Session state via SessionSupervisor (Single Source of Truth)
  * - Exercise/Workout loading
  * - Training engine coordination
  * - UI state updates
@@ -51,9 +55,15 @@ class TrainingViewModel(
         private const val TAG = "TrainingViewModel"
     }
     
-    // ==================== State Managers ====================
+    // ==================== Session Supervisor (Single Source of Truth) ====================
     
+    val supervisor = SessionSupervisor()
+    
+    // ==================== State Managers (Legacy - kept for compatibility) ====================
+    
+    @Deprecated("Use supervisor.state instead")
     val stateManager = TrainingStateManager()
+    
     val poseValidator = PoseValidator()
     val countdownController = CountdownController()
     
@@ -133,8 +143,18 @@ class TrainingViewModel(
     private var isSwitchingExercise = false
     
     private var engineObserverJob: Job? = null
+    private var supervisorObserverJob: Job? = null
     
     // ==================== Initialization ====================
+    
+    init {
+        // Observe supervisor actions and execute them
+        supervisorObserverJob = viewModelScope.launch {
+            supervisor.actions.collect { action ->
+                executeAction(action)
+            }
+        }
+    }
     
     /**
      * Load single exercise
@@ -166,6 +186,9 @@ class TrainingViewModel(
             targetRepsOverride = targetRepsOverride,
             targetDurationMsOverride = targetDurationMsOverride
         )
+        
+        // Notify supervisor that exercise is loaded
+        supervisor.onExerciseLoaded()
         
         Log.d(TAG, "Loaded exercise: ${config.name.en}")
         return true
@@ -222,6 +245,9 @@ class TrainingViewModel(
         _exerciseName.value = firstExercise.config.name.en
         _poseVariantIndex.value = firstExercise.workoutExercise.variantIndex
         
+        // Notify supervisor
+        supervisor.onExerciseLoaded()
+        
         Log.d(TAG, "Loaded workout: ${config.name.en} with ${loadedExercises.size} exercises")
         return true
     }
@@ -231,6 +257,7 @@ class TrainingViewModel(
      */
     fun initializeFeedback(context: Context, isVideoMode: Boolean) {
         _isVideoMode.value = isVideoMode
+        supervisor.isVideoMode = isVideoMode
         
         feedbackManager = FeedbackManager(
             context = context,
@@ -245,50 +272,215 @@ class TrainingViewModel(
         feedbackManager?.initialize()
     }
     
-    // ==================== Training Control ====================
+    // ==================== Supervisor Signal Methods ====================
     
     /**
-     * Start training
+     * Called from Activity for every frame with detected pose
      */
-    fun startTraining() {
-        sessionStartTime = System.currentTimeMillis()
-        feedbackManager?.resetMessageStates()
-        
-        if (_isWorkoutMode.value) {
-            startWorkoutTraining()
-        } else {
-            trainingEngine?.start()
-            observeTrainingEngine()
-        }
-        
-        stateManager.transitionTo(TrainingStateManager.TrainingState.TRAINING)
-        
-        viewModelScope.launch {
-            _events.emit(TrainingUIEvent.TrainingStarted)
-        }
+    fun onPoseFrame(angles: JointAngles, landmarks: List<SmoothedLandmark>?, isFrontCamera: Boolean) {
+        supervisor.processSignal(SupervisorSignal.PoseFrame(angles, landmarks, isFrontCamera))
     }
     
     /**
-     * Start training for video mode - skips SETUP_POSE and countdown
-     * In video mode, we don't need pose validation before starting
+     * Called from Activity when no pose detected
      */
-    fun startVideoModeTraining() {
-        sessionStartTime = System.currentTimeMillis()
-        feedbackManager?.resetMessageStates()
-        
-        trainingEngine?.start()
-        observeTrainingEngine()
-        
-        // Video mode starts immediately (skip SETUP_POSE and COUNTDOWN).
-        // TrainingStateManager doesn't allow SETUP_POSE -> TRAINING via transitionTo(),
-        // so we force the state here intentionally.
-        stateManager.forceState(TrainingStateManager.TrainingState.TRAINING)
-        
-        viewModelScope.launch {
-            _events.emit(TrainingUIEvent.TrainingStarted)
+    fun onNoPoseDetected() {
+        supervisor.processSignal(SupervisorSignal.NoPoseFrame)
+    }
+    
+    /**
+     * Called when countdown finishes
+     */
+    fun onCountdownFinished() {
+        supervisor.processSignal(SupervisorSignal.CountdownFinished)
+    }
+    
+    /**
+     * Request pause (from UI)
+     */
+    fun requestPause() {
+        supervisor.processSignal(SupervisorSignal.PauseRequested)
+    }
+    
+    /**
+     * Request resume (from UI)
+     */
+    fun requestResume() {
+        supervisor.processSignal(SupervisorSignal.ResumeRequested)
+    }
+    
+    /**
+     * Request stop (from UI)
+     */
+    fun requestStop() {
+        supervisor.processSignal(SupervisorSignal.StopRequested)
+    }
+    
+    /**
+     * Video mode start request
+     */
+    fun requestVideoStart() {
+        supervisor.processSignal(SupervisorSignal.StartRequested)
+    }
+    
+    /**
+     * Video ended
+     */
+    fun onVideoEnded() {
+        supervisor.processSignal(SupervisorSignal.VideoEnded)
+    }
+    
+    /**
+     * Video seeked
+     */
+    fun onVideoSeeked() {
+        supervisor.processSignal(SupervisorSignal.VideoSeeked)
+    }
+    
+    // ==================== Action Execution ====================
+    
+    /**
+     * Execute actions from SessionSupervisor
+     */
+    private fun executeAction(action: SupervisorAction) {
+        when (action) {
+            // Engine Commands
+            is SupervisorAction.StartEngine -> {
+                sessionStartTime = System.currentTimeMillis()
+                feedbackManager?.resetMessageStates()
+                
+                if (_isWorkoutMode.value) {
+                    startWorkoutTraining()
+                } else {
+                    trainingEngine?.start()
+                    observeTrainingEngine()
+                }
+                
+                viewModelScope.launch {
+                    _events.emit(TrainingUIEvent.TrainingStarted)
+                }
+            }
+            
+            is SupervisorAction.PauseEngine -> {
+                trainingEngine?.pause()
+            }
+            
+            is SupervisorAction.ResumeEngine -> {
+                trainingEngine?.resume()
+            }
+            
+            is SupervisorAction.StopEngine -> {
+                val summary = trainingEngine?.stop()
+                viewModelScope.launch {
+                    _events.emit(TrainingUIEvent.TrainingCompleted(summary))
+                }
+            }
+            
+            is SupervisorAction.ResumeFromVisibilityPause -> {
+                trainingEngine?.resumeFromVisibilityPause()
+            }
+            
+            is SupervisorAction.ResetEngine -> {
+                trainingEngine?.stop()
+                trainingEngine?.start()
+            }
+            
+            // Frame Processing
+            is SupervisorAction.ProcessFrame -> {
+                trainingEngine?.processFrame(action.angles, action.landmarks, action.isFrontCamera)
+            }
+            
+            is SupervisorAction.ValidatePose -> {
+                val result = poseValidator.validate(
+                    angles = action.angles,
+                    exerciseConfig = _exerciseConfig.value,
+                    poseVariantIndex = _poseVariantIndex.value
+                )
+                
+                // Emit validation update for UI
+                viewModelScope.launch {
+                    _events.emit(TrainingUIEvent.PoseValidationUpdate(result))
+                }
+                
+                // If pose confirmed, notify supervisor
+                if (result.isConfirmed) {
+                    supervisor.processSignal(SupervisorSignal.PoseConfirmed)
+                } else if (!result.isValid && supervisor.state.value == SessionState.COUNTDOWN) {
+                    // Pose became invalid during countdown
+                    supervisor.processSignal(SupervisorSignal.PoseInvalid)
+                } else if (!result.isValid && supervisor.state.value == SessionState.RESUME_COUNTDOWN) {
+                    supervisor.processSignal(SupervisorSignal.PoseInvalid)
+                }
+            }
+            
+            // UI Commands
+            is SupervisorAction.ShowSetupPose -> {
+                poseValidator.reset()
+                viewModelScope.launch {
+                    _events.emit(TrainingUIEvent.ShowSetupPose)
+                }
+            }
+            
+            is SupervisorAction.StartCountdown -> {
+                countdownController.start()
+                viewModelScope.launch {
+                    _events.emit(TrainingUIEvent.StartCountdown)
+                }
+            }
+            
+            is SupervisorAction.CancelCountdown -> {
+                countdownController.cancel()
+                poseValidator.reset()
+                viewModelScope.launch {
+                    _events.emit(TrainingUIEvent.CountdownCancelled)
+                }
+            }
+            
+            is SupervisorAction.ShowAutoPaused -> {
+                viewModelScope.launch {
+                    _events.emit(TrainingUIEvent.AutoPaused(action.reason))
+                }
+            }
+            
+            is SupervisorAction.ShowNoPoseWarning -> {
+                viewModelScope.launch {
+                    _events.emit(TrainingUIEvent.NoPoseWarning(action.elapsedMs))
+                }
+            }
+            
+            is SupervisorAction.ShowCompleted -> {
+                _isCompleted.value = true
+                viewModelScope.launch {
+                    _events.emit(TrainingUIEvent.ExerciseCompleted)
+                }
+            }
+            
+            // Video Commands
+            is SupervisorAction.PauseVideo -> {
+                viewModelScope.launch {
+                    _events.emit(TrainingUIEvent.PauseVideoPlayback)
+                }
+            }
+            
+            is SupervisorAction.ResumeVideo -> {
+                viewModelScope.launch {
+                    _events.emit(TrainingUIEvent.ResumeVideoPlayback)
+                }
+            }
         }
-        
-        // Intentionally no verbose logs here (kept clean for production)
+    }
+    
+    // ==================== Legacy Training Control (Deprecated) ====================
+    
+    @Deprecated("Use supervisor signals instead")
+    fun startTraining() {
+        supervisor.processSignal(SupervisorSignal.StartRequested)
+    }
+    
+    @Deprecated("Use supervisor signals instead")
+    fun startVideoModeTraining() {
+        supervisor.isVideoMode = true
+        supervisor.processSignal(SupervisorSignal.StartRequested)
     }
     
     private fun startWorkoutTraining() {
@@ -303,114 +495,36 @@ class TrainingViewModel(
         Log.d(TAG, "Workout training started: ${workoutEngine.currentExercise.value?.getDisplayName()}")
     }
     
-    /**
-     * Pause training
-     */
+    @Deprecated("Use requestPause() instead")
     fun pauseTraining() {
-        trainingEngine?.pause()
-        stateManager.transitionTo(TrainingStateManager.TrainingState.PAUSED)
+        requestPause()
     }
     
-    /**
-     * Resume training
-     */
+    @Deprecated("Use requestResume() instead")
     fun resumeTraining() {
-        trainingEngine?.resume()
-        stateManager.transitionTo(TrainingStateManager.TrainingState.TRAINING)
+        requestResume()
     }
     
-    /**
-     * Stop training and get summary
-     */
+    @Deprecated("Use requestStop() instead")
     fun stopTraining(): SessionSummary? {
-        val summary = trainingEngine?.stop()
-        stateManager.transitionTo(TrainingStateManager.TrainingState.COMPLETED)
-        
-        viewModelScope.launch {
-            _events.emit(TrainingUIEvent.TrainingCompleted(summary))
-        }
-        
-        return summary
+        requestStop()
+        return trainingEngine?.stop()
     }
     
-    /**
-     * Resume from visibility pause
-     */
+    @Deprecated("Use supervisor flow instead")
     fun resumeFromVisibilityPause() {
         trainingEngine?.resumeFromVisibilityPause()
-        stateManager.transitionTo(TrainingStateManager.TrainingState.TRAINING)
     }
     
-    // ==================== Frame Processing ====================
+    // ==================== Legacy Frame Processing (Deprecated) ====================
     
-    /**
-     * Process a pose frame
-     */
+    @Deprecated("Use onPoseFrame() instead")
     fun processFrame(
         angles: JointAngles,
         smoothedLandmarks: List<SmoothedLandmark>?,
         isFrontCamera: Boolean
     ) {
-        when (stateManager.currentState) {
-            TrainingStateManager.TrainingState.SETUP_POSE,
-            TrainingStateManager.TrainingState.VISIBILITY_SETUP_POSE -> {
-                // Skip pose validation in video mode - no countdown needed
-                if (_isVideoMode.value) {
-                    return
-                }
-                
-                val result = poseValidator.validate(
-                    angles = angles,
-                    exerciseConfig = _exerciseConfig.value,
-                    poseVariantIndex = _poseVariantIndex.value
-                )
-                
-                viewModelScope.launch {
-                    _events.emit(TrainingUIEvent.PoseValidationUpdate(result))
-                }
-                
-                if (result.isConfirmed) {
-                    if (stateManager.currentState == TrainingStateManager.TrainingState.VISIBILITY_SETUP_POSE) {
-                        viewModelScope.launch {
-                            _events.emit(TrainingUIEvent.StartVisibilityResumeCountdown)
-                        }
-                    } else {
-                        viewModelScope.launch {
-                            _events.emit(TrainingUIEvent.StartCountdown)
-                        }
-                    }
-                }
-            }
-            
-            TrainingStateManager.TrainingState.COUNTDOWN -> {
-                // Skip countdown validation in video mode
-                if (_isVideoMode.value) {
-                    return
-                }
-                
-                val result = poseValidator.validate(
-                    angles = angles,
-                    exerciseConfig = _exerciseConfig.value,
-                    poseVariantIndex = _poseVariantIndex.value
-                )
-                
-                if (!result.isValid) {
-                    countdownController.cancel()
-                    poseValidator.reset()
-                    stateManager.transitionTo(TrainingStateManager.TrainingState.SETUP_POSE)
-                    
-                    viewModelScope.launch {
-                        _events.emit(TrainingUIEvent.CountdownCancelled)
-                    }
-                }
-            }
-            
-            TrainingStateManager.TrainingState.TRAINING -> {
-                trainingEngine?.processFrame(angles, smoothedLandmarks, isFrontCamera)
-            }
-            
-            else -> {}
-        }
+        onPoseFrame(angles, smoothedLandmarks, isFrontCamera)
     }
     
     // ==================== Engine Observers ====================
@@ -454,19 +568,32 @@ class TrainingViewModel(
             // Observe completion
             launch {
                 engine.isCompleted.collect { completed ->
-                    if (completed && stateManager.isActiveTraining()) {
-                        _isCompleted.value = true
-                        _events.emit(TrainingUIEvent.ExerciseCompleted)
+                    if (completed && supervisor.state.value == SessionState.TRAINING) {
+                        supervisor.processSignal(SupervisorSignal.TargetReached)
                     }
                 }
             }
             
-            // Observe feedback events
+            // Observe feedback events and forward to supervisor
             launch {
                 engine.events.collect { event ->
+                    // Forward to FeedbackManager for audio/haptic
                     feedbackManager?.emit(event)
                     _feedbackEvents.emit(event)
-                    handleFeedbackEvent(event)
+                    
+                    // Forward visibility events to supervisor
+                    when (event) {
+                        is FeedbackEvent.VisibilityPaused -> {
+                            supervisor.processSignal(SupervisorSignal.VisibilityPaused)
+                        }
+                        is FeedbackEvent.VisibilityResumeCountdown -> {
+                            supervisor.processSignal(SupervisorSignal.VisibilityRestored)
+                        }
+                        is FeedbackEvent.TargetReached -> {
+                            supervisor.processSignal(SupervisorSignal.TargetReached)
+                        }
+                        else -> {}
+                    }
                 }
             }
         }
@@ -493,7 +620,7 @@ class TrainingViewModel(
                         currentRepsInSession = count
                         
                         val repsLimit = workoutEngine.getRepsForCurrentSession()
-                        if (count >= repsLimit && stateManager.isActiveTraining()) {
+                        if (count >= repsLimit && supervisor.state.value == SessionState.TRAINING) {
                             isSwitchingExercise = true
                             delay(500)
                             handleWorkoutRepLimitReached(count)
@@ -514,7 +641,17 @@ class TrainingViewModel(
                 engine.events.collect { event ->
                     feedbackManager?.emit(event)
                     _feedbackEvents.emit(event)
-                    handleFeedbackEvent(event)
+                    
+                    // Forward visibility events to supervisor
+                    when (event) {
+                        is FeedbackEvent.VisibilityPaused -> {
+                            supervisor.processSignal(SupervisorSignal.VisibilityPaused)
+                        }
+                        is FeedbackEvent.VisibilityResumeCountdown -> {
+                            supervisor.processSignal(SupervisorSignal.VisibilityRestored)
+                        }
+                        else -> {}
+                    }
                 }
             }
         }
@@ -582,7 +719,6 @@ class TrainingViewModel(
         val workoutEngine = workoutTrainingEngine ?: return
         
         isSwitchingExercise = false
-        stateManager.transitionTo(TrainingStateManager.TrainingState.COMPLETED)
         
         viewModelScope.launch {
             _events.emit(TrainingUIEvent.WorkoutCompleted(
@@ -590,30 +726,6 @@ class TrainingViewModel(
                 accuracy = workoutEngine.getOverallAccuracy(),
                 durationMs = System.currentTimeMillis() - sessionStartTime
             ))
-        }
-    }
-    
-    private fun handleFeedbackEvent(event: FeedbackEvent) {
-        when (event) {
-            is FeedbackEvent.VisibilityPaused -> {
-                stateManager.saveRepCountForVisibility(event.savedRepCount)
-                stateManager.transitionTo(TrainingStateManager.TrainingState.VISIBILITY_PAUSED)
-                
-                viewModelScope.launch {
-                    _events.emit(TrainingUIEvent.VisibilityPaused(event))
-                }
-            }
-            
-            is FeedbackEvent.VisibilityResumeCountdown -> {
-                stateManager.saveRepCountForVisibility(event.resumeFromRep)
-                stateManager.transitionTo(TrainingStateManager.TrainingState.VISIBILITY_SETUP_POSE)
-                
-                viewModelScope.launch {
-                    _events.emit(TrainingUIEvent.VisibilityResumeStartPose(event))
-                }
-            }
-            
-            else -> {}
         }
     }
     
@@ -672,9 +784,11 @@ class TrainingViewModel(
     override fun onCleared() {
         super.onCleared()
         engineObserverJob?.cancel()
+        supervisorObserverJob?.cancel()
         countdownController.release()
         feedbackManager?.release()
         workoutTrainingEngine?.stop()
+        supervisor.reset()
     }
     
     // ==================== Factory ====================
@@ -697,6 +811,9 @@ sealed class TrainingUIEvent {
     /** Training has started */
     object TrainingStarted : TrainingUIEvent()
     
+    /** Show setup pose panel */
+    object ShowSetupPose : TrainingUIEvent()
+    
     /** Start countdown timer */
     object StartCountdown : TrainingUIEvent()
     
@@ -711,6 +828,12 @@ sealed class TrainingUIEvent {
     
     /** Training completed (with summary) */
     data class TrainingCompleted(val summary: SessionSummary?) : TrainingUIEvent()
+    
+    /** Auto-paused (visibility or no pose) */
+    data class AutoPaused(val reason: PauseReason) : TrainingUIEvent()
+    
+    /** No pose warning (before auto-pause) */
+    data class NoPoseWarning(val elapsedMs: Long) : TrainingUIEvent()
     
     /** Exercise switched in workout mode */
     data class ExerciseSwitched(
@@ -729,12 +852,20 @@ sealed class TrainingUIEvent {
         val durationMs: Long
     ) : TrainingUIEvent()
     
-    /** Visibility paused - joints not visible */
+    /** Pause video playback (video mode) */
+    object PauseVideoPlayback : TrainingUIEvent()
+    
+    /** Resume video playback (video mode) */
+    object ResumeVideoPlayback : TrainingUIEvent()
+    
+    // ==================== Legacy Events (for backward compatibility) ====================
+    
+    @Deprecated("Use AutoPaused instead")
     data class VisibilityPaused(val event: FeedbackEvent.VisibilityPaused) : TrainingUIEvent()
     
-    /** Visibility returned - validate start pose before resume */
+    @Deprecated("Use ShowSetupPose instead")
     data class VisibilityResumeStartPose(val event: FeedbackEvent.VisibilityResumeCountdown) : TrainingUIEvent()
     
-    /** Start visibility resume countdown */
+    @Deprecated("Use StartCountdown instead")
     object StartVisibilityResumeCountdown : TrainingUIEvent()
 }

@@ -7,6 +7,7 @@ import android.os.Vibrator
 import android.os.VibratorManager
 import android.speech.tts.TextToSpeech
 import android.util.Log
+import androidx.core.content.ContextCompat
 import com.trainingvalidator.poc.training.engine.PositionError
 import com.trainingvalidator.poc.training.models.CheckSeverity
 import com.trainingvalidator.poc.training.models.JointError
@@ -93,8 +94,8 @@ class FeedbackManager(
         val vibratorManager = context.getSystemService(Context.VIBRATOR_MANAGER_SERVICE) as? VibratorManager
         vibratorManager?.defaultVibrator
     } else {
-        @Suppress("DEPRECATION")
-        context.getSystemService(Context.VIBRATOR_SERVICE) as? Vibrator
+        // Avoid deprecated string-based service lookup
+        ContextCompat.getSystemService(context, Vibrator::class.java)
     }
     
     // Cooldown tracking (legacy - mostly handled by MessageOrchestrator now)
@@ -278,11 +279,13 @@ class FeedbackManager(
         if (!isHapticEnabled) return
         
         try {
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                vibrator?.vibrate(VibrationEffect.createOneShot(30, VibrationEffect.DEFAULT_AMPLITUDE))
-            } else {
-                @Suppress("DEPRECATION")
-                vibrator?.vibrate(30)
+            vibrator?.let { v ->
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                    v.vibrate(VibrationEffect.createOneShot(30, VibrationEffect.DEFAULT_AMPLITUDE))
+                } else {
+                    @Suppress("DEPRECATION")
+                    v.vibrate(30)
+                }
             }
         } catch (e: Exception) {
             Log.e(TAG, "Vibration failed", e)
@@ -638,13 +641,17 @@ class FeedbackManager(
     private fun vibrate(pattern: LongArray, repeat: Int) {
         if (!isHapticEnabled) return
         
-        vibrator?.let { v ->
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                v.vibrate(VibrationEffect.createWaveform(pattern, repeat))
-            } else {
-                @Suppress("DEPRECATION")
-                v.vibrate(pattern, repeat)
+        try {
+            vibrator?.let { v ->
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                    v.vibrate(VibrationEffect.createWaveform(pattern, repeat))
+                } else {
+                    @Suppress("DEPRECATION")
+                    v.vibrate(pattern, repeat)
+                }
             }
+        } catch (e: Exception) {
+            Log.e(TAG, "Vibration failed", e)
         }
     }
     

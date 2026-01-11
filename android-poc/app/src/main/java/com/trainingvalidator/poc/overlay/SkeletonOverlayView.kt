@@ -16,11 +16,11 @@ import com.trainingvalidator.poc.analysis.JointAngles
 import com.trainingvalidator.poc.analysis.SmoothedLandmark
 import com.trainingvalidator.poc.pose.BodyLandmarks
 import com.trainingvalidator.poc.pose.JointLandmarkMapping
+import com.trainingvalidator.poc.training.config.SettingsManager
 import com.trainingvalidator.poc.training.engine.JointArrowInfo
 import com.trainingvalidator.poc.training.engine.JointZone
 import com.trainingvalidator.poc.training.engine.PositionError
 import com.trainingvalidator.poc.training.models.CheckSeverity
-import com.trainingvalidator.poc.training.config.SettingsManager
 import kotlin.math.max
 import kotlin.math.sin
 
@@ -46,15 +46,9 @@ class SkeletonOverlayView @JvmOverloads constructor(
         private const val TRACKED_LINE_WIDTH = 8f
         private const val ERROR_LINE_WIDTH = 10f
         private const val TEXT_SIZE = 26f
-        private const val VISIBILITY_THRESHOLD = 0.5f
         
-        // Non-tracked skeleton opacity (Minimalist: faint but visible)
-        private const val NON_TRACKED_OPACITY = 0.18f
-        
-        // Tracked skeleton opacity based on state
-        // Lower opacity for correct state to reduce visual noise and focus on Arc
-        private const val TRACKED_OPACITY_CORRECT = 0.50f    // Green/Yellow - 50%
-        private const val TRACKED_OPACITY_ERROR = 0.75f      // Orange/Red - 75%
+        // Default visibility threshold (can be overridden by settings)
+        private const val DEFAULT_VISIBILITY_THRESHOLD = 0.5f
         
         // Colors (Modern palette)
         private val COLOR_DEFAULT = Color.parseColor("#80FFFFFF")          // Faint white
@@ -78,6 +72,23 @@ class SkeletonOverlayView @JvmOverloads constructor(
         const val COLOR_LERP_FACTOR = 0.25f  // How fast to transition (0.1 = slow, 0.5 = fast)
         const val ZONE_HYSTERESIS_DEGREES = 2.0  // Dead zone to prevent flickering
     }
+    
+    // ==================== Settings-based values ====================
+    
+    // Visibility threshold from settings
+    private val visibilityThreshold: Float
+        get() = if (SettingsManager.isLoaded) SettingsManager.getOverlayVisibility() 
+                else DEFAULT_VISIBILITY_THRESHOLD
+    
+    // Opacity values from settings
+    private val nonTrackedOpacity: Float
+        get() = if (SettingsManager.isLoaded) SettingsManager.getNonTrackedOpacity() else 0.18f
+    
+    private val trackedOpacityCorrect: Float
+        get() = if (SettingsManager.isLoaded) SettingsManager.getTrackedCorrectOpacity() else 0.50f
+    
+    private val trackedOpacityError: Float
+        get() = if (SettingsManager.isLoaded) SettingsManager.getTrackedErrorOpacity() else 0.75f
 
     // Paint objects
     private val pointPaint = Paint().apply {
@@ -394,17 +405,22 @@ class SkeletonOverlayView @JvmOverloads constructor(
                     val start = landmarks[startIdx]
                     val end = landmarks[endIdx]
                     
-                    if (start.visibility >= VISIBILITY_THRESHOLD && 
-                        end.visibility >= VISIBILITY_THRESHOLD) {
+                    if (start.visibility >= visibilityThreshold && 
+                        end.visibility >= visibilityThreshold) {
                         
                         // Check if this connection is part of a tracked joint
                         val startJointCode = landmarkIndexToJointCode(startIdx)
                         val endJointCode = landmarkIndexToJointCode(endIdx)
                         
+                        // For front camera, we need to look up the mirrored joint code
+                        // because jointArrowInfos uses the "logical" joint (after angle mirroring)
+                        val effectiveStartJointCode = getEffectiveJointCode(startJointCode)
+                        val effectiveEndJointCode = getEffectiveJointCode(endJointCode)
+                        
                         // Find the relevant joint for this connection (if any)
                         val relevantJointCode = when {
-                            startJointCode in jointArrowInfos -> startJointCode
-                            endJointCode in jointArrowInfos -> endJointCode
+                            effectiveStartJointCode in jointArrowInfos -> effectiveStartJointCode
+                            effectiveEndJointCode in jointArrowInfos -> effectiveEndJointCode
                             else -> null
                         }
                         
@@ -420,9 +436,9 @@ class SkeletonOverlayView @JvmOverloads constructor(
                         // Lower opacity (50%) for correct/warning state to focus on Arc
                         // Higher opacity (75%) for error state to draw attention
                         val trackedOpacity = when {
-                            arrowInfo?.isError == true -> TRACKED_OPACITY_ERROR  // Orange/Red = 75%
-                            arrowInfo?.isWarning == true -> TRACKED_OPACITY_ERROR // Warning = 75%
-                            else -> TRACKED_OPACITY_CORRECT  // Green/Yellow = 50%
+                            arrowInfo?.isError == true -> trackedOpacityError
+                            arrowInfo?.isWarning == true -> trackedOpacityError
+                            else -> trackedOpacityCorrect
                         }
                         
                         // Set color, width, and opacity based on state
@@ -436,12 +452,12 @@ class SkeletonOverlayView @JvmOverloads constructor(
                             isTrackedConnection -> {
                                 linePaint.color = COLOR_LINE_TRACKED
                                 linePaint.strokeWidth = TRACKED_LINE_WIDTH
-                                linePaint.alpha = (TRACKED_OPACITY_CORRECT * 255).toInt()
+                                linePaint.alpha = (trackedOpacityCorrect * 255).toInt()
                             }
                             isTrainingMode -> {
                                 linePaint.color = COLOR_LINE_DEFAULT
                                 linePaint.strokeWidth = LINE_WIDTH
-                                linePaint.alpha = (NON_TRACKED_OPACITY * 255).toInt()
+                                linePaint.alpha = (nonTrackedOpacity * 255).toInt()
                             }
                             else -> {
                                 linePaint.color = COLOR_LINE_DEFAULT
@@ -625,24 +641,27 @@ class SkeletonOverlayView @JvmOverloads constructor(
 
     private fun drawLandmarks(canvas: Canvas, landmarks: List<SmoothedLandmark>) {
         landmarks.forEachIndexed { index, landmark ->
-            if (landmark.visibility >= VISIBILITY_THRESHOLD) {
+            if (landmark.visibility >= visibilityThreshold) {
                 val x = landmark.x * imageWidth * scaleFactor
                 val y = landmark.y * imageHeight * scaleFactor
                 
                 val jointCode = landmarkIndexToJointCode(index)
                 val isTracked = index in trackedLandmarkIndices
                 
+                // For front camera, look up mirrored joint code in jointArrowInfos
+                val effectiveJointCode = getEffectiveJointCode(jointCode)
+                
                 // Get gradient color and state for tracked joints
-                val arrowInfo = jointCode?.let { jointArrowInfos[it] }
+                val arrowInfo = effectiveJointCode?.let { jointArrowInfos[it] }
                 val gradientColor = arrowInfo?.let { getGradientColorForPosition(it) }
                 
                 // Determine opacity based on joint state (consistent with lines)
                 // Lower opacity (50%) for correct state to focus on Arc
                 // Higher opacity (75%) for error/warning state
                 val trackedOpacity = when {
-                    arrowInfo?.isError == true -> TRACKED_OPACITY_ERROR
-                    arrowInfo?.isWarning == true -> TRACKED_OPACITY_ERROR
-                    else -> TRACKED_OPACITY_CORRECT
+                    arrowInfo?.isError == true -> trackedOpacityError
+                    arrowInfo?.isWarning == true -> trackedOpacityError
+                    else -> trackedOpacityCorrect
                 }
                 
                 // Determine appearance based on state
@@ -656,12 +675,12 @@ class SkeletonOverlayView @JvmOverloads constructor(
                     }
                     isTracked -> {
                         pointPaint.color = COLOR_TRACKED
-                        pointPaint.alpha = (TRACKED_OPACITY_CORRECT * 255).toInt()
+                        pointPaint.alpha = (trackedOpacityCorrect * 255).toInt()
                         radius = TRACKED_LANDMARK_STROKE_WIDTH / 2
                     }
                     isTrainingMode -> {
                         pointPaint.color = COLOR_DEFAULT
-                        pointPaint.alpha = (NON_TRACKED_OPACITY * 255).toInt()
+                        pointPaint.alpha = (nonTrackedOpacity * 255).toInt()
                         radius = LANDMARK_STROKE_WIDTH / 2
                     }
                     else -> {
@@ -700,7 +719,7 @@ class SkeletonOverlayView @JvmOverloads constructor(
         for (index in trackedLandmarkIndices) {
             if (index < landmarks.size) {
                 val landmark = landmarks[index]
-                if (landmark.visibility >= VISIBILITY_THRESHOLD) {
+                if (landmark.visibility >= visibilityThreshold) {
                     val x = landmark.x * imageWidth * scaleFactor
                     val y = landmark.y * imageHeight * scaleFactor
                     
@@ -716,6 +735,37 @@ class SkeletonOverlayView @JvmOverloads constructor(
      */
     private fun landmarkIndexToJointCode(index: Int): String? {
         return JointLandmarkMapping.landmarkToJoint(index)
+    }
+    
+    /**
+     * Get the effective joint code for looking up in jointArrowInfos
+     * 
+     * For front camera, the image is mirrored, so:
+     * - left_elbow in the image → right_elbow in jointArrowInfos
+     * - right_elbow in the image → left_elbow in jointArrowInfos
+     * 
+     * This is because angles are mirrored before being sent to the engine,
+     * so jointArrowInfos contains "right_elbow" even though the visible
+     * landmark in the mirrored image is at the left_elbow position.
+     */
+    private fun getEffectiveJointCode(jointCode: String?): String? {
+        if (jointCode == null) return null
+        return if (isFrontCamera) {
+            mirrorJointCode(jointCode)
+        } else {
+            jointCode
+        }
+    }
+    
+    /**
+     * Mirror a joint code (left ↔ right)
+     */
+    private fun mirrorJointCode(jointCode: String): String {
+        return when {
+            jointCode.startsWith("left_") -> jointCode.replace("left_", "right_")
+            jointCode.startsWith("right_") -> jointCode.replace("right_", "left_")
+            else -> jointCode
+        }
     }
     
     /**
@@ -760,7 +810,7 @@ class SkeletonOverlayView @JvmOverloads constructor(
             if (landmarkIndex >= landmarks.size) continue
             
             val landmark = landmarks[landmarkIndex]
-            if (landmark.visibility < VISIBILITY_THRESHOLD) continue
+            if (landmark.visibility < visibilityThreshold) continue
             
             // Calculate center position in screen coordinates
             val centerX = landmark.x * imageWidth * scaleFactor
@@ -872,8 +922,8 @@ class SkeletonOverlayView @JvmOverloads constructor(
                 val lm1 = landmarks[landmark1Idx]
                 val lm2 = landmarks[landmark2Idx]
                 
-                if (lm1.visibility >= VISIBILITY_THRESHOLD && 
-                    lm2.visibility >= VISIBILITY_THRESHOLD) {
+                if (lm1.visibility >= visibilityThreshold && 
+                    lm2.visibility >= visibilityThreshold) {
                     
                     val x1 = lm1.x * imageWidth * scaleFactor
                     val y1 = lm1.y * imageHeight * scaleFactor

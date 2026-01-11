@@ -1,22 +1,26 @@
 package com.trainingvalidator.poc.ui.training
 
 import com.trainingvalidator.poc.analysis.JointAngles
+import com.trainingvalidator.poc.training.config.SettingsManager
 import com.trainingvalidator.poc.training.models.ExerciseConfig
 
 /**
  * PoseValidator - Validates user pose against exercise requirements
  * 
  * Used to check if user is in correct starting position before training begins.
+ * 
+ * Settings (from app_settings.json):
+ * - requiredValidFrames: Number of consecutive valid frames to confirm pose
+ * - minValidAngle/maxValidAngle: Reject angles outside anatomical range
  */
 class PoseValidator {
     
-    companion object {
-        /** Number of consecutive valid frames required to confirm pose */
-        const val REQUIRED_VALID_FRAMES = 10
-    }
-    
     // Validation state
     private var validFrameCount = 0
+    
+    // Settings
+    private val requiredValidFrames: Int
+        get() = SettingsManager.getRequiredValidFrames()
     
     /**
      * Result of pose validation
@@ -25,7 +29,7 @@ class PoseValidator {
         val isValid: Boolean,
         val jointStatuses: List<JointStatus>,
         val validFrameCount: Int,
-        val requiredFrames: Int = REQUIRED_VALID_FRAMES
+        val requiredFrames: Int = SettingsManager.getRequiredValidFrames()
     ) {
         val isConfirmed: Boolean
             get() = validFrameCount >= requiredFrames
@@ -61,6 +65,11 @@ class PoseValidator {
     /**
      * Validate current pose against exercise config
      * 
+     * Validates ALL tracked joints (primary + secondary) - not just primary.
+     * All joints must be:
+     * 1. Visible (angle != null, meaning all required landmarks are detected)
+     * 2. Within their startPose range
+     * 
      * @param angles Current joint angles
      * @param exerciseConfig Exercise configuration
      * @param poseVariantIndex Index of the pose variant to use
@@ -87,17 +96,23 @@ class PoseValidator {
                 validFrameCount = 0
             )
         
-        val primaryJoints = variant.getPrimaryJoints()
+        // Validate ALL tracked joints (primary + secondary)
+        // All joints must be visible and in range to start training
+        val allTrackedJoints = variant.trackedJoints
         val jointStatuses = mutableListOf<JointStatus>()
         var allValid = true
         
-        for (joint in primaryJoints) {
+        for (joint in allTrackedJoints) {
             val angle = getAngleForJoint(angles, joint.joint)
-            val isVisible = angle != null
-            val inRange = if (angle != null) {
+            
+            // Check if angle is visible AND anatomically valid
+            val isVisible = angle != null && SettingsManager.isAngleValid(angle)
+            
+            // Check if angle is within startPose range
+            val inRange = if (angle != null && isVisible) {
                 angle >= joint.startPose.min && angle <= joint.startPose.max
             } else {
-                false
+                false // Not visible or invalid = not valid
             }
             
             jointStatuses.add(
@@ -112,7 +127,8 @@ class PoseValidator {
                 )
             )
             
-            if (!inRange) {
+            // Both visibility AND range are required
+            if (!isVisible || !inRange) {
                 allValid = false
             }
         }
@@ -162,20 +178,22 @@ class PoseValidator {
     
     /**
      * Get pose requirements text for display
+     * Shows all tracked joints (primary + secondary)
      */
     fun getPoseRequirementsText(
         exerciseConfig: ExerciseConfig?,
         poseVariantIndex: Int
     ): String {
         val variant = exerciseConfig?.poseVariants?.getOrNull(poseVariantIndex) ?: return ""
-        val primaryJoints = variant.getPrimaryJoints()
+        val allTrackedJoints = variant.trackedJoints
         
         return buildString {
             appendLine("Get into starting position:")
             appendLine()
-            primaryJoints.forEach { joint ->
+            allTrackedJoints.forEach { joint ->
                 val name = formatJointName(joint.joint)
-                appendLine("• $name: ${joint.startPose.min.toInt()}° - ${joint.startPose.max.toInt()}°")
+                val roleIndicator = if (joint.role.name == "PRIMARY") "●" else "○"
+                appendLine("$roleIndicator $name: ${joint.startPose.min.toInt()}° - ${joint.startPose.max.toInt()}°")
             }
         }
     }

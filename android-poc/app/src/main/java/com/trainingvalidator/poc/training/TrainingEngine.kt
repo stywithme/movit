@@ -462,6 +462,11 @@ class TrainingEngine(
      */
     fun resumeFromVisibilityPause() {
         synchronized(stateLock) {
+            // IMPORTANT:
+            // Auto-pause is orchestrated by SessionSupervisor via PauseEngine -> TrainingEngine.pause()
+            // So we must explicitly unpause here, otherwise processFrame() will keep returning early.
+            isPaused = false
+
             // Reset state machine to START (like beginning of training)
             // User needs to get back into start position
             stateMachine.reset()

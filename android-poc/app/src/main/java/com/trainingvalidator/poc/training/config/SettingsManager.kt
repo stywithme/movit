@@ -228,4 +228,64 @@ object SettingsManager {
      * Get legacy EMA alpha value
      */
     fun getLegacySmoothingAlpha(): Float = settings.smoothing.legacyAlpha
+    
+    // ==================== Visibility Settings ====================
+    
+    /**
+     * Get visibility threshold for angle calculation
+     * Lower = more tolerant, Higher = stricter
+     */
+    fun getAngleCalculationVisibility(): Float = settings.visibility.angleCalculation
+    
+    /**
+     * Get visibility threshold for skeleton overlay drawing
+     */
+    fun getOverlayVisibility(): Float = settings.visibility.overlay
+    
+    /**
+     * Get visibility threshold for pose validation
+     */
+    fun getPoseValidationVisibility(): Float = settings.visibility.poseValidation
+    
+    // ==================== Pose Validation Settings ====================
+    
+    /**
+     * Get required valid frames for pose confirmation
+     */
+    fun getRequiredValidFrames(): Int = settings.poseValidation.requiredValidFrames
+    
+    /**
+     * Get minimum valid angle (angles below this are considered noise)
+     */
+    fun getMinValidAngle(): Float = settings.poseValidation.minValidAngle
+    
+    /**
+     * Get maximum valid angle (angles above this are considered impossible)
+     */
+    fun getMaxValidAngle(): Float = settings.poseValidation.maxValidAngle
+    
+    /**
+     * Check if an angle value is within valid anatomical range
+     */
+    fun isAngleValid(angle: Double): Boolean {
+        return angle >= settings.poseValidation.minValidAngle && 
+               angle <= settings.poseValidation.maxValidAngle
+    }
+    
+    // ==================== Overlay Opacity Settings ====================
+    
+    /**
+     * Get opacity for non-tracked joints
+     */
+    fun getNonTrackedOpacity(): Float = settings.overlayOpacity.nonTracked
+    
+    /**
+     * Get opacity for tracked joints in correct position
+     */
+    fun getTrackedCorrectOpacity(): Float = settings.overlayOpacity.trackedCorrect
+    
+    /**
+     * Get opacity for tracked joints in error position
+     */
+    fun getTrackedErrorOpacity(): Float = settings.overlayOpacity.trackedError
 }

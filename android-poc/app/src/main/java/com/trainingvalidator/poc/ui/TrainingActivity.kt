@@ -12,6 +12,7 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
+import androidx.core.content.IntentCompat
 import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.WindowInsetsControllerCompat
@@ -29,11 +30,12 @@ import com.trainingvalidator.poc.pose.PoseResult
 import com.trainingvalidator.poc.training.config.SettingsManager
 import com.trainingvalidator.poc.training.feedback.FeedbackEvent
 import com.trainingvalidator.poc.training.feedback.FeedbackManager
+import com.trainingvalidator.poc.training.session.PauseReason
+import com.trainingvalidator.poc.training.session.SessionState
 import com.trainingvalidator.poc.ui.components.AnimationUtils
 import com.trainingvalidator.poc.ui.components.GlassmorphicMessageView
 import com.trainingvalidator.poc.ui.training.CountdownController
 import com.trainingvalidator.poc.ui.training.PoseValidator
-import com.trainingvalidator.poc.ui.training.TrainingStateManager
 import com.trainingvalidator.poc.ui.training.TrainingUIEvent
 import com.trainingvalidator.poc.ui.training.TrainingViewModel
 import com.trainingvalidator.poc.ui.training.VideoModeController
@@ -41,11 +43,9 @@ import android.net.Uri
 import android.widget.SeekBar
 import com.trainingvalidator.poc.training.engine.HoldState
 import com.trainingvalidator.poc.training.engine.Phase
-import com.trainingvalidator.poc.training.report.CaptureType
 import com.trainingvalidator.poc.training.report.FrameCaptureManager
 import com.trainingvalidator.poc.training.report.ReportGenerator
 import com.trainingvalidator.poc.storage.ReportStorage
-import com.trainingvalidator.poc.training.report.PostTrainingReport
 import com.trainingvalidator.poc.ui.report.ReportActivity
 import com.trainingvalidator.poc.video.VideoManager
 import kotlinx.coroutines.Dispatchers
@@ -53,11 +53,10 @@ import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 
 /**
- * TrainingActivity - Refactored Professional Training Screen
+ * TrainingActivity - Professional Training Screen
  * 
  * Now uses:
- * - TrainingViewModel for state management
- * - TrainingStateManager for state machine
+ * - SessionSupervisor via TrainingViewModel for state management (Single Source of Truth)
  * - PoseValidator for pose validation
  * - CountdownController for countdown logic
  * - VideoModeController for video mode
@@ -66,6 +65,7 @@ import kotlinx.coroutines.launch
  * - UI binding and updates
  * - Camera/Pose detection setup
  * - User interactions
+ * - Forwarding pose data to ViewModel
  */
 class TrainingActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetectionListener {
 
@@ -126,6 +126,10 @@ class TrainingActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetection
     private var isVideoMode = false
     private var videoUri: Uri? = null
     private var lastRepCount = 0
+
+    // Tracks pose presence transitions to avoid leaving stale form feedback visible when pose is lost.
+    // This is intentionally Activity-local (UI concern) and does not affect session state machine behavior.
+    private var wasPoseDetectedLastFrame: Boolean = false
     
     // Report & Frame Capture
     private var frameCaptureManager: FrameCaptureManager? = null
@@ -211,12 +215,7 @@ class TrainingActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetection
         // Training mode
         val trainingMode = intent.getStringExtra(EXTRA_TRAINING_MODE) ?: MODE_CAMERA
         isVideoMode = trainingMode == MODE_VIDEO
-        videoUri = if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.TIRAMISU) {
-            intent.getParcelableExtra(EXTRA_VIDEO_URI, Uri::class.java)
-        } else {
-            @Suppress("DEPRECATION")
-            intent.getParcelableExtra(EXTRA_VIDEO_URI)
-        }
+        videoUri = IntentCompat.getParcelableExtra(intent, EXTRA_VIDEO_URI, Uri::class.java)
         
         if (isVideoMode && videoUri == null) {
             Toast.makeText(this, "No video selected", Toast.LENGTH_LONG).show()
@@ -259,7 +258,10 @@ class TrainingActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetection
         binding.tvExerciseName.text = viewModel.exerciseName.value
         
         // Close button
-        binding.btnClose.setOnClickListener { finish() }
+        binding.btnClose.setOnClickListener { 
+            viewModel.requestStop()
+            finish() 
+        }
         
         // Switch camera button
         binding.btnSwitchCamera.setOnClickListener {
@@ -276,7 +278,7 @@ class TrainingActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetection
         }
         
         // Initial state
-        updateUIForState(TrainingStateManager.TrainingState.SETUP_POSE)
+        updateUIForSessionState(SessionState.SETUP_POSE)
         showPoseRequirements()
     }
     
@@ -289,13 +291,14 @@ class TrainingActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetection
             
             override fun onFinish() {
                 AnimationUtils.animateGoText(binding.tvCountdown) {
-                    viewModel.startTraining()
+                    // Notify supervisor that countdown finished
+                    viewModel.onCountdownFinished()
                 }
                 viewModel.feedbackManager?.speakGo()
             }
             
             override fun onCancelled() {
-                updateUIForState(TrainingStateManager.TrainingState.SETUP_POSE)
+                updateUIForSessionState(SessionState.SETUP_POSE)
             }
         })
     }
@@ -310,17 +313,15 @@ class TrainingActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetection
         
         // Initialize report storage
         reportStorage = ReportStorage(this)
-        
-        // Intentionally no verbose logs here (kept clean for production)
     }
     
     // ==================== ViewModel Observers ====================
     
     private fun observeViewModel() {
-        // Observe state changes
+        // Observe supervisor state (Single Source of Truth)
         lifecycleScope.launch {
-            viewModel.stateManager.state.collectLatest { state ->
-                updateUIForState(state)
+            viewModel.supervisor.state.collectLatest { state ->
+                updateUIForSessionState(state)
             }
         }
         
@@ -417,17 +418,11 @@ class TrainingActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetection
                 showGlassmorphicMessage(message)
             }
         }
-        
-        // Note: arrowInfos observer is set up in observeTrainingEngineState()
-        // because trainingEngine is null at this point
     }
     
     /**
      * Observe training engine arrowInfos for visual feedback (Arc, colors)
      * Called AFTER trainingEngine is created (in startVideoTraining or after countdown)
-     * 
-     * Note: Other engine state (phase, repCount, events) is handled via ViewModel StateFlows
-     * Only arrowInfos needs direct observation because ViewModel doesn't relay it
      */
     private var arrowInfosObserverJob: kotlinx.coroutines.Job? = null
     
@@ -453,19 +448,24 @@ class TrainingActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetection
                 }
             }
         }
-        
-        // Intentionally no verbose logs here (kept clean for production)
     }
     
     private fun handleUIEvent(event: TrainingUIEvent) {
         when (event) {
+            is TrainingUIEvent.ShowSetupPose -> {
+                showPoseRequirements()
+                binding.tvPoseStatus.visibility = View.VISIBLE
+            }
+            
             is TrainingUIEvent.StartCountdown -> {
-                viewModel.stateManager.transitionTo(TrainingStateManager.TrainingState.COUNTDOWN)
-                viewModel.countdownController.start()
+                // Countdown is now started by supervisor action
+                binding.tvPoseStatus.visibility = View.GONE
+                binding.tvCountdown.visibility = View.VISIBLE
+                binding.tvCountdown.alpha = 1f
             }
             
             is TrainingUIEvent.CountdownCancelled -> {
-                updateUIForState(TrainingStateManager.TrainingState.SETUP_POSE)
+                updateUIForSessionState(SessionState.SETUP_POSE)
             }
             
             is TrainingUIEvent.PoseValidationUpdate -> {
@@ -475,11 +475,20 @@ class TrainingActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetection
             is TrainingUIEvent.TrainingStarted -> {
                 val trackedIndices = viewModel.getTrackedLandmarkIndices()
                 binding.skeletonOverlay.setTrainingMode(true, trackedIndices, useFrontCamera)
+                observeTrainingEngineState()
             }
             
             is TrainingUIEvent.ExerciseCompleted,
             is TrainingUIEvent.TrainingCompleted -> {
                 completeTraining()
+            }
+            
+            is TrainingUIEvent.AutoPaused -> {
+                handleAutoPaused(event.reason)
+            }
+            
+            is TrainingUIEvent.NoPoseWarning -> {
+                handleNoPoseWarning(event.elapsedMs)
             }
             
             is TrainingUIEvent.ExerciseSwitched -> {
@@ -499,25 +508,34 @@ class TrainingActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetection
                 completeWorkout(event.totalReps, event.accuracy, event.durationMs)
             }
             
-            is TrainingUIEvent.VisibilityPaused -> {
-                handleVisibilityPaused(event.event)
+            is TrainingUIEvent.PauseVideoPlayback -> {
+                videoModeController?.pause()
+                updatePlayPauseIcon(isPlaying = false)
             }
             
-            is TrainingUIEvent.VisibilityResumeStartPose -> {
-                handleVisibilityResumeSetupPose(event.event)
+            is TrainingUIEvent.ResumeVideoPlayback -> {
+                videoModeController?.play()
+                updatePlayPauseIcon(isPlaying = true)
             }
-            
-            is TrainingUIEvent.StartVisibilityResumeCountdown -> {
-                startVisibilityResumeCountdown()
+
+            else -> {
+                // Intentionally no-op: future events should not crash UI.
             }
         }
     }
     
     // ==================== UI Updates ====================
     
-    private fun updateUIForState(state: TrainingStateManager.TrainingState) {
+    /**
+     * Update UI based on SessionState (from SessionSupervisor)
+     */
+    private fun updateUIForSessionState(state: SessionState) {
         when (state) {
-            TrainingStateManager.TrainingState.SETUP_POSE -> {
+            SessionState.IDLE -> {
+                // Initial state - waiting for exercise to load
+            }
+            
+            SessionState.SETUP_POSE -> {
                 binding.setupPosePanel.visibility = View.VISIBLE
                 binding.countdownPanel.visibility = View.GONE
                 binding.heroCounterContainer.visibility = View.GONE
@@ -527,7 +545,7 @@ class TrainingActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetection
                 updatePlayPauseIcon(isPlaying = false)
             }
             
-            TrainingStateManager.TrainingState.COUNTDOWN -> {
+            SessionState.COUNTDOWN -> {
                 AnimationUtils.slideOutPanel(binding.setupPosePanel, AnimationUtils.Direction.BOTTOM) {
                     binding.countdownPanel.visibility = View.VISIBLE
                 }
@@ -536,7 +554,7 @@ class TrainingActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetection
                 binding.completedPanel.visibility = View.GONE
             }
             
-            TrainingStateManager.TrainingState.TRAINING -> {
+            SessionState.TRAINING -> {
                 binding.setupPosePanel.visibility = View.GONE
                 binding.countdownPanel.visibility = View.GONE
                 AnimationUtils.bounceIn(binding.heroCounterContainer)
@@ -547,11 +565,36 @@ class TrainingActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetection
                 updatePlayPauseIcon(isPlaying = true)
             }
             
-            TrainingStateManager.TrainingState.PAUSED -> {
+            SessionState.PAUSED -> {
                 updatePlayPauseIcon(isPlaying = false)
             }
             
-            TrainingStateManager.TrainingState.COMPLETED -> {
+            SessionState.AUTO_PAUSED -> {
+                binding.heroCounterContainer.visibility = View.VISIBLE
+                binding.tvProgress.visibility = View.VISIBLE
+                binding.progressContainer.visibility = View.VISIBLE
+                updatePlayPauseIcon(isPlaying = false)
+            }
+            
+            SessionState.RESUME_SETUP -> {
+                binding.setupPosePanel.visibility = View.VISIBLE
+                binding.countdownPanel.visibility = View.GONE
+                binding.heroCounterContainer.visibility = View.VISIBLE
+                binding.tvProgress.visibility = View.VISIBLE
+                binding.progressContainer.visibility = View.VISIBLE
+                binding.completedPanel.visibility = View.GONE
+                updatePlayPauseIcon(isPlaying = false)
+            }
+            
+            SessionState.RESUME_COUNTDOWN -> {
+                binding.setupPosePanel.visibility = View.GONE
+                binding.countdownPanel.visibility = View.VISIBLE
+                binding.heroCounterContainer.visibility = View.VISIBLE
+                binding.tvProgress.visibility = View.VISIBLE
+                updatePlayPauseIcon(isPlaying = false)
+            }
+            
+            SessionState.COMPLETED -> {
                 AnimationUtils.slideOutPanel(binding.heroCounterContainer, AnimationUtils.Direction.TOP)
                 binding.setupPosePanel.visibility = View.GONE
                 binding.countdownPanel.visibility = View.GONE
@@ -561,24 +604,41 @@ class TrainingActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetection
                 updatePlayPauseIcon(isPlaying = false)
                 binding.vignetteOverlay.clear()
             }
-            
-            TrainingStateManager.TrainingState.VISIBILITY_PAUSED -> {
-                binding.heroCounterContainer.visibility = View.VISIBLE
-                binding.tvProgress.visibility = View.VISIBLE
-                binding.progressContainer.visibility = View.VISIBLE
-                updatePlayPauseIcon(isPlaying = false)
-            }
-            
-            TrainingStateManager.TrainingState.VISIBILITY_SETUP_POSE -> {
-                binding.setupPosePanel.visibility = View.VISIBLE
-                binding.countdownPanel.visibility = View.GONE
-                binding.heroCounterContainer.visibility = View.VISIBLE
-                binding.tvProgress.visibility = View.VISIBLE
-                binding.progressContainer.visibility = View.VISIBLE
-                binding.completedPanel.visibility = View.GONE
-                updatePlayPauseIcon(isPlaying = false)
-            }
         }
+    }
+    
+    private fun handleAutoPaused(reason: PauseReason) {
+        val message = when (reason) {
+            PauseReason.VISIBILITY -> "Required joints not visible"
+            PauseReason.NO_POSE -> "No pose detected for too long"
+            PauseReason.MANUAL -> "Training paused"
+        }
+        
+        binding.glassmorphicMessage.showMessage(
+            message,
+            if (reason == PauseReason.MANUAL) GlassmorphicMessageView.TYPE_INFO 
+            else GlassmorphicMessageView.TYPE_ERROR,
+            durationMs = -1
+        )
+        
+        if (reason != PauseReason.MANUAL) {
+            binding.vignetteOverlay.showError()
+        }
+        
+        Log.d(TAG, "Auto-paused: $reason")
+    }
+    
+    private fun handleNoPoseWarning(elapsedMs: Long) {
+        val remainingSeconds = ((4000 - elapsedMs) / 1000).toInt().coerceAtLeast(0)
+        val message = "⚠️ No pose detected! Return in ${remainingSeconds}s..."
+        
+        binding.glassmorphicMessage.showMessage(
+            message,
+            GlassmorphicMessageView.TYPE_WARNING,
+            durationMs = 500 // Short duration as it updates frequently
+        )
+        
+        binding.vignetteOverlay.showWarning()
     }
     
     private fun updatePoseValidationUI(result: PoseValidator.ValidationResult) {
@@ -605,9 +665,10 @@ class TrainingActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetection
                 updatePlayPauseIcon(isPlaying)
             }
         } else {
-            when (viewModel.stateManager.currentState) {
-                TrainingStateManager.TrainingState.TRAINING -> viewModel.pauseTraining()
-                TrainingStateManager.TrainingState.PAUSED -> viewModel.resumeTraining()
+            val currentState = viewModel.supervisor.state.value
+            when (currentState) {
+                SessionState.TRAINING -> viewModel.requestPause()
+                SessionState.PAUSED, SessionState.AUTO_PAUSED -> viewModel.requestResume()
                 else -> {}
             }
         }
@@ -673,7 +734,6 @@ class TrainingActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetection
         Log.d(TAG, "Training completed. Captured $captureCount frames ($storageSize)")
         
         // Generate report and navigate directly to ReportActivity
-        // Note: ReportGenerator.generateFromEngine() calls engine.stop() internally
         generateReportAndNavigate()
     }
     
@@ -712,48 +772,6 @@ class TrainingActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetection
         
         setResult(RESULT_OK, resultIntent)
         finish()
-    }
-    
-    // ==================== Visibility Handling ====================
-    
-    private fun handleVisibilityPaused(event: FeedbackEvent.VisibilityPaused) {
-        binding.glassmorphicMessage.showMessage(
-            event.message.en,
-            GlassmorphicMessageView.TYPE_ERROR,
-            durationMs = -1
-        )
-        
-        binding.vignetteOverlay.showError()
-        binding.tvRepCount.text = event.savedRepCount.toString()
-        
-        // Audio feedback now handled by FeedbackManager via VisibilityPaused event
-        // This ensures proper orchestration and prevents message conflicts
-        
-        Log.d(TAG, "Visibility paused - saved rep: ${event.savedRepCount}")
-    }
-    
-    private fun handleVisibilityResumeSetupPose(event: FeedbackEvent.VisibilityResumeCountdown) {
-        viewModel.poseValidator.reset()
-        
-        binding.glassmorphicMessage.showMessage(
-            "Get into starting position",
-            GlassmorphicMessageView.TYPE_INFO,
-            durationMs = 2000
-        )
-        
-        binding.vignetteOverlay.clear()
-        showPoseRequirements()
-        binding.tvPoseStatus.visibility = View.VISIBLE
-        
-        Log.d(TAG, "Visibility resume - waiting for startPose validation")
-    }
-    
-    private fun startVisibilityResumeCountdown() {
-        binding.tvPoseStatus.visibility = View.GONE
-        binding.tvCountdown.visibility = View.VISIBLE
-        binding.tvCountdown.alpha = 1f
-        
-        viewModel.countdownController.start()
     }
     
     // ==================== Feedback Events ====================
@@ -814,16 +832,13 @@ class TrainingActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetection
      */
     private fun capturePeakFrame(phase: Phase) {
         // Only capture during active training
-        if (viewModel.stateManager.currentState != TrainingStateManager.TrainingState.TRAINING) {
+        if (viewModel.supervisor.state.value != SessionState.TRAINING) {
             return
         }
         
         val bitmap = if (isVideoMode) {
-            // For video mode, we would need to get bitmap from VideoModeController
-            // This requires additional integration - skipped for now
             null
         } else {
-            // For camera mode, get bitmap from PreviewView
             binding.previewView.bitmap
         }
         
@@ -847,7 +862,7 @@ class TrainingActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetection
      */
     private fun captureErrorFrame(repNumber: Int, phase: Phase, errorKey: String) {
         // Only capture during active training
-        if (viewModel.stateManager.currentState != TrainingStateManager.TrainingState.TRAINING) {
+        if (viewModel.supervisor.state.value != SessionState.TRAINING) {
             return
         }
         
@@ -878,8 +893,6 @@ class TrainingActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetection
      * Generate report and navigate directly to ReportActivity
      */
     private fun generateReportAndNavigate() {
-        // Intentionally no verbose logs here (kept clean for production)
-        
         val engine = viewModel.trainingEngine
         if (engine == null) {
             Log.e(TAG, "TrainingEngine is null!")
@@ -968,7 +981,6 @@ class TrainingActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetection
         val summary = viewModel.trainingEngine?.stop()
         
         binding.skeletonOverlay.setTrainingMode(false)
-        viewModel.stateManager.transitionTo(TrainingStateManager.TrainingState.COMPLETED)
         
         if (viewModel.isHoldExercise()) {
             val holdElapsed = viewModel.holdElapsedMs.value ?: 0L
@@ -1043,6 +1055,7 @@ class TrainingActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetection
             if (!::landmarkSmoother.isInitialized) return@launch
             
             updateFps()
+            wasPoseDetectedLastFrame = true
             
             val smoothedLandmarks = landmarkSmoother.smooth(result.landmarks, result.timestampMs)
             
@@ -1065,8 +1078,8 @@ class TrainingActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetection
             
             val angles = if (result.isFrontCamera) rawAngles.mirrored() else rawAngles
             
-            // Process frame via ViewModel
-            viewModel.processFrame(angles, smoothedLandmarks, result.isFrontCamera)
+            // Forward pose frame to supervisor via ViewModel
+            viewModel.onPoseFrame(angles, smoothedLandmarks, result.isFrontCamera)
             
             // Update skeleton overlay
             val arrowInfos = viewModel.trainingEngine?.arrowInfos?.value ?: emptyMap()
@@ -1087,16 +1100,22 @@ class TrainingActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetection
         lifecycleScope.launch(Dispatchers.Main) {
             updateFps()
             binding.skeletonOverlay.clear()
+
+            // If we just transitioned from pose → no pose, clear stale form messages immediately.
+            // Otherwise, warnings shown by supervisor after 2s could be immediately cleared every frame.
+            if (wasPoseDetectedLastFrame && viewModel.supervisor.state.value == SessionState.TRAINING) {
+                binding.glassmorphicMessage.hide()
+                binding.vignetteOverlay.clear()
+            }
+            wasPoseDetectedLastFrame = false
             
-            if (viewModel.stateManager.currentState == TrainingStateManager.TrainingState.SETUP_POSE) {
+            // Always notify supervisor about NoPose
+            viewModel.onNoPoseDetected()
+            
+            // Update UI for setup pose state
+            if (viewModel.supervisor.state.value == SessionState.SETUP_POSE) {
                 viewModel.poseValidator.reset()
                 binding.tvPoseStatus.text = "❌ No pose detected\nMake sure your full body is visible"
-            }
-            
-            if (viewModel.stateManager.currentState == TrainingStateManager.TrainingState.COUNTDOWN) {
-                viewModel.countdownController.cancel()
-                viewModel.poseValidator.reset()
-                viewModel.stateManager.transitionTo(TrainingStateManager.TrainingState.SETUP_POSE)
             }
         }
     }
@@ -1156,8 +1175,8 @@ class TrainingActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetection
                 when (state) {
                     VideoManager.PlaybackState.PLAYING -> {
                         updatePlayPauseIcon(isPlaying = true)
-                        if (viewModel.stateManager.currentState != TrainingStateManager.TrainingState.TRAINING &&
-                            viewModel.stateManager.currentState != TrainingStateManager.TrainingState.COMPLETED) {
+                        if (viewModel.supervisor.state.value != SessionState.TRAINING &&
+                            viewModel.supervisor.state.value != SessionState.COMPLETED) {
                             startVideoTraining()
                         }
                     }
@@ -1166,6 +1185,7 @@ class TrainingActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetection
                     }
                     VideoManager.PlaybackState.ENDED -> {
                         updatePlayPauseIcon(isPlaying = false)
+                        viewModel.onVideoEnded()
                     }
                     VideoManager.PlaybackState.ERROR -> {
                         binding.glassmorphicMessage.showError("Error playing video")
@@ -1183,15 +1203,12 @@ class TrainingActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetection
             }
             
             override fun onSeekPerformed() {
-                viewModel.trainingEngine?.stop()
-                viewModel.trainingEngine?.start()
+                viewModel.onVideoSeeked()
                 binding.glassmorphicMessage.showMessage("Analysis reset", GlassmorphicMessageView.TYPE_INFO)
             }
             
             override fun onVideoEnded() {
-                if (viewModel.stateManager.currentState == TrainingStateManager.TrainingState.TRAINING) {
-                    completeTraining()
-                }
+                viewModel.onVideoEnded()
             }
             
             override fun onFrameProcessed(
@@ -1200,7 +1217,8 @@ class TrainingActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetection
                 imageWidth: Int,
                 imageHeight: Int
             ) {
-                viewModel.processFrame(angles, smoothedLandmarks, false)
+                wasPoseDetectedLastFrame = true
+                viewModel.onPoseFrame(angles, smoothedLandmarks, false)
                 
                 val arrowInfos = viewModel.trainingEngine?.arrowInfos?.value ?: emptyMap()
                 val positionErrors = viewModel.trainingEngine?.positionErrors?.value ?: emptyList()
@@ -1217,6 +1235,14 @@ class TrainingActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetection
             
             override fun onNoPoseDetected() {
                 binding.skeletonOverlay.clear()
+                // Same transition-based clearing as camera mode:
+                // clear stale form feedback once when pose disappears.
+                if (wasPoseDetectedLastFrame && viewModel.supervisor.state.value == SessionState.TRAINING) {
+                    binding.glassmorphicMessage.hide()
+                    binding.vignetteOverlay.clear()
+                }
+                wasPoseDetectedLastFrame = false
+                viewModel.onNoPoseDetected()
             }
             
             override fun onResultsSaved(success: Boolean) {
@@ -1275,15 +1301,13 @@ class TrainingActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetection
     }
     
     private fun startVideoTraining() {
-        // Use startVideoModeTraining() to skip SETUP_POSE and countdown
-        // In video mode, we start training directly without pose validation
-        viewModel.startVideoModeTraining()
+        // Video mode starts immediately via supervisor
+        viewModel.requestVideoStart()
         
         val trackedIndices = viewModel.getTrackedLandmarkIndices()
         binding.skeletonOverlay.setTrainingMode(true, trackedIndices, useFrontCamera = false)
         
-        // Set up observers on the training engine (arrowInfos, phase, events)
-        // This must be called AFTER trainingEngine is created
+        // Set up observers on the training engine
         observeTrainingEngineState()
         
         Log.d(TAG, "Video training started")

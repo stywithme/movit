@@ -169,4 +169,47 @@ object JointLandmarkMapping {
     fun landmarksToJointCodes(landmarks: Collection<Int>): List<String> {
         return landmarks.mapNotNull { landmarkToJoint(it) }
     }
+    
+    /**
+     * Get all landmark indices required to calculate an angle for a joint
+     * 
+     * Each joint angle is calculated from 3 points:
+     * - The joint before (toward torso/center)
+     * - The joint itself
+     * - The joint after (toward extremity)
+     * 
+     * @param jointCode The joint for which we want to calculate an angle
+     * @return List of 3 landmark indices required, or empty if joint not supported
+     */
+    fun getLandmarksForAngle(jointCode: String): List<Int> {
+        return when (jointCode.lowercase()) {
+            // Arm angles
+            "left_elbow" -> listOf(11, 13, 15)  // shoulder, elbow, wrist
+            "right_elbow" -> listOf(12, 14, 16)
+            "left_shoulder" -> listOf(13, 11, 23)  // elbow, shoulder, hip
+            "right_shoulder" -> listOf(14, 12, 24)
+            "left_wrist" -> listOf(13, 15, 19)  // elbow, wrist, index
+            "right_wrist" -> listOf(14, 16, 20)
+            
+            // Leg angles
+            "left_hip" -> listOf(11, 23, 25)  // shoulder, hip, knee
+            "right_hip" -> listOf(12, 24, 26)
+            "left_knee" -> listOf(23, 25, 27)  // hip, knee, ankle
+            "right_knee" -> listOf(24, 26, 28)
+            "left_ankle" -> listOf(25, 27, 31)  // knee, ankle, foot
+            "right_ankle" -> listOf(26, 28, 32)
+            
+            else -> emptyList()
+        }
+    }
+    
+    /**
+     * Get all unique landmarks required to calculate angles for multiple joints
+     * 
+     * @param jointCodes List of joint codes
+     * @return Set of unique landmark indices required
+     */
+    fun getAllLandmarksForAngles(jointCodes: Collection<String>): Set<Int> {
+        return jointCodes.flatMap { getLandmarksForAngle(it) }.toSet()
+    }
 }

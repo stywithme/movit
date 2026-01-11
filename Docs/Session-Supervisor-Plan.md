@@ -11,36 +11,41 @@ This creates **inconsistencies**:
 - Auto-pause from visibility doesn't call `engine.pause()`, it just stops forwarding frames
 - Resume after visibility loss incorrectly calls `startTraining()` instead of `resumeFromVisibilityPause()`
 - `onNoPoseDetected()` during TRAINING has no auto-pause path
-- No mechanism to detect/handle exercise mismatch
 
 ### Solution: Unified Session Supervisor
 A single **`SessionSupervisor`** component that:
 - Owns the **Single Source of Truth** for session state
-- Receives **all signals** (UI commands, pose signals, engine events)
-- Issues **all commands** to engine and UI
-- Handles both **Camera** and **Video** modes with appropriate behavior
+- Receives signals from UI, Pose Detection, and Engine
+- Issues commands to Engine and UI
+- Works for both **Camera** and **Video** modes
+
+---
+
+## Design Principles
+
+1. **Simplicity First**: No over-engineering. Use existing components where possible.
+2. **Reuse Engine's VisibilityMonitor**: Don't recreate visibility logic. Supervisor listens to Engine events.
+3. **No Mismatch Detection (Phase 1)**: Focus on core issues first. Mismatch can be added later.
+4. **No Complex Threading**: All signals arrive from Main thread / viewModelScope.
+5. **Mode-Aware Behavior**: Simple `if (isVideoMode)` checks, not complex Policy objects.
 
 ---
 
 ## State Diagram
 
 ```
-┌─────────────────────────────────────────────────────────────────────────────┐
-│                           SESSION SUPERVISOR STATES                          │
-└─────────────────────────────────────────────────────────────────────────────┘
-
                               ┌──────────────┐
-                              │    IDLE      │ ◄─── Initial state
+                              │    IDLE      │
                               └──────┬───────┘
                                      │ loadExercise()
                                      ▼
                               ┌──────────────┐
-                              │ SETUP_POSE   │ ◄─── Waiting for valid start pose
-                              └──────┬───────┘      (10 consecutive valid frames)
+                              │ SETUP_POSE   │ ◄─── PoseValidator (10 valid frames)
+                              └──────┬───────┘
                                      │
                     ┌────────────────┼────────────────┐
                     │                │                │
-              [VideoMode]      [PoseConfirmed]   [NoPose/Exit]
+              [VideoMode]      [PoseConfirmed]   [NoPose]
                     │                │                │
                     ▼                ▼                │
              ┌──────────────┐ ┌──────────────┐        │
@@ -49,494 +54,499 @@ A single **`SessionSupervisor`** component that:
              └──────┬───────┘        │                │
                     │          [CountdownDone]        │
                     │                │                │
-                    └────────────────┼────────────────┘
-                                     ▼
+                    └────────────────┴────────────────┘
+                                     │
                               ┌──────────────┐
-                              │   TRAINING   │ ◄─── Active training/analysis
+                              │   TRAINING   │
                               └──────┬───────┘
                                      │
           ┌──────────────────────────┼──────────────────────────┐
           │                          │                          │
-    [ManualPause]          [AutoPause Triggers]          [TargetReached]
-          │                          │                          │
+    [ManualPause]          [VisibilityPaused]            [TargetReached]
+          │                   [NoPose 4s]                       │
           ▼                          ▼                          ▼
    ┌──────────────┐          ┌──────────────┐           ┌──────────────┐
    │    PAUSED    │          │ AUTO_PAUSED  │           │  COMPLETED   │
-   │   (Manual)   │          │   (Auto)     │           └──────────────┘
-   └──────┬───────┘          └──────┬───────┘
-          │                          │
-    [ManualResume]           [SignalRestored]
-          │                          │
-          ▼                          ▼
-   ┌──────────────┐          ┌──────────────┐
-   │  COUNTDOWN   │          │RESUME_SETUP  │ ◄─── Validate pose before resume
-   │  (Resume)    │          └──────┬───────┘
+   │   (Manual)   │          └──────┬───────┘           └──────────────┘
    └──────┬───────┘                 │
-          │                   [PoseConfirmed]
-          │                         │
+          │                  [VisibilityRestored]
+    [ManualResume]                  │
           │                         ▼
           │                  ┌──────────────┐
-          │                  │RESUME_COUNT  │ ◄─── 3-2-1-GO countdown
+          │                  │RESUME_SETUP  │ ◄─── PoseValidator again
           │                  └──────┬───────┘
           │                         │
-          └─────────────────────────┼─────────────────────────────┐
-                                    │                             │
-                              [CountdownDone]              [PoseLost/Cancel]
+          │                   [PoseConfirmed]
+          │                         │
+          ▼                         ▼
+   ┌──────────────┐          ┌──────────────┐
+   │  COUNTDOWN   │          │RESUME_COUNT  │
+   └──────┬───────┘          └──────┬───────┘
+          │                         │
+          │                   [CountdownDone]
+          │                         │
+          └─────────────────────────┴─────────────────────────────┐
                                     │                             │
                                     ▼                             │
                          Return to TRAINING ◄─────────────────────┘
-                         (preserving rep count)            Back to AUTO_PAUSED
+                         (preserving rep count)
 ```
 
 ---
 
 ## States Definition
 
-| State | Description | Engine State | Frames Processed |
-|-------|-------------|--------------|------------------|
+| State | Description | Engine State | Process Frames |
+|-------|-------------|--------------|----------------|
 | `IDLE` | No exercise loaded | stopped | No |
-| `SETUP_POSE` | Waiting for valid start position | stopped | Validation only |
-| `COUNTDOWN` | 3-2-1-GO before training starts | stopped | Validation only |
-| `TRAINING` | Active training/analysis | running | Yes |
-| `PAUSED` | Manual pause by user | paused | No |
-| `AUTO_PAUSED` | Automatic pause (visibility/noPose/mismatch) | paused | No |
-| `RESUME_SETUP` | After auto-pause, validating pose before resume | paused | Validation only |
-| `RESUME_COUNTDOWN` | 3-2-1-GO before resume | paused | Validation only |
-| `COMPLETED` | Target reached or video ended | stopped | No |
+| `SETUP_POSE` | Validating start position | stopped | PoseValidator only |
+| `COUNTDOWN` | 3-2-1-GO | stopped | PoseValidator only |
+| `TRAINING` | Active training | running | Yes - Engine.processFrame() |
+| `PAUSED` | Manual pause | paused | No |
+| `AUTO_PAUSED` | Auto pause (visibility/noPose) | paused | No |
+| `RESUME_SETUP` | Validating pose before resume | paused | PoseValidator only |
+| `RESUME_COUNTDOWN` | 3-2-1-GO before resume | paused | PoseValidator only |
+| `COMPLETED` | Training finished | stopped | No |
 
 ---
 
-## Auto-Pause Triggers (with timings)
+## Signals & Actions
 
-### 1. Visibility Loss (joints not visible)
-```
-Timeline:  0s ──────── 1s ──────── 2s ──────── 4s
-           │           │           │           │
-        [Invisible] [Grace OK]  [Warning]   [AUTO_PAUSE]
-                       │           │           │
-                    Continue    Show msg    Pause + Save state
-```
-
-### 2. No Pose Detected (MediaPipe returns no pose)
-```
-Timeline:  0s ──────── 1s ──────── 2s ──────── 4s
-           │           │           │           │
-        [NoPose]    [Grace OK]  [Warning]   [AUTO_PAUSE]
-                       │           │           │
-                    Continue   "Step back    Pause + Save state
-                               into frame"
-```
-
-### 3. Exercise Mismatch (wrong exercise detected)
-```
-Timeline:  0s ──────── 2s ──────── 4s ──────── 6s
-           │           │           │           │
-        [Mismatch] [Grace OK]  [Warning]   [AUTO_PAUSE]
-                       │           │           │
-                    Continue   "Wrong        Pause + Show
-                               position"     correction guide
-```
-
----
-
-## Events & Actions
-
-### Input Events (Signals to Supervisor)
+### Input Signals
 
 ```kotlin
 sealed class SupervisorSignal {
-    // ==================== UI Commands ====================
+    // UI Commands
     object StartRequested : SupervisorSignal()
     object PauseRequested : SupervisorSignal()
     object ResumeRequested : SupervisorSignal()
     object StopRequested : SupervisorSignal()
     
-    // ==================== Pose Signals ====================
-    data class PoseDetected(
+    // Pose Data (from Activity)
+    data class PoseFrame(
         val angles: JointAngles,
-        val landmarks: List<SmoothedLandmark>,
-        val confidence: Float
+        val landmarks: List<SmoothedLandmark>?,
+        val isFrontCamera: Boolean
     ) : SupervisorSignal()
     
-    object NoPoseDetected : SupervisorSignal()
+    object NoPoseFrame : SupervisorSignal()
+
+    // Pose validation result (from ViewModel after PoseValidator confirms)
+    object PoseConfirmed : SupervisorSignal()
     
-    // ==================== Quality Signals ====================
-    data class TrackingQuality(
-        val level: QualityLevel,        // GOOD, DEGRADED, BAD
-        val invisibleJoints: List<String>,
-        val mismatchScore: Float        // 0.0 = match, 1.0 = mismatch
-    ) : SupervisorSignal()
-    
-    // ==================== Engine Signals ====================
+    // Engine Events (forwarded from TrainingEngine)
     object TargetReached : SupervisorSignal()
-    object HoldCompleted : SupervisorSignal()
+    object VisibilityPaused : SupervisorSignal()  // From Engine's VisibilityMonitor
+    object VisibilityRestored : SupervisorSignal()
     
-    // ==================== Countdown Signals ====================
-    data class CountdownTick(val remaining: Int) : SupervisorSignal()
+    // Countdown Events
     object CountdownFinished : SupervisorSignal()
-    object CountdownCancelled : SupervisorSignal()
     
-    // ==================== Video Signals ====================
+    // Video Events
     object VideoEnded : SupervisorSignal()
     object VideoSeeked : SupervisorSignal()
 }
-
-enum class QualityLevel { GOOD, DEGRADED, BAD }
 ```
 
-### Output Actions (Commands from Supervisor)
+### Output Actions
 
 ```kotlin
 sealed class SupervisorAction {
-    // ==================== Engine Commands ====================
+    // Engine Commands
     object StartEngine : SupervisorAction()
     object PauseEngine : SupervisorAction()
     object ResumeEngine : SupervisorAction()
     object StopEngine : SupervisorAction()
     object ResumeFromVisibilityPause : SupervisorAction()
-    object ResetEngineKeepReps : SupervisorAction()
     
-    // ==================== UI Commands ====================
-    data class ShowState(val state: SessionState) : SupervisorAction()
-    data class ShowWarning(val type: WarningType, val message: String) : SupervisorAction()
+    // Frame Processing
+    data class ProcessFrame(
+        val angles: JointAngles,
+        val landmarks: List<SmoothedLandmark>?,
+        val isFrontCamera: Boolean
+    ) : SupervisorAction()
+    
+    data class ValidatePose(
+        val angles: JointAngles
+    ) : SupervisorAction()
+    
+    // UI Commands
     object ShowSetupPose : SupervisorAction()
     object StartCountdown : SupervisorAction()
     object CancelCountdown : SupervisorAction()
-    data class ShowPauseReason(val reason: PauseReason) : SupervisorAction()
+    data class ShowAutoPaused(val reason: PauseReason) : SupervisorAction()
     object ShowCompleted : SupervisorAction()
     
-    // ==================== Feedback Commands ====================
-    data class SpeakMessage(val text: String) : SupervisorAction()
-    data class Vibrate(val pattern: VibratePattern) : SupervisorAction()
+    // Video-specific
+    object PauseVideo : SupervisorAction()
 }
 
-enum class WarningType { VISIBILITY, NO_POSE, MISMATCH }
-enum class PauseReason { MANUAL, VISIBILITY, NO_POSE, MISMATCH }
-enum class VibratePattern { WARNING, ERROR, SUCCESS }
+enum class PauseReason { MANUAL, VISIBILITY, NO_POSE }
 ```
 
 ---
 
-## State Transitions Table
+## Key Transitions
 
-| Current State | Signal | Condition | Next State | Actions |
-|---------------|--------|-----------|------------|---------|
-| IDLE | loadExercise | success | SETUP_POSE | ShowSetupPose |
-| SETUP_POSE | PoseDetected | isStartPoseValid × 10 frames | COUNTDOWN | StartCountdown |
-| SETUP_POSE | NoPoseDetected | - | SETUP_POSE | ShowWarning(NO_POSE) |
-| COUNTDOWN | CountdownFinished | - | TRAINING | StartEngine, ShowState |
-| COUNTDOWN | PoseDetected | !isStartPoseValid | SETUP_POSE | CancelCountdown |
-| COUNTDOWN | NoPoseDetected | - | SETUP_POSE | CancelCountdown |
-| TRAINING | PauseRequested | - | PAUSED | PauseEngine |
-| TRAINING | TrackingQuality | level=BAD for 4s | AUTO_PAUSED | PauseEngine, ShowPauseReason |
-| TRAINING | NoPoseDetected | for 4s (with grace/warn) | AUTO_PAUSED | PauseEngine, ShowPauseReason |
-| TRAINING | TargetReached | - | COMPLETED | StopEngine, ShowCompleted |
-| TRAINING | VideoEnded | isVideoMode | COMPLETED | StopEngine, ShowCompleted |
-| PAUSED | ResumeRequested | - | COUNTDOWN | ShowSetupPose, then StartCountdown |
-| AUTO_PAUSED | TrackingQuality | level=GOOD | RESUME_SETUP | ShowSetupPose |
-| RESUME_SETUP | PoseDetected | isStartPoseValid × 10 frames | RESUME_COUNTDOWN | StartCountdown |
-| RESUME_SETUP | TrackingQuality | level=BAD | AUTO_PAUSED | ShowPauseReason |
-| RESUME_COUNTDOWN | CountdownFinished | - | TRAINING | ResumeFromVisibilityPause |
-| RESUME_COUNTDOWN | PoseDetected | !isStartPoseValid | AUTO_PAUSED | CancelCountdown |
-| * | StopRequested | - | COMPLETED | StopEngine |
+| State | Signal | Next State | Actions |
+|-------|--------|------------|---------|
+| IDLE | loadExercise() | SETUP_POSE | ShowSetupPose |
+| SETUP_POSE | PoseConfirmed | COUNTDOWN | StartCountdown |
+| SETUP_POSE [VideoMode] | StartRequested | TRAINING | StartEngine |
+| COUNTDOWN | CountdownFinished | TRAINING | StartEngine |
+| COUNTDOWN | PoseFrame (invalid) | SETUP_POSE | CancelCountdown |
+| COUNTDOWN | NoPoseFrame | SETUP_POSE | CancelCountdown |
+| TRAINING | PoseFrame | TRAINING | ProcessFrame |
+| TRAINING | PauseRequested | PAUSED | PauseEngine |
+| TRAINING | VisibilityPaused | AUTO_PAUSED | PauseEngine, ShowAutoPaused |
+| TRAINING | NoPoseFrame (4s) | AUTO_PAUSED | PauseEngine, ShowAutoPaused |
+| TRAINING | TargetReached | COMPLETED | StopEngine, ShowCompleted |
+| TRAINING | VideoEnded | COMPLETED | StopEngine, ShowCompleted |
+| PAUSED | ResumeRequested | COUNTDOWN | StartCountdown |
+| AUTO_PAUSED | VisibilityRestored | RESUME_SETUP | ShowSetupPose |
+| RESUME_SETUP | PoseConfirmed | RESUME_COUNTDOWN | StartCountdown |
+| RESUME_COUNTDOWN | CountdownFinished | TRAINING | **ResumeFromVisibilityPause** |
+| RESUME_COUNTDOWN | PoseFrame (invalid) | AUTO_PAUSED | CancelCountdown |
+| * | StopRequested | COMPLETED | StopEngine [+PauseVideo if VideoMode] |
 
 ---
 
-## Implementation Plan
+## Implementation
 
-### Phase 1: Create SessionSupervisor Class
+### File Structure
 
-**File:** `training/session/SessionSupervisor.kt`
+```
+training/
+├── session/
+│   ├── SessionSupervisor.kt      # State machine
+│   ├── SessionState.kt           # State enum  
+│   ├── SupervisorSignal.kt       # Input signals
+│   └── SupervisorAction.kt       # Output actions
+└── engine/
+    ├── TrainingEngine.kt         # UNCHANGED - keeps VisibilityMonitor
+    └── ...
+```
+
+### SessionSupervisor.kt
 
 ```kotlin
-class SessionSupervisor(
-    private val config: SupervisorConfig = SupervisorConfig()
-) {
-    // ==================== State ====================
+class SessionSupervisor {
+    
     private val _state = MutableStateFlow(SessionState.IDLE)
     val state: StateFlow<SessionState> = _state.asStateFlow()
     
-    private val _actions = MutableSharedFlow<SupervisorAction>(extraBufferCapacity = 20)
-    val actions: SharedFlow<SupervisorAction> = _actions.asSharedFlow()
+    private val _actions = MutableSharedFlow<SupervisorAction>(extraBufferCapacity = 16)
+    val actions: SharedFlow<SupervisorAction> = _actions
     
-    // ==================== Tracking ====================
+    var isVideoMode: Boolean = false
+    
+    // NoPose tracking (for 4s auto-pause)
+    private var noPoseStartTime: Long = 0L
+    private val noPoseGraceMs = 1000L
+    private val noPoseWarnMs = 2000L  
+    private val noPosePauseMs = 4000L
+    
+    // Pause reason
     private var pauseReason: PauseReason? = null
-    private var savedRepCount: Int = 0
-    private var isVideoMode: Boolean = false
     
-    // ==================== Quality Monitors ====================
-    private val qualityMonitor = TrackingQualityMonitor(
-        graceMs = config.graceMs,
-        warnMs = config.warnMs,
-        pauseMs = config.pauseMs
-    )
+    fun processSignal(signal: SupervisorSignal) {
+        when (_state.value) {
+            SessionState.IDLE -> handleIdle(signal)
+            SessionState.SETUP_POSE -> handleSetupPose(signal)
+            SessionState.COUNTDOWN -> handleCountdown(signal)
+            SessionState.TRAINING -> handleTraining(signal)
+            SessionState.PAUSED -> handlePaused(signal)
+            SessionState.AUTO_PAUSED -> handleAutoPaused(signal)
+            SessionState.RESUME_SETUP -> handleResumeSetup(signal)
+            SessionState.RESUME_COUNTDOWN -> handleResumeCountdown(signal)
+            SessionState.COMPLETED -> handleCompleted(signal)
+        }
+    }
     
-    // ==================== Public API ====================
-    fun setVideoMode(enabled: Boolean)
-    fun processSignal(signal: SupervisorSignal)
-    fun getCurrentState(): SessionState
-    fun getSavedRepCount(): Int
+    private fun handleTraining(signal: SupervisorSignal) {
+        when (signal) {
+            is SupervisorSignal.PoseFrame -> {
+                noPoseStartTime = 0L  // Reset NoPose timer
+                emit(SupervisorAction.ProcessFrame(signal.angles, signal.landmarks, signal.isFrontCamera))
+            }
+            
+            is SupervisorSignal.NoPoseFrame -> {
+                handleNoPose()
+            }
+            
+            is SupervisorSignal.VisibilityPaused -> {
+                pauseReason = PauseReason.VISIBILITY
+                transitionTo(SessionState.AUTO_PAUSED)
+                emit(SupervisorAction.PauseEngine)
+                emit(SupervisorAction.ShowAutoPaused(PauseReason.VISIBILITY))
+            }
+            
+            is SupervisorSignal.PauseRequested -> {
+                pauseReason = PauseReason.MANUAL
+                transitionTo(SessionState.PAUSED)
+                emit(SupervisorAction.PauseEngine)
+                if (isVideoMode) emit(SupervisorAction.PauseVideo)
+            }
+            
+            is SupervisorSignal.TargetReached,
+            is SupervisorSignal.VideoEnded -> {
+                transitionTo(SessionState.COMPLETED)
+                emit(SupervisorAction.StopEngine)
+                emit(SupervisorAction.ShowCompleted)
+            }
+            
+            is SupervisorSignal.StopRequested -> {
+                transitionTo(SessionState.COMPLETED)
+                if (isVideoMode) emit(SupervisorAction.PauseVideo)
+                emit(SupervisorAction.StopEngine)
+                emit(SupervisorAction.ShowCompleted)
+            }
+            
+            else -> {}
+        }
+    }
+    
+    private fun handleNoPose() {
+        val now = System.currentTimeMillis()
+        
+        if (noPoseStartTime == 0L) {
+            noPoseStartTime = now
+            return
+        }
+        
+        val duration = now - noPoseStartTime
+        
+        when {
+            duration >= noPosePauseMs -> {
+                pauseReason = PauseReason.NO_POSE
+                transitionTo(SessionState.AUTO_PAUSED)
+                emit(SupervisorAction.PauseEngine)
+                emit(SupervisorAction.ShowAutoPaused(PauseReason.NO_POSE))
+                if (isVideoMode) emit(SupervisorAction.PauseVideo)
+                noPoseStartTime = 0L
+            }
+            duration >= noPoseWarnMs -> {
+                // Warning handled by UI (already shows "No pose detected")
+            }
+            // < graceMs: ignore
+        }
+    }
+    
+    private fun handleResumeCountdown(signal: SupervisorSignal) {
+        when (signal) {
+            is SupervisorSignal.CountdownFinished -> {
+                transitionTo(SessionState.TRAINING)
+                emit(SupervisorAction.ResumeFromVisibilityPause)  // KEY: preserves rep count
+            }
+            
+            is SupervisorSignal.PoseFrame -> {
+                // Validate pose during countdown
+                emit(SupervisorAction.ValidatePose(signal.angles))
+            }
+            
+            is SupervisorSignal.NoPoseFrame -> {
+                transitionTo(SessionState.AUTO_PAUSED)
+                emit(SupervisorAction.CancelCountdown)
+            }
+            
+            else -> {}
+        }
+    }
+    
+    // ... other handlers follow same pattern
 }
 ```
 
-### Phase 2: Create TrackingQualityMonitor
-
-**File:** `training/session/TrackingQualityMonitor.kt`
-
-```kotlin
-class TrackingQualityMonitor(
-    private val graceMs: Long = 1000,
-    private val warnMs: Long = 2000,
-    private val pauseMs: Long = 4000
-) {
-    private val _qualityLevel = MutableStateFlow(QualityLevel.GOOD)
-    val qualityLevel: StateFlow<QualityLevel> = _qualityLevel.asStateFlow()
-    
-    private var degradedStartTime: Long = 0
-    
-    /**
-     * Update quality based on current frame data
-     * Returns action suggestion (NONE, WARN, PAUSE)
-     */
-    fun update(
-        hasLandmarks: Boolean,
-        requiredJointsVisible: Boolean,
-        mismatchScore: Float
-    ): QualityAction
-    
-    fun reset()
-}
-
-enum class QualityAction { NONE, WARN, PAUSE }
-```
-
-### Phase 3: Integrate with TrainingViewModel
-
-**Changes to:** `ui/training/TrainingViewModel.kt`
+### Integration with TrainingViewModel
 
 ```kotlin
 class TrainingViewModel(private val assets: AssetManager) : ViewModel() {
     
-    // ==================== NEW: Session Supervisor ====================
-    val sessionSupervisor = SessionSupervisor()
-    
-    // DEPRECATE: Replace TrainingStateManager with SessionSupervisor
-    // val stateManager = TrainingStateManager()  // Remove
+    val supervisor = SessionSupervisor()
+    val poseValidator = PoseValidator()
     
     init {
-        // Observe supervisor actions
+        // Listen to supervisor actions
         viewModelScope.launch {
-            sessionSupervisor.actions.collect { action ->
+            supervisor.actions.collect { action ->
                 executeAction(action)
             }
         }
     }
     
-    // ==================== Frame Processing ====================
-    fun processFrame(angles: JointAngles, landmarks: List<SmoothedLandmark>?, isFrontCamera: Boolean) {
-        // Always send signal to supervisor (it decides what to do)
-        sessionSupervisor.processSignal(
-            SupervisorSignal.PoseDetected(angles, landmarks, calculateConfidence(landmarks))
-        )
+    // Called from Activity for every frame
+    fun onPoseFrame(angles: JointAngles, landmarks: List<SmoothedLandmark>?, isFrontCamera: Boolean) {
+        supervisor.processSignal(SupervisorSignal.PoseFrame(angles, landmarks, isFrontCamera))
     }
     
     fun onNoPoseDetected() {
-        sessionSupervisor.processSignal(SupervisorSignal.NoPoseDetected)
+        supervisor.processSignal(SupervisorSignal.NoPoseFrame)
     }
     
-    // ==================== Execute Actions ====================
     private fun executeAction(action: SupervisorAction) {
         when (action) {
             is SupervisorAction.StartEngine -> trainingEngine?.start()
             is SupervisorAction.PauseEngine -> trainingEngine?.pause()
-            is SupervisorAction.ResumeEngine -> trainingEngine?.resume()
-            is SupervisorAction.ResumeFromVisibilityPause -> trainingEngine?.resumeFromVisibilityPause()
             is SupervisorAction.StopEngine -> trainingEngine?.stop()
-            // ... UI actions forwarded to Activity via events
+            is SupervisorAction.ResumeFromVisibilityPause -> trainingEngine?.resumeFromVisibilityPause()
+            
+            is SupervisorAction.ProcessFrame -> {
+                trainingEngine?.processFrame(action.angles, action.landmarks, action.isFrontCamera)
+            }
+            
+            is SupervisorAction.ValidatePose -> {
+                val result = poseValidator.validate(action.angles, exerciseConfig.value, poseVariantIndex.value)
+                // Handle validation result...
+                if (result.isConfirmed) {
+                    supervisor.processSignal(SupervisorSignal.PoseConfirmed)
+                }
+            }
+            
+            // UI actions forwarded to Activity via events
+            is SupervisorAction.ShowSetupPose -> emitUIEvent(...)
+            is SupervisorAction.StartCountdown -> countdownController.start()
+            // ...
+        }
+    }
+    
+    // Forward Engine events to Supervisor
+    private fun observeTrainingEngine() {
+        viewModelScope.launch {
+            engine.events.collect { event ->
+                when (event) {
+                    is FeedbackEvent.VisibilityPaused -> {
+                        supervisor.processSignal(SupervisorSignal.VisibilityPaused)
+                    }
+                    is FeedbackEvent.VisibilityResumeCountdown -> {
+                        supervisor.processSignal(SupervisorSignal.VisibilityRestored)
+                    }
+                    is FeedbackEvent.TargetReached -> {
+                        supervisor.processSignal(SupervisorSignal.TargetReached)
+                    }
+                    else -> {
+                        // Forward to FeedbackManager as before
+                        feedbackManager?.emit(event)
+                    }
+                }
+            }
         }
     }
 }
 ```
 
-### Phase 4: Update TrainingActivity
-
-**Changes to:** `ui/TrainingActivity.kt`
+### TrainingActivity Changes
 
 ```kotlin
-// Replace stateManager observation with sessionSupervisor.state
-lifecycleScope.launch {
-    viewModel.sessionSupervisor.state.collectLatest { state ->
-        updateUIForSessionState(state)
-    }
+// Replace direct stateManager calls with supervisor signals
+
+override fun onPoseDetected(result: PoseResult) {
+    // ... calculate angles ...
+    viewModel.onPoseFrame(angles, smoothedLandmarks, result.isFrontCamera)
 }
 
-// Handle NoPoseDetected properly
 override fun onNoPoseDetected() {
-    lifecycleScope.launch(Dispatchers.Main) {
-        binding.skeletonOverlay.clear()
-        // NEW: Always notify supervisor (not just in SETUP_POSE)
-        viewModel.onNoPoseDetected()
+    binding.skeletonOverlay.clear()
+    viewModel.onNoPoseDetected()  // NEW: Always notify supervisor
+}
+
+// Observe supervisor state instead of stateManager
+lifecycleScope.launch {
+    viewModel.supervisor.state.collectLatest { state ->
+        updateUIForState(state)
     }
 }
 
-// Countdown now respects pause reason
-private fun setupCountdownController() {
-    viewModel.countdownController.setListener(object : CountdownController.CountdownListener {
-        override fun onFinish() {
-            // NEW: Supervisor decides start vs resume
-            viewModel.sessionSupervisor.processSignal(SupervisorSignal.CountdownFinished)
-        }
-        // ...
-    })
-}
-```
-
-### Phase 5: Remove VisibilityMonitor from TrainingEngine
-
-**Changes to:** `training/TrainingEngine.kt`
-
-```kotlin
-// REMOVE: VisibilityMonitor (now handled by SessionSupervisor)
-// private val visibilityMonitor: VisibilityMonitor = ...
-
-fun processFrame(angles: JointAngles, landmarks: List<SmoothedLandmark>?, isFrontCamera: Boolean) {
-    if (!isRunning || isPaused) return
-    
-    synchronized(stateLock) {
-        // REMOVE: Visibility checking (handled by supervisor)
-        // if (landmarks != null) {
-        //     val visibilityResult = visibilityMonitor.checkVisibility(...)
-        // }
-        
-        // Keep: Phase detection, form validation, rep counting
-        // ...
+// Countdown signals supervisor
+viewModel.countdownController.setListener(object : CountdownController.CountdownListener {
+    override fun onFinish() {
+        viewModel.supervisor.processSignal(SupervisorSignal.CountdownFinished)
     }
-}
+    // ...
+})
 ```
 
 ---
 
-## File Structure
+## What Stays Unchanged
 
-```
-training/
-├── session/
-│   ├── SessionSupervisor.kt          # Main state machine
-│   ├── SessionState.kt               # State enum
-│   ├── SupervisorSignal.kt           # Input events
-│   ├── SupervisorAction.kt           # Output actions
-│   ├── SupervisorConfig.kt           # Timing configuration
-│   └── TrackingQualityMonitor.kt     # Quality tracking with timers
-├── engine/
-│   ├── TrainingEngine.kt             # MODIFIED: Remove visibility logic
-│   ├── PhaseStateMachine.kt          # Unchanged
-│   ├── FormValidator.kt              # Unchanged
-│   └── ...
-└── ...
-```
+1. **`TrainingEngine`** - Keeps `VisibilityMonitor` and all existing logic
+2. **`FeedbackManager`** - Continues handling form feedback from Engine
+3. **`ReportGenerator`** - Uses `engine.getVisibilityStats()` as before
+4. **`PoseValidator`** - Same logic, just called via Supervisor actions
+5. **`CountdownController`** - Same component, signals routed through Supervisor
 
 ---
 
-## Migration Strategy
+## Migration Steps
 
-### Step 1: Add New Classes (Non-breaking)
-- Create `session/` package with all new classes
-- Add `SessionSupervisor` to `TrainingViewModel` alongside existing `TrainingStateManager`
+### Step 1: Create Session Package
+- Create `training/session/` with `SessionSupervisor`, `SessionState`, `SupervisorSignal`, `SupervisorAction`
+- Pure logic, no dependencies on UI
 
-### Step 2: Parallel Operation
-- Both `TrainingStateManager` and `SessionSupervisor` run
-- Log discrepancies to validate new logic
-- UI still follows `TrainingStateManager`
+### Step 2: Add Supervisor to ViewModel
+- Add `supervisor` property
+- Add action execution logic
+- Add Engine event forwarding to Supervisor
+- **Keep** `stateManager` temporarily for comparison
 
-### Step 3: Switch UI to Supervisor
-- Change UI observers from `stateManager.state` to `sessionSupervisor.state`
-- Remove `TrainingStateManager` usage from `TrainingViewModel`
+### Step 3: Update Activity
+- Change `onNoPoseDetected()` to always call `viewModel.onNoPoseDetected()`
+- Route countdown finish through Supervisor
+- Observe `supervisor.state` instead of `stateManager.state`
 
-### Step 4: Clean Up Engine
-- Remove `VisibilityMonitor` from `TrainingEngine`
-- Remove visibility-related state flows from engine
-- Engine becomes pure "processor"
-
-### Step 5: Delete Deprecated Code
-- Remove `TrainingStateManager.kt`
-- Remove `VisibilityMonitor.kt` (logic moved to `TrackingQualityMonitor`)
+### Step 4: Remove Old Code
+- Remove `TrainingStateManager`
+- Remove state-gating in `processFrame()` (Supervisor handles it)
 
 ---
 
-## Video Mode Specifics
+## Video Mode Behavior
 
-| Scenario | Camera Mode | Video Mode |
-|----------|-------------|------------|
-| No Pose | Grace → Warn → AUTO_PAUSE | Grace → Warn → AUTO_PAUSE (same) |
-| Visibility Loss | Grace → Warn → AUTO_PAUSE | Grace → Warn → AUTO_PAUSE (same) |
-| Mismatch | Grace → Warn → AUTO_PAUSE | Grace → Warn → AUTO_PAUSE (same) |
-| Manual Pause | Pause immediately | Pause video playback |
-| Seek | N/A | Reset engine state, continue from seek point |
-| Video End | N/A | COMPLETED state, calculate final frame |
-
----
-
-## Configuration
-
-```kotlin
-data class SupervisorConfig(
-    // Quality timing
-    val graceMs: Long = 1000,           // 1s - ignore brief glitches
-    val warnMs: Long = 2000,            // 2s - show warning
-    val pauseMs: Long = 4000,           // 4s - auto pause
-    
-    // Mismatch timing (longer grace for movement variations)
-    val mismatchGraceMs: Long = 2000,   // 2s grace
-    val mismatchWarnMs: Long = 4000,    // 4s warning
-    val mismatchPauseMs: Long = 6000,   // 6s pause
-    
-    // Start pose validation
-    val requiredValidFrames: Int = 10,  // Frames to confirm pose
-    
-    // Countdown
-    val countdownSeconds: Int = 3       // 3-2-1-GO
-)
-```
+| Event | Camera Mode | Video Mode |
+|-------|-------------|------------|
+| NoPose 4s | AUTO_PAUSE | AUTO_PAUSE + Pause Video |
+| VisibilityPaused | AUTO_PAUSE | AUTO_PAUSE + Pause Video |
+| Manual Pause | PAUSE | PAUSE + Pause Video |
+| Manual Stop | COMPLETED | Pause Video + COMPLETED |
+| Seek | N/A | Reset Engine (stop+start) |
+| Video End | N/A | COMPLETED |
 
 ---
 
 ## Testing Checklist
 
-### Camera Mode Tests
-- [ ] Start → SETUP_POSE → valid pose → COUNTDOWN → TRAINING
+### Core Flow
+- [ ] SETUP_POSE → valid pose → COUNTDOWN → TRAINING
 - [ ] TRAINING → manual pause → PAUSED → resume → COUNTDOWN → TRAINING
-- [ ] TRAINING → visibility loss → warning at 2s → AUTO_PAUSED at 4s
-- [ ] AUTO_PAUSED → visibility restored → RESUME_SETUP → valid pose → RESUME_COUNTDOWN → TRAINING (rep count preserved)
-- [ ] TRAINING → no pose → warning at 2s → AUTO_PAUSED at 4s
-- [ ] TRAINING → mismatch → warning at 4s → AUTO_PAUSED at 6s
+- [ ] TRAINING → NoPose 4s → AUTO_PAUSED
+- [ ] AUTO_PAUSED → visibility restored → RESUME_SETUP → valid pose → RESUME_COUNTDOWN → TRAINING (**rep count preserved**)
 - [ ] TRAINING → target reached → COMPLETED
-- [ ] Any state → stop button → COMPLETED
 
-### Video Mode Tests
-- [ ] Video start → immediate TRAINING (skip SETUP_POSE)
-- [ ] TRAINING → visibility loss → same behavior as camera
-- [ ] TRAINING → manual pause → pause playback
-- [ ] TRAINING → seek → reset engine, continue from seek point
-- [ ] TRAINING → video end → COMPLETED
+### Video Mode
+- [ ] Video start → immediate TRAINING
+- [ ] NoPose → AUTO_PAUSE + video paused
+- [ ] Manual stop → video paused + COMPLETED
 
 ### Edge Cases
 - [ ] Pose lost during COUNTDOWN → back to SETUP_POSE
-- [ ] Pose lost during RESUME_COUNTDOWN → back to AUTO_PAUSED
-- [ ] Multiple rapid pause/resume → stable state
-- [ ] Very fast visibility flicker (< 1s) → ignored (grace period)
+- [ ] NoPose < 1s (grace) → ignored
+- [ ] Rapid pause/resume → stable
+
+---
+
+## Future Enhancements (Phase 2)
+
+1. **Mismatch Detection**: Detect wrong exercise based on phase progression stagnation
+2. **Quality Metrics in Supervisor**: Track session quality independent of Engine
+3. **Configurable Timings**: Make grace/warn/pause times configurable per exercise
 
 ---
 
 ## Summary
 
-This plan introduces a **unified SessionSupervisor** that:
-
-1. **Single Source of Truth**: One component owns session state
-2. **Clear Separation**: Supervisor decides, Engine processes, UI displays
-3. **Proper Resume**: Distinguishes between fresh start and resume from pause
-4. **Consistent Auto-Pause**: Same path for visibility, noPose, and mismatch
-5. **Mode-Aware**: Appropriate behavior for Camera vs Video mode
-6. **Testable**: Clear events/actions make unit testing straightforward
-7. **Minimal Disruption**: Gradual migration path, reuses existing components
-
-The implementation follows the existing project patterns (Kotlin, StateFlow, coroutines) while fixing the fundamental issues in session lifecycle management.
+This plan:
+1. **Fixes core issues**: Resume after visibility preserves rep count, NoPose during TRAINING triggers auto-pause
+2. **Single Source of Truth**: Supervisor owns session state
+3. **Reuses existing code**: VisibilityMonitor, PoseValidator, FeedbackManager unchanged
+4. **Simple implementation**: No complex threading, no over-abstraction
+5. **Clean separation**: Supervisor decides → ViewModel executes → UI displays

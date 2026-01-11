@@ -35,17 +35,17 @@
           "role": "primary",
           "startPose": {
             "min": 50,
-            "max": 130
+            "max": 180
           },
           "upRange": {
-            "beginner": { "min": 120, "max": 150 },
-            "normal":   { "min": 150, "max": 180 },
-            "advanced": { "min": 160, "max": 180 }
+            "beginner": { "min": 110, "max": 140 },
+            "normal":   { "min": 105, "max": 130 },
+            "advanced": { "min": 100, "max": 120 }
           },
           "downRange": {
-            "beginner": { "min": 70, "max": 90 },
-            "normal":   { "min": 65, "max": 80 },
-            "advanced": { "min": 60, "max": 70 }
+            "beginner": { "min": 55, "max": 80 },
+            "normal":   { "min": 50, "max": 85 },
+            "advanced": { "min": 45, "max": 80 }
           },
           "errorMessages": {
             "tooLow": {
@@ -63,12 +63,12 @@
           "role": "secondary",
           "startPose": {
             "min": 0,
-            "max": 60
+            "max": 100
           },
           "Range": {
-            "beginner": { "min": 0, "max": 60 },
-            "normal":   { "min": 0, "max": 60 },
-            "advanced": { "min": 0, "max": 60 }
+            "beginner": { "min": 0, "max": 50 },
+            "normal":   { "min": 0, "max": 50 },
+            "advanced": { "min": 0, "max": 45 }
           },
           "errorMessages": {
             "tooHigh": {

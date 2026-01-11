@@ -1,5 +1,5 @@
 {
-  "version": "1.0.0",
+  "version": "1.1.0",
   "angleDetection": {
     "hysteresisDegrees": 5.0,
     "boundaryBufferDegrees": 3.0,
@@ -24,5 +24,20 @@
     "beta": 0.05,
     "useLegacyEMA": false,
     "legacyAlpha": 1.0
+  },
+  "visibility": {
+    "angleCalculation": 0.6,
+    "overlay": 0.5,
+    "poseValidation": 0.6
+  },
+  "poseValidation": {
+    "requiredValidFrames": 10,
+    "minValidAngle": 15.0,
+    "maxValidAngle": 175.0
+  },
+  "overlayOpacity": {
+    "nonTracked": 0.1,
+    "trackedCorrect": 0.30,
+    "trackedError": 0.65
   }
 }

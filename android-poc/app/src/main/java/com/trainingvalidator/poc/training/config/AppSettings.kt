@@ -7,13 +7,16 @@ package com.trainingvalidator.poc.training.config
  * for angle detection, movement detection, and timing thresholds.
  */
 data class AppSettings(
-    val version: String = "1.0.0",
+    val version: String = "1.1.0",
     val angleDetection: AngleDetectionSettings = AngleDetectionSettings(),
     val movementDetection: MovementDetectionSettings = MovementDetectionSettings(),
     val defaults: DefaultTimingSettings = DefaultTimingSettings(),
     val holdDefaults: HoldDefaults = HoldDefaults(),
     val visual: VisualSettings = VisualSettings(),
-    val smoothing: SmoothingSettings = SmoothingSettings()
+    val smoothing: SmoothingSettings = SmoothingSettings(),
+    val visibility: VisibilitySettings = VisibilitySettings(),
+    val poseValidation: PoseValidationSettings = PoseValidationSettings(),
+    val overlayOpacity: OverlayOpacitySettings = OverlayOpacitySettings()
 )
 
 /**
@@ -112,4 +115,59 @@ data class SmoothingSettings(
     val beta: Float = 0.01f,
     val useLegacyEMA: Boolean = false,
     val legacyAlpha: Float = 0.6f
+)
+
+/**
+ * Visibility thresholds - Controls when landmarks/joints are considered "visible"
+ * 
+ * MediaPipe returns a visibility score (0-1) for each landmark.
+ * Higher threshold = more strict (requires higher confidence)
+ * Lower threshold = more tolerant (accepts lower confidence)
+ * 
+ * @param angleCalculation Threshold for calculating angles (used in AngleCalculator)
+ *                         Lower allows angle calculation with less confident landmarks
+ * @param overlay Threshold for drawing skeleton overlay
+ *                Higher prevents drawing unreliable landmarks
+ * @param poseValidation Threshold for validating startPose before training
+ *                       Ensures joints are clearly visible before starting
+ */
+data class VisibilitySettings(
+    val angleCalculation: Float = 0.3f,
+    val overlay: Float = 0.5f,
+    val poseValidation: Float = 0.3f
+)
+
+/**
+ * Pose validation settings - Controls startPose validation before training begins
+ * 
+ * @param requiredValidFrames Number of consecutive valid frames needed to confirm pose
+ *                            Higher = more stable (prevents accidental starts)
+ * @param minValidAngle Minimum angle considered anatomically valid (degrees)
+ *                      Angles below this are rejected as impossible/noise
+ * @param maxValidAngle Maximum angle considered anatomically valid (degrees)
+ *                      Angles above this are rejected as impossible/noise
+ */
+data class PoseValidationSettings(
+    val requiredValidFrames: Int = 10,
+    val minValidAngle: Float = 5f,
+    val maxValidAngle: Float = 175f
+)
+
+/**
+ * Skeleton overlay opacity settings - Controls visual prominence of skeleton parts
+ * 
+ * Minimalist Design: Non-tracked joints should be faint (low opacity)
+ * while tracked joints are more visible, especially on errors.
+ * 
+ * @param nonTracked Opacity for non-tracked joints (0.0-1.0)
+ *                   Lower makes them less distracting
+ * @param trackedCorrect Opacity for tracked joints in correct position (0.0-1.0)
+ *                       Moderate to focus attention on Arc indicator
+ * @param trackedError Opacity for tracked joints in error position (0.0-1.0)
+ *                     Higher to draw attention to the problem
+ */
+data class OverlayOpacitySettings(
+    val nonTracked: Float = 0.18f,
+    val trackedCorrect: Float = 0.50f,
+    val trackedError: Float = 0.75f
 )
