@@ -16,7 +16,7 @@ import kotlin.math.sqrt
  * Features:
  * - Camera-aware axis selection (FORWARD/VERTICAL/SIDEWAYS)
  * - Automatic facing direction detection
- * - Difficulty-aware thresholds
+ * - Single threshold per check (no difficulty levels)
  * - Visibility gating (only checks visible landmarks)
  * - Cooldown to prevent error spam
  * - Frame-based confirmation to prevent flickering
@@ -52,13 +52,11 @@ class PositionValidator(
      * 
      * @param landmarks List of smoothed landmarks (33 points)
      * @param currentPhase Current phase from PhaseStateMachine
-     * @param difficulty Current difficulty level
      * @return Validation result with errors and warnings
      */
     fun validate(
         landmarks: List<SmoothedLandmark>,
-        currentPhase: Phase,
-        difficulty: DifficultyType
+        currentPhase: Phase
     ): PositionValidationResult {
         if (landmarks.size < 33 || positionChecks.isEmpty()) {
             return PositionValidationResult.empty()
@@ -88,7 +86,7 @@ class PositionValidator(
             }
             
             // Validate the check
-            val result = validateCheck(check, landmarks, difficulty, cameraResult, effectiveFacing)
+            val result = validateCheck(check, landmarks, cameraResult, effectiveFacing)
             
             if (!result.passed && !result.skipped) {
                 // Increment frame count for stability (cap at requiredFrames)
@@ -171,7 +169,6 @@ class PositionValidator(
     private fun validateCheck(
         check: PositionCheck,
         landmarks: List<SmoothedLandmark>,
-        difficulty: DifficultyType,
         cameraResult: CameraPositionDetector.CameraDetectionResult,
         facing: CameraPositionDetector.DetectedFacing
     ): CheckResult {
@@ -186,8 +183,8 @@ class PositionValidator(
             return CheckResult.skipped("Landmarks not visible")
         }
         
-        // Get threshold for current difficulty
-        val threshold = check.condition.thresholds.getForDifficulty(difficulty)
+        // Get threshold (single value, no difficulty levels)
+        val threshold = check.condition.threshold
         
         // Validate based on check type
         return when (check.type) {
@@ -201,7 +198,7 @@ class PositionValidator(
                 validateSidewaysComparison(check, primary, secondary, threshold, cameraResult)
             
             PositionCheckType.DISTANCE_RATIO -> 
-                validateDistanceRatio(check, landmarks, threshold, difficulty)
+                validateDistanceRatio(check, landmarks, threshold)
             
             PositionCheckType.HORIZONTAL_ALIGNMENT -> 
                 validateHorizontalAlignment(check, landmarks, threshold)
@@ -355,8 +352,7 @@ class PositionValidator(
     private fun validateDistanceRatio(
         check: PositionCheck,
         landmarks: List<SmoothedLandmark>,
-        threshold: Double,
-        difficulty: DifficultyType
+        threshold: Double
     ): CheckResult {
         val l1 = getLandmark(check.landmarks.primary, landmarks) ?: return CheckResult.skipped()
         val l2 = getLandmark(check.landmarks.secondary, landmarks) ?: return CheckResult.skipped()

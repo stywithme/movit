@@ -13,7 +13,6 @@ import com.trainingvalidator.poc.pose.PoseLandmarkerHelper
 import com.trainingvalidator.poc.pose.PoseResult
 import com.trainingvalidator.poc.storage.AnalysisResultStorage
 import com.trainingvalidator.poc.training.TrainingEngine
-import com.trainingvalidator.poc.training.models.DifficultyType
 import com.trainingvalidator.poc.training.models.ExerciseConfig
 import com.trainingvalidator.poc.video.VideoAnalysisResult
 import com.trainingvalidator.poc.video.VideoManager
@@ -85,6 +84,10 @@ class VideoModeController(
     private var listener: VideoModeListener? = null
     private var videoUri: Uri? = null
     private var isInitialized = false
+    
+    // Store last processed frame for capture (for report images)
+    private var lastFrameBitmap: Bitmap? = null
+    private val lastFrameLock = Any()
     
     /**
      * Set the video mode listener
@@ -174,6 +177,12 @@ class VideoModeController(
      */
     private fun processFrame(bitmap: Bitmap, timestampMs: Long) {
         val smoother = landmarkSmoother ?: return
+        
+        // Store a copy for frame capture (before processing)
+        synchronized(lastFrameLock) {
+            lastFrameBitmap?.recycle()
+            lastFrameBitmap = bitmap.copy(bitmap.config ?: Bitmap.Config.ARGB_8888, false)
+        }
         
         scope.launch(Dispatchers.Default) {
             try {
@@ -296,6 +305,18 @@ class VideoModeController(
      */
     fun isPlaying(): Boolean = videoManager?.isPlaying() ?: false
     
+    /**
+     * Get current frame as bitmap (for frame capture in video mode)
+     * 
+     * Returns a COPY of the last processed frame.
+     * Caller is responsible for recycling the returned bitmap.
+     */
+    fun getCurrentFrameBitmap(): Bitmap? {
+        synchronized(lastFrameLock) {
+            return lastFrameBitmap?.copy(lastFrameBitmap?.config ?: Bitmap.Config.ARGB_8888, false)
+        }
+    }
+    
     // ==================== Results ====================
     
     /**
@@ -303,8 +324,7 @@ class VideoModeController(
      */
     fun saveResults(
         engine: TrainingEngine,
-        exerciseConfig: ExerciseConfig,
-        difficulty: DifficultyType
+        exerciseConfig: ExerciseConfig
     ): Boolean {
         val uri = videoUri?.toString() ?: return false
         
@@ -315,7 +335,6 @@ class VideoModeController(
             exerciseName = exerciseConfig.name,
             videoUri = uri,
             videoDurationMs = getDuration(),
-            difficulty = difficulty,
             holdDurationMs = if (engine.isHoldExercise) engine.holdElapsedMs.value else null,
             holdTargetMs = if (engine.isHoldExercise) engine.getTargetDurationMs() else null,
             gracePeriodsUsed = if (engine.isHoldExercise) engine.getGracePeriodCount() else null,
@@ -336,6 +355,11 @@ class VideoModeController(
     fun release() {
         videoManager?.release()
         poseLandmarkerHelper?.closeVideoMode()
+        
+        synchronized(lastFrameLock) {
+            lastFrameBitmap?.recycle()
+            lastFrameBitmap = null
+        }
         
         videoManager = null
         poseLandmarkerHelper = null

@@ -22,6 +22,11 @@
   "muscles": ["deltoids", "triceps", "upper_chest"],
   "equipment": ["dumbbell", "barbell", "kettlebell"],
   "tags": ["compound", "upper-body", "strength"],
+  "repCountingConfig": {
+    "reps": 10,
+    "minRepIntervalMs": 1500,
+    "maxRepIntervalMs": 4500
+  },
   "poseVariants": [
     {
       "name": {
@@ -40,11 +45,7 @@
           },
           "condition": {
             "operator": "approximately_equal",
-            "thresholds": {
-              "beginner": 0.12,
-              "normal": 0.08,
-              "advanced": 0.05
-            }
+            "threshold": 0.08
           },
           "activePhases": ["up", "top"],
           "errorMessage": {
@@ -64,11 +65,7 @@
           },
           "condition": {
             "operator": "approximately_equal",
-            "thresholds": {
-              "beginner": 0.15,
-              "normal": 0.10,
-              "advanced": 0.07
-            }
+            "threshold": 0.10
           },
           "activePhases": ["top"],
           "errorMessage": {
@@ -89,77 +86,56 @@
             "max": 110
           },
           "upRange": {
-            "beginner": { "min": 150, "max": 180 },
+            "perfect": { "min": 165, "max": 180 },
             "normal": { "min": 160, "max": 180 },
-            "advanced": { "min": 165, "max": 180 }
+            "pad": { "min": 150, "max": 180 }
           },
           "downRange": {
-            "beginner": { "min": 70, "max": 110 },
+            "perfect": { "min": 85, "max": 95 },
             "normal": { "min": 80, "max": 100 },
-            "advanced": { "min": 85, "max": 95 }
+            "pad": { "min": 70, "max": 110 }
           },
-          "errorMessages": {
-            "tooLow": {
-              "ar": "انزل أكثر لمستوى الكتف",
-              "en": "Lower to shoulder level"
-            },
-            "tooHigh": {
-              "ar": "افرد ذراعك تماماً في الأعلى",
-              "en": "Fully extend at the top"
-            }
+          "stateMessages": {
+            "perfect": { "ar": "ممتاز! ضغط مثالي", "en": "Perfect! Great press" },
+            "normal": { "ar": "جيد، حاول الإفرداد الكامل", "en": "Good, try full extension" },
+            "pad": { "ar": "مقبول، لكن يمكنك التحسن", "en": "Acceptable, but you can improve" },
+            "warning": { "ar": "افرد ذراعك تماماً في الأعلى", "en": "Fully extend at the top" }
           },
           "pairedWith": "right_elbow"
         },
         {
           "joint": "right_elbow",
           "role": "primary",
-          "startPose": {
-            "min": 70,
-            "max": 110
-          },
+          "startPose": { "min": 70, "max": 110 },
           "upRange": {
-            "beginner": { "min": 150, "max": 180 },
+            "perfect": { "min": 165, "max": 180 },
             "normal": { "min": 160, "max": 180 },
-            "advanced": { "min": 165, "max": 180 }
+            "pad": { "min": 150, "max": 180 }
           },
           "downRange": {
-            "beginner": { "min": 70, "max": 110 },
+            "perfect": { "min": 85, "max": 95 },
             "normal": { "min": 80, "max": 100 },
-            "advanced": { "min": 85, "max": 95 }
+            "pad": { "min": 70, "max": 110 }
           },
-          "errorMessages": {
-            "tooLow": {
-              "ar": "انزل أكثر لمستوى الكتف",
-              "en": "Lower to shoulder level"
-            },
-            "tooHigh": {
-              "ar": "افرد ذراعك تماماً",
-              "en": "Fully extend your arm"
-            }
+          "stateMessages": {
+            "perfect": { "ar": "ممتاز! ضغط مثالي", "en": "Perfect! Great press" },
+            "normal": { "ar": "جيد، حاول الإفرداد الكامل", "en": "Good, try full extension" },
+            "pad": { "ar": "مقبول، لكن يمكنك التحسن", "en": "Acceptable, but you can improve" },
+            "warning": { "ar": "افرد ذراعك تماماً", "en": "Fully extend your arm" }
           },
           "pairedWith": "left_elbow"
         },
         {
           "joint": "left_shoulder",
           "role": "secondary",
-          "startPose": {
-            "min": 70,
-            "max": 110
-          },
-          "Range": {
-            "beginner": { "min": 160, "max": 180 },
+          "startPose": { "min": 70, "max": 110 },
+          "range": {
+            "perfect": { "min": 170, "max": 180 },
             "normal": { "min": 165, "max": 180 },
-            "advanced": { "min": 170, "max": 180 }
+            "pad": { "min": 160, "max": 180 }
           },
-          "errorMessages": {
-            "tooLow": {
-              "ar": "حافظ على ثبات الكتف",
-              "en": "Keep shoulder stable"
-            },
-            "tooHigh": {
-              "ar": "ممتاز - الكتف ثابت",
-              "en": "Great - shoulder is stable"
-            }
+          "stateMessages": {
+            "perfect": { "ar": "ممتاز - الكتف ثابت", "en": "Great - shoulder is stable" }
           }
         }
       ],
@@ -169,45 +145,11 @@
           { "ar": "ممتاز! كتفين قويين!", "en": "Excellent! Strong shoulders!" },
           { "ar": "استمر!", "en": "Keep it up!" }
         ],
-        "common_mistake": [
-          { "ar": "لا تقوس ظهرك للخلف", "en": "Don't arch your back" },
-          { "ar": "لا تدفع الرأس للأمام", "en": "Don't push your head forward" },
-          { "ar": "شد عضلات البطن للثبات", "en": "Engage core for stability" }
-        ],
-        "tip": [
+        "tips": [
           { "ar": "تنفس: زفير عند الدفع، شهيق عند النزول", "en": "Breathe: exhale pressing, inhale lowering" },
           { "ar": "ابدأ بوزن خفيف لإتقان الحركة", "en": "Start light to master the movement" }
         ]
-      },
-      "difficultyLevels": [
-        {
-          "level": "beginner",
-          "repCountingConfig": {
-            "reps": 8,
-            "minRepIntervalMs": 1800,
-            "maxRepIntervalMs": 5500
-          },
-          "phases": ["start", "up", "top", "down"]
-        },
-        {
-          "level": "normal",
-          "repCountingConfig": {
-            "reps": 10,
-            "minRepIntervalMs": 1500,
-            "maxRepIntervalMs": 4500
-          },
-          "phases": ["start", "up", "top", "down"]
-        },
-        {
-          "level": "advanced",
-          "repCountingConfig": {
-            "reps": 12,
-            "minRepIntervalMs": 1200,
-            "maxRepIntervalMs": 4000
-          },
-          "phases": ["start", "up", "top", "down"]
-        }
-      ]
+      }
     }
   ]
 }

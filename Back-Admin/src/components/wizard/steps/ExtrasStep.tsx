@@ -37,7 +37,7 @@ export function ExtrasStep({ muscles, equipment, tags }: ExtrasStepProps) {
   };
   
   return (
-    <div className="space-y-8 max-w-4xl mx-auto">
+    <div className="space-y-8">
       <div>
         <h2 className="text-2xl font-bold text-gray-900 mb-2">Attributes & Feedback</h2>
         <p className="text-gray-500">Add metadata and user feedback messages.</p>
@@ -135,14 +135,13 @@ export function ExtrasStep({ muscles, equipment, tags }: ExtrasStepProps) {
         
         <div className="grid gap-4">
           {/* Message Types */}
-          {(['motivational', 'common_mistake', 'tip'] as const).map((type) => {
+          {(['motivational', 'tip'] as const).map((type) => {
             const typeMessages = feedbackMessages.filter(m => m.type === type);
             const typeConfig = {
               motivational: { label: '💪 Motivational', variant: 'success' as const },
-              common_mistake: { label: '⚠️ Common Mistakes', variant: 'warning' as const },
               tip: { label: '💡 Tips', variant: 'primary' as const },
             };
-            const { label, variant } = typeConfig[type];
+            const { label } = typeConfig[type];
             
             return (
               <Card key={type}>

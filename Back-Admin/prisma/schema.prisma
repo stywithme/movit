@@ -69,6 +69,12 @@ model Exercise {
   instructions     Json?     // { "ar": "...", "en": "..." }
   slug             String    @unique
   status           String    @default("draft") // draft, published
+  
+  // Rep counting config (unified - no difficulty levels)
+  // { "reps": 12, "minRepIntervalMs": 1500, "maxRepIntervalMs": 5000 }
+  // or { "duration": 30, "gracePeriodMs": 2500 } for hold exercises
+  repCountingConfig Json?
+  
   publishedAt      DateTime?
   createdBy        String?
   updatedBy        String?

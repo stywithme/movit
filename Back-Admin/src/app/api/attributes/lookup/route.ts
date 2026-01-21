@@ -41,13 +41,10 @@ export async function GET() {
     const data = {
       categories: getValuesByCode('category'),
       countingMethods: getValuesByCode('counting_method'),
-      difficultyTypes: getValuesByCode('difficulty_type'),
       joints: getValuesByCode('joint'),
       muscles: getValuesByCode('muscle'),
       equipment: getValuesByCode('equipment'),
       tags: getValuesByCode('tag'),
-      priorities: getValuesByCode('priority'),
-      feedbackTypes: getValuesByCode('feedback_type'),
       cameraPositions: cameraPositions.map(cp => ({
         id: cp.id,
         code: cp.code,

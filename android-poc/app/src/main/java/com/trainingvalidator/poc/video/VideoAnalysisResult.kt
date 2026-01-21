@@ -1,6 +1,5 @@
 package com.trainingvalidator.poc.video
 
-import com.trainingvalidator.poc.training.models.DifficultyType
 import com.trainingvalidator.poc.training.models.LocalizedText
 import com.trainingvalidator.poc.training.models.RepResult
 import java.util.UUID
@@ -42,9 +41,9 @@ data class VideoAnalysisResult(
     
     /** Accuracy percentage (0.0 - 100.0) */
     val accuracy: Float,
-    
-    /** Difficulty level used for analysis */
-    val difficulty: DifficultyType,
+
+    /** Average score of counted reps (0-100). */
+    val averageScore: Float = 0f,
     
     /** Details for each repetition */
     val repDetails: List<RepResult>,
@@ -142,7 +141,6 @@ fun com.trainingvalidator.poc.training.models.SessionSummary.toVideoAnalysisResu
     exerciseName: LocalizedText,
     videoUri: String,
     videoDurationMs: Long,
-    difficulty: DifficultyType,
     holdDurationMs: Long? = null,
     holdTargetMs: Long? = null,
     gracePeriodsUsed: Int? = null,
@@ -168,7 +166,7 @@ fun com.trainingvalidator.poc.training.models.SessionSummary.toVideoAnalysisResu
         totalReps = this.totalReps,
         correctReps = this.correctReps,
         accuracy = this.accuracy,
-        difficulty = difficulty,
+        averageScore = this.averageScore,
         repDetails = this.repDetails,
         commonErrors = errorSummaries,
         holdDurationMs = holdDurationMs,

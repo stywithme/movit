@@ -288,4 +288,130 @@ object SettingsManager {
      * Get opacity for tracked joints in error position
      */
     fun getTrackedErrorOpacity(): Float = settings.overlayOpacity.trackedError
+    
+    // ==================== Range Indicator Type ====================
+    
+    /**
+     * Get range indicator type settings
+     */
+    fun getRangeIndicatorSettings(): RangeIndicatorSettings = settings.rangeIndicator
+    
+    /**
+     * Get indicator type: "line" or "arc"
+     */
+    fun getIndicatorType(): String = settings.rangeIndicator.type
+    
+    /**
+     * Check if Arc indicator should be used
+     */
+    fun useArcIndicator(): Boolean = settings.rangeIndicator.isArc()
+    
+    /**
+     * Check if Line indicator should be used
+     */
+    fun useLineIndicator(): Boolean = settings.rangeIndicator.isLine()
+    
+    // ==================== Line Indicator Settings ====================
+    
+    /**
+     * Get line indicator settings object
+     */
+    fun getLineIndicatorSettings(): LineIndicatorSettings = settings.lineIndicator
+    
+    /**
+     * Get center angle (typically 90°)
+     */
+    fun getLineIndicatorCenterAngle(): Double = settings.lineIndicator.centerAngle
+    
+    /**
+     * Get smoothing factor for line movement
+     */
+    fun getLineIndicatorSmoothingFactor(): Float = settings.lineIndicator.smoothingFactor
+    
+    /**
+     * Get snap to zero threshold
+     */
+    fun getLineIndicatorSnapThreshold(): Float = settings.lineIndicator.snapToZeroThreshold
+    
+    /**
+     * Get track alpha (0-255)
+     */
+    fun getLineIndicatorTrackAlpha(): Int = settings.lineIndicator.track.alpha
+    
+    /**
+     * Get track width ratio
+     */
+    fun getLineIndicatorTrackWidthRatio(): Float = settings.lineIndicator.track.widthRatio
+    
+    /**
+     * Get indicator width multiplier
+     */
+    fun getLineIndicatorWidthMultiplier(): Float = settings.lineIndicator.indicator.widthMultiplier
+    
+    /**
+     * Get upper limb length ratio
+     */
+    fun getLineIndicatorUpperLengthRatio(): Float = settings.lineIndicator.lengthRatio.upper
+    
+    /**
+     * Get lower limb length ratio
+     */
+    fun getLineIndicatorLowerLengthRatio(): Float = settings.lineIndicator.lengthRatio.lower
+    
+    /**
+     * Get stroke width for normal state
+     */
+    fun getLineIndicatorStrokeWidthNormal(): Float = settings.lineIndicator.strokeWidth.normal
+    
+    /**
+     * Get stroke width for warning state
+     */
+    fun getLineIndicatorStrokeWidthWarning(): Float = settings.lineIndicator.strokeWidth.warning
+    
+    /**
+     * Get stroke width for error state
+     */
+    fun getLineIndicatorStrokeWidthError(): Float = settings.lineIndicator.strokeWidth.error
+    
+    /**
+     * Get joint radius for normal state
+     */
+    fun getLineIndicatorJointRadiusNormal(): Float = settings.lineIndicator.jointRadius.normal
+    
+    /**
+     * Get joint radius for warning state
+     */
+    fun getLineIndicatorJointRadiusWarning(): Float = settings.lineIndicator.jointRadius.warning
+    
+    /**
+     * Get joint radius for error state
+     */
+    fun getLineIndicatorJointRadiusError(): Float = settings.lineIndicator.jointRadius.error
+    
+    // ==================== Feedback Settings ====================
+    
+    /**
+     * Get feedback settings object
+     */
+    fun getFeedbackSettings(): FeedbackSettings = settings.feedback
+    
+    /**
+     * Get message language ("ar" or "en")
+     */
+    fun getFeedbackLanguage(): String = settings.feedback.language
+    
+    /**
+     * Get state message cooldown in milliseconds
+     */
+    fun getStateMessageCooldown(): Long = settings.feedback.stateMessageCooldownMs
+    
+    /**
+     * Get random message idle time in milliseconds
+     */
+    fun getRandomMessageIdleTime(): Long = settings.feedback.randomMessageIdleMs
+    
+    /**
+     * Get random message cooldown in milliseconds
+     */
+    fun getRandomMessageCooldown(): Long = settings.feedback.randomMessageCooldownMs
 }

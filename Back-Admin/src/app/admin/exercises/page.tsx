@@ -147,11 +147,12 @@ export default function ExercisesListPage() {
             <Select
               value={statusFilter}
               onChange={(e) => setStatusFilter(e.target.value)}
-            >
-              <option value="">All</option>
-              <option value="draft">Draft</option>
-              <option value="published">Published</option>
-            </Select>
+              options={[
+                { value: '', label: 'All' },
+                { value: 'draft', label: 'Draft' },
+                { value: 'published', label: 'Published' },
+              ]}
+            />
           </div>
         </div>
       </div>

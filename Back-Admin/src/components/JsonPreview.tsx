@@ -88,7 +88,7 @@ export function JsonPreview({
                 Download
               </button>
             </div>
-            <pre className="p-4 text-xs text-green-400 overflow-x-auto max-h-96 overflow-y-auto font-mono">
+            <pre className="p-4 text-xs text-green-300 font-semibold overflow-x-auto max-h-96 overflow-y-auto font-mono">
               {jsonString}
             </pre>
           </div>
@@ -124,7 +124,7 @@ export function JsonPreview({
           </button>
         </div>
       </div>
-      <pre className="p-4 text-xs text-green-400 overflow-x-auto max-h-96 overflow-y-auto font-mono">
+      <pre className="p-4 text-xs text-green-300 font-semibold overflow-x-auto max-h-96 overflow-y-auto font-mono">
         {jsonString}
       </pre>
     </div>

@@ -22,6 +22,10 @@
   "muscles": ["quadriceps", "glutes", "hamstrings", "core"],
   "equipment": ["bodyweight"],
   "tags": ["isometric", "endurance", "no-equipment"],
+  "repCountingConfig": {
+    "duration": 45,
+    "gracePeriodMs": 2500
+  },
   "poseVariants": [
     {
       "name": {
@@ -40,11 +44,7 @@
           },
           "condition": {
             "operator": "approximately_equal",
-            "thresholds": {
-              "beginner": 0.08,
-              "normal": 0.05,
-              "advanced": 0.03
-            }
+            "threshold": 0.05
           },
           "activePhases": ["count", "hold"],
           "errorMessage": {
@@ -64,11 +64,7 @@
           },
           "condition": {
             "operator": "approximately_equal",
-            "thresholds": {
-              "beginner": 0.10,
-              "normal": 0.07,
-              "advanced": 0.05
-            }
+            "threshold": 0.07
           },
           "activePhases": ["count", "hold"],
           "errorMessage": {
@@ -88,68 +84,53 @@
             "min": 75,
             "max": 110
           },
-          "Range": {
-            "beginner": { "min": 80, "max": 110 },
+          "range": {
+            "perfect": { "min": 88, "max": 95 },
             "normal": { "min": 85, "max": 100 },
-            "advanced": { "min": 88, "max": 95 }
+            "pad": { "min": 80, "max": 110 },
+            "warning": { "min": 60, "max": 80 },
+            "danger": { "min": 0, "max": 60 }
           },
-          "errorMessages": {
-            "tooLow": {
-              "ar": "لا تنزل أكثر من 90 درجة",
-              "en": "Don't go below 90 degrees"
-            },
-            "tooHigh": {
-              "ar": "انزل أكثر - ركبتيك بزاوية 90 درجة",
-              "en": "Lower down - knees at 90 degrees"
-            }
+          "stateMessages": {
+            "perfect": { "ar": "ممتاز! وضعية مثالية", "en": "Perfect! Great position" },
+            "normal": { "ar": "جيد، حاول النزول أكثر قليلاً", "en": "Good, try going a bit lower" },
+            "pad": { "ar": "مقبول، لكن يمكنك التحسن", "en": "Acceptable, but you can improve" },
+            "warning": { "ar": "انزل أكثر - ركبتيك بزاوية 90 درجة", "en": "Lower down - knees at 90 degrees" },
+            "danger": { "ar": "توقف! ركبتيك منخفضة جداً", "en": "Stop! Knees too low" }
           },
           "pairedWith": "right_knee"
         },
         {
           "joint": "right_knee",
           "role": "primary",
-          "startPose": {
-            "min": 75,
-            "max": 110
-          },
-          "Range": {
-            "beginner": { "min": 80, "max": 110 },
+          "startPose": { "min": 75, "max": 110 },
+          "range": {
+            "perfect": { "min": 88, "max": 95 },
             "normal": { "min": 85, "max": 100 },
-            "advanced": { "min": 88, "max": 95 }
+            "pad": { "min": 80, "max": 110 },
+            "warning": { "min": 60, "max": 80 },
+            "danger": { "min": 0, "max": 60 }
           },
-          "errorMessages": {
-            "tooLow": {
-              "ar": "لا تنزل كثيراً",
-              "en": "Don't go too low"
-            },
-            "tooHigh": {
-              "ar": "انزل للوضع الصحيح",
-              "en": "Lower to the correct position"
-            }
+          "stateMessages": {
+            "perfect": { "ar": "ممتاز! وضعية مثالية", "en": "Perfect! Great position" },
+            "normal": { "ar": "جيد، حاول النزول أكثر قليلاً", "en": "Good, try going a bit lower" },
+            "pad": { "ar": "مقبول، لكن يمكنك التحسن", "en": "Acceptable, but you can improve" },
+            "warning": { "ar": "انزل للوضع الصحيح", "en": "Lower to the correct position" },
+            "danger": { "ar": "توقف! ركبتيك منخفضة جداً", "en": "Stop! Knees too low" }
           },
           "pairedWith": "left_knee"
         },
         {
           "joint": "left_hip",
           "role": "secondary",
-          "startPose": {
-            "min": 75,
-            "max": 110
-          },
-          "Range": {
-            "beginner": { "min": 80, "max": 110 },
+          "startPose": { "min": 75, "max": 110 },
+          "range": {
+            "perfect": { "min": 88, "max": 95 },
             "normal": { "min": 85, "max": 100 },
-            "advanced": { "min": 88, "max": 95 }
+            "pad": { "min": 80, "max": 110 }
           },
-          "errorMessages": {
-            "tooLow": {
-              "ar": "لا تجلس منخفضاً جداً",
-              "en": "Don't sit too low"
-            },
-            "tooHigh": {
-              "ar": "انزل حتى الفخذين موازيين للأرض",
-              "en": "Lower until thighs parallel to floor"
-            }
+          "stateMessages": {
+            "perfect": { "ar": "ممتاز - الفخذان موازيان للأرض", "en": "Great - thighs parallel to floor" }
           }
         }
       ],
@@ -159,42 +140,11 @@
           { "ar": "لا تستسلم!", "en": "Don't give up!" },
           { "ar": "ثابر! أوشكت على الانتهاء!", "en": "Persist! Almost done!" }
         ],
-        "common_mistake": [
-          { "ar": "لا تدع ركبتيك تتجاوز أصابع قدميك", "en": "Don't let knees go past toes" },
-          { "ar": "اسند ظهرك بالكامل على الحائط", "en": "Press your entire back against wall" },
-          { "ar": "لا ترفع كعبيك عن الأرض", "en": "Keep heels on the ground" }
-        ],
-        "tip": [
+        "tips": [
           { "ar": "تنفس بانتظام ولا تحبس أنفاسك", "en": "Breathe steadily, don't hold breath" },
           { "ar": "انظر للأمام لتحسين التركيز", "en": "Look forward to improve focus" }
         ]
-      },
-      "difficultyLevels": [
-        {
-          "level": "beginner",
-          "repCountingConfig": {
-            "duration": 30,
-            "gracePeriodMs": 3000
-          },
-          "phases": ["start", "hold"]
-        },
-        {
-          "level": "normal",
-          "repCountingConfig": {
-            "duration": 45,
-            "gracePeriodMs": 2500
-          },
-          "phases": ["start", "hold"]
-        },
-        {
-          "level": "advanced",
-          "repCountingConfig": {
-            "duration": 60,
-            "gracePeriodMs": 2000
-          },
-          "phases": ["start", "hold"]
-        }
-      ]
+      }
     }
   ]
 }

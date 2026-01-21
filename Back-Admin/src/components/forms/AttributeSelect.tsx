@@ -62,7 +62,7 @@ export function AttributeSelect({
     if (!name) return option.code;
     // Handle both object and parsed JSON
     if (typeof name === 'object') {
-      return name[lang] || name.en || name.EN || option.code;
+      return name[lang] || name.en || option.code;
     }
     return option.code;
   };
@@ -134,6 +134,15 @@ export function AttributeSelect({
     );
   }
 
+  // Build options for Select component
+  const selectOptions = [
+    { value: '', label: placeholder },
+    ...options.map((option) => ({
+      value: option.id,
+      label: `${option.icon ? option.icon + ' ' : ''}${getName(option)}`,
+    })),
+  ];
+
   return (
     <div className={`space-y-2 ${className}`}>
       <label className="block text-sm font-medium text-gray-700">
@@ -156,22 +165,13 @@ export function AttributeSelect({
           value={typeof value === 'string' ? value : ''}
           onChange={handleSingleChange}
           required={required}
-          error={error}
-        >
-          <option value="">{placeholder}</option>
-          {options.map((option) => (
-            <option key={option.id} value={option.id}>
-              {option.icon && `${option.icon} `}
-              {getName(option)}
-            </option>
-          ))}
-        </Select>
+          error={!!error}
+          helperText={error}
+          options={selectOptions}
+        />
       )}
-
-      {error && <p className="text-sm text-red-500">{error}</p>}
     </div>
   );
 }
 
 export default AttributeSelect;
-

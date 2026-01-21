@@ -6,6 +6,11 @@ import android.graphics.Paint
 import android.graphics.Paint.Cap
 import android.graphics.RectF
 import com.trainingvalidator.poc.training.engine.JointZone
+import com.trainingvalidator.poc.training.models.AngleColorResolver
+import com.trainingvalidator.poc.training.models.JointState
+import com.trainingvalidator.poc.training.models.StateConfig
+import com.trainingvalidator.poc.training.models.StateRanges
+import com.trainingvalidator.poc.training.models.ZoneType
 
 /**
  * ArcRangeIndicator - Draws segmented arc showing valid angle ranges
@@ -321,6 +326,143 @@ class ArcRangeIndicator {
         canvas.drawCircle(indicatorX, indicatorY, indicatorRadius, indicatorPaint)
         
         // 3. Draw line from center to indicator
+        linePaint.color = indicatorColor
+        linePaint.alpha = LINE_ALPHA
+        linePaint.strokeWidth = indicatorRadius * 0.4f
+        canvas.drawLine(data.centerX, data.centerY, indicatorX, indicatorY, linePaint)
+    }
+    
+    // ==================== NEW: StateRanges-based Drawing ====================
+    
+    /**
+     * Draw arc using StateRanges for accurate coloring (matches LineRangeIndicator)
+     * 
+     * This uses the actual range boundaries from exercise config instead of
+     * legacy range values, ensuring visual consistency with LineRangeIndicator.
+     */
+    fun drawWithStateRanges(
+        canvas: Canvas,
+        data: ArcRangeData,
+        config: ArcConfig,
+        density: Float
+    ) {
+        // If no StateRanges available, fall back to legacy draw
+        if (data.upStateRanges == null && data.downStateRanges == null) {
+            draw(canvas, data, config, density)
+            return
+        }
+        
+        val radius = config.radiusDp * density
+        val strokeWidth = config.strokeWidthDp * density
+        
+        arcRect.set(
+            data.centerX - radius,
+            data.centerY - radius,
+            data.centerX + radius,
+            data.centerY + radius
+        )
+        
+        val alpha = (config.arcOpacity * 255).toInt()
+        
+        // 1. Draw arc segments using StateRanges
+        drawArcSegmentsFromRanges(canvas, data, strokeWidth, alpha)
+        
+        // 2. Draw current position indicator
+        if (config.showCurrentIndicator) {
+            drawCurrentIndicatorFromState(canvas, data, radius, config.indicatorRadiusDp * density)
+        }
+    }
+    
+    /**
+     * Draw arc segments using StateRanges for accurate color calculation
+     */
+    /**
+     * Draw arc segments using BOTH upRanges and downRanges
+     * 
+     * This is the CORRECT implementation because:
+     * - TRANSITION zone is determined by the GAP between upRange and downRange
+     * - We need BOTH ranges to properly identify what's TRANSITION
+     * 
+     * Uses AngleColorResolver.resolve() which is the SINGLE SOURCE OF TRUTH.
+     */
+    private fun drawArcSegmentsFromRanges(
+        canvas: Canvas,
+        data: ArcRangeData,
+        strokeWidth: Float,
+        alpha: Int
+    ) {
+        segmentPaint.strokeWidth = strokeWidth
+        
+        // Draw the full arc (0° to 180°) using BOTH ranges for proper color resolution
+        val stepSize = 2.0
+        var currentAngle = 0.0
+        
+        while (currentAngle < 180.0) {
+            val nextAngle = minOf(currentAngle + stepSize, 180.0)
+            val midAngle = (currentAngle + nextAngle) / 2
+            
+            // Convert visual angle to original angle for range checking
+            val originalAngle = if (data.invertAngles) 180.0 - midAngle else midAngle
+            
+            // Use AngleColorResolver.resolve() - SINGLE SOURCE OF TRUTH
+            // This properly determines zone (UP/DOWN/TRANSITION) and state
+            val color = AngleColorResolver.resolve(
+                originalAngle,
+                data.upStateRanges,
+                data.downStateRanges
+            ).color
+            
+            drawSubSegment(canvas, data, currentAngle, nextAngle, color, strokeWidth, alpha)
+            
+            currentAngle = nextAngle
+        }
+    }
+    
+    /**
+     * Draw current indicator using state color (with smoothing)
+     */
+    private fun drawCurrentIndicatorFromState(
+        canvas: Canvas,
+        data: ArcRangeData,
+        arcRadius: Float,
+        indicatorRadius: Float
+    ) {
+        val canvasAngle = data.toCanvasAngle(data.currentAngle)
+        val angleRad = Math.toRadians(canvasAngle.toDouble())
+        
+        val indicatorX = data.centerX + (arcRadius * kotlin.math.cos(angleRad)).toFloat()
+        val indicatorY = data.centerY + (arcRadius * kotlin.math.sin(angleRad)).toFloat()
+        
+        // Use state color directly (from JointStateInfo)
+        // If TRANSITION, use NORMAL color instead (no blue flashing)
+        val indicatorColor = if (data.state == JointState.TRANSITION) {
+            StateConfig.getColor(JointState.NORMAL)
+        } else if (data.stateColor != 0) {
+            data.stateColor
+        } else {
+            // Fallback to calculated color
+            ArcColorCalculator.getColorForAngle(
+                data.currentAngle,
+                data.upRangeMin, data.upRangeMax,
+                data.downRangeMin, data.downRangeMax
+            )
+        }
+        
+        val glowRadius = indicatorRadius * GLOW_RADIUS_MULTIPLIER
+        val glowAlpha = if (data.isError || data.isWarning) GLOW_ALPHA_ERROR else GLOW_ALPHA_NORMAL
+        
+        // 1. Draw glow
+        glowPaint.color = indicatorColor
+        glowPaint.alpha = glowAlpha
+        glowPaint.maskFilter = BlurMaskFilter(glowRadius, BlurMaskFilter.Blur.NORMAL)
+        canvas.drawCircle(indicatorX, indicatorY, indicatorRadius * GLOW_RADIUS_MULTIPLIER, glowPaint)
+        glowPaint.maskFilter = null
+        
+        // 2. Draw indicator dot
+        indicatorPaint.color = indicatorColor
+        canvas.drawCircle(indicatorX, indicatorY, indicatorRadius, indicatorPaint)
+        
+        // 3. Draw line from center
         linePaint.color = indicatorColor
         linePaint.alpha = LINE_ALPHA
         linePaint.strokeWidth = indicatorRadius * 0.4f

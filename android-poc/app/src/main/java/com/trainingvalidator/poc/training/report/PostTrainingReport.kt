@@ -2,28 +2,38 @@ package com.trainingvalidator.poc.training.report
 
 import com.trainingvalidator.poc.training.engine.Phase
 import com.trainingvalidator.poc.training.models.AngleRange
-import com.trainingvalidator.poc.training.models.DifficultyType
 import com.trainingvalidator.poc.training.models.ErrorType
+import com.trainingvalidator.poc.training.models.JointState
 import com.trainingvalidator.poc.training.models.LocalizedText
 import java.util.UUID
 
 /**
  * PostTrainingReport - Complete report for a training session
  * 
+ * STATE-BASED REPORT STRUCTURE:
+ * - Uses JointState (PERFECT/NORMAL/PAD/WARNING/DANGER) for quality assessment
+ * - Provides user-friendly display names (مثالي/جيد/مقبول/يحتاج تحسين/خطر)
+ * - Emphasizes DANGER states and celebrates PERFECT moments
+ * 
  * Contains all data needed to display a comprehensive post-training report
- * including performance summary, best/worst reps, error analysis, timeline,
- * and improvement tips.
+ * including performance summary, danger alerts, perfect moments, error analysis,
+ * timeline, and improvement tips.
  */
 data class PostTrainingReport(
     val id: String = UUID.randomUUID().toString(),
     val sessionId: String,
     val exerciseId: String,
     val exerciseName: LocalizedText,
-    val difficulty: DifficultyType,
     val timestamp: Long = System.currentTimeMillis(),
     
-    // Summary section
+    // Summary section (with state breakdown)
     val summary: PerformanceSummary,
+    
+    // DANGER alerts (critical - shown prominently if any) 🚨
+    val dangerAlerts: List<DangerAlert> = emptyList(),
+    
+    // Perfect moments (for celebration) ⭐
+    val perfectMoments: List<PerfectMoment> = emptyList(),
     
     // Best moments (for motivation) - up to 3
     val bestReps: List<BestRepHighlight>,
@@ -31,10 +41,10 @@ data class PostTrainingReport(
     // Worst rep (for comparison with best)
     val worstRep: WorstRepHighlight?,
     
-    // Error analysis - grouped by error type
+    // Error analysis - grouped by state and joint
     val errorAnalysis: List<ErrorAnalysisItem>,
     
-    // Rep-by-rep timeline
+    // Rep-by-rep timeline (with state info)
     val repTimeline: List<RepTimelineEntry>,
     
     // Consistency metrics
@@ -58,10 +68,26 @@ data class PostTrainingReport(
     fun isHoldExercise(): Boolean = holdSummary != null
     
     /**
+     * Check if there are any DANGER alerts
+     */
+    fun hasDangerAlerts(): Boolean = dangerAlerts.isNotEmpty()
+    
+    /**
+     * Check if session should be celebrated (many perfect, no danger)
+     */
+    fun shouldCelebrate(): Boolean = summary.shouldCelebrate
+    
+    /**
      * Get the best frame for comparison (first best rep frame)
      */
     fun getBestRepFrame(): FrameCapture? = 
         frameCaptures.find { it.captureType == CaptureType.BEST_REP }
+    
+    /**
+     * Get DANGER frame
+     */
+    fun getDangerFrame(): FrameCapture? =
+        frameCaptures.find { it.captureType == CaptureType.DANGER_FRAME }
     
     /**
      * Get error frame for specific error type
@@ -76,16 +102,36 @@ data class PostTrainingReport(
 
 /**
  * PerformanceSummary - Overview of training session performance
+ * 
+ * STATE-BASED METRICS:
+ * - countedReps: Reps in PERFECT + NORMAL + PAD states
+ * - invalidatedReps: Reps that reached DANGER state
+ * - averageScore: Average score of counted reps (0-100)
+ * - stateBreakdown: Distribution of reps across states
  */
 data class PerformanceSummary(
     val totalReps: Int,
-    val correctReps: Int,
-    val incorrectReps: Int,
-    val accuracy: Float,            // 0-100
     val durationMs: Long,
     val rating: PerformanceRating,
-    val motivationalMessage: LocalizedText
+    val motivationalMessage: LocalizedText,
+    
+    // State-based metrics
+    val countedReps: Int,           // PERFECT + NORMAL + PAD
+    val invalidatedReps: Int,       // DANGER reps
+    val averageScore: Float,        // 0-100 average of counted reps
+    val countedRatio: Float,        // countedReps / totalReps
+    
+    // State breakdown for visual display
+    val stateBreakdown: StateBreakdown,
+    
+    // Celebration flag
+    val shouldCelebrate: Boolean = false
 ) {
+    // Legacy compatibility
+    val accuracy: Float get() = countedRatio * 100f
+    val correctReps: Int get() = countedReps
+    val incorrectReps: Int get() = totalReps - countedReps
+    
     fun getFormattedDuration(): String {
         val seconds = (durationMs / 1000) % 60
         val minutes = (durationMs / 1000) / 60
@@ -93,6 +139,94 @@ data class PerformanceSummary(
     }
     
     fun getFormattedAccuracy(): String = "%.0f%%".format(accuracy)
+    fun getFormattedScore(): String = "%.0f%%".format(averageScore)
+}
+
+/**
+ * StateBreakdown - Distribution of reps across states
+ */
+data class StateBreakdown(
+    val perfectCount: Int = 0,
+    val normalCount: Int = 0,
+    val padCount: Int = 0,
+    val warningCount: Int = 0,
+    val dangerCount: Int = 0
+) {
+    /**
+     * Total counted reps (PERFECT + NORMAL + PAD)
+     */
+    val totalCounted: Int get() = perfectCount + normalCount + padCount
+    
+    /**
+     * Total reps
+     */
+    val total: Int get() = perfectCount + normalCount + padCount + warningCount + dangerCount
+    
+    /**
+     * Ratio of perfect reps to total counted
+     */
+    val perfectRatio: Float get() = 
+        if (totalCounted > 0) perfectCount.toFloat() / totalCounted else 0f
+    
+    /**
+     * Check if session should be celebrated
+     * Celebrate if: 50%+ perfect AND no danger
+     */
+    fun shouldCelebrate(): Boolean = perfectRatio >= 0.5f && dangerCount == 0
+    
+    /**
+     * Get percentage for a specific state
+     */
+    fun getPercentage(state: JointState): Float {
+        val count = getCount(state)
+        return if (total > 0) (count.toFloat() / total) * 100f else 0f
+    }
+    
+    /**
+     * Get count for a specific state
+     */
+    fun getCount(state: JointState): Int = when (state) {
+        JointState.PERFECT -> perfectCount
+        JointState.NORMAL -> normalCount
+        JointState.PAD -> padCount
+        JointState.WARNING -> warningCount
+        JointState.DANGER -> dangerCount
+        JointState.TRANSITION -> 0
+    }
+    
+    /**
+     * Get the most common state
+     */
+    fun getDominantState(): JointState {
+        val counts = listOf(
+            JointState.PERFECT to perfectCount,
+            JointState.NORMAL to normalCount,
+            JointState.PAD to padCount,
+            JointState.WARNING to warningCount,
+            JointState.DANGER to dangerCount
+        )
+        return counts.maxByOrNull { it.second }?.first ?: JointState.NORMAL
+    }
+    
+    companion object {
+        /**
+         * Create from state map
+         */
+        fun fromMap(stateMap: Map<JointState, Int>): StateBreakdown {
+            return StateBreakdown(
+                perfectCount = stateMap[JointState.PERFECT] ?: 0,
+                normalCount = stateMap[JointState.NORMAL] ?: 0,
+                padCount = stateMap[JointState.PAD] ?: 0,
+                warningCount = stateMap[JointState.WARNING] ?: 0,
+                dangerCount = stateMap[JointState.DANGER] ?: 0
+            )
+        }
+        
+        /**
+         * Empty breakdown
+         */
+        fun empty(): StateBreakdown = StateBreakdown()
+    }
 }
 
 /**
@@ -105,10 +239,24 @@ enum class PerformanceRating {
     NEEDS_WORK;  // <60%
     
     companion object {
+        /**
+         * Get rating from accuracy (legacy)
+         */
         fun fromAccuracy(accuracy: Float): PerformanceRating = when {
             accuracy >= 90f -> EXCELLENT
             accuracy >= 75f -> GOOD
             accuracy >= 60f -> FAIR
+            else -> NEEDS_WORK
+        }
+        
+        /**
+         * Get rating from score and counted ratio (state-based)
+         * Used by SessionSummary.getPerformanceRating()
+         */
+        fun fromScoreAndRatio(averageScore: Float, countedRatio: Float): PerformanceRating = when {
+            averageScore >= 80f && countedRatio >= 0.9f -> EXCELLENT
+            averageScore >= 60f && countedRatio >= 0.75f -> GOOD
+            averageScore >= 40f && countedRatio >= 0.6f -> FAIR
             else -> NEEDS_WORK
         }
     }
@@ -133,6 +281,58 @@ enum class PerformanceRating {
     }
 }
 
+// ==================== Danger Alert (Critical) ====================
+
+/**
+ * DangerAlert - Critical alert for DANGER state occurrences 🚨
+ * 
+ * This should be shown PROMINENTLY in the report.
+ * Users need to understand when they reached dangerous positions.
+ */
+data class DangerAlert(
+    val repNumber: Int,
+    val jointCode: String,
+    val jointName: LocalizedText,
+    val actualAngle: Double,
+    val safeRange: AngleRange,
+    
+    // Message from stateMessages.danger in exercise JSON
+    val dangerMessage: LocalizedText,
+    
+    // Solution tip from feedbackMessages.tips
+    val solutionTip: LocalizedText,
+    
+    // CRITICAL: The frame showing the dangerous position
+    val dangerFrame: FrameCapture?
+) {
+    fun getFormattedAngle(): String = "%.0f°".format(actualAngle)
+    fun getSafeRangeText(): String = "%.0f° - %.0f°".format(safeRange.min, safeRange.max)
+}
+
+// ==================== Perfect Moment (Celebration) ====================
+
+/**
+ * PerfectMoment - Highlight of a PERFECT state rep ⭐
+ * 
+ * For celebration and motivation. Show these prominently!
+ */
+data class PerfectMoment(
+    val repNumber: Int,
+    val score: Float,               // 100% for perfect
+    val durationMs: Long,
+    
+    // Motivational message from feedbackMessages.motivational
+    val motivationalMessage: LocalizedText,
+    
+    // Frame capture for this perfect moment
+    val frameCapture: FrameCapture?
+) {
+    fun getFormattedDuration(): String {
+        val seconds = durationMs / 1000.0
+        return "%.1fs".format(seconds)
+    }
+}
+
 // ==================== Best/Worst Rep Highlights ====================
 
 /**
@@ -141,6 +341,8 @@ enum class PerformanceRating {
 data class BestRepHighlight(
     val repNumber: Int,
     val durationMs: Long,
+    val score: Float = 100f,        // Score for this rep
+    val worstState: JointState = JointState.PERFECT,
     val reasons: List<LocalizedText>,
     val frameCapture: FrameCapture?
 ) {
@@ -157,6 +359,7 @@ data class WorstRepHighlight(
     val repNumber: Int,
     val durationMs: Long,
     val errorCount: Int,
+    val worstState: JointState = JointState.WARNING,
     val primaryError: LocalizedText,
     val frameCapture: FrameCapture?
 ) {
@@ -170,19 +373,40 @@ data class WorstRepHighlight(
 
 /**
  * ErrorAnalysisItem - Grouped analysis of a specific error type
+ * 
+ * STATE-BASED ERROR ANALYSIS:
+ * - Uses JointState (WARNING/DANGER) instead of ErrorType
+ * - Messages come from stateMessages in exercise JSON
+ * - Tips come from feedbackMessages.tips
+ * - Visual comparison between error and correct form
  */
 data class ErrorAnalysisItem(
-    val errorKey: String,           // "left_knee:TOO_HIGH"
+    val errorKey: String,           // "left_knee:WARNING" or "left_knee:DANGER"
     val jointCode: String,
-    val errorType: ErrorType,
+    val jointName: LocalizedText,   // "الركبة" / "Knee"
+    
+    // State info
+    val state: JointState,          // WARNING or DANGER
+    val stateDisplayName: LocalizedText,  // "يحتاج تحسين" / "Needs Work"
+    val stateIcon: String,          // "⚠️" or "🚨"
+    
     val count: Int,
     val affectedReps: List<Int>,
-    val message: LocalizedText,     // Error description
-    val tip: LocalizedText,         // How to fix
+    
+    // Messages from exercise JSON
+    val message: LocalizedText,     // From stateMessages (e.g., "أنت تنزل أكثر من اللازم")
+    val tip: LocalizedText,         // From feedbackMessages.tips (e.g., "ادفع من كعبيك")
+    
     val averageActualAngle: Double,
     val expectedRange: AngleRange,
+    val bestRepAngle: Double? = null,  // Angle in user's best rep (for comparison)
+    
+    // CRITICAL: Visual comparison frames
     val errorFrame: FrameCapture?,  // User's error frame
-    val bestRepFrame: FrameCapture? // User's best rep for comparison
+    val bestRepFrame: FrameCapture?, // User's best rep for comparison
+    
+    // Legacy compatibility
+    val errorType: ErrorType = ErrorType.TOO_LOW
 ) {
     /**
      * Get formatted affected reps string (e.g., "#2, #4, #5")
@@ -200,12 +424,33 @@ data class ErrorAnalysisItem(
      * Get formatted actual angle (e.g., "95°")
      */
     fun getActualAngleText(): String = "%.0f°".format(averageActualAngle)
+    
+    /**
+     * Get formatted best rep angle (e.g., "75°")
+     */
+    fun getBestRepAngleText(): String? = bestRepAngle?.let { "%.0f°".format(it) }
+    
+    /**
+     * Check if this is a DANGER error
+     */
+    fun isDanger(): Boolean = state == JointState.DANGER
+    
+    /**
+     * Check if this is a WARNING error
+     */
+    fun isWarning(): Boolean = state == JointState.WARNING
 }
 
 // ==================== Rep Timeline ====================
 
 /**
  * RepTimelineEntry - Single rep in the timeline
+ * 
+ * STATE-BASED TIMELINE:
+ * - Shows worstState for each rep
+ * - Shows score (0-100%)
+ * - Shows state message for non-PERFECT reps
+ * - User-friendly display names
  */
 data class RepTimelineEntry(
     val repNumber: Int,
@@ -214,12 +459,25 @@ data class RepTimelineEntry(
     val errors: List<String>,       // Short error labels
     val isBestRep: Boolean,
     val isWorstRep: Boolean,
-    val frameCapture: FrameCapture?
+    val frameCapture: FrameCapture?,
+    
+    // State-based info
+    val worstState: JointState = JointState.NORMAL,
+    val stateDisplayName: LocalizedText = LocalizedText(ar = "جيد", en = "Good"),
+    val stateIcon: String = "✓",
+    val score: Float = 0f,          // 0-100
+    val isCounted: Boolean = true,
+    val isInvalidated: Boolean = false,  // DANGER
+    
+    // State message (shown for non-PERFECT reps)
+    val stateMessage: LocalizedText? = null
 ) {
     fun getFormattedDuration(): String {
         val seconds = durationMs / 1000.0
         return "%.1fs".format(seconds)
     }
+    
+    fun getFormattedScore(): String = "%.0f%%".format(score)
     
     /**
      * Get short error summary (first error or count)
@@ -229,17 +487,48 @@ data class RepTimelineEntry(
         errors.size == 1 -> errors.first()
         else -> "${errors.first()} +${errors.size - 1}"
     }
+    
+    /**
+     * Check if this rep is perfect
+     */
+    fun isPerfect(): Boolean = worstState == JointState.PERFECT
+    
+    /**
+     * Check if this rep is dangerous
+     */
+    fun isDanger(): Boolean = worstState == JointState.DANGER
 }
 
 /**
  * Rep status for timeline display
  */
 enum class RepStatus {
-    CORRECT,
-    HAS_ERRORS,
-    BEST_REP,
-    WORST_REP,
-    FAILED  // For hold exercises
+    PERFECT,    // PERFECT state
+    GOOD,       // NORMAL state
+    ACCEPTABLE, // PAD state
+    HAS_ERRORS, // WARNING state
+    DANGER,     // DANGER state
+    BEST_REP,   // Best rep in session
+    WORST_REP,  // Worst rep in session
+    FAILED;     // For hold exercises
+    
+    companion object {
+        fun fromState(state: JointState, isBest: Boolean = false, isWorst: Boolean = false): RepStatus {
+            return when {
+                isBest -> BEST_REP
+                isWorst -> WORST_REP
+                state == JointState.PERFECT -> PERFECT
+                state == JointState.NORMAL -> GOOD
+                state == JointState.PAD -> ACCEPTABLE
+                state == JointState.WARNING -> HAS_ERRORS
+                state == JointState.DANGER -> DANGER
+                else -> GOOD
+            }
+        }
+    }
+    
+    // Legacy compatibility
+    val CORRECT: RepStatus get() = PERFECT
 }
 
 // ==================== Consistency Metrics ====================
@@ -368,18 +657,32 @@ data class ImprovementTip(
     val title: LocalizedText,
     val description: LocalizedText,
     val priority: Int,              // 1 = highest priority
-    val isNextFocus: Boolean = false // For "Next session focus"
+    val isNextFocus: Boolean = false, // For "Next session focus"
+    val icon: String = "💡",        // Tip icon
+    val severity: TipSeverity = TipSeverity.HELPFUL,
+    val relatedReps: List<Int> = emptyList()  // Reps this tip addresses
 )
+
+/**
+ * Tip severity - affects presentation
+ */
+enum class TipSeverity {
+    CRITICAL,   // For DANGER fixes 🚨
+    IMPORTANT,  // For WARNING fixes ⚠️
+    HELPFUL     // General tips 💡
+}
 
 /**
  * Categories for improvement tips
  */
 enum class TipCategory {
+    SAFETY,         // For DANGER fixes
     DEPTH,          // Not going low enough
     ALIGNMENT,      // Body alignment issues
     TIMING,         // Too fast/slow
     POSITION,       // Position-based errors
-    STABILITY       // Form breaking during movement
+    STABILITY,      // Form breaking during movement
+    GENERAL         // General tips from exercise JSON
 }
 
 // ==================== Hold Exercise Summary ====================
@@ -454,8 +757,9 @@ data class FrameCapture(
  * Type of frame capture
  */
 enum class CaptureType {
-    BEST_REP,       // Perfect rep with no errors
-    ERROR_FRAME,    // Frame when error detected
+    BEST_REP,       // Perfect rep with no errors ⭐
+    DANGER_FRAME,   // Frame when DANGER state detected 🚨
+    ERROR_FRAME,    // Frame when WARNING state detected ⚠️
     PEAK_FRAME,     // Peak of each rep (BOTTOM phase)
     HOLD_SAMPLE     // Sample during hold exercise
 }

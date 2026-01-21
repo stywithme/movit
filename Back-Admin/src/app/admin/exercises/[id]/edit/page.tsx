@@ -1,679 +1,499 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+/**
+ * Exercise Edit Page (State-Based System)
+ * =======================================
+ * 
+ * Edit existing exercise using the 7-step wizard.
+ * Loads exercise data and maps to wizard state.
+ */
+
+import { useEffect, useState, useCallback } from 'react';
 import { useRouter, useParams } from 'next/navigation';
+import { useWizardStore } from '@/components/wizard/WizardContext';
 import { WizardStepper } from '@/components/wizard/WizardStepper';
-import { BasicInfoStep } from '@/components/wizard/steps/BasicInfoStep';
-import { AttributesStep } from '@/components/wizard/steps/AttributesStep';
-import { PoseVariantsStep } from '@/components/wizard/steps/PoseVariantsStep';
-import { MovementConfigStep } from '@/components/wizard/steps/MovementConfigStep';
-import { MessagesStep } from '@/components/wizard/steps/MessagesStep';
-import { ReviewStep } from '@/components/wizard/steps/ReviewStep';
-import { JsonPreview } from '@/components/JsonPreview';
-import { LocalizedText } from '@/lib/types/localized';
-import { 
-  MovementConfig, 
-  buildDifficultyLevelsFromMovementConfig,
-  trackedJointsToStartPoseAngles,
-  getPrimaryJointCodes,
-  TrackedJoint,
-  JointRole,
-  createDefaultErrorMessages,
-} from '@/modules/exercises/exercises.types';
+import { AutoSaveIndicator } from '@/components/wizard/AutoSaveIndicator';
+import {
+  BasicInfoStep,
+  CameraPositionStep,
+  JointConfigStep,
+  PositionChecksStep,
+  RepConfigStep,
+  ExtrasStep,
+  ReviewStep,
+} from '@/components/wizard/steps';
+import type { TrackedJointData, PositionCheckData } from '@/modules/exercises/exercises.validation';
 
-interface AttributeValue {
-  id: string;
-  code: string;
-  name: LocalizedText;
-  description?: LocalizedText | null;
+const TOTAL_STEPS = 7;
+
+interface LookupData {
+  categories: Array<{ id: string; code: string; name: { ar: string; en: string } }>;
+  countingMethods: Array<{ id: string; code: string; name: { ar: string; en: string }; description?: { ar: string; en: string } }>;
+  cameraPositions: Array<{ id: string; code: string; name: { ar: string; en: string }; description?: { ar: string; en: string }; imageUrl?: string }>;
+  joints: Array<{ id: string; code: string; name: { ar: string; en: string } }>;
+  muscles: Array<{ id: string; code: string; name: { ar: string; en: string } }>;
+  equipment: Array<{ id: string; code: string; name: { ar: string; en: string } }>;
+  tags: Array<{ id: string; code: string; name: { ar: string; en: string } }>;
 }
-
-interface CameraPosition {
-  id: string;
-  code: string;
-  name: LocalizedText;
-  description?: LocalizedText | null;
-  imageUrl?: string | null;
-  joints?: { id: string; code: string; name: LocalizedText }[];
-}
-
-interface PoseVariant {
-  id: string;
-  name: LocalizedText;
-  description: LocalizedText;
-  cameraPositionId: string;
-  referenceImageUrl: string;
-}
-
-interface FeedbackMessage {
-  id: string;
-  type: string;
-  message: LocalizedText;
-}
-
-// Simplified wizard: 6 steps
-const WIZARD_STEPS = [
-  { id: 'basic', title: 'Basic Info', description: 'Name, category' },
-  { id: 'attributes', title: 'Attributes', description: 'Muscles, equipment' },
-  { id: 'poses', title: 'Pose Variants', description: 'Camera positions' },
-  { id: 'movement', title: 'Movement Config', description: 'Angles & reps' },
-  { id: 'messages', title: 'Messages', description: 'Feedback' },
-  { id: 'review', title: 'Review', description: 'Publish' },
-];
-
-// Fixed difficulty levels
-const DIFFICULTY_LEVELS = ['beginner', 'normal', 'advanced'];
 
 export default function EditExercisePage() {
   const router = useRouter();
   const params = useParams();
   const exerciseId = params.id as string;
-
-  const [currentStep, setCurrentStep] = useState(0);
+  
+  const { 
+    currentStep, 
+    setStep, 
+    resetWizard, 
+    loadExercise,
+    setSaveStatus, 
+    markAsSaved, 
+    setExerciseId,
+    exerciseStatus,
+  } = useWizardStore();
+  
+  const [lookupData, setLookupData] = useState<LookupData | null>(null);
   const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
-
-  // Attribute data
-  const [categories, setCategories] = useState<AttributeValue[]>([]);
-  const [countingMethods, setCountingMethods] = useState<AttributeValue[]>([]);
-  const [muscles, setMuscles] = useState<AttributeValue[]>([]);
-  const [equipment, setEquipment] = useState<AttributeValue[]>([]);
-  const [tags, setTags] = useState<AttributeValue[]>([]);
-  const [cameraPositions, setCameraPositions] = useState<CameraPosition[]>([]);
-  const [joints, setJoints] = useState<AttributeValue[]>([]);
-
-  // Form state
-  const [basicInfo, setBasicInfo] = useState({
-    name: { ar: '', en: '' },
-    description: { ar: '', en: '' },
-    instructions: { ar: '', en: '' },
-    categoryId: '',
-    countingMethodId: '',
-  });
-
-  const [attributes, setAttributes] = useState({
-    muscles: [] as string[],
-    equipment: [] as string[],
-    tags: [] as string[],
-  });
-
-  const [poseVariants, setPoseVariants] = useState<PoseVariant[]>([]);
-  const [movementConfigs, setMovementConfigs] = useState<Record<string, MovementConfig>>({});
-  const [feedbackMessages, setFeedbackMessages] = useState<Record<string, FeedbackMessage[]>>({});
-  const [exerciseStatus, setExerciseStatus] = useState<string>('draft');
-
-  const getCountingMethodCode = () => {
-    const method = countingMethods.find((m) => m.id === basicInfo.countingMethodId);
-    return method?.code || 'up_down';
-  };
-
+  const [error, setError] = useState<string | null>(null);
+  
+  // Fetch lookup data and exercise
   useEffect(() => {
-    const loadData = async () => {
+    async function fetchData() {
       try {
-        const fetchValues = async (code: string) => {
-          const res = await fetch(`/api/attributes/${code}/values`);
-          const data = await res.json();
-          if (data.success) {
-            return (data.data.values || []).map((item: Record<string, unknown>) => ({
-              ...item,
-              name: typeof item.name === 'string' ? JSON.parse(item.name as string) : item.name,
-              description: item.description && typeof item.description === 'string'
-                ? JSON.parse(item.description as string)
-                : item.description,
-            }));
-          }
-          return [];
-        };
-
-        const fetchCameraPositions = async () => {
-          const res = await fetch('/api/camera-positions');
-          const data = await res.json();
-          return data.success ? data.data : [];
-        };
-
-        const [cats, methods, muscleList, equipList, tagList, cameras, jointList] = await Promise.all([
-          fetchValues('category'),
-          fetchValues('counting_method'),
-          fetchValues('muscle'),
-          fetchValues('equipment'),
-          fetchValues('tag'),
-          fetchCameraPositions(),
-          fetchValues('joint'),
-        ]);
-
-        setCategories(cats);
-        setCountingMethods(methods);
-        setMuscles(muscleList);
-        setEquipment(equipList);
-        setTags(tagList);
-        setCameraPositions(cameras);
-        setJoints(jointList);
-
-        // Load exercise data
-        const exerciseRes = await fetch(`/api/exercises/${exerciseId}`);
-        const exerciseData = await exerciseRes.json();
-
-        if (exerciseData.success) {
-          const ex = exerciseData.data;
-          setExerciseStatus(ex.status || 'draft');
-
-          setBasicInfo({
-            name: ex.name || { ar: '', en: '' },
-            description: ex.description || { ar: '', en: '' },
-            instructions: ex.instructions || { ar: '', en: '' },
-            categoryId: ex.categoryId || '',
-            countingMethodId: ex.countingMethodId || '',
-          });
-
-          // Parse attributes
-          const muscleIds = ex.attributes?.filter((a: { attributeValue?: { attribute?: { code: string } } }) =>
-            a.attributeValue?.attribute?.code === 'muscle'
-          ).map((a: { attributeValueId: string }) => a.attributeValueId) || [];
-
-          const equipmentIds = ex.attributes?.filter((a: { attributeValue?: { attribute?: { code: string } } }) =>
-            a.attributeValue?.attribute?.code === 'equipment'
-          ).map((a: { attributeValueId: string }) => a.attributeValueId) || [];
-
-          const tagIds = ex.attributes?.filter((a: { attributeValue?: { attribute?: { code: string } } }) =>
-            a.attributeValue?.attribute?.code === 'tag'
-          ).map((a: { attributeValueId: string }) => a.attributeValueId) || [];
-
-          setAttributes({ muscles: muscleIds, equipment: equipmentIds, tags: tagIds });
-
-          // Parse pose variants
-          if (ex.poseVariants) {
-            setPoseVariants(ex.poseVariants.map((pv: Record<string, unknown>) => ({
-              id: pv.id,
-              name: pv.name || { ar: '', en: '' },
-              description: pv.description || { ar: '', en: '' },
-              cameraPositionId: pv.cameraPositionId || '',
-              referenceImageUrl: pv.referenceImageUrl || '',
-            })));
-
-            // Parse movement configs from pose variants and difficulty levels
-            const configs: Record<string, MovementConfig> = {};
-            const messages: Record<string, FeedbackMessage[]> = {};
-
-            for (const pv of ex.poseVariants) {
-              // Check if we have saved trackedJointsConfig (new format)
-              const savedTrackedJoints = pv.trackedJointsConfig as TrackedJoint[] | null;
-              
-              let trackedJoints: TrackedJoint[] = [];
-              
-              if (savedTrackedJoints && Array.isArray(savedTrackedJoints) && savedTrackedJoints.length > 0) {
-                // Use saved tracked joints config (new format)
-                trackedJoints = savedTrackedJoints.map((tj: TrackedJoint) => ({
-                  jointCode: tj.jointCode,
-                  jointId: tj.jointId,
-                  role: tj.role || 'primary',
-                  startPose: tj.startPose || { min: 160, max: 180 },
-                  targetAngle: tj.targetAngle || 90,
-                  tolerances: tj.tolerances || { beginner: 30, normal: 15, advanced: 5 },
-                  errorMessages: tj.errorMessages || createDefaultErrorMessages(tj.jointCode),
-                  pairedWith: tj.pairedWith,
-                }));
-              } else {
-                // Fall back to legacy format: Convert startPoseAngles to trackedJoints
-                const startPoseAngles = pv.startPoseAngles as Record<string, { min: number; max: number } | number> || {};
-                const primaryJointCode = pv.primaryJoint as string || '';
-                
-                // Get target angle from difficulty levels
-                let targetAngle = 90;
-                const firstDl = pv.difficultyLevels?.[0];
-                if (firstDl?.romConfig) {
-                  const romConfig = firstDl.romConfig as { targetAngle?: number };
-                  if (romConfig.targetAngle) targetAngle = romConfig.targetAngle;
-                }
-
-                // Parse primary joints (may be comma-separated)
-                const primaryJointCodes = primaryJointCode.split(',').map((c: string) => c.trim()).filter(Boolean);
-                
-                Object.entries(startPoseAngles).forEach(([jointCode, angleData]) => {
-                  // Handle both old format (number) and new format ({ min, max })
-                  let startPose = { min: 160, max: 180 };
-                  if (typeof angleData === 'number') {
-                    startPose = { min: angleData - 10, max: angleData + 10 };
-                  } else if (angleData && typeof angleData === 'object') {
-                    startPose = angleData as { min: number; max: number };
-                  }
-
-                  // Determine role based on primaryJointCodes
-                  const role: JointRole = primaryJointCodes.includes(jointCode) ? 'primary' : 'secondary';
-
-                  // Find joint ID from joints list
-                  const joint = jointList.find((j: AttributeValue) => j.code === jointCode);
-                  if (joint) {
-                    trackedJoints.push({
-                      jointCode,
-                      jointId: joint.id,
-                      role,
-                      startPose,
-                      targetAngle,
-                      tolerances: { beginner: 30, normal: 15, advanced: 5 },
-                      errorMessages: createDefaultErrorMessages(jointCode),
-                    });
-                  }
-                });
-              }
-
-              // Initialize config with defaults
-              configs[pv.id] = {
-                trackedJoints,
-                beginnerReps: 8,
-                normalReps: 12,
-                advancedReps: 15,
-                beginnerDuration: 10,
-                normalDuration: 20,
-                advancedDuration: 30,
-              };
-
-              // Parse from existing difficulty levels to extract rep settings
-              for (const dl of (pv.difficultyLevels || [])) {
-                const levelCode = dl.difficultyType?.code || 'normal';
-                const repConfig = dl.repCountingConfig as { reps?: number; duration?: number } | null;
-
-                if (levelCode === 'beginner') {
-                  if (repConfig?.reps) configs[pv.id].beginnerReps = repConfig.reps;
-                  if (repConfig?.duration) configs[pv.id].beginnerDuration = repConfig.duration;
-                } else if (levelCode === 'normal') {
-                  if (repConfig?.reps) configs[pv.id].normalReps = repConfig.reps;
-                  if (repConfig?.duration) configs[pv.id].normalDuration = repConfig.duration;
-                } else if (levelCode === 'advanced') {
-                  if (repConfig?.reps) configs[pv.id].advancedReps = repConfig.reps;
-                  if (repConfig?.duration) configs[pv.id].advancedDuration = repConfig.duration;
-                }
-
-                // Parse feedback messages (use normal level as base)
-                if (dl.feedbackMessages && levelCode === 'normal') {
-                  messages[pv.id] = dl.feedbackMessages.map((msg: Record<string, unknown>) => ({
-                    id: msg.id || `msg-${Date.now()}`,
-                    type: msg.type || '',
-                    message: msg.message || { ar: '', en: '' },
-                  }));
-                }
-              }
-            }
-
-            setMovementConfigs(configs);
-            setFeedbackMessages(messages);
-          }
+        // Fetch lookup data
+        const lookupResponse = await fetch('/api/attributes/lookup');
+        if (!lookupResponse.ok) throw new Error('Failed to fetch lookup data');
+        const lookupJson = await lookupResponse.json();
+        setLookupData(lookupJson.data);
+        
+        // Fetch exercise data
+        const exerciseResponse = await fetch(`/api/exercises/${exerciseId}`);
+        if (!exerciseResponse.ok) throw new Error('Exercise not found');
+        const exerciseJson = await exerciseResponse.json();
+        
+        if (!exerciseJson.success || !exerciseJson.data) {
+          throw new Error('Exercise not found');
         }
-      } catch (error) {
-        console.error('Error loading data:', error);
+        
+        const exercise = exerciseJson.data;
+        
+        // Map exercise data to wizard state
+        const firstVariant = exercise.poseVariants?.[0];
+        const repConfig = exercise.repCountingConfig as Record<string, number> | null;
+        const isHold = exercise.countingMethod?.code === 'hold';
+        
+        // Map tracked joints from first variant
+        const trackedJoints = (firstVariant?.trackedJointsConfig as TrackedJointData[]) || [];
+        
+        // Map position checks
+        const positionChecks = (firstVariant?.positionChecks || []).map((pc: Record<string, unknown>) => ({
+          checkId: pc.checkId as string,
+          type: pc.type as string,
+          landmarks: pc.landmarks as { primary: string; secondary: string; tertiary?: string; quaternary?: string },
+          condition: pc.condition as { operator: string; threshold: number },
+          activePhases: pc.activePhases as string[],
+          errorMessage: pc.errorMessage as { ar: string; en: string },
+          severity: pc.severity as string || 'warning',
+          cooldownMs: (pc.cooldownMs as number) || 2000,
+          minErrorFrames: (pc.minErrorFrames as number) || 3,
+        }));
+        
+        // Map feedback messages
+        const feedbackMessages = (firstVariant?.feedbackMessages || []).map((fm: Record<string, unknown>) => ({
+          type: fm.type as 'motivational' | 'tip',
+          message: fm.message as { ar: string; en: string },
+        }));
+        
+        // Map attributes
+        const muscles = exercise.attributes
+          ?.filter((a: { attributeValue?: { attribute?: { code: string } } }) => 
+            a.attributeValue?.attribute?.code === 'muscle')
+          .map((a: { attributeValueId: string }) => a.attributeValueId) || [];
+        
+        const equipment = exercise.attributes
+          ?.filter((a: { attributeValue?: { attribute?: { code: string } } }) => 
+            a.attributeValue?.attribute?.code === 'equipment')
+          .map((a: { attributeValueId: string }) => a.attributeValueId) || [];
+        
+        const tags = exercise.attributes
+          ?.filter((a: { attributeValue?: { attribute?: { code: string } } }) => 
+            a.attributeValue?.attribute?.code === 'tag')
+          .map((a: { attributeValueId: string }) => a.attributeValueId) || [];
+        
+        // Load into wizard state
+        loadExercise({
+          exerciseId: exercise.id,
+          exerciseStatus: exercise.status,
+          currentStep: 1,
+          basicInfo: {
+            name: exercise.name || { ar: '', en: '' },
+            description: exercise.description || { ar: '', en: '' },
+            instructions: exercise.instructions || { ar: '', en: '' },
+            categoryId: exercise.categoryId || '',
+          },
+          countingMethod: {
+            countingMethodId: exercise.countingMethodId || '',
+            countingMethodCode: exercise.countingMethod?.code,
+          },
+          cameraPosition: {
+            cameraPositionIds: exercise.poseVariants?.map((pv: { cameraPositionId: string }) => pv.cameraPositionId) || [],
+            expectedFacingDirection: firstVariant?.expectedFacingDirection || 'auto_detect',
+          },
+          jointConfig: {
+            trackedJoints,
+          },
+          positionChecks: {
+            positionChecks,
+          },
+          repConfig: isHold
+            ? {
+                duration: repConfig?.duration || 30,
+                gracePeriodMs: repConfig?.gracePeriodMs || 2500,
+              }
+            : {
+                reps: repConfig?.reps || 12,
+                minRepIntervalMs: repConfig?.minRepIntervalMs || 1500,
+                maxRepIntervalMs: repConfig?.maxRepIntervalMs || 5000,
+              },
+          extras: {
+            muscles,
+            equipment,
+            tags,
+            feedbackMessages,
+          },
+        });
+        
+        setExerciseId(exercise.id);
+        
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'An error occurred');
       } finally {
         setLoading(false);
       }
-    };
-
-    loadData();
-  }, [exerciseId]);
-
-  const handleNext = () => {
-    if (currentStep < WIZARD_STEPS.length - 1) setCurrentStep(currentStep + 1);
-  };
-
-  const handlePrevious = () => {
-    if (currentStep > 0) setCurrentStep(currentStep - 1);
-  };
-
-  // Build exercise data for saving
-  const buildExerciseData = () => {
-    const countingMethodCode = getCountingMethodCode();
+    }
     
-    const difficultyLevels = poseVariants.flatMap((pv) => {
-      const config = movementConfigs[pv.id];
-      if (!config || config.trackedJoints.length === 0) return [];
-      
-      // Get feedback messages for this variant
-      const variantMessages = feedbackMessages[pv.id] || [];
-      const feedbackMessagesInput = variantMessages.map((msg) => ({
-        type: msg.type,
-        message: msg.message,
-        audioUrl: undefined,
-        sortOrder: undefined,
-      }));
-
-      // Build levels with phases, angle rules, and feedback messages
-      const levels = buildDifficultyLevelsFromMovementConfig(
-        pv.id,
-        config,
-        countingMethodCode,
-        feedbackMessagesInput
-      );
-
-      return levels;
-    });
-
-    const exerciseData = {
-      ...basicInfo,
-      ...attributes,
-      poseVariants: poseVariants.map((pv) => {
-        const config = movementConfigs[pv.id];
+    fetchData();
+  }, [exerciseId, loadExercise, setExerciseId]);
+  
+  // Build API payload from store
+  const buildPayload = useCallback(() => {
+    const store = useWizardStore.getState();
+    const isHold = store.countingMethod.countingMethodCode === 'hold';
+    
+    // Build tracked joints for API
+    const trackedJointsConfig = (store.jointConfig.trackedJoints || []).map((joint: TrackedJointData) => {
+      if (joint.role === 'primary') {
         return {
-          id: pv.id,
-          tempId: pv.id,
-          name: pv.name,
-          description: pv.description,
-          cameraPositionId: pv.cameraPositionId,
-          referenceImageUrl: pv.referenceImageUrl,
-          startPoseAngles: config ? trackedJointsToStartPoseAngles(config.trackedJoints) : {},
-          primaryJoint: config ? getPrimaryJointCodes(config.trackedJoints).join(',') : '',
-          // Store full tracked joints configuration for complete data
-          trackedJointsConfig: config?.trackedJoints || [],
+          joint: joint.joint,
+          role: 'primary',
+          startPose: joint.startPose,
+          upRange: joint.upRange,
+          downRange: joint.downRange,
+          stateMessages: joint.stateMessages,
+          pairedWith: joint.pairedWith,
+          invertIndicator: joint.invertIndicator,
         };
-      }),
-      difficultyLevels,
-    };
-
-    // Log full data structure for debugging
-    console.log('📦 Exercise Data Structure:', JSON.stringify(exerciseData, null, 2));
+      } else {
+        return {
+          joint: joint.joint,
+          role: 'secondary',
+          startPose: joint.startPose,
+          range: joint.range,
+          stateMessages: joint.stateMessages,
+          pairedWith: joint.pairedWith,
+        };
+      }
+    });
     
-    return exerciseData;
-  };
-
+    // Build position checks
+    const positionChecks = (store.positionChecks.positionChecks || []).map((pc: PositionCheckData, idx: number) => ({
+      checkId: pc.checkId,
+      type: pc.type,
+      landmarks: pc.landmarks,
+      condition: pc.condition,
+      activePhases: pc.activePhases,
+      errorMessage: pc.errorMessage,
+      severity: pc.severity,
+      cooldownMs: pc.cooldownMs,
+      minErrorFrames: pc.minErrorFrames,
+      sortOrder: idx + 1,
+    }));
+    
+    // Build feedback messages
+    const feedbackMessages = (store.extras.feedbackMessages || []).map((fm, idx) => ({
+      type: fm.type,
+      message: fm.message,
+      sortOrder: idx + 1,
+    }));
+    
+    // Build rep counting config
+    const repCountingConfig = isHold
+      ? {
+          duration: store.repConfig.duration || 30,
+          gracePeriodMs: store.repConfig.gracePeriodMs || 2500,
+        }
+      : {
+          reps: store.repConfig.reps || 12,
+          minRepIntervalMs: store.repConfig.minRepIntervalMs || 1500,
+          maxRepIntervalMs: store.repConfig.maxRepIntervalMs || 5000,
+        };
+    
+    return {
+      name: store.basicInfo.name,
+      description: store.basicInfo.description,
+      instructions: store.basicInfo.instructions,
+      categoryId: store.basicInfo.categoryId,
+      countingMethodId: store.countingMethod.countingMethodId,
+      muscles: store.extras.muscles,
+      equipment: store.extras.equipment,
+      tags: store.extras.tags,
+      repCountingConfig,
+      poseVariants: store.cameraPosition.cameraPositionIds?.map((cameraPositionId, index) => ({
+        name: store.basicInfo.name,
+        cameraPositionId,
+        expectedFacingDirection: store.cameraPosition.expectedFacingDirection,
+        trackedJointsConfig,
+        positionChecks,
+        feedbackMessages,
+        sortOrder: index + 1,
+      })),
+    };
+  }, []);
+  
+  // Handle step change with auto-save
+  const handleStepChange = useCallback(async (newStep: number) => {
+    if (newStep < 1 || newStep > TOTAL_STEPS) return;
+    
+    const store = useWizardStore.getState();
+    
+    // Auto-save if dirty
+    if (store.isDirty && store.exerciseId) {
+      setSaveStatus('saving');
+      
+      try {
+        await fetch(`/api/exercises/${store.exerciseId}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(buildPayload()),
+        });
+        markAsSaved();
+      } catch (err) {
+        setSaveStatus('error', err instanceof Error ? err.message : 'Save failed');
+      }
+    }
+    
+    setStep(newStep);
+  }, [setSaveStatus, markAsSaved, setStep, buildPayload]);
+  
+  // Save changes
   const handleSave = async () => {
-    setSaving(true);
+    setSaveStatus('saving');
+    
     try {
-      const exerciseData = buildExerciseData();
-      const res = await fetch(`/api/exercises/${exerciseId}`, {
+      await fetch(`/api/exercises/${exerciseId}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(exerciseData),
+        body: JSON.stringify(buildPayload()),
       });
-
-      const data = await res.json();
-      if (data.success) {
-        alert('Saved successfully!');
-      } else {
-        alert('Error saving: ' + data.error);
-      }
-    } catch (error) {
-      console.error('Error saving:', error);
-      alert('Error saving exercise');
-    } finally {
-      setSaving(false);
+      markAsSaved();
+    } catch (err) {
+      setSaveStatus('error', err instanceof Error ? err.message : 'Save failed');
     }
   };
-
+  
+  // Publish
   const handlePublish = async () => {
-    // Save first
-    await handleSave();
+    setSaveStatus('saving');
     
-    setSaving(true);
     try {
-      const res = await fetch(`/api/exercises/${exerciseId}/publish`, { method: 'POST' });
+      // Save first
+      await fetch(`/api/exercises/${exerciseId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(buildPayload()),
+      });
       
-      // Check if response is ok
-      if (!res.ok) {
-        const errorText = await res.text();
-        console.error('Publish failed:', res.status, errorText);
-        alert(`Error publishing: ${res.status} ${res.statusText}`);
-        return;
-      }
-
-      // Check if response has content
-      const contentType = res.headers.get('content-type');
-      if (!contentType || !contentType.includes('application/json')) {
-        const text = await res.text();
-        console.error('Invalid response format:', text);
-        alert('Error: Invalid response from server');
-        return;
-      }
-
-      const data = await res.json();
-      if (data.success) {
-        setExerciseStatus('published');
-        router.push('/admin/exercises');
-      } else {
-        alert('Error publishing: ' + (data.error || 'Unknown error'));
-      }
-    } catch (error) {
-      console.error('Error publishing:', error);
-      alert('Error publishing exercise: ' + (error instanceof Error ? error.message : 'Unknown error'));
-    } finally {
-      setSaving(false);
+      // Then publish
+      await fetch(`/api/exercises/${exerciseId}/publish`, { method: 'POST' });
+      markAsSaved();
+      router.push('/admin/exercises');
+    } catch (err) {
+      setSaveStatus('error', err instanceof Error ? err.message : 'Publish failed');
     }
   };
-
-  const canProceed = () => {
+  
+  // Render current step
+  const renderStep = () => {
+    if (!lookupData) return null;
+    
     switch (currentStep) {
-      case 0: return basicInfo.name.en && basicInfo.categoryId && basicInfo.countingMethodId;
-      case 2: return poseVariants.length > 0;
-      case 3: {
-        // Check if at least one tracked joint with primary role is set for at least one variant
-        return poseVariants.some((pv) => {
-          const config = movementConfigs[pv.id];
-          return config && config.trackedJoints.length > 0 && config.trackedJoints.some(j => j.role === 'primary');
-        });
-      }
-      default: return true;
+      case 1:
+        return (
+          <BasicInfoStep 
+            categories={lookupData.categories} 
+            countingMethods={lookupData.countingMethods} 
+          />
+        );
+      case 2:
+        return <CameraPositionStep cameraPositions={lookupData.cameraPositions} />;
+      case 3:
+        return <JointConfigStep />;
+      case 4:
+        return <PositionChecksStep />;
+      case 5:
+        return <RepConfigStep />;
+      case 6:
+        return (
+          <ExtrasStep 
+            muscles={lookupData.muscles} 
+            equipment={lookupData.equipment} 
+            tags={lookupData.tags} 
+          />
+        );
+      case 7:
+        return <ReviewStep />;
+      default:
+        return (
+          <BasicInfoStep 
+            categories={lookupData.categories} 
+            countingMethods={lookupData.countingMethods} 
+          />
+        );
     }
   };
-
-  const buildPreviewJson = () => {
-    const countingMethod = countingMethods.find((c) => c.id === basicInfo.countingMethodId);
-    const category = categories.find((c) => c.id === basicInfo.categoryId);
-    const countingMethodCode = getCountingMethodCode();
-
-    return {
-      name: basicInfo.name,
-      category: category ? { code: category.code, name: category.name } : null,
-      countingMethod: countingMethod?.code,
-      muscles: attributes.muscles.map(id => muscles.find(m => m.id === id)?.code).filter(Boolean),
-      equipment: attributes.equipment.map(id => equipment.find(e => e.id === id)?.code).filter(Boolean),
-      tags: attributes.tags.map(id => tags.find(t => t.id === id)?.code).filter(Boolean),
-      poseVariants: poseVariants.map((pv) => {
-        const camera = cameraPositions.find((c) => c.id === pv.cameraPositionId);
-        const config = movementConfigs[pv.id];
-        const variantMessages = feedbackMessages[pv.id] || [];
-
-        return {
-          name: pv.name,
-          cameraPosition: camera?.code || pv.cameraPositionId,
-          trackedJoints: config?.trackedJoints.map(j => ({
-            joint: j.jointCode,
-            role: j.role,
-            startPose: j.startPose,
-            targetAngle: j.targetAngle,
-            tolerances: j.tolerances,
-            errorMessages: j.errorMessages,
-            pairedWith: j.pairedWith,
-          })) || [],
-          feedbackMessages: {
-            motivational: variantMessages.filter(m => m.type === 'motivational').map(m => m.message),
-            common_mistake: variantMessages.filter(m => m.type === 'common_mistake').map(m => m.message),
-            tip: variantMessages.filter(m => m.type === 'tip').map(m => m.message),
-          },
-          difficultyLevels: DIFFICULTY_LEVELS.map((level) => {
-            const firstPrimary = config?.trackedJoints.find(j => j.role === 'primary');
-            const toleranceKey = level as 'beginner' | 'normal' | 'advanced';
-            const tolerance = firstPrimary?.tolerances?.[toleranceKey] ?? 
-              (level === 'beginner' ? 30 : level === 'normal' ? 15 : 5);
-            
-            return {
-              level,
-              romConfig: {
-                targetAngle: firstPrimary?.targetAngle ?? 90,
-                tolerance,
-              },
-              repCountingConfig: {
-                reps: level === 'beginner' ? config?.beginnerReps :
-                     level === 'normal' ? config?.normalReps :
-                     config?.advancedReps,
-                duration: countingMethodCode === 'counter' ? (
-                  level === 'beginner' ? config?.beginnerDuration :
-                  level === 'normal' ? config?.normalDuration :
-                  config?.advancedDuration
-                ) : undefined,
-              },
-              phases: countingMethodCode === 'up_down' 
-                ? ['start', 'down', 'bottom', 'up']
-                : countingMethodCode === 'push_pull'
-                ? ['start', 'push', 'extended', 'pull']
-                : ['start', 'count', 'end'],
-            };
-          }),
-        };
-      }),
-    };
-  };
-
-  // Create dummy difficulty levels for compatibility
-  const dummyDifficultyLevels = poseVariants.flatMap((pv) =>
-    DIFFICULTY_LEVELS.map((level) => ({
-      id: `${pv.id}-${level}`,
-      poseVariantId: pv.id,
-      difficultyTypeId: level,
-      name: { ar: level === 'beginner' ? 'مبتدئ' : level === 'normal' ? 'عادي' : 'محترف', en: level },
-      description: { ar: '', en: '' },
-    }))
-  );
-
+  
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
-        <div className="text-gray-500">Loading...</div>
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600" />
       </div>
     );
   }
-
-  return (
-    <div className="space-y-6">
-      <div className="flex justify-between items-center">
-        <div>
-          <span className={`text-sm px-2 py-1 rounded ${
-            exerciseStatus === 'published' ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'
-          }`}>
-            {exerciseStatus === 'published' ? 'Published' : 'Draft'}
-          </span>
-          <h1 className="text-2xl font-bold text-gray-900 mt-2">{basicInfo.name.en || 'Edit Exercise'}</h1>
-        </div>
-        <div className="flex gap-3">
-          <button
-            type="button"
+  
+  if (error) {
+    return (
+      <div className="flex items-center justify-center min-h-[400px]">
+        <div className="text-center">
+          <p className="text-red-600 mb-4">{error}</p>
+          <button 
             onClick={() => router.push('/admin/exercises')}
-            className="px-4 py-2 text-gray-600 hover:text-gray-900"
+            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
           >
-            Cancel
-          </button>
-          <button
-            type="button"
-            onClick={handleSave}
-            disabled={saving}
-            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50"
-          >
-            {saving ? 'Saving...' : 'Save Changes'}
+            Back to Exercises
           </button>
         </div>
       </div>
-
-      <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-        <WizardStepper
-          steps={WIZARD_STEPS}
-          currentStep={currentStep}
-          onStepClick={setCurrentStep}
-        />
-
-        <div className="mt-8">
-          {currentStep === 0 && (
-            <BasicInfoStep
-              data={basicInfo}
-              onChange={setBasicInfo}
-              categories={categories}
-              countingMethods={countingMethods}
-              loading={loading}
-            />
-          )}
-
-          {currentStep === 1 && (
-            <AttributesStep
-              data={attributes}
-              onChange={setAttributes}
-              muscles={muscles}
-              equipment={equipment}
-              tags={tags}
-            />
-          )}
-
-          {currentStep === 2 && (
-            <PoseVariantsStep
-              data={poseVariants}
-              onChange={setPoseVariants}
-              cameraPositions={cameraPositions}
-            />
-          )}
-
-          {currentStep === 3 && (
-            <MovementConfigStep
-              data={movementConfigs}
-              onChange={setMovementConfigs}
-              poseVariants={poseVariants}
-              joints={joints}
-              countingMethodCode={getCountingMethodCode()}
-            />
-          )}
-
-          {currentStep === 4 && (
-            <MessagesStep
-              data={feedbackMessages}
-              onChange={setFeedbackMessages}
-              poseVariants={poseVariants}
-              difficultyLevels={dummyDifficultyLevels}
-              difficultyTypes={[]}
-            />
-          )}
-
-          {currentStep === 5 && (
-            <ReviewStep
-              data={{
-                basicInfo,
-                attributes,
-                poseVariants,
-                difficultyLevels: dummyDifficultyLevels,
-                startPoseAngles: {},
-                phaseRules: {},
-                repCountingConfigs: {},
-                feedbackMessages,
-              }}
-              onPublish={handlePublish}
-              onSaveDraft={handleSave}
-              saving={saving}
-              categories={categories}
-              countingMethods={countingMethods}
-            />
-          )}
-        </div>
-
-        <div className="mt-8 pt-6 border-t border-gray-200 flex justify-between">
-          <button
-            type="button"
-            onClick={handlePrevious}
-            disabled={currentStep === 0}
-            className="px-4 py-2 text-gray-600 hover:text-gray-900 disabled:opacity-50"
-          >
-            Previous
-          </button>
-          <div className="flex gap-3">
-            {currentStep < WIZARD_STEPS.length - 1 && (
+    );
+  }
+  
+  return (
+    <div className="min-h-screen bg-gray-50">
+      {/* Header */}
+      <div className="bg-white border-b sticky top-0 z-10">
+        <div className="w-full px-4 sm:px-6 lg:px-8 py-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-4">
               <button
-                type="button"
-                onClick={handleNext}
-                disabled={!canProceed()}
-                className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50"
+                onClick={() => {
+                  resetWizard();
+                  router.push('/admin/exercises');
+                }}
+                className="p-2 hover:bg-gray-100 rounded-lg"
               >
-                Next
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+                </svg>
               </button>
-            )}
+              <div>
+                <div className="flex items-center gap-2">
+                  <h1 className="text-xl font-bold text-gray-900">Edit Exercise</h1>
+                  <span className={`text-xs px-2 py-1 rounded ${
+                    exerciseStatus === 'published' ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'
+                  }`}>
+                    {exerciseStatus === 'published' ? 'Published' : 'Draft'}
+                  </span>
+                </div>
+                <p className="text-sm text-gray-500">State-based configuration</p>
+              </div>
+            </div>
+            <div className="flex items-center gap-3">
+              <AutoSaveIndicator />
+              <button
+                onClick={handleSave}
+                className="px-4 py-2 text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200"
+              >
+                Save
+              </button>
+              {currentStep === TOTAL_STEPS && (
+                <button
+                  onClick={handlePublish}
+                  className="px-4 py-2 text-white bg-green-600 rounded-lg hover:bg-green-700"
+                >
+                  Publish
+                </button>
+              )}
+            </div>
           </div>
         </div>
       </div>
-
-      <JsonPreview
-        data={buildPreviewJson()}
-        title="Exercise Configuration (JSON Preview)"
-        collapsible={true}
-        defaultExpanded={false}
-      />
+      
+      {/* Stepper */}
+      <div className="bg-white border-b">
+        <div className="w-full px-4 sm:px-6 lg:px-8 py-4">
+          <WizardStepper 
+            currentStep={currentStep}
+            totalSteps={TOTAL_STEPS}
+            onStepClick={handleStepChange}
+            stepLabels={[
+              'Basic Info',
+              'Camera',
+              'Joints',
+              'Checks',
+              'Reps',
+              'Extras',
+              'Review',
+            ]}
+          />
+        </div>
+      </div>
+      
+      {/* Content */}
+      <div className="w-full px-4 sm:px-6 lg:px-8 py-8">
+        {renderStep()}
+      </div>
+      
+      {/* Footer Navigation */}
+      <div className="fixed bottom-0 left-0 right-0 bg-white border-t p-4">
+        <div className="w-full px-4 sm:px-6 lg:px-8 flex justify-between">
+          <button
+            onClick={() => handleStepChange(currentStep - 1)}
+            disabled={currentStep === 1}
+            className={`px-6 py-2 rounded-lg transition-colors ${
+              currentStep === 1 
+                ? 'bg-gray-100 text-gray-400 cursor-not-allowed' 
+                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+            }`}
+          >
+            ← Previous
+          </button>
+          
+          <div className="text-sm text-gray-500">
+            Step {currentStep} of {TOTAL_STEPS}
+          </div>
+          
+          <button
+            onClick={() => handleStepChange(currentStep + 1)}
+            disabled={currentStep === TOTAL_STEPS}
+            className={`px-6 py-2 rounded-lg transition-colors ${
+              currentStep === TOTAL_STEPS 
+                ? 'bg-gray-100 text-gray-400 cursor-not-allowed' 
+                : 'bg-blue-600 text-white hover:bg-blue-700'
+            }`}
+          >
+            Next →
+          </button>
+        </div>
+      </div>
     </div>
   );
 }

@@ -3,53 +3,44 @@ package com.trainingvalidator.poc.training.engine
 import android.util.Log
 import com.trainingvalidator.poc.training.config.SettingsManager
 import com.trainingvalidator.poc.training.models.CountingMethod
-import com.trainingvalidator.poc.training.models.DifficultyType
 import com.trainingvalidator.poc.training.models.RepCountingConfig
 import com.trainingvalidator.poc.training.models.TrackedJoint
 
 /**
- * PhaseStateMachine - Manages exercise phases using upRange/downRange system
+ * PhaseStateMachine - Manages exercise phases using STATE-BASED ranges
  * 
- * NEW LOGIC based on clear zones:
+ * Phase determination uses the OUTERMOST bounds of StateRanges to define zones.
+ * Quality assessment (PERFECT/NORMAL/PAD/WARNING/DANGER) is handled by FormValidator.
+ * 
+ * Zone Layout (using StateRanges):
  * 
  *   180° ─────────────────────────
- *        │ ERROR: Too High        │
- *   ─────┼────────────────────────┤ upRange.max
+ *        │ Outside Range          │
+ *   ─────┼────────────────────────┤ upRange.getEffectiveMax() (or danger.max)
  *        │                        │
  *        │  ✅ UP STATE           │
  *        │  (Start Position)      │
  *        │                        │
- *   ─────┼────────────────────────┤ upRange.min
+ *   ─────┼────────────────────────┤ upRange.getEffectiveMin() (pad/normal/perfect.min)
  *        │                        │
  *        │  🔄 TRANSITION         │
  *        │  (Moving)              │
  *        │                        │
- *   ─────┼────────────────────────┤ downRange.max
+ *   ─────┼────────────────────────┤ downRange.getEffectiveMax() (pad/normal/perfect.max)
  *        │                        │
  *        │  ✅ DOWN STATE         │
  *        │  (Target Position)     │
  *        │                        │
- *   ─────┼────────────────────────┤ downRange.min
- *        │ ERROR: Too Low         │
+ *   ─────┼────────────────────────┤ downRange.getEffectiveMin() (or danger.min)
+ *        │ Outside Range          │
  *     0° ─────────────────────────
  * 
- * State Transitions:
- *   IDLE → START:  angle enters upRange
- *   START → DOWN:  angle exits upRange (< upRange.min)
- *   DOWN → BOTTOM: angle enters downRange (<= downRange.max)
- *   BOTTOM → UP:   angle exits downRange (> downRange.max)
- *   UP → START:    angle enters upRange (>= upRange.min) → REP COMPLETED!
- * 
- * Configurable Settings:
- *   - Global: hysteresis (from app_settings.json)
- *   - Smoothing: Handled centrally by AngleSmoother (Single Source of Truth)
- *   - Per-Exercise: minRepInterval, maxRepInterval (from exercise JSON)
- *   - Calculated: minPhaseDuration = minRepInterval / numberOfPhases
+ * NOTE: Difficulty level has been REMOVED. All users get the same phase thresholds.
+ * Quality scoring is handled separately by FormValidator using JointState.
  */
 class PhaseStateMachine(
     private val countingMethod: CountingMethod,
     private val primaryJoints: List<TrackedJoint>,
-    private val difficulty: DifficultyType,
     private val repCountingConfig: RepCountingConfig? = null,
     private val numberOfPhases: Int = 4
 ) {
@@ -64,9 +55,6 @@ class PhaseStateMachine(
      * Hysteresis buffer from global settings (prevents flickering at boundaries)
      */
     private val hysteresis: Double = SettingsManager.getHysteresis()
-    
-    // NOTE: Smoothing is now handled centrally by AngleSmoother in TrainingEngine
-    // PhaseStateMachine receives pre-smoothed angles for consistency with FormValidator
     
     /**
      * Minimum rep interval from exercise config or global default
@@ -116,7 +104,7 @@ class PhaseStateMachine(
      */
     var onRepCompleted: (() -> Unit)? = null
     
-    // Calculated thresholds from first primary joint
+    // Calculated thresholds from first primary joint's StateRanges
     private val upRangeMin: Double
     private val upRangeMax: Double
     private val downRangeMin: Double
@@ -136,25 +124,50 @@ class PhaseStateMachine(
     
     init {
         val joint = primaryJoints.first()
-        val upRange = joint.getUpRange(difficulty)
-        val downRange = joint.getDownRange(difficulty)
         
-        upRangeMin = upRange.min
-        upRangeMax = upRange.max
-        downRangeMin = downRange.min
-        downRangeMax = downRange.max
+        // Use StateRanges to determine phase thresholds
+        // For phase detection, we use the EFFECTIVE bounds (outermost counted states)
+        if (joint.hasStateUpDownRanges()) {
+            val upRange = joint.getStateUpRange()
+            val downRange = joint.getStateDownRange()
+            
+            // upRangeMin = lowest min of counted states (pad/normal/perfect)
+            // This is where TRANSITION ends and UP_ZONE begins
+            upRangeMin = upRange.getEffectiveMin()
+            
+            // upRangeMax = highest max (including warning/danger if defined)
+            upRangeMax = upRange.getOutermostMax()
+            
+            // downRangeMin = lowest min (including warning/danger if defined)
+            downRangeMin = downRange.getOutermostMin()
+            
+            // downRangeMax = highest max of counted states
+            // This is where DOWN_ZONE ends and TRANSITION begins
+            downRangeMax = downRange.getEffectiveMax()
+        } else if (joint.hasStateHoldRange()) {
+            // For HOLD exercises with single range
+            val holdRange = joint.getStateHoldRange()
+            upRangeMin = holdRange.getEffectiveMin()
+            upRangeMax = holdRange.getOutermostMax()
+            downRangeMin = holdRange.getOutermostMin()
+            downRangeMax = holdRange.getEffectiveMax()
+        } else {
+            // Fallback defaults
+            upRangeMin = 120.0
+            upRangeMax = 180.0
+            downRangeMin = 0.0
+            downRangeMax = 80.0
+        }
         
-        Log.d(TAG, "PhaseStateMachine initialized:")
+        Log.d(TAG, "PhaseStateMachine initialized (STATE-BASED):")
         Log.d(TAG, "  Method: $countingMethod")
-        Log.d(TAG, "  Difficulty: $difficulty")
         Log.d(TAG, "  upRange: $upRangeMin - $upRangeMax")
         Log.d(TAG, "  downRange: $downRangeMin - $downRangeMax")
         Log.d(TAG, "  Transition Zone: $downRangeMax - $upRangeMin")
         Log.d(TAG, "  Settings (configurable):")
         Log.d(TAG, "    Hysteresis: $hysteresis°")
-        Log.d(TAG, "    Smoothing: Handled by central AngleSmoother")
         Log.d(TAG, "    Min Rep Interval: ${minRepIntervalMs}ms")
-        Log.d(TAG, "    Min Phase Duration: ${minPhaseDurationMs}ms (calculated)")
+        Log.d(TAG, "    Min Phase Duration: ${minPhaseDurationMs}ms")
     }
     
     /**
@@ -172,7 +185,6 @@ class PhaseStateMachine(
         }
         
         // Calculate average angle of primary joints
-        // NOTE: Angles are already smoothed by AngleSmoother
         val angle = calculateAverageAngle(primaryAngles)
         
         // Determine next phase based on counting method
@@ -240,9 +252,6 @@ class PhaseStateMachine(
      * Update for UP_DOWN counting method (Squat, Bicep Curl, etc.)
      * 
      * Flow: IDLE → START → DOWN → BOTTOM → UP → START (+1 rep)
-     * 
-     * NOTE: onRepCompleted is NOT called here - it's called in handlePhaseTransition
-     * AFTER confirming the phase actually changed (passed MIN_PHASE_DURATION check)
      */
     private fun updateUpDown(angle: Double): Phase {
         return when (currentPhase) {
@@ -260,7 +269,6 @@ class PhaseStateMachine(
                 // User is in start position, wait for them to leave UP range
                 if (hasLeftUpRange(angle)) {
                     Log.d(TAG, "Left UP range, starting descent: $angle")
-                    // Reset the flag for new rep cycle
                     repCountedThisCycle = false
                     Phase.DOWN
                 } else {
@@ -276,7 +284,6 @@ class PhaseStateMachine(
                         Phase.BOTTOM
                     }
                     isInUpRange(angle) -> {
-                        // User went back without reaching target - reset
                         Log.d(TAG, "Returned to UP without reaching DOWN: $angle")
                         Phase.START
                     }
@@ -298,12 +305,10 @@ class PhaseStateMachine(
                 // User is going up, wait for UP range
                 when {
                     hasEnteredUpRange(angle) -> {
-                        // Request rep completion - will be validated in handlePhaseTransition
                         Log.d(TAG, "★ Requesting REP completion - Entered UP range: $angle")
                         Phase.START
                     }
                     isInDownRange(angle) -> {
-                        // User went back to bottom
                         Log.d(TAG, "Returned to DOWN range: $angle")
                         Phase.BOTTOM
                     }
@@ -319,9 +324,6 @@ class PhaseStateMachine(
      * Update for PUSH_PULL counting method (Push-up, Bench Press)
      * 
      * Flow: IDLE → START → PUSH → EXTENDED → PULL → START (+1 rep)
-     * 
-     * Note: For push-pull, "UP" range is extended position, "DOWN" is bent
-     * NOTE: onRepCompleted is NOT called here - it's called in handlePhaseTransition
      */
     private fun updatePushPull(angle: Double): Phase {
         return when (currentPhase) {
@@ -331,7 +333,6 @@ class PhaseStateMachine(
             
             Phase.START -> {
                 if (hasLeftUpRange(angle)) {
-                    // Reset the flag for new rep cycle
                     repCountedThisCycle = false
                     Phase.PUSH
                 } else Phase.START
@@ -352,7 +353,6 @@ class PhaseStateMachine(
             Phase.PULL -> {
                 when {
                     hasEnteredUpRange(angle) -> {
-                        // Request rep completion - will be validated in handlePhaseTransition
                         Log.d(TAG, "★ Requesting REP completion (PUSH_PULL)")
                         Phase.START
                     }
@@ -373,7 +373,6 @@ class PhaseStateMachine(
     private fun updateHold(angle: Double): Phase {
         return when (currentPhase) {
             Phase.IDLE -> {
-                // Wait for user to get into hold position (DOWN range)
                 if (isInDownRange(angle)) {
                     Log.d(TAG, "Entered HOLD zone: $angle")
                     Phase.COUNT
@@ -383,7 +382,6 @@ class PhaseStateMachine(
             }
             
             Phase.COUNT -> {
-                // Stay in COUNT while in hold zone
                 if (!isInDownRange(angle, exiting = true)) {
                     Log.d(TAG, "Left HOLD zone: $angle")
                     Phase.IDLE
@@ -408,7 +406,7 @@ class PhaseStateMachine(
         val now = System.currentTimeMillis()
         val phaseDuration = now - phaseEntryTime
         
-        // Only transition if minimum duration has passed (configurable per exercise)
+        // Only transition if minimum duration has passed
         if (phaseDuration < minPhaseDurationMs) {
             Log.d(TAG, "Phase transition rejected - too fast (${phaseDuration}ms < ${minPhaseDurationMs}ms)")
             return
@@ -422,7 +420,7 @@ class PhaseStateMachine(
             (currentPhase == Phase.UP && nextPhase == Phase.START) ||
             (currentPhase == Phase.PULL && nextPhase == Phase.START)
         
-        // Update phases FIRST
+        // Update phases
         previousPhase = currentPhase
         currentPhase = nextPhase
         phaseEntryTime = now
@@ -433,7 +431,6 @@ class PhaseStateMachine(
         if (isRepCompletionTransition) {
             val timeSinceLastRep = now - lastRepCompletedTime
             
-            // Check all conditions before counting (using configurable minRepInterval)
             when {
                 repCountedThisCycle -> {
                     Log.w(TAG, "Rep already counted this cycle - ignoring")
@@ -442,7 +439,6 @@ class PhaseStateMachine(
                     Log.w(TAG, "Rep cooldown not passed (${timeSinceLastRep}ms < ${minRepIntervalMs}ms) - ignoring")
                 }
                 else -> {
-                    // All checks passed - count the rep!
                     repCountedThisCycle = true
                     lastRepCompletedTime = now
                     Log.d(TAG, "★ REP COMPLETED! (validated)")
@@ -486,12 +482,10 @@ class PhaseStateMachine(
         phaseEntryTime = System.currentTimeMillis()
         repCountedThisCycle = false
         lastRepCompletedTime = 0L
-        // NOTE: Angle smoothing history is now managed by AngleSmoother
     }
     
     /**
      * Check if a rep was just completed
-     * Handles both UP_DOWN (UP -> START) and PUSH_PULL (PULL -> START) transitions
      */
     fun wasRepJustCompleted(): Boolean {
         return (previousPhase == Phase.UP && currentPhase == Phase.START) ||
@@ -503,11 +497,11 @@ class PhaseStateMachine(
      */
     fun getZoneInfo(angle: Double): String {
         return when {
-            angle > upRangeMax -> "ERROR: Too High"
+            angle > upRangeMax -> "Above UP Range"
             angle >= upRangeMin -> "UP Zone"
             angle > downRangeMax -> "Transition"
             angle >= downRangeMin -> "DOWN Zone"
-            else -> "ERROR: Too Low"
+            else -> "Below DOWN Range"
         }
     }
 }

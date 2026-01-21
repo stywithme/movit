@@ -1,12 +1,16 @@
 package com.trainingvalidator.poc.overlay
 
 import com.trainingvalidator.poc.training.engine.JointZone
+import com.trainingvalidator.poc.training.models.JointState
+import com.trainingvalidator.poc.training.models.JointStateInfo
+import com.trainingvalidator.poc.training.models.StateRanges
+import com.trainingvalidator.poc.training.models.ZoneType
 
 /**
  * ArcRangeData - Data model for Arc Range visualization
  * 
- * Contains all information needed to draw a gradient arc around a joint
- * showing the valid angle ranges and current position.
+ * UPDATED: Now supports both legacy JointArrowInfo and new JointStateInfo.
+ * Uses StateRanges for accurate color calculation matching LineRangeIndicator.
  * 
  * Coordinate System:
  * - Joint angles: 0° (fully bent) to 180° (fully extended)
@@ -48,7 +52,27 @@ data class ArcRangeData(
     val isWarning: Boolean,
     
     /** Whether this is a primary joint for rep counting */
-    val isPrimary: Boolean = true
+    val isPrimary: Boolean = true,
+    
+    // ==================== NEW: StateRanges for accurate coloring ====================
+    
+    /** Current JointState from engine */
+    val state: JointState = JointState.NORMAL,
+    
+    /** Current color from StateConfig */
+    val stateColor: Int = 0,
+    
+    /** StateRanges for UP zone (for gradient calculation) */
+    val upStateRanges: StateRanges? = null,
+    
+    /** StateRanges for DOWN zone (for gradient calculation) */
+    val downStateRanges: StateRanges? = null,
+    
+    /** Current ZoneType from engine */
+    val zoneType: ZoneType = ZoneType.UP_ZONE,
+    
+    /** Whether angles should be inverted for gradient calculation */
+    val invertAngles: Boolean = false
 ) {
     
     /**
@@ -95,8 +119,82 @@ data class ArcRangeData(
     
     companion object {
         /**
-         * Create ArcRangeData from JointArrowInfo
+         * Create ArcRangeData from JointStateInfo (NEW - preferred method)
+         * 
+         * Uses StateRanges for accurate gradient coloring matching LineRangeIndicator.
+         * Supports invertIndicator for exercises where lower limb moves up (bicep curl).
+         * 
+         * IMPORTANT: We store ORIGINAL ranges (no swapping).
+         * The drawing code will invert angles when invertAngles = true.
+         * This keeps the logic simple: ONE inversion only.
          */
+        fun fromStateInfo(
+            centerX: Float,
+            centerY: Float,
+            stateInfo: JointStateInfo
+        ): ArcRangeData {
+            // Store ORIGINAL ranges - NO swapping
+            // The drawing code will handle angle inversion
+            val upRanges = stateInfo.upStateRanges
+            val downRanges = stateInfo.downStateRanges
+            
+            val upMin = upRanges?.getEffectiveMin() ?: 90.0
+            val upMax = upRanges?.getOutermostMax() ?: 180.0
+            val downMin = downRanges?.getOutermostMin() ?: 0.0
+            val downMax = downRanges?.getEffectiveMax() ?: 90.0
+            
+            // Invert the angle for visual display when invertIndicator = true
+            // This is for the MOVING INDICATOR position only
+            val effectiveAngle = if (stateInfo.invertIndicator) {
+                180.0 - stateInfo.currentAngle
+            } else {
+                stateInfo.currentAngle
+            }
+            
+            // Convert ZoneType to legacy JointZone
+            val legacyZone = when (stateInfo.currentZone) {
+                ZoneType.UP_ZONE -> when (stateInfo.state) {
+                    JointState.DANGER, JointState.WARNING -> {
+                        if (stateInfo.currentAngle > 90) JointZone.TOO_HIGH else JointZone.TOO_LOW
+                    }
+                    else -> JointZone.UP_ZONE
+                }
+                ZoneType.DOWN_ZONE -> when (stateInfo.state) {
+                    JointState.DANGER, JointState.WARNING -> {
+                        if (stateInfo.currentAngle < 90) JointZone.TOO_LOW else JointZone.TOO_HIGH
+                    }
+                    else -> JointZone.DOWN_ZONE
+                }
+                ZoneType.TRANSITION -> JointZone.TRANSITION
+            }
+            
+            return ArcRangeData(
+                jointCode = stateInfo.jointCode,
+                centerX = centerX,
+                centerY = centerY,
+                currentAngle = effectiveAngle,  // Use inverted angle for display
+                upRangeMin = upMin,
+                upRangeMax = upMax,
+                downRangeMin = downMin,
+                downRangeMax = downMax,
+                zone = legacyZone,
+                isError = stateInfo.state == JointState.DANGER || stateInfo.state == JointState.WARNING,
+                isWarning = stateInfo.state == JointState.PAD,
+                isPrimary = stateInfo.isPrimary,
+                state = stateInfo.state,
+                stateColor = stateInfo.color,
+                upStateRanges = upRanges,
+                downStateRanges = downRanges,
+                zoneType = stateInfo.currentZone,
+                invertAngles = stateInfo.invertIndicator
+            )
+        }
+        
+        /**
+         * Create ArcRangeData from JointArrowInfo (Legacy)
+         * @deprecated Use fromStateInfo() instead
+         */
+        @Deprecated("Use fromStateInfo() with JointStateInfo instead")
         fun fromArrowInfo(
             jointCode: String,
             centerX: Float,

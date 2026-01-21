@@ -4,12 +4,12 @@
  * Exercise Creation Wizard Page
  * =============================
  * 
- * 7-step wizard for creating exercises that match the Android JSON schema.
+ * 7-step wizard for creating exercises with state-based JSON schema.
  * 
  * Steps:
- * 1. Basic Info + Type (combined)
+ * 1. Basic Info + Counting Method
  * 2. Camera Position
- * 3. Joint Configuration  
+ * 3. Joint Configuration (State-based ranges)
  * 4. Position Checks (optional)
  * 5. Rep/Duration Config
  * 6. Extras (attributes + feedback)
@@ -30,11 +30,10 @@ import {
   ExtrasStep,
   ReviewStep,
 } from '@/components/wizard/steps';
+import type { TrackedJointData, PositionCheckData } from '@/modules/exercises/exercises.validation';
 
-// Total number of steps (now 7 instead of 8)
 const TOTAL_STEPS = 7;
 
-// Lookup data types
 interface LookupData {
   categories: Array<{ id: string; code: string; name: { ar: string; en: string } }>;
   countingMethods: Array<{ id: string; code: string; name: { ar: string; en: string }; description?: { ar: string; en: string } }>;
@@ -47,7 +46,15 @@ interface LookupData {
 
 export default function NewExercisePage() {
   const router = useRouter();
-  const { currentStep, setStep, resetWizard, exerciseId, setSaveStatus, markAsSaved, setExerciseId } = useWizardStore();
+  const { 
+    currentStep, 
+    setStep, 
+    resetWizard, 
+    exerciseId, 
+    setSaveStatus, 
+    markAsSaved, 
+    setExerciseId 
+  } = useWizardStore();
   
   const [lookupData, setLookupData] = useState<LookupData | null>(null);
   const [loading, setLoading] = useState(true);
@@ -71,6 +78,91 @@ export default function NewExercisePage() {
     fetchLookupData();
   }, []);
   
+  // Build API payload from store
+  const buildPayload = useCallback(() => {
+    const store = useWizardStore.getState();
+    const isHold = store.countingMethod.countingMethodCode === 'hold';
+    
+    // Build tracked joints for API
+    const trackedJointsConfig = (store.jointConfig.trackedJoints || []).map((joint: TrackedJointData) => {
+      if (joint.role === 'primary') {
+        return {
+          joint: joint.joint,
+          role: 'primary',
+          startPose: joint.startPose,
+          upRange: joint.upRange,
+          downRange: joint.downRange,
+          stateMessages: joint.stateMessages,
+          pairedWith: joint.pairedWith,
+          invertIndicator: joint.invertIndicator,
+        };
+      } else {
+        return {
+          joint: joint.joint,
+          role: 'secondary',
+          startPose: joint.startPose,
+          range: joint.range,
+          stateMessages: joint.stateMessages,
+          pairedWith: joint.pairedWith,
+        };
+      }
+    });
+    
+    // Build position checks
+    const positionChecks = (store.positionChecks.positionChecks || []).map((pc: PositionCheckData, idx: number) => ({
+      checkId: pc.checkId,
+      type: pc.type,
+      landmarks: pc.landmarks,
+      condition: pc.condition,
+      activePhases: pc.activePhases,
+      errorMessage: pc.errorMessage,
+      severity: pc.severity,
+      cooldownMs: pc.cooldownMs,
+      minErrorFrames: pc.minErrorFrames,
+      sortOrder: idx + 1,
+    }));
+    
+    // Build feedback messages
+    const feedbackMessages = (store.extras.feedbackMessages || []).map((fm, idx) => ({
+      type: fm.type,
+      message: fm.message,
+      sortOrder: idx + 1,
+    }));
+    
+    // Build rep counting config
+    const repCountingConfig = isHold
+      ? {
+          duration: store.repConfig.duration || 30,
+          gracePeriodMs: store.repConfig.gracePeriodMs || 2500,
+        }
+      : {
+          reps: store.repConfig.reps || 12,
+          minRepIntervalMs: store.repConfig.minRepIntervalMs || 1500,
+          maxRepIntervalMs: store.repConfig.maxRepIntervalMs || 5000,
+        };
+    
+    return {
+      name: store.basicInfo.name,
+      description: store.basicInfo.description,
+      instructions: store.basicInfo.instructions,
+      categoryId: store.basicInfo.categoryId,
+      countingMethodId: store.countingMethod.countingMethodId,
+      muscles: store.extras.muscles,
+      equipment: store.extras.equipment,
+      tags: store.extras.tags,
+      repCountingConfig,
+      poseVariants: store.cameraPosition.cameraPositionIds?.map((cameraPositionId, index) => ({
+        name: store.basicInfo.name,
+        cameraPositionId,
+        expectedFacingDirection: store.cameraPosition.expectedFacingDirection,
+        trackedJointsConfig,
+        positionChecks,
+        feedbackMessages,
+        sortOrder: index + 1,
+      })),
+    };
+  }, []);
+  
   // Auto-save on step change
   const handleStepChange = useCallback(async (newStep: number) => {
     if (newStep < 1 || newStep > TOTAL_STEPS) return;
@@ -86,13 +178,13 @@ export default function NewExercisePage() {
           await fetch(`/api/exercises/${store.exerciseId}`, {
             method: 'PUT',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(buildPayload(store)),
+            body: JSON.stringify(buildPayload()),
           });
         } else {
           const response = await fetch('/api/exercises', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(buildPayload(store)),
+            body: JSON.stringify(buildPayload()),
           });
           const data = await response.json();
           if (data.data?.id) {
@@ -106,42 +198,10 @@ export default function NewExercisePage() {
     }
     
     setStep(newStep);
-  }, [setSaveStatus, markAsSaved, setExerciseId, setStep]);
-  
-  // Build API payload from store
-  const buildPayload = (store: ReturnType<typeof useWizardStore.getState>) => {
-    return {
-      name: store.basicInfo.name,
-      description: store.basicInfo.description,
-      instructions: store.basicInfo.instructions,
-      categoryId: store.basicInfo.categoryId,
-      countingMethodId: store.countingMethod.countingMethodId,
-      muscles: store.extras.muscles,
-      equipment: store.extras.equipment,
-      tags: store.extras.tags,
-      poseVariants: store.cameraPosition.cameraPositionIds?.map((cameraPositionId, index) => ({
-        name: store.basicInfo.name,
-        cameraPositionId,
-        expectedFacingDirection: store.cameraPosition.expectedFacingDirection,
-        trackedJointsConfig: store.jointConfig.trackedJoints,
-        positionChecks: store.positionChecks.positionChecks?.map((pc, idx) => ({
-          ...pc,
-          sortOrder: idx + 1,
-        })),
-        feedbackMessages: store.extras.feedbackMessages,
-        difficultyLevels: ['beginner', 'normal', 'advanced'].map((level) => ({
-          difficultyTypeCode: level,
-          name: { ar: level === 'beginner' ? 'مبتدئ' : level === 'normal' ? 'عادي' : 'محترف', en: level.charAt(0).toUpperCase() + level.slice(1) },
-          repCountingConfig: store.repConfig[level as keyof typeof store.repConfig],
-        })),
-        sortOrder: index + 1,
-      })),
-    };
-  };
+  }, [setSaveStatus, markAsSaved, setExerciseId, setStep, buildPayload]);
   
   // Save as draft
   const handleSaveDraft = async () => {
-    const store = useWizardStore.getState();
     setSaveStatus('saving');
     
     try {
@@ -149,13 +209,13 @@ export default function NewExercisePage() {
         await fetch(`/api/exercises/${exerciseId}`, {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(buildPayload(store)),
+          body: JSON.stringify(buildPayload()),
         });
       } else {
         const response = await fetch('/api/exercises', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(buildPayload(store)),
+          body: JSON.stringify(buildPayload()),
         });
         const data = await response.json();
         if (data.data?.id) {
@@ -170,7 +230,6 @@ export default function NewExercisePage() {
   
   // Publish
   const handlePublish = async () => {
-    const store = useWizardStore.getState();
     setSaveStatus('saving');
     
     try {
@@ -180,7 +239,7 @@ export default function NewExercisePage() {
         const response = await fetch('/api/exercises', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(buildPayload(store)),
+          body: JSON.stringify(buildPayload()),
         });
         const data = await response.json();
         id = data.data?.id;
@@ -189,7 +248,7 @@ export default function NewExercisePage() {
         await fetch(`/api/exercises/${id}`, {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(buildPayload(store)),
+          body: JSON.stringify(buildPayload()),
         });
       }
       
@@ -204,23 +263,60 @@ export default function NewExercisePage() {
     }
   };
   
+  // Render current step
+  const renderStep = () => {
+    if (!lookupData) return null;
+    
+    switch (currentStep) {
+      case 1:
+        return (
+          <BasicInfoStep 
+            categories={lookupData.categories} 
+            countingMethods={lookupData.countingMethods} 
+          />
+        );
+      case 2:
+        return <CameraPositionStep cameraPositions={lookupData.cameraPositions} />;
+      case 3:
+        return <JointConfigStep />;
+      case 4:
+        return <PositionChecksStep />;
+      case 5:
+        return <RepConfigStep />;
+      case 6:
+        return (
+          <ExtrasStep 
+            muscles={lookupData.muscles} 
+            equipment={lookupData.equipment} 
+            tags={lookupData.tags} 
+          />
+        );
+      case 7:
+        return <ReviewStep />;
+      default:
+        return (
+          <BasicInfoStep 
+            categories={lookupData.categories} 
+            countingMethods={lookupData.countingMethods} 
+          />
+        );
+    }
+  };
+  
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-center">
-          <div className="w-12 h-12 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto mb-4" />
-          <p className="text-gray-500">Loading...</p>
-        </div>
+      <div className="flex items-center justify-center min-h-[400px]">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600" />
       </div>
     );
   }
   
-  if (error || !lookupData) {
+  if (error) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
+      <div className="flex items-center justify-center min-h-[400px]">
         <div className="text-center">
-          <p className="text-red-500 mb-4">{error || 'Failed to load data'}</p>
-          <button
+          <p className="text-red-600 mb-4">{error}</p>
+          <button 
             onClick={() => window.location.reload()}
             className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
           >
@@ -234,91 +330,106 @@ export default function NewExercisePage() {
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
-      <header className="bg-white border-b sticky top-0 z-40">
-        <div className="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            <button
-              onClick={() => router.push('/admin/exercises')}
-              className="text-gray-500 hover:text-gray-700"
-            >
-              ← Back
-            </button>
-            <h1 className="text-xl font-bold text-gray-900">Create Exercise</h1>
+      <div className="bg-white border-b sticky top-0 z-10">
+        <div className="w-full px-4 sm:px-6 lg:px-8 py-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-4">
+              <button
+                onClick={() => {
+                  if (confirm('Discard changes and go back?')) {
+                    resetWizard();
+                    router.push('/admin/exercises');
+                  }
+                }}
+                className="p-2 hover:bg-gray-100 rounded-lg"
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+                </svg>
+              </button>
+              <div>
+                <h1 className="text-xl font-bold text-gray-900">Create Exercise</h1>
+                <p className="text-sm text-gray-500">State-based configuration</p>
+              </div>
+            </div>
+            <div className="flex items-center gap-3">
+              <AutoSaveIndicator />
+              <button
+                onClick={handleSaveDraft}
+                className="px-4 py-2 text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200"
+              >
+                Save Draft
+              </button>
+              {currentStep === TOTAL_STEPS && (
+                <button
+                  onClick={handlePublish}
+                  className="px-4 py-2 text-white bg-green-600 rounded-lg hover:bg-green-700"
+                >
+                  Publish
+                </button>
+              )}
+            </div>
           </div>
-          <AutoSaveIndicator />
         </div>
-      </header>
+      </div>
       
       {/* Stepper */}
       <div className="bg-white border-b">
-        <WizardStepper totalSteps={TOTAL_STEPS} />
+        <div className="w-full px-4 sm:px-6 lg:px-8 py-4">
+          <WizardStepper 
+            currentStep={currentStep}
+            totalSteps={TOTAL_STEPS}
+            onStepClick={handleStepChange}
+            stepLabels={[
+              'Basic Info',
+              'Camera',
+              'Joints',
+              'Checks',
+              'Reps',
+              'Extras',
+              'Review',
+            ]}
+          />
+        </div>
       </div>
       
       {/* Content */}
-      <main className="max-w-7xl mx-auto px-4 py-8">
-        {currentStep === 1 && (
-          <BasicInfoStep 
-            categories={lookupData.categories} 
-            countingMethods={lookupData.countingMethods}
-          />
-        )}
-        {currentStep === 2 && (
-          <CameraPositionStep cameraPositions={lookupData.cameraPositions} />
-        )}
-        {currentStep === 3 && (
-          <JointConfigStep joints={lookupData.joints} />
-        )}
-        {currentStep === 4 && (
-          <PositionChecksStep />
-        )}
-        {currentStep === 5 && (
-          <RepConfigStep />
-        )}
-        {currentStep === 6 && (
-          <ExtrasStep 
-            muscles={lookupData.muscles} 
-            equipment={lookupData.equipment} 
-            tags={lookupData.tags} 
-          />
-        )}
-        {currentStep === 7 && (
-          <ReviewStep onSaveDraft={handleSaveDraft} onPublish={handlePublish} />
-        )}
-      </main>
+      <div className="w-full px-4 sm:px-6 lg:px-8 py-8">
+        {renderStep()}
+      </div>
       
       {/* Footer Navigation */}
-      {currentStep < TOTAL_STEPS && (
-        <footer className="fixed bottom-0 left-0 right-0 bg-white border-t py-4 px-4">
-          <div className="max-w-7xl mx-auto flex items-center justify-between">
-            <button
-              type="button"
-              onClick={() => handleStepChange(currentStep - 1)}
-              disabled={currentStep === 1}
-              className={`
-                px-6 py-3 rounded-xl font-medium transition-colors
-                ${currentStep === 1 
-                  ? 'text-gray-300 cursor-not-allowed' 
-                  : 'text-gray-700 hover:bg-gray-100'
-                }
-              `}
-            >
-              ← Previous
-            </button>
-            
-            <span className="text-sm text-gray-500">
-              Step {currentStep} of {TOTAL_STEPS}
-            </span>
-            
-            <button
-              type="button"
-              onClick={() => handleStepChange(currentStep + 1)}
-              className="px-6 py-3 bg-blue-600 text-white rounded-xl font-medium hover:bg-blue-700 transition-colors"
-            >
-              Next →
-            </button>
+      <div className="fixed bottom-0 left-0 right-0 bg-white border-t p-4">
+        <div className="w-full px-4 sm:px-6 lg:px-8 flex justify-between">
+          <button
+            onClick={() => handleStepChange(currentStep - 1)}
+            disabled={currentStep === 1}
+            className={`px-6 py-2 rounded-lg transition-colors ${
+              currentStep === 1 
+                ? 'bg-gray-100 text-gray-400 cursor-not-allowed' 
+                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+            }`}
+          >
+            ← Previous
+          </button>
+          
+          <div className="text-sm text-gray-500">
+            Step {currentStep} of {TOTAL_STEPS}
           </div>
-        </footer>
-      )}
+          
+          <button
+            onClick={() => handleStepChange(currentStep + 1)}
+            disabled={currentStep === TOTAL_STEPS}
+            className={`px-6 py-2 rounded-lg transition-colors ${
+              currentStep === TOTAL_STEPS 
+                ? 'bg-gray-100 text-gray-400 cursor-not-allowed' 
+                : 'bg-blue-600 text-white hover:bg-blue-700'
+            }`}
+          >
+            Next →
+          </button>
+        </div>
+      </div>
     </div>
   );
 }

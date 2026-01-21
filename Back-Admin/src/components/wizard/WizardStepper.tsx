@@ -5,29 +5,18 @@
  * ========================
  * 
  * Visual step indicator for the exercise creation wizard.
+ * Updated for state-based system.
  */
 
-import { useWizardStore, useStepComplete } from './WizardContext';
-
-// Default 7 steps (Type is now combined with Basic Info)
-const STEPS = [
-  { id: 1, name: 'Basic Info & Type', shortName: 'Basic' },
-  { id: 2, name: 'Camera Position', shortName: 'Camera' },
-  { id: 3, name: 'Joint Config', shortName: 'Joints' },
-  { id: 4, name: 'Position Checks', shortName: 'Checks' },
-  { id: 5, name: 'Rep Config', shortName: 'Reps' },
-  { id: 6, name: 'Extras', shortName: 'Extras' },
-  { id: 7, name: 'Review', shortName: 'Review' },
-];
-
 interface StepIndicatorProps {
-  step: typeof STEPS[number];
+  stepNumber: number;
+  label: string;
   isActive: boolean;
   isComplete: boolean;
   onClick: () => void;
 }
 
-function StepIndicator({ step, isActive, isComplete, onClick }: StepIndicatorProps) {
+function StepIndicator({ stepNumber, label, isActive, isComplete, onClick }: StepIndicatorProps) {
   return (
     <button
       type="button"
@@ -59,18 +48,18 @@ function StepIndicator({ step, isActive, isComplete, onClick }: StepIndicatorPro
             />
           </svg>
         ) : (
-          step.id
+          stepNumber
         )}
       </div>
       
       {/* Label */}
       <span
         className={`
-          text-xs font-medium transition-colors
+          text-xs font-medium transition-colors whitespace-nowrap
           ${isActive ? 'text-blue-600' : isComplete ? 'text-green-600' : 'text-gray-400'}
         `}
       >
-        {step.shortName}
+        {label}
       </span>
     </button>
   );
@@ -92,56 +81,42 @@ function Connector({ isComplete }: ConnectorProps) {
 }
 
 interface WizardStepperProps {
-  totalSteps?: number;
+  currentStep: number;
+  totalSteps: number;
+  onStepClick: (step: number) => void;
+  stepLabels?: string[];
 }
 
-export function WizardStepper({ totalSteps = 7 }: WizardStepperProps) {
-  const { currentStep, setStep } = useWizardStore();
-  
-  // Use only the steps up to totalSteps
-  const stepsToShow = STEPS.slice(0, totalSteps);
-  
+export function WizardStepper({ 
+  currentStep, 
+  totalSteps, 
+  onStepClick,
+  stepLabels = ['Basic', 'Camera', 'Joints', 'Checks', 'Reps', 'Extras', 'Review'],
+}: WizardStepperProps) {
+  const steps = Array.from({ length: totalSteps }, (_, i) => ({
+    id: i + 1,
+    label: stepLabels[i] || `Step ${i + 1}`,
+  }));
+
   return (
-    <div className="w-full px-4 py-6">
-      <div className="flex items-center justify-between max-w-4xl mx-auto">
-        {stepsToShow.map((step, index) => (
-          <div key={step.id} className="flex items-center flex-1 last:flex-none">
-            <StepIndicatorWrapper step={step} currentStep={currentStep} setStep={setStep} />
-            {index < stepsToShow.length - 1 && (
-              <ConnectorWrapper stepId={step.id} currentStep={currentStep} />
-            )}
-          </div>
-        ))}
-      </div>
+    <div className="flex items-center justify-between">
+      {steps.map((step, index) => (
+        <div key={step.id} className="flex items-center flex-1 last:flex-none">
+          <StepIndicator
+            stepNumber={step.id}
+            label={step.label}
+            isActive={currentStep === step.id}
+            isComplete={currentStep > step.id}
+            onClick={() => onStepClick(step.id)}
+          />
+          
+          {index < steps.length - 1 && (
+            <Connector isComplete={currentStep > step.id} />
+          )}
+        </div>
+      ))}
     </div>
   );
-}
-
-// Wrapper components to use hooks
-function StepIndicatorWrapper({ 
-  step, 
-  currentStep, 
-  setStep 
-}: { 
-  step: typeof STEPS[number]; 
-  currentStep: number; 
-  setStep: (step: number) => void;
-}) {
-  const isComplete = useStepComplete(step.id);
-  
-  return (
-    <StepIndicator
-      step={step}
-      isActive={currentStep === step.id}
-      isComplete={isComplete && currentStep > step.id}
-      onClick={() => setStep(step.id)}
-    />
-  );
-}
-
-function ConnectorWrapper({ stepId, currentStep }: { stepId: number; currentStep: number }) {
-  const isComplete = useStepComplete(stepId);
-  return <Connector isComplete={isComplete && currentStep > stepId} />;
 }
 
 export default WizardStepper;

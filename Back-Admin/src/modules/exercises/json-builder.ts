@@ -5,13 +5,14 @@
  * This module is the SINGLE point of transformation from
  * database models to the Android JSON schema.
  * 
+ * Updated: State-based system (no difficulty levels)
+ * 
  * IMPORTANT: Any change to the Android contract should ONLY be reflected here.
  */
 
 import type {
   ExerciseConfig,
   PoseVariantConfig,
-  DifficultyLevelConfig,
   TrackedJoint,
   PrimaryTrackedJoint,
   SecondaryTrackedJoint,
@@ -20,15 +21,15 @@ import type {
   LocalizedText,
   CountingMethod,
   CameraPosition,
-  DifficultyLevel,
   FacingDirection,
   PhaseName,
   AngleRange,
-  DifficultyRanges,
+  StateRanges,
+  StateMessages,
   RepCountingConfig,
 } from '@/lib/types/android-schema';
 
-import { getPhasesForCountingMethod, validateExerciseConfig } from '@/lib/types/android-schema';
+import { validateExerciseConfig } from '@/lib/types/android-schema';
 
 // ============================================
 // DATABASE TYPES (from Prisma include)
@@ -42,6 +43,7 @@ interface DbExercise {
   name: Record<string, string>;
   description?: Record<string, string> | null;
   instructions?: Record<string, string> | null;
+  repCountingConfig?: unknown;
   category: {
     code: string;
     name: Record<string, string>;
@@ -72,7 +74,6 @@ interface DbPoseVariant {
   };
   positionChecks: DbPositionCheck[];
   feedbackMessages: DbFeedbackMessage[];
-  difficultyLevels: DbDifficultyLevel[];
 }
 
 interface DbPositionCheck {
@@ -91,15 +92,6 @@ interface DbPositionCheck {
 interface DbFeedbackMessage {
   type: string;
   message: Record<string, string>;
-}
-
-interface DbDifficultyLevel {
-  id: string;
-  difficultyType: {
-    code: string;
-  };
-  repCountingConfig?: unknown;
-  phases?: unknown;
 }
 
 // ============================================
@@ -126,6 +118,9 @@ export function buildExerciseConfig(dbExercise: DbExercise): ExerciseConfig {
     else if (attrCode === 'tag') tags.push(valueCode);
   }
   
+  // Build rep counting config
+  const repCountingConfig = parseRepCountingConfig(dbExercise.repCountingConfig, countingMethod);
+  
   const config: ExerciseConfig = {
     name: toLocalizedText(dbExercise.name),
     category: {
@@ -136,8 +131,9 @@ export function buildExerciseConfig(dbExercise: DbExercise): ExerciseConfig {
     muscles,
     equipment,
     tags,
+    repCountingConfig,
     poseVariants: dbExercise.poseVariants.map(pv => 
-      buildPoseVariantConfig(pv, countingMethod)
+      buildPoseVariantConfig(pv)
     ),
   };
   
@@ -155,10 +151,7 @@ export function buildExerciseConfig(dbExercise: DbExercise): ExerciseConfig {
 /**
  * Build PoseVariantConfig from database pose variant
  */
-function buildPoseVariantConfig(
-  dbVariant: DbPoseVariant,
-  countingMethod: CountingMethod
-): PoseVariantConfig {
+function buildPoseVariantConfig(dbVariant: DbPoseVariant): PoseVariantConfig {
   // Use schemaCode for Android, fallback to code if not set
   const cameraPosition = (dbVariant.cameraPosition.schemaCode || 
     mapCameraCodeToSchema(dbVariant.cameraPosition.code)) as CameraPosition;
@@ -175,21 +168,26 @@ function buildPoseVariantConfig(
   // Group feedback messages by type
   const feedbackMessages = buildFeedbackMessages(dbVariant.feedbackMessages);
   
-  // Build difficulty levels
-  const difficultyLevels = buildDifficultyLevels(
-    dbVariant.difficultyLevels,
-    countingMethod
-  );
-  
-  return {
+  const config: PoseVariantConfig = {
     name: toLocalizedText(dbVariant.name),
     cameraPosition,
-    expectedFacingDirection,
     trackedJoints,
-    positionChecks,
-    feedbackMessages,
-    difficultyLevels,
   };
+  
+  // Only include optional fields if they have values
+  if (expectedFacingDirection !== 'auto_detect') {
+    config.expectedFacingDirection = expectedFacingDirection;
+  }
+  
+  if (positionChecks.length > 0) {
+    config.positionChecks = positionChecks;
+  }
+  
+  if (feedbackMessages.motivational.length > 0 || feedbackMessages.tips.length > 0) {
+    config.feedbackMessages = feedbackMessages;
+  }
+  
+  return config;
 }
 
 /**
@@ -205,28 +203,31 @@ function parseTrackedJoints(config: unknown): TrackedJoint[] {
       joint: joint.joint as string,
       role: joint.role as 'primary' | 'secondary',
       startPose: joint.startPose as AngleRange,
-      errorMessages: joint.errorMessages as {
-        tooLow: LocalizedText;
-        tooHigh: LocalizedText;
-      },
     };
     
+    // Add optional fields
+    if (joint.stateMessages) {
+      Object.assign(baseJoint, { stateMessages: joint.stateMessages as StateMessages });
+    }
     if (joint.pairedWith) {
       Object.assign(baseJoint, { pairedWith: joint.pairedWith as string });
+    }
+    if (joint.invertIndicator) {
+      Object.assign(baseJoint, { invertIndicator: joint.invertIndicator as boolean });
     }
     
     if (joint.role === 'primary') {
       return {
         ...baseJoint,
         role: 'primary' as const,
-        upRange: joint.upRange as DifficultyRanges,
-        downRange: joint.downRange as DifficultyRanges,
+        upRange: joint.upRange as StateRanges,
+        downRange: joint.downRange as StateRanges,
       } as PrimaryTrackedJoint;
     } else {
       return {
         ...baseJoint,
         role: 'secondary' as const,
-        Range: joint.Range as DifficultyRanges, // Capital R!
+        range: joint.range as StateRanges,
       } as SecondaryTrackedJoint;
     }
   });
@@ -236,11 +237,23 @@ function parseTrackedJoints(config: unknown): TrackedJoint[] {
  * Build PositionCheck from database record
  */
 function buildPositionCheck(dbCheck: DbPositionCheck): PositionCheck {
+  const condition = dbCheck.condition as { operator: string; threshold?: number; thresholds?: Record<string, number> };
+  
+  // Support both old (thresholds) and new (threshold) format
+  let threshold = condition.threshold;
+  if (threshold === undefined && condition.thresholds) {
+    // Use normal threshold as default for backwards compatibility
+    threshold = condition.thresholds.normal ?? condition.thresholds.beginner ?? 0.05;
+  }
+  
   return {
     id: dbCheck.checkId,
     type: dbCheck.type as PositionCheck['type'],
     landmarks: dbCheck.landmarks as PositionCheck['landmarks'],
-    condition: dbCheck.condition as PositionCheck['condition'],
+    condition: {
+      operator: condition.operator as PositionCheck['condition']['operator'],
+      threshold: threshold ?? 0.05,
+    },
     activePhases: dbCheck.activePhases as PhaseName[],
     errorMessage: toLocalizedText(dbCheck.errorMessage),
     severity: dbCheck.severity as PositionCheck['severity'],
@@ -250,60 +263,24 @@ function buildPositionCheck(dbCheck: DbPositionCheck): PositionCheck {
 }
 
 /**
- * Group feedback messages by type
+ * Group feedback messages by type (simplified - only motivational and tips)
  */
 function buildFeedbackMessages(dbMessages: DbFeedbackMessage[]): FeedbackMessages {
   const result: FeedbackMessages = {
     motivational: [],
-    common_mistake: [],
-    tip: [],
+    tips: [],
   };
   
   for (const msg of dbMessages) {
-    const type = msg.type as keyof FeedbackMessages;
-    if (type in result) {
-      result[type].push(toLocalizedText(msg.message));
+    if (msg.type === 'motivational') {
+      result.motivational.push(toLocalizedText(msg.message));
+    } else if (msg.type === 'tip' || msg.type === 'tips') {
+      result.tips.push(toLocalizedText(msg.message));
     }
+    // Ignore common_mistake (deprecated)
   }
   
   return result;
-}
-
-/**
- * Build DifficultyLevelConfig array from database difficulty levels
- */
-function buildDifficultyLevels(
-  dbLevels: DbDifficultyLevel[],
-  countingMethod: CountingMethod
-): DifficultyLevelConfig[] {
-  const phases = getPhasesForCountingMethod(countingMethod);
-  
-  // Sort by level order: beginner, normal, advanced
-  const levelOrder = ['beginner', 'normal', 'advanced'];
-  const sorted = [...dbLevels].sort((a, b) => {
-    return levelOrder.indexOf(a.difficultyType.code) - 
-           levelOrder.indexOf(b.difficultyType.code);
-  });
-  
-  return sorted.map(dl => {
-    const level = dl.difficultyType.code as DifficultyLevel;
-    
-    // Parse repCountingConfig, use phases from DB or default
-    const repCountingConfig = parseRepCountingConfig(
-      dl.repCountingConfig,
-      countingMethod
-    );
-    
-    // Use phases from DB if available, otherwise use template
-    const dlPhases = Array.isArray(dl.phases) ? 
-      (dl.phases as PhaseName[]) : phases;
-    
-    return {
-      level,
-      repCountingConfig,
-      phases: dlPhases,
-    };
-  });
 }
 
 /**
@@ -318,25 +295,15 @@ function parseRepCountingConfig(
   if (countingMethod === 'hold') {
     return {
       duration: parsed?.duration ?? 30,
-      ...(parsed?.gracePeriodMs && { gracePeriodMs: parsed.gracePeriodMs }),
+      gracePeriodMs: parsed?.gracePeriodMs ?? 2500,
     };
-  } else {
-    const result: RepCountingConfig = {
-      reps: parsed?.reps ?? 10,
-    };
-    
-    // Only include timing fields if they have values
-    if (parsed?.minRepIntervalMs) {
-      (result as { reps: number; minRepIntervalMs?: number }).minRepIntervalMs = 
-        parsed.minRepIntervalMs;
-    }
-    if (parsed?.maxRepIntervalMs) {
-      (result as { reps: number; maxRepIntervalMs?: number }).maxRepIntervalMs = 
-        parsed.maxRepIntervalMs;
-    }
-    
-    return result;
   }
+  
+  return {
+    reps: parsed?.reps ?? 12,
+    minRepIntervalMs: parsed?.minRepIntervalMs ?? 1500,
+    maxRepIntervalMs: parsed?.maxRepIntervalMs ?? 5000,
+  };
 }
 
 // ============================================
@@ -344,7 +311,7 @@ function parseRepCountingConfig(
 // ============================================
 
 /**
- * Convert database JSON to LocalizedText
+ * Convert DB JSON to LocalizedText
  */
 function toLocalizedText(json: Record<string, string> | null | undefined): LocalizedText {
   return {
@@ -360,8 +327,11 @@ function mapCameraCodeToSchema(code: string): CameraPosition {
   const mapping: Record<string, CameraPosition> = {
     'side_left': 'side_view',
     'side_right': 'side_view',
+    'side_view': 'side_view',
     'front': 'front_view',
+    'front_view': 'front_view',
     'back': 'back_view',
+    'back_view': 'back_view',
   };
   
   return mapping[code] ?? 'side_view';
@@ -446,18 +416,6 @@ export const exerciseFullInclude = {
         },
       },
       feedbackMessages: {
-        orderBy: {
-          sortOrder: 'asc' as const,
-        },
-      },
-      difficultyLevels: {
-        include: {
-          difficultyType: {
-            select: {
-              code: true,
-            },
-          },
-        },
         orderBy: {
           sortOrder: 'asc' as const,
         },

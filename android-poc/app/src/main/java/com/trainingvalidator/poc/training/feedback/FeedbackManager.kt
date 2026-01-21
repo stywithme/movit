@@ -8,9 +8,12 @@ import android.os.VibratorManager
 import android.speech.tts.TextToSpeech
 import android.util.Log
 import androidx.core.content.ContextCompat
+import com.trainingvalidator.poc.training.config.SettingsManager
 import com.trainingvalidator.poc.training.engine.PositionError
 import com.trainingvalidator.poc.training.models.CheckSeverity
+import com.trainingvalidator.poc.training.models.FeedbackMessages
 import com.trainingvalidator.poc.training.models.JointError
+import com.trainingvalidator.poc.training.models.JointState
 import com.trainingvalidator.poc.training.models.LocalizedText
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.SharedFlow
@@ -51,6 +54,11 @@ class FeedbackManager(
         private const val STREAK_THRESHOLD_SMALL = 3
         private const val STREAK_THRESHOLD_MEDIUM = 5
         private const val STREAK_THRESHOLD_LARGE = 10
+        
+        // Random message settings (LOW priority - fills quiet time)
+        // NOTE: These are now configurable via SettingsManager
+        private const val MIN_IDLE_TIME_FOR_RANDOM_MS_DEFAULT = 5000L
+        private const val RANDOM_MESSAGE_COOLDOWN_MS_DEFAULT = 10000L
     }
     
     // Smart message orchestrator (prevents spam, manages delivery)
@@ -105,6 +113,12 @@ class FeedbackManager(
     // Streak tracking for motivation
     private var correctRepStreak = 0
     private var lastAnnouncedRep = 0
+    
+    // Random message tracking (LOW priority - fills quiet time)
+    private var lastHighPriorityMessageTime = 0L
+    private var lastRandomMessageTime = 0L
+    private var availableMotivationalMessages: List<LocalizedText> = emptyList()
+    private var availableTipMessages: List<LocalizedText> = emptyList()
     
     /**
      * Visual message for Glassmorphic UI (Video mode)
@@ -162,6 +176,7 @@ class FeedbackManager(
             is FeedbackEvent.RepCompleted -> handleRepCompleted(event)
             is FeedbackEvent.TargetReached -> handleTargetReached(event)
             is FeedbackEvent.MotivationalMessage -> handleMotivation(event)
+            is FeedbackEvent.JointStateMessage -> handleJointStateMessage(event)
             
             // Hold events
             is FeedbackEvent.HoldStarted -> handleHoldStarted()
@@ -205,6 +220,40 @@ class FeedbackManager(
         if (decision.channel != MessageOrchestrator.DeliveryChannel.SILENT) {
             correctRepStreak = 0
         }
+    }
+
+    // ==================== Joint State Messages ====================
+
+    private suspend fun handleJointStateMessage(event: FeedbackEvent.JointStateMessage) {
+        // Ignore transition (shouldn't be emitted) and empty messages
+        val messageText = event.message.get(config.language)
+        if (messageText.isBlank()) return
+        
+        val category = when (event.state) {
+            JointState.DANGER -> MessageOrchestrator.Category.CRITICAL
+            JointState.WARNING -> MessageOrchestrator.Category.WARNING
+            JointState.PAD -> MessageOrchestrator.Category.TIP
+            JointState.NORMAL -> MessageOrchestrator.Category.INFO
+            JointState.PERFECT -> MessageOrchestrator.Category.MOTIVATION
+            JointState.TRANSITION -> MessageOrchestrator.Category.INFO
+        }
+        
+        val messageType = when (event.state) {
+            JointState.DANGER -> MessageType.ERROR
+            JointState.WARNING -> MessageType.WARNING
+            JointState.PAD -> MessageType.TIP
+            JointState.NORMAL -> MessageType.INFO
+            JointState.PERFECT -> MessageType.MOTIVATION
+            JointState.TRANSITION -> MessageType.INFO
+        }
+        
+        val decision = messageOrchestrator.decide(
+            messageKey = "state:${event.jointCode}:${event.state}",
+            category = category,
+            messageText = messageText
+        )
+        
+        deliverMessage(messageText, decision, messageType)
     }
     
     /**
@@ -267,6 +316,11 @@ class FeedbackManager(
                             else -> vibrateLight()
                         }
                     }
+                }
+                
+                // Mark high-priority message delivered (resets idle timer for random messages)
+                if (messageType == MessageType.ERROR || messageType == MessageType.WARNING) {
+                    markHighPriorityMessageDelivered()
                 }
             }
         }
@@ -655,6 +709,114 @@ class FeedbackManager(
         }
     }
     
+    // ==================== Random Messages (LOW Priority) ====================
+    
+    /**
+     * Set available random messages from exercise configuration
+     * 
+     * Call this when training starts with the exercise's feedbackMessages.
+     * These messages will be delivered randomly during "quiet time" when
+     * no errors/warnings are active.
+     * 
+     * @param feedbackMessages The exercise's FeedbackMessages (motivational + tips)
+     */
+    fun setRandomMessages(feedbackMessages: FeedbackMessages) {
+        availableMotivationalMessages = feedbackMessages.motivational
+        availableTipMessages = feedbackMessages.tips
+        Log.d(TAG, "Random messages set: ${availableMotivationalMessages.size} motivational, ${availableTipMessages.size} tips")
+    }
+    
+    /**
+     * Check if it's time for a random message and deliver one if appropriate
+     * 
+     * Call this periodically (e.g., every frame or every second) to check
+     * if conditions are right for a random message:
+     * 1. Enough idle time has passed (no high-priority messages)
+     * 2. Cooldown from last random message has passed
+     * 3. No current error/warning state
+     * 
+     * @param hasActiveErrors Whether there are currently active errors/warnings
+     * @return true if a random message was delivered
+     */
+    suspend fun checkAndDeliverRandomMessage(hasActiveErrors: Boolean): Boolean {
+        // Don't deliver if there are active errors
+        if (hasActiveErrors) {
+            lastHighPriorityMessageTime = System.currentTimeMillis()
+            return false
+        }
+        
+        val now = System.currentTimeMillis()
+        
+        // Check if enough idle time has passed (configurable via settings)
+        val minIdleTime = SettingsManager.getRandomMessageIdleTime()
+        val idleTime = now - lastHighPriorityMessageTime
+        if (idleTime < minIdleTime) {
+            return false
+        }
+        
+        // Check cooldown from last random message (configurable via settings)
+        val randomCooldown = SettingsManager.getRandomMessageCooldown()
+        val timeSinceLastRandom = now - lastRandomMessageTime
+        if (timeSinceLastRandom < randomCooldown) {
+            return false
+        }
+        
+        // Check if we have any messages
+        if (availableMotivationalMessages.isEmpty() && availableTipMessages.isEmpty()) {
+            return false
+        }
+        
+        // Decide which type of message to deliver (70% motivational, 30% tips)
+        val useMotivational = availableMotivationalMessages.isNotEmpty() && 
+            (availableTipMessages.isEmpty() || Math.random() < 0.7)
+        
+        val message = if (useMotivational) {
+            availableMotivationalMessages.randomOrNull()
+        } else {
+            availableTipMessages.randomOrNull()
+        }
+        
+        if (message == null) return false
+        
+        val messageText = message.get(config.language)
+        val messageType = if (useMotivational) MessageType.MOTIVATION else MessageType.TIP
+        
+        // Use MessageOrchestrator with LOW priority
+        val decision = messageOrchestrator.decide(
+            messageKey = "random:${messageText.hashCode()}",
+            category = if (useMotivational) MessageOrchestrator.Category.MOTIVATION else MessageOrchestrator.Category.TIP,
+            messageText = messageText
+        )
+        
+        // Only deliver if not silenced
+        if (decision.channel == MessageOrchestrator.DeliveryChannel.SILENT) {
+            return false
+        }
+        
+        // Deliver with LOW priority (won't interrupt other messages)
+        if (isVideoMode) {
+            emitVisualMessage(messageText, messageType)
+        } else {
+            speak(messageText, SpeakPriority.LOW)
+            if (isHapticEnabled) {
+                vibrateLight()
+            }
+        }
+        
+        lastRandomMessageTime = now
+        Log.d(TAG, "Random message delivered: $messageText")
+        return true
+    }
+    
+    /**
+     * Mark that a high-priority message was just delivered
+     * 
+     * Call this when delivering error/warning messages to reset the idle timer.
+     */
+    fun markHighPriorityMessageDelivered() {
+        lastHighPriorityMessageTime = System.currentTimeMillis()
+    }
+    
     // ==================== Utilities ====================
     
     /**
@@ -664,6 +826,8 @@ class FeedbackManager(
         messageOrchestrator.resetAll()
         lastAnnouncedRep = 0
         correctRepStreak = 0
+        lastHighPriorityMessageTime = System.currentTimeMillis()
+        lastRandomMessageTime = 0L
         Log.d(TAG, "Message states reset")
     }
     

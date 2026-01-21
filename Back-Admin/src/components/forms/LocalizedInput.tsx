@@ -83,7 +83,7 @@ export function LocalizedInput({
                 placeholder={placeholder.en || `Enter ${label.toLowerCase()} in English`}
                 required={required}
                 rows={rows}
-                error={error}
+                error={!!error}
                 dir="ltr"
               />
             ) : (
@@ -93,7 +93,7 @@ export function LocalizedInput({
                 onChange={(e) => handleChange('en', e.target.value)}
                 placeholder={placeholder.en || `Enter ${label.toLowerCase()} in English`}
                 required={required}
-                error={error}
+                error={!!error}
                 dir="ltr"
               />
             )}
@@ -108,7 +108,7 @@ export function LocalizedInput({
                 placeholder={placeholder.ar || `أدخل ${label} بالعربية`}
                 required={required}
                 rows={rows}
-                error={error}
+                error={!!error}
                 dir="rtl"
               />
             ) : (
@@ -118,7 +118,7 @@ export function LocalizedInput({
                 onChange={(e) => handleChange('ar', e.target.value)}
                 placeholder={placeholder.ar || `أدخل ${label} بالعربية`}
                 required={required}
-                error={error}
+                error={!!error}
                 dir="rtl"
               />
             )}

@@ -12,12 +12,13 @@ import com.trainingvalidator.poc.training.TrainingEngine
 import com.trainingvalidator.poc.training.models.SessionSummary
 import com.trainingvalidator.poc.training.engine.HoldState
 import com.trainingvalidator.poc.training.engine.Phase
+import com.trainingvalidator.poc.training.config.SettingsManager
 import com.trainingvalidator.poc.training.feedback.FeedbackConfig
 import com.trainingvalidator.poc.training.feedback.FeedbackEvent
 import com.trainingvalidator.poc.training.feedback.FeedbackManager
 import com.trainingvalidator.poc.training.loader.ExerciseLoader
 import com.trainingvalidator.poc.training.loader.WorkoutLoader
-import com.trainingvalidator.poc.training.models.DifficultyType
+// NOTE: DifficultyType has been REMOVED - quality is now assessed via JointState
 import com.trainingvalidator.poc.training.models.ExerciseConfig
 import com.trainingvalidator.poc.training.models.WorkoutConfig
 import com.trainingvalidator.poc.training.session.PauseReason
@@ -75,8 +76,7 @@ class TrainingViewModel(
     private val _workoutConfig = MutableStateFlow<WorkoutConfig?>(null)
     val workoutConfig: StateFlow<WorkoutConfig?> = _workoutConfig.asStateFlow()
     
-    private val _difficulty = MutableStateFlow(DifficultyType.BEGINNER)
-    val difficulty: StateFlow<DifficultyType> = _difficulty.asStateFlow()
+    // NOTE: difficulty has been REMOVED - all users get the same exercise
     
     private val _poseVariantIndex = MutableStateFlow(0)
     val poseVariantIndex: StateFlow<Int> = _poseVariantIndex.asStateFlow()
@@ -158,10 +158,13 @@ class TrainingViewModel(
     
     /**
      * Load single exercise
+     * 
+     * NOTE: difficultyStr is kept for API compatibility but is ignored.
+     * Quality is now assessed via JointState (PERFECT/NORMAL/PAD/WARNING/DANGER).
      */
     fun loadExercise(
         exerciseName: String,
-        difficultyStr: String,
+        difficultyStr: String = "",  // Kept for API compatibility, ignored
         poseVariantIndex: Int = 0,
         targetRepsOverride: Int? = null,
         targetDurationMsOverride: Long? = null
@@ -175,17 +178,18 @@ class TrainingViewModel(
         _exerciseConfig.value = config
         _exerciseName.value = config.name.en
         _poseVariantIndex.value = poseVariantIndex
-        _difficulty.value = parseDifficulty(difficultyStr)
         _isWorkoutMode.value = false
         
-        // Create training engine
+        // Create training engine (no difficulty needed)
         trainingEngine = TrainingEngine(
             exerciseConfig = config,
-            difficulty = _difficulty.value,
             poseVariantIndex = poseVariantIndex,
             targetRepsOverride = targetRepsOverride,
             targetDurationMsOverride = targetDurationMsOverride
         )
+        
+        // Configure random feedback messages (if feedback manager is ready)
+        updateRandomMessagesFromEngine()
         
         // Notify supervisor that exercise is loaded
         supervisor.onExerciseLoaded()
@@ -196,8 +200,10 @@ class TrainingViewModel(
     
     /**
      * Load workout for hot-swap mode
+     * 
+     * NOTE: difficultyStr is kept for API compatibility but is ignored.
      */
-    fun loadWorkout(workoutName: String, difficultyStr: String): Boolean {
+    fun loadWorkout(workoutName: String, difficultyStr: String = ""): Boolean {
         val config = WorkoutLoader.load(assets, workoutName)
         if (config == null) {
             Log.e(TAG, "Failed to load workout: $workoutName")
@@ -205,7 +211,6 @@ class TrainingViewModel(
         }
         
         _workoutConfig.value = config
-        _difficulty.value = parseDifficulty(difficultyStr)
         _isWorkoutMode.value = true
         
         // Load all exercises
@@ -219,7 +224,6 @@ class TrainingViewModel(
             LoadedExercise(
                 config = exerciseConfig,
                 workoutExercise = workoutExercise,
-                difficulty = workoutExercise.difficulty ?: _difficulty.value,
                 round = 1,
                 indexInRound = index,
                 totalInRound = config.exercises.size,
@@ -235,8 +239,7 @@ class TrainingViewModel(
         // Create workout engine
         workoutTrainingEngine = WorkoutTrainingEngine(
             exercises = loadedExercises,
-            workoutConfig = config,
-            defaultDifficulty = _difficulty.value
+            workoutConfig = config
         )
         
         // Set first exercise
@@ -259,17 +262,23 @@ class TrainingViewModel(
         _isVideoMode.value = isVideoMode
         supervisor.isVideoMode = isVideoMode
         
+        // Get language from app settings
+        val language = SettingsManager.getFeedbackLanguage()
+        
         feedbackManager = FeedbackManager(
             context = context,
             config = FeedbackConfig(
                 enableAudio = true,
                 enableHaptic = true,
-                language = "en"
+                language = language
             )
         ).apply {
             this.isVideoMode = isVideoMode
         }
         feedbackManager?.initialize()
+        
+        // Configure random messages if engine already exists
+        updateRandomMessagesFromEngine()
     }
     
     // ==================== Supervisor Signal Methods ====================
@@ -488,6 +497,7 @@ class TrainingViewModel(
         
         trainingEngine = workoutEngine.start()
         trainingEngine?.start()
+        updateRandomMessagesFromEngine()
         
         observeWorkoutTrainingEngine()
         currentRepsInSession = 0
@@ -656,6 +666,15 @@ class TrainingViewModel(
             }
         }
     }
+
+    /**
+     * Configure random feedback messages from the current engine
+     * Called when engine or feedback manager is initialized.
+     */
+    private fun updateRandomMessagesFromEngine() {
+        val engine = trainingEngine ?: return
+        feedbackManager?.setRandomMessages(engine.feedbackMessages)
+    }
     
     private fun handleWorkoutRepLimitReached(completedReps: Int) {
         val workoutEngine = workoutTrainingEngine ?: return
@@ -697,6 +716,7 @@ class TrainingViewModel(
         
         trainingEngine = newEngine
         newEngine.start()
+        updateRandomMessagesFromEngine()
         
         currentRepsInSession = 0
         isSwitchingExercise = false
@@ -738,14 +758,8 @@ class TrainingViewModel(
         } else 0
     }
     
-    private fun parseDifficulty(str: String): DifficultyType {
-        return when (str.lowercase()) {
-            "beginner" -> DifficultyType.BEGINNER
-            "normal" -> DifficultyType.NORMAL
-            "advanced" -> DifficultyType.ADVANCED
-            else -> DifficultyType.BEGINNER
-        }
-    }
+    // NOTE: parseDifficulty has been REMOVED - difficulty levels are no longer used
+    // Quality is now assessed via JointState (PERFECT/NORMAL/PAD/WARNING/DANGER)
     
     /**
      * Get tracked landmark indices for skeleton overlay

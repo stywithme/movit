@@ -1,227 +1,328 @@
 'use client';
 
 /**
- * Step 8: Review & Publish
+ * Step 7: Review & Publish
  * ========================
+ * 
+ * Final review of exercise configuration with JSON preview.
  */
 
-import { useState } from 'react';
-import { useWizardStore, useStepComplete } from '../WizardContext';
+import { useMemo } from 'react';
+import { useWizardStore } from '../WizardContext';
+import { Card, CardHeader, CardTitle, CardContent, Badge } from '@/components/ui';
+import { JsonPreview } from '@/components/JsonPreview';
 import { canPublish } from '@/modules/exercises/exercises.validation';
-import { Card, CardHeader, CardTitle, CardContent, Button, Badge, Label } from '@/components/ui';
-import { Check, AlertTriangle, ChevronDown, ChevronUp, Copy } from 'lucide-react';
+import { STATE_CONFIG, JOINT_STATE_NAMES } from '@/lib/types/localized';
+import type { ExerciseConfig } from '@/lib/types/android-schema';
 
-interface ReviewStepProps {
-  onSaveDraft: () => Promise<void>;
-  onPublish: () => Promise<void>;
-}
-
-export function ReviewStep({ onSaveDraft, onPublish }: ReviewStepProps) {
+export function ReviewStep() {
   const store = useWizardStore();
-  const [showJson, setShowJson] = useState(false);
-  const [isSubmitting, setIsSubmitting] = useState(false);
   
-  // Check step completion
-  const stepsComplete = [1, 2, 3, 4, 5, 6, 7].map(step => ({
-    step,
-    complete: useStepComplete(step),
-  }));
+  // Build the final JSON config
+  const exerciseConfig = useMemo((): ExerciseConfig | null => {
+    try {
+      const isHold = store.countingMethod.countingMethodCode === 'hold';
+      
+      // Build tracked joints based on counting method
+      const trackedJoints = (store.jointConfig.trackedJoints || []).map((joint) => {
+        if (joint.role === 'primary') {
+          if (isHold) {
+            // Hold mode: primary joints have single range
+            return {
+              joint: joint.joint,
+              role: 'primary' as const,
+              startPose: joint.startPose,
+              range: joint.range || { perfect: { min: 85, max: 95 } },
+              stateMessages: joint.stateMessages,
+              pairedWith: joint.pairedWith,
+              invertIndicator: joint.invertIndicator,
+            };
+          } else {
+            // Up/Down or Push/Pull mode: primary joints have upRange and downRange
+            return {
+              joint: joint.joint,
+              role: 'primary' as const,
+              startPose: joint.startPose,
+              upRange: joint.upRange || { perfect: { min: 150, max: 180 } },
+              downRange: joint.downRange || { perfect: { min: 0, max: 90 } },
+              stateMessages: joint.stateMessages,
+              pairedWith: joint.pairedWith,
+              invertIndicator: joint.invertIndicator,
+            };
+          }
+        } else {
+          return {
+            joint: joint.joint,
+            role: 'secondary' as const,
+            startPose: joint.startPose,
+            range: joint.range,
+            stateMessages: joint.stateMessages,
+            pairedWith: joint.pairedWith,
+          };
+        }
+      });
+      
+      // Build position checks
+      const positionChecks = (store.positionChecks.positionChecks || []).map((pc) => ({
+        id: pc.checkId,
+        type: pc.type,
+        landmarks: pc.landmarks,
+        condition: pc.condition,
+        activePhases: pc.activePhases,
+        errorMessage: pc.errorMessage,
+        severity: pc.severity,
+        cooldownMs: pc.cooldownMs,
+        minErrorFrames: pc.minErrorFrames,
+      }));
+      
+      // Build feedback messages
+      const feedbackMessages = {
+        motivational: (store.extras.feedbackMessages || [])
+          .filter(m => m.type === 'motivational')
+          .map(m => m.message),
+        tips: (store.extras.feedbackMessages || [])
+          .filter(m => m.type === 'tip')
+          .map(m => m.message),
+      };
+      
+      // Build rep counting config
+      const repCountingConfig = isHold
+        ? {
+            duration: store.repConfig.duration || 30,
+            gracePeriodMs: store.repConfig.gracePeriodMs || 2500,
+          }
+        : {
+            reps: store.repConfig.reps || 12,
+            minRepIntervalMs: store.repConfig.minRepIntervalMs || 1500,
+            maxRepIntervalMs: store.repConfig.maxRepIntervalMs || 5000,
+          };
+      
+      return {
+        name: store.basicInfo.name || { ar: '', en: '' },
+        description: store.basicInfo.description,
+        instructions: store.basicInfo.instructions,
+        category: {
+          code: 'exercise', // Will be replaced with actual category
+          name: { ar: 'تمرين', en: 'Exercise' },
+        },
+        countingMethod: store.countingMethod.countingMethodCode || 'up_down',
+        muscles: [], // Will be resolved from IDs
+        equipment: [],
+        tags: [],
+        repCountingConfig,
+        poseVariants: [{
+          name: store.basicInfo.name || { ar: '', en: '' },
+          cameraPosition: 'side_view',
+          expectedFacingDirection: store.cameraPosition.expectedFacingDirection || 'auto_detect',
+          trackedJoints,
+          positionChecks: positionChecks.length > 0 ? positionChecks : undefined,
+          feedbackMessages: (feedbackMessages.motivational.length > 0 || feedbackMessages.tips.length > 0) 
+            ? feedbackMessages 
+            : undefined,
+        }],
+      };
+    } catch {
+      return null;
+    }
+  }, [store]);
   
-  const { valid: canPublishNow, missingSteps } = canPublish({
-    basicInfo: store.basicInfo as Parameters<typeof canPublish>[0]['basicInfo'],
-    countingMethod: store.countingMethod as Parameters<typeof canPublish>[0]['countingMethod'],
-    cameraPosition: store.cameraPosition as Parameters<typeof canPublish>[0]['cameraPosition'],
-    jointConfig: store.jointConfig as Parameters<typeof canPublish>[0]['jointConfig'],
-    positionChecks: store.positionChecks as Parameters<typeof canPublish>[0]['positionChecks'],
-    repConfig: store.repConfig as Parameters<typeof canPublish>[0]['repConfig'],
-    extras: store.extras as Parameters<typeof canPublish>[0]['extras'],
-  });
-  
-  const stepNames = ['Basic Info', 'Exercise Type', 'Camera', 'Joints', 'Position Checks', 'Reps', 'Extras'];
-  
-  // Build summary JSON
-  const buildSummaryJson = () => {
-    return {
-      name: store.basicInfo.name,
-      countingMethod: store.countingMethod.countingMethodCode,
-      cameraPositions: store.cameraPosition.cameraPositionIds?.length || 0,
-      expectedFacingDirection: store.cameraPosition.expectedFacingDirection,
-      trackedJoints: store.jointConfig.trackedJoints?.map(j => ({
-        joint: j.joint,
-        role: j.role,
-      })),
-      positionChecks: store.positionChecks.positionChecks?.length || 0,
+  // Validation - build a compatible object for canPublish
+  const validation = useMemo(() => {
+    // Extract data in the format expected by canPublish
+    const wizardData = {
+      basicInfo: store.basicInfo,
+      countingMethod: store.countingMethod,
+      cameraPosition: store.cameraPosition,
+      jointConfig: store.jointConfig,
+      positionChecks: store.positionChecks,
       repConfig: store.repConfig,
-      muscles: store.extras.muscles?.length || 0,
-      equipment: store.extras.equipment?.length || 0,
-      feedbackMessages: store.extras.feedbackMessages?.length || 0,
+      extras: store.extras,
     };
-  };
+    return canPublish(wizardData as Parameters<typeof canPublish>[0]);
+  }, [store]);
   
-  const handleSaveDraft = async () => {
-    setIsSubmitting(true);
-    try {
-      await onSaveDraft();
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
-  
-  const handlePublish = async () => {
-    setIsSubmitting(true);
-    try {
-      await onPublish();
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
+  // Summary stats
+  const stats = useMemo(() => ({
+    joints: store.jointConfig.trackedJoints?.length || 0,
+    primaryJoints: store.jointConfig.trackedJoints?.filter(j => j.role === 'primary').length || 0,
+    secondaryJoints: store.jointConfig.trackedJoints?.filter(j => j.role === 'secondary').length || 0,
+    positionChecks: store.positionChecks.positionChecks?.length || 0,
+    feedbackMessages: store.extras.feedbackMessages?.length || 0,
+    cameraPositions: store.cameraPosition.cameraPositionIds?.length || 0,
+  }), [store]);
   
   return (
-    <div className="space-y-8 max-w-4xl mx-auto">
+    <div className="space-y-6">
       <div>
         <h2 className="text-2xl font-bold text-gray-900 mb-2">Review & Publish</h2>
-        <p className="text-gray-500">Review your exercise configuration before publishing.</p>
+        <p className="text-gray-500">
+          Review your exercise configuration before publishing.
+        </p>
       </div>
       
-      {/* Exercise Summary */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Exercise Summary</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-2 gap-6">
-            <div>
-              <span className="text-sm text-gray-500 block mb-1">Name</span>
-              <p className="font-medium text-gray-900">{store.basicInfo.name?.en || '-'} / {store.basicInfo.name?.ar || '-'}</p>
-            </div>
-            <div>
-              <span className="text-sm text-gray-500 block mb-1">Type</span>
-              <Badge variant="primary" className="uppercase">{store.countingMethod.countingMethodCode || '-'}</Badge>
-            </div>
-            <div>
-              <span className="text-sm text-gray-500 block mb-1">Camera Positions</span>
-              <p className="font-medium text-gray-900">{store.cameraPosition.cameraPositionIds?.length || 0} selected</p>
-            </div>
-            <div>
-              <span className="text-sm text-gray-500 block mb-1">Facing Direction</span>
-              <p className="font-medium capitalize text-gray-900">{store.cameraPosition.expectedFacingDirection?.replace(/_/g, ' ') || 'Auto'}</p>
-            </div>
-            <div>
-              <span className="text-sm text-gray-500 block mb-1">Tracked Joints</span>
-              <div className="flex gap-2">
-                <Badge variant="primary">{store.jointConfig.trackedJoints?.filter(j => j.role === 'primary').length || 0} Primary</Badge>
-                <Badge variant="outline">{store.jointConfig.trackedJoints?.filter(j => j.role === 'secondary').length || 0} Secondary</Badge>
-              </div>
-            </div>
-            <div>
-              <span className="text-sm text-gray-500 block mb-1">Position Checks</span>
-              <p className="font-medium text-gray-900">{store.positionChecks.positionChecks?.length || 0}</p>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-      
       {/* Validation Status */}
-      <Card>
-        <CardHeader>
-          <div className="flex items-center gap-2">
-            <CardTitle>Validation</CardTitle>
-            {canPublishNow ? (
-              <Badge variant="success">Ready to Publish</Badge>
-            ) : (
-              <Badge variant="warning">Incomplete</Badge>
-            )}
+      {!validation.valid && (
+        <div className="bg-red-50 border border-red-200 rounded-xl p-4">
+          <h4 className="font-semibold text-red-800 mb-2">⚠️ Cannot Publish Yet</h4>
+          <ul className="list-disc list-inside text-sm text-red-700 space-y-1">
+            {validation.errors.map((err, i) => (
+              <li key={i}>{err}</li>
+            ))}
+          </ul>
+          <p className="text-sm text-red-600 mt-3">
+            Incomplete steps: {validation.incompleteSteps.join(', ')}
+          </p>
+        </div>
+      )}
+      
+      {validation.valid && (
+        <div className="bg-green-50 border border-green-200 rounded-xl p-4 flex items-center gap-3">
+          <span className="text-2xl">✅</span>
+          <div>
+            <p className="font-semibold text-green-800">Ready to Publish!</p>
+            <p className="text-sm text-green-700">All required fields are complete.</p>
           </div>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-3">
-            {stepsComplete.map(({ step, complete }) => (
-              <div key={step} className="flex items-center justify-between p-2 rounded-lg hover:bg-gray-50">
-                <div className="flex items-center gap-3">
-                  <div className={`w-6 h-6 rounded-full flex items-center justify-center ${complete ? 'bg-green-100' : 'bg-amber-100'}`}>
-                    {complete ? (
-                      <Check className="w-4 h-4 text-green-600" />
-                    ) : (
-                      <AlertTriangle className="w-4 h-4 text-amber-600" />
-                    )}
-                  </div>
-                  <span className={complete ? 'text-gray-900' : 'text-amber-700 font-medium'}>
-                    Step {step}: {stepNames[step - 1]}
-                  </span>
+        </div>
+      )}
+      
+      {/* Summary Cards */}
+      <div className="grid md:grid-cols-3 gap-4">
+        <Card>
+          <CardContent className="pt-4">
+            <div className="text-center">
+              <p className="text-3xl font-bold text-blue-600">{stats.joints}</p>
+              <p className="text-sm text-gray-500">Tracked Joints</p>
+              <div className="text-xs text-gray-400 mt-1">
+                {stats.primaryJoints} primary • {stats.secondaryJoints} secondary
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+        
+        <Card>
+          <CardContent className="pt-4">
+            <div className="text-center">
+              <p className="text-3xl font-bold text-purple-600">{stats.positionChecks}</p>
+              <p className="text-sm text-gray-500">Position Checks</p>
+            </div>
+          </CardContent>
+        </Card>
+        
+        <Card>
+          <CardContent className="pt-4">
+            <div className="text-center">
+              <p className="text-3xl font-bold text-green-600">{stats.feedbackMessages}</p>
+              <p className="text-sm text-gray-500">Feedback Messages</p>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+      
+      {/* Configuration Details */}
+      <div className="grid md:grid-cols-2 gap-4">
+        {/* Basic Info */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-lg">📋 Basic Info</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-2">
+            <div>
+              <span className="text-sm text-gray-500">Name (EN):</span>
+              <p className="font-medium">{store.basicInfo.name?.en || '-'}</p>
+            </div>
+            <div>
+              <span className="text-sm text-gray-500">Name (AR):</span>
+              <p className="font-medium" dir="rtl">{store.basicInfo.name?.ar || '-'}</p>
+            </div>
+            <div>
+              <span className="text-sm text-gray-500">Counting Method:</span>
+              <Badge className="ml-2">{store.countingMethod.countingMethodCode || '-'}</Badge>
+            </div>
+          </CardContent>
+        </Card>
+        
+        {/* Rep Config */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-lg">
+              {store.countingMethod.countingMethodCode === 'hold' ? '⏱️ Hold Timer' : '🔄 Rep Config'}
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            {store.countingMethod.countingMethodCode === 'hold' ? (
+              <div className="space-y-2">
+                <div className="flex justify-between">
+                  <span className="text-sm text-gray-500">Duration:</span>
+                  <span className="font-medium">{store.repConfig.duration || 30}s</span>
                 </div>
-                <div className="flex items-center gap-2">
-                  {!complete && step <= 4 && <Badge variant="warning">Required</Badge>}
-                  {!complete && step > 4 && <Badge variant="outline">Optional</Badge>}
-                  {complete && <Badge variant="success">Complete</Badge>}
+                <div className="flex justify-between">
+                  <span className="text-sm text-gray-500">Grace Period:</span>
+                  <span className="font-medium">{store.repConfig.gracePeriodMs || 2500}ms</span>
                 </div>
               </div>
-            ))}
+            ) : (
+              <div className="space-y-2">
+                <div className="flex justify-between">
+                  <span className="text-sm text-gray-500">Target Reps:</span>
+                  <span className="font-medium">{store.repConfig.reps || 12}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-sm text-gray-500">Min Interval:</span>
+                  <span className="font-medium">{store.repConfig.minRepIntervalMs || 1500}ms</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-sm text-gray-500">Max Interval:</span>
+                  <span className="font-medium">{store.repConfig.maxRepIntervalMs || 5000}ms</span>
+                </div>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      </div>
+      
+      {/* State Ranges Legend */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-lg">🎯 State-Based Scoring</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <p className="text-sm text-gray-600 mb-4">
+            The new state-based system evaluates performance based on which angle range the user is in:
+          </p>
+          <div className="grid grid-cols-5 gap-2">
+            {JOINT_STATE_NAMES.map((state) => {
+              const config = STATE_CONFIG[state];
+              return (
+                <div 
+                  key={state}
+                  className={`p-3 rounded-lg text-center ${
+                    state === 'perfect' ? 'bg-green-100 border border-green-300' :
+                    state === 'normal' ? 'bg-yellow-100 border border-yellow-300' :
+                    state === 'pad' ? 'bg-orange-100 border border-orange-300' :
+                    state === 'warning' ? 'bg-red-100 border border-red-300' :
+                    'bg-red-200 border border-red-400'
+                  }`}
+                >
+                  <p className="font-bold text-lg">{config.rate}%</p>
+                  <p className="text-xs font-medium capitalize">{state}</p>
+                  <p className="text-[10px] text-gray-500">
+                    {config.isRepCounted ? '✓ Counted' : '✗ Not counted'}
+                  </p>
+                </div>
+              );
+            })}
           </div>
         </CardContent>
       </Card>
       
       {/* JSON Preview */}
-      <Card className="overflow-hidden">
-        <div 
-          className="flex items-center justify-between p-4 bg-gray-50 cursor-pointer border-b hover:bg-gray-100 transition-colors"
-          onClick={() => setShowJson(!showJson)}
-        >
-          <div className="flex items-center gap-2">
-            <span className="font-semibold text-gray-900">Android JSON Preview</span>
-            <Label tooltip="Preview the exact JSON structure that will be sent to the Android app." />
-          </div>
-          {showJson ? <ChevronUp className="h-5 w-5 text-gray-500" /> : <ChevronDown className="h-5 w-5 text-gray-500" />}
-        </div>
-        
-        {showJson && (
-          <CardContent className="p-0">
-            <div className="relative bg-gray-900">
-              <pre className="text-green-400 p-6 text-sm overflow-x-auto max-h-96 font-mono">
-                {JSON.stringify(buildSummaryJson(), null, 2)}
-              </pre>
-              <button
-                type="button"
-                onClick={() => navigator.clipboard.writeText(JSON.stringify(buildSummaryJson(), null, 2))}
-                className="absolute top-4 right-4 p-2 bg-white/10 hover:bg-white/20 rounded-lg text-white transition-colors"
-                title="Copy JSON"
-              >
-                <Copy className="h-4 w-4" />
-              </button>
-            </div>
-          </CardContent>
-        )}
-      </Card>
-      
-      {/* Actions */}
-      <div className="flex items-center justify-between pt-4">
-        <Button
-          variant="outline"
-          onClick={handleSaveDraft}
-          disabled={isSubmitting}
-          loading={isSubmitting}
-          size="lg"
-        >
-          Save as Draft
-        </Button>
-        
-        <div className="flex flex-col items-end gap-2">
-          <Button
-            variant={canPublishNow ? 'success' : 'secondary'}
-            onClick={handlePublish}
-            disabled={isSubmitting || !canPublishNow}
-            loading={isSubmitting}
-            size="lg"
-            icon={<Check className="h-5 w-5" />}
-          >
-            Publish Exercise
-          </Button>
-          {!canPublishNow && (
-            <p className="text-sm text-amber-600">
-              Complete required steps to publish
-            </p>
-          )}
-        </div>
-      </div>
+      {exerciseConfig && (
+        <JsonPreview 
+          data={exerciseConfig} 
+          title="📱 Android JSON Config (Preview)"
+          defaultExpanded={false}
+        />
+      )}
     </div>
   );
 }

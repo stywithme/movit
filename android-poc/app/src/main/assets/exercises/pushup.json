@@ -22,6 +22,11 @@
   "muscles": ["chest", "shoulders", "triceps", "core"],
   "equipment": ["bodyweight"],
   "tags": ["compound", "upper-body", "no-equipment"],
+  "repCountingConfig": {
+    "reps": 12,
+    "minRepIntervalMs": 1500,
+    "maxRepIntervalMs": 5000
+  },
   "poseVariants": [
     {
       "name": {
@@ -38,77 +43,66 @@
             "max": 180
           },
           "upRange": {
-            "beginner": { "min": 150, "max": 180 },
+            "perfect": { "min": 165, "max": 180 },
             "normal": { "min": 160, "max": 180 },
-            "advanced": { "min": 165, "max": 180 }
+            "pad": { "min": 150, "max": 180 }
           },
           "downRange": {
-            "beginner": { "min": 70, "max": 110 },
-            "normal": { "min": 60, "max": 90 },
-            "advanced": { "min": 50, "max": 80 }
+            "perfect": { "min": 50, "max": 80 },
+            "normal": { "min": 45, "max": 90 },
+            "pad": { "min": 40, "max": 110 },
+            "warning": { "min": 30, "max": 40 },
+            "danger": { "min": 0, "max": 30 }
           },
-          "errorMessages": {
-            "tooLow": {
-              "ar": "لا تنزل كثيراً - حافظ على استقامة الجسم",
-              "en": "Don't go too low - keep your body straight"
-            },
-            "tooHigh": {
-              "ar": "انزل أكثر - قرّب صدرك من الأرض",
-              "en": "Go lower - bring your chest closer to the floor"
-            }
+          "stateMessages": {
+            "perfect": { "ar": "ممتاز! ضغط مثالي", "en": "Perfect! Great push-up" },
+            "normal": { "ar": "جيد، حاول النزول أكثر قليلاً", "en": "Good, try going a bit lower" },
+            "pad": { "ar": "مقبول، اقترب من الأرض أكثر", "en": "Acceptable, get closer to floor" },
+            "warning": { "ar": "لا تنزل كثيراً", "en": "Don't go too low" },
+            "danger": { "ar": "توقف! هذا قد يؤذي كتفك", "en": "Stop! This may hurt your shoulder" }
           },
           "pairedWith": "right_elbow"
         },
         {
           "joint": "right_elbow",
           "role": "primary",
-          "startPose": {
-            "min": 150,
-            "max": 180
-          },
+          "startPose": { "min": 150, "max": 180 },
           "upRange": {
-            "beginner": { "min": 150, "max": 180 },
+            "perfect": { "min": 165, "max": 180 },
             "normal": { "min": 160, "max": 180 },
-            "advanced": { "min": 165, "max": 180 }
+            "pad": { "min": 150, "max": 180 }
           },
           "downRange": {
-            "beginner": { "min": 70, "max": 110 },
-            "normal": { "min": 60, "max": 90 },
-            "advanced": { "min": 50, "max": 80 }
+            "perfect": { "min": 50, "max": 80 },
+            "normal": { "min": 45, "max": 90 },
+            "pad": { "min": 40, "max": 110 },
+            "warning": { "min": 30, "max": 40 },
+            "danger": { "min": 0, "max": 30 }
           },
-          "errorMessages": {
-            "tooLow": {
-              "ar": "لا تنزل كثيراً",
-              "en": "Don't go too low"
-            },
-            "tooHigh": {
-              "ar": "انزل أكثر",
-              "en": "Go lower"
-            }
+          "stateMessages": {
+            "perfect": { "ar": "ممتاز! ضغط مثالي", "en": "Perfect! Great push-up" },
+            "normal": { "ar": "جيد، حاول النزول أكثر قليلاً", "en": "Good, try going a bit lower" },
+            "pad": { "ar": "مقبول، اقترب من الأرض أكثر", "en": "Acceptable, get closer to floor" },
+            "warning": { "ar": "لا تنزل كثيراً", "en": "Don't go too low" },
+            "danger": { "ar": "توقف! هذا قد يؤذي كتفك", "en": "Stop! This may hurt your shoulder" }
           },
           "pairedWith": "left_elbow"
         },
         {
           "joint": "left_hip",
           "role": "secondary",
-          "startPose": {
-            "min": 160,
-            "max": 180
-          },
-          "Range": {
-            "beginner": { "min": 155, "max": 180 },
+          "startPose": { "min": 160, "max": 180 },
+          "range": {
+            "perfect": { "min": 170, "max": 180 },
             "normal": { "min": 165, "max": 180 },
-            "advanced": { "min": 170, "max": 180 }
+            "pad": { "min": 155, "max": 180 },
+            "warning": { "min": 140, "max": 155 },
+            "danger": { "min": 0, "max": 140 }
           },
-          "errorMessages": {
-            "tooLow": {
-              "ar": "ارفع وسطك - لا تدع ظهرك ينحني",
-              "en": "Raise your hips - don't let your back sag"
-            },
-            "tooHigh": {
-              "ar": "اخفض وسطك - حافظ على استقامة الجسم",
-              "en": "Lower your hips - keep your body straight"
-            }
+          "stateMessages": {
+            "perfect": { "ar": "ممتاز - الجسم مستقيم", "en": "Great - body is straight" },
+            "warning": { "ar": "ارفع وسطك قليلاً", "en": "Raise your hips slightly" },
+            "danger": { "ar": "وسطك منخفض جداً!", "en": "Hips too low!" }
           }
         }
       ],
@@ -118,46 +112,12 @@
           { "ar": "أداء رائع!", "en": "Great performance!" },
           { "ar": "قوي! لا تتوقف!", "en": "Strong! Don't stop!" }
         ],
-        "common_mistake": [
-          { "ar": "حافظ على استقامة ظهرك", "en": "Keep your back straight" },
-          { "ar": "لا تدع وسطك ينخفض", "en": "Don't let your hips drop" },
-          { "ar": "المرفقان بزاوية 45 درجة وليس للخارج", "en": "Elbows at 45 degrees, not flared out" }
-        ],
-        "tip": [
+        "tips": [
           { "ar": "تنفس: زفير عند الصعود، شهيق عند النزول", "en": "Breathe: exhale going up, inhale going down" },
           { "ar": "انظر للأمام قليلاً وليس للأسفل", "en": "Look slightly forward, not straight down" },
           { "ar": "شد عضلات بطنك طوال الحركة", "en": "Keep your core engaged throughout" }
         ]
-      },
-      "difficultyLevels": [
-        {
-          "level": "beginner",
-          "repCountingConfig": {
-            "reps": 8,
-            "minRepIntervalMs": 2000,
-            "maxRepIntervalMs": 6000
-          },
-          "phases": ["start", "push", "extended", "pull"]
-        },
-        {
-          "level": "normal",
-          "repCountingConfig": {
-            "reps": 12,
-            "minRepIntervalMs": 1500,
-            "maxRepIntervalMs": 5000
-          },
-          "phases": ["start", "push", "extended", "pull"]
-        },
-        {
-          "level": "advanced",
-          "repCountingConfig": {
-            "reps": 20,
-            "minRepIntervalMs": 1000,
-            "maxRepIntervalMs": 4000
-          },
-          "phases": ["start", "push", "extended", "pull"]
-        }
-      ]
+      }
     },
     {
       "name": {
@@ -169,58 +129,40 @@
         {
           "joint": "left_elbow",
           "role": "primary",
-          "startPose": {
-            "min": 150,
-            "max": 180
-          },
+          "startPose": { "min": 150, "max": 180 },
           "upRange": {
-            "beginner": { "min": 150, "max": 180 },
+            "perfect": { "min": 165, "max": 180 },
             "normal": { "min": 160, "max": 180 },
-            "advanced": { "min": 165, "max": 180 }
+            "pad": { "min": 150, "max": 180 }
           },
           "downRange": {
-            "beginner": { "min": 70, "max": 110 },
-            "normal": { "min": 60, "max": 90 },
-            "advanced": { "min": 50, "max": 80 }
+            "perfect": { "min": 50, "max": 80 },
+            "normal": { "min": 45, "max": 90 },
+            "pad": { "min": 40, "max": 110 }
           },
-          "errorMessages": {
-            "tooLow": {
-              "ar": "لا تنزل كثيراً",
-              "en": "Don't go too low"
-            },
-            "tooHigh": {
-              "ar": "انزل أكثر",
-              "en": "Go lower"
-            }
+          "stateMessages": {
+            "perfect": { "ar": "ممتاز! ضغط مثالي", "en": "Perfect! Great push-up" },
+            "normal": { "ar": "جيد، حاول النزول أكثر", "en": "Good, try going lower" }
           },
           "pairedWith": "right_elbow"
         },
         {
           "joint": "right_elbow",
           "role": "primary",
-          "startPose": {
-            "min": 150,
-            "max": 180
-          },
+          "startPose": { "min": 150, "max": 180 },
           "upRange": {
-            "beginner": { "min": 150, "max": 180 },
+            "perfect": { "min": 165, "max": 180 },
             "normal": { "min": 160, "max": 180 },
-            "advanced": { "min": 165, "max": 180 }
+            "pad": { "min": 150, "max": 180 }
           },
           "downRange": {
-            "beginner": { "min": 70, "max": 110 },
-            "normal": { "min": 60, "max": 90 },
-            "advanced": { "min": 50, "max": 80 }
+            "perfect": { "min": 50, "max": 80 },
+            "normal": { "min": 45, "max": 90 },
+            "pad": { "min": 40, "max": 110 }
           },
-          "errorMessages": {
-            "tooLow": {
-              "ar": "لا تنزل كثيراً",
-              "en": "Don't go too low"
-            },
-            "tooHigh": {
-              "ar": "انزل أكثر",
-              "en": "Go lower"
-            }
+          "stateMessages": {
+            "perfect": { "ar": "ممتاز! ضغط مثالي", "en": "Perfect! Great push-up" },
+            "normal": { "ar": "جيد، حاول النزول أكثر", "en": "Good, try going lower" }
           },
           "pairedWith": "left_elbow"
         }
@@ -229,38 +171,8 @@
         "motivational": [
           { "ar": "ممتاز!", "en": "Excellent!" }
         ],
-        "common_mistake": [],
-        "tip": []
-      },
-      "difficultyLevels": [
-        {
-          "level": "beginner",
-          "repCountingConfig": {
-            "reps": 8,
-            "minRepIntervalMs": 2000,
-            "maxRepIntervalMs": 6000
-          },
-          "phases": ["start", "push", "extended", "pull"]
-        },
-        {
-          "level": "normal",
-          "repCountingConfig": {
-            "reps": 12,
-            "minRepIntervalMs": 1500,
-            "maxRepIntervalMs": 5000
-          },
-          "phases": ["start", "push", "extended", "pull"]
-        },
-        {
-          "level": "advanced",
-          "repCountingConfig": {
-            "reps": 20,
-            "minRepIntervalMs": 1000,
-            "maxRepIntervalMs": 4000
-          },
-          "phases": ["start", "push", "extended", "pull"]
-        }
-      ]
+        "tips": []
+      }
     }
   ]
 }

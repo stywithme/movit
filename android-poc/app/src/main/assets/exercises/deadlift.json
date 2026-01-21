@@ -22,6 +22,11 @@
   "muscles": ["hamstrings", "glutes", "lower_back", "traps", "forearms"],
   "equipment": ["barbell", "dumbbell", "kettlebell"],
   "tags": ["compound", "strength", "full-body"],
+  "repCountingConfig": {
+    "reps": 10,
+    "minRepIntervalMs": 2000,
+    "maxRepIntervalMs": 6000
+  },
   "poseVariants": [
     {
       "name": {
@@ -40,11 +45,7 @@
           },
           "condition": {
             "operator": "approximately_equal",
-            "thresholds": {
-              "beginner": 0.12,
-              "normal": 0.08,
-              "advanced": 0.05
-            }
+            "threshold": 0.08
           },
           "activePhases": ["up", "down"],
           "errorMessage": {
@@ -62,18 +63,23 @@
           "role": "primary",
           "startPose": { "min": 160, "max": 180 },
           "upRange": {
-            "beginner": { "min": 155, "max": 180 },
+            "perfect": { "min": 170, "max": 180 },
             "normal": { "min": 165, "max": 180 },
-            "advanced": { "min": 170, "max": 180 }
+            "pad": { "min": 155, "max": 180 }
           },
           "downRange": {
-            "beginner": { "min": 70, "max": 110 },
+            "perfect": { "min": 80, "max": 95 },
             "normal": { "min": 75, "max": 100 },
-            "advanced": { "min": 80, "max": 95 }
+            "pad": { "min": 70, "max": 110 },
+            "warning": { "min": 50, "max": 70 },
+            "danger": { "min": 0, "max": 50 }
           },
-          "errorMessages": {
-            "tooLow": { "ar": "انزل أكثر", "en": "Go lower" },
-            "tooHigh": { "ar": "قف بشكل مستقيم", "en": "Stand fully upright" }
+          "stateMessages": {
+            "perfect": { "ar": "ممتاز! وضعية مثالية", "en": "Perfect! Great form" },
+            "normal": { "ar": "جيد، حاول النزول أكثر قليلاً", "en": "Good, try going a bit lower" },
+            "pad": { "ar": "مقبول، لكن يمكنك التحسن", "en": "Acceptable, but you can improve" },
+            "warning": { "ar": "انزل أكثر من اللازم", "en": "Going too low" },
+            "danger": { "ar": "توقف! هذا قد يؤذي ظهرك", "en": "Stop! This may hurt your back" }
           },
           "pairedWith": "right_hip"
         },
@@ -82,18 +88,23 @@
           "role": "primary",
           "startPose": { "min": 160, "max": 180 },
           "upRange": {
-            "beginner": { "min": 155, "max": 180 },
+            "perfect": { "min": 170, "max": 180 },
             "normal": { "min": 165, "max": 180 },
-            "advanced": { "min": 170, "max": 180 }
+            "pad": { "min": 155, "max": 180 }
           },
           "downRange": {
-            "beginner": { "min": 70, "max": 110 },
+            "perfect": { "min": 80, "max": 95 },
             "normal": { "min": 75, "max": 100 },
-            "advanced": { "min": 80, "max": 95 }
+            "pad": { "min": 70, "max": 110 },
+            "warning": { "min": 50, "max": 70 },
+            "danger": { "min": 0, "max": 50 }
           },
-          "errorMessages": {
-            "tooLow": { "ar": "انزل أكثر", "en": "Lower more" },
-            "tooHigh": { "ar": "قف مستقيماً", "en": "Stand tall" }
+          "stateMessages": {
+            "perfect": { "ar": "ممتاز! وضعية مثالية", "en": "Perfect! Great form" },
+            "normal": { "ar": "جيد، حاول النزول أكثر قليلاً", "en": "Good, try going a bit lower" },
+            "pad": { "ar": "مقبول، لكن يمكنك التحسن", "en": "Acceptable, but you can improve" },
+            "warning": { "ar": "انزل أكثر من اللازم", "en": "Going too low" },
+            "danger": { "ar": "توقف! هذا قد يؤذي ظهرك", "en": "Stop! This may hurt your back" }
           },
           "pairedWith": "left_hip"
         },
@@ -101,14 +112,13 @@
           "joint": "left_knee",
           "role": "secondary",
           "startPose": { "min": 160, "max": 180 },
-          "Range": {
-            "beginner": { "min": 160, "max": 180 },
+          "range": {
+            "perfect": { "min": 170, "max": 180 },
             "normal": { "min": 165, "max": 180 },
-            "advanced": { "min": 170, "max": 180 }
+            "pad": { "min": 160, "max": 180 }
           },
-          "errorMessages": {
-            "tooLow": { "ar": "حافظ على ثبات الركبة", "en": "Keep knee stable" },
-            "tooHigh": { "ar": "ممتاز - الركبة ثابتة", "en": "Great - knee is stable" }
+          "stateMessages": {
+            "perfect": { "ar": "ممتاز - الركبة ثابتة", "en": "Great - knee is stable" }
           }
         }
       ],
@@ -117,32 +127,11 @@
           { "ar": "قوة هائلة!", "en": "Massive strength!" },
           { "ar": "ممتاز!", "en": "Excellent!" }
         ],
-        "common_mistake": [
-          { "ar": "لا تقوس ظهرك أبداً", "en": "Never round your back" },
-          { "ar": "ابدأ الحركة بدفع الوركين", "en": "Initiate with hip drive" }
-        ],
-        "tip": [
+        "tips": [
           { "ar": "شد عضلات البطن لحماية ظهرك", "en": "Brace core to protect back" },
           { "ar": "أبقِ البار قريباً من جسمك", "en": "Keep bar close to body" }
         ]
-      },
-      "difficultyLevels": [
-        {
-          "level": "beginner",
-          "repCountingConfig": { "reps": 8, "minRepIntervalMs": 2500, "maxRepIntervalMs": 7000 },
-          "phases": ["start", "up", "top", "down"]
-        },
-        {
-          "level": "normal",
-          "repCountingConfig": { "reps": 10, "minRepIntervalMs": 2000, "maxRepIntervalMs": 6000 },
-          "phases": ["start", "up", "top", "down"]
-        },
-        {
-          "level": "advanced",
-          "repCountingConfig": { "reps": 12, "minRepIntervalMs": 1800, "maxRepIntervalMs": 5000 },
-          "phases": ["start", "up", "top", "down"]
-        }
-      ]
+      }
     }
   ]
 }

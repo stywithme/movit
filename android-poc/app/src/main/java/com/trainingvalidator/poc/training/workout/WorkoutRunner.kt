@@ -39,8 +39,7 @@ import kotlinx.coroutines.flow.StateFlow
  */
 class WorkoutRunner(
     private val workoutConfig: WorkoutConfig,
-    private val assets: AssetManager,
-    private val defaultDifficulty: DifficultyType = DifficultyType.BEGINNER
+    private val assets: AssetManager
 ) {
     
     companion object {
@@ -285,11 +284,9 @@ class WorkoutRunner(
             // Load exercise config
             val exerciseConfig = ExerciseLoader.load(assets, workoutExercise.exercise)
             if (exerciseConfig != null) {
-                val difficulty = workoutExercise.difficulty ?: defaultDifficulty
                 val loadedExercise = LoadedExercise(
                     config = exerciseConfig,
                     workoutExercise = workoutExercise,
-                    difficulty = difficulty,
                     round = _currentRound,
                     indexInRound = index,
                     totalInRound = workoutConfig.exercises.size,
@@ -299,8 +296,7 @@ class WorkoutRunner(
                 
                 // Set target reps
                 val targetReps = workoutExercise.target.reps 
-                    ?: exerciseConfig.getDifficultyLevel(workoutExercise.variantIndex, difficulty)
-                        ?.repCountingConfig?.reps 
+                    ?: exerciseConfig.repCountingConfig.reps
                     ?: 10
                 
                 _exerciseRepsTargets[index] = targetReps
@@ -477,12 +473,9 @@ class WorkoutRunner(
             return
         }
         
-        val difficulty = workoutExercise.difficulty ?: defaultDifficulty
-        
         val loadedExercise = LoadedExercise(
             config = exerciseConfig,
             workoutExercise = workoutExercise,
-            difficulty = difficulty,
             round = _currentRound,
             indexInRound = _currentExerciseIndex,
             totalInRound = workoutConfig.exercises.size,
@@ -600,19 +593,17 @@ class WorkoutRunner(
 data class LoadedExercise(
     val config: ExerciseConfig,
     val workoutExercise: WorkoutExercise,
-    val difficulty: DifficultyType,
     val round: Int,
     val indexInRound: Int,
     val totalInRound: Int,
-    val maxRepsThisSession: Int? = null  // NEW: For alternating mode
+    val maxRepsThisSession: Int? = null  // For alternating mode
 ) {
     /**
      * Get the target reps (from workout override or exercise default)
      */
     fun getTargetReps(): Int? {
         return workoutExercise.target.reps
-            ?: config.getDifficultyLevel(workoutExercise.variantIndex, difficulty)
-                ?.repCountingConfig?.reps
+            ?: config.repCountingConfig.reps
     }
     
     /**
@@ -629,8 +620,7 @@ data class LoadedExercise(
      */
     fun getTargetDurationSec(): Int? {
         return workoutExercise.target.durationSec
-            ?: config.getDifficultyLevel(workoutExercise.variantIndex, difficulty)
-                ?.repCountingConfig?.duration
+            ?: config.repCountingConfig.duration
     }
     
     /**

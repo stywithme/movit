@@ -22,6 +22,11 @@
   "muscles": ["calves", "soleus"],
   "equipment": ["bodyweight", "dumbbell", "smith_machine"],
   "tags": ["isolation", "lower-body", "beginner-friendly"],
+  "repCountingConfig": {
+    "reps": 20,
+    "minRepIntervalMs": 800,
+    "maxRepIntervalMs": 3000
+  },
   "poseVariants": [
     {
       "name": {
@@ -40,11 +45,7 @@
           },
           "condition": {
             "operator": "approximately_equal",
-            "thresholds": {
-              "beginner": 0.10,
-              "normal": 0.07,
-              "advanced": 0.05
-            }
+            "threshold": 0.07
           },
           "activePhases": ["up", "top"],
           "errorMessage": {
@@ -65,77 +66,58 @@
             "max": 100
           },
           "upRange": {
-            "beginner": { "min": 110, "max": 140 },
+            "perfect": { "min": 125, "max": 150 },
             "normal": { "min": 120, "max": 145 },
-            "advanced": { "min": 125, "max": 150 }
+            "pad": { "min": 110, "max": 140 }
           },
           "downRange": {
-            "beginner": { "min": 70, "max": 100 },
+            "perfect": { "min": 80, "max": 90 },
             "normal": { "min": 75, "max": 95 },
-            "advanced": { "min": 80, "max": 90 }
+            "pad": { "min": 70, "max": 100 }
           },
-          "errorMessages": {
-            "tooLow": {
-              "ar": "ارتفع على أصابع قدميك",
-              "en": "Rise up on your toes"
-            },
-            "tooHigh": {
-              "ar": "ممتاز - ثبّت في الأعلى",
-              "en": "Great - hold at the top"
-            }
+          "stateMessages": {
+            "perfect": { "ar": "ممتاز! رفع مثالي", "en": "Perfect! Great raise" },
+            "normal": { "ar": "جيد، حاول الارتفاع أكثر", "en": "Good, try rising higher" },
+            "pad": { "ar": "مقبول، لكن يمكنك التحسن", "en": "Acceptable, but you can improve" },
+            "warning": { "ar": "ارتفع على أصابع قدميك أكثر", "en": "Rise higher on your toes" }
           },
           "pairedWith": "right_ankle"
         },
         {
           "joint": "right_ankle",
           "role": "primary",
-          "startPose": {
-            "min": 70,
-            "max": 100
-          },
+          "startPose": { "min": 70, "max": 100 },
           "upRange": {
-            "beginner": { "min": 110, "max": 140 },
+            "perfect": { "min": 125, "max": 150 },
             "normal": { "min": 120, "max": 145 },
-            "advanced": { "min": 125, "max": 150 }
+            "pad": { "min": 110, "max": 140 }
           },
           "downRange": {
-            "beginner": { "min": 70, "max": 100 },
+            "perfect": { "min": 80, "max": 90 },
             "normal": { "min": 75, "max": 95 },
-            "advanced": { "min": 80, "max": 90 }
+            "pad": { "min": 70, "max": 100 }
           },
-          "errorMessages": {
-            "tooLow": {
-              "ar": "ارتفع على أصابع قدميك",
-              "en": "Rise up on your toes"
-            },
-            "tooHigh": {
-              "ar": "ممتاز!",
-              "en": "Excellent!"
-            }
+          "stateMessages": {
+            "perfect": { "ar": "ممتاز! رفع مثالي", "en": "Perfect! Great raise" },
+            "normal": { "ar": "جيد، حاول الارتفاع أكثر", "en": "Good, try rising higher" },
+            "pad": { "ar": "مقبول، لكن يمكنك التحسن", "en": "Acceptable, but you can improve" },
+            "warning": { "ar": "ارتفع على أصابع قدميك أكثر", "en": "Rise higher on your toes" }
           },
           "pairedWith": "left_ankle"
         },
         {
           "joint": "left_knee",
           "role": "secondary",
-          "startPose": {
-            "min": 165,
-            "max": 180
-          },
-          "Range": {
-            "beginner": { "min": 160, "max": 180 },
+          "startPose": { "min": 165, "max": 180 },
+          "range": {
+            "perfect": { "min": 170, "max": 180 },
             "normal": { "min": 165, "max": 180 },
-            "advanced": { "min": 170, "max": 180 }
+            "pad": { "min": 160, "max": 180 },
+            "warning": { "min": 145, "max": 160 }
           },
-          "errorMessages": {
-            "tooLow": {
-              "ar": "لا تثني ركبتيك - ابقهما مفرودتين",
-              "en": "Don't bend knees - keep them straight"
-            },
-            "tooHigh": {
-              "ar": "ممتاز - ركبتان مستقيمتان",
-              "en": "Great - knees straight"
-            }
+          "stateMessages": {
+            "perfect": { "ar": "ممتاز - ركبتان مستقيمتان", "en": "Great - knees straight" },
+            "warning": { "ar": "لا تثني ركبتيك - ابقهما مفرودتين", "en": "Don't bend knees - keep them straight" }
           }
         }
       ],
@@ -145,45 +127,11 @@
           { "ar": "استمر!", "en": "Keep going!" },
           { "ar": "رائع!", "en": "Great!" }
         ],
-        "common_mistake": [
-          { "ar": "لا تثني ركبتيك", "en": "Don't bend your knees" },
-          { "ar": "ارتفع لأعلى نقطة ممكنة", "en": "Rise to the highest point possible" },
-          { "ar": "انزل ببطء وتحكم", "en": "Lower slowly with control" }
-        ],
-        "tip": [
+        "tips": [
           { "ar": "ثبّت لمدة ثانية في أعلى الحركة", "en": "Pause for a second at the top" },
           { "ar": "استخدم حائط للتوازن إذا لزم الأمر", "en": "Use a wall for balance if needed" }
         ]
-      },
-      "difficultyLevels": [
-        {
-          "level": "beginner",
-          "repCountingConfig": {
-            "reps": 15,
-            "minRepIntervalMs": 1000,
-            "maxRepIntervalMs": 3500
-          },
-          "phases": ["start", "up", "top", "down"]
-        },
-        {
-          "level": "normal",
-          "repCountingConfig": {
-            "reps": 20,
-            "minRepIntervalMs": 800,
-            "maxRepIntervalMs": 3000
-          },
-          "phases": ["start", "up", "top", "down"]
-        },
-        {
-          "level": "advanced",
-          "repCountingConfig": {
-            "reps": 25,
-            "minRepIntervalMs": 600,
-            "maxRepIntervalMs": 2500
-          },
-          "phases": ["start", "up", "top", "down"]
-        }
-      ]
+      }
     }
   ]
 }

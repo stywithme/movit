@@ -1,20 +1,19 @@
 /**
- * Wizard Steps Exports
+ * Wizard Steps Export
  * ====================
  * 
- * 8-step wizard:
- * 1. Basic Info
- * 2. Counting Method (Exercise Type)
- * 3. Camera Position
- * 4. Joint Configuration (Visual Skeleton)
- * 5. Position Checks (optional)
- * 6. Rep/Duration Config
- * 7. Extras (Attributes + Feedback)
- * 8. Review & Publish
+ * Steps for the 7-step exercise creation wizard.
+ * 
+ * Step 1: Basic Info + Counting Method
+ * Step 2: Camera Position
+ * Step 3: Joint Configuration (State-based ranges)
+ * Step 4: Position Checks (optional)
+ * Step 5: Rep/Duration Config
+ * Step 6: Extras (attributes + feedback)
+ * Step 7: Review & Publish
  */
 
 export { BasicInfoStep } from './BasicInfoStep';
-export { CountingMethodStep } from './CountingMethodStep';
 export { CameraPositionStep } from './CameraPositionStep';
 export { JointConfigStep } from './JointConfigStep';
 export { PositionChecksStep } from './PositionChecksStep';

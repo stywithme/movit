@@ -2,44 +2,48 @@ package com.trainingvalidator.poc.overlay
 
 import android.graphics.Color
 import com.trainingvalidator.poc.training.engine.JointZone
+import com.trainingvalidator.poc.training.models.JointState
+import com.trainingvalidator.poc.training.models.StateConfig
+import com.trainingvalidator.poc.training.models.StateRanges
+import com.trainingvalidator.poc.training.models.ZoneType
 
 /**
  * ArcColorCalculator - Calculates colors for Arc Range Indicator zones
  * 
- * INTEGRATED with Engine's JointZone system:
- * Uses the same zone calculation logic as FormValidator/PhaseStateMachine
+ * REFACTORED: Now uses StateConfig as the SINGLE SOURCE OF TRUTH for colors.
  * 
- * Zone Color Mapping:
- * - TOO_HIGH / TOO_LOW: Red (#FF5252) - Error zones
- * - UP_ZONE / DOWN_ZONE: Green (#00E676) with edge gradient - Valid zones
- * - TRANSITION: Light Blue (#81D4FA) - Movement zone
+ * NEW: Added StateRanges-based color calculation for accurate gradient
+ * matching with LineRangeIndicator.
  * 
- * Gradient within valid zones (matches Engine's warning concept):
- * - Center (40%): Green (optimal)
- * - Near edge (30%): Yellow (approaching boundary - like isWarning)
- * - Edge (30%): Orange (at boundary)
+ * Zone Color Mapping (from StateConfig):
+ * - DANGER: dark red
+ * - WARNING: light red  
+ * - PAD: orange
+ * - NORMAL: yellow
+ * - PERFECT: green
+ * - TRANSITION: blue-gray
  */
 object ArcColorCalculator {
     
-    // ==================== Zone Colors (Match Engine States) ====================
+    // ==================== Colors from StateConfig (Single Source of Truth) ====================
     
-    /** Error zone color (TOO_HIGH, TOO_LOW) - Maps to JointColor.ERROR_HIGH/ERROR_LOW */
-    val COLOR_ERROR = Color.parseColor("#FF5252")
+    /** Error zone color - delegates to StateConfig.DANGER */
+    val COLOR_ERROR: Int get() = StateConfig.getColor(JointState.DANGER)
     
-    /** Optimal position color (center of valid zones) - Maps to JointColor.CORRECT */
-    val COLOR_OPTIMAL = Color.parseColor("#00E676")
+    /** Optimal position color - delegates to StateConfig.PERFECT */
+    val COLOR_OPTIMAL: Int get() = StateConfig.getColor(JointState.PERFECT)
     
-    /** Approaching boundary color - Maps to isWarning = true */
-    val COLOR_NEAR_BOUNDARY = Color.parseColor("#FFEB3B")
+    /** Approaching boundary color - delegates to StateConfig.NORMAL */
+    val COLOR_NEAR_BOUNDARY: Int get() = StateConfig.getColor(JointState.NORMAL)
     
-    /** At boundary color (edge of valid zones) - Near error threshold */
-    val COLOR_BOUNDARY = Color.parseColor("#FF9800")
+    /** At boundary color - delegates to StateConfig.PAD */
+    val COLOR_BOUNDARY: Int get() = StateConfig.getColor(JointState.PAD)
     
-    /** Transition zone color - TRANSITION state in Engine - YELLOW as requested */
-    val COLOR_TRANSITION = Color.parseColor("#FFEB3B")
+    /** Transition zone color - delegates to StateConfig.TRANSITION */
+    val COLOR_TRANSITION: Int get() = StateConfig.getColor(JointState.TRANSITION)
     
-    /** Warning color (approaching error) */
-    val COLOR_WARNING = Color.parseColor("#FFC107")
+    /** Warning color - delegates to StateConfig.WARNING */
+    val COLOR_WARNING: Int get() = StateConfig.getColor(JointState.WARNING)
     
     // ==================== Zone Determination (Same as Engine) ====================
     
@@ -275,5 +279,113 @@ object ArcColorCalculator {
      */
     fun withOpacity(color: Int, opacity: Float): Int {
         return withAlpha(color, (opacity.coerceIn(0f, 1f) * 255).toInt())
+    }
+    
+    // ==================== NEW: StateRanges-based Color Calculation ====================
+    
+    /**
+     * Get color for an angle using StateRanges (matches LineRangeIndicator logic)
+     * 
+     * This uses the ACTUAL range boundaries from the exercise config for accurate
+     * color calculation, instead of fixed percentages.
+     * 
+     * @param angle Current angle
+     * @param stateRanges StateRanges for this zone (up or down)
+     * @param zoneType Current zone type
+     * @return Color based on which state the angle falls into
+     */
+    fun getColorForAngleFromRanges(
+        angle: Double,
+        stateRanges: StateRanges?,
+        zoneType: ZoneType
+    ): Int {
+        if (stateRanges == null) {
+            return COLOR_OPTIMAL
+        }
+        
+        // Use the same logic as LineRangeIndicator
+        return when {
+            stateRanges.perfect.contains(angle) -> COLOR_OPTIMAL
+            stateRanges.normal?.contains(angle) == true -> COLOR_NEAR_BOUNDARY
+            stateRanges.pad?.contains(angle) == true -> COLOR_BOUNDARY
+            stateRanges.warning?.contains(angle) == true -> COLOR_WARNING
+            stateRanges.danger?.contains(angle) == true -> COLOR_ERROR
+            else -> COLOR_WARNING  // Fallback for angles outside all ranges
+        }
+    }
+    
+    /**
+     * Get gradient color for arc segment using StateRanges
+     * 
+     * Calculates smooth gradient based on actual range boundaries.
+     * Used for drawing arc segments with proper color transitions.
+     * 
+     * @param angle Angle to get color for
+     * @param stateRanges StateRanges for this zone
+     * @param zoneType Zone type (UP_ZONE or DOWN_ZONE)
+     * @return Interpolated color
+     */
+    fun getGradientColorFromRanges(
+        angle: Double,
+        stateRanges: StateRanges?,
+        zoneType: ZoneType
+    ): Int {
+        if (stateRanges == null) return COLOR_OPTIMAL
+        
+        val perfect = stateRanges.perfect
+        val normal = stateRanges.normal
+        val pad = stateRanges.pad
+        
+        // Calculate center of perfect range
+        val center = (perfect.min + perfect.max) / 2.0
+        
+        // Determine if on upper or lower side of center
+        val isUpperSide = angle > center
+        
+        // Get boundaries for current side
+        val perfectBound = if (isUpperSide) perfect.max else perfect.min
+        val normalBound = if (normal != null) (if (isUpperSide) normal.max else normal.min) else perfectBound
+        val padBound = if (pad != null) (if (isUpperSide) pad.max else pad.min) else normalBound
+        
+        // Calculate distances
+        val distToAngle = kotlin.math.abs(angle - center)
+        val distToPerfect = kotlin.math.abs(perfectBound - center)
+        val distToNormal = kotlin.math.abs(normalBound - center)
+        val distToPad = kotlin.math.abs(padBound - center)
+        
+        return when {
+            // Inside Perfect Range
+            distToAngle <= distToPerfect -> COLOR_OPTIMAL
+            
+            // Between Perfect and Normal (Gradient Green -> Yellow)
+            distToAngle <= distToNormal -> {
+                val range = distToNormal - distToPerfect
+                if (range <= 0) return COLOR_NEAR_BOUNDARY
+                val t = ((distToAngle - distToPerfect) / range).toFloat().coerceIn(0f, 1f)
+                interpolateColor(COLOR_OPTIMAL, COLOR_NEAR_BOUNDARY, t)
+            }
+            
+            // Between Normal and Pad (Gradient Yellow -> Orange)
+            distToAngle <= distToPad -> {
+                val range = distToPad - distToNormal
+                if (range <= 0) return COLOR_BOUNDARY
+                val t = ((distToAngle - distToNormal) / range).toFloat().coerceIn(0f, 1f)
+                interpolateColor(COLOR_NEAR_BOUNDARY, COLOR_BOUNDARY, t)
+            }
+            
+            // Outside Pad (Gradient Orange -> Warning Red)
+            else -> {
+                val warningThreshold = 5.0
+                val t = ((distToAngle - distToPad) / warningThreshold).toFloat().coerceIn(0f, 1f)
+                interpolateColor(COLOR_BOUNDARY, COLOR_WARNING, t)
+            }
+        }
+    }
+    
+    /**
+     * Extension to check if angle is in range
+     */
+    private fun com.trainingvalidator.poc.training.models.AngleRange.contains(angle: Double): Boolean {
+        return angle >= min && angle <= max
     }
 }

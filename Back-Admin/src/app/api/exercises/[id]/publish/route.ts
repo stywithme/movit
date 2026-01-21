@@ -12,23 +12,18 @@ interface RouteParams {
 export async function POST(request: NextRequest, { params }: RouteParams) {
   try {
     const { id } = await params;
-    
-    // Verify exercise exists
-    const exercise = await exerciseService.getById(id);
-    if (!exercise) {
+
+    // Check if exercise exists
+    const existing = await exerciseService.getById(id);
+    if (!existing) {
       return NextResponse.json(
         { success: false, error: 'Exercise not found' },
         { status: 404 }
       );
     }
-    
-    // TODO: Add validation before publishing
-    // - Must have at least one pose variant
-    // - Must have at least one primary tracked joint
-    // - Must have all 3 difficulty levels
-    
+
     await exerciseService.publish(id);
-    
+
     return NextResponse.json({
       success: true,
       message: 'Exercise published successfully',
@@ -49,9 +44,18 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
 export async function DELETE(request: NextRequest, { params }: RouteParams) {
   try {
     const { id } = await params;
-    
+
+    // Check if exercise exists
+    const existing = await exerciseService.getById(id);
+    if (!existing) {
+      return NextResponse.json(
+        { success: false, error: 'Exercise not found' },
+        { status: 404 }
+      );
+    }
+
     await exerciseService.unpublish(id);
-    
+
     return NextResponse.json({
       success: true,
       message: 'Exercise unpublished successfully',

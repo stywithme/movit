@@ -22,6 +22,10 @@
   "muscles": ["obliques", "core", "shoulders", "glutes"],
   "equipment": ["bodyweight"],
   "tags": ["isometric", "core", "no-equipment", "unilateral"],
+  "repCountingConfig": {
+    "duration": 25,
+    "gracePeriodMs": 2500
+  },
   "poseVariants": [
     {
       "name": {
@@ -40,11 +44,7 @@
           },
           "condition": {
             "operator": "approximately_equal",
-            "thresholds": {
-              "beginner": 0.12,
-              "normal": 0.08,
-              "advanced": 0.05
-            }
+            "threshold": 0.08
           },
           "activePhases": ["count", "hold"],
           "errorMessage": {
@@ -64,71 +64,45 @@
             "min": 160,
             "max": 180
           },
-          "upRange": {
-            "beginner": { "min": 155, "max": 180 },
+          "range": {
+            "perfect": { "min": 170, "max": 180 },
             "normal": { "min": 165, "max": 180 },
-            "advanced": { "min": 170, "max": 180 }
+            "pad": { "min": 155, "max": 180 },
+            "warning": { "min": 140, "max": 155 },
+            "danger": { "min": 0, "max": 140 }
           },
-          "downRange": {
-            "beginner": { "min": 155, "max": 180 },
-            "normal": { "min": 165, "max": 180 },
-            "advanced": { "min": 170, "max": 180 }
-          },
-          "errorMessages": {
-            "tooLow": {
-              "ar": "ارفع حوضك أعلى",
-              "en": "Raise your hips higher"
-            },
-            "tooHigh": {
-              "ar": "لا ترفع حوضك كثيراً",
-              "en": "Don't raise hips too high"
-            }
+          "stateMessages": {
+            "perfect": { "ar": "ممتاز! وضعية مثالية", "en": "Perfect! Great form" },
+            "normal": { "ar": "جيد، حاول رفع الحوض أكثر قليلاً", "en": "Good, try raising hips slightly more" },
+            "pad": { "ar": "مقبول، لكن يمكنك التحسن", "en": "Acceptable, but you can improve" },
+            "warning": { "ar": "ارفع حوضك أعلى", "en": "Raise your hips higher" },
+            "danger": { "ar": "حوضك منخفض جداً!", "en": "Hips too low!" }
           }
         },
         {
           "joint": "left_shoulder",
           "role": "secondary",
-          "startPose": {
-            "min": 70,
-            "max": 110
-          },
-          "Range": {
-            "beginner": { "min": 70, "max": 120 },
+          "startPose": { "min": 70, "max": 110 },
+          "range": {
+            "perfect": { "min": 85, "max": 100 },
             "normal": { "min": 80, "max": 110 },
-            "advanced": { "min": 85, "max": 100 }
+            "pad": { "min": 70, "max": 120 }
           },
-          "errorMessages": {
-            "tooLow": {
-              "ar": "ضع كتفك فوق مرفقك",
-              "en": "Position shoulder over elbow"
-            },
-            "tooHigh": {
-              "ar": "ممتاز!",
-              "en": "Great!"
-            }
+          "stateMessages": {
+            "perfect": { "ar": "ممتاز - الكتف في الوضع الصحيح", "en": "Great - shoulder is positioned correctly" }
           }
         },
         {
           "joint": "left_knee",
           "role": "secondary",
-          "startPose": {
-            "min": 165,
-            "max": 180
-          },
-          "Range": {
-            "beginner": { "min": 160, "max": 180 },
+          "startPose": { "min": 165, "max": 180 },
+          "range": {
+            "perfect": { "min": 172, "max": 180 },
             "normal": { "min": 168, "max": 180 },
-            "advanced": { "min": 172, "max": 180 }
+            "pad": { "min": 160, "max": 180 }
           },
-          "errorMessages": {
-            "tooLow": {
-              "ar": "افرد ساقيك",
-              "en": "Straighten your legs"
-            },
-            "tooHigh": {
-              "ar": "ممتاز!",
-              "en": "Excellent!"
-            }
+          "stateMessages": {
+            "perfect": { "ar": "ممتاز - الساقين مستقيمتين", "en": "Great - legs are straight" }
           }
         }
       ],
@@ -138,42 +112,12 @@
           { "ar": "قوي! لا تستسلم!", "en": "Strong! Don't give up!" },
           { "ar": "أداء رائع!", "en": "Great form!" }
         ],
-        "common_mistake": [
-          { "ar": "لا تدع حوضك يهبط للأسفل", "en": "Don't let your hips sag" },
-          { "ar": "لا ترفع حوضك للأعلى كثيراً", "en": "Don't pike your hips up" },
-          { "ar": "حافظ على رقبتك في خط مستقيم", "en": "Keep neck in line with spine" }
-        ],
-        "tip": [
+        "tips": [
           { "ar": "تنفس بانتظام", "en": "Breathe steadily" },
-          { "ar": "شد عضلات الجذع للثبات", "en": "Engage core for stability" }
+          { "ar": "شد عضلات الجذع للثبات", "en": "Engage core for stability" },
+          { "ar": "حافظ على رقبتك في خط مستقيم", "en": "Keep neck in line with spine" }
         ]
-      },
-      "difficultyLevels": [
-        {
-          "level": "beginner",
-          "repCountingConfig": {
-            "duration": 15,
-            "gracePeriodMs": 3000
-          },
-          "phases": ["start", "hold"]
-        },
-        {
-          "level": "normal",
-          "repCountingConfig": {
-            "duration": 25,
-            "gracePeriodMs": 2500
-          },
-          "phases": ["start", "hold"]
-        },
-        {
-          "level": "advanced",
-          "repCountingConfig": {
-            "duration": 40,
-            "gracePeriodMs": 2000
-          },
-          "phases": ["start", "hold"]
-        }
-      ]
+      }
     },
     {
       "name": {
@@ -192,11 +136,7 @@
           },
           "condition": {
             "operator": "approximately_equal",
-            "thresholds": {
-              "beginner": 0.12,
-              "normal": 0.08,
-              "advanced": 0.05
-            }
+            "threshold": 0.08
           },
           "activePhases": ["count", "hold"],
           "errorMessage": {
@@ -216,48 +156,32 @@
             "min": 160,
             "max": 180
           },
-          "upRange": {
-            "beginner": { "min": 155, "max": 180 },
+          "range": {
+            "perfect": { "min": 170, "max": 180 },
             "normal": { "min": 165, "max": 180 },
-            "advanced": { "min": 170, "max": 180 }
+            "pad": { "min": 155, "max": 180 },
+            "warning": { "min": 140, "max": 155 },
+            "danger": { "min": 0, "max": 140 }
           },
-          "downRange": {
-            "beginner": { "min": 155, "max": 180 },
-            "normal": { "min": 165, "max": 180 },
-            "advanced": { "min": 170, "max": 180 }
-          },
-          "errorMessages": {
-            "tooLow": {
-              "ar": "ارفع حوضك أعلى",
-              "en": "Raise your hips higher"
-            },
-            "tooHigh": {
-              "ar": "لا ترفع حوضك كثيراً",
-              "en": "Don't raise hips too high"
-            }
+          "stateMessages": {
+            "perfect": { "ar": "ممتاز! وضعية مثالية", "en": "Perfect! Great form" },
+            "normal": { "ar": "جيد، حاول رفع الحوض أكثر قليلاً", "en": "Good, try raising hips slightly more" },
+            "pad": { "ar": "مقبول، لكن يمكنك التحسن", "en": "Acceptable, but you can improve" },
+            "warning": { "ar": "ارفع حوضك أعلى", "en": "Raise your hips higher" },
+            "danger": { "ar": "حوضك منخفض جداً!", "en": "Hips too low!" }
           }
         },
         {
           "joint": "right_shoulder",
           "role": "secondary",
-          "startPose": {
-            "min": 70,
-            "max": 110
-          },
-          "Range": {
-            "beginner": { "min": 70, "max": 120 },
+          "startPose": { "min": 70, "max": 110 },
+          "range": {
+            "perfect": { "min": 85, "max": 100 },
             "normal": { "min": 80, "max": 110 },
-            "advanced": { "min": 85, "max": 100 }
+            "pad": { "min": 70, "max": 120 }
           },
-          "errorMessages": {
-            "tooLow": {
-              "ar": "ضع كتفك فوق مرفقك",
-              "en": "Position shoulder over elbow"
-            },
-            "tooHigh": {
-              "ar": "ممتاز!",
-              "en": "Great!"
-            }
+          "stateMessages": {
+            "perfect": { "ar": "ممتاز - الكتف في الوضع الصحيح", "en": "Great - shoulder is positioned correctly" }
           }
         }
       ],
@@ -265,35 +189,8 @@
         "motivational": [
           { "ar": "استمر!", "en": "Keep going!" }
         ],
-        "common_mistake": [],
-        "tip": []
-      },
-      "difficultyLevels": [
-        {
-          "level": "beginner",
-          "repCountingConfig": {
-            "duration": 15,
-            "gracePeriodMs": 3000
-          },
-          "phases": ["start", "hold"]
-        },
-        {
-          "level": "normal",
-          "repCountingConfig": {
-            "duration": 25,
-            "gracePeriodMs": 2500
-          },
-          "phases": ["start", "hold"]
-        },
-        {
-          "level": "advanced",
-          "repCountingConfig": {
-            "duration": 40,
-            "gracePeriodMs": 2000
-          },
-          "phases": ["start", "hold"]
-        }
-      ]
+        "tips": []
+      }
     }
   ]
 }

@@ -1,6 +1,8 @@
 /**
  * Core types for multi-language support and enums
  * ================================================
+ * 
+ * Updated: State-based system (no difficulty levels)
  */
 
 /**
@@ -17,23 +19,17 @@ export type LocalizedText = {
 export type ExerciseStatus = 'draft' | 'published';
 
 /**
- * Priority level for angle rules
- */
-export type PriorityLevel = 'high' | 'medium' | 'low';
-
-/**
  * Media type
  */
 export type MediaType = 'image' | 'video';
 
 /**
- * Feedback message type
+ * Feedback message type (simplified - removed common_mistake)
  */
-export type FeedbackType = 'motivational' | 'common_mistake' | 'tip';
+export type FeedbackType = 'motivational' | 'tip';
 
 /**
  * Counting method codes (ALIGNED WITH ANDROID CONTRACT)
- * IMPORTANT: These MUST match the Android JSON schema exactly
  */
 export type CountingMethodCode = 'up_down' | 'push_pull' | 'hold';
 
@@ -46,11 +42,6 @@ export type CameraPositionCode = 'side_left' | 'side_right' | 'front' | 'back';
  * Camera position schema codes (for Android export)
  */
 export type CameraPositionSchemaCode = 'side_view' | 'front_view' | 'back_view';
-
-/**
- * Difficulty type codes (fixed 3 levels)
- */
-export type DifficultyTypeCode = 'beginner' | 'normal' | 'advanced';
 
 /**
  * Joint role in tracking
@@ -86,7 +77,8 @@ export type ConditionOperator =
   | 'should_not_exceed'
   | 'should_exceed'
   | 'should_be_within'
-  | 'should_equal';
+  | 'should_equal'
+  | 'approximately_equal';
 
 /**
  * Severity levels for errors/warnings
@@ -109,8 +101,75 @@ export type PhaseName =
   | 'count';
 
 /**
+ * Joint state names (new state-based system)
+ */
+export type JointStateName = 'perfect' | 'normal' | 'pad' | 'warning' | 'danger';
+
+/**
+ * All joint state names as array (for iteration)
+ */
+export const JOINT_STATE_NAMES: JointStateName[] = ['perfect', 'normal', 'pad', 'warning', 'danger'];
+
+/**
+ * Counted states (contribute to rep score)
+ */
+export const COUNTED_STATES: JointStateName[] = ['perfect', 'normal', 'pad'];
+
+/**
+ * State configuration (colors, rates, behavior)
+ */
+export const STATE_CONFIG: Record<JointStateName, {
+  rate: number;
+  isRepCounted: boolean;
+  invalidatesRep: boolean;
+  color: string;
+  colorHex: string;
+  label: { ar: string; en: string };
+}> = {
+  perfect: {
+    rate: 100,
+    isRepCounted: true,
+    invalidatesRep: false,
+    color: 'green',
+    colorHex: '#22c55e',
+    label: { ar: 'مثالي', en: 'Perfect' },
+  },
+  normal: {
+    rate: 60,
+    isRepCounted: true,
+    invalidatesRep: false,
+    color: 'yellow',
+    colorHex: '#eab308',
+    label: { ar: 'جيد', en: 'Good' },
+  },
+  pad: {
+    rate: 20,
+    isRepCounted: true,
+    invalidatesRep: false,
+    color: 'orange',
+    colorHex: '#f97316',
+    label: { ar: 'مقبول', en: 'Acceptable' },
+  },
+  warning: {
+    rate: 0,
+    isRepCounted: false,
+    invalidatesRep: false,
+    color: 'red',
+    colorHex: '#ef4444',
+    label: { ar: 'تحذير', en: 'Warning' },
+  },
+  danger: {
+    rate: 0,
+    isRepCounted: false,
+    invalidatesRep: true,
+    color: 'darkred',
+    colorHex: '#991b1b',
+    label: { ar: 'خطر', en: 'Danger' },
+  },
+};
+
+/**
  * Angle joints that can be tracked (subset of all landmarks)
- * These are the joints that support angle-based tracking
  */
 export type AngleJointCode =
   | 'left_shoulder'

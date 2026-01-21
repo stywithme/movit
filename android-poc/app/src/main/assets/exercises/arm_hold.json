@@ -22,6 +22,10 @@
   "muscles": ["shoulders", "arms"],
   "equipment": ["bodyweight"],
   "tags": ["test", "easy", "hold"],
+  "repCountingConfig": {
+    "duration": 15,
+    "gracePeriodMs": 2500
+  },
   "poseVariants": [
     {
       "name": {
@@ -34,28 +38,21 @@
           "joint": "right_shoulder",
           "role": "primary",
           "startPose": {
-            "min": 150,
+            "min": 120,
             "max": 180
           },
-          "upRange": {
-            "beginner": { "min": 140, "max": 180 },
-            "normal": { "min": 150, "max": 180 },
-            "advanced": { "min": 160, "max": 180 }
+          "range": {
+            "perfect": { "min": 160, "max": 180 },
+            "normal": { "min": 155, "max": 180 },
+            "pad": { "min": 145, "max": 180 },
+            "warning": { "min": 0, "max": 145 }
           },
-          "downRange": {
-            "beginner": { "min": 140, "max": 180 },
-            "normal": { "min": 150, "max": 180 },
-            "advanced": { "min": 160, "max": 180 }
-          },
-          "errorMessages": {
-            "tooLow": {
-              "ar": "ارفع ذراعك أكثر للأعلى",
-              "en": "Raise your arm higher"
-            },
-            "tooHigh": {
-              "ar": "ممتاز - حافظ على الوضع",
-              "en": "Great - maintain position"
-            }
+          "stateMessages": {
+            "perfect": { "ar": "ممتاز! ثبات مثالي!", "en": "Perfect! Great hold!" },
+            "normal": { "ar": "جيد، حاول رفع الذراع أكثر", "en": "Good, try raising arm more" },
+            "pad": { "ar": "مقبول، لكن يمكنك التحسن", "en": "Acceptable, but you can improve" },
+            "warning": { "ar": "ارفع ذراعك أكثر", "en": "Raise arm higher" },
+            "danger": { "ar": "الذراع منخفضة جداً!", "en": "Arm too low!" }
           }
         }
       ],
@@ -64,36 +61,10 @@
           { "ar": "استمر! ذراعك مرفوعة!", "en": "Keep going! Arm up!" },
           { "ar": "ممتاز! حافظ على الوضع!", "en": "Excellent! Hold it!" }
         ],
-        "tip": [
+        "tips": [
           { "ar": "حافظ على استقامة الذراع", "en": "Keep your arm straight" }
         ]
-      },
-      "difficultyLevels": [
-        {
-          "level": "beginner",
-          "repCountingConfig": {
-            "duration": 10,
-            "gracePeriodMs": 3000
-          },
-          "phases": ["hold"]
-        },
-        {
-          "level": "normal",
-          "repCountingConfig": {
-            "duration": 15,
-            "gracePeriodMs": 2500
-          },
-          "phases": ["hold"]
-        },
-        {
-          "level": "advanced",
-          "repCountingConfig": {
-            "duration": 20,
-            "gracePeriodMs": 2000
-          },
-          "phases": ["hold"]
-        }
-      ]
+      }
     }
   ]
 }

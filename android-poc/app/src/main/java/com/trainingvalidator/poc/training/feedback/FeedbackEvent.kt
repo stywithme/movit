@@ -4,6 +4,7 @@ import com.trainingvalidator.poc.training.engine.CameraPositionWarning
 import com.trainingvalidator.poc.training.engine.Phase
 import com.trainingvalidator.poc.training.engine.PositionError
 import com.trainingvalidator.poc.training.models.JointError
+import com.trainingvalidator.poc.training.models.JointState
 import com.trainingvalidator.poc.training.models.LocalizedText
 
 /**
@@ -28,11 +29,18 @@ sealed class FeedbackEvent {
     
     /**
      * Rep completed event
+     * 
+     * STATE-BASED SCORING:
+     * - score: Rep score (0-100) based on worst state
+     * - worstState: The worst JointState reached during the rep
+     * - isCorrect: Legacy - maps to whether rep was counted
      */
     data class RepCompleted(
         val repNumber: Int,
         val isCorrect: Boolean,
         val errors: List<JointError> = emptyList(),
+        val score: Float = 0f,
+        val worstState: JointState? = null,
         override val timestamp: Long = System.currentTimeMillis(),
         override val priority: FeedbackPriority = FeedbackPriority.MEDIUM
     ) : FeedbackEvent()
@@ -235,6 +243,38 @@ sealed class FeedbackEvent {
      */
     data class VisibilityResumed(
         val repCount: Int,
+        override val timestamp: Long = System.currentTimeMillis(),
+        override val priority: FeedbackPriority = FeedbackPriority.MEDIUM
+    ) : FeedbackEvent()
+    
+    // ==================== STATE-BASED Events ====================
+    
+    /**
+     * DANGER state detected - user is in injury risk zone
+     * 
+     * This is a HIGH priority event that should:
+     * - Trigger strong haptic feedback
+     * - Show prominent visual warning
+     * - Play alert sound
+     * - The current rep will be INVALIDATED
+     */
+    data class DangerDetected(
+        val joints: List<String>,
+        val message: LocalizedText? = null,
+        override val timestamp: Long = System.currentTimeMillis(),
+        override val priority: FeedbackPriority = FeedbackPriority.HIGH
+    ) : FeedbackEvent()
+
+    /**
+     * Joint state message - state-based feedback (warning/pad/normal/perfect)
+     * 
+     * This is emitted when a joint enters or stays in a state that has a message.
+     * DANGER is handled separately via DangerDetected.
+     */
+    data class JointStateMessage(
+        val jointCode: String,
+        val state: JointState,
+        val message: LocalizedText,
         override val timestamp: Long = System.currentTimeMillis(),
         override val priority: FeedbackPriority = FeedbackPriority.MEDIUM
     ) : FeedbackEvent()

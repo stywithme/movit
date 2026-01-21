@@ -1,50 +1,50 @@
-import { LocalizedText, CountingMethodCode } from '@/lib/types/localized';
-import { getPhasesForCountingMethod } from './phase-templates';
+/**
+ * Exercise Types - State-Based System
+ * ====================================
+ * 
+ * Types for exercise creation and management.
+ * Aligned with Android JSON Schema - State-based (no difficulty levels).
+ */
+
+import type { LocalizedText, CountingMethodCode, JointStateName } from '@/lib/types/localized';
 
 // ============================================
-// ROM (Range of Motion) Configuration
+// ANGLE RANGE TYPES
 // ============================================
 
 /**
- * ROM config for each difficulty level
+ * Basic angle range (min/max)
  */
-export interface RomConfig {
-  targetAngle: number;  // Bottom/Extended position target angle
-  tolerance: number;    // ±tolerance degrees acceptable
-}
-
-/**
- * Rep counting config (auto-derived from ROM or manual)
- */
-export interface RepCountingConfig {
-  reps?: number;              // Target reps (for workout plan)
-  duration?: number;          // For Counter method (seconds)
-  eccentricThreshold?: number;  // AUTO: targetAngle + tolerance
-  concentricThreshold?: number; // AUTO: from startPoseAngles
-}
-
-/**
- * Start pose angle range for a single joint
- */
-export interface StartPoseAngleRange {
+export interface AngleRange {
   min: number;
   max: number;
 }
 
 /**
- * Start pose angles - joint name to angle range mapping
+ * State-based ranges (replaces DifficultyRanges)
  */
-export interface StartPoseAngles {
-  [jointCode: string]: StartPoseAngleRange;  // e.g., { "left_knee": { min: 160, max: 180 } }
+export interface StateRanges {
+  perfect: AngleRange;
+  normal?: AngleRange;
+  pad?: AngleRange;
+  warning?: AngleRange;
+  danger?: AngleRange;
 }
 
 /**
- * Error messages for a joint (localized)
+ * State messages - one message per state
  */
-export interface JointErrorMessages {
-  tooHigh: LocalizedText;  // When angle is above expected
-  tooLow: LocalizedText;   // When angle is below expected
+export interface StateMessages {
+  perfect?: LocalizedText;
+  normal?: LocalizedText;
+  pad?: LocalizedText;
+  warning?: LocalizedText;
+  danger?: LocalizedText;
 }
+
+// ============================================
+// TRACKED JOINT TYPES
+// ============================================
 
 /**
  * Joint role in the exercise
@@ -52,35 +52,46 @@ export interface JointErrorMessages {
 export type JointRole = 'primary' | 'secondary';
 
 /**
- * Tolerance settings per difficulty level for a joint
+ * Base tracked joint properties
  */
-export interface JointTolerances {
-  beginner: number;
-  normal: number;
-  advanced: number;
+interface BaseTrackedJoint {
+  joint: string;
+  role: JointRole;
+  startPose: AngleRange;
+  stateMessages?: StateMessages;
+  pairedWith?: string;
+  invertIndicator?: boolean;
 }
 
 /**
- * Tracked joint configuration
+ * Primary tracked joint - for rep counting
  */
-export interface TrackedJoint {
-  jointCode: string;
-  jointId: string;
-  role: JointRole;                   // 'primary' for rep counting, 'secondary' for feedback only
-  startPose: StartPoseAngleRange;    // Range for start position
-  targetAngle: number;               // Target angle at bottom/extended
-  errorMessages: JointErrorMessages; // Error messages for this joint
-  tolerances: JointTolerances;       // Tolerance per difficulty level for THIS joint
-  pairedWith?: string;               // Joint code of paired joint (e.g., left_knee paired with right_knee)
+export interface PrimaryTrackedJoint extends BaseTrackedJoint {
+  role: 'primary';
+  upRange: StateRanges;
+  downRange: StateRanges;
 }
+
+/**
+ * Secondary tracked joint - for form feedback only
+ */
+export interface SecondaryTrackedJoint extends BaseTrackedJoint {
+  role: 'secondary';
+  range: StateRanges;
+}
+
+/**
+ * Union type for tracked joints
+ */
+export type TrackedJoint = PrimaryTrackedJoint | SecondaryTrackedJoint;
 
 /**
  * Joint pair for mirroring settings (left/right)
  */
 export interface JointPair {
-  left: string;   // Left joint code
-  right: string;  // Right joint code
-  label: string;  // Display label (e.g., "Knees", "Hips")
+  left: string;
+  right: string;
+  label: string;
 }
 
 /**
@@ -91,10 +102,6 @@ export const JOINT_PAIRS: JointPair[] = [
   { left: 'left_shoulder', right: 'right_shoulder', label: 'Shoulders' },
   { left: 'left_elbow', right: 'right_elbow', label: 'Elbows' },
   { left: 'left_wrist', right: 'right_wrist', label: 'Wrists' },
-  // Hands
-  { left: 'left_pinky', right: 'right_pinky', label: 'Pinkies' },
-  { left: 'left_index', right: 'right_index', label: 'Index Fingers' },
-  { left: 'left_thumb', right: 'right_thumb', label: 'Thumbs' },
   // Lower body
   { left: 'left_hip', right: 'right_hip', label: 'Hips' },
   { left: 'left_knee', right: 'right_knee', label: 'Knees' },
@@ -105,11 +112,83 @@ export const JOINT_PAIRS: JointPair[] = [
 ];
 
 // ============================================
-// Pose Variant Types
+// POSITION CHECK TYPES
 // ============================================
 
 /**
- * Pose variant input with movement config (new structure)
+ * Position check landmarks
+ */
+export interface PositionCheckLandmarks {
+  primary: string;
+  secondary: string;
+  tertiary?: string;
+  quaternary?: string;
+}
+
+/**
+ * Position check condition (single threshold)
+ */
+export interface PositionCheckCondition {
+  operator: 
+    | 'should_not_exceed'
+    | 'should_exceed'
+    | 'should_be_within'
+    | 'should_equal'
+    | 'approximately_equal';
+  threshold: number;
+}
+
+/**
+ * Position check input
+ */
+export interface PositionCheckInput {
+  checkId: string;
+  type: string;
+  landmarks: PositionCheckLandmarks;
+  condition: PositionCheckCondition;
+  activePhases: string[];
+  errorMessage: LocalizedText;
+  severity?: string;
+  cooldownMs?: number;
+  minErrorFrames?: number;
+  sortOrder?: number;
+}
+
+// ============================================
+// REP COUNTING CONFIG
+// ============================================
+
+/**
+ * Rep counting config (unified - no difficulty levels)
+ */
+export interface RepCountingConfig {
+  reps?: number;
+  duration?: number;
+  minRepIntervalMs?: number;
+  maxRepIntervalMs?: number;
+  gracePeriodMs?: number;
+}
+
+// ============================================
+// FEEDBACK MESSAGES
+// ============================================
+
+/**
+ * Feedback message input (simplified - no common_mistake)
+ */
+export interface FeedbackMessageInput {
+  type: 'motivational' | 'tip';
+  message: LocalizedText;
+  audioUrl?: string;
+  sortOrder?: number;
+}
+
+// ============================================
+// POSE VARIANT TYPES
+// ============================================
+
+/**
+ * Pose variant input
  */
 export interface PoseVariantInput {
   id?: string;
@@ -118,96 +197,19 @@ export interface PoseVariantInput {
   description?: LocalizedText;
   cameraPositionId: string;
   referenceImageUrl?: string;
-  startPoseAngles?: StartPoseAngles;      // { "left_knee": { min, max }, ... }
-  primaryJoint?: string;                   // Comma-separated primary joint codes
-  trackedJointsConfig?: TrackedJoint[];    // Full tracked joints configuration
-  sortOrder?: number;
-}
-
-/**
- * Movement config for a pose variant (used in wizard)
- */
-export interface MovementConfig {
-  trackedJoints: TrackedJoint[];    // All joints being tracked (can be multiple)
-  // Rep settings per difficulty level
-  beginnerReps?: number;
-  normalReps?: number;
-  advancedReps?: number;
-  // For Counter method
-  beginnerDuration?: number;
-  normalDuration?: number;
-  advancedDuration?: number;
-  // Note: Tolerance is now per-joint in TrackedJoint.tolerances
-}
-
-// ============================================
-// Difficulty Level Types
-// ============================================
-
-/**
- * Difficulty level input (basic)
- */
-export interface DifficultyLevelInput {
-  difficultyTypeId?: string;
-  difficultyTypeCode?: string;
-  name: LocalizedText;
-  description?: LocalizedText;
-  romConfig?: RomConfig;
-  repCountingConfig?: RepCountingConfig;
-  sortOrder?: number;
-}
-
-/**
- * Difficulty level input (full with phases and messages)
- */
-export interface DifficultyLevelFullInput extends DifficultyLevelInput {
-  poseVariantId: string;
-  phases?: PhaseInput[];
+  expectedFacingDirection?: string;
+  trackedJointsConfig?: TrackedJoint[];
+  positionChecks?: PositionCheckInput[];
   feedbackMessages?: FeedbackMessageInput[];
-}
-
-// ============================================
-// Phase and Rule Types
-// ============================================
-
-/**
- * Angle rule input
- */
-export interface AngleRuleInput {
-  jointId: string;
-  minAngle: number;
-  maxAngle: number;
-  errorMessageOver?: LocalizedText;
-  errorMessageUnder?: LocalizedText;
-  priority?: 'high' | 'medium' | 'low';
-}
-
-/**
- * Phase input
- */
-export interface PhaseInput {
-  code: string;
-  name: LocalizedText;
-  sortOrder?: number;
-  angleRules?: AngleRuleInput[];
-}
-
-/**
- * Feedback message input
- */
-export interface FeedbackMessageInput {
-  type: 'motivational' | 'common_mistake' | 'tip';
-  message: LocalizedText;
-  audioUrl?: string;
   sortOrder?: number;
 }
 
 // ============================================
-// Exercise Input Types
+// EXERCISE INPUT TYPES
 // ============================================
 
 /**
- * Exercise creation input (basic)
+ * Exercise creation input
  */
 export interface CreateExerciseInput {
   name: LocalizedText;
@@ -219,6 +221,7 @@ export interface CreateExerciseInput {
   muscles?: string[];
   equipment?: string[];
   tags?: string[];
+  repCountingConfig?: RepCountingConfig;
   poseVariants?: PoseVariantInput[];
 }
 
@@ -229,396 +232,205 @@ export interface UpdateExerciseInput extends Partial<CreateExerciseInput> {
   status?: 'draft' | 'published';
 }
 
-/**
- * Complete exercise input (for wizard flow)
- */
-export interface CompleteExerciseInput {
-  name: LocalizedText;
-  description?: LocalizedText;
-  instructions?: LocalizedText;
-  categoryId: string;
-  countingMethodId: string;
-  muscles?: string[];
-  equipment?: string[];
-  tags?: string[];
-  poseVariants?: (PoseVariantInput & { tempId?: string; id?: string })[];
-  movementConfigs?: Record<string, MovementConfig>;  // keyed by poseVariant tempId/id
-  difficultyLevels?: DifficultyLevelFullInput[];
-}
-
 // ============================================
-// API Response Types (for Mobile)
+// HELPER FUNCTIONS
 // ============================================
 
 /**
- * Complete exercise config for API response
+ * Get paired joint code
  */
-export interface ExerciseConfig {
-  id: string;
-  name: LocalizedText;
-  description?: LocalizedText;
-  instructions?: LocalizedText;
-  category: {
-    code: string;
-    name: LocalizedText;
-  };
-  countingMethod: string;
-  primaryImage?: string;
-  muscles: string[];
-  equipment: string[];
-  updatedAt: string;
-  poseVariants: PoseVariantConfig[];
-}
-
-export interface PoseVariantConfig {
-  id: string;
-  name: LocalizedText;
-  cameraPosition: string;
-  referenceImage?: string;
-  requiredJoints?: string[];
-  startPoseAngles?: StartPoseAngles;
-  primaryJoint?: string;
-  trackedJointsConfig?: TrackedJoint[];  // Full tracked joints configuration
-  difficultyLevels: DifficultyLevelConfig[];
-}
-
-export interface DifficultyLevelConfig {
-  id: string;
-  level: string;
-  name: LocalizedText;
-  description?: LocalizedText;
-  romConfig?: RomConfig;
-  repCountingConfig?: RepCountingConfig;
-  phases: PhaseConfig[];
-  feedbackMessages: {
-    motivational: LocalizedText[];
-    common_mistake?: LocalizedText[];
-    tip?: LocalizedText[];
-  };
-}
-
-export interface PhaseConfig {
-  code: string;
-  name: LocalizedText;
-  rules: AngleRuleConfig[];
-}
-
-export interface AngleRuleConfig {
-  joint: string;
-  min: number;
-  max: number;
-  errorOver?: LocalizedText;
-  errorUnder?: LocalizedText;
-  priority: string;
-}
-
-// ============================================
-// Helper Functions
-// ============================================
-
-/**
- * Calculate rep counting thresholds from tracked joint config
- */
-export function calculateThresholds(
-  trackedJoint: TrackedJoint,
-  tolerance: number
-): { eccentricThreshold: number; concentricThreshold: number } {
-  return {
-    // Eccentric: when angle goes below target + tolerance
-    eccentricThreshold: trackedJoint.targetAngle + tolerance,
-    // Concentric: when angle returns to near starting position (use min of start range)
-    concentricThreshold: trackedJoint.startPose.min - 10, // 10° buffer
-  };
+export function getPairedJointCode(jointCode: string): string | undefined {
+  const pair = JOINT_PAIRS.find(p => p.left === jointCode || p.right === jointCode);
+  if (!pair) return undefined;
+  return pair.left === jointCode ? pair.right : pair.left;
 }
 
 /**
- * Build difficulty levels from movement config with phases and angle rules
+ * Check if joint is primary
  */
-export function buildDifficultyLevelsFromMovementConfig(
-  poseVariantId: string,
-  config: MovementConfig,
-  countingMethodCode: CountingMethodCode,
-  feedbackMessages?: FeedbackMessageInput[]
-): DifficultyLevelFullInput[] {
-  const levels: DifficultyLevelFullInput[] = [];
-  const primaryJoints = config.trackedJoints.filter(j => j.role === 'primary');
-  
-  if (primaryJoints.length === 0) {
-    return levels;
+export function isPrimaryJoint(joint: TrackedJoint): joint is PrimaryTrackedJoint {
+  return joint.role === 'primary';
+}
+
+/**
+ * Check if joint is secondary
+ */
+export function isSecondaryJoint(joint: TrackedJoint): joint is SecondaryTrackedJoint {
+  return joint.role === 'secondary';
   }
 
-  // Use first primary joint for threshold calculations
-  const firstPrimaryJoint = primaryJoints[0];
+/**
+ * Get outer min from StateRanges
+ */
+export function getOuterMin(ranges: StateRanges): number {
+  let min = ranges.perfect.min;
+  if (ranges.normal) min = Math.min(min, ranges.normal.min);
+  if (ranges.pad) min = Math.min(min, ranges.pad.min);
+  if (ranges.warning) min = Math.min(min, ranges.warning.min);
+  if (ranges.danger) min = Math.min(min, ranges.danger.min);
+  return min;
+}
 
-  // Get phase templates for this counting method
-  const phaseTemplates = getPhasesForCountingMethod(countingMethodCode);
+/**
+ * Get outer max from StateRanges
+ */
+export function getOuterMax(ranges: StateRanges): number {
+  let max = ranges.perfect.max;
+  if (ranges.normal) max = Math.max(max, ranges.normal.max);
+  if (ranges.pad) max = Math.max(max, ranges.pad.max);
+  if (ranges.warning) max = Math.max(max, ranges.warning.max);
+  if (ranges.danger) max = Math.max(max, ranges.danger.max);
+  return max;
+}
 
-  const difficultyData = [
-    { 
-      code: 'beginner', 
-      name: { ar: 'مبتدئ', en: 'Beginner' },
-      toleranceKey: 'beginner' as const,
-      reps: config.beginnerReps,
-      duration: config.beginnerDuration,
-    },
-    { 
-      code: 'normal', 
-      name: { ar: 'عادي', en: 'Normal' },
-      toleranceKey: 'normal' as const,
-      reps: config.normalReps,
-      duration: config.normalDuration,
-    },
-    { 
-      code: 'advanced', 
-      name: { ar: 'محترف', en: 'Advanced' },
-      toleranceKey: 'advanced' as const,
-      reps: config.advancedReps,
-      duration: config.advancedDuration,
-    },
-  ];
-
-  for (const diff of difficultyData) {
-    // Get tolerance from first primary joint for ROM config
-    // Fallback to default tolerances if not set
-    const defaultTolerances = createDefaultTolerances();
-    const tolerance = firstPrimaryJoint.tolerances?.[diff.toleranceKey] ?? defaultTolerances[diff.toleranceKey];
-    
-    const romConfig: RomConfig = {
-      targetAngle: firstPrimaryJoint.targetAngle,
-      tolerance: tolerance,
-    };
-
-    const thresholds = calculateThresholds(firstPrimaryJoint, tolerance);
-
-    const repCountingConfig: RepCountingConfig = {
-      reps: diff.reps,
-      duration: countingMethodCode === 'counter' ? diff.duration : undefined,
-      eccentricThreshold: thresholds.eccentricThreshold,
-      concentricThreshold: thresholds.concentricThreshold,
-    };
-
-    // Build phases with angle rules from tracked joints
-    const phases: PhaseInput[] = phaseTemplates.map((template, index) => {
-      // Determine angle ranges for each phase based on counting method and phase code
-      const angleRules: AngleRuleInput[] = config.trackedJoints.map((joint) => {
-        let minAngle = joint.startPose.min;
-        let maxAngle = joint.startPose.max;
-
-        // Adjust angles based on phase
-        if (countingMethodCode === 'up_down') {
-          if (template.code === 'start' || template.code === 'up') {
-            // Start and Up phases: use start pose range
-            minAngle = joint.startPose.min;
-            maxAngle = joint.startPose.max;
-          } else if (template.code === 'down' || template.code === 'bottom') {
-            // Down and Bottom phases: use target angle ± tolerance
-            const jointTolerance = joint.tolerances?.[diff.toleranceKey] ?? tolerance;
-            minAngle = Math.max(0, joint.targetAngle - jointTolerance);
-            maxAngle = Math.min(180, joint.targetAngle + jointTolerance);
-          }
-        } else if (countingMethodCode === 'push_pull') {
-          if (template.code === 'start' || template.code === 'pull') {
-            // Start and Pull phases: use start pose range
-            minAngle = joint.startPose.min;
-            maxAngle = joint.startPose.max;
-          } else if (template.code === 'push' || template.code === 'extended') {
-            // Push and Extended phases: use target angle ± tolerance
-            const jointTolerance = joint.tolerances?.[diff.toleranceKey] ?? tolerance;
-            minAngle = Math.max(0, joint.targetAngle - jointTolerance);
-            maxAngle = Math.min(180, joint.targetAngle + jointTolerance);
-          }
-        } else if (countingMethodCode === 'counter') {
-          // Counter: all phases use start pose range
-          minAngle = joint.startPose.min;
-          maxAngle = joint.startPose.max;
-        }
-
+/**
+ * Create default primary joint
+ */
+export function createDefaultPrimaryJoint(jointCode: string): PrimaryTrackedJoint {
         return {
-          jointId: joint.jointId,
-          minAngle,
-          maxAngle,
-          errorMessageOver: joint.errorMessages.tooHigh,
-          errorMessageUnder: joint.errorMessages.tooLow,
-          priority: joint.role === 'primary' ? 'high' : 'medium',
-        };
-      });
-
-      return {
-        code: template.code,
-        name: template.name,
-        sortOrder: template.sortOrder,
-        angleRules,
-      };
-    });
-
-    levels.push({
-      poseVariantId,
-      difficultyTypeCode: diff.code,
-      name: diff.name,
-      description: { ar: '', en: '' },
-      romConfig,
-      repCountingConfig,
-      phases,
-      feedbackMessages: feedbackMessages || [],
-    });
-  }
-
-  return levels;
+    joint: jointCode,
+    role: 'primary',
+    startPose: { min: 150, max: 180 },
+    upRange: {
+      perfect: { min: 150, max: 180 },
+      normal: { min: 140, max: 180 },
+      pad: { min: 130, max: 180 },
+    },
+    downRange: {
+      perfect: { min: 60, max: 90 },
+      normal: { min: 50, max: 100 },
+      pad: { min: 40, max: 110 },
+    },
+    stateMessages: createDefaultStateMessages(jointCode),
+    pairedWith: getPairedJointCode(jointCode),
+  };
 }
 
 /**
- * Convert TrackedJoints to StartPoseAngles format for database
+ * Create default secondary joint
  */
-export function trackedJointsToStartPoseAngles(trackedJoints: TrackedJoint[]): StartPoseAngles {
-  const result: StartPoseAngles = {};
-  for (const joint of trackedJoints) {
-    result[joint.jointCode] = joint.startPose;
-  }
-  return result;
+export function createDefaultSecondaryJoint(jointCode: string): SecondaryTrackedJoint {
+  return {
+    joint: jointCode,
+    role: 'secondary',
+    startPose: { min: 150, max: 180 },
+    range: {
+      perfect: { min: 160, max: 180 },
+      normal: { min: 150, max: 180 },
+      warning: { min: 0, max: 150 },
+    },
+    stateMessages: createDefaultStateMessages(jointCode),
+    pairedWith: getPairedJointCode(jointCode),
+  };
 }
 
 /**
- * Get primary joint codes from tracked joints (supports multiple primary joints)
+ * Create default state messages for a joint
  */
-export function getPrimaryJointCodes(trackedJoints: TrackedJoint[]): string[] {
-  return trackedJoints.filter(j => j.role === 'primary').map(j => j.jointCode);
-}
-
-/**
- * Get first primary joint code from tracked joints (for backwards compatibility)
- */
-export function getPrimaryJointCode(trackedJoints: TrackedJoint[]): string | undefined {
-  return trackedJoints.find(j => j.role === 'primary')?.jointCode;
-}
-
-/**
- * Get all primary joints from tracked joints
- */
-export function getPrimaryJoints(trackedJoints: TrackedJoint[]): TrackedJoint[] {
-  return trackedJoints.filter(j => j.role === 'primary');
-}
-
-/**
- * Get secondary joints from tracked joints
- */
-export function getSecondaryJoints(trackedJoints: TrackedJoint[]): TrackedJoint[] {
-  return trackedJoints.filter(j => j.role === 'secondary');
-}
-
-/**
- * Check if all primary joints have reached the target angle
- */
-export function areAllPrimaryJointsAtTarget(
-  trackedJoints: TrackedJoint[],
-  currentAngles: Record<string, number>,
-  tolerance: number
-): boolean {
-  const primaryJoints = getPrimaryJoints(trackedJoints);
-  
-  return primaryJoints.every(joint => {
-    const currentAngle = currentAngles[joint.jointCode];
-    if (currentAngle === undefined) return false;
-    return currentAngle <= joint.targetAngle + tolerance;
-  });
-}
-
-/**
- * Get error messages for joints that are out of range
- */
-export function getJointErrors(
-  trackedJoints: TrackedJoint[],
-  currentAngles: Record<string, number>,
-  tolerance: number
-): Array<{ jointCode: string; type: 'tooHigh' | 'tooLow'; message: LocalizedText }> {
-  const errors: Array<{ jointCode: string; type: 'tooHigh' | 'tooLow'; message: LocalizedText }> = [];
-  
-  for (const joint of trackedJoints) {
-    const currentAngle = currentAngles[joint.jointCode];
-    if (currentAngle === undefined) continue;
-    
-    // Check if angle is too high (above start pose max)
-    if (currentAngle > joint.startPose.max + 10) {
-      errors.push({
-        jointCode: joint.jointCode,
-        type: 'tooHigh',
-        message: joint.errorMessages.tooHigh,
-      });
-    }
-    // Check if angle is too low (below target - tolerance)
-    else if (currentAngle < joint.targetAngle - tolerance - 10) {
-      errors.push({
-        jointCode: joint.jointCode,
-        type: 'tooLow',
-        message: joint.errorMessages.tooLow,
-      });
-    }
-  }
-  
-  return errors;
-}
-
-/**
- * Create default error messages for a joint
- */
-export function createDefaultErrorMessages(jointCode: string): JointErrorMessages {
+export function createDefaultStateMessages(jointCode: string): StateMessages {
   const jointName = jointCode.replace(/_/g, ' ').replace(/left |right /gi, '');
   const isLeft = jointCode.startsWith('left_');
   const side = isLeft ? 'left' : 'right';
   const sideAr = isLeft ? 'اليسرى' : 'اليمنى';
   
   return {
-    tooHigh: {
-      ar: `اثني ${jointName} ${sideAr} أكثر`,
-      en: `Bend your ${side} ${jointName} more`,
+    perfect: { ar: 'ممتاز!', en: 'Perfect!' },
+    normal: { ar: 'جيد', en: 'Good' },
+    pad: { ar: 'مقبول', en: 'Acceptable' },
+    warning: { 
+      ar: `تحقق من وضع ${jointName} ${sideAr}`, 
+      en: `Check your ${side} ${jointName} position` 
     },
-    tooLow: {
-      ar: `لا تنزل ${jointName} ${sideAr} كثيراً`,
-      en: `Don't lower your ${side} ${jointName} too much`,
+    danger: { 
+      ar: `توقف! ${jointName} ${sideAr} في وضع خطير`, 
+      en: `Stop! ${side} ${jointName} in dangerous position` 
     },
   };
 }
 
 /**
- * Create default tolerances for a joint
+ * Copy joint settings to paired joint
  */
-export function createDefaultTolerances(): JointTolerances {
-  return {
-    beginner: 30,
-    normal: 15,
-    advanced: 5,
-  };
-}
-
-/**
- * Copy joint settings to another joint (for mirroring left/right)
- */
-export function copyJointSettings(
-  source: TrackedJoint,
-  targetJointCode: string,
-  targetJointId: string
-): TrackedJoint {
-  const isTargetLeft = targetJointCode.startsWith('left_');
-  const sideAr = isTargetLeft ? 'اليسرى' : 'اليمنى';
-  const side = isTargetLeft ? 'left' : 'right';
-  const jointName = targetJointCode.replace(/_/g, ' ').replace(/left_|right_/gi, '');
+export function copyToPairedJoint(source: TrackedJoint): TrackedJoint | null {
+  const pairedCode = getPairedJointCode(source.joint);
+  if (!pairedCode) return null;
   
+  const newMessages = createDefaultStateMessages(pairedCode);
+  
+  if (isPrimaryJoint(source)) {
+    return {
+      ...source,
+      joint: pairedCode,
+      stateMessages: newMessages,
+      pairedWith: source.joint,
+    };
+  } else {
+    return {
+      ...source,
+      joint: pairedCode,
+      stateMessages: newMessages,
+      pairedWith: source.joint,
+    };
+  }
+}
+
+/**
+ * Get default rep counting config based on counting method
+ */
+export function getDefaultRepCountingConfig(countingMethod: CountingMethodCode): RepCountingConfig {
+  if (countingMethod === 'hold') {
+    return {
+      duration: 30,
+      gracePeriodMs: 2500,
+    };
+  }
   return {
-    jointCode: targetJointCode,
-    jointId: targetJointId,
-    role: source.role,
-    startPose: { ...source.startPose },
-    targetAngle: source.targetAngle,
-    tolerances: { ...source.tolerances }, // Copy tolerances from source
-    errorMessages: {
-      tooHigh: {
-        ar: `اثني ${jointName} ${sideAr} أكثر`,
-        en: `Bend your ${side} ${jointName} more`,
-      },
-      tooLow: {
-        ar: `لا تنزل ${jointName} ${sideAr} كثيراً`,
-        en: `Don't lower your ${side} ${jointName} too much`,
-      },
-    },
-    pairedWith: source.jointCode,
+    reps: 12,
+    minRepIntervalMs: 1500,
+    maxRepIntervalMs: 5000,
   };
+}
+
+/**
+ * Validate StateRanges for transition zone (for primary joints)
+ */
+export function validateTransitionZone(
+  upRange: StateRanges, 
+  downRange: StateRanges
+): { valid: boolean; error?: string } {
+  const upMin = getOuterMin(upRange);
+  const downMax = getOuterMax(downRange);
+  
+  if (upMin <= downMax) {
+  return {
+      valid: false,
+      error: `Invalid transition zone: upRange min (${upMin}) must be greater than downRange max (${downMax})`,
+    };
+  }
+  
+  return { valid: true };
+}
+
+/**
+ * Get state at a given angle for StateRanges
+ * Returns the highest priority state that contains the angle
+ */
+export function getStateAtAngle(angle: number, ranges: StateRanges): JointStateName | null {
+  // Priority: danger > warning > perfect > normal > pad
+  if (ranges.danger && angle >= ranges.danger.min && angle <= ranges.danger.max) {
+    return 'danger';
+  }
+  if (ranges.warning && angle >= ranges.warning.min && angle <= ranges.warning.max) {
+    return 'warning';
+  }
+  if (angle >= ranges.perfect.min && angle <= ranges.perfect.max) {
+    return 'perfect';
+  }
+  if (ranges.normal && angle >= ranges.normal.min && angle <= ranges.normal.max) {
+    return 'normal';
+  }
+  if (ranges.pad && angle >= ranges.pad.min && angle <= ranges.pad.max) {
+    return 'pad';
+  }
+  return null;
 }

@@ -1,7 +1,14 @@
-import { LocalizedText, CountingMethodCode, PhaseName } from '@/lib/types/localized';
+/**
+ * Phase Templates
+ * ================
+ * 
+ * Phase templates for auto-generating phases based on counting method.
+ */
+
+import type { LocalizedText, CountingMethodCode, PhaseName } from '@/lib/types/localized';
 
 /**
- * Phase template for auto-generating phases based on counting method
+ * Phase template
  */
 export type PhaseTemplate = {
   code: PhaseName;
@@ -18,7 +25,6 @@ export type PhaseTemplate = {
  * 3. hold - Isometric exercises (Plank, Wall Sit, etc.)
  */
 export const phaseTemplates: Record<CountingMethodCode, PhaseTemplate[]> = {
-  // Up and Down: Like squat - going down (eccentric) and up (concentric)
   up_down: [
     { code: 'start', name: { ar: 'وضعية البداية', en: 'Starting Position' }, sortOrder: 1 },
     { code: 'down', name: { ar: 'النزول', en: 'Going Down' }, sortOrder: 2 },
@@ -26,7 +32,6 @@ export const phaseTemplates: Record<CountingMethodCode, PhaseTemplate[]> = {
     { code: 'up', name: { ar: 'الصعود', en: 'Going Up' }, sortOrder: 4 },
   ],
   
-  // Push and Pull: Like push-up - pushing and pulling
   push_pull: [
     { code: 'start', name: { ar: 'وضعية البداية', en: 'Starting Position' }, sortOrder: 1 },
     { code: 'push', name: { ar: 'الدفع', en: 'Push' }, sortOrder: 2 },
@@ -34,8 +39,6 @@ export const phaseTemplates: Record<CountingMethodCode, PhaseTemplate[]> = {
     { code: 'pull', name: { ar: 'السحب', en: 'Pull' }, sortOrder: 4 },
   ],
   
-  // Hold: Isometric exercises - single phase for holding position
-  // Android engine uses 'count' phase internally for HOLD timing
   hold: [
     { code: 'hold', name: { ar: 'الثبات', en: 'Hold' }, sortOrder: 1 },
   ],
@@ -43,7 +46,6 @@ export const phaseTemplates: Record<CountingMethodCode, PhaseTemplate[]> = {
 
 /**
  * Get phase codes (simple string array) for a counting method
- * This is what gets stored in the database and sent to Android
  */
 export function getPhaseCodesForCountingMethod(countingMethodCode: CountingMethodCode): PhaseName[] {
   const templates = phaseTemplates[countingMethodCode] || phaseTemplates.up_down;
@@ -74,26 +76,3 @@ export const countingMethodDescriptions: Record<CountingMethodCode, LocalizedTex
     en: 'Hold - isometric exercises count time instead of reps (like plank)',
   },
 };
-
-/**
- * Get default rep/duration values per difficulty for a counting method
- */
-export function getDefaultRepConfig(countingMethodCode: CountingMethodCode): {
-  beginner: { reps?: number; duration?: number };
-  normal: { reps?: number; duration?: number };
-  advanced: { reps?: number; duration?: number };
-} {
-  if (countingMethodCode === 'hold') {
-    return {
-      beginner: { duration: 15 },
-      normal: { duration: 30 },
-      advanced: { duration: 60 },
-    };
-  }
-  
-  return {
-    beginner: { reps: 8 },
-    normal: { reps: 12 },
-    advanced: { reps: 16 },
-  };
-}

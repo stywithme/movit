@@ -1,6 +1,19 @@
+/**
+ * Exercise Service - State-Based System
+ * ======================================
+ * 
+ * Service for exercise CRUD operations.
+ * Updated: State-based system (no difficulty levels)
+ */
+
 import { getPrisma } from '@/lib/prisma/client';
-import { getPhaseCodesForCountingMethod } from './phase-templates';
 import type { CountingMethodCode, PhaseName } from '@/lib/types/localized';
+import type { 
+  TrackedJoint, 
+  PositionCheckInput, 
+  FeedbackMessageInput,
+  RepCountingConfig,
+} from './exercises.types';
 
 // ============================================
 // TYPES
@@ -11,80 +24,6 @@ interface LocalizedText {
   en: string;
 }
 
-interface TrackedJointInput {
-  joint: string;
-  role: 'primary' | 'secondary';
-  startPose: { min: number; max: number };
-  upRange?: {
-    beginner: { min: number; max: number };
-    normal: { min: number; max: number };
-    advanced: { min: number; max: number };
-  };
-  downRange?: {
-    beginner: { min: number; max: number };
-    normal: { min: number; max: number };
-    advanced: { min: number; max: number };
-  };
-  Range?: {
-    beginner: { min: number; max: number };
-    normal: { min: number; max: number };
-    advanced: { min: number; max: number };
-  };
-  errorMessages: {
-    tooLow: LocalizedText;
-    tooHigh: LocalizedText;
-  };
-  pairedWith?: string;
-}
-
-interface PositionCheckInput {
-  checkId: string;
-  type: string;
-  landmarks: {
-    primary: string;
-    secondary: string;
-    tertiary?: string;
-    quaternary?: string;
-  };
-  condition: {
-    operator: string;
-    thresholds: {
-      beginner: number;
-      normal: number;
-      advanced: number;
-    };
-  };
-  activePhases: PhaseName[];
-  errorMessage: LocalizedText;
-  severity?: string;
-  cooldownMs?: number;
-  minErrorFrames?: number;
-  sortOrder?: number;
-}
-
-interface FeedbackMessageInput {
-  type: 'motivational' | 'common_mistake' | 'tip';
-  message: LocalizedText;
-  audioUrl?: string;
-  sortOrder?: number;
-}
-
-interface RepCountingConfigInput {
-  reps?: number;
-  duration?: number;
-  minRepIntervalMs?: number;
-  maxRepIntervalMs?: number;
-  gracePeriodMs?: number;
-}
-
-interface DifficultyLevelInput {
-  difficultyTypeCode: 'beginner' | 'normal' | 'advanced';
-  name: LocalizedText;
-  description?: LocalizedText;
-  repCountingConfig: RepCountingConfigInput;
-  phases?: PhaseName[];
-}
-
 interface PoseVariantInput {
   id?: string;
   tempId?: string;
@@ -93,10 +32,9 @@ interface PoseVariantInput {
   cameraPositionId: string;
   referenceImageUrl?: string;
   expectedFacingDirection?: string;
-  trackedJointsConfig?: TrackedJointInput[];
+  trackedJointsConfig?: TrackedJoint[];
   positionChecks?: PositionCheckInput[];
   feedbackMessages?: FeedbackMessageInput[];
-  difficultyLevels?: DifficultyLevelInput[];
   sortOrder?: number;
 }
 
@@ -110,6 +48,7 @@ interface CreateExerciseInput {
   muscles?: string[];
   equipment?: string[];
   tags?: string[];
+  repCountingConfig?: RepCountingConfig;
   poseVariants?: PoseVariantInput[];
 }
 
@@ -241,12 +180,6 @@ export const exerciseService = {
             feedbackMessages: {
               orderBy: { sortOrder: 'asc' },
             },
-            difficultyLevels: {
-              orderBy: { sortOrder: 'asc' },
-              include: {
-                difficultyType: true,
-              },
-            },
           },
         },
       },
@@ -254,26 +187,20 @@ export const exerciseService = {
   },
 
   /**
-   * Create a new exercise (basic creation - draft)
+   * Create a new exercise
    */
   async create(data: CreateExerciseInput, createdBy?: string) {
     const prisma = await getPrisma();
     const slug = data.slug || generateSlug(data.name);
 
-    // Get counting method code for phase generation
-    const countingMethod = await prisma.attributeValue.findUnique({
-      where: { id: data.countingMethodId },
-      select: { code: true },
-    });
-    const countingMethodCode = (countingMethod?.code || 'up_down') as CountingMethodCode;
-
     const exercise = await prisma.exercise.create({
       data: {
-        name: data.name,
-        description: data.description || undefined,
-        instructions: data.instructions || undefined,
+        name: data.name as object,
+        description: (data.description as object) || undefined,
+        instructions: (data.instructions as object) || undefined,
         categoryId: data.categoryId,
         countingMethodId: data.countingMethodId,
+        repCountingConfig: (data.repCountingConfig as object) || undefined,
         slug,
         status: 'draft',
         createdBy,
@@ -305,7 +232,7 @@ export const exerciseService = {
     if (data.poseVariants && data.poseVariants.length > 0) {
       for (let pvIndex = 0; pvIndex < data.poseVariants.length; pvIndex++) {
         const pv = data.poseVariants[pvIndex];
-        await this.createPoseVariant(prisma, exercise.id, pv, pvIndex, countingMethodCode);
+        await this.createPoseVariant(prisma, exercise.id, pv, pvIndex);
       }
     }
 
@@ -319,19 +246,18 @@ export const exerciseService = {
     prisma: Awaited<ReturnType<typeof getPrisma>>,
     exerciseId: string,
     pv: PoseVariantInput,
-    sortOrder: number,
-    countingMethodCode: CountingMethodCode
+    sortOrder: number
   ) {
     // Create pose variant
     const poseVariant = await prisma.poseVariant.create({
       data: {
         exerciseId,
         cameraPositionId: pv.cameraPositionId,
-        name: pv.name,
-        description: pv.description || undefined,
+        name: pv.name as object,
+        description: (pv.description as object) || undefined,
         referenceImageUrl: pv.referenceImageUrl || undefined,
         expectedFacingDirection: pv.expectedFacingDirection || 'auto_detect',
-        trackedJointsConfig: pv.trackedJointsConfig || undefined,
+        trackedJointsConfig: (pv.trackedJointsConfig as object) || undefined,
         sortOrder: pv.sortOrder ?? sortOrder + 1,
       },
     });
@@ -343,10 +269,10 @@ export const exerciseService = {
           poseVariantId: poseVariant.id,
           checkId: pc.checkId,
           type: pc.type,
-          landmarks: pc.landmarks,
-          condition: pc.condition,
+          landmarks: pc.landmarks as object,
+          condition: pc.condition as object,
           activePhases: pc.activePhases,
-          errorMessage: pc.errorMessage,
+          errorMessage: pc.errorMessage as object,
           severity: pc.severity || 'warning',
           cooldownMs: pc.cooldownMs ?? 2000,
           minErrorFrames: pc.minErrorFrames ?? 3,
@@ -361,60 +287,14 @@ export const exerciseService = {
         data: pv.feedbackMessages.map((fm, idx) => ({
           poseVariantId: poseVariant.id,
           type: fm.type,
-          message: fm.message,
+          message: fm.message as object,
           audioUrl: fm.audioUrl || undefined,
           sortOrder: fm.sortOrder ?? idx + 1,
         })),
       });
     }
 
-    // Create difficulty levels
-    if (pv.difficultyLevels && pv.difficultyLevels.length > 0) {
-      for (let dlIndex = 0; dlIndex < pv.difficultyLevels.length; dlIndex++) {
-        const dl = pv.difficultyLevels[dlIndex];
-        await this.createDifficultyLevel(prisma, poseVariant.id, dl, dlIndex, countingMethodCode);
-      }
-    }
-
     return poseVariant;
-  },
-
-  /**
-   * Create a difficulty level
-   */
-  async createDifficultyLevel(
-    prisma: Awaited<ReturnType<typeof getPrisma>>,
-    poseVariantId: string,
-    data: DifficultyLevelInput,
-    sortOrder: number,
-    countingMethodCode: CountingMethodCode
-  ) {
-    // Look up difficulty type ID
-    const difficultyType = await prisma.attributeValue.findFirst({
-      where: {
-        code: data.difficultyTypeCode,
-        attribute: { code: 'difficulty_type' },
-      },
-    });
-
-    if (!difficultyType) {
-      throw new Error(`Difficulty type not found: ${data.difficultyTypeCode}`);
-    }
-
-    // Use provided phases or generate from counting method
-    const phases = data.phases || getPhaseCodesForCountingMethod(countingMethodCode);
-
-    return prisma.difficultyLevel.create({
-      data: {
-        poseVariantId,
-        difficultyTypeId: difficultyType.id,
-        name: data.name,
-        description: data.description || undefined,
-        repCountingConfig: data.repCountingConfig,
-        phases,
-        sortOrder: sortOrder + 1,
-      },
-    });
   },
 
   /**
@@ -422,26 +302,6 @@ export const exerciseService = {
    */
   async update(id: string, data: UpdateExerciseInput, updatedBy?: string) {
     const prisma = await getPrisma();
-    
-    // Get current exercise for counting method
-    const currentExercise = await prisma.exercise.findUnique({
-      where: { id },
-      include: { countingMethod: true },
-    });
-
-    if (!currentExercise) {
-      throw new Error('Exercise not found');
-    }
-
-    // Get counting method code
-    let countingMethodCode = currentExercise.countingMethod.code as CountingMethodCode;
-    if (data.countingMethodId) {
-      const newMethod = await prisma.attributeValue.findUnique({
-        where: { id: data.countingMethodId },
-        select: { code: true },
-      });
-      countingMethodCode = (newMethod?.code || countingMethodCode) as CountingMethodCode;
-    }
 
     const updateData: Record<string, unknown> = {
       updatedBy,
@@ -452,6 +312,7 @@ export const exerciseService = {
     if (data.instructions !== undefined) updateData.instructions = data.instructions;
     if (data.categoryId !== undefined) updateData.categoryId = data.categoryId;
     if (data.countingMethodId !== undefined) updateData.countingMethodId = data.countingMethodId;
+    if (data.repCountingConfig !== undefined) updateData.repCountingConfig = data.repCountingConfig;
     if (data.status !== undefined) updateData.status = data.status;
 
     await prisma.exercise.update({
@@ -491,7 +352,7 @@ export const exerciseService = {
       // Create new pose variants
       for (let pvIndex = 0; pvIndex < data.poseVariants.length; pvIndex++) {
         const pv = data.poseVariants[pvIndex];
-        await this.createPoseVariant(prisma, id, pv, pvIndex, countingMethodCode);
+        await this.createPoseVariant(prisma, id, pv, pvIndex);
       }
     }
 

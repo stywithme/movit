@@ -22,6 +22,11 @@
   "muscles": ["quadriceps", "glutes", "hamstrings", "calves"],
   "equipment": ["bodyweight", "dumbbell"],
   "tags": ["unilateral", "balance", "functional"],
+  "repCountingConfig": {
+    "reps": 10,
+    "minRepIntervalMs": 2000,
+    "maxRepIntervalMs": 6000
+  },
   "poseVariants": [
     {
       "name": {
@@ -38,47 +43,38 @@
             "max": 180
           },
           "upRange": {
-            "beginner": { "min": 155, "max": 180 },
+            "perfect": { "min": 165, "max": 180 },
             "normal": { "min": 160, "max": 180 },
-            "advanced": { "min": 165, "max": 180 }
+            "pad": { "min": 155, "max": 180 }
           },
           "downRange": {
-            "beginner": { "min": 80, "max": 110 },
+            "perfect": { "min": 88, "max": 95 },
             "normal": { "min": 85, "max": 100 },
-            "advanced": { "min": 88, "max": 95 }
+            "pad": { "min": 80, "max": 110 },
+            "warning": { "min": 60, "max": 80 },
+            "danger": { "min": 0, "max": 60 }
           },
-          "errorMessages": {
-            "tooLow": {
-              "ar": "لا تثني ركبتك كثيراً",
-              "en": "Don't bend your knee too much"
-            },
-            "tooHigh": {
-              "ar": "اثني ركبتك أكثر",
-              "en": "Bend your knee more"
-            }
+          "stateMessages": {
+            "perfect": { "ar": "ممتاز! اندفاع مثالي", "en": "Perfect! Great lunge" },
+            "normal": { "ar": "جيد، حاول الثني أكثر قليلاً", "en": "Good, try bending a bit more" },
+            "pad": { "ar": "مقبول، لكن يمكنك التحسن", "en": "Acceptable, but you can improve" },
+            "warning": { "ar": "لا تثني ركبتك كثيراً", "en": "Don't bend your knee too much" },
+            "danger": { "ar": "توقف! قد تؤذي ركبتك", "en": "Stop! This may hurt your knee" }
           }
         },
         {
           "joint": "left_hip",
           "role": "secondary",
-          "startPose": {
-            "min": 160,
-            "max": 180
-          },
-          "Range": {
-            "beginner": { "min": 155, "max": 180 },
+          "startPose": { "min": 160, "max": 180 },
+          "range": {
+            "perfect": { "min": 170, "max": 180 },
             "normal": { "min": 165, "max": 180 },
-            "advanced": { "min": 170, "max": 180 }
+            "pad": { "min": 155, "max": 180 },
+            "warning": { "min": 140, "max": 155 }
           },
-          "errorMessages": {
-            "tooLow": {
-              "ar": "حافظ على استقامة ظهرك",
-              "en": "Keep your back straight"
-            },
-            "tooHigh": {
-              "ar": "لا تميل للخلف",
-              "en": "Don't lean back"
-            }
+          "stateMessages": {
+            "perfect": { "ar": "ممتاز - الظهر مستقيم", "en": "Great - back is straight" },
+            "warning": { "ar": "حافظ على استقامة ظهرك", "en": "Keep your back straight" }
           }
         }
       ],
@@ -87,44 +83,11 @@
           { "ar": "ممتاز! استمر!", "en": "Excellent! Keep going!" },
           { "ar": "توازن رائع!", "en": "Great balance!" }
         ],
-        "common_mistake": [
-          { "ar": "لا تدع ركبتك تتجاوز أصابع قدميك", "en": "Don't let your knee go past your toes" },
-          { "ar": "حافظ على استقامة ظهرك", "en": "Keep your torso upright" }
-        ],
-        "tip": [
+        "tips": [
           { "ar": "انظر للأمام لتحسين التوازن", "en": "Look forward to improve balance" },
           { "ar": "ادفع من كعبك للعودة للوضع الأصلي", "en": "Push through your heel to return to start" }
         ]
-      },
-      "difficultyLevels": [
-        {
-          "level": "beginner",
-          "repCountingConfig": {
-            "reps": 8,
-            "minRepIntervalMs": 2500,
-            "maxRepIntervalMs": 7000
-          },
-          "phases": ["start", "down", "bottom", "up"]
-        },
-        {
-          "level": "normal",
-          "repCountingConfig": {
-            "reps": 10,
-            "minRepIntervalMs": 2000,
-            "maxRepIntervalMs": 6000
-          },
-          "phases": ["start", "down", "bottom", "up"]
-        },
-        {
-          "level": "advanced",
-          "repCountingConfig": {
-            "reps": 12,
-            "minRepIntervalMs": 1500,
-            "maxRepIntervalMs": 5000
-          },
-          "phases": ["start", "down", "bottom", "up"]
-        }
-      ]
+      }
     },
     {
       "name": {
@@ -136,52 +99,40 @@
         {
           "joint": "right_knee",
           "role": "primary",
-          "startPose": {
-            "min": 160,
-            "max": 180
-          },
+          "startPose": { "min": 160, "max": 180 },
           "upRange": {
-            "beginner": { "min": 155, "max": 180 },
+            "perfect": { "min": 165, "max": 180 },
             "normal": { "min": 160, "max": 180 },
-            "advanced": { "min": 165, "max": 180 }
+            "pad": { "min": 155, "max": 180 }
           },
           "downRange": {
-            "beginner": { "min": 80, "max": 110 },
+            "perfect": { "min": 88, "max": 95 },
             "normal": { "min": 85, "max": 100 },
-            "advanced": { "min": 88, "max": 95 }
+            "pad": { "min": 80, "max": 110 },
+            "warning": { "min": 60, "max": 80 },
+            "danger": { "min": 0, "max": 60 }
           },
-          "errorMessages": {
-            "tooLow": {
-              "ar": "لا تثني ركبتك كثيراً",
-              "en": "Don't bend your knee too much"
-            },
-            "tooHigh": {
-              "ar": "اثني ركبتك أكثر",
-              "en": "Bend your knee more"
-            }
+          "stateMessages": {
+            "perfect": { "ar": "ممتاز! اندفاع مثالي", "en": "Perfect! Great lunge" },
+            "normal": { "ar": "جيد، حاول الثني أكثر قليلاً", "en": "Good, try bending a bit more" },
+            "pad": { "ar": "مقبول، لكن يمكنك التحسن", "en": "Acceptable, but you can improve" },
+            "warning": { "ar": "لا تثني ركبتك كثيراً", "en": "Don't bend your knee too much" },
+            "danger": { "ar": "توقف! قد تؤذي ركبتك", "en": "Stop! This may hurt your knee" }
           }
         },
         {
           "joint": "right_hip",
           "role": "secondary",
-          "startPose": {
-            "min": 160,
-            "max": 180
-          },
-          "Range": {
-            "beginner": { "min": 155, "max": 180 },
+          "startPose": { "min": 160, "max": 180 },
+          "range": {
+            "perfect": { "min": 170, "max": 180 },
             "normal": { "min": 165, "max": 180 },
-            "advanced": { "min": 170, "max": 180 }
+            "pad": { "min": 155, "max": 180 },
+            "warning": { "min": 140, "max": 155 }
           },
-          "errorMessages": {
-            "tooLow": {
-              "ar": "حافظ على استقامة ظهرك",
-              "en": "Keep your back straight"
-            },
-            "tooHigh": {
-              "ar": "لا تميل للخلف",
-              "en": "Don't lean back"
-            }
+          "stateMessages": {
+            "perfect": { "ar": "ممتاز - الظهر مستقيم", "en": "Great - back is straight" },
+            "warning": { "ar": "حافظ على استقامة ظهرك", "en": "Keep your back straight" }
           }
         }
       ],
@@ -189,38 +140,8 @@
         "motivational": [
           { "ar": "ممتاز!", "en": "Excellent!" }
         ],
-        "common_mistake": [],
-        "tip": []
-      },
-      "difficultyLevels": [
-        {
-          "level": "beginner",
-          "repCountingConfig": {
-            "reps": 8,
-            "minRepIntervalMs": 2500,
-            "maxRepIntervalMs": 7000
-          },
-          "phases": ["start", "down", "bottom", "up"]
-        },
-        {
-          "level": "normal",
-          "repCountingConfig": {
-            "reps": 10,
-            "minRepIntervalMs": 2000,
-            "maxRepIntervalMs": 6000
-          },
-          "phases": ["start", "down", "bottom", "up"]
-        },
-        {
-          "level": "advanced",
-          "repCountingConfig": {
-            "reps": 12,
-            "minRepIntervalMs": 1500,
-            "maxRepIntervalMs": 5000
-          },
-          "phases": ["start", "down", "bottom", "up"]
-        }
-      ]
+        "tips": []
+      }
     }
   ]
 }

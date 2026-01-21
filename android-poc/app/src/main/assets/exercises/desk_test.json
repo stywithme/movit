@@ -22,6 +22,10 @@
   "muscles": ["shoulders"],
   "equipment": ["bodyweight"],
   "tags": ["test", "desk"],
+  "repCountingConfig": {
+    "duration": 20,
+    "gracePeriodMs": 2000
+  },
   "poseVariants": [
     {
       "name": {
@@ -40,11 +44,7 @@
           },
           "condition": {
             "operator": "approximately_equal",
-            "thresholds": {
-              "beginner": 0.15,
-              "normal": 0.10,
-              "advanced": 0.05
-            }
+            "threshold": 0.10
           },
           "activePhases": ["idle", "start", "count"],
           "errorMessage": {
@@ -64,11 +64,7 @@
           },
           "condition": {
             "operator": "should_not_exceed", 
-            "thresholds": {
-              "beginner": 0.0,
-              "normal": -0.05,
-              "advanced": -0.1
-            }
+            "threshold": -0.05
           },
           "activePhases": ["idle", "start", "count"],
           "errorMessage": {
@@ -88,11 +84,7 @@
           },
           "condition": {
             "operator": "approximately_equal",
-            "thresholds": {
-              "beginner": 0.2,
-              "normal": 0.15,
-              "advanced": 0.1
-            }
+            "threshold": 0.15
           },
           "activePhases": ["idle", "start", "count"],
           "errorMessage": {
@@ -112,11 +104,7 @@
           },
           "condition": {
             "operator": "approximately_equal",
-            "thresholds": {
-              "beginner": 0.15,
-              "normal": 0.10,
-              "advanced": 0.05
-            }
+            "threshold": 0.10
           },
           "activePhases": ["idle", "start", "count"],
           "errorMessage": {
@@ -133,53 +121,20 @@
           "joint": "right_elbow",
           "role": "primary",
           "startPose": { "min": 0, "max": 180 },
-          "upRange": {
-            "beginner": { "min": 0, "max": 180 },
-            "normal":   { "min": 0, "max": 180 },
-            "advanced": { "min": 0, "max": 180 }
+          "range": {
+            "perfect": { "min": 0, "max": 180 },
+            "normal": { "min": 0, "max": 180 },
+            "pad": { "min": 0, "max": 180 }
           },
-          "downRange": {
-            "beginner": { "min": 10, "max": 170 },
-            "normal":   { "min": 20, "max": 160 },
-            "advanced": { "min": 30, "max": 150 }
-          },
-          "errorMessages": {
-            "tooLow": { "ar": "", "en": "" },
-            "tooHigh": { "ar": "", "en": "" }
+          "stateMessages": {
+            "perfect": { "ar": "ممتاز! وضعية صحيحة", "en": "Perfect! Correct position" }
           }
         }
       ],
       "feedbackMessages": {
         "motivational": [],
-        "common_mistake": [],
-        "tip": []
-      },
-      "difficultyLevels": [
-        {
-          "level": "beginner",
-          "repCountingConfig": {
-            "duration": 15,
-            "gracePeriodMs": 3000
-          },
-          "phases": ["start", "hold"]
-        },
-        {
-          "level": "normal",
-          "repCountingConfig": {
-            "duration": 20,
-            "gracePeriodMs": 2000
-          },
-          "phases": ["start", "hold"]
-        },
-        {
-          "level": "advanced",
-          "repCountingConfig": {
-            "duration": 30,
-            "gracePeriodMs": 1000
-          },
-          "phases": ["start", "hold"]
-        }
-      ]
+        "tips": []
+      }
     }
   ]
 }

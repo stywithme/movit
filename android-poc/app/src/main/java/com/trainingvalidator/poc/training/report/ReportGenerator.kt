@@ -9,26 +9,24 @@ import java.util.UUID
 /**
  * ReportGenerator - Generates PostTrainingReport from training session data
  * 
- * Converts SessionSummary and additional data into a complete report
- * with all sections: summary, best/worst reps, error analysis, timeline, tips.
+ * STATE-BASED REPORT GENERATION:
+ * - Uses JointState (PERFECT/NORMAL/PAD/WARNING/DANGER) for assessment
+ * - Generates DANGER alerts with visual frames
+ * - Celebrates PERFECT moments
+ * - Uses stateMessages from exercise JSON for error descriptions
+ * - Uses feedbackMessages.tips for improvement suggestions
+ * - Uses feedbackMessages.motivational for encouragement
  */
 object ReportGenerator {
     
     private const val TAG = "ReportGenerator"
     private const val MAX_BEST_REPS = 3
+    private const val MAX_PERFECT_MOMENTS = 3
+    private const val MAX_DANGER_ALERTS = 2
     private const val MAX_TIPS = 3
     
     /**
      * Generate a complete post-training report
-     * 
-     * @param sessionId Unique session identifier
-     * @param summary SessionSummary from TrainingEngine.stop()
-     * @param exerciseConfig Exercise configuration
-     * @param durationMs Actual session duration (from ViewModel)
-     * @param visibilityStats Visibility statistics (optional)
-     * @param cameraWarningCount Number of camera position warnings
-     * @param frameCaptures List of captured frames
-     * @param holdData Hold-specific data (for HOLD exercises)
      */
     fun generate(
         sessionId: String,
@@ -40,46 +38,53 @@ object ReportGenerator {
         frameCaptures: List<FrameCapture> = emptyList(),
         holdData: HoldData? = null
     ): PostTrainingReport {
-        Log.d(TAG, "Generating report for ${summary.exerciseName}, ${summary.totalReps} reps")
+        Log.d(TAG, "Generating state-based report for ${summary.exerciseName}, ${summary.totalReps} reps")
         
-        // Generate performance summary
-        val performanceSummary = generateSummary(summary, durationMs)
+        // 1. Generate performance summary with state breakdown
+        val performanceSummary = generateStateSummary(summary, durationMs, exerciseConfig)
         
-        // Find best reps (no errors, optimal timing)
-        val bestReps = findBestReps(summary.repDetails, frameCaptures)
+        // 2. Generate DANGER alerts (CRITICAL - shown prominently)
+        val dangerAlerts = generateDangerAlerts(summary.repDetails, exerciseConfig, frameCaptures)
         
-        // Find worst rep (most errors)
+        // 3. Generate perfect moments (for celebration)
+        val perfectMoments = generatePerfectMoments(summary.repDetails, exerciseConfig, frameCaptures)
+        
+        // 4. Find best reps by score
+        val bestReps = findBestRepsByScore(summary.repDetails, frameCaptures)
+        
+        // 5. Find worst rep
         val worstRep = findWorstRep(summary.repDetails, frameCaptures)
         
-        // Get best rep frame for comparison
+        // 6. Get best rep frame for comparison
         val bestRepFrame = frameCaptures.find { it.captureType == CaptureType.BEST_REP }
         
-        // Generate error analysis
-        val errorAnalysis = generateErrorAnalysis(
+        // 7. Generate state-based error analysis
+        val errorAnalysis = generateStateBasedErrorAnalysis(
             repDetails = summary.repDetails,
             exerciseConfig = exerciseConfig,
             frameCaptures = frameCaptures,
             bestRepFrame = bestRepFrame
         )
         
-        // Generate timeline
-        val timeline = generateTimeline(
+        // 8. Generate state-based timeline
+        val timeline = generateStateTimeline(
             repDetails = summary.repDetails,
+            exerciseConfig = exerciseConfig,
             bestRepNumbers = bestReps.map { it.repNumber }.toSet(),
             worstRepNumber = worstRep?.repNumber,
             frameCaptures = frameCaptures
         )
         
-        // Calculate consistency metrics
+        // 9. Calculate consistency metrics
         val consistency = calculateConsistency(summary.repDetails)
         
-        // Generate session quality
+        // 10. Generate session quality
         val sessionQuality = generateSessionQuality(visibilityStats, cameraWarningCount)
         
-        // Generate improvement tips
-        val tips = generateTips(errorAnalysis, exerciseConfig)
+        // 11. Generate tips from exercise JSON
+        val tips = generateExerciseBasedTips(errorAnalysis, exerciseConfig, dangerAlerts)
         
-        // Generate hold summary if applicable
+        // 12. Generate hold summary if applicable
         val holdSummary = holdData?.let { generateHoldSummary(it, frameCaptures) }
         
         return PostTrainingReport(
@@ -87,8 +92,9 @@ object ReportGenerator {
             sessionId = sessionId,
             exerciseId = exerciseConfig.fileName,
             exerciseName = exerciseConfig.name,
-            difficulty = summary.difficulty,
             summary = performanceSummary,
+            dangerAlerts = dangerAlerts,
+            perfectMoments = perfectMoments,
             bestReps = bestReps,
             worstRep = worstRep,
             errorAnalysis = errorAnalysis,
@@ -112,7 +118,7 @@ object ReportGenerator {
     ): PostTrainingReport {
         val summary = engine.stop()
         val visibilityStats = engine.getVisibilityStats()
-        val cameraWarnings = if (engine.hasPositionChecks()) 1 else 0 // Simplified
+        val cameraWarnings = if (engine.hasPositionChecks()) 1 else 0
         
         val holdData = if (engine.isHoldExercise) {
             HoldData(
@@ -136,51 +142,178 @@ object ReportGenerator {
         )
     }
     
-    // ==================== Private Generators ====================
+    // ==================== State-Based Summary ====================
     
-    private fun generateSummary(summary: SessionSummary, durationMs: Long): PerformanceSummary {
-        val rating = PerformanceRating.fromAccuracy(summary.accuracy)
+    private fun generateStateSummary(
+        summary: SessionSummary,
+        durationMs: Long,
+        exerciseConfig: ExerciseConfig
+    ): PerformanceSummary {
+        // Build state breakdown
+        val stateBreakdown = StateBreakdown.fromMap(summary.stateBreakdown)
+        
+        // Determine if we should celebrate
+        val shouldCelebrate = stateBreakdown.shouldCelebrate()
+        
+        // Get rating based on score and counted ratio (use fromScoreAndRatio directly)
+        val rating = PerformanceRating.fromScoreAndRatio(
+            summary.averageScore,
+            summary.countedRatio
+        )
+        
+        // Get motivational message from exercise or generate based on rating
+        val motivationalMessage = selectMotivationalMessage(
+            exerciseConfig = exerciseConfig,
+            rating = rating,
+            stateBreakdown = stateBreakdown
+        )
         
         return PerformanceSummary(
             totalReps = summary.totalReps,
-            correctReps = summary.correctReps,
-            incorrectReps = summary.incorrectReps,
-            accuracy = summary.accuracy,
             durationMs = durationMs,
             rating = rating,
-            motivationalMessage = rating.getMotivationalMessage()
+            motivationalMessage = motivationalMessage,
+            countedReps = summary.countedReps,
+            invalidatedReps = summary.invalidatedReps,
+            averageScore = summary.averageScore,
+            countedRatio = summary.countedRatio,
+            stateBreakdown = stateBreakdown,
+            shouldCelebrate = shouldCelebrate
         )
     }
     
-    private fun findBestReps(
+    // ==================== DANGER Alerts ====================
+    
+    private fun generateDangerAlerts(
         repDetails: List<RepResult>,
+        exerciseConfig: ExerciseConfig,
         frameCaptures: List<FrameCapture>
-    ): List<BestRepHighlight> {
-        // Find reps with no errors
-        val perfectReps = repDetails.filter { it.isCorrect }
+    ): List<DangerAlert> {
+        // Find reps with DANGER state
+        val dangerReps = repDetails.filter { it.worstState == JointState.DANGER }
         
-        if (perfectReps.isEmpty()) {
-            Log.d(TAG, "No perfect reps found")
+        if (dangerReps.isEmpty()) {
             return emptyList()
         }
         
-        // Sort by duration (prefer optimal timing - not too fast, not too slow)
-        // For now, just take first N perfect reps
-        return perfectReps.take(MAX_BEST_REPS).map { rep ->
+        Log.d(TAG, "Found ${dangerReps.size} DANGER reps")
+        
+        return dangerReps.take(MAX_DANGER_ALERTS).mapNotNull { rep ->
+            // Find the joint that caused DANGER
+            val dangerError = rep.errors.firstOrNull()
+            val jointCode = dangerError?.jointCode ?: return@mapNotNull null
+            
+            // Get tracked joint config
+            val trackedJoint = getTrackedJoint(exerciseConfig, jointCode)
+            
+            // Get DANGER message from stateMessages
+            val dangerMessage = trackedJoint?.stateMessages?.danger
+                ?: LocalizedText(
+                    ar = "وضعية خطيرة! انتبه لسلامتك",
+                    en = "Dangerous position! Watch your form"
+                )
+            
+            // Get tip from feedbackMessages
+            val tip = getRelevantTip(exerciseConfig, jointCode)
+                ?: LocalizedText(
+                    ar = "تحكم في الحركة ولا تتجاوز الحدود الآمنة",
+                    en = "Control the movement and stay within safe limits"
+                )
+            
+            // Get safe range
+            val safeRange = getSafeRangeForJoint(trackedJoint)
+            
+            // Find DANGER frame
+            val dangerFrame = frameCaptures.find { 
+                it.captureType == CaptureType.DANGER_FRAME && it.repNumber == rep.repNumber
+            } ?: frameCaptures.find {
+                it.captureType == CaptureType.ERROR_FRAME && it.repNumber == rep.repNumber
+            }
+            
+            DangerAlert(
+                repNumber = rep.repNumber,
+                jointCode = jointCode,
+                jointName = JointNameHelper.getSimpleJointName(jointCode),
+                actualAngle = dangerError.actualAngle,
+                safeRange = safeRange,
+                dangerMessage = dangerMessage,
+                solutionTip = tip,
+                dangerFrame = dangerFrame
+            )
+        }
+    }
+    
+    // ==================== Perfect Moments ====================
+    
+    private fun generatePerfectMoments(
+        repDetails: List<RepResult>,
+        exerciseConfig: ExerciseConfig,
+        frameCaptures: List<FrameCapture>
+    ): List<PerfectMoment> {
+        // Find reps with PERFECT state
+        val perfectReps = repDetails.filter { it.worstState == JointState.PERFECT }
+        
+        if (perfectReps.isEmpty()) {
+            return emptyList()
+        }
+        
+        Log.d(TAG, "Found ${perfectReps.size} PERFECT reps")
+        
+        // Get motivational messages from exercise
+        val motivationals = exerciseConfig.poseVariants.firstOrNull()
+            ?.feedbackMessages?.motivational ?: emptyList()
+        
+        return perfectReps.take(MAX_PERFECT_MOMENTS).mapIndexed { index, rep ->
+            // Get frame for this rep
             val frame = frameCaptures.find { 
                 it.repNumber == rep.repNumber && 
                 (it.captureType == CaptureType.BEST_REP || it.captureType == CaptureType.PEAK_FRAME)
             }
             
-            val duration = calculateRepDuration(rep)
+            // Select motivational message
+            val motivational = motivationals.getOrNull(index % motivationals.size.coerceAtLeast(1))
+                ?: LocalizedText(ar = "ممتاز! أداء مثالي!", en = "Excellent! Perfect form!")
+            
+            PerfectMoment(
+                repNumber = rep.repNumber,
+                score = rep.score,
+                durationMs = calculateRepDuration(rep),
+                motivationalMessage = motivational,
+                frameCapture = frame
+            )
+        }
+    }
+    
+    // ==================== Best/Worst Reps ====================
+    
+    private fun findBestRepsByScore(
+        repDetails: List<RepResult>,
+        frameCaptures: List<FrameCapture>
+    ): List<BestRepHighlight> {
+        // Sort by score descending
+        val sortedReps = repDetails
+            .filter { it.isCounted }
+            .sortedByDescending { it.score }
+        
+        if (sortedReps.isEmpty()) {
+            Log.d(TAG, "No counted reps found")
+            return emptyList()
+        }
+        
+        return sortedReps.take(MAX_BEST_REPS).map { rep ->
+            val frame = frameCaptures.find { 
+                it.repNumber == rep.repNumber && 
+                (it.captureType == CaptureType.BEST_REP || it.captureType == CaptureType.PEAK_FRAME)
+            }
+            
+            val displayInfo = StateDisplayConfig.getDisplayInfo(rep.worstState)
             
             BestRepHighlight(
                 repNumber = rep.repNumber,
-                durationMs = duration,
-                reasons = listOf(LocalizedText(
-                    ar = "أداء مثالي",
-                    en = "Perfect form"
-                )),
+                durationMs = calculateRepDuration(rep),
+                score = rep.score,
+                worstState = rep.worstState,
+                reasons = listOf(displayInfo.toLocalizedText()),
                 frameCapture = frame
             )
         }
@@ -190,80 +323,144 @@ object ReportGenerator {
         repDetails: List<RepResult>,
         frameCaptures: List<FrameCapture>
     ): WorstRepHighlight? {
-        // Find rep with most errors
+        // Find rep with lowest score or DANGER/WARNING state
         val worstRep = repDetails
-            .filter { !it.isCorrect }
-            .maxByOrNull { it.getTotalErrorCount() }
+            .filter { !it.isCounted || it.isInvalidated }
+            .minByOrNull { it.score }
+            ?: repDetails.minByOrNull { it.score }
             ?: return null
         
         val primaryError = worstRep.errors.firstOrNull()?.message
             ?: worstRep.positionErrors.firstOrNull()?.message
-            ?: LocalizedText(ar = "خطأ في الأداء", en = "Form error")
+            ?: StateDisplayConfig.getDisplayInfo(worstRep.worstState).toLocalizedText()
         
         val frame = frameCaptures.find { 
-            it.repNumber == worstRep.repNumber && it.captureType == CaptureType.ERROR_FRAME
+            it.repNumber == worstRep.repNumber && 
+            (it.captureType == CaptureType.ERROR_FRAME || it.captureType == CaptureType.DANGER_FRAME)
         }
         
         return WorstRepHighlight(
             repNumber = worstRep.repNumber,
             durationMs = calculateRepDuration(worstRep),
             errorCount = worstRep.getTotalErrorCount(),
+            worstState = worstRep.worstState,
             primaryError = primaryError,
             frameCapture = frame
         )
     }
     
-    private fun generateErrorAnalysis(
+    // ==================== State-Based Error Analysis ====================
+    
+    /**
+     * Generate error analysis from ALL errors across ALL reps
+     * 
+     * IMPORTANT: This now collects errors from rep.errors list, not just worst state.
+     * This ensures ALL joint errors are shown (primary + secondary).
+     */
+    private fun generateStateBasedErrorAnalysis(
         repDetails: List<RepResult>,
         exerciseConfig: ExerciseConfig,
         frameCaptures: List<FrameCapture>,
         bestRepFrame: FrameCapture?
     ): List<ErrorAnalysisItem> {
-        // Collect all errors grouped by type
-        val errorGroups = mutableMapOf<String, MutableList<Pair<Int, JointError>>>()
+        // Collect ALL errors from ALL reps, grouped by joint + state
+        data class ErrorOccurrence(
+            val repNumber: Int,
+            val error: JointError,
+            val actualAngle: Double
+        )
+        
+        val errorGroups = mutableMapOf<String, MutableList<ErrorOccurrence>>()
         
         repDetails.forEach { rep ->
+            // Collect from EACH error in the rep (not just worst state)
             rep.errors.forEach { error ->
-                val key = "${error.jointCode}:${error.errorType}"
-                errorGroups.getOrPut(key) { mutableListOf() }
-                    .add(Pair(rep.repNumber, error))
+                // Use the error's own state, not the rep's worst state
+                val errorState = error.state
+                if (errorState == JointState.WARNING || errorState == JointState.DANGER) {
+                    val key = "${error.jointCode}:${errorState.name}"
+                    errorGroups.getOrPut(key) { mutableListOf() }.add(
+                        ErrorOccurrence(rep.repNumber, error, error.actualAngle)
+                    )
+                }
             }
         }
         
-        // Convert to ErrorAnalysisItem, sorted by frequency
+        Log.d(TAG, "Found ${errorGroups.size} error groups from ${repDetails.size} reps")
+        
+        // Get best rep for comparison
+        val bestRep = repDetails.maxByOrNull { it.score }
+        val bestRepAngles = bestRepFrame?.metadata?.angles ?: emptyMap()
+        
         return errorGroups.map { (key, occurrences) ->
-            val sample = occurrences.first().second
-            val affectedReps = occurrences.map { it.first }
+            val jointCode = key.substringBefore(":")
+            val stateName = key.substringAfter(":")
+            val state = try { JointState.valueOf(stateName) } catch (e: Exception) { JointState.WARNING }
             
-            // Calculate average actual angle
-            val avgAngle = occurrences.map { it.second.actualAngle }.average()
+            val affectedReps = occurrences.map { it.repNumber }.distinct()
             
-            // Find error frame for this error type
+            // Get display info
+            val displayInfo = StateDisplayConfig.getDisplayInfo(state)
+            
+            // Get tracked joint for messages
+            val trackedJoint = getTrackedJoint(exerciseConfig, jointCode)
+            
+            // Get message from stateMessages - use the error's own message if available
+            val stateMessage = occurrences.firstOrNull()?.error?.message
+                ?: trackedJoint?.stateMessages?.getMessage(state)
+                ?: getDefaultStateMessage(state)
+            
+            // Get tip from feedbackMessages.tips
+            val tip = getRelevantTip(exerciseConfig, jointCode)
+                ?: getDefaultTip(state)
+            
+            // Calculate average angle from occurrences
+            val avgAngle = occurrences.map { it.actualAngle }.average()
+            
+            // Get expected range
+            val expectedRange = getSafeRangeForJoint(trackedJoint)
+            
+            // Best rep angle for this joint
+            val bestAngle = bestRepAngles[jointCode]
+            
+            // Find error frame for this specific error type
             val errorFrame = frameCaptures.find { 
-                it.captureType == CaptureType.ERROR_FRAME && it.errorType == key
+                (it.captureType == CaptureType.ERROR_FRAME || it.captureType == CaptureType.DANGER_FRAME) &&
+                it.errorType?.contains(jointCode) == true
+            } ?: frameCaptures.find {
+                (it.captureType == CaptureType.ERROR_FRAME || it.captureType == CaptureType.DANGER_FRAME) &&
+                it.repNumber in affectedReps
             }
-            
-            // Get tip from exercise config if available
-            val tip = getTipForError(sample, exerciseConfig)
             
             ErrorAnalysisItem(
                 errorKey = key,
-                jointCode = sample.jointCode,
-                errorType = sample.errorType,
-                count = occurrences.size,
+                jointCode = jointCode,
+                jointName = JointNameHelper.getSimpleJointName(jointCode),
+                state = state,
+                stateDisplayName = displayInfo.toLocalizedText(),
+                stateIcon = displayInfo.icon,
+                count = occurrences.size,  // Count of occurrences, not just affected reps
                 affectedReps = affectedReps,
-                message = sample.message,
+                message = stateMessage,
                 tip = tip,
                 averageActualAngle = avgAngle,
-                expectedRange = AngleRange(sample.expectedMin, sample.expectedMax),
+                expectedRange = expectedRange,
+                bestRepAngle = bestAngle,
                 errorFrame = errorFrame,
                 bestRepFrame = bestRepFrame
             )
-        }.sortedByDescending { it.count }
+        }.sortedWith(
+            // Sort by: DANGER first, then by count
+            compareByDescending<ErrorAnalysisItem> { it.state == JointState.DANGER }
+                .thenByDescending { it.count }
+        )
     }
     
-    private fun generateTimeline(
+    // ==================== State-Based Timeline ====================
+    
+    private fun generateStateTimeline(
         repDetails: List<RepResult>,
+        exerciseConfig: ExerciseConfig,
         bestRepNumbers: Set<Int>,
         worstRepNumber: Int?,
         frameCaptures: List<FrameCapture>
@@ -272,12 +469,18 @@ object ReportGenerator {
             val isBest = rep.repNumber in bestRepNumbers
             val isWorst = rep.repNumber == worstRepNumber
             
-            val status = when {
-                isBest -> RepStatus.BEST_REP
-                isWorst -> RepStatus.WORST_REP
-                rep.isCorrect -> RepStatus.CORRECT
-                else -> RepStatus.HAS_ERRORS
-            }
+            val displayInfo = StateDisplayConfig.getDisplayInfo(rep.worstState)
+            
+            val status = RepStatus.fromState(rep.worstState, isBest, isWorst)
+            
+            // Get state message for non-PERFECT reps
+            val stateMessage = if (rep.worstState != JointState.PERFECT) {
+                val primaryJoint = rep.errors.firstOrNull()?.jointCode
+                    ?: exerciseConfig.getPrimaryJoints().firstOrNull()?.joint
+                
+                val trackedJoint = primaryJoint?.let { getTrackedJoint(exerciseConfig, it) }
+                trackedJoint?.stateMessages?.getMessage(rep.worstState)
+            } else null
             
             // Get short error labels
             val errors = rep.errors.map { getShortErrorLabel(it) }
@@ -292,10 +495,98 @@ object ReportGenerator {
                 errors = errors,
                 isBestRep = isBest,
                 isWorstRep = isWorst,
-                frameCapture = frame
+                frameCapture = frame,
+                worstState = rep.worstState,
+                stateDisplayName = displayInfo.toLocalizedText(),
+                stateIcon = displayInfo.icon,
+                score = rep.score,
+                isCounted = rep.isCounted,
+                isInvalidated = rep.isInvalidated,
+                stateMessage = stateMessage
             )
         }
     }
+    
+    // ==================== Tips from Exercise JSON ====================
+    
+    private fun generateExerciseBasedTips(
+        errorAnalysis: List<ErrorAnalysisItem>,
+        exerciseConfig: ExerciseConfig,
+        dangerAlerts: List<DangerAlert>
+    ): List<ImprovementTip> {
+        val tips = mutableListOf<ImprovementTip>()
+        
+        // Priority 1: DANGER fixes (CRITICAL)
+        dangerAlerts.firstOrNull()?.let { danger ->
+            tips.add(ImprovementTip(
+                id = "danger_fix_${danger.jointCode}",
+                category = TipCategory.SAFETY,
+                icon = "🚨",
+                title = LocalizedText(ar = "الأهم - لسلامتك", en = "Most Important - For Your Safety"),
+                description = danger.solutionTip,
+                priority = 1,
+                severity = TipSeverity.CRITICAL,
+                relatedReps = listOf(danger.repNumber)
+            ))
+        }
+        
+        // Priority 2: Most common WARNING
+        errorAnalysis
+            .filter { it.state == JointState.WARNING }
+            .maxByOrNull { it.count }
+            ?.let { warningError ->
+                tips.add(ImprovementTip(
+                    id = warningError.errorKey,
+                    category = mapJointToCategory(warningError.jointCode),
+                    icon = "1️⃣",
+                    title = LocalizedText(ar = "نقطة التحسين الرئيسية", en = "Main Improvement Point"),
+                    description = warningError.tip,
+                    priority = 2,
+                    severity = TipSeverity.IMPORTANT,
+                    relatedReps = warningError.affectedReps
+                ))
+            }
+        
+        // Priority 3: Exercise tips from JSON
+        val exerciseTips = exerciseConfig.poseVariants.firstOrNull()
+            ?.feedbackMessages?.tips ?: emptyList()
+        
+        exerciseTips.take(2).forEachIndexed { index, tip ->
+            tips.add(ImprovementTip(
+                id = "exercise_tip_$index",
+                category = TipCategory.GENERAL,
+                icon = if (index == 0) "2️⃣" else "🎯",
+                title = LocalizedText(
+                    ar = if (index == 0) "نصيحة إضافية" else "تركيز الجلسة القادمة",
+                    en = if (index == 0) "Additional Tip" else "Next Session Focus"
+                ),
+                description = tip,
+                priority = 3 + index,
+                severity = TipSeverity.HELPFUL,
+                isNextFocus = index == 1
+            ))
+        }
+        
+        // If no tips yet, add encouragement
+        if (tips.isEmpty()) {
+            tips.add(ImprovementTip(
+                id = "perfect",
+                category = TipCategory.GENERAL,
+                icon = "⭐",
+                title = LocalizedText(ar = "ممتاز!", en = "Excellent!"),
+                description = LocalizedText(
+                    ar = "حافظ على هذا الأداء الرائع!",
+                    en = "Keep up this excellent performance!"
+                ),
+                priority = 1,
+                severity = TipSeverity.HELPFUL
+            ))
+        }
+        
+        return tips.take(MAX_TIPS)
+    }
+    
+    // ==================== Helper Methods ====================
     
     private fun calculateConsistency(repDetails: List<RepResult>): ConsistencyMetrics? {
         if (repDetails.size < 2) return null
@@ -319,69 +610,11 @@ object ReportGenerator {
         
         return SessionQuality(
             visibilityPauseCount = pauseCount,
-            totalInvisibleMs = 0L,  // Not tracked in current VisibilityStats
+            totalInvisibleMs = 0L,
             cameraWarningCount = cameraWarningCount + warningCount,
             overallQuality = quality,
             suggestions = suggestions
         )
-    }
-    
-    private fun generateTips(
-        errorAnalysis: List<ErrorAnalysisItem>,
-        exerciseConfig: ExerciseConfig
-    ): List<ImprovementTip> {
-        if (errorAnalysis.isEmpty()) {
-            // No errors - return encouragement
-            return listOf(
-                ImprovementTip(
-                    id = "perfect",
-                    category = TipCategory.STABILITY,
-                    title = LocalizedText(ar = "ممتاز!", en = "Perfect!"),
-                    description = LocalizedText(
-                        ar = "حافظ على هذا الأداء الرائع!",
-                        en = "Keep up this excellent performance!"
-                    ),
-                    priority = 1,
-                    isNextFocus = false
-                )
-            )
-        }
-        
-        val tips = mutableListOf<ImprovementTip>()
-        
-        // Top 2 most common errors
-        errorAnalysis.take(2).forEachIndexed { index, error ->
-            tips.add(
-                ImprovementTip(
-                    id = error.errorKey,
-                    category = mapErrorToCategory(error),
-                    title = error.message,
-                    description = error.tip,
-                    priority = index + 1,
-                    isNextFocus = false
-                )
-            )
-        }
-        
-        // Add "Next Focus" for 3rd error if exists
-        if (errorAnalysis.size > 2) {
-            val nextError = errorAnalysis[2]
-            tips.add(
-                ImprovementTip(
-                    id = nextError.errorKey,
-                    category = mapErrorToCategory(nextError),
-                    title = nextError.message,
-                    description = LocalizedText(
-                        ar = "ركز على هذا في الجلسة القادمة",
-                        en = "Focus on this in your next session"
-                    ),
-                    priority = 3,
-                    isNextFocus = true
-                )
-            )
-        }
-        
-        return tips
     }
     
     private fun generateHoldSummary(
@@ -392,20 +625,15 @@ object ReportGenerator {
             (holdData.achievedMs.toFloat() / holdData.targetMs.toFloat()) * 100f
         } else 0f
         
-        // Convert joint error map to quality breakdown
         val jointBreakdown = holdData.jointErrorMap.map { (jointCode, errorCount) ->
             JointHoldQuality(
                 jointCode = jointCode,
-                jointName = LocalizedText(
-                    ar = getJointNameAr(jointCode),
-                    en = getJointNameEn(jointCode)
-                ),
+                jointName = JointNameHelper.getJointName(jointCode),
                 quality = HoldQuality.fromErrorCount(errorCount),
                 errorCount = errorCount
             )
         }
         
-        // Get sample frames for hold
         val sampleFrames = frameCaptures.filter { it.captureType == CaptureType.HOLD_SAMPLE }
         
         return HoldSummary(
@@ -419,11 +647,8 @@ object ReportGenerator {
         )
     }
     
-    // ==================== Helper Methods ====================
-    
     private fun calculateRepDuration(rep: RepResult): Long {
-        // Sum of all phase timings
-        return rep.phaseTimings.values.sum().takeIf { it > 0 } ?: 2000L // Default 2s
+        return rep.phaseTimings.values.sum().takeIf { it > 0 } ?: 2000L
     }
     
     private fun getShortErrorLabel(error: JointError): String {
@@ -434,53 +659,96 @@ object ReportGenerator {
         }
     }
     
-    private fun getTipForError(error: JointError, exerciseConfig: ExerciseConfig): LocalizedText {
-        // Try to get tip from exercise config
-        val poseVariant = exerciseConfig.poseVariants.firstOrNull()
-        val tips = poseVariant?.feedbackMessages?.tip ?: emptyList()
+    private fun getTrackedJoint(exerciseConfig: ExerciseConfig, jointCode: String): TrackedJoint? {
+        return exerciseConfig.poseVariants.firstOrNull()
+            ?.trackedJoints
+            ?.find { it.joint == jointCode }
+    }
+    
+    private fun getRelevantTip(exerciseConfig: ExerciseConfig, jointCode: String): LocalizedText? {
+        val tips = exerciseConfig.poseVariants.firstOrNull()
+            ?.feedbackMessages?.tips ?: return null
         
-        // Return first relevant tip or generic
-        return tips.firstOrNull() ?: when (error.errorType) {
-            ErrorType.TOO_HIGH -> LocalizedText(
-                ar = "حاول ثني المفصل أكثر",
-                en = "Try to bend more at this joint"
+        // Try to find a tip related to this joint
+        return tips.find { tip ->
+            tip.en.lowercase().contains(jointCode.replace("_", " ").lowercase()) ||
+            tip.en.lowercase().contains(jointCode.substringAfter("_").lowercase())
+        } ?: tips.firstOrNull()
+    }
+    
+    private fun getSafeRangeForJoint(trackedJoint: TrackedJoint?): AngleRange {
+        if (trackedJoint == null) {
+            return AngleRange(0.0, 180.0)
+        }
+        
+        // Get perfect range as safe range
+        val perfectRange = trackedJoint.downRange?.perfect
+            ?: trackedJoint.upRange?.perfect
+            ?: trackedJoint.range?.perfect
+        
+        return perfectRange ?: AngleRange(0.0, 180.0)
+    }
+    
+    private fun selectMotivationalMessage(
+        exerciseConfig: ExerciseConfig,
+        rating: PerformanceRating,
+        stateBreakdown: StateBreakdown
+    ): LocalizedText {
+        val motivationals = exerciseConfig.poseVariants.firstOrNull()
+            ?.feedbackMessages?.motivational ?: emptyList()
+        
+        return when {
+            // Celebrate excellent performance
+            stateBreakdown.perfectRatio >= 0.8f && stateBreakdown.dangerCount == 0 -> {
+                motivationals.randomOrNull() 
+                    ?: LocalizedText(ar = "ممتاز! أداء مثالي!", en = "Excellent! Perfect form!")
+            }
+            
+            // Good performance
+            rating == PerformanceRating.GOOD || rating == PerformanceRating.EXCELLENT -> {
+                motivationals.randomOrNull()
+                    ?: LocalizedText(ar = "عمل رائع! استمر!", en = "Great job! Keep it up!")
+            }
+            
+            // Needs work but encouraging
+            else -> rating.getMotivationalMessage()
+        }
+    }
+    
+    private fun getDefaultStateMessage(state: JointState): LocalizedText {
+        return when (state) {
+            JointState.PERFECT -> LocalizedText(ar = "ممتاز!", en = "Excellent!")
+            JointState.NORMAL -> LocalizedText(ar = "جيد", en = "Good")
+            JointState.PAD -> LocalizedText(ar = "مقبول", en = "Acceptable")
+            JointState.WARNING -> LocalizedText(ar = "يحتاج تحسين", en = "Needs improvement")
+            JointState.DANGER -> LocalizedText(ar = "خطر!", en = "Danger!")
+            JointState.TRANSITION -> LocalizedText(ar = "انتقال", en = "Moving")
+        }
+    }
+    
+    private fun getDefaultTip(state: JointState): LocalizedText {
+        return when (state) {
+            JointState.DANGER -> LocalizedText(
+                ar = "تحكم في الحركة ولا تتجاوز الحدود الآمنة",
+                en = "Control the movement and stay within safe limits"
             )
-            ErrorType.TOO_LOW -> LocalizedText(
-                ar = "لا تثني المفصل كثيراً",
-                en = "Don't bend too much at this joint"
+            JointState.WARNING -> LocalizedText(
+                ar = "حاول التركيز على الوضعية الصحيحة",
+                en = "Try to focus on proper form"
+            )
+            else -> LocalizedText(
+                ar = "استمر بالتدريب للتحسن",
+                en = "Keep practicing to improve"
             )
         }
     }
     
-    private fun mapErrorToCategory(error: ErrorAnalysisItem): TipCategory {
+    private fun mapJointToCategory(jointCode: String): TipCategory {
         return when {
-            error.jointCode.contains("knee") || error.jointCode.contains("hip") -> TipCategory.DEPTH
-            error.jointCode.contains("spine") || error.jointCode.contains("shoulder") -> TipCategory.ALIGNMENT
+            jointCode.contains("knee") || jointCode.contains("hip") -> TipCategory.DEPTH
+            jointCode.contains("spine") || jointCode.contains("shoulder") -> TipCategory.ALIGNMENT
+            jointCode.contains("ankle") -> TipCategory.POSITION
             else -> TipCategory.STABILITY
-        }
-    }
-    
-    private fun getJointNameEn(jointCode: String): String {
-        return when {
-            jointCode.contains("knee") -> "Knee"
-            jointCode.contains("hip") -> "Hip"
-            jointCode.contains("elbow") -> "Elbow"
-            jointCode.contains("shoulder") -> "Shoulder"
-            jointCode.contains("ankle") -> "Ankle"
-            jointCode.contains("spine") -> "Spine"
-            else -> jointCode.replace("_", " ").replaceFirstChar { it.uppercase() }
-        }
-    }
-    
-    private fun getJointNameAr(jointCode: String): String {
-        return when {
-            jointCode.contains("knee") -> "الركبة"
-            jointCode.contains("hip") -> "الورك"
-            jointCode.contains("elbow") -> "المرفق"
-            jointCode.contains("shoulder") -> "الكتف"
-            jointCode.contains("ankle") -> "الكاحل"
-            jointCode.contains("spine") -> "العمود الفقري"
-            else -> jointCode
         }
     }
 }

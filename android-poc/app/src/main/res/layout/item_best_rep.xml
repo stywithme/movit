@@ -6,30 +6,28 @@
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:layout_marginBottom="12dp"
-    app:cardBackgroundColor="#2D2D2D"
+    app:cardBackgroundColor="#1A3A2F"
     app:cardCornerRadius="12dp"
     app:cardElevation="2dp">
 
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:orientation="horizontal"
-        android:padding="16dp">
+        android:orientation="vertical">
 
-        <!-- Frame Thumbnail -->
-        <androidx.cardview.widget.CardView
-            android:layout_width="100dp"
-            android:layout_height="100dp"
-            app:cardCornerRadius="8dp"
-            app:cardElevation="0dp"
-            android:layout_marginEnd="16dp">
+        <!-- Large Frame Image - Click to expand -->
+        <FrameLayout
+            android:id="@+id/frameContainer"
+            android:layout_width="match_parent"
+            android:layout_height="220dp"
+            android:foreground="?attr/selectableItemBackground">
 
             <ImageView
                 android:id="@+id/ivFrame"
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
-                android:scaleType="centerCrop"
-                android:background="#404040"
+                android:scaleType="fitCenter"
+                android:background="#1A1A1A"
                 android:visibility="gone"
                 tools:visibility="visible"/>
 
@@ -38,60 +36,116 @@
                 android:id="@+id/placeholderFrame"
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
-                android:background="#404040"
+                android:background="#2A4A3A"
                 android:gravity="center"
                 android:orientation="vertical">
 
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="⭐"
-                    android:textSize="32sp"/>
+                    android:text="🏆"
+                    android:textSize="48sp"/>
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="8dp"
+                    android:text="Best Performance"
+                    android:textColor="#4CAF50"
+                    android:textSize="14sp"/>
             </LinearLayout>
-        </androidx.cardview.widget.CardView>
 
-        <!-- Details -->
-        <LinearLayout
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:layout_gravity="center_vertical"
-            android:orientation="vertical">
-
+            <!-- Best Badge -->
             <TextView
-                android:id="@+id/tvRepNumber"
+                android:id="@+id/tvBadge"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:textColor="@android:color/white"
-                android:textSize="18sp"
-                android:textStyle="bold"
-                tools:text="Rep #3"/>
+                android:layout_gravity="top|end"
+                android:layout_margin="8dp"
+                android:background="#CC4CAF50"
+                android:paddingHorizontal="12dp"
+                android:paddingVertical="6dp"
+                android:text="🏆 Best Rep"
+                android:textColor="#FFFFFF"
+                android:textSize="12sp"
+                android:textStyle="bold"/>
 
+            <!-- Score Badge -->
+            <TextView
+                android:id="@+id/tvScore"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="bottom|start"
+                android:layout_margin="8dp"
+                android:background="#CC000000"
+                android:paddingHorizontal="12dp"
+                android:paddingVertical="6dp"
+                android:textColor="#4CAF50"
+                android:textSize="16sp"
+                android:textStyle="bold"
+                tools:text="Score: 95%"/>
+
+            <!-- Tap to expand hint -->
+            <TextView
+                android:id="@+id/tvExpandHint"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="bottom|end"
+                android:layout_margin="8dp"
+                android:background="#88000000"
+                android:paddingHorizontal="8dp"
+                android:paddingVertical="4dp"
+                android:text="🔍 Tap to expand"
+                android:textColor="#FFFFFF"
+                android:textSize="11sp"
+                android:visibility="gone"/>
+
+        </FrameLayout>
+
+        <!-- Details Section -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:padding="16dp">
+
+            <!-- Rep Number & Duration -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:gravity="center_vertical">
+
+                <TextView
+                    android:id="@+id/tvRepNumber"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:textColor="@android:color/white"
+                    android:textSize="18sp"
+                    android:textStyle="bold"
+                    tools:text="Rep #3"/>
+
+                <TextView
+                    android:id="@+id/tvDuration"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:textColor="#B0B0B0"
+                    android:textSize="14sp"
+                    tools:text="⏱ 2.1s"/>
+            </LinearLayout>
+
+            <!-- Reason/Message -->
             <TextView
                 android:id="@+id/tvReason"
-                android:layout_width="wrap_content"
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="4dp"
-                android:textColor="#4CAF50"
-                android:textSize="14sp"
-                tools:text="✓ Perfect form"/>
+                android:layout_marginTop="8dp"
+                android:textColor="#A5D6A7"
+                android:textSize="15sp"
+                android:lineSpacingExtra="4dp"
+                tools:text="✓ Excellent form! All joints in perfect position throughout the movement."/>
 
-            <TextView
-                android:id="@+id/tvDuration"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="4dp"
-                android:textColor="#B0B0B0"
-                android:textSize="12sp"
-                tools:text="Duration: 2.1s"/>
         </LinearLayout>
-
-        <!-- Star Badge -->
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_gravity="top"
-            android:text="⭐"
-            android:textSize="24sp"/>
     </LinearLayout>
 </androidx.cardview.widget.CardView>

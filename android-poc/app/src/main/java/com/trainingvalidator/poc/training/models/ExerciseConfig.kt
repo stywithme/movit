@@ -6,7 +6,10 @@ import com.google.gson.annotations.SerializedName
  * ExerciseConfig - Complete exercise configuration from JSON
  * 
  * This represents the full exercise data structure as defined by the admin dashboard.
- * Supports multiple pose variants, tracked joints, and difficulty levels.
+ * Supports multiple pose variants and tracked joints with STATE-BASED quality assessment.
+ * 
+ * NOTE: Difficulty levels have been REMOVED. All users get the same exercise,
+ * and quality is assessed based on JointState (PERFECT/NORMAL/PAD/WARNING/DANGER).
  */
 data class ExerciseConfig(
     val name: LocalizedText,
@@ -18,6 +21,7 @@ data class ExerciseConfig(
     val equipment: List<String> = emptyList(),
     val tags: List<String> = emptyList(),
     val poseVariants: List<PoseVariant> = emptyList(),
+    val repCountingConfig: RepCountingConfig = RepCountingConfig(), // Moved from DifficultyLevel
     // Runtime field - set by ExerciseLoader
     @Transient
     var fileName: String = ""
@@ -30,21 +34,22 @@ data class ExerciseConfig(
     }
     
     /**
-     * Get difficulty level config for a pose variant
-     */
-    fun getDifficultyLevel(variantIndex: Int, level: DifficultyType): DifficultyLevel? {
-        return poseVariants.getOrNull(variantIndex)
-            ?.difficultyLevels
-            ?.find { it.level == level }
-    }
-    
-    /**
      * Get primary joints for a pose variant
      */
     fun getPrimaryJoints(variantIndex: Int = 0): List<TrackedJoint> {
         return poseVariants.getOrNull(variantIndex)
             ?.trackedJoints
             ?.filter { it.role == JointRole.PRIMARY }
+            ?: emptyList()
+    }
+    
+    /**
+     * Get secondary joints for a pose variant
+     */
+    fun getSecondaryJoints(variantIndex: Int = 0): List<TrackedJoint> {
+        return poseVariants.getOrNull(variantIndex)
+            ?.trackedJoints
+            ?.filter { it.role == JointRole.SECONDARY }
             ?: emptyList()
     }
     
@@ -96,6 +101,8 @@ enum class CountingMethod {
  * @param cameraPosition Expected camera position: "side_view", "front_view", "back_view"
  * @param expectedFacingDirection Expected body facing direction for position checks
  * @param positionChecks Position-based validation checks (knee-over-toe, alignment, etc.)
+ * 
+ * NOTE: difficultyLevels have been REMOVED. Quality is now assessed via JointState.
  */
 data class PoseVariant(
     val name: LocalizedText,
@@ -103,8 +110,7 @@ data class PoseVariant(
     val expectedFacingDirection: FacingDirection? = null,
     val trackedJoints: List<TrackedJoint> = emptyList(),
     val positionChecks: List<PositionCheck> = emptyList(),
-    val feedbackMessages: FeedbackMessages = FeedbackMessages(),
-    val difficultyLevels: List<DifficultyLevel> = emptyList()
+    val feedbackMessages: FeedbackMessages = FeedbackMessages()
 ) {
     /**
      * Get tracked joint by code
@@ -140,78 +146,220 @@ enum class JointRole {
 }
 
 /**
- * Tracked joint configuration - NEW STRUCTURE with upRange/downRange
+ * Tracked joint configuration - STATE-BASED STRUCTURE
  * 
- * The exercise movement is divided into clear zones:
- * - upRange: Valid range for UP/START position (standing, extended) - PRIMARY only
- * - downRange: Valid range for DOWN/BOTTOM position (bent, lowered) - PRIMARY only
- * - range: Single hold range for SECONDARY joints (must stay stable)
- * - Transition Zone: Between upRange.min and downRange.max (movement allowed)
- * - Error Zones: Above upRange.max or below downRange.min
+ * Uses StateRanges for unified quality assessment:
+ * - stateUpRange: State-based ranges for UP/START position (PRIMARY only)
+ * - stateDownRange: State-based ranges for DOWN/BOTTOM position (PRIMARY only)
+ * - stateRange: Single StateRanges for SECONDARY joints (must stay stable)
+ * 
+ * Each StateRanges contains:
+ * - perfect: Ideal angle range (required)
+ * - normal: Good angle range (optional, overlaps perfect)
+ * - pad: Acceptable range (optional, overlaps normal)
+ * - warning: Error zone (optional, outer edges)
+ * - danger: Injury risk zone (optional, extreme outer edges)
+ * 
+ * TRANSITION zone is calculated automatically from the gap between
+ * stateUpRange and stateDownRange.
  * 
  * Example for Bicep Curl:
  *   PRIMARY (left_elbow):
- *     upRange:   { min: 150, max: 180 }  → arm extended
- *     downRange: { min: 30,  max: 70  }  → arm bent
+ *     stateUpRange:   { perfect: {130-150}, normal: {120-160}, warning: {160-170} }
+ *     stateDownRange: { perfect: {40-70}, normal: {30-80} }
  *   SECONDARY (right_elbow):
- *     range:     { min: 150, max: 180 }  → must stay extended (HOLD)
+ *     stateRange:     { perfect: {150-170}, warning: {170-180} }
  */
 data class TrackedJoint(
-    val joint: String,                      // Joint code (e.g., "left_elbow")
-    val role: JointRole,                    // primary or secondary
-    val startPose: AngleRange,              // For pre-training position check (independent)
-    val upRange: DifficultyRanges? = null,  // Range for UP/START position (PRIMARY only)
-    val downRange: DifficultyRanges? = null, // Range for DOWN/BOTTOM position (PRIMARY only)
-    @SerializedName("Range")
-    val range: DifficultyRanges? = null,    // Single hold range (SECONDARY only)
-    val errorMessages: ErrorMessages,       // Error messages for feedback
-    val pairedWith: String? = null          // Paired joint code (for symmetry)
+    val joint: String,                          // Joint code (e.g., "left_elbow")
+    val role: JointRole,                        // primary or secondary
+    val startPose: AngleRange,                  // For pre-training position check
+    
+    // State-based ranges (replaces DifficultyRanges)
+    // Keep JSON keys aligned with plan: upRange/downRange/range
+    @SerializedName(value = "upRange", alternate = ["stateUpRange"])
+    val upRange: StateRanges? = null,           // State ranges for UP position (PRIMARY)
+    @SerializedName(value = "downRange", alternate = ["stateDownRange"])
+    val downRange: StateRanges? = null,         // State ranges for DOWN position (PRIMARY)
+    @SerializedName(value = "Range", alternate = ["range", "stateRange"])
+    val range: StateRanges? = null,             // State ranges for SECONDARY (hold)
+    
+    // State-specific messages (MEDIUM priority feedback)
+    // Messages for each JointState: perfect, normal, pad, warning, danger
+    val stateMessages: StateMessages? = null,
+    
+    val pairedWith: String? = null,             // Paired joint code (for symmetry)
+    
+    // Visual indicator direction control
+    // When true: Swaps upRange/downRange for visual indicator display
+    // Use when the LOWER limb moves UP (like bicep curl: forearm moves up towards shoulder)
+    // Default false: Upper limb moves down (like squat: thigh moves down)
+    val invertIndicator: Boolean = false
 ) {
+    // ==================== State-Based Methods ====================
+    
     /**
-     * Get UP range for a specific difficulty level (PRIMARY only)
+     * Get StateRanges for UP position (PRIMARY only)
      */
-    fun getUpRange(level: DifficultyType): AngleRange {
-        val ranges = upRange ?: throw IllegalStateException("upRange is required for PRIMARY joints")
-        return when (level) {
-            DifficultyType.BEGINNER -> ranges.beginner
-            DifficultyType.NORMAL -> ranges.normal
-            DifficultyType.ADVANCED -> ranges.advanced
+    fun getStateUpRange(): StateRanges {
+        return upRange
+            ?: throw IllegalStateException("stateUpRange is required for PRIMARY joints: $joint")
+    }
+    
+    /**
+     * Get StateRanges for DOWN position (PRIMARY only)
+     */
+    fun getStateDownRange(): StateRanges {
+        return downRange
+            ?: throw IllegalStateException("stateDownRange is required for PRIMARY joints: $joint")
+    }
+    
+    /**
+     * Get StateRanges for SECONDARY joint (hold range)
+     */
+    fun getStateHoldRange(): StateRanges {
+        return range
+            ?: throw IllegalStateException("stateRange is required for SECONDARY joints: $joint")
+    }
+    
+    /**
+     * Check if this joint has state-based up/down ranges (PRIMARY)
+     */
+    fun hasStateUpDownRanges(): Boolean = upRange != null && downRange != null
+    
+    /**
+     * Check if this joint has state-based hold range (SECONDARY)
+     */
+    fun hasStateHoldRange(): Boolean = range != null
+    
+    /**
+     * Calculate TRANSITION zone boundaries
+     * 
+     * TRANSITION.min = highest max in downRange (across all states)
+     * TRANSITION.max = lowest min in upRange (across all states)
+     * 
+     * @return Pair of (transitionMin, transitionMax) or null if not applicable
+     */
+    fun getTransitionZone(): Pair<Double, Double>? {
+        if (!hasStateUpDownRanges()) return null
+        
+        val upRange = getStateUpRange()
+        val downRange = getStateDownRange()
+        
+        // TRANSITION.min = highest max in downRange
+        val transitionMin = downRange.getEffectiveMax()
+        
+        // TRANSITION.max = lowest min in upRange
+        val transitionMax = upRange.getEffectiveMin()
+        
+        return if (transitionMin < transitionMax) {
+            Pair(transitionMin, transitionMax)
+        } else {
+            // No valid transition zone (ranges overlap or touch)
+            null
         }
     }
     
     /**
-     * Get DOWN range for a specific difficulty level (PRIMARY only)
+     * Determine the ZoneType for an angle (PRIMARY joints)
+     * 
+     * NOTE: This is a raw calculation without hysteresis.
+     * For production use, prefer FormValidator.getJointStateInfos() which applies
+     * hysteresis and danger frame smoothing for stable state transitions.
+     * 
+     * @param angle Current joint angle
+     * @return ZoneType (UP_ZONE, DOWN_ZONE, or TRANSITION)
      */
-    fun getDownRange(level: DifficultyType): AngleRange {
-        val ranges = downRange ?: throw IllegalStateException("downRange is required for PRIMARY joints")
-        return when (level) {
-            DifficultyType.BEGINNER -> ranges.beginner
-            DifficultyType.NORMAL -> ranges.normal
-            DifficultyType.ADVANCED -> ranges.advanced
+    fun determineZoneType(angle: Double): ZoneType {
+        if (!hasStateUpDownRanges()) {
+            // SECONDARY joints are always in their hold zone
+            return ZoneType.UP_ZONE // Treat as single zone
+        }
+        
+        val transition = getTransitionZone()
+        
+        return when {
+            transition != null && angle > transition.first && angle < transition.second -> {
+                ZoneType.TRANSITION
+            }
+            angle >= getStateUpRange().getEffectiveMin() -> {
+                ZoneType.UP_ZONE
+            }
+            angle <= getStateDownRange().getEffectiveMax() -> {
+                ZoneType.DOWN_ZONE
+            }
+            else -> {
+                // In transition zone (no explicit transition defined)
+                ZoneType.TRANSITION
+            }
         }
     }
     
     /**
-     * Get hold range for SECONDARY joint (single range for HOLD behavior)
+     * Determine JointState for an angle (raw calculation)
+     * 
+     * NOTE: This is a raw calculation without hysteresis or danger frame smoothing.
+     * For production use, prefer FormValidator.getJointStateInfos() which provides
+     * stable state transitions with proper hysteresis.
+     * 
+     * @param angle Current joint angle
+     * @return JointState based on which range the angle falls into
      */
-    fun getHoldRange(level: DifficultyType): AngleRange {
-        val ranges = range ?: throw IllegalStateException("range is required for SECONDARY joints")
-        return when (level) {
-            DifficultyType.BEGINNER -> ranges.beginner
-            DifficultyType.NORMAL -> ranges.normal
-            DifficultyType.ADVANCED -> ranges.advanced
+    fun determineState(angle: Double): JointState {
+        return if (hasStateHoldRange()) {
+            // SECONDARY: Check against hold range
+            getStateHoldRange().determineState(angle)
+        } else if (hasStateUpDownRanges()) {
+            // PRIMARY: Check against up/down ranges
+            val zoneType = determineZoneType(angle)
+            when (zoneType) {
+                ZoneType.TRANSITION -> JointState.TRANSITION
+                ZoneType.UP_ZONE -> getStateUpRange().determineState(angle)
+                ZoneType.DOWN_ZONE -> getStateDownRange().determineState(angle)
+            }
+        } else {
+            // Fallback
+            JointState.WARNING
         }
     }
     
     /**
-     * Check if this joint has a hold range (SECONDARY)
+     * Get messages for a specific state
      */
-    fun hasHoldRange(): Boolean = range != null
+    fun getMessagesForState(state: JointState): List<LocalizedText> {
+        return stateMessages?.getMessages(state) ?: emptyList()
+    }
     
     /**
-     * Check if this joint has up/down ranges (PRIMARY)
+     * Get message for start pose feedback
+     * 
+     * Uses stateMessages.warning if available, otherwise returns a generic message.
+     * This replaces the old errorMessages.tooLow/tooHigh system.
+     * 
+     * @param errorType TOO_HIGH or TOO_LOW
+     * @return LocalizedText message for the error
      */
-    fun hasUpDownRanges(): Boolean = upRange != null && downRange != null
+    fun getStartPoseMessage(errorType: ErrorType): LocalizedText {
+        // Try to get warning message from stateMessages
+        val warningMessage = stateMessages?.warning
+        if (warningMessage != null) {
+            return warningMessage
+        }
+        
+        // Fallback to generic messages
+        return when (errorType) {
+            ErrorType.TOO_HIGH -> LocalizedText(
+                ar = "اخفض أكثر",
+                en = "Lower more"
+            )
+            ErrorType.TOO_LOW -> LocalizedText(
+                ar = "ارفع أكثر",
+                en = "Raise more"
+            )
+        }
+    }
+    
+    // ==================== Legacy/Utility Methods ====================
     
     /**
      * Check if angle is in startPose range (pre-training check)
@@ -221,60 +369,20 @@ data class TrackedJoint(
     }
     
     /**
-     * Check if angle is in UP range (start position) - PRIMARY only
+     * Check if angle is in any counted state (PERFECT, NORMAL, PAD)
      */
-    fun isInUpRange(angle: Double, level: DifficultyType): Boolean {
-        val range = getUpRange(level)
-        return angle >= range.min && angle <= range.max
-    }
-    
-    /**
-     * Check if angle is in DOWN range (target position) - PRIMARY only
-     */
-    fun isInDownRange(angle: Double, level: DifficultyType): Boolean {
-        val range = getDownRange(level)
-        return angle >= range.min && angle <= range.max
-    }
-    
-    /**
-     * Check if angle is in hold range - SECONDARY only
-     */
-    fun isInHoldRange(angle: Double, level: DifficultyType): Boolean {
-        val holdRange = getHoldRange(level)
-        return angle >= holdRange.min && angle <= holdRange.max
-    }
-    
-    /**
-     * Check if angle is in transition zone (between UP and DOWN) - PRIMARY only
-     */
-    fun isInTransition(angle: Double, level: DifficultyType): Boolean {
-        val up = getUpRange(level)
-        val down = getDownRange(level)
-        return angle > down.max && angle < up.min
-    }
-    
-    /**
-     * Check if angle is in error zone (too high or too low)
-     */
-    fun isInErrorZone(angle: Double, level: DifficultyType): ErrorZone {
-        return if (hasHoldRange()) {
-            // SECONDARY: Check against hold range
-            val holdRange = getHoldRange(level)
-            when {
-                angle > holdRange.max -> ErrorZone.TOO_HIGH
-                angle < holdRange.min -> ErrorZone.TOO_LOW
-                else -> ErrorZone.NONE
-            }
-        } else {
-            // PRIMARY: Check against up/down ranges
-            val up = getUpRange(level)
-            val down = getDownRange(level)
-            when {
-                angle > up.max -> ErrorZone.TOO_HIGH
-                angle < down.min -> ErrorZone.TOO_LOW
-                else -> ErrorZone.NONE
-            }
+    fun isInCountedState(angle: Double): Boolean {
+        return when (val state = determineState(angle)) {
+            JointState.PERFECT, JointState.NORMAL, JointState.PAD -> true
+            else -> false
         }
+    }
+    
+    /**
+     * Check if angle causes rep invalidation (DANGER state)
+     */
+    fun invalidatesRep(angle: Double): Boolean {
+        return determineState(angle) == JointState.DANGER
     }
 }
 
@@ -300,57 +408,72 @@ data class AngleRange(
     fun contains(angle: Double): Boolean {
         return angle >= min && angle <= max
     }
+    
+    /**
+     * Check if this range overlaps with another range
+     * Two ranges overlap if they share any common points
+     */
+    fun overlaps(other: AngleRange): Boolean {
+        // Ranges overlap if one starts before the other ends
+        return this.min <= other.max && other.min <= this.max
+    }
+    
+    /**
+     * Check if this range fully contains another range
+     */
+    fun fullyContains(other: AngleRange): Boolean {
+        return this.min <= other.min && this.max >= other.max
+    }
 }
 
-/**
- * Ranges per difficulty level
- */
-data class DifficultyRanges(
-    val beginner: AngleRange = AngleRange(0.0, 180.0),
-    val normal: AngleRange = AngleRange(0.0, 180.0),
-    val advanced: AngleRange = AngleRange(0.0, 180.0)
-)
+// NOTE: DifficultyRanges has been REMOVED. Use StateRanges instead.
+// NOTE: ErrorMessages (tooLow/tooHigh) has been REMOVED. Use StateMessages instead.
 
 /**
- * Error messages for joint feedback
- */
-data class ErrorMessages(
-    val tooLow: LocalizedText = LocalizedText(),
-    val tooHigh: LocalizedText = LocalizedText()
-)
-
-/**
- * Feedback messages collection
+ * Feedback messages collection - LOW PRIORITY random messages
+ * 
+ * These messages are delivered randomly when there's "quiet time" 
+ * (no errors/warnings active). They have the lowest priority and
+ * are skipped if higher priority messages need to be delivered.
+ * 
+ * Message Types:
+ * - motivational: Positive reinforcement (e.g., "Great job!", "Keep going!")
+ * - tips: Improvement suggestions (e.g., "Push through your heels")
+ * 
+ * NOTE: common_mistake has been REMOVED - covered by positionChecks.errorMessage
  */
 data class FeedbackMessages(
     val motivational: List<LocalizedText> = emptyList(),
-    @SerializedName("common_mistake")
-    val commonMistake: List<LocalizedText> = emptyList(),
-    val tip: List<LocalizedText> = emptyList()
-)
-
-/**
- * Difficulty level configuration
- */
-data class DifficultyLevel(
-    val level: DifficultyType,
-    val repCountingConfig: RepCountingConfig,
-    val phases: List<String> = emptyList()
-)
-
-/**
- * Difficulty type enum
- */
-enum class DifficultyType {
-    @SerializedName("beginner")
-    BEGINNER,
+    @SerializedName("tips", alternate = ["tip"])
+    val tips: List<LocalizedText> = emptyList()
+) {
+    /**
+     * Check if there are any messages available
+     */
+    fun hasMessages(): Boolean = motivational.isNotEmpty() || tips.isNotEmpty()
     
-    @SerializedName("normal")
-    NORMAL,
+    /**
+     * Get a random motivational message
+     */
+    fun getRandomMotivational(): LocalizedText? = motivational.randomOrNull()
     
-    @SerializedName("advanced")
-    ADVANCED
+    /**
+     * Get a random tip
+     */
+    fun getRandomTip(): LocalizedText? = tips.randomOrNull()
+    
+    /**
+     * Get any random message (motivational or tip)
+     */
+    fun getRandomMessage(): LocalizedText? {
+        val allMessages = motivational + tips
+        return allMessages.randomOrNull()
+    }
 }
+
+// NOTE: DifficultyLevel and DifficultyType have been REMOVED.
+// Quality is now assessed via JointState (PERFECT/NORMAL/PAD/WARNING/DANGER).
+// RepCountingConfig is now at ExerciseConfig level.
 
 /**
  * Rep counting configuration
@@ -504,33 +627,12 @@ data class LandmarkGroup(
 )
 
 /**
- * Position condition with difficulty-aware thresholds
+ * Position condition with threshold
  */
 data class PositionCondition(
     val operator: PositionOperator,
-    val thresholds: DifficultyThresholds
+    val threshold: Double  // Single threshold value (no difficulty levels)
 )
-
-/**
- * Threshold values per difficulty level
- * Similar pattern to DifficultyRanges but for single values
- */
-data class DifficultyThresholds(
-    val beginner: Double,
-    val normal: Double,
-    val advanced: Double
-) {
-    /**
-     * Get threshold for specific difficulty
-     */
-    fun getForDifficulty(difficulty: DifficultyType): Double {
-        return when (difficulty) {
-            DifficultyType.BEGINNER -> beginner
-            DifficultyType.NORMAL -> normal
-            DifficultyType.ADVANCED -> advanced
-        }
-    }
-}
 
 /**
  * Position comparison operators

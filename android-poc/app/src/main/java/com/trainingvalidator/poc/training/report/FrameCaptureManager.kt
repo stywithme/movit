@@ -11,12 +11,14 @@ import java.util.UUID
  * FrameCaptureManager - Captures and manages frames during training
  * 
  * Captures frames at key moments:
+ * - DANGER frames (CRITICAL - highest priority) 🚨
  * - Peak of each rep (BOTTOM/EXTENDED phase)
- * - When errors are detected
- * - Best reps (marked after completion)
+ * - Best reps (marked after completion) ⭐
+ * - When errors are detected (WARNING state)
  * - Hold exercise samples
  * 
  * Includes limits to prevent storage bloat:
+ * - Max 2 DANGER frames (CRITICAL - always capture)
  * - Max 3 best reps
  * - One error frame per error type
  * - One peak frame per rep
@@ -32,8 +34,10 @@ class FrameCaptureManager(
         private const val FULL_SIZE = 720       // px
         private const val JPEG_QUALITY = 85     // %
         private const val MAX_BEST_REPS = 3
+        private const val MAX_DANGER_FRAMES = 2
         private const val MAX_HOLD_SAMPLES = 3
         private const val ERROR_CAPTURE_COOLDOWN_MS = 2000L
+        private const val DANGER_CAPTURE_COOLDOWN_MS = 1000L  // Shorter cooldown for DANGER
     }
     
     private val capturedFrames = mutableListOf<FrameCapture>()
@@ -42,6 +46,10 @@ class FrameCaptureManager(
     // Track captured error types to avoid duplicates
     private val capturedErrorTypes = mutableSetOf<String>()
     private val lastErrorCaptureTimes = mutableMapOf<String, Long>()
+    
+    // Track DANGER captures
+    private var dangerFrameCount = 0
+    private var lastDangerCaptureTime = 0L
     
     // Track best reps count
     private var bestRepCount = 0
@@ -66,6 +74,58 @@ class FrameCaptureManager(
     )
     
     // ==================== Capture Methods ====================
+    
+    /**
+     * Capture DANGER frame - HIGHEST PRIORITY 🚨
+     * 
+     * This should ALWAYS be called when DANGER state is detected.
+     * These frames are critical for showing users dangerous positions.
+     * 
+     * @param bitmap The bitmap to capture (will be copied)
+     * @param repNumber Current rep in progress
+     * @param phase Current phase
+     * @param jointCode Joint that triggered DANGER (e.g., "left_knee")
+     * @param actualAngle The dangerous angle value
+     * @param angles All current joint angles
+     */
+    fun captureDangerFrame(
+        bitmap: Bitmap,
+        repNumber: Int,
+        phase: Phase,
+        jointCode: String,
+        actualAngle: Double,
+        angles: Map<String, Double>? = null
+    ): FrameCapture? {
+        // Check max DANGER frames
+        if (dangerFrameCount >= MAX_DANGER_FRAMES) {
+            Log.d(TAG, "Max DANGER frames ($MAX_DANGER_FRAMES) reached, skipping")
+            return null
+        }
+        
+        // Short cooldown for DANGER
+        val now = System.currentTimeMillis()
+        if (now - lastDangerCaptureTime < DANGER_CAPTURE_COOLDOWN_MS) {
+            return null
+        }
+        
+        val errorKey = "$jointCode:DANGER:${actualAngle.toInt()}"
+        
+        val capture = captureInternal(
+            bitmap = bitmap,
+            repNumber = repNumber,
+            phase = phase,
+            captureType = CaptureType.DANGER_FRAME,
+            errorType = errorKey,
+            angles = angles
+        ) ?: return null
+        
+        dangerFrameCount++
+        lastDangerCaptureTime = now
+        
+        Log.d(TAG, "🚨 Captured DANGER frame for $jointCode at ${actualAngle.toInt()}° (rep $repNumber)")
+        
+        return capture
+    }
     
     /**
      * Capture peak frame (when entering BOTTOM/EXTENDED phase)
@@ -100,12 +160,12 @@ class FrameCaptureManager(
     }
     
     /**
-     * Capture error frame (when error first detected)
+     * Capture error frame (when WARNING state detected)
      * 
      * @param bitmap The bitmap to capture
      * @param repNumber Current rep in progress
      * @param phase Current phase
-     * @param errorKey Error type key (e.g., "left_knee:TOO_HIGH")
+     * @param errorKey Error type key (e.g., "left_knee:WARNING")
      * @param angles Current joint angles
      */
     fun captureErrorFrame(
@@ -248,7 +308,7 @@ class FrameCaptureManager(
                 thumbnailUri = thumbPath,
                 metadata = FrameMetadata(
                     angles = angles ?: emptyMap(),
-                    hasError = captureType == CaptureType.ERROR_FRAME,
+                    hasError = captureType == CaptureType.ERROR_FRAME || captureType == CaptureType.DANGER_FRAME,
                     errorDetails = errorType
                 )
             )
@@ -312,7 +372,13 @@ class FrameCaptureManager(
         capturedFrames.filter { it.captureType == CaptureType.BEST_REP }
     
     /**
-     * Get error frames
+     * Get DANGER frames 🚨
+     */
+    fun getDangerFrames(): List<FrameCapture> =
+        capturedFrames.filter { it.captureType == CaptureType.DANGER_FRAME }
+    
+    /**
+     * Get error frames (WARNING)
      */
     fun getErrorFrames(): List<FrameCapture> =
         capturedFrames.filter { it.captureType == CaptureType.ERROR_FRAME }
@@ -323,6 +389,15 @@ class FrameCaptureManager(
     fun getErrorFrame(errorKey: String): FrameCapture? =
         capturedFrames.find { 
             it.captureType == CaptureType.ERROR_FRAME && it.errorType == errorKey
+        }
+    
+    /**
+     * Get DANGER frame for specific joint
+     */
+    fun getDangerFrame(jointCode: String): FrameCapture? =
+        capturedFrames.find { 
+            it.captureType == CaptureType.DANGER_FRAME && 
+            it.errorType?.contains(jointCode) == true
         }
     
     /**
@@ -357,6 +432,8 @@ class FrameCaptureManager(
             capturedFrames.clear()
             capturedErrorTypes.clear()
             lastErrorCaptureTimes.clear()
+            dangerFrameCount = 0
+            lastDangerCaptureTime = 0L
             peakFramesByRep.clear()
             bestRepCount = 0
             holdSampleCount = 0

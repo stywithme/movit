@@ -36,7 +36,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
 
 /**
  * PUT /api/exercises/:id
- * Update an exercise (supports both basic and complete update)
+ * Update an exercise (state-based system)
  */
 export async function PUT(request: NextRequest, { params }: RouteParams) {
   try {
@@ -52,14 +52,7 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
       );
     }
 
-    let exercise;
-
-    // Check if this is a complete update (has difficultyLevels)
-    if (body.difficultyLevels && body.difficultyLevels.length > 0) {
-      exercise = await exerciseService.updateComplete(id, body);
-    } else {
-      exercise = await exerciseService.update(id, body);
-    }
+    const exercise = await exerciseService.update(id, body);
 
     return NextResponse.json({
       success: true,

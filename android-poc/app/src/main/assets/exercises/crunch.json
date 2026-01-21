@@ -22,6 +22,11 @@
   "muscles": ["abs", "core"],
   "equipment": ["bodyweight"],
   "tags": ["isolation", "core", "no-equipment", "beginner-friendly"],
+  "repCountingConfig": {
+    "reps": 20,
+    "minRepIntervalMs": 800,
+    "maxRepIntervalMs": 3000
+  },
   "poseVariants": [
     {
       "name": {
@@ -36,38 +41,36 @@
           "role": "primary",
           "startPose": { "min": 0, "max": 20 },
           "upRange": {
-            "beginner": { "min": 30, "max": 50 },
+            "perfect": { "min": 40, "max": 60 },
             "normal": { "min": 35, "max": 55 },
-            "advanced": { "min": 40, "max": 60 }
+            "pad": { "min": 30, "max": 50 },
+            "warning": { "min": 60, "max": 75 },
+            "danger": { "min": 75, "max": 90 }
           },
           "downRange": {
-            "beginner": { "min": 0, "max": 25 },
+            "perfect": { "min": 0, "max": 15 },
             "normal": { "min": 0, "max": 20 },
-            "advanced": { "min": 0, "max": 15 }
+            "pad": { "min": 0, "max": 25 }
           },
-          "errorMessages": {
-            "tooLow": {
-              "ar": "ارفع كتفيك عن الأرض",
-              "en": "Lift shoulders off the floor"
-            },
-            "tooHigh": {
-              "ar": "لا ترفع كثيراً - هذا ليس sit-up",
-              "en": "Don't go too high - this is a crunch, not sit-up"
-            }
+          "stateMessages": {
+            "perfect": { "ar": "ممتاز! كرانش مثالي", "en": "Perfect! Great crunch" },
+            "normal": { "ar": "جيد، حاول رفع الكتفين أكثر", "en": "Good, try lifting shoulders more" },
+            "pad": { "ar": "مقبول، لكن يمكنك التحسن", "en": "Acceptable, but you can improve" },
+            "warning": { "ar": "لا ترفع كثيراً - هذا كرانش وليس sit-up", "en": "Don't go too high - this is a crunch, not sit-up" },
+            "danger": { "ar": "توقف! ترفع أكثر من اللازم", "en": "Stop! You're going too high" }
           }
         },
         {
           "joint": "left_knee",
           "role": "secondary",
           "startPose": { "min": 80, "max": 110 },
-          "Range": {
-            "beginner": { "min": 75, "max": 115 },
+          "range": {
+            "perfect": { "min": 85, "max": 105 },
             "normal": { "min": 80, "max": 110 },
-            "advanced": { "min": 85, "max": 105 }
+            "pad": { "min": 75, "max": 115 }
           },
-          "errorMessages": {
-            "tooLow": { "ar": "ثني ركبتيك أكثر", "en": "Bend knees more" },
-            "tooHigh": { "ar": "أبقِ ركبتيك مثنيتين", "en": "Keep knees bent" }
+          "stateMessages": {
+            "perfect": { "ar": "ممتاز - الركبتان مثنيتان", "en": "Great - knees are bent" }
           }
         }
       ],
@@ -76,32 +79,11 @@
           { "ar": "بطن قوية!", "en": "Strong abs!" },
           { "ar": "ممتاز! استمر!", "en": "Excellent! Keep going!" }
         ],
-        "common_mistake": [
-          { "ar": "لا تشد على رقبتك - اترك مسافة بين ذقنك وصدرك", "en": "Don't pull on neck - keep chin off chest" },
-          { "ar": "ركز على عضلات البطن وليس الرقبة", "en": "Focus on abs, not neck" }
-        ],
-        "tip": [
+        "tips": [
           { "ar": "زفير عند الصعود، شهيق عند النزول", "en": "Exhale going up, inhale going down" },
           { "ar": "تخيل أنك تقرب أضلاعك من حوضك", "en": "Imagine bringing ribs to pelvis" }
         ]
-      },
-      "difficultyLevels": [
-        {
-          "level": "beginner",
-          "repCountingConfig": { "reps": 15, "minRepIntervalMs": 1000, "maxRepIntervalMs": 3500 },
-          "phases": ["start", "up", "top", "down"]
-        },
-        {
-          "level": "normal",
-          "repCountingConfig": { "reps": 20, "minRepIntervalMs": 800, "maxRepIntervalMs": 3000 },
-          "phases": ["start", "up", "top", "down"]
-        },
-        {
-          "level": "advanced",
-          "repCountingConfig": { "reps": 30, "minRepIntervalMs": 600, "maxRepIntervalMs": 2500 },
-          "phases": ["start", "up", "top", "down"]
-        }
-      ]
+      }
     }
   ]
 }

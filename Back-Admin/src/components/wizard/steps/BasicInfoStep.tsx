@@ -85,7 +85,7 @@ export function BasicInfoStep({ categories, countingMethods }: BasicInfoStepProp
   };
   
   return (
-    <div className="space-y-8 max-w-4xl mx-auto">
+    <div className="space-y-8">
       <div>
         <h2 className="text-2xl font-bold text-gray-900 mb-2">Basic Information</h2>
         <p className="text-gray-500">Enter exercise details and select the counting type.</p>

@@ -22,6 +22,10 @@
   "muscles": ["lower_back", "glutes", "hamstrings", "shoulders"],
   "equipment": ["bodyweight"],
   "tags": ["isometric", "back", "no-equipment", "rehab"],
+  "repCountingConfig": {
+    "duration": 20,
+    "gracePeriodMs": 2500
+  },
   "poseVariants": [
     {
       "name": {
@@ -40,11 +44,7 @@
           },
           "condition": {
             "operator": "should_not_exceed",
-            "thresholds": {
-              "beginner": 0.05,
-              "normal": 0.02,
-              "advanced": 0.0
-            }
+            "threshold": 0.02
           },
           "activePhases": ["count", "hold"],
           "errorMessage": {
@@ -64,11 +64,7 @@
           },
           "condition": {
             "operator": "should_not_exceed",
-            "thresholds": {
-              "beginner": 0.10,
-              "normal": 0.05,
-              "advanced": 0.02
-            }
+            "threshold": 0.05
           },
           "activePhases": ["count", "hold"],
           "errorMessage": {
@@ -88,101 +84,62 @@
             "min": 150,
             "max": 180
           },
-          "upRange": {
-            "beginner": { "min": 145, "max": 180 },
+          "range": {
+            "perfect": { "min": 165, "max": 180 },
             "normal": { "min": 155, "max": 180 },
-            "advanced": { "min": 165, "max": 180 }
+            "pad": { "min": 145, "max": 180 },
+            "warning": { "min": 130, "max": 145 }
           },
-          "downRange": {
-            "beginner": { "min": 145, "max": 180 },
-            "normal": { "min": 155, "max": 180 },
-            "advanced": { "min": 165, "max": 180 }
-          },
-          "errorMessages": {
-            "tooLow": {
-              "ar": "افرد ذراعيك أمامك",
-              "en": "Extend arms in front"
-            },
-            "tooHigh": {
-              "ar": "ممتاز!",
-              "en": "Great!"
-            }
+          "stateMessages": {
+            "perfect": { "ar": "ممتاز! ذراعيك مرفوعتين!", "en": "Perfect! Arms raised!" },
+            "normal": { "ar": "جيد، حاول رفع الذراعين أكثر", "en": "Good, try raising arms more" },
+            "pad": { "ar": "مقبول، لكن يمكنك التحسن", "en": "Acceptable, but you can improve" },
+            "warning": { "ar": "افرد ذراعيك أمامك أكثر", "en": "Extend arms more in front" }
           },
           "pairedWith": "right_shoulder"
         },
         {
           "joint": "right_shoulder",
           "role": "primary",
-          "startPose": {
-            "min": 150,
-            "max": 180
-          },
-          "upRange": {
-            "beginner": { "min": 145, "max": 180 },
+          "startPose": { "min": 150, "max": 180 },
+          "range": {
+            "perfect": { "min": 165, "max": 180 },
             "normal": { "min": 155, "max": 180 },
-            "advanced": { "min": 165, "max": 180 }
+            "pad": { "min": 145, "max": 180 },
+            "warning": { "min": 130, "max": 145 }
           },
-          "downRange": {
-            "beginner": { "min": 145, "max": 180 },
-            "normal": { "min": 155, "max": 180 },
-            "advanced": { "min": 165, "max": 180 }
-          },
-          "errorMessages": {
-            "tooLow": {
-              "ar": "افرد ذراعيك",
-              "en": "Extend arms"
-            },
-            "tooHigh": {
-              "ar": "ممتاز!",
-              "en": "Excellent!"
-            }
+          "stateMessages": {
+            "perfect": { "ar": "ممتاز! ذراعيك مرفوعتين!", "en": "Perfect! Arms raised!" },
+            "normal": { "ar": "جيد، حاول رفع الذراعين أكثر", "en": "Good, try raising arms more" },
+            "pad": { "ar": "مقبول، لكن يمكنك التحسن", "en": "Acceptable, but you can improve" },
+            "warning": { "ar": "افرد ذراعيك أكثر", "en": "Extend arms more" }
           },
           "pairedWith": "left_shoulder"
         },
         {
           "joint": "left_hip",
           "role": "secondary",
-          "startPose": {
-            "min": 160,
-            "max": 180
-          },
-          "Range": {
-            "beginner": { "min": 155, "max": 180 },
+          "startPose": { "min": 160, "max": 180 },
+          "range": {
+            "perfect": { "min": 170, "max": 180 },
             "normal": { "min": 165, "max": 180 },
-            "advanced": { "min": 170, "max": 180 }
+            "pad": { "min": 155, "max": 180 }
           },
-          "errorMessages": {
-            "tooLow": {
-              "ar": "ارفع ساقيك",
-              "en": "Raise your legs"
-            },
-            "tooHigh": {
-              "ar": "ممتاز!",
-              "en": "Great!"
-            }
+          "stateMessages": {
+            "perfect": { "ar": "ممتاز - الساقين مرفوعتين", "en": "Great - legs are raised" }
           }
         },
         {
           "joint": "left_knee",
           "role": "secondary",
-          "startPose": {
-            "min": 165,
-            "max": 180
-          },
-          "Range": {
-            "beginner": { "min": 160, "max": 180 },
+          "startPose": { "min": 165, "max": 180 },
+          "range": {
+            "perfect": { "min": 172, "max": 180 },
             "normal": { "min": 168, "max": 180 },
-            "advanced": { "min": 172, "max": 180 }
+            "pad": { "min": 160, "max": 180 }
           },
-          "errorMessages": {
-            "tooLow": {
-              "ar": "افرد ساقيك",
-              "en": "Straighten legs"
-            },
-            "tooHigh": {
-              "ar": "ممتاز!",
-              "en": "Excellent!"
-            }
+          "stateMessages": {
+            "perfect": { "ar": "ممتاز - الساقين مستقيمتين", "en": "Great - legs are straight" }
           }
         }
       ],
@@ -192,42 +149,12 @@
           { "ar": "ممتاز! استمر!", "en": "Excellent! Keep holding!" },
           { "ar": "أنت سوبرمان حقيقي!", "en": "You're a real Superman!" }
         ],
-        "common_mistake": [
-          { "ar": "لا تحني رقبتك للخلف", "en": "Don't hyperextend neck" },
-          { "ar": "افرد ذراعيك تماماً", "en": "Fully extend your arms" },
-          { "ar": "ارفع ذراعيك وساقيك معاً", "en": "Lift arms and legs simultaneously" }
-        ],
-        "tip": [
+        "tips": [
           { "ar": "انظر للأسفل للحفاظ على رقبتك", "en": "Look down to protect your neck" },
-          { "ar": "تنفس بانتظام أثناء الثبات", "en": "Breathe steadily while holding" }
+          { "ar": "تنفس بانتظام أثناء الثبات", "en": "Breathe steadily while holding" },
+          { "ar": "ارفع ذراعيك وساقيك معاً", "en": "Lift arms and legs simultaneously" }
         ]
-      },
-      "difficultyLevels": [
-        {
-          "level": "beginner",
-          "repCountingConfig": {
-            "duration": 10,
-            "gracePeriodMs": 3000
-          },
-          "phases": ["start", "hold"]
-        },
-        {
-          "level": "normal",
-          "repCountingConfig": {
-            "duration": 20,
-            "gracePeriodMs": 2500
-          },
-          "phases": ["start", "hold"]
-        },
-        {
-          "level": "advanced",
-          "repCountingConfig": {
-            "duration": 30,
-            "gracePeriodMs": 2000
-          },
-          "phases": ["start", "hold"]
-        }
-      ]
+      }
     }
   ]
 }

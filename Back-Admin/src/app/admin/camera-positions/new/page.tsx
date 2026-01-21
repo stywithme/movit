@@ -218,10 +218,10 @@ export default function NewCameraPositionPage() {
                     />
                     <div className="flex flex-col min-w-0">
                       <span className="font-medium text-gray-900 text-sm leading-tight">
-                        {joint.name?.en || joint.name?.EN || 'N/A'}
+                        {joint.name?.en || 'N/A'}
                       </span>
                       <span className="text-gray-500 text-xs mt-0.5 leading-tight">
-                        {joint.name?.ar || joint.name?.AR || ''}
+                        {joint.name?.ar || ''}
                       </span>
                     </div>
                   </label>

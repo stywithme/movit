@@ -1,122 +1,30 @@
 package com.trainingvalidator.poc.training.models
 
 import com.trainingvalidator.poc.training.engine.PositionError
+import com.trainingvalidator.poc.training.report.PerformanceRating
 
-/**
- * TrainingSession - Holds the current training session state
- * 
- * This is the runtime state of an active training session.
- * It tracks reps, errors, and timing for the current exercise.
- */
-data class TrainingSession(
-    val exerciseName: String,
-    val difficulty: DifficultyType,
-    val targetReps: Int,
-    val startTime: Long = System.currentTimeMillis()
-) {
-    // Rep tracking
-    private val _repResults = mutableListOf<RepResult>()
-    val repResults: List<RepResult> get() = _repResults.toList()
-    
-    // Current state
-    var currentRep: Int = 0
-        private set
-    
-    var correctReps: Int = 0
-        private set
-    
-    var incorrectReps: Int = 0
-        private set
-    
-    var isCompleted: Boolean = false
-        private set
-    
-    var endTime: Long? = null
-        private set
-    
-    /**
-     * Add a completed rep
-     */
-    fun addRep(result: RepResult) {
-        _repResults.add(result)
-        currentRep++
-        
-        if (result.isCorrect) {
-            correctReps++
-        } else {
-            incorrectReps++
-        }
-        
-        // Check if target reached
-        if (currentRep >= targetReps) {
-            complete()
-        }
-    }
-    
-    /**
-     * Mark session as completed
-     */
-    fun complete() {
-        isCompleted = true
-        endTime = System.currentTimeMillis()
-    }
-    
-    /**
-     * Get session duration in milliseconds
-     */
-    fun getDurationMs(): Long {
-        val end = endTime ?: System.currentTimeMillis()
-        return end - startTime
-    }
-    
-    /**
-     * Get accuracy percentage
-     */
-    fun getAccuracy(): Float {
-        if (currentRep == 0) return 0f
-        return (correctReps.toFloat() / currentRep.toFloat()) * 100f
-    }
-    
-    /**
-     * Get most common errors
-     */
-    fun getMostCommonErrors(): Map<String, Int> {
-        return _repResults
-            .flatMap { it.errors }
-            .groupingBy { "${it.jointCode}:${it.errorType}" }
-            .eachCount()
-            .toList()
-            .sortedByDescending { it.second }
-            .toMap()
-    }
-    
-    /**
-     * Generate session summary
-     */
-    fun getSummary(): SessionSummary {
-        return SessionSummary(
-            exerciseName = exerciseName,
-            difficulty = difficulty,
-            totalReps = currentRep,
-            correctReps = correctReps,
-            incorrectReps = incorrectReps,
-            accuracy = getAccuracy(),
-            durationMs = getDurationMs(),
-            commonErrors = getMostCommonErrors(),
-            repDetails = repResults
-        )
-    }
-}
+// NOTE: TrainingSession class has been REMOVED as it duplicated RepCounter logic.
+// Session state is managed by TrainingEngine and RepCounter.
+// SessionSummary is used for the final report.
 
 /**
  * RepResult - Result of a single repetition
+ * 
+ * STATE-BASED SCORING:
+ * - score: 0-100 based on worst state (PERFECT=100, NORMAL=60, PAD=20, WARNING/DANGER=0)
+ * - worstState: The worst JointState reached during the rep
+ * - isCounted: Whether this rep counts toward the total
+ * - isInvalidated: Whether this rep was invalidated by DANGER state
  * 
  * @param errors Angle-based errors from FormValidator
  * @param positionErrors Position-based errors from PositionValidator (severity: ERROR only)
  */
 data class RepResult(
     val repNumber: Int,
-    val isCorrect: Boolean,
+    val score: Float,                      // 0-100 based on worst state
+    val worstState: JointState,            // Worst state reached during rep
+    val isCounted: Boolean,                // Whether this rep counts
+    val isInvalidated: Boolean = false,    // Whether DANGER was reached
     val errors: List<JointError> = emptyList(),
     val positionErrors: List<PositionError> = emptyList(),
     val phaseTimings: Map<String, Long> = emptyMap(),
@@ -126,10 +34,44 @@ data class RepResult(
      * Get total error count (angle + position)
      */
     fun getTotalErrorCount(): Int = errors.size + positionErrors.size
+    
+    /**
+     * Legacy compatibility - isCorrect maps to isCounted
+     */
+    val isCorrect: Boolean get() = isCounted
+    
+    companion object {
+        /**
+         * Create a RepResult from worst state
+         */
+        fun fromWorstState(
+            repNumber: Int,
+            worstState: JointState,
+            errors: List<JointError> = emptyList(),
+            positionErrors: List<PositionError> = emptyList(),
+            phaseTimings: Map<String, Long> = emptyMap()
+        ): RepResult {
+            val config = StateConfig.getConfig(worstState)
+            return RepResult(
+                repNumber = repNumber,
+                score = config.rate.coerceAtLeast(0f),
+                worstState = worstState,
+                isCounted = config.isRepCounted,
+                isInvalidated = config.invalidatesRep,
+                errors = errors,
+                positionErrors = positionErrors,
+                phaseTimings = phaseTimings
+            )
+        }
+    }
 }
 
 /**
  * JointError - Error detected on a joint
+ * 
+ * STATE-BASED ERROR TRACKING:
+ * - Includes the JointState for proper categorization
+ * - Used in report generation to show ALL errors, not just worst state
  */
 data class JointError(
     val jointCode: String,
@@ -137,7 +79,9 @@ data class JointError(
     val actualAngle: Double,
     val expectedMin: Double,
     val expectedMax: Double,
-    val message: LocalizedText
+    val message: LocalizedText,
+    val state: JointState = JointState.WARNING,  // The state that triggered this error
+    val isPrimary: Boolean = true                // Whether this is from a primary joint
 )
 
 /**
@@ -150,15 +94,21 @@ enum class ErrorType {
 
 /**
  * SessionSummary - Final summary of training session
+ * 
+ * STATE-BASED METRICS:
+ * - averageScore: Average score of counted reps (0-100)
+ * - countedRatio: Ratio of counted reps to total reps
+ * - stateBreakdown: Count of reps per worst state
  */
 data class SessionSummary(
     val exerciseName: String,
-    val difficulty: DifficultyType,
     val totalReps: Int,
-    val correctReps: Int,
-    val incorrectReps: Int,
-    val accuracy: Float,
+    val countedReps: Int,
+    val invalidatedReps: Int,
+    val averageScore: Float,
+    val countedRatio: Float,
     val durationMs: Long,
+    val stateBreakdown: Map<JointState, Int>,
     val commonErrors: Map<String, Int>,
     val repDetails: List<RepResult>
 ) {
@@ -170,4 +120,29 @@ data class SessionSummary(
         val minutes = (durationMs / 1000) / 60
         return "%02d:%02d".format(minutes, seconds)
     }
+    
+    /**
+     * Get performance rating based on score and counted ratio
+     */
+    fun getPerformanceRating(): PerformanceRating {
+        return PerformanceRating.fromScoreAndRatio(averageScore, countedRatio)
+    }
+    
+    /**
+     * Legacy compatibility - accuracy maps to countedRatio * 100
+     */
+    val accuracy: Float get() = countedRatio * 100f
+    
+    /**
+     * Legacy compatibility - correctReps maps to countedReps
+     */
+    val correctReps: Int get() = countedReps
+    
+    /**
+     * Legacy compatibility - incorrectReps maps to totalReps - countedReps
+     */
+    val incorrectReps: Int get() = totalReps - countedReps
 }
+
+// NOTE: PerformanceRating enum has been moved to PostTrainingReport.kt
+// Import it from: com.trainingvalidator.poc.training.report.PerformanceRating

@@ -22,6 +22,11 @@
   "muscles": ["triceps", "chest", "shoulders"],
   "equipment": ["chair", "bench", "parallel_bars"],
   "tags": ["compound", "upper-body", "bodyweight"],
+  "repCountingConfig": {
+    "reps": 12,
+    "minRepIntervalMs": 1500,
+    "maxRepIntervalMs": 4500
+  },
   "poseVariants": [
     {
       "name": {
@@ -40,11 +45,7 @@
           },
           "condition": {
             "operator": "approximately_equal",
-            "thresholds": {
-              "beginner": 0.12,
-              "normal": 0.08,
-              "advanced": 0.05
-            }
+            "threshold": 0.08
           },
           "activePhases": ["down", "bottom", "up"],
           "errorMessage": {
@@ -65,77 +66,64 @@
             "max": 180
           },
           "upRange": {
-            "beginner": { "min": 145, "max": 180 },
+            "perfect": { "min": 160, "max": 180 },
             "normal": { "min": 155, "max": 180 },
-            "advanced": { "min": 160, "max": 180 }
+            "pad": { "min": 145, "max": 180 }
           },
           "downRange": {
-            "beginner": { "min": 70, "max": 110 },
+            "perfect": { "min": 80, "max": 95 },
             "normal": { "min": 75, "max": 100 },
-            "advanced": { "min": 80, "max": 95 }
+            "pad": { "min": 70, "max": 110 },
+            "warning": { "min": 50, "max": 70 },
+            "danger": { "min": 0, "max": 50 }
           },
-          "errorMessages": {
-            "tooLow": {
-              "ar": "لا تنزل كثيراً - حافظ على سلامة كتفك",
-              "en": "Don't go too low - protect your shoulders"
-            },
-            "tooHigh": {
-              "ar": "انزل أكثر - اثني مرفقك لـ 90 درجة",
-              "en": "Go lower - bend elbow to 90 degrees"
-            }
+          "stateMessages": {
+            "perfect": { "ar": "ممتاز! غطس مثالي", "en": "Perfect! Great dip" },
+            "normal": { "ar": "جيد، حاول النزول أكثر قليلاً", "en": "Good, try going a bit lower" },
+            "pad": { "ar": "مقبول، لكن يمكنك التحسن", "en": "Acceptable, but you can improve" },
+            "warning": { "ar": "لا تنزل كثيراً", "en": "Don't go too low" },
+            "danger": { "ar": "توقف! هذا قد يؤذي كتفك", "en": "Stop! This may hurt your shoulders" }
           },
           "pairedWith": "right_elbow"
         },
         {
           "joint": "right_elbow",
           "role": "primary",
-          "startPose": {
-            "min": 150,
-            "max": 180
-          },
+          "startPose": { "min": 150, "max": 180 },
           "upRange": {
-            "beginner": { "min": 145, "max": 180 },
+            "perfect": { "min": 160, "max": 180 },
             "normal": { "min": 155, "max": 180 },
-            "advanced": { "min": 160, "max": 180 }
+            "pad": { "min": 145, "max": 180 }
           },
           "downRange": {
-            "beginner": { "min": 70, "max": 110 },
+            "perfect": { "min": 80, "max": 95 },
             "normal": { "min": 75, "max": 100 },
-            "advanced": { "min": 80, "max": 95 }
+            "pad": { "min": 70, "max": 110 },
+            "warning": { "min": 50, "max": 70 },
+            "danger": { "min": 0, "max": 50 }
           },
-          "errorMessages": {
-            "tooLow": {
-              "ar": "لا تنزل كثيراً",
-              "en": "Don't go too low"
-            },
-            "tooHigh": {
-              "ar": "انزل أكثر",
-              "en": "Go lower"
-            }
+          "stateMessages": {
+            "perfect": { "ar": "ممتاز! غطس مثالي", "en": "Perfect! Great dip" },
+            "normal": { "ar": "جيد، حاول النزول أكثر قليلاً", "en": "Good, try going a bit lower" },
+            "pad": { "ar": "مقبول، لكن يمكنك التحسن", "en": "Acceptable, but you can improve" },
+            "warning": { "ar": "لا تنزل كثيراً", "en": "Don't go too low" },
+            "danger": { "ar": "توقف! هذا قد يؤذي كتفك", "en": "Stop! This may hurt your shoulders" }
           },
           "pairedWith": "left_elbow"
         },
         {
           "joint": "left_shoulder",
           "role": "secondary",
-          "startPose": {
-            "min": 0,
-            "max": 30
-          },
-          "Range": {
-            "beginner": { "min": 0, "max": 40 },
+          "startPose": { "min": 0, "max": 30 },
+          "range": {
+            "perfect": { "min": 0, "max": 25 },
             "normal": { "min": 0, "max": 30 },
-            "advanced": { "min": 0, "max": 25 }
+            "pad": { "min": 0, "max": 40 },
+            "warning": { "min": 40, "max": 60 }
           },
-          "errorMessages": {
-            "tooLow": {
-              "ar": "حافظ على ثبات الكتف",
-              "en": "Keep shoulder stable"
-            },
-            "tooHigh": {
-              "ar": "ممتاز - الكتف ثابت",
-              "en": "Great - shoulder is stable"
-            }
+          "stateMessages": {
+            "perfect": { "ar": "ممتاز - الكتف ثابت", "en": "Great - shoulder is stable" },
+            "warning": { "ar": "حافظ على ثبات الكتف", "en": "Keep shoulder stable" }
           }
         }
       ],
@@ -145,45 +133,11 @@
           { "ar": "استمر! أنت تفعلها!", "en": "Keep going! You're doing it!" },
           { "ar": "رائع!", "en": "Great!" }
         ],
-        "common_mistake": [
-          { "ar": "لا تدع كتفيك يرتفعان نحو أذنيك", "en": "Don't let shoulders shrug up to ears" },
-          { "ar": "حافظ على مرفقيك للخلف وليس للجانب", "en": "Keep elbows back, not flared out" },
-          { "ar": "لا تنزل أكثر من اللازم", "en": "Don't go lower than needed" }
-        ],
-        "tip": [
+        "tips": [
           { "ar": "شد عضلات بطنك للثبات", "en": "Engage core for stability" },
           { "ar": "تنفس: زفير عند الصعود", "en": "Breathe: exhale going up" }
         ]
-      },
-      "difficultyLevels": [
-        {
-          "level": "beginner",
-          "repCountingConfig": {
-            "reps": 8,
-            "minRepIntervalMs": 1800,
-            "maxRepIntervalMs": 5500
-          },
-          "phases": ["start", "down", "bottom", "up"]
-        },
-        {
-          "level": "normal",
-          "repCountingConfig": {
-            "reps": 12,
-            "minRepIntervalMs": 1500,
-            "maxRepIntervalMs": 4500
-          },
-          "phases": ["start", "down", "bottom", "up"]
-        },
-        {
-          "level": "advanced",
-          "repCountingConfig": {
-            "reps": 15,
-            "minRepIntervalMs": 1200,
-            "maxRepIntervalMs": 4000
-          },
-          "phases": ["start", "down", "bottom", "up"]
-        }
-      ]
+      }
     }
   ]
 }

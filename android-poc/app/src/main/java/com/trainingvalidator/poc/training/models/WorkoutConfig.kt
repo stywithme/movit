@@ -130,13 +130,11 @@ enum class ExecutionMode {
  * 
  * @param exercise The exercise file name (without .json extension)
  * @param variantIndex Which pose variant to use (default 0)
- * @param difficulty Override difficulty (or use default from exercise)
  * @param target Target reps or duration (overrides exercise default)
  */
 data class WorkoutExercise(
     val exercise: String,                           // Exercise file name
     val variantIndex: Int = 0,                      // Pose variant index
-    val difficulty: DifficultyType? = null,         // null = use exercise default or workout default
     val target: ExerciseTarget = ExerciseTarget(),  // Target reps or duration
     val notes: LocalizedText? = null                // Optional notes/tips for this exercise in workout
 ) {

@@ -22,6 +22,11 @@
   "muscles": ["quadriceps", "glutes", "hamstrings"],
   "equipment": ["bodyweight", "barbell"],
   "tags": [],
+  "repCountingConfig": {
+    "reps": 12,
+    "minRepIntervalMs": 1600,
+    "maxRepIntervalMs": 5000
+  },
   "poseVariants": [
     {
       "name": {
@@ -40,11 +45,7 @@
           },
           "condition": {
             "operator": "should_not_exceed",
-            "thresholds": {
-              "beginner": 0.08,
-              "normal": 0.05,
-              "advanced": 0.03
-            }
+            "threshold": 0.05
           },
           "activePhases": ["down", "bottom"],
           "errorMessage": {
@@ -64,11 +65,7 @@
           },
           "condition": {
             "operator": "should_exceed",
-            "thresholds": {
-              "beginner": 0.05,
-              "normal": 0.03,
-              "advanced": 0.02
-            }
+            "threshold": 0.03
           },
           "activePhases": ["bottom"],
           "errorMessage": {
@@ -88,11 +85,7 @@
           },
           "condition": {
             "operator": "approximately_equal",
-            "thresholds": {
-              "beginner": 0.15,
-              "normal": 0.10,
-              "advanced": 0.08
-            }
+            "threshold": 0.10
           },
           "activePhases": ["bottom"],
           "errorMessage": {
@@ -108,105 +101,80 @@
         {
           "joint": "left_knee",
           "role": "primary",
-          "startPose": {
-            "min": 120,
-            "max": 180
-          },
+          "startPose": { "min": 120, "max": 180 },
           "upRange": {
-            "beginner": { "min": 135, "max": 180 },
-            "normal":   { "min": 140, "max": 180 },
-            "advanced": { "min": 145, "max": 180 }
+            "perfect": { "min": 150, "max": 180 },
+            "normal":  { "min": 140, "max": 180 }
           },
           "downRange": {
-            "beginner": { "min": 50, "max": 110 },
-            "normal":   { "min": 40, "max": 100 },
-            "advanced": { "min": 35, "max": 95 }
+            "perfect": { "min": 60, "max": 90 },
+            "normal":  { "min": 50, "max": 110 },
+            "pad":     { "min": 40, "max": 90 },
+            "warning": { "min": 30, "max": 40 },
+            "danger":  { "min": 0, "max": 30 }
           },
-          "errorMessages": {
-            "tooLow": {
-              "ar": "لا تنزل كثيراً",
-              "en": "Don't go too low"
-            },
-            "tooHigh": {
-              "ar": "انزل أكثر",
-              "en": "Go lower"
-            }
+          "stateMessages": {
+            "perfect": { "ar": "ممتاز! زاوية مثالية", "en": "Perfect! Great angle" },
+            "normal": { "ar": "جيد، حاول النزول أكثر قليلاً", "en": "Good, try going a bit lower" },
+            "pad": { "ar": "مقبول، لكن يمكنك التحسن", "en": "Acceptable, but you can improve" },
+            "warning": { "ar": "أنت تنزل أكثر من اللازم", "en": "You're going too low" },
+            "danger": { "ar": "توقف! هذا قد يؤذي ركبتيك", "en": "Stop! This may hurt your knees" }
           },
           "pairedWith": "right_knee"
         },
         {
           "joint": "right_knee",
           "role": "primary",
-          "startPose": {
-            "min": 120,
-            "max": 180
-          },
+          "startPose": { "min": 120, "max": 180 },
           "upRange": {
-            "beginner": { "min": 135, "max": 180 },
-            "normal":   { "min": 140, "max": 180 },
-            "advanced": { "min": 145, "max": 180 }
+            "perfect": { "min": 150, "max": 180 },
+            "normal":  { "min": 140, "max": 180 }
           },
           "downRange": {
-            "beginner": { "min": 50, "max": 110 },
-            "normal":   { "min": 40, "max": 100 },
-            "advanced": { "min": 35, "max": 95 }
+            "perfect": { "min": 60, "max": 90 },
+            "normal":  { "min": 50, "max": 110 },
+            "pad":     { "min": 40, "max": 90 },
+            "warning": { "min": 30, "max": 40 },
+            "danger":  { "min": 0, "max": 30 }
           },
-          "errorMessages": {
-            "tooLow": {
-              "ar": "لا تنزل كثيراً",
-              "en": "Don't go too low"
-            },
-            "tooHigh": {
-              "ar": "انزل أكثر",
-              "en": "Go lower"
-            }
+          "stateMessages": {
+            "perfect": { "ar": "ممتاز! زاوية مثالية", "en": "Perfect! Great angle" },
+            "normal": { "ar": "جيد، حاول النزول أكثر قليلاً", "en": "Good, try going a bit lower" },
+            "pad": { "ar": "مقبول، لكن يمكنك التحسن", "en": "Acceptable, but you can improve" },
+            "warning": { "ar": "أنت تنزل أكثر من اللازم", "en": "You're going too low" },
+            "danger": { "ar": "توقف! هذا قد يؤذي ركبتيك", "en": "Stop! This may hurt your knees" }
           },
           "pairedWith": "left_knee"
         },
         {
           "joint": "left_hip",
           "role": "secondary",
-          "startPose": {
-            "min": 120,
-            "max": 180
+          "startPose": { "min": 120, "max": 180 },
+          "range": {
+            "perfect": { "min": 160, "max": 180 },
+            "normal":  { "min": 155, "max": 180 },
+            "warning": { "min": 140, "max": 155 }
           },
-          "Range": {
-            "beginner": { "min": 155, "max": 180 },
-            "normal":   { "min": 160, "max": 180 },
-            "advanced": { "min": 165, "max": 180 }
-          },
-          "errorMessages": {
-            "tooLow": {
-              "ar": "حافظ على استقامة الورك",
-              "en": "Keep your hips aligned"
-            },
-            "tooHigh": {
-              "ar": "ممتاز - الورك ثابت",
-              "en": "Great - hips are stable"
-            }
+          "stateMessages": {
+            "perfect": { "ar": "ممتاز - الورك ثابت", "en": "Great - hips are stable" },
+            "warning": { "ar": "حافظ على استقامة الورك", "en": "Keep your hips aligned" }
           }
         },
         {
           "joint": "spine",
           "role": "secondary",
-          "startPose": {
-            "min": 0,
-            "max": 15
+          "startPose": { "min": 0, "max": 15 },
+          "range": {
+            "perfect": { "min": 0, "max": 10 },
+            "normal":  { "min": 0, "max": 15 },
+            "pad":     { "min": 0, "max": 20 },
+            "warning": { "min": 20, "max": 30 },
+            "danger":  { "min": 30, "max": 90 }
           },
-          "Range": {
-            "beginner": { "min": 0, "max": 20 },
-            "normal":   { "min": 0, "max": 15 },
-            "advanced": { "min": 0, "max": 10 }
-          },
-          "errorMessages": {
-            "tooLow": {
-              "ar": "ممتاز - ظهرك مستقيم",
-              "en": "Great - back is straight"
-            },
-            "tooHigh": {
-              "ar": "حافظ على استقامة الجذع",
-              "en": "Keep your torso upright"
-            }
+          "stateMessages": {
+            "perfect": { "ar": "ممتاز - ظهرك مستقيم", "en": "Great - back is straight" },
+            "warning": { "ar": "حافظ على استقامة الجذع", "en": "Keep your torso upright" },
+            "danger": { "ar": "ظهرك منحني جداً! قد تتعرض للإصابة", "en": "Your back is too rounded! Risk of injury" }
           }
         }
       ],
@@ -216,46 +184,12 @@
           { "ar": "أداء رائع!", "en": "Great form!" },
           { "ar": "قوي! لا تتوقف!", "en": "Strong! Don't stop!" }
         ],
-        "common_mistake": [
-          { "ar": "لا تدع ركبتيك تتجاوز أصابع قدميك", "en": "Don't let your knees go past your toes" },
-          { "ar": "حافظ على استقامة ظهرك", "en": "Keep your back straight" },
-          { "ar": "لا ترفع كعبيك عن الأرض", "en": "Keep your heels on the ground" }
-        ],
-        "tip": [
+        "tips": [
           { "ar": "ادفع من كعبيك للصعود", "en": "Push through your heels to stand up" },
           { "ar": "انظر للأمام وليس للأسفل", "en": "Look forward, not down" },
           { "ar": "شد عضلات بطنك طوال الحركة", "en": "Keep your core engaged throughout" }
         ]
-      },
-      "difficultyLevels": [
-        {
-          "level": "beginner",
-          "repCountingConfig": {
-            "reps": 10,
-            "minRepIntervalMs": 2000,
-            "maxRepIntervalMs": 6000
-          },
-          "phases": ["start", "down", "bottom", "up"]
-        },
-        {
-          "level": "normal",
-          "repCountingConfig": {
-            "reps": 12,
-            "minRepIntervalMs": 1600,
-            "maxRepIntervalMs": 5000
-          },
-          "phases": ["start", "down", "bottom", "up"]
-        },
-        {
-          "level": "advanced",
-          "repCountingConfig": {
-            "reps": 15,
-            "minRepIntervalMs": 1200,
-            "maxRepIntervalMs": 4000
-          },
-          "phases": ["start", "down", "bottom", "up"]
-        }
-      ]
+      }
     }
   ]
 }

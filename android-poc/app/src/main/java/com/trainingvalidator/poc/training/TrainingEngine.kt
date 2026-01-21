@@ -18,17 +18,21 @@ import kotlinx.coroutines.flow.StateFlow
  * This is the "brain" of the training system. It coordinates:
  * - JointAngleTracker: Extracts relevant joint angles
  * - PhaseStateMachine: Tracks exercise phases
- * - FormValidator: Validates form and detects errors
- * - RepCounter: Counts repetitions
+ * - FormValidator: Validates form and detects errors (STATE-BASED)
+ * - RepCounter: Counts repetitions with scores
+ * 
+ * STATE-BASED ARCHITECTURE:
+ * - Quality assessment uses JointState (PERFECT/NORMAL/PAD/WARNING/DANGER)
+ * - Rep scoring based on worst state reached
+ * - Single source of truth from StateConfig
  * 
  * Usage:
- * 1. Create instance with exercise config and difficulty
+ * 1. Create instance with exercise config (no difficulty needed)
  * 2. Call processFrame() for each camera frame
  * 3. Observe state flows for UI updates
  */
 class TrainingEngine(
     private val exerciseConfig: ExerciseConfig,
-    private val difficulty: DifficultyType,
     private val poseVariantIndex: Int = 0,
     /**
      * Override target reps from workout config (null = use exercise default)
@@ -44,14 +48,16 @@ class TrainingEngine(
     
     companion object {
         private const val TAG = "TrainingEngine"
+        
+        // State message throttling (prevents excessive message spam)
+        // NOTE: This is overridden by SettingsManager.getStateMessageCooldown() at runtime
+        private const val STATE_MESSAGE_COOLDOWN_MS_DEFAULT = 2000L
     }
     
     // ==================== Configuration ====================
     
     private val poseVariant: PoseVariant = exerciseConfig.poseVariants[poseVariantIndex]
-    private val difficultyLevel: DifficultyLevel = poseVariant.difficultyLevels
-        .find { it.level == difficulty }
-        ?: throw IllegalArgumentException("Difficulty level not found: $difficulty")
+    private val repCountingConfig: RepCountingConfig = exerciseConfig.repCountingConfig
     
     private val trackedJoints: List<TrackedJoint> = poseVariant.trackedJoints
     private val primaryJoints: List<TrackedJoint> = poseVariant.getPrimaryJoints()
@@ -60,7 +66,16 @@ class TrainingEngine(
      * Effective target reps: override takes precedence, then exercise config
      */
     private val targetReps: Int = targetRepsOverride 
-        ?: difficultyLevel.repCountingConfig.reps
+        ?: repCountingConfig.reps
+    
+    /**
+     * Feedback messages for random delivery (LOW priority)
+     * 
+     * Access this to configure FeedbackManager with exercise-specific messages.
+     * Call feedbackManager.setRandomMessages(engine.feedbackMessages) when starting.
+     */
+    val feedbackMessages: FeedbackMessages
+        get() = poseVariant.feedbackMessages
     
     // ==================== Components ====================
     
@@ -75,19 +90,18 @@ class TrainingEngine(
     private val stateMachine = PhaseStateMachine(
         countingMethod = exerciseConfig.countingMethod,
         primaryJoints = primaryJoints,
-        difficulty = difficulty,
-        repCountingConfig = difficultyLevel.repCountingConfig,
-        numberOfPhases = difficultyLevel.phases.size
+        repCountingConfig = repCountingConfig,
+        numberOfPhases = 4  // Default phases: START → DOWN → BOTTOM → UP
     )
     
     private val formValidator = FormValidator(
-        trackedJoints = trackedJoints,
-        difficulty = difficulty
+        trackedJoints = trackedJoints
     )
     
     private val repCounter = RepCounter(
         targetReps = targetReps,
-        repCountingConfig = difficultyLevel.repCountingConfig
+        repCountingConfig = repCountingConfig,
+        isHoldExercise = exerciseConfig.countingMethod == CountingMethod.HOLD
     )
 
     /**
@@ -150,7 +164,7 @@ class TrainingEngine(
      */
     val targetDurationMs: Long? = if (isHoldExercise) {
         targetDurationMsOverride 
-            ?: difficultyLevel.repCountingConfig.getDurationMs(
+            ?: repCountingConfig.getDurationMs(
                 SettingsManager.getDefaultHoldDuration()
             )
     } else null
@@ -162,7 +176,7 @@ class TrainingEngine(
     private val holdTimer: HoldTimer? = targetDurationMs?.let { duration ->
         HoldTimer(
             targetDurationMs = duration,
-            gracePeriodMs = difficultyLevel.repCountingConfig.getGracePeriod(
+            gracePeriodMs = repCountingConfig.getGracePeriod(
                 SettingsManager.getDefaultGracePeriod()
             )
         )
@@ -170,13 +184,10 @@ class TrainingEngine(
     
     // ==================== Hold Form Quality Tracking ====================
     
-    /**
-     * Track form errors during hold exercises
-     * These are used to calculate form quality (percentage of time with correct form)
-     */
-    private var holdErrorFrameCount: Int = 0
-    private var holdTotalFrameCount: Int = 0
-    private val holdJointErrors = mutableMapOf<String, Int>() // joint -> error count
+    // NOTE: Legacy tracking variables removed.
+    // Form quality is now calculated by RepCounter using weighted average of time in states.
+    // See RepCounter.calculateHoldScore()
+
     
     // ==================== State Flows ====================
     
@@ -191,6 +202,14 @@ class TrainingEngine(
     
     private val _arrowInfos = MutableStateFlow<Map<String, JointArrowInfo>>(emptyMap())
     val arrowInfos: StateFlow<Map<String, JointArrowInfo>> = _arrowInfos
+    
+    /** NEW: State-based joint info for modern UI components */
+    private val _jointStateInfos = MutableStateFlow<Map<String, JointStateInfo>>(emptyMap())
+    val jointStateInfos: StateFlow<Map<String, JointStateInfo>> = _jointStateInfos
+    
+    /** Flag indicating if any joint is currently in DANGER state */
+    private val _isDangerActive = MutableStateFlow(false)
+    val isDangerActive: StateFlow<Boolean> = _isDangerActive
     
     private val _isInStartPosition = MutableStateFlow(false)
     val isInStartPosition: StateFlow<Boolean> = _isInStartPosition
@@ -303,12 +322,52 @@ class TrainingEngine(
     private var lastValidationResult: ValidationResult? = null
     
     /**
+     * Session start timestamp for duration tracking
+     */
+    @Volatile
+    private var sessionStartTimeMs: Long = 0L
+    
+    /**
+     * Total paused duration (accumulated when paused)
+     */
+    @Volatile
+    private var totalPausedDurationMs: Long = 0L
+    
+    /**
+     * Timestamp when pause started (for calculating pause duration)
+     */
+    @Volatile
+    private var pauseStartTimeMs: Long = 0L
+    
+    /**
      * Flag to defer rep completion until after validation and error collection.
      * This ensures errors from the current frame are included in the rep that just completed.
      * Thread safety: marked @Volatile as it's read/written from different threads.
      */
     @Volatile
     private var pendingRepCompletion = false
+    
+    /**
+     * Throttling for DANGER events to prevent spamming
+     */
+    @Volatile
+    private var lastDangerEventTime: Long = 0L
+    private val dangerEventCooldownMs: Long = 2000L  // 2 seconds between DANGER events
+
+    /**
+     * State message throttling per joint
+     * Tracks last emitted state and timestamp to avoid spamming
+     */
+    private val lastStateMessageTimes = mutableMapOf<String, Long>()
+    private val lastEmittedStates = mutableMapOf<String, JointState>()
+    
+    /**
+     * Check if we should emit a DANGER event (throttling)
+     */
+    private fun shouldEmitDangerEvent(): Boolean {
+        val now = System.currentTimeMillis()
+        return now - lastDangerEventTime >= dangerEventCooldownMs
+    }
     
     // ==================== Initialization ====================
     
@@ -325,15 +384,17 @@ class TrainingEngine(
             pendingRepCompletion = true
         }
         
-        repCounter.onRepCountChanged = { count, isCorrect ->
+        repCounter.onRepCountChanged = { count, score, isCounted ->
             _repCount.value = count
             // Use errors from the completed rep (accumulated during the entire rep)
-            // instead of lastValidationResult which only has current frame errors
-            val completedRepErrors = repCounter.getLastRepResult()?.errors ?: emptyList()
+            val completedRep = repCounter.getLastRepResult()
+            val completedRepErrors = completedRep?.errors ?: emptyList()
             emitEvent(FeedbackEvent.RepCompleted(
                 repNumber = count,
-                isCorrect = isCorrect,
-                errors = completedRepErrors
+                isCorrect = isCounted,  // Legacy compatibility
+                errors = completedRepErrors,
+                score = score,
+                worstState = completedRep?.worstState
             ))
         }
         
@@ -349,10 +410,9 @@ class TrainingEngine(
         // Setup Hold Timer callbacks (if hold exercise)
         setupHoldTimerCallbacks()
         
-        Log.d(TAG, "TrainingEngine initialized")
+        Log.d(TAG, "TrainingEngine initialized (STATE-BASED)")
         Log.d(TAG, "Exercise: ${exerciseConfig.name.en}")
         Log.d(TAG, "Counting Method: ${exerciseConfig.countingMethod}")
-        Log.d(TAG, "Difficulty: $difficulty")
         if (isHoldExercise) {
             Log.d(TAG, "Target Duration: ${targetDurationMs}ms")
             Log.d(TAG, "Grace Period: ${holdTimer?.getGracePeriodMs()}ms")
@@ -379,6 +439,9 @@ class TrainingEngine(
         synchronized(stateLock) {
             isRunning = true
             isPaused = false
+            sessionStartTimeMs = System.currentTimeMillis()
+            totalPausedDurationMs = 0L
+            pauseStartTimeMs = 0L
             angleSmoother.reset()  // Reset smoothing history for fresh start
             stateMachine.reset()
             repCounter.reset()
@@ -387,6 +450,10 @@ class TrainingEngine(
             formValidator.reset()  // Reset zone hysteresis state
             lastPositionEventTimes.clear()
             // Camera warning throttle is now handled by MessageOrchestrator
+            
+            // Reset state message throttling
+            lastStateMessageTimes.clear()
+            lastEmittedStates.clear()
             
             _currentPhase.value = Phase.IDLE
             _repCount.value = 0
@@ -431,6 +498,7 @@ class TrainingEngine(
     fun pause() {
         synchronized(stateLock) {
             isPaused = true
+            pauseStartTimeMs = System.currentTimeMillis()
         }
         emitEvent(FeedbackEvent.TrainingPaused(repCounter.count))
         Log.d(TAG, "Training paused at rep ${repCounter.count}")
@@ -442,6 +510,10 @@ class TrainingEngine(
      */
     fun resume() {
         synchronized(stateLock) {
+            if (pauseStartTimeMs > 0) {
+                totalPausedDurationMs += System.currentTimeMillis() - pauseStartTimeMs
+                pauseStartTimeMs = 0L
+            }
             isPaused = false
         }
         emitEvent(FeedbackEvent.TrainingResumed())
@@ -508,24 +580,37 @@ class TrainingEngine(
      * Thread safety: Uses synchronized block to coordinate with processFrame
      */
     fun stop(): SessionSummary {
+        val actualDurationMs: Long
         synchronized(stateLock) {
+            // Calculate actual duration (excluding paused time)
+            val now = System.currentTimeMillis()
+            val totalElapsed = if (sessionStartTimeMs > 0) now - sessionStartTimeMs else 0L
+            
+            // If currently paused, add pending pause duration
+            val pendingPause = if (isPaused && pauseStartTimeMs > 0) {
+                now - pauseStartTimeMs
+            } else 0L
+            
+            actualDurationMs = maxOf(0L, totalElapsed - totalPausedDurationMs - pendingPause)
+            
             isRunning = false
             isPaused = false
         }
         
         val summary = SessionSummary(
             exerciseName = exerciseConfig.name.en,
-            difficulty = difficulty,
             totalReps = repCounter.count,
-            correctReps = repCounter.correctCount,
-            incorrectReps = repCounter.incorrectCount,
-            accuracy = repCounter.getAccuracy(),
-            durationMs = 0, // TODO: Track actual duration
+            countedReps = repCounter.countedCount,
+            invalidatedReps = repCounter.invalidatedCount,
+            averageScore = repCounter.getAverageScore(),
+            countedRatio = if (repCounter.count > 0) repCounter.countedCount.toFloat() / repCounter.count else 0f,
+            durationMs = actualDurationMs,
+            stateBreakdown = repCounter.getStateBreakdown(),
             commonErrors = repCounter.getMostCommonErrors(),
             repDetails = repCounter.repResults
         )
         
-        Log.d(TAG, "Training stopped. Summary: $summary")
+        Log.d(TAG, "Training stopped. Duration: ${actualDurationMs}ms, Summary: $summary")
         return summary
     }
     
@@ -575,10 +660,47 @@ class TrainingEngine(
             val currentPhase = stateMachine.update(primaryAngles)
             _currentPhase.value = currentPhase
             
-            // 6. Validate form (using same smoothed angles - consistent with state machine)
+            // 6. Validate form using STATE-BASED system (using same smoothed angles)
+            // Get JointStateInfos - the NEW unified state system
+            val jointStateInfos = formValidator.getJointStateInfos(smoothedAngles)
+            
+            // Update state flows for UI
+            _jointStateInfos.value = jointStateInfos
+            
+            // 6.0 Emit state-based messages (warning/pad/normal/perfect)
+            emitStateMessages(jointStateInfos)
+            
+            // Also get legacy validation for backward compatibility
             val validation = formValidator.validate(smoothedAngles, currentPhase)
             lastValidationResult = validation
             _jointStatuses.value = validation.jointStatuses
+            
+            // 6.1. Check for DANGER state (always, for UI feedback)
+            val hasDanger = formValidator.hasDangerState(jointStateInfos)
+            _isDangerActive.value = hasDanger
+            
+            // 6.2. Update worst state tracking for rep scoring
+            // For REP exercises: track during critical phases (BOTTOM/EXTENDED)
+            // For HOLD exercises: track during COUNT phase (user is holding)
+            val isCriticalPhase = when {
+                isHoldExercise -> currentPhase == Phase.COUNT && _holdState.value == HoldState.HOLDING
+                else -> currentPhase in listOf(Phase.BOTTOM, Phase.EXTENDED, Phase.COUNT)
+            }
+            
+            if (isCriticalPhase) {
+                val worstState = formValidator.getWorstState(jointStateInfos)
+                repCounter.updateWorstState(worstState)
+                
+                // Emit DANGER event with throttling (only when entering DANGER)
+                if (hasDanger && shouldEmitDangerEvent()) {
+                    val dangerJoints = jointStateInfos.filter { it.value.state == JointState.DANGER }
+                    emitEvent(FeedbackEvent.DangerDetected(
+                        joints = dangerJoints.keys.toList(),
+                        message = dangerJoints.values.firstOrNull()?.messages?.firstOrNull()
+                    ))
+                    lastDangerEventTime = System.currentTimeMillis()
+                }
+            }
             
             // 7. Update arrow infos for visual feedback (using smoothed angles)
             // This MUST happen before visibility check so skeleton overlay always shows correct joints
@@ -642,7 +764,7 @@ class TrainingEngine(
             
             // 8. Position validation (if landmarks provided and validator exists)
             val positionValidation = if (landmarks != null && positionValidator != null) {
-                positionValidator.validate(landmarks, currentPhase, difficulty)
+                positionValidator.validate(landmarks, currentPhase)
             } else null
             
             // Update position-related state flows
@@ -652,37 +774,20 @@ class TrainingEngine(
                 _cameraWarning.value = it.cameraWarning
             }
             
-            // 9. Handle form errors (add to current rep for rep-based, track for hold)
+            // 9. Handle form errors (add to current rep)
             for (error in validation.errors) {
-                if (!isHoldExercise) {
-                    repCounter.addError(error)
-                } else {
-                    // Track errors for hold exercises to calculate form quality
-                    if (_holdState.value == HoldState.HOLDING) {
-                        holdErrorFrameCount++
-                        holdJointErrors[error.jointCode] = 
-                            (holdJointErrors[error.jointCode] ?: 0) + 1
-                    }
-                }
+                // Add error to rep counter - it handles both REP and HOLD logic
+                repCounter.addError(error)
+                
                 // Emit error event for real-time feedback
                 emitEvent(FeedbackEvent.JointErrorDetected(error))
             }
             
             // 10. Handle position errors
             positionValidation?.errors?.forEach { error ->
-                // Only ERROR severity affects rep correctness
-                if (!isHoldExercise) {
-                    repCounter.addPositionError(error)
-                } else {
-                    // Track position errors for hold exercises too
-                    if (_holdState.value == HoldState.HOLDING) {
-                        holdErrorFrameCount++
-                        // Track by check ID for position errors
-                        val jointKey = "position:${error.checkId}"
-                        holdJointErrors[jointKey] = 
-                            (holdJointErrors[jointKey] ?: 0) + 1
-                    }
-                }
+                // Add error to rep counter - it handles both REP and HOLD logic
+                repCounter.addPositionError(error)
+                
                 if (shouldEmitPositionEvent(error.checkId)) {
                     emitEvent(FeedbackEvent.PositionErrorDetected(error))
                 }
@@ -712,14 +817,11 @@ class TrainingEngine(
                 val isInHoldZone = (currentPhase == Phase.COUNT)
                 updateHoldTimer(isInHoldZone)
                 
-                // Track form quality during hold
+                // Form quality is now tracked internally by RepCounter via updateWorstState/stateTimeTracking
+                // We update the state flow for UI purposes using intermediate calculation
                 if (_holdState.value == HoldState.HOLDING) {
-                    holdTotalFrameCount++
-                    // Update form quality state flows
-                    val quality = calculateFormQuality()
-                    _holdFormQuality.value = quality
-                    _holdErrorCount.value = holdErrorFrameCount
-                    _holdJointErrorMap.value = holdJointErrors.toMap()
+                    // Estimate current quality from RepCounter (if exposed) or keep 1.0 until completion
+                    // For now, we'll rely on the final score at completion
                 }
             } else {
                 // Rep-based: Handle pending rep completion AFTER validation and error collection
@@ -785,11 +887,24 @@ class TrainingEngine(
             
             timer.onCompleted = { totalMs, gracePeriodsUsed ->
                 _isCompleted.value = true
-                // Calculate final form quality before completion
-                val formQuality = calculateFormQuality()
+                
+                // Manually complete the rep to ensure scoring
+                repCounter.completeRep()
+                
+                // Get the final result from repCounter (Single Source of Truth)
+                val finalResult = repCounter.getLastRepResult()
+                val score = finalResult?.score ?: 0f
+                
+                // Form quality is now essentially the score / 100
+                // Score is 0-100, so divide by 100 to get 0.0-1.0 range for legacy compatibility
+                val formQuality = score / 100f
+                
                 _holdFormQuality.value = formQuality
-                _holdErrorCount.value = holdErrorFrameCount
-                _holdJointErrorMap.value = holdJointErrors.toMap()
+                // Error count is no longer tracked separately in TrainingEngine
+                // But we can get it from RepResult if needed
+                _holdErrorCount.value = finalResult?.getTotalErrorCount() ?: 0
+                // Joint map is complex to reconstruct from list, but less critical for immediate feedback
+                _holdJointErrorMap.value = emptyMap() 
                 
                 emitEvent(FeedbackEvent.HoldCompleted(
                     totalMs = totalMs,
@@ -797,7 +912,7 @@ class TrainingEngine(
                     formQuality = formQuality,
                     gracePeriodsUsed = gracePeriodsUsed
                 ))
-                Log.d(TAG, "★ Hold COMPLETED! (totalMs: $totalMs, formQuality: $formQuality, errorFrames: $holdErrorFrameCount/$holdTotalFrameCount)")
+                Log.d(TAG, "★ Hold COMPLETED! (totalMs: $totalMs, formQuality: $formQuality, score: $score)")
             }
             
             timer.onFailed = { elapsedMs, gracePeriodsUsed ->
@@ -838,27 +953,10 @@ class TrainingEngine(
     }
     
     /**
-     * Calculate form quality for hold exercises
-     * Returns percentage of frames with correct form (0.0 - 1.0)
-     * 
-     * Formula: formQuality = (totalFrames - errorFrames) / totalFrames
-     * 
-     * @return Form quality as float between 0.0 (all errors) and 1.0 (perfect)
-     */
-    private fun calculateFormQuality(): Float {
-        if (holdTotalFrameCount == 0) return 1.0f // No frames yet = perfect (initial state)
-        val correctFrames = holdTotalFrameCount - holdErrorFrameCount
-        return (correctFrames.toFloat() / holdTotalFrameCount.toFloat()).coerceIn(0f, 1f)
-    }
-    
-    /**
      * Reset hold form quality tracking
      * Called when hold starts or resets
      */
     private fun resetHoldTracking() {
-        holdErrorFrameCount = 0
-        holdTotalFrameCount = 0
-        holdJointErrors.clear()
         _holdFormQuality.value = 1.0f // Start with perfect quality
         _holdErrorCount.value = 0
         _holdJointErrorMap.value = emptyMap()
@@ -870,6 +968,38 @@ class TrainingEngine(
      */
     private fun emitEvent(event: FeedbackEvent) {
         _events.tryEmit(event)
+    }
+
+    /**
+     * Emit state messages for joints (WARNING/PAD/NORMAL/PERFECT)
+     * Uses throttling per joint to avoid spam.
+     */
+    private fun emitStateMessages(stateInfos: Map<String, JointStateInfo>) {
+        val now = System.currentTimeMillis()
+        
+        for ((jointCode, info) in stateInfos) {
+            val state = info.state
+            
+            // Skip transition and danger (danger handled by DangerDetected)
+            if (state == JointState.TRANSITION || state == JointState.DANGER) continue
+            
+            val message = info.messages.firstOrNull() ?: continue
+            val lastState = lastEmittedStates[jointCode]
+            val lastTime = lastStateMessageTimes[jointCode] ?: 0L
+            val cooldown = SettingsManager.getStateMessageCooldown()
+            
+            val shouldEmit = (lastState != state) || (now - lastTime >= cooldown)
+            if (!shouldEmit) continue
+            
+            emitEvent(FeedbackEvent.JointStateMessage(
+                jointCode = jointCode,
+                state = state,
+                message = message
+            ))
+            
+            lastEmittedStates[jointCode] = state
+            lastStateMessageTimes[jointCode] = now
+        }
     }
 
     /**
@@ -890,13 +1020,16 @@ class TrainingEngine(
     // ==================== Getters ====================
     
     fun getExerciseConfig(): ExerciseConfig = exerciseConfig
-    fun getDifficulty(): DifficultyType = difficulty
     fun getTargetReps(): Int = targetReps
     fun getCurrentRep(): Int = repCounter.count
-    fun getCorrectReps(): Int = repCounter.correctCount
+    fun getCountedReps(): Int = repCounter.countedCount
+    fun getAverageScore(): Float = repCounter.getAverageScore()
     fun getAccuracy(): Float = repCounter.getAccuracy()
     fun getProgress(): Float = repCounter.getProgress()
     fun isTrainingActive(): Boolean = isRunning && !isPaused
+    
+    /** Legacy compatibility */
+    fun getCorrectReps(): Int = repCounter.countedCount
     
     /**
      * Get tracked joint codes (for UI to know which joints to highlight)

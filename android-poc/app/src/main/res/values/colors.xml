@@ -13,4 +13,25 @@
     <color name="skeleton_warning">#FFFFC107</color>
     <color name="skeleton_error">#FFF44336</color>
     <color name="skeleton_default">#FF2196F3</color>
+    
+    <!-- State Colors (for Report) -->
+    <color name="state_perfect">#FF4CAF50</color>       <!-- Green -->
+    <color name="state_normal">#FFFFEB3B</color>        <!-- Yellow -->
+    <color name="state_pad">#FFFF9800</color>           <!-- Orange -->
+    <color name="state_warning">#FFFF5252</color>       <!-- Light Red -->
+    <color name="state_danger">#FFB71C1C</color>        <!-- Dark Red -->
+    <color name="state_transition">#FF607D8B</color>    <!-- Blue Gray -->
+    
+    <!-- State Background Colors (10% opacity) -->
+    <color name="state_perfect_bg">#1A4CAF50</color>
+    <color name="state_normal_bg">#1AFFEB3B</color>
+    <color name="state_pad_bg">#1AFF9800</color>
+    <color name="state_warning_bg">#1AFF5252</color>
+    <color name="state_danger_bg">#1AB71C1C</color>
+    
+    <!-- Report Colors -->
+    <color name="report_background">#FF121212</color>
+    <color name="report_card_background">#FF1E1E1E</color>
+    <color name="report_text_primary">#FFFFFFFF</color>
+    <color name="report_text_secondary">#FFB0B0B0</color>
 </resources>

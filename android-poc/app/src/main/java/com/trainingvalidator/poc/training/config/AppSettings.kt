@@ -7,7 +7,8 @@ package com.trainingvalidator.poc.training.config
  * for angle detection, movement detection, and timing thresholds.
  */
 data class AppSettings(
-    val version: String = "1.1.0",
+    val version: String = "1.2.0",
+    val feedback: FeedbackSettings = FeedbackSettings(),
     val angleDetection: AngleDetectionSettings = AngleDetectionSettings(),
     val movementDetection: MovementDetectionSettings = MovementDetectionSettings(),
     val defaults: DefaultTimingSettings = DefaultTimingSettings(),
@@ -16,8 +17,44 @@ data class AppSettings(
     val smoothing: SmoothingSettings = SmoothingSettings(),
     val visibility: VisibilitySettings = VisibilitySettings(),
     val poseValidation: PoseValidationSettings = PoseValidationSettings(),
-    val overlayOpacity: OverlayOpacitySettings = OverlayOpacitySettings()
+    val overlayOpacity: OverlayOpacitySettings = OverlayOpacitySettings(),
+    val rangeIndicator: RangeIndicatorSettings = RangeIndicatorSettings(),
+    val lineIndicator: LineIndicatorSettings = LineIndicatorSettings()
 )
+
+/**
+ * Feedback settings - Controls audio/text message system
+ * 
+ * @param language Message language: "ar" for Arabic, "en" for English
+ * @param stateMessageCooldownMs Minimum time between same-state messages
+ * @param randomMessageIdleMs Idle time before triggering random motivational messages
+ * @param randomMessageCooldownMs Minimum time between random messages
+ */
+data class FeedbackSettings(
+    val language: String = "ar",
+    val stateMessageCooldownMs: Long = 2000,
+    val randomMessageIdleMs: Long = 5000,
+    val randomMessageCooldownMs: Long = 10000
+)
+
+/**
+ * Range Indicator Type Settings - Choose between Arc and Line visual indicators
+ * 
+ * @param type "line" for line-on-limb indicator, "arc" for arc-around-joint indicator
+ */
+data class RangeIndicatorSettings(
+    val type: String = "line"
+) {
+    /**
+     * Check if Arc indicator should be used
+     */
+    fun isArc(): Boolean = type.equals("arc", ignoreCase = true)
+    
+    /**
+     * Check if Line indicator should be used
+     */
+    fun isLine(): Boolean = type.equals("line", ignoreCase = true)
+}
 
 /**
  * Angle detection settings - Used by FormValidator and PhaseStateMachine
@@ -170,4 +207,77 @@ data class OverlayOpacitySettings(
     val nonTracked: Float = 0.18f,
     val trackedCorrect: Float = 0.50f,
     val trackedError: Float = 0.75f
+)
+
+/**
+ * Line Indicator settings - Controls the line-based range indicator
+ * 
+ * Replaces Arc indicator with a simpler visual:
+ * - Static Track: Shows full movement range with gradient colors
+ * - Moving Indicator: Shows current position on the track
+ * 
+ * @param centerAngle The center angle where line length is 0 (typically 90°)
+ * @param smoothingFactor Smoothness of indicator movement (0.1=smooth, 0.5=responsive)
+ * @param snapToZeroThreshold Below this ratio, snap to 0 to prevent flickering
+ * @param track Settings for the static track line
+ * @param indicator Settings for the moving indicator line
+ * @param lengthRatio Max length ratios for UP and DOWN limbs
+ * @param strokeWidth Stroke widths for different states
+ * @param jointRadius Joint circle radius for different states
+ */
+data class LineIndicatorSettings(
+    val centerAngle: Double = 90.0,
+    val smoothingFactor: Float = 0.12f,
+    val snapToZeroThreshold: Float = 0.04f,
+    val track: LineTrackSettings = LineTrackSettings(),
+    val indicator: LineIndicatorStyleSettings = LineIndicatorStyleSettings(),
+    val lengthRatio: LineLengthRatioSettings = LineLengthRatioSettings(),
+    val strokeWidth: LineStrokeWidthSettings = LineStrokeWidthSettings(),
+    val jointRadius: LineJointRadiusSettings = LineJointRadiusSettings()
+)
+
+/**
+ * Static track settings
+ * @param alpha Track opacity (0-255)
+ * @param widthRatio Track width relative to indicator (e.g., 0.7 = 70% of indicator width)
+ */
+data class LineTrackSettings(
+    val alpha: Int = 130,
+    val widthRatio: Float = 0.7f
+)
+
+/**
+ * Moving indicator style settings
+ * @param widthMultiplier Indicator width multiplier relative to base stroke width
+ */
+data class LineIndicatorStyleSettings(
+    val widthMultiplier: Float = 1.3f
+)
+
+/**
+ * Length ratio settings for UP and DOWN limbs
+ * @param upper Max length ratio for UP direction (0.0-1.0)
+ * @param lower Max length ratio for DOWN direction (0.0-1.0)
+ */
+data class LineLengthRatioSettings(
+    val upper: Float = 0.50f,
+    val lower: Float = 0.75f
+)
+
+/**
+ * Stroke width settings for different states (in dp)
+ */
+data class LineStrokeWidthSettings(
+    val normal: Float = 10f,
+    val warning: Float = 12f,
+    val error: Float = 14f
+)
+
+/**
+ * Joint radius settings for different states (in dp)
+ */
+data class LineJointRadiusSettings(
+    val normal: Float = 14f,
+    val warning: Float = 18f,
+    val error: Float = 22f
 )

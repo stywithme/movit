@@ -5,7 +5,7 @@
  * ==============================
  * 
  * Global state management for the exercise creation wizard.
- * Handles form data, navigation, and auto-save functionality.
+ * Updated: State-based system (no difficulty levels)
  */
 
 import { create } from 'zustand';
@@ -16,7 +16,7 @@ import type {
   CameraPositionData,
   JointConfigData,
   PositionChecksData,
-  RepConfigData,
+  RepCountingConfigData,
   ExtrasData,
   TrackedJointData,
   PositionCheckData,
@@ -47,7 +47,7 @@ export interface WizardState {
   cameraPosition: Partial<CameraPositionData>;
   jointConfig: Partial<JointConfigData>;
   positionChecks: Partial<PositionChecksData>;
-  repConfig: Partial<RepConfigData>;
+  repConfig: Partial<RepCountingConfigData>;
   extras: Partial<ExtrasData>;
 }
 
@@ -63,7 +63,7 @@ export interface WizardActions {
   setCameraPosition: (data: Partial<CameraPositionData>) => void;
   setJointConfig: (data: Partial<JointConfigData>) => void;
   setPositionChecks: (data: Partial<PositionChecksData>) => void;
-  setRepConfig: (data: Partial<RepConfigData>) => void;
+  setRepConfig: (data: Partial<RepCountingConfigData>) => void;
   setExtras: (data: Partial<ExtrasData>) => void;
   
   // Joint helpers
@@ -128,9 +128,9 @@ const initialState: WizardState = {
     positionChecks: [],
   },
   repConfig: {
-    beginner: { reps: 8 },
-    normal: { reps: 12 },
-    advanced: { reps: 16 },
+    reps: 12,
+    minRepIntervalMs: 1500,
+    maxRepIntervalMs: 5000,
   },
   extras: {
     muscles: [],
@@ -152,7 +152,7 @@ export const useWizardStore = create<WizardStore>()(
       // Navigation
       setStep: (step) => set({ currentStep: step }),
       nextStep: () => set((state) => ({ 
-        currentStep: Math.min(state.currentStep + 1, 8) 
+        currentStep: Math.min(state.currentStep + 1, 7) 
       })),
       prevStep: () => set((state) => ({ 
         currentStep: Math.max(state.currentStep - 1, 1) 
@@ -164,10 +164,30 @@ export const useWizardStore = create<WizardStore>()(
         isDirty: true,
       })),
       
-      setCountingMethod: (data) => set((state) => ({
+      setCountingMethod: (data) => set((state) => {
+        const newState: Partial<WizardState> = {
         countingMethod: { ...state.countingMethod, ...data },
         isDirty: true,
-      })),
+        };
+        
+        // Update repConfig defaults when counting method changes
+        if (data.countingMethodCode) {
+          if (data.countingMethodCode === 'hold') {
+            newState.repConfig = {
+              duration: 30,
+              gracePeriodMs: 2500,
+            };
+          } else {
+            newState.repConfig = {
+              reps: 12,
+              minRepIntervalMs: 1500,
+              maxRepIntervalMs: 5000,
+            };
+          }
+        }
+        
+        return newState;
+      }),
       
       setCameraPosition: (data) => set((state) => ({
         cameraPosition: { ...state.cameraPosition, ...data },
@@ -275,19 +295,20 @@ export const useWizardStore = create<WizardStore>()(
       
       setSaveStatus: (status, error) => set({ 
         saveStatus: status, 
-        saveError: error || null,
+        saveError: error ?? null,
       }),
       
       markAsSaved: () => set({ 
         isDirty: false, 
         lastSaved: new Date(),
         saveStatus: 'saved',
+        saveError: null,
       }),
       
       markAsDirty: () => set({ isDirty: true }),
       
       // Reset
-      resetWizard: () => set(initialState),
+      resetWizard: () => set({ ...initialState }),
       
       loadExercise: (data) => set({
         ...initialState,
@@ -298,8 +319,9 @@ export const useWizardStore = create<WizardStore>()(
     {
       name: 'exercise-wizard-storage',
       partialize: (state) => ({
-        // Only persist form data, not UI state
         exerciseId: state.exerciseId,
+        exerciseStatus: state.exerciseStatus,
+        currentStep: state.currentStep,
         basicInfo: state.basicInfo,
         countingMethod: state.countingMethod,
         cameraPosition: state.cameraPosition,
@@ -311,65 +333,3 @@ export const useWizardStore = create<WizardStore>()(
     }
   )
 );
-
-// ============================================
-// HOOKS
-// ============================================
-
-/**
- * Get all form data for API submission
- */
-export function useWizardFormData() {
-  const store = useWizardStore();
-  
-  return {
-    basicInfo: store.basicInfo,
-    countingMethod: store.countingMethod,
-    cameraPosition: store.cameraPosition,
-    jointConfig: store.jointConfig,
-    positionChecks: store.positionChecks,
-    repConfig: store.repConfig,
-    extras: store.extras,
-  };
-}
-
-/**
- * Check if a step is complete
- * 
- * Steps (7 total):
- * 1. Basic Info + Type
- * 2. Camera Position
- * 3. Joint Configuration
- * 4. Position Checks (optional)
- * 5. Rep/Duration Config
- * 6. Extras (optional)
- * 7. Review
- */
-export function useStepComplete(step: number): boolean {
-  const store = useWizardStore();
-  
-  switch (step) {
-    case 1: // Basic Info + Type
-      return !!(
-        store.basicInfo.name?.en && 
-        store.basicInfo.name?.ar && 
-        store.basicInfo.categoryId &&
-        store.countingMethod.countingMethodId
-      );
-    case 2: // Camera Position
-      return (store.cameraPosition.cameraPositionIds?.length ?? 0) > 0;
-    case 3: // Joint Configuration
-      return (store.jointConfig.trackedJoints?.length ?? 0) > 0 &&
-        (store.jointConfig.trackedJoints?.some(j => j.role === 'primary') ?? false);
-    case 4: // Position Checks (optional)
-      return true;
-    case 5: // Rep/Duration Config
-      return true; // Has defaults
-    case 6: // Extras (optional)
-      return true;
-    case 7: // Review
-      return true;
-    default:
-      return false;
-  }
-}

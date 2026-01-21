@@ -43,6 +43,7 @@ import android.net.Uri
 import android.widget.SeekBar
 import com.trainingvalidator.poc.training.engine.HoldState
 import com.trainingvalidator.poc.training.engine.Phase
+import com.trainingvalidator.poc.training.models.JointState
 import com.trainingvalidator.poc.training.report.FrameCaptureManager
 import com.trainingvalidator.poc.training.report.ReportGenerator
 import com.trainingvalidator.poc.storage.ReportStorage
@@ -83,6 +84,7 @@ class TrainingActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetection
         const val EXTRA_TARGET_DURATION_OVERRIDE = "target_duration_override"
         const val EXTRA_WORKOUT_NAME = "workout_name"
         const val EXTRA_IS_WORKOUT_MODE = "is_workout_mode"
+        const val EXTRA_INDICATOR_TYPE = "indicator_type"
         
         // Result extras
         const val RESULT_REPS_COMPLETED = "reps_completed"
@@ -222,6 +224,13 @@ class TrainingActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetection
             finish()
             return
         }
+        
+        // Indicator type (from ExerciseDetailActivity or default from settings)
+        val indicatorType = intent.getStringExtra(EXTRA_INDICATOR_TYPE) 
+            ?: com.trainingvalidator.poc.training.config.SettingsManager.getIndicatorType()
+        
+        // Set indicator type in overlay
+        binding.skeletonOverlay.setIndicatorType(indicatorType)
         
         // Target overrides
         val targetRepsOverride = intent.getIntExtra(EXTRA_TARGET_REPS_OVERRIDE, -1)
@@ -421,31 +430,42 @@ class TrainingActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetection
     }
     
     /**
-     * Observe training engine arrowInfos for visual feedback (Arc, colors)
+     * Observe training engine jointStateInfos for visual feedback
      * Called AFTER trainingEngine is created (in startVideoTraining or after countdown)
+     * 
+     * UPDATED: Now uses JointStateInfo instead of deprecated JointArrowInfo
      */
-    private var arrowInfosObserverJob: kotlinx.coroutines.Job? = null
+    private var stateInfosObserverJob: kotlinx.coroutines.Job? = null
     
     private fun observeTrainingEngineState() {
         // Cancel previous observer to avoid duplicates
-        arrowInfosObserverJob?.cancel()
+        stateInfosObserverJob?.cancel()
         
         val engine = viewModel.trainingEngine ?: run {
             Log.e(TAG, "observeTrainingEngineState: trainingEngine is null!")
             return
         }
         
-        arrowInfosObserverJob = lifecycleScope.launch {
-            // Observe arrow infos for visual feedback (Arc, colors)
-            engine.arrowInfos.collectLatest { arrowInfos ->
-                binding.skeletonOverlay.setArrowInfos(arrowInfos)
+        stateInfosObserverJob = lifecycleScope.launch {
+            // Observe state infos for visual feedback (Line indicator, colors)
+            engine.jointStateInfos.collectLatest { stateInfos ->
+                binding.skeletonOverlay.setStateInfos(stateInfos)
                 
-                val hasErrors = arrowInfos.any { it.value.isError }
+                // Check for error states (DANGER or WARNING)
+                val hasErrors = stateInfos.any { 
+                    it.value.state == JointState.DANGER || it.value.state == JointState.WARNING 
+                }
                 if (hasErrors) {
                     binding.vignetteOverlay.showError()
                 } else {
                     binding.vignetteOverlay.clear()
                 }
+                
+                // Trigger low-priority random messages during quiet time
+                val positionErrors = engine.positionErrors.value
+                viewModel.feedbackManager?.checkAndDeliverRandomMessage(
+                    hasActiveErrors = hasErrors || positionErrors.isNotEmpty()
+                )
             }
         }
     }
@@ -795,11 +815,21 @@ class TrainingActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetection
             
             is FeedbackEvent.JointErrorDetected -> {
                 // Capture error frame (first occurrence per error type)
-                val errorKey = "${event.error.jointCode}:${event.error.errorType}"
+                val errorKey = "${event.error.jointCode}:${event.error.state.name}"
                 val currentRep = (viewModel.trainingEngine?.getCurrentRep() ?: 0) + 1
                 val phase = viewModel.currentPhase.value
                 
-                captureErrorFrame(currentRep, phase, errorKey)
+                // Check if this is DANGER state - capture DANGER frame 🚨
+                if (event.error.state == com.trainingvalidator.poc.training.models.JointState.DANGER) {
+                    captureDangerFrame(
+                        repNumber = currentRep,
+                        phase = phase,
+                        jointCode = event.error.jointCode,
+                        actualAngle = event.error.actualAngle
+                    )
+                } else {
+                    captureErrorFrame(currentRep, phase, errorKey)
+                }
             }
             
             is FeedbackEvent.HoldGraceStarted -> {
@@ -836,11 +866,8 @@ class TrainingActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetection
             return
         }
         
-        val bitmap = if (isVideoMode) {
-            null
-        } else {
-            binding.previewView.bitmap
-        }
+        // Get bitmap from camera or video mode
+        val bitmap = getBitmapForCapture()
         
         bitmap?.let { bmp ->
             val currentRep = (viewModel.trainingEngine?.getCurrentRep() ?: 0) + 1
@@ -854,6 +881,11 @@ class TrainingActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetection
             )
             
             Log.d(TAG, "Captured peak frame for rep $currentRep at phase ${phase.name}")
+            
+            // Recycle if from video mode (it's a copy)
+            if (isVideoMode) {
+                bmp.recycle()
+            }
         }
     }
     
@@ -866,11 +898,8 @@ class TrainingActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetection
             return
         }
         
-        val bitmap = if (isVideoMode) {
-            null
-        } else {
-            binding.previewView.bitmap
-        }
+        // Get bitmap from camera or video mode
+        val bitmap = getBitmapForCapture()
         
         bitmap?.let { bmp ->
             val angles = viewModel.trainingEngine?.currentAngles?.value ?: emptyMap()
@@ -886,6 +915,59 @@ class TrainingActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetection
             if (captured != null) {
                 Log.d(TAG, "Captured error frame for $errorKey at rep $repNumber")
             }
+            
+            // Recycle if from video mode (it's a copy)
+            if (isVideoMode) {
+                bmp.recycle()
+            }
+        }
+    }
+    
+    /**
+     * Capture DANGER frame when DANGER state detected 🚨
+     */
+    private fun captureDangerFrame(repNumber: Int, phase: Phase, jointCode: String, actualAngle: Double) {
+        // Only capture during active training
+        if (viewModel.supervisor.state.value != SessionState.TRAINING) {
+            return
+        }
+        
+        // Get bitmap from camera or video mode
+        val bitmap = getBitmapForCapture()
+        
+        bitmap?.let { bmp ->
+            val angles = viewModel.trainingEngine?.currentAngles?.value ?: emptyMap()
+            
+            val captured = frameCaptureManager?.captureDangerFrame(
+                bitmap = bmp,
+                repNumber = repNumber,
+                phase = phase,
+                jointCode = jointCode,
+                actualAngle = actualAngle,
+                angles = angles
+            )
+            
+            if (captured != null) {
+                Log.d(TAG, "🚨 Captured DANGER frame for $jointCode at ${actualAngle.toInt()}° (rep $repNumber)")
+            }
+            
+            // Recycle if from video mode (it's a copy)
+            if (isVideoMode) {
+                bmp.recycle()
+            }
+        }
+    }
+    
+    /**
+     * Get bitmap for frame capture (works in both camera and video mode)
+     */
+    private fun getBitmapForCapture(): android.graphics.Bitmap? {
+        return if (isVideoMode) {
+            // Get current frame from video controller
+            videoModeController?.getCurrentFrameBitmap()
+        } else {
+            // Get from camera preview
+            binding.previewView.bitmap
         }
     }
     
@@ -1081,16 +1163,16 @@ class TrainingActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetection
             // Forward pose frame to supervisor via ViewModel
             viewModel.onPoseFrame(angles, smoothedLandmarks, result.isFrontCamera)
             
-            // Update skeleton overlay
-            val arrowInfos = viewModel.trainingEngine?.arrowInfos?.value ?: emptyMap()
+            // Update skeleton overlay with JointStateInfo
+            val stateInfos = viewModel.trainingEngine?.jointStateInfos?.value ?: emptyMap()
             val positionErrors = viewModel.trainingEngine?.positionErrors?.value ?: emptyList()
             
-            binding.skeletonOverlay.updateWithArrowInfos(
+            binding.skeletonOverlay.updateWithStateInfos(
                 smoothedLandmarks = smoothedLandmarks,
                 inputImageWidth = result.imageWidth,
                 inputImageHeight = result.imageHeight,
                 angles = angles,
-                arrowInfos = arrowInfos,
+                stateInfos = stateInfos,
                 positionErrors = positionErrors
             )
         }
@@ -1220,15 +1302,16 @@ class TrainingActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetection
                 wasPoseDetectedLastFrame = true
                 viewModel.onPoseFrame(angles, smoothedLandmarks, false)
                 
-                val arrowInfos = viewModel.trainingEngine?.arrowInfos?.value ?: emptyMap()
+                // Update skeleton overlay with JointStateInfo
+                val stateInfos = viewModel.trainingEngine?.jointStateInfos?.value ?: emptyMap()
                 val positionErrors = viewModel.trainingEngine?.positionErrors?.value ?: emptyList()
                 
-                binding.skeletonOverlay.updateWithArrowInfos(
+                binding.skeletonOverlay.updateWithStateInfos(
                     smoothedLandmarks = smoothedLandmarks,
                     inputImageWidth = imageWidth,
                     inputImageHeight = imageHeight,
                     angles = angles,
-                    arrowInfos = arrowInfos,
+                    stateInfos = stateInfos,
                     positionErrors = positionErrors
                 )
             }
@@ -1294,8 +1377,7 @@ class TrainingActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetection
             val exerciseConfig = viewModel.exerciseConfig.value ?: return@setOnClickListener
             videoModeController?.saveResults(
                 viewModel.trainingEngine ?: return@setOnClickListener,
-                exerciseConfig,
-                viewModel.difficulty.value
+                exerciseConfig
             )
         }
     }

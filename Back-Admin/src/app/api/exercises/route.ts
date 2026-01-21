@@ -38,7 +38,7 @@ export async function GET(request: NextRequest) {
 
 /**
  * POST /api/exercises
- * Create a new exercise (supports both basic and complete creation)
+ * Create a new exercise (state-based system)
  */
 export async function POST(request: NextRequest) {
   try {
@@ -60,14 +60,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    let exercise;
-
-    // Check if this is a complete exercise creation (has difficultyLevels)
-    if (body.difficultyLevels && body.difficultyLevels.length > 0) {
-      exercise = await exerciseService.createComplete(body);
-    } else {
-      exercise = await exerciseService.create(body);
-    }
+    const exercise = await exerciseService.create(body);
 
     return NextResponse.json({
       success: true,

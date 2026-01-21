@@ -21,6 +21,10 @@ import com.trainingvalidator.poc.training.engine.JointArrowInfo
 import com.trainingvalidator.poc.training.engine.JointZone
 import com.trainingvalidator.poc.training.engine.PositionError
 import com.trainingvalidator.poc.training.models.CheckSeverity
+import com.trainingvalidator.poc.training.models.JointState
+import com.trainingvalidator.poc.training.models.JointStateInfo
+import com.trainingvalidator.poc.training.models.StateConfig
+import com.trainingvalidator.poc.training.models.ZoneType
 import kotlin.math.max
 import kotlin.math.sin
 
@@ -50,27 +54,16 @@ class SkeletonOverlayView @JvmOverloads constructor(
         // Default visibility threshold (can be overridden by settings)
         private const val DEFAULT_VISIBILITY_THRESHOLD = 0.5f
         
-        // Colors (Modern palette)
-        private val COLOR_DEFAULT = Color.parseColor("#80FFFFFF")          // Faint white
-        private val COLOR_CORRECT = Color.parseColor("#00E676")            // Green
-        private val COLOR_ERROR = Color.parseColor("#FF5252")              // Red
-        private val COLOR_WARNING = Color.parseColor("#FFC107")            // Amber
-        private val COLOR_POSITION_ERROR = Color.parseColor("#E91E63")     // Pink
-        private val COLOR_TRACKED = Color.parseColor("#64B5F6")            // Light Blue
-        private val COLOR_LINE_DEFAULT = Color.parseColor("#40FFFFFF")     // Faint
-        private val COLOR_LINE_TRACKED = Color.parseColor("#64B5F6")       // Light Blue
+        // UI-specific colors (not from StateConfig)
+        private val COLOR_DEFAULT = Color.parseColor("#80FFFFFF")          // Faint white (non-tracked)
+        private val COLOR_POSITION_ERROR = Color.parseColor("#E91E63")     // Pink (position checks)
+        private val COLOR_TRACKED = Color.parseColor("#64B5F6")            // Light Blue (tracked default)
+        private val COLOR_LINE_DEFAULT = Color.parseColor("#40FFFFFF")     // Faint line
+        private val COLOR_LINE_TRACKED = Color.parseColor("#64B5F6")       // Light Blue line
         private val COLOR_GLOW = Color.parseColor("#4000E676")             // Green glow
-        
-        // Gradient colors for range indicator
-        private val COLOR_OPTIMAL = Color.parseColor("#00E676")            // Green - perfect position
-        private val COLOR_NEAR_BOUNDARY = Color.parseColor("#FFEB3B")      // Yellow - approaching limit
-        private val COLOR_BOUNDARY = Color.parseColor("#FF9800")           // Orange - at boundary
-        private val COLOR_OUT_OF_RANGE = Color.parseColor("#FF5252")       // Red - outside range
-        private val COLOR_TRANSITION = Color.parseColor("#FFEB3B")         // Yellow - Safe transition path (was blue)
         
         // Color smoothing constants (prevents flickering)
         const val COLOR_LERP_FACTOR = 0.25f  // How fast to transition (0.1 = slow, 0.5 = fast)
-        const val ZONE_HYSTERESIS_DEGREES = 2.0  // Dead zone to prevent flickering
     }
     
     // ==================== Settings-based values ====================
@@ -124,7 +117,7 @@ class SkeletonOverlayView @JvmOverloads constructor(
     }
     
     private val positionWarningPaint = Paint().apply {
-        color = COLOR_WARNING
+        color = StateConfig.getColor(JointState.WARNING)
         strokeWidth = 3f
         style = Paint.Style.STROKE
         isAntiAlias = true
@@ -164,10 +157,15 @@ class SkeletonOverlayView @JvmOverloads constructor(
     private var isTrainingMode: Boolean = false
     private var isFrontCamera: Boolean = false  // For mirroring tracked indices
     
-    // Joint info for each tracked joint (calculated by FormValidator)
+    // Joint state info for each tracked joint (calculated by FormValidator)
+    // NEW: Uses JointStateInfo from unified state system
+    private var jointStateInfos: Map<String, JointStateInfo> = emptyMap()
+    
+    // Legacy: kept for backward compatibility during migration
+    @Deprecated("Use jointStateInfos instead")
     private var jointArrowInfos: Map<String, JointArrowInfo> = emptyMap()
     
-    // Error state - which joints have errors
+    // Error state - which joints have errors (DANGER or WARNING)
     private var errorJointCodes: Set<String> = emptySet()
     
     // Position-based errors (knee-over-toe, alignment, etc.)
@@ -184,39 +182,30 @@ class SkeletonOverlayView @JvmOverloads constructor(
     
     // Color smoothing state (prevents flickering)
     private val previousColors = mutableMapOf<String, Int>()
-    private val previousZones = mutableMapOf<String, JointZone>()
+    private val previousStates = mutableMapOf<String, JointState>()
     
     // Flow animation
     private var flowAnimator: ValueAnimator? = null
     private var flowPhase: Float = 0f
     private var isFlowAnimating = false
+
     
-    // Arc Range Indicator
+    // Visual Indicators
+    private val lineRangeIndicator = LineRangeIndicator()
     private val arcRangeIndicator = ArcRangeIndicator()
-    private var showArcIndicators = true
     private var arcConfig = ArcConfig()
+    
+    // Indicator type setting (read from SettingsManager)
+    private var useArcIndicator: Boolean = false
+    private var showIndicators = true
 
     init {
         // Start flow animation
         startFlowAnimation()
         
-        // Load arc settings from SettingsManager
-        loadArcSettings()
-    }
-    
-    /**
-     * Load arc indicator settings from SettingsManager
-     */
-    private fun loadArcSettings() {
-        showArcIndicators = SettingsManager.getShowArcIndicators()
-        arcConfig = ArcConfig(
-            radiusDp = SettingsManager.getArcIndicatorRadiusDp(),
-            strokeWidthDp = SettingsManager.getArcIndicatorStrokeWidthDp(),
-            showCurrentIndicator = SettingsManager.getArcShowCurrentIndicator(),
-            showOnlyOnError = SettingsManager.getArcShowOnlyOnError(),
-            showOnlyPrimary = SettingsManager.getArcShowOnlyPrimary(),
-            arcOpacity = SettingsManager.getArcOpacity()
-        )
+        // Read indicator type from settings
+        useArcIndicator = SettingsManager.useArcIndicator()
+        showIndicators = true
     }
     
     /**
@@ -257,8 +246,39 @@ class SkeletonOverlayView @JvmOverloads constructor(
     }
     
     /**
-     * Update with arrow infos for direction feedback
+     * Update with state infos for visual feedback
+     * NEW: Uses JointStateInfo from unified state system
      */
+    fun updateWithStateInfos(
+        smoothedLandmarks: List<SmoothedLandmark>?,
+        inputImageWidth: Int = 1,
+        inputImageHeight: Int = 1,
+        angles: JointAngles? = null,
+        stateInfos: Map<String, JointStateInfo>,
+        positionErrors: List<PositionError> = emptyList()
+    ) {
+        landmarks = smoothedLandmarks
+        imageWidth = inputImageWidth
+        imageHeight = inputImageHeight
+        jointAngles = angles
+        jointStateInfos = stateInfos
+        this.positionErrors = positionErrors
+        scaleFactor = max(width.toFloat() / imageWidth, height.toFloat() / imageHeight)
+        
+        // Collect error joints (DANGER or WARNING states)
+        errorJointCodes = stateInfos.filter { 
+            it.value.state == JointState.DANGER || it.value.state == JointState.WARNING 
+        }.keys
+        
+        invalidate()
+    }
+    
+    /**
+     * Update with arrow infos for direction feedback
+     * @deprecated Use updateWithStateInfos() instead
+     */
+    @Suppress("DEPRECATION")
+    @Deprecated("Use updateWithStateInfos() instead")
     fun updateWithArrowInfos(
         smoothedLandmarks: List<SmoothedLandmark>?,
         inputImageWidth: Int = 1,
@@ -318,8 +338,23 @@ class SkeletonOverlayView @JvmOverloads constructor(
     }
     
     /**
-     * Update arrow infos (for real-time feedback)
+     * Update state infos (for real-time feedback)
+     * NEW: Uses JointStateInfo from unified state system
      */
+    fun setStateInfos(stateInfos: Map<String, JointStateInfo>) {
+        jointStateInfos = stateInfos
+        errorJointCodes = stateInfos.filter { 
+            it.value.state == JointState.DANGER || it.value.state == JointState.WARNING 
+        }.keys
+        invalidate()
+    }
+    
+    /**
+     * Update arrow infos (for real-time feedback)
+     * @deprecated Use setStateInfos() instead
+     */
+    @Suppress("DEPRECATION")
+    @Deprecated("Use setStateInfos() instead")
     fun setArrowInfos(arrowInfos: Map<String, JointArrowInfo>) {
         jointArrowInfos = arrowInfos
         errorJointCodes = arrowInfos.filter { it.value.isError }.keys
@@ -334,10 +369,54 @@ class SkeletonOverlayView @JvmOverloads constructor(
     // NOTE: Removed empty setShowLowVisibility() - was unused/unimplemented
     
     /**
-     * Enable/disable arc range indicators around joints
+     * Enable/disable range indicators (both Arc and Line)
      */
+    fun setShowIndicators(show: Boolean) {
+        showIndicators = show
+        invalidate()
+    }
+    
+    /**
+     * Set indicator type: "arc" or "line"
+     */
+    fun setIndicatorType(type: String) {
+        useArcIndicator = type.equals("arc", ignoreCase = true)
+        invalidate()
+    }
+    
+    /**
+     * Switch to Arc indicator
+     */
+    fun useArcIndicator() {
+        useArcIndicator = true
+        invalidate()
+    }
+    
+    /**
+     * Switch to Line indicator
+     */
+    fun useLineIndicator() {
+        useArcIndicator = false
+        invalidate()
+    }
+    
+    /**
+     * Enable/disable line range indicators on limb segments
+     * @deprecated Use setShowIndicators() and setIndicatorType() instead
+     */
+    @Deprecated("Use setShowIndicators() and setIndicatorType() instead")
+    fun setShowLineIndicators(show: Boolean) {
+        showIndicators = show
+        invalidate()
+    }
+    
+    /**
+     * Enable/disable arc range indicators around joints
+     * @deprecated Use setShowIndicators() and setIndicatorType() instead
+     */
+    @Deprecated("Use setShowIndicators() and setIndicatorType() instead")
     fun setShowArcIndicators(show: Boolean) {
-        showArcIndicators = show
+        showIndicators = show
         invalidate()
     }
     
@@ -349,16 +428,21 @@ class SkeletonOverlayView @JvmOverloads constructor(
         invalidate()
     }
 
+    @Suppress("DEPRECATION")
     fun clear() {
         landmarks = null
         jointAngles = null
+        jointStateInfos = emptyMap()
         jointArrowInfos = emptyMap()
         errorJointCodes = emptySet()
         positionErrors = emptyList()
         
         // Reset color smoothing state
         previousColors.clear()
-        previousZones.clear()
+        previousStates.clear()
+        
+        // Reset line indicator smoothing state
+        lineRangeIndicator.reset()
         
         invalidate()
     }
@@ -368,30 +452,36 @@ class SkeletonOverlayView @JvmOverloads constructor(
         val currentLandmarks = landmarks ?: return
         if (currentLandmarks.isEmpty()) return
 
-        // Draw connections first (behind points)
-        drawConnections(canvas, currentLandmarks)
-        
-        // Draw glow on tracked joints when correct (no errors)
-        if (isTrainingMode && errorJointCodes.isEmpty()) {
-            drawCorrectFormGlow(canvas, currentLandmarks)
-        }
-        
-        // Draw landmark points
-        drawLandmarks(canvas, currentLandmarks)
-        
-        // Draw Arc Range Indicators for tracked joints
-        if (isTrainingMode && showArcIndicators && jointArrowInfos.isNotEmpty()) {
-            drawArcRangeIndicators(canvas, currentLandmarks)
-        }
-        
-        // Draw position errors (knee-over-toe, alignment, etc.)
-        if (isTrainingMode && positionErrors.isNotEmpty()) {
-            drawPositionErrors(canvas, currentLandmarks)
-        }
-        
-        // Draw angles if enabled (only on error when showAnglesOnlyOnError)
-        if (showAngles) {
-            drawAngles(canvas, currentLandmarks)
+        // TRAINING MODE: Show Range Indicators (Arc or Line based on settings)
+        // NON-TRAINING MODE: Show full skeleton
+        if (isTrainingMode) {
+            // During training: Range Indicators + Glowing Joints + Position Errors
+            // No skeleton lines, no angles - just the essential guidance
+            
+            if (showIndicators && jointStateInfos.isNotEmpty()) {
+                if (useArcIndicator) {
+                    drawArcRangeIndicatorsNew(canvas, currentLandmarks)
+                } else {
+                    drawLineRangeIndicatorsNew(canvas, currentLandmarks)
+                }
+            }
+            
+            // Draw glowing joints on all tracked joints (Primary + Secondary)
+            if (jointStateInfos.isNotEmpty()) {
+                drawGlowingJoints(canvas, currentLandmarks)
+            }
+            
+            if (positionErrors.isNotEmpty()) {
+                drawPositionErrors(canvas, currentLandmarks)
+            }
+        } else {
+            // Non-training mode: Show full skeleton
+            drawConnections(canvas, currentLandmarks)
+            drawLandmarks(canvas, currentLandmarks)
+            
+            if (showAngles) {
+                drawAngles(canvas, currentLandmarks)
+            }
         }
     }
 
@@ -482,21 +572,162 @@ class SkeletonOverlayView @JvmOverloads constructor(
         }
     }
     
+    // ==================== NEW: State-based Color Calculation ====================
+    
+    /**
+     * Calculate gradient color based on JointStateInfo with SMOOTHING
+     * 
+     * SIMPLIFIED: Uses StateConfig colors as base, with gradient within zones
+     * 
+     * Color logic:
+     * - DANGER/WARNING: Use StateConfig color directly (no gradient)
+     * - PERFECT/NORMAL/PAD: Gradient based on position within stateRanges
+     * - TRANSITION: Use StateConfig color (blue-gray)
+     */
+    private fun getGradientColorForState(stateInfo: JointStateInfo): Int {
+        val jointCode = stateInfo.jointCode
+        
+        // Calculate target color based on state and position
+        val targetColor = calculateTargetColorFromState(stateInfo)
+        
+        // Apply color smoothing (lerp with previous color)
+        val previousColor = previousColors[jointCode]
+        val smoothedColor = if (previousColor != null) {
+            smoothInterpolateColor(previousColor, targetColor, COLOR_LERP_FACTOR)
+        } else {
+            targetColor
+        }
+        
+        // Store for next frame
+        previousColors[jointCode] = smoothedColor
+        
+        return smoothedColor
+    }
+    
+    /**
+     * Calculate target color from JointStateInfo
+     * 
+     * FIXED: Calculates color interpolation based on ACTUAL ranges
+     * instead of fixed percentages. This ensures the skeleton color
+     * matches exactly with the LineRangeIndicator and exercise config.
+     */
+    private fun calculateTargetColorFromState(stateInfo: JointStateInfo): Int {
+        val state = stateInfo.state
+        val stateRanges = stateInfo.stateRanges
+        val currentAngle = stateInfo.currentAngle
+        
+        // Colors from StateConfig
+        val perfectColor = StateConfig.getColor(JointState.PERFECT)
+        val normalColor = StateConfig.getColor(JointState.NORMAL)
+        val padColor = StateConfig.getColor(JointState.PAD)
+        val warningColor = StateConfig.getColor(JointState.WARNING)
+        val dangerColor = StateConfig.getColor(JointState.DANGER)
+        val transitionColor = StateConfig.getColor(JointState.TRANSITION)
+        
+        // 1. Handle non-gradual states directly
+        if (state == JointState.DANGER) return dangerColor
+        if (state == JointState.WARNING) return warningColor
+        if (state == JointState.TRANSITION) return transitionColor
+        if (stateRanges == null) return stateInfo.color
+        
+        // 2. Determine ranges and calculate smooth gradient
+        // We need to find where the current angle falls between the range boundaries
+        
+        val perfect = stateRanges.perfect
+        val normal = stateRanges.normal
+        val pad = stateRanges.pad
+        
+        // Calculate center of perfect range (optimal point)
+        val center = (perfect.min + perfect.max) / 2.0
+        
+        // Check if we are on the "upper" side (angle > center) or "lower" side
+        val isUpperSide = currentAngle > center
+        
+        // Get the boundaries for the current side
+        val perfectBound = if (isUpperSide) perfect.max else perfect.min
+        val normalBound = if (normal != null) (if (isUpperSide) normal.max else normal.min) else perfectBound
+        val padBound = if (pad != null) (if (isUpperSide) pad.max else pad.min) else normalBound
+        
+        // Determine distance from center to boundaries (to handle direction correctly)
+        val distToAngle = kotlin.math.abs(currentAngle - center)
+        val distToPerfect = kotlin.math.abs(perfectBound - center)
+        val distToNormal = kotlin.math.abs(normalBound - center)
+        val distToPad = kotlin.math.abs(padBound - center)
+        
+        return when {
+            // Case 1: Inside Perfect Range
+            distToAngle <= distToPerfect -> {
+                perfectColor
+            }
+            
+            // Case 2: Between Perfect and Normal (Gradient Green -> Yellow)
+            distToAngle <= distToNormal -> {
+                val range = distToNormal - distToPerfect
+                if (range <= 0) return normalColor
+                val t = ((distToAngle - distToPerfect) / range).toFloat().coerceIn(0f, 1f)
+                interpolateColor(perfectColor, normalColor, t)
+            }
+            
+            // Case 3: Between Normal and Pad (Gradient Yellow -> Orange)
+            distToAngle <= distToPad -> {
+                val range = distToPad - distToNormal
+                if (range <= 0) return padColor
+                val t = ((distToAngle - distToNormal) / range).toFloat().coerceIn(0f, 1f)
+                interpolateColor(normalColor, padColor, t)
+            }
+            
+            // Case 4: Outside Pad (Gradient Orange -> Warning Red)
+            else -> {
+                // Smooth transition to warning color for a few degrees outside pad
+                val warningThreshold = 5.0 // degrees
+                val t = ((distToAngle - distToPad) / warningThreshold).toFloat().coerceIn(0f, 1f)
+                interpolateColor(padColor, warningColor, t)
+            }
+        }
+    }
+    
+    // ==================== Legacy: Arrow-based Color Calculation ====================
+    
+    /**
+     * Get color for normalized position with state-aware coloring
+     * @deprecated Use calculateTargetColorFromState instead
+     */
+    @Suppress("DEPRECATION")
+    @Deprecated("Use calculateTargetColorFromState instead")
+    private fun getColorForNormalizedPositionNew(
+        normalizedDist: Double, 
+        isOuterSide: Boolean,
+        currentState: JointState
+    ): Int {
+        val perfectColor = StateConfig.getColor(JointState.PERFECT)
+        val normalColor = StateConfig.getColor(JointState.NORMAL)
+        val padColor = StateConfig.getColor(JointState.PAD)
+        
+        return when {
+            normalizedDist < 0.4 -> perfectColor
+            normalizedDist < 0.7 -> {
+                val t = ((normalizedDist - 0.4) / 0.3).toFloat()
+                interpolateColor(perfectColor, normalColor, t)
+            }
+            else -> {
+                if (isOuterSide) {
+                    val t = ((normalizedDist - 0.7) / 0.3).toFloat()
+                    interpolateColor(normalColor, padColor, t)
+                } else {
+                    normalColor
+                }
+            }
+        }
+    }
+    
+    // ==================== Legacy: Arrow-based Color Calculation ====================
+    
     /**
      * Calculate gradient color based on angle position with SMOOTHING
-     * 
-     * IMPROVEMENTS:
-     * 1. Color smoothing: lerp between old and new color to prevent flickering
-     * 2. Unified gradient: smooth transitions across all zones
-     * 3. Uses buffered ranges for consistency with zone detection
-     * 
-     * Color mapping (unified gradient):
-     * - TOO_LOW (error): Red
-     * - DOWN_ZONE edge: Orange → Yellow → Green (center) → Yellow → Orange
-     * - TRANSITION: Blend between adjacent zones (not a hard jump)
-     * - UP_ZONE edge: Orange → Yellow → Green (center) → Yellow → Orange
-     * - TOO_HIGH (error): Red
+     * @deprecated Use getGradientColorForState() instead
      */
+    @Suppress("DEPRECATION")
+    @Deprecated("Use getGradientColorForState() instead")
     private fun getGradientColorForPosition(arrowInfo: JointArrowInfo): Int {
         val jointCode = arrowInfo.jointCode
         val currentAngle = arrowInfo.currentAngle
@@ -520,9 +751,19 @@ class SkeletonOverlayView @JvmOverloads constructor(
     
     /**
      * Calculate target color based on position (before smoothing)
+     * @deprecated Use calculateTargetColorFromState() instead
      */
+    @Suppress("DEPRECATION")
+    @Deprecated("Use calculateTargetColorFromState() instead")
     private fun calculateTargetColor(arrowInfo: JointArrowInfo, currentAngle: Double): Int {
-        // Define the full range from TOO_LOW to TOO_HIGH
+        // Use StateConfig colors instead of hardcoded values
+        val perfectColor = StateConfig.getColor(JointState.PERFECT)
+        val normalColor = StateConfig.getColor(JointState.NORMAL)
+        val padColor = StateConfig.getColor(JointState.PAD)
+        val warningColor = StateConfig.getColor(JointState.WARNING)
+        val dangerColor = StateConfig.getColor(JointState.DANGER)
+        val transitionColor = StateConfig.getColor(JointState.TRANSITION)
+        
         val downMin = arrowInfo.downRangeMin
         val downMax = arrowInfo.downRangeMax
         val upMin = arrowInfo.upRangeMin
@@ -535,75 +776,63 @@ class SkeletonOverlayView @JvmOverloads constructor(
                 JointZone.TOO_LOW -> downMin - currentAngle
                 else -> 0.0
             }
-            // Quick ramp to red (within 10°)
+            // Quick ramp to danger color (within 10°)
             val errorRatio = (distanceOutside / 10.0).coerceIn(0.0, 1.0)
-            return interpolateColor(COLOR_BOUNDARY, COLOR_OUT_OF_RANGE, errorRatio.toFloat())
+            return interpolateColor(padColor, dangerColor, errorRatio.toFloat())
         }
         
         // For valid zones, use unified gradient approach
         return when (arrowInfo.zone) {
             JointZone.DOWN_ZONE -> {
-                // Calculate position within DOWN_ZONE
                 val rangeSize = downMax - downMin
-                if (rangeSize <= 0) return COLOR_OPTIMAL
+                if (rangeSize <= 0) return perfectColor
                 
                 val center = (downMin + downMax) / 2
                 val distFromCenter = kotlin.math.abs(currentAngle - center)
                 val normalizedDist = (distFromCenter / (rangeSize / 2)).coerceIn(0.0, 1.0)
-                
-                // Outer side check: DOWN_ZONE outer side is LOWER angles (towards TOO_LOW)
                 val isOuterSide = currentAngle < center
                 
-                getColorForNormalizedPosition(normalizedDist, isOuterSide)
+                getColorForNormalizedPositionLegacy(normalizedDist, isOuterSide)
             }
             
             JointZone.UP_ZONE -> {
-                // Calculate position within UP_ZONE
                 val rangeSize = upMax - upMin
-                if (rangeSize <= 0) return COLOR_OPTIMAL
+                if (rangeSize <= 0) return perfectColor
                 
                 val center = (upMin + upMax) / 2
                 val distFromCenter = kotlin.math.abs(currentAngle - center)
                 val normalizedDist = (distFromCenter / (rangeSize / 2)).coerceIn(0.0, 1.0)
-                
-                // Outer side check: UP_ZONE outer side is HIGHER angles (towards TOO_HIGH)
                 val isOuterSide = currentAngle > center
                 
-                getColorForNormalizedPosition(normalizedDist, isOuterSide)
+                getColorForNormalizedPositionLegacy(normalizedDist, isOuterSide)
             }
             
-            JointZone.TRANSITION -> {
-                // TRANSITION: Always Yellow as requested (Safe transition path)
-                COLOR_NEAR_BOUNDARY
-            }
+            JointZone.TRANSITION -> transitionColor
             
-            else -> COLOR_OPTIMAL
+            else -> perfectColor
         }
     }
     
     /**
-     * Get color for normalized position (0 = center, 1 = edge)
-     * Supports ASYMMETRIC coloring:
-     * - Outer side: Green -> Yellow -> Orange
-     * - Inner side: Green -> Yellow (stays yellow)
+     * Get color for normalized position (legacy version using StateConfig)
      */
-    private fun getColorForNormalizedPosition(normalizedDist: Double, isOuterSide: Boolean = true): Int {
+    private fun getColorForNormalizedPositionLegacy(normalizedDist: Double, isOuterSide: Boolean = true): Int {
+        val perfectColor = StateConfig.getColor(JointState.PERFECT)
+        val normalColor = StateConfig.getColor(JointState.NORMAL)
+        val padColor = StateConfig.getColor(JointState.PAD)
+        
         return when {
-            normalizedDist < 0.4 -> COLOR_OPTIMAL  // Center 40% = pure green
+            normalizedDist < 0.4 -> perfectColor
             normalizedDist < 0.7 -> {
-                // 40-70% = green → yellow (Both sides)
                 val t = ((normalizedDist - 0.4) / 0.3).toFloat()
-                interpolateColor(COLOR_OPTIMAL, COLOR_NEAR_BOUNDARY, t)
+                interpolateColor(perfectColor, normalColor, t)
             }
             else -> {
-                // 70-100% - Edge
                 if (isOuterSide) {
-                    // Outer side: Yellow → Orange (Warning/Danger)
                     val t = ((normalizedDist - 0.7) / 0.3).toFloat()
-                    interpolateColor(COLOR_NEAR_BOUNDARY, COLOR_BOUNDARY, t)
+                    interpolateColor(normalColor, padColor, t)
                 } else {
-                    // Inner side: Stay Yellow (Safe transition)
-                    COLOR_NEAR_BOUNDARY
+                    normalColor
                 }
             }
         }
@@ -710,7 +939,9 @@ class SkeletonOverlayView @JvmOverloads constructor(
     
     /**
      * Draw subtle glow effect on tracked joints when form is correct
+     * @deprecated Use drawGlowingJoints() instead
      */
+    @Deprecated("Use drawGlowingJoints() instead")
     private fun drawCorrectFormGlow(canvas: Canvas, landmarks: List<SmoothedLandmark>) {
         // Animate glow intensity
         val glowIntensity = 0.3f + 0.4f * sin(flowPhase * Math.PI * 2).toFloat()
@@ -726,6 +957,99 @@ class SkeletonOverlayView @JvmOverloads constructor(
                     canvas.drawCircle(x, y, 25f, glowPaint)
                 }
             }
+        }
+    }
+    
+    /**
+     * Draw glowing joints on Primary and Secondary joints with state-based colors
+     * 
+     * Features:
+     * - Draws on all tracked joints (Primary and Secondary)
+     * - Color matches the current JointState
+     * - Animated glow effect with pulsing intensity
+     * - Glow radius varies by joint importance (Primary larger than Secondary)
+     */
+    private fun drawGlowingJoints(canvas: Canvas, landmarks: List<SmoothedLandmark>) {
+        if (jointStateInfos.isEmpty()) return
+        
+        // Animate glow intensity with flow phase
+        val baseGlowIntensity = 0.4f + 0.3f * sin(flowPhase * Math.PI * 2).toFloat()
+        
+        for ((jointCode, stateInfo) in jointStateInfos) {
+            // Get the center landmark for this joint
+            val angleLandmarks = JointLandmarkMapping.getLandmarksForAngle(jointCode)
+            if (angleLandmarks.size != 3) continue
+            
+            val centerIdx = angleLandmarks[1]
+            val effectiveCenterIdx = if (isFrontCamera) BodyLandmarks.getMirroredIndex(centerIdx) else centerIdx
+            
+            if (effectiveCenterIdx >= landmarks.size) continue
+            val landmark = landmarks[effectiveCenterIdx]
+            if (landmark.visibility < visibilityThreshold) continue
+            
+            // Calculate screen coordinates
+            val x = landmark.x * imageWidth * scaleFactor
+            val y = landmark.y * imageHeight * scaleFactor
+            
+            // Get color from state (using StateConfig for consistency)
+            val stateColor = stateInfo.color
+            
+            // Size multiplier based on state severity
+            // More severe states = larger glow to draw attention
+            val sizeMultiplier = when (stateInfo.state) {
+                JointState.PERFECT -> 1.0f      // Base size
+                JointState.NORMAL -> 1.25f      // +25%
+                JointState.TRANSITION -> 1.25f  // Same as NORMAL
+                JointState.PAD -> 1.5f          // +50%
+                JointState.WARNING -> 2.0f      // +100%
+                JointState.DANGER -> 2.0f       // +100%
+            }
+            
+            // Base glow parameters (different for Primary vs Secondary)
+            val (baseGlowRadius, baseInnerRadius, baseGlowAlpha) = if (stateInfo.isPrimary) {
+                Triple(28f, 10f, (baseGlowIntensity * 0.7f * 255).toInt())
+            } else {
+                Triple(20f, 7f, (baseGlowIntensity * 0.5f * 255).toInt())
+            }
+            
+            // Apply size multiplier
+            val glowRadius = baseGlowRadius * sizeMultiplier
+            val innerRadius = baseInnerRadius * sizeMultiplier
+            
+            // Alpha also increases with severity for more emphasis
+            val finalGlowAlpha = when (stateInfo.state) {
+                JointState.DANGER -> (baseGlowAlpha * 1.4f).toInt().coerceAtMost(255)
+                JointState.WARNING -> (baseGlowAlpha * 1.3f).toInt().coerceAtMost(255)
+                JointState.PAD -> (baseGlowAlpha * 1.1f).toInt().coerceAtMost(255)
+                else -> baseGlowAlpha
+            }
+            
+            // 1. Draw outer glow (blurred, larger circle)
+            glowPaint.color = stateColor
+            glowPaint.alpha = finalGlowAlpha
+            glowPaint.maskFilter = android.graphics.BlurMaskFilter(
+                glowRadius * 0.6f, 
+                android.graphics.BlurMaskFilter.Blur.NORMAL
+            )
+            canvas.drawCircle(x, y, glowRadius, glowPaint)
+            glowPaint.maskFilter = null
+            
+            // 2. Draw inner solid circle (more visible center)
+            pointPaint.color = stateColor
+            pointPaint.alpha = (baseGlowIntensity * 255).toInt().coerceIn(150, 255)
+            canvas.drawCircle(x, y, innerRadius, pointPaint)
+            
+            // 3. Draw outer ring for emphasis
+            linePaint.style = Paint.Style.STROKE
+            linePaint.strokeWidth = 2f
+            linePaint.color = stateColor
+            linePaint.alpha = (baseGlowIntensity * 200).toInt().coerceIn(100, 200)
+            canvas.drawCircle(x, y, innerRadius + 4f, linePaint)
+            linePaint.style = Paint.Style.STROKE
+            
+            // Reset paint states
+            pointPaint.alpha = 255
+            linePaint.alpha = 255
         }
     }
     
@@ -786,51 +1110,378 @@ class SkeletonOverlayView @JvmOverloads constructor(
         }
     }
     
-    // ==================== Arc Range Indicator Drawing ====================
+    // ==================== Line Range Indicator Drawing ====================
+    
+    // ==================== Arc Range Indicators (NEW) ====================
     
     /**
-     * Draw Arc Range Indicators for all tracked joints
+     * Draw Arc Range Indicators using JointStateInfo
      * 
-     * Shows a gradient arc around each tracked joint indicating:
-     * - Valid UP range (green at center, orange at edges)
-     * - Valid DOWN range (green at center, orange at edges)
-     * - Transition zone (blue)
-     * - Error zones (red)
-     * - Current position indicator (dot with glow)
+     * Alternative visual style to Line Indicators:
+     * - Arc around the joint showing valid angle ranges
+     * - Current position indicator on the arc
+     * 
+     * Uses StateRanges for accurate gradient coloring matching LineRangeIndicator
      */
-    private fun drawArcRangeIndicators(
+    private fun drawArcRangeIndicatorsNew(
+        canvas: Canvas,
+        landmarks: List<SmoothedLandmark>
+    ) {
+        val density = resources.displayMetrics.density
+        
+        for ((jointCode, stateInfo) in jointStateInfos) {
+            // Only show Arc for PRIMARY joints
+            if (!stateInfo.isPrimary) continue
+            
+            // Get center landmark for this joint
+            val angleLandmarks = JointLandmarkMapping.getLandmarksForAngle(jointCode)
+            if (angleLandmarks.size != 3) continue
+            
+            val centerIdx = angleLandmarks[1]
+            val effectiveCenterIdx = if (isFrontCamera) BodyLandmarks.getMirroredIndex(centerIdx) else centerIdx
+            
+            if (effectiveCenterIdx >= landmarks.size) continue
+            val centerLm = landmarks[effectiveCenterIdx]
+            if (centerLm.visibility < visibilityThreshold) continue
+            
+            // Convert to screen coordinates (same calculation as LineRangeIndicator)
+            val centerX = centerLm.x * imageWidth * scaleFactor
+            val centerY = centerLm.y * imageHeight * scaleFactor
+            
+            // Create ArcRangeData from JointStateInfo
+            val arcData = ArcRangeData.fromStateInfo(centerX, centerY, stateInfo)
+            
+            // Check if should show based on config
+            if (!arcRangeIndicator.shouldShowArc(arcData, arcConfig)) continue
+            
+            // Draw using StateRanges-based coloring
+            arcRangeIndicator.drawWithStateRanges(canvas, arcData, arcConfig, density)
+        }
+    }
+    
+    // ==================== Line Range Indicators ====================
+    
+    /**
+     * Draw Line Range Indicators using NEW JointStateInfo
+     * 
+     * TWO-LAYER SYSTEM:
+     * 1. Static Tracks on BOTH limbs (UP and DOWN) - shows full movement range
+     * 2. Moving Indicator on current limb only - shows current position
+     * 
+     * Uses StateConfig colors for consistency with unified state system
+     */
+    private fun drawLineRangeIndicatorsNew(
+        canvas: Canvas,
+        landmarks: List<SmoothedLandmark>
+    ) {
+        val density = resources.displayMetrics.density
+        
+        for ((jointCode, stateInfo) in jointStateInfos) {
+            // Only show Line Indicator for PRIMARY joints
+            if (!stateInfo.isPrimary) continue
+            
+            val currentAngle = stateInfo.currentAngle
+            
+            // Get the 3 landmarks that form this angle
+            val angleLandmarks = JointLandmarkMapping.getLandmarksForAngle(jointCode)
+            if (angleLandmarks.size != 3) continue
+            
+            val (upperIdx, centerIdx, lowerIdx) = angleLandmarks
+            
+            // Apply mirroring for front camera
+            val effectiveUpperIdx = if (isFrontCamera) BodyLandmarks.getMirroredIndex(upperIdx) else upperIdx
+            val effectiveCenterIdx = if (isFrontCamera) BodyLandmarks.getMirroredIndex(centerIdx) else centerIdx
+            val effectiveLowerIdx = if (isFrontCamera) BodyLandmarks.getMirroredIndex(lowerIdx) else lowerIdx
+            
+            // Validate center landmark
+            if (effectiveCenterIdx >= landmarks.size) continue
+            val centerLm = landmarks[effectiveCenterIdx]
+            if (centerLm.visibility < visibilityThreshold) continue
+            
+            // Get UPPER landmark
+            if (effectiveUpperIdx >= landmarks.size) continue
+            val upperLm = landmarks[effectiveUpperIdx]
+            
+            // Get LOWER landmark
+            if (effectiveLowerIdx >= landmarks.size) continue
+            val lowerLm = landmarks[effectiveLowerIdx]
+            
+            // Calculate screen coordinates
+            val centerX = centerLm.x * imageWidth * scaleFactor
+            val centerY = centerLm.y * imageHeight * scaleFactor
+            val upperX = upperLm.x * imageWidth * scaleFactor
+            val upperY = upperLm.y * imageHeight * scaleFactor
+            val lowerX = lowerLm.x * imageWidth * scaleFactor
+            val lowerY = lowerLm.y * imageHeight * scaleFactor
+            
+            // Calculate distances
+            val upperDistance = kotlin.math.sqrt(
+                (upperX - centerX) * (upperX - centerX) +
+                (upperY - centerY) * (upperY - centerY)
+            )
+            val lowerDistance = kotlin.math.sqrt(
+                (lowerX - centerX) * (lowerX - centerX) +
+                (lowerY - centerY) * (lowerY - centerY)
+            )
+            
+            // Max lengths from settings
+            val upperMaxLength = upperDistance * SettingsManager.getLineIndicatorUpperLengthRatio()
+            val lowerMaxLength = lowerDistance * SettingsManager.getLineIndicatorLowerLengthRatio()
+            
+            // Get style based on state
+            val style = LineStyleNew.forState(stateInfo, density)
+            
+            // Determine if this is a HOLD exercise (single range, not up/down)
+            // Hold exercises have same ranges for both up and down
+            val isHoldExercise = stateInfo.upStateRanges != null && 
+                stateInfo.upStateRanges == stateInfo.downStateRanges
+            
+            // For Hold exercises: determine which limb to show based on target angle
+            val holdTargetLimb = if (isHoldExercise) {
+                val perfectRange = stateInfo.stateRanges?.perfect
+                val targetCenter = perfectRange?.let { (it.min + it.max) / 2 } ?: 90.0
+                if (targetCenter >= 90.0) {
+                    LineRangeIndicator.LimbType.UPPER
+                } else {
+                    LineRangeIndicator.LimbType.LOWER
+                }
+            } else null
+            
+            // ========== 1. Draw STATIC TRACKS ==========
+            
+            // For Hold: Only draw ONE track on the target limb
+            // For Rep exercises: Draw tracks on BOTH limbs
+            
+            // Draw UPPER track (if visible and applicable)
+            val shouldDrawUpperTrack = upperLm.visibility >= visibilityThreshold &&
+                (holdTargetLimb == null || holdTargetLimb == LineRangeIndicator.LimbType.UPPER)
+            
+            if (shouldDrawUpperTrack) {
+                lineRangeIndicator.drawTrackNew(
+                    canvas = canvas,
+                    centerX = centerX,
+                    centerY = centerY,
+                    targetX = upperX,
+                    targetY = upperY,
+                    maxLength = upperMaxLength,
+                    style = style,
+                    stateInfo = stateInfo,
+                    limbType = LineRangeIndicator.LimbType.UPPER
+                )
+            }
+            
+            // Draw LOWER track (if visible and applicable)
+            val shouldDrawLowerTrack = lowerLm.visibility >= visibilityThreshold &&
+                (holdTargetLimb == null || holdTargetLimb == LineRangeIndicator.LimbType.LOWER)
+            
+            if (shouldDrawLowerTrack) {
+                lineRangeIndicator.drawTrackNew(
+                    canvas = canvas,
+                    centerX = centerX,
+                    centerY = centerY,
+                    targetX = lowerX,
+                    targetY = lowerY,
+                    maxLength = lowerMaxLength,
+                    style = style,
+                    stateInfo = stateInfo,
+                    limbType = LineRangeIndicator.LimbType.LOWER
+                )
+            }
+            
+            // ========== 2. Draw MOVING INDICATOR ==========
+            
+            // For Hold: Use the target limb direction
+            // For Rep: Use hysteresis-based limb detection to prevent flickering at center
+            val limbType = if (isHoldExercise && holdTargetLimb != null) {
+                holdTargetLimb
+            } else {
+                // Use hysteresis to prevent indicator flickering when crossing center angle
+                lineRangeIndicator.getTargetLimbWithHysteresis(
+                    jointCode = jointCode,
+                    currentAngle = currentAngle,
+                    invertIndicator = stateInfo.invertIndicator
+                )
+            }
+            
+            // Update transition progress for smooth crossover animation
+            lineRangeIndicator.updateTransitionProgress(jointCode)
+            
+            if (limbType == LineRangeIndicator.LimbType.NONE) continue
+            
+            val (targetX, targetY, maxLength) = when (limbType) {
+                LineRangeIndicator.LimbType.UPPER -> Triple(upperX, upperY, upperMaxLength)
+                LineRangeIndicator.LimbType.LOWER -> Triple(lowerX, lowerY, lowerMaxLength)
+                LineRangeIndicator.LimbType.NONE -> continue
+            }
+            
+            // Calculate indicator length based on angle (with inversion support)
+            // This also applies transition smoothing when switching limbs
+            val lineLength = lineRangeIndicator.calculateLineLength(
+                jointCode = jointCode,
+                currentAngle = currentAngle,
+                maxLength = maxLength,
+                invertIndicator = stateInfo.invertIndicator
+            )
+            
+            // Draw the moving indicator
+            lineRangeIndicator.drawIndicatorNew(
+                canvas = canvas,
+                centerX = centerX,
+                centerY = centerY,
+                targetX = targetX,
+                targetY = targetY,
+                lineLength = lineLength,
+                stateInfo = stateInfo,
+                style = style,
+                density = density,
+                maxLength = maxLength,
+                limbType = limbType
+            )
+        }
+    }
+    
+    /**
+     * Draw Line Range Indicators - LEGACY (using JointArrowInfo)
+     * @deprecated Use drawLineRangeIndicatorsNew() instead
+     */
+    @Suppress("DEPRECATION")
+    @Deprecated("Use drawLineRangeIndicatorsNew() instead")
+    private fun drawLineRangeIndicators(
         canvas: Canvas,
         landmarks: List<SmoothedLandmark>
     ) {
         val density = resources.displayMetrics.density
         
         for ((jointCode, arrowInfo) in jointArrowInfos) {
-            // Get landmark index for this joint
-            val landmarkIndex = jointCodeToLandmarkIndex(jointCode) ?: continue
-            if (landmarkIndex >= landmarks.size) continue
+            // Only show Line Indicator for PRIMARY joints
+            if (!arrowInfo.isPrimary) continue
             
-            val landmark = landmarks[landmarkIndex]
-            if (landmark.visibility < visibilityThreshold) continue
+            val currentAngle = arrowInfo.currentAngle
             
-            // Calculate center position in screen coordinates
-            val centerX = landmark.x * imageWidth * scaleFactor
-            val centerY = landmark.y * imageHeight * scaleFactor
+            // Get the 3 landmarks that form this angle
+            val angleLandmarks = JointLandmarkMapping.getLandmarksForAngle(jointCode)
+            if (angleLandmarks.size != 3) continue
             
-            // Create arc data from arrow info
-            val arcData = ArcRangeData.fromArrowInfo(
-                jointCode = jointCode,
-                centerX = centerX,
-                centerY = centerY,
-                arrowInfo = arrowInfo
+            val (upperIdx, centerIdx, lowerIdx) = angleLandmarks
+            
+            // Apply mirroring for front camera
+            val effectiveUpperIdx = if (isFrontCamera) BodyLandmarks.getMirroredIndex(upperIdx) else upperIdx
+            val effectiveCenterIdx = if (isFrontCamera) BodyLandmarks.getMirroredIndex(centerIdx) else centerIdx
+            val effectiveLowerIdx = if (isFrontCamera) BodyLandmarks.getMirroredIndex(lowerIdx) else lowerIdx
+            
+            // Validate center landmark
+            if (effectiveCenterIdx >= landmarks.size) continue
+            val centerLm = landmarks[effectiveCenterIdx]
+            if (centerLm.visibility < visibilityThreshold) continue
+            
+            // Get UPPER landmark
+            if (effectiveUpperIdx >= landmarks.size) continue
+            val upperLm = landmarks[effectiveUpperIdx]
+            
+            // Get LOWER landmark
+            if (effectiveLowerIdx >= landmarks.size) continue
+            val lowerLm = landmarks[effectiveLowerIdx]
+            
+            // Calculate screen coordinates for center
+            val centerX = centerLm.x * imageWidth * scaleFactor
+            val centerY = centerLm.y * imageHeight * scaleFactor
+            
+            // Calculate screen coordinates for UPPER limb
+            val upperX = upperLm.x * imageWidth * scaleFactor
+            val upperY = upperLm.y * imageHeight * scaleFactor
+            
+            // Calculate screen coordinates for LOWER limb
+            val lowerX = lowerLm.x * imageWidth * scaleFactor
+            val lowerY = lowerLm.y * imageHeight * scaleFactor
+            
+            // Calculate distances
+            val upperDistance = kotlin.math.sqrt(
+                (upperX - centerX) * (upperX - centerX) +
+                (upperY - centerY) * (upperY - centerY)
+            )
+            val lowerDistance = kotlin.math.sqrt(
+                (lowerX - centerX) * (lowerX - centerX) +
+                (lowerY - centerY) * (lowerY - centerY)
             )
             
-            // Check if arc should be shown based on config
-            if (!arcRangeIndicator.shouldShowArc(arcData, arcConfig)) {
-                continue
+            // Max lengths from settings
+            val upperMaxLength = upperDistance * SettingsManager.getLineIndicatorUpperLengthRatio()
+            val lowerMaxLength = lowerDistance * SettingsManager.getLineIndicatorLowerLengthRatio()
+            
+            // Get style
+            val style = LineStyle.forState(arrowInfo, density)
+            
+            // ========== 1. Draw STATIC TRACKS on BOTH limbs ==========
+            
+            // Draw UPPER track (if visible)
+            if (upperLm.visibility >= visibilityThreshold) {
+                lineRangeIndicator.drawTrack(
+                    canvas = canvas,
+                    centerX = centerX,
+                    centerY = centerY,
+                    targetX = upperX,
+                    targetY = upperY,
+                    maxLength = upperMaxLength,
+                    style = style,
+                    arrowInfo = arrowInfo,
+                    limbType = LineRangeIndicator.LimbType.UPPER
+                )
             }
             
-            // Draw the arc
-            arcRangeIndicator.draw(canvas, arcData, arcConfig, density)
+            // Draw LOWER track (if visible)
+            if (lowerLm.visibility >= visibilityThreshold) {
+                lineRangeIndicator.drawTrack(
+                    canvas = canvas,
+                    centerX = centerX,
+                    centerY = centerY,
+                    targetX = lowerX,
+                    targetY = lowerY,
+                    maxLength = lowerMaxLength,
+                    style = style,
+                    arrowInfo = arrowInfo,
+                    limbType = LineRangeIndicator.LimbType.LOWER
+                )
+            }
+            
+            // ========== 2. Draw MOVING INDICATOR on current limb only ==========
+            
+            // Use hysteresis to prevent flickering when crossing center angle
+            val limbType = lineRangeIndicator.getTargetLimbWithHysteresis(
+                jointCode = jointCode,
+                currentAngle = currentAngle,
+                invertIndicator = false
+            )
+            lineRangeIndicator.updateTransitionProgress(jointCode)
+            
+            if (limbType == LineRangeIndicator.LimbType.NONE) continue
+            
+            val (targetX, targetY, maxLength) = when (limbType) {
+                LineRangeIndicator.LimbType.UPPER -> Triple(upperX, upperY, upperMaxLength)
+                LineRangeIndicator.LimbType.LOWER -> Triple(lowerX, lowerY, lowerMaxLength)
+                LineRangeIndicator.LimbType.NONE -> continue
+            }
+            
+            // Calculate indicator length based on angle (with transition smoothing)
+            val lineLength = lineRangeIndicator.calculateLineLength(
+                jointCode = jointCode,
+                currentAngle = currentAngle,
+                maxLength = maxLength
+            )
+            
+            // Draw the moving indicator
+            lineRangeIndicator.drawIndicator(
+                canvas = canvas,
+                centerX = centerX,
+                centerY = centerY,
+                targetX = targetX,
+                targetY = targetY,
+                lineLength = lineLength,
+                arrowInfo = arrowInfo,
+                style = style,
+                density = density,
+                maxLength = maxLength,
+                limbType = limbType
+            )
         }
     }
 
@@ -897,8 +1548,8 @@ class SkeletonOverlayView @JvmOverloads constructor(
         
         // Color: Error (red) > Warning (amber) > Default (white)
         textPaint.color = when {
-            hasError -> COLOR_ERROR
-            isWarning -> COLOR_WARNING
+            hasError -> StateConfig.getColor(JointState.DANGER)
+            isWarning -> StateConfig.getColor(JointState.WARNING)
             else -> Color.WHITE
         }
         
@@ -909,48 +1560,75 @@ class SkeletonOverlayView @JvmOverloads constructor(
     // ==================== Position Error Drawing ====================
     
     /**
-     * Draw visual indicators for position errors with severity distinction
+     * Draw visual indicator for position errors
+     * 
+     * SINGLE ERROR DISPLAY: Only shows the highest severity error to reduce clutter
+     * Priority: ERROR > WARNING > TIP
      */
     private fun drawPositionErrors(canvas: Canvas, landmarks: List<SmoothedLandmark>) {
-        for (error in positionErrors) {
-            val landmark1Idx = landmarkNameToIndex(error.landmark1)
-            val landmark2Idx = landmarkNameToIndex(error.landmark2)
-            
-            if (landmark1Idx != null && landmark2Idx != null &&
-                landmark1Idx < landmarks.size && landmark2Idx < landmarks.size) {
-                
-                val lm1 = landmarks[landmark1Idx]
-                val lm2 = landmarks[landmark2Idx]
-                
-                if (lm1.visibility >= visibilityThreshold && 
-                    lm2.visibility >= visibilityThreshold) {
-                    
-                    val x1 = lm1.x * imageWidth * scaleFactor
-                    val y1 = lm1.y * imageHeight * scaleFactor
-                    val x2 = lm2.x * imageWidth * scaleFactor
-                    val y2 = lm2.y * imageHeight * scaleFactor
-                    
-                    // Choose paint based on severity (DISTINCT visuals per level)
-                    val (linePaintToUse, circleRadius) = when (error.severity) {
-                        CheckSeverity.ERROR -> positionErrorPaint to 22f
-                        CheckSeverity.WARNING -> positionWarningPaint to 18f
-                        CheckSeverity.TIP -> positionTipPaint to 14f
-                    }
-                    
-                    // Draw dashed line between the two landmarks
-                    canvas.drawLine(x1, y1, x2, y2, linePaintToUse)
-                    
-                    // Draw circles at both landmarks to highlight them
-                    canvas.drawCircle(x1, y1, circleRadius, linePaintToUse)
-                    canvas.drawCircle(x2, y2, circleRadius, linePaintToUse)
-                    
-                    // For ERROR severity, also draw a filled circle with transparency
-                    if (error.severity == CheckSeverity.ERROR) {
-                        canvas.drawCircle(x1, y1, circleRadius - 5f, positionErrorFillPaint)
-                        canvas.drawCircle(x2, y2, circleRadius - 5f, positionErrorFillPaint)
-                    }
-                }
-            }
+        // Select single highest priority error
+        val primaryError = getPrimaryPositionError() ?: return
+        
+        drawSinglePositionError(canvas, landmarks, primaryError)
+    }
+    
+    /**
+     * Get the highest priority position error
+     * Priority: ERROR > WARNING > TIP
+     */
+    private fun getPrimaryPositionError(): PositionError? {
+        return positionErrors.firstOrNull { it.severity == CheckSeverity.ERROR }
+            ?: positionErrors.firstOrNull { it.severity == CheckSeverity.WARNING }
+            ?: positionErrors.firstOrNull()
+    }
+    
+    /**
+     * Draw a single position error with bracket-style highlighting
+     */
+    private fun drawSinglePositionError(
+        canvas: Canvas,
+        landmarks: List<SmoothedLandmark>,
+        error: PositionError
+    ) {
+        val landmark1Idx = landmarkNameToIndex(error.landmark1)
+        val landmark2Idx = landmarkNameToIndex(error.landmark2)
+        
+        if (landmark1Idx == null || landmark2Idx == null ||
+            landmark1Idx >= landmarks.size || landmark2Idx >= landmarks.size) {
+            return
+        }
+        
+        val lm1 = landmarks[landmark1Idx]
+        val lm2 = landmarks[landmark2Idx]
+        
+        if (lm1.visibility < visibilityThreshold || 
+            lm2.visibility < visibilityThreshold) {
+            return
+        }
+        
+        val x1 = lm1.x * imageWidth * scaleFactor
+        val y1 = lm1.y * imageHeight * scaleFactor
+        val x2 = lm2.x * imageWidth * scaleFactor
+        val y2 = lm2.y * imageHeight * scaleFactor
+        
+        // Choose paint based on severity
+        val (linePaintToUse, circleRadius) = when (error.severity) {
+            CheckSeverity.ERROR -> positionErrorPaint to 22f
+            CheckSeverity.WARNING -> positionWarningPaint to 18f
+            CheckSeverity.TIP -> positionTipPaint to 14f
+        }
+        
+        // Draw dashed line between the two landmarks
+        canvas.drawLine(x1, y1, x2, y2, linePaintToUse)
+        
+        // Draw bracket-style circles at both landmarks
+        canvas.drawCircle(x1, y1, circleRadius, linePaintToUse)
+        canvas.drawCircle(x2, y2, circleRadius, linePaintToUse)
+        
+        // For ERROR severity, add filled circle with transparency
+        if (error.severity == CheckSeverity.ERROR) {
+            canvas.drawCircle(x1, y1, circleRadius - 5f, positionErrorFillPaint)
+            canvas.drawCircle(x2, y2, circleRadius - 5f, positionErrorFillPaint)
         }
     }
     

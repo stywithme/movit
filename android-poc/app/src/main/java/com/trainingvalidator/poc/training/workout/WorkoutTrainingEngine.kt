@@ -36,8 +36,7 @@ import kotlinx.coroutines.flow.StateFlow
  */
 class WorkoutTrainingEngine(
     private val exercises: List<LoadedExercise>,
-    private val workoutConfig: WorkoutConfig,
-    private val defaultDifficulty: DifficultyType = DifficultyType.BEGINNER
+    private val workoutConfig: WorkoutConfig
 ) {
     companion object {
         private const val TAG = "WorkoutTrainingEngine"
@@ -291,7 +290,6 @@ class WorkoutTrainingEngine(
         
         return TrainingEngine(
             exerciseConfig = exercise.config,
-            difficulty = exercise.difficulty,
             poseVariantIndex = exercise.workoutExercise.variantIndex,
             targetRepsOverride = targetRepsOverride,
             targetDurationMsOverride = targetDurationMsOverride

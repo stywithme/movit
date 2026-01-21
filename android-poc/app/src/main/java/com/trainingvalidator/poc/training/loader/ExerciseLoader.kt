@@ -40,6 +40,10 @@ object ExerciseLoader {
                     // Store the file name for later use
                     config.fileName = exerciseName
                     Log.d(TAG, "Loaded exercise: ${config.name.en} (file: $exerciseName)")
+                    
+                    // Validate StateRanges configuration
+                    validateStateRanges(config, exerciseName)
+                    
                     config
                 }
             }
@@ -49,6 +53,61 @@ object ExerciseLoader {
         } catch (e: Exception) {
             Log.e(TAG, "Error parsing exercise: $fileName", e)
             null
+        }
+    }
+    
+    /**
+     * Validate StateRanges configuration and log warnings
+     */
+    private fun validateStateRanges(config: ExerciseConfig, exerciseName: String) {
+        for (variant in config.poseVariants) {
+            for (joint in variant.trackedJoints) {
+                // Validate upRange
+                joint.upRange?.let { upRange ->
+                    val result = upRange.validate(joint.joint, "upRange")
+                    result.warnings.forEach { warning ->
+                        Log.w(TAG, "[$exerciseName] $warning")
+                    }
+                    result.errors.forEach { error ->
+                        Log.e(TAG, "[$exerciseName] $error")
+                    }
+                }
+                
+                // Validate downRange
+                joint.downRange?.let { downRange ->
+                    val result = downRange.validate(joint.joint, "downRange")
+                    result.warnings.forEach { warning ->
+                        Log.w(TAG, "[$exerciseName] $warning")
+                    }
+                    result.errors.forEach { error ->
+                        Log.e(TAG, "[$exerciseName] $error")
+                    }
+                }
+                
+                // Validate hold range (for SECONDARY joints)
+                joint.range?.let { holdRange ->
+                    val result = holdRange.validate(joint.joint, "range")
+                    result.warnings.forEach { warning ->
+                        Log.w(TAG, "[$exerciseName] $warning")
+                    }
+                    result.errors.forEach { error ->
+                        Log.e(TAG, "[$exerciseName] $error")
+                    }
+                }
+                
+                // Validate TRANSITION zone (upRange.min > downRange.max)
+                if (joint.upRange != null && joint.downRange != null) {
+                    val transitionZone = joint.getTransitionZone()
+                    if (transitionZone == null) {
+                        Log.w(TAG, "[$exerciseName][${joint.joint}] No valid TRANSITION zone: upRange.min (${joint.upRange.getEffectiveMin()}) should be > downRange.max (${joint.downRange.getEffectiveMax()})")
+                    } else {
+                        val (transMin, transMax) = transitionZone
+                        if (transMax - transMin < 5.0) {
+                            Log.w(TAG, "[$exerciseName][${joint.joint}] TRANSITION zone is very small (${transMin}-${transMax}). Consider increasing the gap.")
+                        }
+                    }
+                }
+            }
         }
     }
     

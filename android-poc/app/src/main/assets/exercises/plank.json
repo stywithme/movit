@@ -22,6 +22,10 @@
   "muscles": ["abs", "core", "shoulders", "back"],
   "equipment": ["bodyweight"],
   "tags": ["isometric", "beginner-friendly", "no-equipment"],
+  "repCountingConfig": {
+    "duration": 30,
+    "gracePeriodMs": 2500
+  },
   "poseVariants": [
     {
       "name": {
@@ -40,11 +44,7 @@
           },
           "condition": {
             "operator": "approximately_equal",
-            "thresholds": {
-              "beginner": 0.12,
-              "normal": 0.08,
-              "advanced": 0.05
-            }
+            "threshold": 0.08
           },
           "activePhases": ["count", "hold"],
           "errorMessage": {
@@ -64,11 +64,7 @@
           },
           "condition": {
             "operator": "approximately_equal",
-            "thresholds": {
-              "beginner": 0.15,
-              "normal": 0.10,
-              "advanced": 0.07
-            }
+            "threshold": 0.10
           },
           "activePhases": ["count", "hold"],
           "errorMessage": {
@@ -88,11 +84,7 @@
           },
           "condition": {
             "operator": "should_not_exceed",
-            "thresholds": {
-              "beginner": 0.12,
-              "normal": 0.08,
-              "advanced": 0.05
-            }
+            "threshold": 0.08
           },
           "activePhases": ["count", "hold"],
           "errorMessage": {
@@ -108,75 +100,49 @@
         {
           "joint": "left_hip",
           "role": "primary",
-          "startPose": {
-            "min": 150,
-            "max": 180
-          },
-          "upRange": {
-            "beginner": { "min": 150, "max": 180 },
+          "startPose": { "min": 150, "max": 180 },
+          "range": {
+            "perfect": { "min": 165, "max": 180 },
             "normal": { "min": 160, "max": 180 },
-            "advanced": { "min": 165, "max": 180 }
+            "pad": { "min": 150, "max": 180 },
+            "warning": { "min": 140, "max": 150 },
+            "danger": { "min": 0, "max": 140 }
           },
-          "downRange": {
-            "beginner": { "min": 150, "max": 180 },
-            "normal": { "min": 160, "max": 180 },
-            "advanced": { "min": 165, "max": 180 }
-          },
-          "errorMessages": {
-            "tooLow": {
-              "ar": "ارفع الوسط قليلاً - لا تدع ظهرك ينحني",
-              "en": "Raise your hips - don't let your back sag"
-            },
-            "tooHigh": {
-              "ar": "اخفض الوسط قليلاً - حافظ على استقامة الجسم",
-              "en": "Lower your hips - keep your body straight"
-            }
+          "stateMessages": {
+            "perfect": { "ar": "ممتاز! وضعية مثالية", "en": "Perfect! Great form" },
+            "normal": { "ar": "جيد، حاول رفع الوسط قليلاً", "en": "Good, try raising hips slightly" },
+            "pad": { "ar": "مقبول، لكن يمكنك التحسن", "en": "Acceptable, but you can improve" },
+            "warning": { "ar": "ارفع الوسط قليلاً", "en": "Raise your hips slightly" },
+            "danger": { "ar": "وسطك منخفض جداً! قد يؤذي ظهرك", "en": "Hips too low! May hurt your back" }
           }
         },
         {
           "joint": "left_shoulder",
           "role": "secondary",
-          "startPose": {
-            "min": 70,
-            "max": 110
-          },
-          "Range": {
-            "beginner": { "min": 60, "max": 120 },
+          "startPose": { "min": 70, "max": 110 },
+          "range": {
+            "perfect": { "min": 80, "max": 100 },
             "normal": { "min": 70, "max": 110 },
-            "advanced": { "min": 80, "max": 100 }
+            "pad": { "min": 60, "max": 120 }
           },
-          "errorMessages": {
-            "tooLow": {
-              "ar": "تقدم قليلاً للأمام",
-              "en": "Move your shoulders forward slightly"
-            },
-            "tooHigh": {
-              "ar": "ارجع قليلاً للخلف",
-              "en": "Move your shoulders back slightly"
-            }
+          "stateMessages": {
+            "perfect": { "ar": "ممتاز - وضعية الكتف مثالية", "en": "Great - shoulder position is perfect" },
+            "warning": { "ar": "عدّل وضع الكتف", "en": "Adjust shoulder position" }
           }
         },
         {
           "joint": "left_knee",
           "role": "secondary",
-          "startPose": {
-            "min": 160,
-            "max": 180
-          },
-          "Range": {
-            "beginner": { "min": 155, "max": 180 },
+          "startPose": { "min": 160, "max": 180 },
+          "range": {
+            "perfect": { "min": 170, "max": 180 },
             "normal": { "min": 165, "max": 180 },
-            "advanced": { "min": 170, "max": 180 }
+            "pad": { "min": 155, "max": 180 },
+            "warning": { "min": 140, "max": 155 }
           },
-          "errorMessages": {
-            "tooLow": {
-              "ar": "افرد ركبتيك",
-              "en": "Straighten your knees"
-            },
-            "tooHigh": {
-              "ar": "حافظ على استقامة الساقين",
-              "en": "Keep your legs straight"
-            }
+          "stateMessages": {
+            "perfect": { "ar": "ممتاز - الساقين مستقيمتين", "en": "Great - legs are straight" },
+            "warning": { "ar": "افرد ركبتيك", "en": "Straighten your knees" }
           }
         }
       ],
@@ -186,41 +152,11 @@
           { "ar": "ممتاز! حافظ على الوضع!", "en": "Excellent! Hold that position!" },
           { "ar": "قوي! لا تستسلم!", "en": "Strong! Don't give up!" }
         ],
-        "common_mistake": [
-          { "ar": "لا تدع ظهرك ينحني للأسفل", "en": "Don't let your back sag down" },
-          { "ar": "لا ترفع مؤخرتك للأعلى", "en": "Don't raise your hips too high" }
-        ],
-        "tip": [
+        "tips": [
           { "ar": "تنفس بانتظام ولا تحبس أنفاسك", "en": "Breathe steadily, don't hold your breath" },
           { "ar": "شد عضلات بطنك طوال التمرين", "en": "Keep your core engaged throughout" }
         ]
-      },
-      "difficultyLevels": [
-        {
-          "level": "beginner",
-          "repCountingConfig": {
-            "duration": 20,
-            "gracePeriodMs": 3000
-          },
-          "phases": ["hold"]
-        },
-        {
-          "level": "normal",
-          "repCountingConfig": {
-            "duration": 30,
-            "gracePeriodMs": 2500
-          },
-          "phases": ["hold"]
-        },
-        {
-          "level": "advanced",
-          "repCountingConfig": {
-            "duration": 45,
-            "gracePeriodMs": 2000
-          },
-          "phases": ["hold"]
-        }
-      ]
+      }
     }
   ]
 }

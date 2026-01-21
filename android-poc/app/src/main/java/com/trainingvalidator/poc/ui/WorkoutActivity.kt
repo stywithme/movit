@@ -106,20 +106,13 @@ class WorkoutActivity : AppCompatActivity() {
         }
         
         val config = workoutConfig!!
-        
-        // Parse difficulty
-        val defaultDifficulty = when (difficultyStr.lowercase()) {
-            "beginner" -> DifficultyType.BEGINNER
-            "normal" -> DifficultyType.NORMAL
-            "advanced" -> DifficultyType.ADVANCED
-            else -> DifficultyType.BEGINNER
-        }
-        
+        // NOTE: difficulty has been removed (unified evaluation).
+        // difficultyStr is kept only for backward compatibility with older intents.
+
         // Create workout runner
         workoutRunner = WorkoutRunner(
             workoutConfig = config,
-            assets = assets,
-            defaultDifficulty = defaultDifficulty
+            assets = assets
         ).apply {
             setupCallbacks(this)
         }
@@ -349,7 +342,8 @@ class WorkoutActivity : AppCompatActivity() {
         val intent = Intent(this, TrainingActivity::class.java).apply {
             putExtra(TrainingActivity.EXTRA_WORKOUT_NAME, name)
             putExtra(TrainingActivity.EXTRA_IS_WORKOUT_MODE, true)
-            putExtra(TrainingActivity.EXTRA_DIFFICULTY, difficultyStr)
+            // Kept for backward compatibility, ignored by new engine
+            putExtra(TrainingActivity.EXTRA_DIFFICULTY, "")
             putExtra(TrainingActivity.EXTRA_TRAINING_MODE, TrainingActivity.MODE_CAMERA)
         }
         
@@ -409,7 +403,8 @@ class WorkoutActivity : AppCompatActivity() {
         // Launch TrainingActivity with the exercise
         val intent = Intent(this, TrainingActivity::class.java).apply {
             putExtra(TrainingActivity.EXTRA_EXERCISE_NAME, exercise.config.fileName)
-            putExtra(TrainingActivity.EXTRA_DIFFICULTY, exercise.difficulty.name.lowercase())
+            // Kept for backward compatibility, ignored by new engine
+            putExtra(TrainingActivity.EXTRA_DIFFICULTY, "")
             putExtra(TrainingActivity.EXTRA_POSE_VARIANT, exercise.workoutExercise.variantIndex)
             putExtra(TrainingActivity.EXTRA_TRAINING_MODE, TrainingActivity.MODE_CAMERA)
             

@@ -22,6 +22,11 @@
   "muscles": ["biceps", "forearms"],
   "equipment": ["bodyweight", "dumbbell"],
   "tags": [],
+  "repCountingConfig": {
+    "reps": 12,
+    "minRepIntervalMs": 1200,
+    "maxRepIntervalMs": 4500
+  },
   "poseVariants": [
     {
       "name": {
@@ -33,29 +38,27 @@
         {
           "joint": "right_elbow",
           "role": "primary",
+          "invertIndicator": true,
+          "_invertIndicator_comment": "Lower limb (forearm) moves UP towards shoulder, so invert indicator direction",
           "startPose": {
             "min": 50,
             "max": 180
           },
           "upRange": {
-            "beginner": { "min": 110, "max": 140 },
-            "normal":   { "min": 105, "max": 130 },
-            "advanced": { "min": 100, "max": 120 }
+            "perfect": { "min": 135, "max": 160 },
+            "normal": { "min": 140, "max": 170 },
+            "pad": { "min": 150, "max": 165 },
+            "warning": { "min": 165, "max": 180 }
           },
           "downRange": {
-            "beginner": { "min": 55, "max": 80 },
-            "normal":   { "min": 50, "max": 85 },
-            "advanced": { "min": 45, "max": 80 }
+            "perfect": { "min": 0, "max": 90 },
+            "normal": { "min": 0, "max": 100 }
           },
-          "errorMessages": {
-            "tooLow": {
-              "ar": "لا تثني المرفق كثيراً",
-              "en": "Don't bend your elbow too much"
-            },
-            "tooHigh": {
-              "ar": "اثني المرفق أكثر",
-              "en": "Bend your elbow more"
-            }
+          "stateMessages": {
+            "perfect": { "ar": "ممتاز! ثني مثالي", "en": "Perfect! Great curl" },
+            "normal": { "ar": "جيد، حاول الثني أكثر", "en": "Good, try curling more" },
+            "pad": { "ar": "مقبول، اقترب من الكتف أكثر", "en": "Acceptable, get closer to shoulder" },
+            "warning": { "ar": "اثني المرفق أكثر", "en": "Bend your elbow more" }
           }
         },
         {
@@ -65,20 +68,15 @@
             "min": 0,
             "max": 100
           },
-          "Range": {
-            "beginner": { "min": 0, "max": 50 },
-            "normal":   { "min": 0, "max": 50 },
-            "advanced": { "min": 0, "max": 45 }
+          "range": {
+            "perfect": { "min": 0, "max": 50 },
+            "normal": { "min": 0, "max": 60 },
+            "pad": { "min": 0, "max": 70 },
+            "warning": { "min": 70, "max": 100 }
           },
-          "errorMessages": {
-            "tooHigh": {
-              "ar": "اجعل ذراعك بجانب جسمك",
-              "en": "Keep your arm close to your body"
-            },
-            "tooLow": {
-              "ar": "وضع جيد",
-              "en": "Good position"
-            }
+          "stateMessages": {
+            "perfect": { "ar": "ممتاز - الذراع ثابتة", "en": "Great - arm is stable" },
+            "warning": { "ar": "اجعل ذراعك بجانب جسمك", "en": "Keep your arm close to your body" }
           }
         }
       ],
@@ -88,46 +86,13 @@
           { "ar": "أداء رائع!", "en": "Great performance!" },
           { "ar": "استمر! أنت تتحسن!", "en": "Keep it up! You're improving!" }
         ],
-        "common_mistake": [
-          { "ar": "لا تحرك مرفقك - فقط الساعد", "en": "Don't move your elbow - only the forearm" },
-          { "ar": "لا تستخدم جسمك للمساعدة", "en": "Don't use your body to help" },
-          { "ar": "تحكم في الحركة ولا تستعجل", "en": "Control the movement, don't rush" }
-        ],
-        "tip": [
+        "tips": [
           { "ar": "حافظ على ثبات مرفقك بجانب جسمك", "en": "Keep your elbow fixed at your side" },
           { "ar": "تنفس: زفير عند الرفع، شهيق عند الإنزال", "en": "Breathe: exhale lifting, inhale lowering" },
-          { "ar": "ركز على انقباض العضلة في أعلى الحركة", "en": "Focus on squeezing at the top" }
+          { "ar": "ركز على انقباض العضلة في أعلى الحركة", "en": "Focus on squeezing at the top" },
+          { "ar": "لا تحرك مرفقك - فقط الساعد", "en": "Don't move your elbow - only the forearm" }
         ]
-      },
-      "difficultyLevels": [
-        {
-          "level": "beginner",
-          "repCountingConfig": {
-            "reps": 10,
-            "minRepIntervalMs": 1500,
-            "maxRepIntervalMs": 5000
-          },
-          "phases": ["start", "down", "bottom", "up"]
-        },
-        {
-          "level": "normal",
-          "repCountingConfig": {
-            "reps": 12,
-            "minRepIntervalMs": 1200,
-            "maxRepIntervalMs": 4000
-          },
-          "phases": ["start", "down", "bottom", "up"]
-        },
-        {
-          "level": "advanced",
-          "repCountingConfig": {
-            "reps": 15,
-            "minRepIntervalMs": 800,
-            "maxRepIntervalMs": 3000
-          },
-          "phases": ["start", "down", "bottom", "up"]
-        }
-      ]
+      }
     }
   ]
 }

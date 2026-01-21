@@ -17,7 +17,6 @@ import androidx.core.content.ContextCompat
 import com.trainingvalidator.poc.databinding.ActivityExerciseDetailBinding
 import com.trainingvalidator.poc.training.loader.ExerciseLoader
 import com.trainingvalidator.poc.training.models.CountingMethod
-import com.trainingvalidator.poc.training.models.DifficultyType
 import com.trainingvalidator.poc.training.models.ExerciseConfig
 
 /**
@@ -25,10 +24,9 @@ import com.trainingvalidator.poc.training.models.ExerciseConfig
  * 
  * Flow:
  * 1. Show exercise name, instructions, required angles
- * 2. User selects difficulty level
- * 3. User selects pose variant (camera position)
- * 4. User taps "Start Training"
- * 5. Navigate to TrainingActivity
+ * 2. User selects pose variant (camera position)
+ * 3. User taps "Start Training"
+ * 4. Navigate to TrainingActivity
  */
 class ExerciseDetailActivity : AppCompatActivity() {
 
@@ -39,8 +37,8 @@ class ExerciseDetailActivity : AppCompatActivity() {
 
     private lateinit var binding: ActivityExerciseDetailBinding
     private var exerciseConfig: ExerciseConfig? = null
-    private var selectedDifficulty: DifficultyType = DifficultyType.BEGINNER
     private var selectedVariantIndex: Int = 0
+    private var selectedIndicatorType: String = "line" // "line" or "arc"
     
     // Modern Photo Picker (Android 13+ with backport) - Opens Gallery directly
     private val photoPickerLauncher = registerForActivityResult(
@@ -147,14 +145,17 @@ class ExerciseDetailActivity : AppCompatActivity() {
             com.trainingvalidator.poc.training.models.CountingMethod.HOLD -> "Hold (like Plank)"
         }
         
-        // Setup difficulty buttons
-        setupDifficultyButtons()
+        // Difficulty selection removed (unified evaluation for all users)
+        setupDifficultySection()
         
         // Setup pose variant selection
         setupPoseVariants()
         
         // Setup tracked joints display
         displayTrackedJoints()
+        
+        // Setup indicator type selection
+        setupIndicatorSelection()
         
         // Camera mode button
         binding.btnStartCamera.setOnClickListener {
@@ -171,59 +172,88 @@ class ExerciseDetailActivity : AppCompatActivity() {
             startCameraTraining()
         }
     }
-
-    private fun setupDifficultyButtons() {
-        binding.btnBeginner.setOnClickListener {
-            selectDifficulty(DifficultyType.BEGINNER)
+    
+    private fun setupIndicatorSelection() {
+        // Load default from settings
+        val defaultIndicator = com.trainingvalidator.poc.training.config.SettingsManager.getIndicatorType()
+        selectedIndicatorType = defaultIndicator
+        
+        // Update button states based on default
+        updateIndicatorButtons()
+        
+        // Line button
+        binding.btnIndicatorLine.setOnClickListener {
+            selectedIndicatorType = "line"
+            updateIndicatorButtons()
         }
         
-        binding.btnNormal.setOnClickListener {
-            selectDifficulty(DifficultyType.NORMAL)
+        // Arc button
+        binding.btnIndicatorArc.setOnClickListener {
+            selectedIndicatorType = "arc"
+            updateIndicatorButtons()
+        }
+    }
+    
+    private fun updateIndicatorButtons() {
+        val isLineSelected = selectedIndicatorType == "line"
+        val isArcSelected = selectedIndicatorType == "arc"
+        
+        // Line button
+        binding.btnIndicatorLine.apply {
+            if (isLineSelected) {
+                // Selected: filled green button
+                backgroundTintList = android.content.res.ColorStateList.valueOf(
+                    android.graphics.Color.parseColor("#00E676")
+                )
+                setTextColor(android.graphics.Color.WHITE)
+            } else {
+                // Unselected: outlined button (transparent background)
+                backgroundTintList = android.content.res.ColorStateList.valueOf(
+                    android.graphics.Color.TRANSPARENT
+                )
+                setTextColor(android.graphics.Color.parseColor("#00E676"))
+            }
         }
         
-        binding.btnAdvanced.setOnClickListener {
-            selectDifficulty(DifficultyType.ADVANCED)
+        // Arc button
+        binding.btnIndicatorArc.apply {
+            if (isArcSelected) {
+                // Selected: filled blue button
+                backgroundTintList = android.content.res.ColorStateList.valueOf(
+                    android.graphics.Color.parseColor("#2196F3")
+                )
+                setTextColor(android.graphics.Color.WHITE)
+            } else {
+                // Unselected: outlined button (transparent background)
+                backgroundTintList = android.content.res.ColorStateList.valueOf(
+                    android.graphics.Color.TRANSPARENT
+                )
+                setTextColor(android.graphics.Color.parseColor("#2196F3"))
+            }
         }
-        
-        // Default selection
-        selectDifficulty(DifficultyType.BEGINNER)
     }
 
-    private fun selectDifficulty(difficulty: DifficultyType) {
-        selectedDifficulty = difficulty
+    private fun setupDifficultySection() {
+        // Hide buttons if present in layout
+        binding.btnBeginner.visibility = View.GONE
+        binding.btnNormal.visibility = View.GONE
+        binding.btnAdvanced.visibility = View.GONE
+
+        // Replace difficulty label with unified evaluation message (UI text in English)
+        binding.tvTolerance.text = "Unified evaluation (no difficulty selection)"
+
+        // Target display now comes from exerciseConfig.repCountingConfig
         val exercise = exerciseConfig ?: return
-        
-        // Update button states
-        binding.btnBeginner.alpha = if (difficulty == DifficultyType.BEGINNER) 1f else 0.5f
-        binding.btnNormal.alpha = if (difficulty == DifficultyType.NORMAL) 1f else 0.5f
-        binding.btnAdvanced.alpha = if (difficulty == DifficultyType.ADVANCED) 1f else 0.5f
-        
-        // Update target display based on counting method
-        val variant = exercise.poseVariants.getOrNull(selectedVariantIndex)
-        val diffLevel = variant?.difficultyLevels?.find { it.level == difficulty }
-        val repConfig = diffLevel?.repCountingConfig
-        
         binding.tvTargetReps.text = when (exercise.countingMethod) {
             CountingMethod.HOLD -> {
-                val duration = repConfig?.duration ?: 30
+                val duration = exercise.repCountingConfig.duration ?: 30
                 "Target: ${duration} seconds"
             }
             else -> {
-                val reps = repConfig?.reps ?: 12
+                val reps = exercise.repCountingConfig.reps
                 "Target: $reps reps"
             }
         }
-        
-        // Show difficulty label instead of tolerance
-        val diffLabel = when (difficulty) {
-            DifficultyType.BEGINNER -> "Beginner (Wider Range)"
-            DifficultyType.NORMAL -> "Normal"
-            DifficultyType.ADVANCED -> "Advanced (Strict Range)"
-        }
-        binding.tvTolerance.text = "Level: $diffLabel"
-        
-        // Update tracked joints display to reflect new difficulty
-        displayTrackedJoints()
     }
 
     private fun setupPoseVariants() {
@@ -264,25 +294,35 @@ class ExerciseDetailActivity : AppCompatActivity() {
         
         // Update tracked joints display
         displayTrackedJoints()
-        
-        // Update difficulty info
-        selectDifficulty(selectedDifficulty)
     }
 
     private fun displayTrackedJoints() {
-        val variant = exerciseConfig?.poseVariants?.getOrNull(selectedVariantIndex) ?: return
+        val config = exerciseConfig ?: return
+        val variant = config.poseVariants.getOrNull(selectedVariantIndex) ?: return
         
         val primaryJoints = variant.getPrimaryJoints()
         val secondaryJoints = variant.getSecondaryJoints()
+        val isHoldExercise = config.countingMethod == com.trainingvalidator.poc.training.models.CountingMethod.HOLD
         
         val text = buildString {
-            appendLine("📍 Primary Joints (for rep counting):")
+            appendLine("📍 Primary Joints (for ${if (isHoldExercise) "hold" else "rep"} counting):")
             primaryJoints.forEach { joint ->
-                val upRange = joint.getUpRange(selectedDifficulty)
-                val downRange = joint.getDownRange(selectedDifficulty)
                 appendLine("  • ${formatJointName(joint.joint)}")
-                appendLine("    UP:   ${upRange.min.toInt()}° - ${upRange.max.toInt()}°")
-                appendLine("    DOWN: ${downRange.min.toInt()}° - ${downRange.max.toInt()}°")
+                
+                // Handle HOLD vs REP exercises
+                if (isHoldExercise && joint.hasStateHoldRange()) {
+                    // HOLD exercise - use range
+                    val holdRange = joint.getStateHoldRange().perfect
+                    appendLine("    HOLD: ${holdRange.min.toInt()}° - ${holdRange.max.toInt()}°")
+                } else if (joint.hasStateUpDownRanges()) {
+                    // REP exercise - use upRange/downRange
+                    val upRange = joint.getStateUpRange().perfect
+                    val downRange = joint.getStateDownRange().perfect
+                    appendLine("    UP:   ${upRange.min.toInt()}° - ${upRange.max.toInt()}°")
+                    appendLine("    DOWN: ${downRange.min.toInt()}° - ${downRange.max.toInt()}°")
+                } else {
+                    appendLine("    (No state ranges defined)")
+                }
             }
             
             if (secondaryJoints.isNotEmpty()) {
@@ -290,6 +330,10 @@ class ExerciseDetailActivity : AppCompatActivity() {
                 appendLine("📌 Secondary Joints (for feedback):")
                 secondaryJoints.forEach { joint ->
                     appendLine("  • ${formatJointName(joint.joint)}")
+                    if (joint.hasStateHoldRange()) {
+                        val range = joint.getStateHoldRange().perfect
+                        appendLine("    RANGE: ${range.min.toInt()}° - ${range.max.toInt()}°")
+                    }
                 }
             }
         }
@@ -371,9 +415,11 @@ class ExerciseDetailActivity : AppCompatActivity() {
         
         val intent = Intent(this, TrainingActivity::class.java).apply {
             putExtra(TrainingActivity.EXTRA_EXERCISE_NAME, exercise.fileName)
-            putExtra(TrainingActivity.EXTRA_DIFFICULTY, selectedDifficulty.name.lowercase())
+            // Kept for backward compatibility, ignored by new engine
+            putExtra(TrainingActivity.EXTRA_DIFFICULTY, "")
             putExtra(TrainingActivity.EXTRA_POSE_VARIANT, selectedVariantIndex)
             putExtra(TrainingActivity.EXTRA_TRAINING_MODE, TrainingActivity.MODE_CAMERA)
+            putExtra(TrainingActivity.EXTRA_INDICATOR_TYPE, selectedIndicatorType)
         }
         startActivity(intent)
     }
@@ -386,10 +432,12 @@ class ExerciseDetailActivity : AppCompatActivity() {
         
         val intent = Intent(this, TrainingActivity::class.java).apply {
             putExtra(TrainingActivity.EXTRA_EXERCISE_NAME, exercise.fileName)
-            putExtra(TrainingActivity.EXTRA_DIFFICULTY, selectedDifficulty.name.lowercase())
+            // Kept for backward compatibility, ignored by new engine
+            putExtra(TrainingActivity.EXTRA_DIFFICULTY, "")
             putExtra(TrainingActivity.EXTRA_POSE_VARIANT, selectedVariantIndex)
             putExtra(TrainingActivity.EXTRA_TRAINING_MODE, TrainingActivity.MODE_VIDEO)
             putExtra(TrainingActivity.EXTRA_VIDEO_URI, videoUri)
+            putExtra(TrainingActivity.EXTRA_INDICATOR_TYPE, selectedIndicatorType)
         }
         startActivity(intent)
     }
