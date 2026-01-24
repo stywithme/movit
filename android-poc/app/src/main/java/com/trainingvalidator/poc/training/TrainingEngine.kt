@@ -994,6 +994,7 @@ class TrainingEngine(
             emitEvent(FeedbackEvent.JointStateMessage(
                 jointCode = jointCode,
                 state = state,
+                zone = info.currentZone,
                 message = message
             ))
             

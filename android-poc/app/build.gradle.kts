@@ -73,6 +73,14 @@ dependencies {
     // JSON Parsing
     implementation("com.google.code.gson:gson:2.13.2")
     
+    // Networking - Retrofit + OkHttp for API sync
+    val retrofitVersion = "2.11.0"
+    val okhttpVersion = "4.12.0"
+    implementation("com.squareup.retrofit2:retrofit:$retrofitVersion")
+    implementation("com.squareup.retrofit2:converter-gson:$retrofitVersion")
+    implementation("com.squareup.okhttp3:okhttp:$okhttpVersion")
+    implementation("com.squareup.okhttp3:logging-interceptor:$okhttpVersion")
+    
     // ViewPager2 for Report tabs
     implementation("androidx.viewpager2:viewpager2:1.1.0")
     

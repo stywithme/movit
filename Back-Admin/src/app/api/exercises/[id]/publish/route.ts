@@ -12,7 +12,7 @@ interface RouteParams {
 export async function POST(request: NextRequest, { params }: RouteParams) {
   try {
     const { id } = await params;
-
+    
     // Check if exercise exists
     const existing = await exerciseService.getById(id);
     if (!existing) {
@@ -21,9 +21,9 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
         { status: 404 }
       );
     }
-
+    
     await exerciseService.publish(id);
-
+    
     return NextResponse.json({
       success: true,
       message: 'Exercise published successfully',
@@ -53,9 +53,9 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
         { status: 404 }
       );
     }
-
+    
     await exerciseService.unpublish(id);
-
+    
     return NextResponse.json({
       success: true,
       message: 'Exercise unpublished successfully',

@@ -344,18 +344,42 @@ export function buildTrackedJoint(
   isHold: boolean = false
 ): TrackedJointData {
   const defaults = JOINT_DEFAULTS[jointCode] || DEFAULT_STATE_RANGES;
+  const useZoneMessages = !isHold && role === 'primary';
+  
+  // Build state messages based on exercise type
+  const stateMessages = useZoneMessages 
+    ? {
+        // Zone-based messages for up_down and push_pull primary joints
+        perfect: {
+          up: { ar: 'ممتاز!', en: 'Perfect!' },
+          down: { ar: 'ممتاز!', en: 'Perfect!' },
+        },
+        normal: {
+          up: { ar: 'جيد', en: 'Good' },
+          down: { ar: 'جيد', en: 'Good' },
+        },
+        warning: {
+          up: { ar: 'تحقق من وضعك', en: 'Check your position' },
+          down: { ar: 'تحقق من وضعك', en: 'Check your position' },
+        },
+        danger: {
+          down: { ar: 'توقف! وضع خطير', en: 'Stop! Dangerous position' },
+        },
+      }
+    : {
+        // Simple messages for hold or secondary joints
+        perfect: { ar: 'ممتاز!', en: 'Perfect!' },
+        normal: { ar: 'جيد', en: 'Good' },
+        pad: { ar: 'مقبول', en: 'Acceptable' },
+        warning: { ar: 'تحقق من وضعك', en: 'Check your position' },
+        danger: { ar: 'توقف! وضع خطير', en: 'Stop! Dangerous position' },
+      };
   
   const baseJoint = {
     joint: jointCode,
     startPose: { min: 150, max: 180 },
     pairedWith,
-    stateMessages: {
-      perfect: { ar: 'ممتاز!', en: 'Perfect!' },
-      normal: { ar: 'جيد', en: 'Good' },
-      pad: { ar: 'مقبول', en: 'Acceptable' },
-      warning: { ar: 'تحقق من وضعك', en: 'Check your position' },
-      danger: { ar: 'توقف! وضع خطير', en: 'Stop! Dangerous position' },
-    },
+    stateMessages,
   };
   
   // Adjust startPose based on joint type

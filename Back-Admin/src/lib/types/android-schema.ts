@@ -20,10 +20,15 @@
 
 /**
  * Localized text for multi-language support
+ * Optionally includes pre-generated audio URLs for TTS replacement
  */
 export interface LocalizedText {
   ar: string;
   en: string;
+  /** Pre-generated Arabic audio file URL */
+  audioAr?: string;
+  /** Pre-generated English audio file URL */
+  audioEn?: string;
 }
 
 /**
@@ -128,14 +133,49 @@ export interface StateRanges {
 }
 
 /**
- * State messages - one message per state
+ * Zone-based message (for up_down and push_pull exercises)
+ * Allows different messages for up and down positions
  */
+export interface ZoneBasedMessage {
+  up?: LocalizedText;
+  down?: LocalizedText;
+}
+
+/**
+ * State messages - supports two formats:
+ * 
+ * 1. Simple format (for hold exercises): Single message per state
+ *    { perfect: { ar: "...", en: "..." } }
+ * 
+ * 2. Zone format (for up_down/push_pull): Different messages per zone
+ *    { perfect: { up: { ar: "...", en: "..." }, down: { ar: "...", en: "..." } } }
+ * 
+ * All messages are optional - can have just up, just down, both, or none
+ */
+export type StateMessageValue = LocalizedText | ZoneBasedMessage;
+
 export interface StateMessages {
-  perfect?: LocalizedText;
-  normal?: LocalizedText;
-  pad?: LocalizedText;
-  warning?: LocalizedText;
-  danger?: LocalizedText;
+  perfect?: StateMessageValue;
+  normal?: StateMessageValue;
+  pad?: StateMessageValue;
+  warning?: StateMessageValue;
+  danger?: StateMessageValue;
+}
+
+/**
+ * Check if a message value is zone-based (has up/down) or simple (has ar/en)
+ */
+export function isZoneBasedMessage(msg: StateMessageValue | undefined): msg is ZoneBasedMessage {
+  if (!msg) return false;
+  return 'up' in msg || 'down' in msg;
+}
+
+/**
+ * Check if a message value is a simple LocalizedText
+ */
+export function isSimpleMessage(msg: StateMessageValue | undefined): msg is LocalizedText {
+  if (!msg) return false;
+  return 'ar' in msg || 'en' in msg;
 }
 
 // ============================================

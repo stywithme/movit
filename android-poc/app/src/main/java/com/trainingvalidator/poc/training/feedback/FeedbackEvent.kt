@@ -6,6 +6,7 @@ import com.trainingvalidator.poc.training.engine.PositionError
 import com.trainingvalidator.poc.training.models.JointError
 import com.trainingvalidator.poc.training.models.JointState
 import com.trainingvalidator.poc.training.models.LocalizedText
+import com.trainingvalidator.poc.training.models.ZoneType
 
 /**
  * FeedbackEvent - Represents a feedback event to be displayed/played
@@ -270,10 +271,14 @@ sealed class FeedbackEvent {
      * 
      * This is emitted when a joint enters or stays in a state that has a message.
      * DANGER is handled separately via DangerDetected.
+     * 
+     * The zone field indicates whether the joint is in UP or DOWN position,
+     * allowing for zone-specific messages in Up&Down/Push&Pull exercises.
      */
     data class JointStateMessage(
         val jointCode: String,
         val state: JointState,
+        val zone: ZoneType,
         val message: LocalizedText,
         override val timestamp: Long = System.currentTimeMillis(),
         override val priority: FeedbackPriority = FeedbackPriority.MEDIUM

@@ -75,11 +75,23 @@
             "danger": { "min": 0, "max": 50 }
           },
           "stateMessages": {
-            "perfect": { "ar": "ممتاز! وضعية مثالية", "en": "Perfect! Great form" },
-            "normal": { "ar": "جيد، حاول النزول أكثر قليلاً", "en": "Good, try going a bit lower" },
-            "pad": { "ar": "مقبول، لكن يمكنك التحسن", "en": "Acceptable, but you can improve" },
-            "warning": { "ar": "انزل أكثر من اللازم", "en": "Going too low" },
-            "danger": { "ar": "توقف! هذا قد يؤذي ظهرك", "en": "Stop! This may hurt your back" }
+            "perfect": {
+              "up": { "ar": "ممتاز! قف مستقيماً", "en": "Perfect! Stand tall" },
+              "down": { "ar": "ممتاز! وضعية مثالية", "en": "Perfect! Great form" }
+            },
+            "normal": {
+              "up": { "ar": "جيد، حاول الوقوف بشكل مستقيم", "en": "Good, try standing straighter" },
+              "down": { "ar": "جيد، حاول النزول أكثر قليلاً", "en": "Good, try going a bit lower" }
+            },
+            "pad": {
+              "down": { "ar": "مقبول، لكن يمكنك التحسن", "en": "Acceptable, but you can improve" }
+            },
+            "warning": {
+              "down": { "ar": "انزل أكثر من اللازم", "en": "Going too low" }
+            },
+            "danger": {
+              "down": { "ar": "توقف! هذا قد يؤذي ظهرك", "en": "Stop! This may hurt your back" }
+            }
           },
           "pairedWith": "right_hip"
         },
@@ -100,11 +112,23 @@
             "danger": { "min": 0, "max": 50 }
           },
           "stateMessages": {
-            "perfect": { "ar": "ممتاز! وضعية مثالية", "en": "Perfect! Great form" },
-            "normal": { "ar": "جيد، حاول النزول أكثر قليلاً", "en": "Good, try going a bit lower" },
-            "pad": { "ar": "مقبول، لكن يمكنك التحسن", "en": "Acceptable, but you can improve" },
-            "warning": { "ar": "انزل أكثر من اللازم", "en": "Going too low" },
-            "danger": { "ar": "توقف! هذا قد يؤذي ظهرك", "en": "Stop! This may hurt your back" }
+            "perfect": {
+              "up": { "ar": "ممتاز! قف مستقيماً", "en": "Perfect! Stand tall" },
+              "down": { "ar": "ممتاز! وضعية مثالية", "en": "Perfect! Great form" }
+            },
+            "normal": {
+              "up": { "ar": "جيد، حاول الوقوف بشكل مستقيم", "en": "Good, try standing straighter" },
+              "down": { "ar": "جيد، حاول النزول أكثر قليلاً", "en": "Good, try going a bit lower" }
+            },
+            "pad": {
+              "down": { "ar": "مقبول، لكن يمكنك التحسن", "en": "Acceptable, but you can improve" }
+            },
+            "warning": {
+              "down": { "ar": "انزل أكثر من اللازم", "en": "Going too low" }
+            },
+            "danger": {
+              "down": { "ar": "توقف! هذا قد يؤذي ظهرك", "en": "Stop! This may hurt your back" }
+            }
           },
           "pairedWith": "left_hip"
         },

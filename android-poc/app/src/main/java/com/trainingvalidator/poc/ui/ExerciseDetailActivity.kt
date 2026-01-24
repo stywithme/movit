@@ -112,7 +112,14 @@ class ExerciseDetailActivity : AppCompatActivity() {
     }
 
     private fun loadExercise(exerciseName: String) {
-        exerciseConfig = ExerciseLoader.load(assets, exerciseName)
+        // Try repository first (cached/synced data), fall back to assets
+        exerciseConfig = try {
+            val repository = com.trainingvalidator.poc.storage.ExerciseRepository.getInstance(this)
+            repository.getExercise(exerciseName) ?: ExerciseLoader.load(assets, exerciseName)
+        } catch (e: Exception) {
+            // Repository not initialized, use assets
+            ExerciseLoader.load(assets, exerciseName)
+        }
         
         if (exerciseConfig == null) {
             Toast.makeText(this, "Failed to load exercise", Toast.LENGTH_SHORT).show()

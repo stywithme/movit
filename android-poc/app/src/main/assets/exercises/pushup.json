@@ -55,11 +55,23 @@
             "danger": { "min": 0, "max": 30 }
           },
           "stateMessages": {
-            "perfect": { "ar": "ممتاز! ضغط مثالي", "en": "Perfect! Great push-up" },
-            "normal": { "ar": "جيد، حاول النزول أكثر قليلاً", "en": "Good, try going a bit lower" },
-            "pad": { "ar": "مقبول، اقترب من الأرض أكثر", "en": "Acceptable, get closer to floor" },
-            "warning": { "ar": "لا تنزل كثيراً", "en": "Don't go too low" },
-            "danger": { "ar": "توقف! هذا قد يؤذي كتفك", "en": "Stop! This may hurt your shoulder" }
+            "perfect": {
+              "up": { "ar": "ممتاز! ذراعك مفرودة بالكامل", "en": "Perfect! Arm fully extended" },
+              "down": { "ar": "ممتاز! ضغط مثالي", "en": "Perfect! Great push-up" }
+            },
+            "normal": {
+              "up": { "ar": "جيد، حاول فرد الذراع أكثر", "en": "Good, try extending more" },
+              "down": { "ar": "جيد، حاول النزول أكثر قليلاً", "en": "Good, try going a bit lower" }
+            },
+            "pad": {
+              "down": { "ar": "مقبول، اقترب من الأرض أكثر", "en": "Acceptable, get closer to floor" }
+            },
+            "warning": {
+              "down": { "ar": "لا تنزل كثيراً", "en": "Don't go too low" }
+            },
+            "danger": {
+              "down": { "ar": "توقف! هذا قد يؤذي كتفك", "en": "Stop! This may hurt your shoulder" }
+            }
           },
           "pairedWith": "right_elbow"
         },
@@ -80,11 +92,23 @@
             "danger": { "min": 0, "max": 30 }
           },
           "stateMessages": {
-            "perfect": { "ar": "ممتاز! ضغط مثالي", "en": "Perfect! Great push-up" },
-            "normal": { "ar": "جيد، حاول النزول أكثر قليلاً", "en": "Good, try going a bit lower" },
-            "pad": { "ar": "مقبول، اقترب من الأرض أكثر", "en": "Acceptable, get closer to floor" },
-            "warning": { "ar": "لا تنزل كثيراً", "en": "Don't go too low" },
-            "danger": { "ar": "توقف! هذا قد يؤذي كتفك", "en": "Stop! This may hurt your shoulder" }
+            "perfect": {
+              "up": { "ar": "ممتاز! ذراعك مفرودة بالكامل", "en": "Perfect! Arm fully extended" },
+              "down": { "ar": "ممتاز! ضغط مثالي", "en": "Perfect! Great push-up" }
+            },
+            "normal": {
+              "up": { "ar": "جيد، حاول فرد الذراع أكثر", "en": "Good, try extending more" },
+              "down": { "ar": "جيد، حاول النزول أكثر قليلاً", "en": "Good, try going a bit lower" }
+            },
+            "pad": {
+              "down": { "ar": "مقبول، اقترب من الأرض أكثر", "en": "Acceptable, get closer to floor" }
+            },
+            "warning": {
+              "down": { "ar": "لا تنزل كثيراً", "en": "Don't go too low" }
+            },
+            "danger": {
+              "down": { "ar": "توقف! هذا قد يؤذي كتفك", "en": "Stop! This may hurt your shoulder" }
+            }
           },
           "pairedWith": "left_elbow"
         },
@@ -141,8 +165,13 @@
             "pad": { "min": 40, "max": 110 }
           },
           "stateMessages": {
-            "perfect": { "ar": "ممتاز! ضغط مثالي", "en": "Perfect! Great push-up" },
-            "normal": { "ar": "جيد، حاول النزول أكثر", "en": "Good, try going lower" }
+            "perfect": {
+              "up": { "ar": "ممتاز! ذراعك مفرودة", "en": "Perfect! Arm extended" },
+              "down": { "ar": "ممتاز! ضغط مثالي", "en": "Perfect! Great push-up" }
+            },
+            "normal": {
+              "down": { "ar": "جيد، حاول النزول أكثر", "en": "Good, try going lower" }
+            }
           },
           "pairedWith": "right_elbow"
         },
@@ -161,8 +190,13 @@
             "pad": { "min": 40, "max": 110 }
           },
           "stateMessages": {
-            "perfect": { "ar": "ممتاز! ضغط مثالي", "en": "Perfect! Great push-up" },
-            "normal": { "ar": "جيد، حاول النزول أكثر", "en": "Good, try going lower" }
+            "perfect": {
+              "up": { "ar": "ممتاز! ذراعك مفرودة", "en": "Perfect! Arm extended" },
+              "down": { "ar": "ممتاز! ضغط مثالي", "en": "Perfect! Great push-up" }
+            },
+            "normal": {
+              "down": { "ar": "جيد، حاول النزول أكثر", "en": "Good, try going lower" }
+            }
           },
           "pairedWith": "left_elbow"
         }

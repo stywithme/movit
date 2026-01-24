@@ -63,13 +63,39 @@ data class ExerciseConfig(
 
 /**
  * Localized text (Arabic + English)
+ * 
+ * Optionally includes pre-generated audio file URLs for TTS replacement.
+ * When audio URLs are available, the app can play cached audio files
+ * instead of using Android's built-in TTS.
  */
 data class LocalizedText(
     val ar: String = "",
-    val en: String = ""
+    val en: String = "",
+    /** Pre-generated Arabic audio file URL */
+    val audioAr: String? = null,
+    /** Pre-generated English audio file URL */
+    val audioEn: String? = null
 ) {
+    /**
+     * Get text for the specified language
+     */
     fun get(language: String = "en"): String {
         return if (language == "ar") ar else en
+    }
+    
+    /**
+     * Get audio URL for the specified language
+     * @return Audio URL or null if not available
+     */
+    fun getAudioUrl(language: String = "en"): String? {
+        return if (language == "ar") audioAr else audioEn
+    }
+    
+    /**
+     * Check if audio is available for the specified language
+     */
+    fun hasAudio(language: String = "en"): Boolean {
+        return getAudioUrl(language)?.isNotBlank() == true
     }
 }
 
@@ -324,7 +350,19 @@ data class TrackedJoint(
     }
     
     /**
-     * Get messages for a specific state
+     * Get messages for a specific state and zone
+     * 
+     * @param state The JointState to get messages for
+     * @param zone The current ZoneType (UP_ZONE, DOWN_ZONE, TRANSITION)
+     * @return List containing the message (0 or 1 element)
+     */
+    fun getMessagesForState(state: JointState, zone: ZoneType): List<LocalizedText> {
+        return stateMessages?.getMessages(state, zone) ?: emptyList()
+    }
+    
+    /**
+     * Legacy: Get messages for a specific state (without zone)
+     * Prefers UP zone, falls back to DOWN
      */
     fun getMessagesForState(state: JointState): List<LocalizedText> {
         return stateMessages?.getMessages(state) ?: emptyList()
@@ -340,8 +378,9 @@ data class TrackedJoint(
      * @return LocalizedText message for the error
      */
     fun getStartPoseMessage(errorType: ErrorType): LocalizedText {
-        // Try to get warning message from stateMessages
-        val warningMessage = stateMessages?.warning
+        // Try to get warning message from stateMessages (uses UP zone by default for start pose)
+        val warningMessage = stateMessages?.getMessage(JointState.WARNING, ZoneType.UP_ZONE)
+            ?: stateMessages?.getMessage(JointState.WARNING)
         if (warningMessage != null) {
             return warningMessage
         }

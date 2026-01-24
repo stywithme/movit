@@ -55,11 +55,23 @@
             "danger": { "min": 0, "max": 60 }
           },
           "stateMessages": {
-            "perfect": { "ar": "ممتاز! اندفاع مثالي", "en": "Perfect! Great lunge" },
-            "normal": { "ar": "جيد، حاول الثني أكثر قليلاً", "en": "Good, try bending a bit more" },
-            "pad": { "ar": "مقبول، لكن يمكنك التحسن", "en": "Acceptable, but you can improve" },
-            "warning": { "ar": "لا تثني ركبتك كثيراً", "en": "Don't bend your knee too much" },
-            "danger": { "ar": "توقف! قد تؤذي ركبتك", "en": "Stop! This may hurt your knee" }
+            "perfect": {
+              "up": { "ar": "ممتاز! قف مستقيماً", "en": "Perfect! Stand tall" },
+              "down": { "ar": "ممتاز! اندفاع مثالي", "en": "Perfect! Great lunge" }
+            },
+            "normal": {
+              "up": { "ar": "جيد، حاول الوقوف بشكل مستقيم", "en": "Good, try standing straighter" },
+              "down": { "ar": "جيد، حاول الثني أكثر قليلاً", "en": "Good, try bending a bit more" }
+            },
+            "pad": {
+              "down": { "ar": "مقبول، لكن يمكنك التحسن", "en": "Acceptable, but you can improve" }
+            },
+            "warning": {
+              "down": { "ar": "لا تثني ركبتك كثيراً", "en": "Don't bend your knee too much" }
+            },
+            "danger": {
+              "down": { "ar": "توقف! قد تؤذي ركبتك", "en": "Stop! This may hurt your knee" }
+            }
           }
         },
         {
@@ -113,11 +125,23 @@
             "danger": { "min": 0, "max": 60 }
           },
           "stateMessages": {
-            "perfect": { "ar": "ممتاز! اندفاع مثالي", "en": "Perfect! Great lunge" },
-            "normal": { "ar": "جيد، حاول الثني أكثر قليلاً", "en": "Good, try bending a bit more" },
-            "pad": { "ar": "مقبول، لكن يمكنك التحسن", "en": "Acceptable, but you can improve" },
-            "warning": { "ar": "لا تثني ركبتك كثيراً", "en": "Don't bend your knee too much" },
-            "danger": { "ar": "توقف! قد تؤذي ركبتك", "en": "Stop! This may hurt your knee" }
+            "perfect": {
+              "up": { "ar": "ممتاز! قف مستقيماً", "en": "Perfect! Stand tall" },
+              "down": { "ar": "ممتاز! اندفاع مثالي", "en": "Perfect! Great lunge" }
+            },
+            "normal": {
+              "up": { "ar": "جيد، حاول الوقوف بشكل مستقيم", "en": "Good, try standing straighter" },
+              "down": { "ar": "جيد، حاول الثني أكثر قليلاً", "en": "Good, try bending a bit more" }
+            },
+            "pad": {
+              "down": { "ar": "مقبول، لكن يمكنك التحسن", "en": "Acceptable, but you can improve" }
+            },
+            "warning": {
+              "down": { "ar": "لا تثني ركبتك كثيراً", "en": "Don't bend your knee too much" }
+            },
+            "danger": {
+              "down": { "ar": "توقف! قد تؤذي ركبتك", "en": "Stop! This may hurt your knee" }
+            }
           }
         },
         {

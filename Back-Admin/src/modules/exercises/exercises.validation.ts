@@ -13,16 +13,20 @@ import { z } from 'zod';
 // ============================================
 
 /**
- * Localized text (ar + en)
+ * Localized text (ar + en) with optional audio URLs
  */
 export const LocalizedTextSchema = z.object({
   ar: z.string().min(1, 'Arabic text is required'),
   en: z.string().min(1, 'English text is required'),
+  audioAr: z.string().optional(),
+  audioEn: z.string().optional(),
 });
 
 export const LocalizedTextOptionalSchema = z.object({
   ar: z.string(),
   en: z.string(),
+  audioAr: z.string().optional(),
+  audioEn: z.string().optional(),
 }).optional();
 
 /**
@@ -97,15 +101,37 @@ export const StateRangesSchema = z.object({
 });
 
 /**
- * State messages (one per state)
+ * Zone-based message (for up_down and push_pull)
+ */
+export const ZoneBasedMessageSchema = z.object({
+  up: LocalizedTextSchema.optional(),
+  down: LocalizedTextSchema.optional(),
+});
+
+/**
+ * State message value - can be simple (LocalizedText) or zone-based
+ * Simple: { ar: "...", en: "..." }
+ * Zone: { up: { ar: "...", en: "..." }, down: { ar: "...", en: "..." } }
+ */
+export const StateMessageValueSchema = z.union([
+  LocalizedTextSchema,
+  ZoneBasedMessageSchema,
+]).optional();
+
+/**
+ * State messages - supports both simple and zone-based formats
+ * All messages are optional
  */
 export const StateMessagesSchema = z.object({
-  perfect: LocalizedTextSchema.optional(),
-  normal: LocalizedTextSchema.optional(),
-  pad: LocalizedTextSchema.optional(),
-  warning: LocalizedTextSchema.optional(),
-  danger: LocalizedTextSchema.optional(),
+  perfect: StateMessageValueSchema,
+  normal: StateMessageValueSchema,
+  pad: StateMessageValueSchema,
+  warning: StateMessageValueSchema,
+  danger: StateMessageValueSchema,
 }).optional();
+
+export type ZoneBasedMessageData = z.infer<typeof ZoneBasedMessageSchema>;
+export type StateMessageValueData = z.infer<typeof StateMessageValueSchema>;
 
 // ============================================
 // STEP 1: BASIC INFO
@@ -354,8 +380,7 @@ export type RepCountingConfigData = z.infer<typeof RepCountingConfigSchema>;
 
 export const FeedbackMessageSchema = z.object({
   type: z.enum(['motivational', 'tip']),
-  message: LocalizedTextSchema,
-  audioUrl: z.string().url().optional().or(z.literal('')),
+  message: LocalizedTextSchema, // Includes audioAr and audioEn
 });
 
 export const ExtrasSchema = z.object({

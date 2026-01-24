@@ -12,9 +12,10 @@ import { useCallback, useState, useMemo } from 'react';
 import { useWizardStore } from '../../WizardContext';
 import { SkeletonPicker } from './SkeletonPicker';
 import { buildTrackedJoint, getPairedJointCode, hasMirrorPair, STATE_COLORS, STATE_LABELS } from './joint-templates';
+import { SmartLocalizedInput } from '@/components/forms';
 import type { TrackedJointData, PrimaryTrackedJointData, SecondaryTrackedJointData, StateRangesData } from '@/modules/exercises/exercises.validation';
-import { JOINT_STATE_NAMES, COUNTED_STATES, STATE_CONFIG } from '@/lib/types/localized';
-import type { JointStateName } from '@/lib/types/localized';
+import { JOINT_STATE_NAMES, COUNTED_STATES, STATE_CONFIG, ZONE_TYPES } from '@/lib/types/localized';
+import type { JointStateName, ZoneType, LocalizedText } from '@/lib/types/localized';
 
 // ============================================
 // STATE RANGE EDITOR COMPONENT
@@ -241,18 +242,161 @@ function JointEditor({ joint, index, onUpdate, onRemove, onCopyToMirror, isHold 
     onUpdate(newJoint);
   };
   
-  const updateStateMessage = (state: JointStateName, lang: 'ar' | 'en', value: string) => {
+  /**
+   * Update state message - supports both simple and zone-based formats
+   * Simple (hold): { ar: "...", en: "..." }
+   * Zone (up_down/push_pull): { up: { ar: "...", en: "..." }, down: { ar: "...", en: "..." } }
+   */
+  const updateStateMessage = (
+    state: JointStateName, 
+    lang: 'ar' | 'en', 
+    value: string,
+    zone?: ZoneType
+  ) => {
     const currentMessages = joint.stateMessages || {};
-    onUpdate({
-      ...joint,
-      stateMessages: {
-        ...currentMessages,
-        [state]: {
-          ...(currentMessages[state] || {}),
-          [lang]: value,
+    const currentStateMsg = currentMessages[state] || {};
+    
+    if (zone) {
+      // Zone-based message update
+      const currentZone = (currentStateMsg as Record<string, unknown>)?.[zone] || {};
+      onUpdate({
+        ...joint,
+        stateMessages: {
+          ...currentMessages,
+          [state]: {
+            ...currentStateMsg,
+            [zone]: {
+              ...(currentZone as Record<string, string>),
+              [lang]: value,
+            },
+          },
         },
-      },
-    });
+      });
+    } else {
+      // Simple message update (for hold exercises)
+      onUpdate({
+        ...joint,
+        stateMessages: {
+          ...currentMessages,
+          [state]: {
+            ...(currentStateMsg as Record<string, string>),
+            [lang]: value,
+          },
+        },
+      });
+    }
+  };
+  
+  /**
+   * Update state message for both languages at once (with optional audio)
+   * This prevents race conditions when updating ar and en separately
+   */
+  const updateStateMessageBoth = (
+    state: JointStateName,
+    arValue: string,
+    enValue: string,
+    zone?: ZoneType,
+    audio?: { ar?: string; en?: string }
+  ) => {
+    const currentMessages = joint.stateMessages || {};
+    const currentStateMsg = currentMessages[state] || {};
+    
+    if (zone) {
+      // Zone-based message update
+      const currentZone = (currentStateMsg as Record<string, Record<string, string>>)?.[zone] || {};
+      onUpdate({
+        ...joint,
+        stateMessages: {
+          ...currentMessages,
+          [state]: {
+            ...currentStateMsg,
+            [zone]: {
+              ...currentZone,
+              ar: arValue,
+              en: enValue,
+              ...(audio?.ar !== undefined && { audioAr: audio.ar }),
+              ...(audio?.en !== undefined && { audioEn: audio.en }),
+            },
+          },
+        },
+      });
+    } else {
+      // Simple message update (for hold exercises)
+      const currentSimple = currentStateMsg as Record<string, string>;
+      onUpdate({
+        ...joint,
+        stateMessages: {
+          ...currentMessages,
+          [state]: {
+            ...currentSimple,
+            ar: arValue,
+            en: enValue,
+            ...(audio?.ar !== undefined && { audioAr: audio.ar }),
+            ...(audio?.en !== undefined && { audioEn: audio.en }),
+          },
+        },
+      });
+    }
+  };
+  
+  /**
+   * Update audio only for a state message
+   */
+  const updateStateMessageAudio = (
+    state: JointStateName,
+    audio: { ar?: string; en?: string },
+    zone?: ZoneType
+  ) => {
+    const currentMessages = joint.stateMessages || {};
+    const currentStateMsg = currentMessages[state] || {};
+    
+    if (zone) {
+      const currentZone = (currentStateMsg as Record<string, Record<string, string>>)?.[zone] || {};
+      onUpdate({
+        ...joint,
+        stateMessages: {
+          ...currentMessages,
+          [state]: {
+            ...currentStateMsg,
+            [zone]: {
+              ...currentZone,
+              ...(audio.ar !== undefined && { audioAr: audio.ar }),
+              ...(audio.en !== undefined && { audioEn: audio.en }),
+            },
+          },
+        },
+      });
+    } else {
+      const currentSimple = currentStateMsg as Record<string, string>;
+      onUpdate({
+        ...joint,
+        stateMessages: {
+          ...currentMessages,
+          [state]: {
+            ...currentSimple,
+            ...(audio.ar !== undefined && { audioAr: audio.ar }),
+            ...(audio.en !== undefined && { audioEn: audio.en }),
+          },
+        },
+      });
+    }
+  };
+  
+  /**
+   * Get message value - handles both simple and zone-based formats
+   */
+  const getMessageValue = (state: JointStateName, lang: 'ar' | 'en' | 'audioAr' | 'audioEn', zone?: ZoneType): string => {
+    const stateMsg = joint.stateMessages?.[state];
+    if (!stateMsg) return '';
+    
+    if (zone) {
+      // Zone-based message
+      const zoneMsg = (stateMsg as Record<string, Record<string, string>>)?.[zone];
+      return zoneMsg?.[lang] || '';
+    }
+    
+    // Simple message
+    return (stateMsg as Record<string, string>)?.[lang] || '';
   };
 
   return (
@@ -416,33 +560,135 @@ function JointEditor({ joint, index, onUpdate, onRemove, onCopyToMirror, isHold 
               💬 State Messages (Optional)
               <span className="ml-2 text-xs font-normal text-gray-400">Click to expand</span>
             </summary>
-            <div className="mt-4 grid gap-3">
+            <div className="mt-4 space-y-3">
+              {/* Info about message format */}
+              {!isHold && isPrimary && (
+                <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 text-sm text-blue-700">
+                  <strong>Zone-based Messages:</strong> For up/down exercises, you can set different messages 
+                  for the <span className="font-semibold">Up</span> position and <span className="font-semibold">Down</span> position.
+                  All messages are optional.
+                </div>
+              )}
+              
               {JOINT_STATE_NAMES.map((state) => {
-                const message = joint.stateMessages?.[state];
                 const colors = STATE_COLORS[state];
+                const useZoneMessages = !isHold && isPrimary;
+                
+                // For zone-based: check which zones have this state enabled
+                const primaryJoint = joint as PrimaryTrackedJointData;
+                const hasUpState = useZoneMessages && primaryJoint.upRange?.[state];
+                const hasDownState = useZoneMessages && primaryJoint.downRange?.[state];
+                
+                // For hold/secondary: check if state is in range
+                const secondaryJoint = joint as SecondaryTrackedJointData;
+                const hasRangeState = !useZoneMessages && (
+                  (isPrimary && isHold && primaryJoint.range?.[state]) ||
+                  (!isPrimary && secondaryJoint.range?.[state])
+                );
+                
+                // Skip states that are not enabled in any zone
+                if (useZoneMessages && !hasUpState && !hasDownState) return null;
+                if (!useZoneMessages && !hasRangeState && state !== 'perfect') return null;
                 
                 return (
                   <div key={state} className={`p-3 rounded-lg ${colors.bg} ${colors.border} border`}>
-                    <div className="flex items-center gap-2 mb-2">
+                    <div className="flex items-center gap-2 mb-3">
                       <span className={`font-medium text-sm ${colors.text}`}>{STATE_LABELS[state].en}</span>
+                      {useZoneMessages && (
+                        <span className="text-xs text-gray-500">
+                          ({[hasUpState && 'Up', hasDownState && 'Down'].filter(Boolean).join(' + ')})
+                        </span>
+                      )}
                     </div>
-                    <div className="grid md:grid-cols-2 gap-2">
-                      <input
-                        type="text"
-                        placeholder="Arabic message"
-                        value={message?.ar || ''}
-                        onChange={(e) => updateStateMessage(state, 'ar', e.target.value)}
-                        className="px-3 py-1.5 text-sm text-gray-900 border rounded bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                        dir="rtl"
+                    
+                    {useZoneMessages ? (
+                      // Zone-based messages for up_down and push_pull
+                      // Only show inputs for zones where this state is enabled
+                      <div className="space-y-3">
+                        {/* Up Zone - only if state is enabled in upRange */}
+                        {hasUpState && (
+                          <div className="bg-white/50 rounded p-2">
+                            <div className="text-xs font-semibold text-gray-600 mb-1.5 flex items-center gap-1">
+                              ⬆️ Up Position
+                            </div>
+                            <SmartLocalizedInput
+                              label=""
+                              value={{
+                                ar: getMessageValue(state, 'ar', 'up'),
+                                en: getMessageValue(state, 'en', 'up'),
+                              }}
+                              onChange={(value: LocalizedText) => {
+                                updateStateMessageBoth(state, value.ar, value.en, 'up');
+                              }}
+                              audioValue={{
+                                ar: getMessageValue(state, 'audioAr', 'up') || undefined,
+                                en: getMessageValue(state, 'audioEn', 'up') || undefined,
+                              }}
+                              onAudioChange={(audio) => {
+                                updateStateMessageAudio(state, audio, 'up');
+                              }}
+                              enableTranslation
+                              enableTTS
+                              translationContext={`fitness exercise ${state} state feedback message`}
+                              variant="inline"
+                            />
+                          </div>
+                        )}
+                        
+                        {/* Down Zone - only if state is enabled in downRange */}
+                        {hasDownState && (
+                          <div className="bg-white/50 rounded p-2">
+                            <div className="text-xs font-semibold text-gray-600 mb-1.5 flex items-center gap-1">
+                              ⬇️ Down Position
+                            </div>
+                            <SmartLocalizedInput
+                              label=""
+                              value={{
+                                ar: getMessageValue(state, 'ar', 'down'),
+                                en: getMessageValue(state, 'en', 'down'),
+                              }}
+                              onChange={(value: LocalizedText) => {
+                                updateStateMessageBoth(state, value.ar, value.en, 'down');
+                              }}
+                              audioValue={{
+                                ar: getMessageValue(state, 'audioAr', 'down') || undefined,
+                                en: getMessageValue(state, 'audioEn', 'down') || undefined,
+                              }}
+                              onAudioChange={(audio) => {
+                                updateStateMessageAudio(state, audio, 'down');
+                              }}
+                              enableTranslation
+                              enableTTS
+                              translationContext={`fitness exercise ${state} state feedback message`}
+                              variant="inline"
+                            />
+                          </div>
+                        )}
+                      </div>
+                    ) : (
+                      // Simple messages for hold exercises
+                      <SmartLocalizedInput
+                        label=""
+                        value={{
+                          ar: getMessageValue(state, 'ar'),
+                          en: getMessageValue(state, 'en'),
+                        }}
+                        onChange={(value: LocalizedText) => {
+                          updateStateMessageBoth(state, value.ar, value.en);
+                        }}
+                        audioValue={{
+                          ar: getMessageValue(state, 'audioAr') || undefined,
+                          en: getMessageValue(state, 'audioEn') || undefined,
+                        }}
+                        onAudioChange={(audio) => {
+                          updateStateMessageAudio(state, audio);
+                        }}
+                        enableTranslation
+                        enableTTS
+                        translationContext={`fitness exercise ${state} state feedback message`}
+                        variant="inline"
                       />
-                      <input
-                        type="text"
-                        placeholder="English message"
-                        value={message?.en || ''}
-                        onChange={(e) => updateStateMessage(state, 'en', e.target.value)}
-                        className="px-3 py-1.5 text-sm text-gray-900 border rounded bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                      />
-                    </div>
+                    )}
                   </div>
                 );
               })}
@@ -707,7 +953,7 @@ export function JointConfigStep() {
             <ul className="space-y-1 text-blue-600">
               <li>🔴 <strong>Warning</strong>: Out of range, rep not counted</li>
               <li>⛔ <strong>Danger</strong>: Dangerous position, rep invalidated</li>
-            </ul>
+        </ul>
           </div>
         </div>
         <p className="text-xs text-blue-500 mt-3">

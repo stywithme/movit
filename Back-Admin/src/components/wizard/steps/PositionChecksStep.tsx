@@ -10,8 +10,9 @@
 import { useState } from 'react';
 import { useWizardStore } from '../WizardContext';
 import { Card, CardHeader, CardTitle, CardContent, Button, Badge, Input, Label } from '@/components/ui';
+import { SmartLocalizedInput } from '@/components/forms';
 import type { PositionCheckData } from '@/modules/exercises/exercises.validation';
-import type { PhaseName, PositionCheckType, ConditionOperator } from '@/lib/types/localized';
+import type { PhaseName, PositionCheckType, ConditionOperator, LocalizedAudio } from '@/lib/types/localized';
 
 // ============================================
 // TEMPLATES
@@ -32,7 +33,7 @@ const TEMPLATES: Array<{
       landmarks: { primary: 'left_knee', secondary: 'left_foot_index' },
       condition: { operator: 'should_not_exceed', threshold: 0.05 },
       activePhases: ['down', 'bottom'],
-      errorMessage: { ar: 'لا تدع ركبتك تتجاوز أصابع قدميك', en: 'Don\'t let your knee go past your toes' },
+      errorMessage: { ar: 'لا تدع ركبتك تتجاوز أصابع قدميك', en: 'Don\'t let your knee go past your toes', audioAr: undefined, audioEn: undefined },
       severity: 'warning',
       cooldownMs: 2000,
       minErrorFrames: 3,
@@ -47,7 +48,7 @@ const TEMPLATES: Array<{
       landmarks: { primary: 'left_shoulder', secondary: 'left_hip' },
       condition: { operator: 'approximately_equal', threshold: 0.08 },
       activePhases: ['start', 'down', 'bottom', 'up'],
-      errorMessage: { ar: 'حافظ على استقامة ظهرك', en: 'Keep your back straight' },
+      errorMessage: { ar: 'حافظ على استقامة ظهرك', en: 'Keep your back straight', audioAr: undefined, audioEn: undefined },
       severity: 'warning',
       cooldownMs: 2000,
       minErrorFrames: 4,
@@ -62,7 +63,7 @@ const TEMPLATES: Array<{
       landmarks: { primary: 'left_hip', secondary: 'left_knee' },
       condition: { operator: 'should_exceed', threshold: 0.03 },
       activePhases: ['down', 'bottom'],
-      errorMessage: { ar: 'ادفع وركك للخلف', en: 'Push your hips back' },
+      errorMessage: { ar: 'ادفع وركك للخلف', en: 'Push your hips back', audioAr: undefined, audioEn: undefined },
       severity: 'tip',
       cooldownMs: 3000,
       minErrorFrames: 5,
@@ -77,7 +78,7 @@ const TEMPLATES: Array<{
       landmarks: { primary: 'left_elbow', secondary: 'left_hip' },
       condition: { operator: 'approximately_equal', threshold: 0.08 },
       activePhases: ['up', 'down'],
-      errorMessage: { ar: 'ثبّت مرفقك بجانب جسمك', en: 'Keep your elbow close to your body' },
+      errorMessage: { ar: 'ثبّت مرفقك بجانب جسمك', en: 'Keep your elbow close to your body', audioAr: undefined, audioEn: undefined },
       severity: 'warning',
       cooldownMs: 2000,
       minErrorFrames: 4,
@@ -285,23 +286,25 @@ function PositionCheckCard({ check, index, onUpdate, onRemove }: PositionCheckCa
             </div>
           </div>
           
-          {/* Error Messages */}
-          <div>
-            <Label>Error Message</Label>
-            <div className="grid md:grid-cols-2 gap-2 mt-1">
-              <Input
-                placeholder="Arabic message"
-                value={check.errorMessage.ar}
-                onChange={(e) => updateField('errorMessage', { ...check.errorMessage, ar: e.target.value })}
-                dir="rtl"
-              />
-              <Input
-                placeholder="English message"
-                value={check.errorMessage.en}
-                onChange={(e) => updateField('errorMessage', { ...check.errorMessage, en: e.target.value })}
-              />
-            </div>
-          </div>
+          {/* Error Messages - Using SmartLocalizedInput */}
+          <SmartLocalizedInput
+            label="Error Message"
+            value={check.errorMessage}
+            onChange={(value) => updateField('errorMessage', value)}
+            audioValue={{
+              ar: check.errorMessage.audioAr,
+              en: check.errorMessage.audioEn,
+            }}
+            onAudioChange={(audio) => updateField('errorMessage', {
+              ...check.errorMessage,
+              audioAr: audio.ar,
+              audioEn: audio.en,
+            })}
+            enableTranslation
+            enableTTS
+            translationContext="fitness exercise form correction message"
+            variant="compact"
+          />
           
           {/* Severity & Timing */}
           <div className="grid md:grid-cols-3 gap-4">
@@ -367,7 +370,7 @@ export function PositionChecksStep() {
       landmarks: { primary: 'left_shoulder', secondary: 'left_hip' },
       condition: { operator: 'approximately_equal', threshold: 0.1 },
       activePhases: ['down', 'bottom'],
-      errorMessage: { ar: 'تحقق من وضعك', en: 'Check your position' },
+      errorMessage: { ar: 'تحقق من وضعك', en: 'Check your position', audioAr: undefined, audioEn: undefined },
       severity: 'warning',
       cooldownMs: 2000,
       minErrorFrames: 3,

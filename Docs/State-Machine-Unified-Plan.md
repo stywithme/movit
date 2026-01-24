@@ -290,17 +290,38 @@ TRANSITION.min = downRange.pad.max (أو downRange.normal.max أو downRange.per
 ### Messages per State (مُحدّث)
 
 **القرار النهائي للرسائل داخل `stateMessages`:**
-- **مبسّطة**: كل State لها **رسالة واحدة فقط** (LocalizedText).
+- الرسائل أصبحت **مرتبطة بالـ Zone** في تمارين `up_down` و `push_pull`.
+- تمارين **Hold** تستمر برسالة واحدة لكل State.
+- **الرسائل اختيارية بالكامل**: ممكن تعريف رسالة في `up` فقط أو `down` فقط أو الاثنين أو لا شيء.
 - لا يوجد `motivational/info/tip/correction/alert` داخل `stateMessages`.
 - التصنيفات أصبحت **على مستوى الـ Feedback System** وليس داخل الـ JSON.
 
+**صيغة Hold (رسالة واحدة لكل State):**
 ```
 StateMessages:
-  perfect: "ممتاز!"
-  normal:  "جيد، حاول الوصول للمدى الأمثل"
-  pad:     "أنت قريب من الحد"
-  warning: "اثنِ أكثر / افرد أكثر"
-  danger:  "انتبه! زاوية خطيرة"
+  perfect: { ar: "ممتاز!", en: "Perfect!" }
+  normal:  { ar: "جيد", en: "Good" }
+  pad:     { ar: "أنت قريب من الحد", en: "Near limit" }
+  warning: { ar: "اثنِ أكثر", en: "Bend more" }
+  danger:  { ar: "انتبه! زاوية خطيرة", en: "Dangerous angle" }
+```
+
+**صيغة Up/Down (رسائل مختلفة حسب الـ Zone):**
+```
+StateMessages:
+  perfect:
+    up:   { ar: "ممتاز! ذراعك مفرودة", en: "Perfect! Arm extended" }
+    down: { ar: "ممتاز! ثني مثالي", en: "Perfect! Great curl" }
+  normal:
+    up:   { ar: "جيد، حاول الفرد أكثر", en: "Good, try extending more" }
+    down: { ar: "جيد، حاول الثني أكثر", en: "Good, try curling more" }
+  pad:
+    down: { ar: "مقبول، اقترب من الحد", en: "Acceptable, near limit" }
+  warning:
+    up:   { ar: "افرد أكثر", en: "Extend more" }
+    down: { ar: "اثنِ أكثر", en: "Bend more" }
+  danger:
+    down: { ar: "توقف! زاوية خطيرة", en: "Stop! Dangerous angle" }
 ```
 
 **ملاحظات مهمة:**
@@ -327,22 +348,6 @@ FeedbackMessages:
 **ملاحظات:**
 - تم حذف `common_mistake`.
 - تم توحيد المفتاح إلى `tips` بدلاً من `tip`.
-### Messages per State
-
-```
-StateMessages:
-  perfect:
-    motivational: ["ممتاز!", "أداء رائع!"]
-  normal:
-    info: ["جيد، حاول الوصول للمدى الأمثل"]
-  pad:
-    tip: ["أنت قريب من الحد"]
-  warning:
-    correction: ["اثنِ أكثر", "افرد أكثر"]
-  danger:
-    alert: ["انتبه! زاوية خطيرة"]
-```
-
 ---
 
 ## 4. التأثير على المكونات (Component Impact)
@@ -953,6 +958,11 @@ enum ZoneType {
 - [x] Rep يُلغى إذا `stateConfig.invalidatesRep` (DANGER)
 - [x] Score يُحسب من `worstState` خلال الـ phases المهمة
 - [x] `SessionSummary` يعرض `countedReps/totalReps` + `averageScore`
+
+### تحديث إضافي على الخطة
+- ✅ تمت إضافة دعم رسائل **Up/Down لكل State** في تمارين `up_down` و `push_pull`.
+- ✅ تم الإبقاء على رسالة واحدة لكل State في تمارين **Hold**.
+- ✅ الرسائل اختيارية ويمكن تعريف `up` فقط أو `down` فقط أو كلاهما أو لا شيء.
 
 ---
 

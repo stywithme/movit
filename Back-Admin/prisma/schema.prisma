@@ -266,8 +266,7 @@ model FeedbackMessage {
   id            String   @id @default(uuid())
   poseVariantId String
   type          String   // motivational, common_mistake, tip
-  message       Json     // { "ar": "...", "en": "..." }
-  audioUrl      String?
+  message       Json     // { "ar": "...", "en": "...", "audioAr": "...", "audioEn": "..." }
   sortOrder     Int      @default(0)
   createdAt     DateTime @default(now())
 

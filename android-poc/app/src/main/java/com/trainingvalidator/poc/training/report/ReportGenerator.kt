@@ -207,7 +207,7 @@ object ReportGenerator {
             val trackedJoint = getTrackedJoint(exerciseConfig, jointCode)
             
             // Get DANGER message from stateMessages
-            val dangerMessage = trackedJoint?.stateMessages?.danger
+            val dangerMessage = trackedJoint?.stateMessages?.getMessage(JointState.DANGER)
                 ?: LocalizedText(
                     ar = "وضعية خطيرة! انتبه لسلامتك",
                     en = "Dangerous position! Watch your form"

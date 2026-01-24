@@ -8,6 +8,7 @@ import android.os.VibratorManager
 import android.speech.tts.TextToSpeech
 import android.util.Log
 import androidx.core.content.ContextCompat
+import com.trainingvalidator.poc.storage.AudioCacheManager
 import com.trainingvalidator.poc.training.config.SettingsManager
 import com.trainingvalidator.poc.training.engine.PositionError
 import com.trainingvalidator.poc.training.models.CheckSeverity
@@ -93,9 +94,13 @@ class FeedbackManager(
     )
     val visualMessages: SharedFlow<VisualMessage> = _visualMessages
     
-    // Text-to-speech
+    // Text-to-speech (legacy, used as fallback)
     private var tts: TextToSpeech? = null
     private var isTtsReady = false
+    
+    // Audio feedback player (prioritizes cached audio over TTS)
+    private var audioPlayer: AudioFeedbackPlayer? = null
+    private var useAudioPlayer = false
     
     // Vibrator
     private val vibrator: Vibrator? = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
@@ -138,7 +143,7 @@ class FeedbackManager(
     }
     
     /**
-     * Initialize TTS engine
+     * Initialize TTS engine (legacy mode)
      */
     fun initialize() {
         tts = TextToSpeech(context) { status ->
@@ -162,6 +167,21 @@ class FeedbackManager(
                 }
             }
         }
+    }
+    
+    /**
+     * Initialize with AudioFeedbackPlayer for cached audio support
+     * 
+     * Call this instead of initialize() to use cached audio files
+     * when available, with TTS as fallback.
+     * 
+     * @param audioCache AudioCacheManager for accessing cached audio files
+     */
+    fun initializeWithAudioCache(audioCache: AudioCacheManager) {
+        audioPlayer = AudioFeedbackPlayer(context, audioCache, config.language)
+        audioPlayer?.initialize()
+        useAudioPlayer = true
+        Log.d(TAG, "Initialized with AudioFeedbackPlayer (cached audio support)")
     }
     
     /**
@@ -204,17 +224,18 @@ class FeedbackManager(
     
     private suspend fun handleJointError(event: FeedbackEvent.JointErrorDetected) {
         val messageKey = "joint:${event.error.jointCode}:${event.error.errorType}"
-        val message = event.error.message.get(config.language)
+        val localizedText = event.error.message
+        val displayText = localizedText.get(config.language)
         
         // Use MessageOrchestrator for smart delivery
         val decision = messageOrchestrator.decide(
             messageKey = messageKey,
             category = MessageOrchestrator.Category.ERROR,
-            messageText = message
+            messageText = displayText
         )
         
-        // Deliver based on decision
-        deliverMessage(message, decision, MessageType.ERROR)
+        // Deliver based on decision (with LocalizedText for audio support)
+        deliverLocalizedMessage(localizedText, displayText, decision, MessageType.ERROR)
         
         // Reset streak on error (only if message was delivered)
         if (decision.channel != MessageOrchestrator.DeliveryChannel.SILENT) {
@@ -226,8 +247,9 @@ class FeedbackManager(
 
     private suspend fun handleJointStateMessage(event: FeedbackEvent.JointStateMessage) {
         // Ignore transition (shouldn't be emitted) and empty messages
-        val messageText = event.message.get(config.language)
-        if (messageText.isBlank()) return
+        val localizedText = event.message
+        val displayText = localizedText.get(config.language)
+        if (displayText.isBlank()) return
         
         val category = when (event.state) {
             JointState.DANGER -> MessageOrchestrator.Category.CRITICAL
@@ -247,28 +269,56 @@ class FeedbackManager(
             JointState.TRANSITION -> MessageType.INFO
         }
         
+        // Include zone in messageKey to track up/down messages separately
         val decision = messageOrchestrator.decide(
-            messageKey = "state:${event.jointCode}:${event.state}",
+            messageKey = "state:${event.jointCode}:${event.state}:${event.zone}",
             category = category,
-            messageText = messageText
+            messageText = displayText
         )
         
-        deliverMessage(messageText, decision, messageType)
+        // Deliver with LocalizedText for audio support
+        deliverLocalizedMessage(localizedText, displayText, decision, messageType)
     }
     
     /**
      * Deliver a message based on orchestrator decision
      * Handles mode-aware delivery (Camera vs Video)
+     * 
+     * @param message Text-only message (legacy, no audio URL support)
      */
     private suspend fun deliverMessage(
         message: String, 
         decision: MessageOrchestrator.DeliveryDecision,
         messageType: MessageType
     ) {
+        // Delegate to LocalizedText version (no audio URLs)
+        deliverLocalizedMessage(
+            localizedText = LocalizedText(ar = message, en = message),
+            displayText = message,
+            decision = decision,
+            messageType = messageType
+        )
+    }
+    
+    /**
+     * Deliver a localized message based on orchestrator decision
+     * Supports cached audio playback via LocalizedText.audioAr/audioEn
+     * 
+     * @param localizedText Full LocalizedText with optional audio URLs
+     * @param displayText Text to display (already localized)
+     * @param decision Orchestrator delivery decision
+     * @param messageType Type for visual styling and haptics
+     */
+    private suspend fun deliverLocalizedMessage(
+        localizedText: LocalizedText,
+        displayText: String,
+        decision: MessageOrchestrator.DeliveryDecision,
+        messageType: MessageType
+    ) {
         when (decision.channel) {
             MessageOrchestrator.DeliveryChannel.SILENT -> {
                 // No message - visual overlay handles it
-                Log.d(TAG, "Message silenced: $message (repeat #${decision.repeatCount})")
+                Log.d(TAG, "Message silenced: $displayText (repeat #${decision.repeatCount})")
             }
             
             MessageOrchestrator.DeliveryChannel.HAPTIC_ONLY -> {
@@ -285,7 +335,7 @@ class FeedbackManager(
             MessageOrchestrator.DeliveryChannel.VISUAL_ONLY -> {
                 // Visual message only (no audio)
                 if (isVideoMode) {
-                    emitVisualMessage(message, messageType)
+                    emitVisualMessage(displayText, messageType)
                 }
                 // In camera mode: just haptic as visual cue
                 if (!isVideoMode && isHapticEnabled) {
@@ -296,10 +346,9 @@ class FeedbackManager(
             MessageOrchestrator.DeliveryChannel.AUDIO_AND_VISUAL -> {
                 // Full feedback
                 if (isVideoMode) {
-                    emitVisualMessage(message, messageType)
+                    emitVisualMessage(displayText, messageType)
                 } else {
                     // Determine speech priority based on message type
-                    // Errors and warnings can interrupt, motivation waits in queue
                     val speechPriority = when (messageType) {
                         MessageType.ERROR -> SpeakPriority.HIGH      // Can interrupt
                         MessageType.WARNING -> SpeakPriority.HIGH    // Can interrupt
@@ -307,7 +356,8 @@ class FeedbackManager(
                         MessageType.TIP -> SpeakPriority.LOW         // Skip if busy
                         MessageType.INFO -> SpeakPriority.NORMAL     // Waits in queue
                     }
-                    speak(message, speechPriority)
+                    // Use speakLocalized to leverage cached audio if available
+                    speakLocalized(localizedText, speechPriority)
                     if (isHapticEnabled) {
                         when (messageType) {
                             MessageType.ERROR -> vibrateError()
@@ -399,36 +449,41 @@ class FeedbackManager(
     // ==================== Motivation ====================
     
     private suspend fun handleMotivation(event: FeedbackEvent.MotivationalMessage) {
-        val message = event.message.get(config.language)
+        val localizedText = event.message
+        val displayText = localizedText.get(config.language)
         
         // Use MessageOrchestrator for smart delivery
         val decision = messageOrchestrator.decide(
-            messageKey = "motivation:${message.hashCode()}",
+            messageKey = "motivation:${displayText.hashCode()}",
             category = MessageOrchestrator.Category.MOTIVATION,
-            messageText = message
+            messageText = displayText
         )
         
-        deliverMessage(message, decision, MessageType.MOTIVATION)
+        // Deliver with LocalizedText for audio support
+        deliverLocalizedMessage(localizedText, displayText, decision, MessageType.MOTIVATION)
     }
     
     private suspend fun triggerStreakMotivation(streak: Int) {
-        val message = when {
+        // Build LocalizedText for streak messages (no audio URLs for these)
+        val localizedText = when {
             streak >= STREAK_THRESHOLD_LARGE -> 
-                if (config.language == "ar") "ممتاز! استمر!" else "Excellent! Keep going!"
+                LocalizedText(ar = "ممتاز! استمر!", en = "Excellent! Keep going!")
             streak >= STREAK_THRESHOLD_MEDIUM -> 
-                if (config.language == "ar") "أداء رائع!" else "Great form!"
+                LocalizedText(ar = "أداء رائع!", en = "Great form!")
             else -> 
-                if (config.language == "ar") "جيد!" else "Good!"
+                LocalizedText(ar = "جيد!", en = "Good!")
         }
+        val displayText = localizedText.get(config.language)
         
         // Use MessageOrchestrator (will prevent duplicate messages)
         val decision = messageOrchestrator.decide(
             messageKey = "streak:$streak",
             category = MessageOrchestrator.Category.MOTIVATION,
-            messageText = message
+            messageText = displayText
         )
         
-        deliverMessage(message, decision, MessageType.MOTIVATION)
+        // Deliver with LocalizedText (TTS fallback since no audio URLs)
+        deliverLocalizedMessage(localizedText, displayText, decision, MessageType.MOTIVATION)
     }
     
     // ==================== Hold Event Handlers ====================
@@ -490,93 +545,103 @@ class FeedbackManager(
     // ==================== Position Event Handlers ====================
     
     private suspend fun handlePositionError(event: FeedbackEvent.PositionErrorDetected) {
-        val message = event.error.message.get(config.language)
+        val localizedText = event.error.message
+        val displayText = localizedText.get(config.language)
         
         // Use MessageOrchestrator for smart delivery
         val decision = messageOrchestrator.decide(
             messageKey = "position:${event.error.checkId}",
             category = MessageOrchestrator.Category.ERROR,
-            messageText = message
+            messageText = displayText
         )
         
-        deliverMessage(message, decision, MessageType.ERROR)
+        // Deliver with LocalizedText for audio support
+        deliverLocalizedMessage(localizedText, displayText, decision, MessageType.ERROR)
     }
     
     private suspend fun handlePositionWarning(event: FeedbackEvent.PositionWarningDetected) {
-        val message = event.error.message.get(config.language)
+        val localizedText = event.error.message
+        val displayText = localizedText.get(config.language)
         
         // Use MessageOrchestrator for smart delivery
         val decision = messageOrchestrator.decide(
             messageKey = "position_warn:${event.error.checkId}",
             category = MessageOrchestrator.Category.WARNING,
-            messageText = message
+            messageText = displayText
         )
         
-        deliverMessage(message, decision, MessageType.WARNING)
+        // Deliver with LocalizedText for audio support
+        deliverLocalizedMessage(localizedText, displayText, decision, MessageType.WARNING)
     }
 
     private suspend fun handlePositionTip(event: FeedbackEvent.PositionTipDetected) {
-        val message = event.error.message.get(config.language)
+        val displayText = event.error.message.get(config.language)
         
         // Use MessageOrchestrator for smart delivery
         // Tips are VISUAL_ONLY by design (low priority)
         val decision = messageOrchestrator.decide(
             messageKey = "position_tip:${event.error.checkId}",
             category = MessageOrchestrator.Category.TIP,
-            messageText = message
+            messageText = displayText
         )
         
         // Only deliver in Video mode (tips are visual-only per plan)
         if (isVideoMode && decision.channel != MessageOrchestrator.DeliveryChannel.SILENT) {
-            emitVisualMessage(message, MessageType.TIP)
+            emitVisualMessage(displayText, MessageType.TIP)
         }
         
         Log.d(TAG, "Position tip: ${event.error.checkId} (channel: ${decision.channel})")
     }
     
     private suspend fun handleCameraWarning(event: FeedbackEvent.CameraPositionWarning) {
-        val message = event.warning.message.get(config.language)
+        val localizedText = event.warning.message
+        val displayText = localizedText.get(config.language)
         
         // Use MessageOrchestrator for smart delivery
         // Use WARNING category so user hears it at least once, then reduces
         // Camera warnings are important but shouldn't spam
         val decision = messageOrchestrator.decide(
             messageKey = "camera:${event.warning.expectedPosition}",
-            category = MessageOrchestrator.Category.WARNING,  // Changed from INFO for better handling
-            messageText = message
+            category = MessageOrchestrator.Category.WARNING,
+            messageText = displayText
         )
         
-        deliverMessage(message, decision, MessageType.WARNING)
+        // Deliver with LocalizedText for audio support
+        deliverLocalizedMessage(localizedText, displayText, decision, MessageType.WARNING)
     }
     
     // ==================== Visibility Event Handlers ====================
     
     private suspend fun handleVisibilityWarning(event: FeedbackEvent.VisibilityWarning) {
-        val message = event.message.get(config.language)
+        val localizedText = event.message
+        val displayText = localizedText.get(config.language)
         
         // Use MessageOrchestrator for smart delivery
         // Visibility warnings are important - user needs to adjust position
         val decision = messageOrchestrator.decide(
             messageKey = "visibility:warning",
             category = MessageOrchestrator.Category.WARNING,
-            messageText = message
+            messageText = displayText
         )
         
-        deliverMessage(message, decision, MessageType.WARNING)
+        // Deliver with LocalizedText for audio support
+        deliverLocalizedMessage(localizedText, displayText, decision, MessageType.WARNING)
     }
     
     private suspend fun handleVisibilityPaused(event: FeedbackEvent.VisibilityPaused) {
-        val message = event.message.get(config.language)
+        val localizedText = event.message
+        val displayText = localizedText.get(config.language)
         
         // Visibility paused is CRITICAL - training stopped, user must act
         // Use CRITICAL category to ensure it's always heard
         val decision = messageOrchestrator.decide(
             messageKey = "visibility:paused",
             category = MessageOrchestrator.Category.CRITICAL,
-            messageText = message
+            messageText = displayText
         )
         
-        deliverMessage(message, decision, MessageType.ERROR)
+        // Deliver with LocalizedText for audio support
+        deliverLocalizedMessage(localizedText, displayText, decision, MessageType.ERROR)
         
         // Extra haptic feedback for critical visibility loss
         if (!isVideoMode && isHapticEnabled) {
@@ -621,12 +686,26 @@ class FeedbackManager(
     private var isSpeaking = false
     
     /**
-     * Speak text using TTS (Camera mode only)
+     * Speak text using TTS or cached audio (Camera mode only)
      * @param text The text to speak
      * @param priority Determines if this can interrupt other speech
      */
     fun speak(text: String, priority: SpeakPriority = SpeakPriority.HIGH) {
-        if (!isTtsEnabled || !isTtsReady) return
+        if (!isTtsEnabled) return
+        
+        // Use AudioFeedbackPlayer if available
+        if (useAudioPlayer && audioPlayer != null) {
+            val audioPriority = when (priority) {
+                SpeakPriority.HIGH -> AudioFeedbackPlayer.Priority.HIGH
+                SpeakPriority.NORMAL -> AudioFeedbackPlayer.Priority.NORMAL
+                SpeakPriority.LOW -> AudioFeedbackPlayer.Priority.LOW
+            }
+            audioPlayer?.play(text, null, audioPriority)
+            return
+        }
+        
+        // Fallback to legacy TTS
+        if (!isTtsReady) return
         
         val now = System.currentTimeMillis()
         
@@ -654,11 +733,49 @@ class FeedbackManager(
     }
     
     /**
+     * Speak localized text using cached audio if available
+     * @param localizedText LocalizedText with optional audio URLs
+     * @param priority Determines if this can interrupt other speech
+     */
+    fun speakLocalized(localizedText: LocalizedText, priority: SpeakPriority = SpeakPriority.HIGH) {
+        if (!isTtsEnabled) return
+        
+        // Debug: Log audio URL availability
+        val audioUrl = localizedText.getAudioUrl(config.language)
+        if (audioUrl != null) {
+            Log.d(TAG, "LocalizedText has audio URL ($config.language): $audioUrl")
+        } else {
+            Log.d(TAG, "LocalizedText has NO audio URL for ${config.language}. Text: ${localizedText.get(config.language).take(30)}...")
+        }
+        
+        // Use AudioFeedbackPlayer if available (supports cached audio)
+        if (useAudioPlayer && audioPlayer != null) {
+            val audioPriority = when (priority) {
+                SpeakPriority.HIGH -> AudioFeedbackPlayer.Priority.HIGH
+                SpeakPriority.NORMAL -> AudioFeedbackPlayer.Priority.NORMAL
+                SpeakPriority.LOW -> AudioFeedbackPlayer.Priority.LOW
+            }
+            audioPlayer?.play(localizedText, audioPriority)
+            return
+        }
+        
+        // Fallback to text-only TTS
+        speak(localizedText.get(config.language), priority)
+    }
+    
+    /**
      * Speak countdown number with emphasis
      * Uses HIGH priority - countdown should interrupt other messages
      */
     fun speakCountdown(number: Int) {
-        if (!isTtsEnabled || !isTtsReady) return
+        if (!isTtsEnabled) return
+        
+        if (useAudioPlayer && audioPlayer != null) {
+            audioPlayer?.playCountdown(number)
+            return
+        }
+        
+        if (!isTtsReady) return
         isSpeaking = true
         tts?.speak(number.toString(), TextToSpeech.QUEUE_FLUSH, null, "countdown_$number")
     }
@@ -668,7 +785,14 @@ class FeedbackManager(
      * Uses HIGH priority - start signal is critical
      */
     fun speakGo() {
-        if (!isTtsEnabled || !isTtsReady) return
+        if (!isTtsEnabled) return
+        
+        if (useAudioPlayer && audioPlayer != null) {
+            audioPlayer?.playGo()
+            return
+        }
+        
+        if (!isTtsReady) return
         val goText = if (config.language == "ar") "ابدأ!" else "Go!"
         isSpeaking = true
         tts?.speak(goText, TextToSpeech.QUEUE_FLUSH, null, "go")
@@ -839,9 +963,16 @@ class FeedbackManager(
     fun setLanguage(language: String) {
         val locale = if (language == "ar") Locale.forLanguageTag("ar") else Locale.US
         tts?.setLanguage(locale)
+        audioPlayer?.setLanguage(language)
     }
     
     fun release() {
+        // Release audio player
+        audioPlayer?.release()
+        audioPlayer = null
+        useAudioPlayer = false
+        
+        // Release TTS
         tts?.stop()
         tts?.shutdown()
         tts = null

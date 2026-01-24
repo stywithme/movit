@@ -32,14 +32,55 @@ export interface StateRanges {
 }
 
 /**
- * State messages - one message per state
+ * Localized text with optional audio URLs
+ */
+export interface LocalizedTextWithAudio {
+  ar: string;
+  en: string;
+  audioAr?: string;
+  audioEn?: string;
+}
+
+/**
+ * Zone-based message (for up_down and push_pull exercises)
+ */
+export interface ZoneBasedMessage {
+  up?: LocalizedTextWithAudio;
+  down?: LocalizedTextWithAudio;
+}
+
+/**
+ * State message value - can be simple or zone-based
+ * Simple (for hold): { ar: "...", en: "...", audioAr?: "...", audioEn?: "..." }
+ * Zone (for up_down/push_pull): { up: {...}, down: {...} }
+ */
+export type StateMessageValue = LocalizedTextWithAudio | ZoneBasedMessage;
+
+/**
+ * State messages - supports both formats
  */
 export interface StateMessages {
-  perfect?: LocalizedText;
-  normal?: LocalizedText;
-  pad?: LocalizedText;
-  warning?: LocalizedText;
-  danger?: LocalizedText;
+  perfect?: StateMessageValue;
+  normal?: StateMessageValue;
+  pad?: StateMessageValue;
+  warning?: StateMessageValue;
+  danger?: StateMessageValue;
+}
+
+/**
+ * Check if a message value is zone-based
+ */
+export function isZoneBasedMessage(msg: StateMessageValue | undefined): msg is ZoneBasedMessage {
+  if (!msg) return false;
+  return 'up' in msg || 'down' in msg;
+}
+
+/**
+ * Check if a message value is simple LocalizedText
+ */
+export function isSimpleMessage(msg: StateMessageValue | undefined): msg is LocalizedText {
+  if (!msg) return false;
+  return 'ar' in msg || 'en' in msg;
 }
 
 // ============================================
@@ -147,7 +188,7 @@ export interface PositionCheckInput {
   landmarks: PositionCheckLandmarks;
   condition: PositionCheckCondition;
   activePhases: string[];
-  errorMessage: LocalizedText;
+  errorMessage: LocalizedTextWithAudio;
   severity?: string;
   cooldownMs?: number;
   minErrorFrames?: number;
@@ -175,11 +216,11 @@ export interface RepCountingConfig {
 
 /**
  * Feedback message input (simplified - no common_mistake)
+ * Audio URLs are now part of message: { ar, en, audioAr, audioEn }
  */
 export interface FeedbackMessageInput {
   type: 'motivational' | 'tip';
-  message: LocalizedText;
-  audioUrl?: string;
+  message: LocalizedTextWithAudio;
   sortOrder?: number;
 }
 
@@ -326,13 +367,44 @@ export function createDefaultSecondaryJoint(jointCode: string): SecondaryTracked
 
 /**
  * Create default state messages for a joint
+ * @param jointCode - The joint code (e.g., 'left_elbow')
+ * @param useZoneMessages - If true, creates zone-based messages (up/down)
  */
-export function createDefaultStateMessages(jointCode: string): StateMessages {
+export function createDefaultStateMessages(
+  jointCode: string, 
+  useZoneMessages: boolean = false
+): StateMessages {
   const jointName = jointCode.replace(/_/g, ' ').replace(/left |right /gi, '');
   const isLeft = jointCode.startsWith('left_');
   const side = isLeft ? 'left' : 'right';
   const sideAr = isLeft ? 'اليسرى' : 'اليمنى';
   
+  if (useZoneMessages) {
+    // Zone-based messages for up_down and push_pull exercises
+    return {
+      perfect: {
+        up: { ar: 'ممتاز! وضع مثالي', en: 'Perfect! Great form' },
+        down: { ar: 'ممتاز! ثني مثالي', en: 'Perfect! Great bend' },
+      },
+      normal: {
+        up: { ar: 'جيد، حاول أكثر', en: 'Good, try a bit more' },
+        down: { ar: 'جيد، حاول الثني أكثر', en: 'Good, try bending more' },
+      },
+      pad: {
+        up: { ar: 'مقبول', en: 'Acceptable' },
+        down: { ar: 'مقبول', en: 'Acceptable' },
+      },
+      warning: {
+        up: { ar: `${jointName} ${sideAr} بحاجة لتعديل`, en: `Adjust your ${side} ${jointName}` },
+        down: { ar: `${jointName} ${sideAr} بحاجة لتعديل`, en: `Adjust your ${side} ${jointName}` },
+      },
+      danger: {
+        down: { ar: 'توقف! وضع خطير', en: 'Stop! Dangerous position' },
+      },
+    };
+  }
+  
+  // Simple messages for hold exercises
   return {
     perfect: { ar: 'ممتاز!', en: 'Perfect!' },
     normal: { ar: 'جيد', en: 'Good' },

@@ -6,7 +6,8 @@
  */
 
 import { useWizardStore } from '../WizardContext';
-import { Card, CardHeader, CardTitle, CardContent, Button, Badge, Input, Label } from '@/components/ui';
+import { Card, CardHeader, CardTitle, CardContent, Button, Badge, Label } from '@/components/ui';
+import { SmartLocalizedInput } from '@/components/forms';
 import { Plus, X } from 'lucide-react';
 import type { FeedbackMessageData } from '@/modules/exercises/exercises.validation';
 
@@ -158,30 +159,37 @@ export function ExtrasStep({ muscles, equipment, tags }: ExtrasStepProps) {
                     const globalIndex = feedbackMessages.indexOf(msg);
                     return (
                       <div key={idx} className="flex gap-2 items-start">
-                        <div className="flex-1 grid grid-cols-2 gap-2">
-                          <Input
-                            value={msg.message.en}
-                            onChange={(e) => updateFeedbackMessage(globalIndex, {
+                        <div className="flex-1">
+                          <SmartLocalizedInput
+                            label=""
+                            value={msg.message}
+                            onChange={(value) => updateFeedbackMessage(globalIndex, {
                               ...msg,
-                              message: { ...msg.message, en: e.target.value },
+                              message: value,
                             })}
-                            placeholder="English message"
-                          />
-                          <Input
-                            dir="rtl"
-                            value={msg.message.ar}
-                            onChange={(e) => updateFeedbackMessage(globalIndex, {
+                            audioValue={{
+                              ar: msg.message.audioAr,
+                              en: msg.message.audioEn,
+                            }}
+                            onAudioChange={(audio) => updateFeedbackMessage(globalIndex, {
                               ...msg,
-                              message: { ...msg.message, ar: e.target.value },
+                              message: {
+                                ...msg.message,
+                                audioAr: audio.ar,
+                                audioEn: audio.en,
+                              },
                             })}
-                            placeholder="الرسالة بالعربية"
+                            enableTranslation
+                            enableTTS
+                            translationContext={type === 'motivational' ? 'fitness motivational message' : 'fitness exercise tip'}
+                            variant="inline"
                           />
                         </div>
                         <Button
                           variant="ghost"
                           size="icon"
                           onClick={() => removeFeedbackMessage(globalIndex)}
-                          className="text-red-500 hover:text-red-700"
+                          className="text-red-500 hover:text-red-700 mt-1"
                         >
                           <X className="h-4 w-4" />
                         </Button>

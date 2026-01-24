@@ -77,10 +77,20 @@
             "pad": { "min": 50, "max": 115 }
           },
           "stateMessages": {
-            "perfect": { "ar": "ممتاز! ثني مثالي", "en": "Perfect! Great curl" },
-            "normal": { "ar": "جيد، حاول الثني أكثر", "en": "Good, try curling more" },
-            "pad": { "ar": "مقبول، اقترب من الكتف أكثر", "en": "Acceptable, get closer to shoulder" },
-            "warning": { "ar": "ارفع الوزن أكثر", "en": "Curl up more" }
+            "perfect": {
+              "up": { "ar": "ممتاز! ذراعك مفرودة", "en": "Perfect! Arm extended" },
+              "down": { "ar": "ممتاز! ثني مثالي", "en": "Perfect! Great curl" }
+            },
+            "normal": {
+              "up": { "ar": "جيد، حاول فرد الذراع أكثر", "en": "Good, try extending more" },
+              "down": { "ar": "جيد، حاول الثني أكثر", "en": "Good, try curling more" }
+            },
+            "pad": {
+              "down": { "ar": "مقبول، اقترب من الكتف أكثر", "en": "Acceptable, get closer to shoulder" }
+            },
+            "warning": {
+              "down": { "ar": "ارفع الوزن أكثر", "en": "Curl up more" }
+            }
           }
         },
         {

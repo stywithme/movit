@@ -188,8 +188,8 @@ class FormValidator(
         // Apply hysteresis and danger smoothing
         val state = applyHysteresis(joint.joint, rawState, angle, stateRanges)
         
-        // Get messages for this state
-        val messages = joint.getMessagesForState(state)
+        // Get messages for this state and zone
+        val messages = joint.getMessagesForState(state, zoneType)
         
         return JointStateInfo.create(
             jointCode = joint.joint,

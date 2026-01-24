@@ -813,7 +813,29 @@ object AngleColorResolver {
  * StateMessages - Configurable messages for each JointState
  * 
  * MEDIUM PRIORITY messages delivered when joint enters a specific state.
- * Each state has a single LocalizedText message (not a collection).
+ * Supports two formats:
+ * 
+ * 1. SINGLE MESSAGE (for Hold exercises):
+ * ```json
+ * "stateMessages": {
+ *   "perfect": { "ar": "ممتاز!", "en": "Perfect!" },
+ *   "warning": { "ar": "ابق ثابتاً", "en": "Stay steady" }
+ * }
+ * ```
+ * 
+ * 2. ZONE-SPECIFIC MESSAGES (for Up&Down/Push&Pull exercises):
+ * ```json
+ * "stateMessages": {
+ *   "perfect": {
+ *     "up": { "ar": "ممتاز! ذراعك مفرودة", "en": "Perfect! Arm extended" },
+ *     "down": { "ar": "ممتاز! ثني مثالي", "en": "Perfect! Great curl" }
+ *   },
+ *   "warning": {
+ *     "up": { "ar": "افرد ذراعك أكثر", "en": "Extend your arm more" },
+ *     "down": { "ar": "اثنِ المرفق أكثر", "en": "Bend your elbow more" }
+ *   }
+ * }
+ * ```
  * 
  * Message Delivery:
  * - DANGER: CRITICAL priority - always delivered, strong haptic
@@ -822,38 +844,24 @@ object AngleColorResolver {
  * - NORMAL: INFO priority - one-time, visual only
  * - PERFECT: MOTIVATION priority - encouragement when reaching perfect form
  * 
- * Example JSON:
- * ```json
- * "stateMessages": {
- *   "perfect": { "ar": "ممتاز!", "en": "Perfect!" },
- *   "normal": { "ar": "جيد", "en": "Good" },
- *   "pad": { "ar": "قريب من الحد", "en": "Near limit" },
- *   "warning": { "ar": "اثنِ أكثر", "en": "Bend more" },
- *   "danger": { "ar": "توقف!", "en": "Stop!" }
- * }
- * ```
+ * All messages are OPTIONAL - can have up only, down only, both, or none.
  */
 data class StateMessages(
-    val perfect: LocalizedText? = null,
-    val normal: LocalizedText? = null,
-    val pad: LocalizedText? = null,
-    val warning: LocalizedText? = null,
-    val danger: LocalizedText? = null
+    val perfect: StateMessageValue? = null,
+    val normal: StateMessageValue? = null,
+    val pad: StateMessageValue? = null,
+    val warning: StateMessageValue? = null,
+    val danger: StateMessageValue? = null
 ) {
     /**
-     * Get message for a specific state
-     * Returns a list for API compatibility (may contain 0 or 1 message)
+     * Get message for a specific state and zone
+     * 
+     * @param state The JointState to get message for
+     * @param zone The current ZoneType (UP_ZONE, DOWN_ZONE, or TRANSITION)
+     * @return LocalizedText or null if not defined
      */
-    fun getMessages(state: JointState): List<LocalizedText> {
-        val message = getMessage(state) ?: return emptyList()
-        return listOf(message)
-    }
-    
-    /**
-     * Get single message for a state (null if not defined)
-     */
-    fun getMessage(state: JointState): LocalizedText? {
-        return when (state) {
+    fun getMessage(state: JointState, zone: ZoneType): LocalizedText? {
+        val value = when (state) {
             JointState.PERFECT -> perfect
             JointState.NORMAL -> normal
             JointState.PAD -> pad
@@ -861,10 +869,177 @@ data class StateMessages(
             JointState.DANGER -> danger
             JointState.TRANSITION -> null
         }
+        return value?.getMessage(zone)
     }
     
     /**
-     * Check if message is defined for a state
+     * Get message for a specific state (legacy - uses any available message)
+     * Prefers UP zone if zone-specific, falls back to DOWN
+     */
+    fun getMessage(state: JointState): LocalizedText? {
+        return getMessage(state, ZoneType.UP_ZONE) 
+            ?: getMessage(state, ZoneType.DOWN_ZONE)
+    }
+    
+    /**
+     * Get messages for a specific state and zone
+     * Returns a list for API compatibility (may contain 0 or 1 message)
+     */
+    fun getMessages(state: JointState, zone: ZoneType): List<LocalizedText> {
+        val message = getMessage(state, zone) ?: return emptyList()
+        return listOf(message)
+    }
+    
+    /**
+     * Legacy: Get messages for a state (without zone)
+     */
+    fun getMessages(state: JointState): List<LocalizedText> {
+        val message = getMessage(state) ?: return emptyList()
+        return listOf(message)
+    }
+    
+    /**
+     * Check if message is defined for a state in any zone
      */
     fun hasMessage(state: JointState): Boolean = getMessage(state) != null
+    
+    /**
+     * Check if message is defined for a state in a specific zone
+     */
+    fun hasMessage(state: JointState, zone: ZoneType): Boolean = getMessage(state, zone) != null
+}
+
+/**
+ * StateMessageValue - Either a single message or zone-specific messages
+ * 
+ * Supports JSON formats:
+ * 1. Single: { "ar": "...", "en": "..." }
+ * 2. Zone-specific: { "up": {"ar": "...", "en": "..."}, "down": {"ar": "...", "en": "..."} }
+ * 
+ * All fields are optional - can have up only, down only, both, or neither.
+ */
+sealed class StateMessageValue {
+    /**
+     * Get message for a specific zone
+     * @param zone The zone to get message for
+     * @return LocalizedText or null if not defined for this zone
+     */
+    abstract fun getMessage(zone: ZoneType): LocalizedText?
+    
+    /**
+     * Single message for all zones (Hold exercises)
+     */
+    data class Single(val message: LocalizedText) : StateMessageValue() {
+        override fun getMessage(zone: ZoneType): LocalizedText = message
+    }
+    
+    /**
+     * Zone-specific messages (Up&Down/Push&Pull exercises)
+     * Both up and down are optional
+     */
+    data class ZoneSpecific(
+        val up: LocalizedText? = null,
+        val down: LocalizedText? = null
+    ) : StateMessageValue() {
+        override fun getMessage(zone: ZoneType): LocalizedText? {
+            return when (zone) {
+                ZoneType.UP_ZONE -> up
+                ZoneType.DOWN_ZONE -> down
+                ZoneType.TRANSITION -> null // No message during transition
+            }
+        }
+    }
+}
+
+/**
+ * Gson TypeAdapter for StateMessageValue
+ * 
+ * Handles both JSON formats:
+ * 1. Single: { "ar": "...", "en": "..." }
+ * 2. Zone-specific: { "up": {...}, "down": {...} }
+ * 
+ * Detection logic:
+ * - If object has "up" or "down" keys → ZoneSpecific
+ * - Otherwise → Single (treat as LocalizedText)
+ */
+class StateMessageValueTypeAdapter : com.google.gson.TypeAdapter<StateMessageValue>() {
+    
+    private val gson = com.google.gson.Gson()
+    
+    override fun write(out: com.google.gson.stream.JsonWriter, value: StateMessageValue?) {
+        if (value == null) {
+            out.nullValue()
+            return
+        }
+        
+        when (value) {
+            is StateMessageValue.Single -> {
+                // Write as LocalizedText with audio URLs
+                out.beginObject()
+                out.name("ar").value(value.message.ar)
+                out.name("en").value(value.message.en)
+                value.message.audioAr?.let { out.name("audioAr").value(it) }
+                value.message.audioEn?.let { out.name("audioEn").value(it) }
+                out.endObject()
+            }
+            is StateMessageValue.ZoneSpecific -> {
+                // Write as zone-specific with audio URLs
+                out.beginObject()
+                value.up?.let { up ->
+                    out.name("up")
+                    out.beginObject()
+                    out.name("ar").value(up.ar)
+                    out.name("en").value(up.en)
+                    up.audioAr?.let { out.name("audioAr").value(it) }
+                    up.audioEn?.let { out.name("audioEn").value(it) }
+                    out.endObject()
+                }
+                value.down?.let { down ->
+                    out.name("down")
+                    out.beginObject()
+                    out.name("ar").value(down.ar)
+                    out.name("en").value(down.en)
+                    down.audioAr?.let { out.name("audioAr").value(it) }
+                    down.audioEn?.let { out.name("audioEn").value(it) }
+                    out.endObject()
+                }
+                out.endObject()
+            }
+        }
+    }
+    
+    override fun read(reader: com.google.gson.stream.JsonReader): StateMessageValue? {
+        if (reader.peek() == com.google.gson.stream.JsonToken.NULL) {
+            reader.nextNull()
+            return null
+        }
+        
+        // Parse as JsonObject first to inspect keys
+        val jsonElement = com.google.gson.JsonParser.parseReader(reader)
+        if (!jsonElement.isJsonObject) {
+            return null
+        }
+        
+        val jsonObject = jsonElement.asJsonObject
+        
+        // Check if it's zone-specific (has "up" or "down" keys)
+        return if (jsonObject.has("up") || jsonObject.has("down")) {
+            // Zone-specific format
+            val up = jsonObject.get("up")?.let { upElement ->
+                if (upElement.isJsonObject) {
+                    gson.fromJson(upElement, LocalizedText::class.java)
+                } else null
+            }
+            val down = jsonObject.get("down")?.let { downElement ->
+                if (downElement.isJsonObject) {
+                    gson.fromJson(downElement, LocalizedText::class.java)
+                } else null
+            }
+            StateMessageValue.ZoneSpecific(up = up, down = down)
+        } else {
+            // Single message format (LocalizedText)
+            val message = gson.fromJson(jsonObject, LocalizedText::class.java)
+            StateMessageValue.Single(message)
+        }
+    }
 }

@@ -20,6 +20,7 @@ import com.trainingvalidator.poc.training.loader.ExerciseLoader
 import com.trainingvalidator.poc.training.loader.WorkoutLoader
 // NOTE: DifficultyType has been REMOVED - quality is now assessed via JointState
 import com.trainingvalidator.poc.training.models.ExerciseConfig
+import com.trainingvalidator.poc.storage.ExerciseRepository
 import com.trainingvalidator.poc.training.models.WorkoutConfig
 import com.trainingvalidator.poc.training.session.PauseReason
 import com.trainingvalidator.poc.training.session.SessionState
@@ -159,6 +160,9 @@ class TrainingViewModel(
     /**
      * Load single exercise
      * 
+     * Attempts to load from ExerciseRepository first (for cached/synced exercises),
+     * falls back to bundled assets if not available.
+     * 
      * NOTE: difficultyStr is kept for API compatibility but is ignored.
      * Quality is now assessed via JointState (PERFECT/NORMAL/PAD/WARNING/DANGER).
      */
@@ -167,9 +171,29 @@ class TrainingViewModel(
         difficultyStr: String = "",  // Kept for API compatibility, ignored
         poseVariantIndex: Int = 0,
         targetRepsOverride: Int? = null,
-        targetDurationMsOverride: Long? = null
+        targetDurationMsOverride: Long? = null,
+        context: Context? = null  // Optional context for repository access
     ): Boolean {
-        val config = ExerciseLoader.load(assets, exerciseName)
+        // Try to load from repository first (has cached/synced data)
+        var config: ExerciseConfig? = null
+        
+        if (context != null) {
+            try {
+                val repository = ExerciseRepository.getInstance(context)
+                config = repository.getExercise(exerciseName)
+                if (config != null) {
+                    Log.d(TAG, "Loaded exercise from repository: $exerciseName")
+                }
+            } catch (e: Exception) {
+                Log.w(TAG, "Repository not available, falling back to assets", e)
+            }
+        }
+        
+        // Fall back to bundled assets
+        if (config == null) {
+            config = ExerciseLoader.load(assets, exerciseName)
+        }
+        
         if (config == null) {
             Log.e(TAG, "Failed to load exercise: $exerciseName")
             return false
@@ -202,23 +226,52 @@ class TrainingViewModel(
      * Load workout for hot-swap mode
      * 
      * NOTE: difficultyStr is kept for API compatibility but is ignored.
+     * 
+     * @param workoutName Name of the workout to load
+     * @param difficultyStr Ignored (legacy parameter)
+     * @param context Optional context for repository access (enables cached/synced data)
      */
-    fun loadWorkout(workoutName: String, difficultyStr: String = ""): Boolean {
-        val config = WorkoutLoader.load(assets, workoutName)
-        if (config == null) {
+    fun loadWorkout(
+        workoutName: String, 
+        difficultyStr: String = "",
+        context: Context? = null
+    ): Boolean {
+        val workoutConfig = WorkoutLoader.load(assets, workoutName)
+        if (workoutConfig == null) {
             Log.e(TAG, "Failed to load workout: $workoutName")
             return false
         }
         
-        _workoutConfig.value = config
+        _workoutConfig.value = workoutConfig
         _isWorkoutMode.value = true
         
-        // Load all exercises
-        val loadedExercises = config.exercises.mapIndexed { index, workoutExercise ->
-            val exerciseConfig = ExerciseLoader.load(assets, workoutExercise.exercise)
+        // Try to get repository for cached/synced exercises
+        val repository = context?.let {
+            try {
+                ExerciseRepository.getInstance(it)
+            } catch (e: Exception) {
+                Log.w(TAG, "Repository not available, falling back to assets", e)
+                null
+            }
+        }
+        
+        // Load all exercises (prioritize repository, fallback to assets)
+        val loadedExercises = workoutConfig.exercises.mapIndexed { index, workoutExercise ->
+            // Try repository first (has synced data with audio URLs)
+            var exerciseConfig = repository?.getExercise(workoutExercise.exercise)
+            
+            // Fallback to bundled assets
+            if (exerciseConfig == null) {
+                exerciseConfig = ExerciseLoader.load(assets, workoutExercise.exercise)
+            }
+            
             if (exerciseConfig == null) {
                 Log.e(TAG, "Failed to load exercise: ${workoutExercise.exercise}")
                 return@mapIndexed null
+            }
+            
+            if (repository != null) {
+                Log.d(TAG, "Loaded exercise from repository: ${workoutExercise.exercise}")
             }
             
             LoadedExercise(
@@ -226,7 +279,7 @@ class TrainingViewModel(
                 workoutExercise = workoutExercise,
                 round = 1,
                 indexInRound = index,
-                totalInRound = config.exercises.size,
+                totalInRound = workoutConfig.exercises.size,
                 maxRepsThisSession = null
             )
         }.filterNotNull()
@@ -239,7 +292,7 @@ class TrainingViewModel(
         // Create workout engine
         workoutTrainingEngine = WorkoutTrainingEngine(
             exercises = loadedExercises,
-            workoutConfig = config
+            workoutConfig = workoutConfig
         )
         
         // Set first exercise
@@ -251,14 +304,18 @@ class TrainingViewModel(
         // Notify supervisor
         supervisor.onExerciseLoaded()
         
-        Log.d(TAG, "Loaded workout: ${config.name.en} with ${loadedExercises.size} exercises")
+        Log.d(TAG, "Loaded workout: ${workoutConfig.name.en} with ${loadedExercises.size} exercises")
         return true
     }
     
     /**
      * Initialize feedback manager
+     * 
+     * @param context Android context
+     * @param isVideoMode Whether in video analysis mode
+     * @param useRepository If true, uses ExerciseRepository for audio caching support
      */
-    fun initializeFeedback(context: Context, isVideoMode: Boolean) {
+    fun initializeFeedback(context: Context, isVideoMode: Boolean, useRepository: Boolean = true) {
         _isVideoMode.value = isVideoMode
         supervisor.isVideoMode = isVideoMode
         
@@ -275,7 +332,21 @@ class TrainingViewModel(
         ).apply {
             this.isVideoMode = isVideoMode
         }
-        feedbackManager?.initialize()
+        
+        // Initialize with audio cache if using repository
+        if (useRepository) {
+            try {
+                val repository = ExerciseRepository.getInstance(context)
+                val audioCache = repository.getAudioCache()
+                feedbackManager?.initializeWithAudioCache(audioCache)
+                Log.d(TAG, "Feedback initialized with audio cache support")
+            } catch (e: Exception) {
+                Log.w(TAG, "Failed to initialize audio cache, falling back to TTS", e)
+                feedbackManager?.initialize()
+            }
+        } else {
+            feedbackManager?.initialize()
+        }
         
         // Configure random messages if engine already exists
         updateRandomMessagesFromEngine()

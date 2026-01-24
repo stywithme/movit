@@ -114,11 +114,23 @@
             "danger":  { "min": 0, "max": 30 }
           },
           "stateMessages": {
-            "perfect": { "ar": "ممتاز! زاوية مثالية", "en": "Perfect! Great angle" },
-            "normal": { "ar": "جيد، حاول النزول أكثر قليلاً", "en": "Good, try going a bit lower" },
-            "pad": { "ar": "مقبول، لكن يمكنك التحسن", "en": "Acceptable, but you can improve" },
-            "warning": { "ar": "أنت تنزل أكثر من اللازم", "en": "You're going too low" },
-            "danger": { "ar": "توقف! هذا قد يؤذي ركبتيك", "en": "Stop! This may hurt your knees" }
+            "perfect": {
+              "up": { "ar": "ممتاز! قف مستقيماً", "en": "Perfect! Stand tall" },
+              "down": { "ar": "ممتاز! زاوية مثالية", "en": "Perfect! Great angle" }
+            },
+            "normal": {
+              "up": { "ar": "جيد، حاول الوقوف بشكل مستقيم", "en": "Good, try standing straighter" },
+              "down": { "ar": "جيد، حاول النزول أكثر قليلاً", "en": "Good, try going a bit lower" }
+            },
+            "pad": {
+              "down": { "ar": "مقبول، لكن يمكنك التحسن", "en": "Acceptable, but you can improve" }
+            },
+            "warning": {
+              "down": { "ar": "أنت تنزل أكثر من اللازم", "en": "You're going too low" }
+            },
+            "danger": {
+              "down": { "ar": "توقف! هذا قد يؤذي ركبتيك", "en": "Stop! This may hurt your knees" }
+            }
           },
           "pairedWith": "right_knee"
         },
@@ -138,11 +150,23 @@
             "danger":  { "min": 0, "max": 30 }
           },
           "stateMessages": {
-            "perfect": { "ar": "ممتاز! زاوية مثالية", "en": "Perfect! Great angle" },
-            "normal": { "ar": "جيد، حاول النزول أكثر قليلاً", "en": "Good, try going a bit lower" },
-            "pad": { "ar": "مقبول، لكن يمكنك التحسن", "en": "Acceptable, but you can improve" },
-            "warning": { "ar": "أنت تنزل أكثر من اللازم", "en": "You're going too low" },
-            "danger": { "ar": "توقف! هذا قد يؤذي ركبتيك", "en": "Stop! This may hurt your knees" }
+            "perfect": {
+              "up": { "ar": "ممتاز! قف مستقيماً", "en": "Perfect! Stand tall" },
+              "down": { "ar": "ممتاز! زاوية مثالية", "en": "Perfect! Great angle" }
+            },
+            "normal": {
+              "up": { "ar": "جيد، حاول الوقوف بشكل مستقيم", "en": "Good, try standing straighter" },
+              "down": { "ar": "جيد، حاول النزول أكثر قليلاً", "en": "Good, try going a bit lower" }
+            },
+            "pad": {
+              "down": { "ar": "مقبول، لكن يمكنك التحسن", "en": "Acceptable, but you can improve" }
+            },
+            "warning": {
+              "down": { "ar": "أنت تنزل أكثر من اللازم", "en": "You're going too low" }
+            },
+            "danger": {
+              "down": { "ar": "توقف! هذا قد يؤذي ركبتيك", "en": "Stop! This may hurt your knees" }
+            }
           },
           "pairedWith": "left_knee"
         },

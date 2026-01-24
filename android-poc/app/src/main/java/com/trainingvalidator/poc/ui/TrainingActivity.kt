@@ -244,14 +244,16 @@ class TrainingActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetection
         
         // Load exercise or workout via ViewModel
         if (isWorkoutMode && workoutName != null) {
-            if (!viewModel.loadWorkout(workoutName, difficultyStr)) {
+            // Pass context to enable repository-based loading (cached/synced data with audio)
+            if (!viewModel.loadWorkout(workoutName, difficultyStr, context = this)) {
                 Toast.makeText(this, "Failed to load workout: $workoutName", Toast.LENGTH_LONG).show()
                 finish()
                 return
             }
         } else {
+            // Pass context to enable repository-based loading (cached/synced data)
             if (!viewModel.loadExercise(exerciseName, difficultyStr, poseVariantIndex, 
-                    targetRepsOverride, targetDurationOverride)) {
+                    targetRepsOverride, targetDurationOverride, context = this)) {
                 Toast.makeText(this, "Failed to load exercise: $exerciseName", Toast.LENGTH_LONG).show()
                 finish()
                 return

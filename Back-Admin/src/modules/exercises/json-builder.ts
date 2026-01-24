@@ -312,12 +312,23 @@ function parseRepCountingConfig(
 
 /**
  * Convert DB JSON to LocalizedText
+ * Preserves audio URLs if present
  */
 function toLocalizedText(json: Record<string, string> | null | undefined): LocalizedText {
-  return {
+  const result: LocalizedText = {
     ar: json?.ar ?? '',
     en: json?.en ?? '',
   };
+  
+  // Include audio URLs if present
+  if (json?.audioAr) {
+    result.audioAr = json.audioAr;
+  }
+  if (json?.audioEn) {
+    result.audioEn = json.audioEn;
+  }
+  
+  return result;
 }
 
 /**

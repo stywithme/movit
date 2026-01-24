@@ -22,6 +22,8 @@ import type {
 interface LocalizedText {
   ar: string;
   en: string;
+  audioAr?: string;
+  audioEn?: string;
 }
 
 interface PoseVariantInput {
@@ -262,7 +264,7 @@ export const exerciseService = {
       },
     });
 
-    // Create position checks
+    // Create position checks (errorMessage includes audio URLs)
     if (pv.positionChecks && pv.positionChecks.length > 0) {
       await prisma.positionCheck.createMany({
         data: pv.positionChecks.map((pc, idx) => ({
@@ -272,7 +274,12 @@ export const exerciseService = {
           landmarks: pc.landmarks as object,
           condition: pc.condition as object,
           activePhases: pc.activePhases,
-          errorMessage: pc.errorMessage as object,
+          errorMessage: {
+            ar: pc.errorMessage.ar,
+            en: pc.errorMessage.en,
+            audioAr: pc.errorMessage.audioAr || undefined,
+            audioEn: pc.errorMessage.audioEn || undefined,
+          },
           severity: pc.severity || 'warning',
           cooldownMs: pc.cooldownMs ?? 2000,
           minErrorFrames: pc.minErrorFrames ?? 3,
@@ -281,14 +288,18 @@ export const exerciseService = {
       });
     }
 
-    // Create feedback messages
+    // Create feedback messages (audio URLs are now part of message object)
     if (pv.feedbackMessages && pv.feedbackMessages.length > 0) {
       await prisma.feedbackMessage.createMany({
         data: pv.feedbackMessages.map((fm, idx) => ({
           poseVariantId: poseVariant.id,
           type: fm.type,
-          message: fm.message as object,
-          audioUrl: fm.audioUrl || undefined,
+          message: {
+            ar: fm.message.ar,
+            en: fm.message.en,
+            audioAr: fm.message.audioAr || undefined,
+            audioEn: fm.message.audioEn || undefined,
+          },
           sortOrder: fm.sortOrder ?? idx + 1,
         })),
       });

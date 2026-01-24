@@ -14,6 +14,23 @@ export type LocalizedText = {
 };
 
 /**
+ * Localized text with optional audio URLs
+ * Used for messages that support TTS generation
+ */
+export interface LocalizedTextWithAudio extends LocalizedText {
+  audioAr?: string;
+  audioEn?: string;
+}
+
+/**
+ * Audio URLs for localized content
+ */
+export interface LocalizedAudio {
+  ar?: string;
+  en?: string;
+}
+
+/**
  * Exercise status
  */
 export type ExerciseStatus = 'draft' | 'published';
@@ -104,6 +121,16 @@ export type PhaseName =
  * Joint state names (new state-based system)
  */
 export type JointStateName = 'perfect' | 'normal' | 'pad' | 'warning' | 'danger';
+
+/**
+ * Zone types for messages (up/down)
+ */
+export type ZoneType = 'up' | 'down';
+
+/**
+ * All zone types as array
+ */
+export const ZONE_TYPES: ZoneType[] = ['up', 'down'];
 
 /**
  * All joint state names as array (for iteration)
