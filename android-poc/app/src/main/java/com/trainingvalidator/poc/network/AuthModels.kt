@@ -82,3 +82,11 @@ data class UpdateSettingsRequest(
     val voiceFeedback: Boolean? = null,
     val notifications: Boolean? = null
 )
+
+data class GoogleAuthRequest(
+    val idToken: String,
+    val googleId: String,
+    val email: String,
+    val name: String,
+    val avatarUrl: String? = null
+)

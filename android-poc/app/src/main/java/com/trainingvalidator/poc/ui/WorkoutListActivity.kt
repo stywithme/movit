@@ -12,9 +12,14 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.trainingvalidator.poc.R
 import com.trainingvalidator.poc.databinding.ActivityWorkoutListBinding
+import com.trainingvalidator.poc.storage.WorkoutRepository
 import com.trainingvalidator.poc.training.loader.WorkoutLoader
 import com.trainingvalidator.poc.training.models.WorkoutConfig
 import com.trainingvalidator.poc.training.models.WorkoutType
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 /**
  * WorkoutListActivity - Shows available workout programs
@@ -55,18 +60,27 @@ class WorkoutListActivity : AppCompatActivity() {
     }
 
     private fun loadWorkouts() {
-        // Load all workouts from assets
-        val loaded = WorkoutLoader.loadAll(assets)
-        
-        if (loaded.isEmpty()) {
-            binding.layoutEmpty.visibility = View.VISIBLE
-            binding.rvWorkouts.visibility = View.GONE
-        } else {
-            workouts.clear()
-            workouts.addAll(loaded)
-            binding.rvWorkouts.adapter?.notifyDataSetChanged()
-            binding.layoutEmpty.visibility = View.GONE
-            binding.rvWorkouts.visibility = View.VISIBLE
+        // Load workouts from repository (cached from server or assets)
+        CoroutineScope(Dispatchers.Main).launch {
+            val repository = WorkoutRepository.getInstance(this@WorkoutListActivity)
+            
+            // Initialize repository if needed (loads from cache or assets)
+            withContext(Dispatchers.IO) {
+                repository.initialize()
+            }
+            
+            val loaded = repository.getAllWorkouts()
+            
+            if (loaded.isEmpty()) {
+                binding.layoutEmpty.visibility = View.VISIBLE
+                binding.rvWorkouts.visibility = View.GONE
+            } else {
+                workouts.clear()
+                workouts.addAll(loaded)
+                binding.rvWorkouts.adapter?.notifyDataSetChanged()
+                binding.layoutEmpty.visibility = View.GONE
+                binding.rvWorkouts.visibility = View.VISIBLE
+            }
         }
     }
 

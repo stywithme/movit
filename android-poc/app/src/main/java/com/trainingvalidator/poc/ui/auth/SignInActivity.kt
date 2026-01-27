@@ -9,6 +9,8 @@ import androidx.lifecycle.lifecycleScope
 import com.trainingvalidator.poc.R
 import com.trainingvalidator.poc.databinding.ActivitySignInBinding
 import com.trainingvalidator.poc.network.ApiClient
+import com.trainingvalidator.poc.network.GoogleAuthRequest
+import com.trainingvalidator.poc.network.GoogleSignInHelper
 import com.trainingvalidator.poc.network.LoginRequest
 import com.trainingvalidator.poc.storage.AuthManager
 import com.trainingvalidator.poc.ui.main.MainContainerActivity
@@ -134,9 +136,64 @@ class SignInActivity : AppCompatActivity() {
     }
 
     private fun signInWithGoogle() {
-        // Mock Google Sign In - In real implementation, use Firebase Auth or Google Sign-In API
-        Toast.makeText(this, getString(R.string.google_sign_in_coming_soon), Toast.LENGTH_SHORT)
-            .show()
+        if (!GoogleSignInHelper.isConfigured()) {
+            Toast.makeText(this, getString(R.string.google_sign_in_coming_soon), Toast.LENGTH_SHORT)
+                .show()
+            return
+        }
+
+        setLoading(true)
+        lifecycleScope.launch {
+            try {
+                val googleResult = GoogleSignInHelper.signIn(this@SignInActivity)
+                
+                if (googleResult == null) {
+                    Toast.makeText(
+                        this@SignInActivity,
+                        getString(R.string.error_auth_failed),
+                        Toast.LENGTH_SHORT
+                    ).show()
+                    return@launch
+                }
+
+                // Send to backend
+                val response = withContext(Dispatchers.IO) {
+                    ApiClient.authApi.googleAuth(
+                        GoogleAuthRequest(
+                            idToken = googleResult.idToken,
+                            googleId = googleResult.googleId,
+                            email = googleResult.email,
+                            name = googleResult.displayName,
+                            avatarUrl = googleResult.photoUrl
+                        )
+                    )
+                }
+
+                val body = response.body()
+                val authData = body?.data
+                if (response.isSuccessful && body?.success == true && authData != null) {
+                    AuthManager.saveAuthData(this@SignInActivity, authData)
+                    startActivity(Intent(this@SignInActivity, MainContainerActivity::class.java).apply {
+                        flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+                    })
+                    finish()
+                } else {
+                    Toast.makeText(
+                        this@SignInActivity,
+                        body?.error ?: getString(R.string.error_auth_failed),
+                        Toast.LENGTH_SHORT
+                    ).show()
+                }
+            } catch (e: Exception) {
+                Toast.makeText(
+                    this@SignInActivity,
+                    getString(R.string.error_auth_failed),
+                    Toast.LENGTH_SHORT
+                ).show()
+            } finally {
+                setLoading(false)
+            }
+        }
     }
 
     private fun setLoading(isLoading: Boolean) {

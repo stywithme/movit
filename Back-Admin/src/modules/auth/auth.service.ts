@@ -9,6 +9,7 @@
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import crypto from 'crypto';
+import { OAuth2Client } from 'google-auth-library';
 import { getPrisma } from '@/lib/prisma/client';
 import type {
   RegisterInput,
@@ -33,6 +34,54 @@ const RESET_TOKEN_EXPIRY_HOURS = 1;
 
 const JWT_SECRET = process.env.JWT_SECRET || 'your-super-secret-jwt-key-change-in-production';
 const JWT_REFRESH_SECRET = process.env.JWT_REFRESH_SECRET || 'your-super-secret-refresh-key-change-in-production';
+
+// Google OAuth Client ID (Web Client ID from Google Cloud Console)
+const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID || '';
+const googleClient = new OAuth2Client(GOOGLE_CLIENT_ID);
+
+// ============================================
+// GOOGLE TOKEN VERIFICATION
+// ============================================
+
+interface GoogleTokenPayload {
+  sub: string; // Google user ID
+  email: string;
+  name: string;
+  picture?: string;
+  email_verified: boolean;
+}
+
+/**
+ * Verify Google ID token and extract user data
+ */
+async function verifyGoogleToken(idToken: string): Promise<GoogleTokenPayload | null> {
+  // Skip verification if no client ID configured (development mode)
+  if (!GOOGLE_CLIENT_ID) {
+    console.warn('GOOGLE_CLIENT_ID not configured - skipping token verification');
+    return null;
+  }
+
+  try {
+    const ticket = await googleClient.verifyIdToken({
+      idToken,
+      audience: GOOGLE_CLIENT_ID,
+    });
+    
+    const payload = ticket.getPayload();
+    if (!payload) return null;
+
+    return {
+      sub: payload.sub,
+      email: payload.email || '',
+      name: payload.name || 'User',
+      picture: payload.picture,
+      email_verified: payload.email_verified || false,
+    };
+  } catch (error) {
+    console.error('Google token verification failed:', error);
+    return null;
+  }
+}
 
 // ============================================
 // HELPERS
@@ -210,9 +259,37 @@ export const authService = {
 
   /**
    * Google OAuth login/register
+   * 
+   * @param idToken - Google ID token from client (optional if googleId/email/name provided)
+   * @param googleId - Google user ID (sub claim)
+   * @param email - User email
+   * @param name - User display name
+   * @param avatarUrl - Profile picture URL
+   * @param deviceInfo - Device info for session tracking
    */
-  async googleAuth(googleId: string, email: string, name: string, avatarUrl?: string, deviceInfo?: string): Promise<AuthResponse> {
+  async googleAuth(
+    idToken: string | undefined,
+    googleId: string,
+    email: string,
+    name: string,
+    avatarUrl?: string,
+    deviceInfo?: string
+  ): Promise<AuthResponse> {
     const prisma = await getPrisma();
+
+    // If idToken provided and GOOGLE_CLIENT_ID configured, verify the token
+    if (idToken && GOOGLE_CLIENT_ID) {
+      const verified = await verifyGoogleToken(idToken);
+      if (verified) {
+        // Use verified data instead of client-provided data
+        googleId = verified.sub;
+        email = verified.email;
+        name = verified.name;
+        avatarUrl = verified.picture || avatarUrl;
+      } else {
+        throw new Error('Invalid Google token');
+      }
+    }
 
     // Find or create user
     let user = await prisma.user.findFirst({

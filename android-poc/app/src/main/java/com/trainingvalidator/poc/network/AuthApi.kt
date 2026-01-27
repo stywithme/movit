@@ -24,6 +24,11 @@ interface AuthApi {
         @Body request: LoginRequest
     ): Response<AuthApiResponse<AuthData>>
 
+    @POST("api/mobile/auth/google")
+    suspend fun googleAuth(
+        @Body request: GoogleAuthRequest
+    ): Response<AuthApiResponse<AuthData>>
+
     @POST("api/mobile/auth/refresh")
     suspend fun refreshToken(
         @Body request: RefreshTokenRequest

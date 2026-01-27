@@ -9,6 +9,8 @@ import androidx.lifecycle.lifecycleScope
 import com.trainingvalidator.poc.R
 import com.trainingvalidator.poc.databinding.ActivitySignUpBinding
 import com.trainingvalidator.poc.network.ApiClient
+import com.trainingvalidator.poc.network.GoogleAuthRequest
+import com.trainingvalidator.poc.network.GoogleSignInHelper
 import com.trainingvalidator.poc.network.RegisterRequest
 import com.trainingvalidator.poc.storage.AuthManager
 import com.trainingvalidator.poc.ui.main.MainContainerActivity
@@ -151,9 +153,65 @@ class SignUpActivity : AppCompatActivity() {
     }
 
     private fun signUpWithGoogle() {
-        // Mock Google Sign Up
-        Toast.makeText(this, getString(R.string.google_sign_up_coming_soon), Toast.LENGTH_SHORT)
-            .show()
+        if (!GoogleSignInHelper.isConfigured()) {
+            Toast.makeText(this, getString(R.string.google_sign_up_coming_soon), Toast.LENGTH_SHORT)
+                .show()
+            return
+        }
+
+        setLoading(true)
+        lifecycleScope.launch {
+            try {
+                val googleResult = GoogleSignInHelper.signIn(this@SignUpActivity)
+                
+                if (googleResult == null) {
+                    Toast.makeText(
+                        this@SignUpActivity,
+                        getString(R.string.error_auth_failed),
+                        Toast.LENGTH_SHORT
+                    ).show()
+                    return@launch
+                }
+
+                // Send to backend (same endpoint for login/register with Google)
+                val response = withContext(Dispatchers.IO) {
+                    ApiClient.authApi.googleAuth(
+                        GoogleAuthRequest(
+                            idToken = googleResult.idToken,
+                            googleId = googleResult.googleId,
+                            email = googleResult.email,
+                            name = googleResult.displayName,
+                            avatarUrl = googleResult.photoUrl
+                        )
+                    )
+                }
+
+                val body = response.body()
+                val authData = body?.data
+                if (response.isSuccessful && body?.success == true && authData != null) {
+                    AuthManager.saveAuthData(this@SignUpActivity, authData)
+                    Toast.makeText(this@SignUpActivity, getString(R.string.success), Toast.LENGTH_SHORT).show()
+                    startActivity(Intent(this@SignUpActivity, MainContainerActivity::class.java).apply {
+                        flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+                    })
+                    finish()
+                } else {
+                    Toast.makeText(
+                        this@SignUpActivity,
+                        body?.error ?: getString(R.string.error_auth_failed),
+                        Toast.LENGTH_SHORT
+                    ).show()
+                }
+            } catch (e: Exception) {
+                Toast.makeText(
+                    this@SignUpActivity,
+                    getString(R.string.error_auth_failed),
+                    Toast.LENGTH_SHORT
+                ).show()
+            } finally {
+                setLoading(false)
+            }
+        }
     }
 
     private fun setLoading(isLoading: Boolean) {

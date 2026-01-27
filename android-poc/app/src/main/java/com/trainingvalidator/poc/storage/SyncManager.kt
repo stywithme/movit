@@ -39,7 +39,8 @@ import java.net.UnknownHostException
 class SyncManager(
     private val context: Context,
     private val exerciseCache: ExerciseCacheManager,
-    private val audioCache: AudioCacheManager
+    private val audioCache: AudioCacheManager,
+    private val workoutCache: WorkoutCacheManager? = null
 ) {
     
     companion object {
@@ -65,6 +66,8 @@ class SyncManager(
         data class Success(
             val exercisesUpdated: Int,
             val exercisesDeleted: Int,
+            val workoutsUpdated: Int = 0,
+            val workoutsDeleted: Int = 0,
             val audioFilesDownloaded: Int,
             val isFullSync: Boolean
         ) : SyncResult()
@@ -255,11 +258,16 @@ class SyncManager(
         val meta = response.meta
         
         val exercises = data.exercises
-        val deletedIds = data.deletedExerciseIds
+        val deletedExerciseIds = data.deletedExerciseIds
+        val workouts = data.workouts
+        val deletedWorkoutIds = data.deletedWorkoutIds
         val audioManifest = data.audioManifest
         
         // Check if there are any changes
-        if (exercises.isEmpty() && deletedIds.isEmpty()) {
+        val hasExerciseChanges = exercises.isNotEmpty() || deletedExerciseIds.isNotEmpty()
+        val hasWorkoutChanges = workouts.isNotEmpty() || deletedWorkoutIds.isNotEmpty()
+        
+        if (!hasExerciseChanges && !hasWorkoutChanges) {
             Log.d(TAG, "No changes since last sync")
             
             // Still update timestamp
@@ -275,14 +283,39 @@ class SyncManager(
         }
         
         // Save exercises
-        exerciseCache.saveExercises(exercises, isFullSync)
-        
-        // Remove deleted exercises
-        if (deletedIds.isNotEmpty()) {
-            exerciseCache.removeExercises(deletedIds)
+        if (hasExerciseChanges) {
+            exerciseCache.saveExercises(exercises, isFullSync)
+            
+            // Remove deleted exercises
+            if (deletedExerciseIds.isNotEmpty()) {
+                exerciseCache.removeExercises(deletedExerciseIds)
+            }
         }
         
-        // Save metadata
+        // Save workouts
+        var workoutsUpdatedCount = 0
+        var workoutsDeletedCount = 0
+        if (hasWorkoutChanges && workoutCache != null) {
+            workoutCache.saveWorkouts(workouts, isFullSync)
+            workoutsUpdatedCount = workouts.size
+            
+            // Remove deleted workouts
+            if (deletedWorkoutIds.isNotEmpty()) {
+                workoutCache.removeWorkouts(deletedWorkoutIds)
+                workoutsDeletedCount = deletedWorkoutIds.size
+            }
+            
+            // Save workout metadata
+            if (meta != null) {
+                workoutCache.saveMetadata(
+                    timestamp = response.timestamp,
+                    workoutCount = meta.totalWorkouts,
+                    serverVersion = meta.serverVersion
+                )
+            }
+        }
+        
+        // Save exercise metadata
         if (meta != null) {
             exerciseCache.saveMetadata(
                 timestamp = response.timestamp,
@@ -300,11 +333,14 @@ class SyncManager(
             Log.d(TAG, "Audio manifest stored: ${audioManifest.files.size} files pending download (baseUrl: $lastAudioBaseUrl)")
         }
         
-        Log.d(TAG, "Sync complete: ${exercises.size} updated, ${deletedIds.size} deleted")
+        Log.d(TAG, "Sync complete: ${exercises.size} exercises updated, ${deletedExerciseIds.size} deleted, " +
+                   "$workoutsUpdatedCount workouts updated, $workoutsDeletedCount deleted")
         
         return SyncResult.Success(
             exercisesUpdated = exercises.size,
-            exercisesDeleted = deletedIds.size,
+            exercisesDeleted = deletedExerciseIds.size,
+            workoutsUpdated = workoutsUpdatedCount,
+            workoutsDeleted = workoutsDeletedCount,
             audioFilesDownloaded = 0, // Audio download is now separate
             isFullSync = isFullSync
         )
@@ -329,13 +365,16 @@ class SyncManager(
      * Get sync status for UI display
      */
     fun getSyncStatus(): SyncStatus {
-        val cacheStats = exerciseCache.getCacheStats()
+        val exerciseCacheStats = exerciseCache.getCacheStats()
+        val workoutCacheStats = workoutCache?.getCacheStats()
         
         return SyncStatus(
             hasExercises = exerciseCache.hasExercises(),
-            exerciseCount = cacheStats.exerciseCount,
-            lastSyncTimestamp = cacheStats.lastSyncTimestamp,
-            serverVersion = cacheStats.serverVersion,
+            exerciseCount = exerciseCacheStats.exerciseCount,
+            hasWorkouts = workoutCache?.hasWorkouts() ?: false,
+            workoutCount = workoutCacheStats?.workoutCount ?: 0,
+            lastSyncTimestamp = exerciseCacheStats.lastSyncTimestamp,
+            serverVersion = exerciseCacheStats.serverVersion,
             isSyncing = isSyncing
         )
     }
@@ -343,6 +382,8 @@ class SyncManager(
     data class SyncStatus(
         val hasExercises: Boolean,
         val exerciseCount: Int,
+        val hasWorkouts: Boolean = false,
+        val workoutCount: Int = 0,
         val lastSyncTimestamp: String?,
         val serverVersion: String?,
         val isSyncing: Boolean

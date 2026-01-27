@@ -3,10 +3,11 @@
  * =================
  * 
  * Types for the mobile sync API that enables incremental and full
- * synchronization of exercises with the Android app.
+ * synchronization of exercises and workouts with the Android app.
  */
 
 import type { ExerciseConfig } from '@/lib/types/android-schema';
+import type { WorkoutExport } from '@/modules/workouts/workouts.types';
 
 // ============================================
 // REQUEST TYPES
@@ -49,6 +50,16 @@ export interface SyncData {
   deletedExerciseIds: string[];
   
   /**
+   * List of workouts (Super Sets / Circuits)
+   */
+  workouts: WorkoutExport[];
+  
+  /**
+   * IDs of workouts that were deleted since last sync
+   */
+  deletedWorkoutIds: string[];
+  
+  /**
    * Audio files manifest for download
    */
   audioManifest: AudioManifest;
@@ -78,6 +89,11 @@ export interface SyncMeta {
   totalExercises: number;
   
   /**
+   * Total number of published workouts
+   */
+  totalWorkouts: number;
+  
+  /**
    * Whether this is a full sync or incremental
    */
   isFullSync: boolean;
@@ -91,6 +107,11 @@ export interface SyncMeta {
    * Number of exercises in this response
    */
   exercisesInResponse: number;
+  
+  /**
+   * Number of workouts in this response
+   */
+  workoutsInResponse: number;
 }
 
 // ============================================

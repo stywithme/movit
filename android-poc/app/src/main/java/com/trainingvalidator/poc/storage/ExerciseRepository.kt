@@ -58,7 +58,15 @@ class ExerciseRepository private constructor(private val context: Context) {
     // Cache managers
     private val exerciseCache = ExerciseCacheManager(context)
     private val audioCache = AudioCacheManager(context)
-    private val syncManager = SyncManager(context, exerciseCache, audioCache)
+    
+    // Get workout cache from WorkoutRepository for unified sync
+    private val workoutCache: WorkoutCacheManager by lazy {
+        WorkoutRepository.getInstance(context).getCacheManager()
+    }
+    
+    private val syncManager: SyncManager by lazy {
+        SyncManager(context, exerciseCache, audioCache, workoutCache)
+    }
     
     // State flows for UI observation
     private val _isLoading = MutableStateFlow(false)
@@ -108,9 +116,16 @@ class ExerciseRepository private constructor(private val context: Context) {
                 _lastSyncResult.value = result
                 
                 // Reload if sync was successful
-                if (result is SyncManager.SyncResult.Success && result.exercisesUpdated > 0) {
-                    loadFromCache()
-                    Log.d(TAG, "Reloaded ${_exercises.value.size} exercises after sync")
+                if (result is SyncManager.SyncResult.Success) {
+                    if (result.exercisesUpdated > 0) {
+                        loadFromCache()
+                        Log.d(TAG, "Reloaded ${_exercises.value.size} exercises after sync")
+                    }
+                    // Reload workouts if updated
+                    if (result.workoutsUpdated > 0) {
+                        WorkoutRepository.getInstance(context).reloadFromCache()
+                        Log.d(TAG, "Triggered workout reload after sync")
+                    }
                 }
                 
                 // Start background audio download (non-blocking)
@@ -215,6 +230,12 @@ class ExerciseRepository private constructor(private val context: Context) {
                 loadFromCache()
                 Log.d(TAG, "Reloaded ${_exercises.value.size} exercises after refresh")
                 
+                // Reload workouts if updated
+                if (result.workoutsUpdated > 0) {
+                    WorkoutRepository.getInstance(context).reloadFromCache()
+                    Log.d(TAG, "Triggered workout reload after refresh")
+                }
+                
                 // Download new audio files (non-blocking background task)
                 if (syncManager.hasPendingAudioDownloads()) {
                     kotlinx.coroutines.GlobalScope.launch(Dispatchers.IO) {
@@ -244,9 +265,16 @@ class ExerciseRepository private constructor(private val context: Context) {
         val result = syncManager.syncIfNeeded(forceCheck = true)
         _lastSyncResult.value = result
         
-        if (result is SyncManager.SyncResult.Success && result.exercisesUpdated > 0) {
-            loadFromCache()
-            Log.d(TAG, "Reloaded ${_exercises.value.size} exercises after update check")
+        if (result is SyncManager.SyncResult.Success) {
+            if (result.exercisesUpdated > 0) {
+                loadFromCache()
+                Log.d(TAG, "Reloaded ${_exercises.value.size} exercises after update check")
+            }
+            // Reload workouts if updated
+            if (result.workoutsUpdated > 0) {
+                WorkoutRepository.getInstance(context).reloadFromCache()
+                Log.d(TAG, "Triggered workout reload after update check")
+            }
         }
         
         // Download any new audio files

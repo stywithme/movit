@@ -1,5 +1,8 @@
 import { PrismaClient } from '../src/generated/prisma/client.js';
 import { PrismaPg } from '@prisma/adapter-pg';
+import bcrypt from 'bcryptjs';
+import * as fs from 'fs/promises';
+import * as path from 'path';
 
 if (!process.env.DATABASE_URL) {
   throw new Error('DATABASE_URL is not set in environment variables');
@@ -12,6 +15,84 @@ const adapter = new PrismaPg({
 
 // Create PrismaClient with adapter
 const prisma = new PrismaClient({ adapter });
+
+const categoryCodeMap: Record<string, string> = {
+  glutes: 'legs',
+};
+
+const muscleCodeMap: Record<string, string> = {
+  chest: 'chest_muscle',
+  shoulders: 'front_delts',
+  arms: 'biceps',
+  back: 'lats',
+  core: 'abs_muscle',
+  abs: 'abs_muscle',
+  deltoids: 'side_delts',
+  trapezius: 'traps',
+  upper_chest: 'chest_muscle',
+  soleus: 'calves',
+};
+
+const muscleNameMap: Record<string, { ar: string; en: string }> = {
+  chest: { ar: 'الصدر', en: 'Chest' },
+  shoulders: { ar: 'الأكتاف', en: 'Shoulders' },
+  arms: { ar: 'الذراعين', en: 'Arms' },
+  back: { ar: 'الظهر', en: 'Back' },
+  core: { ar: 'الجذع', en: 'Core' },
+  abs: { ar: 'البطن', en: 'Abs' },
+  deltoids: { ar: 'الدالية', en: 'Deltoids' },
+  trapezius: { ar: 'شبه المنحرفة', en: 'Trapezius' },
+  upper_chest: { ar: 'الصدر العلوي', en: 'Upper Chest' },
+  soleus: { ar: 'عضلة النعلية', en: 'Soleus' },
+};
+
+const equipmentNameMap: Record<string, { ar: string; en: string }> = {
+  cable_machine: { ar: 'جهاز الكابلات', en: 'Cable Machine' },
+  chair: { ar: 'كرسي', en: 'Chair' },
+  parallel_bars: { ar: 'متوازي', en: 'Parallel Bars' },
+  smith_machine: { ar: 'جهاز سميث', en: 'Smith Machine' },
+};
+
+const tagNameMap: Record<string, { ar: string; en: string }> = {
+  compound: { ar: 'مركب', en: 'Compound' },
+  upper_body: { ar: 'الجزء العلوي', en: 'Upper Body' },
+  lower_body: { ar: 'الجزء السفلي', en: 'Lower Body' },
+  full_body: { ar: 'الجسم بالكامل', en: 'Full Body' },
+  no_equipment: { ar: 'بدون معدات', en: 'No Equipment' },
+  bodyweight: { ar: 'وزن الجسم', en: 'Bodyweight' },
+  isolation: { ar: 'عزل', en: 'Isolation' },
+  isometric: { ar: 'ثابت', en: 'Isometric' },
+  endurance: { ar: 'تحمل', en: 'Endurance' },
+  strength: { ar: 'قوة', en: 'Strength' },
+  functional: { ar: 'وظيفي', en: 'Functional' },
+  balance: { ar: 'توازن', en: 'Balance' },
+  unilateral: { ar: 'أحادي', en: 'Unilateral' },
+  left: { ar: 'يسار', en: 'Left' },
+  right: { ar: 'يمين', en: 'Right' },
+  beginner_friendly: { ar: 'مناسب للمبتدئين', en: 'Beginner Friendly' },
+  easy: { ar: 'سهل', en: 'Easy' },
+  rehab: { ar: 'تأهيل', en: 'Rehab' },
+  desk: { ar: 'مكتب', en: 'Desk' },
+  test: { ar: 'اختبار', en: 'Test' },
+  hold: { ar: 'ثبات', en: 'Hold' },
+  core: { ar: 'جذع', en: 'Core' },
+  shoulders: { ar: 'أكتاف', en: 'Shoulders' },
+  back: { ar: 'ظهر', en: 'Back' },
+};
+
+function toTitleCase(value: string): string {
+  return value
+    .replace(/[_-]+/g, ' ')
+    .replace(/\b\w/g, (char) => char.toUpperCase())
+    .trim();
+}
+
+function buildLocalizedName(code: string, map?: Record<string, { ar: string; en: string }>) {
+  const normalized = code.replace(/-/g, '_');
+  if (map && map[normalized]) return map[normalized];
+  const title = toTitleCase(normalized);
+  return { ar: title, en: title };
+}
 
 async function main() {
   console.log('🌱 Seeding database...');
@@ -50,6 +131,7 @@ async function main() {
   const categoryAttr = await prisma.attribute.findUnique({ where: { code: 'category' } });
   const muscleAttr = await prisma.attribute.findUnique({ where: { code: 'muscle' } });
   const equipmentAttr = await prisma.attribute.findUnique({ where: { code: 'equipment' } });
+  const tagAttr = await prisma.attribute.findUnique({ where: { code: 'tag' } });
   const countingMethodAttr = await prisma.attribute.findUnique({ where: { code: 'counting_method' } });
   const difficultyTypeAttr = await prisma.attribute.findUnique({ where: { code: 'difficulty_type' } });
   const jointAttr = await prisma.attribute.findUnique({ where: { code: 'joint' } });
@@ -389,6 +471,398 @@ async function main() {
   }
 
   console.log('✅ Camera positions created');
+
+  // ============================================
+  // EXERCISES & WORKOUTS (Android Assets)
+  // ============================================
+
+  const assetsDir = path.resolve(__dirname, '../../android-poc/app/src/main/assets');
+  const exercisesDir = path.join(assetsDir, 'exercises');
+  const workoutsDir = path.join(assetsDir, 'workouts');
+
+  const attributeValues = await prisma.attributeValue.findMany();
+  const attributeValueByCode = new Map(attributeValues.map((value) => [value.code, value]));
+
+  if (!categoryAttr || !muscleAttr || !equipmentAttr || !tagAttr || !countingMethodAttr) {
+    throw new Error('Required attributes are missing');
+  }
+
+  const ensureAttributeValue = async (
+    attributeId: string,
+    code: string,
+    name: { ar: string; en: string }
+  ) => {
+    const existing = attributeValueByCode.get(code);
+    if (existing) return existing;
+    const created = await prisma.attributeValue.upsert({
+      where: { code },
+      update: { name },
+      create: { code, name, attributeId, sortOrder: 999 },
+    });
+    attributeValueByCode.set(code, created);
+    return created;
+  };
+
+  const resolveTagCode = (rawCode: string) => {
+    const normalized = rawCode.replace(/-/g, '_');
+    const existing = attributeValueByCode.get(normalized);
+    if (!existing) return normalized;
+    if (existing.attributeId === tagAttr.id) return normalized;
+    return `tag_${normalized}`;
+  };
+
+  const cameraPositions = await prisma.cameraPosition.findMany({
+    where: { schemaCode: { in: ['side_view', 'front_view', 'back_view'] } },
+    orderBy: { sortOrder: 'asc' },
+  });
+  const cameraBySchema = new Map<string, string>();
+  for (const camera of cameraPositions) {
+    if (!camera.schemaCode) continue;
+    if (!cameraBySchema.has(camera.schemaCode)) {
+      cameraBySchema.set(camera.schemaCode, camera.id);
+    }
+  }
+
+  const exerciseFiles = (await fs.readdir(exercisesDir)).filter((file) => file.endsWith('.json'));
+
+  for (const file of exerciseFiles) {
+    const filePath = path.join(exercisesDir, file);
+    const raw = await fs.readFile(filePath, 'utf8');
+    const exerciseJson = JSON.parse(raw) as {
+      name: { ar: string; en: string };
+      description?: { ar: string; en: string };
+      instructions?: { ar: string; en: string };
+      category: { code: string; name: { ar: string; en: string } };
+      countingMethod: string;
+      muscles?: string[];
+      equipment?: string[];
+      tags?: string[];
+      repCountingConfig?: Record<string, unknown>;
+      poseVariants?: Array<{
+        name: { ar: string; en: string };
+        cameraPosition: string;
+        expectedFacingDirection?: string;
+        trackedJoints?: unknown[];
+        positionChecks?: Array<{
+          id: string;
+          type: string;
+          landmarks: Record<string, unknown>;
+          condition: Record<string, unknown>;
+          activePhases?: string[];
+          errorMessage: { ar: string; en: string };
+          severity?: string;
+          cooldownMs?: number;
+          minErrorFrames?: number;
+        }>;
+        feedbackMessages?: {
+          motivational?: Array<{ ar: string; en: string }>;
+          tips?: Array<{ ar: string; en: string }>;
+        };
+      }>;
+    };
+
+    const slug = path.basename(file, '.json');
+    const categoryCode = categoryCodeMap[exerciseJson.category.code] || exerciseJson.category.code;
+    const categoryValue = await ensureAttributeValue(
+      categoryAttr.id,
+      categoryCode,
+      exerciseJson.category.name
+    );
+
+    const countingMethodValue = attributeValueByCode.get(exerciseJson.countingMethod);
+    if (!countingMethodValue || countingMethodValue.attributeId !== countingMethodAttr.id) {
+      throw new Error(`Counting method not found for ${exerciseJson.countingMethod}`);
+    }
+
+    const exerciseRecord = await prisma.exercise.upsert({
+      where: { slug },
+      update: {
+        name: exerciseJson.name,
+        description: exerciseJson.description || undefined,
+        instructions: exerciseJson.instructions || undefined,
+        categoryId: categoryValue.id,
+        countingMethodId: countingMethodValue.id,
+        repCountingConfig: (exerciseJson.repCountingConfig as object) || undefined,
+        status: 'published',
+        publishedAt: new Date(),
+      },
+      create: {
+        slug,
+        name: exerciseJson.name,
+        description: exerciseJson.description || undefined,
+        instructions: exerciseJson.instructions || undefined,
+        categoryId: categoryValue.id,
+        countingMethodId: countingMethodValue.id,
+        repCountingConfig: (exerciseJson.repCountingConfig as object) || undefined,
+        status: 'published',
+        publishedAt: new Date(),
+      },
+    });
+
+    const muscleIds: string[] = [];
+    for (const rawCode of exerciseJson.muscles || []) {
+      const normalized = rawCode.replace(/-/g, '_');
+      const resolved = muscleCodeMap[normalized] || normalized;
+      const existing = attributeValueByCode.get(resolved);
+      if (existing) {
+        if (existing.attributeId !== muscleAttr.id) {
+          console.warn(`Skipping muscle code due to conflict: ${resolved}`);
+          continue;
+        }
+        muscleIds.push(existing.id);
+        continue;
+      }
+
+      const created = await ensureAttributeValue(
+        muscleAttr.id,
+        resolved,
+        buildLocalizedName(normalized, muscleNameMap)
+      );
+      muscleIds.push(created.id);
+    }
+
+    const equipmentIds: string[] = [];
+    for (const rawCode of exerciseJson.equipment || []) {
+      const normalized = rawCode.replace(/-/g, '_');
+      const existing = attributeValueByCode.get(normalized);
+      if (existing) {
+        if (existing.attributeId !== equipmentAttr.id) {
+          console.warn(`Skipping equipment code due to conflict: ${normalized}`);
+          continue;
+        }
+        equipmentIds.push(existing.id);
+        continue;
+      }
+
+      const created = await ensureAttributeValue(
+        equipmentAttr.id,
+        normalized,
+        buildLocalizedName(normalized, equipmentNameMap)
+      );
+      equipmentIds.push(created.id);
+    }
+
+    const tagIds: string[] = [];
+    for (const rawCode of exerciseJson.tags || []) {
+      const normalized = rawCode.replace(/-/g, '_');
+      const tagCode = resolveTagCode(normalized);
+      const existing = attributeValueByCode.get(tagCode);
+      if (existing) {
+        if (existing.attributeId !== tagAttr.id) {
+          console.warn(`Skipping tag code due to conflict: ${tagCode}`);
+          continue;
+        }
+        tagIds.push(existing.id);
+        continue;
+      }
+
+      const created = await ensureAttributeValue(
+        tagAttr.id,
+        tagCode,
+        buildLocalizedName(normalized, tagNameMap)
+      );
+      tagIds.push(created.id);
+    }
+
+    await prisma.exerciseAttribute.deleteMany({
+      where: { exerciseId: exerciseRecord.id },
+    });
+
+    const attributeIds = [...new Set([...muscleIds, ...equipmentIds, ...tagIds])];
+    if (attributeIds.length > 0) {
+      await prisma.exerciseAttribute.createMany({
+        data: attributeIds.map((attributeValueId) => ({
+          exerciseId: exerciseRecord.id,
+          attributeValueId,
+        })),
+        skipDuplicates: true,
+      });
+    }
+
+    await prisma.poseVariant.deleteMany({
+      where: { exerciseId: exerciseRecord.id },
+    });
+
+    for (let pvIndex = 0; pvIndex < (exerciseJson.poseVariants || []).length; pvIndex++) {
+      const variant = exerciseJson.poseVariants![pvIndex];
+      const cameraPositionId = cameraBySchema.get(variant.cameraPosition);
+      if (!cameraPositionId) {
+        throw new Error(`Camera position not found for ${variant.cameraPosition}`);
+      }
+
+      const poseVariant = await prisma.poseVariant.create({
+        data: {
+          exerciseId: exerciseRecord.id,
+          cameraPositionId,
+          name: variant.name,
+          expectedFacingDirection: variant.expectedFacingDirection || 'auto_detect',
+          trackedJointsConfig: (variant.trackedJoints as object) || undefined,
+          sortOrder: pvIndex + 1,
+        },
+      });
+
+      if (variant.positionChecks && variant.positionChecks.length > 0) {
+        await prisma.positionCheck.createMany({
+          data: variant.positionChecks.map((check, index) => ({
+            poseVariantId: poseVariant.id,
+            checkId: check.id,
+            type: check.type,
+            landmarks: check.landmarks as object,
+            condition: check.condition as object,
+            activePhases: check.activePhases || [],
+            errorMessage: check.errorMessage,
+            severity: check.severity || 'warning',
+            cooldownMs: check.cooldownMs ?? 2000,
+            minErrorFrames: check.minErrorFrames ?? 3,
+            sortOrder: index + 1,
+          })),
+        });
+      }
+
+      const feedbackMessages = variant.feedbackMessages || {};
+      const motivational = feedbackMessages.motivational || [];
+      const tips = feedbackMessages.tips || [];
+      const feedbackData = [
+        ...motivational.map((msg, index) => ({
+          poseVariantId: poseVariant.id,
+          type: 'motivational',
+          message: msg,
+          sortOrder: index + 1,
+        })),
+        ...tips.map((msg, index) => ({
+          poseVariantId: poseVariant.id,
+          type: 'tip',
+          message: msg,
+          sortOrder: motivational.length + index + 1,
+        })),
+      ];
+
+      if (feedbackData.length > 0) {
+        await prisma.feedbackMessage.createMany({
+          data: feedbackData,
+        });
+      }
+    }
+  }
+
+  console.log('✅ Exercises seeded from assets');
+
+  const workoutFiles = (await fs.readdir(workoutsDir)).filter((file) => file.endsWith('.json'));
+
+  for (const file of workoutFiles) {
+    const filePath = path.join(workoutsDir, file);
+    const raw = await fs.readFile(filePath, 'utf8');
+    const workoutJson = JSON.parse(raw) as {
+      name: { ar: string; en: string };
+      description?: { ar: string; en: string };
+      type: 'circuit' | 'super_set';
+      executionMode: 'sequential' | 'alternating';
+      repsPerSwitch?: number;
+      restBetweenSwitchMs?: number;
+      restBetweenExercisesMs?: number;
+      restBetweenRoundsMs?: number;
+      rounds?: number;
+      exercises: Array<{
+        exercise: string;
+        variantIndex?: number;
+        difficulty?: 'beginner' | 'normal' | 'advanced';
+        target?: { reps?: number; durationSec?: number };
+        notes?: { ar: string; en: string };
+      }>;
+    };
+
+    const slug = path.basename(file, '.json');
+
+    const workoutRecord = await prisma.workout.upsert({
+      where: { slug },
+      update: {
+        name: workoutJson.name,
+        description: workoutJson.description || undefined,
+        type: workoutJson.type,
+        executionMode: workoutJson.executionMode,
+        rounds: workoutJson.rounds ?? 1,
+        repsPerSwitch: workoutJson.repsPerSwitch ?? undefined,
+        restBetweenSwitchMs: workoutJson.restBetweenSwitchMs ?? undefined,
+        restBetweenExercisesMs: workoutJson.restBetweenExercisesMs ?? undefined,
+        restBetweenRoundsMs: workoutJson.restBetweenRoundsMs ?? 60000,
+        status: 'published',
+        publishedAt: new Date(),
+      },
+      create: {
+        slug,
+        name: workoutJson.name,
+        description: workoutJson.description || undefined,
+        type: workoutJson.type,
+        executionMode: workoutJson.executionMode,
+        rounds: workoutJson.rounds ?? 1,
+        repsPerSwitch: workoutJson.repsPerSwitch ?? undefined,
+        restBetweenSwitchMs: workoutJson.restBetweenSwitchMs ?? undefined,
+        restBetweenExercisesMs: workoutJson.restBetweenExercisesMs ?? undefined,
+        restBetweenRoundsMs: workoutJson.restBetweenRoundsMs ?? 60000,
+        status: 'published',
+        publishedAt: new Date(),
+      },
+    });
+
+    await prisma.workoutExercise.deleteMany({
+      where: { workoutId: workoutRecord.id },
+    });
+
+    for (let index = 0; index < workoutJson.exercises.length; index++) {
+      const exerciseEntry = workoutJson.exercises[index];
+      const exerciseRecord = await prisma.exercise.findUnique({
+        where: { slug: exerciseEntry.exercise },
+        select: { id: true },
+      });
+
+      if (!exerciseRecord) {
+        throw new Error(`Workout exercise not found: ${exerciseEntry.exercise}`);
+      }
+
+      await prisma.workoutExercise.create({
+        data: {
+          workoutId: workoutRecord.id,
+          exerciseId: exerciseRecord.id,
+          variantIndex: exerciseEntry.variantIndex ?? 0,
+          difficulty: exerciseEntry.difficulty ?? 'beginner',
+          targetReps: exerciseEntry.target?.reps ?? undefined,
+          targetDuration: exerciseEntry.target?.durationSec ?? undefined,
+          notes: exerciseEntry.notes || undefined,
+          sortOrder: index,
+        },
+      });
+    }
+  }
+
+  console.log('✅ Workouts seeded from assets');
+
+  // ============================================
+  // SUPER ADMIN (Dashboard)
+  // ============================================
+  const adminEmail = (process.env.ADMIN_SEED_EMAIL || 'alustadh.manager@gmail.com').toLowerCase();
+  const adminName = process.env.ADMIN_SEED_NAME || 'Super Admin';
+  const adminPassword = process.env.ADMIN_SEED_PASSWORD || 'password';
+  const hashedPassword = await bcrypt.hash(adminPassword, 12);
+
+  await prisma.admin.upsert({
+    where: { email: adminEmail },
+    update: {
+      name: adminName,
+      role: 'super_admin',
+      isActive: true,
+      deletedAt: null,
+      ...(process.env.ADMIN_SEED_PASSWORD ? { password: hashedPassword } : {}),
+    },
+    create: {
+      name: adminName,
+      email: adminEmail,
+      password: hashedPassword,
+      role: 'super_admin',
+      isActive: true,
+    },
+  });
+
+  console.log(`✅ Super admin seeded: ${adminEmail}`);
 
   console.log('🎉 Seeding completed!');
 }

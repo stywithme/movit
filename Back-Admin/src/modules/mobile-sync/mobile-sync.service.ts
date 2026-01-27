@@ -8,6 +8,8 @@
 
 import { getPrisma } from '@/lib/prisma/client';
 import { buildExerciseConfig, exerciseFullInclude } from '@/modules/exercises/json-builder';
+import { workoutService } from '@/modules/workouts/workouts.service';
+import type { WorkoutExport } from '@/modules/workouts/workouts.types';
 import type {
   SyncRequestParams,
   MobileSyncResponse,
@@ -123,6 +125,77 @@ export const mobileSyncService = {
       };
     });
     
+    // Fetch workouts
+    const workoutWhereCondition: Record<string, unknown> = {
+      status: 'published',
+      deletedAt: null,
+    };
+    
+    if (updatedAfterDate) {
+      workoutWhereCondition.updatedAt = {
+        gt: updatedAfterDate,
+      };
+    }
+    
+    const workouts = await prisma.workout.findMany({
+      where: workoutWhereCondition,
+      include: {
+        exercises: {
+          orderBy: { sortOrder: 'asc' },
+          include: {
+            exercise: {
+              select: {
+                id: true,
+                slug: true,
+                name: true,
+                countingMethod: { select: { code: true } },
+              },
+            },
+          },
+        },
+      },
+      orderBy: { updatedAt: 'desc' },
+    });
+    
+    // Get total count of published workouts
+    const totalWorkouts = await prisma.workout.count({
+      where: {
+        status: 'published',
+        deletedAt: null,
+      },
+    });
+    
+    // Get deleted workout IDs (for incremental sync)
+    let deletedWorkoutIds: string[] = [];
+    if (updatedAfterDate) {
+      const deletedWorkouts = await prisma.workout.findMany({
+        where: {
+          deletedAt: { gt: updatedAfterDate },
+        },
+        select: { id: true },
+      });
+      
+      const unpublishedWorkouts = await prisma.workout.findMany({
+        where: {
+          status: 'draft',
+          deletedAt: null,
+          updatedAt: { gt: updatedAfterDate },
+        },
+        select: { id: true },
+      });
+      
+      deletedWorkoutIds = [
+        ...deletedWorkouts.map(w => w.id),
+        ...unpublishedWorkouts.map(w => w.id),
+      ];
+    }
+    
+    // Transform workouts to mobile format
+    const workoutsExport: WorkoutExport[] = workouts.map(workout => {
+      const result = workoutService.buildWorkoutExport(workout as Parameters<typeof workoutService.buildWorkoutExport>[0]);
+      return result!;
+    }).filter((w): w is WorkoutExport => w !== null);
+    
     // Build audio manifest
     const audioManifest = await this.buildAudioManifest(exercisesWithMeta, baseUrl);
     
@@ -133,13 +206,17 @@ export const mobileSyncService = {
       data: {
         exercises: exercisesWithMeta,
         deletedExerciseIds,
+        workouts: workoutsExport,
+        deletedWorkoutIds,
         audioManifest,
       },
       meta: {
         totalExercises,
+        totalWorkouts,
         isFullSync,
         serverVersion: SERVER_VERSION,
         exercisesInResponse: exercisesWithMeta.length,
+        workoutsInResponse: workoutsExport.length,
       },
     };
     

@@ -11,6 +11,7 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
 import com.trainingvalidator.poc.R
 import com.trainingvalidator.poc.databinding.ActivityWorkoutBinding
+import com.trainingvalidator.poc.storage.WorkoutRepository
 import com.trainingvalidator.poc.training.loader.WorkoutLoader
 import com.trainingvalidator.poc.training.models.*
 import com.trainingvalidator.poc.training.workout.LoadedExercise
@@ -99,7 +100,9 @@ class WorkoutActivity : AppCompatActivity() {
     }
 
     private fun loadWorkout(name: String) {
-        workoutConfig = WorkoutLoader.load(assets, name)
+        // Try to load from repository first (cached from server), fallback to assets
+        val repository = WorkoutRepository.getInstance(this)
+        workoutConfig = repository.getWorkout(name) ?: WorkoutLoader.load(assets, name)
         
         if (workoutConfig == null) {
             Toast.makeText(

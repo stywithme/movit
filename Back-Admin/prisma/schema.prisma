@@ -82,11 +82,12 @@ model Exercise {
   updatedAt        DateTime  @updatedAt
   deletedAt        DateTime?
 
-  category       AttributeValue      @relation("ExerciseCategory", fields: [categoryId], references: [id])
-  countingMethod AttributeValue      @relation("ExerciseCountingMethod", fields: [countingMethodId], references: [id])
-  attributes     ExerciseAttribute[]
-  media          ExerciseMedia[]
-  poseVariants   PoseVariant[]
+  category         AttributeValue      @relation("ExerciseCategory", fields: [categoryId], references: [id])
+  countingMethod   AttributeValue      @relation("ExerciseCountingMethod", fields: [countingMethodId], references: [id])
+  attributes       ExerciseAttribute[]
+  media            ExerciseMedia[]
+  poseVariants     PoseVariant[]
+  workoutExercises WorkoutExercise[]
 
   @@index([categoryId])
   @@index([countingMethodId])
@@ -278,6 +279,67 @@ model FeedbackMessage {
 }
 
 // ============================================
+// WORKOUTS (Super Sets / Circuits)
+// ============================================
+
+/// Workout - Super Set or Circuit training session
+model Workout {
+  id                     String    @id @default(uuid())
+  name                   Json      // { "ar": "...", "en": "..." }
+  description            Json?     // { "ar": "...", "en": "..." }
+  slug                   String    @unique
+  
+  // Workout configuration
+  type                   String    // circuit | super_set
+  executionMode          String    // sequential | alternating
+  rounds                 Int       @default(1)
+  repsPerSwitch          Int?      // For alternating mode: reps before switching exercise
+  restBetweenSwitchMs    Int?      // For alternating mode: rest between switches
+  restBetweenExercisesMs Int?      // For sequential mode: rest between exercises
+  restBetweenRoundsMs    Int       @default(60000)
+  
+  // Status & metadata
+  status                 String    @default("draft") // draft, published
+  publishedAt            DateTime?
+  createdBy              String?
+  updatedBy              String?
+  createdAt              DateTime  @default(now())
+  updatedAt              DateTime  @updatedAt
+  deletedAt              DateTime?
+
+  exercises WorkoutExercise[]
+
+  @@index([status])
+  @@index([type])
+  @@index([deletedAt])
+  @@map("workouts")
+}
+
+/// WorkoutExercise - Exercise within a workout with specific configuration
+model WorkoutExercise {
+  id             String   @id @default(uuid())
+  workoutId      String
+  exerciseId     String
+  
+  // Exercise configuration for this workout
+  variantIndex   Int      @default(0)    // Which pose variant to use
+  difficulty     String   @default("beginner") // beginner, normal, advanced
+  targetReps     Int?                     // Target reps (for rep-based exercises)
+  targetDuration Int?                     // Target duration in seconds (for hold exercises)
+  notes          Json?                    // { "ar": "...", "en": "..." } - Optional notes
+  
+  sortOrder      Int      @default(0)
+  createdAt      DateTime @default(now())
+
+  workout  Workout  @relation(fields: [workoutId], references: [id], onDelete: Cascade)
+  exercise Exercise @relation(fields: [exerciseId], references: [id])
+
+  @@index([workoutId])
+  @@index([exerciseId])
+  @@map("workout_exercises")
+}
+
+// ============================================
 // ADMIN USERS (for audit trail)
 // ============================================
 
@@ -289,6 +351,8 @@ model Admin {
   name      String
   role      String    @default("admin") // admin, super_admin
   isActive  Boolean   @default(true)
+  resetToken String?
+  resetTokenExpiry DateTime?
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
   deletedAt DateTime?

@@ -27,14 +27,10 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // TODO: Verify Google ID token in production
-    // For now, we expect the client to send verified user data
     const { idToken } = parseResult.data;
-    
-    // In production, decode and verify the idToken
-    // For development, we'll expect additional fields
     const { googleId, email, name, avatarUrl } = body;
 
+    // Require at minimum the idToken or full user data
     if (!googleId || !email || !name) {
       return NextResponse.json(
         { success: false, error: 'Missing Google user data' },
@@ -44,6 +40,7 @@ export async function POST(request: NextRequest) {
 
     const deviceInfo = getDeviceInfo(request);
     const result = await authService.googleAuth(
+      idToken,
       googleId,
       email,
       name,

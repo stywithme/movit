@@ -86,6 +86,11 @@ dependencies {
     
     // CardView
     implementation("androidx.cardview:cardview:1.0.0")
+    
+    // Google Sign-In with Credential Manager
+    implementation("androidx.credentials:credentials:1.5.0")
+    implementation("androidx.credentials:credentials-play-services-auth:1.5.0")
+    implementation("com.google.android.libraries.identity.googleid:googleid:1.1.1")
 
     // ExoPlayer (Media3) - For video playback and analysis
     val media3Version = "1.9.0"

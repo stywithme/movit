@@ -99,6 +99,34 @@ export default function AdminDashboard() {
           </div>
         </Link>
 
+        {/* Admins Card */}
+        <Link
+          href="/admin/admins"
+          className="block p-6 bg-white rounded-lg shadow-sm border border-gray-200 hover:shadow-md transition-shadow"
+        >
+          <div className="flex items-center gap-4">
+            <div className="w-12 h-12 bg-indigo-100 rounded-lg flex items-center justify-center">
+              <svg
+                className="w-6 h-6 text-indigo-600"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M17 20h5v-2a4 4 0 00-4-4h-1m-4 6v-2a4 4 0 00-4-4H4m8-4a4 4 0 110-8 4 4 0 010 8zm6 4a3 3 0 100-6 3 3 0 000 6z"
+                />
+              </svg>
+            </div>
+            <div>
+              <h3 className="font-semibold text-gray-900">Admins</h3>
+              <p className="text-sm text-gray-500">Manage dashboard admins</p>
+            </div>
+          </div>
+        </Link>
+
         {/* Quick Create Card */}
         <Link
           href="/admin/exercises/new"

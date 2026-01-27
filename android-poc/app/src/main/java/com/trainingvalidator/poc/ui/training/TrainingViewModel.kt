@@ -21,6 +21,7 @@ import com.trainingvalidator.poc.training.loader.WorkoutLoader
 // NOTE: DifficultyType has been REMOVED - quality is now assessed via JointState
 import com.trainingvalidator.poc.training.models.ExerciseConfig
 import com.trainingvalidator.poc.storage.ExerciseRepository
+import com.trainingvalidator.poc.storage.WorkoutRepository
 import com.trainingvalidator.poc.training.models.WorkoutConfig
 import com.trainingvalidator.poc.training.session.PauseReason
 import com.trainingvalidator.poc.training.session.SessionState
@@ -236,7 +237,16 @@ class TrainingViewModel(
         difficultyStr: String = "",
         context: Context? = null
     ): Boolean {
-        val workoutConfig = WorkoutLoader.load(assets, workoutName)
+        // Try to load from repository first (cached from server), fallback to assets
+        val workoutConfig = context?.let {
+            try {
+                WorkoutRepository.getInstance(it).getWorkout(workoutName)
+            } catch (e: Exception) {
+                Log.w(TAG, "WorkoutRepository not available, falling back to assets", e)
+                null
+            }
+        } ?: WorkoutLoader.load(assets, workoutName)
+        
         if (workoutConfig == null) {
             Log.e(TAG, "Failed to load workout: $workoutName")
             return false

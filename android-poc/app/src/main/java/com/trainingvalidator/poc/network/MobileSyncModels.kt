@@ -2,6 +2,11 @@ package com.trainingvalidator.poc.network
 
 import com.google.gson.annotations.SerializedName
 import com.trainingvalidator.poc.training.models.ExerciseConfig
+import com.trainingvalidator.poc.training.models.WorkoutConfig
+import com.trainingvalidator.poc.training.models.LocalizedText
+import com.trainingvalidator.poc.training.models.WorkoutType
+import com.trainingvalidator.poc.training.models.ExecutionMode
+import com.trainingvalidator.poc.training.models.WorkoutExercise
 
 /**
  * Mobile Sync API Response Models
@@ -21,11 +26,13 @@ data class MobileSyncResponse(
 )
 
 /**
- * Sync data containing exercises and audio manifest
+ * Sync data containing exercises, workouts, and audio manifest
  */
 data class SyncData(
     val exercises: List<ExerciseConfigWithMeta>,
     val deletedExerciseIds: List<String>,
+    val workouts: List<WorkoutConfigWithMeta> = emptyList(),
+    val deletedWorkoutIds: List<String> = emptyList(),
     val audioManifest: AudioManifest
 )
 
@@ -75,10 +82,53 @@ data class ExerciseConfigWithMeta(
  */
 data class SyncMeta(
     val totalExercises: Int,
+    val totalWorkouts: Int = 0,
     val isFullSync: Boolean,
     val serverVersion: String,
-    val exercisesInResponse: Int
+    val exercisesInResponse: Int,
+    val workoutsInResponse: Int = 0
 )
+
+/**
+ * Workout config with additional metadata from server
+ */
+data class WorkoutConfigWithMeta(
+    // Metadata from server
+    val id: String,
+    val slug: String,
+    val updatedAt: String,
+    
+    // WorkoutConfig fields
+    val name: LocalizedText,
+    val description: LocalizedText? = null,
+    val type: WorkoutType = WorkoutType.CIRCUIT,
+    val executionMode: ExecutionMode = ExecutionMode.SEQUENTIAL,
+    val repsPerSwitch: Int? = null,
+    val rounds: Int = 1,
+    val restBetweenExercisesMs: Long? = null,
+    val restBetweenRoundsMs: Long = 60000,
+    val restBetweenSwitchMs: Long? = null,
+    val exercises: List<WorkoutExercise> = emptyList()
+) {
+    /**
+     * Convert to WorkoutConfig (without meta)
+     */
+    fun toWorkoutConfig(): WorkoutConfig {
+        return WorkoutConfig(
+            name = name,
+            description = description,
+            type = type,
+            executionMode = executionMode,
+            repsPerSwitch = repsPerSwitch ?: 0,
+            rounds = rounds,
+            restBetweenExercisesMs = restBetweenExercisesMs ?: 10000L,
+            restBetweenRoundsMs = restBetweenRoundsMs,
+            restBetweenSwitchMs = restBetweenSwitchMs ?: 0L,
+            exercises = exercises,
+            fileName = slug  // Use slug as fileName for compatibility
+        )
+    }
+}
 
 /**
  * Audio manifest for downloading audio files
