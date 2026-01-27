@@ -26,64 +26,132 @@
         android:label="@string/app_name"
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
-        android:theme="@style/Theme.TrainingValidatorPoC"
+        android:theme="@style/Theme.WayToFix"
         android:networkSecurityConfig="@xml/network_security_config"
         android:usesCleartextTraffic="true"
-        tools:targetApi="31">
+        android:localeConfig="@xml/locales_config"
+        tools:targetApi="34">
         
-        <!-- Exercise List - LAUNCHER -->
+        <!-- ═══════════════════════════════════════════════════ -->
+        <!-- AUTH FLOW -->
+        <!-- ═══════════════════════════════════════════════════ -->
+        
+        <!-- Splash Screen - LAUNCHER -->
         <activity
-            android:name=".ui.ExerciseListActivity"
+            android:name=".ui.auth.SplashActivity"
             android:exported="true"
             android:screenOrientation="portrait"
-            android:theme="@style/Theme.TrainingValidatorPoC">
+            android:theme="@style/Theme.WayToFix.Splash">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
         
+        <!-- Onboarding -->
+        <activity
+            android:name=".ui.auth.OnboardingActivity"
+            android:exported="false"
+            android:screenOrientation="portrait"
+            android:theme="@style/Theme.WayToFix" />
+        
+        <!-- Sign In -->
+        <activity
+            android:name=".ui.auth.SignInActivity"
+            android:exported="false"
+            android:screenOrientation="portrait"
+            android:theme="@style/Theme.WayToFix"
+            android:windowSoftInputMode="adjustResize" />
+        
+        <!-- Sign Up -->
+        <activity
+            android:name=".ui.auth.SignUpActivity"
+            android:exported="false"
+            android:screenOrientation="portrait"
+            android:theme="@style/Theme.WayToFix"
+            android:windowSoftInputMode="adjustResize" />
+        
+        <!-- Forgot Password -->
+        <activity
+            android:name=".ui.auth.ForgotPasswordActivity"
+            android:exported="false"
+            android:screenOrientation="portrait"
+            android:theme="@style/Theme.WayToFix"
+            android:windowSoftInputMode="adjustResize" />
+        
+        <!-- ═══════════════════════════════════════════════════ -->
+        <!-- PROFILE -->
+        <!-- ═══════════════════════════════════════════════════ -->
+        
+        <!-- Profile -->
+        <activity
+            android:name=".ui.profile.ProfileActivity"
+            android:exported="false"
+            android:screenOrientation="portrait"
+            android:theme="@style/Theme.WayToFix" />
+        
+        <!-- ═══════════════════════════════════════════════════ -->
+        <!-- MAIN CONTAINER (Bottom Navigation) -->
+        <!-- ═══════════════════════════════════════════════════ -->
+        
+        <activity
+            android:name=".ui.main.MainContainerActivity"
+            android:exported="false"
+            android:screenOrientation="portrait"
+            android:theme="@style/Theme.WayToFix" />
+        
+        <!-- ═══════════════════════════════════════════════════ -->
+        <!-- EXERCISE & TRAINING FLOW -->
+        <!-- ═══════════════════════════════════════════════════ -->
+        
+        <!-- Exercise List (Legacy - kept for compatibility) -->
+        <activity
+            android:name=".ui.ExerciseListActivity"
+            android:exported="false"
+            android:screenOrientation="portrait"
+            android:theme="@style/Theme.WayToFix" />
+        
         <!-- Exercise Detail -->
         <activity
             android:name=".ui.ExerciseDetailActivity"
             android:exported="false"
             android:screenOrientation="portrait"
-            android:theme="@style/Theme.TrainingValidatorPoC" />
+            android:theme="@style/Theme.WayToFix" />
         
         <!-- Training Activity -->
         <activity
             android:name=".ui.TrainingActivity"
             android:exported="false"
             android:screenOrientation="portrait"
-            android:theme="@style/Theme.TrainingValidatorPoC" />
+            android:theme="@style/Theme.WayToFix.Training" />
         
-        <!-- Original MainActivity (Demo Mode) -->
+        <!-- Main Activity (Camera Demo) -->
         <activity
             android:name=".ui.MainActivity"
             android:exported="false"
             android:screenOrientation="portrait"
-            android:theme="@style/Theme.TrainingValidatorPoC" />
+            android:theme="@style/Theme.WayToFix.Training" />
         
         <!-- Workout List Activity -->
         <activity
             android:name=".ui.WorkoutListActivity"
             android:exported="false"
             android:screenOrientation="portrait"
-            android:theme="@style/Theme.TrainingValidatorPoC" />
+            android:theme="@style/Theme.WayToFix" />
         
         <!-- Workout Activity (runs workout sessions) -->
         <activity
             android:name=".ui.WorkoutActivity"
             android:exported="false"
             android:screenOrientation="portrait"
-            android:theme="@style/Theme.TrainingValidatorPoC" />
+            android:theme="@style/Theme.WayToFix.Training" />
         
         <!-- Post-Training Report Activity -->
         <activity
             android:name=".ui.report.ReportActivity"
             android:exported="false"
             android:screenOrientation="portrait"
-            android:theme="@style/Theme.TrainingValidatorPoC" />
+            android:theme="@style/Theme.WayToFix" />
         
     </application>
 

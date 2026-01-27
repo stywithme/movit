@@ -1,0 +1,497 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView 
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@drawable/bg_gradient_main"
+    android:fillViewport="true"
+    android:fitsSystemWindows="true">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:paddingTop="@dimen/spacing_3xl"
+        android:paddingBottom="@dimen/spacing_2xl">
+
+        <!-- Header -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="@dimen/app_header_height"
+            android:gravity="center_vertical"
+            android:paddingHorizontal="@dimen/spacing_sm">
+
+            <View
+                android:layout_width="48dp"
+                android:layout_height="48dp" />
+
+            <TextView
+                style="@style/TextAppearance.WayToFix.Headline3"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:gravity="center"
+                android:text="@string/profile"
+                android:textColor="@color/text_primary" />
+
+            <ImageButton
+                android:id="@+id/btnMenu"
+                android:layout_width="48dp"
+                android:layout_height="48dp"
+                android:background="?attr/selectableItemBackgroundBorderless"
+                android:contentDescription="@string/cd_menu"
+                android:src="@drawable/ic_more"
+                app:tint="@color/text_primary" />
+
+        </LinearLayout>
+
+        <!-- Profile Info Card -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:gravity="center"
+            android:paddingVertical="@dimen/spacing_xl">
+
+            <!-- Avatar -->
+            <FrameLayout
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content">
+
+                <ImageView
+                    android:id="@+id/ivAvatar"
+                    android:layout_width="100dp"
+                    android:layout_height="100dp"
+                    android:background="@drawable/bg_avatar_circle"
+                    android:padding="2dp"
+                    android:scaleType="centerCrop"
+                    android:src="@drawable/ic_person"
+                    app:tint="@color/text_secondary"
+                android:contentDescription="@string/cd_avatar" />
+
+                <ImageView
+                    android:id="@+id/btnEditAvatar"
+                    android:layout_width="32dp"
+                    android:layout_height="32dp"
+                    android:layout_gravity="bottom|end"
+                    android:background="@drawable/bg_circle_primary"
+                    android:padding="6dp"
+                    android:src="@drawable/ic_edit"
+                    app:tint="@color/on_primary"
+                android:contentDescription="@string/cd_edit_avatar" />
+
+            </FrameLayout>
+
+            <!-- Name -->
+            <TextView
+                android:id="@+id/tvUserName"
+                style="@style/TextAppearance.WayToFix.Headline2"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="@dimen/spacing_base"
+            android:textColor="@color/text_primary"
+            tools:text="Mahmoud Hassan" />
+
+            <!-- Email -->
+            <TextView
+                android:id="@+id/tvUserEmail"
+                style="@style/TextAppearance.WayToFix.Body2"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="@dimen/spacing_xs"
+            android:textColor="@color/text_secondary"
+            tools:text="alustadh.manager@gmail.com" />
+
+        </LinearLayout>
+
+        <!-- Pro Membership Card -->
+        <androidx.cardview.widget.CardView
+            android:id="@+id/cardMembership"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginHorizontal="@dimen/screen_padding_horizontal"
+            app:cardBackgroundColor="@color/surface"
+            app:cardCornerRadius="@dimen/radius_base"
+            app:cardElevation="0dp">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:padding="@dimen/spacing_base">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:gravity="center_vertical">
+
+                    <ImageView
+                        android:layout_width="40dp"
+                        android:layout_height="40dp"
+                        android:background="@drawable/bg_circle_gold"
+                        android:padding="8dp"
+                        android:src="@drawable/ic_star_gold"
+                        android:contentDescription="@string/cd_pro" />
+
+                    <LinearLayout
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:layout_marginStart="@dimen/spacing_md"
+                        android:orientation="vertical">
+
+                        <TextView
+                            style="@style/TextAppearance.WayToFix.Headline3"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="@string/pro_membership"
+                            android:textColor="@color/pro_gold" />
+
+                        <TextView
+                            style="@style/TextAppearance.WayToFix.Caption"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="@string/pro_membership_desc"
+                            android:textColor="@color/text_secondary" />
+
+                    </LinearLayout>
+
+                </LinearLayout>
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnManageSubscription"
+                    style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+                    android:layout_width="match_parent"
+                    android:layout_height="48dp"
+                    android:layout_marginTop="@dimen/spacing_base"
+                    android:text="@string/manage_subscription"
+                    android:textColor="@color/pro_gold"
+                    app:strokeColor="@color/pro_gold"
+                    app:cornerRadius="@dimen/radius_sm" />
+
+            </LinearLayout>
+
+        </androidx.cardview.widget.CardView>
+
+        <!-- Lifetime Stats -->
+        <TextView
+            style="@style/TextAppearance.WayToFix.Label"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="@dimen/screen_padding_horizontal"
+            android:layout_marginTop="@dimen/spacing_xl"
+            android:text="@string/lifetime_stats"
+            android:textColor="@color/text_secondary" />
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginHorizontal="@dimen/screen_padding_horizontal"
+            android:layout_marginTop="@dimen/spacing_sm"
+            android:orientation="horizontal">
+
+            <!-- Workouts Completed -->
+            <androidx.cardview.widget.CardView
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:layout_marginEnd="@dimen/spacing_sm"
+                app:cardBackgroundColor="@color/surface"
+                app:cardCornerRadius="@dimen/radius_base"
+                app:cardElevation="0dp">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:padding="@dimen/spacing_base">
+
+                    <ImageView
+                        android:layout_width="40dp"
+                        android:layout_height="40dp"
+                        android:background="@drawable/bg_circle_surface"
+                        android:padding="8dp"
+                        android:src="@drawable/ic_muscle"
+                        app:tint="@color/primary"
+                        android:contentDescription="Workouts" />
+
+                    <TextView
+                        android:id="@+id/tvWorkoutsCount"
+                        style="@style/TextAppearance.WayToFix.Headline1"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="@dimen/spacing_sm"
+                        android:textColor="@color/text_primary"
+                        tools:text="150" />
+
+                    <TextView
+                        style="@style/TextAppearance.WayToFix.Caption"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="@string/workouts_completed"
+                        android:textColor="@color/text_secondary" />
+
+                </LinearLayout>
+
+            </androidx.cardview.widget.CardView>
+
+            <!-- Minutes Trained -->
+            <androidx.cardview.widget.CardView
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:layout_marginStart="@dimen/spacing_sm"
+                app:cardBackgroundColor="@color/surface"
+                app:cardCornerRadius="@dimen/radius_base"
+                app:cardElevation="0dp">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:padding="@dimen/spacing_base">
+
+                    <ImageView
+                        android:layout_width="40dp"
+                        android:layout_height="40dp"
+                        android:background="@drawable/bg_circle_surface"
+                        android:padding="8dp"
+                        android:src="@drawable/ic_timer"
+                        app:tint="@color/info"
+                        android:contentDescription="Minutes" />
+
+                    <TextView
+                        android:id="@+id/tvMinutesCount"
+                        style="@style/TextAppearance.WayToFix.Headline1"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="@dimen/spacing_sm"
+                        android:textColor="@color/text_primary"
+                        tools:text="4,200" />
+
+                    <TextView
+                        style="@style/TextAppearance.WayToFix.Caption"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="@string/minutes_trained"
+                        android:textColor="@color/text_secondary" />
+
+                </LinearLayout>
+
+            </androidx.cardview.widget.CardView>
+
+        </LinearLayout>
+
+        <!-- Settings Section -->
+        <TextView
+            style="@style/TextAppearance.WayToFix.Label"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="@dimen/screen_padding_horizontal"
+            android:layout_marginTop="@dimen/spacing_xl"
+            android:text="@string/settings"
+            android:textColor="@color/text_secondary" />
+
+        <androidx.cardview.widget.CardView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginHorizontal="@dimen/screen_padding_horizontal"
+            android:layout_marginTop="@dimen/spacing_sm"
+            app:cardBackgroundColor="@color/surface"
+            app:cardCornerRadius="@dimen/radius_base"
+            app:cardElevation="0dp">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:divider="@drawable/divider_horizontal"
+                android:showDividers="middle">
+
+                <!-- General -->
+                <LinearLayout
+                    android:id="@+id/itemGeneral"
+                    android:layout_width="match_parent"
+                    android:layout_height="56dp"
+                    android:gravity="center_vertical"
+                    android:paddingHorizontal="@dimen/spacing_base"
+                    android:background="?attr/selectableItemBackground">
+
+                    <ImageView
+                        android:layout_width="24dp"
+                        android:layout_height="24dp"
+                        android:src="@drawable/ic_settings"
+                        app:tint="@color/text_secondary" />
+
+                    <TextView
+                        style="@style/TextAppearance.WayToFix.Body1"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:layout_marginStart="@dimen/spacing_md"
+                        android:text="@string/general"
+                        android:textColor="@color/text_primary" />
+
+                    <ImageView
+                        android:layout_width="20dp"
+                        android:layout_height="20dp"
+                        android:src="@drawable/ic_chevron_right"
+                        app:tint="@color/text_tertiary" />
+
+                </LinearLayout>
+
+                <!-- Voice Feedback -->
+                <LinearLayout
+                    android:id="@+id/itemVoiceFeedback"
+                    android:layout_width="match_parent"
+                    android:layout_height="64dp"
+                    android:gravity="center_vertical"
+                    android:paddingHorizontal="@dimen/spacing_base">
+
+                    <ImageView
+                        android:layout_width="24dp"
+                        android:layout_height="24dp"
+                        android:src="@drawable/ic_voice"
+                        app:tint="@color/text_secondary" />
+
+                    <LinearLayout
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:layout_marginStart="@dimen/spacing_md"
+                        android:orientation="vertical">
+
+                        <TextView
+                            style="@style/TextAppearance.WayToFix.Body1"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="@string/voice_feedback"
+                            android:textColor="@color/text_primary" />
+
+                        <TextView
+                            style="@style/TextAppearance.WayToFix.Caption"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="@string/voice_feedback_desc"
+                            android:textColor="@color/text_tertiary" />
+
+                    </LinearLayout>
+
+                    <com.google.android.material.switchmaterial.SwitchMaterial
+                        android:id="@+id/switchVoice"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:checked="true"
+                        app:thumbTint="@color/primary"
+                        app:trackTint="@color/surface_border" />
+
+                </LinearLayout>
+
+                <!-- Notifications -->
+                <LinearLayout
+                    android:id="@+id/itemNotifications"
+                    android:layout_width="match_parent"
+                    android:layout_height="56dp"
+                    android:gravity="center_vertical"
+                    android:paddingHorizontal="@dimen/spacing_base"
+                    android:background="?attr/selectableItemBackground">
+
+                    <ImageView
+                        android:layout_width="24dp"
+                        android:layout_height="24dp"
+                        android:src="@drawable/ic_notifications"
+                        app:tint="@color/text_secondary" />
+
+                    <TextView
+                        style="@style/TextAppearance.WayToFix.Body1"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:layout_marginStart="@dimen/spacing_md"
+                        android:text="@string/notifications"
+                        android:textColor="@color/text_primary" />
+
+                    <ImageView
+                        android:layout_width="20dp"
+                        android:layout_height="20dp"
+                        android:src="@drawable/ic_chevron_right"
+                        app:tint="@color/text_tertiary" />
+
+                </LinearLayout>
+
+                <!-- Language -->
+                <LinearLayout
+                    android:id="@+id/itemLanguage"
+                    android:layout_width="match_parent"
+                    android:layout_height="56dp"
+                    android:gravity="center_vertical"
+                    android:paddingHorizontal="@dimen/spacing_base"
+                    android:background="?attr/selectableItemBackground">
+
+                    <ImageView
+                        android:layout_width="24dp"
+                        android:layout_height="24dp"
+                        android:src="@drawable/ic_language"
+                        app:tint="@color/text_secondary" />
+
+                    <TextView
+                        style="@style/TextAppearance.WayToFix.Body1"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:layout_marginStart="@dimen/spacing_md"
+                        android:text="@string/language"
+                        android:textColor="@color/text_primary" />
+
+                    <TextView
+                        android:id="@+id/tvCurrentLanguage"
+                        style="@style/TextAppearance.WayToFix.Body2"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="@string/language_english"
+                        android:textColor="@color/text_tertiary" />
+
+                    <ImageView
+                        android:layout_width="20dp"
+                        android:layout_height="20dp"
+                        android:layout_marginStart="@dimen/spacing_sm"
+                        android:src="@drawable/ic_chevron_right"
+                        app:tint="@color/text_tertiary" />
+
+                </LinearLayout>
+
+                <!-- Log Out -->
+                <LinearLayout
+                    android:id="@+id/itemLogOut"
+                    android:layout_width="match_parent"
+                    android:layout_height="56dp"
+                    android:gravity="center_vertical"
+                    android:paddingHorizontal="@dimen/spacing_base"
+                    android:background="?attr/selectableItemBackground">
+
+                    <ImageView
+                        android:layout_width="24dp"
+                        android:layout_height="24dp"
+                        android:src="@drawable/ic_logout"
+                        app:tint="@color/error" />
+
+                    <TextView
+                        style="@style/TextAppearance.WayToFix.Body1"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:layout_marginStart="@dimen/spacing_md"
+                        android:text="@string/log_out"
+                        android:textColor="@color/error" />
+
+                </LinearLayout>
+
+            </LinearLayout>
+
+        </androidx.cardview.widget.CardView>
+
+    </LinearLayout>
+
+</ScrollView>

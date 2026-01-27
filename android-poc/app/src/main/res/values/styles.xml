@@ -1,0 +1,87 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- ═══════════════════════════════════════════════════ -->
+    <!-- BUTTONS -->
+    <!-- ═══════════════════════════════════════════════════ -->
+    <style name="Widget.WayToFix.Button.Primary" parent="Widget.MaterialComponents.Button">
+        <item name="android:layout_height">@dimen/button_height</item>
+        <item name="android:textAppearance">@style/TextAppearance.WayToFix.Button</item>
+        <item name="android:textColor">@color/text_on_primary</item>
+        <item name="backgroundTint">@color/primary</item>
+        <item name="cornerRadius">@dimen/radius_xl</item>
+        <item name="rippleColor">@color/primary_variant</item>
+        <item name="elevation">0dp</item>
+    </style>
+    
+    <style name="Widget.WayToFix.Button.Secondary" parent="Widget.MaterialComponents.Button.OutlinedButton">
+        <item name="android:layout_height">@dimen/button_height</item>
+        <item name="android:textAppearance">@style/TextAppearance.WayToFix.Button</item>
+        <item name="android:textColor">@color/text_primary</item>
+        <item name="strokeColor">@color/surface_border</item>
+        <item name="strokeWidth">@dimen/border_medium</item>
+        <item name="cornerRadius">@dimen/radius_xl</item>
+        <item name="backgroundTint">@android:color/transparent</item>
+    </style>
+    
+    <!-- Dialog Buttons -->
+    <style name="Widget.WayToFix.Button.DialogPositive" parent="Widget.MaterialComponents.Button.TextButton">
+        <item name="android:textColor">@color/primary</item>
+    </style>
+    
+    <style name="Widget.WayToFix.Button.DialogNegative" parent="Widget.MaterialComponents.Button.TextButton">
+        <item name="android:textColor">@color/text_secondary</item>
+    </style>
+
+    <!-- ═══════════════════════════════════════════════════ -->
+    <!-- INPUT FIELDS -->
+    <!-- ═══════════════════════════════════════════════════ -->
+    <style name="Widget.WayToFix.TextInputLayout" parent="Widget.MaterialComponents.TextInputLayout.OutlinedBox">
+        <item name="boxBackgroundColor">@color/surface</item>
+        <item name="boxStrokeColor">@color/surface_border</item>
+        <item name="boxStrokeWidth">@dimen/border_medium</item>
+        <item name="boxCornerRadiusTopStart">@dimen/radius_base</item>
+        <item name="boxCornerRadiusTopEnd">@dimen/radius_base</item>
+        <item name="boxCornerRadiusBottomStart">@dimen/radius_base</item>
+        <item name="boxCornerRadiusBottomEnd">@dimen/radius_base</item>
+        <item name="hintTextColor">@color/text_tertiary</item>
+        <item name="android:textColorHint">@color/text_tertiary</item>
+    </style>
+    
+    <style name="Widget.WayToFix.TextInputEditText" parent="Widget.MaterialComponents.TextInputEditText.OutlinedBox">
+        <item name="android:textAppearance">@style/TextAppearance.WayToFix.Body1</item>
+        <item name="android:textColor">@color/text_primary</item>
+    </style>
+
+    <!-- ═══════════════════════════════════════════════════ -->
+    <!-- CARDS -->
+    <!-- ═══════════════════════════════════════════════════ -->
+    <style name="Widget.WayToFix.Card" parent="Widget.MaterialComponents.CardView">
+        <item name="cardBackgroundColor">@color/surface</item>
+        <item name="cardCornerRadius">@dimen/radius_base</item>
+        <item name="cardElevation">0dp</item>
+        <item name="contentPadding">@dimen/spacing_base</item>
+    </style>
+    
+    <!-- ═══════════════════════════════════════════════════ -->
+    <!-- SWITCHES -->
+    <!-- ═══════════════════════════════════════════════════ -->
+    <style name="Widget.WayToFix.Switch" parent="Widget.MaterialComponents.CompoundButton.Switch">
+        <item name="thumbTint">@color/primary</item>
+        <item name="trackTint">@color/surface_border</item>
+    </style>
+    
+    <!-- ═══════════════════════════════════════════════════ -->
+    <!-- CHIPS -->
+    <!-- ═══════════════════════════════════════════════════ -->
+    <style name="Widget.WayToFix.Chip.Filter" parent="Widget.MaterialComponents.Chip.Choice">
+        <item name="chipBackgroundColor">@color/chip_background_selector</item>
+        <item name="android:textColor">@color/chip_text_selector</item>
+        <item name="chipStrokeColor">@color/surface_border</item>
+        <item name="chipStrokeWidth">1dp</item>
+        <item name="chipCornerRadius">@dimen/radius_xl</item>
+        <item name="chipMinHeight">36dp</item>
+        <item name="chipStartPadding">@dimen/spacing_md</item>
+        <item name="chipEndPadding">@dimen/spacing_md</item>
+        <item name="checkedIconVisible">false</item>
+    </style>
+</resources>

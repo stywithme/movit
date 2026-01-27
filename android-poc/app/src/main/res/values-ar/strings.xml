@@ -1,0 +1,254 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- App -->
+    <string name="app_name">Way to Fix</string>
+    <string name="app_tagline">صحّح. طوّر. حقّق.</string>
+    <string name="version_format">الإصدار %1$s</string>
+    
+    <!-- Common -->
+    <string name="next">التالي</string>
+    <string name="skip">تخطي</string>
+    <string name="back">رجوع</string>
+    <string name="done">تم</string>
+    <string name="cancel">إلغاء</string>
+    <string name="save">حفظ</string>
+    <string name="edit">تعديل</string>
+    <string name="delete">حذف</string>
+    <string name="confirm">تأكيد</string>
+    <string name="loading">جاري التحميل…</string>
+    <string name="error">خطأ</string>
+    <string name="success">نجاح</string>
+    <string name="retry">إعادة المحاولة</string>
+    <string name="or">أو</string>
+    
+    <!-- Navigation -->
+    <string name="home">الرئيسية</string>
+    <string name="exercises">التمارين</string>
+    <string name="history">السجل</string>
+    
+    <!-- Accessibility -->
+    <string name="cd_profile">الملف الشخصي</string>
+    <string name="cd_filter">تصفية</string>
+    <string name="cd_avatar">الصورة الشخصية</string>
+    <string name="cd_edit_avatar">تعديل الصورة</string>
+    <string name="cd_menu">القائمة</string>
+    <string name="cd_pro">احترافي</string>
+    <string name="cd_exercise">تمرين</string>
+    <string name="cd_camera">الكاميرا</string>
+    <string name="cd_video">الفيديو</string>
+    <string name="cd_no_exercises">لا توجد تمارين</string>
+    <string name="cd_no_history">لا يوجد سجل</string>
+    <string name="cd_view_details">عرض التفاصيل</string>
+    <string name="cd_bookmark">حفظ</string>
+    <string name="cd_category">الفئة</string>
+    
+    <!-- Common Messages -->
+    <string name="coming_soon">قريبًا</string>
+    <string name="general_settings_coming_soon">الإعدادات العامة - قريبًا</string>
+    <string name="notifications_settings_coming_soon">إعدادات الإشعارات - قريبًا</string>
+    <string name="change_avatar_coming_soon">تغيير الصورة - قريبًا</string>
+    <string name="google_sign_in_coming_soon">تسجيل Google - قريبًا</string>
+    <string name="google_sign_up_coming_soon">إنشاء حساب Google - قريبًا</string>
+    <string name="no_video_selected">لم يتم اختيار فيديو</string>
+    <string name="no_exercise_specified">لم يتم تحديد تمرين</string>
+    <string name="failed_to_load_exercise">فشل تحميل التمرين</string>
+    <string name="failed_to_load_exercise_format">فشل تحميل التمرين: %1$s</string>
+    <string name="failed_to_load_workout_format">فشل تحميل البرنامج: %1$s</string>
+    <string name="no_workout_specified">لم يتم تحديد برنامج</string>
+    <string name="video_permission_required">مطلوب إذن للوصول إلى الفيديوهات</string>
+    <string name="video_permission_rationale">نحتاج إذن الوصول إلى الفيديو لتحليل مقاطع التمرين</string>
+    <string name="counting_method_up_down">أعلى وأسفل (مثل القرفصاء)</string>
+    <string name="counting_method_push_pull">دفع وسحب (مثل تمارين الضغط)</string>
+    <string name="counting_method_hold">ثبات (مثل البلانك)</string>
+    
+    <!-- Home -->
+    <string name="greeting_morning">صباح الخير،</string>
+    <string name="greeting_afternoon">طاب يومك،</string>
+    <string name="greeting_evening">مساء الخير،</string>
+    <string name="streak">الاستمرارية</string>
+    <string name="continue_training">تابع التمرين</string>
+    <string name="quick_actions">إجراءات سريعة</string>
+    <string name="sets_completed_format">تم إكمال %1$d من %2$d مجموعة</string>
+    <string name="sample_exercise_squats">القرفصاء</string>
+    
+    <!-- Exercises -->
+    <string name="featured_program_title">برنامج الذكاء الاصطناعي للجسم بالكامل</string>
+    <string name="featured_program_subtitle">اتقن الأداء مع ملاحظات فورية.</string>
+    <string name="featured_program_meta">45 دقيقة - متوسط</string>
+    <string name="no_exercises_found">لا توجد تمارين</string>
+    
+    <!-- History -->
+    <string name="no_workouts_yet">لا توجد تمارين بعد</string>
+    <string name="no_workouts_hint">ابدأ أول تمرين لتظهر السجلات هنا</string>
+    <string name="sample_weekly_average">85%</string>
+    <string name="sample_total_time">2س 45د</string>
+    <string name="sample_date_today">اليوم، %1$s</string>
+    <string name="sample_date_yesterday">أمس، %1$s</string>
+    <string name="sample_exercise_pushups">تمارين الضغط</string>
+    <string name="sample_exercise_deadlifts">الرفعة الميتة</string>
+    
+    <!-- Auth - Sign In -->
+    <string name="sign_in">تسجيل الدخول</string>
+    <string name="sign_in_title">مرحباً بعودتك</string>
+    <string name="sign_in_subtitle">سجّل دخولك لمتابعة رحلتك الرياضية</string>
+    <string name="email_address">البريد الإلكتروني</string>
+    <string name="email_hint">name@example.com</string>
+    <string name="password">كلمة المرور</string>
+    <string name="password_hint">أدخل كلمة المرور</string>
+    <string name="forgot_password">نسيت كلمة المرور؟</string>
+    <string name="no_account">ليس لديك حساب؟</string>
+    <string name="sign_up_link">إنشاء حساب</string>
+    <string name="continue_with_google">المتابعة مع Google</string>
+    <string name="or_sign_in_with">أو سجّل الدخول باستخدام</string>
+    
+    <!-- Auth - Sign Up -->
+    <string name="sign_up">إنشاء حساب</string>
+    <string name="create_account">إنشاء حساب</string>
+    <string name="create_account_subtitle">ابدأ في تحسين أدائك اليوم مع التصحيح المدعوم بالذكاء الاصطناعي.</string>
+    <string name="full_name">الاسم الكامل</string>
+    <string name="full_name_hint">أدخل اسمك الكامل</string>
+    <string name="confirm_password">تأكيد كلمة المرور</string>
+    <string name="confirm_password_hint">أعد إدخال كلمة المرور</string>
+    <string name="already_have_account">لديك حساب بالفعل؟</string>
+    <string name="sign_in_link">تسجيل الدخول</string>
+    <string name="or_sign_up_with">أو أنشئ حساب باستخدام</string>
+    <string name="terms_agreement">بالتسجيل، فإنك توافق على شروط الخدمة وسياسة الخصوصية</string>
+    
+    <!-- Auth - Forgot Password -->
+    <string name="forgot_password_title">نسيت كلمة المرور</string>
+    <string name="forgot_password_subtitle">أدخل بريدك الإلكتروني وسنرسل لك رابطاً لإعادة تعيين كلمة المرور.</string>
+    <string name="send_reset_link">إرسال رابط الاستعادة</string>
+    <string name="back_to_sign_in">العودة لتسجيل الدخول</string>
+    <string name="reset_link_sent">تم إرسال رابط الاستعادة!</string>
+    <string name="check_your_email">تحقق من بريدك الإلكتروني.</string>
+    
+    <!-- Auth - Validation -->
+    <string name="error_email_required">البريد الإلكتروني مطلوب</string>
+    <string name="error_email_invalid">يرجى إدخال بريد إلكتروني صحيح</string>
+    <string name="error_password_required">كلمة المرور مطلوبة</string>
+    <string name="error_password_short">كلمة المرور يجب أن تكون 6 أحرف على الأقل</string>
+    <string name="error_passwords_not_match">كلمتا المرور غير متطابقتين</string>
+    <string name="error_name_required">الاسم مطلوب</string>
+    <string name="error_auth_failed">فشل المصادقة. يرجى المحاولة مرة أخرى.</string>
+    
+    <!-- Onboarding -->
+    <string name="onboarding_title_1">تحليل الأداء بالذكاء الاصطناعي</string>
+    <string name="onboarding_desc_1">يحلل الذكاء الاصطناعي أداء تمارينك في الوقت الفعلي، ويقدم ملاحظات فورية لمساعدتك على التدريب بأمان وفعالية.</string>
+    <string name="onboarding_title_2">إعداد الكاميرا</string>
+    <string name="onboarding_desc_2">ضع هاتفك بشكل صحيح. ضعه على بعد 2-3 أمتار لرؤية جسمك بالكامل.</string>
+    <string name="onboarding_title_3">تتبع تقدمك</string>
+    <string name="onboarding_desc_3">اعرض تقارير مفصلة، تتبع التحسينات، وحقق أهدافك الرياضية بشكل أسرع.</string>
+    <string name="get_started">ابدأ الآن</string>
+    
+    <!-- Profile -->
+    <string name="profile">الملف الشخصي</string>
+    <string name="pro_membership">عضوية Pro</string>
+    <string name="pro_membership_desc">تحليل AI غير محدود نشط.</string>
+    <string name="manage_subscription">إدارة الاشتراك</string>
+    <string name="lifetime_stats">الإحصائيات الكلية</string>
+    <string name="workouts_completed">تمارين مكتملة</string>
+    <string name="minutes_trained">دقائق التدريب</string>
+    <string name="settings">الإعدادات</string>
+    <string name="general">عام</string>
+    <string name="voice_feedback">التعليق الصوتي</string>
+    <string name="voice_feedback_desc">تصحيح الأداء في الوقت الفعلي</string>
+    <string name="notifications">الإشعارات</string>
+    <string name="language">اللغة</string>
+    <string name="language_english">English</string>
+    <string name="language_arabic">العربية</string>
+    <string name="log_out">تسجيل الخروج</string>
+    <string name="log_out_confirm">هل أنت متأكد من رغبتك في تسجيل الخروج؟</string>
+    
+    <!-- Exercise Library -->
+    <string name="exercise_library">مكتبة التمارين</string>
+    <string name="search_exercise">ابحث عن تمرين…</string>
+    <string name="all">الكل</string>
+    <string name="legs">الأرجل</string>
+    <string name="arms">الذراعين</string>
+    <string name="core">البطن</string>
+    <string name="back_muscle">الظهر</string>
+    <string name="chest">الصدر</string>
+    <string name="featured_program">البرنامج المميز</string>
+    <string name="popular_exercises">التمارين الشائعة</string>
+    <string name="view_all">عرض الكل</string>
+    <string name="ai_correction_enabled">تصحيح AI مفعّل</string>
+    
+    <!-- Difficulty -->
+    <string name="easy">سهل</string>
+    <string name="medium">متوسط</string>
+    <string name="hard">صعب</string>
+    
+    <!-- Workout -->
+    <string name="start">ابدأ</string>
+    <string name="start_camera">تشغيل الكاميرا</string>
+    <string name="analyze_video">تحليل فيديو</string>
+    <string name="form_checklist">قائمة التحقق</string>
+    <string name="steps_format">%1$d خطوات</string>
+    
+    <!-- Training -->
+    <string name="current_exercise">التمرين الحالي</string>
+    <string name="reps">تكرارات</string>
+    <string name="set_format">المجموعة %1$d/%2$d</string>
+    <string name="time">الوقت</string>
+    <string name="form">الأداء</string>
+    <string name="good">جيد</string>
+    <string name="finish">إنهاء</string>
+    
+    <!-- Post Workout -->
+    <string name="post_workout">ما بعد التمرين</string>
+    <string name="excellent">ممتاز!</string>
+    <string name="set_complete">المجموعة اكتملت</string>
+    <string name="accuracy">الدقة</string>
+    <string name="duration">المدة</string>
+    <string name="best">الأفضل</string>
+    <string name="errors">الأخطاء</string>
+    <string name="stats">الإحصائيات</string>
+    <string name="tips">نصائح</string>
+    <string name="way_to_fix">طريقة التصحيح</string>
+    <string name="save_and_finish">حفظ وإنهاء</string>
+    <string name="high_priority">أولوية عالية</string>
+    
+    <!-- History -->
+    <string name="workout_history">سجل التمارين</string>
+    <string name="programs">البرامج</string>
+    <string name="challenges">التحديات</string>
+    <string name="form_checks">فحص الأداء</string>
+    <string name="weekly_average">المعدل الأسبوعي</string>
+    <string name="total_time">الوقت الكلي</string>
+    <string name="this_week">هذا الأسبوع</string>
+    <string name="last_week">الأسبوع الماضي</string>
+    <string name="details">التفاصيل</string>
+    <string name="needs_work">يحتاج تحسين</string>
+    
+    <!-- Subscription -->
+    <string name="plans_subscriptions">الخطط والاشتراكات</string>
+    <string name="monthly">شهري</string>
+    <string name="yearly">سنوي</string>
+    <string name="discount_format">-%1$d%%</string>
+    <string name="starter">المبتدئ</string>
+    <string name="free">مجاني</string>
+    <string name="pro_athlete">الرياضي المحترف</string>
+    <string name="price_format">$%1$.2f/شهر</string>
+    <string name="billed_yearly_format">يُدفع $%1$d سنوياً</string>
+    <string name="most_popular">الأكثر شيوعاً</string>
+    <string name="subscribe_now">اشترك الآن</string>
+    <string name="secured_by">مؤمّن بواسطة Apple Pay و Stripe</string>
+    <string name="restore_purchases">استعادة المشتريات</string>
+    <string name="terms_conditions">الشروط والأحكام</string>
+    
+    <!-- Features -->
+    <string name="feature_basic_library">الوصول لمكتبة التمارين الأساسية</string>
+    <string name="feature_ai_scans">3 فحوصات AI أسبوعياً</string>
+    <string name="feature_community">دعم المجتمع</string>
+    <string name="feature_unlimited_ai">تصحيح AI غير محدود</string>
+    <string name="feature_personalized">برامج تدريب مخصصة</string>
+    <string name="feature_analytics">تحليلات تقدم مفصلة</string>
+    <string name="feature_video_export">تصدير فيديو وحركة بطيئة</string>
+    
+    <!-- Legacy strings (Training) -->
+    <string name="camera_permission_required">إذن الكاميرا مطلوب للكشف عن الوضعية</string>
+    <string name="grant_permission">منح الإذن</string>
+    <string name="pose_not_detected">لم يتم اكتشاف وضعية</string>
+    <string name="ready_to_start">جاهز للبدء!</string>
+    <string name="analyzing">جاري التحليل…</string>
+</resources>

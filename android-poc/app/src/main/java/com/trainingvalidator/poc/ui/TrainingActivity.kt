@@ -152,7 +152,11 @@ class TrainingActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetection
         if (isGranted) {
             onCameraPermissionGranted()
         } else {
-            Toast.makeText(this, "Camera permission required", Toast.LENGTH_LONG).show()
+            Toast.makeText(
+                this,
+                getString(R.string.camera_permission_required),
+                Toast.LENGTH_LONG
+            ).show()
             finish()
         }
     }
@@ -220,7 +224,7 @@ class TrainingActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetection
         videoUri = IntentCompat.getParcelableExtra(intent, EXTRA_VIDEO_URI, Uri::class.java)
         
         if (isVideoMode && videoUri == null) {
-            Toast.makeText(this, "No video selected", Toast.LENGTH_LONG).show()
+            Toast.makeText(this, getString(R.string.no_video_selected), Toast.LENGTH_LONG).show()
             finish()
             return
         }
@@ -246,7 +250,11 @@ class TrainingActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetection
         if (isWorkoutMode && workoutName != null) {
             // Pass context to enable repository-based loading (cached/synced data with audio)
             if (!viewModel.loadWorkout(workoutName, difficultyStr, context = this)) {
-                Toast.makeText(this, "Failed to load workout: $workoutName", Toast.LENGTH_LONG).show()
+                Toast.makeText(
+                    this,
+                    getString(R.string.failed_to_load_workout_format, workoutName),
+                    Toast.LENGTH_LONG
+                ).show()
                 finish()
                 return
             }
@@ -254,7 +262,11 @@ class TrainingActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetection
             // Pass context to enable repository-based loading (cached/synced data)
             if (!viewModel.loadExercise(exerciseName, difficultyStr, poseVariantIndex, 
                     targetRepsOverride, targetDurationOverride, context = this)) {
-                Toast.makeText(this, "Failed to load exercise: $exerciseName", Toast.LENGTH_LONG).show()
+                Toast.makeText(
+                    this,
+                    getString(R.string.failed_to_load_exercise_format, exerciseName),
+                    Toast.LENGTH_LONG
+                ).show()
                 finish()
                 return
             }

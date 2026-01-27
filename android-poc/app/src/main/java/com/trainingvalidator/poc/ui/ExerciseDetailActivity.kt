@@ -13,7 +13,9 @@ import androidx.activity.result.ActivityResultLauncher
 import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
+import androidx.appcompat.app.AppCompatDelegate
 import androidx.core.content.ContextCompat
+import com.trainingvalidator.poc.R
 import com.trainingvalidator.poc.databinding.ActivityExerciseDetailBinding
 import com.trainingvalidator.poc.training.loader.ExerciseLoader
 import com.trainingvalidator.poc.training.models.CountingMethod
@@ -54,7 +56,7 @@ class ExerciseDetailActivity : AppCompatActivity() {
         if (result.resultCode == RESULT_OK) {
             handleVideoSelection(result.data?.data)
         } else {
-            Toast.makeText(this, "No video selected", Toast.LENGTH_SHORT).show()
+            Toast.makeText(this, getString(R.string.no_video_selected), Toast.LENGTH_SHORT).show()
         }
     }
     
@@ -67,7 +69,7 @@ class ExerciseDetailActivity : AppCompatActivity() {
         } else {
             Toast.makeText(
                 this, 
-                "Permission required to access videos", 
+                getString(R.string.video_permission_required), 
                 Toast.LENGTH_LONG
             ).show()
         }
@@ -89,7 +91,7 @@ class ExerciseDetailActivity : AppCompatActivity() {
             }
             startVideoTraining(uri)
         } else {
-            Toast.makeText(this, "No video selected", Toast.LENGTH_SHORT).show()
+            Toast.makeText(this, getString(R.string.no_video_selected), Toast.LENGTH_SHORT).show()
         }
     }
 
@@ -102,7 +104,7 @@ class ExerciseDetailActivity : AppCompatActivity() {
         // Get exercise name from intent
         val exerciseName = intent.getStringExtra(EXTRA_EXERCISE_NAME)
         if (exerciseName == null) {
-            Toast.makeText(this, "No exercise specified", Toast.LENGTH_SHORT).show()
+            Toast.makeText(this, getString(R.string.no_exercise_specified), Toast.LENGTH_SHORT).show()
             finish()
             return
         }
@@ -122,7 +124,7 @@ class ExerciseDetailActivity : AppCompatActivity() {
         }
         
         if (exerciseConfig == null) {
-            Toast.makeText(this, "Failed to load exercise", Toast.LENGTH_SHORT).show()
+            Toast.makeText(this, getString(R.string.failed_to_load_exercise), Toast.LENGTH_SHORT).show()
             finish()
             return
         }
@@ -130,14 +132,15 @@ class ExerciseDetailActivity : AppCompatActivity() {
 
     private fun setupUI() {
         val exercise = exerciseConfig ?: return
+        val language = getCurrentLanguage()
         
         // Back button
         binding.btnBack.setOnClickListener { finish() }
         
         // Exercise info
-        binding.tvExerciseName.text = exercise.name.en
-        binding.tvExerciseNameAr.text = exercise.name.ar
-        binding.tvCategory.text = exercise.category.name.en
+        binding.tvExerciseName.text = exercise.name.get(language).ifBlank { exercise.name.en }
+        binding.tvExerciseNameAr.text = if (language == "ar") exercise.name.en else exercise.name.ar
+        binding.tvCategory.text = exercise.category.name.get(language).ifBlank { exercise.category.name.en }
         binding.tvMuscles.text = exercise.muscles.joinToString(", ") { 
             it.replaceFirstChar { c -> c.uppercase() } 
         }
@@ -147,9 +150,9 @@ class ExerciseDetailActivity : AppCompatActivity() {
         
         // Counting method
         binding.tvCountingMethod.text = when (exercise.countingMethod) {
-            com.trainingvalidator.poc.training.models.CountingMethod.UP_DOWN -> "Up & Down (like Squat)"
-            com.trainingvalidator.poc.training.models.CountingMethod.PUSH_PULL -> "Push & Pull (like Push-up)"
-            com.trainingvalidator.poc.training.models.CountingMethod.HOLD -> "Hold (like Plank)"
+            CountingMethod.UP_DOWN -> getString(R.string.counting_method_up_down)
+            CountingMethod.PUSH_PULL -> getString(R.string.counting_method_push_pull)
+            CountingMethod.HOLD -> getString(R.string.counting_method_hold)
         }
         
         // Difficulty selection removed (unified evaluation for all users)
@@ -371,7 +374,7 @@ class ExerciseDetailActivity : AppCompatActivity() {
             shouldShowRequestPermissionRationale(permission) -> {
                 Toast.makeText(
                     this,
-                    "Video access permission is needed to analyze exercise videos",
+                    getString(R.string.video_permission_rationale),
                     Toast.LENGTH_LONG
                 ).show()
                 permissionLauncher.launch(permission)
@@ -412,6 +415,16 @@ class ExerciseDetailActivity : AppCompatActivity() {
             }
             legacyPickerLauncher.launch(intent)
         }
+    }
+    
+    private fun getCurrentLanguage(): String {
+        val appLocales = AppCompatDelegate.getApplicationLocales()
+        val locale = if (appLocales.isEmpty) {
+            resources.configuration.locales[0]
+        } else {
+            appLocales[0]
+        }
+        return locale?.language ?: "en"
     }
     
     /**

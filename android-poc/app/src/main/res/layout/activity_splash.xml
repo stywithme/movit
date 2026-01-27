@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout 
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@drawable/bg_gradient_main"
+    tools:context=".ui.auth.SplashActivity">
+
+    <!-- Logo Container -->
+    <LinearLayout
+        android:id="@+id/logoContainer"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:gravity="center"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent">
+
+        <!-- Full Logo (Icon + Text + Tagline) -->
+        <ImageView
+            android:id="@+id/ivLogo"
+            android:layout_width="280dp"
+            android:layout_height="wrap_content"
+            android:adjustViewBounds="true"
+            android:src="@drawable/logo_full"
+            android:contentDescription="@string/app_name" />
+
+    </LinearLayout>
+
+    <!-- Loading Indicator -->
+    <ProgressBar
+        android:id="@+id/progressBar"
+        android:layout_width="32dp"
+        android:layout_height="32dp"
+        android:layout_marginBottom="@dimen/spacing_3xl"
+        android:indeterminateTint="@color/primary"
+        app:layout_constraintBottom_toTopOf="@id/tvVersion"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent" />
+
+    <!-- Version -->
+    <TextView
+        android:id="@+id/tvVersion"
+        style="@style/TextAppearance.WayToFix.Caption"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="@dimen/spacing_2xl"
+        android:textColor="@color/text_tertiary"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        tools:text="Version 1.0.0" />
+
+</androidx.constraintlayout.widget.ConstraintLayout>

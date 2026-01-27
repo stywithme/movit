@@ -9,6 +9,7 @@ import android.widget.Toast
 import androidx.activity.OnBackPressedCallback
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
+import com.trainingvalidator.poc.R
 import com.trainingvalidator.poc.databinding.ActivityWorkoutBinding
 import com.trainingvalidator.poc.training.loader.WorkoutLoader
 import com.trainingvalidator.poc.training.models.*
@@ -85,7 +86,8 @@ class WorkoutActivity : AppCompatActivity() {
         // Get workout name from intent
         workoutName = intent.getStringExtra(EXTRA_WORKOUT_NAME)
         if (workoutName == null) {
-            Toast.makeText(this, "No workout specified", Toast.LENGTH_SHORT).show()
+            Toast.makeText(this, getString(R.string.no_workout_specified), Toast.LENGTH_SHORT)
+                .show()
             finish()
             return
         }
@@ -100,7 +102,11 @@ class WorkoutActivity : AppCompatActivity() {
         workoutConfig = WorkoutLoader.load(assets, name)
         
         if (workoutConfig == null) {
-            Toast.makeText(this, "Failed to load workout: $workoutName", Toast.LENGTH_SHORT).show()
+            Toast.makeText(
+                this,
+                getString(R.string.failed_to_load_workout_format, workoutName),
+                Toast.LENGTH_SHORT
+            ).show()
             finish()
             return
         }

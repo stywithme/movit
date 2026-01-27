@@ -1,0 +1,88 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- ═══════════════════════════════════════════════════ -->
+    <!-- SPACING (4dp Grid System) -->
+    <!-- ═══════════════════════════════════════════════════ -->
+    <dimen name="spacing_xxs">2dp</dimen>
+    <dimen name="spacing_xs">4dp</dimen>
+    <dimen name="spacing_sm">8dp</dimen>
+    <dimen name="spacing_md">12dp</dimen>
+    <dimen name="spacing_base">16dp</dimen>
+    <dimen name="spacing_lg">20dp</dimen>
+    <dimen name="spacing_xl">24dp</dimen>
+    <dimen name="spacing_2xl">32dp</dimen>
+    <dimen name="spacing_3xl">40dp</dimen>
+    <dimen name="spacing_4xl">48dp</dimen>
+    
+    <!-- Screen Layout -->
+    <dimen name="screen_padding_horizontal">20dp</dimen>
+    <dimen name="screen_padding_vertical">16dp</dimen>
+    
+    <!-- ═══════════════════════════════════════════════════ -->
+    <!-- CORNER RADIUS -->
+    <!-- ═══════════════════════════════════════════════════ -->
+    <dimen name="radius_xs">4dp</dimen>
+    <dimen name="radius_sm">8dp</dimen>
+    <dimen name="radius_md">12dp</dimen>
+    <dimen name="radius_base">16dp</dimen>
+    <dimen name="radius_lg">20dp</dimen>
+    <dimen name="radius_xl">24dp</dimen>
+    <dimen name="radius_2xl">32dp</dimen>
+    <dimen name="radius_full">999dp</dimen>
+    
+    <!-- ═══════════════════════════════════════════════════ -->
+    <!-- COMPONENT DIMENSIONS -->
+    <!-- ═══════════════════════════════════════════════════ -->
+    <dimen name="button_height">56dp</dimen>
+    <dimen name="button_height_small">44dp</dimen>
+    <dimen name="input_height">56dp</dimen>
+    <dimen name="chip_height">36dp</dimen>
+    <dimen name="bottom_nav_height">80dp</dimen>
+    <dimen name="app_header_height">56dp</dimen>
+    
+    <!-- Icon Sizes -->
+    <dimen name="icon_xs">16dp</dimen>
+    <dimen name="icon_sm">20dp</dimen>
+    <dimen name="icon_md">24dp</dimen>
+    <dimen name="icon_lg">32dp</dimen>
+    <dimen name="icon_xl">48dp</dimen>
+    
+    <!-- Borders -->
+    <dimen name="border_thin">1dp</dimen>
+    <dimen name="border_medium">1.5dp</dimen>
+    <dimen name="border_thick">2dp</dimen>
+    
+    <!-- ═══════════════════════════════════════════════════ -->
+    <!-- TYPOGRAPHY SIZES -->
+    <!-- ═══════════════════════════════════════════════════ -->
+    <dimen name="text_display">36sp</dimen>
+    <dimen name="text_h1">28sp</dimen>
+    <dimen name="text_h2">22sp</dimen>
+    <dimen name="text_h3">18sp</dimen>
+    <dimen name="text_body_large">16sp</dimen>
+    <dimen name="text_body_medium">14sp</dimen>
+    <dimen name="text_body_small">12sp</dimen>
+
+    <!-- ═══════════════════════════════════════════════════ -->
+    <!-- TRAINING UI DIMENSIONS (Legacy) -->
+    <!-- ═══════════════════════════════════════════════════ -->
+    <dimen name="glass_corner_radius">24dp</dimen>
+    <dimen name="glass_corner_radius_large">28dp</dimen>
+    <dimen name="glass_border_width">1dp</dimen>
+    <dimen name="glass_blur_radius">20dp</dimen>
+    <dimen name="glass_elevation">8dp</dimen>
+
+    <dimen name="hero_text_size">100sp</dimen>
+    <dimen name="hero_text_size_small">80sp</dimen>
+
+    <dimen name="skeleton_line_width">6dp</dimen>
+    <dimen name="skeleton_line_width_tracked">8dp</dimen>
+    <dimen name="skeleton_line_width_error">10dp</dimen>
+    <dimen name="skeleton_landmark_size">10dp</dimen>
+    <dimen name="skeleton_landmark_size_tracked">14dp</dimen>
+
+    <dimen name="message_pill_padding_horizontal">20dp</dimen>
+    <dimen name="message_pill_padding_vertical">12dp</dimen>
+    <dimen name="message_icon_size">24dp</dimen>
+    <dimen name="message_text_size">15sp</dimen>
+</resources>

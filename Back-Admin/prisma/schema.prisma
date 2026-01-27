@@ -295,3 +295,68 @@ model Admin {
 
   @@map("admins")
 }
+
+// ============================================
+// MOBILE APP USERS
+// ============================================
+
+/// Mobile app users
+model User {
+  id              String    @id @default(uuid())
+  email           String    @unique
+  password        String?   // Nullable for OAuth users
+  name            String
+  avatarUrl       String?
+  
+  // OAuth providers
+  googleId        String?   @unique
+  provider        String    @default("email") // email, google
+  
+  // Settings
+  preferredLanguage String  @default("en") // en, ar
+  voiceFeedback     Boolean @default(true)
+  notifications     Boolean @default(true)
+  
+  // Subscription
+  isPro           Boolean   @default(false)
+  subscriptionExpiry DateTime?
+  
+  // Stats
+  totalWorkouts   Int       @default(0)
+  totalMinutes    Int       @default(0)
+  
+  // Password reset
+  resetToken      String?
+  resetTokenExpiry DateTime?
+  
+  // Status
+  isActive        Boolean   @default(true)
+  emailVerified   Boolean   @default(false)
+  
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  deletedAt       DateTime?
+
+  // Refresh tokens for secure logout
+  refreshTokens   RefreshToken[]
+
+  @@index([email])
+  @@index([googleId])
+  @@map("users")
+}
+
+/// Refresh tokens for JWT authentication
+model RefreshToken {
+  id          String   @id @default(uuid())
+  userId      String
+  token       String   @unique
+  deviceInfo  String?  // Device name/info for session management
+  expiresAt   DateTime
+  createdAt   DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([token])
+  @@map("refresh_tokens")
+}

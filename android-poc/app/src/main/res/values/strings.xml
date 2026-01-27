@@ -1,9 +1,254 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="app_name">Training Validator PoC</string>
+    <!-- App -->
+    <string name="app_name">Way to Fix</string>
+    <string name="app_tagline">Fix. Improve. Achieve.</string>
+    <string name="version_format">Version %1$s</string>
+    
+    <!-- Common -->
+    <string name="next">Next</string>
+    <string name="skip">Skip</string>
+    <string name="back">Back</string>
+    <string name="done">Done</string>
+    <string name="cancel">Cancel</string>
+    <string name="save">Save</string>
+    <string name="edit">Edit</string>
+    <string name="delete">Delete</string>
+    <string name="confirm">Confirm</string>
+    <string name="loading">Loading…</string>
+    <string name="error">Error</string>
+    <string name="success">Success</string>
+    <string name="retry">Retry</string>
+    <string name="or">or</string>
+    
+    <!-- Navigation -->
+    <string name="home">Home</string>
+    <string name="exercises">Exercises</string>
+    <string name="history">History</string>
+    
+    <!-- Accessibility -->
+    <string name="cd_profile">Profile</string>
+    <string name="cd_filter">Filter</string>
+    <string name="cd_avatar">Avatar</string>
+    <string name="cd_edit_avatar">Edit avatar</string>
+    <string name="cd_menu">Menu</string>
+    <string name="cd_pro">Pro</string>
+    <string name="cd_exercise">Exercise</string>
+    <string name="cd_camera">Camera</string>
+    <string name="cd_video">Video</string>
+    <string name="cd_no_exercises">No exercises</string>
+    <string name="cd_no_history">No history</string>
+    <string name="cd_view_details">View details</string>
+    <string name="cd_bookmark">Bookmark</string>
+    <string name="cd_category">Category</string>
+    
+    <!-- Common Messages -->
+    <string name="coming_soon">Coming Soon</string>
+    <string name="general_settings_coming_soon">General Settings - Coming Soon</string>
+    <string name="notifications_settings_coming_soon">Notifications Settings - Coming Soon</string>
+    <string name="change_avatar_coming_soon">Change Avatar - Coming Soon</string>
+    <string name="google_sign_in_coming_soon">Google Sign In - Coming Soon</string>
+    <string name="google_sign_up_coming_soon">Google Sign Up - Coming Soon</string>
+    <string name="no_video_selected">No video selected</string>
+    <string name="no_exercise_specified">No exercise specified</string>
+    <string name="failed_to_load_exercise">Failed to load exercise</string>
+    <string name="failed_to_load_exercise_format">Failed to load exercise: %1$s</string>
+    <string name="failed_to_load_workout_format">Failed to load workout: %1$s</string>
+    <string name="no_workout_specified">No workout specified</string>
+    <string name="video_permission_required">Permission required to access videos</string>
+    <string name="video_permission_rationale">Video access permission is needed to analyze exercise videos</string>
+    <string name="counting_method_up_down">Up &amp; Down (like Squat)</string>
+    <string name="counting_method_push_pull">Push &amp; Pull (like Push-up)</string>
+    <string name="counting_method_hold">Hold (like Plank)</string>
+    
+    <!-- Home -->
+    <string name="greeting_morning">Good morning,</string>
+    <string name="greeting_afternoon">Good afternoon,</string>
+    <string name="greeting_evening">Good evening,</string>
+    <string name="streak">Streak</string>
+    <string name="continue_training">Continue Training</string>
+    <string name="quick_actions">Quick Actions</string>
+    <string name="sets_completed_format">%1$d/%2$d sets completed</string>
+    <string name="sample_exercise_squats">Squats</string>
+    
+    <!-- Exercises -->
+    <string name="featured_program_title">Full Body AI Program</string>
+    <string name="featured_program_subtitle">Master your form with real-time feedback.</string>
+    <string name="featured_program_meta">45 min - Intermediate</string>
+    <string name="no_exercises_found">No exercises found</string>
+    
+    <!-- History -->
+    <string name="no_workouts_yet">No workouts yet</string>
+    <string name="no_workouts_hint">Start your first workout to see history here</string>
+    <string name="sample_weekly_average">85%</string>
+    <string name="sample_total_time">2h 45m</string>
+    <string name="sample_date_today">Today, %1$s</string>
+    <string name="sample_date_yesterday">Yesterday, %1$s</string>
+    <string name="sample_exercise_pushups">Push-ups</string>
+    <string name="sample_exercise_deadlifts">Deadlifts</string>
+    
+    <!-- Auth - Sign In -->
+    <string name="sign_in">Sign In</string>
+    <string name="sign_in_title">Welcome Back</string>
+    <string name="sign_in_subtitle">Sign in to continue your fitness journey</string>
+    <string name="email_address">Email Address</string>
+    <string name="email_hint">name@example.com</string>
+    <string name="password">Password</string>
+    <string name="password_hint">Enter your password</string>
+    <string name="forgot_password">Forgot Password?</string>
+    <string name="no_account">Don\'t have an account?</string>
+    <string name="sign_up_link">Sign Up</string>
+    <string name="continue_with_google">Continue with Google</string>
+    <string name="or_sign_in_with">Or sign in with</string>
+    
+    <!-- Auth - Sign Up -->
+    <string name="sign_up">Sign Up</string>
+    <string name="create_account">Create Account</string>
+    <string name="create_account_subtitle">Start perfecting your form today with AI-powered correction.</string>
+    <string name="full_name">Full Name</string>
+    <string name="full_name_hint">Enter your full name</string>
+    <string name="confirm_password">Confirm Password</string>
+    <string name="confirm_password_hint">Confirm your password</string>
+    <string name="already_have_account">Already have an account?</string>
+    <string name="sign_in_link">Sign In</string>
+    <string name="or_sign_up_with">Or sign up with</string>
+    <string name="terms_agreement">By signing up, you agree to our Terms of Service and Privacy Policy</string>
+    
+    <!-- Auth - Forgot Password -->
+    <string name="forgot_password_title">Forgot Password</string>
+    <string name="forgot_password_subtitle">Enter your email address and we\'ll send you a link to reset your password.</string>
+    <string name="send_reset_link">Send Reset Link</string>
+    <string name="back_to_sign_in">Back to Sign In</string>
+    <string name="reset_link_sent">Password reset link sent!</string>
+    <string name="check_your_email">Check your email for the reset link.</string>
+    
+    <!-- Auth - Validation -->
+    <string name="error_email_required">Email is required</string>
+    <string name="error_email_invalid">Please enter a valid email</string>
+    <string name="error_password_required">Password is required</string>
+    <string name="error_password_short">Password must be at least 6 characters</string>
+    <string name="error_passwords_not_match">Passwords do not match</string>
+    <string name="error_name_required">Name is required</string>
+    <string name="error_auth_failed">Authentication failed. Please try again.</string>
+    
+    <!-- Onboarding -->
+    <string name="onboarding_title_1">AI Form Analysis</string>
+    <string name="onboarding_desc_1">Our AI analyzes your exercise form in real-time, providing instant feedback to help you train safely and effectively.</string>
+    <string name="onboarding_title_2">Camera Setup</string>
+    <string name="onboarding_desc_2">Position your phone correctly. Place it 2–3 meters away to see your full body.</string>
+    <string name="onboarding_title_3">Track Your Progress</string>
+    <string name="onboarding_desc_3">View detailed reports, track improvements, and achieve your fitness goals faster.</string>
+    <string name="get_started">Get Started</string>
+    
+    <!-- Profile -->
+    <string name="profile">Profile</string>
+    <string name="pro_membership">Pro Membership</string>
+    <string name="pro_membership_desc">Unlimited AI form analysis active.</string>
+    <string name="manage_subscription">Manage Subscription</string>
+    <string name="lifetime_stats">Lifetime Stats</string>
+    <string name="workouts_completed">Workouts Completed</string>
+    <string name="minutes_trained">Minutes Trained</string>
+    <string name="settings">Settings</string>
+    <string name="general">General</string>
+    <string name="voice_feedback">Voice Feedback</string>
+    <string name="voice_feedback_desc">Real-time form correction</string>
+    <string name="notifications">Notifications</string>
+    <string name="language">Language</string>
+    <string name="language_english">English</string>
+    <string name="language_arabic">العربية</string>
+    <string name="log_out">Log Out</string>
+    <string name="log_out_confirm">Are you sure you want to log out?</string>
+    
+    <!-- Exercise Library -->
+    <string name="exercise_library">Exercise Library</string>
+    <string name="search_exercise">Find an exercise…</string>
+    <string name="all">All</string>
+    <string name="legs">Legs</string>
+    <string name="arms">Arms</string>
+    <string name="core">Core</string>
+    <string name="back_muscle">Back</string>
+    <string name="chest">Chest</string>
+    <string name="featured_program">Featured Program</string>
+    <string name="popular_exercises">Popular Exercises</string>
+    <string name="view_all">View all</string>
+    <string name="ai_correction_enabled">AI Correction Enabled</string>
+    
+    <!-- Difficulty -->
+    <string name="easy">Easy</string>
+    <string name="medium">Medium</string>
+    <string name="hard">Hard</string>
+    
+    <!-- Workout -->
+    <string name="start">Start</string>
+    <string name="start_camera">Start Camera</string>
+    <string name="analyze_video">Analyze Video</string>
+    <string name="form_checklist">Form Checklist</string>
+    <string name="steps_format">%1$d steps</string>
+    
+    <!-- Training -->
+    <string name="current_exercise">Current Exercise</string>
+    <string name="reps">Reps</string>
+    <string name="set_format">Set %1$d/%2$d</string>
+    <string name="time">Time</string>
+    <string name="form">Form</string>
+    <string name="good">Good</string>
+    <string name="finish">Finish</string>
+    
+    <!-- Post Workout -->
+    <string name="post_workout">Post-Workout</string>
+    <string name="excellent">Excellent!</string>
+    <string name="set_complete">Set Complete</string>
+    <string name="accuracy">Accuracy</string>
+    <string name="duration">Duration</string>
+    <string name="best">Best</string>
+    <string name="errors">Errors</string>
+    <string name="stats">Stats</string>
+    <string name="tips">Tips</string>
+    <string name="way_to_fix">Way to Fix</string>
+    <string name="save_and_finish">Save &amp; Finish</string>
+    <string name="high_priority">High Priority</string>
+    
+    <!-- History -->
+    <string name="workout_history">Workout History</string>
+    <string name="programs">Programs</string>
+    <string name="challenges">Challenges</string>
+    <string name="form_checks">Form Checks</string>
+    <string name="weekly_average">Weekly Average</string>
+    <string name="total_time">Total Time</string>
+    <string name="this_week">This Week</string>
+    <string name="last_week">Last Week</string>
+    <string name="details">Details</string>
+    <string name="needs_work">Needs Work</string>
+    
+    <!-- Subscription -->
+    <string name="plans_subscriptions">Plans &amp; Subscriptions</string>
+    <string name="monthly">Monthly</string>
+    <string name="yearly">Yearly</string>
+    <string name="discount_format">-%1$d%%</string>
+    <string name="starter">Starter</string>
+    <string name="free">Free</string>
+    <string name="pro_athlete">Pro Athlete</string>
+    <string name="price_format">$%1$.2f/mo</string>
+    <string name="billed_yearly_format">Billed $%1$d yearly</string>
+    <string name="most_popular">Most Popular</string>
+    <string name="subscribe_now">Subscribe Now</string>
+    <string name="secured_by">Secured by Apple Pay &amp; Stripe</string>
+    <string name="restore_purchases">Restore Purchases</string>
+    <string name="terms_conditions">Terms &amp; Conditions</string>
+    
+    <!-- Features -->
+    <string name="feature_basic_library">Basic drill library access</string>
+    <string name="feature_ai_scans">3 AI form scans per week</string>
+    <string name="feature_community">Community support</string>
+    <string name="feature_unlimited_ai">Unlimited AI Form Correction</string>
+    <string name="feature_personalized">Personalized Training Programs</string>
+    <string name="feature_analytics">Detailed Progress Analytics</string>
+    <string name="feature_video_export">Video Export &amp; Slow Motion</string>
+    
+    <!-- Legacy strings (Training) -->
     <string name="camera_permission_required">Camera permission is required for pose detection</string>
     <string name="grant_permission">Grant Permission</string>
     <string name="pose_not_detected">No pose detected</string>
     <string name="ready_to_start">Ready to start!</string>
-    <string name="analyzing">Analyzing pose...</string>
+    <string name="analyzing">Analyzing pose…</string>
 </resources>

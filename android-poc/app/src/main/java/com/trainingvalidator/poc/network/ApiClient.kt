@@ -76,6 +76,13 @@ object ApiClient {
     val mobileSyncApi: MobileSyncApi by lazy {
         retrofit.create(MobileSyncApi::class.java)
     }
+
+    /**
+     * Auth API instance
+     */
+    val authApi: AuthApi by lazy {
+        retrofit.create(AuthApi::class.java)
+    }
     
     /**
      * Get OkHttpClient for direct downloads

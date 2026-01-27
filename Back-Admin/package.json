@@ -31,9 +31,11 @@
     "@radix-ui/react-tooltip": "^1.2.8",
     "@tailwindcss/postcss": "^4.0.0-alpha.34",
     "autoprefixer": "^10.4.19",
+    "bcryptjs": "^3.0.3",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "dotenv": "^16.4.5",
+    "jsonwebtoken": "^9.0.3",
     "lucide-react": "^0.562.0",
     "next": "15.5.9",
     "pg": "^8.16.3",
@@ -48,6 +50,8 @@
     "zustand": "^5.0.9"
   },
   "devDependencies": {
+    "@types/bcryptjs": "^2.4.6",
+    "@types/jsonwebtoken": "^9.0.10",
     "@types/node": "^22.0.0",
     "@types/react": "^19.0.0",
     "@types/react-dom": "^19.0.0",
