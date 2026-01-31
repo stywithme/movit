@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import { LocalizedText } from '@/lib/types/localized';
 import LocalizedInput from '@/components/forms/LocalizedInput';
+import { FileUpload } from '@/components/forms';
 import { Input } from '@/components/ui';
 
 interface Joint {
@@ -178,24 +179,24 @@ export default function EditCameraPositionPage() {
           multiline
         />
 
-        {/* Image URL */}
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Reference Image URL</label>
-          <Input
+        {/* Image */}
+        <div className="space-y-3">
+          <FileUpload
+            label="Reference Image"
             value={formData.imageUrl}
-            onChange={(e) => setFormData({ ...formData, imageUrl: e.target.value })}
-            placeholder="https://example.com/image.jpg"
+            onChange={(imageUrl) => setFormData({ ...formData, imageUrl })}
+            uploadType="camera-position-image"
+            accept="image/*"
+            helperText="Upload a camera position reference image"
           />
-          {formData.imageUrl && (
-            <div className="mt-2">
-              <img
-                src={formData.imageUrl}
-                alt="Preview"
-                className="h-32 w-auto rounded-lg border border-gray-200"
-                onError={(e) => (e.currentTarget.style.display = 'none')}
-              />
-            </div>
-          )}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Reference Image URL</label>
+            <Input
+              value={formData.imageUrl}
+              onChange={(e) => setFormData({ ...formData, imageUrl: e.target.value })}
+              placeholder="https://example.com/image.jpg"
+            />
+          </div>
         </div>
 
         {/* Joints Selection */}

@@ -142,6 +142,7 @@ export const BasicInfoSchema = z.object({
   description: LocalizedTextOptionalSchema,
   instructions: LocalizedTextOptionalSchema,
   categoryId: z.string().uuid('Please select a category'),
+  imageUrl: z.string().url().optional().or(z.literal('')),
 });
 
 export type BasicInfoData = z.infer<typeof BasicInfoSchema>;
@@ -170,6 +171,7 @@ export const CameraPositionSchema = z.object({
     'facing_away',
     'auto_detect',
   ]).default('auto_detect'),
+  referenceImages: z.record(z.string(), z.string().url().optional().or(z.literal(''))).optional(),
 });
 
 export type CameraPositionData = z.infer<typeof CameraPositionSchema>;

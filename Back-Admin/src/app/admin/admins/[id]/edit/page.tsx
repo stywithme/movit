@@ -36,6 +36,7 @@ export default function EditAdminPage() {
             name: admin.name || '',
             email: admin.email || '',
             role: admin.role || 'admin',
+            password: '',
           });
         } else {
           router.push('/admin/admins');

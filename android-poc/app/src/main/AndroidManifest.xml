@@ -118,6 +118,20 @@
             android:screenOrientation="portrait"
             android:theme="@style/Theme.WayToFix" />
         
+        <!-- Pre-Workout Screen (New Design) -->
+        <activity
+            android:name=".ui.PreWorkoutActivity"
+            android:exported="false"
+            android:screenOrientation="portrait"
+            android:theme="@style/Theme.WayToFix" />
+        
+        <!-- Post-Workout Report Screen (New Design) -->
+        <activity
+            android:name=".ui.PostWorkoutActivity"
+            android:exported="false"
+            android:screenOrientation="portrait"
+            android:theme="@style/Theme.WayToFix" />
+        
         <!-- Training Activity -->
         <activity
             android:name=".ui.TrainingActivity"

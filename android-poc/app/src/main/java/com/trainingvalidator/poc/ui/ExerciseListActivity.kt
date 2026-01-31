@@ -7,12 +7,14 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.TextView
+import android.widget.ImageView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.cardview.widget.CardView
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.GridLayoutManager
 import androidx.recyclerview.widget.RecyclerView
+import coil.load
 import com.trainingvalidator.poc.R
 import com.trainingvalidator.poc.databinding.ActivityExerciseListBinding
 import com.trainingvalidator.poc.storage.ExerciseRepository
@@ -217,9 +219,9 @@ class ExerciseListActivity : AppCompatActivity() {
     }
 
     private fun openExerciseDetail(exercise: ExerciseConfig) {
-        val intent = Intent(this, ExerciseDetailActivity::class.java).apply {
+        val intent = Intent(this, PreWorkoutActivity::class.java).apply {
             // Use the stored file name from ExerciseLoader
-            putExtra(ExerciseDetailActivity.EXTRA_EXERCISE_NAME, exercise.fileName)
+            putExtra(PreWorkoutActivity.EXTRA_EXERCISE_NAME, exercise.fileName)
         }
         startActivity(intent)
     }
@@ -234,6 +236,7 @@ class ExerciseListActivity : AppCompatActivity() {
 
         inner class ViewHolder(view: View) : RecyclerView.ViewHolder(view) {
             val card: CardView = view.findViewById(R.id.cardExercise)
+            val ivImage: ImageView = view.findViewById(R.id.ivExerciseImage)
             val tvName: TextView = view.findViewById(R.id.tvExerciseName)
             val tvNameAr: TextView = view.findViewById(R.id.tvExerciseNameAr)
             val tvCategory: TextView = view.findViewById(R.id.tvCategory)
@@ -254,6 +257,12 @@ class ExerciseListActivity : AppCompatActivity() {
             holder.tvCategory.text = exercise.category.name.en
             holder.tvMuscles.text = exercise.muscles.joinToString(", ") { 
                 it.replaceFirstChar { c -> c.uppercase() } 
+            }
+
+            holder.ivImage.load(exercise.imageUrl) {
+                placeholder(R.drawable.ic_camera)
+                error(R.drawable.ic_camera)
+                crossfade(true)
             }
             
             holder.card.setOnClickListener {

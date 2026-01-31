@@ -15,6 +15,7 @@ data class ExerciseConfig(
     val name: LocalizedText,
     val description: LocalizedText? = null,
     val instructions: LocalizedText? = null,
+    val imageUrl: String? = null,
     val category: CategoryInfo,
     val countingMethod: CountingMethod,
     val muscles: List<String> = emptyList(),

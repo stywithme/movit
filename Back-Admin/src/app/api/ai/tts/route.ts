@@ -85,14 +85,6 @@ export async function DELETE(request: NextRequest) {
       );
     }
 
-    // Security check: only allow deleting from /audio/tts/
-    if (!body.audioPath.startsWith('/audio/tts/')) {
-      return NextResponse.json(
-        { success: false, error: 'Invalid audio path' },
-        { status: 400 }
-      );
-    }
-
     const deleted = await deleteAudioFile(body.audioPath);
 
     return NextResponse.json({

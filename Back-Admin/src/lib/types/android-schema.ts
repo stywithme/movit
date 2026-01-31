@@ -339,6 +339,7 @@ export interface ExerciseConfig {
   name: LocalizedText;
   description?: LocalizedText;
   instructions?: LocalizedText;
+  imageUrl?: string;
   category: Category;
   countingMethod: CountingMethod;
   muscles: string[];

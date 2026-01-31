@@ -16,15 +16,16 @@
         android:orientation="vertical"
         android:padding="16dp">
 
-        <!-- Exercise Icon -->
-        <TextView
-            android:layout_width="48dp"
-            android:layout_height="48dp"
-            android:text="🏋️"
-            android:textSize="32sp"
-            android:gravity="center"
+        <!-- Exercise Image -->
+        <ImageView
+            android:id="@+id/ivExerciseImage"
+            android:layout_width="56dp"
+            android:layout_height="56dp"
+            android:layout_gravity="center_horizontal"
             android:background="@drawable/circle_background"
-            android:layout_gravity="center_horizontal" />
+            android:scaleType="centerCrop"
+            android:src="@drawable/ic_camera"
+            android:contentDescription="@string/cd_exercise"/>
 
         <!-- Exercise Name (English) -->
         <TextView

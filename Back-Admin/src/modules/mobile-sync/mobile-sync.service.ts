@@ -20,6 +20,7 @@ import type {
 } from './mobile-sync.types';
 import * as fs from 'fs/promises';
 import * as path from 'path';
+import { getGcsBucket, parseObjectNameFromUrl } from '@/lib/storage';
 
 // Server version for API compatibility
 const SERVER_VERSION = '1.0.0';
@@ -329,10 +330,17 @@ export const mobileSyncService = {
    */
   async getAudioFileSize(audioPath: string): Promise<number | undefined> {
     try {
-      // Convert URL path to filesystem path
+      const objectName = parseObjectNameFromUrl(audioPath);
+      if (objectName) {
+        const bucket = getGcsBucket();
+        const [metadata] = await bucket.file(objectName).getMetadata();
+        const size = metadata.size ? Number(metadata.size) : undefined;
+        return Number.isFinite(size) ? size : undefined;
+      }
+
+      // Fallback for local files (legacy)
       const relativePath = audioPath.startsWith('/') ? audioPath.slice(1) : audioPath;
       const fullPath = path.join(process.cwd(), 'public', relativePath);
-      
       const stats = await fs.stat(fullPath);
       return stats.size;
     } catch {

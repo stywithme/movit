@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Splash Screen Theme for Android 12+ (API 31+)
+         Minimizes system splash to just show background color,
+         then immediately shows our custom SplashActivity -->
+    <style name="Theme.WayToFix.Splash" parent="Theme.WayToFix">
+        <!-- Use solid background color (no icon) -->
+        <item name="android:windowSplashScreenBackground">@color/background</item>
+        
+        <!-- Use a transparent/minimal icon to hide it -->
+        <item name="android:windowSplashScreenAnimatedIcon">@android:color/transparent</item>
+        
+        <!-- No icon background -->
+        <item name="android:windowSplashScreenIconBackgroundColor">@color/background</item>
+        
+        <!-- System UI -->
+        <item name="android:windowBackground">@color/background</item>
+        <item name="android:statusBarColor">@android:color/transparent</item>
+        <item name="android:navigationBarColor">@android:color/transparent</item>
+    </style>
+</resources>

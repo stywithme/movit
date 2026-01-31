@@ -7,8 +7,7 @@
  */
 
 import { geminiClient, geminiConfig, type SupportedLanguage } from './client';
-import * as fs from 'fs/promises';
-import * as path from 'path';
+import { uploadBufferToGcs, deleteObjectFromGcs, parseObjectNameFromUrl } from '@/lib/storage';
 
 /**
  * Create WAV file from PCM data
@@ -54,8 +53,7 @@ interface TTSOptions {
 
 interface TTSResult {
   success: boolean;
-  audioPath?: string;     // Relative path for client access
-  audioFullPath?: string; // Full path on server
+  audioPath?: string; // Public URL for client access
   error?: string;
 }
 
@@ -112,28 +110,19 @@ export async function generateSpeech(options: TTSOptions): Promise<TTSResult> {
     const randomId = Math.random().toString(36).substring(2, 8);
     const filename = `tts_${language}_${timestamp}_${randomId}.wav`;
 
-    // Ensure audio directory exists
-    const audioDir = path.join(process.cwd(), 'public', 'audio', 'tts');
-    await fs.mkdir(audioDir, { recursive: true });
-
     // Convert PCM data to WAV format
     const pcmBuffer = Buffer.from(audioData, 'base64');
     const wavBuffer = createWavBuffer(pcmBuffer);
     
-    // Save audio file
-    const fullPath = path.join(audioDir, filename);
-    await fs.writeFile(fullPath, wavBuffer);
+    const objectName = `exercises/audio/${filename}`;
+    const uploadResult = await uploadBufferToGcs(objectName, wavBuffer, 'audio/wav');
     
-    console.log('[TTS] Audio file saved:', fullPath);
+    console.log('[TTS] Audio file uploaded:', uploadResult.url);
     console.log('[TTS] PCM size:', pcmBuffer.length, 'bytes, WAV size:', wavBuffer.length, 'bytes');
-
-    // Return relative path for client access
-    const relativePath = `/audio/tts/${filename}`;
 
     return {
       success: true,
-      audioPath: relativePath,
-      audioFullPath: fullPath,
+      audioPath: uploadResult.url,
     };
   } catch (error) {
     console.error('[TTS] Error:', error);
@@ -149,9 +138,11 @@ export async function generateSpeech(options: TTSOptions): Promise<TTSResult> {
  */
 export async function deleteAudioFile(audioPath: string): Promise<boolean> {
   try {
-    // Convert relative path to full path
-    const fullPath = path.join(process.cwd(), 'public', audioPath);
-    await fs.unlink(fullPath);
+    const objectName = parseObjectNameFromUrl(audioPath);
+    if (!objectName) {
+      return false;
+    }
+    await deleteObjectFromGcs(objectName);
     return true;
   } catch (error) {
     console.error('Error deleting audio file:', error);

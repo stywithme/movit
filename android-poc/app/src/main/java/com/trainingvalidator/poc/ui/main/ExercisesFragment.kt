@@ -21,7 +21,7 @@ import com.trainingvalidator.poc.storage.ExerciseRepository
 import com.trainingvalidator.poc.storage.SyncManager
 import com.trainingvalidator.poc.training.loader.ExerciseLoader
 import com.trainingvalidator.poc.training.models.ExerciseConfig
-import com.trainingvalidator.poc.ui.ExerciseDetailActivity
+import com.trainingvalidator.poc.ui.PreWorkoutActivity
 import com.trainingvalidator.poc.ui.WorkoutListActivity
 import kotlinx.coroutines.launch
 
@@ -174,8 +174,8 @@ class ExercisesFragment : Fragment() {
     }
 
     private fun openExerciseDetail(exercise: ExerciseConfig) {
-        val intent = Intent(requireContext(), ExerciseDetailActivity::class.java).apply {
-            putExtra(ExerciseDetailActivity.EXTRA_EXERCISE_NAME, exercise.fileName)
+        val intent = Intent(requireContext(), PreWorkoutActivity::class.java).apply {
+            putExtra(PreWorkoutActivity.EXTRA_EXERCISE_NAME, exercise.fileName)
         }
         startActivity(intent)
     }

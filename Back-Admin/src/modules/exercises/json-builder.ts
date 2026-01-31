@@ -43,6 +43,11 @@ interface DbExercise {
   name: Record<string, string>;
   description?: Record<string, string> | null;
   instructions?: Record<string, string> | null;
+  media?: Array<{
+    url: string;
+    type: string;
+    isPrimary: boolean;
+  }>;
   repCountingConfig?: unknown;
   category: {
     code: string;
@@ -136,6 +141,11 @@ export function buildExerciseConfig(dbExercise: DbExercise): ExerciseConfig {
       buildPoseVariantConfig(pv)
     ),
   };
+
+  const primaryImage = dbExercise.media?.find(m => m.type === 'image' && m.isPrimary);
+  if (primaryImage?.url) {
+    config.imageUrl = primaryImage.url;
+  }
   
   // Only include optional fields if they have values
   if (dbExercise.description) {
@@ -394,6 +404,18 @@ export const exerciseFullInclude = {
       code: true,
       name: true,
     },
+  },
+  media: {
+    where: {
+      isPrimary: true,
+      type: 'image',
+    },
+    select: {
+      url: true,
+      type: true,
+      isPrimary: true,
+    },
+    take: 1,
   },
   countingMethod: {
     select: {

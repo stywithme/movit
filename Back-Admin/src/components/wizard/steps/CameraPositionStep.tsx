@@ -7,6 +7,7 @@
 
 import { useWizardStore } from '../WizardContext';
 import { Card, Label, Badge } from '@/components/ui';
+import { FileUpload } from '@/components/forms';
 import { Check, Camera } from 'lucide-react';
 import type { FacingDirection } from '@/lib/types/localized';
 
@@ -37,10 +38,13 @@ export function CameraPositionStep({ cameraPositions }: CameraPositionStepProps)
   
   const togglePosition = (id: string) => {
     const current = cameraPosition.cameraPositionIds || [];
-    const updated = current.includes(id)
-      ? current.filter(p => p !== id)
-      : [...current, id];
-    setCameraPosition({ cameraPositionIds: updated });
+    const isSelected = current.includes(id);
+    const updated = isSelected ? current.filter(p => p !== id) : [...current, id];
+    const currentRefs = cameraPosition.referenceImages || {};
+    const nextRefs = isSelected
+      ? Object.fromEntries(Object.entries(currentRefs).filter(([key]) => key !== id))
+      : currentRefs;
+    setCameraPosition({ cameraPositionIds: updated, referenceImages: nextRefs });
   };
   
   const setFacingDirection = (direction: FacingDirection) => {
@@ -105,6 +109,56 @@ export function CameraPositionStep({ cameraPositions }: CameraPositionStepProps)
           <span className="text-sm text-amber-600">Select at least one camera position</span>
         )}
       </div>
+
+      {/* Pose Variant Reference Images */}
+      {(cameraPosition.cameraPositionIds || []).length > 0 && (
+        <div className="space-y-4 pt-6 border-t border-gray-200">
+          <div className="flex items-center gap-2">
+            <Label tooltip="Optional: Upload a reference image for each selected camera position.">
+              Pose Variant Reference Images
+            </Label>
+          </div>
+          <div className="space-y-4">
+            {(cameraPosition.cameraPositionIds || []).map((id) => {
+              const pos = cameraPositions.find((p) => p.id === id);
+              if (!pos) return null;
+              const value = cameraPosition.referenceImages?.[id] || '';
+              return (
+                <div key={id} className="bg-white rounded-lg border border-gray-200 p-4">
+                  <div className="flex items-center gap-3 mb-3">
+                    <div className="w-10 h-10 bg-gray-100 rounded-lg overflow-hidden flex items-center justify-center">
+                      {pos.imageUrl ? (
+                        <img src={pos.imageUrl} alt={pos.name.en} className="w-full h-full object-cover" />
+                      ) : (
+                        <Camera className="w-5 h-5 text-gray-400" />
+                      )}
+                    </div>
+                    <div>
+                      <p className="font-medium text-gray-900">{pos.name.en}</p>
+                      <p className="text-sm text-gray-500">{pos.name.ar}</p>
+                    </div>
+                  </div>
+                  <FileUpload
+                    label="Reference Image"
+                    value={value}
+                    onChange={(imageUrl) => {
+                      setCameraPosition({
+                        referenceImages: {
+                          ...(cameraPosition.referenceImages || {}),
+                          [id]: imageUrl,
+                        },
+                      });
+                    }}
+                    uploadType="exercise-image"
+                    accept="image/*"
+                    helperText="Optional: reference image for this pose variant"
+                  />
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
       
       {/* Facing Direction */}
       <div className="space-y-4 pt-6 border-t border-gray-200">

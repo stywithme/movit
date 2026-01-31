@@ -72,6 +72,9 @@ dependencies {
 
     // JSON Parsing
     implementation("com.google.code.gson:gson:2.13.2")
+
+    // Image Loading
+    implementation("io.coil-kt:coil:2.6.0")
     
     // Networking - Retrofit + OkHttp for API sync
     val retrofitVersion = "2.11.0"

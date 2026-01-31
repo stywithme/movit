@@ -79,6 +79,9 @@ export default function EditExercisePage() {
         
         // Map exercise data to wizard state
         const firstVariant = exercise.poseVariants?.[0];
+        const primaryImageUrl = exercise.media?.find((m: { isPrimary: boolean; type: string }) => 
+          m.isPrimary && m.type === 'image'
+        )?.url || '';
         const repConfig = exercise.repCountingConfig as Record<string, number> | null;
         const isHold = exercise.countingMethod?.code === 'hold';
         
@@ -121,6 +124,15 @@ export default function EditExercisePage() {
           .map((a: { attributeValueId: string }) => a.attributeValueId) || [];
         
         // Load into wizard state
+        const referenceImages = (exercise.poseVariants || []).reduce(
+          (acc: Record<string, string>, pv: { cameraPositionId: string; referenceImageUrl?: string | null }) => {
+            if (pv.referenceImageUrl) {
+              acc[pv.cameraPositionId] = pv.referenceImageUrl;
+            }
+            return acc;
+          },
+          {}
+        );
         loadExercise({
           exerciseId: exercise.id,
           exerciseStatus: exercise.status,
@@ -130,6 +142,7 @@ export default function EditExercisePage() {
             description: exercise.description || { ar: '', en: '' },
             instructions: exercise.instructions || { ar: '', en: '' },
             categoryId: exercise.categoryId || '',
+            imageUrl: primaryImageUrl,
           },
           countingMethod: {
             countingMethodId: exercise.countingMethodId || '',
@@ -138,6 +151,7 @@ export default function EditExercisePage() {
           cameraPosition: {
             cameraPositionIds: exercise.poseVariants?.map((pv: { cameraPositionId: string }) => pv.cameraPositionId) || [],
             expectedFacingDirection: firstVariant?.expectedFacingDirection || 'auto_detect',
+            referenceImages,
           },
           jointConfig: {
             trackedJoints,
@@ -244,6 +258,7 @@ export default function EditExercisePage() {
       instructions: store.basicInfo.instructions,
       categoryId: store.basicInfo.categoryId,
       countingMethodId: store.countingMethod.countingMethodId,
+      imageUrl: store.basicInfo.imageUrl || undefined,
       muscles: store.extras.muscles,
       equipment: store.extras.equipment,
       tags: store.extras.tags,
@@ -252,6 +267,7 @@ export default function EditExercisePage() {
         name: store.basicInfo.name,
         cameraPositionId,
         expectedFacingDirection: store.cameraPosition.expectedFacingDirection,
+        referenceImageUrl: store.cameraPosition.referenceImages?.[cameraPositionId] || undefined,
         trackedJointsConfig,
         positionChecks,
         feedbackMessages,

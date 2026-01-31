@@ -184,6 +184,9 @@
     <string name="analyze_video">تحليل فيديو</string>
     <string name="form_checklist">قائمة التحقق</string>
     <string name="steps_format">%1$d خطوات</string>
+    <string name="looping_preview">معاينة متكررة</string>
+    <string name="no_equipment">بدون معدات</string>
+    <string name="camera_position">موقع الكاميرا</string>
     
     <!-- Training -->
     <string name="current_exercise">التمرين الحالي</string>

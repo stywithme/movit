@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { LocalizedText } from '@/lib/types/localized';
 import LocalizedInput from '@/components/forms/LocalizedInput';
+import { FileUpload } from '@/components/forms';
 import { Input } from '@/components/ui';
 
 interface Joint {
@@ -171,14 +172,24 @@ export default function NewCameraPositionPage() {
           multiline
         />
 
-        {/* Image URL */}
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Reference Image URL</label>
-          <Input
+        {/* Image */}
+        <div className="space-y-3">
+          <FileUpload
+            label="Reference Image"
             value={formData.imageUrl}
-            onChange={(e) => setFormData({ ...formData, imageUrl: e.target.value })}
-            placeholder="https://example.com/image.jpg"
+            onChange={(imageUrl) => setFormData({ ...formData, imageUrl })}
+            uploadType="camera-position-image"
+            accept="image/*"
+            helperText="Upload a camera position reference image"
           />
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Reference Image URL</label>
+            <Input
+              value={formData.imageUrl}
+              onChange={(e) => setFormData({ ...formData, imageUrl: e.target.value })}
+              placeholder="https://example.com/image.jpg"
+            />
+          </div>
         </div>
 
         {/* Joints Selection */}

@@ -258,6 +258,7 @@ export interface CreateExerciseInput {
   instructions?: LocalizedText;
   categoryId: string;
   countingMethodId: string;
+  imageUrl?: string;
   slug?: string;
   muscles?: string[];
   equipment?: string[];

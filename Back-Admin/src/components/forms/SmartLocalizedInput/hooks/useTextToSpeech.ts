@@ -123,8 +123,16 @@ export function useTextToSpeech(): UseTextToSpeechReturn {
       setIsPlaying(false);
     };
     audio.onerror = (e) => {
-      console.error('[TTS Play] Error:', audio.error, e);
-      setError('Failed to play audio');
+      const errorCode = audio.error?.code;
+      const errorMessage = audio.error?.message || 'Unknown error';
+      console.error('[TTS Play] Error:', { code: errorCode, message: errorMessage, url: audioUrl }, e);
+      
+      // Provide helpful error message
+      if (errorCode === 4) {
+        setError('Audio format not supported or file not accessible. Check if the URL is publicly accessible.');
+      } else {
+        setError(`Failed to play audio: ${errorMessage}`);
+      }
       setIsPlaying(false);
     };
 

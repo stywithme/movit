@@ -184,6 +184,9 @@
     <string name="analyze_video">Analyze Video</string>
     <string name="form_checklist">Form Checklist</string>
     <string name="steps_format">%1$d steps</string>
+    <string name="looping_preview">LOOPING PREVIEW</string>
+    <string name="no_equipment">No Equipment</string>
+    <string name="camera_position">Camera Position</string>
     
     <!-- Training -->
     <string name="current_exercise">Current Exercise</string>

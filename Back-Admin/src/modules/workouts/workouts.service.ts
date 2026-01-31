@@ -29,6 +29,13 @@ interface LocalizedText {
 // HELPERS
 // ============================================
 
+function parseLocalizedText(value: unknown): LocalizedText | undefined {
+  if (!value || typeof value !== 'object') return undefined;
+  const record = value as Record<string, unknown>;
+  if (typeof record.ar !== 'string' || typeof record.en !== 'string') return undefined;
+  return { ar: record.ar, en: record.en };
+}
+
 /**
  * Generate a unique slug from name
  */
@@ -311,10 +318,10 @@ export const workoutService = {
       throw new Error('Workout not found');
     }
 
-    const name = original.name as LocalizedText;
+    const name = parseLocalizedText(original.name) || { ar: '', en: '' };
     const newName: LocalizedText = {
-      ar: `${name.ar} (نسخة)`,
-      en: `${name.en} (Copy)`,
+      ar: `${name.ar || ''} (نسخة)`,
+      en: `${name.en || ''} (Copy)`,
     };
 
     const exercises: WorkoutExerciseInput[] = original.exercises.map((ex, index) => ({
@@ -323,14 +330,14 @@ export const workoutService = {
       difficulty: ex.difficulty as 'beginner' | 'normal' | 'advanced',
       targetReps: ex.targetReps ?? undefined,
       targetDuration: ex.targetDuration ?? undefined,
-      notes: ex.notes as LocalizedText | undefined,
+      notes: parseLocalizedText(ex.notes),
       sortOrder: index,
     }));
 
     return this.create(
       {
         name: newName,
-        description: original.description as LocalizedText | undefined,
+        description: parseLocalizedText(original.description),
         type: original.type as 'circuit' | 'super_set',
         executionMode: original.executionMode as 'sequential' | 'alternating',
         rounds: original.rounds,
@@ -375,15 +382,15 @@ export const workoutService = {
         variantIndex: we.variantIndex,
         difficulty: we.difficulty as 'beginner' | 'normal' | 'advanced',
         target,
-        notes: we.notes as LocalizedText | undefined,
+        notes: parseLocalizedText(we.notes),
       };
     });
 
     return {
       id: workout.id,
       slug: workout.slug,
-      name: workout.name as LocalizedText,
-      description: workout.description as LocalizedText | undefined,
+      name: parseLocalizedText(workout.name) || { ar: '', en: '' },
+      description: parseLocalizedText(workout.description),
       type: workout.type as 'circuit' | 'super_set',
       executionMode: workout.executionMode as 'sequential' | 'alternating',
       rounds: workout.rounds,

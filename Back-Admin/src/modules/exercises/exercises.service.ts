@@ -7,6 +7,7 @@
  */
 
 import { getPrisma } from '@/lib/prisma/client';
+import { deleteByUrl } from '@/lib/storage';
 import type { CountingMethodCode, PhaseName } from '@/lib/types/localized';
 import type { 
   TrackedJoint, 
@@ -46,6 +47,7 @@ interface CreateExerciseInput {
   instructions?: LocalizedText;
   categoryId: string;
   countingMethodId: string;
+  imageUrl?: string;
   slug?: string;
   muscles?: string[];
   equipment?: string[];
@@ -207,6 +209,16 @@ export const exerciseService = {
         status: 'draft',
         createdBy,
         updatedBy: createdBy,
+        media: data.imageUrl
+          ? {
+              create: {
+                type: 'image',
+                url: data.imageUrl,
+                isPrimary: true,
+                sortOrder: 1,
+              },
+            }
+          : undefined,
       },
       include: {
         category: true,
@@ -313,6 +325,16 @@ export const exerciseService = {
    */
   async update(id: string, data: UpdateExerciseInput, updatedBy?: string) {
     const prisma = await getPrisma();
+    const existingMedia = data.imageUrl !== undefined
+      ? await prisma.exerciseMedia.findFirst({
+          where: {
+            exerciseId: id,
+            type: 'image',
+            isPrimary: true,
+          },
+          select: { url: true },
+        })
+      : null;
 
     const updateData: Record<string, unknown> = {
       updatedBy,
@@ -330,6 +352,32 @@ export const exerciseService = {
       where: { id },
       data: updateData,
     });
+
+    if (data.imageUrl !== undefined) {
+      await prisma.exerciseMedia.deleteMany({
+        where: {
+          exerciseId: id,
+          type: 'image',
+          isPrimary: true,
+        },
+      });
+
+      if (data.imageUrl) {
+        await prisma.exerciseMedia.create({
+          data: {
+            exerciseId: id,
+            type: 'image',
+            url: data.imageUrl,
+            isPrimary: true,
+            sortOrder: 1,
+          },
+        });
+      }
+
+      if (existingMedia?.url && existingMedia.url !== data.imageUrl) {
+        await deleteByUrl(existingMedia.url);
+      }
+    }
 
     // Update attributes if provided
     const attributeIds = [

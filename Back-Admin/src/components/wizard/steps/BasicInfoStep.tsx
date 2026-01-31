@@ -13,6 +13,7 @@ import { useEffect } from 'react';
 import { useWizardStore } from '../WizardContext';
 import { BasicInfoSchema, type BasicInfoData } from '@/modules/exercises/exercises.validation';
 import { Input, Textarea, Select, Label, Card, Badge } from '@/components/ui';
+import { FileUpload } from '@/components/forms';
 import { Check } from 'lucide-react';
 import type { CountingMethodCode } from '@/lib/types/localized';
 
@@ -58,6 +59,7 @@ export function BasicInfoStep({ categories, countingMethods }: BasicInfoStepProp
   const {
     register,
     watch,
+    setValue,
     formState: { errors },
   } = useForm<BasicInfoData>({
     resolver: zodResolver(BasicInfoSchema),
@@ -66,6 +68,7 @@ export function BasicInfoStep({ categories, countingMethods }: BasicInfoStepProp
       description: basicInfo.description || { ar: '', en: '' },
       instructions: basicInfo.instructions || { ar: '', en: '' },
       categoryId: basicInfo.categoryId || '',
+      imageUrl: basicInfo.imageUrl || '',
     },
   });
   
@@ -128,6 +131,24 @@ export function BasicInfoStep({ categories, countingMethods }: BasicInfoStepProp
             label: `${cat.name.en} / ${cat.name.ar}`,
           }))}
           {...register('categoryId')}
+        />
+      </div>
+
+      {/* Exercise Image */}
+      <div className="space-y-2">
+        <Label tooltip="Optional: Upload a primary image for this exercise.">
+          Exercise Image
+        </Label>
+        <FileUpload
+          label="Primary Image"
+          value={basicInfo.imageUrl || ''}
+          onChange={(imageUrl) => {
+            setValue('imageUrl', imageUrl, { shouldDirty: true });
+            setBasicInfo({ imageUrl });
+          }}
+          uploadType="exercise-image"
+          accept="image/*"
+          helperText="Recommended: 1200x800 JPG or PNG"
         />
       </div>
       

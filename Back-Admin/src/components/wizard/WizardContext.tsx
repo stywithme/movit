@@ -112,6 +112,7 @@ const initialState: WizardState = {
     description: { ar: '', en: '' },
     instructions: { ar: '', en: '' },
     categoryId: '',
+    imageUrl: '',
   },
   countingMethod: {
     countingMethodId: '',
@@ -120,6 +121,7 @@ const initialState: WizardState = {
   cameraPosition: {
     cameraPositionIds: [],
     expectedFacingDirection: 'auto_detect',
+    referenceImages: {},
   },
   jointConfig: {
     trackedJoints: [],

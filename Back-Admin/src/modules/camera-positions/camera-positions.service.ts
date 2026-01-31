@@ -1,4 +1,5 @@
 import { getPrisma } from '@/lib/prisma/client';
+import { deleteByUrl } from '@/lib/storage';
 import { CreateCameraPositionInput, UpdateCameraPositionInput } from './camera-positions.types';
 
 /**
@@ -103,6 +104,10 @@ export const cameraPositionService = {
    */
   async update(id: string, data: UpdateCameraPositionInput) {
     const prisma = await getPrisma();
+    const existing = await prisma.cameraPosition.findUnique({
+      where: { id },
+      select: { imageUrl: true },
+    });
     
     const updateData: Record<string, unknown> = {
       updatedAt: new Date(),
@@ -143,6 +148,10 @@ export const cameraPositionService = {
         },
       },
     });
+
+    if (data.imageUrl !== undefined && existing?.imageUrl && existing.imageUrl !== data.imageUrl) {
+      await deleteByUrl(existing.imageUrl);
+    }
     
     return cameraPosition;
   },
@@ -166,15 +175,25 @@ export const cameraPositionService = {
    */
   async hardDelete(id: string) {
     const prisma = await getPrisma();
+    const existing = await prisma.cameraPosition.findUnique({
+      where: { id },
+      select: { imageUrl: true },
+    });
     
     // Delete joints first
     await prisma.cameraPositionJoint.deleteMany({
       where: { cameraPositionId: id },
     });
     
-    return prisma.cameraPosition.delete({
+    const deleted = await prisma.cameraPosition.delete({
       where: { id },
     });
+    
+    if (existing?.imageUrl) {
+      await deleteByUrl(existing.imageUrl);
+    }
+
+    return deleted;
   },
 };
 
