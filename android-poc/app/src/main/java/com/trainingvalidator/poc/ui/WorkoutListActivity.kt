@@ -5,9 +5,9 @@ import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.widget.ImageView
 import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
-import androidx.cardview.widget.CardView
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.trainingvalidator.poc.R
@@ -16,6 +16,7 @@ import com.trainingvalidator.poc.storage.WorkoutRepository
 import com.trainingvalidator.poc.training.loader.WorkoutLoader
 import com.trainingvalidator.poc.training.models.WorkoutConfig
 import com.trainingvalidator.poc.training.models.WorkoutType
+import androidx.appcompat.app.AppCompatDelegate
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -100,15 +101,14 @@ class WorkoutListActivity : AppCompatActivity() {
     ) : RecyclerView.Adapter<WorkoutAdapter.ViewHolder>() {
 
         inner class ViewHolder(view: View) : RecyclerView.ViewHolder(view) {
-            val card: CardView = view.findViewById(R.id.cardWorkout)
-            val tvIcon: TextView = view.findViewById(R.id.tvIcon)
+            val ivWorkoutImage: ImageView = view.findViewById(R.id.ivWorkoutImage)
             val tvName: TextView = view.findViewById(R.id.tvWorkoutName)
-            val tvNameAr: TextView = view.findViewById(R.id.tvWorkoutNameAr)
             val tvDescription: TextView = view.findViewById(R.id.tvDescription)
             val tvExerciseCount: TextView = view.findViewById(R.id.tvExerciseCount)
-            val tvRounds: TextView = view.findViewById(R.id.tvRounds)
             val tvDuration: TextView = view.findViewById(R.id.tvDuration)
-            val tvWorkoutType: TextView = view.findViewById(R.id.tvWorkoutType)
+            val tvDifficulty: TextView = view.findViewById(R.id.tvDifficulty)
+            val tvMuscles: TextView = view.findViewById(R.id.tvMuscles)
+            val btnStart: View = view.findViewById(R.id.btnStart)
         }
 
         override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
@@ -119,38 +119,46 @@ class WorkoutListActivity : AppCompatActivity() {
 
         override fun onBindViewHolder(holder: ViewHolder, position: Int) {
             val workout = items[position]
+            val language = getCurrentLanguage()
             
-            holder.tvName.text = workout.name.en
-            holder.tvNameAr.text = workout.name.ar
-            holder.tvDescription.text = workout.description?.en ?: ""
-            holder.tvExerciseCount.text = workout.exercises.size.toString()
-            holder.tvRounds.text = workout.rounds.toString()
+            holder.tvName.text = workout.name.get(language).ifBlank { workout.name.en }
+            holder.tvDescription.text = workout.description?.let { desc ->
+                desc.get(language).ifBlank { desc.en }
+            } ?: ""
+            holder.tvExerciseCount.text = getString(
+                R.string.exercises_count_format,
+                workout.exercises.size
+            )
             
             // Calculate estimated duration in minutes
             val durationMinutes = (workout.getEstimatedDurationMs() / 60000).toInt()
-            holder.tvDuration.text = "~$durationMinutes"
+            holder.tvDuration.text = getString(R.string.duration_minutes_format, durationMinutes)
             
             // Workout type badge
-            holder.tvWorkoutType.text = when (workout.type) {
-                WorkoutType.CIRCUIT -> "CIRCUIT"
-                WorkoutType.SUPER_SET -> "SUPER SET"
-                WorkoutType.AMRAP -> "AMRAP"
-                WorkoutType.EMOM -> "EMOM"
+            holder.tvDifficulty.text = when (workout.type) {
+                WorkoutType.CIRCUIT -> getString(R.string.workout_type_circuit)
+                WorkoutType.SUPER_SET -> getString(R.string.workout_type_super_set)
+                WorkoutType.AMRAP -> getString(R.string.workout_type_amrap)
+                WorkoutType.EMOM -> getString(R.string.workout_type_emom)
             }
-            
-            // Icon based on type
-            holder.tvIcon.text = when (workout.type) {
-                WorkoutType.CIRCUIT -> "🔥"
-                WorkoutType.SUPER_SET -> "💪"
-                WorkoutType.AMRAP -> "⏱️"
-                WorkoutType.EMOM -> "🎯"
-            }
-            
-            holder.card.setOnClickListener {
-                onClick(workout)
-            }
+
+            // Optional: muscles not available in workout config
+            holder.tvMuscles.visibility = View.GONE
+
+            holder.itemView.setOnClickListener { onClick(workout) }
+            holder.btnStart.setOnClickListener { onClick(workout) }
         }
 
         override fun getItemCount() = items.size
+    }
+
+    private fun getCurrentLanguage(): String {
+        val appLocales = AppCompatDelegate.getApplicationLocales()
+        val locale = if (appLocales.isEmpty) {
+            resources.configuration.locales[0]
+        } else {
+            appLocales[0]
+        }
+        return locale?.language ?: "en"
     }
 }

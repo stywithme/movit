@@ -13,6 +13,7 @@ import android.widget.LinearLayout
 import android.widget.TextView
 import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
+import androidx.appcompat.app.AppCompatDelegate
 import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.WindowInsetsControllerCompat
@@ -181,11 +182,21 @@ class ReportActivity : AppCompatActivity() {
     }
     
     private fun updateUI(report: PostTrainingReport) {
-        // Hero section
-        binding.tvExerciseName.text = report.exerciseName.en
+        val language = getCurrentLanguage()
+        
+        // Hero section - use current language
+        binding.tvExerciseName.text = report.exerciseName.get(language).ifBlank { report.exerciseName.en }
         // Show rating instead of difficulty (difficulty has been removed)
-        binding.tvDifficulty.text = report.summary.rating.name.lowercase().replaceFirstChar { it.uppercase() }
-        binding.tvMotivationalMessage.text = report.summary.motivationalMessage.en
+        val ratingText = when (report.summary.rating) {
+            PerformanceRating.EXCELLENT -> getString(R.string.excellent)
+            PerformanceRating.GOOD -> getString(R.string.good)
+            PerformanceRating.FAIR -> getString(R.string.medium)
+            PerformanceRating.NEEDS_WORK -> getString(R.string.needs_work)
+        }
+        binding.tvDifficulty.text = ratingText
+        binding.tvMotivationalMessage.text = report.summary.motivationalMessage.get(language).ifBlank { 
+            report.summary.motivationalMessage.en 
+        }
         
         // Rating icon based on performance (with DANGER alert override)
         binding.tvRatingIcon.text = when {
@@ -222,13 +233,23 @@ class ReportActivity : AppCompatActivity() {
         binding.tvDuration.text = report.summary.getFormattedDuration()
         binding.progressAccuracy.progress = report.summary.averageScore.toInt()
         
-        // State-based rep counts
+        // State-based rep counts with localized strings
         val stateBreakdown = report.summary.stateBreakdown
-        binding.tvCorrectReps.text = "⭐ ${stateBreakdown.perfectCount} Perfect  ✓ ${stateBreakdown.normalCount} Good"
+        val perfectText = getString(R.string.perfect_count_format, stateBreakdown.perfectCount)
+        val goodText = getString(R.string.good_count_format, stateBreakdown.normalCount)
+        binding.tvCorrectReps.text = "⭐ $perfectText  ✓ $goodText"
+        
         binding.tvIncorrectReps.text = when {
-            stateBreakdown.dangerCount > 0 -> "🚨 ${stateBreakdown.dangerCount} Danger  ⚠️ ${stateBreakdown.warningCount} Warning"
-            stateBreakdown.warningCount > 0 -> "⚠️ ${stateBreakdown.warningCount} Needs Work"
-            else -> "✓ All good!"
+            stateBreakdown.dangerCount > 0 -> {
+                val dangerText = getString(R.string.danger_count_format, stateBreakdown.dangerCount)
+                val warningText = getString(R.string.warning_count_format, stateBreakdown.warningCount)
+                "🚨 $dangerText  ⚠️ $warningText"
+            }
+            stateBreakdown.warningCount > 0 -> {
+                val warningText = getString(R.string.warning_count_format, stateBreakdown.warningCount)
+                "⚠️ $warningText"
+            }
+            else -> "✓ ${getString(R.string.all_good)}"
         }
         
         // Color score based on value and DANGER state
@@ -242,6 +263,16 @@ class ReportActivity : AppCompatActivity() {
         binding.tvAccuracy.setTextColor(scoreColor)
         
         Log.d(TAG, "UI updated for report: ${report.id}")
+    }
+    
+    private fun getCurrentLanguage(): String {
+        val appLocales = AppCompatDelegate.getApplicationLocales()
+        val locale = if (appLocales.isEmpty) {
+            resources.configuration.locales[0]
+        } else {
+            appLocales[0]
+        }
+        return locale?.language ?: "en"
     }
     
     // ==================== ViewPager Adapter ====================
@@ -319,12 +350,13 @@ class BestRepsFragment : Fragment() {
         
         override fun onBindViewHolder(holder: ViewHolder, position: Int) {
             val bestRep = bestReps[position]
+            val context = holder.itemView.context
             
-            holder.tvRepNumber.text = "Rep #${bestRep.repNumber}"
+            holder.tvRepNumber.text = context.getString(R.string.rep_number_format, bestRep.repNumber)
             holder.tvDuration.text = "⏱ ${bestRep.getFormattedDuration()}"
             
             // Score display
-            holder.tvScore.text = "Score: ${bestRep.score.toInt()}%"
+            holder.tvScore.text = context.getString(R.string.score_format, bestRep.score.toInt())
             
             // Badge based on position
             holder.tvBadge.text = when (position) {
@@ -449,7 +481,7 @@ class ErrorsFragment : Fragment() {
     
     private fun addPerfectTrainingMessage(container: LinearLayout) {
         val messageView = TextView(requireContext()).apply {
-            text = "🎉\n\nAmazing! Perfect Training!\n\nNo errors detected. You're doing great!"
+            text = "🎉\n\n${getString(R.string.perfect_training_title)}\n\n${getString(R.string.perfect_training_desc)}"
             textSize = 18f
             gravity = android.view.Gravity.CENTER
             setTextColor(0xFF4CAF50.toInt())
@@ -461,7 +493,7 @@ class ErrorsFragment : Fragment() {
     private fun addDangerSection(container: LinearLayout, alerts: List<DangerAlert>) {
         // Section header
         val header = TextView(requireContext()).apply {
-            text = "🚨 Important Safety Alerts"
+            text = "🚨 ${getString(R.string.safety_alerts)}"
             textSize = 18f
             setTextColor(0xFFB71C1C.toInt())
             setPadding(32, 16, 32, 8)
@@ -469,10 +501,18 @@ class ErrorsFragment : Fragment() {
         }
         container.addView(header)
         
+        // Check if Arabic
+        val isArabic = (requireActivity() as? ReportActivity)?.let {
+            AppCompatDelegate.getApplicationLocales().let { locales ->
+                if (locales.isEmpty) resources.configuration.locales[0]?.language == "ar"
+                else locales[0]?.language == "ar"
+            }
+        } ?: false
+        
         // Add danger alert cards
         alerts.forEach { alert ->
             val dangerCard = com.trainingvalidator.poc.ui.report.components.DangerAlertCard(requireContext())
-            dangerCard.bind(alert, isArabic = false)
+            dangerCard.bind(alert, isArabic = isArabic)
             container.addView(dangerCard)
         }
         
@@ -494,9 +534,17 @@ class ErrorsFragment : Fragment() {
         val dangerErrors = errors.filter { it.isDanger() }
         val warningErrors = errors.filter { !it.isDanger() }
         
+        // Check if Arabic
+        val isArabic = (requireActivity() as? ReportActivity)?.let {
+            AppCompatDelegate.getApplicationLocales().let { locales ->
+                if (locales.isEmpty) resources.configuration.locales[0]?.language == "ar"
+                else locales[0]?.language == "ar"
+            }
+        } ?: false
+        
         if (warningErrors.isNotEmpty()) {
             val header = TextView(requireContext()).apply {
-                text = "⚠️ Areas for Improvement"
+                text = "⚠️ ${getString(R.string.areas_for_improvement)}"
                 textSize = 16f
                 setTextColor(0xFFFFFFFF.toInt())
                 setPadding(32, 16, 32, 8)
@@ -507,7 +555,7 @@ class ErrorsFragment : Fragment() {
             // Add error cards
             warningErrors.forEach { error ->
                 val errorCard = com.trainingvalidator.poc.ui.report.components.ErrorComparisonCard(requireContext())
-                errorCard.bind(error, isArabic = false)
+                errorCard.bind(error, isArabic = isArabic)
                 container.addView(errorCard)
             }
         }

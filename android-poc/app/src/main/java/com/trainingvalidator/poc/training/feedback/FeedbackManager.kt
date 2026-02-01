@@ -72,9 +72,9 @@ class FeedbackManager(
             Log.d(TAG, "Mode changed: ${if (value) "VIDEO" else "CAMERA"}")
         }
     
-    // TTS enabled only in Camera mode
+    // TTS enabled only in Camera mode and if voice is enabled
     private val isTtsEnabled: Boolean
-        get() = !isVideoMode && config.enableAudio
+        get() = !isVideoMode && isVoiceEnabled()
     
     // Haptic enabled only in Camera mode
     private val isHapticEnabled: Boolean
@@ -97,6 +97,24 @@ class FeedbackManager(
     // Text-to-speech (legacy, used as fallback)
     private var tts: TextToSpeech? = null
     private var isTtsReady = false
+    
+    // Runtime voice control
+    private var voiceEnabledOverride: Boolean? = null
+    
+    /**
+     * Enable or disable voice feedback at runtime
+     */
+    fun setVoiceEnabled(enabled: Boolean) {
+        voiceEnabledOverride = enabled
+        Log.d(TAG, "Voice feedback ${if (enabled) "enabled" else "disabled"}")
+    }
+    
+    /**
+     * Check if voice is currently enabled
+     */
+    private fun isVoiceEnabled(): Boolean {
+        return voiceEnabledOverride ?: config.enableAudio
+    }
     
     // Audio feedback player (prioritizes cached audio over TTS)
     private var audioPlayer: AudioFeedbackPlayer? = null

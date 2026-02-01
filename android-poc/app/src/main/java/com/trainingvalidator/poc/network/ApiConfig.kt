@@ -32,9 +32,9 @@ object ApiConfig {
      * - Windows: Run `ipconfig` in cmd, look for "IPv4 Address" under your WiFi adapter
      * - Mac/Linux: Run `ifconfig` or `ip addr`, look for your WiFi interface
      * 
-     * Current: 192.168.68.175 (auto-detected)
+     * Current: 192.168.68.102 (auto-detected)
      */
-    private const val PHYSICAL_DEVICE_IP = "192.168.68.175"
+    private const val PHYSICAL_DEVICE_IP = "192.168.68.102"
     
     /**
      * Base URL for emulator

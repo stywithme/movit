@@ -18,7 +18,7 @@
             android:layout_height="wrap_content"
             android:orientation="vertical"
             android:paddingTop="@dimen/spacing_3xl"
-            android:paddingBottom="@dimen/spacing_xl">
+            android:paddingBottom="100dp">
 
             <!-- Header -->
             <LinearLayout
@@ -154,7 +154,7 @@
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:textColor="@color/warning"
-                            tools:text="12🔥" />
+                            tools:text="12" />
 
                         <TextView
                             style="@style/TextAppearance.WayToFix.Caption"
@@ -169,81 +169,280 @@
 
             </androidx.cardview.widget.CardView>
 
-            <!-- Continue Training Section -->
-            <TextView
-                style="@style/TextAppearance.WayToFix.Headline3"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginStart="@dimen/screen_padding_horizontal"
-                android:layout_marginTop="@dimen/spacing_xl"
-                android:text="@string/continue_training"
-                android:textColor="@color/text_primary" />
-
-            <!-- Last Workout Card -->
-            <androidx.cardview.widget.CardView
-                android:id="@+id/cardContinue"
+            <!-- ======================= RECENT REPORTS SECTION ======================= -->
+            <LinearLayout
+                android:id="@+id/recentReportsSection"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginHorizontal="@dimen/screen_padding_horizontal"
-                android:layout_marginTop="@dimen/spacing_sm"
-                app:cardBackgroundColor="@color/surface"
-                app:cardCornerRadius="@dimen/radius_base"
-                app:cardElevation="0dp">
+                android:orientation="vertical"
+                android:layout_marginTop="@dimen/spacing_xl">
 
+                <!-- Section Header -->
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:gravity="center_vertical"
-                    android:padding="@dimen/spacing_base">
+                    android:paddingHorizontal="@dimen/screen_padding_horizontal">
 
-                    <ImageView
-                        android:layout_width="56dp"
-                        android:layout_height="56dp"
-                        android:background="@drawable/bg_circle_surface"
-                        android:padding="12dp"
-                        android:src="@drawable/ic_muscle"
-                        app:tint="@color/primary"
-                        android:contentDescription="@string/cd_exercise" />
-
-                    <LinearLayout
+                    <TextView
+                        style="@style/TextAppearance.WayToFix.Headline3"
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
                         android:layout_weight="1"
-                        android:layout_marginStart="@dimen/spacing_md"
-                        android:orientation="vertical">
+                        android:text="@string/recent_reports"
+                        android:textColor="@color/text_primary" />
 
-                        <TextView
-                            android:id="@+id/tvLastExercise"
-                            style="@style/TextAppearance.WayToFix.Body1"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:textColor="@color/text_primary"
-                            android:textStyle="bold"
-                            tools:text="@string/sample_exercise_squats" />
-
-                        <TextView
-                            android:id="@+id/tvLastProgress"
-                            style="@style/TextAppearance.WayToFix.Caption"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:textColor="@color/text_tertiary"
-                            tools:text="2/3 sets completed" />
-
-                    </LinearLayout>
-
-                    <com.google.android.material.button.MaterialButton
-                        android:id="@+id/btnContinue"
-                        style="@style/Widget.WayToFix.Button.Primary"
+                    <TextView
+                        android:id="@+id/tvViewAllReports"
+                        style="@style/TextAppearance.WayToFix.Body2"
                         android:layout_width="wrap_content"
-                        android:layout_height="40dp"
-                        android:text="@string/start"
-                        android:textSize="14sp" />
+                        android:layout_height="wrap_content"
+                        android:text="@string/view_all"
+                        android:textColor="@color/primary" />
 
                 </LinearLayout>
 
-            </androidx.cardview.widget.CardView>
+                <!-- Reports RecyclerView (Horizontal) -->
+                <androidx.recyclerview.widget.RecyclerView
+                    android:id="@+id/rvRecentReports"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="@dimen/spacing_sm"
+                    android:clipToPadding="false"
+                    android:paddingHorizontal="@dimen/screen_padding_horizontal"
+                    android:orientation="horizontal"
+                    tools:listitem="@layout/item_report_card"
+                    tools:itemCount="3" />
 
-            <!-- Quick Actions -->
+                <!-- Empty State for Reports -->
+                <androidx.cardview.widget.CardView
+                    android:id="@+id/emptyReportsCard"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginHorizontal="@dimen/screen_padding_horizontal"
+                    android:layout_marginTop="@dimen/spacing_sm"
+                    android:visibility="gone"
+                    app:cardBackgroundColor="@color/surface"
+                    app:cardCornerRadius="@dimen/radius_base"
+                    app:cardElevation="0dp">
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:gravity="center"
+                        android:orientation="vertical"
+                        android:padding="@dimen/spacing_xl">
+
+                        <ImageView
+                            android:layout_width="48dp"
+                            android:layout_height="48dp"
+                            android:src="@drawable/ic_report"
+                            app:tint="@color/text_hint"
+                            android:contentDescription="@null" />
+
+                        <TextView
+                            style="@style/TextAppearance.WayToFix.Body2"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="@dimen/spacing_sm"
+                            android:text="@string/no_reports_yet"
+                            android:textColor="@color/text_secondary" />
+
+                        <TextView
+                            style="@style/TextAppearance.WayToFix.Caption"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="@dimen/spacing_xs"
+                            android:text="@string/complete_workout_for_report"
+                            android:textColor="@color/text_hint"
+                            android:textAlignment="center" />
+
+                    </LinearLayout>
+
+                </androidx.cardview.widget.CardView>
+
+            </LinearLayout>
+
+            <!-- ======================= WORKOUTS SECTION ======================= -->
+            <LinearLayout
+                android:id="@+id/workoutsSection"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:layout_marginTop="@dimen/spacing_xl">
+
+                <!-- Section Header -->
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:gravity="center_vertical"
+                    android:paddingHorizontal="@dimen/screen_padding_horizontal">
+
+                    <TextView
+                        style="@style/TextAppearance.WayToFix.Headline3"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:text="@string/workouts"
+                        android:textColor="@color/text_primary" />
+
+                    <TextView
+                        android:id="@+id/tvViewAllWorkouts"
+                        style="@style/TextAppearance.WayToFix.Body2"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="@string/view_all"
+                        android:textColor="@color/primary" />
+
+                </LinearLayout>
+
+                <!-- Workouts RecyclerView (Horizontal) -->
+                <androidx.recyclerview.widget.RecyclerView
+                    android:id="@+id/rvWorkouts"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="@dimen/spacing_sm"
+                    android:clipToPadding="false"
+                    android:paddingHorizontal="@dimen/screen_padding_horizontal"
+                    android:orientation="horizontal"
+                    tools:listitem="@layout/item_workout_card"
+                    tools:itemCount="3" />
+
+                <!-- Empty State for Workouts -->
+                <androidx.cardview.widget.CardView
+                    android:id="@+id/emptyWorkoutsCard"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginHorizontal="@dimen/screen_padding_horizontal"
+                    android:layout_marginTop="@dimen/spacing_sm"
+                    android:visibility="gone"
+                    app:cardBackgroundColor="@color/surface"
+                    app:cardCornerRadius="@dimen/radius_base"
+                    app:cardElevation="0dp">
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:gravity="center"
+                        android:orientation="vertical"
+                        android:padding="@dimen/spacing_xl">
+
+                        <ImageView
+                            android:layout_width="48dp"
+                            android:layout_height="48dp"
+                            android:src="@drawable/ic_workout"
+                            app:tint="@color/text_hint"
+                            android:contentDescription="@null" />
+
+                        <TextView
+                            style="@style/TextAppearance.WayToFix.Body2"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="@dimen/spacing_sm"
+                            android:text="@string/no_workouts_yet"
+                            android:textColor="@color/text_secondary" />
+
+                    </LinearLayout>
+
+                </androidx.cardview.widget.CardView>
+
+            </LinearLayout>
+
+            <!-- ======================= RECENT EXERCISES SECTION ======================= -->
+            <LinearLayout
+                android:id="@+id/recentExercisesSection"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:layout_marginTop="@dimen/spacing_xl">
+
+                <!-- Section Header -->
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:gravity="center_vertical"
+                    android:paddingHorizontal="@dimen/screen_padding_horizontal">
+
+                    <TextView
+                        style="@style/TextAppearance.WayToFix.Headline3"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:text="@string/recent_exercises"
+                        android:textColor="@color/text_primary" />
+
+                    <TextView
+                        android:id="@+id/tvViewAllExercises"
+                        style="@style/TextAppearance.WayToFix.Body2"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="@string/view_all"
+                        android:textColor="@color/primary" />
+
+                </LinearLayout>
+
+                <!-- Exercises RecyclerView (Horizontal) -->
+                <androidx.recyclerview.widget.RecyclerView
+                    android:id="@+id/rvRecentExercises"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="@dimen/spacing_sm"
+                    android:clipToPadding="false"
+                    android:paddingHorizontal="@dimen/screen_padding_horizontal"
+                    android:orientation="horizontal"
+                    tools:listitem="@layout/item_exercise_card"
+                    tools:itemCount="4" />
+
+                <!-- Empty State for Exercises -->
+                <androidx.cardview.widget.CardView
+                    android:id="@+id/emptyExercisesCard"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginHorizontal="@dimen/screen_padding_horizontal"
+                    android:layout_marginTop="@dimen/spacing_sm"
+                    android:visibility="gone"
+                    app:cardBackgroundColor="@color/surface"
+                    app:cardCornerRadius="@dimen/radius_base"
+                    app:cardElevation="0dp">
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:gravity="center"
+                        android:orientation="vertical"
+                        android:padding="@dimen/spacing_xl">
+
+                        <ImageView
+                            android:layout_width="48dp"
+                            android:layout_height="48dp"
+                            android:src="@drawable/ic_muscle"
+                            app:tint="@color/text_hint"
+                            android:contentDescription="@null" />
+
+                        <TextView
+                            style="@style/TextAppearance.WayToFix.Body2"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="@dimen/spacing_sm"
+                            android:text="@string/no_exercises_yet"
+                            android:textColor="@color/text_secondary" />
+
+                        <TextView
+                            style="@style/TextAppearance.WayToFix.Caption"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="@dimen/spacing_xs"
+                            android:text="@string/start_exercise_hint"
+                            android:textColor="@color/text_hint"
+                            android:textAlignment="center" />
+
+                    </LinearLayout>
+
+                </androidx.cardview.widget.CardView>
+
+            </LinearLayout>
+
+            <!-- ======================= QUICK ACTIONS ======================= -->
             <TextView
                 style="@style/TextAppearance.WayToFix.Headline3"
                 android:layout_width="wrap_content"
@@ -337,6 +536,22 @@
                 </androidx.cardview.widget.CardView>
 
             </LinearLayout>
+
+            <!-- Hidden views for backward compatibility -->
+            <androidx.cardview.widget.CardView
+                android:id="@+id/cardContinue"
+                android:layout_width="0dp"
+                android:layout_height="0dp"
+                android:visibility="gone"
+                app:cardElevation="0dp">
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content">
+                    <TextView android:id="@+id/tvLastExercise" android:layout_width="wrap_content" android:layout_height="wrap_content" android:visibility="gone"/>
+                    <TextView android:id="@+id/tvLastProgress" android:layout_width="wrap_content" android:layout_height="wrap_content" android:visibility="gone"/>
+                    <com.google.android.material.button.MaterialButton android:id="@+id/btnContinue" android:layout_width="wrap_content" android:layout_height="wrap_content" android:visibility="gone"/>
+                </LinearLayout>
+            </androidx.cardview.widget.CardView>
 
         </LinearLayout>
 

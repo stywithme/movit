@@ -15,7 +15,24 @@ export async function PATCH(request: NextRequest) {
       return unauthorizedResponse();
     }
 
-    const body = await request.json();
+    // Read body safely to avoid JSON parse errors on empty payloads
+    const rawBody = await request.text();
+    if (!rawBody || rawBody.trim().length === 0) {
+      return NextResponse.json(
+        { success: false, error: 'Request body is required' },
+        { status: 400 }
+      );
+    }
+
+    let body: unknown;
+    try {
+      body = JSON.parse(rawBody);
+    } catch {
+      return NextResponse.json(
+        { success: false, error: 'Invalid JSON body' },
+        { status: 400 }
+      );
+    }
 
     // Validate input
     const parseResult = updateSettingsSchema.safeParse(body);

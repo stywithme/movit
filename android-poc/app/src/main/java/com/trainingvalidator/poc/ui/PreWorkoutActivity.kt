@@ -7,11 +7,7 @@ import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import android.provider.MediaStore
-import android.view.LayoutInflater
 import android.view.View
-import android.widget.ImageView
-import android.widget.LinearLayout
-import android.widget.TextView
 import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
@@ -22,6 +18,7 @@ import com.trainingvalidator.poc.R
 import com.trainingvalidator.poc.databinding.ActivityPreWorkoutBinding
 import com.trainingvalidator.poc.training.loader.ExerciseLoader
 import com.trainingvalidator.poc.training.models.ExerciseConfig
+import com.trainingvalidator.poc.ui.utils.LocalizationHelper
 
 /**
  * PreWorkoutActivity - Exercise detail screen before starting workout
@@ -121,25 +118,24 @@ class PreWorkoutActivity : AppCompatActivity() {
 
         // Exercise info
         binding.tvExerciseName.text = exercise.name.get(language).ifBlank { exercise.name.en }
-        binding.tvMuscles.text = exercise.muscles.joinToString(" & ") {
-            it.replaceFirstChar { c -> c.uppercase() }
-        }
-        binding.tvEquipment.text = if (exercise.equipment.isEmpty()) {
-            getString(R.string.no_equipment)
-        } else {
-            exercise.equipment.joinToString(", ") {
-                it.replaceFirstChar { c -> c.uppercase() }
+        
+        // Localized muscles
+        binding.tvMuscles.text = LocalizationHelper.getMusclesDisplayText(this, exercise.muscles)
+        
+        // Localized equipment
+        binding.tvEquipment.text = LocalizationHelper.getEquipmentDisplayText(this, exercise.equipment)
+
+        // Exercise image
+        exercise.imageUrl?.let { url ->
+            binding.ivExercisePreview.load(url) {
+                placeholder(R.drawable.gradient_report_hero)
+                error(R.drawable.gradient_report_hero)
+                crossfade(true)
             }
         }
 
-        binding.ivExercisePreview.load(exercise.imageUrl) {
-            placeholder(R.drawable.gradient_report_hero)
-            error(R.drawable.gradient_report_hero)
-            crossfade(true)
-        }
-
-        // Setup form checklist
-        setupFormChecklist()
+        // Instructions
+        setupInstructions()
 
         // Setup camera position variants
         setupCameraPositions()
@@ -153,110 +149,31 @@ class PreWorkoutActivity : AppCompatActivity() {
             openVideoPicker()
         }
     }
-
-    private fun setupFormChecklist() {
+    
+    private fun setupInstructions() {
         val exercise = exerciseConfig ?: return
         val language = getCurrentLanguage()
 
-        // Get checklist items from exercise instructions
+        // Get instructions text
         val instructionsText = exercise.instructions?.let { instr ->
             instr.get(language).ifBlank { instr.en }
         } ?: ""
-        val checklistItems = parseInstructions(instructionsText)
-
-        binding.tvStepsCount.text = getString(R.string.steps_format, checklistItems.size)
-
-        binding.checklistContainer.removeAllViews()
-
-        checklistItems.forEachIndexed { index, item ->
-            val itemView = LayoutInflater.from(this).inflate(
-                R.layout.item_checklist,
-                binding.checklistContainer,
-                false
-            )
-
-            val tvTitle = itemView.findViewById<TextView>(R.id.tvTitle)
-            val tvDescription = itemView.findViewById<TextView>(R.id.tvDescription)
-            val checkboxBackground = itemView.findViewById<View>(R.id.checkboxBackground)
-            val ivCheckmark = itemView.findViewById<ImageView>(R.id.ivCheckmark)
-
-            // Set title and description
-            tvTitle.text = item.title
-            tvDescription.text = item.description
-
-            // First item is always checked (demo purposes)
-            if (index == 0) {
-                checkboxBackground.setBackgroundResource(R.drawable.bg_circle_primary)
-                ivCheckmark.visibility = View.VISIBLE
-            }
-
-            // Add click listener to toggle check
-            itemView.setOnClickListener {
-                toggleChecklistItem(checkboxBackground, ivCheckmark)
-            }
-
-            binding.checklistContainer.addView(itemView)
-        }
-    }
-
-    private fun toggleChecklistItem(background: View, checkmark: ImageView) {
-        if (checkmark.visibility == View.VISIBLE) {
-            background.setBackgroundResource(R.drawable.bg_circle_surface)
-            checkmark.visibility = View.GONE
+        
+        // Set instructions or show default message
+        binding.tvInstructions.text = if (instructionsText.isNotBlank()) {
+            instructionsText
         } else {
-            background.setBackgroundResource(R.drawable.bg_circle_primary)
-            checkmark.visibility = View.VISIBLE
+            // Default instructions based on exercise description
+            exercise.description?.let { desc ->
+                desc.get(language).ifBlank { desc.en }
+            } ?: getString(R.string.no_instructions_available)
         }
     }
 
-    private fun parseInstructions(instructions: String): List<ChecklistItem> {
-        // Parse instructions into checklist items
-        // Expected format: numbered list or bullet points
-        val items = mutableListOf<ChecklistItem>()
-
-        // Try to split by newlines first
-        val lines = instructions.split("\n")
-            .map { it.trim() }
-            .filter { it.isNotBlank() }
-
-        if (lines.size >= 2) {
-            lines.forEach { line ->
-                // Remove numbering if present (e.g., "1.", "2.", "-", "•")
-                val cleanLine = line.replace(Regex("^[0-9]+\\.\\s*|^[-•]\\s*"), "")
-                if (cleanLine.isNotBlank()) {
-                    // Try to split into title and description
-                    val parts = cleanLine.split(":", limit = 2)
-                    if (parts.size == 2) {
-                        items.add(ChecklistItem(parts[0].trim(), parts[1].trim()))
-                    } else {
-                        // Use first few words as title
-                        val words = cleanLine.split(" ")
-                        if (words.size > 3) {
-                            items.add(ChecklistItem(
-                                words.take(2).joinToString(" "),
-                                cleanLine
-                            ))
-                        } else {
-                            items.add(ChecklistItem(cleanLine, ""))
-                        }
-                    }
-                }
-            }
-        }
-
-        // If parsing failed, create default items
-        if (items.isEmpty()) {
-            items.add(ChecklistItem("Stance", "Stand with feet shoulder-width apart."))
-            items.add(ChecklistItem("Posture", "Keep your chest up and back straight."))
-            items.add(ChecklistItem("Depth", "Lower hips until thighs are parallel to floor."))
-            items.add(ChecklistItem("Return", "Push through heels to return to standing."))
-        }
-
-        return items
-    }
 
     private fun setupCameraPositions() {
         val exercise = exerciseConfig ?: return
+        val language = getCurrentLanguage()
 
         if (exercise.poseVariants.size <= 1) {
             binding.cameraPositionSection.visibility = View.GONE
@@ -266,7 +183,11 @@ class PreWorkoutActivity : AppCompatActivity() {
         binding.cameraPositionSection.visibility = View.VISIBLE
 
         exercise.poseVariants.forEachIndexed { index, variant ->
-            val buttonText = variant.name.en.ifBlank { variant.cameraPosition }
+            // Get localized variant name, fallback to camera position code
+            val variantName = variant.name.get(language).ifBlank { variant.name.en }
+            val buttonText = variantName.ifBlank { 
+                LocalizationHelper.getCameraPositionDisplayName(this, variant.cameraPosition)
+            }
             when (index) {
                 0 -> {
                     binding.btnVariant1.text = buttonText
@@ -408,12 +329,4 @@ class PreWorkoutActivity : AppCompatActivity() {
         }
         startActivity(intent)
     }
-
-    /**
-     * Data class for checklist items
-     */
-    data class ChecklistItem(
-        val title: String,
-        val description: String
-    )
 }

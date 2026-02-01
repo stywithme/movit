@@ -58,6 +58,9 @@ object SettingsManager {
      * @return True if loaded successfully, false if using defaults
      */
     fun initialize(context: Context): Boolean {
+        // Initialize SharedPreferences for runtime settings
+        runtimePrefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        
         return try {
             val jsonString = context.assets.open(SETTINGS_FILE).bufferedReader().use { it.readText() }
             _settings = gson.fromJson(jsonString, AppSettings::class.java)
@@ -298,8 +301,12 @@ object SettingsManager {
     
     /**
      * Get indicator type: "line" or "arc"
+     * Returns runtime value if set, otherwise from config
      */
-    fun getIndicatorType(): String = settings.rangeIndicator.type
+    fun getIndicatorType(): String {
+        return runtimePrefs?.getString(KEY_INDICATOR_TYPE, null) 
+            ?: settings.rangeIndicator.type
+    }
     
     /**
      * Check if Arc indicator should be used
@@ -414,4 +421,58 @@ object SettingsManager {
      * Get random message cooldown in milliseconds
      */
     fun getRandomMessageCooldown(): Long = settings.feedback.randomMessageCooldownMs
+    
+    // ==================== Runtime Settings (SharedPreferences) ====================
+    
+    private var runtimePrefs: android.content.SharedPreferences? = null
+    
+    private const val PREFS_NAME = "training_settings"
+    private const val KEY_INDICATOR_TYPE = "indicator_type"
+    private const val KEY_VOICE_FEEDBACK_ENABLED = "voice_feedback_enabled"
+    private const val KEY_MODEL_TYPE = "model_type"
+    
+    /**
+     * Initialize SharedPreferences for runtime settings
+     */
+    private fun getPrefs(context: Context? = null): android.content.SharedPreferences? {
+        if (runtimePrefs == null && context != null) {
+            runtimePrefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        }
+        return runtimePrefs
+    }
+    
+    /**
+     * Set indicator type at runtime ("line" or "arc")
+     */
+    fun setIndicatorType(type: String) {
+        runtimePrefs?.edit()?.putString(KEY_INDICATOR_TYPE, type)?.apply()
+    }
+    
+    /**
+     * Check if voice feedback is enabled
+     */
+    fun isVoiceFeedbackEnabled(): Boolean {
+        return runtimePrefs?.getBoolean(KEY_VOICE_FEEDBACK_ENABLED, true) ?: true
+    }
+    
+    /**
+     * Set voice feedback enabled/disabled
+     */
+    fun setVoiceFeedbackEnabled(enabled: Boolean) {
+        runtimePrefs?.edit()?.putBoolean(KEY_VOICE_FEEDBACK_ENABLED, enabled)?.apply()
+    }
+    
+    /**
+     * Get MediaPipe model type ("full" or "heavy")
+     */
+    fun getModelType(): String {
+        return runtimePrefs?.getString(KEY_MODEL_TYPE, "full") ?: "full"
+    }
+    
+    /**
+     * Set MediaPipe model type
+     */
+    fun setModelType(type: String) {
+        runtimePrefs?.edit()?.putString(KEY_MODEL_TYPE, type)?.apply()
+    }
 }

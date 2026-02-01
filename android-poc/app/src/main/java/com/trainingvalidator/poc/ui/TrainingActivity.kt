@@ -144,6 +144,10 @@ class TrainingActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetection
     private var frameCount = 0
     private var lastFpsUpdateTime = System.currentTimeMillis()
     private var currentFps = 0
+    
+    // Elapsed time tracking
+    private var trainingStartTime: Long = 0L
+    private var elapsedTimeJob: kotlinx.coroutines.Job? = null
 
     // Permission launcher
     private val cameraPermissionLauncher = registerForActivityResult(
@@ -286,13 +290,9 @@ class TrainingActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetection
             finish() 
         }
         
-        // Switch camera button
-        binding.btnSwitchCamera.setOnClickListener {
-            useFrontCamera = !useFrontCamera
-            cameraManager?.switchCamera(useFrontCamera)
-            if (::landmarkSmoother.isInitialized) {
-                landmarkSmoother.reset()
-            }
+        // Settings button
+        binding.btnSettings.setOnClickListener {
+            showSettingsDialog()
         }
         
         // Play/Pause button
@@ -300,9 +300,146 @@ class TrainingActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetection
             handlePlayPauseClick()
         }
         
+        // Initialize elapsed time display
+        binding.tvTimeElapsed.text = "00:00"
+        
+        // Initialize form status
+        binding.tvFormStatus.text = getString(R.string.good)
+        binding.tvFormStatus.setTextColor(ContextCompat.getColor(this, R.color.primary))
+        
         // Initial state
         updateUIForSessionState(SessionState.SETUP_POSE)
         showPoseRequirements()
+    }
+    
+    /**
+     * Show training settings dialog
+     */
+    private fun showSettingsDialog() {
+        val dialogView = layoutInflater.inflate(R.layout.dialog_training_settings, null)
+        val dialog = android.app.AlertDialog.Builder(this, R.style.Theme_WayToFix_Dialog)
+            .setView(dialogView)
+            .create()
+        
+        // Get current settings
+        var selectedIndicator = SettingsManager.getIndicatorType()
+        var voiceFeedbackEnabled = SettingsManager.isVoiceFeedbackEnabled()
+        var selectedModel = SettingsManager.getModelType()
+        
+        // Setup indicator buttons
+        val btnLine = dialogView.findViewById<com.google.android.material.button.MaterialButton>(R.id.btnIndicatorLine)
+        val btnArc = dialogView.findViewById<com.google.android.material.button.MaterialButton>(R.id.btnIndicatorArc)
+        
+        fun updateIndicatorButtons() {
+            if (selectedIndicator == "line") {
+                btnLine.setBackgroundColor(ContextCompat.getColor(this, R.color.primary))
+                btnLine.setTextColor(ContextCompat.getColor(this, R.color.on_primary))
+                btnArc.setBackgroundColor(android.graphics.Color.TRANSPARENT)
+                btnArc.setTextColor(ContextCompat.getColor(this, R.color.text_primary))
+            } else {
+                btnArc.setBackgroundColor(ContextCompat.getColor(this, R.color.primary))
+                btnArc.setTextColor(ContextCompat.getColor(this, R.color.on_primary))
+                btnLine.setBackgroundColor(android.graphics.Color.TRANSPARENT)
+                btnLine.setTextColor(ContextCompat.getColor(this, R.color.text_primary))
+            }
+        }
+        updateIndicatorButtons()
+        
+        btnLine.setOnClickListener {
+            selectedIndicator = "line"
+            updateIndicatorButtons()
+        }
+        btnArc.setOnClickListener {
+            selectedIndicator = "arc"
+            updateIndicatorButtons()
+        }
+        
+        // Setup voice feedback switch
+        val switchVoice = dialogView.findViewById<com.google.android.material.switchmaterial.SwitchMaterial>(R.id.switchVoiceFeedback)
+        switchVoice.isChecked = voiceFeedbackEnabled
+        switchVoice.setOnCheckedChangeListener { _, isChecked ->
+            voiceFeedbackEnabled = isChecked
+        }
+        
+        // Setup model buttons
+        val btnModelFull = dialogView.findViewById<com.google.android.material.button.MaterialButton>(R.id.btnModelFull)
+        val btnModelHeavy = dialogView.findViewById<com.google.android.material.button.MaterialButton>(R.id.btnModelHeavy)
+        
+        fun updateModelButtons() {
+            if (selectedModel == "full") {
+                btnModelFull.setBackgroundColor(ContextCompat.getColor(this, R.color.primary))
+                btnModelFull.setTextColor(ContextCompat.getColor(this, R.color.on_primary))
+                btnModelHeavy.setBackgroundColor(android.graphics.Color.TRANSPARENT)
+                btnModelHeavy.setTextColor(ContextCompat.getColor(this, R.color.text_primary))
+            } else {
+                btnModelHeavy.setBackgroundColor(ContextCompat.getColor(this, R.color.primary))
+                btnModelHeavy.setTextColor(ContextCompat.getColor(this, R.color.on_primary))
+                btnModelFull.setBackgroundColor(android.graphics.Color.TRANSPARENT)
+                btnModelFull.setTextColor(ContextCompat.getColor(this, R.color.text_primary))
+            }
+        }
+        updateModelButtons()
+        
+        btnModelFull.setOnClickListener {
+            selectedModel = "full"
+            updateModelButtons()
+        }
+        btnModelHeavy.setOnClickListener {
+            selectedModel = "heavy"
+            updateModelButtons()
+        }
+        
+        // Close button
+        dialogView.findViewById<android.widget.ImageButton>(R.id.btnCloseSettings).setOnClickListener {
+            dialog.dismiss()
+        }
+        
+        // Camera section (only visible in camera mode)
+        val cameraSectionContainer = dialogView.findViewById<android.widget.LinearLayout>(R.id.cameraSectionContainer)
+        val dividerCamera = dialogView.findViewById<View>(R.id.dividerCamera)
+        val tvCurrentCamera = dialogView.findViewById<android.widget.TextView>(R.id.tvCurrentCamera)
+        val btnSwitchCameraDialog = dialogView.findViewById<com.google.android.material.button.MaterialButton>(R.id.btnSwitchCameraDialog)
+        
+        if (isVideoMode) {
+            // Hide camera section in video mode
+            cameraSectionContainer.visibility = View.GONE
+            dividerCamera.visibility = View.GONE
+        } else {
+            // Show camera section and update current camera text
+            cameraSectionContainer.visibility = View.VISIBLE
+            dividerCamera.visibility = View.VISIBLE
+            tvCurrentCamera.text = if (useFrontCamera) getString(R.string.front_camera) else getString(R.string.back_camera)
+            
+            btnSwitchCameraDialog.setOnClickListener {
+                useFrontCamera = !useFrontCamera
+                cameraManager?.switchCamera(useFrontCamera)
+                if (::landmarkSmoother.isInitialized) {
+                    landmarkSmoother.reset()
+                }
+                tvCurrentCamera.text = if (useFrontCamera) getString(R.string.front_camera) else getString(R.string.back_camera)
+            }
+        }
+        
+        // Apply button
+        dialogView.findViewById<com.google.android.material.button.MaterialButton>(R.id.btnApplySettings).setOnClickListener {
+            // Save settings
+            SettingsManager.setIndicatorType(selectedIndicator)
+            SettingsManager.setVoiceFeedbackEnabled(voiceFeedbackEnabled)
+            SettingsManager.setModelType(selectedModel)
+            
+            // Apply indicator change immediately
+            binding.skeletonOverlay.setIndicatorType(selectedIndicator)
+            
+            // Update feedback manager
+            viewModel.feedbackManager?.setVoiceEnabled(voiceFeedbackEnabled)
+            
+            dialog.dismiss()
+            
+            Toast.makeText(this, getString(R.string.settings) + " " + getString(R.string.save), Toast.LENGTH_SHORT).show()
+        }
+        
+        dialog.window?.setBackgroundDrawableResource(android.R.color.transparent)
+        dialog.show()
     }
     
     private fun setupCountdownController() {
@@ -324,6 +461,55 @@ class TrainingActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetection
                 updateUIForSessionState(SessionState.SETUP_POSE)
             }
         })
+    }
+    
+    /**
+     * Start elapsed time timer
+     */
+    private fun startElapsedTimeTimer() {
+        trainingStartTime = System.currentTimeMillis()
+        elapsedTimeJob?.cancel()
+        elapsedTimeJob = lifecycleScope.launch {
+            while (true) {
+                val elapsed = System.currentTimeMillis() - trainingStartTime
+                binding.tvTimeElapsed.text = formatElapsedTime(elapsed)
+                kotlinx.coroutines.delay(1000)
+            }
+        }
+    }
+    
+    /**
+     * Stop elapsed time timer
+     */
+    private fun stopElapsedTimeTimer() {
+        elapsedTimeJob?.cancel()
+        elapsedTimeJob = null
+    }
+    
+    /**
+     * Format elapsed time to MM:SS
+     */
+    private fun formatElapsedTime(ms: Long): String {
+        val totalSeconds = ms / 1000
+        val minutes = totalSeconds / 60
+        val seconds = totalSeconds % 60
+        return String.format("%02d:%02d", minutes, seconds)
+    }
+    
+    /**
+     * Update form status based on current state
+     */
+    private fun updateFormStatus(state: JointState) {
+        val (text, color) = when (state) {
+            JointState.PERFECT -> getString(R.string.excellent) to R.color.primary
+            JointState.NORMAL -> getString(R.string.good) to R.color.success
+            JointState.PAD -> "OK" to R.color.warning
+            JointState.WARNING -> getString(R.string.needs_work) to R.color.warning
+            JointState.DANGER -> getString(R.string.error) to R.color.error
+            JointState.TRANSITION -> getString(R.string.good) to R.color.text_secondary
+        }
+        binding.tvFormStatus.text = text
+        binding.tvFormStatus.setTextColor(ContextCompat.getColor(this, color))
     }
     
     private fun initializeReportSystem() {
@@ -475,6 +661,19 @@ class TrainingActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetection
                     binding.vignetteOverlay.clear()
                 }
                 
+                // Update form status based on worst state
+                val worstState = stateInfos.values.maxByOrNull { info ->
+                    when (info.state) {
+                        JointState.DANGER -> 5
+                        JointState.WARNING -> 4
+                        JointState.PAD -> 3
+                        JointState.NORMAL -> 2
+                        JointState.PERFECT -> 1
+                        JointState.TRANSITION -> 0
+                    }
+                }?.state ?: JointState.PERFECT
+                updateFormStatus(worstState)
+                
                 // Trigger low-priority random messages during quiet time
                 val positionErrors = engine.positionErrors.value
                 viewModel.feedbackManager?.checkAndDeliverRandomMessage(
@@ -596,7 +795,13 @@ class TrainingActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetection
                 binding.tvProgress.visibility = View.VISIBLE
                 binding.completedPanel.visibility = View.GONE
                 binding.progressContainer.visibility = View.VISIBLE
+                binding.bottomStatsBar.visibility = View.VISIBLE
                 updatePlayPauseIcon(isPlaying = true)
+                
+                // Start elapsed time timer
+                if (trainingStartTime == 0L) {
+                    startElapsedTimeTimer()
+                }
             }
             
             SessionState.PAUSED -> {
@@ -633,7 +838,11 @@ class TrainingActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetection
                 binding.setupPosePanel.visibility = View.GONE
                 binding.countdownPanel.visibility = View.GONE
                 binding.tvProgress.visibility = View.GONE
+                binding.bottomStatsBar.visibility = View.GONE
                 binding.completedPanel.visibility = View.VISIBLE
+                
+                // Stop elapsed time timer
+                stopElapsedTimeTimer()
                 binding.progressContainer.visibility = View.GONE
                 updatePlayPauseIcon(isPlaying = false)
                 binding.vignetteOverlay.clear()
@@ -689,8 +898,13 @@ class TrainingActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetection
     }
     
     private fun updatePlayPauseIcon(isPlaying: Boolean) {
-        val iconRes = if (isPlaying) R.drawable.ic_pause else R.drawable.ic_play
-        binding.btnPlayPause.setImageResource(iconRes)
+        // stopIcon is now a View with background, not an ImageView
+        // Toggle visibility or background based on state
+        if (isPlaying) {
+            binding.stopIcon.setBackgroundResource(R.drawable.bg_stop_button)
+        } else {
+            binding.stopIcon.setBackgroundResource(R.drawable.ic_play)
+        }
     }
     
     private fun handlePlayPauseClick() {

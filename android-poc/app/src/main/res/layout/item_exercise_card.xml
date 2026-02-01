@@ -1,88 +1,137 @@
 <?xml version="1.0" encoding="utf-8"?>
-<androidx.cardview.widget.CardView 
+<com.google.android.material.card.MaterialCardView
     xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
-    android:id="@+id/cardExercise"
-    android:layout_width="match_parent"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="160dp"
     android:layout_height="wrap_content"
-    android:layout_margin="8dp"
-    app:cardBackgroundColor="#2A2A2A"
-    app:cardCornerRadius="16dp"
-    app:cardElevation="4dp">
+    android:layout_marginEnd="@dimen/spacing_sm"
+    app:cardBackgroundColor="@color/surface"
+    app:cardCornerRadius="@dimen/radius_base"
+    app:cardElevation="0dp"
+    app:strokeWidth="0dp">
 
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:orientation="vertical"
-        android:padding="16dp">
+        android:orientation="vertical">
 
         <!-- Exercise Image -->
-        <ImageView
-            android:id="@+id/ivExerciseImage"
-            android:layout_width="56dp"
-            android:layout_height="56dp"
-            android:layout_gravity="center_horizontal"
-            android:background="@drawable/circle_background"
-            android:scaleType="centerCrop"
-            android:src="@drawable/ic_camera"
-            android:contentDescription="@string/cd_exercise"/>
+        <FrameLayout
+            android:layout_width="match_parent"
+            android:layout_height="100dp">
 
-        <!-- Exercise Name (English) -->
-        <TextView
-            android:id="@+id/tvExerciseName"
+            <ImageView
+                android:id="@+id/ivExerciseImage"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:scaleType="centerCrop"
+                android:contentDescription="@null"
+                tools:background="@color/surface_variant" />
+
+            <!-- Bookmark/Save Icon -->
+            <ImageView
+                android:id="@+id/ivBookmark"
+                android:layout_width="32dp"
+                android:layout_height="32dp"
+                android:layout_gravity="top|end"
+                android:layout_margin="@dimen/spacing_xs"
+                android:background="@drawable/glass_pill_background"
+                android:padding="6dp"
+                android:src="@drawable/ic_bookmark"
+                app:tint="@color/text_primary"
+                android:contentDescription="@string/cd_bookmark"
+                android:visibility="gone" />
+
+        </FrameLayout>
+
+        <!-- Content -->
+        <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="Squat"
-            android:textColor="@android:color/white"
-            android:textSize="18sp"
-            android:textStyle="bold"
-            android:textAlignment="center"
-            android:layout_marginTop="12dp" />
+            android:orientation="vertical"
+            android:padding="@dimen/spacing_sm">
 
-        <!-- Exercise Name (Arabic) -->
-        <TextView
-            android:id="@+id/tvExerciseNameAr"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="القرفصاء"
-            android:textColor="#00E676"
-            android:textSize="14sp"
-            android:textAlignment="center"
-            android:layout_marginTop="4dp" />
+            <TextView
+                android:id="@+id/tvExerciseName"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:ellipsize="end"
+                android:maxLines="1"
+                android:textColor="@color/text_primary"
+                android:textSize="14sp"
+                android:textStyle="bold"
+                tools:text="Squats" />
 
-        <!-- Divider -->
-        <View
-            android:layout_width="match_parent"
-            android:layout_height="1dp"
-            android:background="#3A3A3A"
-            android:layout_marginTop="12dp"
-            android:layout_marginBottom="12dp" />
+            <!-- Muscles -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="2dp"
+                android:gravity="center_vertical"
+                android:orientation="horizontal">
 
-        <!-- Category -->
-        <TextView
-            android:id="@+id/tvCategory"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="Legs"
-            android:textColor="#888888"
-            android:textSize="12sp"
-            android:drawableStart="@drawable/ic_category"
-            android:drawablePadding="8dp"
-            app:drawableTint="#888888" />
+                <ImageView
+                    android:layout_width="12dp"
+                    android:layout_height="12dp"
+                    android:src="@drawable/ic_muscle"
+                    app:tint="@color/primary"
+                    android:contentDescription="@null" />
 
-        <!-- Muscles -->
-        <TextView
-            android:id="@+id/tvMuscles"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="Glutes, Hamstrings"
-            android:textColor="#888888"
-            android:textSize="12sp"
-            android:drawableStart="@drawable/ic_muscle"
-            android:drawablePadding="8dp"
-            android:layout_marginTop="4dp"
-            app:drawableTint="#888888" />
+                <TextView
+                    android:id="@+id/tvMuscles"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="4dp"
+                    android:ellipsize="end"
+                    android:maxLines="1"
+                    android:textColor="@color/text_secondary"
+                    android:textSize="11sp"
+                    tools:text="Legs &amp; Glutes" />
+
+            </LinearLayout>
+
+            <!-- Difficulty Indicator -->
+            <LinearLayout
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="@dimen/spacing_xs"
+                android:gravity="center_vertical"
+                android:orientation="horizontal">
+
+                <View
+                    android:id="@+id/difficultyDot1"
+                    android:layout_width="6dp"
+                    android:layout_height="6dp"
+                    android:background="@drawable/dot_active" />
+
+                <View
+                    android:id="@+id/difficultyDot2"
+                    android:layout_width="6dp"
+                    android:layout_height="6dp"
+                    android:layout_marginStart="3dp"
+                    android:background="@drawable/dot_active" />
+
+                <View
+                    android:id="@+id/difficultyDot3"
+                    android:layout_width="6dp"
+                    android:layout_height="6dp"
+                    android:layout_marginStart="3dp"
+                    android:background="@drawable/dot_inactive" />
+
+                <TextView
+                    android:id="@+id/tvDifficulty"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="@dimen/spacing_xs"
+                    android:textColor="@color/text_hint"
+                    android:textSize="10sp"
+                    tools:text="MEDIUM" />
+
+            </LinearLayout>
+
+        </LinearLayout>
 
     </LinearLayout>
 
-</androidx.cardview.widget.CardView>
+</com.google.android.material.card.MaterialCardView>

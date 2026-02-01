@@ -5,7 +5,7 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@android:color/black"
+    android:background="@color/background"
     tools:context=".ui.TrainingActivity">
 
     <!-- ==================== LAYER 0: Media Background ==================== -->
@@ -38,74 +38,170 @@
         android:layout_width="match_parent"
         android:layout_height="match_parent" />
 
-    <!-- ==================== LAYER 3: Glass HUD System ==================== -->
+    <!-- ==================== LAYER 3: NEW TOP BAR ==================== -->
 
-    <!-- TOP DECK: Glass Pill Navigation -->
-    <LinearLayout
-        android:id="@+id/topDeck"
-        android:layout_width="wrap_content"
+    <!-- Top Bar Container -->
+    <androidx.constraintlayout.widget.ConstraintLayout
+        android:id="@+id/topBar"
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:orientation="horizontal"
-        android:gravity="center_vertical"
-        android:paddingHorizontal="16dp"
-        android:paddingVertical="10dp"
-        android:background="@drawable/glass_deck_background"
-        android:elevation="8dp"
-        android:layout_marginTop="16dp"
-        app:layout_constraintTop_toTopOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
+        android:padding="@dimen/spacing_base"
+        app:layout_constraintTop_toTopOf="parent">
+
+        <!-- Finish Button (Left) -->
+        <LinearLayout
+            android:id="@+id/btnClose"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:background="@drawable/bg_finish_button"
+            android:gravity="center_vertical"
+            android:orientation="horizontal"
+            android:paddingHorizontal="@dimen/spacing_md"
+            android:paddingVertical="@dimen/spacing_sm"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent"
+            app:layout_constraintBottom_toBottomOf="parent">
+
+            <ImageView
+                android:layout_width="16dp"
+                android:layout_height="16dp"
+                android:src="@drawable/ic_close"
+                app:tint="@android:color/white" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="@dimen/spacing_xs"
+                android:text="@string/finish"
+                android:textColor="@android:color/white"
+                android:textSize="14sp" />
+
+        </LinearLayout>
+
+        <!-- Center Title -->
+        <LinearLayout
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:gravity="center"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintTop_toTopOf="parent"
+            app:layout_constraintBottom_toBottomOf="parent">
+
+            <TextView
+                android:id="@+id/tvCurrentExerciseLabel"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/current_exercise"
+                android:textColor="@color/primary"
+                android:textSize="11sp"
+                android:textAllCaps="true"
+                android:letterSpacing="0.1" />
+
+            <TextView
+                android:id="@+id/tvExerciseName"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Exercise"
+                android:textColor="@android:color/white"
+                android:textSize="18sp"
+                android:textStyle="bold"
+                android:maxWidth="200dp"
+                android:ellipsize="end"
+                android:singleLine="true" />
+
+        </LinearLayout>
+
+        <!-- Settings Button (Right) -->
+        <ImageButton
+            android:id="@+id/btnSettings"
+            android:layout_width="40dp"
+            android:layout_height="40dp"
+            android:background="@drawable/bg_settings_button"
+            android:src="@drawable/ic_settings"
+            android:scaleType="center"
+            android:padding="8dp"
+            android:contentDescription="@string/settings"
+            app:tint="@android:color/white"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintTop_toTopOf="parent"
+            app:layout_constraintBottom_toBottomOf="parent" />
+
+    </androidx.constraintlayout.widget.ConstraintLayout>
+
+    <!-- ==================== CIRCULAR REP COUNTER (Top Right) ==================== -->
+    
+    <FrameLayout
+        android:id="@+id/heroCounterContainer"
+        android:layout_width="90dp"
+        android:layout_height="90dp"
+        android:layout_marginTop="@dimen/spacing_sm"
+        android:layout_marginEnd="@dimen/spacing_base"
+        android:background="@drawable/bg_circular_counter"
+        android:visibility="gone"
+        app:layout_constraintTop_toBottomOf="@id/topBar"
         app:layout_constraintEnd_toEndOf="parent">
 
-        <!-- Close Button -->
-        <ImageButton
-            android:id="@+id/btnClose"
-            android:layout_width="36dp"
-            android:layout_height="36dp"
-            android:src="@drawable/ic_close"
-            android:background="?attr/selectableItemBackgroundBorderless"
-            android:contentDescription="Close"
-            app:tint="@android:color/white" />
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:orientation="vertical"
+            android:gravity="center">
 
-        <!-- Divider -->
-        <View
-            android:layout_width="1dp"
-            android:layout_height="24dp"
-            android:background="#33FFFFFF"
-            android:layout_marginHorizontal="12dp" />
+            <!-- Large Rep Number -->
+            <TextView
+                android:id="@+id/tvRepCount"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="0"
+                android:textColor="@android:color/white"
+                android:textSize="32sp"
+                android:textStyle="bold"
+                android:fontFamily="sans-serif-medium" />
 
-        <!-- Exercise Name -->
-        <TextView
-            android:id="@+id/tvExerciseName"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="Exercise"
-            android:textColor="@android:color/white"
-            android:textSize="16sp"
-            android:textStyle="bold"
-            android:maxWidth="180dp"
-            android:ellipsize="end"
-            android:singleLine="true" />
+            <!-- REPS Label -->
+            <TextView
+                android:id="@+id/tvRepsLabel"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/reps"
+                android:textColor="@color/primary"
+                android:textSize="10sp"
+                android:textAllCaps="true"
+                android:letterSpacing="0.05" />
 
-        <!-- Divider -->
-        <View
-            android:layout_width="1dp"
-            android:layout_height="24dp"
-            android:background="#33FFFFFF"
-            android:layout_marginHorizontal="12dp" />
+        </LinearLayout>
 
-        <!-- Phase Label -->
-        <TextView
-            android:id="@+id/tvPhase"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="Ready"
-            android:textColor="#00E676"
-            android:textSize="14sp"
-            android:textStyle="bold" />
+    </FrameLayout>
 
-    </LinearLayout>
+    <!-- Progress Label (hidden - kept for compatibility) -->
+    <TextView
+        android:id="@+id/tvProgress"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="0 / 12"
+        android:textColor="#80FFFFFF"
+        android:textSize="14sp"
+        android:visibility="gone"
+        app:layout_constraintTop_toBottomOf="@id/heroCounterContainer"
+        app:layout_constraintEnd_toEndOf="@id/heroCounterContainer"
+        android:layout_marginTop="4dp"
+        android:layout_marginEnd="@dimen/spacing_base" />
 
-    <!-- FPS Debug (top right) -->
+    <!-- Phase Label (hidden - kept for compatibility) -->
+    <TextView
+        android:id="@+id/tvPhase"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Ready"
+        android:textColor="@color/primary"
+        android:textSize="12sp"
+        android:visibility="gone"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintEnd_toEndOf="parent" />
+
+    <!-- FPS Debug (top right - hidden by default) -->
     <TextView
         android:id="@+id/tvFps"
         android:layout_width="wrap_content"
@@ -114,62 +210,22 @@
         android:textColor="#66FFFFFF"
         android:textSize="10sp"
         android:padding="8dp"
-        app:layout_constraintTop_toTopOf="parent"
-        app:layout_constraintEnd_toEndOf="parent" />
-
-    <!-- ==================== HERO ELEMENT: Rep Counter / Timer ==================== -->
-    
-    <FrameLayout
-        android:id="@+id/heroCounterContainer"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
         android:visibility="gone"
-        app:layout_constraintTop_toBottomOf="@id/topDeck"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"
-        android:layout_marginTop="24dp">
+        app:layout_constraintTop_toBottomOf="@id/topBar"
+        app:layout_constraintStart_toStartOf="parent" />
 
-        <!-- Large Hero Number -->
-        <TextView
-            android:id="@+id/tvRepCount"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="0"
-            android:textColor="@android:color/white"
-            android:textSize="100sp"
-            android:fontFamily="sans-serif-thin"
-            android:shadowColor="#66000000"
-            android:shadowDx="2"
-            android:shadowDy="2"
-            android:shadowRadius="8" />
-
-    </FrameLayout>
-
-    <!-- Progress Label (below hero number) -->
-    <TextView
-        android:id="@+id/tvProgress"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="0 / 12"
-        android:textColor="#80FFFFFF"
-        android:textSize="16sp"
-        android:visibility="gone"
-        app:layout_constraintTop_toBottomOf="@id/heroCounterContainer"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"
-        android:layout_marginTop="4dp" />
-
-    <!-- ==================== GLASSMORPHIC MESSAGE AREA ==================== -->
+    <!-- ==================== GLASSMORPHIC MESSAGE AREA (Same row as Rep Counter) ==================== -->
     
     <com.trainingvalidator.poc.ui.components.GlassmorphicMessageView
         android:id="@+id/glassmorphicMessage"
-        android:layout_width="wrap_content"
+        android:layout_width="0dp"
         android:layout_height="wrap_content"
-        android:layout_marginTop="16dp"
-        android:layout_marginHorizontal="24dp"
-        app:layout_constraintTop_toBottomOf="@id/tvProgress"
+        android:layout_marginStart="@dimen/spacing_base"
+        android:layout_marginEnd="@dimen/spacing_sm"
+        android:layout_marginTop="@dimen/spacing_sm"
+        app:layout_constraintTop_toBottomOf="@id/topBar"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent" />
+        app:layout_constraintEnd_toStartOf="@id/heroCounterContainer" />
 
     <!-- ==================== SETUP POSE PANEL (Glass Style) ==================== -->
     
@@ -178,12 +234,14 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="vertical"
-        android:padding="24dp"
-        android:layout_marginHorizontal="16dp"
-        android:layout_marginBottom="16dp"
+        android:padding="@dimen/spacing_xl"
+        android:layout_marginHorizontal="@dimen/spacing_base"
+        android:layout_marginBottom="@dimen/spacing_base"
         android:background="@drawable/glass_deck_background"
         android:elevation="8dp"
-        app:layout_constraintBottom_toTopOf="@id/bottomDeck">
+        app:layout_constraintBottom_toTopOf="@id/bottomStatsBar"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent">
 
         <LinearLayout
             android:layout_width="match_parent"
@@ -196,16 +254,16 @@
                 android:layout_height="20dp"
                 android:src="@drawable/ic_position"
                 android:contentDescription="Position"
-                app:tint="#00E676" />
+                app:tint="@color/primary" />
 
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="Setup Position"
-                android:textColor="#00E676"
+                android:text="@string/setup_position"
+                android:textColor="@color/primary"
                 android:textSize="18sp"
                 android:textStyle="bold"
-                android:layout_marginStart="8dp" />
+                android:layout_marginStart="@dimen/spacing_sm" />
 
         </LinearLayout>
 
@@ -213,23 +271,23 @@
             android:id="@+id/tvPoseRequirements"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="Loading requirements..."
+            android:text="@string/loading"
             android:textColor="#CCFFFFFF"
             android:textSize="14sp"
-            android:layout_marginTop="12dp"
+            android:layout_marginTop="@dimen/spacing_md"
             android:lineSpacingExtra="4dp" />
 
         <View
             android:layout_width="match_parent"
             android:layout_height="1dp"
             android:background="#1AFFFFFF"
-            android:layout_marginTop="16dp"
-            android:layout_marginBottom="16dp" />
+            android:layout_marginTop="@dimen/spacing_base"
+            android:layout_marginBottom="@dimen/spacing_base" />
 
         <TextView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="Current Status:"
+            android:text="@string/current_status"
             android:textColor="#66FFFFFF"
             android:textSize="12sp" />
 
@@ -237,11 +295,11 @@
             android:id="@+id/tvPoseStatus"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="Waiting for pose..."
+            android:text="@string/waiting_for_pose"
             android:textColor="@android:color/white"
             android:textSize="13sp"
             android:fontFamily="monospace"
-            android:layout_marginTop="8dp"
+            android:layout_marginTop="@dimen/spacing_sm"
             android:lineSpacingExtra="2dp" />
 
     </LinearLayout>
@@ -265,7 +323,7 @@
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="Get Ready!"
+                android:text="@string/get_ready"
                 android:textColor="#CCFFFFFF"
                 android:textSize="22sp"
                 android:textStyle="bold" />
@@ -275,7 +333,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="3"
-                android:textColor="#00E676"
+                android:textColor="@color/primary"
                 android:textSize="140sp"
                 android:fontFamily="sans-serif-thin" />
 
@@ -283,7 +341,7 @@
 
     </FrameLayout>
 
-    <!-- ==================== TRAINING PANEL (Legacy - now integrated into Hero) ==================== -->
+    <!-- ==================== TRAINING PANEL (Legacy - kept for compatibility) ==================== -->
     
     <LinearLayout
         android:id="@+id/trainingPanel"
@@ -291,10 +349,9 @@
         android:layout_height="wrap_content"
         android:orientation="vertical"
         android:gravity="center"
-        android:visibility="gone"
-        tools:visibility="visible" />
+        android:visibility="gone" />
 
-    <!-- Legacy Error Text (hidden - using GlassmorphicMessage instead) -->
+    <!-- Legacy Error Text (hidden) -->
     <TextView
         android:id="@+id/tvError"
         android:layout_width="wrap_content"
@@ -313,8 +370,8 @@
         android:layout_height="match_parent"
         android:orientation="vertical"
         android:gravity="center"
-        android:padding="32dp"
-        android:background="#EE121212"
+        android:padding="@dimen/spacing_2xl"
+        android:background="@color/background"
         android:visibility="gone">
 
         <ImageView
@@ -326,26 +383,26 @@
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Workout Complete!"
-            android:textColor="#00E676"
+            android:text="@string/workout_complete"
+            android:textColor="@color/primary"
             android:textSize="28sp"
             android:textStyle="bold"
-            android:layout_marginTop="16dp" />
+            android:layout_marginTop="@dimen/spacing_base" />
 
-        <!-- Summary Card (Glassmorphic) -->
+        <!-- Summary Card -->
         <androidx.cardview.widget.CardView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="32dp"
-            app:cardBackgroundColor="#33FFFFFF"
-            app:cardCornerRadius="24dp"
-            app:cardElevation="8dp">
+            android:layout_marginTop="@dimen/spacing_2xl"
+            app:cardBackgroundColor="@color/surface"
+            app:cardCornerRadius="@dimen/radius_lg"
+            app:cardElevation="0dp">
 
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:orientation="vertical"
-                android:padding="24dp">
+                android:padding="@dimen/spacing_xl">
 
                 <!-- Total Reps -->
                 <LinearLayout
@@ -358,8 +415,8 @@
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
                         android:layout_weight="1"
-                        android:text="Total Reps"
-                        android:textColor="#99FFFFFF"
+                        android:text="@string/total_reps"
+                        android:textColor="@color/text_secondary"
                         android:textSize="15sp" />
 
                     <TextView
@@ -367,7 +424,7 @@
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:text="12"
-                        android:textColor="@android:color/white"
+                        android:textColor="@color/text_primary"
                         android:textSize="28sp"
                         android:fontFamily="sans-serif-light" />
 
@@ -379,14 +436,14 @@
                     android:layout_height="wrap_content"
                     android:orientation="horizontal"
                     android:gravity="center_vertical"
-                    android:layout_marginTop="16dp">
+                    android:layout_marginTop="@dimen/spacing_base">
 
                     <TextView
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
                         android:layout_weight="1"
-                        android:text="Correct"
-                        android:textColor="#99FFFFFF"
+                        android:text="@string/correct"
+                        android:textColor="@color/text_secondary"
                         android:textSize="15sp" />
 
                     <TextView
@@ -394,7 +451,7 @@
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:text="10 correct"
-                        android:textColor="#00E676"
+                        android:textColor="@color/primary"
                         android:textSize="18sp"
                         android:textStyle="bold" />
 
@@ -406,14 +463,14 @@
                     android:layout_height="wrap_content"
                     android:orientation="horizontal"
                     android:gravity="center_vertical"
-                    android:layout_marginTop="16dp">
+                    android:layout_marginTop="@dimen/spacing_base">
 
                     <TextView
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
                         android:layout_weight="1"
-                        android:text="Accuracy"
-                        android:textColor="#99FFFFFF"
+                        android:text="@string/accuracy"
+                        android:textColor="@color/text_secondary"
                         android:textSize="15sp" />
 
                     <TextView
@@ -421,7 +478,7 @@
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:text="83%"
-                        android:textColor="#FFD700"
+                        android:textColor="@color/pro_gold"
                         android:textSize="28sp"
                         android:fontFamily="sans-serif-light" />
 
@@ -433,14 +490,14 @@
                     android:layout_height="wrap_content"
                     android:orientation="horizontal"
                     android:gravity="center_vertical"
-                    android:layout_marginTop="16dp">
+                    android:layout_marginTop="@dimen/spacing_base">
 
                     <TextView
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
                         android:layout_weight="1"
-                        android:text="Duration"
-                        android:textColor="#99FFFFFF"
+                        android:text="@string/duration"
+                        android:textColor="@color/text_secondary"
                         android:textSize="15sp" />
 
                     <TextView
@@ -448,7 +505,7 @@
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:text="01:30"
-                        android:textColor="@android:color/white"
+                        android:textColor="@color/text_primary"
                         android:textSize="18sp" />
 
                 </LinearLayout>
@@ -462,20 +519,19 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="horizontal"
-            android:layout_marginTop="32dp">
+            android:layout_marginTop="@dimen/spacing_2xl">
 
             <!-- Save Results Button (Video mode only) -->
             <com.google.android.material.button.MaterialButton
                 android:id="@+id/btnSaveResults"
                 android:layout_width="0dp"
-                android:layout_height="56dp"
+                android:layout_height="@dimen/button_height"
                 android:layout_weight="1"
-                android:layout_marginEnd="8dp"
-                android:text="Save"
+                android:layout_marginEnd="@dimen/spacing_sm"
+                android:text="@string/save"
                 android:textSize="16sp"
                 android:visibility="gone"
-                app:cornerRadius="28dp"
-                app:backgroundTint="#2196F3"
+                style="@style/Widget.WayToFix.Button.Secondary"
                 app:icon="@android:drawable/ic_menu_save"
                 app:iconGravity="textStart" />
 
@@ -483,13 +539,12 @@
             <com.google.android.material.button.MaterialButton
                 android:id="@+id/btnFinish"
                 android:layout_width="0dp"
-                android:layout_height="56dp"
+                android:layout_height="@dimen/button_height"
                 android:layout_weight="1"
-                android:text="Done"
+                android:text="@string/done"
                 android:textSize="18sp"
                 android:textStyle="bold"
-                app:cornerRadius="28dp"
-                app:backgroundTint="#00E676" />
+                style="@style/Widget.WayToFix.Button.Primary" />
 
         </LinearLayout>
 
@@ -502,21 +557,23 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="vertical"
-        android:padding="16dp"
-        android:layout_marginHorizontal="16dp"
-        android:layout_marginBottom="8dp"
+        android:padding="@dimen/spacing_base"
+        android:layout_marginHorizontal="@dimen/spacing_base"
+        android:layout_marginBottom="@dimen/spacing_sm"
         android:background="@drawable/glass_deck_background"
         android:elevation="8dp"
         android:visibility="gone"
-        app:layout_constraintBottom_toTopOf="@id/bottomDeck">
+        app:layout_constraintBottom_toTopOf="@id/bottomStatsBar"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent">
 
         <!-- Seek Bar -->
         <SeekBar
             android:id="@+id/videoSeekBar"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:progressTint="#00E676"
-            android:thumbTint="#00E676"
+            android:progressTint="@color/primary"
+            android:thumbTint="@color/primary"
             android:max="100" />
 
         <!-- Time Display -->
@@ -549,88 +606,153 @@
 
         </LinearLayout>
 
-        <!-- REMOVED: Rewind/Forward buttons - use SeekBar instead -->
-
     </LinearLayout>
 
-    <!-- ==================== BOTTOM CONTROL DECK ==================== -->
+    <!-- ==================== BOTTOM CONTROL BAR (Stats + Controls in one row) ==================== -->
     
     <LinearLayout
-        android:id="@+id/bottomDeck"
-        android:layout_width="wrap_content"
+        android:id="@+id/bottomStatsBar"
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="horizontal"
         android:gravity="center_vertical"
-        android:paddingHorizontal="20dp"
-        android:paddingVertical="12dp"
-        android:background="@drawable/glass_deck_background"
-        android:elevation="8dp"
-        android:layout_marginBottom="24dp"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent">
+        android:paddingHorizontal="@dimen/spacing_base"
+        android:paddingVertical="@dimen/spacing_md"
+        android:layout_marginBottom="@dimen/spacing_lg"
+        app:layout_constraintBottom_toBottomOf="parent">
 
-        <!-- Switch Camera Button -->
-        <ImageButton
-            android:id="@+id/btnSwitchCamera"
-            android:layout_width="48dp"
-            android:layout_height="48dp"
-            android:src="@drawable/ic_switch_camera"
-            android:background="?attr/selectableItemBackgroundBorderless"
-            android:contentDescription="Switch Camera"
-            app:tint="@android:color/white" />
+        <!-- TIME Card (Left - takes remaining space) -->
+        <LinearLayout
+            android:id="@+id/cardTime"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:layout_marginEnd="@dimen/spacing_md"
+            android:background="@drawable/bg_stat_card_dark"
+            android:orientation="vertical"
+            android:gravity="center"
+            android:paddingVertical="@dimen/spacing_md">
 
-        <!-- Divider -->
-        <View
-            android:layout_width="1dp"
-            android:layout_height="32dp"
-            android:background="#33FFFFFF"
-            android:layout_marginHorizontal="16dp" />
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/time"
+                android:textColor="@color/text_hint"
+                android:textSize="11sp"
+                android:textAllCaps="true" />
 
-        <!-- Play/Pause Button (Glassmorphic Icon Button) -->
-        <ImageButton
+            <TextView
+                android:id="@+id/tvTimeElapsed"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="00:00"
+                android:textColor="@color/text_primary"
+                android:textSize="20sp"
+                android:textStyle="bold" />
+
+        </LinearLayout>
+
+        <!-- Stop/Play Button (Center - fixed width) -->
+        <FrameLayout
             android:id="@+id/btnPlayPause"
             android:layout_width="56dp"
             android:layout_height="56dp"
-            android:src="@drawable/ic_play"
             android:background="@drawable/glass_pill_background"
-            android:padding="14dp"
-            android:contentDescription="Play/Pause"
-            android:scaleType="fitCenter"
-            app:tint="@android:color/white" />
+            android:contentDescription="Stop">
 
-        <!-- Progress Indicator (for camera mode) -->
+            <View
+                android:id="@+id/stopIcon"
+                android:layout_width="20dp"
+                android:layout_height="20dp"
+                android:layout_gravity="center"
+                android:background="@drawable/bg_stop_button" />
+
+        </FrameLayout>
+
+        <!-- FORM Card (Right - takes remaining space) -->
         <LinearLayout
-            android:id="@+id/progressContainer"
-            android:layout_width="wrap_content"
+            android:id="@+id/cardForm"
+            android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:orientation="horizontal"
-            android:gravity="center_vertical"
-            android:visibility="gone">
-
-            <ProgressBar
-                android:id="@+id/progressBar"
-                style="?android:attr/progressBarStyleHorizontal"
-                android:layout_width="100dp"
-                android:layout_height="4dp"
-                android:progressTint="#00E676"
-                android:progressBackgroundTint="#33FFFFFF"
-                android:max="100" />
+            android:layout_weight="1"
+            android:layout_marginStart="@dimen/spacing_md"
+            android:background="@drawable/bg_stat_card_dark"
+            android:orientation="vertical"
+            android:gravity="center"
+            android:paddingVertical="@dimen/spacing_md">
 
             <TextView
-                android:id="@+id/tvProgressPercent"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="0%"
-                android:textColor="#CCFFFFFF"
-                android:textSize="12sp"
-                android:layout_marginStart="8dp" />
+                android:text="@string/form"
+                android:textColor="@color/text_hint"
+                android:textSize="11sp"
+                android:textAllCaps="true" />
+
+            <TextView
+                android:id="@+id/tvFormStatus"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/good"
+                android:textColor="@color/primary"
+                android:textSize="20sp"
+                android:textStyle="bold" />
 
         </LinearLayout>
 
     </LinearLayout>
+    
+    <!-- Hidden Switch Camera Button (moved to Settings dialog) -->
+    <ImageButton
+        android:id="@+id/btnSwitchCamera"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        android:visibility="gone"
+        app:layout_constraintTop_toTopOf="parent" />
 
-    <!-- Legacy panels kept for compatibility -->
+    <!-- Hidden SET Card (for workouts - kept for compatibility) -->
+    <LinearLayout
+        android:id="@+id/cardSet"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        android:visibility="gone"
+        app:layout_constraintTop_toTopOf="parent">
+
+        <TextView
+            android:id="@+id/tvSetProgress"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="1/4"
+            android:visibility="gone" />
+
+    </LinearLayout>
+
+    <!-- Hidden bottomControlDeck (kept for compatibility) -->
+    <FrameLayout
+        android:id="@+id/bottomControlDeck"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        android:visibility="gone"
+        app:layout_constraintBottom_toBottomOf="parent" />
+
+    <!-- ==================== LEGACY PANELS (Hidden - kept for compatibility) ==================== -->
+    
+    <!-- Legacy topDeck (alias for compatibility) -->
+    <LinearLayout
+        android:id="@+id/topDeck"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        android:visibility="gone"
+        app:layout_constraintTop_toTopOf="parent" />
+
+    <!-- Legacy bottomDeck (alias for compatibility) -->
+    <LinearLayout
+        android:id="@+id/bottomDeck"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        android:visibility="gone"
+        app:layout_constraintBottom_toBottomOf="parent" />
+
     <LinearLayout
         android:id="@+id/topPanel"
         android:layout_width="match_parent"
@@ -644,5 +766,34 @@
         android:layout_height="wrap_content"
         android:visibility="gone"
         app:layout_constraintBottom_toBottomOf="parent" />
+
+    <!-- Progress Container (hidden - kept for compatibility) -->
+    <LinearLayout
+        android:id="@+id/progressContainer"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center_vertical"
+        android:visibility="gone">
+
+        <ProgressBar
+            android:id="@+id/progressBar"
+            style="?android:attr/progressBarStyleHorizontal"
+            android:layout_width="100dp"
+            android:layout_height="4dp"
+            android:progressTint="@color/primary"
+            android:progressBackgroundTint="#33FFFFFF"
+            android:max="100" />
+
+        <TextView
+            android:id="@+id/tvProgressPercent"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="0%"
+            android:textColor="#CCFFFFFF"
+            android:textSize="12sp"
+            android:layout_marginStart="8dp" />
+
+    </LinearLayout>
 
 </androidx.constraintlayout.widget.ConstraintLayout>

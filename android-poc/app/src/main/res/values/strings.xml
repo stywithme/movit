@@ -70,6 +70,19 @@
     <string name="quick_actions">Quick Actions</string>
     <string name="sets_completed_format">%1$d/%2$d sets completed</string>
     <string name="sample_exercise_squats">Squats</string>
+    <string name="recent_reports">Recent Reports</string>
+    <string name="workouts">Workouts</string>
+    <string name="recent_exercises">Recent Exercises</string>
+    <string name="view_all">View All</string>
+    <string name="no_reports_yet">No reports yet</string>
+    <string name="complete_workout_for_report">Complete a workout to see your report here</string>
+    <string name="no_workouts_yet">No workouts available</string>
+    <string name="no_exercises_yet">No exercises yet</string>
+    <string name="start_exercise_hint">Start an exercise to see your history</string>
+    <string name="ai_enabled">AI Enabled</string>
+    <string name="exercises_count_format">%d exercises</string>
+    <string name="reps">Reps</string>
+    <string name="duration">Duration</string>
     
     <!-- Exercises -->
     <string name="featured_program_title">Full Body AI Program</string>
@@ -78,7 +91,6 @@
     <string name="no_exercises_found">No exercises found</string>
     
     <!-- History -->
-    <string name="no_workouts_yet">No workouts yet</string>
     <string name="no_workouts_hint">Start your first workout to see history here</string>
     <string name="sample_weekly_average">85%</string>
     <string name="sample_total_time">2h 45m</string>
@@ -170,7 +182,6 @@
     <string name="chest">Chest</string>
     <string name="featured_program">Featured Program</string>
     <string name="popular_exercises">Popular Exercises</string>
-    <string name="view_all">View all</string>
     <string name="ai_correction_enabled">AI Correction Enabled</string>
     
     <!-- Difficulty -->
@@ -187,10 +198,63 @@
     <string name="looping_preview">LOOPING PREVIEW</string>
     <string name="no_equipment">No Equipment</string>
     <string name="camera_position">Camera Position</string>
+    <string name="exercise_instructions">Instructions</string>
+    <string name="target_muscles">Target Muscles</string>
+    <string name="no_instructions_available">No instructions available for this exercise.</string>
+    <string name="duration_minutes_format">%d min</string>
+    <string name="workout_type_circuit">CIRCUIT</string>
+    <string name="workout_type_super_set">SUPER SET</string>
+    <string name="workout_type_amrap">AMRAP</string>
+    <string name="workout_type_emom">EMOM</string>
+    
+    <!-- Muscles -->
+    <string name="muscle_quadriceps">Quadriceps</string>
+    <string name="muscle_glutes">Glutes</string>
+    <string name="muscle_hamstrings">Hamstrings</string>
+    <string name="muscle_calves">Calves</string>
+    <string name="muscle_biceps">Biceps</string>
+    <string name="muscle_triceps">Triceps</string>
+    <string name="muscle_shoulders">Shoulders</string>
+    <string name="muscle_chest">Chest</string>
+    <string name="muscle_back">Back</string>
+    <string name="muscle_core">Core</string>
+    <string name="muscle_abs">Abs</string>
+    <string name="muscle_forearms">Forearms</string>
+    <string name="muscle_lats">Lats</string>
+    <string name="muscle_lower_back">Lower Back</string>
+    <string name="muscle_hip_flexors">Hip Flexors</string>
+    <string name="muscle_obliques">Obliques</string>
+    
+    <!-- Equipment -->
+    <string name="equipment_bodyweight">Bodyweight</string>
+    <string name="equipment_barbell">Barbell</string>
+    <string name="equipment_dumbbell">Dumbbell</string>
+    <string name="equipment_kettlebell">Kettlebell</string>
+    <string name="equipment_resistance_band">Resistance Band</string>
+    <string name="equipment_mat">Mat</string>
+    <string name="equipment_bench">Bench</string>
+    <string name="equipment_pull_up_bar">Pull-up Bar</string>
+    <string name="equipment_cable_machine">Cable Machine</string>
+    <string name="equipment_none">No Equipment</string>
+    
+    <!-- Camera Positions -->
+    <string name="camera_side_view">Side View</string>
+    <string name="camera_front_view">Front View</string>
+    <string name="camera_back_view">Back View</string>
+    <string name="camera_angle_45">45° Angle</string>
+    
+    <!-- Default Checklist Items -->
+    <string name="checklist_stance_title">Stance</string>
+    <string name="checklist_stance_desc">Stand with feet shoulder-width apart.</string>
+    <string name="checklist_posture_title">Posture</string>
+    <string name="checklist_posture_desc">Keep your chest up and back straight.</string>
+    <string name="checklist_depth_title">Depth</string>
+    <string name="checklist_depth_desc">Lower hips until thighs are parallel to floor.</string>
+    <string name="checklist_return_title">Return</string>
+    <string name="checklist_return_desc">Push through heels to return to standing.</string>
     
     <!-- Training -->
     <string name="current_exercise">Current Exercise</string>
-    <string name="reps">Reps</string>
     <string name="set_format">Set %1$d/%2$d</string>
     <string name="time">Time</string>
     <string name="form">Form</string>
@@ -202,7 +266,6 @@
     <string name="excellent">Excellent!</string>
     <string name="set_complete">Set Complete</string>
     <string name="accuracy">Accuracy</string>
-    <string name="duration">Duration</string>
     <string name="best">Best</string>
     <string name="errors">Errors</string>
     <string name="stats">Stats</string>
@@ -210,6 +273,25 @@
     <string name="way_to_fix">Way to Fix</string>
     <string name="save_and_finish">Save &amp; Finish</string>
     <string name="high_priority">High Priority</string>
+    <string name="perfect">Perfect</string>
+    <string name="warning">Warning</string>
+    <string name="danger">Danger</string>
+    <string name="all_good">All good!</string>
+    <string name="perfect_count_format">%1$d Perfect</string>
+    <string name="good_count_format">%1$d Good</string>
+    <string name="warning_count_format">%1$d Warning</string>
+    <string name="danger_count_format">%1$d Danger</string>
+    <string name="rep_number_format">Rep #%1$d</string>
+    <string name="score_format">Score: %1$d%%</string>
+    <string name="state_perfect">Perfect Form</string>
+    <string name="state_normal">Good Form</string>
+    <string name="state_warning">Needs Improvement</string>
+    <string name="state_danger">Form Issue</string>
+    <string name="perfect_training_title">Amazing! Perfect Training!</string>
+    <string name="perfect_training_desc">No errors detected. You\'re doing great!</string>
+    <string name="safety_alerts">Important Safety Alerts</string>
+    <string name="areas_for_improvement">Areas for Improvement</string>
+    <string name="best_rep_title">Best Rep #%1$d</string>
     
     <!-- History -->
     <string name="workout_history">Workout History</string>
@@ -247,6 +329,25 @@
     <string name="feature_personalized">Personalized Training Programs</string>
     <string name="feature_analytics">Detailed Progress Analytics</string>
     <string name="feature_video_export">Video Export &amp; Slow Motion</string>
+    
+    <!-- Training Screen -->
+    <string name="setup_position">Setup Position</string>
+    <string name="current_status">Current Status:</string>
+    <string name="waiting_for_pose">Waiting for pose…</string>
+    <string name="get_ready">Get Ready!</string>
+    <string name="workout_complete">Workout Complete!</string>
+    <string name="total_reps">Total Reps</string>
+    <string name="correct">Correct</string>
+    <string name="training_settings">Training Settings</string>
+    <string name="visual_indicator">Visual Indicator</string>
+    <string name="detection_model">Detection Model</string>
+    <string name="detection_model_desc">Heavy model is more accurate but slower</string>
+    <string name="model_full">Full (Fast)</string>
+    <string name="model_heavy">Heavy (Accurate)</string>
+    <string name="apply">Apply</string>
+    <string name="front_camera">Front Camera</string>
+    <string name="back_camera">Back Camera</string>
+    <string name="switch_text">Switch</string>
     
     <!-- Legacy strings (Training) -->
     <string name="camera_permission_required">Camera permission is required for pose detection</string>

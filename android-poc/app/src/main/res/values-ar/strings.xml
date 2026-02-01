@@ -70,6 +70,18 @@
     <string name="quick_actions">إجراءات سريعة</string>
     <string name="sets_completed_format">تم إكمال %1$d من %2$d مجموعة</string>
     <string name="sample_exercise_squats">القرفصاء</string>
+    <string name="recent_reports">آخر التقارير</string>
+    <string name="workouts">التمارين المجمعة</string>
+    <string name="recent_exercises">آخر التمارين</string>
+    <string name="view_all">عرض الكل</string>
+    <string name="no_reports_yet">لا توجد تقارير بعد</string>
+    <string name="complete_workout_for_report">أكمل تمريناً لتظهر تقاريرك هنا</string>
+    <string name="no_exercises_yet">لا توجد تمارين بعد</string>
+    <string name="start_exercise_hint">ابدأ تمريناً لترى سجلك هنا</string>
+    <string name="ai_enabled">بالذكاء الاصطناعي</string>
+    <string name="exercises_count_format">%d تمارين</string>
+    <string name="reps">التكرارات</string>
+    <string name="duration">المدة</string>
     
     <!-- Exercises -->
     <string name="featured_program_title">برنامج الذكاء الاصطناعي للجسم بالكامل</string>
@@ -170,7 +182,6 @@
     <string name="chest">الصدر</string>
     <string name="featured_program">البرنامج المميز</string>
     <string name="popular_exercises">التمارين الشائعة</string>
-    <string name="view_all">عرض الكل</string>
     <string name="ai_correction_enabled">تصحيح AI مفعّل</string>
     
     <!-- Difficulty -->
@@ -187,10 +198,63 @@
     <string name="looping_preview">معاينة متكررة</string>
     <string name="no_equipment">بدون معدات</string>
     <string name="camera_position">موقع الكاميرا</string>
+    <string name="exercise_instructions">التعليمات</string>
+    <string name="target_muscles">العضلات المستهدفة</string>
+    <string name="no_instructions_available">لا توجد تعليمات متاحة لهذا التمرين.</string>
+    <string name="duration_minutes_format">%d دقيقة</string>
+    <string name="workout_type_circuit">دائرة</string>
+    <string name="workout_type_super_set">سوبر سيت</string>
+    <string name="workout_type_amrap">أقصى جولات</string>
+    <string name="workout_type_emom">كل دقيقة</string>
+    
+    <!-- Muscles -->
+    <string name="muscle_quadriceps">عضلات الفخذ الأمامية</string>
+    <string name="muscle_glutes">عضلات المؤخرة</string>
+    <string name="muscle_hamstrings">عضلات الفخذ الخلفية</string>
+    <string name="muscle_calves">عضلات الساق</string>
+    <string name="muscle_biceps">العضلة ذات الرأسين</string>
+    <string name="muscle_triceps">العضلة ثلاثية الرؤوس</string>
+    <string name="muscle_shoulders">الأكتاف</string>
+    <string name="muscle_chest">الصدر</string>
+    <string name="muscle_back">الظهر</string>
+    <string name="muscle_core">عضلات الجذع</string>
+    <string name="muscle_abs">عضلات البطن</string>
+    <string name="muscle_forearms">الساعدين</string>
+    <string name="muscle_lats">العضلة الظهرية العريضة</string>
+    <string name="muscle_lower_back">أسفل الظهر</string>
+    <string name="muscle_hip_flexors">عضلات الورك</string>
+    <string name="muscle_obliques">العضلات المائلة</string>
+    
+    <!-- Equipment -->
+    <string name="equipment_bodyweight">وزن الجسم</string>
+    <string name="equipment_barbell">بار حديد</string>
+    <string name="equipment_dumbbell">دمبل</string>
+    <string name="equipment_kettlebell">كيتل بيل</string>
+    <string name="equipment_resistance_band">حبل مقاومة</string>
+    <string name="equipment_mat">سجادة</string>
+    <string name="equipment_bench">مقعد</string>
+    <string name="equipment_pull_up_bar">بار علوي</string>
+    <string name="equipment_cable_machine">جهاز كابل</string>
+    <string name="equipment_none">بدون معدات</string>
+    
+    <!-- Camera Positions -->
+    <string name="camera_side_view">منظر جانبي</string>
+    <string name="camera_front_view">منظر أمامي</string>
+    <string name="camera_back_view">منظر خلفي</string>
+    <string name="camera_angle_45">زاوية 45°</string>
+    
+    <!-- Default Checklist Items -->
+    <string name="checklist_stance_title">الوقفة</string>
+    <string name="checklist_stance_desc">قف مع مباعدة قدميك بعرض الكتفين.</string>
+    <string name="checklist_posture_title">وضع الجسم</string>
+    <string name="checklist_posture_desc">حافظ على صدرك مرفوعاً وظهرك مستقيماً.</string>
+    <string name="checklist_depth_title">العمق</string>
+    <string name="checklist_depth_desc">اخفض الوركين حتى تصبح الفخذين موازية للأرض.</string>
+    <string name="checklist_return_title">العودة</string>
+    <string name="checklist_return_desc">ادفع من خلال الكعبين للعودة للوقوف.</string>
     
     <!-- Training -->
     <string name="current_exercise">التمرين الحالي</string>
-    <string name="reps">تكرارات</string>
     <string name="set_format">المجموعة %1$d/%2$d</string>
     <string name="time">الوقت</string>
     <string name="form">الأداء</string>
@@ -202,7 +266,6 @@
     <string name="excellent">ممتاز!</string>
     <string name="set_complete">المجموعة اكتملت</string>
     <string name="accuracy">الدقة</string>
-    <string name="duration">المدة</string>
     <string name="best">الأفضل</string>
     <string name="errors">الأخطاء</string>
     <string name="stats">الإحصائيات</string>
@@ -210,6 +273,25 @@
     <string name="way_to_fix">طريقة التصحيح</string>
     <string name="save_and_finish">حفظ وإنهاء</string>
     <string name="high_priority">أولوية عالية</string>
+    <string name="perfect">ممتاز</string>
+    <string name="warning">تحذير</string>
+    <string name="danger">خطر</string>
+    <string name="all_good">كل شيء جيد!</string>
+    <string name="perfect_count_format">%1$d ممتاز</string>
+    <string name="good_count_format">%1$d جيد</string>
+    <string name="warning_count_format">%1$d تحذير</string>
+    <string name="danger_count_format">%1$d خطر</string>
+    <string name="rep_number_format">التكرار #%1$d</string>
+    <string name="score_format">النتيجة: %1$d%%</string>
+    <string name="state_perfect">أداء ممتاز</string>
+    <string name="state_normal">أداء جيد</string>
+    <string name="state_warning">يحتاج تحسين</string>
+    <string name="state_danger">مشكلة في الأداء</string>
+    <string name="perfect_training_title">رائع! تمرين ممتاز!</string>
+    <string name="perfect_training_desc">لم يتم اكتشاف أي أخطاء. أنت تقوم بعمل رائع!</string>
+    <string name="safety_alerts">تنبيهات السلامة المهمة</string>
+    <string name="areas_for_improvement">مجالات التحسين</string>
+    <string name="best_rep_title">أفضل تكرار #%1$d</string>
     
     <!-- History -->
     <string name="workout_history">سجل التمارين</string>
@@ -247,6 +329,25 @@
     <string name="feature_personalized">برامج تدريب مخصصة</string>
     <string name="feature_analytics">تحليلات تقدم مفصلة</string>
     <string name="feature_video_export">تصدير فيديو وحركة بطيئة</string>
+    
+    <!-- Training Screen -->
+    <string name="setup_position">إعداد الوضعية</string>
+    <string name="current_status">الحالة الحالية:</string>
+    <string name="waiting_for_pose">في انتظار الوضعية…</string>
+    <string name="get_ready">استعد!</string>
+    <string name="workout_complete">اكتمل التمرين!</string>
+    <string name="total_reps">إجمالي التكرارات</string>
+    <string name="correct">صحيح</string>
+    <string name="training_settings">إعدادات التمرين</string>
+    <string name="visual_indicator">المؤشر البصري</string>
+    <string name="detection_model">نموذج الكشف</string>
+    <string name="detection_model_desc">النموذج الثقيل أكثر دقة لكنه أبطأ</string>
+    <string name="model_full">كامل (سريع)</string>
+    <string name="model_heavy">ثقيل (دقيق)</string>
+    <string name="apply">تطبيق</string>
+    <string name="front_camera">الكاميرا الأمامية</string>
+    <string name="back_camera">الكاميرا الخلفية</string>
+    <string name="switch_text">تبديل</string>
     
     <!-- Legacy strings (Training) -->
     <string name="camera_permission_required">إذن الكاميرا مطلوب للكشف عن الوضعية</string>

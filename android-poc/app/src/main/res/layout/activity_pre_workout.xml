@@ -1,264 +1,196 @@
 <?xml version="1.0" encoding="utf-8"?>
-<androidx.coordinatorlayout.widget.CoordinatorLayout
+<androidx.constraintlayout.widget.ConstraintLayout
     xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@color/background"
-    android:fitsSystemWindows="true">
+    android:background="@color/background">
 
-    <!-- App Bar with Collapsing Image -->
-    <com.google.android.material.appbar.AppBarLayout
-        android:id="@+id/appBarLayout"
+    <!-- Toolbar -->
+    <androidx.appcompat.widget.Toolbar
+        android:id="@+id/toolbar"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:background="@android:color/transparent"
-        android:fitsSystemWindows="true"
-        app:elevation="0dp">
+        android:layout_height="?attr/actionBarSize"
+        app:layout_constraintTop_toTopOf="parent"
+        app:navigationIcon="@drawable/ic_arrow_back"
+        app:title=""
+        app:titleTextColor="@color/text_primary"/>
 
-        <com.google.android.material.appbar.CollapsingToolbarLayout
-            android:id="@+id/collapsingToolbar"
-            android:layout_width="match_parent"
-            android:layout_height="320dp"
-            android:fitsSystemWindows="true"
-            app:contentScrim="@color/background"
-            app:layout_scrollFlags="scroll|exitUntilCollapsed"
-            app:expandedTitleGravity="bottom"
-            app:collapsedTitleGravity="center_vertical">
-
-            <!-- Exercise Preview Image -->
-            <FrameLayout
-                android:layout_width="match_parent"
-                android:layout_height="match_parent"
-                app:layout_collapseMode="parallax"
-                app:layout_collapseParallaxMultiplier="0.7">
-
-                <ImageView
-                    android:id="@+id/ivExercisePreview"
-                    android:layout_width="match_parent"
-                    android:layout_height="match_parent"
-                    android:scaleType="centerCrop"
-                    android:contentDescription="@string/cd_exercise"
-                    tools:src="@drawable/gradient_report_hero"/>
-
-                <!-- Gradient Overlay -->
-                <View
-                    android:layout_width="match_parent"
-                    android:layout_height="match_parent"
-                    android:background="@drawable/gradient_bottom"/>
-
-                <!-- Looping Preview Badge -->
-                <LinearLayout
-                    android:id="@+id/badgeLoopingPreview"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_gravity="center"
-                    android:background="@drawable/glass_pill_background"
-                    android:paddingHorizontal="@dimen/spacing_md"
-                    android:paddingVertical="@dimen/spacing_xs"
-                    android:orientation="horizontal"
-                    android:gravity="center_vertical">
-
-                    <ImageView
-                        android:layout_width="16dp"
-                        android:layout_height="16dp"
-                        android:src="@drawable/ic_play"
-                        app:tint="@color/text_primary"/>
-
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:layout_marginStart="@dimen/spacing_xs"
-                        android:text="@string/looping_preview"
-                        android:textColor="@color/text_primary"
-                        android:textSize="12sp"/>
-
-                </LinearLayout>
-
-            </FrameLayout>
-
-            <!-- Toolbar -->
-            <androidx.appcompat.widget.Toolbar
-                android:id="@+id/toolbar"
-                android:layout_width="match_parent"
-                android:layout_height="?attr/actionBarSize"
-                app:layout_collapseMode="pin"
-                app:navigationIcon="@drawable/ic_arrow_back"
-                app:title=""
-                app:titleTextColor="@color/text_primary"/>
-
-        </com.google.android.material.appbar.CollapsingToolbarLayout>
-    </com.google.android.material.appbar.AppBarLayout>
-
-    <!-- Main Content -->
+    <!-- Scrollable Content -->
     <androidx.core.widget.NestedScrollView
         android:layout_width="match_parent"
-        android:layout_height="match_parent"
+        android:layout_height="0dp"
         android:fillViewport="true"
-        app:layout_behavior="@string/appbar_scrolling_view_behavior">
+        app:layout_constraintTop_toBottomOf="@id/toolbar"
+        app:layout_constraintBottom_toTopOf="@id/bottomButtons">
 
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="vertical"
-            android:paddingBottom="100dp">
+            android:padding="@dimen/spacing_base">
 
-            <!-- Exercise Info Card -->
-            <androidx.cardview.widget.CardView
+            <!-- Exercise Image Card -->
+            <com.google.android.material.card.MaterialCardView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginHorizontal="@dimen/spacing_base"
-                android:layout_marginTop="-40dp"
                 app:cardBackgroundColor="@color/surface"
                 app:cardCornerRadius="@dimen/radius_lg"
-                app:cardElevation="0dp">
+                app:cardElevation="0dp"
+                app:strokeWidth="0dp">
 
-                <LinearLayout
+                <FrameLayout
                     android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:orientation="vertical"
-                    android:padding="@dimen/spacing_lg">
+                    android:layout_height="220dp">
 
-                    <!-- Title Row -->
-                    <LinearLayout
+                    <ImageView
+                        android:id="@+id/ivExercisePreview"
                         android:layout_width="match_parent"
+                        android:layout_height="match_parent"
+                        android:scaleType="centerCrop"
+                        android:contentDescription="@string/cd_exercise"
+                        tools:background="@color/surface_variant"/>
+
+                    <!-- Gradient Overlay -->
+                    <View
+                        android:layout_width="match_parent"
+                        android:layout_height="match_parent"
+                        android:background="@drawable/gradient_bottom"/>
+
+                    <!-- Looping Preview Badge -->
+                    <LinearLayout
+                        android:id="@+id/badgeLoopingPreview"
+                        android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
+                        android:layout_gravity="center"
+                        android:background="@drawable/glass_pill_background"
+                        android:paddingHorizontal="@dimen/spacing_md"
+                        android:paddingVertical="@dimen/spacing_xs"
                         android:orientation="horizontal"
-                        android:gravity="center_vertical">
+                        android:gravity="center_vertical"
+                        android:visibility="gone">
+
+                        <ImageView
+                            android:layout_width="16dp"
+                            android:layout_height="16dp"
+                            android:src="@drawable/ic_play"
+                            app:tint="@color/text_primary"/>
 
                         <TextView
-                            android:id="@+id/tvExerciseName"
-                            android:layout_width="0dp"
+                            android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:layout_weight="1"
-                            android:textAppearance="@style/TextAppearance.WayToFix.Headline1"
+                            android:layout_marginStart="@dimen/spacing_xs"
+                            android:text="@string/looping_preview"
                             android:textColor="@color/text_primary"
-                            tools:text="Squats"/>
-
-                        <!-- PRO Badge -->
-                        <TextView
-                            android:id="@+id/badgePro"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:background="@drawable/bg_chip_accent"
-                            android:paddingHorizontal="@dimen/spacing_sm"
-                            android:paddingVertical="@dimen/spacing_xs"
-                            android:text="⭐ PRO"
-                            android:textColor="@color/on_primary"
-                            android:textSize="11sp"
-                            android:textStyle="bold"
-                            android:visibility="gone"/>
+                            android:textSize="12sp"/>
 
                     </LinearLayout>
 
-                    <!-- Meta Info -->
-                    <LinearLayout
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="@dimen/spacing_sm"
-                        android:orientation="horizontal"
-                        android:gravity="center_vertical">
+                </FrameLayout>
 
-                        <!-- Muscles -->
-                        <ImageView
-                            android:layout_width="16dp"
-                            android:layout_height="16dp"
-                            android:src="@drawable/ic_muscle"
-                            app:tint="@color/primary"/>
+            </com.google.android.material.card.MaterialCardView>
 
-                        <TextView
-                            android:id="@+id/tvMuscles"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:layout_marginStart="@dimen/spacing_xs"
-                            android:textColor="@color/text_secondary"
-                            android:textSize="14sp"
-                            tools:text="Quads &amp; Glutes"/>
+            <!-- Exercise Name -->
+            <TextView
+                android:id="@+id/tvExerciseName"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="@dimen/spacing_lg"
+                android:textAppearance="@style/TextAppearance.WayToFix.Headline1"
+                android:textColor="@color/text_primary"
+                tools:text="القرفصاء"/>
 
-                        <View
-                            android:layout_width="4dp"
-                            android:layout_height="4dp"
-                            android:layout_marginHorizontal="@dimen/spacing_sm"
-                            android:background="@drawable/dot_inactive"/>
-
-                        <!-- Equipment -->
-                        <ImageView
-                            android:layout_width="16dp"
-                            android:layout_height="16dp"
-                            android:src="@drawable/ic_equipment"
-                            app:tint="@color/text_hint"/>
-
-                        <TextView
-                            android:id="@+id/tvEquipment"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:layout_marginStart="@dimen/spacing_xs"
-                            android:textColor="@color/text_secondary"
-                            android:textSize="14sp"
-                            tools:text="No Equipment"/>
-
-                    </LinearLayout>
-
-                </LinearLayout>
-
-            </androidx.cardview.widget.CardView>
-
-            <!-- Form Checklist Section -->
+            <!-- Muscles & Equipment Row -->
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:orientation="vertical"
-                android:layout_marginTop="@dimen/spacing_xl"
-                android:paddingHorizontal="@dimen/spacing_base">
+                android:layout_marginTop="@dimen/spacing_sm"
+                android:orientation="horizontal"
+                android:gravity="center_vertical">
 
-                <!-- Section Header -->
-                <LinearLayout
-                    android:layout_width="match_parent"
+                <!-- Muscles -->
+                <ImageView
+                    android:layout_width="18dp"
+                    android:layout_height="18dp"
+                    android:src="@drawable/ic_muscle"
+                    app:tint="@color/primary"/>
+
+                <TextView
+                    android:id="@+id/tvMuscles"
+                    android:layout_width="0dp"
                     android:layout_height="wrap_content"
-                    android:orientation="horizontal"
-                    android:gravity="center_vertical">
-
-                    <TextView
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:layout_weight="1"
-                        android:text="@string/form_checklist"
-                        android:textAppearance="@style/TextAppearance.WayToFix.Headline3"
-                        android:textColor="@color/text_primary"/>
-
-                    <TextView
-                        android:id="@+id/tvStepsCount"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:textColor="@color/text_hint"
-                        android:textSize="14sp"
-                        tools:text="4 steps"/>
-
-                </LinearLayout>
-
-                <!-- Checklist Items Container -->
-                <LinearLayout
-                    android:id="@+id/checklistContainer"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:orientation="vertical"
-                    android:layout_marginTop="@dimen/spacing_md">
-
-                    <!-- Checklist items will be added dynamically -->
-
-                </LinearLayout>
+                    android:layout_weight="1"
+                    android:layout_marginStart="@dimen/spacing_xs"
+                    android:textColor="@color/text_secondary"
+                    android:textSize="14sp"
+                    android:ellipsize="end"
+                    android:maxLines="2"
+                    tools:text="عضلات الفخذ الأمامية &amp; عضلات المؤخرة"/>
 
             </LinearLayout>
 
-            <!-- Camera Position Section (if multiple variants) -->
+            <!-- Equipment Row -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="@dimen/spacing_xs"
+                android:orientation="horizontal"
+                android:gravity="center_vertical">
+
+                <ImageView
+                    android:layout_width="18dp"
+                    android:layout_height="18dp"
+                    android:src="@drawable/ic_equipment"
+                    app:tint="@color/text_hint"/>
+
+                <TextView
+                    android:id="@+id/tvEquipment"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="@dimen/spacing_xs"
+                    android:textColor="@color/text_secondary"
+                    android:textSize="14sp"
+                    tools:text="بدون معدات"/>
+
+            </LinearLayout>
+
+            <!-- Instructions Section -->
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="@dimen/spacing_xl"
+                android:text="@string/exercise_instructions"
+                android:textAppearance="@style/TextAppearance.WayToFix.Headline3"
+                android:textColor="@color/text_primary"/>
+
+            <androidx.cardview.widget.CardView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="@dimen/spacing_sm"
+                app:cardBackgroundColor="@color/surface"
+                app:cardCornerRadius="@dimen/radius_base"
+                app:cardElevation="0dp">
+
+                <TextView
+                    android:id="@+id/tvInstructions"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:padding="@dimen/spacing_base"
+                    android:textColor="@color/text_secondary"
+                    android:textSize="15sp"
+                    android:lineSpacingExtra="4dp"
+                    tools:text="قف بشكل مستقيم، ثم انزل ببطء حتى تصل ركبتيك لزاوية 90 درجة"/>
+
+            </androidx.cardview.widget.CardView>
+
+            <!-- Camera Position Section -->
             <LinearLayout
                 android:id="@+id/cameraPositionSection"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:orientation="vertical"
                 android:layout_marginTop="@dimen/spacing_xl"
-                android:paddingHorizontal="@dimen/spacing_base"
                 android:visibility="gone">
 
                 <TextView
@@ -272,7 +204,7 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:orientation="horizontal"
-                    android:layout_marginTop="@dimen/spacing_md">
+                    android:layout_marginTop="@dimen/spacing_sm">
 
                     <com.google.android.material.button.MaterialButton
                         android:id="@+id/btnVariant1"
@@ -298,19 +230,40 @@
 
             </LinearLayout>
 
+            <!-- Hidden elements for compatibility -->
+            <LinearLayout
+                android:id="@+id/checklistContainer"
+                android:layout_width="0dp"
+                android:layout_height="0dp"
+                android:visibility="gone"
+                android:orientation="vertical"/>
+
+            <TextView
+                android:id="@+id/tvStepsCount"
+                android:layout_width="0dp"
+                android:layout_height="0dp"
+                android:visibility="gone"/>
+
+            <TextView
+                android:id="@+id/badgePro"
+                android:layout_width="0dp"
+                android:layout_height="0dp"
+                android:visibility="gone"/>
+
         </LinearLayout>
 
     </androidx.core.widget.NestedScrollView>
 
     <!-- Bottom Action Buttons -->
     <LinearLayout
+        android:id="@+id/bottomButtons"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_gravity="bottom"
         android:background="@color/background"
         android:orientation="horizontal"
         android:padding="@dimen/spacing_base"
-        android:elevation="8dp">
+        android:elevation="8dp"
+        app:layout_constraintBottom_toBottomOf="parent">
 
         <!-- Analyze Video Button -->
         <com.google.android.material.button.MaterialButton
@@ -340,4 +293,4 @@
 
     </LinearLayout>
 
-</androidx.coordinatorlayout.widget.CoordinatorLayout>
+</androidx.constraintlayout.widget.ConstraintLayout>

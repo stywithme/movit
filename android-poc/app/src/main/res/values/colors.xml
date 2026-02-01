@@ -5,6 +5,7 @@
     <!-- ═══════════════════════════════════════════════════ -->
     <color name="primary">#8AF851</color>              <!-- Neon Green - Main accent -->
     <color name="primary_variant">#6BD93A</color>      <!-- Darker green for pressed states -->
+    <color name="primary_light">#1A8AF851</color>      <!-- 10% opacity primary for backgrounds -->
     <color name="on_primary">#091801</color>           <!-- Dark text on primary -->
     
     <!-- Legacy Material Colors (Launcher & Compatibility) -->
