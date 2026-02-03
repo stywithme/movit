@@ -189,6 +189,27 @@ class RepCounter(
         currentPhaseTimings = timings.mapKeys { it.key.name.lowercase() }
     }
     
+    /**
+     * Get current worst state for motion recording
+     * Called before completeRep() to capture state for analytics
+     */
+    fun getCurrentWorstState(): JointState = currentRepWorstState
+    
+    /**
+     * Get pending score for motion recording
+     * Calculates what the score will be before completing the rep
+     */
+    fun getPendingScore(): Float {
+        return if (isHoldExercise) {
+            // For hold exercises, calculate from time tracking
+            updateStateTimeTracking(currentTrackingState)
+            calculateHoldScore().first
+        } else {
+            // For rep exercises, use worst state rate
+            StateConfig.getConfig(currentRepWorstState).rate.coerceAtLeast(0f)
+        }
+    }
+    
     // ==================== Rep Completion ====================
     
     /**

@@ -28,7 +28,7 @@ import type {
 // ============================================
 
 const SALT_ROUNDS = 12;
-const ACCESS_TOKEN_EXPIRY = '15m'; // 15 minutes
+const ACCESS_TOKEN_EXPIRY = '24h'; // 24 hours
 const REFRESH_TOKEN_EXPIRY = '30d'; // 30 days
 const RESET_TOKEN_EXPIRY_HOURS = 1;
 
@@ -137,7 +137,7 @@ function generateTokens(userId: string, email: string): AuthTokens {
   return {
     accessToken,
     refreshToken,
-    expiresIn: 15 * 60, // 15 minutes in seconds
+    expiresIn: 24 * 60 * 60, // 24 hours in seconds
   };
 }
 
@@ -610,3 +610,49 @@ export const authService = {
     });
   },
 };
+
+// ============================================
+// HELPER FUNCTIONS FOR API ROUTES
+// ============================================
+
+export interface MobileTokenResult {
+  success: boolean;
+  userId?: string;
+  error?: string;
+}
+
+/**
+ * Verify mobile token from Authorization header
+ * 
+ * Usage in API routes:
+ * ```
+ * const result = await verifyMobileToken(request);
+ * if (!result.success) {
+ *   return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+ * }
+ * const userId = result.userId;
+ * ```
+ */
+export async function verifyMobileToken(request: Request): Promise<MobileTokenResult> {
+  try {
+    const authHeader = request.headers.get('Authorization');
+    
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      return { success: false, error: 'Missing or invalid Authorization header' };
+    }
+    
+    const token = authHeader.replace('Bearer ', '');
+    const userId = authService.verifyToken(token);
+    
+    if (!userId) {
+      return { success: false, error: 'Invalid or expired token' };
+    }
+    
+    return { success: true, userId };
+  } catch (error) {
+    return { 
+      success: false, 
+      error: error instanceof Error ? error.message : 'Token verification failed' 
+    };
+  }
+}

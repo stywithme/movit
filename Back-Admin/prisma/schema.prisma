@@ -88,6 +88,7 @@ model Exercise {
   media            ExerciseMedia[]
   poseVariants     PoseVariant[]
   workoutExercises WorkoutExercise[]
+  trainingSessions TrainingSession[]
 
   @@index([categoryId])
   @@index([countingMethodId])
@@ -403,6 +404,9 @@ model User {
 
   // Refresh tokens for secure logout
   refreshTokens   RefreshToken[]
+  
+  // Training sessions history
+  trainingSessions TrainingSession[]
 
   @@index([email])
   @@index([googleId])
@@ -423,4 +427,126 @@ model RefreshToken {
   @@index([userId])
   @@index([token])
   @@map("refresh_tokens")
+}
+
+// ============================================
+// TRAINING SESSIONS (Exercise History)
+// ============================================
+
+/// Training session - A completed exercise session
+model TrainingSession {
+  id              String   @id @default(uuid())
+  
+  // Foreign keys
+  userId          String
+  exerciseId      String
+  
+  // Session info
+  timestamp       DateTime // When session started
+  durationMs      Int      // Total duration in milliseconds
+  
+  // Rep counts
+  totalReps       Int
+  countedReps     Int      // Reps with PERFECT/NORMAL/PAD state
+  invalidReps     Int      // Reps with DANGER state
+  
+  // Weight info (optional - for weighted exercises)
+  weightKg        Float?
+  weightUnit      String   @default("kg") // kg or lbs
+  
+  // Legacy report data (images, danger alerts, etc.)
+  legacyReport    Json?    // PostTrainingReport for backward compatibility
+  
+  // Sync status
+  deviceId        String?  // Device that uploaded this session
+  
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  // Relations
+  user            User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  exercise        Exercise          @relation(fields: [exerciseId], references: [id])
+  sessionMetrics  SessionMetrics?   // One-to-one with metrics
+  repMetrics      RepMetrics[]      // One-to-many with rep metrics
+
+  @@index([userId])
+  @@index([exerciseId])
+  @@index([timestamp])
+  @@index([userId, exerciseId])
+  @@map("training_sessions")
+}
+
+/// Session-level aggregated metrics
+model SessionMetrics {
+  id                    String   @id @default(uuid())
+  sessionId             String   @unique
+  
+  // Kinematic metrics (averages)
+  avgRom                Int      // Average ROM × 10
+  avgSymmetry           Int?     // Average symmetry × 10
+  avgStability          Int      // Average stability × 10
+  avgVelocity           Int?     // Average velocity × 100
+  
+  // Form metrics
+  avgFormScore          Int      // Average form score × 10
+  avgAlignmentAccuracy  Int      // Average alignment × 10
+  
+  // Tempo (stored as JSON array [eccentric, iso, concentric])
+  avgTempo              Json     // IntArray as JSON
+  
+  // Temporal metrics
+  totalTUT              Int      // Total Time Under Tension (ms)
+  
+  // Load metrics
+  totalVolume           Float?   // Total volume (reps × weight)
+  maxWeight             Float?   // Maximum weight used
+  est1RM                Float?   // Estimated 1 Rep Max
+  
+  // Advanced metrics (future)
+  relativeStrength      Float?   // Weight / body weight
+  intensityPercentage   Float?   // % of 1RM
+  
+  // Quality metrics
+  formConsistency       Int?     // DTW score × 10
+  fatigueIndex          Int?     // Rep number where fatigue started
+  
+  createdAt             DateTime @default(now())
+  
+  session TrainingSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  
+  @@map("session_metrics")
+}
+
+/// Individual rep metrics
+model RepMetrics {
+  id              String   @id @default(uuid())
+  sessionId       String
+  
+  // Rep info
+  repNumber       Int      // 1-based rep number
+  durationMs      Int      // Rep duration in ms
+  worstState      Int      // 0=PERFECT, 1=NORMAL, 2=PAD, 3=WARNING, 4=DANGER
+  score           Int      // Form score × 10
+  weightKg        Float?   // Weight for this specific rep
+  
+  // Kinematic metrics
+  rom             Int      // Range of Motion × 10
+  symmetry        Int?     // Bilateral symmetry × 10
+  stability       Int      // Core stability × 10
+  velocity        Int?     // Mean velocity × 100
+  
+  // Form metrics
+  formScore       Int      // Form score × 10
+  alignmentAccuracy Int    // Alignment × 10
+  
+  // Tempo (stored as JSON array [eccentric, iso, concentric])
+  tempo           Json     // IntArray as JSON
+  
+  createdAt       DateTime @default(now())
+  
+  session TrainingSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  
+  @@index([sessionId])
+  @@index([sessionId, repNumber])
+  @@map("rep_metrics")
 }

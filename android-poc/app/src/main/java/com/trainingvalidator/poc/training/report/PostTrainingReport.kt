@@ -125,7 +125,13 @@ data class PerformanceSummary(
     val stateBreakdown: StateBreakdown,
     
     // Celebration flag
-    val shouldCelebrate: Boolean = false
+    val shouldCelebrate: Boolean = false,
+    
+    // Weight & Load metrics (optional - for weighted exercises)
+    val weightKg: Float? = null,
+    val weightUnit: String = "kg",
+    val totalVolume: Float? = null,     // countedReps × weightKg
+    val est1RM: Float? = null           // Estimated 1 Rep Max
 ) {
     // Legacy compatibility
     val accuracy: Float get() = countedRatio * 100f
@@ -140,6 +146,34 @@ data class PerformanceSummary(
     
     fun getFormattedAccuracy(): String = "%.0f%%".format(accuracy)
     fun getFormattedScore(): String = "%.0f%%".format(averageScore)
+    
+    // Weight helpers
+    fun getFormattedWeight(): String? {
+        val w = weightKg ?: return null
+        return if (weightUnit == "lbs") {
+            "%.0f lbs".format(w * 2.20462f)
+        } else {
+            "%.1f kg".format(w)
+        }
+    }
+    
+    fun getFormattedVolume(): String? {
+        val v = totalVolume ?: return null
+        return if (weightUnit == "lbs") {
+            "%.0f lbs".format(v * 2.20462f)
+        } else {
+            "%.1f kg".format(v)
+        }
+    }
+    
+    fun getFormattedEst1RM(): String? {
+        val e = est1RM ?: return null
+        return if (weightUnit == "lbs") {
+            "%.0f lbs".format(e * 2.20462f)
+        } else {
+            "%.1f kg".format(e)
+        }
+    }
 }
 
 /**

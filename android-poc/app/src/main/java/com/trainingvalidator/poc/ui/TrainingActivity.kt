@@ -47,11 +47,18 @@ import com.trainingvalidator.poc.training.models.JointState
 import com.trainingvalidator.poc.training.report.FrameCaptureManager
 import com.trainingvalidator.poc.training.report.ReportGenerator
 import com.trainingvalidator.poc.storage.ReportStorage
+import com.trainingvalidator.poc.storage.AnalyticsStorage
+import com.trainingvalidator.poc.storage.AuthManager
+import com.trainingvalidator.poc.network.SessionSyncService
+import com.trainingvalidator.poc.network.ApiConfig
 import com.trainingvalidator.poc.ui.report.ReportActivity
 import com.trainingvalidator.poc.video.VideoManager
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+import okhttp3.MediaType.Companion.toMediaType
+import okhttp3.RequestBody.Companion.toRequestBody
 
 /**
  * TrainingActivity - Professional Training Screen
@@ -85,6 +92,8 @@ class TrainingActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetection
         const val EXTRA_WORKOUT_NAME = "workout_name"
         const val EXTRA_IS_WORKOUT_MODE = "is_workout_mode"
         const val EXTRA_INDICATOR_TYPE = "indicator_type"
+        const val EXTRA_WEIGHT_KG = "weight_kg"           // Weight in kilograms (optional)
+        const val EXTRA_WEIGHT_UNIT = "weight_unit"       // "kg" or "lbs" (default: kg)
         
         // Result extras
         const val RESULT_REPS_COMPLETED = "reps_completed"
@@ -969,7 +978,16 @@ class TrainingActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetection
     
     // ==================== Completion ====================
     
+    private var hasCompletedTraining = false  // Prevent duplicate calls
+    
     private fun completeTraining() {
+        // Prevent duplicate completion (ExerciseCompleted + TrainingCompleted events)
+        if (hasCompletedTraining) {
+            Log.d(TAG, "completeTraining already called, skipping duplicate")
+            return
+        }
+        hasCompletedTraining = true
+        
         binding.skeletonOverlay.setTrainingMode(false)
         binding.vignetteOverlay.clear()
         
@@ -1245,7 +1263,10 @@ class TrainingActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetection
                 Log.d(TAG, "Report generated: id=${report.id}, accuracy=${report.summary.accuracy}%")
                 
                 val saved = reportStorage?.save(report) ?: false
-                Log.d(TAG, "Report saved: $saved")
+                Log.d(TAG, "Report saved locally: $saved")
+                
+                // Finalize motion recording and sync to backend
+                syncSessionToBackend(report.id)
                 
                 launch(Dispatchers.Main) {
                     binding.glassmorphicMessage.hide()
@@ -1283,6 +1304,122 @@ class TrainingActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetection
             }
         }
     }
+    
+    /**
+     * Sync session data to backend
+     * Uses SessionSyncService to upload metrics
+     */
+    private suspend fun syncSessionToBackend(sessionId: String) {
+        try {
+            // Get session upload from MotionRecorder
+            val sessionUpload = viewModel.finalizeAndGetSessionUpload(sessionId)
+            
+            if (sessionUpload == null) {
+                Log.w(TAG, "No session data to sync (MotionRecorder not active)")
+                return
+            }
+            
+            Log.d(TAG, "Syncing session to backend: ${sessionUpload.id}, " +
+                       "${sessionUpload.totalReps} reps, " +
+                       "avgScore=${sessionUpload.sessionMetrics.avgFormScore / 10f}%")
+            
+            // Refresh token if needed (after 20 hours)
+            if (AuthManager.shouldRefreshToken(this@TrainingActivity)) {
+                Log.d(TAG, "Token needs refresh, attempting...")
+                refreshTokenIfNeeded()
+            }
+            
+            // Get sync service
+            val syncService = SessionSyncService.getInstance(
+                this@TrainingActivity,
+                ApiConfig.getBaseUrl()
+            )
+            
+            // Get auth token from AuthManager
+            val token = AuthManager.getAccessToken(this@TrainingActivity)
+            
+            if (token != null) {
+                syncService.setAuthToken(token)
+                
+                // Upload session
+                val result = syncService.uploadSession(sessionUpload)
+                
+                if (result.success) {
+                    Log.d(TAG, "Session synced successfully!")
+                } else {
+                    Log.w(TAG, "Session sync failed (saved for later): ${result.error}")
+                    // Session is saved locally in AnalyticsStorage for retry
+                }
+            } else {
+                Log.w(TAG, "No auth token, saving session for later sync")
+                // Save locally for later sync
+                val storage = AnalyticsStorage(this@TrainingActivity)
+                storage.savePending(sessionUpload)
+            }
+        } catch (e: Exception) {
+            Log.e(TAG, "Error syncing session: ${e.message}", e)
+            // Don't fail the whole flow, just log the error
+        }
+    }
+    
+    /**
+     * Refresh access token using refresh token
+     */
+    private suspend fun refreshTokenIfNeeded() {
+        try {
+            val refreshToken = AuthManager.getRefreshToken(this@TrainingActivity)
+            if (refreshToken == null) {
+                Log.w(TAG, "No refresh token available")
+                return
+            }
+            
+            val client = okhttp3.OkHttpClient()
+            val json = """{"refreshToken": "$refreshToken"}"""
+            val body = json.toRequestBody("application/json".toMediaType())
+            
+            val request = okhttp3.Request.Builder()
+                .url("${ApiConfig.getBaseUrl()}api/mobile/auth/refresh")
+                .post(body)
+                .build()
+            
+            withContext(Dispatchers.IO) {
+                client.newCall(request).execute().use { response ->
+                    if (response.isSuccessful) {
+                        val responseBody = response.body?.string()
+                        // Parse response and save new tokens
+                        responseBody?.let { body ->
+                            val gson = com.google.gson.Gson()
+                            val result = gson.fromJson(body, RefreshResponse::class.java)
+                            if (result.tokens != null) {
+                                AuthManager.saveNewTokens(
+                                    this@TrainingActivity,
+                                    result.tokens.accessToken,
+                                    result.tokens.refreshToken,
+                                    result.tokens.expiresIn
+                                )
+                                Log.d(TAG, "Token refreshed successfully")
+                            }
+                        }
+                    } else {
+                        Log.w(TAG, "Token refresh failed: ${response.code}")
+                    }
+                }
+            }
+        } catch (e: Exception) {
+            Log.e(TAG, "Token refresh error: ${e.message}")
+        }
+    }
+    
+    // Helper class for parsing refresh response
+    private data class RefreshResponse(
+        val tokens: TokenData? = null
+    )
+    
+    private data class TokenData(
+        val accessToken: String,
+        val refreshToken: String,
+        val expiresIn: Long
+    )
     
     /**
      * Show fallback summary screen if report generation fails

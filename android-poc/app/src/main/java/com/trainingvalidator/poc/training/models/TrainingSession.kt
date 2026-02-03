@@ -110,7 +110,9 @@ data class SessionSummary(
     val durationMs: Long,
     val stateBreakdown: Map<JointState, Int>,
     val commonErrors: Map<String, Int>,
-    val repDetails: List<RepResult>
+    val repDetails: List<RepResult>,
+    val weightKg: Float? = null,         // Weight used (optional)
+    val weightUnit: String = "kg"        // Weight unit (kg or lbs)
 ) {
     /**
      * Format duration as mm:ss

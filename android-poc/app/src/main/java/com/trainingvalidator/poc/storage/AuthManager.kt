@@ -125,4 +125,48 @@ object AuthManager {
         editor.remove(KEY_TOTAL_MINUTES)
         editor.apply()
     }
+    
+    // ==================== Token Refresh ====================
+    
+    private const val REFRESH_THRESHOLD_MS = 20 * 60 * 60 * 1000L  // 20 hours
+    
+    /**
+     * Get token expiration timestamp
+     */
+    fun getTokenExpiresAt(context: Context): Long =
+        prefs(context).getLong(KEY_TOKEN_EXPIRES_AT, 0)
+    
+    /**
+     * Check if token should be refreshed (after 20 hours)
+     */
+    fun shouldRefreshToken(context: Context): Boolean {
+        val expiresAt = getTokenExpiresAt(context)
+        if (expiresAt == 0L) return false
+        
+        // Token valid for 24h, refresh after 20h
+        val tokenAge = System.currentTimeMillis() - (expiresAt - 24 * 60 * 60 * 1000L)
+        return tokenAge >= REFRESH_THRESHOLD_MS
+    }
+    
+    /**
+     * Check if token is expired or about to expire (within 1 hour)
+     */
+    fun isTokenExpired(context: Context): Boolean {
+        val expiresAt = getTokenExpiresAt(context)
+        if (expiresAt == 0L) return true
+        
+        // Consider expired if less than 1 hour remaining
+        return System.currentTimeMillis() >= (expiresAt - 60 * 60 * 1000L)
+    }
+    
+    /**
+     * Save new tokens after refresh
+     */
+    fun saveNewTokens(context: Context, accessToken: String, refreshToken: String, expiresInSeconds: Long) {
+        val editor = prefs(context).edit()
+        editor.putString(KEY_ACCESS_TOKEN, accessToken)
+        editor.putString(KEY_REFRESH_TOKEN, refreshToken)
+        editor.putLong(KEY_TOKEN_EXPIRES_AT, System.currentTimeMillis() + expiresInSeconds * 1000L)
+        editor.apply()
+    }
 }

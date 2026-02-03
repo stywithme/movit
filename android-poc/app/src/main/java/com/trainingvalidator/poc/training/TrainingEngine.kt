@@ -3,6 +3,7 @@ package com.trainingvalidator.poc.training
 import android.util.Log
 import com.trainingvalidator.poc.analysis.JointAngles
 import com.trainingvalidator.poc.analysis.SmoothedLandmark
+import com.trainingvalidator.poc.training.analytics.MotionRecorder
 import com.trainingvalidator.poc.training.config.SettingsManager
 import com.trainingvalidator.poc.training.engine.*
 import com.trainingvalidator.poc.training.feedback.FeedbackEvent
@@ -80,6 +81,15 @@ class TrainingEngine(
     // ==================== Components ====================
     
     private val jointTracker = JointAngleTracker(trackedJoints)
+    
+    /**
+     * Motion recorder for analytics (optional)
+     * 
+     * When set, records frame-by-frame motion data for post-session analysis.
+     * Set this before calling start() to enable motion recording.
+     * Call getMotionRecord() after stop() to retrieve the session data.
+     */
+    var motionRecorder: MotionRecorder? = null
     
     /**
      * Centralized angle smoother - Single Source of Truth for smoothed angles
@@ -478,6 +488,9 @@ class TrainingEngine(
                 _graceRemainingMs.value = null
                 resetHoldTracking()
             }
+            
+            // Start motion recording if enabled
+            motionRecorder?.start()
         }
         
         emitEvent(FeedbackEvent.TrainingStarted(
@@ -670,6 +683,14 @@ class TrainingEngine(
             // 6.0 Emit state-based messages (warning/pad/normal/perfect)
             emitStateMessages(jointStateInfos)
             
+            // 6.0.1 Record frame for motion analytics (if enabled)
+            motionRecorder?.record(
+                timestamp = System.currentTimeMillis(),
+                phase = currentPhase,
+                angles = smoothedAngles,
+                states = jointStateInfos
+            )
+            
             // Also get legacy validation for backward compatibility
             val validation = formValidator.validate(smoothedAngles, currentPhase)
             lastValidationResult = validation
@@ -839,10 +860,23 @@ class TrainingEngine(
      */
     private fun handleRepCompleted() {
         // Record phase timings
-        repCounter.setPhaseTimings(stateMachine.getPhaseTimings())
+        val phaseTimings = stateMachine.getPhaseTimings()
+        repCounter.setPhaseTimings(phaseTimings)
+        
+        // Get current state before completing rep
+        val worstState = repCounter.getCurrentWorstState()
+        val score = repCounter.getPendingScore()
         
         // Complete the rep
         repCounter.completeRep()
+        
+        // Finalize motion recording for this rep
+        motionRecorder?.finalizeRep(
+            repNumber = repCounter.count,
+            phaseTimings = phaseTimings.mapKeys { it.key.name.lowercase() },
+            worstState = worstState,
+            score = score
+        )
         
         // Clear phase timings for next rep
         stateMachine.clearTimings()

@@ -9,6 +9,8 @@ import androidx.lifecycle.viewModelScope
 import com.trainingvalidator.poc.analysis.JointAngles
 import com.trainingvalidator.poc.analysis.SmoothedLandmark
 import com.trainingvalidator.poc.training.TrainingEngine
+import com.trainingvalidator.poc.training.analytics.MotionRecorder
+import com.trainingvalidator.poc.training.analytics.SessionUpload
 import com.trainingvalidator.poc.training.models.SessionSummary
 import com.trainingvalidator.poc.training.engine.HoldState
 import com.trainingvalidator.poc.training.engine.Phase
@@ -106,6 +108,13 @@ class TrainingViewModel(
     private val _isCompleted = MutableStateFlow(false)
     val isCompleted: StateFlow<Boolean> = _isCompleted.asStateFlow()
     
+    // Weight for weighted exercises (kg)
+    private var _weightKg: Float? = null
+    private var _weightUnit: String = "kg"
+    
+    // Motion recorder for analytics
+    private var motionRecorder: MotionRecorder? = null
+    
     // ==================== UI State ====================
     
     private val _exerciseName = MutableStateFlow("")
@@ -173,7 +182,9 @@ class TrainingViewModel(
         poseVariantIndex: Int = 0,
         targetRepsOverride: Int? = null,
         targetDurationMsOverride: Long? = null,
-        context: Context? = null  // Optional context for repository access
+        context: Context? = null,  // Optional context for repository access
+        weightKg: Float? = null,   // Weight for weighted exercises
+        weightUnit: String = "kg"  // kg or lbs
     ): Boolean {
         // Try to load from repository first (has cached/synced data)
         var config: ExerciseConfig? = null
@@ -205,6 +216,10 @@ class TrainingViewModel(
         _poseVariantIndex.value = poseVariantIndex
         _isWorkoutMode.value = false
         
+        // Store weight settings
+        _weightKg = weightKg
+        _weightUnit = weightUnit
+        
         // Create training engine (no difficulty needed)
         trainingEngine = TrainingEngine(
             exerciseConfig = config,
@@ -212,6 +227,24 @@ class TrainingViewModel(
             targetRepsOverride = targetRepsOverride,
             targetDurationMsOverride = targetDurationMsOverride
         )
+        
+        // Create motion recorder for analytics
+        val trackedJoints = config.getTrackedJoints(poseVariantIndex)
+            .map { it.joint }
+        
+        val exerciseId = config.fileName.ifEmpty { exerciseName }
+        
+        motionRecorder = MotionRecorder(
+            trackedJoints = trackedJoints,
+            exerciseId = exerciseId,
+            defaultWeightKg = weightKg,
+            weightUnit = weightUnit
+        )
+        
+        // Link motion recorder to training engine
+        trainingEngine?.motionRecorder = motionRecorder
+        
+        Log.d(TAG, "MotionRecorder created for $exerciseId, weight: $weightKg $weightUnit")
         
         // Configure random feedback messages (if feedback manager is ready)
         updateRandomMessagesFromEngine()
@@ -873,6 +906,41 @@ class TrainingViewModel(
      * Get workout overall accuracy
      */
     fun getWorkoutAccuracy(): Float = workoutTrainingEngine?.getOverallAccuracy() ?: 0f
+    
+    // ==================== Analytics ====================
+    
+    /**
+     * Finalize motion recording and get session upload data
+     * Call this after training completes to get metrics for sync
+     * 
+     * @param sessionId Optional custom session ID (generated if null)
+     * @return SessionUpload ready for backend sync, or null if no recording
+     */
+    fun finalizeAndGetSessionUpload(sessionId: String? = null): SessionUpload? {
+        return try {
+            val upload = motionRecorder?.finalize(sessionId)
+            Log.d(TAG, "Session finalized: ${upload?.totalReps} reps, ${upload?.sessionMetrics?.avgFormScore?.div(10f)}% avg score")
+            upload
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed to finalize session: ${e.message}", e)
+            null
+        }
+    }
+    
+    /**
+     * Get current weight configuration
+     */
+    fun getWeightKg(): Float? = _weightKg
+    fun getWeightUnit(): String = _weightUnit
+    
+    /**
+     * Update weight (can be changed during training)
+     */
+    fun setWeight(weightKg: Float?, unit: String = "kg") {
+        _weightKg = weightKg
+        _weightUnit = unit
+        // Note: MotionRecorder uses default weight, individual reps can have different weights
+    }
     
     // ==================== Lifecycle ====================
     
