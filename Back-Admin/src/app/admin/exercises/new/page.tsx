@@ -162,6 +162,17 @@ export default function NewExercisePage() {
         feedbackMessages,
         sortOrder: index + 1,
       })),
+      // Weight configuration
+      supportsWeight: store.weightConfig.supportsWeight,
+      minWeight: store.weightConfig.minWeight,
+      maxWeight: store.weightConfig.maxWeight,
+      defaultWeight: store.weightConfig.defaultWeight,
+      // Report metrics configuration
+      reportMetrics: {
+        primary: store.reportMetrics.primary,
+        optional: store.reportMetrics.optional,
+        excluded: store.reportMetrics.excluded,
+      },
     };
   }, []);
   

@@ -136,8 +136,8 @@ class SessionSyncService(
                     Log.e(TAG, "Background sync error: ${e.message}")
                 }
                 
-                // Retry every 5 minutes
-                delay(5 * 60 * 1000)
+                // Retry every 10 minutes
+                delay(10 * 60 * 1000)
             }
         }
     }

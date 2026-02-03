@@ -27,6 +27,8 @@ import type {
   StateRanges,
   StateMessages,
   RepCountingConfig,
+  ReportMetricsConfig,
+  MetricCode,
 } from '@/lib/types/android-schema';
 
 import { validateExerciseConfig } from '@/lib/types/android-schema';
@@ -65,6 +67,13 @@ interface DbExercise {
     };
   }>;
   poseVariants: DbPoseVariant[];
+  
+  // Weight & Metrics configuration
+  supportsWeight?: boolean | null;
+  minWeight?: number | null;
+  maxWeight?: number | null;
+  defaultWeight?: number | null;
+  reportMetrics?: unknown | null;
 }
 
 interface DbPoseVariant {
@@ -126,6 +135,14 @@ export function buildExerciseConfig(dbExercise: DbExercise): ExerciseConfig {
   // Build rep counting config
   const repCountingConfig = parseRepCountingConfig(dbExercise.repCountingConfig, countingMethod);
   
+  // Build pose variants
+  const poseVariants = dbExercise.poseVariants.map(pv => 
+    buildPoseVariantConfig(pv)
+  );
+  
+  // Auto-detect bilateral (has paired joints)
+  const isBilateral = detectBilateral(poseVariants);
+  
   const config: ExerciseConfig = {
     name: toLocalizedText(dbExercise.name),
     category: {
@@ -137,9 +154,7 @@ export function buildExerciseConfig(dbExercise: DbExercise): ExerciseConfig {
     equipment,
     tags,
     repCountingConfig,
-    poseVariants: dbExercise.poseVariants.map(pv => 
-      buildPoseVariantConfig(pv)
-    ),
+    poseVariants,
   };
 
   const primaryImage = dbExercise.media?.find(m => m.type === 'image' && m.isPrimary);
@@ -153,6 +168,37 @@ export function buildExerciseConfig(dbExercise: DbExercise): ExerciseConfig {
   }
   if (dbExercise.instructions) {
     config.instructions = toLocalizedText(dbExercise.instructions);
+  }
+  
+  // ═══════════════════════════════════════════════════════════════
+  // WEIGHT & METRICS CONFIGURATION
+  // ═══════════════════════════════════════════════════════════════
+  
+  // Weight configuration
+  if (dbExercise.supportsWeight) {
+    config.supportsWeight = true;
+    if (dbExercise.minWeight != null) {
+      config.minWeight = dbExercise.minWeight;
+    }
+    if (dbExercise.maxWeight != null) {
+      config.maxWeight = dbExercise.maxWeight;
+    }
+    if (dbExercise.defaultWeight != null) {
+      config.defaultWeight = dbExercise.defaultWeight;
+    }
+  }
+  
+  // Report metrics configuration
+  if (dbExercise.reportMetrics) {
+    config.reportMetrics = parseReportMetrics(dbExercise.reportMetrics);
+  } else {
+    // Generate default based on exercise type
+    config.reportMetrics = generateDefaultMetrics(countingMethod, isBilateral, !!dbExercise.supportsWeight);
+  }
+  
+  // Include bilateral flag
+  if (isBilateral) {
+    config.isBilateral = true;
   }
   
   return config;
@@ -321,6 +367,73 @@ function parseRepCountingConfig(
 // ============================================
 
 /**
+ * Detect if exercise is bilateral (has paired joints)
+ */
+function detectBilateral(poseVariants: PoseVariantConfig[]): boolean {
+  for (const variant of poseVariants) {
+    for (const joint of variant.trackedJoints) {
+      if ('pairedWith' in joint && joint.pairedWith) {
+        return true;
+      }
+    }
+  }
+  return false;
+}
+
+/**
+ * Parse report metrics from DB JSON
+ */
+function parseReportMetrics(config: unknown): ReportMetricsConfig {
+  const parsed = config as Record<string, unknown> | null;
+  if (!parsed) {
+    return { primary: ['FORM_SCORE'] };
+  }
+  
+  return {
+    primary: (parsed.primary as MetricCode[]) || ['FORM_SCORE'],
+    optional: (parsed.optional as MetricCode[]) || undefined,
+    excluded: (parsed.excluded as MetricCode[]) || undefined,
+  };
+}
+
+/**
+ * Generate default report metrics based on exercise type
+ */
+function generateDefaultMetrics(
+  countingMethod: CountingMethod,
+  isBilateral: boolean,
+  supportsWeight: boolean
+): ReportMetricsConfig {
+  const isHold = countingMethod === 'hold';
+  const primary: MetricCode[] = ['FORM_SCORE'];
+  const optional: MetricCode[] = [];
+  
+  if (isHold) {
+    primary.push('HOLD_DURATION');
+    optional.push('STABILITY');
+  } else {
+    primary.push('ROM');
+    optional.push('TEMPO', 'TUT');
+  }
+  
+  if (isBilateral && !isHold) {
+    primary.push('SYMMETRY');
+  }
+  
+  if (supportsWeight) {
+    primary.push('WEIGHT');
+    optional.push('VOLUME', 'EST_1RM');
+  }
+  
+  optional.push('ALIGNMENT');
+  
+  return {
+    primary: primary.slice(0, 3), // Max 3 primary
+    optional,
+  };
+}
+
+/**
  * Convert DB JSON to LocalizedText
  * Preserves audio URLs if present
  */
@@ -458,4 +571,16 @@ export const exerciseFullInclude = {
       sortOrder: 'asc' as const,
     },
   },
+} as const;
+
+/**
+ * Fields to select for weight & metrics configuration
+ * These are direct fields on the Exercise model
+ */
+export const exerciseConfigFields = {
+  supportsWeight: true,
+  minWeight: true,
+  maxWeight: true,
+  defaultWeight: true,
+  reportMetrics: true,
 } as const;

@@ -348,6 +348,67 @@ export interface ExerciseConfig {
   /** Rep counting config at exercise level (not per difficulty) */
   repCountingConfig: RepCountingConfig;
   poseVariants: PoseVariantConfig[];
+  
+  // ═══════════════════════════════════════════════════════════════
+  // WEIGHT & METRICS CONFIGURATION
+  // ═══════════════════════════════════════════════════════════════
+  
+  /** Does this exercise support weights? */
+  supportsWeight?: boolean;
+  
+  /** Weight limits (kg) */
+  minWeight?: number;
+  maxWeight?: number;
+  defaultWeight?: number;
+  
+  /** Report metrics configuration */
+  reportMetrics?: ReportMetricsConfig;
+  
+  /** Is this exercise bilateral (has paired joints)? - auto-detected */
+  isBilateral?: boolean;
+}
+
+// ============================================
+// REPORT METRICS CONFIGURATION
+// ============================================
+
+/**
+ * Available metric codes for mobile app
+ */
+export type MetricCode = 
+  // Core
+  | 'FORM_SCORE'
+  | 'REP_COUNT'
+  | 'DURATION'
+  // Kinematic
+  | 'ROM'
+  | 'SYMMETRY'
+  | 'STABILITY'
+  // Temporal
+  | 'TEMPO'
+  | 'TUT'
+  | 'HOLD_DURATION'
+  // Quality
+  | 'ALIGNMENT'
+  | 'FORM_CONSISTENCY'
+  | 'FATIGUE_INDEX'
+  // Power
+  | 'VELOCITY'
+  // Load
+  | 'WEIGHT'
+  | 'VOLUME'
+  | 'EST_1RM';
+
+/**
+ * Report metrics configuration for mobile display
+ */
+export interface ReportMetricsConfig {
+  /** Primary metrics (shown as main cards) - 2-3 max */
+  primary: MetricCode[];
+  /** Optional metrics (available in expanded view) */
+  optional?: MetricCode[];
+  /** Excluded metrics (hidden from report) */
+  excluded?: MetricCode[];
 }
 
 // ============================================

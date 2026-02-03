@@ -229,6 +229,146 @@ export const JOINT_DEFAULTS: Record<string, StateRangesDefaults> = {
       pad: { min: 70, max: 110 },
     },
   },
+  
+  // Wrists
+  left_wrist: {
+    upRange: {
+      perfect: { min: 160, max: 180 },
+      normal: { min: 150, max: 180 },
+      pad: { min: 140, max: 180 },
+    },
+    downRange: {
+      perfect: { min: 90, max: 120 },
+      normal: { min: 80, max: 130 },
+      pad: { min: 70, max: 140 },
+    },
+    range: {
+      perfect: { min: 160, max: 180 },
+      normal: { min: 150, max: 180 },
+      warning: { min: 0, max: 150 },
+    },
+  },
+  right_wrist: {
+    upRange: {
+      perfect: { min: 160, max: 180 },
+      normal: { min: 150, max: 180 },
+      pad: { min: 140, max: 180 },
+    },
+    downRange: {
+      perfect: { min: 90, max: 120 },
+      normal: { min: 80, max: 130 },
+      pad: { min: 70, max: 140 },
+    },
+    range: {
+      perfect: { min: 160, max: 180 },
+      normal: { min: 150, max: 180 },
+      warning: { min: 0, max: 150 },
+    },
+  },
+  
+  // Heels
+  left_heel: {
+    upRange: {
+      perfect: { min: 0, max: 20 },
+      normal: { min: 0, max: 30 },
+      pad: { min: 0, max: 40 },
+    },
+    downRange: {
+      perfect: { min: 0, max: 20 },
+      normal: { min: 0, max: 30 },
+      pad: { min: 0, max: 40 },
+    },
+    range: {
+      perfect: { min: 0, max: 20 },
+      normal: { min: 0, max: 30 },
+      warning: { min: 30, max: 90 },
+    },
+  },
+  right_heel: {
+    upRange: {
+      perfect: { min: 0, max: 20 },
+      normal: { min: 0, max: 30 },
+      pad: { min: 0, max: 40 },
+    },
+    downRange: {
+      perfect: { min: 0, max: 20 },
+      normal: { min: 0, max: 30 },
+      pad: { min: 0, max: 40 },
+    },
+    range: {
+      perfect: { min: 0, max: 20 },
+      normal: { min: 0, max: 30 },
+      warning: { min: 30, max: 90 },
+    },
+  },
+  
+  // Foot Index
+  left_foot_index: {
+    upRange: {
+      perfect: { min: 0, max: 30 },
+      normal: { min: 0, max: 40 },
+      pad: { min: 0, max: 50 },
+    },
+    downRange: {
+      perfect: { min: 0, max: 30 },
+      normal: { min: 0, max: 40 },
+      pad: { min: 0, max: 50 },
+    },
+    range: {
+      perfect: { min: 0, max: 30 },
+      normal: { min: 0, max: 40 },
+      warning: { min: 40, max: 90 },
+    },
+  },
+  right_foot_index: {
+    upRange: {
+      perfect: { min: 0, max: 30 },
+      normal: { min: 0, max: 40 },
+      pad: { min: 0, max: 50 },
+    },
+    downRange: {
+      perfect: { min: 0, max: 30 },
+      normal: { min: 0, max: 40 },
+      pad: { min: 0, max: 50 },
+    },
+    range: {
+      perfect: { min: 0, max: 30 },
+      normal: { min: 0, max: 40 },
+      warning: { min: 40, max: 90 },
+    },
+  },
+  
+  // Pinky, Index, Thumb (hands) - Generic defaults
+  left_pinky: {
+    upRange: { perfect: { min: 160, max: 180 }, normal: { min: 150, max: 180 } },
+    downRange: { perfect: { min: 60, max: 90 }, normal: { min: 50, max: 100 } },
+    range: { perfect: { min: 160, max: 180 }, normal: { min: 150, max: 180 } },
+  },
+  right_pinky: {
+    upRange: { perfect: { min: 160, max: 180 }, normal: { min: 150, max: 180 } },
+    downRange: { perfect: { min: 60, max: 90 }, normal: { min: 50, max: 100 } },
+    range: { perfect: { min: 160, max: 180 }, normal: { min: 150, max: 180 } },
+  },
+  left_index: {
+    upRange: { perfect: { min: 160, max: 180 }, normal: { min: 150, max: 180 } },
+    downRange: { perfect: { min: 60, max: 90 }, normal: { min: 50, max: 100 } },
+    range: { perfect: { min: 160, max: 180 }, normal: { min: 150, max: 180 } },
+  },
+  right_index: {
+    upRange: { perfect: { min: 160, max: 180 }, normal: { min: 150, max: 180 } },
+    downRange: { perfect: { min: 60, max: 90 }, normal: { min: 50, max: 100 } },
+    range: { perfect: { min: 160, max: 180 }, normal: { min: 150, max: 180 } },
+  },
+  left_thumb: {
+    upRange: { perfect: { min: 160, max: 180 }, normal: { min: 150, max: 180 } },
+    downRange: { perfect: { min: 60, max: 90 }, normal: { min: 50, max: 100 } },
+    range: { perfect: { min: 160, max: 180 }, normal: { min: 150, max: 180 } },
+  },
+  right_thumb: {
+    upRange: { perfect: { min: 160, max: 180 }, normal: { min: 150, max: 180 } },
+    downRange: { perfect: { min: 60, max: 90 }, normal: { min: 50, max: 100 } },
+    range: { perfect: { min: 160, max: 180 }, normal: { min: 150, max: 180 } },
+  },
 };
 
 // Default for unknown joints

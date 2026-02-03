@@ -153,6 +153,215 @@ export const JOINT_PAIRS: JointPair[] = [
 ];
 
 // ============================================
+// BILATERAL JOINTS (Virtual joints for paired tracking)
+// ============================================
+
+/**
+ * Bilateral joint - represents a pair of joints (left + right)
+ * When admin selects "Knees", it automatically creates both left_knee and right_knee
+ */
+export interface BilateralJoint {
+  code: string;           // e.g., "knees"
+  label: LocalizedText;   // { ar: "الركبتين", en: "Knees" }
+  leftJoint: string;      // e.g., "left_knee"
+  rightJoint: string;     // e.g., "right_knee"
+}
+
+/**
+ * Predefined bilateral joints
+ */
+export const BILATERAL_JOINTS: BilateralJoint[] = [
+  { code: 'shoulders', label: { ar: 'الكتفين', en: 'Shoulders' }, leftJoint: 'left_shoulder', rightJoint: 'right_shoulder' },
+  { code: 'elbows', label: { ar: 'الكوعين', en: 'Elbows' }, leftJoint: 'left_elbow', rightJoint: 'right_elbow' },
+  { code: 'wrists', label: { ar: 'الرسغين', en: 'Wrists' }, leftJoint: 'left_wrist', rightJoint: 'right_wrist' },
+  { code: 'hips', label: { ar: 'الوركين', en: 'Hips' }, leftJoint: 'left_hip', rightJoint: 'right_hip' },
+  { code: 'knees', label: { ar: 'الركبتين', en: 'Knees' }, leftJoint: 'left_knee', rightJoint: 'right_knee' },
+  { code: 'ankles', label: { ar: 'الكاحلين', en: 'Ankles' }, leftJoint: 'left_ankle', rightJoint: 'right_ankle' },
+];
+
+/**
+ * Get bilateral joint by code
+ */
+export function getBilateralJoint(code: string): BilateralJoint | undefined {
+  return BILATERAL_JOINTS.find(j => j.code === code);
+}
+
+/**
+ * Check if a joint code is bilateral
+ */
+export function isBilateralJointCode(code: string): boolean {
+  return BILATERAL_JOINTS.some(j => j.code === code);
+}
+
+/**
+ * Expand bilateral joint to left and right joints
+ */
+export function expandBilateralJoint(code: string): { left: string; right: string } | null {
+  const bilateral = getBilateralJoint(code);
+  if (!bilateral) return null;
+  return { left: bilateral.leftJoint, right: bilateral.rightJoint };
+}
+
+// ============================================
+// REPORT METRICS CONFIGURATION
+// ============================================
+
+/**
+ * Available metrics for reports
+ */
+export type MetricCode = 
+  // Core (always available)
+  | 'form_score'
+  | 'rep_count'
+  | 'duration'
+  // Kinematic
+  | 'rom'
+  | 'symmetry'
+  | 'stability'
+  // Temporal
+  | 'tempo'
+  | 'tut'
+  | 'hold_duration'
+  // Quality
+  | 'alignment'
+  | 'form_consistency'
+  | 'fatigue_index'
+  // Power
+  | 'velocity'
+  // Load
+  | 'weight'
+  | 'volume'
+  | 'est_1rm';
+
+/**
+ * Metric definition
+ */
+export interface MetricDefinition {
+  code: MetricCode;
+  label: LocalizedText;
+  unit: string;
+  category: 'core' | 'kinematic' | 'temporal' | 'quality' | 'power' | 'load';
+  autoInclude: {
+    repBased: boolean;
+    hold: boolean;
+    bilateral: boolean;
+    weighted: boolean;
+  };
+  minReps?: number;  // Minimum reps required to show this metric
+}
+
+/**
+ * All available metrics with their definitions
+ */
+export const METRIC_DEFINITIONS: MetricDefinition[] = [
+  // Core
+  { code: 'form_score', label: { ar: 'جودة الأداء', en: 'Form Score' }, unit: '%', category: 'core',
+    autoInclude: { repBased: true, hold: true, bilateral: true, weighted: true } },
+  { code: 'rep_count', label: { ar: 'عدد العدات', en: 'Rep Count' }, unit: '', category: 'core',
+    autoInclude: { repBased: true, hold: false, bilateral: true, weighted: true } },
+  { code: 'duration', label: { ar: 'المدة', en: 'Duration' }, unit: 's', category: 'core',
+    autoInclude: { repBased: true, hold: true, bilateral: true, weighted: true } },
+  
+  // Kinematic
+  { code: 'rom', label: { ar: 'المدى الحركي', en: 'Range of Motion' }, unit: '°', category: 'kinematic',
+    autoInclude: { repBased: true, hold: false, bilateral: true, weighted: true } },
+  { code: 'symmetry', label: { ar: 'التوازن', en: 'Symmetry' }, unit: '%', category: 'kinematic',
+    autoInclude: { repBased: false, hold: false, bilateral: true, weighted: false } },
+  { code: 'stability', label: { ar: 'الثبات', en: 'Stability' }, unit: '%', category: 'kinematic',
+    autoInclude: { repBased: false, hold: true, bilateral: true, weighted: false } },
+  
+  // Temporal
+  { code: 'tempo', label: { ar: 'الإيقاع', en: 'Tempo' }, unit: 's', category: 'temporal',
+    autoInclude: { repBased: true, hold: false, bilateral: true, weighted: true } },
+  { code: 'tut', label: { ar: 'الوقت تحت الضغط', en: 'Time Under Tension' }, unit: 's', category: 'temporal',
+    autoInclude: { repBased: true, hold: false, bilateral: true, weighted: true } },
+  { code: 'hold_duration', label: { ar: 'مدة الثبات', en: 'Hold Duration' }, unit: 's', category: 'temporal',
+    autoInclude: { repBased: false, hold: true, bilateral: true, weighted: false } },
+  
+  // Quality
+  { code: 'alignment', label: { ar: 'دقة المحاذاة', en: 'Alignment Accuracy' }, unit: '%', category: 'quality',
+    autoInclude: { repBased: true, hold: true, bilateral: true, weighted: true } },
+  { code: 'form_consistency', label: { ar: 'ثبات الشكل', en: 'Form Consistency' }, unit: '%', category: 'quality',
+    autoInclude: { repBased: true, hold: false, bilateral: true, weighted: true }, minReps: 4 },
+  { code: 'fatigue_index', label: { ar: 'نقطة التعب', en: 'Fatigue Index' }, unit: '#', category: 'quality',
+    autoInclude: { repBased: true, hold: false, bilateral: true, weighted: true }, minReps: 4 },
+  
+  // Power
+  { code: 'velocity', label: { ar: 'السرعة', en: 'Velocity' }, unit: '°/s', category: 'power',
+    autoInclude: { repBased: false, hold: false, bilateral: false, weighted: false } },
+  
+  // Load
+  { code: 'weight', label: { ar: 'الوزن', en: 'Weight' }, unit: 'kg', category: 'load',
+    autoInclude: { repBased: false, hold: false, bilateral: false, weighted: true } },
+  { code: 'volume', label: { ar: 'الحجم الكلي', en: 'Total Volume' }, unit: 'kg', category: 'load',
+    autoInclude: { repBased: false, hold: false, bilateral: false, weighted: true } },
+  { code: 'est_1rm', label: { ar: 'القوة القصوى', en: 'Est. 1RM' }, unit: 'kg', category: 'load',
+    autoInclude: { repBased: false, hold: false, bilateral: false, weighted: true } },
+];
+
+/**
+ * Report metrics configuration (stored in Exercise.reportMetrics)
+ */
+export interface ReportMetricsConfig {
+  primary: MetricCode[];     // Main cards to show (2-3)
+  optional?: MetricCode[];   // Extra metrics admin selected
+  excluded?: MetricCode[];   // Explicitly hidden metrics
+}
+
+/**
+ * Get auto-included metrics based on exercise type
+ */
+export function getAutoIncludedMetrics(options: {
+  countingMethod: 'up_down' | 'push_pull' | 'hold';
+  isBilateral: boolean;
+  supportsWeight: boolean;
+}): MetricCode[] {
+  const { countingMethod, isBilateral, supportsWeight } = options;
+  const isRepBased = countingMethod !== 'hold';
+  
+  return METRIC_DEFINITIONS
+    .filter(m => {
+      if (isRepBased && m.autoInclude.repBased) return true;
+      if (!isRepBased && m.autoInclude.hold) return true;
+      if (isBilateral && m.autoInclude.bilateral && m.code === 'symmetry') return true;
+      if (supportsWeight && m.autoInclude.weighted && ['weight', 'volume', 'est_1rm'].includes(m.code)) return true;
+      return false;
+    })
+    .map(m => m.code);
+}
+
+/**
+ * Get default primary metrics for display
+ */
+export function getDefaultPrimaryMetrics(options: {
+  countingMethod: 'up_down' | 'push_pull' | 'hold';
+  isBilateral: boolean;
+  supportsWeight: boolean;
+}): MetricCode[] {
+  const { countingMethod, isBilateral, supportsWeight } = options;
+  
+  if (countingMethod === 'hold') {
+    return supportsWeight 
+      ? ['form_score', 'hold_duration', 'weight']
+      : ['form_score', 'hold_duration'];
+  }
+  
+  if (isBilateral && supportsWeight) {
+    return ['form_score', 'symmetry', 'weight'];
+  }
+  
+  if (isBilateral) {
+    return ['form_score', 'symmetry', 'rom'];
+  }
+  
+  if (supportsWeight) {
+    return ['form_score', 'rom', 'weight'];
+  }
+  
+  return ['form_score', 'rom'];
+}
+
+// ============================================
 // POSITION CHECK TYPES
 // ============================================
 
@@ -250,6 +459,16 @@ export interface PoseVariantInput {
 // ============================================
 
 /**
+ * Weight configuration for exercise
+ */
+export interface WeightConfig {
+  supportsWeight: boolean;
+  minWeight?: number;      // kg
+  maxWeight?: number;      // kg
+  defaultWeight?: number;  // kg
+}
+
+/**
  * Exercise creation input
  */
 export interface CreateExerciseInput {
@@ -265,6 +484,12 @@ export interface CreateExerciseInput {
   tags?: string[];
   repCountingConfig?: RepCountingConfig;
   poseVariants?: PoseVariantInput[];
+  
+  // Weight configuration
+  weightConfig?: WeightConfig;
+  
+  // Report metrics configuration
+  reportMetrics?: ReportMetricsConfig;
 }
 
 /**

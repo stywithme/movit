@@ -54,6 +54,17 @@ interface CreateExerciseInput {
   tags?: string[];
   repCountingConfig?: RepCountingConfig;
   poseVariants?: PoseVariantInput[];
+  // Weight configuration
+  supportsWeight?: boolean;
+  minWeight?: number;
+  maxWeight?: number;
+  defaultWeight?: number;
+  // Report metrics configuration
+  reportMetrics?: {
+    primary?: string[];
+    optional?: string[];
+    excluded?: string[];
+  };
 }
 
 interface UpdateExerciseInput extends Partial<CreateExerciseInput> {
@@ -209,6 +220,13 @@ export const exerciseService = {
         status: 'draft',
         createdBy,
         updatedBy: createdBy,
+        // Weight configuration
+        supportsWeight: data.supportsWeight ?? false,
+        minWeight: data.minWeight ?? null,
+        maxWeight: data.maxWeight ?? null,
+        defaultWeight: data.defaultWeight ?? null,
+        // Report metrics configuration
+        reportMetrics: data.reportMetrics ? (data.reportMetrics as object) : null,
         media: data.imageUrl
           ? {
               create: {
@@ -347,6 +365,13 @@ export const exerciseService = {
     if (data.countingMethodId !== undefined) updateData.countingMethodId = data.countingMethodId;
     if (data.repCountingConfig !== undefined) updateData.repCountingConfig = data.repCountingConfig;
     if (data.status !== undefined) updateData.status = data.status;
+    // Weight configuration
+    if (data.supportsWeight !== undefined) updateData.supportsWeight = data.supportsWeight;
+    if (data.minWeight !== undefined) updateData.minWeight = data.minWeight;
+    if (data.maxWeight !== undefined) updateData.maxWeight = data.maxWeight;
+    if (data.defaultWeight !== undefined) updateData.defaultWeight = data.defaultWeight;
+    // Report metrics configuration
+    if (data.reportMetrics !== undefined) updateData.reportMetrics = data.reportMetrics;
 
     await prisma.exercise.update({
       where: { id },
@@ -481,5 +506,107 @@ export const exerciseService = {
         },
       },
     });
+  },
+
+  // ============================================
+  // WEIGHT & METRICS CONFIGURATION
+  // ============================================
+
+  /**
+   * Update weight configuration for an exercise
+   */
+  async updateWeightConfig(
+    id: string,
+    config: {
+      supportsWeight: boolean;
+      minWeight?: number;
+      maxWeight?: number;
+      defaultWeight?: number;
+    },
+    updatedBy?: string
+  ) {
+    const prisma = await getPrisma();
+    return prisma.exercise.update({
+      where: { id },
+      data: {
+        supportsWeight: config.supportsWeight,
+        minWeight: config.minWeight || null,
+        maxWeight: config.maxWeight || null,
+        defaultWeight: config.defaultWeight || null,
+        updatedBy,
+      },
+    });
+  },
+
+  /**
+   * Update report metrics configuration
+   */
+  async updateReportMetrics(
+    id: string,
+    config: {
+      primary: string[];
+      optional?: string[];
+      excluded?: string[];
+    },
+    updatedBy?: string
+  ) {
+    const prisma = await getPrisma();
+    return prisma.exercise.update({
+      where: { id },
+      data: {
+        reportMetrics: config,
+        updatedBy,
+      },
+    });
+  },
+
+  /**
+   * Get exercise configuration for mobile (includes metrics info)
+   */
+  async getExerciseConfig(id: string) {
+    const prisma = await getPrisma();
+    const exercise = await prisma.exercise.findUnique({
+      where: { id, deletedAt: null },
+      include: {
+        countingMethod: true,
+        poseVariants: {
+          take: 1,
+          select: {
+            trackedJointsConfig: true,
+          },
+        },
+      },
+    });
+
+    if (!exercise) return null;
+
+    // Determine if bilateral from tracked joints
+    const trackedJoints = exercise.poseVariants[0]?.trackedJointsConfig as any[] || [];
+    const hasPairedJoints = trackedJoints.some((j: any) => j.pairedWith);
+    
+    // Get counting method code
+    const countingMethodCode = (exercise.countingMethod as any)?.code as string;
+    const isHold = countingMethodCode === 'hold';
+
+    return {
+      id: exercise.id,
+      name: exercise.name,
+      countingMethod: countingMethodCode,
+      
+      // Weight config
+      weight: {
+        supported: exercise.supportsWeight,
+        min: exercise.minWeight,
+        max: exercise.maxWeight,
+        default: exercise.defaultWeight,
+      },
+      
+      // Metrics config
+      metrics: {
+        isBilateral: hasPairedJoints,
+        isHold,
+        config: exercise.reportMetrics as any,
+      },
+    };
   },
 };

@@ -52,6 +52,8 @@ import com.trainingvalidator.poc.storage.AuthManager
 import com.trainingvalidator.poc.network.SessionSyncService
 import com.trainingvalidator.poc.network.ApiConfig
 import com.trainingvalidator.poc.ui.report.ReportActivity
+import com.trainingvalidator.poc.ui.report.ReportActivityV2
+import com.trainingvalidator.poc.ui.report.ReportPagerActivity
 import com.trainingvalidator.poc.video.VideoManager
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.collectLatest
@@ -191,11 +193,38 @@ class TrainingActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetection
         initializeReportSystem()
         observeViewModel()
         
+        // Sync pending sessions before starting new training
+        syncPendingSessionsOnTrainingStart()
+        
         // Initialize based on mode
         if (isVideoMode) {
             setupVideoMode()
         } else {
             checkCameraPermission()
+        }
+    }
+    
+    /**
+     * Sync pending sessions when starting a new training
+     */
+    private fun syncPendingSessionsOnTrainingStart() {
+        val token = AuthManager.getAccessToken(this)
+        if (token == null) {
+            Log.d(TAG, "No auth token, skipping pending sync")
+            return
+        }
+        
+        lifecycleScope.launch(Dispatchers.IO) {
+            try {
+                val syncService = SessionSyncService.getInstance(this@TrainingActivity, ApiConfig.getBaseUrl())
+                syncService.setAuthToken(token)
+                val result = syncService.syncPending()
+                if (result.total > 0) {
+                    Log.d(TAG, "Synced ${result.successCount}/${result.total} pending sessions before training")
+                }
+            } catch (e: Exception) {
+                Log.e(TAG, "Pending sync error: ${e.message}")
+            }
         }
     }
     
@@ -1265,28 +1294,36 @@ class TrainingActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetection
                 val saved = reportStorage?.save(report) ?: false
                 Log.d(TAG, "Report saved locally: $saved")
                 
-                // Finalize motion recording and sync to backend
-                syncSessionToBackend(report.id)
-                
+                // Navigate to report IMMEDIATELY (Offline-First)
                 launch(Dispatchers.Main) {
                     binding.glassmorphicMessage.hide()
                     
                     if (saved) {
-                        Log.d(TAG, "Navigating to ReportActivity with id: ${report.id}")
+                        Log.d(TAG, "Navigating to ReportPagerActivity with id: ${report.id}")
                         
                         try {
-                            val intent = ReportActivity.createIntent(this@TrainingActivity, report.id).apply {
-                                putExtra(ReportActivity.EXTRA_EXERCISE_NAME, viewModel.exerciseName.value)
-                            }
+                            // Use new full-screen pager report activity
+                            val intent = ReportPagerActivity.createIntent(this@TrainingActivity, report.id)
                             startActivity(intent)
                             finish()
                         } catch (e: Exception) {
-                            Log.e(TAG, "Failed to start ReportActivity: ${e.message}", e)
+                            Log.e(TAG, "Failed to start ReportPagerActivity: ${e.message}", e)
                             showFallbackSummary()
                         }
                     } else {
                         Log.e(TAG, "Failed to save report, showing fallback")
                         showFallbackSummary()
+                    }
+                }
+                
+                // Sync to backend in background (non-blocking)
+                // Use GlobalScope since this Activity will be finished
+                @Suppress("OPT_IN_USAGE")
+                kotlinx.coroutines.GlobalScope.launch(Dispatchers.IO) {
+                    try {
+                        syncSessionToBackendStandalone(report.id)
+                    } catch (e: Exception) {
+                        Log.w(TAG, "Background sync failed, will retry later: ${e.message}")
                     }
                 }
             } catch (e: Exception) {
@@ -1306,10 +1343,12 @@ class TrainingActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetection
     }
     
     /**
-     * Sync session data to backend
-     * Uses SessionSyncService to upload metrics
+     * Sync session data to backend (standalone version for GlobalScope)
+     * Uses applicationContext to survive Activity destruction
      */
-    private suspend fun syncSessionToBackend(sessionId: String) {
+    private suspend fun syncSessionToBackendStandalone(sessionId: String) {
+        val appContext = applicationContext
+        
         try {
             // Get session upload from MotionRecorder
             val sessionUpload = viewModel.finalizeAndGetSessionUpload(sessionId)
@@ -1324,19 +1363,19 @@ class TrainingActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetection
                        "avgScore=${sessionUpload.sessionMetrics.avgFormScore / 10f}%")
             
             // Refresh token if needed (after 20 hours)
-            if (AuthManager.shouldRefreshToken(this@TrainingActivity)) {
+            if (AuthManager.shouldRefreshToken(appContext)) {
                 Log.d(TAG, "Token needs refresh, attempting...")
-                refreshTokenIfNeeded()
+                refreshTokenStandalone(appContext)
             }
             
             // Get sync service
             val syncService = SessionSyncService.getInstance(
-                this@TrainingActivity,
+                appContext,
                 ApiConfig.getBaseUrl()
             )
             
             // Get auth token from AuthManager
-            val token = AuthManager.getAccessToken(this@TrainingActivity)
+            val token = AuthManager.getAccessToken(appContext)
             
             if (token != null) {
                 syncService.setAuthToken(token)
@@ -1353,12 +1392,59 @@ class TrainingActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetection
             } else {
                 Log.w(TAG, "No auth token, saving session for later sync")
                 // Save locally for later sync
-                val storage = AnalyticsStorage(this@TrainingActivity)
+                val storage = AnalyticsStorage(appContext)
                 storage.savePending(sessionUpload)
             }
         } catch (e: Exception) {
             Log.e(TAG, "Error syncing session: ${e.message}", e)
             // Don't fail the whole flow, just log the error
+        }
+    }
+    
+    /**
+     * Standalone token refresh that uses Context instead of Activity
+     */
+    private suspend fun refreshTokenStandalone(context: android.content.Context) {
+        try {
+            val refreshTokenValue = AuthManager.getRefreshToken(context)
+            if (refreshTokenValue == null) {
+                Log.w(TAG, "No refresh token available")
+                return
+            }
+            
+            val client = okhttp3.OkHttpClient()
+            val json = """{"refreshToken": "$refreshTokenValue"}"""
+            val body = json.toRequestBody("application/json".toMediaType())
+            
+            val request = okhttp3.Request.Builder()
+                .url("${ApiConfig.getBaseUrl()}api/mobile/auth/refresh")
+                .post(body)
+                .build()
+            
+            withContext(Dispatchers.IO) {
+                client.newCall(request).execute().use { response ->
+                    if (response.isSuccessful) {
+                        val responseBody = response.body?.string()
+                        responseBody?.let { bodyStr ->
+                            val gson = com.google.gson.Gson()
+                            val result = gson.fromJson(bodyStr, RefreshResponse::class.java)
+                            if (result.tokens != null) {
+                                AuthManager.saveNewTokens(
+                                    context,
+                                    result.tokens.accessToken,
+                                    result.tokens.refreshToken,
+                                    result.tokens.expiresIn
+                                )
+                                Log.d(TAG, "Token refreshed successfully (standalone)")
+                            }
+                        }
+                    } else {
+                        Log.w(TAG, "Token refresh failed: ${response.code}")
+                    }
+                }
+            }
+        } catch (e: Exception) {
+            Log.w(TAG, "Token refresh error: ${e.message}")
         }
     }
     

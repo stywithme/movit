@@ -23,6 +23,22 @@ data class ExerciseConfig(
     val tags: List<String> = emptyList(),
     val poseVariants: List<PoseVariant> = emptyList(),
     val repCountingConfig: RepCountingConfig = RepCountingConfig(), // Moved from DifficultyLevel
+    
+    // ═══════════════════════════════════════════════════════════════
+    // WEIGHT & METRICS CONFIGURATION (from backend)
+    // ═══════════════════════════════════════════════════════════════
+    
+    /** Does this exercise support weights? */
+    val supportsWeight: Boolean = false,
+    
+    /** Weight limits (kg) */
+    val minWeight: Float? = null,
+    val maxWeight: Float? = null,
+    val defaultWeight: Float? = null,
+    
+    /** Report metrics configuration */
+    val reportMetrics: ReportMetricsConfig? = null,
+    
     // Runtime field - set by ExerciseLoader
     @Transient
     var fileName: String = ""
@@ -59,6 +75,50 @@ data class ExerciseConfig(
      */
     fun getTrackedJoints(variantIndex: Int = 0): List<TrackedJoint> {
         return poseVariants.getOrNull(variantIndex)?.trackedJoints ?: emptyList()
+    }
+    
+    // ═══════════════════════════════════════════════════════════════
+    // EXERCISE TYPE DETECTION
+    // ═══════════════════════════════════════════════════════════════
+    
+    /**
+     * Check if this is a hold exercise
+     */
+    fun isHoldExercise(): Boolean = countingMethod == CountingMethod.HOLD
+    
+    /**
+     * Check if this exercise has bilateral joints (left/right pairs)
+     */
+    fun isBilateralExercise(variantIndex: Int = 0): Boolean {
+        return getTrackedJoints(variantIndex).any { it.pairedWith != null }
+    }
+    
+    /**
+     * Get the effective report metrics config
+     * Falls back to auto-detected defaults if not configured
+     */
+    fun getEffectiveMetricsConfig(variantIndex: Int = 0): ReportMetricsConfig {
+        return reportMetrics ?: MetricCode.getDefaults(
+            isHold = isHoldExercise(),
+            isBilateral = isBilateralExercise(variantIndex),
+            supportsWeight = supportsWeight
+        )
+    }
+    
+    /**
+     * Check if a specific metric should be shown for this exercise
+     */
+    fun shouldShowMetric(metric: MetricCode, variantIndex: Int = 0): Boolean {
+        val config = getEffectiveMetricsConfig(variantIndex)
+        
+        // Also apply automatic rules
+        return when (metric) {
+            MetricCode.SYMMETRY -> isBilateralExercise(variantIndex) && config.shouldShow(metric)
+            MetricCode.TEMPO, MetricCode.TUT -> !isHoldExercise() && config.shouldShow(metric)
+            MetricCode.HOLD_DURATION -> isHoldExercise() && config.shouldShow(metric)
+            MetricCode.WEIGHT, MetricCode.VOLUME, MetricCode.EST_1RM -> supportsWeight && config.shouldShow(metric)
+            else -> config.shouldShow(metric)
+        }
     }
 }
 
@@ -107,6 +167,112 @@ data class CategoryInfo(
     val code: String,
     val name: LocalizedText
 )
+
+// ═══════════════════════════════════════════════════════════════════════════
+// METRICS CONFIGURATION
+// ═══════════════════════════════════════════════════════════════════════════
+
+/**
+ * Report metrics configuration - determines which metrics to show in the report
+ * 
+ * @param primary Main metrics shown as cards (2-3 recommended)
+ * @param optional Additional metrics admin selected
+ * @param excluded Metrics explicitly hidden from report
+ */
+data class ReportMetricsConfig(
+    val primary: List<MetricCode> = listOf(MetricCode.FORM_SCORE),
+    val optional: List<MetricCode> = emptyList(),
+    val excluded: List<MetricCode> = emptyList()
+) {
+    /**
+     * Check if a metric should be displayed
+     */
+    fun shouldShow(metric: MetricCode): Boolean {
+        if (excluded.contains(metric)) return false
+        return primary.contains(metric) || optional.contains(metric)
+    }
+    
+    /**
+     * Check if a metric is primary (shown in main cards)
+     */
+    fun isPrimary(metric: MetricCode): Boolean = primary.contains(metric)
+    
+    /**
+     * Get all visible metrics
+     */
+    fun getVisibleMetrics(): List<MetricCode> = primary + optional
+}
+
+/**
+ * Available metric codes - matches backend MetricCode
+ */
+enum class MetricCode {
+    // Core (always available)
+    FORM_SCORE,
+    REP_COUNT,
+    DURATION,
+    
+    // Kinematic
+    ROM,
+    SYMMETRY,
+    STABILITY,
+    
+    // Temporal
+    TEMPO,
+    TUT,
+    HOLD_DURATION,
+    
+    // Quality
+    ALIGNMENT,
+    FORM_CONSISTENCY,
+    FATIGUE_INDEX,
+    
+    // Power
+    VELOCITY,
+    
+    // Load
+    WEIGHT,
+    VOLUME,
+    EST_1RM;
+    
+    companion object {
+        /**
+         * Get default metrics for an exercise type
+         */
+        fun getDefaults(
+            isHold: Boolean,
+            isBilateral: Boolean,
+            supportsWeight: Boolean
+        ): ReportMetricsConfig {
+            val primary = mutableListOf(FORM_SCORE)
+            val optional = mutableListOf<MetricCode>()
+            
+            if (isHold) {
+                primary.add(HOLD_DURATION)
+                optional.add(STABILITY)
+            } else {
+                primary.add(ROM)
+                optional.addAll(listOf(TEMPO, TUT))
+            }
+            
+            if (isBilateral && !isHold) {
+                primary.add(SYMMETRY)
+            }
+            
+            if (supportsWeight) {
+                primary.add(WEIGHT)
+                optional.addAll(listOf(VOLUME, EST_1RM))
+            }
+            
+            optional.add(ALIGNMENT)
+            
+            return ReportMetricsConfig(
+                primary = primary.take(3), // Max 3 primary
+                optional = optional
+            )
+        }
+    }
+}
 
 /**
  * Counting method enum - determines the state machine type

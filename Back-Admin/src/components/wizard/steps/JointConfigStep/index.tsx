@@ -1,21 +1,191 @@
 'use client';
 
 /**
- * Step 4: Joint Configuration (State-Based)
- * ==========================================
+ * Step 3: Joint Configuration (Simplified)
+ * =========================================
  * 
- * Interactive configuration for tracked joints with state-based ranges.
- * Features visual angle range editors and real-time validation.
+ * Simplified joint configuration with:
+ * - Dropdown to add joints (including bilateral pairs)
+ * - Bilateral joints shown as single tab (but saved as left + right)
+ * - State-based angle range editors
  */
 
 import { useCallback, useState, useMemo } from 'react';
 import { useWizardStore } from '../../WizardContext';
-import { SkeletonPicker } from './SkeletonPicker';
-import { buildTrackedJoint, getPairedJointCode, hasMirrorPair, STATE_COLORS, STATE_LABELS } from './joint-templates';
+import { buildTrackedJoint, STATE_COLORS, STATE_LABELS } from './joint-templates';
 import { SmartLocalizedInput } from '@/components/forms';
+import { Plus, ChevronDown, Trash2, Copy } from 'lucide-react';
 import type { TrackedJointData, PrimaryTrackedJointData, SecondaryTrackedJointData, StateRangesData } from '@/modules/exercises/exercises.validation';
-import { JOINT_STATE_NAMES, COUNTED_STATES, STATE_CONFIG, ZONE_TYPES } from '@/lib/types/localized';
-import type { JointStateName, ZoneType, LocalizedText } from '@/lib/types/localized';
+import { JOINT_STATE_NAMES, COUNTED_STATES, STATE_CONFIG } from '@/lib/types/localized';
+import type { JointStateName, LocalizedText } from '@/lib/types/localized';
+
+// ============================================
+// UI TAB STRUCTURE
+// ============================================
+// Represents how joints appear in tabs (bilateral = 1 tab for 2 joints)
+interface UITab {
+  id: string;                    // e.g., "shoulders" or "left_knee"
+  label: { ar: string; en: string };
+  type: 'bilateral' | 'single';
+  leftJointIndex?: number;       // Index in trackedJoints array
+  rightJointIndex?: number;      // Index in trackedJoints array
+  singleJointIndex?: number;     // For single joints
+}
+
+// ============================================
+// JOINT DEFINITIONS
+// ============================================
+
+interface JointOption {
+  code: string;
+  label: { ar: string; en: string };
+  type: 'single' | 'bilateral';
+  leftJoint?: string;
+  rightJoint?: string;
+}
+
+const JOINT_OPTIONS: JointOption[] = [
+  // ============================================
+  // BILATERAL JOINTS (Pairs) - Most Common
+  // ============================================
+  { code: 'divider_bilateral', label: { ar: '━━━ مفاصل مزدوجة (الأكثر استخداماً) ━━━', en: '━━━ Bilateral Joints (Most Common) ━━━' }, type: 'single' },
+  { code: 'shoulders', label: { ar: 'الكتفين', en: 'Shoulders (Both)' }, type: 'bilateral', leftJoint: 'left_shoulder', rightJoint: 'right_shoulder' },
+  { code: 'elbows', label: { ar: 'الكوعين', en: 'Elbows (Both)' }, type: 'bilateral', leftJoint: 'left_elbow', rightJoint: 'right_elbow' },
+  { code: 'wrists', label: { ar: 'الرسغين', en: 'Wrists (Both)' }, type: 'bilateral', leftJoint: 'left_wrist', rightJoint: 'right_wrist' },
+  { code: 'hips', label: { ar: 'الوركين', en: 'Hips (Both)' }, type: 'bilateral', leftJoint: 'left_hip', rightJoint: 'right_hip' },
+  { code: 'knees', label: { ar: 'الركبتين', en: 'Knees (Both)' }, type: 'bilateral', leftJoint: 'left_knee', rightJoint: 'right_knee' },
+  { code: 'ankles', label: { ar: 'الكاحلين', en: 'Ankles (Both)' }, type: 'bilateral', leftJoint: 'left_ankle', rightJoint: 'right_ankle' },
+  { code: 'heels', label: { ar: 'الكعبين', en: 'Heels (Both)' }, type: 'bilateral', leftJoint: 'left_heel', rightJoint: 'right_heel' },
+  { code: 'foot_indexes', label: { ar: 'أصابع القدمين', en: 'Foot Indexes (Both)' }, type: 'bilateral', leftJoint: 'left_foot_index', rightJoint: 'right_foot_index' },
+  
+  // ============================================
+  // SINGLE JOINTS - Upper Body
+  // ============================================
+  { code: 'divider_upper', label: { ar: '━━━ الجزء العلوي ━━━', en: '━━━ Upper Body ━━━' }, type: 'single' },
+  // Shoulders
+  { code: 'left_shoulder', label: { ar: 'الكتف الأيسر', en: 'Left Shoulder' }, type: 'single' },
+  { code: 'right_shoulder', label: { ar: 'الكتف الأيمن', en: 'Right Shoulder' }, type: 'single' },
+  // Elbows
+  { code: 'left_elbow', label: { ar: 'المرفق الأيسر', en: 'Left Elbow' }, type: 'single' },
+  { code: 'right_elbow', label: { ar: 'المرفق الأيمن', en: 'Right Elbow' }, type: 'single' },
+  // Wrists
+  { code: 'left_wrist', label: { ar: 'الرسغ الأيسر', en: 'Left Wrist' }, type: 'single' },
+  { code: 'right_wrist', label: { ar: 'الرسغ الأيمن', en: 'Right Wrist' }, type: 'single' },
+  
+  // ============================================
+  // SINGLE JOINTS - Core
+  // ============================================
+  { code: 'divider_core', label: { ar: '━━━ الجذع ━━━', en: '━━━ Core ━━━' }, type: 'single' },
+  { code: 'spine', label: { ar: 'العمود الفقري', en: 'Spine' }, type: 'single' },
+  { code: 'left_hip', label: { ar: 'الورك الأيسر', en: 'Left Hip' }, type: 'single' },
+  { code: 'right_hip', label: { ar: 'الورك الأيمن', en: 'Right Hip' }, type: 'single' },
+  
+  // ============================================
+  // SINGLE JOINTS - Lower Body
+  // ============================================
+  { code: 'divider_lower', label: { ar: '━━━ الجزء السفلي ━━━', en: '━━━ Lower Body ━━━' }, type: 'single' },
+  // Knees
+  { code: 'left_knee', label: { ar: 'الركبة اليسرى', en: 'Left Knee' }, type: 'single' },
+  { code: 'right_knee', label: { ar: 'الركبة اليمنى', en: 'Right Knee' }, type: 'single' },
+  // Ankles
+  { code: 'left_ankle', label: { ar: 'الكاحل الأيسر', en: 'Left Ankle' }, type: 'single' },
+  { code: 'right_ankle', label: { ar: 'الكاحل الأيمن', en: 'Right Ankle' }, type: 'single' },
+  // Heels
+  { code: 'left_heel', label: { ar: 'كعب القدم الأيسر', en: 'Left Heel' }, type: 'single' },
+  { code: 'right_heel', label: { ar: 'كعب القدم الأيمن', en: 'Right Heel' }, type: 'single' },
+  // Foot Index
+  { code: 'left_foot_index', label: { ar: 'أصبع القدم الأيسر', en: 'Left Foot Index' }, type: 'single' },
+  { code: 'right_foot_index', label: { ar: 'أصبع القدم الأيمن', en: 'Right Foot Index' }, type: 'single' },
+  
+  // ============================================
+  // SINGLE JOINTS - Hands (Less Common)
+  // ============================================
+  { code: 'divider_hands', label: { ar: '━━━ اليدين (أقل استخداماً) ━━━', en: '━━━ Hands (Less Common) ━━━' }, type: 'single' },
+  // Pinky
+  { code: 'left_pinky', label: { ar: 'الخنصر الأيسر', en: 'Left Pinky' }, type: 'single' },
+  { code: 'right_pinky', label: { ar: 'الخنصر الأيمن', en: 'Right Pinky' }, type: 'single' },
+  // Index
+  { code: 'left_index', label: { ar: 'السبابة اليسرى', en: 'Left Index' }, type: 'single' },
+  { code: 'right_index', label: { ar: 'السبابة اليمنى', en: 'Right Index' }, type: 'single' },
+  // Thumb
+  { code: 'left_thumb', label: { ar: 'الإبهام الأيسر', en: 'Left Thumb' }, type: 'single' },
+  { code: 'right_thumb', label: { ar: 'الإبهام الأيمن', en: 'Right Thumb' }, type: 'single' },
+];
+
+// ============================================
+// BILATERAL JOINTS MAPPING
+// ============================================
+// Maps bilateral code to its display name and joints
+const BILATERAL_MAPPING: Record<string, { label: { ar: string; en: string }, leftJoint: string, rightJoint: string }> = {
+  shoulders: { label: { ar: 'الكتفين', en: 'Shoulders' }, leftJoint: 'left_shoulder', rightJoint: 'right_shoulder' },
+  elbows: { label: { ar: 'الكوعين', en: 'Elbows' }, leftJoint: 'left_elbow', rightJoint: 'right_elbow' },
+  wrists: { label: { ar: 'الرسغين', en: 'Wrists' }, leftJoint: 'left_wrist', rightJoint: 'right_wrist' },
+  hips: { label: { ar: 'الوركين', en: 'Hips' }, leftJoint: 'left_hip', rightJoint: 'right_hip' },
+  knees: { label: { ar: 'الركبتين', en: 'Knees' }, leftJoint: 'left_knee', rightJoint: 'right_knee' },
+  ankles: { label: { ar: 'الكاحلين', en: 'Ankles' }, leftJoint: 'left_ankle', rightJoint: 'right_ankle' },
+  heels: { label: { ar: 'الكعبين', en: 'Heels' }, leftJoint: 'left_heel', rightJoint: 'right_heel' },
+  foot_indexes: { label: { ar: 'أصابع القدمين', en: 'Foot Indexes' }, leftJoint: 'left_foot_index', rightJoint: 'right_foot_index' },
+};
+
+// Helper: Find bilateral code from joint code
+function getBilateralCode(jointCode: string): string | null {
+  for (const [bilateralCode, mapping] of Object.entries(BILATERAL_MAPPING)) {
+    if (mapping.leftJoint === jointCode || mapping.rightJoint === jointCode) {
+      return bilateralCode;
+    }
+  }
+  return null;
+}
+
+// Helper: Build UI tabs from tracked joints
+function buildUITabs(trackedJoints: TrackedJointData[]): UITab[] {
+  const tabs: UITab[] = [];
+  const processedBilaterals = new Set<string>();
+  
+  trackedJoints.forEach((joint, index) => {
+    const bilateralCode = getBilateralCode(joint.joint);
+    
+    if (bilateralCode && joint.pairedWith) {
+      // This is part of a bilateral pair
+      if (!processedBilaterals.has(bilateralCode)) {
+        processedBilaterals.add(bilateralCode);
+        
+        const mapping = BILATERAL_MAPPING[bilateralCode];
+        const leftIndex = trackedJoints.findIndex(j => j.joint === mapping.leftJoint);
+        const rightIndex = trackedJoints.findIndex(j => j.joint === mapping.rightJoint);
+        
+        if (leftIndex >= 0 && rightIndex >= 0) {
+          tabs.push({
+            id: bilateralCode,
+            label: mapping.label,
+            type: 'bilateral',
+            leftJointIndex: leftIndex,
+            rightJointIndex: rightIndex,
+          });
+        }
+      }
+    } else {
+      // Single joint
+      const singleOption = JOINT_OPTIONS.find(o => o.code === joint.joint);
+      tabs.push({
+        id: joint.joint,
+        label: singleOption?.label || { ar: joint.joint, en: joint.joint },
+        type: 'single',
+        singleJointIndex: index,
+      });
+    }
+  });
+  
+  return tabs;
+}
+
+// Helper: Get single joint display name
+function getJointLabel(jointCode: string): { ar: string; en: string } {
+  const option = JOINT_OPTIONS.find(o => o.code === jointCode);
+  if (option) return option.label;
+  const formatted = jointCode.replace(/_/g, ' ');
+  return { ar: formatted, en: formatted.charAt(0).toUpperCase() + formatted.slice(1) };
+}
 
 // ============================================
 // STATE RANGE EDITOR COMPONENT
@@ -29,7 +199,6 @@ interface StateRangeEditorProps {
 }
 
 function StateRangeEditor({ label, ranges, onChange, showWarningDanger = true }: StateRangeEditorProps) {
-  // Ensure ranges has at least perfect (required)
   const safeRanges: StateRangesData = ranges?.perfect 
     ? ranges 
     : { perfect: { min: 150, max: 180 } };
@@ -47,7 +216,6 @@ function StateRangeEditor({ label, ranges, onChange, showWarningDanger = true }:
         [state]: { ...currentRange, [field]: value },
       });
     } else {
-      // Create new range
       onChange({
         ...safeRanges,
         [state]: { min: field === 'min' ? value : 0, max: field === 'max' ? value : 180 },
@@ -56,15 +224,13 @@ function StateRangeEditor({ label, ranges, onChange, showWarningDanger = true }:
   };
 
   const toggleState = (state: JointStateName) => {
-    if (state === 'perfect') return; // Perfect is always required
+    if (state === 'perfect') return;
     
     if (safeRanges[state]) {
-      // Remove state
       const newRanges = { ...safeRanges };
       delete newRanges[state];
       onChange(newRanges);
     } else {
-      // Add state with defaults
       const defaults: Record<JointStateName, { min: number; max: number }> = {
         perfect: { min: 150, max: 180 },
         normal: { min: 140, max: 180 },
@@ -106,7 +272,6 @@ function StateRangeEditor({ label, ranges, onChange, showWarningDanger = true }:
             />
           );
         })}
-        {/* Tick marks */}
         {[0, 45, 90, 135, 180].map((deg) => (
           <div
             key={deg}
@@ -134,22 +299,18 @@ function StateRangeEditor({ label, ranges, onChange, showWarningDanger = true }:
                 isEnabled ? `${colors.bg} ${colors.border} border` : 'bg-gray-50 border border-dashed border-gray-300'
               }`}
             >
-              {/* Toggle */}
               {!isRequired && (
                 <button
                   type="button"
                   onClick={() => toggleState(state)}
                   className={`w-5 h-5 rounded border-2 flex items-center justify-center transition-colors ${
-                    isEnabled 
-                      ? `${colors.border} ${colors.bg}` 
-                      : 'border-gray-300 bg-white'
+                    isEnabled ? `${colors.border} ${colors.bg}` : 'border-gray-300 bg-white'
                   }`}
                 >
                   {isEnabled && <span className="text-xs">✓</span>}
                 </button>
               )}
               
-              {/* Label */}
               <div className={`w-24 ${isRequired ? 'ml-8' : ''}`}>
                 <span className={`font-medium text-sm ${isEnabled ? colors.text : 'text-gray-400'}`}>
                   {STATE_LABELS[state].en}
@@ -164,7 +325,6 @@ function StateRangeEditor({ label, ranges, onChange, showWarningDanger = true }:
                 </div>
               </div>
               
-              {/* Min/Max inputs */}
               {isEnabled && range && (
                 <div className="flex items-center gap-2 flex-1">
                   <div className="flex items-center gap-1">
@@ -195,7 +355,6 @@ function StateRangeEditor({ label, ranges, onChange, showWarningDanger = true }:
                 </div>
               )}
               
-              {/* Placeholder when disabled */}
               {!isEnabled && (
                 <span className="text-sm text-gray-400 italic">Click to enable</span>
               )}
@@ -208,22 +367,20 @@ function StateRangeEditor({ label, ranges, onChange, showWarningDanger = true }:
 }
 
 // ============================================
-// JOINT EDITOR COMPONENT
+// JOINT TAB CONTENT
 // ============================================
 
-interface JointEditorProps {
+interface JointTabContentProps {
   joint: TrackedJointData;
-  index: number;
   onUpdate: (joint: TrackedJointData) => void;
   onRemove: () => void;
   onCopyToMirror?: () => void;
-  isHold?: boolean;
+  isHold: boolean;
+  hasMirror: boolean;
 }
 
-function JointEditor({ joint, index, onUpdate, onRemove, onCopyToMirror, isHold = false }: JointEditorProps) {
-  const [expanded, setExpanded] = useState(true);
+function JointTabContent({ joint, onUpdate, onRemove, onCopyToMirror, isHold, hasMirror }: JointTabContentProps) {
   const isPrimary = joint.role === 'primary';
-  const hasPair = hasMirrorPair(joint.joint);
   
   const updateStartPose = (field: 'min' | 'max', value: number) => {
     onUpdate({
@@ -234,468 +391,394 @@ function JointEditor({ joint, index, onUpdate, onRemove, onCopyToMirror, isHold 
 
   const updateRole = (newRole: 'primary' | 'secondary') => {
     if (newRole === joint.role) return;
-    
-    // Rebuild joint with new role (pass isHold to build correct structure)
     const newJoint = buildTrackedJoint(joint.joint, newRole, joint.pairedWith, isHold);
     newJoint.startPose = joint.startPose;
     newJoint.stateMessages = joint.stateMessages;
     onUpdate(newJoint);
   };
-  
-  /**
-   * Update state message - supports both simple and zone-based formats
-   * Simple (hold): { ar: "...", en: "..." }
-   * Zone (up_down/push_pull): { up: { ar: "...", en: "..." }, down: { ar: "...", en: "..." } }
-   */
-  const updateStateMessage = (
-    state: JointStateName, 
-    lang: 'ar' | 'en', 
-    value: string,
-    zone?: ZoneType
-  ) => {
-    const currentMessages = joint.stateMessages || {};
-    const currentStateMsg = currentMessages[state] || {};
-    
-    if (zone) {
-      // Zone-based message update
-      const currentZone = (currentStateMsg as Record<string, unknown>)?.[zone] || {};
-      onUpdate({
-        ...joint,
-        stateMessages: {
-          ...currentMessages,
-          [state]: {
-            ...currentStateMsg,
-            [zone]: {
-              ...(currentZone as Record<string, string>),
-              [lang]: value,
-            },
-          },
-        },
-      });
-    } else {
-      // Simple message update (for hold exercises)
-      onUpdate({
-        ...joint,
-        stateMessages: {
-          ...currentMessages,
-          [state]: {
-            ...(currentStateMsg as Record<string, string>),
-            [lang]: value,
-          },
-        },
-      });
-    }
-  };
-  
-  /**
-   * Update state message for both languages at once (with optional audio)
-   * This prevents race conditions when updating ar and en separately
-   */
-  const updateStateMessageBoth = (
-    state: JointStateName,
-    arValue: string,
-    enValue: string,
-    zone?: ZoneType,
-    audio?: { ar?: string; en?: string }
-  ) => {
-    const currentMessages = joint.stateMessages || {};
-    const currentStateMsg = currentMessages[state] || {};
-    
-    if (zone) {
-      // Zone-based message update
-      const currentZone = (currentStateMsg as Record<string, Record<string, string>>)?.[zone] || {};
-      onUpdate({
-        ...joint,
-        stateMessages: {
-          ...currentMessages,
-          [state]: {
-            ...currentStateMsg,
-            [zone]: {
-              ...currentZone,
-              ar: arValue,
-              en: enValue,
-              ...(audio?.ar !== undefined && { audioAr: audio.ar }),
-              ...(audio?.en !== undefined && { audioEn: audio.en }),
-            },
-          },
-        },
-      });
-    } else {
-      // Simple message update (for hold exercises)
-      const currentSimple = currentStateMsg as Record<string, string>;
-      onUpdate({
-        ...joint,
-        stateMessages: {
-          ...currentMessages,
-          [state]: {
-            ...currentSimple,
-            ar: arValue,
-            en: enValue,
-            ...(audio?.ar !== undefined && { audioAr: audio.ar }),
-            ...(audio?.en !== undefined && { audioEn: audio.en }),
-          },
-        },
-      });
-    }
-  };
-  
-  /**
-   * Update audio only for a state message
-   */
-  const updateStateMessageAudio = (
-    state: JointStateName,
-    audio: { ar?: string; en?: string },
-    zone?: ZoneType
-  ) => {
-    const currentMessages = joint.stateMessages || {};
-    const currentStateMsg = currentMessages[state] || {};
-    
-    if (zone) {
-      const currentZone = (currentStateMsg as Record<string, Record<string, string>>)?.[zone] || {};
-      onUpdate({
-        ...joint,
-        stateMessages: {
-          ...currentMessages,
-          [state]: {
-            ...currentStateMsg,
-            [zone]: {
-              ...currentZone,
-              ...(audio.ar !== undefined && { audioAr: audio.ar }),
-              ...(audio.en !== undefined && { audioEn: audio.en }),
-            },
-          },
-        },
-      });
-    } else {
-      const currentSimple = currentStateMsg as Record<string, string>;
-      onUpdate({
-        ...joint,
-        stateMessages: {
-          ...currentMessages,
-          [state]: {
-            ...currentSimple,
-            ...(audio.ar !== undefined && { audioAr: audio.ar }),
-            ...(audio.en !== undefined && { audioEn: audio.en }),
-          },
-        },
-      });
-    }
-  };
-  
-  /**
-   * Get message value - handles both simple and zone-based formats
-   */
-  const getMessageValue = (state: JointStateName, lang: 'ar' | 'en' | 'audioAr' | 'audioEn', zone?: ZoneType): string => {
-    const stateMsg = joint.stateMessages?.[state];
-    if (!stateMsg) return '';
-    
-    if (zone) {
-      // Zone-based message
-      const zoneMsg = (stateMsg as Record<string, Record<string, string>>)?.[zone];
-      return zoneMsg?.[lang] || '';
-    }
-    
-    // Simple message
-    return (stateMsg as Record<string, string>)?.[lang] || '';
+
+  // Invert Indicator toggle
+  const toggleInvertIndicator = () => {
+    onUpdate({
+      ...joint,
+      invertIndicator: !joint.invertIndicator,
+    });
   };
 
   return (
-    <div className={`border-2 rounded-xl overflow-hidden ${
-      isPrimary ? 'border-blue-400' : 'border-purple-400'
-    }`}>
-      {/* Header */}
-      <div 
-        className={`px-4 py-3 flex items-center justify-between cursor-pointer ${
-          isPrimary ? 'bg-blue-50' : 'bg-purple-50'
-        }`}
-        onClick={() => setExpanded(!expanded)}
-      >
+    <div className="p-6 space-y-6">
+      {/* Header Actions */}
+      <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <span className={`px-2 py-1 rounded text-xs font-bold ${
-            isPrimary ? 'bg-blue-500 text-white' : 'bg-purple-500 text-white'
-          }`}>
-            {isPrimary ? '🎯 PRIMARY' : '📌 SECONDARY'}
-          </span>
-          <span className="font-semibold text-gray-800 capitalize">
+          <span className="text-lg font-semibold text-gray-800 capitalize">
             {joint.joint.replace(/_/g, ' ')}
           </span>
           {joint.pairedWith && (
-            <span className="text-xs text-gray-500">
-              (paired with {joint.pairedWith.replace(/_/g, ' ')})
+            <span className="text-xs bg-purple-100 text-purple-700 px-2 py-1 rounded-full">
+              ⟷ {joint.pairedWith.replace(/_/g, ' ')}
             </span>
           )}
         </div>
         
         <div className="flex items-center gap-2">
-          {hasPair && onCopyToMirror && (
+          {hasMirror && onCopyToMirror && (
             <button
               type="button"
-              onClick={(e) => { e.stopPropagation(); onCopyToMirror(); }}
-              className="px-2 py-1 text-xs font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 hover:text-gray-900 rounded transition-colors"
-              title="Copy settings to paired joint"
+              onClick={onCopyToMirror}
+              className="flex items-center gap-1 px-3 py-1.5 text-sm text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors"
             >
-              📋 Copy to pair
+              <Copy className="w-4 h-4" />
+              Copy to pair
             </button>
           )}
           <button
             type="button"
-            onClick={(e) => { e.stopPropagation(); onRemove(); }}
-            className="p-1 text-red-500 hover:text-red-700 hover:bg-red-50 rounded transition-colors"
+            onClick={onRemove}
+            className="flex items-center gap-1 px-3 py-1.5 text-sm text-red-600 bg-red-50 hover:bg-red-100 rounded-lg transition-colors"
           >
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-            </svg>
+            <Trash2 className="w-4 h-4" />
+            Remove
           </button>
-          <svg 
-            className={`w-5 h-5 text-gray-500 transition-transform ${expanded ? 'rotate-180' : ''}`} 
-            fill="none" 
-            stroke="currentColor" 
-            viewBox="0 0 24 24"
-          >
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-          </svg>
         </div>
       </div>
       
-      {/* Expanded Content */}
-      {expanded && (
-        <div className="p-4 space-y-6">
-          {/* Role Toggle */}
-          <div className="flex items-center gap-4">
-            <label className="text-sm font-medium text-gray-700">Role:</label>
-            <div className="flex gap-2">
-              <button
-                type="button"
-                onClick={() => updateRole('primary')}
-                className={`px-3 py-1.5 text-sm rounded-lg transition-all ${
-                  isPrimary 
-                    ? 'bg-blue-500 text-white font-bold' 
-                    : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                }`}
-              >
-                🎯 Primary (rep counting)
-              </button>
-              <button
-                type="button"
-                onClick={() => updateRole('secondary')}
-                className={`px-3 py-1.5 text-sm rounded-lg transition-all ${
-                  !isPrimary 
-                    ? 'bg-purple-500 text-white font-bold' 
-                    : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                }`}
-              >
-                📌 Secondary (form check)
-              </button>
-            </div>
-          </div>
-          
-          {/* Start Pose */}
-          <div className="bg-gray-50 rounded-lg p-4">
-            <h4 className="font-semibold text-gray-800 mb-3">Start Position Range</h4>
-            <div className="flex items-center gap-4">
-              <div className="flex items-center gap-2">
-                <label className="text-sm text-gray-600">Min:</label>
-                <input
-                  type="number"
-                  min={0}
-                  max={180}
-                  value={joint.startPose.min}
-                  onChange={(e) => updateStartPose('min', Number(e.target.value))}
-                  className="w-20 px-3 py-2 font-medium text-gray-900 border-2 border-gray-200 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                />
-                <span className="text-gray-400">°</span>
-              </div>
-              <span className="text-gray-400">—</span>
-              <div className="flex items-center gap-2">
-                <label className="text-sm text-gray-600">Max:</label>
-                <input
-                  type="number"
-                  min={0}
-                  max={180}
-                  value={joint.startPose.max}
-                  onChange={(e) => updateStartPose('max', Number(e.target.value))}
-                  className="w-20 px-3 py-2 font-medium text-gray-900 border-2 border-gray-200 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                />
-                <span className="text-gray-400">°</span>
-              </div>
-            </div>
-          </div>
-          
-          {/* State Ranges */}
-          {isPrimary && !isHold ? (
-            // Up/Down and Push/Pull mode - show upRange and downRange
-            <div className="grid md:grid-cols-2 gap-6">
-              <StateRangeEditor
-                label="⬆️ Up Range (Extended Position)"
-                ranges={(joint as PrimaryTrackedJointData).upRange || { perfect: { min: 150, max: 180 } }}
-                onChange={(upRange) => onUpdate({ ...joint, upRange } as PrimaryTrackedJointData)}
-              />
-              <StateRangeEditor
-                label="⬇️ Down Range (Contracted Position)"
-                ranges={(joint as PrimaryTrackedJointData).downRange || { perfect: { min: 0, max: 90 } }}
-                onChange={(downRange) => onUpdate({ ...joint, downRange } as PrimaryTrackedJointData)}
-              />
-            </div>
-          ) : isPrimary && isHold ? (
-            // Hold mode - primary has single range like secondary
-            <StateRangeEditor
-              label="🎯 Hold Position Range"
-              ranges={(joint as PrimaryTrackedJointData).range || { perfect: { min: 85, max: 95 } }}
-              onChange={(range) => onUpdate({ ...joint, range } as PrimaryTrackedJointData)}
-              showWarningDanger={true}
-            />
-          ) : (
-            // Secondary joints - always single range
-            <StateRangeEditor
-              label="📏 Valid Range"
-              ranges={(joint as SecondaryTrackedJointData).range}
-              onChange={(range) => onUpdate({ ...joint, range } as SecondaryTrackedJointData)}
-              showWarningDanger={true}
-            />
-          )}
-          
-          {/* State Messages (Collapsible) */}
-          <details className="group">
-            <summary className="cursor-pointer font-semibold text-gray-700 hover:text-gray-900">
-              💬 State Messages (Optional)
-              <span className="ml-2 text-xs font-normal text-gray-400">Click to expand</span>
-            </summary>
-            <div className="mt-4 space-y-3">
-              {/* Info about message format */}
-              {!isHold && isPrimary && (
-                <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 text-sm text-blue-700">
-                  <strong>Zone-based Messages:</strong> For up/down exercises, you can set different messages 
-                  for the <span className="font-semibold">Up</span> position and <span className="font-semibold">Down</span> position.
-                  All messages are optional.
-                </div>
-              )}
-              
-              {JOINT_STATE_NAMES.map((state) => {
-                const colors = STATE_COLORS[state];
-                const useZoneMessages = !isHold && isPrimary;
-                
-                // For zone-based: check which zones have this state enabled
-                const primaryJoint = joint as PrimaryTrackedJointData;
-                const hasUpState = useZoneMessages && primaryJoint.upRange?.[state];
-                const hasDownState = useZoneMessages && primaryJoint.downRange?.[state];
-                
-                // For hold/secondary: check if state is in range
-                const secondaryJoint = joint as SecondaryTrackedJointData;
-                const hasRangeState = !useZoneMessages && (
-                  (isPrimary && isHold && primaryJoint.range?.[state]) ||
-                  (!isPrimary && secondaryJoint.range?.[state])
-                );
-                
-                // Skip states that are not enabled in any zone
-                if (useZoneMessages && !hasUpState && !hasDownState) return null;
-                if (!useZoneMessages && !hasRangeState && state !== 'perfect') return null;
-                
-                return (
-                  <div key={state} className={`p-3 rounded-lg ${colors.bg} ${colors.border} border`}>
-                    <div className="flex items-center gap-2 mb-3">
-                      <span className={`font-medium text-sm ${colors.text}`}>{STATE_LABELS[state].en}</span>
-                      {useZoneMessages && (
-                        <span className="text-xs text-gray-500">
-                          ({[hasUpState && 'Up', hasDownState && 'Down'].filter(Boolean).join(' + ')})
-                        </span>
-                      )}
-                    </div>
-                    
-                    {useZoneMessages ? (
-                      // Zone-based messages for up_down and push_pull
-                      // Only show inputs for zones where this state is enabled
-                      <div className="space-y-3">
-                        {/* Up Zone - only if state is enabled in upRange */}
-                        {hasUpState && (
-                          <div className="bg-white/50 rounded p-2">
-                            <div className="text-xs font-semibold text-gray-600 mb-1.5 flex items-center gap-1">
-                              ⬆️ Up Position
-                            </div>
-                            <SmartLocalizedInput
-                              label=""
-                              value={{
-                                ar: getMessageValue(state, 'ar', 'up'),
-                                en: getMessageValue(state, 'en', 'up'),
-                              }}
-                              onChange={(value: LocalizedText) => {
-                                updateStateMessageBoth(state, value.ar, value.en, 'up');
-                              }}
-                              audioValue={{
-                                ar: getMessageValue(state, 'audioAr', 'up') || undefined,
-                                en: getMessageValue(state, 'audioEn', 'up') || undefined,
-                              }}
-                              onAudioChange={(audio) => {
-                                updateStateMessageAudio(state, audio, 'up');
-                              }}
-                              enableTranslation
-                              enableTTS
-                              translationContext={`fitness exercise ${state} state feedback message`}
-                              variant="inline"
-                            />
-                          </div>
-                        )}
-                        
-                        {/* Down Zone - only if state is enabled in downRange */}
-                        {hasDownState && (
-                          <div className="bg-white/50 rounded p-2">
-                            <div className="text-xs font-semibold text-gray-600 mb-1.5 flex items-center gap-1">
-                              ⬇️ Down Position
-                            </div>
-                            <SmartLocalizedInput
-                              label=""
-                              value={{
-                                ar: getMessageValue(state, 'ar', 'down'),
-                                en: getMessageValue(state, 'en', 'down'),
-                              }}
-                              onChange={(value: LocalizedText) => {
-                                updateStateMessageBoth(state, value.ar, value.en, 'down');
-                              }}
-                              audioValue={{
-                                ar: getMessageValue(state, 'audioAr', 'down') || undefined,
-                                en: getMessageValue(state, 'audioEn', 'down') || undefined,
-                              }}
-                              onAudioChange={(audio) => {
-                                updateStateMessageAudio(state, audio, 'down');
-                              }}
-                              enableTranslation
-                              enableTTS
-                              translationContext={`fitness exercise ${state} state feedback message`}
-                              variant="inline"
-                            />
-                          </div>
-                        )}
-                      </div>
-                    ) : (
-                      // Simple messages for hold exercises
-                      <SmartLocalizedInput
-                        label=""
-                        value={{
-                          ar: getMessageValue(state, 'ar'),
-                          en: getMessageValue(state, 'en'),
-                        }}
-                        onChange={(value: LocalizedText) => {
-                          updateStateMessageBoth(state, value.ar, value.en);
-                        }}
-                        audioValue={{
-                          ar: getMessageValue(state, 'audioAr') || undefined,
-                          en: getMessageValue(state, 'audioEn') || undefined,
-                        }}
-                        onAudioChange={(audio) => {
-                          updateStateMessageAudio(state, audio);
-                        }}
-                        enableTranslation
-                        enableTTS
-                        translationContext={`fitness exercise ${state} state feedback message`}
-                        variant="inline"
-                      />
-                    )}
-                  </div>
-                );
-              })}
-            </div>
-          </details>
+      {/* Role Toggle */}
+      <div className="flex items-center gap-4 p-4 bg-gray-50 rounded-lg">
+        <label className="text-sm font-medium text-gray-700">Role:</label>
+        <div className="flex gap-2">
+          <button
+            type="button"
+            onClick={() => updateRole('primary')}
+            className={`px-4 py-2 text-sm rounded-lg transition-all ${
+              isPrimary 
+                ? 'bg-blue-500 text-white font-bold shadow-md' 
+                : 'bg-white text-gray-600 border hover:bg-gray-50'
+            }`}
+          >
+            🎯 Primary (Rep Counting)
+          </button>
+          <button
+            type="button"
+            onClick={() => updateRole('secondary')}
+            className={`px-4 py-2 text-sm rounded-lg transition-all ${
+              !isPrimary 
+                ? 'bg-purple-500 text-white font-bold shadow-md' 
+                : 'bg-white text-gray-600 border hover:bg-gray-50'
+            }`}
+          >
+            📌 Secondary (Form Check)
+          </button>
         </div>
+      </div>
+      
+      {/* Invert Indicator */}
+      <div className="flex items-center justify-between p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+        <div>
+          <p className="font-medium text-gray-800">Invert Indicator</p>
+          <p className="text-sm text-gray-500">Flip the angle direction (for joints like elbow where flexion is the goal)</p>
+        </div>
+        <button
+          type="button"
+          onClick={toggleInvertIndicator}
+          className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+            joint.invertIndicator ? 'bg-yellow-500' : 'bg-gray-200'
+          }`}
+        >
+          <span
+            className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+              joint.invertIndicator ? 'translate-x-6' : 'translate-x-1'
+            }`}
+          />
+        </button>
+      </div>
+      
+      {/* Start Pose */}
+      <div className="bg-gray-50 rounded-lg p-4">
+        <h4 className="font-semibold text-gray-800 mb-3">Start Position Range</h4>
+        <div className="flex items-center gap-4">
+          <div className="flex items-center gap-2">
+            <label className="text-sm text-gray-600">Min:</label>
+            <input
+              type="number"
+              min={0}
+              max={180}
+              value={joint.startPose.min}
+              onChange={(e) => updateStartPose('min', Number(e.target.value))}
+              className="w-20 px-3 py-2 font-medium text-gray-900 border-2 border-gray-200 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
+            <span className="text-gray-400">°</span>
+          </div>
+          <span className="text-gray-400">—</span>
+          <div className="flex items-center gap-2">
+            <label className="text-sm text-gray-600">Max:</label>
+            <input
+              type="number"
+              min={0}
+              max={180}
+              value={joint.startPose.max}
+              onChange={(e) => updateStartPose('max', Number(e.target.value))}
+              className="w-20 px-3 py-2 font-medium text-gray-900 border-2 border-gray-200 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
+            <span className="text-gray-400">°</span>
+          </div>
+        </div>
+      </div>
+      
+      {/* State Ranges */}
+      {isPrimary && !isHold ? (
+        <div className="grid md:grid-cols-2 gap-6">
+          <StateRangeEditor
+            label="⬆️ Up Range (Extended)"
+            ranges={(joint as PrimaryTrackedJointData).upRange || { perfect: { min: 150, max: 180 } }}
+            onChange={(upRange) => onUpdate({ ...joint, upRange } as PrimaryTrackedJointData)}
+          />
+          <StateRangeEditor
+            label="⬇️ Down Range (Contracted)"
+            ranges={(joint as PrimaryTrackedJointData).downRange || { perfect: { min: 0, max: 90 } }}
+            onChange={(downRange) => onUpdate({ ...joint, downRange } as PrimaryTrackedJointData)}
+          />
+        </div>
+      ) : isPrimary && isHold ? (
+        <StateRangeEditor
+          label="🎯 Hold Position Range"
+          ranges={(joint as PrimaryTrackedJointData).range || { perfect: { min: 85, max: 95 } }}
+          onChange={(range) => onUpdate({ ...joint, range } as PrimaryTrackedJointData)}
+          showWarningDanger={true}
+        />
+      ) : (
+        <StateRangeEditor
+          label="📏 Valid Range"
+          ranges={(joint as SecondaryTrackedJointData).range}
+          onChange={(range) => onUpdate({ ...joint, range } as SecondaryTrackedJointData)}
+          showWarningDanger={true}
+        />
       )}
+    </div>
+  );
+}
+
+// ============================================
+// BILATERAL TAB CONTENT (Single tab for both joints)
+// ============================================
+
+interface BilateralTabContentProps {
+  leftJoint: TrackedJointData;
+  rightJoint: TrackedJointData;
+  bilateralCode: string;
+  onUpdateBoth: (updater: (joint: TrackedJointData) => TrackedJointData) => void;
+  onRemove: () => void;
+  isHold: boolean;
+}
+
+function BilateralTabContent({ leftJoint, rightJoint, bilateralCode, onUpdateBoth, onRemove, isHold }: BilateralTabContentProps) {
+  // Use left joint as the "template" for display
+  const joint = leftJoint;
+  const isPrimary = joint.role === 'primary';
+  const mapping = BILATERAL_MAPPING[bilateralCode];
+  
+  const updateStartPose = (field: 'min' | 'max', value: number) => {
+    onUpdateBoth((j) => ({
+      ...j,
+      startPose: { ...j.startPose, [field]: value },
+    }));
+  };
+
+  const updateRole = (newRole: 'primary' | 'secondary') => {
+    if (newRole === joint.role) return;
+    onUpdateBoth((j) => {
+      const newJoint = buildTrackedJoint(j.joint, newRole, j.pairedWith, isHold);
+      newJoint.startPose = j.startPose;
+      newJoint.stateMessages = j.stateMessages;
+      return newJoint;
+    });
+  };
+
+  const toggleInvertIndicator = () => {
+    onUpdateBoth((j) => ({
+      ...j,
+      invertIndicator: !j.invertIndicator,
+    }));
+  };
+
+  const updateUpRange = (upRange: StateRangesData) => {
+    onUpdateBoth((j) => ({ ...j, upRange } as PrimaryTrackedJointData));
+  };
+
+  const updateDownRange = (downRange: StateRangesData) => {
+    onUpdateBoth((j) => ({ ...j, downRange } as PrimaryTrackedJointData));
+  };
+
+  const updateRange = (range: StateRangesData) => {
+    if (isPrimary) {
+      onUpdateBoth((j) => ({ ...j, range } as PrimaryTrackedJointData));
+    } else {
+      onUpdateBoth((j) => ({ ...j, range } as SecondaryTrackedJointData));
+    }
+  };
+
+  return (
+    <div className="p-6 space-y-6">
+      {/* Header Actions */}
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <span className="text-lg font-semibold text-gray-800">
+            {mapping?.label.en || bilateralCode}
+          </span>
+          <span className="text-xs bg-purple-100 text-purple-700 px-2 py-1 rounded-full">
+            ⟷ Bilateral
+          </span>
+          <span className="text-xs text-gray-500">
+            (Left + Right)
+          </span>
+        </div>
+        
+        <button
+          type="button"
+          onClick={onRemove}
+          className="flex items-center gap-1 px-3 py-1.5 text-sm text-red-600 bg-red-50 hover:bg-red-100 rounded-lg transition-colors"
+        >
+          <Trash2 className="w-4 h-4" />
+          Remove Both
+        </button>
+      </div>
+      
+      {/* Info Banner */}
+      <div className="bg-purple-50 border border-purple-200 rounded-lg p-3">
+        <p className="text-sm text-purple-700">
+          ✨ Settings below apply to <strong>both {mapping?.label.en.toLowerCase() || 'joints'}</strong> automatically.
+        </p>
+      </div>
+      
+      {/* Role Toggle */}
+      <div className="flex items-center gap-4 p-4 bg-gray-50 rounded-lg">
+        <label className="text-sm font-medium text-gray-700">Role:</label>
+        <div className="flex gap-2">
+          <button
+            type="button"
+            onClick={() => updateRole('primary')}
+            className={`px-4 py-2 text-sm rounded-lg transition-all ${
+              isPrimary 
+                ? 'bg-blue-500 text-white font-bold shadow-md' 
+                : 'bg-white text-gray-600 border hover:bg-gray-50'
+            }`}
+          >
+            🎯 Primary (Rep Counting)
+          </button>
+          <button
+            type="button"
+            onClick={() => updateRole('secondary')}
+            className={`px-4 py-2 text-sm rounded-lg transition-all ${
+              !isPrimary 
+                ? 'bg-purple-500 text-white font-bold shadow-md' 
+                : 'bg-white text-gray-600 border hover:bg-gray-50'
+            }`}
+          >
+            📌 Secondary (Form Check)
+          </button>
+        </div>
+      </div>
+      
+      {/* Invert Indicator */}
+      <div className="flex items-center justify-between p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+        <div>
+          <p className="font-medium text-gray-800">Invert Indicator</p>
+          <p className="text-sm text-gray-500">Flip the angle direction (for joints like elbow where flexion is the goal)</p>
+        </div>
+        <button
+          type="button"
+          onClick={toggleInvertIndicator}
+          className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+            joint.invertIndicator ? 'bg-yellow-500' : 'bg-gray-200'
+          }`}
+        >
+          <span
+            className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+              joint.invertIndicator ? 'translate-x-6' : 'translate-x-1'
+            }`}
+          />
+        </button>
+      </div>
+      
+      {/* Start Pose */}
+      <div className="bg-gray-50 rounded-lg p-4">
+        <h4 className="font-semibold text-gray-800 mb-3">Start Position Range</h4>
+        <div className="flex items-center gap-4">
+          <div className="flex items-center gap-2">
+            <label className="text-sm text-gray-600">Min:</label>
+            <input
+              type="number"
+              min={0}
+              max={180}
+              value={joint.startPose.min}
+              onChange={(e) => updateStartPose('min', Number(e.target.value))}
+              className="w-20 px-3 py-2 font-medium text-gray-900 border-2 border-gray-200 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
+            <span className="text-gray-400">°</span>
+          </div>
+          <span className="text-gray-400">—</span>
+          <div className="flex items-center gap-2">
+            <label className="text-sm text-gray-600">Max:</label>
+            <input
+              type="number"
+              min={0}
+              max={180}
+              value={joint.startPose.max}
+              onChange={(e) => updateStartPose('max', Number(e.target.value))}
+              className="w-20 px-3 py-2 font-medium text-gray-900 border-2 border-gray-200 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
+            <span className="text-gray-400">°</span>
+          </div>
+        </div>
+      </div>
+      
+      {/* State Ranges */}
+      {isPrimary && !isHold ? (
+        <div className="grid md:grid-cols-2 gap-6">
+          <StateRangeEditor
+            label="⬆️ Up Range (Extended)"
+            ranges={(joint as PrimaryTrackedJointData).upRange || { perfect: { min: 150, max: 180 } }}
+            onChange={updateUpRange}
+          />
+          <StateRangeEditor
+            label="⬇️ Down Range (Contracted)"
+            ranges={(joint as PrimaryTrackedJointData).downRange || { perfect: { min: 0, max: 90 } }}
+            onChange={updateDownRange}
+          />
+        </div>
+      ) : isPrimary && isHold ? (
+        <StateRangeEditor
+          label="🎯 Hold Position Range"
+          ranges={(joint as PrimaryTrackedJointData).range || { perfect: { min: 85, max: 95 } }}
+          onChange={updateRange}
+          showWarningDanger={true}
+        />
+      ) : (
+        <StateRangeEditor
+          label="📏 Valid Range"
+          ranges={(joint as SecondaryTrackedJointData).range}
+          onChange={updateRange}
+          showWarningDanger={true}
+        />
+      )}
+      
+      {/* Visual Comparison */}
+      <div className="bg-gray-50 rounded-lg p-4 border">
+        <h4 className="font-medium text-gray-700 mb-3 text-sm">📊 Current Values</h4>
+        <div className="grid grid-cols-2 gap-4 text-sm">
+          <div className="bg-white rounded-lg p-3 border">
+            <div className="font-medium text-gray-800 mb-1">{getJointLabel(leftJoint.joint).en}</div>
+            <div className="text-xs text-gray-500">
+              Role: {leftJoint.role} | Start: {leftJoint.startPose.min}°-{leftJoint.startPose.max}°
+            </div>
+          </div>
+          <div className="bg-white rounded-lg p-3 border">
+            <div className="font-medium text-gray-800 mb-1">{getJointLabel(rightJoint.joint).en}</div>
+            <div className="text-xs text-gray-500">
+              Role: {rightJoint.role} | Start: {rightJoint.startPose.min}°-{rightJoint.startPose.max}°
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
   );
 }
@@ -706,10 +789,14 @@ function JointEditor({ joint, index, onUpdate, onRemove, onCopyToMirror, isHold 
 
 export function JointConfigStep() {
   const { jointConfig, setJointConfig, countingMethod } = useWizardStore();
-  const [activeJoint, setActiveJoint] = useState<string | null>(null);
+  const [activeTabIndex, setActiveTabIndex] = useState(0);
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   
   const trackedJoints = jointConfig.trackedJoints || [];
   const isHold = countingMethod.countingMethodCode === 'hold';
+  
+  // Build UI tabs from tracked joints
+  const uiTabs = useMemo(() => buildUITabs(trackedJoints), [trackedJoints]);
   
   // Validation
   const hasPrimary = trackedJoints.some(j => j.role === 'primary');
@@ -723,127 +810,89 @@ export function JointConfigStep() {
       errors.push('At least one primary joint is required for rep counting');
     }
     
-    // Validate ranges for primary joints based on counting method
-    trackedJoints.forEach((joint) => {
-      if (joint.role === 'primary') {
-        const primary = joint as PrimaryTrackedJointData;
-        
-        if (isHold) {
-          // Hold mode: primary joints need a single range
-          if (!primary.range || !primary.range.perfect) {
-            errors.push(`${joint.joint}: Missing range configuration for hold exercise`);
-          }
-        } else {
-          // Up/Down or Push/Pull mode: primary joints need upRange and downRange
-          if (!primary.upRange || !primary.upRange.perfect) {
-            errors.push(`${joint.joint}: Missing upRange configuration`);
-            return;
-          }
-          if (!primary.downRange || !primary.downRange.perfect) {
-            errors.push(`${joint.joint}: Missing downRange configuration`);
-            return;
-          }
-          
-          // Validate transition zone
-          const upMin = Math.min(
-            primary.upRange.perfect.min,
-            primary.upRange.normal?.min ?? 999,
-            primary.upRange.pad?.min ?? 999
-          );
-          const downMax = Math.max(
-            primary.downRange.perfect.max,
-            primary.downRange.normal?.max ?? 0,
-            primary.downRange.pad?.max ?? 0
-          );
-          
-          if (upMin <= downMax) {
-            errors.push(`${joint.joint}: Invalid transition zone (upRange min ${upMin}° must be > downRange max ${downMax}°)`);
-          }
-        }
-      }
-    });
-    
     return errors;
   }, [trackedJoints, hasPrimary]);
   
-  // Handle joint selection from skeleton
-  const handleSelectJoint = useCallback((jointCode: string) => {
-    const existing = trackedJoints.find(j => j.joint === jointCode);
-    if (existing) return;
-    
-    const role = trackedJoints.length === 0 ? 'primary' : 'secondary';
-    const newJoint = buildTrackedJoint(jointCode, role, undefined, isHold);
-    setJointConfig({
-      trackedJoints: [...trackedJoints, newJoint],
+  // Get available joints (not already added)
+  const availableJoints = useMemo(() => {
+    const existingCodes = trackedJoints.map(j => j.joint);
+    return JOINT_OPTIONS.filter(opt => {
+      if (opt.code.startsWith('divider')) return true;
+      if (opt.type === 'bilateral') {
+        // Hide if both joints already exist
+        return !existingCodes.includes(opt.leftJoint!) || !existingCodes.includes(opt.rightJoint!);
+      }
+      return !existingCodes.includes(opt.code);
     });
-    setActiveJoint(jointCode);
-  }, [trackedJoints, setJointConfig, isHold]);
+  }, [trackedJoints]);
   
-  // Handle joint update
+  // Add joint(s)
+  const handleAddJoint = useCallback((option: JointOption) => {
+    if (option.code.startsWith('divider')) return;
+    
+    const newJoints: TrackedJointData[] = [];
+    const role = trackedJoints.length === 0 ? 'primary' : 'secondary';
+    
+    if (option.type === 'bilateral' && option.leftJoint && option.rightJoint) {
+      // Add both joints as a pair
+      const leftJoint = buildTrackedJoint(option.leftJoint, role, option.rightJoint, isHold);
+      const rightJoint = buildTrackedJoint(option.rightJoint, role, option.leftJoint, isHold);
+      
+      // Check if either already exists
+      const existingCodes = trackedJoints.map(j => j.joint);
+      if (!existingCodes.includes(option.leftJoint)) newJoints.push(leftJoint);
+      if (!existingCodes.includes(option.rightJoint)) newJoints.push(rightJoint);
+    } else {
+      // Single joint
+      const newJoint = buildTrackedJoint(option.code, role, undefined, isHold);
+      newJoints.push(newJoint);
+    }
+    
+    if (newJoints.length > 0) {
+      setJointConfig({ trackedJoints: [...trackedJoints, ...newJoints] });
+      // Switch to the new tab (will be at the end)
+      setActiveTabIndex(uiTabs.length);
+    }
+    setIsDropdownOpen(false);
+  }, [trackedJoints, setJointConfig, isHold, uiTabs.length]);
+  
+  // Update joint
   const handleUpdateJoint = useCallback((index: number, joint: TrackedJointData) => {
     const newJoints = [...trackedJoints];
     newJoints[index] = joint;
     setJointConfig({ trackedJoints: newJoints });
   }, [trackedJoints, setJointConfig]);
   
-  // Handle joint removal
+  // Remove single joint
   const handleRemoveJoint = useCallback((index: number) => {
     const newJoints = trackedJoints.filter((_, i) => i !== index);
     setJointConfig({ trackedJoints: newJoints });
-    setActiveJoint(null);
+    
+    // Adjust active tab (will be recalculated by uiTabs)
+    if (activeTabIndex >= uiTabs.length - 1) {
+      setActiveTabIndex(Math.max(0, uiTabs.length - 2));
+    }
+  }, [trackedJoints, setJointConfig, activeTabIndex, uiTabs.length]);
+  
+  // Update both bilateral joints at once
+  const handleUpdateBilateral = useCallback((leftIndex: number, rightIndex: number, updater: (joint: TrackedJointData) => TrackedJointData) => {
+    const newJoints = [...trackedJoints];
+    newJoints[leftIndex] = updater(newJoints[leftIndex]);
+    newJoints[rightIndex] = updater(newJoints[rightIndex]);
+    setJointConfig({ trackedJoints: newJoints });
   }, [trackedJoints, setJointConfig]);
   
-  // Copy to mirror joint
-  const handleCopyToMirror = useCallback((sourceIndex: number) => {
-    const source = trackedJoints[sourceIndex];
-    const pairedCode = getPairedJointCode(source.joint);
-    if (!pairedCode) return;
+  // Remove bilateral pair
+  const handleRemoveBilateral = useCallback((leftIndex: number, rightIndex: number) => {
+    const indicesToRemove = new Set([leftIndex, rightIndex]);
+    const newJoints = trackedJoints.filter((_, i) => !indicesToRemove.has(i));
+    setJointConfig({ trackedJoints: newJoints });
     
-    // Check if paired joint already exists
-    const existingPairIndex = trackedJoints.findIndex(j => j.joint === pairedCode);
-    
-    // Build paired joint with same settings (pass isHold for correct structure)
-    const pairedJoint = buildTrackedJoint(pairedCode, source.role, source.joint, isHold);
-    
-    // Copy ranges based on mode and role
-    if (source.role === 'primary') {
-      const s = source as PrimaryTrackedJointData;
-      if (isHold) {
-        // Hold mode: copy range
-        if (s.range) {
-          (pairedJoint as PrimaryTrackedJointData).range = JSON.parse(JSON.stringify(s.range));
-        }
-      } else {
-        // Up/Down mode: copy upRange and downRange
-        if (s.upRange) {
-          (pairedJoint as PrimaryTrackedJointData).upRange = JSON.parse(JSON.stringify(s.upRange));
-        }
-        if (s.downRange) {
-          (pairedJoint as PrimaryTrackedJointData).downRange = JSON.parse(JSON.stringify(s.downRange));
-        }
-      }
-    } else {
-      const s = source as SecondaryTrackedJointData;
-      (pairedJoint as SecondaryTrackedJointData).range = JSON.parse(JSON.stringify(s.range));
+    // Adjust active tab
+    if (activeTabIndex >= uiTabs.length - 1) {
+      setActiveTabIndex(Math.max(0, uiTabs.length - 2));
     }
-    pairedJoint.startPose = { ...source.startPose };
-    
-    // Update source to be paired
-    const updatedSource = { ...source, pairedWith: pairedCode };
-    
-    if (existingPairIndex >= 0) {
-      // Update existing
-      const newJoints = [...trackedJoints];
-      newJoints[sourceIndex] = updatedSource;
-      newJoints[existingPairIndex] = pairedJoint;
-      setJointConfig({ trackedJoints: newJoints });
-    } else {
-      // Add new
-      const newJoints = [...trackedJoints];
-      newJoints[sourceIndex] = updatedSource;
-      setJointConfig({ trackedJoints: [...newJoints, pairedJoint] });
-    }
-  }, [trackedJoints, setJointConfig, isHold]);
+  }, [trackedJoints, setJointConfig, activeTabIndex, uiTabs.length]);
   
   return (
     <div className="space-y-6">
@@ -851,7 +900,7 @@ export function JointConfigStep() {
       <div>
         <h2 className="text-2xl font-bold text-gray-900 mb-2">Joint Configuration</h2>
         <p className="text-gray-500">
-          Configure the joints to track and their state-based angle ranges. 
+          Add joints to track and configure their angle ranges. 
           {isHold ? ' For hold exercises, angles are checked continuously.' : ' Primary joints are used for rep counting.'}
         </p>
       </div>
@@ -868,100 +917,170 @@ export function JointConfigStep() {
         </div>
       )}
       
-      {/* Main Layout */}
-      <div className="grid lg:grid-cols-2 gap-6">
-        {/* Skeleton Picker */}
-        <div className="bg-white rounded-2xl border p-4">
-          <h3 className="font-semibold text-gray-800 mb-3">Click to Add Joints</h3>
-        <SkeletonPicker
-          selectedJoints={trackedJoints}
-          onSelectJoint={handleSelectJoint}
-            onUpdateJoint={(jointCode, updates) => {
-              const index = trackedJoints.findIndex(j => j.joint === jointCode);
-              if (index >= 0) {
-                const updated = { ...trackedJoints[index], ...updates } as TrackedJointData;
-                handleUpdateJoint(index, updated);
-              }
-            }}
-            onRemoveJoint={(jointCode) => {
-              const index = trackedJoints.findIndex(j => j.joint === jointCode);
-              if (index >= 0) handleRemoveJoint(index);
-            }}
-            onCopyToMirror={(fromJoint, toJoint) => {
-              const index = trackedJoints.findIndex(j => j.joint === fromJoint);
-              if (index >= 0) handleCopyToMirror(index);
-            }}
-          activeJoint={activeJoint}
-            setActiveJoint={setActiveJoint}
-        />
+      {/* Add Joint Button */}
+      <div className="relative">
+        <button
+          type="button"
+          onClick={() => setIsDropdownOpen(!isDropdownOpen)}
+          className="flex items-center gap-2 px-4 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors shadow-md"
+        >
+          <Plus className="w-5 h-5" />
+          Add Joint
+          <ChevronDown className={`w-4 h-4 transition-transform ${isDropdownOpen ? 'rotate-180' : ''}`} />
+        </button>
+        
+        {/* Dropdown */}
+        {isDropdownOpen && (
+          <>
+            <div 
+              className="fixed inset-0 z-10" 
+              onClick={() => setIsDropdownOpen(false)} 
+            />
+            <div className="absolute top-full left-0 mt-2 w-72 bg-white border border-gray-200 rounded-xl shadow-xl z-20 max-h-96 overflow-y-auto">
+              {availableJoints.map((option) => {
+                if (option.code.startsWith('divider')) {
+                  return (
+                    <div key={option.code} className="px-4 py-2 text-xs text-gray-400 bg-gray-50 font-medium">
+                      {option.label.en}
+                    </div>
+                  );
+                }
+                
+                return (
+                  <button
+                    key={option.code}
+                    type="button"
+                    onClick={() => handleAddJoint(option)}
+                    className="w-full px-4 py-3 text-left hover:bg-blue-50 transition-colors flex items-center gap-3"
+                  >
+                    <span className={`w-8 h-8 rounded-full flex items-center justify-center text-sm ${
+                      option.type === 'bilateral' 
+                        ? 'bg-purple-100 text-purple-600' 
+                        : 'bg-gray-100 text-gray-600'
+                    }`}>
+                      {option.type === 'bilateral' ? '⟷' : '•'}
+                    </span>
+                    <div>
+                      <div className="font-medium text-gray-800">{option.label.en}</div>
+                      <div className="text-xs text-gray-500">{option.label.ar}</div>
+                    </div>
+                    {option.type === 'bilateral' && (
+                      <span className="ml-auto text-xs bg-purple-100 text-purple-600 px-2 py-0.5 rounded-full">
+                        Pair
+                      </span>
+                    )}
+                  </button>
+                );
+              })}
+              
+              {availableJoints.filter(o => !o.code.startsWith('divider')).length === 0 && (
+                <div className="px-4 py-6 text-center text-gray-500">
+                  All joints added
+                </div>
+              )}
+            </div>
+          </>
+        )}
       </div>
       
-        {/* Joint Editors */}
-        <div className="space-y-4">
-          <div className="flex items-center justify-between">
-            <h3 className="font-semibold text-gray-800">
-              Tracked Joints ({trackedJoints.length})
-            </h3>
-            {trackedJoints.length > 0 && (
-            <button
-              type="button"
-              onClick={() => setJointConfig({ trackedJoints: [] })}
-              className="text-xs text-red-600 hover:text-red-700"
-            >
-              Clear All
-            </button>
-            )}
+      {/* Joint Tabs */}
+      {uiTabs.length > 0 && (
+        <div className="bg-white rounded-xl border shadow-sm overflow-hidden">
+          {/* Tab Headers */}
+          <div className="flex border-b overflow-x-auto">
+            {uiTabs.map((tab, index) => {
+              const isActive = activeTabIndex === index;
+              const isBilateral = tab.type === 'bilateral';
+              
+              // Get role from the first joint
+              const firstJointIndex = tab.type === 'bilateral' ? tab.leftJointIndex! : tab.singleJointIndex!;
+              const firstJoint = trackedJoints[firstJointIndex];
+              const isPrimary = firstJoint?.role === 'primary';
+              
+              return (
+                <button
+                  key={tab.id}
+                  type="button"
+                  onClick={() => setActiveTabIndex(index)}
+                  className={`flex-shrink-0 px-4 py-3 text-sm font-medium transition-colors border-b-2 ${
+                    isActive
+                      ? isBilateral
+                        ? 'border-purple-500 bg-purple-50 text-purple-700'
+                        : isPrimary
+                          ? 'border-blue-500 bg-blue-50 text-blue-700'
+                          : 'border-gray-500 bg-gray-50 text-gray-700'
+                      : 'border-transparent hover:bg-gray-50 text-gray-600'
+                  }`}
+                >
+                  <span className="flex items-center gap-2">
+                    {isBilateral ? (
+                      <span className="text-purple-500">⟷</span>
+                    ) : (
+                      <span className={`w-2 h-2 rounded-full ${isPrimary ? 'bg-blue-500' : 'bg-gray-400'}`} />
+                    )}
+                    {tab.label.en}
+                    {firstJoint?.invertIndicator && <span className="text-yellow-600">↕</span>}
+                  </span>
+                </button>
+              );
+            })}
           </div>
           
-          {trackedJoints.length === 0 ? (
-            <div className="bg-gray-50 rounded-xl p-8 text-center border-2 border-dashed border-gray-300">
-              <p className="text-gray-500 mb-2">No joints selected</p>
-              <p className="text-sm text-gray-400">Click on the skeleton to add joints</p>
-            </div>
-          ) : (
-            <div className="space-y-4 max-h-[600px] overflow-y-auto pr-2">
-              {trackedJoints.map((joint, index) => (
-                <JointEditor
-                  key={joint.joint}
-                  joint={joint}
-                  index={index}
-                  onUpdate={(j) => handleUpdateJoint(index, j)}
-                  onRemove={() => handleRemoveJoint(index)}
-                  onCopyToMirror={hasMirrorPair(joint.joint) ? () => handleCopyToMirror(index) : undefined}
+          {/* Tab Content */}
+          {uiTabs[activeTabIndex] && (() => {
+            const tab = uiTabs[activeTabIndex];
+            
+            if (tab.type === 'bilateral' && tab.leftJointIndex !== undefined && tab.rightJointIndex !== undefined) {
+              const leftJoint = trackedJoints[tab.leftJointIndex];
+              const rightJoint = trackedJoints[tab.rightJointIndex];
+              
+              return (
+                <BilateralTabContent
+                  leftJoint={leftJoint}
+                  rightJoint={rightJoint}
+                  bilateralCode={tab.id}
+                  onUpdateBoth={(updater) => handleUpdateBilateral(tab.leftJointIndex!, tab.rightJointIndex!, updater)}
+                  onRemove={() => handleRemoveBilateral(tab.leftJointIndex!, tab.rightJointIndex!)}
                   isHold={isHold}
                 />
-              ))}
-            </div>
-          )}
+              );
+            } else if (tab.singleJointIndex !== undefined) {
+              const joint = trackedJoints[tab.singleJointIndex];
+              
+              return (
+                <JointTabContent
+                  joint={joint}
+                  onUpdate={(j) => handleUpdateJoint(tab.singleJointIndex!, j)}
+                  onRemove={() => handleRemoveJoint(tab.singleJointIndex!)}
+                  isHold={isHold}
+                  hasMirror={false}
+                />
+              );
+            }
+            
+            return null;
+          })()}
         </div>
-      </div>
+      )}
+      
+      {/* Empty State */}
+      {uiTabs.length === 0 && (
+        <div className="bg-gray-50 rounded-xl p-12 text-center border-2 border-dashed border-gray-300">
+          <div className="text-4xl mb-4">🦴</div>
+          <p className="text-gray-600 text-lg mb-2">No joints added yet</p>
+          <p className="text-sm text-gray-400">Click &quot;Add Joint&quot; to start configuring tracked joints</p>
+        </div>
+      )}
       
       {/* Help */}
       <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl p-4 border border-blue-100">
-        <h4 className="font-semibold text-blue-800 mb-2">💡 State-Based Ranges Explained</h4>
-        <div className="grid md:grid-cols-2 gap-4 text-sm">
-          <div>
-            <p className="text-blue-700 mb-2"><strong>Counted States</strong> (contribute to rep score):</p>
-            <ul className="space-y-1 text-blue-600">
-              <li>🟢 <strong>Perfect</strong> (100%): Ideal angle range</li>
-              <li>🟡 <strong>Normal</strong> (60%): Good, acceptable range</li>
-              <li>🟠 <strong>Pad</strong> (20%): Barely acceptable</li>
-            </ul>
-          </div>
-          <div>
-            <p className="text-blue-700 mb-2"><strong>Non-Counted States</strong> (feedback only):</p>
-            <ul className="space-y-1 text-blue-600">
-              <li>🔴 <strong>Warning</strong>: Out of range, rep not counted</li>
-              <li>⛔ <strong>Danger</strong>: Dangerous position, rep invalidated</li>
+        <h4 className="font-semibold text-blue-800 mb-2">💡 Tips</h4>
+        <ul className="text-sm text-blue-700 space-y-1">
+          <li>• <strong>Bilateral joints</strong> (e.g., Knees) add both left and right with linked settings</li>
+          <li>• <strong>Primary joints</strong> are used for rep counting, secondary for form feedback</li>
+          <li>• <strong>Invert Indicator</strong>: Use for joints where lower angle is the goal (like elbow flexion)</li>
+          {!isHold && <li>• Make sure <strong>upRange min &gt; downRange max</strong> for valid transition</li>}
         </ul>
-          </div>
-        </div>
-        <p className="text-xs text-blue-500 mt-3">
-          {isHold 
-            ? 'Tip: For Hold exercises, primary joints have a single target range to maintain during the hold.'
-            : 'Tip: For Up/Down exercises, make sure upRange min > downRange max to create a valid transition zone.'
-          }
-        </p>
       </div>
     </div>
   );

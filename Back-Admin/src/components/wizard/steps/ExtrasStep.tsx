@@ -1,15 +1,16 @@
 'use client';
 
 /**
- * Step 7: Extras (Attributes + Feedback Messages)
- * ================================================
+ * Step 6: Extras (Attributes + Feedback Messages + Weight & Metrics)
+ * ===================================================================
  */
 
 import { useWizardStore } from '../WizardContext';
 import { Card, CardHeader, CardTitle, CardContent, Button, Badge, Label } from '@/components/ui';
 import { SmartLocalizedInput } from '@/components/forms';
-import { Plus, X } from 'lucide-react';
+import { Plus, X, Dumbbell, BarChart3, Check } from 'lucide-react';
 import type { FeedbackMessageData } from '@/modules/exercises/exercises.validation';
+import { METRIC_DEFINITIONS, type MetricCode } from '@/modules/exercises/exercises.types';
 
 interface ExtrasStepProps {
   muscles: Array<{ id: string; code: string; name: { ar: string; en: string } }>;
@@ -18,7 +19,24 @@ interface ExtrasStepProps {
 }
 
 export function ExtrasStep({ muscles, equipment, tags }: ExtrasStepProps) {
-  const { extras, setExtras, addFeedbackMessage, updateFeedbackMessage, removeFeedbackMessage } = useWizardStore();
+  const { 
+    extras, 
+    setExtras, 
+    addFeedbackMessage, 
+    updateFeedbackMessage, 
+    removeFeedbackMessage,
+    weightConfig,
+    setWeightConfig,
+    reportMetrics,
+    setReportMetrics,
+    countingMethod,
+    jointConfig,
+  } = useWizardStore();
+  
+  // Determine exercise type for auto-suggestions
+  const isHold = countingMethod.countingMethodCode === 'hold';
+  const hasPairedJoints = (jointConfig.trackedJoints || []).some((j) => j.pairedWith);
+  const isBilateral = hasPairedJoints;
   
   const toggleAttribute = (type: 'muscles' | 'equipment' | 'tags', id: string) => {
     const current = extras[type] || [];
@@ -125,6 +143,212 @@ export function ExtrasStep({ muscles, equipment, tags }: ExtrasStepProps) {
             </CardContent>
           </Card>
         )}
+      </div>
+      
+      {/* Weight Configuration */}
+      <div className="space-y-4 pt-6 border-t">
+        <div className="flex items-center gap-2">
+          <Dumbbell className="h-5 w-5 text-orange-500" />
+          <h3 className="text-xl font-bold text-gray-900">Weight Configuration</h3>
+          <Label tooltip="Configure if this exercise uses weights and set weight limits." />
+        </div>
+        
+        <Card>
+          <CardContent className="pt-6">
+            <div className="space-y-6">
+              {/* Supports Weight Toggle */}
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="font-medium text-gray-900">Supports Weight</p>
+                  <p className="text-sm text-gray-500">Enable if this exercise uses dumbbells, barbells, etc.</p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setWeightConfig({ supportsWeight: !weightConfig.supportsWeight })}
+                  className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+                    weightConfig.supportsWeight ? 'bg-orange-500' : 'bg-gray-200'
+                  }`}
+                >
+                  <span
+                    className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                      weightConfig.supportsWeight ? 'translate-x-6' : 'translate-x-1'
+                    }`}
+                  />
+                </button>
+              </div>
+              
+              {/* Weight Range - Only show if supports weight */}
+              {weightConfig.supportsWeight && (
+                <div className="grid grid-cols-3 gap-4 pt-4 border-t">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Min Weight (kg)
+                    </label>
+                    <input
+                      type="number"
+                      min="0"
+                      step="0.5"
+                      value={weightConfig.minWeight ?? ''}
+                      onChange={(e) => setWeightConfig({ minWeight: e.target.value ? parseFloat(e.target.value) : undefined })}
+                      placeholder="e.g., 5"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 placeholder:text-gray-400 text-gray-900"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Max Weight (kg)
+                    </label>
+                    <input
+                      type="number"
+                      min="0"
+                      step="0.5"
+                      value={weightConfig.maxWeight ?? ''}
+                      onChange={(e) => setWeightConfig({ maxWeight: e.target.value ? parseFloat(e.target.value) : undefined })}
+                      placeholder="e.g., 100"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 placeholder:text-gray-400 text-gray-900"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Default Weight (kg)
+                    </label>
+                    <input
+                      type="number"
+                      min="0"
+                      step="0.5"
+                      value={weightConfig.defaultWeight ?? ''}
+                      onChange={(e) => setWeightConfig({ defaultWeight: e.target.value ? parseFloat(e.target.value) : undefined })}
+                      placeholder="e.g., 20"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 placeholder:text-gray-400 text-gray-900"
+                    />
+                  </div>
+                </div>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+      
+      {/* Report Metrics Configuration */}
+      <div className="space-y-4 pt-6 border-t">
+        <div className="flex items-center gap-2">
+          <BarChart3 className="h-5 w-5 text-blue-500" />
+          <h3 className="text-xl font-bold text-gray-900">Report Metrics</h3>
+          <Label tooltip="Configure which metrics to show in the post-training report." />
+        </div>
+        
+        {/* Auto-detected info */}
+        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+          <p className="text-sm text-blue-800 font-medium mb-2">Auto-detected exercise type:</p>
+          <div className="flex flex-wrap gap-2">
+            <Badge variant={isHold ? 'teal' : 'default'}>{isHold ? 'Hold Exercise' : 'Rep-based Exercise'}</Badge>
+            {isBilateral && <Badge variant="purple">Bilateral (Symmetry enabled)</Badge>}
+            {weightConfig.supportsWeight && <Badge variant="orange">Weighted (Volume & 1RM enabled)</Badge>}
+          </div>
+        </div>
+        
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-lg">All Metrics</CardTitle>
+            <p className="text-sm text-gray-500 mt-1">
+              <span className="inline-flex items-center gap-1 text-blue-600"><Check className="h-3 w-3" /> Included</span>
+              <span className="mx-3">|</span>
+              <span className="inline-flex items-center gap-1 text-red-600"><X className="h-3 w-3" /> Excluded</span>
+              <span className="mx-3">|</span>
+              <span className="text-gray-400">Not applicable</span>
+            </p>
+          </CardHeader>
+          <CardContent>
+            <div className="flex flex-wrap gap-2">
+              {METRIC_DEFINITIONS.map((metric) => {
+                // Check if metric is applicable for this exercise type
+                let isDisabled = false;
+                let disabledReason = '';
+                
+                // Hold exercise restrictions
+                if (isHold) {
+                  if (['rep_count', 'tempo', 'tut', 'rom', 'form_consistency', 'fatigue_index', 'velocity'].includes(metric.code)) {
+                    isDisabled = true;
+                    disabledReason = 'Not for Hold exercises';
+                  }
+                } else {
+                  // Rep-based exercise restrictions
+                  if (metric.code === 'hold_duration') {
+                    isDisabled = true;
+                    disabledReason = 'Only for Hold exercises';
+                  }
+                }
+                
+                // Weight restrictions
+                if (!weightConfig.supportsWeight && ['weight', 'volume', 'est_1rm'].includes(metric.code)) {
+                  isDisabled = true;
+                  disabledReason = 'Enable weight first';
+                }
+                
+                // Bilateral restrictions
+                if (!isBilateral && metric.code === 'symmetry') {
+                  isDisabled = true;
+                  disabledReason = 'Only for bilateral exercises';
+                }
+                
+                // Check current state
+                const isExcluded = reportMetrics.excluded.includes(metric.code);
+                
+                // Disabled = gray, Excluded = red, else = blue
+                if (isDisabled) {
+                  return (
+                    <Badge
+                      key={metric.code}
+                      variant="default"
+                      className="px-3 py-1.5 cursor-not-allowed bg-gray-100 text-gray-400 border-gray-200"
+                      title={disabledReason}
+                    >
+                      {metric.label.en}
+                    </Badge>
+                  );
+                }
+                
+                if (isExcluded) {
+                  return (
+                    <Badge
+                      key={metric.code}
+                      variant="error"
+                      className="px-3 py-1.5 cursor-pointer"
+                      title="Click to include"
+                      onClick={() => {
+                        // Red → Blue: remove from excluded
+                        const newExcluded = reportMetrics.excluded.filter(c => c !== metric.code);
+                        setReportMetrics({ excluded: newExcluded });
+                      }}
+                    >
+                      <X className="h-3 w-3 mr-1 inline" />
+                      {metric.label.en}
+                    </Badge>
+                  );
+                }
+                
+                // Included (blue)
+                return (
+                  <Badge
+                    key={metric.code}
+                    variant="primary"
+                    className="px-3 py-1.5 cursor-pointer"
+                    title="Click to exclude"
+                    onClick={() => {
+                      // Blue → Red: add to excluded
+                      const newExcluded = [...reportMetrics.excluded, metric.code];
+                      setReportMetrics({ excluded: newExcluded });
+                    }}
+                  >
+                    <Check className="h-3 w-3 mr-1 inline" />
+                    {metric.label.en}
+                  </Badge>
+                );
+              })}
+            </div>
+            <p className="text-xs text-gray-500 mt-3">Click to toggle between Included and Excluded.</p>
+          </CardContent>
+        </Card>
       </div>
       
       {/* Feedback Messages */}

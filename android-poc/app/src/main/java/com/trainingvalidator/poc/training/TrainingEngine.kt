@@ -111,7 +111,8 @@ class TrainingEngine(
     private val repCounter = RepCounter(
         targetReps = targetReps,
         repCountingConfig = repCountingConfig,
-        isHoldExercise = exerciseConfig.countingMethod == CountingMethod.HOLD
+        isHoldExercise = exerciseConfig.countingMethod == CountingMethod.HOLD,
+        primaryJoints = exerciseConfig.getPrimaryJoints().map { it.joint }.toSet()
     )
 
     /**
@@ -709,8 +710,9 @@ class TrainingEngine(
             }
             
             if (isCriticalPhase) {
-                val worstState = formValidator.getWorstState(jointStateInfos)
-                repCounter.updateWorstState(worstState)
+                // Use weighted scoring with full joint state information
+                // This also updates worst state internally, no need for separate call
+                repCounter.updateJointStates(jointStateInfos)
                 
                 // Emit DANGER event with throttling (only when entering DANGER)
                 if (hasDanger && shouldEmitDangerEvent()) {

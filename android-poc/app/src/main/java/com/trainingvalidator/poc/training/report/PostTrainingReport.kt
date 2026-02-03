@@ -2,9 +2,12 @@ package com.trainingvalidator.poc.training.report
 
 import com.trainingvalidator.poc.training.engine.Phase
 import com.trainingvalidator.poc.training.models.AngleRange
+import com.trainingvalidator.poc.training.models.CountingMethod
 import com.trainingvalidator.poc.training.models.ErrorType
 import com.trainingvalidator.poc.training.models.JointState
 import com.trainingvalidator.poc.training.models.LocalizedText
+import com.trainingvalidator.poc.training.models.MetricCode
+import com.trainingvalidator.poc.training.models.ReportMetricsConfig
 import java.util.UUID
 
 /**
@@ -60,7 +63,34 @@ data class PostTrainingReport(
     val frameCaptures: List<FrameCapture>,
     
     // Hold-specific (null for rep-based exercises)
-    val holdSummary: HoldSummary? = null
+    val holdSummary: HoldSummary? = null,
+    
+    // ═══════════════════════════════════════════════════════════════
+    // NEW: Enhanced Report Fields (V2)
+    // ═══════════════════════════════════════════════════════════════
+    
+    // Quick Insight - The main message at the top of the report
+    val quickInsight: QuickInsight? = null,
+    
+    // Hero image - Best rep frame for display
+    val heroFrame: FrameCapture? = null,
+    
+    // Performance metrics for the 3 main cards
+    val performanceMetrics: EnhancedPerformanceMetrics? = null,
+    
+    // ═══════════════════════════════════════════════════════════════
+    // OVERALL QUALITY (Aggregated Score)
+    // ═══════════════════════════════════════════════════════════════
+    
+    /** Overall quality score (0-100) - aggregates Form, Safety, Control */
+    val overallQuality: OverallQualityScore? = null,
+    
+    // ═══════════════════════════════════════════════════════════════
+    // METRICS CONFIGURATION (from ExerciseConfig)
+    // ═══════════════════════════════════════════════════════════════
+    
+    /** Exercise configuration - used to determine which metrics to show */
+    val exerciseConfig: ExerciseConfigSnapshot? = null
 ) {
     /**
      * Check if this is a hold exercise report
@@ -806,3 +836,492 @@ data class FrameMetadata(
     val hasError: Boolean,
     val errorDetails: String?
 )
+
+// ═══════════════════════════════════════════════════════════════════════════
+// ENHANCED REPORT MODELS (V2) - For the new report UI
+// ═══════════════════════════════════════════════════════════════════════════
+
+/**
+ * QuickInsight - The main message displayed at the top of the report
+ * 
+ * Types:
+ * - CELEBRATION: Excellent performance (90%+ score, no danger)
+ * - FOCUS_POINT: Good but has area to focus on
+ * - DANGER_WARNING: Has danger alerts that need attention
+ */
+data class QuickInsight(
+    val type: InsightType,
+    val title: LocalizedText,
+    val subtitle: LocalizedText,
+    val actionable: LocalizedText? = null,
+    val icon: String = "💡"
+) {
+    companion object {
+        fun celebration(score: Float): QuickInsight = QuickInsight(
+            type = InsightType.CELEBRATION,
+            title = LocalizedText(
+                ar = "أداء رائع!",
+                en = "Outstanding Performance!"
+            ),
+            subtitle = LocalizedText(
+                ar = "حافظت على شكل ممتاز طوال التمرين",
+                en = "You maintained excellent form throughout"
+            ),
+            actionable = LocalizedText(
+                ar = "الجلسة القادمة: جرب زيادة الوزن أو العدات",
+                en = "Next session: Try increasing weight or reps"
+            ),
+            icon = "🏆"
+        )
+        
+        fun focusPoint(focusArea: LocalizedText, details: LocalizedText): QuickInsight = QuickInsight(
+            type = InsightType.FOCUS_POINT,
+            title = LocalizedText(
+                ar = "ركز على: ${focusArea.ar}",
+                en = "Focus on: ${focusArea.en}"
+            ),
+            subtitle = details,
+            actionable = null,
+            icon = "🎯"
+        )
+        
+        fun dangerWarning(jointName: LocalizedText, repCount: Int): QuickInsight = QuickInsight(
+            type = InsightType.DANGER_WARNING,
+            title = LocalizedText(
+                ar = "انتبه: ${jointName.ar}",
+                en = "Warning: ${jointName.en}"
+            ),
+            subtitle = LocalizedText(
+                ar = "في $repCount عدات، وصلت لوضع غير آمن",
+                en = "In $repCount reps, you reached an unsafe position"
+            ),
+            actionable = LocalizedText(
+                ar = "راجع الصور أدناه لتفهم المشكلة",
+                en = "Review the images below to understand the issue"
+            ),
+            icon = "⚠️"
+        )
+    }
+}
+
+/**
+ * Insight type determines the visual style and priority
+ */
+enum class InsightType {
+    CELEBRATION,     // 🏆 Green theme - Great job!
+    FOCUS_POINT,     // 🎯 Yellow theme - Needs attention
+    DANGER_WARNING   // ⚠️ Red theme - Safety concern
+}
+
+/**
+ * EnhancedPerformanceMetrics - Grouped metrics for the 3 main cards
+ * 
+ * Card 1: Form (الشكل) - How well is the exercise performed?
+ * Card 2: Safety (الأمان) - Is it safe for joints?
+ * Card 3: Control (التحكم) - Is the movement controlled?
+ */
+data class EnhancedPerformanceMetrics(
+    // Card 1: Form
+    val formCard: FormMetrics,
+    
+    // Card 2: Safety
+    val safetyCard: SafetyMetrics,
+    
+    // Card 3: Control
+    val controlCard: ControlMetrics,
+    
+    // Load metrics (for weighted exercises)
+    val loadMetrics: LoadMetrics? = null
+)
+
+/**
+ * FormMetrics - Combined metrics for the Form card
+ */
+data class FormMetrics(
+    val overallScore: MetricWithStatus,
+    val rom: MetricWithStatus?,           // Range of Motion
+    val symmetry: MetricWithStatus?,      // Bilateral symmetry
+    val formConsistency: MetricWithStatus? // How consistent across reps
+) {
+    fun getCardScore(): Float = overallScore.value
+}
+
+/**
+ * SafetyMetrics - Combined metrics for the Safety card
+ */
+data class SafetyMetrics(
+    val overallScore: MetricWithStatus,
+    val alignmentAccuracy: MetricWithStatus?,
+    val stability: MetricWithStatus?,
+    val dangerCount: Int = 0
+) {
+    fun getCardScore(): Float = overallScore.value
+    fun hasDanger(): Boolean = dangerCount > 0
+}
+
+/**
+ * ControlMetrics - Combined metrics for the Control card
+ */
+data class ControlMetrics(
+    val overallScore: MetricWithStatus,
+    val tempo: TempoDisplay?,
+    val totalTUT: Int?,                   // Time Under Tension in seconds
+    val fatigueIndex: Int?                // Rep number where fatigue started
+) {
+    fun getCardScore(): Float = overallScore.value
+}
+
+/**
+ * LoadMetrics - Metrics for weighted exercises
+ */
+data class LoadMetrics(
+    val weightKg: Float,
+    val weightUnit: String = "kg",
+    val totalVolume: Float?,              // Total weight lifted
+    val est1RM: Float?                    // Estimated 1 Rep Max
+) {
+    fun getFormattedWeight(): String {
+        return if (weightUnit == "lbs") {
+            "%.0f lbs".format(weightKg * 2.20462f)
+        } else {
+            "%.1f kg".format(weightKg)
+        }
+    }
+    
+    fun getFormattedVolume(): String? {
+        val v = totalVolume ?: return null
+        return if (weightUnit == "lbs") {
+            "%.0f lbs".format(v * 2.20462f)
+        } else {
+            "%.1f kg".format(v)
+        }
+    }
+    
+    fun getFormattedEst1RM(): String? {
+        val e = est1RM ?: return null
+        return if (weightUnit == "lbs") {
+            "%.0f lbs".format(e * 2.20462f)
+        } else {
+            "%.1f kg".format(e)
+        }
+    }
+}
+
+/**
+ * TempoDisplay - Formatted tempo for display
+ */
+data class TempoDisplay(
+    val eccentricMs: Int,    // Lowering phase
+    val isometricMs: Int,    // Hold phase
+    val concentricMs: Int,   // Lifting phase
+    val displayFormat: String = "" // e.g., "2-1-2"
+) {
+    fun getFormattedTempo(): String {
+        val ecc = (eccentricMs / 1000.0).let { if (it >= 1) "%.0f".format(it) else "%.1f".format(it) }
+        val iso = (isometricMs / 1000.0).let { if (it >= 1) "%.0f".format(it) else "%.1f".format(it) }
+        val con = (concentricMs / 1000.0).let { if (it >= 1) "%.0f".format(it) else "%.1f".format(it) }
+        return "$ecc-$iso-$con"
+    }
+    
+    fun getEccentricSeconds(): String = "%.1fs".format(eccentricMs / 1000.0)
+    fun getIsometricSeconds(): String = "%.1fs".format(isometricMs / 1000.0)
+    fun getConcentricSeconds(): String = "%.1fs".format(concentricMs / 1000.0)
+}
+
+/**
+ * MetricWithStatus - A single metric with its status and display info
+ */
+data class MetricWithStatus(
+    val value: Float,                     // Raw value (0-100 for percentages)
+    val displayValue: String,             // Formatted for display (e.g., "89%", "92°")
+    val status: MetricStatus,             // Visual status
+    val statusLabel: LocalizedText,       // User-friendly label
+    val advice: LocalizedText? = null     // Optional short advice
+) {
+    companion object {
+        fun fromPercentage(value: Float, advice: LocalizedText? = null): MetricWithStatus {
+            val status = MetricStatus.fromPercentage(value)
+            return MetricWithStatus(
+                value = value,
+                displayValue = "%.0f%%".format(value),
+                status = status,
+                statusLabel = status.getLabel(),
+                advice = advice
+            )
+        }
+        
+        fun fromAngle(value: Float, maxValue: Float, advice: LocalizedText? = null): MetricWithStatus {
+            val percentage = (value / maxValue) * 100
+            val status = MetricStatus.fromPercentage(percentage)
+            return MetricWithStatus(
+                value = value,
+                displayValue = "%.0f°".format(value),
+                status = status,
+                statusLabel = status.getLabel(),
+                advice = advice
+            )
+        }
+    }
+}
+
+/**
+ * MetricStatus - Visual status for metrics
+ */
+enum class MetricStatus {
+    EXCELLENT,   // 🟢 90%+ - Green
+    GOOD,        // 🟢 80-89% - Light Green
+    FAIR,        // 🟡 70-79% - Yellow
+    NEEDS_WORK;  // 🔴 <70% - Red
+    
+    companion object {
+        fun fromPercentage(value: Float): MetricStatus = when {
+            value >= 90 -> EXCELLENT
+            value >= 80 -> GOOD
+            value >= 70 -> FAIR
+            else -> NEEDS_WORK
+        }
+    }
+    
+    fun getLabel(): LocalizedText = when (this) {
+        EXCELLENT -> LocalizedText(ar = "ممتاز", en = "Excellent")
+        GOOD -> LocalizedText(ar = "جيد جداً", en = "Very Good")
+        FAIR -> LocalizedText(ar = "جيد", en = "Good")
+        NEEDS_WORK -> LocalizedText(ar = "يحتاج تحسين", en = "Needs Work")
+    }
+    
+    fun getColor(): Int = when (this) {
+        EXCELLENT -> 0xFF4CAF50.toInt()  // Green
+        GOOD -> 0xFF8BC34A.toInt()       // Light Green
+        FAIR -> 0xFFFFC107.toInt()       // Yellow
+        NEEDS_WORK -> 0xFFFF5252.toInt() // Red
+    }
+    
+    fun getIcon(): String = when (this) {
+        EXCELLENT -> "🟢"
+        GOOD -> "🟢"
+        FAIR -> "🟡"
+        NEEDS_WORK -> "🔴"
+    }
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// EXERCISE CONFIG SNAPSHOT - Lightweight copy of exercise config for report
+// ═══════════════════════════════════════════════════════════════════════════
+
+/**
+ * ExerciseConfigSnapshot - Minimal exercise config data needed for report display
+ * 
+ * This is stored with the report to determine which metrics to show
+ * without needing to reload the full exercise config.
+ */
+data class ExerciseConfigSnapshot(
+    /** Counting method determines tempo/TUT vs hold_duration */
+    val countingMethod: CountingMethod,
+    
+    /** Whether this exercise has bilateral (paired) joints */
+    val isBilateral: Boolean,
+    
+    /** Whether this exercise supports weights */
+    val supportsWeight: Boolean,
+    
+    /** Configured report metrics */
+    val metricsConfig: ReportMetricsConfig
+) {
+    /**
+     * Check if this is a hold exercise
+     */
+    fun isHoldExercise(): Boolean = countingMethod == CountingMethod.HOLD
+    
+    /**
+     * Check if a metric should be displayed
+     */
+    fun shouldShowMetric(metric: MetricCode): Boolean {
+        // Apply automatic rules first
+        return when (metric) {
+            // Symmetry only for bilateral exercises
+            MetricCode.SYMMETRY -> isBilateral && metricsConfig.shouldShow(metric)
+            
+            // Tempo/TUT only for rep-based exercises
+            MetricCode.TEMPO, MetricCode.TUT -> !isHoldExercise() && metricsConfig.shouldShow(metric)
+            
+            // Hold duration only for hold exercises
+            MetricCode.HOLD_DURATION -> isHoldExercise() && metricsConfig.shouldShow(metric)
+            
+            // Weight metrics only for weighted exercises
+            MetricCode.WEIGHT, MetricCode.VOLUME, MetricCode.EST_1RM -> 
+                supportsWeight && metricsConfig.shouldShow(metric)
+            
+            // Form consistency/fatigue need 4+ reps
+            MetricCode.FORM_CONSISTENCY, MetricCode.FATIGUE_INDEX -> 
+                !isHoldExercise() && metricsConfig.shouldShow(metric)
+            
+            // Default: check config
+            else -> metricsConfig.shouldShow(metric)
+        }
+    }
+    
+    /**
+     * Get list of metrics that should be shown as primary cards
+     */
+    fun getPrimaryMetrics(): List<MetricCode> {
+        return metricsConfig.primary.filter { shouldShowMetric(it) }
+    }
+    
+    /**
+     * Get list of all visible metrics (primary + optional)
+     */
+    fun getAllVisibleMetrics(): List<MetricCode> {
+        return metricsConfig.getVisibleMetrics().filter { shouldShowMetric(it) }
+    }
+    
+    companion object {
+        /**
+         * Create from full ExerciseConfig
+         */
+        fun from(
+            countingMethod: CountingMethod,
+            isBilateral: Boolean,
+            supportsWeight: Boolean,
+            metricsConfig: ReportMetricsConfig?
+        ): ExerciseConfigSnapshot {
+            val effectiveConfig = metricsConfig ?: MetricCode.getDefaults(
+                isHold = countingMethod == CountingMethod.HOLD,
+                isBilateral = isBilateral,
+                supportsWeight = supportsWeight
+            )
+            
+            return ExerciseConfigSnapshot(
+                countingMethod = countingMethod,
+                isBilateral = isBilateral,
+                supportsWeight = supportsWeight,
+                metricsConfig = effectiveConfig
+            )
+        }
+    }
+}
+
+// ═══════════════════════════════════════════════════════════════
+// OVERALL QUALITY SCORE
+// ═══════════════════════════════════════════════════════════════
+
+/**
+ * OverallQualityScore - Aggregated quality score from all metrics
+ * 
+ * Combines Form, Safety, and Control scores into a single overall score.
+ * Weights differ for Rep-based vs Hold-based exercises.
+ */
+data class OverallQualityScore(
+    /** Overall quality score (0-100) */
+    val score: Float,
+    
+    /** Form score (0-100) - Joint quality, ROM, Symmetry */
+    val formScore: Float,
+    
+    /** Safety score (0-100) - Alignment, Stability, Danger events */
+    val safetyScore: Float,
+    
+    /** Control score (0-100) - Tempo, Consistency, TUT */
+    val controlScore: Float,
+    
+    /** Weight applied to Form (0.0-1.0) */
+    val formWeight: Float,
+    
+    /** Weight applied to Safety (0.0-1.0) */
+    val safetyWeight: Float,
+    
+    /** Weight applied to Control (0.0-1.0) */
+    val controlWeight: Float,
+    
+    /** Quality rating based on score */
+    val rating: QualityRating = QualityRating.fromScore(score)
+) {
+    /**
+     * Get formatted overall score
+     */
+    fun getFormattedScore(): String = "${score.toInt()}%"
+    
+    /**
+     * Get formatted breakdown
+     */
+    fun getFormattedBreakdown(): String {
+        return "Form: ${formScore.toInt()}% | Safety: ${safetyScore.toInt()}% | Control: ${controlScore.toInt()}%"
+    }
+    
+    companion object {
+        /**
+         * Calculate overall quality from component scores
+         */
+        fun calculate(
+            formScore: Float,
+            safetyScore: Float,
+            controlScore: Float,
+            isHoldExercise: Boolean = false
+        ): OverallQualityScore {
+            // Different weights for hold vs rep exercises
+            val formWeight: Float
+            val safetyWeight: Float
+            val controlWeight: Float
+            
+            if (isHoldExercise) {
+                // Hold: Safety is more important (holding still)
+                formWeight = 0.35f
+                safetyWeight = 0.40f
+                controlWeight = 0.25f
+            } else {
+                // Rep: Form is most important
+                formWeight = 0.40f
+                safetyWeight = 0.35f
+                controlWeight = 0.25f
+            }
+            
+            val overall = (
+                formScore * formWeight +
+                safetyScore * safetyWeight +
+                controlScore * controlWeight
+            )
+            
+            return OverallQualityScore(
+                score = overall,
+                formScore = formScore,
+                safetyScore = safetyScore,
+                controlScore = controlScore,
+                formWeight = formWeight,
+                safetyWeight = safetyWeight,
+                controlWeight = controlWeight
+            )
+        }
+    }
+}
+
+/**
+ * Quality rating based on overall score
+ */
+enum class QualityRating {
+    EXCELLENT,  // 90%+
+    GOOD,       // 70-89%
+    FAIR,       // 50-69%
+    NEEDS_WORK; // <50%
+    
+    companion object {
+        fun fromScore(score: Float): QualityRating = when {
+            score >= 90 -> EXCELLENT
+            score >= 70 -> GOOD
+            score >= 50 -> FAIR
+            else -> NEEDS_WORK
+        }
+    }
+    
+    fun getDisplayText(isArabic: Boolean): String = when (this) {
+        EXCELLENT -> if (isArabic) "ممتاز" else "Excellent"
+        GOOD -> if (isArabic) "جيد" else "Good"
+        FAIR -> if (isArabic) "مقبول" else "Fair"
+        NEEDS_WORK -> if (isArabic) "يحتاج تحسين" else "Needs Work"
+    }
+    
+    fun getIcon(): String = when (this) {
+        EXCELLENT -> "🏆"
+        GOOD -> "✅"
+        FAIR -> "⚠️"
+        NEEDS_WORK -> "📈"
+    }
+}

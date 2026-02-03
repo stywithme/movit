@@ -355,4 +355,15 @@
     <string name="pose_not_detected">لم يتم اكتشاف وضعية</string>
     <string name="ready_to_start">جاهز للبدء!</string>
     <string name="analyzing">جاري التحليل…</string>
+    
+    <!-- Report V2 -->
+    <string name="training_report">تقرير التمرين</string>
+    <string name="share">مشاركة</string>
+    <string name="quality">الجودة</string>
+    <string name="weight">الوزن</string>
+    <string name="train_again">تمرن مجدداً</string>
+    <string name="your_performance">أداؤك</string>
+    <string name="reps_journey">رحلة العدات</string>
+    <string name="tips_for_you">نصائح لك</string>
+    <string name="show_details">عرض التفاصيل</string>
 </resources>

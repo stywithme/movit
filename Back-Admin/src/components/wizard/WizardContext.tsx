@@ -22,6 +22,24 @@ import type {
   PositionCheckData,
   FeedbackMessageData,
 } from '@/modules/exercises/exercises.validation';
+import type { MetricCode } from '@/modules/exercises/exercises.types';
+
+// ============================================
+// WEIGHT & METRICS TYPES
+// ============================================
+
+export interface WeightConfigData {
+  supportsWeight: boolean;
+  minWeight?: number;
+  maxWeight?: number;
+  defaultWeight?: number;
+}
+
+export interface ReportMetricsData {
+  primary: MetricCode[];
+  optional: MetricCode[];
+  excluded: MetricCode[];
+}
 
 // ============================================
 // TYPES
@@ -49,6 +67,10 @@ export interface WizardState {
   positionChecks: Partial<PositionChecksData>;
   repConfig: Partial<RepCountingConfigData>;
   extras: Partial<ExtrasData>;
+  
+  // Weight & Metrics configuration
+  weightConfig: WeightConfigData;
+  reportMetrics: ReportMetricsData;
 }
 
 export interface WizardActions {
@@ -65,6 +87,10 @@ export interface WizardActions {
   setPositionChecks: (data: Partial<PositionChecksData>) => void;
   setRepConfig: (data: Partial<RepCountingConfigData>) => void;
   setExtras: (data: Partial<ExtrasData>) => void;
+  
+  // Weight & Metrics
+  setWeightConfig: (data: Partial<WeightConfigData>) => void;
+  setReportMetrics: (data: Partial<ReportMetricsData>) => void;
   
   // Joint helpers
   addTrackedJoint: (joint: TrackedJointData) => void;
@@ -140,6 +166,19 @@ const initialState: WizardState = {
     tags: [],
     feedbackMessages: [],
   },
+  
+  // Weight & Metrics defaults
+  weightConfig: {
+    supportsWeight: false,
+    minWeight: undefined,
+    maxWeight: undefined,
+    defaultWeight: undefined,
+  },
+  reportMetrics: {
+    primary: ['form_score'],
+    optional: [],
+    excluded: [],
+  },
 };
 
 // ============================================
@@ -213,6 +252,17 @@ export const useWizardStore = create<WizardStore>()(
       
       setExtras: (data) => set((state) => ({
         extras: { ...state.extras, ...data },
+        isDirty: true,
+      })),
+      
+      // Weight & Metrics
+      setWeightConfig: (data) => set((state) => ({
+        weightConfig: { ...state.weightConfig, ...data },
+        isDirty: true,
+      })),
+      
+      setReportMetrics: (data) => set((state) => ({
+        reportMetrics: { ...state.reportMetrics, ...data },
         isDirty: true,
       })),
       
@@ -331,6 +381,8 @@ export const useWizardStore = create<WizardStore>()(
         positionChecks: state.positionChecks,
         repConfig: state.repConfig,
         extras: state.extras,
+        weightConfig: state.weightConfig,
+        reportMetrics: state.reportMetrics,
       }),
     }
   )

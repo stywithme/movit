@@ -113,4 +113,45 @@
     <color name="report_card_background">#FF1E1E1E</color>
     <color name="report_text_primary">#FFFFFFFF</color>
     <color name="report_text_secondary">#FFB0B0B0</color>
+    
+    <!-- ═══════════════════════════════════════════════════════════ -->
+    <!-- REPORT V2 - Glassmorphic Design System                     -->
+    <!-- ═══════════════════════════════════════════════════════════ -->
+    
+    <!-- Glass Card Colors -->
+    <color name="glass_card_bg">#1A1A1A1A</color>           <!-- 10% white -->
+    <color name="glass_card_bg_light">#26FFFFFF</color>     <!-- 15% white -->
+    <color name="glass_card_border">#33FFFFFF</color>       <!-- 20% white -->
+    <color name="glass_card_border_subtle">#1AFFFFFF</color><!-- 10% white -->
+    
+    <!-- Insight Card Colors -->
+    <color name="insight_celebration_bg">#1A4CAF50</color>  <!-- 10% green -->
+    <color name="insight_celebration_border">#334CAF50</color>
+    <color name="insight_focus_bg">#1AFFC107</color>        <!-- 10% yellow -->
+    <color name="insight_focus_border">#33FFC107</color>
+    <color name="insight_danger_bg">#1AFF5252</color>       <!-- 10% red -->
+    <color name="insight_danger_border">#33FF5252</color>
+    
+    <!-- Performance Card Colors -->
+    <color name="card_form_accent">#8AF851</color>          <!-- Primary green -->
+    <color name="card_safety_accent">#4CAF50</color>        <!-- Success green -->
+    <color name="card_control_accent">#2196F3</color>       <!-- Info blue -->
+    
+    <!-- Metric Status Colors -->
+    <color name="metric_excellent">#4CAF50</color>
+    <color name="metric_good">#8BC34A</color>
+    <color name="metric_fair">#FFC107</color>
+    <color name="metric_needs_work">#FF5252</color>
+    
+    <!-- Chart Colors -->
+    <color name="chart_bar_high">#4CAF50</color>
+    <color name="chart_bar_medium">#FFC107</color>
+    <color name="chart_bar_low">#FF5252</color>
+    <color name="chart_line">#8AF851</color>
+    <color name="chart_grid">#1AFFFFFF</color>
+    
+    <!-- Hero Overlay -->
+    <color name="hero_overlay_start">#00000000</color>
+    <color name="hero_overlay_end">#CC040A01</color>
+    
 </resources>

@@ -9,21 +9,23 @@ import com.trainingvalidator.poc.training.models.*
  * 
  * This component is responsible for:
  * - Counting reps with score-based evaluation
- * - Tracking worst state reached per rep
+ * - Tracking joint states per rep (weighted scoring)
  * - Recording errors per rep
  * - Providing rep results for analytics
  * 
- * SCORING SYSTEM:
- * - Score is based on WORST STATE reached during critical phases (BOTTOM/EXTENDED)
- * - PERFECT = 100, NORMAL = 60, PAD = 20, WARNING = 0, DANGER = 0
- * - DANGER also invalidates the rep
+ * SCORING SYSTEM (Updated):
+ * - Score is calculated using WEIGHTED AVERAGE of all joint states
+ * - Primary joints have weight 1.0, secondary joints have weight 0.3
+ * - DANGER state adds a penalty (-15% per DANGER joint)
+ * - Rates: PERFECT=100, NORMAL=80, PAD=60, WARNING=40, DANGER=0
  * 
  * For HOLD exercises, score is calculated using WEIGHTED AVERAGE of time in states.
  */
 class RepCounter(
     private val targetReps: Int = 12,
     repCountingConfig: RepCountingConfig? = null,
-    private val isHoldExercise: Boolean = false
+    private val isHoldExercise: Boolean = false,
+    private val primaryJoints: Set<String> = emptySet()
 ) {
     /**
      * Minimum time between reps (safety backup) - from exercise config or global default
@@ -100,6 +102,11 @@ class RepCounter(
     private var currentTrackingState: JointState = JointState.PERFECT
     
     /**
+     * NEW: Track all joint states for weighted scoring
+     */
+    private var currentJointStates: Map<String, JointStateInfo> = emptyMap()
+    
+    /**
      * Phase timings for current rep
      */
     private var currentPhaseTimings = mapOf<String, Long>()
@@ -122,19 +129,45 @@ class RepCounter(
     // ==================== State Tracking ====================
     
     /**
-     * Update the worst state during current rep
+     * Update the worst state during current rep (legacy method)
      * Called each frame during critical phases (BOTTOM/EXTENDED)
      */
     fun updateWorstState(state: JointState) {
         // Update worst state using JointState.isWorseThan
         if (state.isWorseThan(currentRepWorstState)) {
             currentRepWorstState = state
-            Log.d(TAG, "Worst state updated to: $state")
+            // Debug logging disabled for performance
         }
         
         // For HOLD exercises, track time in each state
         if (isHoldExercise) {
             updateStateTimeTracking(state)
+        }
+    }
+    
+    /**
+     * NEW: Update with full joint state information for weighted scoring
+     * This is the preferred method - provides more accurate scoring
+     * 
+     * @param jointStates Map of joint code to its state info
+     */
+    fun updateJointStates(jointStates: Map<String, JointStateInfo>) {
+        // Store for score calculation
+        currentJointStates = jointStates
+        
+        // Also update worst state for backward compatibility
+        val worstState = jointStates.values
+            .map { it.state }
+            .filter { it != JointState.TRANSITION }
+            .maxByOrNull { it.priority } ?: JointState.PERFECT
+        
+        if (worstState.isWorseThan(currentRepWorstState)) {
+            currentRepWorstState = worstState
+        }
+        
+        // For HOLD exercises, track time in worst state
+        if (isHoldExercise) {
+            updateStateTimeTracking(worstState)
         }
     }
     
@@ -203,10 +236,13 @@ class RepCounter(
         return if (isHoldExercise) {
             // For hold exercises, calculate from time tracking
             updateStateTimeTracking(currentTrackingState)
-            calculateHoldScore().first
+            ScoreCalculator.calculateHoldScore(stateTimeTracking).score
+        } else if (currentJointStates.isNotEmpty()) {
+            // NEW: Use weighted scoring if we have joint states
+            ScoreCalculator.calculateRepScore(currentJointStates, primaryJoints).score
         } else {
-            // For rep exercises, use worst state rate
-            StateConfig.getConfig(currentRepWorstState).rate.coerceAtLeast(0f)
+            // Fallback: use worst state rate
+            ScoreCalculator.calculateScoreFromWorstState(currentRepWorstState)
         }
     }
     
@@ -240,15 +276,24 @@ class RepCounter(
             // Finalize time tracking
             updateStateTimeTracking(currentTrackingState)
             
-            // Calculate weighted average score
-            val holdResult = calculateHoldScore()
-            score = holdResult.first
-            isInvalidated = holdResult.second
+            // Calculate weighted average score using ScoreCalculator
+            val holdResult = ScoreCalculator.calculateHoldScore(stateTimeTracking)
+            score = holdResult.score
+            isInvalidated = holdResult.isInvalidated
             isCounted = !isInvalidated && score > 0
+        } else if (currentJointStates.isNotEmpty()) {
+            // NEW: Rep-based with weighted scoring
+            val repResult = ScoreCalculator.calculateRepScore(currentJointStates, primaryJoints)
+            score = repResult.score
+            isCounted = repResult.isCounted
+            isInvalidated = repResult.isInvalidated
+            
+            Log.d(TAG, "Weighted score: ${score.toInt()}%, worst=${repResult.worstState}, " +
+                    "dangerJoints=${repResult.dangerJoints}")
         } else {
-            // Rep-based: use worst state
+            // Fallback: Legacy worst state scoring
             val config = StateConfig.getConfig(currentRepWorstState)
-            score = config.rate.coerceAtLeast(0f)
+            score = ScoreCalculator.getScoreRate(currentRepWorstState)
             isCounted = config.isRepCounted
             isInvalidated = config.invalidatesRep
         }
@@ -300,37 +345,7 @@ class RepCounter(
         completeRep()
     }
     
-    /**
-     * Calculate score for HOLD exercises using weighted average
-     * 
-     * Formula: (TimeInPerfect * 1.0 + TimeInNormal * 0.6 + TimeInPad * 0.2) / TotalTime
-     * 
-     * @return Pair of (score, isInvalidated)
-     */
-    private fun calculateHoldScore(): Pair<Float, Boolean> {
-        val perfectTime = stateTimeTracking[JointState.PERFECT] ?: 0L
-        val normalTime = stateTimeTracking[JointState.NORMAL] ?: 0L
-        val padTime = stateTimeTracking[JointState.PAD] ?: 0L
-        val warningTime = stateTimeTracking[JointState.WARNING] ?: 0L
-        val dangerTime = stateTimeTracking[JointState.DANGER] ?: 0L
-        
-        val totalTime = perfectTime + normalTime + padTime + warningTime + dangerTime
-        
-        // If DANGER occurred at any point, invalidate
-        if (dangerTime > 0) {
-            return Pair(0f, true)
-        }
-        
-        if (totalTime == 0L) {
-            return Pair(0f, false)
-        }
-        
-        // Weighted average
-        val weightedSum = (perfectTime * 1.0f) + (normalTime * 0.6f) + (padTime * 0.2f)
-        val score = (weightedSum / totalTime) * 100f
-        
-        return Pair(score, false)
-    }
+    // NOTE: Hold score calculation moved to ScoreCalculator.calculateHoldScore()
     
     /**
      * Reset tracking for next rep
@@ -343,6 +358,7 @@ class RepCounter(
         stateTimeTracking.clear()
         lastStateUpdateTime = 0L
         currentTrackingState = JointState.PERFECT
+        currentJointStates = emptyMap()  // Reset joint states
     }
     
     // ==================== Query Methods ====================

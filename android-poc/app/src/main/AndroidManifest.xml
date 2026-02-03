@@ -160,9 +160,23 @@
             android:screenOrientation="portrait"
             android:theme="@style/Theme.WayToFix.Training" />
         
-        <!-- Post-Training Report Activity -->
+        <!-- Post-Training Report Activity (Legacy) -->
         <activity
             android:name=".ui.report.ReportActivity"
+            android:exported="false"
+            android:screenOrientation="portrait"
+            android:theme="@style/Theme.WayToFix" />
+        
+        <!-- Post-Training Report Activity V2 (Enhanced) -->
+        <activity
+            android:name=".ui.report.ReportActivityV2"
+            android:exported="false"
+            android:screenOrientation="portrait"
+            android:theme="@style/Theme.WayToFix" />
+        
+        <!-- Post-Training Report Pager Activity (Full-screen swipeable) -->
+        <activity
+            android:name=".ui.report.ReportPagerActivity"
             android:exported="false"
             android:screenOrientation="portrait"
             android:theme="@style/Theme.WayToFix" />

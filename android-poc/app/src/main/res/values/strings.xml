@@ -355,4 +355,15 @@
     <string name="pose_not_detected">No pose detected</string>
     <string name="ready_to_start">Ready to start!</string>
     <string name="analyzing">Analyzing pose…</string>
+    
+    <!-- Report V2 -->
+    <string name="training_report">Training Report</string>
+    <string name="share">Share</string>
+    <string name="quality">Quality</string>
+    <string name="weight">Weight</string>
+    <string name="train_again">Train Again</string>
+    <string name="your_performance">Your Performance</string>
+    <string name="reps_journey">Reps Journey</string>
+    <string name="tips_for_you">Tips for You</string>
+    <string name="show_details">Show Details</string>
 </resources>

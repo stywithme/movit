@@ -7,6 +7,7 @@ import com.trainingvalidator.poc.training.models.LocalizedText
 import com.trainingvalidator.poc.training.models.WorkoutType
 import com.trainingvalidator.poc.training.models.ExecutionMode
 import com.trainingvalidator.poc.training.models.WorkoutExercise
+import com.trainingvalidator.poc.training.models.ReportMetricsConfig
 
 /**
  * Mobile Sync API Response Models
@@ -56,7 +57,25 @@ data class ExerciseConfigWithMeta(
     val equipment: List<String> = emptyList(),
     val tags: List<String> = emptyList(),
     val poseVariants: List<com.trainingvalidator.poc.training.models.PoseVariant> = emptyList(),
-    val repCountingConfig: com.trainingvalidator.poc.training.models.RepCountingConfig = com.trainingvalidator.poc.training.models.RepCountingConfig()
+    val repCountingConfig: com.trainingvalidator.poc.training.models.RepCountingConfig = com.trainingvalidator.poc.training.models.RepCountingConfig(),
+    
+    // ═══════════════════════════════════════════════════════════════
+    // WEIGHT & METRICS CONFIGURATION (from server)
+    // ═══════════════════════════════════════════════════════════════
+    
+    /** Does this exercise support weights? */
+    val supportsWeight: Boolean = false,
+    
+    /** Weight limits (kg) */
+    val minWeight: Float? = null,
+    val maxWeight: Float? = null,
+    val defaultWeight: Float? = null,
+    
+    /** Report metrics configuration */
+    val reportMetrics: ReportMetricsConfig? = null,
+    
+    /** Is this exercise bilateral (has paired joints)? - auto-detected by server */
+    val isBilateral: Boolean = false
 ) {
     /**
      * Convert to ExerciseConfig (without meta)
@@ -74,6 +93,12 @@ data class ExerciseConfigWithMeta(
             tags = tags,
             poseVariants = poseVariants,
             repCountingConfig = repCountingConfig,
+            // Weight & Metrics
+            supportsWeight = supportsWeight,
+            minWeight = minWeight,
+            maxWeight = maxWeight,
+            defaultWeight = defaultWeight,
+            reportMetrics = reportMetrics,
             fileName = slug  // Use slug as fileName for compatibility
         )
     }

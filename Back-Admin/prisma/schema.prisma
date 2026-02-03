@@ -41,6 +41,10 @@ model AttributeValue {
   sortOrder   Int      @default(0)
   isActive    Boolean  @default(true)
   createdAt   DateTime @default(now())
+  
+  // Metadata for special types (e.g., bilateral joints)
+  // { "type": "bilateral", "leftJoint": "left_knee", "rightJoint": "right_knee" }
+  metadata    Json?
 
   attribute Attribute @relation(fields: [attributeId], references: [id], onDelete: Cascade)
 
@@ -74,6 +78,25 @@ model Exercise {
   // { "reps": 12, "minRepIntervalMs": 1500, "maxRepIntervalMs": 5000 }
   // or { "duration": 30, "gracePeriodMs": 2500 } for hold exercises
   repCountingConfig Json?
+  
+  // ============================================
+  // WEIGHT CONFIGURATION
+  // ============================================
+  supportsWeight    Boolean   @default(false)  // Does this exercise use weights?
+  minWeight         Float?                      // Minimum weight (kg)
+  maxWeight         Float?                      // Maximum weight (kg)
+  defaultWeight     Float?                      // Default weight for new users (kg)
+  
+  // ============================================
+  // REPORT METRICS CONFIGURATION
+  // ============================================
+  // Which metrics to show in the report
+  // { 
+  //   "primary": ["form_score", "symmetry"],     // Main cards (2-3)
+  //   "optional": ["velocity", "stability"],      // Admin-selected extras
+  //   "excluded": ["tempo"]                       // Explicitly hidden
+  // }
+  reportMetrics     Json?
   
   publishedAt      DateTime?
   createdBy        String?

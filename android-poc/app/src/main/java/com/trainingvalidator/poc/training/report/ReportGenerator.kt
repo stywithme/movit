@@ -87,6 +87,25 @@ object ReportGenerator {
         // 12. Generate hold summary if applicable
         val holdSummary = holdData?.let { generateHoldSummary(it, frameCaptures) }
         
+        // 13. Create exercise config snapshot for report metrics filtering
+        val configSnapshot = ExerciseConfigSnapshot.from(
+            countingMethod = exerciseConfig.countingMethod,
+            isBilateral = exerciseConfig.isBilateralExercise(),
+            supportsWeight = exerciseConfig.supportsWeight,
+            metricsConfig = exerciseConfig.reportMetrics
+        )
+        
+        // 14. Calculate Overall Quality Score
+        val overallQuality = calculateOverallQuality(
+            summary = summary,
+            errorAnalysis = errorAnalysis,
+            timeline = timeline,
+            dangerAlerts = dangerAlerts,
+            consistency = consistency,
+            isHoldExercise = exerciseConfig.isHoldExercise(),
+            isBilateral = exerciseConfig.isBilateralExercise()
+        )
+        
         return PostTrainingReport(
             id = UUID.randomUUID().toString(),
             sessionId = sessionId,
@@ -103,7 +122,9 @@ object ReportGenerator {
             sessionQuality = sessionQuality,
             improvementTips = tips,
             frameCaptures = frameCaptures,
-            holdSummary = holdSummary
+            holdSummary = holdSummary,
+            overallQuality = overallQuality,
+            exerciseConfig = configSnapshot
         )
     }
     
@@ -750,6 +771,125 @@ object ReportGenerator {
             jointCode.contains("ankle") -> TipCategory.POSITION
             else -> TipCategory.STABILITY
         }
+    }
+    
+    // ═══════════════════════════════════════════════════════════════
+    // OVERALL QUALITY CALCULATION
+    // ═══════════════════════════════════════════════════════════════
+    
+    /**
+     * Calculate overall quality score from report components
+     * 
+     * This combines Form, Safety, and Control scores into a single metric.
+     */
+    private fun calculateOverallQuality(
+        summary: SessionSummary,
+        errorAnalysis: List<ErrorAnalysisItem>,
+        timeline: List<RepTimelineEntry>,
+        dangerAlerts: List<DangerAlert>,
+        consistency: ConsistencyMetrics?,
+        isHoldExercise: Boolean,
+        isBilateral: Boolean
+    ): OverallQualityScore {
+        
+        // 1. Calculate Form Score
+        val formScore = calculateFormScoreForOverall(summary, timeline, isBilateral)
+        
+        // 2. Calculate Safety Score
+        val safetyScore = calculateSafetyScoreForOverall(errorAnalysis, dangerAlerts, summary.totalReps)
+        
+        // 3. Calculate Control Score
+        val controlScore = calculateControlScoreForOverall(timeline, consistency)
+        
+        // 4. Calculate Overall using OverallQualityScore
+        return OverallQualityScore.calculate(
+            formScore = formScore,
+            safetyScore = safetyScore,
+            controlScore = controlScore,
+            isHoldExercise = isHoldExercise
+        )
+    }
+    
+    /**
+     * Calculate Form Score from summary and timeline
+     */
+    private fun calculateFormScoreForOverall(
+        summary: SessionSummary,
+        timeline: List<RepTimelineEntry>,
+        isBilateral: Boolean
+    ): Float {
+        // Use average score from timeline if available
+        if (timeline.isNotEmpty()) {
+            val avgScore = timeline.map { it.score }.average().toFloat()
+            return avgScore
+        }
+        
+        // Fallback: calculate from state breakdown (Map<JointState, Int>)
+        val breakdownMap = summary.stateBreakdown
+        val perfectCount = breakdownMap[JointState.PERFECT] ?: 0
+        val normalCount = breakdownMap[JointState.NORMAL] ?: 0
+        val padCount = breakdownMap[JointState.PAD] ?: 0
+        val warningCount = breakdownMap[JointState.WARNING] ?: 0
+        val dangerCount = breakdownMap[JointState.DANGER] ?: 0
+        
+        val total = (perfectCount + normalCount + padCount + warningCount + dangerCount).toFloat()
+        if (total == 0f) return 0f
+        
+        return (
+            perfectCount * 100f +
+            normalCount * 80f +
+            padCount * 60f +
+            warningCount * 40f +
+            dangerCount * 0f
+        ) / total
+    }
+    
+    /**
+     * Calculate Safety Score from error analysis and danger alerts
+     */
+    private fun calculateSafetyScoreForOverall(
+        errorAnalysis: List<ErrorAnalysisItem>,
+        dangerAlerts: List<DangerAlert>,
+        totalReps: Int
+    ): Float {
+        if (totalReps == 0) return 100f
+        
+        // Count warning and danger events
+        val warningEvents = errorAnalysis.filter { it.state == JointState.WARNING }.sumOf { it.count }
+        val dangerEvents = dangerAlerts.size
+        
+        // Calculate penalty
+        val warningPenalty = (warningEvents.toFloat() / totalReps) * 30f  // Max 30% penalty for warnings
+        val dangerPenalty = (dangerEvents.toFloat() / totalReps) * 50f    // Max 50% penalty for dangers
+        
+        return (100f - warningPenalty - dangerPenalty).coerceIn(0f, 100f)
+    }
+    
+    /**
+     * Calculate Control Score from timeline and consistency
+     */
+    private fun calculateControlScoreForOverall(
+        timeline: List<RepTimelineEntry>,
+        consistency: ConsistencyMetrics?
+    ): Float {
+        if (timeline.isEmpty()) return 50f  // Neutral if no data
+        
+        var controlScore = 70f  // Base score
+        
+        // Add consistency bonus/penalty
+        if (consistency != null && timeline.size >= 4) {
+            val scores = timeline.map { it.score.toDouble() }
+            val mean = scores.average()
+            val variance = scores.map { (it - mean) * (it - mean) }.average()
+            val stdDev = kotlin.math.sqrt(variance).toFloat()
+            
+            // Lower variance = higher score
+            // stdDev of 0 = +30 bonus, stdDev of 30 = -30 penalty
+            val consistencyBonus = (30f - stdDev).coerceIn(-30f, 30f)
+            controlScore += consistencyBonus
+        }
+        
+        return controlScore.coerceIn(0f, 100f)
     }
 }
 

@@ -269,11 +269,13 @@ async function main() {
   // ============================================
   // JOINTS (MediaPipe Pose landmarks + custom)
   // ============================================
-  // IMPORTANT: These are split into two categories:
-  // 1. ANGLE_JOINTS: Can be used for trackedJoints (angle-based tracking)
-  // 2. LANDMARKS: Full list for positionChecks (position-based validation)
+  // IMPORTANT: These are split into three categories:
+  // 1. UNILATERAL_JOINTS: Single-side joints (left_* or right_*)
+  // 2. BILATERAL_JOINTS: Virtual joints representing a pair (e.g., "knees" = left_knee + right_knee)
+  // 3. LANDMARKS: Full list for positionChecks (position-based validation)
 
-  const joints = [
+  // Unilateral joints (individual left/right)
+  const unilateralJoints = [
     // Upper body - Shoulders (11-12)
     { code: 'left_shoulder', name: { ar: 'الكتف الأيسر', en: 'Left Shoulder' }, sortOrder: 11 },
     { code: 'right_shoulder', name: { ar: 'الكتف الأيمن', en: 'Right Shoulder' }, sortOrder: 12 },
@@ -311,13 +313,92 @@ async function main() {
     { code: 'spine', name: { ar: 'العمود الفقري', en: 'Spine' }, sortOrder: 100 },
   ];
 
-  for (const joint of joints) {
+  for (const joint of unilateralJoints) {
     await prisma.attributeValue.upsert({
       where: { code: joint.code },
       update: {},
       create: { ...joint, attributeId: jointAttr!.id },
     });
   }
+
+  // ============================================
+  // BILATERAL JOINTS (Virtual paired joints)
+  // ============================================
+  // When admin selects "Knees", system creates both left_knee and right_knee
+  // with Symmetry metric automatically enabled
+  
+  const bilateralJoints = [
+    { 
+      code: 'shoulders', 
+      name: { ar: 'الكتفين', en: 'Shoulders' }, 
+      description: { ar: 'الكتف الأيسر والأيمن معاً', en: 'Left and Right Shoulders together' },
+      leftJoint: 'left_shoulder',
+      rightJoint: 'right_shoulder',
+      sortOrder: 201 
+    },
+    { 
+      code: 'elbows', 
+      name: { ar: 'الكوعين', en: 'Elbows' }, 
+      description: { ar: 'المرفق الأيسر والأيمن معاً', en: 'Left and Right Elbows together' },
+      leftJoint: 'left_elbow',
+      rightJoint: 'right_elbow',
+      sortOrder: 202 
+    },
+    { 
+      code: 'wrists', 
+      name: { ar: 'الرسغين', en: 'Wrists' }, 
+      description: { ar: 'الرسغ الأيسر والأيمن معاً', en: 'Left and Right Wrists together' },
+      leftJoint: 'left_wrist',
+      rightJoint: 'right_wrist',
+      sortOrder: 203 
+    },
+    { 
+      code: 'hips', 
+      name: { ar: 'الوركين', en: 'Hips' }, 
+      description: { ar: 'الورك الأيسر والأيمن معاً', en: 'Left and Right Hips together' },
+      leftJoint: 'left_hip',
+      rightJoint: 'right_hip',
+      sortOrder: 204 
+    },
+    { 
+      code: 'knees', 
+      name: { ar: 'الركبتين', en: 'Knees' }, 
+      description: { ar: 'الركبة اليسرى واليمنى معاً', en: 'Left and Right Knees together' },
+      leftJoint: 'left_knee',
+      rightJoint: 'right_knee',
+      sortOrder: 205 
+    },
+    { 
+      code: 'ankles', 
+      name: { ar: 'الكاحلين', en: 'Ankles' }, 
+      description: { ar: 'الكاحل الأيسر والأيمن معاً', en: 'Left and Right Ankles together' },
+      leftJoint: 'left_ankle',
+      rightJoint: 'right_ankle',
+      sortOrder: 206 
+    },
+  ];
+
+  for (const joint of bilateralJoints) {
+    await prisma.attributeValue.upsert({
+      where: { code: joint.code },
+      update: { description: joint.description },
+      create: { 
+        code: joint.code,
+        name: joint.name, 
+        description: joint.description,
+        // Store left/right references in metadata (JSON)
+        metadata: { 
+          type: 'bilateral',
+          leftJoint: joint.leftJoint, 
+          rightJoint: joint.rightJoint 
+        },
+        attributeId: jointAttr!.id,
+        sortOrder: joint.sortOrder,
+      },
+    });
+  }
+
+  console.log('✅ Bilateral joints created');
 
   // Priorities
   const priorities = [

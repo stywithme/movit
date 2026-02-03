@@ -285,7 +285,7 @@ class ReportActivity : AppCompatActivity() {
                 0 -> BestRepsFragment()
                 1 -> ErrorsFragment()
                 2 -> StateBreakdownFragment()  // Replaced Timeline with State Breakdown
-                3 -> TipsFragment()
+                3 -> LegacyTipsFragment()
                 else -> BestRepsFragment()
             }
         }
@@ -784,9 +784,9 @@ class StateBreakdownFragment : Fragment() {
 }
 
 /**
- * Tips Tab - Shows improvement tips
+ * Tips Tab - Shows improvement tips (Legacy version for ReportActivity)
  */
-class TipsFragment : Fragment() {
+class LegacyTipsFragment : Fragment() {
     
     private val viewModel: ReportViewModel by lazy {
         (requireActivity() as ReportActivity).let {

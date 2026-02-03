@@ -175,6 +175,19 @@ export default function EditExercisePage() {
             tags,
             feedbackMessages,
           },
+          // Weight configuration
+          weightConfig: {
+            supportsWeight: exercise.supportsWeight ?? false,
+            minWeight: exercise.minWeight ?? undefined,
+            maxWeight: exercise.maxWeight ?? undefined,
+            defaultWeight: exercise.defaultWeight ?? undefined,
+          },
+          // Report metrics configuration
+          reportMetrics: {
+            primary: (exercise.reportMetrics as Record<string, string[]> | null)?.primary ?? ['form_score'],
+            optional: (exercise.reportMetrics as Record<string, string[]> | null)?.optional ?? [],
+            excluded: (exercise.reportMetrics as Record<string, string[]> | null)?.excluded ?? [],
+          },
         });
         
         setExerciseId(exercise.id);
@@ -273,6 +286,17 @@ export default function EditExercisePage() {
         feedbackMessages,
         sortOrder: index + 1,
       })),
+      // Weight configuration
+      supportsWeight: store.weightConfig.supportsWeight,
+      minWeight: store.weightConfig.minWeight,
+      maxWeight: store.weightConfig.maxWeight,
+      defaultWeight: store.weightConfig.defaultWeight,
+      // Report metrics configuration
+      reportMetrics: {
+        primary: store.reportMetrics.primary,
+        optional: store.reportMetrics.optional,
+        excluded: store.reportMetrics.excluded,
+      },
     };
   }, []);
   
