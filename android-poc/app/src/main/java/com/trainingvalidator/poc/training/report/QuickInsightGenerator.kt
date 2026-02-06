@@ -21,6 +21,9 @@ object QuickInsightGenerator {
      */
     fun generate(report: PostTrainingReport): QuickInsight {
         return when {
+            // Priority 0: No reps completed - special handling
+            report.summary.totalReps == 0 -> generateNoRepsInsight(report)
+            
             // Priority 1: Danger alerts
             report.hasDangerAlerts() -> generateDangerInsight(report)
             
@@ -32,6 +35,71 @@ object QuickInsightGenerator {
             
             // Default: Focus on the main area to improve
             else -> generateDefaultFocusInsight(report)
+        }
+    }
+    
+    /**
+     * Generate insight when no reps were completed
+     * This helps users understand why and how to improve
+     */
+    private fun generateNoRepsInsight(report: PostTrainingReport): QuickInsight {
+        val durationSeconds = (report.summary.durationMs / 1000).toInt()
+        val isHoldExercise = report.exerciseConfig?.isHoldExercise() == true
+        
+        return when {
+            // Very short session - probably technical issue or user stopped early
+            durationSeconds < 5 -> QuickInsight(
+                type = InsightType.FOCUS_POINT,
+                title = LocalizedText(
+                    ar = "جلسة قصيرة جداً",
+                    en = "Very Short Session"
+                ),
+                subtitle = LocalizedText(
+                    ar = "لم يتم اكتشاف أي حركة مكتملة",
+                    en = "No complete movement was detected"
+                ),
+                actionable = LocalizedText(
+                    ar = "حاول مرة أخرى وتأكد من ظهور جسمك بالكامل في الكاميرا",
+                    en = "Try again and make sure your full body is visible in the camera"
+                ),
+                icon = "📹"
+            )
+            
+            // Hold exercise - user didn't reach hold position
+            isHoldExercise -> QuickInsight(
+                type = InsightType.FOCUS_POINT,
+                title = LocalizedText(
+                    ar = "لم يتم الوصول لوضع الثبات",
+                    en = "Hold Position Not Reached"
+                ),
+                subtitle = LocalizedText(
+                    ar = "تأكد من الوصول للوضع الصحيح قبل البدء",
+                    en = "Make sure to reach the correct position before starting"
+                ),
+                actionable = LocalizedText(
+                    ar = "اتبع التعليمات على الشاشة للوصول للوضع المطلوب",
+                    en = "Follow the on-screen instructions to reach the required position"
+                ),
+                icon = "🎯"
+            )
+            
+            // Rep-based exercise - user didn't complete the full range of motion
+            else -> QuickInsight(
+                type = InsightType.FOCUS_POINT,
+                title = LocalizedText(
+                    ar = "لم تكتمل أي عدة",
+                    en = "No Reps Completed"
+                ),
+                subtitle = LocalizedText(
+                    ar = "لم تصل الحركة للمدى الكامل المطلوب",
+                    en = "Movement didn't reach the full required range"
+                ),
+                actionable = LocalizedText(
+                    ar = "حاول النزول أعمق والعودة للوضع الأول بشكل كامل",
+                    en = "Try going deeper and fully returning to the starting position"
+                ),
+                icon = "💪"
+            )
         }
     }
     
@@ -248,24 +316,13 @@ object QuickInsightGenerator {
     }
     
     /**
-     * Detect the point where fatigue started
-     * Returns the rep number where score started declining significantly
+     * Get the fatigue point from pre-calculated value
+     * 
+     * Uses fatigueIndex from PerformanceSummary (Single Source of Truth).
+     * Calculated once in ReportGenerator using MetricsCalculator.
      */
     private fun detectFatiguePoint(report: PostTrainingReport): Int? {
-        val timeline = report.repTimeline
-        if (timeline.size < 4) return null
-        
-        // Find where score drops by more than 15% from the average of first 3 reps
-        val firstThreeAvg = timeline.take(3).map { it.score }.average()
-        
-        for (i in 3 until timeline.size) {
-            val currentScore = timeline[i].score
-            if (currentScore < firstThreeAvg - 15) {
-                return timeline[i].repNumber
-            }
-        }
-        
-        return null
+        return report.summary.fatigueIndex
     }
     
     /**

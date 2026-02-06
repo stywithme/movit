@@ -42,7 +42,8 @@ class PhaseStateMachine(
     private val countingMethod: CountingMethod,
     private val primaryJoints: List<TrackedJoint>,
     private val repCountingConfig: RepCountingConfig? = null,
-    private val numberOfPhases: Int = 4
+    private val numberOfPhases: Int = 4,
+    private val timeProvider: () -> Long = { System.currentTimeMillis() }
 ) {
     
     companion object {
@@ -86,8 +87,9 @@ class PhaseStateMachine(
     
     /**
      * Timestamp when entered current phase
+     * Initialize to 0 - will be set properly on first update()
      */
-    private var phaseEntryTime: Long = System.currentTimeMillis()
+    private var phaseEntryTime: Long = 0L
     
     /**
      * Phase timings for current rep (for analytics)
@@ -133,24 +135,24 @@ class PhaseStateMachine(
             
             // upRangeMin = lowest min of counted states (pad/normal/perfect)
             // This is where TRANSITION ends and UP_ZONE begins
-            upRangeMin = upRange.getEffectiveMin()
+            upRangeMin = upRange.effectiveMin
             
             // upRangeMax = highest max (including warning/danger if defined)
-            upRangeMax = upRange.getOutermostMax()
+            upRangeMax = upRange.outermostMax
             
             // downRangeMin = lowest min (including warning/danger if defined)
-            downRangeMin = downRange.getOutermostMin()
+            downRangeMin = downRange.outermostMin
             
             // downRangeMax = highest max of counted states
             // This is where DOWN_ZONE ends and TRANSITION begins
-            downRangeMax = downRange.getEffectiveMax()
+            downRangeMax = downRange.effectiveMax
         } else if (joint.hasStateHoldRange()) {
             // For HOLD exercises with single range
             val holdRange = joint.getStateHoldRange()
-            upRangeMin = holdRange.getEffectiveMin()
-            upRangeMax = holdRange.getOutermostMax()
-            downRangeMin = holdRange.getOutermostMin()
-            downRangeMax = holdRange.getEffectiveMax()
+            upRangeMin = holdRange.effectiveMin
+            upRangeMax = holdRange.outermostMax
+            downRangeMin = holdRange.outermostMin
+            downRangeMax = holdRange.effectiveMax
         } else {
             // Fallback defaults
             upRangeMin = 120.0
@@ -403,8 +405,10 @@ class PhaseStateMachine(
      * 3. Cooldown period has passed since last rep
      */
     private fun handlePhaseTransition(nextPhase: Phase) {
-        val now = System.currentTimeMillis()
-        val phaseDuration = now - phaseEntryTime
+        val now = timeProvider()
+        
+        // If phaseEntryTime not yet set, allow transition (first frame scenario)
+        val phaseDuration = if (phaseEntryTime > 0L) now - phaseEntryTime else minPhaseDurationMs
         
         // Only transition if minimum duration has passed
         if (phaseDuration < minPhaseDurationMs) {
@@ -429,7 +433,8 @@ class PhaseStateMachine(
         
         // Handle rep completion if applicable
         if (isRepCompletionTransition) {
-            val timeSinceLastRep = now - lastRepCompletedTime
+            // If lastRepCompletedTime is 0, this is the first rep - allow it
+            val timeSinceLastRep = if (lastRepCompletedTime > 0L) now - lastRepCompletedTime else minRepIntervalMs
             
             when {
                 repCountedThisCycle -> {
@@ -479,7 +484,7 @@ class PhaseStateMachine(
         previousPhase = currentPhase
         currentPhase = Phase.IDLE
         phaseTimings.clear()
-        phaseEntryTime = System.currentTimeMillis()
+        phaseEntryTime = 0L  // Will be set properly on first update()
         repCountedThisCycle = false
         lastRepCompletedTime = 0L
     }

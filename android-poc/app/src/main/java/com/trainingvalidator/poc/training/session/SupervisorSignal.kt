@@ -38,15 +38,17 @@ sealed class SupervisorSignal {
      * @param angles Calculated joint angles
      * @param landmarks Smoothed landmarks for position validation
      * @param isFrontCamera Whether using front camera (for visibility check mirroring)
+     * @param timestampMs Frame timestamp (monotonic)
      */
     data class PoseFrame(
         val angles: JointAngles,
         val landmarks: List<SmoothedLandmark>?,
-        val isFrontCamera: Boolean
+        val isFrontCamera: Boolean,
+        val timestampMs: Long
     ) : SupervisorSignal()
     
     /** No pose detected in current frame */
-    object NoPoseFrame : SupervisorSignal()
+    data class NoPoseFrame(val timestampMs: Long) : SupervisorSignal()
     
     // ==================== Pose Validation ====================
     

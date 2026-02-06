@@ -220,12 +220,20 @@ class ExerciseCacheManager(private val context: Context) {
         }
         
         for (exerciseMeta in exercises) {
+            // Debug: Log reportMetrics from server
+            Log.d(TAG, "Exercise ${exerciseMeta.slug} - reportMetrics from server: ${exerciseMeta.reportMetrics}")
+            Log.d(TAG, "  - excluded: ${exerciseMeta.reportMetrics?.excluded}")
+            
             val cached = CachedExercise(
                 id = exerciseMeta.id,
                 slug = exerciseMeta.slug,
                 updatedAt = exerciseMeta.updatedAt,
                 config = exerciseMeta.toExerciseConfig()
             )
+            
+            // Debug: Log reportMetrics after conversion
+            Log.d(TAG, "  - after toExerciseConfig: ${cached.config.reportMetrics}")
+            Log.d(TAG, "  - excluded after: ${cached.config.reportMetrics?.excluded}")
             
             // Save to disk
             val file = File(exercisesDir, "${cached.slug}.json")

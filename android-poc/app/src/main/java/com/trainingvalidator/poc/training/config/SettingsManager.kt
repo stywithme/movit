@@ -310,13 +310,15 @@ object SettingsManager {
     
     /**
      * Check if Arc indicator should be used
+     * Reads from runtime settings first, then falls back to config
      */
-    fun useArcIndicator(): Boolean = settings.rangeIndicator.isArc()
+    fun useArcIndicator(): Boolean = getIndicatorType() == "arc"
     
     /**
      * Check if Line indicator should be used
+     * Reads from runtime settings first, then falls back to config
      */
-    fun useLineIndicator(): Boolean = settings.rangeIndicator.isLine()
+    fun useLineIndicator(): Boolean = getIndicatorType() == "line"
     
     // ==================== Line Indicator Settings ====================
     

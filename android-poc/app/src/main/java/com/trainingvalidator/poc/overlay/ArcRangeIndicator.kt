@@ -71,6 +71,26 @@ class ArcRangeIndicator {
     // Reusable RectF to avoid allocations
     private val arcRect = RectF()
     
+    // Cached BlurMaskFilters to avoid per-frame allocations
+    private val blurFilterSmall: BlurMaskFilter by lazy {
+        BlurMaskFilter(8f, BlurMaskFilter.Blur.NORMAL)
+    }
+    private val blurFilterMedium: BlurMaskFilter by lazy {
+        BlurMaskFilter(12f, BlurMaskFilter.Blur.NORMAL)
+    }
+    private val blurFilterLarge: BlurMaskFilter by lazy {
+        BlurMaskFilter(18f, BlurMaskFilter.Blur.NORMAL)
+    }
+    
+    // Helper to get appropriate cached filter
+    private fun getBlurFilter(radius: Float): BlurMaskFilter {
+        return when {
+            radius <= 10f -> blurFilterSmall
+            radius <= 15f -> blurFilterMedium
+            else -> blurFilterLarge
+        }
+    }
+    
     // ==================== Public API ====================
     
     /**
@@ -314,10 +334,10 @@ class ArcRangeIndicator {
         val glowRadius = indicatorRadius * GLOW_RADIUS_MULTIPLIER
         val glowAlpha = if (data.isError || data.isWarning) GLOW_ALPHA_ERROR else GLOW_ALPHA_NORMAL
         
-        // 1. Draw glow effect
+        // 1. Draw glow effect (using cached BlurMaskFilter)
         glowPaint.color = indicatorColor
         glowPaint.alpha = glowAlpha
-        glowPaint.maskFilter = BlurMaskFilter(glowRadius, BlurMaskFilter.Blur.NORMAL)
+        glowPaint.maskFilter = getBlurFilter(glowRadius)
         canvas.drawCircle(indicatorX, indicatorY, indicatorRadius * GLOW_RADIUS_MULTIPLIER, glowPaint)
         glowPaint.maskFilter = null
         
@@ -451,10 +471,10 @@ class ArcRangeIndicator {
         val glowRadius = indicatorRadius * GLOW_RADIUS_MULTIPLIER
         val glowAlpha = if (data.isError || data.isWarning) GLOW_ALPHA_ERROR else GLOW_ALPHA_NORMAL
         
-        // 1. Draw glow
+        // 1. Draw glow (using cached BlurMaskFilter)
         glowPaint.color = indicatorColor
         glowPaint.alpha = glowAlpha
-        glowPaint.maskFilter = BlurMaskFilter(glowRadius, BlurMaskFilter.Blur.NORMAL)
+        glowPaint.maskFilter = getBlurFilter(glowRadius)
         canvas.drawCircle(indicatorX, indicatorY, indicatorRadius * GLOW_RADIUS_MULTIPLIER, glowPaint)
         glowPaint.maskFilter = null
         

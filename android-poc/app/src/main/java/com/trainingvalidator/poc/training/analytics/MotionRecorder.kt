@@ -61,8 +61,8 @@ class MotionRecorder(
     /**
      * Start recording a new session
      */
-    fun start() {
-        sessionStartMs = System.currentTimeMillis()
+    fun start(startTimestampMs: Long = System.currentTimeMillis()) {
+        sessionStartMs = startTimestampMs
         isRecording = true
         currentRepBuffer.clear()
         completedRepMetrics.clear()
@@ -115,6 +115,10 @@ class MotionRecorder(
         states: Map<String, JointStateInfo>? = null
     ) {
         if (!isRecording) return
+        
+        if (sessionStartMs == 0L) {
+            sessionStartMs = timestamp
+        }
         
         // Safety: limit frames per rep
         if (currentRepBuffer.size >= MAX_FRAMES_PER_REP) {
@@ -242,11 +246,11 @@ class MotionRecorder(
      * @param sessionId Optional session ID (generated if null)
      * @return SessionUpload ready for API upload
      */
-    fun finalize(sessionId: String? = null): SessionUpload {
+    fun finalize(sessionId: String? = null, endTimestampMs: Long = System.currentTimeMillis()): SessionUpload {
         isRecording = false
         
         val id = sessionId ?: UUID.randomUUID().toString()
-        val durationMs = (System.currentTimeMillis() - sessionStartMs).toInt()
+        val durationMs = (endTimestampMs - sessionStartMs).toInt()
         
         // Calculate aggregated session metrics
         val sessionMetrics = calculateSessionMetrics()
@@ -301,9 +305,10 @@ class MotionRecorder(
         val totalTUT = completedRepMetrics.sumOf { it.durationMs }
         
         // Load metrics
+        // Uses same logic as MetricsCalculator.calculateVolume for consistency
         val weights = completedRepMetrics.mapNotNull { it.weightKg }
         val totalVolume = if (weights.isNotEmpty()) {
-            weights.sum()  // Each rep counts as 1 × weight
+            weights.sum()  // Sum of weight per rep (same as MetricsCalculator.calculateVolume)
         } else null
         val maxWeight = weights.maxOrNull()
         val countedReps = completedRepMetrics.count { it.worstState <= StateCode.PAD }
@@ -335,37 +340,29 @@ class MotionRecorder(
     
     /**
      * Calculate form consistency from rep metrics (without raw frames)
-     * Uses ROM variance as a proxy for form consistency
+     * 
+     * Uses MetricsCalculator (Single Source of Truth).
+     * Uses score variance as a proxy for form consistency.
      */
     private fun calculateFormConsistencyFromMetrics(): Short? {
         if (completedRepMetrics.size < 4) return null
         
-        val roms = completedRepMetrics.map { it.metrics.rom.toInt() }
-        val mean = roms.average()
-        val variance = roms.map { (it - mean) * (it - mean) }.average()
-        val stdDev = kotlin.math.sqrt(variance)
-        
-        // Low std dev = high consistency. 200 units std = 0%
-        val score = ((1 - stdDev / 200.0).coerceIn(0.0, 1.0) * 1000).toInt()
-        return score.toShort()
+        // Convert scores from ×10 format to regular float
+        val scores = completedRepMetrics.map { it.score / 10f }
+        return MetricsCalculator.calculateFormConsistencyFromScores(scores)
     }
     
     /**
      * Calculate fatigue index from rep metrics
+     * 
+     * Uses MetricsCalculator (Single Source of Truth).
      */
     private fun calculateFatigueIndexFromMetrics(): Short? {
         if (completedRepMetrics.size < 4) return null
         
-        val firstHalfAvg = completedRepMetrics.take(completedRepMetrics.size / 2)
-            .map { it.score }.average()
-        
-        for (i in completedRepMetrics.indices) {
-            if (completedRepMetrics[i].score < firstHalfAvg * 0.8) {
-                return (i + 1).toShort()
-            }
-        }
-        
-        return null
+        // Convert scores from ×10 format to regular float
+        val scores = completedRepMetrics.map { it.score / 10f }
+        return MetricsCalculator.calculateFatigueIndexFromScores(scores)
     }
     
     private fun createEmptySessionMetrics(): SessionMetrics {

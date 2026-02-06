@@ -7,6 +7,7 @@ import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import android.provider.MediaStore
+import android.util.Log
 import android.view.View
 import android.widget.Toast
 import androidx.activity.result.ActivityResultLauncher
@@ -17,7 +18,6 @@ import androidx.appcompat.app.AppCompatDelegate
 import androidx.core.content.ContextCompat
 import com.trainingvalidator.poc.R
 import com.trainingvalidator.poc.databinding.ActivityExerciseDetailBinding
-import com.trainingvalidator.poc.training.loader.ExerciseLoader
 import com.trainingvalidator.poc.training.models.CountingMethod
 import com.trainingvalidator.poc.training.models.ExerciseConfig
 
@@ -114,13 +114,14 @@ class ExerciseDetailActivity : AppCompatActivity() {
     }
 
     private fun loadExercise(exerciseName: String) {
-        // Try repository first (cached/synced data), fall back to assets
+        // Load from repository (cached/synced data from backend)
+        // No fallback to assets - repository is the single source of truth
         exerciseConfig = try {
             val repository = com.trainingvalidator.poc.storage.ExerciseRepository.getInstance(this)
-            repository.getExercise(exerciseName) ?: ExerciseLoader.load(assets, exerciseName)
+            repository.getExercise(exerciseName)
         } catch (e: Exception) {
-            // Repository not initialized, use assets
-            ExerciseLoader.load(assets, exerciseName)
+            Log.e(TAG, "Failed to access repository for exercise: $exerciseName", e)
+            null
         }
         
         if (exerciseConfig == null) {

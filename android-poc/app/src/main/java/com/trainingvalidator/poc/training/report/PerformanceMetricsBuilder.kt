@@ -8,15 +8,17 @@ import com.trainingvalidator.poc.training.models.MetricCode
 /**
  * PerformanceMetricsBuilder - Builds EnhancedPerformanceMetrics from report data
  * 
- * Aggregates raw metrics into the 3 main cards:
+ * Aggregates metrics into the 3 main cards:
  * - Form (الشكل)
  * - Safety (الأمان)
  * - Control (التحكم)
  * 
- * Uses ScoreCalculator for consistent score calculation across the app.
+ * SINGLE SOURCE OF TRUTH PRINCIPLE:
+ * - Uses pre-calculated metrics from PerformanceSummary (formConsistency, fatigueIndex, avgROM)
+ * - These values are calculated ONCE in ReportGenerator using MetricsCalculator
+ * - This class only FORMATS metrics for display, does NOT recalculate them
  * 
- * IMPORTANT: Calculates all metrics - display layer decides what to show
- * based on ExerciseConfigSnapshot in the report.
+ * Uses ScoreCalculator for score rate constants.
  */
 object PerformanceMetricsBuilder {
     
@@ -36,18 +38,10 @@ object PerformanceMetricsBuilder {
     }
     
     /**
-     * Check if a metric should be calculated/shown
-     */
-    private fun shouldShow(config: ExerciseConfigSnapshot?, metric: MetricCode): Boolean {
-        // If no config, show all (backward compatibility)
-        if (config == null) return true
-        return config.shouldShowMetric(metric)
-    }
-    
-    /**
      * Build Form metrics card
      * Combines: FormScore, ROM, Symmetry, FormConsistency
-     * Always calculates all metrics - display layer decides what to show
+     * 
+     * Uses pre-calculated values from PerformanceSummary where available.
      */
     private fun buildFormMetrics(report: PostTrainingReport, config: ExerciseConfigSnapshot?): FormMetrics {
         val summary = report.summary
@@ -56,15 +50,19 @@ object PerformanceMetricsBuilder {
         // Calculate form score from state distribution (always shown)
         val formScore = calculateFormScore(stateBreakdown)
         
-        // ROM - always calculate
-        val romMetric = calculateROMMetric(report)
+        // ROM - use pre-calculated value from summary
+        val romMetric = if (shouldShow(config, MetricCode.ROM)) {
+            formatROMMetric(summary.avgROM)
+        } else null
         
-        // Symmetry - always calculate (will be null for non-bilateral)
-        val symmetryMetric = calculateSymmetryMetric(report)
+        // Symmetry - calculate only if enabled (will be null for non-bilateral)
+        val symmetryMetric = if (shouldShow(config, MetricCode.SYMMETRY)) {
+            calculateSymmetryMetric(report)
+        } else null
         
-        // Form Consistency - need 4+ reps
-        val consistencyMetric = if (report.repTimeline.size >= 4) {
-            calculateFormConsistencyMetric(report)
+        // Form Consistency - use pre-calculated value from summary
+        val consistencyMetric = if (shouldShow(config, MetricCode.FORM_CONSISTENCY)) {
+            formatFormConsistencyMetric(summary.formConsistency)
         } else null
         
         return FormMetrics(
@@ -77,8 +75,10 @@ object PerformanceMetricsBuilder {
     
     /**
      * Build Safety metrics card
-     * Combines: AlignmentAccuracy, Stability, DangerCount
-     * Always calculates all metrics - display layer decides what to show
+     * Combines: AlignmentAccuracy, TempoConsistency (stability field), DangerCount
+     * 
+     * NOTE: The "stability" field actually measures TEMPO CONSISTENCY (timing variation),
+     * not hip/core stability. True hip stability requires frame data not available here.
      */
     private fun buildSafetyMetrics(report: PostTrainingReport, config: ExerciseConfigSnapshot?): SafetyMetrics {
         val dangerCount = report.dangerAlerts.size
@@ -98,16 +98,21 @@ object PerformanceMetricsBuilder {
             } else null
         )
         
-        // Alignment accuracy - always calculate
-        val alignmentMetric = calculateAlignmentMetric(report)
+        // Alignment accuracy - calculate only if enabled
+        val alignmentMetric = if (shouldShow(config, MetricCode.ALIGNMENT)) {
+            calculateAlignmentMetric(report)
+        } else null
         
-        // Stability - always calculate
-        val stabilityMetric = calculateStabilityMetric(report)
+        // Tempo Consistency (stored in stability field for backward compatibility)
+        // Measures timing variation between reps, NOT hip stability
+        val tempoConsistencyMetric = if (shouldShow(config, MetricCode.STABILITY)) {
+            calculateTempoConsistencyMetric(report)
+        } else null
         
         return SafetyMetrics(
             overallScore = safetyScore,
             alignmentAccuracy = alignmentMetric,
-            stability = stabilityMetric,
+            stability = tempoConsistencyMetric,
             dangerCount = dangerCount
         )
     }
@@ -115,27 +120,28 @@ object PerformanceMetricsBuilder {
     /**
      * Build Control metrics card
      * Combines: Tempo, TUT, FatigueIndex
-     * Always calculates all metrics - display layer decides what to show
+     * 
+     * Uses pre-calculated fatigueIndex from PerformanceSummary.
      */
     private fun buildControlMetrics(report: PostTrainingReport, config: ExerciseConfigSnapshot?): ControlMetrics {
         val isHold = config?.isHoldExercise() == true
         
         // Calculate tempo - for rep-based exercises
-        val tempoDisplay = if (!isHold) {
+        val tempoDisplay = if (!isHold && shouldShow(config, MetricCode.TEMPO)) {
             calculateTempoDisplay(report)
         } else null
         
         // Total Time Under Tension - for rep-based exercises
-        val totalTUT = if (!isHold) {
+        val totalTUT = if (!isHold && shouldShow(config, MetricCode.TUT)) {
             (report.summary.durationMs / 1000).toInt()
         } else null
         
-        // Fatigue index - need 4+ reps
-        val fatigueIndex = if (report.repTimeline.size >= 4) {
-            detectFatigueIndex(report)
+        // Fatigue index - use pre-calculated value from summary (Single Source of Truth)
+        val fatigueIndex = if (shouldShow(config, MetricCode.FATIGUE_INDEX)) {
+            report.summary.fatigueIndex
         } else null
         
-        // Control score based on consistency and tempo
+        // Control score based on consistency and fatigue
         val controlScore = calculateControlScore(report, fatigueIndex)
         
         return ControlMetrics(
@@ -166,6 +172,11 @@ object PerformanceMetricsBuilder {
     // Helper calculation methods
     // ═══════════════════════════════════════════════════════════════
     
+    private fun shouldShow(config: ExerciseConfigSnapshot?, metric: MetricCode): Boolean {
+        if (config == null) return true
+        return config.shouldShowMetric(metric)
+    }
+    
     private fun calculateFormScore(breakdown: StateBreakdown): MetricWithStatus {
         // Use ScoreCalculator rates for consistency
         // PERFECT = 100, NORMAL = 80, PAD = 60, WARNING = 40, DANGER = 0
@@ -192,41 +203,18 @@ object PerformanceMetricsBuilder {
         )
     }
     
-    private fun calculateROMMetric(report: PostTrainingReport): MetricWithStatus? {
-        // Calculate ROM from rep timeline scores
-        // Higher scores indicate better ROM (reaching target angles)
-        val timeline = report.repTimeline
-        
-        if (timeline.isEmpty()) {
-            // Fallback to state breakdown
-            val breakdown = report.summary.stateBreakdown
-            val total = breakdown.total
-            if (total == 0) return null
-            
-            // Use weighted score from states
-            val romScore = (
-                breakdown.perfectCount * 100f +
-                breakdown.normalCount * 80f +
-                breakdown.padCount * 60f +
-                breakdown.warningCount * 40f
-            ) / total
-            
-            return MetricWithStatus.fromPercentage(
-                romScore,
-                advice = if (romScore >= 80) {
-                    LocalizedText(ar = "مدى حركي جيد", en = "Good range of motion")
-                } else {
-                    LocalizedText(ar = "حاول النزول أعمق", en = "Try going deeper")
-                }
-            )
-        }
-        
-        // Use average score from timeline as ROM indicator
-        val avgScore = timeline.map { it.score }.average().toFloat()
+    /**
+     * Format ROM metric from pre-calculated value
+     * 
+     * NOTE: avgROM is calculated in ReportGenerator from rep scores as a proxy.
+     * True ROM requires frame data with angle measurements.
+     */
+    private fun formatROMMetric(avgROM: Float?): MetricWithStatus? {
+        if (avgROM == null) return null
         
         return MetricWithStatus.fromPercentage(
-            avgScore,
-            advice = if (avgScore >= 80) {
+            avgROM,
+            advice = if (avgROM >= 80) {
                 LocalizedText(ar = "مدى حركي جيد", en = "Good range of motion")
             } else {
                 LocalizedText(ar = "حاول النزول أعمق", en = "Try going deeper")
@@ -248,11 +236,9 @@ object PerformanceMetricsBuilder {
         // Use timeline size as total (includes all reps, not just counted)
         val totalReps = report.repTimeline.size.coerceAtLeast(report.summary.totalReps)
         
+        // No symmetry data available when no reps completed
         if (totalReps == 0) {
-            return MetricWithStatus.fromPercentage(
-                100f,
-                advice = LocalizedText(ar = "متوازن تماماً", en = "Perfectly balanced")
-            )
+            return null
         }
         
         if (symmetryErrors.isEmpty()) {
@@ -276,23 +262,17 @@ object PerformanceMetricsBuilder {
         )
     }
     
-    private fun calculateFormConsistencyMetric(report: PostTrainingReport): MetricWithStatus? {
-        val timeline = report.repTimeline
-        if (timeline.size < 4) return null
-        
-        // Calculate variance in scores
-        val scores = timeline.map { it.score }
-        val mean = scores.average()
-        val variance = scores.map { (it - mean) * (it - mean) }.average()
-        val stdDev = kotlin.math.sqrt(variance)
-        
-        // Lower variance = higher consistency
-        // stdDev of 0 = 100%, stdDev of 30+ = 0%
-        val consistencyScore = (100 - (stdDev * 3.33)).coerceIn(0.0, 100.0).toFloat()
+    /**
+     * Format form consistency from pre-calculated value
+     * 
+     * Uses value calculated in ReportGenerator (Single Source of Truth).
+     */
+    private fun formatFormConsistencyMetric(formConsistency: Float?): MetricWithStatus? {
+        if (formConsistency == null) return null
         
         return MetricWithStatus.fromPercentage(
-            consistencyScore,
-            advice = if (consistencyScore >= 80) {
+            formConsistency,
+            advice = if (formConsistency >= 80) {
                 LocalizedText(ar = "ثبات ممتاز", en = "Excellent consistency")
             } else {
                 LocalizedText(ar = "حاول الحفاظ على نفس الشكل", en = "Try to maintain the same form")
@@ -304,11 +284,9 @@ object PerformanceMetricsBuilder {
         // Use timeline size as total (includes all reps)
         val totalReps = report.repTimeline.size.coerceAtLeast(report.summary.totalReps)
         
+        // No alignment data available when no reps completed
         if (totalReps == 0) {
-            return MetricWithStatus.fromPercentage(
-                100f,
-                advice = LocalizedText(ar = "محاذاة ممتازة", en = "Excellent alignment")
-            )
+            return null
         }
         
         // Calculate alignment from state breakdown
@@ -341,13 +319,21 @@ object PerformanceMetricsBuilder {
         )
     }
     
-    private fun calculateStabilityMetric(report: PostTrainingReport): MetricWithStatus? {
-        // Use consistency metrics for stability
+    /**
+     * Calculate Tempo Consistency metric (stored in stability field)
+     * 
+     * Measures timing consistency between reps (NOT hip/core stability).
+     * Lower timing variation = higher consistency score.
+     * 
+     * NOTE: True hip stability requires frame data from MetricsCalculator.calculateStability()
+     * which needs hip joint angle variance. This metric is a tempo-based proxy.
+     */
+    private fun calculateTempoConsistencyMetric(report: PostTrainingReport): MetricWithStatus? {
         val consistency = report.consistency ?: return null
         
-        // Less variation = more stable
+        // Less timing variation = more consistent tempo
         val variationMs = consistency.variationMs
-        val stabilityScore = when {
+        val tempoConsistencyScore = when {
             variationMs < 500 -> 100f
             variationMs < 1000 -> 90f
             variationMs < 1500 -> 80f
@@ -356,9 +342,9 @@ object PerformanceMetricsBuilder {
         }
         
         return MetricWithStatus.fromPercentage(
-            stabilityScore,
-            advice = if (stabilityScore >= 80) {
-                LocalizedText(ar = "ثبات جيد", en = "Good stability")
+            tempoConsistencyScore,
+            advice = if (tempoConsistencyScore >= 80) {
+                LocalizedText(ar = "إيقاع ثابت", en = "Consistent tempo")
             } else {
                 LocalizedText(ar = "تفاوت في السرعة", en = "Speed variation detected")
             }
@@ -377,22 +363,6 @@ object PerformanceMetricsBuilder {
             isometricMs = (avgMs * 0.2).toInt(),
             concentricMs = (avgMs * 0.4).toInt()
         )
-    }
-    
-    private fun detectFatigueIndex(report: PostTrainingReport): Int? {
-        val timeline = report.repTimeline
-        if (timeline.size < 4) return null
-        
-        // Find where score drops by more than 15% from first 3 reps average
-        val firstThreeAvg = timeline.take(3).map { it.score }.average()
-        
-        for (i in 3 until timeline.size) {
-            if (timeline[i].score < firstThreeAvg - 15) {
-                return timeline[i].repNumber
-            }
-        }
-        
-        return null
     }
     
     private fun calculateControlScore(report: PostTrainingReport, fatigueIndex: Int?): MetricWithStatus {

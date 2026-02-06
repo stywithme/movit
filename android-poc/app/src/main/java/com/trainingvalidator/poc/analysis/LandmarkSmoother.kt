@@ -28,8 +28,9 @@ class LandmarkSmoother(
     private val useLegacyEMA: Boolean = false,
     private val legacyAlpha: Float = 0.6f
 ) {
-    // One filter per landmark (33 landmarks × 3 axes = 99 filters)
-    private val landmarkFilters = mutableMapOf<Int, OneEuroFilter3D>()
+    // OPTIMIZED: Use Array instead of Map for O(1) direct index access
+    // Array is faster than Map for integer-indexed lookups
+    private val landmarkFilters = arrayOfNulls<OneEuroFilter3D>(NUM_LANDMARKS)
     
     // Legacy EMA storage
     private var previousLandmarks: MutableList<SmoothedLandmark>? = null
@@ -64,9 +65,14 @@ class LandmarkSmoother(
             val visibility = landmark.visibility().orElse(0f)
             val presence = landmark.presence().orElse(0f)
             
+            // OPTIMIZED: Direct array access instead of map lookup
             // Get or create filter for this landmark
-            val filter = landmarkFilters.getOrPut(index) {
-                OneEuroFilter3D(minCutoff, beta)
+            var filter = if (index < NUM_LANDMARKS) landmarkFilters[index] else null
+            if (filter == null) {
+                filter = OneEuroFilter3D(minCutoff, beta)
+                if (index < NUM_LANDMARKS) {
+                    landmarkFilters[index] = filter
+                }
             }
             
             // Apply adaptive filtering
@@ -146,8 +152,11 @@ class LandmarkSmoother(
      * Call when pose detection restarts or loses track
      */
     fun reset() {
-        landmarkFilters.values.forEach { it.reset() }
-        landmarkFilters.clear()
+        // OPTIMIZED: Reset array elements instead of map operations
+        for (i in landmarkFilters.indices) {
+            landmarkFilters[i]?.reset()
+            landmarkFilters[i] = null
+        }
         previousLandmarks = null
     }
     
@@ -157,10 +166,15 @@ class LandmarkSmoother(
      */
     fun updateParameters(newMinCutoff: Float, newBeta: Float) {
         // Clear filters to use new parameters on next frame
-        landmarkFilters.clear()
+        for (i in landmarkFilters.indices) {
+            landmarkFilters[i] = null
+        }
     }
     
     companion object {
+        // MediaPipe returns 33 landmarks
+        private const val NUM_LANDMARKS = 33
+        
         /**
          * Create LandmarkSmoother from app settings
          * This is the RECOMMENDED way to create a smoother

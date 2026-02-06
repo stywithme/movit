@@ -58,47 +58,6 @@
 
     </LinearLayout>
 
-    <!-- Bottom Action Buttons -->
-    <LinearLayout
-        android:id="@+id/bottomButtonsContainer"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_gravity="bottom"
-        android:orientation="horizontal"
-        android:padding="16dp"
-        android:background="@drawable/gradient_bottom_fade">
-
-        <!-- Train Again Button -->
-        <com.google.android.material.button.MaterialButton
-            android:id="@+id/btnTrainAgain"
-            style="@style/Widget.MaterialComponents.Button.OutlinedButton"
-            android:layout_width="0dp"
-            android:layout_height="56dp"
-            android:layout_weight="1"
-            android:layout_marginEnd="8dp"
-            android:text="@string/train_again"
-            android:textColor="@color/primary"
-            app:strokeColor="@color/primary"
-            app:cornerRadius="16dp"
-            app:icon="@drawable/ic_refresh"
-            app:iconTint="@color/primary" />
-
-        <!-- Done Button -->
-        <com.google.android.material.button.MaterialButton
-            android:id="@+id/btnDone"
-            style="@style/Widget.MaterialComponents.Button"
-            android:layout_width="0dp"
-            android:layout_height="56dp"
-            android:layout_weight="1"
-            android:layout_marginStart="8dp"
-            android:text="@string/done"
-            android:textColor="@color/on_primary"
-            android:backgroundTint="@color/primary"
-            app:cornerRadius="16dp"
-            app:icon="@drawable/ic_check"
-            app:iconTint="@color/on_primary" />
-
-    </LinearLayout>
 
     <!-- Loading Overlay -->
     <FrameLayout

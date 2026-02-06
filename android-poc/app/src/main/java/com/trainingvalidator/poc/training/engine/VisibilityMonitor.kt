@@ -31,7 +31,8 @@ class VisibilityMonitor(
     private val minVisibility: Float = 0.5f,
     private val graceDurationMs: Long = 500,      // 0.5 seconds - ignore brief glitches
     private val warningDurationMs: Long = 1500,   // 1.5 seconds before showing warning
-    private val pauseAfterMs: Long = 3000         // 3 seconds total before pause
+    private val pauseAfterMs: Long = 3000,        // 3 seconds total before pause
+    private val timeProvider: () -> Long = { System.currentTimeMillis() }
 ) {
     companion object {
         private const val TAG = "VisibilityMonitor"
@@ -67,7 +68,7 @@ class VisibilityMonitor(
         isFrontCamera: Boolean = false
     ): VisibilityCheckResult {
         if (landmarks.size < 33) {
-            return handleInvisible(System.currentTimeMillis(), currentRepCount, currentPhase)
+            return handleInvisible(timeProvider(), currentRepCount, currentPhase)
         }
         
         // Check if all required joints are visible with sufficient confidence
@@ -75,7 +76,7 @@ class VisibilityMonitor(
         val visibilityDetails = checkJointVisibility(landmarks, isFrontCamera)
         val allVisible = visibilityDetails.all { it.isVisible }
         
-        val now = System.currentTimeMillis()
+        val now = timeProvider()
         
         return if (allVisible) {
             handleVisible(currentRepCount, currentPhase)

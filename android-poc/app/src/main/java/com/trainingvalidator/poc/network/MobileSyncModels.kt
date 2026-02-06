@@ -75,7 +75,10 @@ data class ExerciseConfigWithMeta(
     val reportMetrics: ReportMetricsConfig? = null,
     
     /** Is this exercise bilateral (has paired joints)? - auto-detected by server */
-    val isBilateral: Boolean = false
+    val isBilateral: Boolean = false,
+    
+    /** Does this exercise have position checks? (for Alignment metric) */
+    val hasPositionChecks: Boolean = false
 ) {
     /**
      * Convert to ExerciseConfig (without meta)
@@ -99,6 +102,7 @@ data class ExerciseConfigWithMeta(
             maxWeight = maxWeight,
             defaultWeight = defaultWeight,
             reportMetrics = reportMetrics,
+            hasPositionChecks = hasPositionChecks,
             fileName = slug  // Use slug as fileName for compatibility
         )
     }

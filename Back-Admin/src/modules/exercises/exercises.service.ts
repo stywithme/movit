@@ -226,7 +226,7 @@ export const exerciseService = {
         maxWeight: data.maxWeight ?? null,
         defaultWeight: data.defaultWeight ?? null,
         // Report metrics configuration
-        reportMetrics: data.reportMetrics ? (data.reportMetrics as object) : null,
+        reportMetrics: data.reportMetrics ? (data.reportMetrics as object) : undefined,
         media: data.imageUrl
           ? {
               create: {

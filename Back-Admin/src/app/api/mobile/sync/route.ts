@@ -42,6 +42,11 @@ export async function GET(request: NextRequest) {
       deletedIds: response.data.deletedExerciseIds.length,
     });
     
+    // Debug: Log reportMetrics for each exercise
+    for (const exercise of response.data.exercises) {
+      console.log(`[Mobile Sync] Exercise "${exercise.slug}" reportMetrics:`, exercise.reportMetrics);
+    }
+    
     return NextResponse.json(response);
   } catch (error) {
     console.error('[Mobile Sync] Error:', error);

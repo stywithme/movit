@@ -66,22 +66,45 @@ class SkeletonOverlayView @JvmOverloads constructor(
         const val COLOR_LERP_FACTOR = 0.25f  // How fast to transition (0.1 = slow, 0.5 = fast)
     }
     
-    // ==================== Settings-based values ====================
+    // ==================== Cached values for performance ====================
     
-    // Visibility threshold from settings
-    private val visibilityThreshold: Float
-        get() = if (SettingsManager.isLoaded) SettingsManager.getOverlayVisibility() 
-                else DEFAULT_VISIBILITY_THRESHOLD
+    // Cache density to avoid repeated resource access
+    private val cachedDensity: Float by lazy { resources.displayMetrics.density }
     
-    // Opacity values from settings
-    private val nonTrackedOpacity: Float
-        get() = if (SettingsManager.isLoaded) SettingsManager.getNonTrackedOpacity() else 0.18f
+    // Cache BlurMaskFilters (expensive to create)
+    private val blurFilterSmall: android.graphics.BlurMaskFilter by lazy {
+        android.graphics.BlurMaskFilter(8f, android.graphics.BlurMaskFilter.Blur.NORMAL)
+    }
+    private val blurFilterMedium: android.graphics.BlurMaskFilter by lazy {
+        android.graphics.BlurMaskFilter(12f, android.graphics.BlurMaskFilter.Blur.NORMAL)
+    }
+    private val blurFilterLarge: android.graphics.BlurMaskFilter by lazy {
+        android.graphics.BlurMaskFilter(18f, android.graphics.BlurMaskFilter.Blur.NORMAL)
+    }
     
-    private val trackedOpacityCorrect: Float
-        get() = if (SettingsManager.isLoaded) SettingsManager.getTrackedCorrectOpacity() else 0.50f
+    // ==================== Settings-based values (cached) ====================
     
-    private val trackedOpacityError: Float
-        get() = if (SettingsManager.isLoaded) SettingsManager.getTrackedErrorOpacity() else 0.75f
+    // Cache settings values - updated when view is attached or settings change
+    private var cachedVisibilityThreshold: Float = DEFAULT_VISIBILITY_THRESHOLD
+    private var cachedNonTrackedOpacity: Float = 0.18f
+    private var cachedTrackedOpacityCorrect: Float = 0.50f
+    private var cachedTrackedOpacityError: Float = 0.75f
+    
+    // Public accessors use cached values
+    private val visibilityThreshold: Float get() = cachedVisibilityThreshold
+    private val nonTrackedOpacity: Float get() = cachedNonTrackedOpacity
+    private val trackedOpacityCorrect: Float get() = cachedTrackedOpacityCorrect
+    private val trackedOpacityError: Float get() = cachedTrackedOpacityError
+    
+    // Refresh cached settings (call when settings might have changed)
+    private fun refreshCachedSettings() {
+        if (SettingsManager.isLoaded) {
+            cachedVisibilityThreshold = SettingsManager.getOverlayVisibility()
+            cachedNonTrackedOpacity = SettingsManager.getNonTrackedOpacity()
+            cachedTrackedOpacityCorrect = SettingsManager.getTrackedCorrectOpacity()
+            cachedTrackedOpacityError = SettingsManager.getTrackedErrorOpacity()
+        }
+    }
 
     // Paint objects
     private val pointPaint = Paint().apply {
@@ -176,6 +199,10 @@ class SkeletonOverlayView @JvmOverloads constructor(
     private var imageHeight: Int = 1
     private var scaleFactor: Float = 1f
     
+    // OPTIMIZED: Cached view dimensions for scale factor calculation
+    private var cachedViewWidth: Int = 0
+    private var cachedViewHeight: Int = 0
+    
     // Settings
     private var showAngles = true
     private var showAnglesOnlyOnError = true  // Only show angles on error/critical
@@ -206,6 +233,32 @@ class SkeletonOverlayView @JvmOverloads constructor(
         // Read indicator type from settings
         useArcIndicator = SettingsManager.useArcIndicator()
         showIndicators = true
+        
+        // Cache settings values
+        refreshCachedSettings()
+    }
+    
+    override fun onAttachedToWindow() {
+        super.onAttachedToWindow()
+        // Refresh cached settings when view is attached
+        refreshCachedSettings()
+    }
+    
+    override fun onSizeChanged(w: Int, h: Int, oldw: Int, oldh: Int) {
+        super.onSizeChanged(w, h, oldw, oldh)
+        // OPTIMIZED: Cache view dimensions and recalculate scale factor
+        cachedViewWidth = w
+        cachedViewHeight = h
+        recalculateScaleFactor()
+    }
+    
+    /**
+     * Recalculate scale factor when view or image dimensions change
+     */
+    private fun recalculateScaleFactor() {
+        if (cachedViewWidth > 0 && cachedViewHeight > 0 && imageWidth > 0 && imageHeight > 0) {
+            scaleFactor = max(cachedViewWidth.toFloat() / imageWidth, cachedViewHeight.toFloat() / imageHeight)
+        }
     }
     
     /**
@@ -238,10 +291,14 @@ class SkeletonOverlayView @JvmOverloads constructor(
         angles: JointAngles? = null
     ) {
         landmarks = smoothedLandmarks
+        val dimensionsChanged = imageWidth != inputImageWidth || imageHeight != inputImageHeight
         imageWidth = inputImageWidth
         imageHeight = inputImageHeight
         jointAngles = angles
-        scaleFactor = max(width.toFloat() / imageWidth, height.toFloat() / imageHeight)
+        // OPTIMIZED: Only recalculate scale factor if dimensions changed
+        if (dimensionsChanged) {
+            recalculateScaleFactor()
+        }
         invalidate()
     }
     
@@ -258,12 +315,16 @@ class SkeletonOverlayView @JvmOverloads constructor(
         positionErrors: List<PositionError> = emptyList()
     ) {
         landmarks = smoothedLandmarks
+        val dimensionsChanged = imageWidth != inputImageWidth || imageHeight != inputImageHeight
         imageWidth = inputImageWidth
         imageHeight = inputImageHeight
         jointAngles = angles
         jointStateInfos = stateInfos
         this.positionErrors = positionErrors
-        scaleFactor = max(width.toFloat() / imageWidth, height.toFloat() / imageHeight)
+        // OPTIMIZED: Only recalculate scale factor if dimensions changed
+        if (dimensionsChanged) {
+            recalculateScaleFactor()
+        }
         
         // Collect error joints (DANGER or WARNING states)
         errorJointCodes = stateInfos.filter { 
@@ -288,12 +349,16 @@ class SkeletonOverlayView @JvmOverloads constructor(
         positionErrors: List<PositionError> = emptyList()
     ) {
         landmarks = smoothedLandmarks
+        val dimensionsChanged = imageWidth != inputImageWidth || imageHeight != inputImageHeight
         imageWidth = inputImageWidth
         imageHeight = inputImageHeight
         jointAngles = angles
         jointArrowInfos = arrowInfos
         this.positionErrors = positionErrors
-        scaleFactor = max(width.toFloat() / imageWidth, height.toFloat() / imageHeight)
+        // OPTIMIZED: Only recalculate scale factor if dimensions changed
+        if (dimensionsChanged) {
+            recalculateScaleFactor()
+        }
         
         // Collect error joints (TOO_HIGH or TOO_LOW zones)
         errorJointCodes = arrowInfos.filter { it.value.isError }.keys
@@ -1025,12 +1090,16 @@ class SkeletonOverlayView @JvmOverloads constructor(
             }
             
             // 1. Draw outer glow (blurred, larger circle)
+            // Use cached BlurMaskFilters to avoid per-frame allocations
+            val blurRadius = glowRadius * 0.6f
+            val blurFilter = when {
+                blurRadius <= 10f -> blurFilterSmall
+                blurRadius <= 15f -> blurFilterMedium
+                else -> blurFilterLarge
+            }
             glowPaint.color = stateColor
             glowPaint.alpha = finalGlowAlpha
-            glowPaint.maskFilter = android.graphics.BlurMaskFilter(
-                glowRadius * 0.6f, 
-                android.graphics.BlurMaskFilter.Blur.NORMAL
-            )
+            glowPaint.maskFilter = blurFilter
             canvas.drawCircle(x, y, glowRadius, glowPaint)
             glowPaint.maskFilter = null
             
@@ -1127,7 +1196,7 @@ class SkeletonOverlayView @JvmOverloads constructor(
         canvas: Canvas,
         landmarks: List<SmoothedLandmark>
     ) {
-        val density = resources.displayMetrics.density
+        val density = cachedDensity
         
         for ((jointCode, stateInfo) in jointStateInfos) {
             // Only show Arc for PRIMARY joints
@@ -1174,7 +1243,7 @@ class SkeletonOverlayView @JvmOverloads constructor(
         canvas: Canvas,
         landmarks: List<SmoothedLandmark>
     ) {
-        val density = resources.displayMetrics.density
+        val density = cachedDensity
         
         for ((jointCode, stateInfo) in jointStateInfos) {
             // Only show Line Indicator for PRIMARY joints
@@ -1350,7 +1419,7 @@ class SkeletonOverlayView @JvmOverloads constructor(
         canvas: Canvas,
         landmarks: List<SmoothedLandmark>
     ) {
-        val density = resources.displayMetrics.density
+        val density = cachedDensity
         
         for ((jointCode, arrowInfo) in jointArrowInfos) {
             // Only show Line Indicator for PRIMARY joints

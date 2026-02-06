@@ -98,15 +98,6 @@ class ReportPagerActivity : AppCompatActivity() {
         binding.btnShare.setOnClickListener {
             shareReport()
         }
-        
-        binding.btnTrainAgain.setOnClickListener {
-            setResult(RESULT_OK)
-            finish()
-        }
-        
-        binding.btnDone.setOnClickListener {
-            finish()
-        }
     }
     
     private fun observeViewModel() {

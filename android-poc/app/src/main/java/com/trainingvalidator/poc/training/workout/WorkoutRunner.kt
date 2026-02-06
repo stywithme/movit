@@ -1,8 +1,7 @@
 package com.trainingvalidator.poc.training.workout
 
-import android.content.res.AssetManager
 import android.util.Log
-import com.trainingvalidator.poc.training.loader.ExerciseLoader
+import com.trainingvalidator.poc.storage.ExerciseRepository
 import com.trainingvalidator.poc.training.models.*
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -39,7 +38,7 @@ import kotlinx.coroutines.flow.StateFlow
  */
 class WorkoutRunner(
     private val workoutConfig: WorkoutConfig,
-    private val assets: AssetManager
+    private val exerciseRepository: ExerciseRepository
 ) {
     
     companion object {
@@ -281,8 +280,8 @@ class WorkoutRunner(
         
         // Pre-load all exercises and set up targets
         workoutConfig.exercises.forEachIndexed { index, workoutExercise ->
-            // Load exercise config
-            val exerciseConfig = ExerciseLoader.load(assets, workoutExercise.exercise)
+            // Load exercise config from repository
+            val exerciseConfig = exerciseRepository.getExercise(workoutExercise.exercise)
             if (exerciseConfig != null) {
                 val loadedExercise = LoadedExercise(
                     config = exerciseConfig,
@@ -464,11 +463,11 @@ class WorkoutRunner(
             return
         }
         
-        // Load the exercise config
-        val exerciseConfig = ExerciseLoader.load(assets, workoutExercise.exercise)
+        // Load the exercise config from repository
+        val exerciseConfig = exerciseRepository.getExercise(workoutExercise.exercise)
         
         if (exerciseConfig == null) {
-            Log.e(TAG, "Failed to load exercise: ${workoutExercise.exercise}")
+            Log.e(TAG, "Exercise not found in repository: ${workoutExercise.exercise}")
             onExerciseCompleted(isCompleted = false)
             return
         }

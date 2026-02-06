@@ -50,7 +50,7 @@ export async function POST(request: NextRequest) {
     console.log(`[Sessions] Saved session ${session.id} for user ${authResult.userId}:`, {
       exerciseId: session.exerciseId,
       totalReps: session.totalReps,
-      avgScore: session.sessionMetrics.avgFormScore / 10,
+      avgScore: session.sessionMetrics?.avgFormScore ? session.sessionMetrics.avgFormScore / 10 : null,
       weightKg: session.weightKg,
     });
 

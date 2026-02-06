@@ -366,6 +366,9 @@ export interface ExerciseConfig {
   
   /** Is this exercise bilateral (has paired joints)? - auto-detected */
   isBilateral?: boolean;
+  
+  /** Does this exercise have position checks? - auto-detected */
+  hasPositionChecks?: boolean;
 }
 
 // ============================================

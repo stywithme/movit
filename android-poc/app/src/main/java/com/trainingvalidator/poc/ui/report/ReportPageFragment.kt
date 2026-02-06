@@ -427,27 +427,52 @@ class ReportPageFragment : Fragment() {
         
         binding.pageIndicatorContainer.isVisible = true
         
-        for (i in 0 until totalPages) {
-            val dot = View(requireContext()).apply {
+        val density = resources.displayMetrics.density
+        val canGoLeft = currentPage > 0
+        val canGoRight = currentPage < totalPages - 1
+        
+        // Left arrow (if can go left)
+        if (canGoLeft) {
+            val leftArrow = TextView(requireContext()).apply {
+                text = "‹"
+                textSize = 28f
+                setTextColor(ContextCompat.getColor(requireContext(), R.color.text_primary))
                 layoutParams = LinearLayout.LayoutParams(
-                    (8 * resources.displayMetrics.density).toInt(),
-                    (8 * resources.displayMetrics.density).toInt()
+                    LinearLayout.LayoutParams.WRAP_CONTENT,
+                    LinearLayout.LayoutParams.WRAP_CONTENT
                 ).apply {
-                    marginStart = (4 * resources.displayMetrics.density).toInt()
-                    marginEnd = (4 * resources.displayMetrics.density).toInt()
-                }
-                background = GradientDrawable().apply {
-                    shape = GradientDrawable.OVAL
-                    setColor(
-                        if (i == currentPage) {
-                            ContextCompat.getColor(requireContext(), R.color.primary)
-                        } else {
-                            ContextCompat.getColor(requireContext(), R.color.text_hint)
-                        }
-                    )
+                    marginEnd = (12 * density).toInt()
                 }
             }
-            binding.pageIndicatorContainer.addView(dot)
+            binding.pageIndicatorContainer.addView(leftArrow)
+        }
+        
+        // Page number indicator
+        val pageText = TextView(requireContext()).apply {
+            text = "${currentPage + 1} / $totalPages"
+            textSize = 14f
+            setTextColor(ContextCompat.getColor(requireContext(), R.color.text_secondary))
+            layoutParams = LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.WRAP_CONTENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT
+            )
+        }
+        binding.pageIndicatorContainer.addView(pageText)
+        
+        // Right arrow (if can go right)
+        if (canGoRight) {
+            val rightArrow = TextView(requireContext()).apply {
+                text = "›"
+                textSize = 28f
+                setTextColor(ContextCompat.getColor(requireContext(), R.color.text_primary))
+                layoutParams = LinearLayout.LayoutParams(
+                    LinearLayout.LayoutParams.WRAP_CONTENT,
+                    LinearLayout.LayoutParams.WRAP_CONTENT
+                ).apply {
+                    marginStart = (12 * density).toInt()
+                }
+            }
+            binding.pageIndicatorContainer.addView(rightArrow)
         }
     }
 }

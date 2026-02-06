@@ -73,7 +73,7 @@ export interface SessionUploadPayload {
   weightKg: number | null;
   weightUnit: string;
   repMetrics: RepMetricsData[];
-  sessionMetrics: SessionMetrics;
+  sessionMetrics: SessionMetrics | null;
   
   // Legacy report (optional - for backward compatibility)
   legacyReport?: LegacyReportData;
@@ -130,7 +130,7 @@ export interface TrainingSessionResponse {
   invalidReps: number;
   weightKg: number | null;
   weightUnit: string;
-  sessionMetrics: SessionMetrics;
+  sessionMetrics: SessionMetrics | null;
   repMetrics: RepMetricsData[];
 }
 

@@ -19,7 +19,6 @@ import com.trainingvalidator.poc.R
 import com.trainingvalidator.poc.databinding.ActivityExerciseListBinding
 import com.trainingvalidator.poc.storage.ExerciseRepository
 import com.trainingvalidator.poc.storage.SyncManager
-import com.trainingvalidator.poc.training.loader.ExerciseLoader
 import com.trainingvalidator.poc.training.models.ExerciseConfig
 import kotlinx.coroutines.launch
 
@@ -135,8 +134,8 @@ class ExerciseListActivity : AppCompatActivity() {
                 }
             } catch (e: Exception) {
                 Log.e(TAG, "Failed to initialize repository", e)
-                // Fall back to asset loading
-                loadExercisesFromAssets()
+                // Show empty state - no fallback to assets
+                showNoExercisesAvailable()
             }
         }
     }
@@ -148,8 +147,8 @@ class ExerciseListActivity : AppCompatActivity() {
         val loaded = repository.getAllExercises()
         
         if (loaded.isEmpty()) {
-            // Fall back to assets if repository is empty
-            loadExercisesFromAssets()
+            // Show empty state - no fallback to assets
+            showNoExercisesAvailable()
         } else {
             updateExercisesList(loaded)
             Log.d(TAG, "Loaded ${loaded.size} exercises from repository")
@@ -157,12 +156,11 @@ class ExerciseListActivity : AppCompatActivity() {
     }
 
     /**
-     * Fallback: Load exercises from bundled assets
+     * Show empty state when no exercises are available
      */
-    private fun loadExercisesFromAssets() {
-        val loaded = ExerciseLoader.loadAll(assets)
-        updateExercisesList(loaded)
-        Log.d(TAG, "Loaded ${loaded.size} exercises from assets (fallback)")
+    private fun showNoExercisesAvailable() {
+        Log.w(TAG, "No exercises available - cache empty and sync failed")
+        updateExercisesList(emptyList())
     }
     
     /**

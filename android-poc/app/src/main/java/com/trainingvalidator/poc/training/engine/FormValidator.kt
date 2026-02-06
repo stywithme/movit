@@ -46,6 +46,12 @@ class FormValidator(
     // Danger frame counter for each joint (safety smoothing)
     private val dangerFrameCounts = mutableMapOf<String, Int>()
     
+    // ==================== Reusable Collections (Performance Optimization) ====================
+    // Pre-allocated to avoid allocation on every frame
+    
+    private val reusableStateInfos = mutableMapOf<String, JointStateInfo>()
+    private val reusableErrors = mutableListOf<JointError>()
+    
     // ==================== Configurable Thresholds ====================
     
     /**
@@ -60,19 +66,21 @@ class FormValidator(
      * 
      * @param currentAngles Map of joint code to current angle
      * @param currentPhase Current phase of exercise (for context)
-     * @return Map of joint code to JointStateInfo
+     * @return Map of joint code to JointStateInfo (immutable copy for thread safety)
      */
     fun getJointStateInfos(currentAngles: Map<String, Double>): Map<String, JointStateInfo> {
-        val stateInfos = mutableMapOf<String, JointStateInfo>()
+        // Clear and reuse internal map
+        reusableStateInfos.clear()
         
         for (joint in trackedJoints) {
             val currentAngle = currentAngles[joint.joint] ?: continue
             
             val stateInfo = determineJointStateInfo(joint, currentAngle)
-            stateInfos[joint.joint] = stateInfo
+            reusableStateInfos[joint.joint] = stateInfo
         }
         
-        return stateInfos
+        // Return immutable copy for thread safety
+        return reusableStateInfos.toMap()
     }
     
     /**
@@ -92,7 +100,8 @@ class FormValidator(
     ): ValidationResult {
         val stateInfos = getJointStateInfos(currentAngles)
         val jointStatuses = mutableMapOf<String, JointStatus>()
-        val errors = mutableListOf<JointError>()
+        // OPTIMIZED: Reuse errors list
+        reusableErrors.clear()
         
         for ((jointCode, stateInfo) in stateInfos) {
             val joint = trackedJoints.find { it.joint == jointCode } ?: continue
@@ -129,14 +138,14 @@ class FormValidator(
             jointStatuses[jointCode] = status
             
             if (!isCorrect && status.error != null) {
-                errors.add(status.error)
+                reusableErrors.add(status.error)
             }
         }
         
         return ValidationResult(
-            isCorrect = errors.isEmpty(),
+            isCorrect = reusableErrors.isEmpty(),
             jointStatuses = jointStatuses,
-            errors = errors
+            errors = reusableErrors.toList()  // Return copy to avoid mutation issues
         )
     }
     
@@ -604,6 +613,8 @@ class FormValidator(
     fun reset() {
         previousStates.clear()
         dangerFrameCounts.clear()
+        reusableStateInfos.clear()
+        reusableErrors.clear()
         Log.d(TAG, "FormValidator state reset")
     }
 }

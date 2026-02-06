@@ -184,9 +184,9 @@ export default function EditExercisePage() {
           },
           // Report metrics configuration
           reportMetrics: {
-            primary: (exercise.reportMetrics as Record<string, string[]> | null)?.primary ?? ['form_score'],
-            optional: (exercise.reportMetrics as Record<string, string[]> | null)?.optional ?? [],
-            excluded: (exercise.reportMetrics as Record<string, string[]> | null)?.excluded ?? [],
+            primary: ((exercise.reportMetrics as Record<string, string[]> | null)?.primary ?? ['form_score']) as import('@/modules/exercises/exercises.types').MetricCode[],
+            optional: ((exercise.reportMetrics as Record<string, string[]> | null)?.optional ?? []) as import('@/modules/exercises/exercises.types').MetricCode[],
+            excluded: ((exercise.reportMetrics as Record<string, string[]> | null)?.excluded ?? []) as import('@/modules/exercises/exercises.types').MetricCode[],
           },
         });
         

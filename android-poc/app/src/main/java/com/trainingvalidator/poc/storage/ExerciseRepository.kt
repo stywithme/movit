@@ -1,9 +1,7 @@
 package com.trainingvalidator.poc.storage
 
 import android.content.Context
-import android.content.res.AssetManager
 import android.util.Log
-import com.trainingvalidator.poc.training.loader.ExerciseLoader
 import com.trainingvalidator.poc.training.models.ExerciseConfig
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -15,11 +13,12 @@ import kotlinx.coroutines.withContext
  * ExerciseRepository
  * 
  * Single source of truth for exercise data in the app.
- * Prioritizes cached data from server sync, falls back to bundled assets.
+ * Uses offline-first cache strategy with backend sync.
  * 
  * Data Source Priority:
- * 1. Cached exercises (from server sync)
- * 2. Bundled assets (for offline-first experience)
+ * 1. Cached exercises (from server sync) - offline first
+ * 2. Fetch from backend and update cache
+ * 3. If both fail, no exercises available
  * 
  * Usage:
  * ```kotlin
@@ -88,10 +87,16 @@ class ExerciseRepository private constructor(private val context: Context) {
      * Initialize repository and load exercises.
      * Call this on app startup.
      * 
+     * Strategy: Cache First, then Backend Sync
+     * - If cache has data: load from cache, sync in background
+     * - If cache empty: attempt sync from backend
+     * - If both fail: return false (no exercises available)
+     * 
      * @param autoSync Whether to attempt server sync
+     * @return true if exercises are available, false if no exercises found
      */
     suspend fun initialize(autoSync: Boolean = true): Boolean = withContext(Dispatchers.IO) {
-        if (isInitialized) return@withContext true
+        if (isInitialized && _exercises.value.isNotEmpty()) return@withContext true
         
         _isLoading.value = true
         
@@ -102,30 +107,28 @@ class ExerciseRepository private constructor(private val context: Context) {
             if (exerciseCache.hasExercises()) {
                 loadFromCache()
                 Log.d(TAG, "Loaded ${_exercises.value.size} exercises from cache")
+                isInitialized = true
             } else {
-                // Fall back to bundled assets
-                loadFromAssets()
-                Log.d(TAG, "Loaded ${_exercises.value.size} exercises from assets")
+                Log.d(TAG, "Cache is empty, will attempt sync from backend")
             }
             
-            isInitialized = true
-            
-            // Attempt sync in background
+            // Attempt sync from backend
             if (autoSync) {
                 val result = syncManager.syncIfNeeded()
                 _lastSyncResult.value = result
                 
                 // Reload if sync was successful
                 if (result is SyncManager.SyncResult.Success) {
-                    if (result.exercisesUpdated > 0) {
+                    if (result.exercisesUpdated > 0 || !isInitialized) {
                         loadFromCache()
-                        Log.d(TAG, "Reloaded ${_exercises.value.size} exercises after sync")
+                        Log.d(TAG, "Loaded ${_exercises.value.size} exercises after sync")
                     }
                     // Reload workouts if updated
                     if (result.workoutsUpdated > 0) {
                         WorkoutRepository.getInstance(context).reloadFromCache()
                         Log.d(TAG, "Triggered workout reload after sync")
                     }
+                    isInitialized = true
                 }
                 
                 // Start background audio download (non-blocking)
@@ -141,13 +144,33 @@ class ExerciseRepository private constructor(private val context: Context) {
                 }
             }
             
+            // If cache was empty and sync didn't work, try one more sync
+            if (_exercises.value.isEmpty() && !autoSync) {
+                Log.w(TAG, "No exercises in cache and autoSync disabled, attempting forced sync")
+                val result = syncManager.syncIfNeeded(forceCheck = true)
+                _lastSyncResult.value = result
+                if (result is SyncManager.SyncResult.Success) {
+                    loadFromCache()
+                    isInitialized = true
+                }
+            }
+            
+            isInitialized = true
+            
+            // Return false if no exercises available
+            if (_exercises.value.isEmpty()) {
+                Log.e(TAG, "No exercises available - cache empty and backend sync failed")
+                return@withContext false
+            }
+            
             true
         } catch (e: Exception) {
             Log.e(TAG, "Failed to initialize repository", e)
             
-            // Last resort: load from assets
-            if (_exercises.value.isEmpty()) {
-                loadFromAssets()
+            // If we have cached data, still return true
+            if (_exercises.value.isNotEmpty()) {
+                isInitialized = true
+                return@withContext true
             }
             
             false
@@ -317,29 +340,40 @@ class ExerciseRepository private constructor(private val context: Context) {
         exerciseMap = cached.associateBy { it.fileName }
     }
     
-    /**
-     * Load exercises from bundled assets
-     */
-    private fun loadFromAssets() {
-        val assets: AssetManager = context.assets
-        val exercises = ExerciseLoader.loadAll(assets)
-        _exercises.value = exercises
-        exerciseMap = exercises.associateBy { it.fileName }
-    }
-    
     // ==================== Cache Management ====================
     
     /**
-     * Clear all caches and reload from assets
+     * Clear all caches and sync from backend.
+     * Use this when you need to force a complete refresh.
+     * 
+     * @return true if exercises were successfully loaded after refresh
      */
-    suspend fun clearCacheAndReload() = withContext(Dispatchers.IO) {
+    suspend fun clearCacheAndReload(): Boolean = withContext(Dispatchers.IO) {
         _isLoading.value = true
         
         try {
             exerciseCache.clearCache()
             audioCache.clearCache()
-            loadFromAssets()
+            _exercises.value = emptyList()
+            exerciseMap = emptyMap()
             isInitialized = false
+            
+            // Attempt to sync from backend after clearing cache
+            val result = syncManager.fullRefresh()
+            _lastSyncResult.value = result
+            
+            if (result is SyncManager.SyncResult.Success) {
+                loadFromCache()
+                isInitialized = true
+                Log.d(TAG, "Reloaded ${_exercises.value.size} exercises after cache clear")
+                return@withContext _exercises.value.isNotEmpty()
+            }
+            
+            Log.e(TAG, "Failed to reload exercises after cache clear - backend sync failed")
+            false
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed to clear cache and reload", e)
+            false
         } finally {
             _isLoading.value = false
         }

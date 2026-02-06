@@ -161,7 +161,27 @@ data class PerformanceSummary(
     val weightKg: Float? = null,
     val weightUnit: String = "kg",
     val totalVolume: Float? = null,     // countedReps × weightKg
-    val est1RM: Float? = null           // Estimated 1 Rep Max
+    val est1RM: Float? = null,          // Estimated 1 Rep Max
+    
+    // ═══════════════════════════════════════════════════════════════
+    // KINEMATIC METRICS (calculated from frame data)
+    // These are the SINGLE SOURCE OF TRUTH for metrics display
+    // ═══════════════════════════════════════════════════════════════
+    
+    /** Average Range of Motion (0-100 percentage of target ROM) */
+    val avgROM: Float? = null,
+    
+    /** Average Symmetry for bilateral exercises (0-100) */
+    val avgSymmetry: Float? = null,
+    
+    /** Average Stability based on hip variance (0-100) */
+    val avgStability: Float? = null,
+    
+    /** Form Consistency score (0-100) - how consistent form was across reps */
+    val formConsistency: Float? = null,
+    
+    /** Fatigue Index - rep number where fatigue started (null = no fatigue) */
+    val fatigueIndex: Int? = null
 ) {
     // Legacy compatibility
     val accuracy: Float get() = countedRatio * 100f
@@ -1124,6 +1144,9 @@ data class ExerciseConfigSnapshot(
     /** Whether this exercise supports weights */
     val supportsWeight: Boolean,
     
+    /** Whether this exercise has position checks (for Alignment metric) */
+    val hasPositionChecks: Boolean,
+    
     /** Configured report metrics */
     val metricsConfig: ReportMetricsConfig
 ) {
@@ -1133,31 +1156,14 @@ data class ExerciseConfigSnapshot(
     fun isHoldExercise(): Boolean = countingMethod == CountingMethod.HOLD
     
     /**
-     * Check if a metric should be displayed
+     * Check if a metric should be displayed.
+     * 
+     * The backend sends a complete excluded list (user + auto-disabled),
+     * so we just need to check if the metric is in the primary/optional
+     * and not in the excluded list.
      */
     fun shouldShowMetric(metric: MetricCode): Boolean {
-        // Apply automatic rules first
-        return when (metric) {
-            // Symmetry only for bilateral exercises
-            MetricCode.SYMMETRY -> isBilateral && metricsConfig.shouldShow(metric)
-            
-            // Tempo/TUT only for rep-based exercises
-            MetricCode.TEMPO, MetricCode.TUT -> !isHoldExercise() && metricsConfig.shouldShow(metric)
-            
-            // Hold duration only for hold exercises
-            MetricCode.HOLD_DURATION -> isHoldExercise() && metricsConfig.shouldShow(metric)
-            
-            // Weight metrics only for weighted exercises
-            MetricCode.WEIGHT, MetricCode.VOLUME, MetricCode.EST_1RM -> 
-                supportsWeight && metricsConfig.shouldShow(metric)
-            
-            // Form consistency/fatigue need 4+ reps
-            MetricCode.FORM_CONSISTENCY, MetricCode.FATIGUE_INDEX -> 
-                !isHoldExercise() && metricsConfig.shouldShow(metric)
-            
-            // Default: check config
-            else -> metricsConfig.shouldShow(metric)
-        }
+        return metricsConfig.shouldShow(metric)
     }
     
     /**
@@ -1182,6 +1188,7 @@ data class ExerciseConfigSnapshot(
             countingMethod: CountingMethod,
             isBilateral: Boolean,
             supportsWeight: Boolean,
+            hasPositionChecks: Boolean,
             metricsConfig: ReportMetricsConfig?
         ): ExerciseConfigSnapshot {
             val effectiveConfig = metricsConfig ?: MetricCode.getDefaults(
@@ -1194,6 +1201,7 @@ data class ExerciseConfigSnapshot(
                 countingMethod = countingMethod,
                 isBilateral = isBilateral,
                 supportsWeight = supportsWeight,
+                hasPositionChecks = hasPositionChecks,
                 metricsConfig = effectiveConfig
             )
         }

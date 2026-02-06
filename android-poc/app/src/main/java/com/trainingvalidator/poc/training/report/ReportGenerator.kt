@@ -2,6 +2,8 @@ package com.trainingvalidator.poc.training.report
 
 import android.util.Log
 import com.trainingvalidator.poc.training.TrainingEngine
+import com.trainingvalidator.poc.training.analytics.MetricsCalculator
+import com.trainingvalidator.poc.training.engine.ScoreCalculator
 import com.trainingvalidator.poc.training.engine.VisibilityStats
 import com.trainingvalidator.poc.training.models.*
 import java.util.UUID
@@ -16,6 +18,10 @@ import java.util.UUID
  * - Uses stateMessages from exercise JSON for error descriptions
  * - Uses feedbackMessages.tips for improvement suggestions
  * - Uses feedbackMessages.motivational for encouragement
+ * 
+ * SINGLE SOURCE OF TRUTH:
+ * - Uses ScoreCalculator for all score calculations
+ * - Uses MetricsCalculator for fatigue/consistency metrics
  */
 object ReportGenerator {
     
@@ -39,6 +45,11 @@ object ReportGenerator {
         holdData: HoldData? = null
     ): PostTrainingReport {
         Log.d(TAG, "Generating state-based report for ${summary.exerciseName}, ${summary.totalReps} reps")
+        
+        // Handle 0 reps case - log for debugging
+        if (summary.totalReps == 0) {
+            Log.w(TAG, "Session completed with 0 reps - user may not have completed full range of motion")
+        }
         
         // 1. Generate performance summary with state breakdown
         val performanceSummary = generateStateSummary(summary, durationMs, exerciseConfig)
@@ -81,21 +92,29 @@ object ReportGenerator {
         // 10. Generate session quality
         val sessionQuality = generateSessionQuality(visibilityStats, cameraWarningCount)
         
-        // 11. Generate tips from exercise JSON
-        val tips = generateExerciseBasedTips(errorAnalysis, exerciseConfig, dangerAlerts)
+        // 11. Generate tips from exercise JSON (pass totalReps for 0-reps handling)
+        val tips = generateExerciseBasedTips(errorAnalysis, exerciseConfig, dangerAlerts, summary.totalReps)
         
         // 12. Generate hold summary if applicable
         val holdSummary = holdData?.let { generateHoldSummary(it, frameCaptures) }
         
         // 13. Create exercise config snapshot for report metrics filtering
+        Log.d(TAG, "Exercise reportMetrics: ${exerciseConfig.reportMetrics}")
+        Log.d(TAG, "  - excluded: ${exerciseConfig.reportMetrics?.excluded}")
+        
         val configSnapshot = ExerciseConfigSnapshot.from(
             countingMethod = exerciseConfig.countingMethod,
             isBilateral = exerciseConfig.isBilateralExercise(),
             supportsWeight = exerciseConfig.supportsWeight,
+            hasPositionChecks = exerciseConfig.hasPositionChecks,
             metricsConfig = exerciseConfig.reportMetrics
         )
         
+        Log.d(TAG, "ConfigSnapshot metricsConfig: ${configSnapshot.metricsConfig}")
+        Log.d(TAG, "  - excluded: ${configSnapshot.metricsConfig.excluded}")
+        
         // 14. Calculate Overall Quality Score
+        // Uses fatigueIndex from performanceSummary (Single Source of Truth)
         val overallQuality = calculateOverallQuality(
             summary = summary,
             errorAnalysis = errorAnalysis,
@@ -103,7 +122,8 @@ object ReportGenerator {
             dangerAlerts = dangerAlerts,
             consistency = consistency,
             isHoldExercise = exerciseConfig.isHoldExercise(),
-            isBilateral = exerciseConfig.isBilateralExercise()
+            isBilateral = exerciseConfig.isBilateralExercise(),
+            fatigueIndex = performanceSummary.fatigueIndex
         )
         
         return PostTrainingReport(
@@ -189,6 +209,32 @@ object ReportGenerator {
             stateBreakdown = stateBreakdown
         )
         
+        // ═══════════════════════════════════════════════════════════════
+        // CALCULATE METRICS ONCE (Single Source of Truth)
+        // These values are stored and reused by PerformanceMetricsBuilder
+        // ═══════════════════════════════════════════════════════════════
+        
+        // Extract scores from repDetails (0-100 format)
+        val scores = summary.repDetails.map { it.score }
+        
+        val shouldComputeRom = exerciseConfig.shouldShowMetric(MetricCode.ROM)
+        val shouldComputeFormConsistency = exerciseConfig.shouldShowMetric(MetricCode.FORM_CONSISTENCY)
+        val shouldComputeFatigueIndex = exerciseConfig.shouldShowMetric(MetricCode.FATIGUE_INDEX)
+        
+        // Form Consistency - using MetricsCalculator (Single Source of Truth)
+        val formConsistency = if (shouldComputeFormConsistency && scores.size >= 4) {
+            MetricsCalculator.calculateFormConsistencyFromScores(scores)?.let { it / 10f }
+        } else null
+        
+        // Fatigue Index - using MetricsCalculator (Single Source of Truth)
+        val fatigueIndex = if (shouldComputeFatigueIndex && scores.size >= 4) {
+            MetricsCalculator.calculateFatigueIndexFromScores(scores)?.toInt()
+        } else null
+        
+        // Average ROM - use average score as proxy (higher score = better ROM achieved)
+        // NOTE: True ROM requires frame data which isn't available in RepResult
+        val avgROM = if (shouldComputeRom && scores.isNotEmpty()) scores.average().toFloat() else null
+        
         return PerformanceSummary(
             totalReps = summary.totalReps,
             durationMs = durationMs,
@@ -199,7 +245,10 @@ object ReportGenerator {
             averageScore = summary.averageScore,
             countedRatio = summary.countedRatio,
             stateBreakdown = stateBreakdown,
-            shouldCelebrate = shouldCelebrate
+            shouldCelebrate = shouldCelebrate,
+            avgROM = avgROM,
+            formConsistency = formConsistency,
+            fatigueIndex = fatigueIndex
         )
     }
     
@@ -533,9 +582,54 @@ object ReportGenerator {
     private fun generateExerciseBasedTips(
         errorAnalysis: List<ErrorAnalysisItem>,
         exerciseConfig: ExerciseConfig,
-        dangerAlerts: List<DangerAlert>
+        dangerAlerts: List<DangerAlert>,
+        totalReps: Int = -1  // Pass -1 to skip 0-reps handling
     ): List<ImprovementTip> {
         val tips = mutableListOf<ImprovementTip>()
+        
+        // Priority 0: Handle 0 reps case - provide guidance
+        if (totalReps == 0) {
+            val isHoldExercise = exerciseConfig.isHoldExercise()
+            
+            tips.add(ImprovementTip(
+                id = "no_reps_tip",
+                category = TipCategory.GENERAL,
+                icon = "📐",
+                title = if (isHoldExercise) {
+                    LocalizedText(ar = "الوصول للوضع الصحيح", en = "Reach the Correct Position")
+                } else {
+                    LocalizedText(ar = "المدى الحركي الكامل", en = "Full Range of Motion")
+                },
+                description = if (isHoldExercise) {
+                    LocalizedText(
+                        ar = "تأكد من الوصول للوضع المطلوب والثبات فيه",
+                        en = "Make sure to reach and hold the required position"
+                    )
+                } else {
+                    LocalizedText(
+                        ar = "لإكمال العدة، يجب النزول للوضع السفلي ثم العودة للوضع الأول بالكامل",
+                        en = "To complete a rep, go down to the bottom position and fully return to start"
+                    )
+                },
+                priority = 1,
+                severity = TipSeverity.IMPORTANT
+            ))
+            
+            tips.add(ImprovementTip(
+                id = "camera_position_tip",
+                category = TipCategory.POSITION,
+                icon = "📹",
+                title = LocalizedText(ar = "وضع الكاميرا", en = "Camera Position"),
+                description = LocalizedText(
+                    ar = "تأكد من أن جسمك بالكامل ظاهر في الكاميرا من الجانب",
+                    en = "Ensure your full body is visible in the camera from the side"
+                ),
+                priority = 2,
+                severity = TipSeverity.HELPFUL
+            ))
+            
+            return tips
+        }
         
         // Priority 1: DANGER fixes (CRITICAL)
         dangerAlerts.firstOrNull()?.let { danger ->
@@ -781,6 +875,8 @@ object ReportGenerator {
      * Calculate overall quality score from report components
      * 
      * This combines Form, Safety, and Control scores into a single metric.
+     * 
+     * @param fatigueIndex Pre-calculated fatigue index for Control score (Single Source of Truth)
      */
     private fun calculateOverallQuality(
         summary: SessionSummary,
@@ -789,7 +885,8 @@ object ReportGenerator {
         dangerAlerts: List<DangerAlert>,
         consistency: ConsistencyMetrics?,
         isHoldExercise: Boolean,
-        isBilateral: Boolean
+        isBilateral: Boolean,
+        fatigueIndex: Int?
     ): OverallQualityScore {
         
         // 1. Calculate Form Score
@@ -798,8 +895,8 @@ object ReportGenerator {
         // 2. Calculate Safety Score
         val safetyScore = calculateSafetyScoreForOverall(errorAnalysis, dangerAlerts, summary.totalReps)
         
-        // 3. Calculate Control Score
-        val controlScore = calculateControlScoreForOverall(timeline, consistency)
+        // 3. Calculate Control Score (uses fatigueIndex for unified calculation)
+        val controlScore = calculateControlScoreForOverall(timeline, consistency, fatigueIndex)
         
         // 4. Calculate Overall using OverallQualityScore
         return OverallQualityScore.calculate(
@@ -812,6 +909,8 @@ object ReportGenerator {
     
     /**
      * Calculate Form Score from summary and timeline
+     * 
+     * Uses ScoreCalculator rates for consistency (Single Source of Truth).
      */
     private fun calculateFormScoreForOverall(
         summary: SessionSummary,
@@ -824,7 +923,7 @@ object ReportGenerator {
             return avgScore
         }
         
-        // Fallback: calculate from state breakdown (Map<JointState, Int>)
+        // Fallback: calculate from state breakdown using ScoreCalculator rates
         val breakdownMap = summary.stateBreakdown
         val perfectCount = breakdownMap[JointState.PERFECT] ?: 0
         val normalCount = breakdownMap[JointState.NORMAL] ?: 0
@@ -835,12 +934,13 @@ object ReportGenerator {
         val total = (perfectCount + normalCount + padCount + warningCount + dangerCount).toFloat()
         if (total == 0f) return 0f
         
+        // Use ScoreCalculator rates (Single Source of Truth)
         return (
-            perfectCount * 100f +
-            normalCount * 80f +
-            padCount * 60f +
-            warningCount * 40f +
-            dangerCount * 0f
+            perfectCount * ScoreCalculator.getScoreRate(JointState.PERFECT) +
+            normalCount * ScoreCalculator.getScoreRate(JointState.NORMAL) +
+            padCount * ScoreCalculator.getScoreRate(JointState.PAD) +
+            warningCount * ScoreCalculator.getScoreRate(JointState.WARNING) +
+            dangerCount * ScoreCalculator.getScoreRate(JointState.DANGER)
         ) / total
     }
     
@@ -866,27 +966,45 @@ object ReportGenerator {
     }
     
     /**
-     * Calculate Control Score from timeline and consistency
+     * Calculate Control Score from timeline, consistency, and fatigue
+     * 
+     * UNIFIED LOGIC: Same calculation as PerformanceMetricsBuilder.calculateControlScore
+     * to ensure consistency between OverallQuality and Control card.
+     * 
+     * @param timeline Rep timeline entries
+     * @param consistency Timing consistency metrics
+     * @param fatigueIndex Pre-calculated fatigue index (Single Source of Truth)
      */
     private fun calculateControlScoreForOverall(
         timeline: List<RepTimelineEntry>,
-        consistency: ConsistencyMetrics?
+        consistency: ConsistencyMetrics?,
+        fatigueIndex: Int?
     ): Float {
         if (timeline.isEmpty()) return 50f  // Neutral if no data
         
-        var controlScore = 70f  // Base score
+        var controlScore = 80f  // Base score
         
-        // Add consistency bonus/penalty
-        if (consistency != null && timeline.size >= 4) {
-            val scores = timeline.map { it.score.toDouble() }
-            val mean = scores.average()
-            val variance = scores.map { (it - mean) * (it - mean) }.average()
-            val stdDev = kotlin.math.sqrt(variance).toFloat()
-            
-            // Lower variance = higher score
-            // stdDev of 0 = +30 bonus, stdDev of 30 = -30 penalty
-            val consistencyBonus = (30f - stdDev).coerceIn(-30f, 30f)
-            controlScore += consistencyBonus
+        // Bonus/penalty for fatigue (same as PerformanceMetricsBuilder)
+        if (fatigueIndex == null) {
+            controlScore += 10f  // Bonus for no fatigue
+        } else {
+            // Penalize based on how early fatigue started
+            val totalReps = timeline.size
+            if (totalReps > 0) {
+                val fatigueRatio = fatigueIndex.toFloat() / totalReps
+                if (fatigueRatio < 0.5) {
+                    controlScore -= 20f
+                } else if (fatigueRatio < 0.7) {
+                    controlScore -= 10f
+                }
+            }
+        }
+        
+        // Bonus for consistent timing (same as PerformanceMetricsBuilder)
+        consistency?.let {
+            if (it.variationMs < 1000) {
+                controlScore += 10f
+            }
         }
         
         return controlScore.coerceIn(0f, 100f)

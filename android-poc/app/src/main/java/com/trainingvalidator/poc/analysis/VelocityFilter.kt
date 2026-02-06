@@ -1,7 +1,6 @@
 package com.trainingvalidator.poc.analysis
 
 import com.google.mediapipe.tasks.components.containers.NormalizedLandmark
-import kotlin.math.sqrt
 
 /**
  * VelocityFilter - Rejects landmarks that move too fast (teleportation)
@@ -14,6 +13,8 @@ class VelocityFilter(
     private val visibilityThreshold: Float = 0.65f, // Only filter high-confidence landmarks
     private val maxTimeDelta: Long = 500L // Reset if more than 500ms between frames
 ) {
+    // OPTIMIZED: Pre-compute squared threshold to avoid sqrt() on every comparison
+    private val maxVelocitySquared: Float = maxVelocity * maxVelocity
     private var previousLandmarks: List<NormalizedLandmark>? = null
     private var previousTimestamp: Long = 0L
 
@@ -56,11 +57,12 @@ class VelocityFilter(
                 current
             } else {
                 // Both have good visibility - check for teleportation
+                // OPTIMIZED: Compare squared distance to avoid sqrt()
                 val dx = current.x() - previous.x()
                 val dy = current.y() - previous.y()
-                val distance = sqrt(dx * dx + dy * dy)
+                val distanceSquared = dx * dx + dy * dy
                 
-                if (distance > maxVelocity) {
+                if (distanceSquared > maxVelocitySquared) {
                     // Teleportation detected on a visible landmark!
                     // Use previous position to prevent jump
                     previous

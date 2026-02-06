@@ -246,6 +246,7 @@ export interface MetricDefinition {
     hold: boolean;
     bilateral: boolean;
     weighted: boolean;
+    hasPositionChecks?: boolean;  // Only show if exercise has position checks
   };
   minReps?: number;  // Minimum reps required to show this metric
 }
@@ -280,7 +281,7 @@ export const METRIC_DEFINITIONS: MetricDefinition[] = [
   
   // Quality
   { code: 'alignment', label: { ar: 'دقة المحاذاة', en: 'Alignment Accuracy' }, unit: '%', category: 'quality',
-    autoInclude: { repBased: true, hold: true, bilateral: true, weighted: true } },
+    autoInclude: { repBased: false, hold: false, bilateral: false, weighted: false, hasPositionChecks: true } },
   { code: 'form_consistency', label: { ar: 'ثبات الشكل', en: 'Form Consistency' }, unit: '%', category: 'quality',
     autoInclude: { repBased: true, hold: false, bilateral: true, weighted: true }, minReps: 4 },
   { code: 'fatigue_index', label: { ar: 'نقطة التعب', en: 'Fatigue Index' }, unit: '#', category: 'quality',
@@ -315,12 +316,18 @@ export function getAutoIncludedMetrics(options: {
   countingMethod: 'up_down' | 'push_pull' | 'hold';
   isBilateral: boolean;
   supportsWeight: boolean;
+  hasPositionChecks?: boolean;
 }): MetricCode[] {
-  const { countingMethod, isBilateral, supportsWeight } = options;
+  const { countingMethod, isBilateral, supportsWeight, hasPositionChecks } = options;
   const isRepBased = countingMethod !== 'hold';
   
   return METRIC_DEFINITIONS
     .filter(m => {
+      // Special case: alignment requires position checks
+      if (m.autoInclude.hasPositionChecks) {
+        return hasPositionChecks === true;
+      }
+      
       if (isRepBased && m.autoInclude.repBased) return true;
       if (!isRepBased && m.autoInclude.hold) return true;
       if (isBilateral && m.autoInclude.bilateral && m.code === 'symmetry') return true;
@@ -328,6 +335,61 @@ export function getAutoIncludedMetrics(options: {
       return false;
     })
     .map(m => m.code);
+}
+
+/**
+ * Get auto-excluded (disabled) metrics based on exercise type.
+ * These are metrics that are NOT APPLICABLE for this exercise type.
+ * 
+ * This should be merged with user-excluded metrics when saving to DB.
+ */
+export function getAutoExcludedMetrics(options: {
+  countingMethod: 'up_down' | 'push_pull' | 'hold';
+  isBilateral: boolean;
+  supportsWeight: boolean;
+  hasPositionChecks: boolean;
+}): MetricCode[] {
+  const { countingMethod, isBilateral, supportsWeight, hasPositionChecks } = options;
+  const isHold = countingMethod === 'hold';
+  
+  const excluded: MetricCode[] = [];
+  
+  // Hold exercise restrictions
+  if (isHold) {
+    excluded.push('rep_count', 'tempo', 'tut', 'rom', 'form_consistency', 'fatigue_index', 'velocity');
+  } else {
+    // Rep-based exercise restrictions
+    excluded.push('hold_duration');
+  }
+  
+  // Weight restrictions
+  if (!supportsWeight) {
+    excluded.push('weight', 'volume', 'est_1rm');
+  }
+  
+  // Bilateral restrictions
+  if (!isBilateral) {
+    excluded.push('symmetry');
+  }
+  
+  // Position Checks restrictions (Alignment)
+  if (!hasPositionChecks) {
+    excluded.push('alignment');
+  }
+  
+  return excluded;
+}
+
+/**
+ * Merge user-excluded metrics with auto-excluded (disabled) metrics.
+ * Returns a complete excluded list for storage in DB.
+ */
+export function mergeExcludedMetrics(
+  userExcluded: MetricCode[],
+  autoExcluded: MetricCode[]
+): MetricCode[] {
+  const combined = new Set([...userExcluded, ...autoExcluded]);
+  return Array.from(combined);
 }
 
 /**

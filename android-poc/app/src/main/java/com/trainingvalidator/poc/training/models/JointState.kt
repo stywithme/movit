@@ -140,13 +140,23 @@ data class StateConfig(
     val severity: Severity
 ) {
     companion object {
-        // Color constants
-        private val COLOR_GREEN = Color.parseColor("#4CAF50")      // Perfect
-        private val COLOR_YELLOW = Color.parseColor("#FFEB3B")     // Normal
-        private val COLOR_ORANGE = Color.parseColor("#FF9800")     // Pad
-        private val COLOR_LIGHT_RED = Color.parseColor("#FF5252")  // Warning
-        private val COLOR_DARK_RED = Color.parseColor("#B71C1C")   // Danger
-        private val COLOR_BLUE_GRAY = Color.parseColor("#607D8B")  // Transition
+        // ==================== Color Constants (Cached for Performance) ====================
+        // Using @JvmField for direct field access without getter overhead
+        
+        @JvmField val COLOR_PERFECT = Color.parseColor("#4CAF50")      // Green
+        @JvmField val COLOR_NORMAL = Color.parseColor("#FFEB3B")       // Yellow
+        @JvmField val COLOR_PAD = Color.parseColor("#FF9800")          // Orange
+        @JvmField val COLOR_WARNING = Color.parseColor("#FF5252")      // Light Red
+        @JvmField val COLOR_DANGER = Color.parseColor("#B71C1C")       // Dark Red
+        @JvmField val COLOR_TRANSITION = Color.parseColor("#607D8B")   // Blue Gray
+        
+        // Legacy color names (for backward compatibility)
+        private val COLOR_GREEN = COLOR_PERFECT
+        private val COLOR_YELLOW = COLOR_NORMAL
+        private val COLOR_ORANGE = COLOR_PAD
+        private val COLOR_LIGHT_RED = COLOR_WARNING
+        private val COLOR_DARK_RED = COLOR_DANGER
+        private val COLOR_BLUE_GRAY = COLOR_TRANSITION
         
         /**
          * Pre-defined StateConfigs - the SINGLE SOURCE OF TRUTH
@@ -214,9 +224,19 @@ data class StateConfig(
         
         /**
          * Get color for a given JointState
+         * 
+         * OPTIMIZED: Uses direct lookup instead of map access for hot path
          */
         fun getColor(state: JointState): Int {
-            return getConfig(state).color
+            // Direct lookup - avoids map access overhead
+            return when (state) {
+                JointState.PERFECT -> COLOR_PERFECT
+                JointState.NORMAL -> COLOR_NORMAL
+                JointState.PAD -> COLOR_PAD
+                JointState.WARNING -> COLOR_WARNING
+                JointState.DANGER -> COLOR_DANGER
+                JointState.TRANSITION -> COLOR_NORMAL  // Same as NORMAL for transition
+            }
         }
         
         /**
@@ -264,58 +284,71 @@ data class StateRanges(
     val warning: AngleRange? = null,
     val danger: AngleRange? = null
 ) {
+    // ==================== Cached Properties (Performance Optimization) ====================
+    // Using @Transient backing fields to cache computed values
+    // These are not serialized by Gson and computed on first access
+    
+    @Transient private var _effectiveMin: Double? = null
+    @Transient private var _effectiveMax: Double? = null
+    @Transient private var _outermostMin: Double? = null
+    @Transient private var _outermostMax: Double? = null
+    
     /**
-     * Get the effective min angle for this range (lowest min across all counted states)
-     * Used for TRANSITION calculation
+     * Cached effective min - computed once on first access
+     * Eliminates listOfNotNull() allocation on every call
      */
-    fun getEffectiveMin(): Double {
-        val candidates = listOfNotNull(
-            perfect.min,
-            normal?.min,
-            pad?.min
-        )
-        return candidates.minOrNull() ?: perfect.min
+    val effectiveMin: Double get() {
+        return _effectiveMin ?: run {
+            var min = perfect.min
+            normal?.min?.let { if (it < min) min = it }
+            pad?.min?.let { if (it < min) min = it }
+            _effectiveMin = min
+            min
+        }
     }
     
     /**
-     * Get the effective max angle for this range (highest max across all counted states)
-     * Used for TRANSITION calculation
+     * Cached effective max - computed once on first access
+     * Eliminates listOfNotNull() allocation on every call
      */
-    fun getEffectiveMax(): Double {
-        val candidates = listOfNotNull(
-            perfect.max,
-            normal?.max,
-            pad?.max
-        )
-        return candidates.maxOrNull() ?: perfect.max
+    val effectiveMax: Double get() {
+        return _effectiveMax ?: run {
+            var max = perfect.max
+            normal?.max?.let { if (it > max) max = it }
+            pad?.max?.let { if (it > max) max = it }
+            _effectiveMax = max
+            max
+        }
     }
     
     /**
-     * Get the outermost min (including warning/danger)
+     * Cached outermost min - computed once on first access
      */
-    fun getOutermostMin(): Double {
-        val candidates = listOfNotNull(
-            warning?.min,
-            danger?.min,
-            pad?.min,
-            normal?.min,
-            perfect.min
-        )
-        return candidates.minOrNull() ?: perfect.min
+    val outermostMin: Double get() {
+        return _outermostMin ?: run {
+            var min = perfect.min
+            normal?.min?.let { if (it < min) min = it }
+            pad?.min?.let { if (it < min) min = it }
+            warning?.min?.let { if (it < min) min = it }
+            danger?.min?.let { if (it < min) min = it }
+            _outermostMin = min
+            min
+        }
     }
     
     /**
-     * Get the outermost max (including warning/danger)
+     * Cached outermost max - computed once on first access
      */
-    fun getOutermostMax(): Double {
-        val candidates = listOfNotNull(
-            danger?.max,
-            warning?.max,
-            pad?.max,
-            normal?.max,
-            perfect.max
-        )
-        return candidates.maxOrNull() ?: perfect.max
+    val outermostMax: Double get() {
+        return _outermostMax ?: run {
+            var max = perfect.max
+            normal?.max?.let { if (it > max) max = it }
+            pad?.max?.let { if (it > max) max = it }
+            warning?.max?.let { if (it > max) max = it }
+            danger?.max?.let { if (it > max) max = it }
+            _outermostMax = max
+            max
+        }
     }
     
     /**
@@ -589,8 +622,8 @@ object AngleColorResolver {
         downRanges: StateRanges?
     ): ColorResult {
         // Calculate TRANSITION boundaries
-        val transitionMin = downRanges?.getEffectiveMax() ?: 0.0
-        val transitionMax = upRanges?.getEffectiveMin() ?: 180.0
+        val transitionMin = downRanges?.effectiveMax ?: 0.0
+        val transitionMax = upRanges?.effectiveMin ?: 180.0
         
         // Determine zone
         val zone = when {
@@ -657,8 +690,8 @@ object AngleColorResolver {
         }
         
         // Check if angle is in TRANSITION zone (outside defined ranges)
-        val effectiveMin = ranges.getEffectiveMin()
-        val effectiveMax = ranges.getEffectiveMax()
+        val effectiveMin = ranges.effectiveMin
+        val effectiveMax = ranges.effectiveMax
         
         val isInTransition = if (isUpZone) {
             // For UP zone: angles below effectiveMin are TRANSITION
@@ -721,8 +754,8 @@ object AngleColorResolver {
         // Check if this angle is in TRANSITION zone (outside the defined ranges)
         // For UPPER limb (moving up from 90°): TRANSITION if angle < effectiveMin
         // For LOWER limb (moving down from 90°): TRANSITION if angle > effectiveMax
-        val effectiveMin = ranges.getEffectiveMin()
-        val effectiveMax = ranges.getEffectiveMax()
+        val effectiveMin = ranges.effectiveMin
+        val effectiveMax = ranges.effectiveMax
         
         val isInTransition = if (isUpperLimb xor invertAngles) {
             // Upper limb (or inverted lower): angles below effectiveMin are TRANSITION

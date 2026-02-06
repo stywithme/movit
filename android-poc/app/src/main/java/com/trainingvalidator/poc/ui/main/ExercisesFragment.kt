@@ -19,7 +19,6 @@ import com.trainingvalidator.poc.R
 import com.trainingvalidator.poc.databinding.FragmentExercisesBinding
 import com.trainingvalidator.poc.storage.ExerciseRepository
 import com.trainingvalidator.poc.storage.SyncManager
-import com.trainingvalidator.poc.training.loader.ExerciseLoader
 import com.trainingvalidator.poc.training.models.ExerciseConfig
 import com.trainingvalidator.poc.ui.PreWorkoutActivity
 import com.trainingvalidator.poc.ui.WorkoutListActivity
@@ -117,7 +116,8 @@ class ExercisesFragment : Fragment() {
                 
             } catch (e: Exception) {
                 Log.e(TAG, "Failed to initialize repository", e)
-                loadExercisesFromAssets()
+                // Show empty state - no fallback to assets
+                showNoExercisesAvailable()
             } finally {
                 binding.progressBar.visibility = View.GONE
             }
@@ -128,17 +128,17 @@ class ExercisesFragment : Fragment() {
         val loaded = repository.getAllExercises()
         
         if (loaded.isEmpty()) {
-            loadExercisesFromAssets()
+            // Show empty state - no fallback to assets
+            showNoExercisesAvailable()
         } else {
             updateExercisesList(loaded)
             Log.d(TAG, "Loaded ${loaded.size} exercises from repository")
         }
     }
 
-    private fun loadExercisesFromAssets() {
-        val loaded = ExerciseLoader.loadAll(requireContext().assets)
-        updateExercisesList(loaded)
-        Log.d(TAG, "Loaded ${loaded.size} exercises from assets (fallback)")
+    private fun showNoExercisesAvailable() {
+        Log.w(TAG, "No exercises available - cache empty and sync failed")
+        updateExercisesList(emptyList())
     }
 
     private fun updateExercisesList(loaded: List<ExerciseConfig>) {

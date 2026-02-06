@@ -249,11 +249,16 @@ class SessionSupervisor {
                 // Reset NoPose timer
                 noPoseStartTime = 0L
                 // Process frame through engine
-                emit(SupervisorAction.ProcessFrame(signal.angles, signal.landmarks, signal.isFrontCamera))
+                emit(SupervisorAction.ProcessFrame(
+                    signal.angles,
+                    signal.landmarks,
+                    signal.isFrontCamera,
+                    signal.timestampMs
+                ))
             }
             
             is SupervisorSignal.NoPoseFrame -> {
-                handleNoPoseDuringTraining()
+                handleNoPoseDuringTraining(signal.timestampMs)
             }
             
             is SupervisorSignal.PauseRequested -> {
@@ -403,8 +408,7 @@ class SessionSupervisor {
     /**
      * Handle NoPose frames during TRAINING with 4s timeout
      */
-    private fun handleNoPoseDuringTraining() {
-        val now = System.currentTimeMillis()
+    private fun handleNoPoseDuringTraining(now: Long) {
         
         // Start timer if not already started
         if (noPoseStartTime == 0L) {

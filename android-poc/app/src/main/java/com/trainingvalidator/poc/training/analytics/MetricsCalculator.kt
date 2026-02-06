@@ -296,6 +296,8 @@ object MetricsCalculator {
      * 
      * Compares first 3 reps with last 3 reps to detect technique breakdown
      * 
+     * SINGLE SOURCE OF TRUTH for form consistency (when frames are available).
+     * 
      * @return Consistency score (1000 = identical patterns, lower = more variation)
      */
     fun calculateFormConsistency(reps: List<RepRecord>, jointIndex: Int): Short? {
@@ -316,19 +318,69 @@ object MetricsCalculator {
     }
     
     /**
+     * Calculate form consistency from scores using standard deviation
+     * 
+     * SINGLE SOURCE OF TRUTH for form consistency (when only scores are available).
+     * Use this when frame data is not available.
+     * 
+     * Lower variance = higher consistency score.
+     * 
+     * @param scores List of scores (0-100) in rep order
+     * @return Consistency score × 10 (0-1000, 1000 = perfect consistency)
+     */
+    fun calculateFormConsistencyFromScores(scores: List<Float>): Short? {
+        if (scores.size < 4) return null
+        
+        val mean = scores.average()
+        val variance = scores.map { (it - mean) * (it - mean) }.average()
+        val stdDev = kotlin.math.sqrt(variance)
+        
+        // Lower variance = higher consistency
+        // stdDev of 0 = 1000 (100%), stdDev of 30+ = 0
+        val consistencyScore = ((100 - (stdDev * 3.33)).coerceIn(0.0, 100.0) * 10).toInt()
+        return consistencyScore.toShort()
+    }
+    
+    /**
      * Calculate fatigue index (rep number where performance dropped)
      * 
      * Looks for 20%+ drop in score compared to first half average
      * 
+     * SINGLE SOURCE OF TRUTH for fatigue detection.
+     * 
+     * @param reps List of RepRecord (score is in ×10 format, e.g., 850 = 85%)
      * @return Rep number where fatigue started (1-based), null if no significant fatigue
      */
     fun calculateFatigueIndex(reps: List<RepRecord>): Short? {
         if (reps.size < 4) return null
         
-        val firstHalfAvg = reps.take(reps.size / 2).map { it.score }.average()
+        // Convert from ×10 format to 0-100 percentage
+        val scores = reps.map { it.score / 10f }
+        return calculateFatigueIndexFromScores(scores)
+    }
+    
+    /**
+     * Calculate fatigue index from a list of scores
+     * 
+     * SINGLE SOURCE OF TRUTH for fatigue detection.
+     * Use this when you have scores but not full RepRecord objects.
+     * 
+     * Algorithm: Compare SECOND HALF reps against FIRST HALF average.
+     * If any rep in second half drops by more than 20%, fatigue detected.
+     * 
+     * @param scores List of scores (0-100) in rep order
+     * @return Rep number where fatigue started (1-based), null if no significant fatigue
+     */
+    fun calculateFatigueIndexFromScores(scores: List<Float>): Short? {
+        if (scores.size < 4) return null
         
-        for (i in reps.indices) {
-            if (reps[i].score < firstHalfAvg * 0.8) { // 20% drop
+        val halfSize = scores.size / 2
+        val firstHalfAvg = scores.take(halfSize).average()
+        val threshold = firstHalfAvg * 0.8  // 20% drop threshold
+        
+        // Start checking from second half only (index = halfSize)
+        for (i in halfSize until scores.size) {
+            if (scores[i] < threshold) {
                 return (i + 1).toShort() // 1-based rep number
             }
         }

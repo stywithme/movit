@@ -51,6 +51,10 @@ class VideoManager(
         
         // Minimum time between processed frames to prevent queue buildup
         private const val MIN_PROCESS_INTERVAL_MS = 20L
+        
+        // DETERMINISTIC MODE: Process frames at fixed video timestamps
+        // This ensures consistent results across multiple runs of the same video
+        private const val DETERMINISTIC_FRAME_INTERVAL_MS = 33L  // ~30fps from video timeline
     }
     
     /**
@@ -84,8 +88,16 @@ class VideoManager(
     @Volatile
     private var isProcessingFrame: Boolean = false
     
+    // DETERMINISTIC MODE: Track last processed VIDEO timestamp (not system time)
+    // This ensures we process frames at consistent video timeline positions
+    @Volatile
+    private var lastProcessedVideoTimestampMs: Long = -1L
+    
     // Reusable bitmap to reduce allocations (optional optimization)
     private var reusableBitmap: Bitmap? = null
+    
+    // OPTIMIZED: Reusable Matrix for rotation to avoid allocation per frame
+    private val reusableRotationMatrix = Matrix()
     
     /**
      * Load video from URI
@@ -197,6 +209,7 @@ class VideoManager(
      */
     fun seekTo(positionMs: Long) {
         player?.seekTo(positionMs)
+        lastProcessedVideoTimestampMs = -1L  // Reset for deterministic frame selection after seek
         Log.d(TAG, "Seeking to ${positionMs}ms")
         onSeekPerformed()
     }
@@ -233,6 +246,7 @@ class VideoManager(
     private fun startFrameExtraction() {
         stopFrameExtraction()
         lastProcessedTimeMs = 0L
+        lastProcessedVideoTimestampMs = -1L  // Reset for deterministic frame selection
         isProcessingFrame = false
         
         // Use Main dispatcher for player access, but process frames async
@@ -251,12 +265,20 @@ class VideoManager(
                     // Update progress on main thread
                     onProgressChanged(timestampMs, duration)
                     
-                    // Smart frame skipping: skip if still processing previous frame
-                    // or if not enough time has passed since last processed frame
-                    val currentTime = System.currentTimeMillis()
-                    val timeSinceLastProcess = currentTime - lastProcessedTimeMs
+                    // DETERMINISTIC FRAME SELECTION:
+                    // Process frames at fixed video timeline intervals, not system time
+                    // This ensures the SAME frames are processed every time for the same video
+                    val shouldProcessFrame = if (lastProcessedVideoTimestampMs < 0) {
+                        // First frame - always process
+                        true
+                    } else {
+                        // Process if enough video time has passed since last processed frame
+                        (timestampMs - lastProcessedVideoTimestampMs) >= DETERMINISTIC_FRAME_INTERVAL_MS
+                    }
                     
-                    if (!isProcessingFrame && timeSinceLastProcess >= MIN_PROCESS_INTERVAL_MS) {
+                    // Also check we're not still processing previous frame
+                    if (!isProcessingFrame && shouldProcessFrame) {
+                        lastProcessedVideoTimestampMs = timestampMs
                         // Extract frame on main thread (required for TextureView)
                         extractAndProcessFrameAsync(timestampMs)
                     }
@@ -366,18 +388,18 @@ class VideoManager(
     
     /**
      * Rotate bitmap by specified degrees
+     * OPTIMIZED: Reuses Matrix object to avoid allocation per frame
      */
     private fun rotateBitmap(bitmap: Bitmap, degrees: Int): Bitmap {
         if (degrees == 0) return bitmap
         
-        val matrix = Matrix().apply {
-            postRotate(degrees.toFloat())
-        }
+        reusableRotationMatrix.reset()
+        reusableRotationMatrix.postRotate(degrees.toFloat())
         
         return Bitmap.createBitmap(
             bitmap, 0, 0,
             bitmap.width, bitmap.height,
-            matrix, true
+            reusableRotationMatrix, true
         )
     }
     

@@ -3,6 +3,7 @@ package com.trainingvalidator.poc.ui.training
 import android.content.Context
 import android.content.res.AssetManager
 import android.util.Log
+import android.os.SystemClock
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
@@ -18,9 +19,8 @@ import com.trainingvalidator.poc.training.config.SettingsManager
 import com.trainingvalidator.poc.training.feedback.FeedbackConfig
 import com.trainingvalidator.poc.training.feedback.FeedbackEvent
 import com.trainingvalidator.poc.training.feedback.FeedbackManager
-import com.trainingvalidator.poc.training.loader.ExerciseLoader
-import com.trainingvalidator.poc.training.loader.WorkoutLoader
 // NOTE: DifficultyType has been REMOVED - quality is now assessed via JointState
+// NOTE: ExerciseLoader and WorkoutLoader removed - using repository only (no assets fallback)
 import com.trainingvalidator.poc.training.models.ExerciseConfig
 import com.trainingvalidator.poc.storage.ExerciseRepository
 import com.trainingvalidator.poc.storage.WorkoutRepository
@@ -33,6 +33,7 @@ import com.trainingvalidator.poc.training.session.SupervisorSignal
 import com.trainingvalidator.poc.training.workout.LoadedExercise
 import com.trainingvalidator.poc.training.workout.SwitchResult
 import com.trainingvalidator.poc.training.workout.WorkoutTrainingEngine
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableSharedFlow
@@ -153,6 +154,11 @@ class TrainingViewModel(
     @Volatile
     private var isSwitchingExercise = false
     
+    // Flag to prevent concurrent frame processing on background thread
+    // This ensures frames are processed one at a time, dropping excess frames
+    @Volatile
+    private var isEngineProcessingFrame = false
+    
     private var engineObserverJob: Job? = null
     private var supervisorObserverJob: Job? = null
     
@@ -186,7 +192,8 @@ class TrainingViewModel(
         weightKg: Float? = null,   // Weight for weighted exercises
         weightUnit: String = "kg"  // kg or lbs
     ): Boolean {
-        // Try to load from repository first (has cached/synced data)
+        // Load from repository (cached/synced data from backend)
+        // No fallback to assets - repository is the single source of truth
         var config: ExerciseConfig? = null
         
         if (context != null) {
@@ -195,19 +202,18 @@ class TrainingViewModel(
                 config = repository.getExercise(exerciseName)
                 if (config != null) {
                     Log.d(TAG, "Loaded exercise from repository: $exerciseName")
+                } else {
+                    Log.e(TAG, "Exercise not found in repository: $exerciseName")
                 }
             } catch (e: Exception) {
-                Log.w(TAG, "Repository not available, falling back to assets", e)
+                Log.e(TAG, "Failed to access repository for exercise: $exerciseName", e)
             }
-        }
-        
-        // Fall back to bundled assets
-        if (config == null) {
-            config = ExerciseLoader.load(assets, exerciseName)
+        } else {
+            Log.e(TAG, "Context is required to load exercise from repository")
         }
         
         if (config == null) {
-            Log.e(TAG, "Failed to load exercise: $exerciseName")
+            Log.e(TAG, "Failed to load exercise: $exerciseName - not available in repository")
             return false
         }
         
@@ -263,59 +269,53 @@ class TrainingViewModel(
      * 
      * @param workoutName Name of the workout to load
      * @param difficultyStr Ignored (legacy parameter)
-     * @param context Optional context for repository access (enables cached/synced data)
+     * @param context Required context for repository access
      */
     fun loadWorkout(
         workoutName: String, 
         difficultyStr: String = "",
         context: Context? = null
     ): Boolean {
-        // Try to load from repository first (cached from server), fallback to assets
-        val workoutConfig = context?.let {
-            try {
-                WorkoutRepository.getInstance(it).getWorkout(workoutName)
-            } catch (e: Exception) {
-                Log.w(TAG, "WorkoutRepository not available, falling back to assets", e)
-                null
-            }
-        } ?: WorkoutLoader.load(assets, workoutName)
+        // Load from repository (cached/synced data from backend)
+        // No fallback to assets - repository is the single source of truth
+        if (context == null) {
+            Log.e(TAG, "Context is required to load workout from repository")
+            return false
+        }
+        
+        val workoutConfig = try {
+            WorkoutRepository.getInstance(context).getWorkout(workoutName)
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed to access WorkoutRepository for workout: $workoutName", e)
+            null
+        }
         
         if (workoutConfig == null) {
-            Log.e(TAG, "Failed to load workout: $workoutName")
+            Log.e(TAG, "Failed to load workout: $workoutName - not available in repository")
             return false
         }
         
         _workoutConfig.value = workoutConfig
         _isWorkoutMode.value = true
         
-        // Try to get repository for cached/synced exercises
-        val repository = context?.let {
-            try {
-                ExerciseRepository.getInstance(it)
-            } catch (e: Exception) {
-                Log.w(TAG, "Repository not available, falling back to assets", e)
-                null
-            }
+        // Get repository for exercises
+        val repository = try {
+            ExerciseRepository.getInstance(context)
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed to access ExerciseRepository", e)
+            return false
         }
         
-        // Load all exercises (prioritize repository, fallback to assets)
+        // Load all exercises from repository (no fallback to assets)
         val loadedExercises = workoutConfig.exercises.mapIndexed { index, workoutExercise ->
-            // Try repository first (has synced data with audio URLs)
-            var exerciseConfig = repository?.getExercise(workoutExercise.exercise)
-            
-            // Fallback to bundled assets
-            if (exerciseConfig == null) {
-                exerciseConfig = ExerciseLoader.load(assets, workoutExercise.exercise)
-            }
+            val exerciseConfig = repository.getExercise(workoutExercise.exercise)
             
             if (exerciseConfig == null) {
-                Log.e(TAG, "Failed to load exercise: ${workoutExercise.exercise}")
+                Log.e(TAG, "Exercise not found in repository: ${workoutExercise.exercise}")
                 return@mapIndexed null
             }
             
-            if (repository != null) {
-                Log.d(TAG, "Loaded exercise from repository: ${workoutExercise.exercise}")
-            }
+            Log.d(TAG, "Loaded exercise from repository: ${workoutExercise.exercise}")
             
             LoadedExercise(
                 config = exerciseConfig,
@@ -400,15 +400,20 @@ class TrainingViewModel(
     /**
      * Called from Activity for every frame with detected pose
      */
-    fun onPoseFrame(angles: JointAngles, landmarks: List<SmoothedLandmark>?, isFrontCamera: Boolean) {
-        supervisor.processSignal(SupervisorSignal.PoseFrame(angles, landmarks, isFrontCamera))
+    fun onPoseFrame(
+        angles: JointAngles,
+        landmarks: List<SmoothedLandmark>?,
+        isFrontCamera: Boolean,
+        timestampMs: Long
+    ) {
+        supervisor.processSignal(SupervisorSignal.PoseFrame(angles, landmarks, isFrontCamera, timestampMs))
     }
     
     /**
      * Called from Activity when no pose detected
      */
-    fun onNoPoseDetected() {
-        supervisor.processSignal(SupervisorSignal.NoPoseFrame)
+    fun onNoPoseDetected(timestampMs: Long) {
+        supervisor.processSignal(SupervisorSignal.NoPoseFrame(timestampMs))
     }
     
     /**
@@ -471,6 +476,7 @@ class TrainingViewModel(
             is SupervisorAction.StartEngine -> {
                 sessionStartTime = System.currentTimeMillis()
                 feedbackManager?.resetMessageStates()
+                isEngineProcessingFrame = false  // Reset frame processing flag
                 
                 if (_isWorkoutMode.value) {
                     startWorkoutTraining()
@@ -508,9 +514,26 @@ class TrainingViewModel(
                 trainingEngine?.start()
             }
             
-            // Frame Processing
+            // Frame Processing - Run on background thread to keep UI responsive
             is SupervisorAction.ProcessFrame -> {
-                trainingEngine?.processFrame(action.angles, action.landmarks, action.isFrontCamera)
+                // Only process if previous frame is done (drop frames to prevent accumulation)
+                if (!isEngineProcessingFrame) {
+                    isEngineProcessingFrame = true
+                    
+                    viewModelScope.launch(Dispatchers.Default) {
+                        try {
+                            trainingEngine?.processFrame(
+                                action.angles,
+                                action.landmarks,
+                                action.isFrontCamera,
+                                action.timestampMs
+                            )
+                        } finally {
+                            isEngineProcessingFrame = false
+                        }
+                    }
+                }
+                // else: frame dropped - keeps skeleton tracking smooth
             }
             
             is SupervisorAction.ValidatePose -> {
@@ -648,7 +671,7 @@ class TrainingViewModel(
         smoothedLandmarks: List<SmoothedLandmark>?,
         isFrontCamera: Boolean
     ) {
-        onPoseFrame(angles, smoothedLandmarks, isFrontCamera)
+        onPoseFrame(angles, smoothedLandmarks, isFrontCamera, SystemClock.uptimeMillis())
     }
     
     // ==================== Engine Observers ====================

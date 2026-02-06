@@ -63,11 +63,12 @@ class VideoModeController(
             angles: JointAngles,
             smoothedLandmarks: List<SmoothedLandmark>,
             imageWidth: Int,
-            imageHeight: Int
+            imageHeight: Int,
+            timestampMs: Long
         )
         
         /** Called when no pose detected in frame */
-        fun onNoPoseDetected()
+        fun onNoPoseDetected(timestampMs: Long)
         
         /** Called when results are saved */
         fun onResultsSaved(success: Boolean)
@@ -89,6 +90,11 @@ class VideoModeController(
     private var lastFrameBitmap: Bitmap? = null
     private val lastFrameLock = Any()
     
+    // OPTIMIZED: Flag to limit concurrent frame processing
+    // Prevents spawning multiple coroutines when processing is slower than frame arrival
+    @Volatile
+    private var isProcessingFrame = false
+    
     /**
      * Set the video mode listener
      */
@@ -98,6 +104,8 @@ class VideoModeController(
     
     /**
      * Initialize video mode with URI
+     * 
+     * IMPORTANT: Resets smoother state for consistent results across runs
      */
     fun initialize(
         textureView: TextureView,
@@ -106,6 +114,11 @@ class VideoModeController(
     ) {
         this.videoUri = uri
         this.landmarkSmoother = smoother
+        
+        // CRITICAL: Reset smoother state for deterministic results
+        // This ensures the same video produces the same results every time
+        smoother.reset()
+        Log.d(TAG, "LandmarkSmoother reset for new video analysis")
         
         // Initialize storage
         analysisResultStorage = AnalysisResultStorage(context)
@@ -174,9 +187,23 @@ class VideoModeController(
     
     /**
      * Process a video frame
+     * 
+     * OPTIMIZED: Limits concurrent processing to prevent coroutine accumulation
+     * Frame rate is controlled by VideoManager (DETERMINISTIC_FRAME_INTERVAL_MS).
      */
     private fun processFrame(bitmap: Bitmap, timestampMs: Long) {
-        val smoother = landmarkSmoother ?: return
+        val smoother = landmarkSmoother
+        if (smoother == null) {
+            bitmap.recycle()
+            return
+        }
+        
+        // OPTIMIZED: Drop frame if still processing previous one
+        // Prevents unbounded coroutine spawning and memory pressure
+        if (isProcessingFrame) {
+            bitmap.recycle()
+            return
+        }
         
         // Store a copy for frame capture (before processing)
         synchronized(lastFrameLock) {
@@ -184,6 +211,7 @@ class VideoModeController(
             lastFrameBitmap = bitmap.copy(bitmap.config ?: Bitmap.Config.ARGB_8888, false)
         }
         
+        isProcessingFrame = true
         scope.launch(Dispatchers.Default) {
             try {
                 val poseResult = poseLandmarkerHelper?.detectPoseFromBitmap(bitmap, timestampMs)
@@ -219,18 +247,20 @@ class VideoModeController(
                             angles = angles,
                             smoothedLandmarks = smoothedLandmarks,
                             imageWidth = poseResult.imageWidth,
-                            imageHeight = poseResult.imageHeight
+                            imageHeight = poseResult.imageHeight,
+                            timestampMs = timestampMs
                         )
                     }
                 } else {
                     withContext(Dispatchers.Main) {
-                        listener?.onNoPoseDetected()
+                        listener?.onNoPoseDetected(timestampMs)
                     }
                 }
                 
             } catch (e: Exception) {
                 Log.e(TAG, "Error processing video frame: ${e.message}")
             } finally {
+                isProcessingFrame = false
                 if (!bitmap.isRecycled) {
                     bitmap.recycle()
                 }

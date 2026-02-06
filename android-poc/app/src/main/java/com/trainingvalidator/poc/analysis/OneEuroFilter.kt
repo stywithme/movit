@@ -35,6 +35,11 @@ class OneEuroFilter(
     private val beta: Float = 0.007f,
     private val dCutoff: Float = 1.0f
 ) {
+    companion object {
+        // Pre-computed constant to avoid Math.PI.toFloat() on every frame
+        private const val TWO_PI_FLOAT = 6.2831855f  // 2 * PI as Float
+    }
+    
     private var xFilter: LowPassFilter? = null
     private var dxFilter: LowPassFilter? = null
     private var lastTime: Long = 0
@@ -93,9 +98,10 @@ class OneEuroFilter(
     
     /**
      * Compute alpha for low-pass filter from cutoff frequency
+     * OPTIMIZED: Uses pre-computed TWO_PI_FLOAT constant
      */
     private fun computeAlpha(cutoff: Float, dt: Float): Float {
-        val tau = 1.0f / (2.0f * Math.PI.toFloat() * cutoff)
+        val tau = 1.0f / (TWO_PI_FLOAT * cutoff)
         return 1.0f / (1.0f + tau / dt)
     }
     

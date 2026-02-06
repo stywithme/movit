@@ -25,7 +25,8 @@ class RepCounter(
     private val targetReps: Int = 12,
     repCountingConfig: RepCountingConfig? = null,
     private val isHoldExercise: Boolean = false,
-    private val primaryJoints: Set<String> = emptySet()
+    private val primaryJoints: Set<String> = emptySet(),
+    private val timeProvider: () -> Long = { System.currentTimeMillis() }
 ) {
     /**
      * Minimum time between reps (safety backup) - from exercise config or global default
@@ -175,7 +176,7 @@ class RepCounter(
      * Track time spent in each state (for HOLD exercises)
      */
     private fun updateStateTimeTracking(state: JointState) {
-        val now = System.currentTimeMillis()
+        val now = timeProvider()
         
         if (lastStateUpdateTime > 0) {
             val duration = now - lastStateUpdateTime
@@ -255,7 +256,7 @@ class RepCounter(
      * For Hold exercises: score = weighted average of time in states
      */
     fun completeRep() {
-        val now = System.currentTimeMillis()
+        val now = timeProvider()
         val timeSinceLastRep = now - lastRepTime
         
         // Safety check: prevent counting if too fast

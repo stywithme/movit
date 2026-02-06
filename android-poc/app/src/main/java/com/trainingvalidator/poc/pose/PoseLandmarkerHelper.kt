@@ -77,6 +77,9 @@ class PoseLandmarkerHelper(
     
     // Reusable bitmap buffer to reduce GC pressure
     private var bitmapBuffer: Bitmap? = null
+    
+    // Reusable Matrix to avoid allocation on every frame
+    private val reusableMatrix = Matrix()
 
     /**
      * Initialize the pose landmarker with optimal settings
@@ -161,24 +164,23 @@ class PoseLandmarkerHelper(
             imageProxy.close()
             
             // Apply rotation and mirroring (after imageProxy is closed)
-            val matrix = Matrix().apply {
-                // Rotate based on image rotation
-                postRotate(rotationDegrees.toFloat())
-                
-                // Mirror for front camera
-                if (isFrontCamera) {
-                    postScale(
-                        -1f, 1f,
-                        proxyWidth.toFloat(),
-                        proxyHeight.toFloat()
-                    )
-                }
+            // OPTIMIZED: Reuse Matrix object instead of creating new one each frame
+            reusableMatrix.reset()
+            reusableMatrix.postRotate(rotationDegrees.toFloat())
+            
+            // Mirror for front camera
+            if (isFrontCamera) {
+                reusableMatrix.postScale(
+                    -1f, 1f,
+                    proxyWidth.toFloat(),
+                    proxyHeight.toFloat()
+                )
             }
             
             val rotatedBitmap = Bitmap.createBitmap(
                 buffer, 0, 0,
                 buffer.width, buffer.height,
-                matrix, true
+                reusableMatrix, true
             )
             
             // Store dimensions for the result callback
@@ -201,7 +203,8 @@ class PoseLandmarkerHelper(
      */
     private fun onPoseResult(result: PoseLandmarkerResult, input: MPImage) {
         val finishTimeMs = SystemClock.uptimeMillis()
-        val inferenceTime = finishTimeMs - result.timestampMs()
+        val frameTimestampMs = result.timestampMs()
+        val inferenceTime = finishTimeMs - frameTimestampMs
         
         if (result.landmarks().isEmpty()) {
             listener.onNoPoseDetected()
@@ -218,7 +221,8 @@ class PoseLandmarkerHelper(
             PoseResult(
                 landmarks = landmarks,
                 worldLandmarks = worldLandmarks,
-                timestampMs = finishTimeMs,
+                // Use the original frame timestamp for smoothing consistency
+                timestampMs = frameTimestampMs,
                 inferenceTimeMs = inferenceTime,
                 imageWidth = input.width,
                 imageHeight = input.height,

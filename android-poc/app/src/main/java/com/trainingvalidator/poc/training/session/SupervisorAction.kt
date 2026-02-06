@@ -42,7 +42,8 @@ sealed class SupervisorAction {
     data class ProcessFrame(
         val angles: JointAngles,
         val landmarks: List<SmoothedLandmark>?,
-        val isFrontCamera: Boolean
+        val isFrontCamera: Boolean,
+        val timestampMs: Long
     ) : SupervisorAction()
     
     /**

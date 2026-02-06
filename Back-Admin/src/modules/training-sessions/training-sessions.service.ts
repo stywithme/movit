@@ -75,28 +75,30 @@ export async function saveSession(
     await tx.sessionMetrics.deleteMany({ where: { sessionId: session.id } });
     await tx.repMetrics.deleteMany({ where: { sessionId: session.id } });
 
-    // 3. Create SessionMetrics
-    const sm = payload.sessionMetrics;
-    await tx.sessionMetrics.create({
-      data: {
-        sessionId: session.id,
-        avgRom: sm.avgRom,
-        avgSymmetry: sm.avgSymmetry,
-        avgStability: sm.avgStability,
-        avgVelocity: sm.avgVelocity,
-        avgFormScore: sm.avgFormScore,
-        avgAlignmentAccuracy: sm.avgAlignmentAccuracy,
-        avgTempo: sm.avgTempo,
-        totalTUT: sm.totalTUT,
-        totalVolume: sm.totalVolume,
-        maxWeight: sm.maxWeight,
-        est1RM: sm.est1RM,
-        relativeStrength: sm.relativeStrength,
-        intensityPercentage: sm.intensityPercentage,
-        formConsistency: sm.formConsistency,
-        fatigueIndex: sm.fatigueIndex,
-      },
-    });
+    // 3. Create SessionMetrics (if provided)
+    if (payload.sessionMetrics) {
+      const sm = payload.sessionMetrics;
+      await tx.sessionMetrics.create({
+        data: {
+          sessionId: session.id,
+          avgRom: sm.avgRom,
+          avgSymmetry: sm.avgSymmetry,
+          avgStability: sm.avgStability,
+          avgVelocity: sm.avgVelocity,
+          avgFormScore: sm.avgFormScore,
+          avgAlignmentAccuracy: sm.avgAlignmentAccuracy,
+          avgTempo: sm.avgTempo,
+          totalTUT: sm.totalTUT,
+          totalVolume: sm.totalVolume,
+          maxWeight: sm.maxWeight,
+          est1RM: sm.est1RM,
+          relativeStrength: sm.relativeStrength,
+          intensityPercentage: sm.intensityPercentage,
+          formConsistency: sm.formConsistency,
+          fatigueIndex: sm.fatigueIndex,
+        },
+      });
+    }
 
     // 4. Create RepMetrics (batch insert)
     if (payload.repMetrics && payload.repMetrics.length > 0) {
@@ -407,7 +409,7 @@ async function calculateExerciseStats(userId: string, exerciseId: string) {
 
   const est1RMs = sessions
     .map((s) => s.sessionMetrics?.est1RM)
-    .filter((e): e is number => e !== null && e > 0);
+    .filter((e): e is number => typeof e === 'number' && e > 0);
   const maxEst1RM = est1RMs.length > 0 ? Math.max(...est1RMs) : null;
 
   const roms = sessions

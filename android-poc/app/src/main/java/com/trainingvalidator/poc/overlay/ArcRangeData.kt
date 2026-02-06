@@ -138,10 +138,10 @@ data class ArcRangeData(
             val upRanges = stateInfo.upStateRanges
             val downRanges = stateInfo.downStateRanges
             
-            val upMin = upRanges?.getEffectiveMin() ?: 90.0
-            val upMax = upRanges?.getOutermostMax() ?: 180.0
-            val downMin = downRanges?.getOutermostMin() ?: 0.0
-            val downMax = downRanges?.getEffectiveMax() ?: 90.0
+            val upMin = upRanges?.effectiveMin ?: 90.0
+            val upMax = upRanges?.outermostMax ?: 180.0
+            val downMin = downRanges?.outermostMin ?: 0.0
+            val downMax = downRanges?.effectiveMax ?: 90.0
             
             // Invert the angle for visual display when invertIndicator = true
             // This is for the MOVING INDICATOR position only

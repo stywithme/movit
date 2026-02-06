@@ -39,6 +39,9 @@ data class ExerciseConfig(
     /** Report metrics configuration */
     val reportMetrics: ReportMetricsConfig? = null,
     
+    /** Does this exercise have position checks? (for Alignment metric) */
+    val hasPositionChecks: Boolean = false,
+    
     // Runtime field - set by ExerciseLoader
     @Transient
     var fileName: String = ""
@@ -106,19 +109,23 @@ data class ExerciseConfig(
     }
     
     /**
-     * Check if a specific metric should be shown for this exercise
+     * Check if a specific metric should be shown for this exercise.
+     * 
+     * The backend sends a complete excluded list (user + auto-disabled),
+     * so we just need to check if the metric is in the primary/optional
+     * and not in the excluded list.
      */
     fun shouldShowMetric(metric: MetricCode, variantIndex: Int = 0): Boolean {
         val config = getEffectiveMetricsConfig(variantIndex)
-        
-        // Also apply automatic rules
-        return when (metric) {
-            MetricCode.SYMMETRY -> isBilateralExercise(variantIndex) && config.shouldShow(metric)
-            MetricCode.TEMPO, MetricCode.TUT -> !isHoldExercise() && config.shouldShow(metric)
-            MetricCode.HOLD_DURATION -> isHoldExercise() && config.shouldShow(metric)
-            MetricCode.WEIGHT, MetricCode.VOLUME, MetricCode.EST_1RM -> supportsWeight && config.shouldShow(metric)
-            else -> config.shouldShow(metric)
-        }
+        return config.shouldShow(metric)
+    }
+    
+    /**
+     * Check if this exercise has position checks defined (from local variants or server flag)
+     */
+    fun hasAnyPositionChecks(variantIndex: Int = 0): Boolean {
+        return poseVariants.getOrNull(variantIndex)?.positionChecks?.isNotEmpty() == true ||
+               hasPositionChecks
     }
 }
 
@@ -175,9 +182,13 @@ data class CategoryInfo(
 /**
  * Report metrics configuration - determines which metrics to show in the report
  * 
+ * Backend sends a comprehensive 'excluded' list that includes:
+ * - User-disabled metrics (admin choice)
+ * - Auto-disabled metrics (e.g., TEMPO for hold exercises, ALIGNMENT when no position checks)
+ * 
  * @param primary Main metrics shown as cards (2-3 recommended)
  * @param optional Additional metrics admin selected
- * @param excluded Metrics explicitly hidden from report
+ * @param excluded Metrics explicitly hidden from report (includes auto-disabled)
  */
 data class ReportMetricsConfig(
     val primary: List<MetricCode> = listOf(MetricCode.FORM_SCORE),
@@ -186,19 +197,24 @@ data class ReportMetricsConfig(
 ) {
     /**
      * Check if a metric should be displayed
+     * Simply checks if the metric is NOT in the excluded list.
      */
     fun shouldShow(metric: MetricCode): Boolean {
-        if (excluded.contains(metric)) return false
-        return primary.contains(metric) || optional.contains(metric)
+        return !excluded.contains(metric)
     }
     
     /**
-     * Check if a metric is primary (shown in main cards)
+     * Check if a metric is primary (shown as main card)
      */
     fun isPrimary(metric: MetricCode): Boolean = primary.contains(metric)
     
     /**
-     * Get all visible metrics
+     * Check if a metric is optional (shown as secondary)
+     */
+    fun isOptional(metric: MetricCode): Boolean = optional.contains(metric)
+    
+    /**
+     * Get primary + optional metrics (suggested display order)
      */
     fun getVisibleMetrics(): List<MetricCode> = primary + optional
 }
@@ -440,10 +456,10 @@ data class TrackedJoint(
         val downRange = getStateDownRange()
         
         // TRANSITION.min = highest max in downRange
-        val transitionMin = downRange.getEffectiveMax()
+        val transitionMin = downRange.effectiveMax
         
         // TRANSITION.max = lowest min in upRange
-        val transitionMax = upRange.getEffectiveMin()
+        val transitionMax = upRange.effectiveMin
         
         return if (transitionMin < transitionMax) {
             Pair(transitionMin, transitionMax)
@@ -475,10 +491,10 @@ data class TrackedJoint(
             transition != null && angle > transition.first && angle < transition.second -> {
                 ZoneType.TRANSITION
             }
-            angle >= getStateUpRange().getEffectiveMin() -> {
+            angle >= getStateUpRange().effectiveMin -> {
                 ZoneType.UP_ZONE
             }
-            angle <= getStateDownRange().getEffectiveMax() -> {
+            angle <= getStateDownRange().effectiveMax -> {
                 ZoneType.DOWN_ZONE
             }
             else -> {

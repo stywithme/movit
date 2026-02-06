@@ -1,9 +1,7 @@
 package com.trainingvalidator.poc.storage
 
 import android.content.Context
-import android.content.res.AssetManager
 import android.util.Log
-import com.trainingvalidator.poc.training.loader.WorkoutLoader
 import com.trainingvalidator.poc.training.models.WorkoutConfig
 import com.trainingvalidator.poc.training.models.WorkoutType
 import kotlinx.coroutines.Dispatchers
@@ -15,11 +13,12 @@ import kotlinx.coroutines.withContext
  * WorkoutRepository
  * 
  * Single source of truth for workout data in the app.
- * Prioritizes cached data from server sync, falls back to bundled assets.
+ * Uses offline-first cache strategy with backend sync.
  * 
  * Data Source Priority:
- * 1. Cached workouts (from server sync)
- * 2. Bundled assets (for offline-first experience)
+ * 1. Cached workouts (from server sync) - offline first
+ * 2. Fetch from backend and update cache
+ * 3. If both fail, no workouts available
  * 
  * Usage:
  * ```kotlin
@@ -72,37 +71,47 @@ class WorkoutRepository private constructor(private val context: Context) {
     // ==================== Initialization ====================
     
     /**
-     * Initialize repository and load workouts.
+     * Initialize repository and load workouts from cache.
      * Call this on app startup after ExerciseRepository.initialize()
      * 
-     * Note: This does NOT trigger sync - use SyncManager for that
+     * Note: This does NOT trigger sync - use SyncManager for that.
+     * Workouts are synced as part of ExerciseRepository.initialize() sync.
+     * 
+     * @return true if workouts are available, false if cache is empty
      */
     suspend fun initialize(): Boolean = withContext(Dispatchers.IO) {
-        if (isInitialized) return@withContext true
+        if (isInitialized && _workouts.value.isNotEmpty()) return@withContext true
         
         _isLoading.value = true
         
         try {
-            // First, try to load from cache for fast startup
+            // Load from cache (synced from backend)
             workoutCache.loadCache()
             
             if (workoutCache.hasWorkouts()) {
                 loadFromCache()
                 Log.d(TAG, "Loaded ${_workouts.value.size} workouts from cache")
+                isInitialized = true
             } else {
-                // Fall back to bundled assets
-                loadFromAssets()
-                Log.d(TAG, "Loaded ${_workouts.value.size} workouts from assets")
+                Log.w(TAG, "No workouts in cache - sync required")
             }
             
             isInitialized = true
+            
+            // Return false if no workouts available
+            if (_workouts.value.isEmpty()) {
+                Log.e(TAG, "No workouts available - cache empty and sync needed")
+                return@withContext false
+            }
+            
             true
         } catch (e: Exception) {
             Log.e(TAG, "Failed to initialize repository", e)
             
-            // Last resort: load from assets
-            if (_workouts.value.isEmpty()) {
-                loadFromAssets()
+            // If we have cached data, still return true
+            if (_workouts.value.isNotEmpty()) {
+                isInitialized = true
+                return@withContext true
             }
             
             false
@@ -201,28 +210,26 @@ class WorkoutRepository private constructor(private val context: Context) {
         workoutMap = cached.associateBy { it.fileName }
     }
     
-    /**
-     * Load workouts from bundled assets
-     */
-    private fun loadFromAssets() {
-        val assets: AssetManager = context.assets
-        val workouts = WorkoutLoader.loadAll(assets)
-        _workouts.value = workouts
-        workoutMap = workouts.associateBy { it.fileName }
-    }
-    
     // ==================== Cache Management ====================
     
     /**
-     * Clear cache and reload from assets
+     * Clear cache. After clearing, sync from backend is required.
+     * 
+     * @return true if cache was cleared successfully
      */
-    suspend fun clearCacheAndReload() = withContext(Dispatchers.IO) {
+    suspend fun clearCache(): Boolean = withContext(Dispatchers.IO) {
         _isLoading.value = true
         
         try {
             workoutCache.clearCache()
-            loadFromAssets()
+            _workouts.value = emptyList()
+            workoutMap = emptyMap()
             isInitialized = false
+            Log.d(TAG, "Workout cache cleared - sync required to reload")
+            true
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed to clear workout cache", e)
+            false
         } finally {
             _isLoading.value = false
         }

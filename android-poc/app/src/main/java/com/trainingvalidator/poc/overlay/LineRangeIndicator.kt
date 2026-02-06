@@ -42,25 +42,47 @@ class LineRangeIndicator {
         NONE        // At center (angle ≈ centerAngle)
     }
     
-    // ==================== Settings (from SettingsManager) ====================
+    // ==================== Settings (cached for performance) ====================
     
-    private val centerAngle: Double
-        get() = SettingsManager.getLineIndicatorCenterAngle()
+    // Cached settings values - call refreshSettings() when settings might change
+    private var cachedCenterAngle: Double = 90.0
+    private var cachedSmoothingFactor: Float = 0.12f
+    private var cachedSnapToZeroThreshold: Float = 0.04f
+    private var cachedTrackAlpha: Int = 130
+    private var cachedTrackWidthRatio: Float = 0.7f
+    private var cachedIndicatorWidthMultiplier: Float = 1.3f
+    private var settingsInitialized: Boolean = false
     
-    private val smoothingFactor: Float
-        get() = SettingsManager.getLineIndicatorSmoothingFactor()
+    // Public accessors use cached values
+    private val centerAngle: Double get() = cachedCenterAngle
+    private val smoothingFactor: Float get() = cachedSmoothingFactor
+    private val snapToZeroThreshold: Float get() = cachedSnapToZeroThreshold
+    private val trackAlpha: Int get() = cachedTrackAlpha
+    private val trackWidthRatio: Float get() = cachedTrackWidthRatio
+    private val indicatorWidthMultiplier: Float get() = cachedIndicatorWidthMultiplier
     
-    private val snapToZeroThreshold: Float
-        get() = SettingsManager.getLineIndicatorSnapThreshold()
+    /**
+     * Refresh cached settings from SettingsManager
+     * Call this when indicator is first used or settings might have changed
+     */
+    fun refreshSettings() {
+        if (SettingsManager.isLoaded) {
+            cachedCenterAngle = SettingsManager.getLineIndicatorCenterAngle()
+            cachedSmoothingFactor = SettingsManager.getLineIndicatorSmoothingFactor()
+            cachedSnapToZeroThreshold = SettingsManager.getLineIndicatorSnapThreshold()
+            cachedTrackAlpha = SettingsManager.getLineIndicatorTrackAlpha()
+            cachedTrackWidthRatio = SettingsManager.getLineIndicatorTrackWidthRatio()
+            cachedIndicatorWidthMultiplier = SettingsManager.getLineIndicatorWidthMultiplier()
+            settingsInitialized = true
+        }
+    }
     
-    private val trackAlpha: Int
-        get() = SettingsManager.getLineIndicatorTrackAlpha()
-    
-    private val trackWidthRatio: Float
-        get() = SettingsManager.getLineIndicatorTrackWidthRatio()
-    
-    private val indicatorWidthMultiplier: Float
-        get() = SettingsManager.getLineIndicatorWidthMultiplier()
+    // Ensure settings are loaded on first use
+    private fun ensureSettings() {
+        if (!settingsInitialized && SettingsManager.isLoaded) {
+            refreshSettings()
+        }
+    }
     
     // ==================== Paint Objects ====================
     
@@ -412,72 +434,54 @@ class LineRangeIndicator {
         limbType: LimbType,
         invertAngles: Boolean
     ) {
+        // PERFORMANCE OPTIMIZATION:
+        // Draw discrete colored segments instead of creating LinearGradient every frame
+        // This avoids expensive gradient object allocation and GC pressure
+        
         val isUpperLimb = limbType == LimbType.UPPER
-        val steps = 30
+        val segments = 12  // Reduced from 30 - still smooth, much faster
         
-        val colors = mutableListOf<Int>()
-        val positions = mutableListOf<Float>()
-        var lastColor: Int? = null
+        // Calculate direction vector
+        val dx = endX - centerX
+        val dy = endY - centerY
         
-        for (i in 0..steps) {
-            val position = i.toFloat() / steps
+        // Setup paint (no shader needed)
+        trackPaint.shader = null
+        trackPaint.strokeWidth = style.strokeWidth * trackWidthRatio
+        
+        var segmentStartX = centerX
+        var segmentStartY = centerY
+        
+        for (i in 1..segments) {
+            val position = i.toFloat() / segments
+            val prevPosition = (i - 1).toFloat() / segments
             
-            // Convert position to visual angle
+            // Calculate segment end point
+            val segEndX = centerX + dx * position
+            val segEndY = centerY + dy * position
+            
+            // Get color at midpoint of segment
+            val midPosition = (prevPosition + position) / 2
             val visualAngle = if (isUpperLimb) {
-                90.0 + (position * 90.0)  // 90° → 180°
+                90.0 + (midPosition * 90.0)
             } else {
-                90.0 - (position * 90.0)  // 90° → 0°
+                90.0 - (midPosition * 90.0)
             }
-            
-            // Convert to original angle (for range checking)
             val originalAngle = if (invertAngles) 180.0 - visualAngle else visualAngle
-            
-            // Use AngleColorResolver.resolve() - SINGLE SOURCE OF TRUTH
-            // This properly determines zone (UP/DOWN/TRANSITION) and state
             val color = AngleColorResolver.resolve(originalAngle, upRanges, downRanges).color
             
-            if (color != lastColor) {
-                if (lastColor != null && positions.isNotEmpty()) {
-                    colors.add(lastColor)
-                    positions.add(position)
-                }
-                colors.add(color)
-                positions.add(position)
-                lastColor = color
-            }
+            // Draw segment
+            trackPaint.color = color
+            trackPaint.alpha = trackAlpha
+            canvas.drawLine(segmentStartX, segmentStartY, segEndX, segEndY, trackPaint)
+            
+            // Move to next segment
+            segmentStartX = segEndX
+            segmentStartY = segEndY
         }
         
-        // Ensure valid gradient
-        if (colors.isEmpty()) {
-            val fallback = StateConfig.getColor(JointState.NORMAL)
-            colors.add(fallback)
-            colors.add(fallback)
-            positions.add(0f)
-            positions.add(1f)
-        }
-        
-        if (positions.first() > 0f) {
-            colors.add(0, colors.first())
-            positions.add(0, 0f)
-        }
-        if (positions.last() < 1f) {
-            colors.add(colors.last())
-            positions.add(1f)
-        }
-        
-        val gradient = LinearGradient(
-            centerX, centerY, endX, endY,
-            colors.toIntArray(), positions.toFloatArray(),
-            Shader.TileMode.CLAMP
-        )
-        
-        trackPaint.shader = gradient
-        trackPaint.strokeWidth = style.strokeWidth * trackWidthRatio
-        trackPaint.alpha = trackAlpha
-        
-        canvas.drawLine(centerX, centerY, endX, endY, trackPaint)
-        
-        trackPaint.shader = null
+        // Reset paint state
+        trackPaint.alpha = 255
     }
     
     /**

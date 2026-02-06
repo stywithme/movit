@@ -1,6 +1,7 @@
 package com.trainingvalidator.poc.training
 
 import android.util.Log
+import android.os.SystemClock
 import com.trainingvalidator.poc.analysis.JointAngles
 import com.trainingvalidator.poc.analysis.SmoothedLandmark
 import com.trainingvalidator.poc.training.analytics.MotionRecorder
@@ -63,6 +64,9 @@ class TrainingEngine(
     private val trackedJoints: List<TrackedJoint> = poseVariant.trackedJoints
     private val primaryJoints: List<TrackedJoint> = poseVariant.getPrimaryJoints()
     
+    // OPTIMIZED: Pre-computed Set for O(1) lookup instead of O(n) any{} on every frame
+    private val primaryJointCodes: Set<String> = primaryJoints.map { it.joint }.toSet()
+    
     /**
      * Effective target reps: override takes precedence, then exercise config
      */
@@ -101,7 +105,8 @@ class TrainingEngine(
         countingMethod = exerciseConfig.countingMethod,
         primaryJoints = primaryJoints,
         repCountingConfig = repCountingConfig,
-        numberOfPhases = 4  // Default phases: START → DOWN → BOTTOM → UP
+        numberOfPhases = 4,  // Default phases: START → DOWN → BOTTOM → UP
+        timeProvider = { nowMs() }
     )
     
     private val formValidator = FormValidator(
@@ -112,7 +117,8 @@ class TrainingEngine(
         targetReps = targetReps,
         repCountingConfig = repCountingConfig,
         isHoldExercise = exerciseConfig.countingMethod == CountingMethod.HOLD,
-        primaryJoints = exerciseConfig.getPrimaryJoints().map { it.joint }.toSet()
+        primaryJoints = exerciseConfig.getPrimaryJoints().map { it.joint }.toSet(),
+        timeProvider = { nowMs() }
     )
 
     /**
@@ -157,7 +163,8 @@ class TrainingEngine(
         minVisibility = 0.3f,       // Lowered from 0.5f - more tolerant
         graceDurationMs = 1000,     // 1s - ignore brief glitches (was 0.5s)
         warningDurationMs = 2000,   // 2s - show warning (was 1.5s)
-        pauseAfterMs = 4000         // 4s - pause training (was 3s)
+        pauseAfterMs = 4000,        // 4s - pause training (was 3s)
+        timeProvider = { nowMs() }
     )
     
     // ==================== Hold Timer (for HOLD exercises only) ====================
@@ -351,6 +358,13 @@ class TrainingEngine(
     private var pauseStartTimeMs: Long = 0L
     
     /**
+     * Latest frame timestamp (monotonic) for deterministic timing
+     * Used to keep video analysis consistent across runs.
+     */
+    @Volatile
+    private var currentFrameTimeMs: Long = 0L
+    
+    /**
      * Flag to defer rep completion until after validation and error collection.
      * This ensures errors from the current frame are included in the rep that just completed.
      * Thread safety: marked @Volatile as it's read/written from different threads.
@@ -373,10 +387,17 @@ class TrainingEngine(
     private val lastEmittedStates = mutableMapOf<String, JointState>()
     
     /**
+     * Current time source (monotonic when timestamps are provided)
+     */
+    private fun nowMs(): Long {
+        return if (currentFrameTimeMs > 0L) currentFrameTimeMs else SystemClock.uptimeMillis()
+    }
+    
+    /**
      * Check if we should emit a DANGER event (throttling)
      */
     private fun shouldEmitDangerEvent(): Boolean {
-        val now = System.currentTimeMillis()
+        val now = nowMs()
         return now - lastDangerEventTime >= dangerEventCooldownMs
     }
     
@@ -450,7 +471,8 @@ class TrainingEngine(
         synchronized(stateLock) {
             isRunning = true
             isPaused = false
-            sessionStartTimeMs = System.currentTimeMillis()
+            currentFrameTimeMs = 0L
+            sessionStartTimeMs = 0L
             totalPausedDurationMs = 0L
             pauseStartTimeMs = 0L
             angleSmoother.reset()  // Reset smoothing history for fresh start
@@ -491,7 +513,7 @@ class TrainingEngine(
             }
             
             // Start motion recording if enabled
-            motionRecorder?.start()
+            motionRecorder?.start(0L)
         }
         
         emitEvent(FeedbackEvent.TrainingStarted(
@@ -512,7 +534,7 @@ class TrainingEngine(
     fun pause() {
         synchronized(stateLock) {
             isPaused = true
-            pauseStartTimeMs = System.currentTimeMillis()
+            pauseStartTimeMs = nowMs()
         }
         emitEvent(FeedbackEvent.TrainingPaused(repCounter.count))
         Log.d(TAG, "Training paused at rep ${repCounter.count}")
@@ -525,7 +547,7 @@ class TrainingEngine(
     fun resume() {
         synchronized(stateLock) {
             if (pauseStartTimeMs > 0) {
-                totalPausedDurationMs += System.currentTimeMillis() - pauseStartTimeMs
+                totalPausedDurationMs += nowMs() - pauseStartTimeMs
                 pauseStartTimeMs = 0L
             }
             isPaused = false
@@ -597,7 +619,7 @@ class TrainingEngine(
         val actualDurationMs: Long
         synchronized(stateLock) {
             // Calculate actual duration (excluding paused time)
-            val now = System.currentTimeMillis()
+            val now = nowMs()
             val totalElapsed = if (sessionStartTimeMs > 0) now - sessionStartTimeMs else 0L
             
             // If currently paused, add pending pause duration
@@ -639,7 +661,12 @@ class TrainingEngine(
      * @param landmarks Optional smoothed landmarks for position-based validation
      * @param isFrontCamera Whether using front camera (for visibility check mirroring)
      */
-    fun processFrame(angles: JointAngles, landmarks: List<SmoothedLandmark>? = null, isFrontCamera: Boolean = false) {
+    fun processFrame(
+        angles: JointAngles,
+        landmarks: List<SmoothedLandmark>? = null,
+        isFrontCamera: Boolean = false,
+        timestampMs: Long = SystemClock.uptimeMillis()
+    ) {
         // Early return outside lock for performance
         if (!isRunning || isPaused) return
         
@@ -648,6 +675,13 @@ class TrainingEngine(
         synchronized(stateLock) {
             // Double-check after acquiring lock
             if (!isRunning || isPaused) return
+            
+            // Update current frame time for deterministic timing
+            val frameTimeMs = if (timestampMs > 0L) timestampMs else SystemClock.uptimeMillis()
+            currentFrameTimeMs = frameTimeMs
+            if (sessionStartTimeMs == 0L) {
+                sessionStartTimeMs = frameTimeMs
+            }
             
             // 1. Extract tracked joint angles (raw) - MUST happen first for arrowInfos
             val rawTrackedAngles = jointTracker.extractTrackedAngles(angles)
@@ -662,8 +696,9 @@ class TrainingEngine(
             _currentAngles.value = smoothedAngles
             
             // 3. Extract primary joint angles (from smoothed)
+            // OPTIMIZED: Uses pre-computed Set for O(1) lookup instead of O(n) any{}
             val primaryAngles = smoothedAngles.filterKeys { jointCode ->
-                primaryJoints.any { it.joint == jointCode }
+                primaryJointCodes.contains(jointCode)
             }
             
             // 4. Check if in start position (using smoothed angles)
@@ -686,7 +721,7 @@ class TrainingEngine(
             
             // 6.0.1 Record frame for motion analytics (if enabled)
             motionRecorder?.record(
-                timestamp = System.currentTimeMillis(),
+                timestamp = frameTimeMs,
                 phase = currentPhase,
                 angles = smoothedAngles,
                 states = jointStateInfos
@@ -721,7 +756,7 @@ class TrainingEngine(
                         joints = dangerJoints.keys.toList(),
                         message = dangerJoints.values.firstOrNull()?.messages?.firstOrNull()
                     ))
-                    lastDangerEventTime = System.currentTimeMillis()
+                    lastDangerEventTime = nowMs()
                 }
             }
             
@@ -976,7 +1011,7 @@ class TrainingEngine(
      */
     private fun updateHoldTimer(isInHoldZone: Boolean) {
         holdTimer?.let { timer ->
-            val currentTimeMs = System.currentTimeMillis()
+            val currentTimeMs = nowMs()
             timer.update(isInHoldZone, currentTimeMs)
             
             // Update state flows
@@ -1011,7 +1046,7 @@ class TrainingEngine(
      * Uses throttling per joint to avoid spam.
      */
     private fun emitStateMessages(stateInfos: Map<String, JointStateInfo>) {
-        val now = System.currentTimeMillis()
+        val now = nowMs()
         
         for ((jointCode, info) in stateInfos) {
             val state = info.state
@@ -1044,7 +1079,7 @@ class TrainingEngine(
      * Visual overlay is driven by state flows and remains visible while the issue persists.
      */
     private fun shouldEmitPositionEvent(checkId: String): Boolean {
-        val now = System.currentTimeMillis()
+        val now = nowMs()
         val cooldown = positionChecksById[checkId]?.cooldownMs ?: 1500L
         val lastTime = lastPositionEventTimes[checkId] ?: 0L
         if (now - lastTime < cooldown) return false

@@ -25,9 +25,14 @@ object MetricDisplayBuilder {
         val config = report.exerciseConfig
         val isHold = config?.isHoldExercise() == true
         
+        // Handle 0 reps case specially
+        val hasNoReps = summary.totalReps == 0 && report.repTimeline.isEmpty()
+        
         // 1. Quality/Score - Use Overall Quality if available
         val qualityScore = report.overallQuality?.score ?: summary.averageScore
-        val qualityValue = if (report.overallQuality != null) {
+        val qualityValue = if (hasNoReps) {
+            "--"  // No meaningful score when no reps
+        } else if (report.overallQuality != null) {
             report.overallQuality.getFormattedScore()
         } else {
             summary.getFormattedScore()
@@ -37,7 +42,7 @@ object MetricDisplayBuilder {
             value = qualityValue,
             label = if (isArabic) "الجودة" else "Quality",
             isPrimary = true,
-            status = getStatusFromScore(qualityScore)
+            status = if (hasNoReps) null else getStatusFromScore(qualityScore)
         ))
         
         // 2. Duration - always shown
@@ -102,7 +107,7 @@ object MetricDisplayBuilder {
     
     /**
      * Build secondary metrics based on exercise configuration
-     * Shows all available metrics - config is used to filter out explicitly excluded ones
+     * Shows only metrics that are NOT excluded in the config
      */
     fun buildSecondaryMetrics(
         report: PostTrainingReport,
@@ -119,47 +124,55 @@ object MetricDisplayBuilder {
         // ═══════════════════════════════════════════════════════════════
         
         // ROM - Range of Motion
-        metrics.formCard.rom?.let { rom ->
-            items.add(MetricDisplayItem(
-                code = MetricCode.ROM,
-                icon = "📐",
-                label = if (isArabic) "المدى الحركي" else "ROM",
-                value = rom.displayValue,
-                status = rom.status
-            ))
+        if (shouldShow(config, MetricCode.ROM)) {
+            metrics.formCard.rom?.let { rom ->
+                items.add(MetricDisplayItem(
+                    code = MetricCode.ROM,
+                    icon = "📐",
+                    label = if (isArabic) "المدى الحركي" else "ROM",
+                    value = rom.displayValue,
+                    status = rom.status
+                ))
+            }
         }
         
         // Symmetry - for bilateral exercises
-        metrics.formCard.symmetry?.let { sym ->
-            items.add(MetricDisplayItem(
-                code = MetricCode.SYMMETRY,
-                icon = "⚖️",
-                label = if (isArabic) "التوازن" else "Symmetry",
-                value = sym.displayValue,
-                status = sym.status
-            ))
+        if (shouldShow(config, MetricCode.SYMMETRY)) {
+            metrics.formCard.symmetry?.let { sym ->
+                items.add(MetricDisplayItem(
+                    code = MetricCode.SYMMETRY,
+                    icon = "⚖️",
+                    label = if (isArabic) "التوازن" else "Symmetry",
+                    value = sym.displayValue,
+                    status = sym.status
+                ))
+            }
         }
         
         // Stability
-        metrics.safetyCard.stability?.let { stab ->
-            items.add(MetricDisplayItem(
-                code = MetricCode.STABILITY,
-                icon = "🏋️",
-                label = if (isArabic) "الثبات" else "Stability",
-                value = stab.displayValue,
-                status = stab.status
-            ))
+        if (shouldShow(config, MetricCode.STABILITY)) {
+            metrics.safetyCard.stability?.let { stab ->
+                items.add(MetricDisplayItem(
+                    code = MetricCode.STABILITY,
+                    icon = "🏋️",
+                    label = if (isArabic) "الثبات" else "Stability",
+                    value = stab.displayValue,
+                    status = stab.status
+                ))
+            }
         }
         
         // Alignment Accuracy
-        metrics.safetyCard.alignmentAccuracy?.let { align ->
-            items.add(MetricDisplayItem(
-                code = MetricCode.ALIGNMENT,
-                icon = "🛡️",
-                label = if (isArabic) "دقة المحاذاة" else "Alignment",
-                value = align.displayValue,
-                status = align.status
-            ))
+        if (shouldShow(config, MetricCode.ALIGNMENT)) {
+            metrics.safetyCard.alignmentAccuracy?.let { align ->
+                items.add(MetricDisplayItem(
+                    code = MetricCode.ALIGNMENT,
+                    icon = "🛡️",
+                    label = if (isArabic) "دقة المحاذاة" else "Alignment",
+                    value = align.displayValue,
+                    status = align.status
+                ))
+            }
         }
         
         // ═══════════════════════════════════════════════════════════════
@@ -168,25 +181,29 @@ object MetricDisplayBuilder {
         
         if (!isHold) {
             // Tempo (Eccentric-Isometric-Concentric)
-            metrics.controlCard.tempo?.let { tempo ->
-                items.add(MetricDisplayItem(
-                    code = MetricCode.TEMPO,
-                    icon = "⏱️",
-                    label = if (isArabic) "الإيقاع" else "Tempo",
-                    value = tempo.getFormattedTempo(),
-                    status = null
-                ))
+            if (shouldShow(config, MetricCode.TEMPO)) {
+                metrics.controlCard.tempo?.let { tempo ->
+                    items.add(MetricDisplayItem(
+                        code = MetricCode.TEMPO,
+                        icon = "⏱️",
+                        label = if (isArabic) "الإيقاع" else "Tempo",
+                        value = tempo.getFormattedTempo(),
+                        status = null
+                    ))
+                }
             }
             
             // TUT - Time Under Tension
-            metrics.controlCard.totalTUT?.let { tut ->
-                items.add(MetricDisplayItem(
-                    code = MetricCode.TUT,
-                    icon = "⏳",
-                    label = if (isArabic) "وقت الشد" else "TUT",
-                    value = "${tut}s",
-                    status = null
-                ))
+            if (shouldShow(config, MetricCode.TUT)) {
+                metrics.controlCard.totalTUT?.let { tut ->
+                    items.add(MetricDisplayItem(
+                        code = MetricCode.TUT,
+                        icon = "⏳",
+                        label = if (isArabic) "وقت الشد" else "TUT",
+                        value = "${tut}s",
+                        status = null
+                    ))
+                }
             }
         }
         
@@ -195,41 +212,47 @@ object MetricDisplayBuilder {
         // ═══════════════════════════════════════════════════════════════
         
         // Weight
-        report.summary.weightKg?.let { weight ->
-            if (weight > 0) {
-                items.add(MetricDisplayItem(
-                    code = MetricCode.WEIGHT,
-                    icon = "🏋️",
-                    label = if (isArabic) "الوزن" else "Weight",
-                    value = report.summary.getFormattedWeight() ?: "${weight}kg",
-                    status = null
-                ))
+        if (shouldShow(config, MetricCode.WEIGHT)) {
+            report.summary.weightKg?.let { weight ->
+                if (weight > 0) {
+                    items.add(MetricDisplayItem(
+                        code = MetricCode.WEIGHT,
+                        icon = "🏋️",
+                        label = if (isArabic) "الوزن" else "Weight",
+                        value = report.summary.getFormattedWeight() ?: "${weight}kg",
+                        status = null
+                    ))
+                }
             }
         }
         
         // Volume
-        report.summary.totalVolume?.let { volume ->
-            if (volume > 0) {
-                items.add(MetricDisplayItem(
-                    code = MetricCode.VOLUME,
-                    icon = "📦",
-                    label = if (isArabic) "الحجم الكلي" else "Volume",
-                    value = report.summary.getFormattedVolume() ?: "${volume}kg",
-                    status = null
-                ))
+        if (shouldShow(config, MetricCode.VOLUME)) {
+            report.summary.totalVolume?.let { volume ->
+                if (volume > 0) {
+                    items.add(MetricDisplayItem(
+                        code = MetricCode.VOLUME,
+                        icon = "📦",
+                        label = if (isArabic) "الحجم الكلي" else "Volume",
+                        value = report.summary.getFormattedVolume() ?: "${volume}kg",
+                        status = null
+                    ))
+                }
             }
         }
         
         // Est 1RM
-        report.summary.est1RM?.let { rm ->
-            if (rm > 0) {
-                items.add(MetricDisplayItem(
-                    code = MetricCode.EST_1RM,
-                    icon = "💪",
-                    label = if (isArabic) "القوة القصوى" else "Est. 1RM",
-                    value = report.summary.getFormattedEst1RM() ?: "${rm}kg",
-                    status = null
-                ))
+        if (shouldShow(config, MetricCode.EST_1RM)) {
+            report.summary.est1RM?.let { rm ->
+                if (rm > 0) {
+                    items.add(MetricDisplayItem(
+                        code = MetricCode.EST_1RM,
+                        icon = "💪",
+                        label = if (isArabic) "القوة القصوى" else "Est. 1RM",
+                        value = report.summary.getFormattedEst1RM() ?: "${rm}kg",
+                        status = null
+                    ))
+                }
             }
         }
         
@@ -238,7 +261,7 @@ object MetricDisplayBuilder {
         // ═══════════════════════════════════════════════════════════════
         
         // Form Consistency (need 4+ reps)
-        if (report.repTimeline.size >= 4) {
+        if (shouldShow(config, MetricCode.FORM_CONSISTENCY) && report.repTimeline.size >= 4) {
             metrics.formCard.formConsistency?.let { cons ->
                 items.add(MetricDisplayItem(
                     code = MetricCode.FORM_CONSISTENCY,
@@ -251,17 +274,19 @@ object MetricDisplayBuilder {
         }
         
         // Fatigue Index
-        metrics.controlCard.fatigueIndex?.let { fatigue ->
-            items.add(MetricDisplayItem(
-                code = MetricCode.FATIGUE_INDEX,
-                icon = "📉",
-                label = if (isArabic) "نقطة التعب" else "Fatigue Point",
-                value = if (isArabic) "العدة #$fatigue" else "Rep #$fatigue",
-                status = MetricStatus.FAIR
-            ))
+        if (shouldShow(config, MetricCode.FATIGUE_INDEX)) {
+            metrics.controlCard.fatigueIndex?.let { fatigue ->
+                items.add(MetricDisplayItem(
+                    code = MetricCode.FATIGUE_INDEX,
+                    icon = "📉",
+                    label = if (isArabic) "نقطة التعب" else "Fatigue Point",
+                    value = if (isArabic) "العدة #$fatigue" else "Rep #$fatigue",
+                    status = MetricStatus.FAIR
+                ))
+            }
         }
         
-        // Danger Count
+        // Danger Count - always show if there are alerts
         val dangerCount = report.dangerAlerts.size
         if (dangerCount > 0) {
             items.add(MetricDisplayItem(

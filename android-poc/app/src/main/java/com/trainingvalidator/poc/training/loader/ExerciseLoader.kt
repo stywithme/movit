@@ -117,7 +117,7 @@ object ExerciseLoader {
                 if (joint.upRange != null && joint.downRange != null) {
                     val transitionZone = joint.getTransitionZone()
                     if (transitionZone == null) {
-                        Log.w(TAG, "[$exerciseName][${joint.joint}] No valid TRANSITION zone: upRange.min (${joint.upRange.getEffectiveMin()}) should be > downRange.max (${joint.downRange.getEffectiveMax()})")
+                        Log.w(TAG, "[$exerciseName][${joint.joint}] No valid TRANSITION zone: upRange.min (${joint.upRange.effectiveMin}) should be > downRange.max (${joint.downRange.effectiveMax})")
                     } else {
                         val (transMin, transMax) = transitionZone
                         if (transMax - transMin < 5.0) {

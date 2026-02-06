@@ -244,112 +244,8 @@ object ScoreCalculator {
         )
     }
     
-    // ═══════════════════════════════════════════════════════════════
-    // OVERALL QUALITY CALCULATION (for Report)
-    // ═══════════════════════════════════════════════════════════════
-    
-    /**
-     * Calculate Overall Quality score from component scores
-     * 
-     * @param formScore Form score (0-100)
-     * @param safetyScore Safety score (0-100)
-     * @param controlScore Control score (0-100)
-     * @param isHoldExercise Whether this is a hold exercise (changes weights)
-     * @return Overall quality score (0-100)
-     */
-    fun calculateOverallQuality(
-        formScore: Float,
-        safetyScore: Float,
-        controlScore: Float,
-        isHoldExercise: Boolean = false
-    ): OverallQualityResult {
-        // Different weights for hold vs rep exercises
-        val formWeight: Float
-        val safetyWeight: Float
-        val controlWeight: Float
-        
-        if (isHoldExercise) {
-            // Hold: Safety is more important
-            formWeight = 0.35f
-            safetyWeight = 0.40f
-            controlWeight = 0.25f
-        } else {
-            // Rep: Form is most important
-            formWeight = 0.40f
-            safetyWeight = 0.35f
-            controlWeight = 0.25f
-        }
-        
-        val overall = (
-            formScore * formWeight +
-            safetyScore * safetyWeight +
-            controlScore * controlWeight
-        )
-        
-        return OverallQualityResult(
-            score = overall,
-            formScore = formScore,
-            safetyScore = safetyScore,
-            controlScore = controlScore,
-            formWeight = formWeight,
-            safetyWeight = safetyWeight,
-            controlWeight = controlWeight
-        )
-    }
-    
-    /**
-     * Calculate Form Score from component metrics
-     * 
-     * @param jointQuality Joint quality score (0-100)
-     * @param romScore ROM score (0-100)
-     * @param symmetryScore Symmetry score (0-100), null for unilateral
-     * @return Form score (0-100)
-     */
-    fun calculateFormScore(
-        jointQuality: Float,
-        romScore: Float,
-        symmetryScore: Float?
-    ): Float {
-        return if (symmetryScore != null) {
-            // Bilateral: include symmetry
-            jointQuality * 0.40f + romScore * 0.35f + symmetryScore * 0.25f
-        } else {
-            // Unilateral: redistribute weights
-            jointQuality * 0.55f + romScore * 0.45f
-        }
-    }
-    
-    /**
-     * Calculate Safety Score from component metrics
-     * 
-     * @param alignmentScore Alignment accuracy (0-100)
-     * @param stabilityScore Stability score (0-100)
-     * @param dangerScore Danger events score (0-100)
-     * @return Safety score (0-100)
-     */
-    fun calculateSafetyScore(
-        alignmentScore: Float,
-        stabilityScore: Float,
-        dangerScore: Float
-    ): Float {
-        return alignmentScore * 0.50f + stabilityScore * 0.30f + dangerScore * 0.20f
-    }
-    
-    /**
-     * Calculate Control Score from component metrics
-     * 
-     * @param tempoScore Tempo quality (0-100)
-     * @param consistencyScore Form consistency (0-100)
-     * @param tutScore TUT quality (0-100)
-     * @return Control score (0-100)
-     */
-    fun calculateControlScore(
-        tempoScore: Float,
-        consistencyScore: Float,
-        tutScore: Float
-    ): Float {
-        return tempoScore * 0.40f + consistencyScore * 0.40f + tutScore * 0.20f
-    }
+    // NOTE: Overall quality calculation has been moved to OverallQualityScore.calculate()
+    // in PostTrainingReport.kt to avoid duplication. Use that as the Single Source of Truth.
 }
 
 // ═══════════════════════════════════════════════════════════════
@@ -396,15 +292,4 @@ data class HoldScoreResult(
     }
 }
 
-/**
- * Result of overall quality calculation
- */
-data class OverallQualityResult(
-    val score: Float,
-    val formScore: Float,
-    val safetyScore: Float,
-    val controlScore: Float,
-    val formWeight: Float,
-    val safetyWeight: Float,
-    val controlWeight: Float
-)
+// NOTE: OverallQualityResult has been removed - use OverallQualityScore from PostTrainingReport.kt instead

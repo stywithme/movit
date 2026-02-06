@@ -4,6 +4,7 @@ import android.Manifest
 import android.content.pm.PackageManager
 import android.graphics.Color
 import android.os.Bundle
+import android.os.SystemClock
 import android.util.Log
 import android.view.View
 import android.view.WindowManager
@@ -47,12 +48,12 @@ import com.trainingvalidator.poc.training.models.JointState
 import com.trainingvalidator.poc.training.report.FrameCaptureManager
 import com.trainingvalidator.poc.training.report.ReportGenerator
 import com.trainingvalidator.poc.storage.ReportStorage
+import com.trainingvalidator.poc.storage.ExerciseRepository
+import com.trainingvalidator.poc.storage.WorkoutRepository
 import com.trainingvalidator.poc.storage.AnalyticsStorage
 import com.trainingvalidator.poc.storage.AuthManager
 import com.trainingvalidator.poc.network.SessionSyncService
 import com.trainingvalidator.poc.network.ApiConfig
-import com.trainingvalidator.poc.ui.report.ReportActivity
-import com.trainingvalidator.poc.ui.report.ReportActivityV2
 import com.trainingvalidator.poc.ui.report.ReportPagerActivity
 import com.trainingvalidator.poc.video.VideoManager
 import kotlinx.coroutines.Dispatchers
@@ -246,6 +247,40 @@ class TrainingActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetection
             landmarkSmoother = LandmarkSmoother.createBalanced()
         }
     }
+    
+    /**
+     * Initialize Exercise and Workout Repositories to ensure cached/synced data is available.
+     * This is needed when TrainingActivity is launched directly (e.g., from deep link).
+     * 
+     * Strategy: Cache First, then Backend Sync if cache is empty.
+     */
+    private fun initializeExerciseRepository() {
+        try {
+            kotlinx.coroutines.runBlocking {
+                // Initialize ExerciseRepository (this also syncs workouts via SyncManager)
+                val exerciseRepo = ExerciseRepository.getInstance(this@TrainingActivity)
+                val exerciseSuccess = exerciseRepo.initialize(autoSync = true)
+                
+                if (exerciseSuccess) {
+                    Log.d(TAG, "ExerciseRepository initialized successfully")
+                } else {
+                    Log.w(TAG, "ExerciseRepository initialized but no exercises available")
+                }
+                
+                // Initialize WorkoutRepository (loads from cache synced by ExerciseRepository)
+                val workoutRepo = WorkoutRepository.getInstance(this@TrainingActivity)
+                val workoutSuccess = workoutRepo.initialize()
+                
+                if (workoutSuccess) {
+                    Log.d(TAG, "WorkoutRepository initialized successfully")
+                } else {
+                    Log.w(TAG, "WorkoutRepository initialized but no workouts available")
+                }
+            }
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed to initialize repositories", e)
+        }
+    }
 
     private fun setupFullscreen() {
         WindowCompat.setDecorFitsSystemWindows(window, false)
@@ -256,6 +291,11 @@ class TrainingActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetection
     }
     
     private fun parseIntentExtras() {
+        // Ensure ExerciseRepository is initialized before loading exercise
+        // This is needed because TrainingActivity might be launched directly
+        // without going through ExerciseListActivity which normally initializes it
+        initializeExerciseRepository()
+        
         val exerciseName = intent.getStringExtra(EXTRA_EXERCISE_NAME) ?: DEFAULT_EXERCISE
         val difficultyStr = intent.getStringExtra(EXTRA_DIFFICULTY) ?: DEFAULT_DIFFICULTY
         val poseVariantIndex = intent.getIntExtra(EXTRA_POSE_VARIANT, 0)
@@ -817,6 +857,11 @@ class TrainingActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetection
             }
             
             SessionState.COUNTDOWN -> {
+                // Reset smoother for clean training start (deterministic results)
+                if (::landmarkSmoother.isInitialized) {
+                    landmarkSmoother.reset()
+                }
+                
                 AnimationUtils.slideOutPanel(binding.setupPosePanel, AnimationUtils.Direction.BOTTOM) {
                     binding.countdownPanel.visibility = View.VISIBLE
                 }
@@ -1020,7 +1065,7 @@ class TrainingActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetection
         binding.skeletonOverlay.setTrainingMode(false)
         binding.vignetteOverlay.clear()
         
-        // Hide the completed panel - we'll navigate to ReportActivity instead
+        // Hide the completed panel - we'll navigate to ReportPagerActivity instead
         binding.completedPanel.visibility = View.GONE
         
         // Log capture stats
@@ -1612,7 +1657,7 @@ class TrainingActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetection
             val angles = if (result.isFrontCamera) rawAngles.mirrored() else rawAngles
             
             // Forward pose frame to supervisor via ViewModel
-            viewModel.onPoseFrame(angles, smoothedLandmarks, result.isFrontCamera)
+            viewModel.onPoseFrame(angles, smoothedLandmarks, result.isFrontCamera, result.timestampMs)
             
             // Update skeleton overlay with JointStateInfo
             val stateInfos = viewModel.trainingEngine?.jointStateInfos?.value ?: emptyMap()
@@ -1643,7 +1688,7 @@ class TrainingActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetection
             wasPoseDetectedLastFrame = false
             
             // Always notify supervisor about NoPose
-            viewModel.onNoPoseDetected()
+            viewModel.onNoPoseDetected(SystemClock.uptimeMillis())
             
             // Update UI for setup pose state
             if (viewModel.supervisor.state.value == SessionState.SETUP_POSE) {
@@ -1748,10 +1793,11 @@ class TrainingActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetection
                 angles: JointAngles,
                 smoothedLandmarks: List<SmoothedLandmark>,
                 imageWidth: Int,
-                imageHeight: Int
+                imageHeight: Int,
+                timestampMs: Long
             ) {
                 wasPoseDetectedLastFrame = true
-                viewModel.onPoseFrame(angles, smoothedLandmarks, false)
+                viewModel.onPoseFrame(angles, smoothedLandmarks, false, timestampMs)
                 
                 // Update skeleton overlay with JointStateInfo
                 val stateInfos = viewModel.trainingEngine?.jointStateInfos?.value ?: emptyMap()
@@ -1767,7 +1813,7 @@ class TrainingActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetection
                 )
             }
             
-            override fun onNoPoseDetected() {
+            override fun onNoPoseDetected(timestampMs: Long) {
                 binding.skeletonOverlay.clear()
                 // Same transition-based clearing as camera mode:
                 // clear stale form feedback once when pose disappears.
@@ -1776,7 +1822,7 @@ class TrainingActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetection
                     binding.vignetteOverlay.clear()
                 }
                 wasPoseDetectedLastFrame = false
-                viewModel.onNoPoseDetected()
+                viewModel.onNoPoseDetected(timestampMs)
             }
             
             override fun onResultsSaved(success: Boolean) {

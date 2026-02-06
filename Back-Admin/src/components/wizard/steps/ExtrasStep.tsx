@@ -31,12 +31,14 @@ export function ExtrasStep({ muscles, equipment, tags }: ExtrasStepProps) {
     setReportMetrics,
     countingMethod,
     jointConfig,
+    positionChecks,
   } = useWizardStore();
   
   // Determine exercise type for auto-suggestions
   const isHold = countingMethod.countingMethodCode === 'hold';
   const hasPairedJoints = (jointConfig.trackedJoints || []).some((j) => j.pairedWith);
   const isBilateral = hasPairedJoints;
+  const hasPositionChecks = (positionChecks.positionChecks || []).length > 0;
   
   const toggleAttribute = (type: 'muscles' | 'equipment' | 'tags', id: string) => {
     const current = extras[type] || [];
@@ -244,6 +246,7 @@ export function ExtrasStep({ muscles, equipment, tags }: ExtrasStepProps) {
             <Badge variant={isHold ? 'teal' : 'default'}>{isHold ? 'Hold Exercise' : 'Rep-based Exercise'}</Badge>
             {isBilateral && <Badge variant="purple">Bilateral (Symmetry enabled)</Badge>}
             {weightConfig.supportsWeight && <Badge variant="orange">Weighted (Volume & 1RM enabled)</Badge>}
+            {hasPositionChecks && <Badge variant="primary">Has Position Checks (Alignment enabled)</Badge>}
           </div>
         </div>
         
@@ -289,6 +292,12 @@ export function ExtrasStep({ muscles, equipment, tags }: ExtrasStepProps) {
                 if (!isBilateral && metric.code === 'symmetry') {
                   isDisabled = true;
                   disabledReason = 'Only for bilateral exercises';
+                }
+                
+                // Position Checks restrictions (Alignment)
+                if (!hasPositionChecks && metric.code === 'alignment') {
+                  isDisabled = true;
+                  disabledReason = 'Add Position Checks first';
                 }
                 
                 // Check current state

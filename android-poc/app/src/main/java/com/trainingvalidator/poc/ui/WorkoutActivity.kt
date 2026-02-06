@@ -12,7 +12,6 @@ import androidx.appcompat.app.AppCompatActivity
 import com.trainingvalidator.poc.R
 import com.trainingvalidator.poc.databinding.ActivityWorkoutBinding
 import com.trainingvalidator.poc.storage.WorkoutRepository
-import com.trainingvalidator.poc.training.loader.WorkoutLoader
 import com.trainingvalidator.poc.training.models.*
 import com.trainingvalidator.poc.training.workout.LoadedExercise
 import com.trainingvalidator.poc.training.workout.WorkoutRunner
@@ -100,9 +99,15 @@ class WorkoutActivity : AppCompatActivity() {
     }
 
     private fun loadWorkout(name: String) {
-        // Try to load from repository first (cached from server), fallback to assets
-        val repository = WorkoutRepository.getInstance(this)
-        workoutConfig = repository.getWorkout(name) ?: WorkoutLoader.load(assets, name)
+        // Load from repository (cached/synced data from backend)
+        // No fallback to assets - repository is the single source of truth
+        workoutConfig = try {
+            val repository = WorkoutRepository.getInstance(this)
+            repository.getWorkout(name)
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed to access repository for workout: $name", e)
+            null
+        }
         
         if (workoutConfig == null) {
             Toast.makeText(
@@ -118,10 +123,11 @@ class WorkoutActivity : AppCompatActivity() {
         // NOTE: difficulty has been removed (unified evaluation).
         // difficultyStr is kept only for backward compatibility with older intents.
 
-        // Create workout runner
+        // Create workout runner with ExerciseRepository
+        val exerciseRepository = com.trainingvalidator.poc.storage.ExerciseRepository.getInstance(this)
         workoutRunner = WorkoutRunner(
             workoutConfig = config,
-            assets = assets
+            exerciseRepository = exerciseRepository
         ).apply {
             setupCallbacks(this)
         }

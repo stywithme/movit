@@ -188,17 +188,40 @@ export function buildExerciseConfig(dbExercise: DbExercise): ExerciseConfig {
     }
   }
   
+  // Check for position checks in any pose variant
+  const hasPositionChecks = poseVariants.some(pv => 
+    pv.positionChecks && pv.positionChecks.length > 0
+  );
+  
   // Report metrics configuration
+  // Always merge user-excluded with auto-excluded (disabled) metrics
+  const autoExcluded = getAutoExcludedMetricCodes({
+    countingMethod,
+    isBilateral,
+    supportsWeight: !!dbExercise.supportsWeight,
+    hasPositionChecks,
+  });
+  
   if (dbExercise.reportMetrics) {
-    config.reportMetrics = parseReportMetrics(dbExercise.reportMetrics);
+    config.reportMetrics = parseReportMetrics(dbExercise.reportMetrics, autoExcluded);
   } else {
     // Generate default based on exercise type
-    config.reportMetrics = generateDefaultMetrics(countingMethod, isBilateral, !!dbExercise.supportsWeight);
+    config.reportMetrics = generateDefaultMetrics(
+      countingMethod, 
+      isBilateral, 
+      !!dbExercise.supportsWeight,
+      hasPositionChecks
+    );
   }
   
   // Include bilateral flag
   if (isBilateral) {
     config.isBilateral = true;
+  }
+  
+  // Include position checks flag
+  if (hasPositionChecks) {
+    config.hasPositionChecks = true;
   }
   
   return config;
@@ -381,28 +404,94 @@ function detectBilateral(poseVariants: PoseVariantConfig[]): boolean {
 }
 
 /**
- * Parse report metrics from DB JSON
+ * Convert metric code from DB format (lowercase) to Android format (uppercase)
  */
-function parseReportMetrics(config: unknown): ReportMetricsConfig {
-  const parsed = config as Record<string, unknown> | null;
-  if (!parsed) {
-    return { primary: ['FORM_SCORE'] };
+function toAndroidMetricCode(code: string): MetricCode {
+  return code.toUpperCase() as MetricCode;
+}
+
+/**
+ * Get auto-excluded (disabled) metrics based on exercise type.
+ * Returns uppercase metric codes for Android compatibility.
+ * 
+ * These are metrics that are NOT APPLICABLE for this exercise type.
+ */
+function getAutoExcludedMetricCodes(options: {
+  countingMethod: CountingMethod;
+  isBilateral: boolean;
+  supportsWeight: boolean;
+  hasPositionChecks: boolean;
+}): MetricCode[] {
+  const { countingMethod, isBilateral, supportsWeight, hasPositionChecks } = options;
+  const isHold = countingMethod === 'hold';
+  
+  const excluded: MetricCode[] = [];
+  
+  // Hold exercise restrictions
+  if (isHold) {
+    excluded.push('REP_COUNT', 'TEMPO', 'TUT', 'ROM', 'FORM_CONSISTENCY', 'FATIGUE_INDEX', 'VELOCITY');
+  } else {
+    // Rep-based exercise restrictions
+    excluded.push('HOLD_DURATION');
   }
   
+  // Weight restrictions
+  if (!supportsWeight) {
+    excluded.push('WEIGHT', 'VOLUME', 'EST_1RM');
+  }
+  
+  // Bilateral restrictions
+  if (!isBilateral) {
+    excluded.push('SYMMETRY');
+  }
+  
+  // Position Checks restrictions (Alignment)
+  if (!hasPositionChecks) {
+    excluded.push('ALIGNMENT');
+  }
+  
+  return excluded;
+}
+
+/**
+ * Parse report metrics from DB JSON
+ * Converts lowercase metric codes to uppercase for Android compatibility
+ * Merges user-excluded with auto-excluded (disabled) metrics
+ */
+function parseReportMetrics(config: unknown, autoExcluded: MetricCode[] = []): ReportMetricsConfig {
+  const parsed = config as Record<string, unknown> | null;
+  if (!parsed) {
+    return { 
+      primary: ['FORM_SCORE'],
+      excluded: autoExcluded.length > 0 ? autoExcluded : undefined,
+    };
+  }
+  
+  // Convert all metric codes to uppercase
+  const primaryCodes = (parsed.primary as string[]) || ['form_score'];
+  const optionalCodes = (parsed.optional as string[]) || [];
+  const userExcludedCodes = (parsed.excluded as string[]) || [];
+  
+  // Merge user-excluded with auto-excluded (disabled) metrics
+  const userExcludedUpper = userExcludedCodes.map(toAndroidMetricCode);
+  const allExcluded = [...new Set([...userExcludedUpper, ...autoExcluded])];
+  
   return {
-    primary: (parsed.primary as MetricCode[]) || ['FORM_SCORE'],
-    optional: (parsed.optional as MetricCode[]) || undefined,
-    excluded: (parsed.excluded as MetricCode[]) || undefined,
+    primary: primaryCodes.map(toAndroidMetricCode),
+    optional: optionalCodes.length > 0 ? optionalCodes.map(toAndroidMetricCode) : undefined,
+    excluded: allExcluded.length > 0 ? allExcluded : undefined,
   };
 }
 
 /**
  * Generate default report metrics based on exercise type
+ * Includes auto-excluded metrics for mobile compatibility
  */
 function generateDefaultMetrics(
   countingMethod: CountingMethod,
   isBilateral: boolean,
-  supportsWeight: boolean
+  supportsWeight: boolean,
+  hasPositionChecks: boolean
 ): ReportMetricsConfig {
   const isHold = countingMethod === 'hold';
   const primary: MetricCode[] = ['FORM_SCORE'];
@@ -425,11 +514,23 @@ function generateDefaultMetrics(
     optional.push('VOLUME', 'EST_1RM');
   }
   
-  optional.push('ALIGNMENT');
+  // Only add ALIGNMENT if exercise has position checks
+  if (hasPositionChecks) {
+    optional.push('ALIGNMENT');
+  }
+  
+  // Get auto-excluded (disabled) metrics
+  const excluded = getAutoExcludedMetricCodes({
+    countingMethod,
+    isBilateral,
+    supportsWeight,
+    hasPositionChecks,
+  });
   
   return {
     primary: primary.slice(0, 3), // Max 3 primary
     optional,
+    excluded: excluded.length > 0 ? excluded : undefined,
   };
 }
 
