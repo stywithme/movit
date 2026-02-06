@@ -11,8 +11,10 @@ import { useState } from 'react';
 import { useWizardStore } from '../WizardContext';
 import { Card, CardHeader, CardTitle, CardContent, Button, Badge, Input, Label } from '@/components/ui';
 import { SmartLocalizedInput } from '@/components/forms';
+import { MessagePickerModal, type MessageOption } from '@/components/messages';
 import type { PositionCheckData } from '@/modules/exercises/exercises.validation';
 import type { PhaseName, PositionCheckType, ConditionOperator, LocalizedAudio } from '@/lib/types/localized';
+import { Library, Plus } from 'lucide-react';
 
 // ============================================
 // TEMPLATES
@@ -126,6 +128,7 @@ interface PositionCheckCardProps {
 
 function PositionCheckCard({ check, index, onUpdate, onRemove }: PositionCheckCardProps) {
   const [expanded, setExpanded] = useState(false);
+  const [messagePickerOpen, setMessagePickerOpen] = useState(false);
   
   const severityColors = {
     error: 'bg-red-100 border-red-400 text-red-700',
@@ -135,6 +138,21 @@ function PositionCheckCard({ check, index, onUpdate, onRemove }: PositionCheckCa
   
   const updateField = <K extends keyof PositionCheckData>(field: K, value: PositionCheckData[K]) => {
     onUpdate(index, { ...check, [field]: value });
+  };
+
+  const handleMessageSelect = (messages: MessageOption[]) => {
+    if (messages.length === 0) return;
+    const msg = messages[0];
+    updateField('errorMessage', {
+      ar: msg.content.ar || '',
+      en: msg.content.en || '',
+      audioAr: msg.content.audioAr,
+      audioEn: msg.content.audioEn,
+    });
+  };
+
+  const clearErrorMessage = () => {
+    updateField('errorMessage', { ar: '', en: '', audioAr: undefined, audioEn: undefined });
   };
 
   return (
@@ -286,24 +304,58 @@ function PositionCheckCard({ check, index, onUpdate, onRemove }: PositionCheckCa
             </div>
           </div>
           
-          {/* Error Messages - Using SmartLocalizedInput */}
-          <SmartLocalizedInput
-            label="Error Message"
-            value={check.errorMessage}
-            onChange={(value) => updateField('errorMessage', value)}
-            audioValue={{
-              ar: check.errorMessage.audioAr,
-              en: check.errorMessage.audioEn,
-            }}
-            onAudioChange={(audio) => updateField('errorMessage', {
-              ...check.errorMessage,
-              audioAr: audio.ar,
-              audioEn: audio.en,
-            })}
-            enableTranslation
-            enableTTS
-            translationContext="fitness exercise form correction message"
-            variant="compact"
+          {/* Error Messages */}
+          <div className="space-y-2">
+            <div className="flex items-center justify-between">
+              <Label>Error Message</Label>
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  icon={<Library className="h-4 w-4" />}
+                  onClick={() => setMessagePickerOpen(true)}
+                >
+                  From Library
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  icon={<Plus className="h-4 w-4" />}
+                  onClick={clearErrorMessage}
+                >
+                  Write New
+                </Button>
+              </div>
+            </div>
+            <SmartLocalizedInput
+              label=""
+              value={check.errorMessage}
+              onChange={(value) => updateField('errorMessage', value)}
+              audioValue={{
+                ar: check.errorMessage.audioAr,
+                en: check.errorMessage.audioEn,
+              }}
+              onAudioChange={(audio) => updateField('errorMessage', {
+                ...check.errorMessage,
+                audioAr: audio.ar,
+                audioEn: audio.en,
+              })}
+              enableTranslation
+              enableTTS
+              translationContext="fitness exercise form correction message"
+              variant="compact"
+            />
+          </div>
+
+          <MessagePickerModal
+            open={messagePickerOpen}
+            onOpenChange={setMessagePickerOpen}
+            onSelect={handleMessageSelect}
+            categoryFilter="position"
+            contextFilter="error"
+            title="Pick Error Message"
+            description="Choose a message from the library for this check."
+            createDefaults={{ category: 'position', context: 'error' }}
           />
           
           {/* Severity & Timing */}

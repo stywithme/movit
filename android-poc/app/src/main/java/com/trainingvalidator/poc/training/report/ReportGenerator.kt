@@ -42,7 +42,8 @@ object ReportGenerator {
         visibilityStats: VisibilityStats? = null,
         cameraWarningCount: Int = 0,
         frameCaptures: List<FrameCapture> = emptyList(),
-        holdData: HoldData? = null
+        holdData: HoldData? = null,
+        sessionMetrics: SessionMetrics? = null
     ): PostTrainingReport {
         Log.d(TAG, "Generating state-based report for ${summary.exerciseName}, ${summary.totalReps} reps")
         
@@ -52,7 +53,7 @@ object ReportGenerator {
         }
         
         // 1. Generate performance summary with state breakdown
-        val performanceSummary = generateStateSummary(summary, durationMs, exerciseConfig)
+        val performanceSummary = generateStateSummary(summary, durationMs, exerciseConfig, sessionMetrics)
         
         // 2. Generate DANGER alerts (CRITICAL - shown prominently)
         val dangerAlerts = generateDangerAlerts(summary.repDetails, exerciseConfig, frameCaptures)
@@ -122,7 +123,6 @@ object ReportGenerator {
             dangerAlerts = dangerAlerts,
             consistency = consistency,
             isHoldExercise = exerciseConfig.isHoldExercise(),
-            isBilateral = exerciseConfig.isBilateralExercise(),
             fatigueIndex = performanceSummary.fatigueIndex
         )
         
@@ -155,7 +155,8 @@ object ReportGenerator {
         engine: TrainingEngine,
         exerciseConfig: ExerciseConfig,
         sessionDurationMs: Long,
-        frameCaptures: List<FrameCapture> = emptyList()
+        frameCaptures: List<FrameCapture> = emptyList(),
+        sessionMetrics: SessionMetrics? = null
     ): PostTrainingReport {
         val summary = engine.stop()
         val visibilityStats = engine.getVisibilityStats()
@@ -179,7 +180,8 @@ object ReportGenerator {
             visibilityStats = visibilityStats,
             cameraWarningCount = cameraWarnings,
             frameCaptures = frameCaptures,
-            holdData = holdData
+            holdData = holdData,
+            sessionMetrics = sessionMetrics
         )
     }
     
@@ -188,7 +190,8 @@ object ReportGenerator {
     private fun generateStateSummary(
         summary: SessionSummary,
         durationMs: Long,
-        exerciseConfig: ExerciseConfig
+        exerciseConfig: ExerciseConfig,
+        sessionMetrics: SessionMetrics?
     ): PerformanceSummary {
         // Build state breakdown
         val stateBreakdown = StateBreakdown.fromMap(summary.stateBreakdown)
@@ -231,9 +234,11 @@ object ReportGenerator {
             MetricsCalculator.calculateFatigueIndexFromScores(scores)?.toInt()
         } else null
         
-        // Average ROM - use average score as proxy (higher score = better ROM achieved)
-        // NOTE: True ROM requires frame data which isn't available in RepResult
-        val avgROM = if (shouldComputeRom && scores.isNotEmpty()) scores.average().toFloat() else null
+        // Average ROM - prefer real ROM from MotionRecorder metrics when available
+        val avgROM = if (shouldComputeRom) {
+            val romFromSession = calculateAverageRomFromSession(sessionMetrics, exerciseConfig)
+            romFromSession ?: if (scores.isNotEmpty()) scores.average().toFloat() else null
+        } else null
         
         return PerformanceSummary(
             totalReps = summary.totalReps,
@@ -250,6 +255,33 @@ object ReportGenerator {
             formConsistency = formConsistency,
             fatigueIndex = fatigueIndex
         )
+    }
+
+    /**
+     * Convert session ROM (degrees × 10) to percentage of target ROM.
+     */
+    private fun calculateAverageRomFromSession(
+        sessionMetrics: SessionMetrics?,
+        exerciseConfig: ExerciseConfig
+    ): Float? {
+        val avgRomDegrees = sessionMetrics?.avgRom?.toInt()?.let { it / 10f } ?: return null
+        val targetRomDegrees = getTargetRomDegrees(exerciseConfig) ?: return null
+        if (targetRomDegrees <= 0f) return null
+        return ((avgRomDegrees / targetRomDegrees) * 100f).coerceIn(0f, 100f)
+    }
+
+    /**
+     * Target ROM is derived from primary joint up/down ranges.
+     */
+    private fun getTargetRomDegrees(exerciseConfig: ExerciseConfig): Float? {
+        val primaryJoint = exerciseConfig.getPrimaryJoints().firstOrNull { it.hasStateUpDownRanges() }
+            ?: return null
+        val upRange = primaryJoint.getStateUpRange()
+        val downRange = primaryJoint.getStateDownRange()
+        val maxAngle = maxOf(upRange.effectiveMax, downRange.effectiveMax)
+        val minAngle = minOf(upRange.effectiveMin, downRange.effectiveMin)
+        val target = (maxAngle - minAngle).toFloat()
+        return if (target > 0f) target else null
     }
     
     // ==================== DANGER Alerts ====================
@@ -885,12 +917,11 @@ object ReportGenerator {
         dangerAlerts: List<DangerAlert>,
         consistency: ConsistencyMetrics?,
         isHoldExercise: Boolean,
-        isBilateral: Boolean,
         fatigueIndex: Int?
     ): OverallQualityScore {
         
         // 1. Calculate Form Score
-        val formScore = calculateFormScoreForOverall(summary, timeline, isBilateral)
+        val formScore = calculateFormScoreForOverall(summary, timeline)
         
         // 2. Calculate Safety Score
         val safetyScore = calculateSafetyScoreForOverall(errorAnalysis, dangerAlerts, summary.totalReps)
@@ -914,8 +945,7 @@ object ReportGenerator {
      */
     private fun calculateFormScoreForOverall(
         summary: SessionSummary,
-        timeline: List<RepTimelineEntry>,
-        isBilateral: Boolean
+        timeline: List<RepTimelineEntry>
     ): Float {
         // Use average score from timeline if available
         if (timeline.isNotEmpty()) {
@@ -980,34 +1010,11 @@ object ReportGenerator {
         consistency: ConsistencyMetrics?,
         fatigueIndex: Int?
     ): Float {
-        if (timeline.isEmpty()) return 50f  // Neutral if no data
-        
-        var controlScore = 80f  // Base score
-        
-        // Bonus/penalty for fatigue (same as PerformanceMetricsBuilder)
-        if (fatigueIndex == null) {
-            controlScore += 10f  // Bonus for no fatigue
-        } else {
-            // Penalize based on how early fatigue started
-            val totalReps = timeline.size
-            if (totalReps > 0) {
-                val fatigueRatio = fatigueIndex.toFloat() / totalReps
-                if (fatigueRatio < 0.5) {
-                    controlScore -= 20f
-                } else if (fatigueRatio < 0.7) {
-                    controlScore -= 10f
-                }
-            }
-        }
-        
-        // Bonus for consistent timing (same as PerformanceMetricsBuilder)
-        consistency?.let {
-            if (it.variationMs < 1000) {
-                controlScore += 10f
-            }
-        }
-        
-        return controlScore.coerceIn(0f, 100f)
+        return PerformanceMetricsBuilder.calculateControlScoreValue(
+            totalReps = timeline.size,
+            consistency = consistency,
+            fatigueIndex = fatigueIndex
+        )
     }
 }
 

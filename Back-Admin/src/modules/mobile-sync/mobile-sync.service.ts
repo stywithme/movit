@@ -17,6 +17,7 @@ import type {
   ExerciseConfigWithMeta,
   AudioManifest,
   AudioFileInfo,
+  MessageTemplate,
 } from './mobile-sync.types';
 import * as fs from 'fs/promises';
 import * as path from 'path';
@@ -115,9 +116,15 @@ export const mobileSyncService = {
       ];
     }
     
-    // Transform exercises to mobile format with metadata
+    // Build message library (deduplicated)
+    const messageLibrary = this.buildMessageLibrary(exercises as Parameters<typeof this.buildMessageLibrary>[0]);
+
+    // Transform exercises to mobile format with metadata (message assignments only)
     const exercisesWithMeta: ExerciseConfigWithMeta[] = exercises.map(exercise => {
-      const config = buildExerciseConfig(exercise as Parameters<typeof buildExerciseConfig>[0]);
+      const config = buildExerciseConfig(exercise as Parameters<typeof buildExerciseConfig>[0], {
+        includeMessages: false,
+        includeAssignments: true,
+      });
       return {
         ...config,
         id: exercise.id,
@@ -197,8 +204,8 @@ export const mobileSyncService = {
       return result!;
     }).filter((w): w is WorkoutExport => w !== null);
     
-    // Build audio manifest
-    const audioManifest = await this.buildAudioManifest(exercisesWithMeta, baseUrl);
+    // Build audio manifest from message library
+    const audioManifest = await this.buildAudioManifest(messageLibrary, baseUrl);
     
     // Build response
     const response: MobileSyncResponse = {
@@ -206,6 +213,7 @@ export const mobileSyncService = {
       timestamp: now.toISOString(),
       data: {
         exercises: exercisesWithMeta,
+        messageLibrary,
         deletedExerciseIds,
         workouts: workoutsExport,
         deletedWorkoutIds,
@@ -223,21 +231,62 @@ export const mobileSyncService = {
     
     return response;
   },
+
+  /**
+   * Build message library from exercise assignments (deduplicated)
+   */
+  buildMessageLibrary(
+    exercises: Array<Parameters<typeof buildExerciseConfig>[0]>
+  ): MessageTemplate[] {
+    const library = new Map<string, MessageTemplate>();
+    
+    const toLocalizedText = (value: Record<string, unknown> | null | undefined) => {
+      const ar = typeof value?.ar === 'string' ? value.ar : '';
+      const en = typeof value?.en === 'string' ? value.en : '';
+      const audioAr = typeof value?.audioAr === 'string' ? value.audioAr : undefined;
+      const audioEn = typeof value?.audioEn === 'string' ? value.audioEn : undefined;
+      return {
+        ar,
+        en,
+        ...(audioAr ? { audioAr } : {}),
+        ...(audioEn ? { audioEn } : {}),
+      };
+    };
+    
+    for (const exercise of exercises) {
+      for (const variant of exercise.poseVariants || []) {
+        for (const assignment of variant.messageAssignments || []) {
+          const message = assignment?.message;
+          if (!message?.id || library.has(message.id)) continue;
+          library.set(message.id, {
+            id: message.id,
+            code: message.code,
+            category: message.category,
+            context: message.context ?? null,
+            content: toLocalizedText(message.content),
+          });
+        }
+      }
+    }
+    
+    return Array.from(library.values());
+  },
   
   /**
-   * Build audio manifest from exercises
-   * Extracts all audio URLs from exercises and validates they exist
+   * Build audio manifest from message library
+   * Extracts all audio URLs from messages and validates they exist
    */
   async buildAudioManifest(
-    exercises: ExerciseConfigWithMeta[],
+    messageLibrary: MessageTemplate[],
     baseUrl: string
   ): Promise<AudioManifest> {
     const audioFiles: AudioFileInfo[] = [];
     const seenUrls = new Set<string>();
     
-    // Extract audio URLs from exercises
-    for (const exercise of exercises) {
-      const audioUrls = this.extractAudioUrls(exercise);
+    // Extract audio URLs from message templates
+    for (const message of messageLibrary) {
+      const { audioAr, audioEn } = message.content;
+      const audioUrls = [audioAr, audioEn].filter((url): url is string => !!url);
       
       for (const url of audioUrls) {
         if (seenUrls.has(url)) continue;
@@ -254,7 +303,6 @@ export const mobileSyncService = {
           url,
           size: fileSize,
           language: language as 'ar' | 'en',
-          exerciseId: exercise.id,
         });
       }
     }
@@ -263,66 +311,6 @@ export const mobileSyncService = {
       baseUrl,
       files: audioFiles,
     };
-  },
-  
-  /**
-   * Extract all audio URLs from an exercise config
-   */
-  extractAudioUrls(exercise: ExerciseConfigWithMeta): string[] {
-    const urls: string[] = [];
-    
-    // Helper to extract from LocalizedText with audio
-    const extractFromLocalized = (obj: Record<string, unknown> | undefined) => {
-      if (!obj) return;
-      if (typeof obj.audioAr === 'string' && obj.audioAr) {
-        urls.push(obj.audioAr);
-      }
-      if (typeof obj.audioEn === 'string' && obj.audioEn) {
-        urls.push(obj.audioEn);
-      }
-    };
-    
-    // Check all pose variants
-    for (const variant of exercise.poseVariants || []) {
-      // Feedback messages
-      if (variant.feedbackMessages) {
-        for (const msg of variant.feedbackMessages.motivational || []) {
-          extractFromLocalized(msg as unknown as Record<string, unknown>);
-        }
-        for (const msg of variant.feedbackMessages.tips || []) {
-          extractFromLocalized(msg as unknown as Record<string, unknown>);
-        }
-      }
-      
-      // Position check error messages
-      for (const check of variant.positionChecks || []) {
-        extractFromLocalized(check.errorMessage as unknown as Record<string, unknown>);
-      }
-      
-      // State messages from tracked joints
-      for (const joint of variant.trackedJoints || []) {
-        const stateMessages = (joint as unknown as Record<string, unknown>).stateMessages;
-        if (stateMessages && typeof stateMessages === 'object') {
-          // Iterate through state message values
-          for (const stateValue of Object.values(stateMessages as Record<string, unknown>)) {
-            if (stateValue && typeof stateValue === 'object') {
-              // Could be LocalizedText or ZoneBasedMessage
-              extractFromLocalized(stateValue as Record<string, unknown>);
-              // Check for nested zone messages (up/down)
-              const zoneMsg = stateValue as Record<string, unknown>;
-              if (zoneMsg.up && typeof zoneMsg.up === 'object') {
-                extractFromLocalized(zoneMsg.up as Record<string, unknown>);
-              }
-              if (zoneMsg.down && typeof zoneMsg.down === 'object') {
-                extractFromLocalized(zoneMsg.down as Record<string, unknown>);
-              }
-            }
-          }
-        }
-      }
-    }
-    
-    return urls;
   },
   
   /**

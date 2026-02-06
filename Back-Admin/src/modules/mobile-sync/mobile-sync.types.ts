@@ -6,7 +6,7 @@
  * synchronization of exercises and workouts with the Android app.
  */
 
-import type { ExerciseConfig } from '@/lib/types/android-schema';
+import type { ExerciseConfig, LocalizedText } from '@/lib/types/android-schema';
 import type { WorkoutExport } from '@/modules/workouts/workouts.types';
 
 // ============================================
@@ -43,6 +43,11 @@ export interface SyncData {
    * List of exercises (full config for mobile app)
    */
   exercises: ExerciseConfigWithMeta[];
+
+  /**
+   * Message library for feedback/state/position messages
+   */
+  messageLibrary: MessageTemplate[];
   
   /**
    * IDs of exercises that were deleted since last sync
@@ -155,6 +160,18 @@ export interface AudioFileInfo {
    * Associated exercise ID (for cache invalidation)
    */
   exerciseId?: string;
+}
+
+// ============================================
+// MESSAGE LIBRARY
+// ============================================
+
+export interface MessageTemplate {
+  id: string;
+  code: string;
+  category: string;
+  context?: string | null;
+  content: LocalizedText;
 }
 
 // ============================================

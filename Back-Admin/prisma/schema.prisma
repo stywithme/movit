@@ -220,7 +220,7 @@ model PoseVariant {
   
   difficultyLevels DifficultyLevel[]
   positionChecks   PositionCheck[]   
-  feedbackMessages FeedbackMessage[] 
+  messageAssignments FeedbackMessageAssignment[]
 
   @@index([exerciseId])
   @@index([cameraPositionId])
@@ -282,24 +282,49 @@ model DifficultyLevel {
   @@map("difficulty_levels")
 }
 
-// ============================================
-// FEEDBACK MESSAGES
-// ============================================
+/// Reusable feedback message templates (library)
+model FeedbackMessageTemplate {
+  id        String   @id @default(uuid())
+  code      String   @unique
+  category  String   // state | position | motivational | tip | system
+  context   String?  // perfect | normal | pad | warning | danger | general
+  content   Json     // { "ar": "...", "en": "...", "audioAr": "...", "audioEn": "..." }
+  tags      String[]
+  isSystem  Boolean  @default(false)
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
-/// Feedback messages (motivational, tips, common mistakes)
-model FeedbackMessage {
+  assignments FeedbackMessageAssignment[]
+
+  @@index([category, context])
+  @@index([isActive])
+  @@map("feedback_message_templates")
+}
+
+/// Assign reusable messages to a specific pose variant context
+model FeedbackMessageAssignment {
   id            String   @id @default(uuid())
   poseVariantId String
-  type          String   // motivational, common_mistake, tip
-  message       Json     // { "ar": "...", "en": "...", "audioAr": "...", "audioEn": "..." }
+  messageId     String
+  
+  // Target context for this assignment
+  target        String   // joint_state | feedback | position
+  context       String?  // perfect | normal | pad | warning | danger | motivational | tip | error
+  jointCode     String?  // For joint_state assignments
+  zone          String?  // up | down (for zone-specific messages)
+  checkId       String?  // For position check assignments
+  
   sortOrder     Int      @default(0)
   createdAt     DateTime @default(now())
-
+  
   poseVariant PoseVariant @relation(fields: [poseVariantId], references: [id], onDelete: Cascade)
-
+  message     FeedbackMessageTemplate @relation(fields: [messageId], references: [id])
+  
   @@index([poseVariantId])
-  @@index([type])
-  @@map("feedback_messages")
+  @@index([messageId])
+  @@index([target, context])
+  @@map("feedback_message_assignments")
 }
 
 // ============================================

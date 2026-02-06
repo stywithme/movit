@@ -127,6 +127,22 @@ data class ExerciseConfig(
         return poseVariants.getOrNull(variantIndex)?.positionChecks?.isNotEmpty() == true ||
                hasPositionChecks
     }
+    
+    /**
+     * Sanitize Gson-null fields.
+     * 
+     * Gson ignores Kotlin default parameter values when a JSON field is missing,
+     * setting the field to null at runtime even if the Kotlin type is non-null.
+     * This method ensures all fields have proper defaults after Gson deserialization.
+     */
+    @Suppress("SENSELESS_COMPARISON", "UNNECESSARY_SAFE_CALL", "USELESS_ELVIS")
+    fun sanitizeGsonDefaults(): ExerciseConfig = copy(
+        fileName = fileName ?: "",
+        poseVariants = (poseVariants ?: emptyList()).map { it.sanitizeGsonDefaults() },
+        muscles = muscles ?: emptyList(),
+        equipment = equipment ?: emptyList(),
+        tags = tags ?: emptyList()
+    )
 }
 
 /**
@@ -319,7 +335,8 @@ data class PoseVariant(
     val expectedFacingDirection: FacingDirection? = null,
     val trackedJoints: List<TrackedJoint> = emptyList(),
     val positionChecks: List<PositionCheck> = emptyList(),
-    val feedbackMessages: FeedbackMessages = FeedbackMessages()
+    val feedbackMessages: FeedbackMessages = FeedbackMessages(),
+    val messageAssignments: List<MessageAssignment> = emptyList()
 ) {
     /**
      * Get tracked joint by code
@@ -341,6 +358,17 @@ data class PoseVariant(
     fun getSecondaryJoints(): List<TrackedJoint> {
         return trackedJoints.filter { it.role == JointRole.SECONDARY }
     }
+    
+    /**
+     * Sanitize Gson-null fields for this PoseVariant and its children.
+     */
+    @Suppress("SENSELESS_COMPARISON", "UNNECESSARY_SAFE_CALL", "USELESS_ELVIS")
+    fun sanitizeGsonDefaults(): PoseVariant = copy(
+        trackedJoints = trackedJoints ?: emptyList(),
+        positionChecks = (positionChecks ?: emptyList()).map { it.sanitizeGsonDefaults() },
+        feedbackMessages = (feedbackMessages ?: FeedbackMessages()).sanitizeGsonDefaults(),
+        messageAssignments = messageAssignments ?: emptyList()
+    )
 }
 
 /**
@@ -670,6 +698,15 @@ data class FeedbackMessages(
     val tips: List<LocalizedText> = emptyList()
 ) {
     /**
+     * Sanitize Gson-null fields.
+     */
+    @Suppress("SENSELESS_COMPARISON", "UNNECESSARY_SAFE_CALL", "USELESS_ELVIS")
+    fun sanitizeGsonDefaults(): FeedbackMessages = copy(
+        motivational = motivational ?: emptyList(),
+        tips = tips ?: emptyList()
+    )
+    
+    /**
      * Check if there are any messages available
      */
     fun hasMessages(): Boolean = motivational.isNotEmpty() || tips.isNotEmpty()
@@ -692,6 +729,19 @@ data class FeedbackMessages(
         return allMessages.randomOrNull()
     }
 }
+
+/**
+ * Message assignment reference (library-based)
+ */
+data class MessageAssignment(
+    val messageId: String,
+    val target: String,
+    val context: String? = null,
+    val jointCode: String? = null,
+    val zone: String? = null,
+    val checkId: String? = null,
+    val sortOrder: Int = 0
+)
 
 // NOTE: DifficultyLevel and DifficultyType have been REMOVED.
 // Quality is now assessed via JointState (PERFECT/NORMAL/PAD/WARNING/DANGER).
@@ -805,11 +855,23 @@ data class PositionCheck(
     val landmarks: LandmarkGroup,
     val condition: PositionCondition,
     val activePhases: List<String>,
-    val errorMessage: LocalizedText,
+    val errorMessage: LocalizedText = LocalizedText(),
     val severity: CheckSeverity = CheckSeverity.WARNING,
     val cooldownMs: Long = 2000,
     val minErrorFrames: Int = 3  // Number of consecutive frames to confirm error
-)
+) {
+    /**
+     * Sanitize Gson-null fields.
+     */
+    @Suppress("SENSELESS_COMPARISON", "UNNECESSARY_SAFE_CALL", "USELESS_ELVIS")
+    fun sanitizeGsonDefaults(): PositionCheck {
+        val safeMessage = errorMessage ?: LocalizedText()
+        val safePhases = activePhases ?: emptyList()
+        return if (safeMessage !== errorMessage || safePhases !== activePhases) {
+            copy(errorMessage = safeMessage, activePhases = safePhases)
+        } else this
+    }
+}
 
 /**
  * Position check types

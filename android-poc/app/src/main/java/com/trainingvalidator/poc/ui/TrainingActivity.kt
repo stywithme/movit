@@ -145,6 +145,11 @@ class TrainingActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetection
     // This is intentionally Activity-local (UI concern) and does not affect session state machine behavior.
     private var wasPoseDetectedLastFrame: Boolean = false
     
+    // Frame processing guard - drops frames if previous is still processing
+    // to prevent Main Thread queue buildup and skeleton lag
+    @Volatile
+    private var isProcessingPoseFrame = false
+    
     // Report & Frame Capture
     private var frameCaptureManager: FrameCaptureManager? = null
     private var reportStorage: ReportStorage? = null
@@ -1327,11 +1332,15 @@ class TrainingActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetection
             try {
                 Log.d(TAG, "Generating report in background...")
                 
+                val sessionUpload = viewModel.finalizeAndGetSessionUpload()
+                val sessionMetrics = sessionUpload?.sessionMetrics
+                
                 val report = ReportGenerator.generateFromEngine(
                     engine = engine,
                     exerciseConfig = exerciseConfig,
                     sessionDurationMs = viewModel.getSessionDurationMs(),
-                    frameCaptures = frameCaptures
+                    frameCaptures = frameCaptures,
+                    sessionMetrics = sessionMetrics
                 )
                 
                 Log.d(TAG, "Report generated: id=${report.id}, accuracy=${report.summary.accuracy}%")
@@ -1629,48 +1638,60 @@ class TrainingActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetection
     // ==================== PoseDetectionListener ====================
 
     override fun onPoseDetected(result: PoseResult) {
-        lifecycleScope.launch(Dispatchers.Main) {
-            if (!::landmarkSmoother.isInitialized) return@launch
-            
-            updateFps()
-            wasPoseDetectedLastFrame = true
-            
-            val smoothedLandmarks = landmarkSmoother.smooth(result.landmarks, result.timestampMs)
-            
-            val worldLandmarks = result.worldLandmarks?.let {
-                landmarkSmoother.convertWorld(it)
+        // Drop frame if previous is still processing (prevents Main Thread queue buildup)
+        if (isProcessingPoseFrame) return
+        isProcessingPoseFrame = true
+        
+        lifecycleScope.launch(Dispatchers.Default) {
+            try {
+                if (!::landmarkSmoother.isInitialized) return@launch
+                
+                // === Heavy computation on background thread ===
+                val smoothedLandmarks = landmarkSmoother.smooth(result.landmarks, result.timestampMs)
+                
+                val worldLandmarks = result.worldLandmarks?.let {
+                    landmarkSmoother.convertWorld(it)
+                }
+                
+                val rawAngles = if (worldLandmarks != null) {
+                    AngleCalculator.calculateAllAnglesSmoothed(
+                        worldLandmarks,
+                        visibilityThreshold = 0.3f,
+                        use3D = true
+                    )
+                } else {
+                    AngleCalculator.calculateAllAnglesSmoothed(
+                        smoothedLandmarks,
+                        visibilityThreshold = 0.3f
+                    )
+                }
+                
+                val angles = if (result.isFrontCamera) rawAngles.mirrored() else rawAngles
+                
+                // === Minimal work on Main Thread: supervisor signal + UI update ===
+                withContext(Dispatchers.Main) {
+                    updateFps()
+                    wasPoseDetectedLastFrame = true
+                    
+                    // Forward pose frame to supervisor via ViewModel
+                    viewModel.onPoseFrame(angles, smoothedLandmarks, result.isFrontCamera, result.timestampMs)
+                    
+                    // Update skeleton overlay with JointStateInfo
+                    val stateInfos = viewModel.trainingEngine?.jointStateInfos?.value ?: emptyMap()
+                    val positionErrors = viewModel.trainingEngine?.positionErrors?.value ?: emptyList()
+                    
+                    binding.skeletonOverlay.updateWithStateInfos(
+                        smoothedLandmarks = smoothedLandmarks,
+                        inputImageWidth = result.imageWidth,
+                        inputImageHeight = result.imageHeight,
+                        angles = angles,
+                        stateInfos = stateInfos,
+                        positionErrors = positionErrors
+                    )
+                }
+            } finally {
+                isProcessingPoseFrame = false
             }
-            
-            val rawAngles = if (worldLandmarks != null) {
-                AngleCalculator.calculateAllAnglesSmoothed(
-                    worldLandmarks,
-                    visibilityThreshold = 0.3f,
-                    use3D = true
-                )
-            } else {
-                AngleCalculator.calculateAllAnglesSmoothed(
-                    smoothedLandmarks,
-                    visibilityThreshold = 0.3f
-                )
-            }
-            
-            val angles = if (result.isFrontCamera) rawAngles.mirrored() else rawAngles
-            
-            // Forward pose frame to supervisor via ViewModel
-            viewModel.onPoseFrame(angles, smoothedLandmarks, result.isFrontCamera, result.timestampMs)
-            
-            // Update skeleton overlay with JointStateInfo
-            val stateInfos = viewModel.trainingEngine?.jointStateInfos?.value ?: emptyMap()
-            val positionErrors = viewModel.trainingEngine?.positionErrors?.value ?: emptyList()
-            
-            binding.skeletonOverlay.updateWithStateInfos(
-                smoothedLandmarks = smoothedLandmarks,
-                inputImageWidth = result.imageWidth,
-                inputImageHeight = result.imageHeight,
-                angles = angles,
-                stateInfos = stateInfos,
-                positionErrors = positionErrors
-            )
         }
     }
 

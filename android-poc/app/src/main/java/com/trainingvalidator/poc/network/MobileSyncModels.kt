@@ -31,6 +31,7 @@ data class MobileSyncResponse(
  */
 data class SyncData(
     val exercises: List<ExerciseConfigWithMeta>,
+    val messageLibrary: List<MessageTemplate> = emptyList(),
     val deletedExerciseIds: List<String>,
     val workouts: List<WorkoutConfigWithMeta> = emptyList(),
     val deletedWorkoutIds: List<String> = emptyList(),
@@ -178,4 +179,15 @@ data class AudioFileInfo(
     val size: Long? = null,
     val language: String,  // "ar" or "en"
     val exerciseId: String? = null
+)
+
+/**
+ * Message template for library-based feedback
+ */
+data class MessageTemplate(
+    val id: String,
+    val code: String,
+    val category: String,
+    val context: String? = null,
+    val content: LocalizedText
 )

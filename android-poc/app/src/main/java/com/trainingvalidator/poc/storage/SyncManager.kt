@@ -3,7 +3,14 @@ package com.trainingvalidator.poc.storage
 import android.content.Context
 import android.util.Log
 import com.trainingvalidator.poc.network.ApiClient
+import com.trainingvalidator.poc.network.ExerciseConfigWithMeta
+import com.trainingvalidator.poc.network.MessageTemplate
 import com.trainingvalidator.poc.network.MobileSyncResponse
+import com.trainingvalidator.poc.training.models.FeedbackMessages
+import com.trainingvalidator.poc.training.models.LocalizedText
+import com.trainingvalidator.poc.training.models.PoseVariant
+import com.trainingvalidator.poc.training.models.StateMessageValue
+import com.trainingvalidator.poc.training.models.StateMessages
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.net.UnknownHostException
@@ -257,10 +264,12 @@ class SyncManager(
         val data = response.data ?: return SyncResult.NoChanges
         val meta = response.meta
         
-        val exercises = data.exercises
-        val deletedExerciseIds = data.deletedExerciseIds
-        val workouts = data.workouts
-        val deletedWorkoutIds = data.deletedWorkoutIds
+        @Suppress("UNNECESSARY_SAFE_CALL", "USELESS_ELVIS")
+        val exercises = data.exercises ?: emptyList()
+        val messageLibrary = data.messageLibrary ?: emptyList()
+        val deletedExerciseIds = data.deletedExerciseIds ?: emptyList()
+        val workouts = data.workouts ?: emptyList()
+        val deletedWorkoutIds = data.deletedWorkoutIds ?: emptyList()
         val audioManifest = data.audioManifest
         
         // Check if there are any changes
@@ -282,9 +291,12 @@ class SyncManager(
             return SyncResult.NoChanges
         }
         
+        // Resolve messages from library before saving
+        val resolvedExercises = resolveExerciseMessages(exercises, messageLibrary)
+        
         // Save exercises
         if (hasExerciseChanges) {
-            exerciseCache.saveExercises(exercises, isFullSync)
+            exerciseCache.saveExercises(resolvedExercises, isFullSync)
             
             // Remove deleted exercises
             if (deletedExerciseIds.isNotEmpty()) {
@@ -344,6 +356,160 @@ class SyncManager(
             audioFilesDownloaded = 0, // Audio download is now separate
             isFullSync = isFullSync
         )
+    }
+
+    /**
+     * Resolve message assignments using the message library.
+     * Keeps training models unchanged by expanding messages before caching.
+     */
+    private fun resolveExerciseMessages(
+        exercises: List<ExerciseConfigWithMeta>,
+        messageLibrary: List<MessageTemplate>
+    ): List<ExerciseConfigWithMeta> {
+        val messageMap = messageLibrary.associateBy { it.id }
+        
+        return exercises.map { exercise ->
+            @Suppress("UNNECESSARY_SAFE_CALL", "USELESS_ELVIS")
+            val variants = exercise.poseVariants ?: emptyList()
+            if (variants.isEmpty()) return@map exercise
+            val resolvedVariants = variants.map { variant ->
+                resolvePoseVariantMessages(variant, messageMap)
+            }
+            exercise.copy(poseVariants = resolvedVariants)
+        }
+    }
+
+    @Suppress("UNNECESSARY_SAFE_CALL", "USELESS_ELVIS")
+    private fun resolvePoseVariantMessages(
+        variant: PoseVariant,
+        messageMap: Map<String, MessageTemplate>
+    ): PoseVariant {
+        val assignments = (variant.messageAssignments ?: emptyList())
+            .sortedBy { it.sortOrder }
+
+        // Always sanitize Gson-null fields, even when there are no assignments
+        if (assignments.isEmpty()) return variant.sanitizeGsonDefaults()
+
+        val motivational = (variant.feedbackMessages?.motivational ?: emptyList()).toMutableList()
+        val tips = (variant.feedbackMessages?.tips ?: emptyList()).toMutableList()
+
+        @Suppress("UNNECESSARY_SAFE_CALL", "USELESS_ELVIS")
+        val trackedJoints = variant.trackedJoints ?: emptyList()
+        val jointMessageMap: MutableMap<String, StateMessages?> =
+            trackedJoints.associate { it.joint to it.stateMessages }.toMutableMap()
+        val positionMessageMap = mutableMapOf<String, LocalizedText>()
+
+        for (assignment in assignments) {
+            val template = messageMap[assignment.messageId] ?: continue
+            val content = template.content
+
+            when (assignment.target) {
+                "feedback" -> when (assignment.context) {
+                    "motivational" -> motivational.add(content)
+                    "tip" -> tips.add(content)
+                }
+
+                "joint_state" -> {
+                    val jointCode = assignment.jointCode ?: continue
+                    val stateKey = assignment.context ?: continue
+                    val current = jointMessageMap[jointCode]
+                    jointMessageMap[jointCode] = applyStateMessage(
+                        current,
+                        stateKey,
+                        assignment.zone,
+                        content
+                    )
+                }
+
+                "position" -> {
+                    val checkId = assignment.checkId ?: continue
+                    positionMessageMap[checkId] = content
+                }
+            }
+        }
+
+        val updatedTrackedJoints = trackedJoints.map { joint ->
+            val updatedMessages = jointMessageMap[joint.joint]
+            val finalMessages = updatedMessages ?: joint.stateMessages
+            if (finalMessages != joint.stateMessages) {
+                joint.copy(stateMessages = finalMessages)
+            } else {
+                joint
+            }
+        }
+
+        @Suppress("UNNECESSARY_SAFE_CALL", "USELESS_ELVIS")
+        val positionChecks = variant.positionChecks ?: emptyList()
+        val updatedPositionChecks = positionChecks.map { check ->
+            val message = positionMessageMap[check.id]
+            if (message != null) {
+                check.copy(errorMessage = message)
+            } else {
+                check
+            }
+        }
+
+        val updatedFeedback = if (motivational.isNotEmpty() || tips.isNotEmpty()) {
+            FeedbackMessages(motivational = motivational, tips = tips)
+        } else {
+            variant.feedbackMessages ?: FeedbackMessages()
+        }
+
+        return variant.copy(
+            trackedJoints = updatedTrackedJoints,
+            positionChecks = updatedPositionChecks,
+            feedbackMessages = updatedFeedback
+        )
+    }
+
+    private fun applyStateMessage(
+        current: StateMessages?,
+        stateKey: String,
+        zone: String?,
+        message: LocalizedText
+    ): StateMessages {
+        val existing = current ?: StateMessages()
+        val normalizedState = stateKey.lowercase()
+        val normalizedZone = zone?.lowercase()
+        val updatedValue = mergeStateMessageValue(
+            when (normalizedState) {
+                "perfect" -> existing.perfect
+                "normal" -> existing.normal
+                "pad" -> existing.pad
+                "warning" -> existing.warning
+                "danger" -> existing.danger
+                else -> null
+            },
+            normalizedZone,
+            message
+        )
+
+        return when (normalizedState) {
+            "perfect" -> existing.copy(perfect = updatedValue)
+            "normal" -> existing.copy(normal = updatedValue)
+            "pad" -> existing.copy(pad = updatedValue)
+            "warning" -> existing.copy(warning = updatedValue)
+            "danger" -> existing.copy(danger = updatedValue)
+            else -> existing
+        }
+    }
+
+    private fun mergeStateMessageValue(
+        existing: StateMessageValue?,
+        zone: String?,
+        message: LocalizedText
+    ): StateMessageValue {
+        if (zone.isNullOrBlank()) {
+            return StateMessageValue.Single(message)
+        }
+
+        val current = existing as? StateMessageValue.ZoneSpecific
+            ?: StateMessageValue.ZoneSpecific()
+
+        return when (zone) {
+            "down" -> current.copy(down = message)
+            else -> current.copy(up = message)
+        }
     }
     
     /**

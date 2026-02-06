@@ -12,7 +12,7 @@ import type { CountingMethodCode, PhaseName } from '@/lib/types/localized';
 import type { 
   TrackedJoint, 
   PositionCheckInput, 
-  FeedbackMessageInput,
+  FeedbackMessageAssignmentInput,
   RepCountingConfig,
 } from './exercises.types';
 
@@ -37,7 +37,7 @@ interface PoseVariantInput {
   expectedFacingDirection?: string;
   trackedJointsConfig?: TrackedJoint[];
   positionChecks?: PositionCheckInput[];
-  feedbackMessages?: FeedbackMessageInput[];
+  messageAssignments?: FeedbackMessageAssignmentInput[];
   sortOrder?: number;
 }
 
@@ -192,8 +192,11 @@ export const exerciseService = {
             positionChecks: {
               orderBy: { sortOrder: 'asc' },
             },
-            feedbackMessages: {
+            messageAssignments: {
               orderBy: { sortOrder: 'asc' },
+              include: {
+                message: true,
+              },
             },
           },
         },
@@ -318,19 +321,18 @@ export const exerciseService = {
       });
     }
 
-    // Create feedback messages (audio URLs are now part of message object)
-    if (pv.feedbackMessages && pv.feedbackMessages.length > 0) {
-      await prisma.feedbackMessage.createMany({
-        data: pv.feedbackMessages.map((fm, idx) => ({
+    // Create message assignments (library-based, optional)
+    if (pv.messageAssignments && pv.messageAssignments.length > 0) {
+      await prisma.feedbackMessageAssignment.createMany({
+        data: pv.messageAssignments.map((assignment, idx) => ({
           poseVariantId: poseVariant.id,
-          type: fm.type,
-          message: {
-            ar: fm.message.ar,
-            en: fm.message.en,
-            audioAr: fm.message.audioAr || undefined,
-            audioEn: fm.message.audioEn || undefined,
-          },
-          sortOrder: fm.sortOrder ?? idx + 1,
+          messageId: assignment.messageId,
+          target: assignment.target,
+          context: assignment.context || null,
+          jointCode: assignment.jointCode || null,
+          zone: assignment.zone || null,
+          checkId: assignment.checkId || null,
+          sortOrder: assignment.sortOrder ?? idx + 1,
         })),
       });
     }

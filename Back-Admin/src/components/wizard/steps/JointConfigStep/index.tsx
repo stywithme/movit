@@ -14,7 +14,8 @@ import { useCallback, useState, useMemo } from 'react';
 import { useWizardStore } from '../../WizardContext';
 import { buildTrackedJoint, STATE_COLORS, STATE_LABELS } from './joint-templates';
 import { SmartLocalizedInput } from '@/components/forms';
-import { Plus, ChevronDown, Trash2, Copy } from 'lucide-react';
+import { Plus, ChevronDown, Trash2, Copy, MessageSquare } from 'lucide-react';
+import { MessagePickerModal, type MessageOption } from '@/components/messages';
 import type { TrackedJointData, PrimaryTrackedJointData, SecondaryTrackedJointData, StateRangesData } from '@/modules/exercises/exercises.validation';
 import { JOINT_STATE_NAMES, COUNTED_STATES, STATE_CONFIG } from '@/lib/types/localized';
 import type { JointStateName, LocalizedText } from '@/lib/types/localized';
@@ -196,9 +197,54 @@ interface StateRangeEditorProps {
   ranges: StateRangesData;
   onChange: (ranges: StateRangesData) => void;
   showWarningDanger?: boolean;
+  /** State messages for this range (optional - enables message icon) */
+  stateMessages?: TrackedJointData['stateMessages'];
+  /** Callback to update state messages */
+  onStateMessagesChange?: (messages: TrackedJointData['stateMessages']) => void;
+  /** Zone label for zone-based messages (e.g. 'up' | 'down') */
+  zone?: 'up' | 'down';
 }
 
-function StateRangeEditor({ label, ranges, onChange, showWarningDanger = true }: StateRangeEditorProps) {
+function StateRangeEditor({ label, ranges, onChange, showWarningDanger = true, stateMessages, onStateMessagesChange, zone }: StateRangeEditorProps) {
+  const [pickerOpen, setPickerOpen] = useState(false);
+  const [pickerState, setPickerState] = useState<JointStateName>('perfect');
+
+  const openMessagePicker = (state: JointStateName) => {
+    setPickerState(state);
+    setPickerOpen(true);
+  };
+
+  const handleMessageSelect = (selected: MessageOption[]) => {
+    if (selected.length === 0 || !onStateMessagesChange) return;
+    const msg = selected[0];
+    const updated = { ...(stateMessages || {}) };
+
+    if (zone) {
+      // Zone-based: set message under up/down
+      const existing = updated[pickerState];
+      const zoneObj = (existing && typeof existing === 'object' && 'up' in existing)
+        ? { ...existing }
+        : { up: undefined, down: undefined };
+      (zoneObj as Record<string, unknown>)[zone] = { ar: msg.content.ar, en: msg.content.en };
+      (updated as Record<string, unknown>)[pickerState] = zoneObj;
+    } else {
+      (updated as Record<string, unknown>)[pickerState] = { ar: msg.content.ar, en: msg.content.en };
+    }
+    onStateMessagesChange(updated);
+  };
+
+  const getMessageForState = (state: JointStateName): { ar?: string; en?: string } | null => {
+    if (!stateMessages) return null;
+    const val = stateMessages[state];
+    if (!val) return null;
+    if (zone && typeof val === 'object' && 'up' in val) {
+      return (val as Record<string, { ar?: string; en?: string }>)[zone] || null;
+    }
+    if (typeof val === 'object' && 'ar' in val) {
+      return val as { ar?: string; en?: string };
+    }
+    return null;
+  };
   const safeRanges: StateRangesData = ranges?.perfect 
     ? ranges 
     : { perfect: { min: 150, max: 180 } };
@@ -355,6 +401,26 @@ function StateRangeEditor({ label, ranges, onChange, showWarningDanger = true }:
                 </div>
               )}
               
+              {/* Message icon (only when enabled and message support is available) */}
+              {isEnabled && onStateMessagesChange && (() => {
+                const msg = getMessageForState(state);
+                return (
+                  <button
+                    type="button"
+                    onClick={() => openMessagePicker(state)}
+                    className="relative group flex-shrink-0"
+                    title={msg ? `${msg.en}\n${msg.ar}` : 'Assign message from library'}
+                  >
+                    <MessageSquare className={`h-4 w-4 transition-colors ${
+                      msg ? 'text-blue-600' : 'text-gray-400 group-hover:text-blue-500'
+                    }`} />
+                    {msg && (
+                      <span className="absolute -top-1 -right-1 w-2 h-2 bg-blue-500 rounded-full" />
+                    )}
+                  </button>
+                );
+              })()}
+              
               {!isEnabled && (
                 <span className="text-sm text-gray-400 italic">Click to enable</span>
               )}
@@ -362,6 +428,20 @@ function StateRangeEditor({ label, ranges, onChange, showWarningDanger = true }:
           );
         })}
       </div>
+      
+      {/* Message Picker Modal */}
+      {onStateMessagesChange && (
+        <MessagePickerModal
+          open={pickerOpen}
+          onOpenChange={setPickerOpen}
+          onSelect={handleMessageSelect}
+          categoryFilter="state"
+          contextFilter={pickerState}
+          title={`Pick ${STATE_LABELS[pickerState]?.en || pickerState} Message`}
+          description="Choose a message from the library for this state."
+          createDefaults={{ category: 'state', context: pickerState }}
+        />
+      )}
     </div>
   );
 }
@@ -531,11 +611,17 @@ function JointTabContent({ joint, onUpdate, onRemove, onCopyToMirror, isHold, ha
             label="⬆️ Up Range (Extended)"
             ranges={(joint as PrimaryTrackedJointData).upRange || { perfect: { min: 150, max: 180 } }}
             onChange={(upRange) => onUpdate({ ...joint, upRange } as PrimaryTrackedJointData)}
+            stateMessages={joint.stateMessages}
+            onStateMessagesChange={(messages) => onUpdate({ ...joint, stateMessages: messages })}
+            zone="up"
           />
           <StateRangeEditor
             label="⬇️ Down Range (Contracted)"
             ranges={(joint as PrimaryTrackedJointData).downRange || { perfect: { min: 0, max: 90 } }}
             onChange={(downRange) => onUpdate({ ...joint, downRange } as PrimaryTrackedJointData)}
+            stateMessages={joint.stateMessages}
+            onStateMessagesChange={(messages) => onUpdate({ ...joint, stateMessages: messages })}
+            zone="down"
           />
         </div>
       ) : isPrimary && isHold ? (
@@ -544,6 +630,8 @@ function JointTabContent({ joint, onUpdate, onRemove, onCopyToMirror, isHold, ha
           ranges={(joint as PrimaryTrackedJointData).range || { perfect: { min: 85, max: 95 } }}
           onChange={(range) => onUpdate({ ...joint, range } as PrimaryTrackedJointData)}
           showWarningDanger={true}
+          stateMessages={joint.stateMessages}
+          onStateMessagesChange={(messages) => onUpdate({ ...joint, stateMessages: messages })}
         />
       ) : (
         <StateRangeEditor
@@ -551,6 +639,8 @@ function JointTabContent({ joint, onUpdate, onRemove, onCopyToMirror, isHold, ha
           ranges={(joint as SecondaryTrackedJointData).range}
           onChange={(range) => onUpdate({ ...joint, range } as SecondaryTrackedJointData)}
           showWarningDanger={true}
+          stateMessages={joint.stateMessages}
+          onStateMessagesChange={(messages) => onUpdate({ ...joint, stateMessages: messages })}
         />
       )}
     </div>
@@ -738,11 +828,17 @@ function BilateralTabContent({ leftJoint, rightJoint, bilateralCode, onUpdateBot
             label="⬆️ Up Range (Extended)"
             ranges={(joint as PrimaryTrackedJointData).upRange || { perfect: { min: 150, max: 180 } }}
             onChange={updateUpRange}
+            stateMessages={joint.stateMessages}
+            onStateMessagesChange={(messages) => onUpdateBoth((j) => ({ ...j, stateMessages: messages }))}
+            zone="up"
           />
           <StateRangeEditor
             label="⬇️ Down Range (Contracted)"
             ranges={(joint as PrimaryTrackedJointData).downRange || { perfect: { min: 0, max: 90 } }}
             onChange={updateDownRange}
+            stateMessages={joint.stateMessages}
+            onStateMessagesChange={(messages) => onUpdateBoth((j) => ({ ...j, stateMessages: messages }))}
+            zone="down"
           />
         </div>
       ) : isPrimary && isHold ? (
@@ -751,6 +847,8 @@ function BilateralTabContent({ leftJoint, rightJoint, bilateralCode, onUpdateBot
           ranges={(joint as PrimaryTrackedJointData).range || { perfect: { min: 85, max: 95 } }}
           onChange={updateRange}
           showWarningDanger={true}
+          stateMessages={joint.stateMessages}
+          onStateMessagesChange={(messages) => onUpdateBoth((j) => ({ ...j, stateMessages: messages }))}
         />
       ) : (
         <StateRangeEditor
@@ -758,6 +856,8 @@ function BilateralTabContent({ leftJoint, rightJoint, bilateralCode, onUpdateBot
           ranges={(joint as SecondaryTrackedJointData).range}
           onChange={updateRange}
           showWarningDanger={true}
+          stateMessages={joint.stateMessages}
+          onStateMessagesChange={(messages) => onUpdateBoth((j) => ({ ...j, stateMessages: messages }))}
         />
       )}
       

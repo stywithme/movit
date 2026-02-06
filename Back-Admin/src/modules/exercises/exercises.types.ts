@@ -486,12 +486,17 @@ export interface RepCountingConfig {
 // ============================================
 
 /**
- * Feedback message input (simplified - no common_mistake)
- * Audio URLs are now part of message: { ar, en, audioAr, audioEn }
+ * Feedback message assignment input (library-based)
  */
-export interface FeedbackMessageInput {
-  type: 'motivational' | 'tip';
-  message: LocalizedTextWithAudio;
+export type FeedbackMessageAssignmentTarget = 'joint_state' | 'feedback' | 'position';
+
+export interface FeedbackMessageAssignmentInput {
+  messageId: string;
+  target: FeedbackMessageAssignmentTarget;
+  context?: string;   // perfect | normal | pad | warning | danger | motivational | tip | error
+  jointCode?: string; // For joint_state assignments
+  zone?: 'up' | 'down';
+  checkId?: string;   // For position check assignments
   sortOrder?: number;
 }
 
@@ -512,7 +517,7 @@ export interface PoseVariantInput {
   expectedFacingDirection?: string;
   trackedJointsConfig?: TrackedJoint[];
   positionChecks?: PositionCheckInput[];
-  feedbackMessages?: FeedbackMessageInput[];
+  messageAssignments?: FeedbackMessageAssignmentInput[];
   sortOrder?: number;
 }
 

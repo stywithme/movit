@@ -5,11 +5,12 @@
  * ===================================================================
  */
 
+import { useState } from 'react';
 import { useWizardStore } from '../WizardContext';
 import { Card, CardHeader, CardTitle, CardContent, Button, Badge, Label } from '@/components/ui';
-import { SmartLocalizedInput } from '@/components/forms';
-import { Plus, X, Dumbbell, BarChart3, Check } from 'lucide-react';
-import type { FeedbackMessageData } from '@/modules/exercises/exercises.validation';
+import { MessagePickerModal, MessageFormModal, type MessageOption, type MessageFormData } from '@/components/messages';
+import { Plus, X, Dumbbell, BarChart3, Check, Library } from 'lucide-react';
+import type { FeedbackAssignmentData } from '@/modules/exercises/exercises.validation';
 import { METRIC_DEFINITIONS, type MetricCode } from '@/modules/exercises/exercises.types';
 
 interface ExtrasStepProps {
@@ -22,9 +23,9 @@ export function ExtrasStep({ muscles, equipment, tags }: ExtrasStepProps) {
   const { 
     extras, 
     setExtras, 
-    addFeedbackMessage, 
-    updateFeedbackMessage, 
-    removeFeedbackMessage,
+    addFeedbackAssignment, 
+    updateFeedbackAssignment, 
+    removeFeedbackAssignment,
     weightConfig,
     setWeightConfig,
     reportMetrics,
@@ -48,14 +49,7 @@ export function ExtrasStep({ muscles, equipment, tags }: ExtrasStepProps) {
     setExtras({ [type]: updated });
   };
   
-  const feedbackMessages = extras.feedbackMessages || [];
-  
-  const addNewMessage = (type: FeedbackMessageData['type']) => {
-    addFeedbackMessage({
-      type,
-      message: { ar: '', en: '' },
-    });
-  };
+  const feedbackAssignments = extras.feedbackAssignments || [];
   
   return (
     <div className="space-y-8">
@@ -361,84 +355,196 @@ export function ExtrasStep({ muscles, equipment, tags }: ExtrasStepProps) {
       </div>
       
       {/* Feedback Messages */}
-      <div className="space-y-4 pt-6 border-t">
-        <div className="flex items-center gap-2">
-          <h3 className="text-xl font-bold text-gray-900">Feedback Messages</h3>
-          <Label tooltip="Messages shown to the user during or after the exercise." />
-        </div>
-        
-        <div className="grid gap-4">
-          {/* Message Types */}
-          {(['motivational', 'tip'] as const).map((type) => {
-            const typeMessages = feedbackMessages.filter(m => m.type === type);
-            const typeConfig = {
-              motivational: { label: '💪 Motivational', variant: 'success' as const },
-              tip: { label: '💡 Tips', variant: 'primary' as const },
-            };
-            const { label } = typeConfig[type];
-            
-            return (
-              <Card key={type}>
-                <CardHeader className="pb-3">
-                  <div className="flex items-center justify-between">
-                    <CardTitle className="text-lg">{label}</CardTitle>
-                    <Button variant="ghost" size="sm" onClick={() => addNewMessage(type)} icon={<Plus className="h-4 w-4" />}>
-                      Add
+      <FeedbackMessagesSection
+        feedbackAssignments={feedbackAssignments}
+        addFeedbackAssignment={addFeedbackAssignment}
+        updateFeedbackAssignment={updateFeedbackAssignment}
+        removeFeedbackAssignment={removeFeedbackAssignment}
+      />
+    </div>
+  );
+}
+
+// ============================================
+// FEEDBACK MESSAGES SECTION (Library-based)
+// ============================================
+
+interface FeedbackMessagesSectionProps {
+  feedbackAssignments: FeedbackAssignmentData[];
+  addFeedbackAssignment: (assignment: FeedbackAssignmentData) => void;
+  updateFeedbackAssignment: (index: number, assignment: FeedbackAssignmentData) => void;
+  removeFeedbackAssignment: (index: number) => void;
+}
+
+function FeedbackMessagesSection({
+  feedbackAssignments,
+  addFeedbackAssignment,
+  updateFeedbackAssignment,
+  removeFeedbackAssignment,
+}: FeedbackMessagesSectionProps) {
+  const [pickerOpen, setPickerOpen] = useState(false);
+  const [pickerType, setPickerType] = useState<'motivational' | 'tip'>('motivational');
+  const [replaceIndex, setReplaceIndex] = useState<number | null>(null);
+  const [createOpen, setCreateOpen] = useState(false);
+  const [createType, setCreateType] = useState<'motivational' | 'tip'>('motivational');
+
+  const openPicker = (type: 'motivational' | 'tip', index?: number) => {
+    setPickerType(type);
+    setReplaceIndex(index ?? null);
+    setPickerOpen(true);
+  };
+
+  const openCreate = (type: 'motivational' | 'tip') => {
+    setCreateType(type);
+    setCreateOpen(true);
+  };
+
+  const handlePickerSelect = (messages: MessageOption[]) => {
+    if (messages.length === 0) return;
+    if (replaceIndex !== null) {
+      const msg = messages[0];
+      updateFeedbackAssignment(replaceIndex, {
+        messageId: msg.id,
+        context: pickerType,
+        message: {
+          ar: msg.content.ar || '',
+          en: msg.content.en || '',
+          audioAr: msg.content.audioAr,
+          audioEn: msg.content.audioEn,
+        },
+      });
+      return;
+    }
+    for (const msg of messages) {
+      addFeedbackAssignment({
+        messageId: msg.id,
+        context: pickerType,
+        message: {
+          ar: msg.content.ar || '',
+          en: msg.content.en || '',
+          audioAr: msg.content.audioAr,
+          audioEn: msg.content.audioEn,
+        },
+      });
+    }
+  };
+
+  const handleCreated = (message: MessageFormData) => {
+    if (!message.id) return;
+    addFeedbackAssignment({
+      messageId: message.id,
+      context: createType,
+      message: {
+        ar: message.content?.ar || '',
+        en: message.content?.en || '',
+        audioAr: message.content?.audioAr,
+        audioEn: message.content?.audioEn,
+      },
+    });
+  };
+
+  return (
+    <div className="space-y-4 pt-6 border-t">
+      <div className="flex items-center gap-2">
+        <h3 className="text-xl font-bold text-gray-900">Feedback Messages</h3>
+        <Label tooltip="Pick reusable messages from the library for this exercise." />
+      </div>
+
+      <div className="grid gap-4">
+        {(['motivational', 'tip'] as const).map((type) => {
+          const typeAssignments = feedbackAssignments.filter((m) => m.context === type);
+          const typeConfig = {
+            motivational: { label: 'Motivational', icon: '💪' },
+            tip: { label: 'Tips', icon: '💡' },
+          };
+          const { label, icon } = typeConfig[type];
+
+          return (
+            <Card key={type}>
+              <CardHeader className="pb-3">
+                <div className="flex items-center justify-between">
+                  <CardTitle className="text-lg">
+                    {icon} {label}
+                  </CardTitle>
+                  <div className="flex items-center gap-2">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => openPicker(type)}
+                      icon={<Library className="h-4 w-4" />}
+                    >
+                      From Library
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => openCreate(type)}
+                      icon={<Plus className="h-4 w-4" />}
+                    >
+                      New Message
                     </Button>
                   </div>
-                </CardHeader>
-                <CardContent className="space-y-3">
-                  {typeMessages.map((msg, idx) => {
-                    const globalIndex = feedbackMessages.indexOf(msg);
-                    return (
-                      <div key={idx} className="flex gap-2 items-start">
-                        <div className="flex-1">
-                          <SmartLocalizedInput
-                            label=""
-                            value={msg.message}
-                            onChange={(value) => updateFeedbackMessage(globalIndex, {
-                              ...msg,
-                              message: value,
-                            })}
-                            audioValue={{
-                              ar: msg.message.audioAr,
-                              en: msg.message.audioEn,
-                            }}
-                            onAudioChange={(audio) => updateFeedbackMessage(globalIndex, {
-                              ...msg,
-                              message: {
-                                ...msg.message,
-                                audioAr: audio.ar,
-                                audioEn: audio.en,
-                              },
-                            })}
-                            enableTranslation
-                            enableTTS
-                            translationContext={type === 'motivational' ? 'fitness motivational message' : 'fitness exercise tip'}
-                            variant="inline"
-                          />
-                        </div>
+                </div>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                {typeAssignments.map((assignment, idx) => {
+                  const globalIndex = feedbackAssignments.indexOf(assignment);
+                  const message = assignment.message;
+                  return (
+                    <div key={idx} className="flex gap-2 items-start">
+                      <div className="flex-1">
+                        <div className="text-sm text-gray-900 truncate">{message?.en || '—'}</div>
+                        <div className="text-sm text-gray-600 truncate" dir="rtl">{message?.ar || '—'}</div>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => openPicker(type, globalIndex)}
+                        >
+                          Change
+                        </Button>
                         <Button
                           variant="ghost"
                           size="icon"
-                          onClick={() => removeFeedbackMessage(globalIndex)}
-                          className="text-red-500 hover:text-red-700 mt-1"
+                          onClick={() => removeFeedbackAssignment(globalIndex)}
+                          className="text-red-500 hover:text-red-700"
                         >
                           <X className="h-4 w-4" />
                         </Button>
                       </div>
-                    );
-                  })}
-                  
-                  {typeMessages.length === 0 && (
-                    <p className="text-sm text-gray-400 italic text-center py-2">No {type.replace('_', ' ')} messages</p>
-                  )}
-                </CardContent>
-              </Card>
-            );
-          })}
-        </div>
+                    </div>
+                  );
+                })}
+
+                {typeAssignments.length === 0 && (
+                  <p className="text-sm text-gray-400 italic text-center py-2">
+                    No {type.replace('_', ' ')} messages
+                  </p>
+                )}
+              </CardContent>
+            </Card>
+          );
+        })}
       </div>
+
+      <MessagePickerModal
+        open={pickerOpen}
+        onOpenChange={setPickerOpen}
+        onSelect={handlePickerSelect}
+        multiple={replaceIndex === null}
+        categoryFilter={pickerType}
+        title={`Pick ${pickerType === 'motivational' ? 'Motivational' : 'Tip'} Messages`}
+        description="Select messages from the library to add to this exercise."
+        createDefaults={{ category: pickerType }}
+      />
+
+      <MessageFormModal
+        open={createOpen}
+        onOpenChange={setCreateOpen}
+        onSaved={handleCreated}
+        defaults={{ category: createType, context: createType }}
+      />
     </div>
   );
 }

@@ -2,7 +2,10 @@ package com.trainingvalidator.poc.pose
 
 import android.content.Context
 import android.graphics.Bitmap
+import android.graphics.Canvas
 import android.graphics.Matrix
+import android.graphics.Paint
+import android.graphics.RectF
 import android.os.SystemClock
 import android.util.Log
 import androidx.camera.core.ImageProxy
@@ -80,6 +83,15 @@ class PoseLandmarkerHelper(
     
     // Reusable Matrix to avoid allocation on every frame
     private val reusableMatrix = Matrix()
+    
+    // Bitmap pool for transformed frames - alternates between 2 bitmaps
+    // to avoid concurrent access (current frame + MediaPipe processing previous)
+    private val transformedBitmapPool = arrayOfNulls<Bitmap>(2)
+    private var transformPoolIndex = 0
+    private var reusableCanvas: Canvas? = null
+    private val srcRectF = RectF()
+    private val dstRectF = RectF()
+    private val transformPaint = Paint(Paint.FILTER_BITMAP_FLAG)
 
     /**
      * Initialize the pose landmarker with optimal settings
@@ -177,11 +189,32 @@ class PoseLandmarkerHelper(
                 )
             }
             
-            val rotatedBitmap = Bitmap.createBitmap(
-                buffer, 0, 0,
-                buffer.width, buffer.height,
-                reusableMatrix, true
-            )
+            // OPTIMIZED: Reuse pooled bitmaps instead of allocating new Bitmap every frame
+            // Calculate output dimensions from matrix transformation
+            srcRectF.set(0f, 0f, buffer.width.toFloat(), buffer.height.toFloat())
+            reusableMatrix.mapRect(dstRectF, srcRectF)
+            val rotatedWidth = Math.round(dstRectF.width())
+            val rotatedHeight = Math.round(dstRectF.height())
+            
+            // Alternate between 2 pooled bitmaps to avoid concurrent access
+            // (current frame write vs MediaPipe still reading previous frame)
+            transformPoolIndex = (transformPoolIndex + 1) % 2
+            var rotatedBitmap = transformedBitmapPool[transformPoolIndex]
+            if (rotatedBitmap == null || rotatedBitmap.width != rotatedWidth ||
+                rotatedBitmap.height != rotatedHeight || rotatedBitmap.isRecycled) {
+                rotatedBitmap = Bitmap.createBitmap(rotatedWidth, rotatedHeight, Bitmap.Config.ARGB_8888)
+                transformedBitmapPool[transformPoolIndex] = rotatedBitmap
+            }
+            
+            // Draw transformed bitmap onto pooled bitmap using Canvas
+            // (replicates Bitmap.createBitmap(source, matrix) logic without allocation)
+            val canvas = reusableCanvas ?: Canvas().also { reusableCanvas = it }
+            canvas.setBitmap(rotatedBitmap)
+            canvas.save()
+            canvas.translate(-dstRectF.left, -dstRectF.top)
+            canvas.concat(reusableMatrix)
+            canvas.drawBitmap(buffer, 0f, 0f, transformPaint)
+            canvas.restore()
             
             // Store dimensions for the result callback
             lastImageWidth = rotatedBitmap.width
@@ -247,6 +280,17 @@ class PoseLandmarkerHelper(
         poseLandmarker?.close()
         poseLandmarker = null
         isInitialized = false
+        
+        // Clean up pooled bitmaps to free memory
+        transformedBitmapPool.forEachIndexed { i, bmp ->
+            bmp?.recycle()
+            transformedBitmapPool[i] = null
+        }
+        bitmapBuffer?.recycle()
+        bitmapBuffer = null
+        reusableCanvas?.setBitmap(null)
+        reusableCanvas = null
+        
         Log.d(TAG, "PoseLandmarker closed")
     }
 

@@ -1,6 +1,5 @@
 package com.trainingvalidator.poc.overlay
 
-import android.animation.ValueAnimator
 import android.content.Context
 import android.graphics.Canvas
 import android.graphics.Color
@@ -8,9 +7,9 @@ import android.graphics.LinearGradient
 import android.graphics.Paint
 import android.graphics.Path
 import android.graphics.Shader
+import android.os.SystemClock
 import android.util.AttributeSet
 import android.view.View
-import android.view.animation.AccelerateDecelerateInterpolator
 import com.google.mediapipe.tasks.vision.poselandmarker.PoseLandmarker
 import com.trainingvalidator.poc.analysis.JointAngles
 import com.trainingvalidator.poc.analysis.SmoothedLandmark
@@ -63,7 +62,8 @@ class SkeletonOverlayView @JvmOverloads constructor(
         private val COLOR_GLOW = Color.parseColor("#4000E676")             // Green glow
         
         // Color smoothing constants (prevents flickering)
-        const val COLOR_LERP_FACTOR = 0.25f  // How fast to transition (0.1 = slow, 0.5 = fast)
+        // Higher = faster transitions = less visual lag. Lower = smoother but more lag.
+        const val COLOR_LERP_FACTOR = 0.5f  // Doubled from 0.25 to reduce visual lag
     }
     
     // ==================== Cached values for performance ====================
@@ -211,10 +211,8 @@ class SkeletonOverlayView @JvmOverloads constructor(
     private val previousColors = mutableMapOf<String, Int>()
     private val previousStates = mutableMapOf<String, JointState>()
     
-    // Flow animation
-    private var flowAnimator: ValueAnimator? = null
+    // Flow animation phase - calculated from system time in onDraw (no ValueAnimator overhead)
     private var flowPhase: Float = 0f
-    private var isFlowAnimating = false
 
     
     // Visual Indicators
@@ -227,9 +225,6 @@ class SkeletonOverlayView @JvmOverloads constructor(
     private var showIndicators = true
 
     init {
-        // Start flow animation
-        startFlowAnimation()
-        
         // Read indicator type from settings
         useArcIndicator = SettingsManager.useArcIndicator()
         showIndicators = true
@@ -262,23 +257,17 @@ class SkeletonOverlayView @JvmOverloads constructor(
     }
     
     /**
-     * Start subtle flow animation for skeleton
+     * Calculate flow phase from system time (replaces ValueAnimator)
+     * 
+     * Benefits over ValueAnimator:
+     * - No continuous invalidate() calls (was causing 60fps redraws even without new pose data)
+     * - Flow phase is now calculated on-demand only when onDraw is triggered by new pose data
+     * - Reduces Main Thread workload by ~50% (from 60fps to ~30fps redraws)
      */
-    private fun startFlowAnimation() {
-        flowAnimator?.cancel()
-        flowAnimator = ValueAnimator.ofFloat(0f, 1f).apply {
-            duration = 2000L
-            repeatCount = ValueAnimator.INFINITE
-            repeatMode = ValueAnimator.RESTART
-            interpolator = AccelerateDecelerateInterpolator()
-            addUpdateListener { animator ->
-                flowPhase = animator.animatedValue as Float
-                if (isTrainingMode && landmarks != null) {
-                    invalidate()
-                }
-            }
+    private fun updateFlowPhase() {
+        if (isTrainingMode) {
+            flowPhase = (SystemClock.uptimeMillis() % 2000L) / 2000f
         }
-        // Don't start immediately - start when training begins
     }
 
     /**
@@ -388,15 +377,6 @@ class SkeletonOverlayView @JvmOverloads constructor(
             trackedIndices.map { BodyLandmarks.getMirroredIndex(it) }.toSet()
         } else {
             trackedIndices
-        }
-        
-        // Control flow animation
-        if (enabled && !isFlowAnimating) {
-            flowAnimator?.start()
-            isFlowAnimating = true
-        } else if (!enabled && isFlowAnimating) {
-            flowAnimator?.cancel()
-            isFlowAnimating = false
         }
         
         invalidate()
@@ -516,6 +496,9 @@ class SkeletonOverlayView @JvmOverloads constructor(
         super.onDraw(canvas)
         val currentLandmarks = landmarks ?: return
         if (currentLandmarks.isEmpty()) return
+
+        // Calculate flow phase from system time (replaces ValueAnimator continuous invalidation)
+        updateFlowPhase()
 
         // TRAINING MODE: Show Range Indicators (Arc or Line based on settings)
         // NON-TRAINING MODE: Show full skeleton
@@ -1721,6 +1704,5 @@ class SkeletonOverlayView @JvmOverloads constructor(
     
     override fun onDetachedFromWindow() {
         super.onDetachedFromWindow()
-        flowAnimator?.cancel()
     }
 }

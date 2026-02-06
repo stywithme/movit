@@ -94,8 +94,92 @@ function buildLocalizedName(code: string, map?: Record<string, { ar: string; en:
   return { ar: title, en: title };
 }
 
+function normalizeMessageContent(content: { ar?: string; en?: string; audioAr?: string; audioEn?: string }) {
+  return {
+    ar: content.ar || '',
+    en: content.en || '',
+    audioAr: content.audioAr,
+    audioEn: content.audioEn,
+  };
+}
+
+async function clearDatabase() {
+  console.log('🧹 Clearing existing data...');
+  await prisma.$transaction([
+    prisma.repMetrics.deleteMany(),
+    prisma.sessionMetrics.deleteMany(),
+    prisma.trainingSession.deleteMany(),
+    prisma.refreshToken.deleteMany(),
+    prisma.workoutExercise.deleteMany(),
+    prisma.workout.deleteMany(),
+    prisma.feedbackMessageAssignment.deleteMany(),
+    prisma.feedbackMessageTemplate.deleteMany(),
+    prisma.positionCheck.deleteMany(),
+    prisma.poseVariant.deleteMany(),
+    prisma.exerciseMedia.deleteMany(),
+    prisma.exerciseAttribute.deleteMany(),
+    prisma.exercise.deleteMany(),
+    prisma.cameraPositionJoint.deleteMany(),
+    prisma.cameraPosition.deleteMany(),
+    prisma.difficultyLevel.deleteMany(),
+    prisma.attributeValue.deleteMany(),
+    prisma.attribute.deleteMany(),
+    prisma.user.deleteMany(),
+    prisma.admin.deleteMany(),
+  ]);
+  console.log('✅ Database cleared');
+}
+
 async function main() {
   console.log('🌱 Seeding database...');
+
+  await clearDatabase();
+
+  const messageIdByKey = new Map<string, string>();
+  const messageCounters = new Map<string, number>();
+
+  const nextMessageCode = (category: string) => {
+    const current = messageCounters.get(category) || 0;
+    const next = current + 1;
+    messageCounters.set(category, next);
+    return `MSG_${category.toUpperCase()}_${String(next).padStart(4, '0')}`;
+  };
+
+  const ensureMessageTemplate = async (params: {
+    category: string;
+    context?: string | null;
+    content: { ar?: string; en?: string; audioAr?: string; audioEn?: string };
+    tags?: string[];
+    isSystem?: boolean;
+  }) => {
+    const normalized = normalizeMessageContent(params.content);
+    const key = [
+      params.category,
+      params.context || '',
+      normalized.ar,
+      normalized.en,
+      normalized.audioAr || '',
+      normalized.audioEn || '',
+    ].join('|');
+
+    const existingId = messageIdByKey.get(key);
+    if (existingId) return existingId;
+
+    const created = await prisma.feedbackMessageTemplate.create({
+      data: {
+        code: nextMessageCode(params.category),
+        category: params.category,
+        context: params.context || null,
+        content: normalized as object,
+        tags: params.tags || [],
+        isSystem: params.isSystem ?? false,
+        isActive: true,
+      },
+    });
+
+    messageIdByKey.set(key, created.id);
+    return created.id;
+  };
 
   // ============================================
   // ATTRIBUTES (Types)
@@ -433,6 +517,27 @@ async function main() {
   console.log('✅ Attribute values created');
 
   // ============================================
+  // MESSAGE TEMPLATES (Base Library)
+  // ============================================
+  const baseMessageTemplates = [
+    { category: 'state', context: 'perfect', content: { ar: 'ممتاز!', en: 'Perfect!' }, tags: ['state', 'perfect'] },
+    { category: 'state', context: 'normal', content: { ar: 'جيد', en: 'Good' }, tags: ['state', 'normal'] },
+    { category: 'state', context: 'pad', content: { ar: 'مقبول', en: 'Acceptable' }, tags: ['state', 'pad'] },
+    { category: 'state', context: 'warning', content: { ar: 'تحقق من وضعك', en: 'Check your position' }, tags: ['state', 'warning'] },
+    { category: 'state', context: 'danger', content: { ar: 'توقف! وضع خطير', en: 'Stop! Dangerous position' }, tags: ['state', 'danger'] },
+    { category: 'motivational', context: 'motivational', content: { ar: 'استمر!', en: 'Keep going!' }, tags: ['motivational'] },
+    { category: 'motivational', context: 'motivational', content: { ar: 'أداء ممتاز!', en: 'Great job!' }, tags: ['motivational'] },
+    { category: 'tip', context: 'tip', content: { ar: 'حافظ على الوضع الصحيح', en: 'Maintain proper form' }, tags: ['tip'] },
+    { category: 'position', context: 'error', content: { ar: 'ضعية غير صحيحة', en: 'Incorrect position' }, tags: ['position', 'error'] },
+  ];
+
+  for (const template of baseMessageTemplates) {
+    await ensureMessageTemplate(template);
+  }
+
+  console.log('✅ Base message templates created');
+
+  // ============================================
   // CAMERA POSITIONS (With schemaCode for Android export)
   // ============================================
   // Internal codes (side_left, side_right, front, back) are more specific
@@ -557,7 +662,7 @@ async function main() {
   // EXERCISES & WORKOUTS (Android Assets)
   // ============================================
 
-  const assetsDir = path.resolve(__dirname, '../../android-poc/app/src/main/assets');
+  const assetsDir = path.resolve(__dirname, '../../Docs/Old-way-json');
   const exercisesDir = path.join(assetsDir, 'exercises');
   const workoutsDir = path.join(assetsDir, 'workouts');
 
@@ -604,7 +709,25 @@ async function main() {
     }
   }
 
-  const exerciseFiles = (await fs.readdir(exercisesDir)).filter((file) => file.endsWith('.json'));
+  const exercisesDirExists = await fs
+    .stat(exercisesDir)
+    .then(() => true)
+    .catch(() => false);
+  const workoutsDirExists = await fs
+    .stat(workoutsDir)
+    .then(() => true)
+    .catch(() => false);
+
+  if (!exercisesDirExists) {
+    console.warn(`⚠️ Exercises directory not found: ${exercisesDir}`);
+  }
+  if (!workoutsDirExists) {
+    console.warn(`⚠️ Workouts directory not found: ${workoutsDir}`);
+  }
+
+  const exerciseFiles = exercisesDirExists
+    ? (await fs.readdir(exercisesDir)).filter((file) => file.endsWith('.json'))
+    : [];
 
   for (const file of exerciseFiles) {
     const filePath = path.join(exercisesDir, file);
@@ -782,6 +905,21 @@ async function main() {
         },
       });
 
+      const assignments: Array<{
+        poseVariantId: string;
+        messageId: string;
+        target: string;
+        context?: string | null;
+        jointCode?: string | null;
+        zone?: string | null;
+        checkId?: string | null;
+        sortOrder: number;
+      }> = [];
+      let assignmentOrder = 1;
+      const addAssignment = (data: Omit<(typeof assignments)[number], 'sortOrder'>) => {
+        assignments.push({ ...data, sortOrder: assignmentOrder++ });
+      };
+
       if (variant.positionChecks && variant.positionChecks.length > 0) {
         await prisma.positionCheck.createMany({
           data: variant.positionChecks.map((check, index) => ({
@@ -798,29 +936,109 @@ async function main() {
             sortOrder: index + 1,
           })),
         });
+
+        for (const check of variant.positionChecks) {
+          if (!check.errorMessage) continue;
+          const messageId = await ensureMessageTemplate({
+            category: 'position',
+            context: 'error',
+            content: check.errorMessage,
+            tags: ['position', 'error'],
+          });
+          addAssignment({
+            poseVariantId: poseVariant.id,
+            messageId,
+            target: 'position',
+            context: 'error',
+            checkId: check.id,
+          });
+        }
+      }
+
+      const trackedJoints = Array.isArray(variant.trackedJoints) ? variant.trackedJoints : [];
+      for (const joint of trackedJoints) {
+        const jointCode = joint?.joint || joint?.code;
+        if (!jointCode || !joint.stateMessages) continue;
+        const stateMessages = joint.stateMessages as Record<string, unknown>;
+        for (const [state, value] of Object.entries(stateMessages)) {
+          if (!value) continue;
+          if (typeof value === 'object' && ('up' in value || 'down' in value)) {
+            const zoneValue = value as Record<string, { ar?: string; en?: string; audioAr?: string; audioEn?: string } | undefined>;
+            for (const zone of ['up', 'down'] as const) {
+              const msg = zoneValue[zone];
+              if (!msg || (!msg.ar && !msg.en)) continue;
+              const messageId = await ensureMessageTemplate({
+                category: 'state',
+                context: state,
+                content: msg,
+                tags: ['state', state],
+              });
+              addAssignment({
+                poseVariantId: poseVariant.id,
+                messageId,
+                target: 'joint_state',
+                context: state,
+                jointCode,
+                zone,
+              });
+            }
+          } else {
+            const msg = value as { ar?: string; en?: string; audioAr?: string; audioEn?: string };
+            if (!msg || (!msg.ar && !msg.en)) continue;
+            const messageId = await ensureMessageTemplate({
+              category: 'state',
+              context: state,
+              content: msg,
+              tags: ['state', state],
+            });
+            addAssignment({
+              poseVariantId: poseVariant.id,
+              messageId,
+              target: 'joint_state',
+              context: state,
+              jointCode,
+            });
+          }
+        }
       }
 
       const feedbackMessages = variant.feedbackMessages || {};
       const motivational = feedbackMessages.motivational || [];
       const tips = feedbackMessages.tips || [];
-      const feedbackData = [
-        ...motivational.map((msg, index) => ({
-          poseVariantId: poseVariant.id,
-          type: 'motivational',
-          message: msg,
-          sortOrder: index + 1,
-        })),
-        ...tips.map((msg, index) => ({
-          poseVariantId: poseVariant.id,
-          type: 'tip',
-          message: msg,
-          sortOrder: motivational.length + index + 1,
-        })),
-      ];
 
-      if (feedbackData.length > 0) {
-        await prisma.feedbackMessage.createMany({
-          data: feedbackData,
+      for (const msg of motivational) {
+        const messageId = await ensureMessageTemplate({
+          category: 'motivational',
+          context: 'motivational',
+          content: msg,
+          tags: ['motivational'],
+        });
+        addAssignment({
+          poseVariantId: poseVariant.id,
+          messageId,
+          target: 'feedback',
+          context: 'motivational',
+        });
+      }
+
+      for (const msg of tips) {
+        const messageId = await ensureMessageTemplate({
+          category: 'tip',
+          context: 'tip',
+          content: msg,
+          tags: ['tip'],
+        });
+        addAssignment({
+          poseVariantId: poseVariant.id,
+          messageId,
+          target: 'feedback',
+          context: 'tip',
+        });
+      }
+
+      if (assignments.length > 0) {
+        await prisma.feedbackMessageAssignment.createMany({
+          data: assignments,
         });
       }
     }
@@ -828,7 +1046,9 @@ async function main() {
 
   console.log('✅ Exercises seeded from assets');
 
-  const workoutFiles = (await fs.readdir(workoutsDir)).filter((file) => file.endsWith('.json'));
+  const workoutFiles = workoutsDirExists
+    ? (await fs.readdir(workoutsDir)).filter((file) => file.endsWith('.json'))
+    : [];
 
   for (const file of workoutFiles) {
     const filePath = path.join(workoutsDir, file);

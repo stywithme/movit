@@ -130,23 +130,6 @@ class RepCounter(
     // ==================== State Tracking ====================
     
     /**
-     * Update the worst state during current rep (legacy method)
-     * Called each frame during critical phases (BOTTOM/EXTENDED)
-     */
-    fun updateWorstState(state: JointState) {
-        // Update worst state using JointState.isWorseThan
-        if (state.isWorseThan(currentRepWorstState)) {
-            currentRepWorstState = state
-            // Debug logging disabled for performance
-        }
-        
-        // For HOLD exercises, track time in each state
-        if (isHoldExercise) {
-            updateStateTimeTracking(state)
-        }
-    }
-    
-    /**
      * NEW: Update with full joint state information for weighted scoring
      * This is the preferred method - provides more accurate scoring
      * 

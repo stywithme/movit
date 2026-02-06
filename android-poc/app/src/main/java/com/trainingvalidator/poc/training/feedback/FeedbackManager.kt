@@ -862,7 +862,13 @@ class FeedbackManager(
      * 
      * @param feedbackMessages The exercise's FeedbackMessages (motivational + tips)
      */
-    fun setRandomMessages(feedbackMessages: FeedbackMessages) {
+    fun setRandomMessages(feedbackMessages: FeedbackMessages?) {
+        if (feedbackMessages == null) {
+            availableMotivationalMessages = emptyList()
+            availableTipMessages = emptyList()
+            Log.d(TAG, "Random messages cleared: feedbackMessages is null")
+            return
+        }
         availableMotivationalMessages = feedbackMessages.motivational
         availableTipMessages = feedbackMessages.tips
         Log.d(TAG, "Random messages set: ${availableMotivationalMessages.size} motivational, ${availableTipMessages.size} tips")

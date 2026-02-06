@@ -75,14 +75,14 @@ export function ReviewStep() {
         minErrorFrames: pc.minErrorFrames,
       }));
       
-      // Build feedback messages
+      // Build feedback messages (from assignments - preview only)
       const feedbackMessages = {
-        motivational: (store.extras.feedbackMessages || [])
-          .filter(m => m.type === 'motivational')
-          .map(m => m.message),
-        tips: (store.extras.feedbackMessages || [])
-          .filter(m => m.type === 'tip')
-          .map(m => m.message),
+        motivational: (store.extras.feedbackAssignments || [])
+          .filter(m => m.context === 'motivational')
+          .map(m => m.message || { ar: '', en: '' }),
+        tips: (store.extras.feedbackAssignments || [])
+          .filter(m => m.context === 'tip')
+          .map(m => m.message || { ar: '', en: '' }),
       };
       
       // Build rep counting config
@@ -147,7 +147,7 @@ export function ReviewStep() {
     primaryJoints: store.jointConfig.trackedJoints?.filter(j => j.role === 'primary').length || 0,
     secondaryJoints: store.jointConfig.trackedJoints?.filter(j => j.role === 'secondary').length || 0,
     positionChecks: store.positionChecks.positionChecks?.length || 0,
-    feedbackMessages: store.extras.feedbackMessages?.length || 0,
+    feedbackMessages: store.extras.feedbackAssignments?.length || 0,
     cameraPositions: store.cameraPosition.cameraPositionIds?.length || 0,
   }), [store]);
   

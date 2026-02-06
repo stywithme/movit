@@ -20,7 +20,7 @@ import type {
   ExtrasData,
   TrackedJointData,
   PositionCheckData,
-  FeedbackMessageData,
+  FeedbackAssignmentData,
 } from '@/modules/exercises/exercises.validation';
 import type { MetricCode } from '@/modules/exercises/exercises.types';
 
@@ -102,10 +102,10 @@ export interface WizardActions {
   updatePositionCheck: (index: number, check: PositionCheckData) => void;
   removePositionCheck: (index: number) => void;
   
-  // Feedback message helpers
-  addFeedbackMessage: (message: FeedbackMessageData) => void;
-  updateFeedbackMessage: (index: number, message: FeedbackMessageData) => void;
-  removeFeedbackMessage: (index: number) => void;
+  // Feedback assignment helpers
+  addFeedbackAssignment: (assignment: FeedbackAssignmentData) => void;
+  updateFeedbackAssignment: (index: number, assignment: FeedbackAssignmentData) => void;
+  removeFeedbackAssignment: (index: number) => void;
   
   // Save state
   setExerciseId: (id: string) => void;
@@ -164,7 +164,7 @@ const initialState: WizardState = {
     muscles: [],
     equipment: [],
     tags: [],
-    feedbackMessages: [],
+    feedbackAssignments: [],
   },
   
   // Weight & Metrics defaults
@@ -316,28 +316,28 @@ export const useWizardStore = create<WizardStore>()(
         isDirty: true,
       })),
       
-      // Feedback message helpers
-      addFeedbackMessage: (message) => set((state) => ({
+      // Feedback assignment helpers
+      addFeedbackAssignment: (assignment) => set((state) => ({
         extras: {
           ...state.extras,
-          feedbackMessages: [...(state.extras.feedbackMessages || []), message],
+          feedbackAssignments: [...(state.extras.feedbackAssignments || []), assignment],
         },
         isDirty: true,
       })),
       
-      updateFeedbackMessage: (index, message) => set((state) => {
-        const messages = [...(state.extras.feedbackMessages || [])];
-        messages[index] = message;
+      updateFeedbackAssignment: (index, assignment) => set((state) => {
+        const assignments = [...(state.extras.feedbackAssignments || [])];
+        assignments[index] = assignment;
         return {
-          extras: { ...state.extras, feedbackMessages: messages },
+          extras: { ...state.extras, feedbackAssignments: assignments },
           isDirty: true,
         };
       }),
       
-      removeFeedbackMessage: (index) => set((state) => ({
+      removeFeedbackAssignment: (index) => set((state) => ({
         extras: {
           ...state.extras,
-          feedbackMessages: (state.extras.feedbackMessages || []).filter((_, i) => i !== index),
+          feedbackAssignments: (state.extras.feedbackAssignments || []).filter((_, i) => i !== index),
         },
         isDirty: true,
       })),

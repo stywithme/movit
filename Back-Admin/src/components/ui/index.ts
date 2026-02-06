@@ -14,3 +14,14 @@ export { Badge } from './Badge';
 export { Card, CardHeader, CardTitle, CardContent, CardFooter } from './Card';
 export { Checkbox } from './Checkbox';
 export { Label } from './Label';
+export {
+  Dialog,
+  DialogTrigger,
+  DialogClose,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogBody,
+  DialogFooter,
+} from './Dialog';

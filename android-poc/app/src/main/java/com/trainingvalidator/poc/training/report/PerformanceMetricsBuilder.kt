@@ -48,7 +48,7 @@ object PerformanceMetricsBuilder {
         val stateBreakdown = summary.stateBreakdown
         
         // Calculate form score from state distribution (always shown)
-        val formScore = calculateFormScore(stateBreakdown)
+        val formScore = calculateFormScore(report, stateBreakdown)
         
         // ROM - use pre-calculated value from summary
         val romMetric = if (shouldShow(config, MetricCode.ROM)) {
@@ -177,37 +177,43 @@ object PerformanceMetricsBuilder {
         return config.shouldShowMetric(metric)
     }
     
-    private fun calculateFormScore(breakdown: StateBreakdown): MetricWithStatus {
-        // Use ScoreCalculator rates for consistency
-        // PERFECT = 100, NORMAL = 80, PAD = 60, WARNING = 40, DANGER = 0
-        val total = breakdown.total.toFloat()
-        if (total == 0f) {
-            return MetricWithStatus.fromPercentage(0f)
+    private fun calculateFormScore(report: PostTrainingReport, breakdown: StateBreakdown): MetricWithStatus {
+        // Prefer timeline scores when available to match overall quality logic.
+        val timelineScores = report.repTimeline.map { it.score }
+        val scoreValue = if (timelineScores.isNotEmpty()) {
+            timelineScores.average().toFloat()
+        } else {
+            // Fallback: Use state breakdown with ScoreCalculator rates
+            // PERFECT = 100, NORMAL = 80, PAD = 60, WARNING = 40, DANGER = 0
+            val total = breakdown.total.toFloat()
+            if (total == 0f) {
+                0f
+            } else {
+                (
+                    breakdown.perfectCount * ScoreCalculator.getScoreRate(JointState.PERFECT) +
+                    breakdown.normalCount * ScoreCalculator.getScoreRate(JointState.NORMAL) +
+                    breakdown.padCount * ScoreCalculator.getScoreRate(JointState.PAD) +
+                    breakdown.warningCount * ScoreCalculator.getScoreRate(JointState.WARNING) +
+                    breakdown.dangerCount * ScoreCalculator.getScoreRate(JointState.DANGER)
+                ) / total
+            }
         }
         
-        val weightedScore = (
-            breakdown.perfectCount * ScoreCalculator.getScoreRate(JointState.PERFECT) +
-            breakdown.normalCount * ScoreCalculator.getScoreRate(JointState.NORMAL) +
-            breakdown.padCount * ScoreCalculator.getScoreRate(JointState.PAD) +
-            breakdown.warningCount * ScoreCalculator.getScoreRate(JointState.WARNING) +
-            breakdown.dangerCount * ScoreCalculator.getScoreRate(JointState.DANGER)
-        ) / total
-        
         return MetricWithStatus.fromPercentage(
-            weightedScore,
+            scoreValue,
             advice = when {
-                weightedScore >= 90 -> LocalizedText(ar = "شكل ممتاز!", en = "Excellent form!")
-                weightedScore >= 70 -> LocalizedText(ar = "شكل جيد", en = "Good form")
+                scoreValue >= 90 -> LocalizedText(ar = "شكل ممتاز!", en = "Excellent form!")
+                scoreValue >= 70 -> LocalizedText(ar = "شكل جيد", en = "Good form")
                 else -> LocalizedText(ar = "ركز على الشكل", en = "Focus on form")
             }
         )
     }
     
     /**
-     * Format ROM metric from pre-calculated value
-     * 
-     * NOTE: avgROM is calculated in ReportGenerator from rep scores as a proxy.
-     * True ROM requires frame data with angle measurements.
+     * Format ROM metric from pre-calculated value.
+     *
+     * NOTE: avgROM uses real MotionRecorder metrics when available,
+     * otherwise falls back to a score-based proxy.
      */
     private fun formatROMMetric(avgROM: Float?): MetricWithStatus? {
         if (avgROM == null) return null
@@ -366,7 +372,35 @@ object PerformanceMetricsBuilder {
     }
     
     private fun calculateControlScore(report: PostTrainingReport, fatigueIndex: Int?): MetricWithStatus {
-        // Base score from consistency
+        val scoreValue = calculateControlScoreValue(
+            totalReps = report.summary.totalReps,
+            consistency = report.consistency,
+            fatigueIndex = fatigueIndex
+        )
+        
+        return MetricWithStatus.fromPercentage(
+            scoreValue,
+            advice = when {
+                fatigueIndex != null -> LocalizedText(
+                    ar = "بدأ التعب من العدة #$fatigueIndex",
+                    en = "Fatigue started at rep #$fatigueIndex"
+                )
+                scoreValue >= 90 -> LocalizedText(ar = "تحكم ممتاز", en = "Excellent control")
+                else -> LocalizedText(ar = "حافظ على الإيقاع", en = "Maintain the tempo")
+            }
+        )
+    }
+    
+    /**
+     * Shared Control score calculation for report and overall quality.
+     */
+    internal fun calculateControlScoreValue(
+        totalReps: Int,
+        consistency: ConsistencyMetrics?,
+        fatigueIndex: Int?
+    ): Float {
+        if (totalReps <= 0) return 50f  // Neutral when no reps are available
+        
         var score = 80f
         
         // Bonus for no fatigue
@@ -374,7 +408,6 @@ object PerformanceMetricsBuilder {
             score += 10f
         } else {
             // Penalize based on how early fatigue started
-            val totalReps = report.summary.totalReps
             val fatigueRatio = fatigueIndex.toFloat() / totalReps
             if (fatigueRatio < 0.5) {
                 score -= 20f
@@ -384,22 +417,12 @@ object PerformanceMetricsBuilder {
         }
         
         // Bonus for consistent timing
-        report.consistency?.let {
+        consistency?.let {
             if (it.variationMs < 1000) {
                 score += 10f
             }
         }
         
-        return MetricWithStatus.fromPercentage(
-            score.coerceIn(0f, 100f),
-            advice = when {
-                fatigueIndex != null -> LocalizedText(
-                    ar = "بدأ التعب من العدة #$fatigueIndex",
-                    en = "Fatigue started at rep #$fatigueIndex"
-                )
-                score >= 90 -> LocalizedText(ar = "تحكم ممتاز", en = "Excellent control")
-                else -> LocalizedText(ar = "حافظ على الإيقاع", en = "Maintain the tempo")
-            }
-        )
+        return score.coerceIn(0f, 100f)
     }
 }

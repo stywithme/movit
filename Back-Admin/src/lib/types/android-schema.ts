@@ -84,6 +84,11 @@ export type ConditionOperator =
 export type Severity = 'error' | 'warning' | 'tip';
 
 /**
+ * Message assignment targets
+ */
+export type MessageAssignmentTarget = 'joint_state' | 'feedback' | 'position';
+
+/**
  * Phase names (used in activePhases)
  */
 export type PhaseName = 
@@ -261,7 +266,7 @@ export interface PositionCheck {
   landmarks: PositionCheckLandmarks;
   condition: PositionCheckCondition;
   activePhases: PhaseName[];
-  errorMessage: LocalizedText;
+  errorMessage?: LocalizedText;
   severity: Severity;
   cooldownMs: number;
   minErrorFrames: number;
@@ -299,6 +304,19 @@ export interface FeedbackMessages {
   tips: LocalizedText[];
 }
 
+/**
+ * Message assignment (library-based)
+ */
+export interface MessageAssignment {
+  messageId: string;
+  target: MessageAssignmentTarget;
+  context?: string;
+  jointCode?: string;
+  zone?: 'up' | 'down';
+  checkId?: string;
+  sortOrder?: number;
+}
+
 // ============================================
 // POSE VARIANT
 // ============================================
@@ -313,6 +331,7 @@ export interface PoseVariantConfig {
   trackedJoints: TrackedJoint[];
   positionChecks?: PositionCheck[];
   feedbackMessages?: FeedbackMessages;
+  messageAssignments?: MessageAssignment[];
 }
 
 // ============================================

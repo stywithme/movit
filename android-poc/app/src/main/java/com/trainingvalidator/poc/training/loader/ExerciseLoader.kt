@@ -54,7 +54,9 @@ object ExerciseLoader {
         return try {
             assets.open(fileName).use { inputStream ->
                 InputStreamReader(inputStream).use { reader ->
-                    val config = gson.fromJson(reader, ExerciseConfig::class.java)
+                    val rawConfig = gson.fromJson(reader, ExerciseConfig::class.java)
+                    // Sanitize Gson-null fields (Gson ignores Kotlin default values)
+                    val config = rawConfig.sanitizeGsonDefaults()
                     // Store the file name for later use
                     config.fileName = exerciseName
                     Log.d(TAG, "Loaded exercise: ${config.name.en} (file: $exerciseName)")
@@ -179,7 +181,9 @@ object ExerciseLoader {
      */
     fun loadFromJson(json: String): ExerciseConfig? {
         return try {
-            gson.fromJson(json, ExerciseConfig::class.java)
+            val config = gson.fromJson(json, ExerciseConfig::class.java)
+            // Sanitize Gson-null fields (Gson ignores Kotlin default values)
+            config?.sanitizeGsonDefaults()
         } catch (e: Exception) {
             Log.e(TAG, "Error parsing JSON", e)
             null

@@ -101,11 +101,14 @@ export default function EditExercisePage() {
           minErrorFrames: (pc.minErrorFrames as number) || 3,
         }));
         
-        // Map feedback messages
-        const feedbackMessages = (firstVariant?.feedbackMessages || []).map((fm: Record<string, unknown>) => ({
-          type: fm.type as 'motivational' | 'tip',
-          message: fm.message as { ar: string; en: string },
-        }));
+        // Map feedback assignments (library-based)
+        const feedbackAssignments = (firstVariant?.messageAssignments || [])
+          .filter((assignment: Record<string, unknown>) => assignment.target === 'feedback')
+          .map((assignment: Record<string, unknown>) => ({
+            messageId: assignment.messageId as string,
+            context: assignment.context as 'motivational' | 'tip',
+            message: (assignment.message as { content?: { ar?: string; en?: string; audioAr?: string; audioEn?: string } } | undefined)?.content,
+          }));
         
         // Map attributes
         const muscles = exercise.attributes
@@ -173,7 +176,7 @@ export default function EditExercisePage() {
             muscles,
             equipment,
             tags,
-            feedbackMessages,
+            feedbackAssignments,
           },
           // Weight configuration
           weightConfig: {
@@ -246,10 +249,11 @@ export default function EditExercisePage() {
       sortOrder: idx + 1,
     }));
     
-    // Build feedback messages
-    const feedbackMessages = (store.extras.feedbackMessages || []).map((fm, idx) => ({
-      type: fm.type,
-      message: fm.message,
+    // Build feedback message assignments (library-based)
+    const feedbackAssignments = (store.extras.feedbackAssignments || []).map((assignment, idx) => ({
+      messageId: assignment.messageId,
+      target: 'feedback',
+      context: assignment.context,
       sortOrder: idx + 1,
     }));
     
@@ -283,7 +287,7 @@ export default function EditExercisePage() {
         referenceImageUrl: store.cameraPosition.referenceImages?.[cameraPositionId] || undefined,
         trackedJointsConfig,
         positionChecks,
-        feedbackMessages,
+        messageAssignments: feedbackAssignments.length > 0 ? feedbackAssignments : undefined,
         sortOrder: index + 1,
       })),
       // Weight configuration

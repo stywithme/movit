@@ -107,9 +107,11 @@ class ExerciseCacheManager(private val context: Context) {
                 ?.forEach { file ->
                     try {
                         val cached = gson.fromJson(file.readText(), CachedExercise::class.java)
+                        // Sanitize Gson-null fields (Gson ignores Kotlin default values)
+                        val sanitized = cached.copy(config = cached.config.sanitizeGsonDefaults())
                         // Restore fileName from slug (since it's @Transient and not serialized)
-                        cached.config.fileName = cached.slug
-                        exerciseCache[cached.slug] = cached
+                        sanitized.config.fileName = cached.slug
+                        exerciseCache[sanitized.slug] = sanitized
                     } catch (e: Exception) {
                         Log.w(TAG, "Failed to load exercise: ${file.name}", e)
                     }

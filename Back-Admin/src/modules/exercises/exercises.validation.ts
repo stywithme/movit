@@ -380,19 +380,20 @@ export type RepCountingConfigData = z.infer<typeof RepCountingConfigSchema>;
 // STEP 7: EXTRAS (ATTRIBUTES + FEEDBACK)
 // ============================================
 
-export const FeedbackMessageSchema = z.object({
-  type: z.enum(['motivational', 'tip']),
-  message: LocalizedTextSchema, // Includes audioAr and audioEn
+export const FeedbackAssignmentSchema = z.object({
+  messageId: z.string().min(1, 'Message is required'),
+  context: z.enum(['motivational', 'tip']),
+  message: LocalizedTextSchema.optional(), // UI preview only
 });
 
 export const ExtrasSchema = z.object({
   muscles: z.array(z.string().uuid()).default([]),
   equipment: z.array(z.string().uuid()).default([]),
   tags: z.array(z.string().uuid()).default([]),
-  feedbackMessages: z.array(FeedbackMessageSchema).default([]),
+  feedbackAssignments: z.array(FeedbackAssignmentSchema).default([]),
 });
 
-export type FeedbackMessageData = z.infer<typeof FeedbackMessageSchema>;
+export type FeedbackAssignmentData = z.infer<typeof FeedbackAssignmentSchema>;
 export type ExtrasData = z.infer<typeof ExtrasSchema>;
 
 // ============================================

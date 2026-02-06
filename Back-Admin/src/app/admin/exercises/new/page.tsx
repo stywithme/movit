@@ -122,10 +122,11 @@ export default function NewExercisePage() {
       sortOrder: idx + 1,
     }));
     
-    // Build feedback messages
-    const feedbackMessages = (store.extras.feedbackMessages || []).map((fm, idx) => ({
-      type: fm.type,
-      message: fm.message,
+    // Build feedback message assignments (library-based)
+    const feedbackAssignments = (store.extras.feedbackAssignments || []).map((assignment, idx) => ({
+      messageId: assignment.messageId,
+      target: 'feedback',
+      context: assignment.context,
       sortOrder: idx + 1,
     }));
     
@@ -159,7 +160,7 @@ export default function NewExercisePage() {
         referenceImageUrl: store.cameraPosition.referenceImages?.[cameraPositionId] || undefined,
         trackedJointsConfig,
         positionChecks,
-        feedbackMessages,
+        messageAssignments: feedbackAssignments.length > 0 ? feedbackAssignments : undefined,
         sortOrder: index + 1,
       })),
       // Weight configuration

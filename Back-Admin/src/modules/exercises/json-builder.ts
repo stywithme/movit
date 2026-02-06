@@ -29,6 +29,9 @@ import type {
   RepCountingConfig,
   ReportMetricsConfig,
   MetricCode,
+  isZoneBasedMessage,
+  isSimpleMessage,
+  ZoneBasedMessage,
 } from '@/lib/types/android-schema';
 
 import { validateExerciseConfig } from '@/lib/types/android-schema';
@@ -87,7 +90,7 @@ interface DbPoseVariant {
     schemaCode?: string | null;
   };
   positionChecks: DbPositionCheck[];
-  feedbackMessages: DbFeedbackMessage[];
+  messageAssignments: DbMessageAssignment[];
 }
 
 interface DbPositionCheck {
@@ -103,9 +106,23 @@ interface DbPositionCheck {
   minErrorFrames: number;
 }
 
-interface DbFeedbackMessage {
-  type: string;
-  message: Record<string, string>;
+interface DbMessageAssignment {
+  messageId: string;
+  target: string;
+  context?: string | null;
+  jointCode?: string | null;
+  zone?: string | null;
+  checkId?: string | null;
+  sortOrder: number;
+  message: DbMessageTemplate;
+}
+
+interface DbMessageTemplate {
+  id: string;
+  code: string;
+  category: string;
+  context?: string | null;
+  content: Record<string, string>;
 }
 
 // ============================================
@@ -115,7 +132,18 @@ interface DbFeedbackMessage {
 /**
  * Build complete Android-compatible ExerciseConfig from database exercise
  */
-export function buildExerciseConfig(dbExercise: DbExercise): ExerciseConfig {
+interface BuildExerciseConfigOptions {
+  /** Include resolved messages in config (stateMessages, feedbackMessages, position errorMessage) */
+  includeMessages?: boolean;
+  /** Include messageAssignments references in config */
+  includeAssignments?: boolean;
+}
+
+export function buildExerciseConfig(
+  dbExercise: DbExercise,
+  options: BuildExerciseConfigOptions = {}
+): ExerciseConfig {
+  const { includeMessages = true, includeAssignments = true } = options;
   const countingMethod = dbExercise.countingMethod.code as CountingMethod;
   
   // Extract attribute codes by type
@@ -136,8 +164,8 @@ export function buildExerciseConfig(dbExercise: DbExercise): ExerciseConfig {
   const repCountingConfig = parseRepCountingConfig(dbExercise.repCountingConfig, countingMethod);
   
   // Build pose variants
-  const poseVariants = dbExercise.poseVariants.map(pv => 
-    buildPoseVariantConfig(pv)
+  const poseVariants = dbExercise.poseVariants.map(pv =>
+    buildPoseVariantConfig(pv, { includeMessages, includeAssignments })
   );
   
   // Auto-detect bilateral (has paired joints)
@@ -230,7 +258,10 @@ export function buildExerciseConfig(dbExercise: DbExercise): ExerciseConfig {
 /**
  * Build PoseVariantConfig from database pose variant
  */
-function buildPoseVariantConfig(dbVariant: DbPoseVariant): PoseVariantConfig {
+function buildPoseVariantConfig(
+  dbVariant: DbPoseVariant,
+  options: BuildExerciseConfigOptions
+): PoseVariantConfig {
   // Use schemaCode for Android, fallback to code if not set
   const cameraPosition = (dbVariant.cameraPosition.schemaCode || 
     mapCameraCodeToSchema(dbVariant.cameraPosition.code)) as CameraPosition;
@@ -242,15 +273,19 @@ function buildPoseVariantConfig(dbVariant: DbPoseVariant): PoseVariantConfig {
   const trackedJoints = parseTrackedJoints(dbVariant.trackedJointsConfig);
   
   // Parse position checks
-  const positionChecks = dbVariant.positionChecks.map(buildPositionCheck);
+  const positionChecks = dbVariant.positionChecks.map((check) =>
+    buildPositionCheck(check, options.includeMessages)
+  );
   
-  // Group feedback messages by type
-  const feedbackMessages = buildFeedbackMessages(dbVariant.feedbackMessages);
+  // Group feedback messages by type (assignments only)
+  const feedbackMessages = buildFeedbackMessagesFromAssignments(dbVariant.messageAssignments);
   
   const config: PoseVariantConfig = {
     name: toLocalizedText(dbVariant.name),
     cameraPosition,
-    trackedJoints,
+    trackedJoints: options.includeMessages
+      ? applyStateMessageAssignments(trackedJoints, dbVariant.messageAssignments)
+      : trackedJoints,
   };
   
   // Only include optional fields if they have values
@@ -262,8 +297,15 @@ function buildPoseVariantConfig(dbVariant: DbPoseVariant): PoseVariantConfig {
     config.positionChecks = positionChecks;
   }
   
-  if (feedbackMessages.motivational.length > 0 || feedbackMessages.tips.length > 0) {
+  if (
+    options.includeMessages &&
+    (feedbackMessages.motivational.length > 0 || feedbackMessages.tips.length > 0)
+  ) {
     config.feedbackMessages = feedbackMessages;
+  }
+
+  if (options.includeAssignments && dbVariant.messageAssignments.length > 0) {
+    config.messageAssignments = buildMessageAssignmentRefs(dbVariant.messageAssignments);
   }
   
   return config;
@@ -315,7 +357,10 @@ function parseTrackedJoints(config: unknown): TrackedJoint[] {
 /**
  * Build PositionCheck from database record
  */
-function buildPositionCheck(dbCheck: DbPositionCheck): PositionCheck {
+function buildPositionCheck(
+  dbCheck: DbPositionCheck,
+  includeMessages: boolean
+): PositionCheck {
   const condition = dbCheck.condition as { operator: string; threshold?: number; thresholds?: Record<string, number> };
   
   // Support both old (thresholds) and new (threshold) format
@@ -334,7 +379,7 @@ function buildPositionCheck(dbCheck: DbPositionCheck): PositionCheck {
       threshold: threshold ?? 0.05,
     },
     activePhases: dbCheck.activePhases as PhaseName[],
-    errorMessage: toLocalizedText(dbCheck.errorMessage),
+    ...(includeMessages ? { errorMessage: toLocalizedText(dbCheck.errorMessage) } : {}),
     severity: dbCheck.severity as PositionCheck['severity'],
     cooldownMs: dbCheck.cooldownMs,
     minErrorFrames: dbCheck.minErrorFrames,
@@ -342,24 +387,124 @@ function buildPositionCheck(dbCheck: DbPositionCheck): PositionCheck {
 }
 
 /**
- * Group feedback messages by type (simplified - only motivational and tips)
+ * Build feedback messages from assignments (library-based)
  */
-function buildFeedbackMessages(dbMessages: DbFeedbackMessage[]): FeedbackMessages {
+function buildFeedbackMessagesFromAssignments(assignments: DbMessageAssignment[]): FeedbackMessages {
   const result: FeedbackMessages = {
     motivational: [],
     tips: [],
   };
   
-  for (const msg of dbMessages) {
-    if (msg.type === 'motivational') {
-      result.motivational.push(toLocalizedText(msg.message));
-    } else if (msg.type === 'tip' || msg.type === 'tips') {
-      result.tips.push(toLocalizedText(msg.message));
+  const feedbackAssignments = assignments
+    .filter(a => a.target === 'feedback')
+    .sort((a, b) => a.sortOrder - b.sortOrder);
+  
+  for (const assignment of feedbackAssignments) {
+    const message = toLocalizedText(assignment.message.content);
+    if (assignment.context === 'motivational') {
+      result.motivational.push(message);
+    } else if (assignment.context === 'tip') {
+      result.tips.push(message);
     }
-    // Ignore common_mistake (deprecated)
   }
   
   return result;
+}
+
+/**
+ * Build message assignment references (library-based)
+ */
+function buildMessageAssignmentRefs(assignments: DbMessageAssignment[]) {
+  return assignments
+    .slice()
+    .sort((a, b) => a.sortOrder - b.sortOrder)
+    .map((assignment) => ({
+      messageId: assignment.messageId,
+      target: assignment.target,
+      context: assignment.context ?? undefined,
+      jointCode: assignment.jointCode ?? undefined,
+      zone: assignment.zone ?? undefined,
+      checkId: assignment.checkId ?? undefined,
+      sortOrder: assignment.sortOrder,
+    }));
+}
+
+/**
+ * Apply joint state message assignments to tracked joints
+ */
+function applyStateMessageAssignments(
+  trackedJoints: TrackedJoint[],
+  assignments: DbMessageAssignment[]
+): TrackedJoint[] {
+  const stateAssignments = assignments.filter(a => a.target === 'joint_state' && a.jointCode && a.context);
+  if (stateAssignments.length === 0) return trackedJoints;
+  
+  const assignmentsByJoint = new Map<string, DbMessageAssignment[]>();
+  for (const assignment of stateAssignments) {
+    const jointCode = assignment.jointCode!;
+    const list = assignmentsByJoint.get(jointCode) || [];
+    list.push(assignment);
+    assignmentsByJoint.set(jointCode, list);
+  }
+  
+  return trackedJoints.map((joint) => {
+    const jointAssignments = assignmentsByJoint.get(joint.joint);
+    if (!jointAssignments || jointAssignments.length === 0) return joint;
+    
+    const mergedStateMessages: StateMessages = { ...(joint.stateMessages || {}) };
+    
+    const sorted = [...jointAssignments].sort((a, b) => a.sortOrder - b.sortOrder);
+    for (const assignment of sorted) {
+      const stateKey = assignment.context as keyof StateMessages;
+      if (!stateKey) continue;
+      const localizedText = toLocalizedText(assignment.message.content);
+      const zone = assignment.zone;
+      setStateMessage(mergedStateMessages, stateKey, localizedText, zone);
+    }
+    
+    return {
+      ...joint,
+      stateMessages: mergedStateMessages,
+    };
+  });
+}
+
+/**
+ * Set a state message with optional zone support
+ */
+function setStateMessage(
+  stateMessages: StateMessages,
+  state: keyof StateMessages,
+  message: LocalizedText,
+  zone?: string | null
+) {
+  if (!zone) {
+    stateMessages[state] = message;
+    return;
+  }
+  
+  const zoneKey = zone === 'down' ? 'down' : 'up';
+  const existing = stateMessages[state];
+  
+  if (existing && isZoneBasedMessage(existing)) {
+    stateMessages[state] = {
+      ...existing,
+      [zoneKey]: message,
+    } as ZoneBasedMessage;
+    return;
+  }
+  
+  if (existing && isSimpleMessage(existing)) {
+    const zoneMessage: ZoneBasedMessage = {
+      [zoneKey]: message,
+    };
+    stateMessages[state] = zoneMessage;
+    return;
+  }
+  
+  stateMessages[state] = {
+    [zoneKey]: message,
+  } as ZoneBasedMessage;
 }
 
 /**
@@ -662,9 +807,20 @@ export const exerciseFullInclude = {
           sortOrder: 'asc' as const,
         },
       },
-      feedbackMessages: {
+      messageAssignments: {
         orderBy: {
           sortOrder: 'asc' as const,
+        },
+        include: {
+          message: {
+            select: {
+              id: true,
+              code: true,
+              category: true,
+              context: true,
+              content: true,
+            },
+          },
         },
       },
     },

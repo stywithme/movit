@@ -22,6 +22,7 @@ import {
   Dumbbell,
   Tags,
   Repeat,
+  MessageSquare,
 } from 'lucide-react';
 
 interface NavItem {
@@ -61,6 +62,7 @@ export function Sidebar() {
       { title: 'Exercises', href: '/admin/exercises', icon: Dumbbell },
       { title: 'Workouts', href: '/admin/workouts', icon: Repeat },
       { title: 'Attributes', href: '/admin/attributes', icon: Tags },
+      { title: 'Messages', href: '/admin/messages', icon: MessageSquare },
       { title: 'Camera Positions', href: '/admin/camera-positions', icon: Layers },
     ],
   };

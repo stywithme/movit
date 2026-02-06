@@ -530,21 +530,6 @@ class FormValidator(
     }
     
     /**
-     * Check if any joint invalidates the rep (DANGER state)
-     */
-    fun anyInvalidatesRep(stateInfos: Map<String, JointStateInfo>): Boolean {
-        return stateInfos.values.any { it.invalidatesRep }
-    }
-    
-    /**
-     * Get the rate (score) for the worst state
-     */
-    fun getWorstRate(stateInfos: Map<String, JointStateInfo>): Float {
-        val worstState = getWorstState(stateInfos)
-        return StateConfig.getRate(worstState)
-    }
-    
-    /**
      * Legacy method - Get visual info for all tracked joints
      * Wraps getJointStateInfos for backward compatibility with overlay code
      * 
