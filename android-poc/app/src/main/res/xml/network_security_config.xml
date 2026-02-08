@@ -1,33 +1,14 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
-    Network Security Configuration
+    Network Security Configuration - RELEASE
     
-    Allows cleartext (HTTP) traffic for local development.
-    For production, remove or restrict this configuration.
+    Secure connections (HTTPS) only.
+    For local development, the debug variant (debug/res/xml/) allows cleartext.
 -->
 <network-security-config>
-    <!-- Default: Secure connections only -->
     <base-config cleartextTrafficPermitted="false">
         <trust-anchors>
             <certificates src="system" />
         </trust-anchors>
     </base-config>
-    
-    <!-- Allow cleartext for local development -->
-    <domain-config cleartextTrafficPermitted="true">
-        <!-- Android Emulator host -->
-        <domain includeSubdomains="true">10.0.2.2</domain>
-        
-        <!-- Localhost (for local testing) -->
-        <domain includeSubdomains="true">localhost</domain>
-        <domain includeSubdomains="true">127.0.0.1</domain>
-        
-        <!-- Local network (192.168.x.x) - for physical device testing -->
-        <domain includeSubdomains="true">192.168.1.18</domain>
-        <domain includeSubdomains="true">192.168.68.100</domain>
-        <domain includeSubdomains="true">192.168.1.100</domain>
-        
-        <!-- Entire 192.168.x.x range for flexibility -->
-        <!-- Note: In production, remove these and use HTTPS -->
-    </domain-config>
 </network-security-config>

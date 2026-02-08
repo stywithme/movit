@@ -14,14 +14,20 @@ import androidx.cardview.widget.CardView
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.GridLayoutManager
+import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.trainingvalidator.poc.R
 import com.trainingvalidator.poc.databinding.FragmentExercisesBinding
 import com.trainingvalidator.poc.storage.ExerciseRepository
+import com.trainingvalidator.poc.storage.WorkoutRepository
 import com.trainingvalidator.poc.storage.SyncManager
 import com.trainingvalidator.poc.training.models.ExerciseConfig
+import com.trainingvalidator.poc.training.models.WorkoutConfig
+import com.trainingvalidator.poc.training.models.WorkoutType
 import com.trainingvalidator.poc.ui.PreWorkoutActivity
 import com.trainingvalidator.poc.ui.WorkoutListActivity
+import com.trainingvalidator.poc.ui.WorkoutActivity
+import com.trainingvalidator.poc.ui.WorkoutDetailActivity
 import kotlinx.coroutines.launch
 
 /**
@@ -39,9 +45,14 @@ class ExercisesFragment : Fragment() {
     private val exercises = mutableListOf<ExerciseConfig>()
     private val filteredExercises = mutableListOf<ExerciseConfig>()
     private var currentCategory: String? = null
+    private val workouts = mutableListOf<WorkoutConfig>()
     
     private val repository: ExerciseRepository by lazy { 
         ExerciseRepository.getInstance(requireContext())
+    }
+
+    private val workoutRepository: WorkoutRepository by lazy {
+        WorkoutRepository.getInstance(requireContext())
     }
 
     override fun onCreateView(
@@ -66,6 +77,16 @@ class ExercisesFragment : Fragment() {
         binding.rvExercises.layoutManager = GridLayoutManager(requireContext(), 2)
         binding.rvExercises.adapter = ExerciseAdapter(filteredExercises) { exercise ->
             openExerciseDetail(exercise)
+        }
+
+        // Setup Workouts list (horizontal)
+        binding.rvWorkouts.layoutManager = LinearLayoutManager(
+            requireContext(),
+            LinearLayoutManager.HORIZONTAL,
+            false
+        )
+        binding.rvWorkouts.adapter = WorkoutAdapter(workouts) { workout ->
+            openWorkout(workout)
         }
     }
 
@@ -95,6 +116,11 @@ class ExercisesFragment : Fragment() {
             binding.chipAll.isChecked = true
         }
 
+        // View all workouts
+        binding.tvViewAllWorkouts.setOnClickListener {
+            startActivity(Intent(requireContext(), WorkoutListActivity::class.java))
+        }
+
         // Featured program
         binding.btnStartProgram.setOnClickListener {
             startActivity(Intent(requireContext(), WorkoutListActivity::class.java))
@@ -113,11 +139,15 @@ class ExercisesFragment : Fragment() {
                 
                 repository.initialize(autoSync = true)
                 loadExercisesFromRepository()
+
+                workoutRepository.initialize()
+                loadWorkoutsFromRepository()
                 
             } catch (e: Exception) {
                 Log.e(TAG, "Failed to initialize repository", e)
                 // Show empty state - no fallback to assets
                 showNoExercisesAvailable()
+                showNoWorkoutsAvailable()
             } finally {
                 binding.progressBar.visibility = View.GONE
             }
@@ -139,6 +169,26 @@ class ExercisesFragment : Fragment() {
     private fun showNoExercisesAvailable() {
         Log.w(TAG, "No exercises available - cache empty and sync failed")
         updateExercisesList(emptyList())
+    }
+
+    private fun loadWorkoutsFromRepository() {
+        val loaded = workoutRepository.getAllWorkouts()
+
+        if (loaded.isEmpty()) {
+            showNoWorkoutsAvailable()
+        } else {
+            workouts.clear()
+            workouts.addAll(loaded)
+            binding.rvWorkouts.adapter?.notifyDataSetChanged()
+            binding.layoutWorkoutsEmpty.visibility = View.GONE
+        }
+    }
+
+    private fun showNoWorkoutsAvailable() {
+        Log.w(TAG, "No workouts available - cache empty and sync failed")
+        workouts.clear()
+        binding.rvWorkouts.adapter?.notifyDataSetChanged()
+        binding.layoutWorkoutsEmpty.visibility = View.VISIBLE
     }
 
     private fun updateExercisesList(loaded: List<ExerciseConfig>) {
@@ -176,6 +226,13 @@ class ExercisesFragment : Fragment() {
     private fun openExerciseDetail(exercise: ExerciseConfig) {
         val intent = Intent(requireContext(), PreWorkoutActivity::class.java).apply {
             putExtra(PreWorkoutActivity.EXTRA_EXERCISE_NAME, exercise.fileName)
+        }
+        startActivity(intent)
+    }
+
+    private fun openWorkout(workout: WorkoutConfig) {
+        val intent = Intent(requireContext(), WorkoutDetailActivity::class.java).apply {
+            putExtra(WorkoutDetailActivity.EXTRA_WORKOUT_NAME, workout.fileName)
         }
         startActivity(intent)
     }
@@ -225,6 +282,59 @@ class ExercisesFragment : Fragment() {
             holder.card.setOnClickListener {
                 onClick(exercise)
             }
+        }
+
+        override fun getItemCount() = items.size
+    }
+
+    /**
+     * Adapter for workout cards (compact)
+     */
+    inner class WorkoutAdapter(
+        private val items: List<WorkoutConfig>,
+        private val onClick: (WorkoutConfig) -> Unit
+    ) : RecyclerView.Adapter<WorkoutAdapter.ViewHolder>() {
+
+        inner class ViewHolder(view: View) : RecyclerView.ViewHolder(view) {
+            val card: CardView = view.findViewById(R.id.cardWorkout)
+            val tvType: TextView = view.findViewById(R.id.tvWorkoutType)
+            val tvName: TextView = view.findViewById(R.id.tvWorkoutName)
+            val tvDescription: TextView = view.findViewById(R.id.tvWorkoutDescription)
+            val tvExerciseCount: TextView = view.findViewById(R.id.tvExerciseCount)
+            val tvDuration: TextView = view.findViewById(R.id.tvDuration)
+        }
+
+        override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
+            val view = LayoutInflater.from(parent.context)
+                .inflate(R.layout.item_workout_card_compact, parent, false)
+            return ViewHolder(view)
+        }
+
+        override fun onBindViewHolder(holder: ViewHolder, position: Int) {
+            val workout = items[position]
+            val language = getCurrentLanguage()
+
+            holder.tvName.text = workout.name.get(language).ifBlank { workout.name.en }
+            holder.tvDescription.text = workout.description?.let { desc ->
+                desc.get(language).ifBlank { desc.en }
+            } ?: ""
+
+            holder.tvType.text = when (workout.type) {
+                WorkoutType.CIRCUIT -> getString(R.string.workout_type_circuit)
+                WorkoutType.SUPER_SET -> getString(R.string.workout_type_super_set)
+                WorkoutType.AMRAP -> getString(R.string.workout_type_amrap)
+                WorkoutType.EMOM -> getString(R.string.workout_type_emom)
+            }
+
+            holder.tvExerciseCount.text = getString(
+                R.string.exercises_count_format,
+                workout.exercises.size
+            )
+
+            val durationMinutes = (workout.getEstimatedDurationMs() / 60000).toInt()
+            holder.tvDuration.text = getString(R.string.duration_minutes_format, durationMinutes)
+
+            holder.card.setOnClickListener { onClick(workout) }
         }
 
         override fun getItemCount() = items.size

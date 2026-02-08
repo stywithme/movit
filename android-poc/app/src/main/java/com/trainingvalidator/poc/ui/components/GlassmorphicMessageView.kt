@@ -7,15 +7,10 @@ import android.graphics.BlurMaskFilter
 import android.graphics.Canvas
 import android.graphics.Color
 import android.graphics.Paint
-import android.graphics.RenderEffect
 import android.graphics.RectF
-import android.graphics.Shader
-import android.graphics.drawable.GradientDrawable
-import android.os.Build
 import android.util.AttributeSet
 import android.view.Gravity
 import android.view.View
-import android.view.ViewGroup
 import android.view.animation.DecelerateInterpolator
 import android.view.animation.OvershootInterpolator
 import android.widget.FrameLayout
@@ -94,6 +89,7 @@ class GlassmorphicMessageView @JvmOverloads constructor(
     
     init {
         // Layer 0: Blur background (custom view that draws blurred background)
+        // Wrap content - we will position/size it to match contentLayout in onLayout()
         blurBackgroundView = BlurBackgroundView(context).apply {
             layoutParams = LayoutParams(LayoutParams.WRAP_CONTENT, LayoutParams.WRAP_CONTENT)
         }
@@ -141,9 +137,12 @@ class GlassmorphicMessageView @JvmOverloads constructor(
     
     override fun onLayout(changed: Boolean, left: Int, top: Int, right: Int, bottom: Int) {
         super.onLayout(changed, left, top, right, bottom)
-        // Update blur background size to match content
-        blurBackgroundView.layoutParams = LayoutParams(contentLayout.width, contentLayout.height)
-        blurBackgroundView.updateBounds(contentLayout.width.toFloat(), contentLayout.height.toFloat(), cornerRadiusPx, currentAccentColor)
+        // Size and position blur background to match content, without changing layoutParams
+        val contentLeft = contentLayout.left
+        val contentTop = contentLayout.top
+        val contentRight = contentLayout.right
+        val contentBottom = contentLayout.bottom
+        blurBackgroundView.layout(contentLeft, contentTop, contentRight, contentBottom)
     }
     
     /**
@@ -288,7 +287,6 @@ class GlassmorphicMessageView @JvmOverloads constructor(
         
         private var viewWidth = 0f
         private var viewHeight = 0f
-        private var cornerRadius = 24f
         private var accentColor = COLOR_INFO_ACCENT
         
         private val backgroundPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
@@ -317,13 +315,14 @@ class GlassmorphicMessageView @JvmOverloads constructor(
             backgroundPaint.maskFilter = BlurMaskFilter(8f, BlurMaskFilter.Blur.NORMAL)
         }
         
-        fun updateBounds(width: Float, height: Float, radius: Float, accent: Int) {
-            viewWidth = width
-            viewHeight = height
-            cornerRadius = radius
-            accentColor = accent
-            accentBorderPaint.color = accent
-            invalidate()
+        /**
+         * Called automatically when this view's size changes (via MATCH_PARENT).
+         * Replaces the old updateBounds() call from onLayout() - no requestLayout() loop.
+         */
+        override fun onSizeChanged(w: Int, h: Int, oldw: Int, oldh: Int) {
+            super.onSizeChanged(w, h, oldw, oldh)
+            viewWidth = w.toFloat()
+            viewHeight = h.toFloat()
         }
         
         fun updateAccentColor(color: Int) {
@@ -340,13 +339,13 @@ class GlassmorphicMessageView @JvmOverloads constructor(
             rect.set(2f, 2f, viewWidth - 2f, viewHeight - 2f)
             
             // Draw frosted glass background
-            canvas.drawRoundRect(rect, cornerRadius, cornerRadius, backgroundPaint)
+            canvas.drawRoundRect(rect, cornerRadiusPx, cornerRadiusPx, backgroundPaint)
             
             // Draw subtle white border
-            canvas.drawRoundRect(rect, cornerRadius, cornerRadius, borderPaint)
+            canvas.drawRoundRect(rect, cornerRadiusPx, cornerRadiusPx, borderPaint)
             
             // Draw accent color border
-            canvas.drawRoundRect(rect, cornerRadius, cornerRadius, accentBorderPaint)
+            canvas.drawRoundRect(rect, cornerRadiusPx, cornerRadiusPx, accentBorderPaint)
         }
         
         private fun Float.dpToPx(): Float = this * context.resources.displayMetrics.density

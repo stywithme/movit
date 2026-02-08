@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    Network Security Configuration - DEBUG
+    
+    Allows ALL cleartext (HTTP) traffic for local development.
+    This file is only used in debug builds.
+    The release version (main/res/xml/) restricts to HTTPS only.
+-->
+<network-security-config>
+    <base-config cleartextTrafficPermitted="true">
+        <trust-anchors>
+            <certificates src="system" />
+        </trust-anchors>
+    </base-config>
+</network-security-config>

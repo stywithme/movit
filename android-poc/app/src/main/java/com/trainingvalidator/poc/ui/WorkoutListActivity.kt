@@ -86,8 +86,8 @@ class WorkoutListActivity : AppCompatActivity() {
     }
 
     private fun openWorkout(workout: WorkoutConfig) {
-        val intent = Intent(this, WorkoutActivity::class.java).apply {
-            putExtra(WorkoutActivity.EXTRA_WORKOUT_NAME, workout.fileName)
+        val intent = Intent(this, WorkoutDetailActivity::class.java).apply {
+            putExtra(WorkoutDetailActivity.EXTRA_WORKOUT_NAME, workout.fileName)
         }
         startActivity(intent)
     }

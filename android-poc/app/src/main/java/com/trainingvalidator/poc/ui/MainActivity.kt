@@ -100,27 +100,31 @@ class MainActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetectionList
         setupUI()
         checkCameraPermission()
         
-        // Sync pending sessions on app start
-        syncPendingSessions()
-        
-        // Start background sync (every 10 minutes)
-        startBackgroundSessionSync()
+        // Initialize session sync (pending sync + background + connectivity listener)
+        initializeSessionSync()
     }
     
     /**
-     * Sync any pending training sessions to backend
+     * Initialize session sync: sync pending, start background job, register connectivity listener
      */
-    private fun syncPendingSessions() {
-        val token = AuthManager.getAccessToken(this)
-        if (token == null) {
-            Log.d(TAG, "No auth token, skipping pending sync")
+    private fun initializeSessionSync() {
+        val token = AuthManager.getAccessToken(this) ?: run {
+            Log.d(TAG, "No auth token, skipping session sync setup")
             return
         }
         
+        val syncService = SessionSyncService.getInstance(this, ApiConfig.getEffectiveBaseUrl())
+        syncService.setAuthToken(token)
+        
+        // Register connectivity listener for auto-sync when network comes back
+        syncService.registerConnectivityListener()
+        
+        // Start periodic background sync (every 10 minutes)
+        syncService.startBackgroundSync()
+        
+        // Sync any pending sessions now
         mainScope.launch(Dispatchers.IO) {
             try {
-                val syncService = SessionSyncService.getInstance(this@MainActivity, ApiConfig.getBaseUrl())
-                syncService.setAuthToken(token)
                 val result = syncService.syncPending()
                 if (result.total > 0) {
                     Log.d(TAG, "Synced ${result.successCount}/${result.total} pending sessions")
@@ -128,19 +132,6 @@ class MainActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetectionList
             } catch (e: Exception) {
                 Log.e(TAG, "Pending sync error: ${e.message}")
             }
-        }
-    }
-    
-    /**
-     * Start background sync service (every 10 minutes)
-     */
-    private fun startBackgroundSessionSync() {
-        val token = AuthManager.getAccessToken(this)
-        if (token != null) {
-            val syncService = SessionSyncService.getInstance(this, ApiConfig.getBaseUrl())
-            syncService.setAuthToken(token)
-            syncService.startBackgroundSync()
-            Log.d(TAG, "Background session sync started (every 10 min)")
         }
     }
 

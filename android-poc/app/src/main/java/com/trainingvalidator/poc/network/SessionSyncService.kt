@@ -1,6 +1,10 @@
 package com.trainingvalidator.poc.network
 
 import android.content.Context
+import android.net.ConnectivityManager
+import android.net.Network
+import android.net.NetworkCapabilities
+import android.net.NetworkRequest
 import android.util.Log
 import com.google.gson.Gson
 import com.trainingvalidator.poc.storage.AnalyticsStorage
@@ -18,7 +22,9 @@ import java.util.concurrent.TimeUnit
  * Features:
  * - Automatic retry with exponential backoff
  * - Offline queue support via AnalyticsStorage
- * - Background sync when connectivity is restored
+ * - Connectivity-aware: checks network before syncing
+ * - Auto-sync when connectivity is restored via NetworkCallback
+ * - Smart retry: skips non-retryable HTTP errors (401, 403, 404, 405)
  */
 class SessionSyncService(
     private val context: Context,
@@ -26,9 +32,10 @@ class SessionSyncService(
 ) {
     companion object {
         private const val TAG = "SessionSyncService"
-        private const val ENDPOINT = "/api/mobile/sessions"
+        private const val ENDPOINT = "api/mobile/sessions"  // No leading slash - baseUrl ends with /
         private const val MAX_RETRIES = 3
         private const val INITIAL_BACKOFF_MS = 1000L
+        private const val BACKGROUND_SYNC_INTERVAL_MS = 10 * 60 * 1000L  // 10 minutes
         
         @Volatile
         private var instance: SessionSyncService? = null
@@ -48,11 +55,20 @@ class SessionSyncService(
     
     private val client = OkHttpClient.Builder()
         .connectTimeout(30, TimeUnit.SECONDS)
-        .writeTimeout(60, TimeUnit.SECONDS)  // Sessions can be larger
+        .writeTimeout(60, TimeUnit.SECONDS)
         .readTimeout(30, TimeUnit.SECONDS)
         .build()
     
     private var authToken: String? = null
+    private var networkCallback: ConnectivityManager.NetworkCallback? = null
+    private var backgroundSyncJob: Job? = null
+    
+    // Build the full URL once, ensuring no double slashes
+    private val uploadUrl: String by lazy {
+        val base = baseUrl.trimEnd('/')
+        val endpoint = ENDPOINT.trimStart('/')
+        "$base/$endpoint"
+    }
     
     /**
      * Set authentication token
@@ -61,30 +77,108 @@ class SessionSyncService(
         authToken = token
     }
     
+    // ==================== Connectivity ====================
+    
+    /**
+     * Check if device has active network connectivity
+     */
+    private fun isNetworkAvailable(): Boolean {
+        val connectivityManager = context.getSystemService(Context.CONNECTIVITY_SERVICE) as? ConnectivityManager
+            ?: return false
+        
+        val network = connectivityManager.activeNetwork ?: return false
+        val capabilities = connectivityManager.getNetworkCapabilities(network) ?: return false
+        
+        return capabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET) &&
+               capabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_VALIDATED)
+    }
+    
+    /**
+     * Register a NetworkCallback to auto-sync when connectivity is restored.
+     * Call this once (e.g., on app start).
+     */
+    fun registerConnectivityListener() {
+        if (networkCallback != null) return  // Already registered
+        
+        val connectivityManager = context.getSystemService(Context.CONNECTIVITY_SERVICE) as? ConnectivityManager
+            ?: return
+        
+        val request = NetworkRequest.Builder()
+            .addCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET)
+            .addCapability(NetworkCapabilities.NET_CAPABILITY_VALIDATED)
+            .build()
+        
+        networkCallback = object : ConnectivityManager.NetworkCallback() {
+            override fun onAvailable(network: Network) {
+                Log.d(TAG, "Network available - triggering pending sync")
+                scope.launch {
+                    try {
+                        val result = syncPending()
+                        if (result.total > 0) {
+                            Log.d(TAG, "Connectivity sync: ${result.successCount}/${result.total}")
+                        }
+                    } catch (e: Exception) {
+                        Log.e(TAG, "Connectivity sync error: ${e.message}")
+                    }
+                }
+            }
+        }
+        
+        try {
+            connectivityManager.registerNetworkCallback(request, networkCallback!!)
+            Log.d(TAG, "Connectivity listener registered")
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed to register connectivity listener: ${e.message}")
+            networkCallback = null
+        }
+    }
+    
+    /**
+     * Unregister the connectivity listener
+     */
+    fun unregisterConnectivityListener() {
+        networkCallback?.let { callback ->
+            try {
+                val connectivityManager = context.getSystemService(Context.CONNECTIVITY_SERVICE) as? ConnectivityManager
+                connectivityManager?.unregisterNetworkCallback(callback)
+                Log.d(TAG, "Connectivity listener unregistered")
+            } catch (e: Exception) {
+                Log.e(TAG, "Failed to unregister connectivity listener: ${e.message}")
+            }
+            networkCallback = null
+        }
+    }
+    
+    // ==================== Upload ====================
+    
     /**
      * Upload a session immediately
      * Falls back to local storage if upload fails
      */
     suspend fun uploadSession(upload: SessionUpload): SyncResult {
         return withContext(Dispatchers.IO) {
+            // Save locally first (guaranteed persistence)
+            storage.savePending(upload)
+            
+            // Check connectivity before attempting upload
+            if (!isNetworkAvailable()) {
+                Log.d(TAG, "No network - session ${upload.id} saved for later sync")
+                return@withContext SyncResult(false, error = "No network connectivity")
+            }
+            
             try {
                 val result = uploadWithRetry(upload)
                 
                 if (result.success) {
-                    // Remove from pending if it was queued
                     storage.deletePending(upload.id)
                     Log.d(TAG, "Session ${upload.id} uploaded successfully")
                 } else {
-                    // Save for later sync
-                    storage.savePending(upload)
                     Log.w(TAG, "Session ${upload.id} saved for later sync: ${result.error}")
                 }
                 
                 result
             } catch (e: Exception) {
-                // Save for later sync
-                storage.savePending(upload)
-                Log.e(TAG, "Upload failed, saved for later: ${e.message}")
+                Log.e(TAG, "Upload failed, saved locally: ${e.message}")
                 SyncResult(false, error = e.message)
             }
         }
@@ -101,18 +195,30 @@ class SessionSyncService(
                 return@withContext SyncBatchResult(0, 0, emptyList())
             }
             
-            Log.d(TAG, "Syncing ${pending.size} pending sessions...")
+            // Check connectivity before attempting batch sync
+            if (!isNetworkAvailable()) {
+                Log.d(TAG, "${pending.size} sessions pending - no network, will sync later")
+                return@withContext SyncBatchResult(pending.size, 0, listOf("No network connectivity"))
+            }
+            
+            Log.d(TAG, "Syncing ${pending.size} pending sessions to: $uploadUrl")
             
             var successCount = 0
             val errors = mutableListOf<String>()
             
-            pending.forEach { upload ->
+            for (upload in pending) {
                 val result = uploadWithRetry(upload)
                 if (result.success) {
                     storage.markSynced(upload.id, keepCopy = false)
                     successCount++
                 } else {
                     errors.add("${upload.id}: ${result.error}")
+                    
+                    // Stop batch if we hit a non-retryable error (server issue)
+                    if (result.isClientError) {
+                        Log.w(TAG, "Client error (${result.error}) - stopping batch sync")
+                        break
+                    }
                 }
             }
             
@@ -122,25 +228,33 @@ class SessionSyncService(
     }
     
     /**
-     * Start background sync job
+     * Start background sync job (periodic, every 10 minutes)
      */
     fun startBackgroundSync() {
-        scope.launch {
+        // Cancel existing job if any
+        backgroundSyncJob?.cancel()
+        
+        backgroundSyncJob = scope.launch {
             while (isActive) {
                 try {
-                    val result = syncPending()
-                    if (result.total > 0) {
-                        Log.d(TAG, "Background sync: ${result.successCount}/${result.total}")
+                    if (isNetworkAvailable() && storage.getPendingCount() > 0) {
+                        val result = syncPending()
+                        if (result.total > 0) {
+                            Log.d(TAG, "Background sync: ${result.successCount}/${result.total}")
+                        }
                     }
                 } catch (e: Exception) {
                     Log.e(TAG, "Background sync error: ${e.message}")
                 }
                 
-                // Retry every 10 minutes
-                delay(10 * 60 * 1000)
+                delay(BACKGROUND_SYNC_INTERVAL_MS)
             }
         }
+        
+        Log.d(TAG, "Background sync started (every ${BACKGROUND_SYNC_INTERVAL_MS / 60000} min)")
     }
+    
+    // ==================== Internal ====================
     
     private suspend fun uploadWithRetry(upload: SessionUpload): SyncResult {
         var lastError: String? = null
@@ -151,18 +265,19 @@ class SessionSyncService(
                 val result = doUpload(upload)
                 if (result.success) return result
                 
-                // Don't retry on auth errors (401/403) - they won't succeed
-                if (result.isAuthError) {
-                    Log.w(TAG, "Auth error - not retrying. Token may be expired.")
+                // Don't retry on non-retryable errors
+                if (result.isAuthError || result.isClientError) {
                     return result
                 }
                 
                 lastError = result.error
+                Log.d(TAG, "Upload attempt ${attempt + 1}/$MAX_RETRIES failed: ${result.error}")
             } catch (e: Exception) {
                 lastError = e.message
+                Log.d(TAG, "Upload attempt ${attempt + 1}/$MAX_RETRIES exception: ${e.message}")
             }
             
-            // Exponential backoff
+            // Exponential backoff (skip after last attempt)
             if (attempt < MAX_RETRIES - 1) {
                 delay(backoffMs)
                 backoffMs *= 2
@@ -173,13 +288,15 @@ class SessionSyncService(
     }
     
     private fun doUpload(upload: SessionUpload): SyncResult {
-        val token = authToken ?: return SyncResult(false, error = "No auth token", isAuthError = true)
+        val token = authToken ?: return SyncResult(
+            false, error = "No auth token", isAuthError = true
+        )
         
         val json = gson.toJson(upload)
         val requestBody = json.toRequestBody("application/json".toMediaType())
         
         val request = Request.Builder()
-            .url("$baseUrl$ENDPOINT")
+            .url(uploadUrl)
             .addHeader("Authorization", "Bearer $token")
             .addHeader("Content-Type", "application/json")
             .post(requestBody)
@@ -188,21 +305,36 @@ class SessionSyncService(
         return try {
             client.newCall(request).execute().use { response ->
                 when {
-                    response.isSuccessful -> SyncResult(true)
+                    response.isSuccessful -> {
+                        SyncResult(true)
+                    }
+                    // Auth errors - don't retry, token is invalid
                     response.code == 401 || response.code == 403 -> {
                         val errorBody = response.body?.string() ?: "Unauthorized"
+                        Log.w(TAG, "Auth error ${response.code}: $errorBody")
                         SyncResult(false, error = "HTTP ${response.code}: $errorBody", isAuthError = true)
                     }
+                    // Client errors (404, 405, 400, 422) - don't retry, request is wrong
+                    response.code in 400..499 -> {
+                        val errorBody = response.body?.string() ?: "Client error"
+                        Log.w(TAG, "Client error ${response.code}: $errorBody")
+                        SyncResult(false, error = "HTTP ${response.code}: $errorBody", isClientError = true)
+                    }
+                    // Server errors (500+) - retry, server might recover
                     else -> {
-                        val errorBody = response.body?.string() ?: "Unknown error"
+                        val errorBody = response.body?.string() ?: "Server error"
+                        Log.w(TAG, "Server error ${response.code}: $errorBody")
                         SyncResult(false, error = "HTTP ${response.code}: $errorBody")
                     }
                 }
             }
         } catch (e: IOException) {
+            Log.w(TAG, "Network error: ${e.message}")
             SyncResult(false, error = "Network error: ${e.message}")
         }
     }
+    
+    // ==================== Public API ====================
     
     /**
      * Get pending sync count
@@ -210,9 +342,19 @@ class SessionSyncService(
     fun getPendingCount(): Int = storage.getPendingCount()
     
     /**
-     * Cancel background sync
+     * Cancel background sync and unregister listeners
      */
     fun cancelBackgroundSync() {
+        backgroundSyncJob?.cancel()
+        backgroundSyncJob = null
+    }
+    
+    /**
+     * Release all resources (call on app termination)
+     */
+    fun release() {
+        cancelBackgroundSync()
+        unregisterConnectivityListener()
         scope.cancel()
     }
 }
@@ -224,7 +366,8 @@ data class SyncResult(
     val success: Boolean,
     val sessionId: String? = null,
     val error: String? = null,
-    val isAuthError: Boolean = false  // True for 401/403 - don't retry
+    val isAuthError: Boolean = false,    // True for 401/403 - don't retry
+    val isClientError: Boolean = false   // True for 4xx - don't retry (endpoint/payload issue)
 )
 
 /**

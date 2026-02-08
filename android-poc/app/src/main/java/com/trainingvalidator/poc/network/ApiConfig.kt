@@ -1,23 +1,29 @@
 package com.trainingvalidator.poc.network
 
 import android.os.Build
+import com.trainingvalidator.poc.BuildConfig
 
 /**
  * API Configuration
  * 
  * Central configuration for API endpoints and networking.
  * 
+ * Port and IP are read from local.properties (like .env for Android):
+ *   api.port=3001
+ *   api.physical_device_ip=192.168.1.18
+ * 
  * For testing on physical device:
  * 1. Find your computer's LAN IP: ipconfig (Windows) or ifconfig (Mac/Linux)
- * 2. Update PHYSICAL_DEVICE_IP below
+ * 2. Update api.physical_device_ip in local.properties
  * 3. Ensure phone and computer are on the same WiFi network
  * 4. Make sure your backend is running and accessible
  */
 object ApiConfig {
     /**
-     * Port number for the backend server
+     * Port number for the backend server.
+     * Read from local.properties → api.port (default: 3001)
      */
-    private const val PORT = 3000
+    private val PORT = BuildConfig.API_PORT
     
     /**
      * Emulator localhost address.
@@ -27,24 +33,23 @@ object ApiConfig {
     
     /**
      * Physical device: Your computer's LAN IP address.
+     * Read from local.properties → api.physical_device_ip (default: 192.168.1.18)
      * 
      * HOW TO FIND YOUR IP:
      * - Windows: Run `ipconfig` in cmd, look for "IPv4 Address" under your WiFi adapter
      * - Mac/Linux: Run `ifconfig` or `ip addr`, look for your WiFi interface
-     * 
-     * Current: 192.168.1.18 (auto-detected)
      */
-    private const val PHYSICAL_DEVICE_IP = "192.168.1.18"
+    private val PHYSICAL_DEVICE_IP = BuildConfig.API_PHYSICAL_IP
     
     /**
      * Base URL for emulator
      */
-    private const val BASE_URL_EMULATOR = "http://$EMULATOR_HOST:$PORT/"
+    private val BASE_URL_EMULATOR = "http://$EMULATOR_HOST:$PORT/"
     
     /**
      * Base URL for physical device
      */
-    private const val BASE_URL_PHYSICAL = "http://$PHYSICAL_DEVICE_IP:$PORT/"
+    private val BASE_URL_PHYSICAL = "http://$PHYSICAL_DEVICE_IP:$PORT/"
     
     /**
      * Connection timeout in seconds

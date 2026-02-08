@@ -207,6 +207,21 @@
     <string name="workout_type_amrap">AMRAP</string>
     <string name="workout_type_emom">EMOM</string>
     
+    <!-- Workout Detail -->
+    <string name="workout_detail_timeline">Workout Timeline</string>
+    <string name="workout_detail_rounds">Rounds</string>
+    <string name="workout_detail_start_workout">Start Workout</string>
+    <string name="workout_detail_round_format">ROUND %1$d</string>
+    <string name="workout_detail_rest_format">Rest %1$d sec</string>
+    <string name="workout_detail_round_rest_format">Round rest %1$d sec</string>
+    <string name="workout_detail_reps_format">%1$d reps</string>
+    <string name="workout_detail_hold_format">Hold %1$d sec</string>
+    <string name="workout_detail_reps_exercise">Rep-based exercise</string>
+    <string name="workout_detail_hold_exercise">Hold exercise</string>
+    <string name="workout_detail_alternating_mode">Alternating Mode</string>
+    <string name="workout_detail_alternating_desc_with_rest">Exercises alternate every %1$d rep(s) with %2$d sec rest between switches.</string>
+    <string name="workout_detail_alternating_desc_no_rest">Exercises alternate every %1$d rep(s) with no rest between switches.</string>
+
     <!-- Muscles -->
     <string name="muscle_quadriceps">Quadriceps</string>
     <string name="muscle_glutes">Glutes</string>

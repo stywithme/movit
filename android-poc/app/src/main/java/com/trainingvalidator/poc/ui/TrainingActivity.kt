@@ -214,15 +214,14 @@ class TrainingActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetection
      * Sync pending sessions when starting a new training
      */
     private fun syncPendingSessionsOnTrainingStart() {
-        val token = AuthManager.getAccessToken(this)
-        if (token == null) {
+        val token = AuthManager.getAccessToken(this) ?: run {
             Log.d(TAG, "No auth token, skipping pending sync")
             return
         }
         
         lifecycleScope.launch(Dispatchers.IO) {
             try {
-                val syncService = SessionSyncService.getInstance(this@TrainingActivity, ApiConfig.getBaseUrl())
+                val syncService = SessionSyncService.getInstance(this@TrainingActivity, ApiConfig.getEffectiveBaseUrl())
                 syncService.setAuthToken(token)
                 val result = syncService.syncPending()
                 if (result.total > 0) {
@@ -1425,7 +1424,7 @@ class TrainingActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetection
             // Get sync service
             val syncService = SessionSyncService.getInstance(
                 appContext,
-                ApiConfig.getBaseUrl()
+                ApiConfig.getEffectiveBaseUrl()
             )
             
             // Get auth token from AuthManager
@@ -1471,7 +1470,7 @@ class TrainingActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetection
             val body = json.toRequestBody("application/json".toMediaType())
             
             val request = okhttp3.Request.Builder()
-                .url("${ApiConfig.getBaseUrl()}api/mobile/auth/refresh")
+                .url("${ApiConfig.getEffectiveBaseUrl()}api/mobile/auth/refresh")
                 .post(body)
                 .build()
             
@@ -1518,7 +1517,7 @@ class TrainingActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetection
             val body = json.toRequestBody("application/json".toMediaType())
             
             val request = okhttp3.Request.Builder()
-                .url("${ApiConfig.getBaseUrl()}api/mobile/auth/refresh")
+                .url("${ApiConfig.getEffectiveBaseUrl()}api/mobile/auth/refresh")
                 .post(body)
                 .build()
             

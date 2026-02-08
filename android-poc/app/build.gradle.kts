@@ -1,7 +1,16 @@
+import java.util.Properties
+
 plugins {
     id("com.android.application")
     id("org.jetbrains.kotlin.android")
 }
+
+// Read API config from local.properties (like .env for Android)
+val localProps = rootProject.file("local.properties")
+val apiProps = Properties()
+if (localProps.exists()) apiProps.load(localProps.inputStream())
+val apiPort = apiProps.getProperty("api.port", "3001")
+val apiPhysicalIp = apiProps.getProperty("api.physical_device_ip", "192.168.1.18")
 
 android {
     namespace = "com.trainingvalidator.poc"
@@ -15,6 +24,9 @@ android {
         versionName = "1.0-poc"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+
+        buildConfigField("int", "API_PORT", apiPort)
+        buildConfigField("String", "API_PHYSICAL_IP", "\"$apiPhysicalIp\"")
     }
 
     buildTypes {
@@ -34,6 +46,7 @@ android {
 
     buildFeatures {
         viewBinding = true
+        buildConfig = true
     }
 }
 
