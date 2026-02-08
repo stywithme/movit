@@ -41,6 +41,17 @@ export interface ReportMetricsData {
   excluded: MetricCode[];
 }
 
+export interface AlternatingVariantForm {
+  label: { ar: string; en: string };
+  variantIndex: number;
+}
+
+export interface AlternatingConfigData {
+  enabled: boolean;
+  switchEvery: number;
+  variants: AlternatingVariantForm[];
+}
+
 // ============================================
 // TYPES
 // ============================================
@@ -64,6 +75,8 @@ export interface WizardState {
   countingMethod: Partial<CountingMethodData>;
   cameraPosition: Partial<CameraPositionData>;
   jointConfig: Partial<JointConfigData>;
+  jointConfigVariants: Record<number, TrackedJointData[]>;
+  activeJointVariantIndex: number;
   positionChecks: Partial<PositionChecksData>;
   repConfig: Partial<RepCountingConfigData>;
   extras: Partial<ExtrasData>;
@@ -71,6 +84,7 @@ export interface WizardState {
   // Weight & Metrics configuration
   weightConfig: WeightConfigData;
   reportMetrics: ReportMetricsData;
+  alternatingConfig: AlternatingConfigData;
 }
 
 export interface WizardActions {
@@ -84,6 +98,8 @@ export interface WizardActions {
   setCountingMethod: (data: Partial<CountingMethodData>) => void;
   setCameraPosition: (data: Partial<CameraPositionData>) => void;
   setJointConfig: (data: Partial<JointConfigData>) => void;
+  setJointConfigVariants: (variants: Record<number, TrackedJointData[]>) => void;
+  setActiveJointVariantIndex: (index: number) => void;
   setPositionChecks: (data: Partial<PositionChecksData>) => void;
   setRepConfig: (data: Partial<RepCountingConfigData>) => void;
   setExtras: (data: Partial<ExtrasData>) => void;
@@ -91,6 +107,12 @@ export interface WizardActions {
   // Weight & Metrics
   setWeightConfig: (data: Partial<WeightConfigData>) => void;
   setReportMetrics: (data: Partial<ReportMetricsData>) => void;
+
+  // Alternating config
+  setAlternatingConfig: (data: Partial<AlternatingConfigData>) => void;
+  addAlternatingVariant: (variant: AlternatingVariantForm) => void;
+  updateAlternatingVariant: (index: number, variant: AlternatingVariantForm) => void;
+  removeAlternatingVariant: (index: number) => void;
   
   // Joint helpers
   addTrackedJoint: (joint: TrackedJointData) => void;
@@ -152,6 +174,8 @@ const initialState: WizardState = {
   jointConfig: {
     trackedJoints: [],
   },
+  jointConfigVariants: {},
+  activeJointVariantIndex: 0,
   positionChecks: {
     positionChecks: [],
   },
@@ -178,6 +202,11 @@ const initialState: WizardState = {
     primary: ['form_score'],
     optional: [],
     excluded: [],
+  },
+  alternatingConfig: {
+    enabled: false,
+    switchEvery: 1,
+    variants: [],
   },
 };
 
@@ -239,6 +268,15 @@ export const useWizardStore = create<WizardStore>()(
         jointConfig: { ...state.jointConfig, ...data },
         isDirty: true,
       })),
+
+      setJointConfigVariants: (variants) => set(() => ({
+        jointConfigVariants: variants,
+        isDirty: true,
+      })),
+
+      setActiveJointVariantIndex: (index) => set(() => ({
+        activeJointVariantIndex: index,
+      })),
       
       setPositionChecks: (data) => set((state) => ({
         positionChecks: { ...state.positionChecks, ...data },
@@ -263,6 +301,36 @@ export const useWizardStore = create<WizardStore>()(
       
       setReportMetrics: (data) => set((state) => ({
         reportMetrics: { ...state.reportMetrics, ...data },
+        isDirty: true,
+      })),
+
+      setAlternatingConfig: (data) => set((state) => ({
+        alternatingConfig: { ...state.alternatingConfig, ...data },
+        isDirty: true,
+      })),
+
+      addAlternatingVariant: (variant) => set((state) => ({
+        alternatingConfig: {
+          ...state.alternatingConfig,
+          variants: [...state.alternatingConfig.variants, variant],
+        },
+        isDirty: true,
+      })),
+
+      updateAlternatingVariant: (index, variant) => set((state) => {
+        const variants = [...state.alternatingConfig.variants];
+        variants[index] = variant;
+        return {
+          alternatingConfig: { ...state.alternatingConfig, variants },
+          isDirty: true,
+        };
+      }),
+
+      removeAlternatingVariant: (index) => set((state) => ({
+        alternatingConfig: {
+          ...state.alternatingConfig,
+          variants: state.alternatingConfig.variants.filter((_, i) => i !== index),
+        },
         isDirty: true,
       })),
       
@@ -378,11 +446,14 @@ export const useWizardStore = create<WizardStore>()(
         countingMethod: state.countingMethod,
         cameraPosition: state.cameraPosition,
         jointConfig: state.jointConfig,
+        jointConfigVariants: state.jointConfigVariants,
+        activeJointVariantIndex: state.activeJointVariantIndex,
         positionChecks: state.positionChecks,
         repConfig: state.repConfig,
         extras: state.extras,
         weightConfig: state.weightConfig,
         reportMetrics: state.reportMetrics,
+        alternatingConfig: state.alternatingConfig,
       }),
     }
   )

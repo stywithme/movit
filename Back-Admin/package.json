@@ -10,10 +10,7 @@
     "start:lan": "next start -H 0.0.0.0",
     "lint": "next lint",
     "prisma:generate": "prisma generate",
-    "prisma:migrate": "prisma migrate dev",
-    "prisma:seed": "tsx prisma/seed.ts",
-    "prisma:studio": "prisma studio",
-    "db:seed": "tsx --env-file=.env prisma/seed.ts"
+    "prisma:studio": "prisma studio"
   },
   "dependencies": {
     "@google-cloud/storage": "^7.18.0",

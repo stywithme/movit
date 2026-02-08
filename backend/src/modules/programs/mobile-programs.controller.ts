@@ -1,0 +1,72 @@
+import { Body, Controller, Get, Param, Post, Req, Res } from '@nestjs/common';
+import type { Request, Response } from 'express';
+import { verifyMobileToken } from '@/modules/auth/auth.service';
+import { programService } from './programs.service';
+
+@Controller('mobile/programs')
+export class MobileProgramsController {
+  @Get()
+  async list(@Res({ passthrough: true }) res: Response) {
+    try {
+      const programs = await programService.getPublishedForMobile();
+      return {
+        success: true,
+        data: programs,
+        meta: {
+          count: programs.length,
+          timestamp: new Date().toISOString(),
+        },
+      };
+    } catch (error) {
+      console.error('Error fetching programs for mobile:', error);
+      res.status(500);
+      return { success: false, error: 'Failed to fetch programs' };
+    }
+  }
+
+  @Get(':id')
+  async getById(@Param('id') id: string, @Res({ passthrough: true }) res: Response) {
+    try {
+      const program = await programService.getById(id);
+      if (!program || !program.isPublished) {
+        res.status(404);
+        return { success: false, error: 'Program not found' };
+      }
+      return { success: true, data: programService.buildProgramExport(program) };
+    } catch (error) {
+      console.error('Error fetching program for mobile:', error);
+      res.status(500);
+      return { success: false, error: 'Failed to fetch program' };
+    }
+  }
+
+  @Post(':id/enroll')
+  async enroll(
+    @Req() req: Request,
+    @Param('id') id: string,
+    @Body() body: { name?: { ar?: string; en?: string } },
+    @Res({ passthrough: true }) res: Response
+  ) {
+    try {
+      const authResult = await verifyMobileToken(req);
+      if (!authResult.success || !authResult.userId) {
+        res.status(401);
+        return { success: false, error: authResult.error || 'Unauthorized' };
+      }
+
+      const program = await programService.getById(id);
+      if (!program || !program.isPublished) {
+        res.status(404);
+        return { success: false, error: 'Program not found' };
+      }
+
+      const enrollment = await programService.enrollUser(authResult.userId, id, body?.name as any);
+      return { success: true, data: enrollment };
+    } catch (error) {
+      console.error('Error enrolling in program:', error);
+      res.status(500);
+      return { success: false, error: 'Failed to enroll in program' };
+    }
+  }
+
+}

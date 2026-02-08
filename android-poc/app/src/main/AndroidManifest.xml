@@ -159,6 +159,41 @@
             android:exported="false"
             android:screenOrientation="portrait"
             android:theme="@style/Theme.WayToFix" />
+
+        <!-- Program List Activity -->
+        <activity
+            android:name=".ui.ProgramListActivity"
+            android:exported="false"
+            android:screenOrientation="portrait"
+            android:theme="@style/Theme.WayToFix" />
+
+        <!-- Program Detail Activity -->
+        <activity
+            android:name=".ui.ProgramDetailActivity"
+            android:exported="false"
+            android:screenOrientation="portrait"
+            android:theme="@style/Theme.WayToFix" />
+
+        <!-- Program Day Activity -->
+        <activity
+            android:name=".ui.ProgramDayActivity"
+            android:exported="false"
+            android:screenOrientation="portrait"
+            android:theme="@style/Theme.WayToFix" />
+
+        <!-- Program Session Activity -->
+        <activity
+            android:name=".ui.ProgramSessionActivity"
+            android:exported="false"
+            android:screenOrientation="portrait"
+            android:theme="@style/Theme.WayToFix" />
+
+        <!-- Program Session Report Activity -->
+        <activity
+            android:name=".ui.ProgramSessionReportActivity"
+            android:exported="false"
+            android:screenOrientation="portrait"
+            android:theme="@style/Theme.WayToFix" />
         
         <!-- Workout Activity (runs workout sessions) -->
         <activity

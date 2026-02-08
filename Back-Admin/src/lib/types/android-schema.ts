@@ -388,6 +388,24 @@ export interface ExerciseConfig {
   
   /** Does this exercise have position checks? - auto-detected */
   hasPositionChecks?: boolean;
+
+  /** Alternating config (multi-variant exercise) */
+  isAlternating?: boolean;
+  alternatingConfig?: AlternatingConfig;
+}
+
+// ============================================
+// ALTERNATING EXERCISE CONFIGURATION
+// ============================================
+
+export interface AlternatingVariantConfig {
+  label: LocalizedText;
+  variantIndex: number;
+}
+
+export interface AlternatingConfig {
+  switchEvery: number;
+  variants: AlternatingVariantConfig[];
 }
 
 // ============================================

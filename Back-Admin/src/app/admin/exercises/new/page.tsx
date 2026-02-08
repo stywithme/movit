@@ -142,6 +142,13 @@ export default function NewExercisePage() {
           maxRepIntervalMs: store.repConfig.maxRepIntervalMs || 5000,
         };
     
+    const jointVariants = store.alternatingConfig.enabled
+      ? {
+          ...store.jointConfigVariants,
+          [store.activeJointVariantIndex]: store.jointConfig.trackedJoints || [],
+        }
+      : {};
+
     return {
       name: store.basicInfo.name,
       description: store.basicInfo.description,
@@ -153,16 +160,43 @@ export default function NewExercisePage() {
       equipment: store.extras.equipment,
       tags: store.extras.tags,
       repCountingConfig,
-      poseVariants: store.cameraPosition.cameraPositionIds?.map((cameraPositionId, index) => ({
-        name: store.basicInfo.name,
-        cameraPositionId,
-        expectedFacingDirection: store.cameraPosition.expectedFacingDirection,
-        referenceImageUrl: store.cameraPosition.referenceImages?.[cameraPositionId] || undefined,
-        trackedJointsConfig,
-        positionChecks,
-        messageAssignments: feedbackAssignments.length > 0 ? feedbackAssignments : undefined,
-        sortOrder: index + 1,
-      })),
+      poseVariants: store.cameraPosition.cameraPositionIds?.map((cameraPositionId, index) => {
+        const jointsForVariant = store.alternatingConfig.enabled
+          ? (jointVariants[index] || [])
+          : (store.jointConfig.trackedJoints || []);
+        const mappedJoints = jointsForVariant.map((joint: TrackedJointData) => {
+          if (joint.role === 'primary') {
+            return {
+              joint: joint.joint,
+              role: 'primary',
+              startPose: joint.startPose,
+              upRange: joint.upRange,
+              downRange: joint.downRange,
+              stateMessages: joint.stateMessages,
+              pairedWith: joint.pairedWith,
+              invertIndicator: joint.invertIndicator,
+            };
+          }
+          return {
+            joint: joint.joint,
+            role: 'secondary',
+            startPose: joint.startPose,
+            range: joint.range,
+            stateMessages: joint.stateMessages,
+            pairedWith: joint.pairedWith,
+          };
+        });
+        return {
+          name: store.basicInfo.name,
+          cameraPositionId,
+          expectedFacingDirection: store.cameraPosition.expectedFacingDirection,
+          referenceImageUrl: store.cameraPosition.referenceImages?.[cameraPositionId] || undefined,
+          trackedJointsConfig: mappedJoints.length > 0 ? mappedJoints : trackedJointsConfig,
+          positionChecks,
+          messageAssignments: feedbackAssignments.length > 0 ? feedbackAssignments : undefined,
+          sortOrder: index + 1,
+        };
+      }),
       // Weight configuration
       supportsWeight: store.weightConfig.supportsWeight,
       minWeight: store.weightConfig.minWeight,
@@ -174,6 +208,16 @@ export default function NewExercisePage() {
         optional: store.reportMetrics.optional,
         excluded: store.reportMetrics.excluded,
       },
+      // Alternating configuration (optional)
+      alternatingConfig: store.alternatingConfig.enabled && store.alternatingConfig.variants.length > 0
+        ? {
+            switchEvery: store.alternatingConfig.switchEvery,
+            variants: store.alternatingConfig.variants.map((variant) => ({
+              label: variant.label,
+              variantIndex: variant.variantIndex,
+            })),
+          }
+        : undefined,
     };
   }, []);
   

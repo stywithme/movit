@@ -2,424 +2,178 @@ package com.trainingvalidator.poc.training.workout
 
 import android.util.Log
 import com.trainingvalidator.poc.training.TrainingEngine
-import com.trainingvalidator.poc.training.models.*
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 
 /**
- * WorkoutTrainingEngine - Hot-swap capable wrapper for TrainingEngine
- * 
- * This engine supports switching between exercises WITHOUT recreating the camera
- * or pose detection pipeline. Used for ALTERNATING mode workouts where fast,
- * seamless transitions are essential (e.g., alternating left/right arm exercises).
- * 
- * Key Features:
- * - Hot-swap: Switch exercise config instantly without camera restart
- * - Preserves camera/pose detection state across exercise switches
- * - Manages exercise sequence and cycling for alternating mode
- * - Tracks cumulative progress (reps, correct reps, accuracy) across all exercises
- * - Applies WorkoutExercise.target overrides to each TrainingEngine
- * 
- * Architecture Note:
- *   - WorkoutRunner: For SEQUENTIAL mode (separate TrainingActivity per exercise)
- *   - WorkoutTrainingEngine: For ALTERNATING/Hot-Swap mode (single TrainingActivity)
- * 
- * This class is instantiated and managed by TrainingActivity when launched in 
- * Workout Mode (EXTRA_IS_WORKOUT_MODE = true, EXTRA_WORKOUT_NAME set).
- * 
- * Usage:
- * 1. Create with list of LoadedExercise and WorkoutConfig
- * 2. Call start() to begin with first exercise (returns TrainingEngine)
- * 3. TrainingActivity calls onRepsCompleted() when session rep limit is reached
- * 4. Based on SwitchResult, call switchToNextExercise() for hot-swap
- * 5. Continue until WorkoutComplete is returned
+ * WorkoutTrainingEngine - Hot-swap engine (legacy)
+ *
+ * This engine is kept for compatibility with the legacy Workout Mode.
+ * The simplified workout flow is now handled by WorkoutRunner.
  */
 class WorkoutTrainingEngine(
-    private val exercises: List<LoadedExercise>,
-    private val workoutConfig: WorkoutConfig
+    private val exercises: List<LoadedExercise>
 ) {
     companion object {
         private const val TAG = "WorkoutTrainingEngine"
     }
-    
-    // ==================== Current State ====================
-    
+
     private var currentExerciseIndex = 0
     private var currentEngine: TrainingEngine? = null
-    private var _exerciseRepsCompleted = mutableMapOf<Int, Int>()  // index -> reps done
-    private var _exerciseRepsTargets = mutableMapOf<Int, Int>()    // index -> target reps
+    private val _exerciseRepsCompleted = mutableMapOf<Int, Int>()
+    private val _exerciseRepsTargets = mutableMapOf<Int, Int>()
     private var _totalRepsCompleted = 0
-    private var _totalCorrectReps = 0  // Track correct reps for accuracy calculation
-    private var _currentRound = 1
-    
-    // ==================== State Flows ====================
-    
+    private var _totalCorrectReps = 0
+
     private val _currentExercise = MutableStateFlow<LoadedExercise?>(null)
     val currentExercise: StateFlow<LoadedExercise?> = _currentExercise
-    
+
     private val _isWorkoutCompleted = MutableStateFlow(false)
     val isWorkoutCompleted: StateFlow<Boolean> = _isWorkoutCompleted
-    
+
     private val _isSwitching = MutableStateFlow(false)
     val isSwitching: StateFlow<Boolean> = _isSwitching
-    
+
     private val _switchInfo = MutableStateFlow<SwitchInfo?>(null)
     val switchInfo: StateFlow<SwitchInfo?> = _switchInfo
-    
-    // ==================== Callbacks ====================
-    
-    /**
-     * Called when exercise is switched (for UI animation)
-     */
+
     var onExerciseSwitched: ((fromExercise: String, toExercise: String, repsThisSession: Int) -> Unit)? = null
-    
-    /**
-     * Called when all exercises are complete
-     */
     var onWorkoutCompleted: ((totalReps: Int, rounds: Int) -> Unit)? = null
-    
-    /**
-     * Called when a round is complete (in alternating mode, after cycling through all exercises)
-     */
     var onRoundCompleted: ((roundNumber: Int, totalRounds: Int) -> Unit)? = null
-    
-    // ==================== Properties ====================
-    
-    val isAlternatingMode: Boolean get() = workoutConfig.isAlternating()
-    val repsPerSwitch: Int get() = workoutConfig.getEffectiveRepsPerSwitch()
-    val totalExercises: Int get() = exercises.size
-    
-    // ==================== Initialization ====================
-    
+
     init {
-        // Initialize targets for each exercise
         exercises.forEachIndexed { index, exercise ->
             val targetReps = exercise.getTargetReps() ?: 10
             _exerciseRepsTargets[index] = targetReps
             _exerciseRepsCompleted[index] = 0
         }
-        
+
         Log.d(TAG, "WorkoutTrainingEngine initialized with ${exercises.size} exercises")
-        Log.d(TAG, "Mode: ${if (isAlternatingMode) "ALTERNATING" else "SEQUENTIAL"}, repsPerSwitch: $repsPerSwitch")
     }
-    
-    // ==================== Public API ====================
-    
-    /**
-     * Get the current TrainingEngine
-     * Returns null if not started
-     */
+
     fun getEngine(): TrainingEngine? = currentEngine
-    
-    /**
-     * Start the workout with the first exercise
-     * Creates the initial TrainingEngine
-     */
+
     fun start(): TrainingEngine {
         currentExerciseIndex = 0
-        _currentRound = 1
         _totalRepsCompleted = 0
         _exerciseRepsCompleted.keys.forEach { _exerciseRepsCompleted[it] = 0 }
-        
+
         val exercise = exercises[currentExerciseIndex]
         _currentExercise.value = exercise
-        
+
         currentEngine = createEngine(exercise)
-        
         Log.d(TAG, "Started with exercise: ${exercise.getDisplayName()}")
-        
         return currentEngine!!
     }
-    
+
     /**
-     * Get reps allowed for current session
-     * In alternating mode, limited by repsPerSwitch
+     * Legacy workout mode does not auto-limit reps per session.
      */
-    fun getRepsForCurrentSession(): Int {
-        if (!isAlternatingMode) return Int.MAX_VALUE
-        
-        val remaining = getRemainingRepsForCurrentExercise()
-        return minOf(repsPerSwitch, remaining)
-    }
-    
-    /**
-     * Get remaining reps for current exercise to reach its target
-     */
-    fun getRemainingRepsForCurrentExercise(): Int {
-        val target = _exerciseRepsTargets[currentExerciseIndex] ?: 0
-        val completed = _exerciseRepsCompleted[currentExerciseIndex] ?: 0
-        return (target - completed).coerceAtLeast(0)
-    }
-    
-    /**
-     * Called when reps are completed in the current session
-     * 
-     * @param reps Number of reps completed in this session
-     * @param correctReps Number of correct reps (for accuracy tracking)
-     * @return SwitchResult indicating next action
-     */
+    fun getRepsForCurrentSession(): Int = Int.MAX_VALUE
+
     fun onRepsCompleted(reps: Int, correctReps: Int = reps): SwitchResult {
-        // Update completed reps for current exercise
         val currentCompleted = _exerciseRepsCompleted[currentExerciseIndex] ?: 0
         val newCompleted = currentCompleted + reps
         _exerciseRepsCompleted[currentExerciseIndex] = newCompleted
         _totalRepsCompleted += reps
         _totalCorrectReps += correctReps
-        
+
         val target = _exerciseRepsTargets[currentExerciseIndex] ?: 0
-        
-        Log.d(TAG, "Exercise $currentExerciseIndex: $newCompleted/$target reps completed (correct: $correctReps)")
-        
-        if (!isAlternatingMode) {
-            // Sequential mode: check if current exercise is done
-            if (newCompleted >= target) {
-                return handleExerciseComplete()
-            }
-            return SwitchResult.Continue
+        Log.d(TAG, "Exercise $currentExerciseIndex: $newCompleted/$target reps completed")
+
+        if (newCompleted >= target) {
+            return handleExerciseComplete()
         }
-        
-        // Alternating mode: always switch after session reps
-        return handleAlternatingSwitch()
+
+        return SwitchResult.Continue
     }
-    
-    /**
-     * Get overall accuracy percentage (0-100)
-     */
+
     fun getOverallAccuracy(): Float {
         if (_totalRepsCompleted == 0) return 100f
         return (_totalCorrectReps.toFloat() / _totalRepsCompleted.toFloat()) * 100f
     }
-    
-    /**
-     * Switch to next exercise (hot-swap)
-     * Creates new TrainingEngine with the next exercise config
-     * Returns the new engine
-     */
+
     fun switchToNextExercise(): TrainingEngine? {
         val previousExercise = _currentExercise.value
         val previousName = previousExercise?.getDisplayName() ?: ""
-        
-        // Find next exercise with remaining reps
-        val nextIndex = findNextIncompleteExercise()
-        
-        if (nextIndex == -1) {
-            // All exercises complete - check for more rounds
-            return handleRoundComplete()
+
+        val nextIndex = currentExerciseIndex + 1
+        if (nextIndex >= exercises.size) {
+            completeWorkout()
+            return null
         }
-        
+
         currentExerciseIndex = nextIndex
         val nextExercise = exercises[currentExerciseIndex]
-        
-        // Signal switching (for UI animation)
+
         _isSwitching.value = true
         _switchInfo.value = SwitchInfo(
             fromExercise = previousName,
             toExercise = nextExercise.getDisplayName(),
             repsThisSession = getRepsForCurrentSession()
         )
-        
-        // Stop current engine
+
         currentEngine?.stop()
-        
-        // Create new engine with next exercise
         _currentExercise.value = nextExercise
         currentEngine = createEngine(nextExercise)
-        
+
         Log.d(TAG, "Hot-swapped from $previousName to ${nextExercise.getDisplayName()}")
-        
-        // Notify callback
         onExerciseSwitched?.invoke(previousName, nextExercise.getDisplayName(), getRepsForCurrentSession())
-        
-        // Clear switching state after a brief moment (UI can animate)
         _isSwitching.value = false
-        
+
         return currentEngine
     }
-    
-    /**
-     * Force switch to a specific exercise by index
-     */
+
     fun switchToExercise(index: Int): TrainingEngine? {
         if (index < 0 || index >= exercises.size) return null
-        
-        currentExerciseIndex = index - 1  // Will be incremented in switchToNextExercise
+        currentExerciseIndex = index - 1
         return switchToNextExercise()
     }
-    
-    /**
-     * Get progress info for UI
-     * 
-     * totalRepsTarget accounts for all rounds (sum per round * total rounds)
-     */
+
     fun getProgressInfo(): WorkoutProgressInfo {
-        val repsPerRound = _exerciseRepsTargets.values.sum()
-        val totalRepsAcrossAllRounds = repsPerRound * workoutConfig.rounds
-        
+        val totalRepsTarget = _exerciseRepsTargets.values.sum()
         return WorkoutProgressInfo(
             currentExerciseIndex = currentExerciseIndex,
             totalExercises = exercises.size,
-            currentExerciseName = _currentExercise.value?.getDisplayName() ?: "",
-            currentExerciseReps = _exerciseRepsCompleted[currentExerciseIndex] ?: 0,
-            currentExerciseTarget = _exerciseRepsTargets[currentExerciseIndex] ?: 0,
             totalRepsCompleted = _totalRepsCompleted,
-            totalRepsTarget = totalRepsAcrossAllRounds,
-            currentRound = _currentRound,
-            totalRounds = workoutConfig.rounds,
-            repsThisSession = getRepsForCurrentSession()
+            totalRepsTarget = totalRepsTarget,
+            totalRounds = 1
         )
     }
-    
-    /**
-     * Stop the workout and cleanup
-     */
+
+    fun getCurrentExerciseName(): String = _currentExercise.value?.getDisplayName() ?: ""
+
     fun stop() {
         currentEngine?.stop()
-        currentEngine = null
-        _currentExercise.value = null
     }
-    
-    // ==================== Private Methods ====================
-    
-    /**
-     * Create TrainingEngine with target overrides from workout config
-     */
+
+    private fun handleExerciseComplete(): SwitchResult {
+        val nextIndex = currentExerciseIndex + 1
+        return if (nextIndex >= exercises.size) {
+            completeWorkout()
+            SwitchResult.WorkoutComplete(_totalRepsCompleted)
+        } else {
+            SwitchResult.SwitchNow(exercises[nextIndex].getDisplayName(), getRepsForCurrentSession())
+        }
+    }
+
+    private fun completeWorkout() {
+        _isWorkoutCompleted.value = true
+        onWorkoutCompleted?.invoke(_totalRepsCompleted, 1)
+    }
+
     private fun createEngine(exercise: LoadedExercise): TrainingEngine {
-        // Get target overrides from workout exercise
-        val targetRepsOverride = exercise.workoutExercise.target.reps
-        val targetDurationMsOverride = exercise.workoutExercise.target.getDurationMs()
-        
         return TrainingEngine(
             exerciseConfig = exercise.config,
             poseVariantIndex = exercise.workoutExercise.variantIndex,
-            targetRepsOverride = targetRepsOverride,
-            targetDurationMsOverride = targetDurationMsOverride
+            targetRepsOverride = exercise.getTargetReps(),
+            targetDurationMsOverride = exercise.getTargetDurationSec()?.let { it * 1000L }
         )
-    }
-    
-    private fun findNextIncompleteExercise(): Int {
-        val exerciseCount = exercises.size
-        
-        // Start from next exercise and wrap around
-        for (i in 1..exerciseCount) {
-            val index = (currentExerciseIndex + i) % exerciseCount
-            val completed = _exerciseRepsCompleted[index] ?: 0
-            val target = _exerciseRepsTargets[index] ?: 0
-            
-            if (completed < target) {
-                return index
-            }
-        }
-        
-        // All exercises complete
-        return -1
-    }
-    
-    private fun handleAlternatingSwitch(): SwitchResult {
-        val nextIndex = findNextIncompleteExercise()
-        
-        if (nextIndex == -1) {
-            // All done in this round
-            if (_currentRound >= workoutConfig.rounds) {
-                _isWorkoutCompleted.value = true
-                onWorkoutCompleted?.invoke(_totalRepsCompleted, _currentRound)
-                return SwitchResult.WorkoutComplete
-            }
-            
-            // More rounds to go
-            return SwitchResult.RoundComplete(_currentRound, workoutConfig.rounds)
-        }
-        
-        // Need to switch
-        return SwitchResult.SwitchNow(
-            nextIndex = nextIndex,
-            nextExerciseName = exercises[nextIndex].getDisplayName(),
-            repsThisSession = minOf(
-                repsPerSwitch,
-                (_exerciseRepsTargets[nextIndex] ?: 0) - (_exerciseRepsCompleted[nextIndex] ?: 0)
-            )
-        )
-    }
-    
-    private fun handleExerciseComplete(): SwitchResult {
-        val nextIndex = currentExerciseIndex + 1
-        
-        if (nextIndex >= exercises.size) {
-            // Round complete
-            if (_currentRound >= workoutConfig.rounds) {
-                _isWorkoutCompleted.value = true
-                onWorkoutCompleted?.invoke(_totalRepsCompleted, _currentRound)
-                return SwitchResult.WorkoutComplete
-            }
-            
-            return SwitchResult.RoundComplete(_currentRound, workoutConfig.rounds)
-        }
-        
-        // Move to next exercise
-        return SwitchResult.SwitchNow(
-            nextIndex = nextIndex,
-            nextExerciseName = exercises[nextIndex].getDisplayName(),
-            repsThisSession = Int.MAX_VALUE
-        )
-    }
-    
-    private fun handleRoundComplete(): TrainingEngine? {
-        if (_currentRound >= workoutConfig.rounds) {
-            // Workout complete
-            _isWorkoutCompleted.value = true
-            onWorkoutCompleted?.invoke(_totalRepsCompleted, _currentRound)
-            return null
-        }
-        
-        // Start new round
-        _currentRound++
-        currentExerciseIndex = 0
-        
-        // Reset completed reps for new round
-        exercises.forEachIndexed { index, _ ->
-            _exerciseRepsCompleted[index] = 0
-        }
-        
-        onRoundCompleted?.invoke(_currentRound - 1, workoutConfig.rounds)
-        
-        // Start first exercise of new round
-        val exercise = exercises[0]
-        _currentExercise.value = exercise
-        
-        currentEngine?.stop()
-        currentEngine = createEngine(exercise)
-        
-        Log.d(TAG, "Starting round $_currentRound with ${exercise.getDisplayName()}")
-        
-        return currentEngine
     }
 }
 
 /**
- * Result of checking if we should switch exercises
- */
-sealed class SwitchResult {
-    /** Continue with current exercise */
-    object Continue : SwitchResult()
-    
-    /** Switch to next exercise immediately */
-    data class SwitchNow(
-        val nextIndex: Int,
-        val nextExerciseName: String,
-        val repsThisSession: Int
-    ) : SwitchResult()
-    
-    /** Current round is complete, need rest before next */
-    data class RoundComplete(
-        val roundNumber: Int,
-        val totalRounds: Int
-    ) : SwitchResult()
-    
-    /** Entire workout is complete */
-    object WorkoutComplete : SwitchResult()
-}
-
-/**
- * Info about the current switch (for UI animation)
+ * Switch info for UI animation
  */
 data class SwitchInfo(
     val fromExercise: String,
@@ -428,29 +182,33 @@ data class SwitchInfo(
 )
 
 /**
- * Progress info for UI display
+ * Result of a completed session segment
+ */
+sealed class SwitchResult {
+    object Continue : SwitchResult()
+
+    data class SwitchNow(
+        val nextExerciseName: String,
+        val repsThisSession: Int
+    ) : SwitchResult()
+
+    data class RoundComplete(
+        val roundNumber: Int,
+        val totalRounds: Int
+    ) : SwitchResult()
+
+    data class WorkoutComplete(
+        val totalReps: Int
+    ) : SwitchResult()
+}
+
+/**
+ * Workout progress for UI
  */
 data class WorkoutProgressInfo(
     val currentExerciseIndex: Int,
     val totalExercises: Int,
-    val currentExerciseName: String,
-    val currentExerciseReps: Int,
-    val currentExerciseTarget: Int,
     val totalRepsCompleted: Int,
     val totalRepsTarget: Int,
-    val currentRound: Int,
-    val totalRounds: Int,
-    val repsThisSession: Int
-) {
-    fun getExerciseProgress(): Float {
-        if (currentExerciseTarget == 0) return 0f
-        return currentExerciseReps.toFloat() / currentExerciseTarget
-    }
-    
-    fun getOverallProgress(): Float {
-        if (totalRepsTarget == 0) return 0f
-        return totalRepsCompleted.toFloat() / totalRepsTarget
-    }
-    
-    fun getPositionDisplay(): String = "${currentExerciseIndex + 1}/${totalExercises}"
-}
+    val totalRounds: Int
+)

@@ -41,6 +41,10 @@ data class ExerciseConfig(
     
     /** Does this exercise have position checks? (for Alignment metric) */
     val hasPositionChecks: Boolean = false,
+
+    /** Alternating config (multi-variant exercise) */
+    val isAlternating: Boolean = false,
+    val alternatingConfig: AlternatingConfig? = null,
     
     // Runtime field - set by ExerciseLoader
     @Transient
@@ -144,6 +148,20 @@ data class ExerciseConfig(
         tags = tags ?: emptyList()
     )
 }
+
+/**
+ * Alternating configuration for an exercise.
+ * Each variant points to a pose variant index and has a label for UI.
+ */
+data class AlternatingConfig(
+    val switchEvery: Int = 1,
+    val variants: List<AlternatingVariant> = emptyList()
+)
+
+data class AlternatingVariant(
+    val label: LocalizedText,
+    val variantIndex: Int
+)
 
 /**
  * Localized text (Arabic + English)
@@ -418,7 +436,7 @@ data class TrackedJoint(
     val upRange: StateRanges? = null,           // State ranges for UP position (PRIMARY)
     @SerializedName(value = "downRange", alternate = ["stateDownRange"])
     val downRange: StateRanges? = null,         // State ranges for DOWN position (PRIMARY)
-    @SerializedName(value = "Range", alternate = ["range", "stateRange"])
+    @SerializedName(value = "range", alternate = ["stateRange"])
     val range: StateRanges? = null,             // State ranges for SECONDARY (hold)
     
     // State-specific messages (MEDIUM priority feedback)

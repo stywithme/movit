@@ -3,8 +3,14 @@ package com.trainingvalidator.poc.ui
 import android.Manifest
 import android.content.pm.PackageManager
 import android.graphics.Color
+import android.media.AudioManager
+import android.media.ToneGenerator
+import android.net.Uri
+import android.os.Build
 import android.os.Bundle
 import android.os.SystemClock
+import android.os.VibrationEffect
+import android.os.Vibrator
 import android.util.Log
 import android.view.View
 import android.view.WindowManager
@@ -40,8 +46,8 @@ import com.trainingvalidator.poc.ui.training.PoseValidator
 import com.trainingvalidator.poc.ui.training.TrainingUIEvent
 import com.trainingvalidator.poc.ui.training.TrainingViewModel
 import com.trainingvalidator.poc.ui.training.VideoModeController
-import android.net.Uri
 import android.widget.SeekBar
+import android.widget.TextView
 import com.trainingvalidator.poc.training.engine.HoldState
 import com.trainingvalidator.poc.training.engine.Phase
 import com.trainingvalidator.poc.training.models.JointState
@@ -97,12 +103,21 @@ class TrainingActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetection
         const val EXTRA_INDICATOR_TYPE = "indicator_type"
         const val EXTRA_WEIGHT_KG = "weight_kg"           // Weight in kilograms (optional)
         const val EXTRA_WEIGHT_UNIT = "weight_unit"       // "kg" or "lbs" (default: kg)
+
+        // Session mode extras
+        const val EXTRA_IS_SESSION_MODE = "is_session_mode"
+        const val EXTRA_SESSION_ITEMS_JSON = "session_items_json"
         
         // Result extras
         const val RESULT_REPS_COMPLETED = "reps_completed"
         const val RESULT_DURATION_MS = "duration_ms"
         const val RESULT_ACCURACY = "accuracy"
         const val RESULT_IS_COMPLETED = "is_completed"
+        const val RESULT_SESSION_SETS_COMPLETED = "session_sets_completed"
+        const val RESULT_SESSION_SETS_PLANNED = "session_sets_planned"
+        const val RESULT_SESSION_TOTAL_REPS = "session_total_reps"
+        const val RESULT_SESSION_AVG_ACCURACY = "session_avg_accuracy"
+        const val RESULT_SESSION_REPORT_JSON = "session_report_json"
         
         // Training modes
         const val MODE_CAMERA = "camera"
@@ -140,6 +155,15 @@ class TrainingActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetection
     private var isVideoMode = false
     private var videoUri: Uri? = null
     private var lastRepCount = 0
+    private var isWeightDialogVisible = false
+    private var hasShownWeightDialog = false
+
+    // Session mode state
+    private var isSessionMode = false
+    private var sessionTrainingEngine: com.trainingvalidator.poc.training.session.SessionTrainingEngine? = null
+    private var sessionRestTimer: android.os.CountDownTimer? = null
+    private var sessionRestRemainingMs: Long = 0L
+    private var sessionSetStartTimeMs: Long = 0L
 
     // Tracks pose presence transitions to avoid leaving stale form feedback visible when pose is lost.
     // This is intentionally Activity-local (UI concern) and does not affect session state machine behavior.
@@ -208,6 +232,32 @@ class TrainingActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetection
         } else {
             checkCameraPermission()
         }
+    }
+
+    override fun onBackPressed() {
+        if (isSessionMode && sessionTrainingEngine != null) {
+            val currentState = sessionTrainingEngine?.state?.value
+            if (currentState !is com.trainingvalidator.poc.training.session.SessionTrainingEngine.State.SessionComplete) {
+                showExitSessionDialog()
+                return
+            }
+        }
+        super.onBackPressed()
+    }
+
+    private fun showExitSessionDialog() {
+        android.app.AlertDialog.Builder(this)
+            .setTitle(getString(R.string.session_exit_title))
+            .setMessage(getString(R.string.session_exit_message))
+            .setPositiveButton(getString(R.string.session_exit_keep)) { dialog, _ ->
+                dialog.dismiss()
+            }
+            .setNegativeButton(getString(R.string.session_exit_exit)) { dialog, _ ->
+                dialog.dismiss()
+                finish()
+            }
+            .setCancelable(true)
+            .show()
     }
     
     /**
@@ -296,13 +346,7 @@ class TrainingActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetection
     
     private fun parseIntentExtras() {
         // Ensure ExerciseRepository is initialized before loading exercise
-        // This is needed because TrainingActivity might be launched directly
-        // without going through ExerciseListActivity which normally initializes it
         initializeExerciseRepository()
-        
-        val exerciseName = intent.getStringExtra(EXTRA_EXERCISE_NAME) ?: DEFAULT_EXERCISE
-        val difficultyStr = intent.getStringExtra(EXTRA_DIFFICULTY) ?: DEFAULT_DIFFICULTY
-        val poseVariantIndex = intent.getIntExtra(EXTRA_POSE_VARIANT, 0)
         
         // Training mode
         val trainingMode = intent.getStringExtra(EXTRA_TRAINING_MODE) ?: MODE_CAMERA
@@ -315,18 +359,37 @@ class TrainingActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetection
             return
         }
         
-        // Indicator type (from ExerciseDetailActivity or default from settings)
+        // Indicator type
         val indicatorType = intent.getStringExtra(EXTRA_INDICATOR_TYPE) 
             ?: com.trainingvalidator.poc.training.config.SettingsManager.getIndicatorType()
-        
-        // Set indicator type in overlay
         binding.skeletonOverlay.setIndicatorType(indicatorType)
+
+        // ── SESSION MODE ──
+        isSessionMode = intent.getBooleanExtra(EXTRA_IS_SESSION_MODE, false)
+        if (isSessionMode) {
+            initializeSessionMode()
+            viewModel.initializeFeedback(this, isVideoMode)
+            return
+        }
+        
+        // ── SINGLE EXERCISE / WORKOUT MODE ──
+        val exerciseName = intent.getStringExtra(EXTRA_EXERCISE_NAME) ?: DEFAULT_EXERCISE
+        val difficultyStr = intent.getStringExtra(EXTRA_DIFFICULTY) ?: DEFAULT_DIFFICULTY
+        val poseVariantIndex = intent.getIntExtra(EXTRA_POSE_VARIANT, 0)
         
         // Target overrides
         val targetRepsOverride = intent.getIntExtra(EXTRA_TARGET_REPS_OVERRIDE, -1)
             .takeIf { it > 0 }
         val targetDurationOverride = intent.getIntExtra(EXTRA_TARGET_DURATION_OVERRIDE, -1)
             .takeIf { it > 0 }?.let { it * 1000L }
+
+        // Weight overrides (optional)
+        val weightKg = if (intent.hasExtra(EXTRA_WEIGHT_KG)) {
+            intent.getFloatExtra(EXTRA_WEIGHT_KG, 0f)
+        } else {
+            null
+        }
+        val weightUnit = intent.getStringExtra(EXTRA_WEIGHT_UNIT) ?: "kg"
         
         // Workout mode
         val workoutName = intent.getStringExtra(EXTRA_WORKOUT_NAME)
@@ -334,7 +397,6 @@ class TrainingActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetection
         
         // Load exercise or workout via ViewModel
         if (isWorkoutMode && workoutName != null) {
-            // Pass context to enable repository-based loading (cached/synced data with audio)
             if (!viewModel.loadWorkout(workoutName, difficultyStr, context = this)) {
                 Toast.makeText(
                     this,
@@ -345,9 +407,16 @@ class TrainingActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetection
                 return
             }
         } else {
-            // Pass context to enable repository-based loading (cached/synced data)
-            if (!viewModel.loadExercise(exerciseName, difficultyStr, poseVariantIndex, 
-                    targetRepsOverride, targetDurationOverride, context = this)) {
+            if (!viewModel.loadExercise(
+                    exerciseName,
+                    difficultyStr,
+                    poseVariantIndex,
+                    targetRepsOverride,
+                    targetDurationOverride,
+                    context = this,
+                    weightKg = weightKg,
+                    weightUnit = weightUnit
+                )) {
                 Toast.makeText(
                     this,
                     getString(R.string.failed_to_load_exercise_format, exerciseName),
@@ -358,6 +427,8 @@ class TrainingActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetection
             }
         }
         
+        maybeShowWeightDialog()
+
         // Initialize feedback
         viewModel.initializeFeedback(this, isVideoMode)
     }
@@ -368,6 +439,7 @@ class TrainingActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetection
         
         // Close button
         binding.btnClose.setOnClickListener { 
+            sessionRestTimer?.cancel()
             viewModel.requestStop()
             finish() 
         }
@@ -393,7 +465,515 @@ class TrainingActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetection
         updateUIForSessionState(SessionState.SETUP_POSE)
         showPoseRequirements()
     }
+
+    private fun maybeShowWeightDialog() {
+        val config = viewModel.exerciseConfig.value ?: return
+        if (!config.supportsWeight || hasShownWeightDialog) return
+
+        hasShownWeightDialog = true
+        isWeightDialogVisible = true
+
+        val dialogView = layoutInflater.inflate(R.layout.dialog_weight_confirm, null)
+        val dialog = android.app.AlertDialog.Builder(this, R.style.Theme_WayToFix_Dialog)
+            .setView(dialogView)
+            .setCancelable(false)
+            .create()
+
+        val inputLayout = dialogView.findViewById<com.google.android.material.textfield.TextInputLayout>(R.id.inputWeightLayout)
+        val inputField = dialogView.findViewById<com.google.android.material.textfield.TextInputEditText>(R.id.inputWeight)
+        val tvRange = dialogView.findViewById<TextView>(R.id.tvWeightRange)
+        val btnStart = dialogView.findViewById<com.google.android.material.button.MaterialButton>(R.id.btnWeightStart)
+        val btnCancel = dialogView.findViewById<com.google.android.material.button.MaterialButton>(R.id.btnWeightCancel)
+
+        val defaultWeight = viewModel.getWeightKg() ?: config.defaultWeight
+        val minWeight = config.minWeight
+        val maxWeight = config.maxWeight
+
+        inputField.setText(defaultWeight?.toString().orEmpty())
+
+        val rangeText = when {
+            minWeight != null && maxWeight != null ->
+                getString(R.string.weight_min_max_format, minWeight, maxWeight)
+            minWeight != null ->
+                getString(R.string.weight_min_only_format, minWeight)
+            maxWeight != null ->
+                getString(R.string.weight_max_only_format, maxWeight)
+            else -> ""
+        }
+        tvRange.text = rangeText
+        tvRange.visibility = if (rangeText.isNotEmpty()) View.VISIBLE else View.GONE
+
+        btnStart.setOnClickListener {
+            val rawInput = inputField.text?.toString()?.trim().orEmpty()
+            val parsed = rawInput.toFloatOrNull() ?: defaultWeight
+
+            if (parsed != null) {
+                if (minWeight != null && parsed < minWeight) {
+                    inputLayout.error = getString(R.string.weight_min_error, minWeight)
+                    return@setOnClickListener
+                }
+                if (maxWeight != null && parsed > maxWeight) {
+                    inputLayout.error = getString(R.string.weight_max_error, maxWeight)
+                    return@setOnClickListener
+                }
+            }
+
+            inputLayout.error = null
+            viewModel.updateSessionWeight(parsed, "kg")
+            isWeightDialogVisible = false
+            dialog.dismiss()
+        }
+
+        btnCancel.setOnClickListener {
+            viewModel.updateSessionWeight(null, "kg")
+            isWeightDialogVisible = false
+            dialog.dismiss()
+        }
+
+        dialog.setOnDismissListener {
+            isWeightDialogVisible = false
+        }
+
+        dialog.show()
+    }
     
+    // ==================== Session Mode ====================
+
+    /**
+     * Initialize session mode: parse items, create SessionTrainingEngine,
+     * resolve exercise names, observe state, and start the session.
+     */
+    private fun initializeSessionMode() {
+        val json = intent.getStringExtra(EXTRA_SESSION_ITEMS_JSON)
+        if (json.isNullOrBlank()) {
+            Log.e(TAG, "Session mode but no items JSON provided")
+            finish()
+            return
+        }
+
+        val gson = com.google.gson.Gson()
+        val itemsType = object : com.google.gson.reflect.TypeToken<List<com.trainingvalidator.poc.training.models.ProgramSessionItem>>() {}.type
+        val items: List<com.trainingvalidator.poc.training.models.ProgramSessionItem> = try {
+            gson.fromJson(json, itemsType)
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed to parse session items JSON", e)
+            finish()
+            return
+        }
+
+        if (items.isEmpty()) {
+            Log.w(TAG, "Session items list is empty")
+            finish()
+            return
+        }
+
+        // Create engine
+        val engine = com.trainingvalidator.poc.training.session.SessionTrainingEngine(items)
+
+        // Resolve exercise names
+        val exerciseRepo = ExerciseRepository.getInstance(this)
+        val language = java.util.Locale.getDefault().language
+        items.filter { it.type == "exercise" && it.exerciseSlug != null }.forEach { item ->
+            val slug = item.exerciseSlug ?: return@forEach
+            val config = exerciseRepo.getExercise(slug)
+            if (config != null) {
+                val name = config.name.get(language).ifBlank { config.name.en }
+                engine.setExerciseName(slug, name)
+            }
+        }
+
+        sessionTrainingEngine = engine
+
+        // Observe session engine state
+        observeSessionEngineState()
+
+        // Start the session
+        engine.start()
+    }
+
+    /**
+     * Observe SessionTrainingEngine state changes and update UI accordingly.
+     */
+    private fun observeSessionEngineState() {
+        val engine = sessionTrainingEngine ?: return
+        lifecycleScope.launch {
+            engine.state.collectLatest { sessionState ->
+                when (sessionState) {
+                    is com.trainingvalidator.poc.training.session.SessionTrainingEngine.State.Idle -> {
+                        // Waiting
+                    }
+                    is com.trainingvalidator.poc.training.session.SessionTrainingEngine.State.PreExercise -> {
+                        showSessionPreExercise(sessionState)
+                    }
+                    is com.trainingvalidator.poc.training.session.SessionTrainingEngine.State.Training -> {
+                        // Training handled by supervisor - panels already hidden
+                    }
+                    is com.trainingvalidator.poc.training.session.SessionTrainingEngine.State.SetRest -> {
+                        showSessionRest(
+                            durationMs = sessionState.durationMs,
+                            title = getString(R.string.session_rest_between_sets),
+                            nextInfo = getString(
+                                R.string.session_rest_next_set_format,
+                                sessionState.exerciseName,
+                                sessionState.nextSetNumber,
+                                sessionState.totalSets
+                            )
+                        )
+                    }
+                    is com.trainingvalidator.poc.training.session.SessionTrainingEngine.State.ExerciseRest -> {
+                        showSessionRest(
+                            durationMs = sessionState.durationMs,
+                            title = getString(R.string.session_rest_between_exercises),
+                            nextInfo = getString(
+                                R.string.session_rest_next_exercise_format,
+                                sessionState.nextExerciseName
+                            )
+                        )
+                    }
+                    is com.trainingvalidator.poc.training.session.SessionTrainingEngine.State.SessionComplete -> {
+                        showSessionComplete(sessionState.report)
+                    }
+                }
+            }
+        }
+    }
+
+    /**
+     * Show pre-exercise overlay with exercise info and "Start Set" button.
+     */
+    private fun showSessionPreExercise(
+        state: com.trainingvalidator.poc.training.session.SessionTrainingEngine.State.PreExercise
+    ) {
+        hideSessionPanels()
+        binding.sessionPreExercisePanel.visibility = View.VISIBLE
+
+        // Hide normal training UI
+        binding.setupPosePanel.visibility = View.GONE
+        binding.countdownPanel.visibility = View.GONE
+        binding.heroCounterContainer.visibility = View.GONE
+        binding.completedPanel.visibility = View.GONE
+        binding.bottomStatsBar.visibility = View.GONE
+        binding.progressContainer.visibility = View.GONE
+
+        val engine = sessionTrainingEngine ?: return
+        val item = state.item
+
+        // Exercise label: "EXERCISE 2/5"
+        binding.tvSessionExerciseLabel.text = getString(
+            R.string.session_exercise_label,
+            state.exerciseIndex + 1,
+            engine.getExerciseCount()
+        )
+
+        // Exercise name
+        binding.tvSessionExerciseName.text = state.exerciseName
+
+        // Set info: "Set 1 of 3 · 12 reps" or "Set 1 of 3 · 30s hold"
+        val targetReps = item.targetReps
+        val targetDuration = item.targetDuration
+        binding.tvSessionSetInfo.text = when {
+            targetReps != null && targetReps > 0 -> getString(
+                R.string.session_set_reps_format,
+                state.setNumber, state.totalSets, targetReps
+            )
+            targetDuration != null && targetDuration > 0 -> getString(
+                R.string.session_set_duration_format,
+                state.setNumber, state.totalSets, targetDuration
+            )
+            else -> getString(
+                R.string.session_set_only_format,
+                state.setNumber, state.totalSets
+            )
+        }
+
+        // Weight info
+        val weight = engine.getCurrentSetWeight()
+        if (weight != null && weight > 0f) {
+            binding.tvSessionWeightInfo.text = getString(R.string.session_weight_format, weight)
+            binding.tvSessionWeightInfo.visibility = View.VISIBLE
+        } else {
+            binding.tvSessionWeightInfo.visibility = View.GONE
+        }
+
+        // "Start Set" button
+        binding.btnSessionStartSet.setOnClickListener {
+            onSessionStartSetClicked(state)
+        }
+    }
+
+    /**
+     * Handle "Start Set" click: load exercise into ViewModel and start training.
+     */
+    private fun onSessionStartSetClicked(
+        state: com.trainingvalidator.poc.training.session.SessionTrainingEngine.State.PreExercise
+    ) {
+        val engine = sessionTrainingEngine ?: return
+        val item = state.item
+        val slug = item.exerciseSlug ?: return
+
+        // Hide pre-exercise panel
+        hideSessionPanels()
+
+        // Show normal training UI
+        binding.bottomStatsBar.visibility = View.VISIBLE
+
+        // Reset supervisor for fresh exercise flow
+        viewModel.supervisor.reset()
+        hasShownWeightDialog = false
+
+        // Prepare target overrides
+        val targetReps = item.targetReps?.takeIf { it > 0 }
+        val targetDurationMs = item.targetDuration?.takeIf { it > 0 }?.let { it * 1000L }
+        val weight = engine.getCurrentSetWeight()
+
+        // Load exercise into ViewModel (triggers supervisor → SETUP_POSE → COUNTDOWN → TRAINING)
+        if (!viewModel.loadExercise(
+                exerciseName = slug,
+                poseVariantIndex = 0,
+                targetRepsOverride = targetReps,
+                targetDurationMsOverride = targetDurationMs,
+                context = this,
+                weightKg = weight,
+                weightUnit = "kg"
+            )) {
+            Log.e(TAG, "Failed to load exercise for session: $slug")
+            // Skip this exercise
+            engine.onSetCompleted(
+                com.trainingvalidator.poc.training.session.SessionTrainingEngine.SetMetrics(
+                    exerciseSlug = slug,
+                    exerciseIndex = state.exerciseIndex,
+                    setNumber = state.setNumber,
+                    repsCompleted = 0,
+                    durationMs = 0L,
+                    accuracy = 0f,
+                    weightKg = weight
+                )
+            )
+            return
+        }
+
+        // Mark session engine as training
+        engine.startTraining()
+
+        // Record set start time for duration tracking
+        sessionSetStartTimeMs = System.currentTimeMillis()
+
+        // Show weight dialog if applicable
+        maybeShowWeightDialog()
+
+        // Initialize feedback if not yet done
+        if (viewModel.feedbackManager == null) {
+            viewModel.initializeFeedback(this, isVideoMode)
+        }
+    }
+
+    /**
+     * Show rest countdown overlay (between sets or between exercises).
+     */
+    private fun showSessionRest(durationMs: Long, title: String, nextInfo: String) {
+        hideSessionPanels()
+        binding.sessionRestPanel.visibility = View.VISIBLE
+
+        // Hide normal training UI
+        binding.setupPosePanel.visibility = View.GONE
+        binding.countdownPanel.visibility = View.GONE
+        binding.heroCounterContainer.visibility = View.GONE
+        binding.completedPanel.visibility = View.GONE
+        binding.bottomStatsBar.visibility = View.GONE
+        binding.progressContainer.visibility = View.GONE
+        binding.vignetteOverlay.clear()
+        binding.skeletonOverlay.setTrainingMode(false)
+
+        binding.tvSessionRestTitle.text = title
+        binding.tvSessionRestNext.text = nextInfo
+
+        startSessionRestTimer(durationMs)
+
+        binding.btnSessionAddTime.setOnClickListener {
+            startSessionRestTimer(sessionRestRemainingMs + 20000L)
+        }
+
+        binding.btnSessionEditRest.setOnClickListener {
+            showEditRestDialog()
+        }
+
+        // Skip rest button
+        binding.btnSessionSkipRest.setOnClickListener {
+            sessionRestTimer?.cancel()
+            sessionTrainingEngine?.onRestCompleted()
+        }
+    }
+
+    private fun startSessionRestTimer(durationMs: Long) {
+        sessionRestTimer?.cancel()
+        sessionRestRemainingMs = durationMs
+        sessionRestTimer = object : android.os.CountDownTimer(durationMs, 1000L) {
+            override fun onTick(millisUntilFinished: Long) {
+                val secs = (millisUntilFinished / 1000).toInt()
+                val m = secs / 60
+                val s = secs % 60
+                binding.tvSessionRestCountdown.text = String.format("%02d:%02d", m, s)
+                sessionRestRemainingMs = millisUntilFinished
+            }
+
+            override fun onFinish() {
+                binding.tvSessionRestCountdown.text = "00:00"
+                sessionRestRemainingMs = 0L
+                playRestEndAlert()
+                sessionTrainingEngine?.onRestCompleted()
+            }
+        }.start()
+    }
+
+    private fun showEditRestDialog() {
+        val input = android.widget.EditText(this).apply {
+            hint = getString(R.string.rest_seconds_hint)
+            inputType = android.text.InputType.TYPE_CLASS_NUMBER
+            setText((sessionRestRemainingMs / 1000L).toString())
+        }
+
+        android.app.AlertDialog.Builder(this)
+            .setTitle(getString(R.string.edit_rest))
+            .setView(input)
+            .setPositiveButton(getString(R.string.save)) { dialog, _ ->
+                val seconds = input.text.toString().toLongOrNull()
+                if (seconds != null && seconds > 0) {
+                    startSessionRestTimer(seconds * 1000L)
+                }
+                dialog.dismiss()
+            }
+            .setNegativeButton(getString(R.string.cancel)) { dialog, _ -> dialog.dismiss() }
+            .show()
+    }
+
+    private fun playRestEndAlert() {
+        val tone = ToneGenerator(AudioManager.STREAM_NOTIFICATION, 80)
+        tone.startTone(ToneGenerator.TONE_PROP_BEEP, 200)
+        tone.release()
+
+        val vibrator = getSystemService(VIBRATOR_SERVICE) as? Vibrator
+        if (vibrator?.hasVibrator() == true) {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                vibrator.vibrate(VibrationEffect.createOneShot(200, VibrationEffect.DEFAULT_AMPLITUDE))
+            } else {
+                @Suppress("DEPRECATION")
+                vibrator.vibrate(200)
+            }
+        }
+    }
+
+    /**
+     * Show session complete overlay with summary.
+     */
+    private fun showSessionComplete(
+        report: com.trainingvalidator.poc.training.session.SessionTrainingEngine.SessionReport
+    ) {
+        hideSessionPanels()
+        binding.sessionCompletePanel.visibility = View.VISIBLE
+
+        // Hide normal training UI
+        binding.setupPosePanel.visibility = View.GONE
+        binding.countdownPanel.visibility = View.GONE
+        binding.heroCounterContainer.visibility = View.GONE
+        binding.completedPanel.visibility = View.GONE
+        binding.bottomStatsBar.visibility = View.GONE
+        binding.progressContainer.visibility = View.GONE
+        binding.vignetteOverlay.clear()
+        binding.skeletonOverlay.setTrainingMode(false)
+
+        // Stop elapsed timer
+        stopElapsedTimeTimer()
+
+        val minutes = (report.totalDurationMs / 60000).toInt()
+        val seconds = ((report.totalDurationMs % 60000) / 1000).toInt()
+
+        binding.tvSessionCompleteSets.text = getString(
+            R.string.session_complete_sets_format,
+            report.totalSetsCompleted,
+            report.totalSetsPlanned
+        )
+        binding.tvSessionCompleteReps.text = getString(
+            R.string.session_complete_reps_format,
+            report.totalReps
+        )
+        binding.tvSessionCompleteDuration.text = getString(
+            R.string.session_complete_duration_format,
+            minutes, seconds
+        )
+        binding.tvSessionCompleteAccuracy.text = getString(
+            R.string.session_complete_accuracy_format,
+            report.averageAccuracy.toInt()
+        )
+
+        binding.btnSessionDone.setOnClickListener {
+            finishSessionWithResult(report)
+        }
+    }
+
+    /**
+     * Called when a set completes during session mode.
+     * Collects metrics and passes to SessionTrainingEngine.
+     */
+    private fun onSessionSetCompleted() {
+        val engine = sessionTrainingEngine ?: return
+        val currentItem = engine.getCurrentExerciseItem() ?: return
+        val trainingEng = viewModel.trainingEngine
+
+        val reps = trainingEng?.getCurrentRep() ?: 0
+        val accuracy = trainingEng?.getAccuracy() ?: 0f
+        val durationMs = System.currentTimeMillis() - sessionSetStartTimeMs
+        val weight = engine.getCurrentSetWeight()
+
+        // Stop the training engine for this set
+        trainingEng?.stop()
+        stopElapsedTimeTimer()
+
+        val metrics = com.trainingvalidator.poc.training.session.SessionTrainingEngine.SetMetrics(
+            exerciseSlug = currentItem.exerciseSlug ?: "",
+            exerciseIndex = engine.getCurrentExerciseIndex(),
+            setNumber = engine.getCurrentSetNumber(),
+            repsCompleted = reps,
+            durationMs = durationMs,
+            accuracy = accuracy,
+            weightKg = weight
+        )
+
+        Log.d(TAG, "Session set completed: ${metrics.exerciseSlug} " +
+                "set ${metrics.setNumber}, reps=$reps, accuracy=${accuracy.toInt()}%")
+
+        engine.onSetCompleted(metrics)
+    }
+
+    /**
+     * Finish session mode and return result to calling activity.
+     */
+    private fun finishSessionWithResult(
+        report: com.trainingvalidator.poc.training.session.SessionTrainingEngine.SessionReport
+    ) {
+        val reportJson = com.google.gson.Gson().toJson(report)
+        val resultIntent = android.content.Intent().apply {
+            putExtra(RESULT_IS_COMPLETED, true)
+            putExtra(RESULT_DURATION_MS, report.totalDurationMs)
+            putExtra(RESULT_SESSION_SETS_COMPLETED, report.totalSetsCompleted)
+            putExtra(RESULT_SESSION_SETS_PLANNED, report.totalSetsPlanned)
+            putExtra(RESULT_SESSION_TOTAL_REPS, report.totalReps)
+            putExtra(RESULT_SESSION_AVG_ACCURACY, report.averageAccuracy)
+            putExtra(RESULT_SESSION_REPORT_JSON, reportJson)
+        }
+        setResult(RESULT_OK, resultIntent)
+        finish()
+    }
+
+    /**
+     * Hide all session overlay panels.
+     */
+    private fun hideSessionPanels() {
+        binding.sessionPreExercisePanel.visibility = View.GONE
+        binding.sessionRestPanel.visibility = View.GONE
+        binding.sessionCompletePanel.visibility = View.GONE
+        sessionRestTimer?.cancel()
+    }
+
     /**
      * Show training settings dialog
      */
@@ -795,7 +1375,11 @@ class TrainingActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetection
             
             is TrainingUIEvent.ExerciseCompleted,
             is TrainingUIEvent.TrainingCompleted -> {
-                completeTraining()
+                if (isSessionMode) {
+                    onSessionSetCompleted()
+                } else {
+                    completeTraining()
+                }
             }
             
             is TrainingUIEvent.AutoPaused -> {
@@ -1637,6 +2221,15 @@ class TrainingActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetection
     // ==================== PoseDetectionListener ====================
 
     override fun onPoseDetected(result: PoseResult) {
+        if (isWeightDialogVisible) return
+
+        // In session mode, skip pose processing when session panels are visible
+        if (isSessionMode && (
+            binding.sessionPreExercisePanel.visibility == View.VISIBLE ||
+            binding.sessionRestPanel.visibility == View.VISIBLE ||
+            binding.sessionCompletePanel.visibility == View.VISIBLE
+        )) return
+
         // Drop frame if previous is still processing (prevents Main Thread queue buildup)
         if (isProcessingPoseFrame) return
         isProcessingPoseFrame = true
@@ -1695,6 +2288,15 @@ class TrainingActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetection
     }
 
     override fun onNoPoseDetected() {
+        if (isWeightDialogVisible) return
+
+        // In session mode, skip when session panels are visible
+        if (isSessionMode && (
+            binding.sessionPreExercisePanel.visibility == View.VISIBLE ||
+            binding.sessionRestPanel.visibility == View.VISIBLE ||
+            binding.sessionCompletePanel.visibility == View.VISIBLE
+        )) return
+
         lifecycleScope.launch(Dispatchers.Main) {
             updateFps()
             binding.skeletonOverlay.clear()
@@ -1939,6 +2541,7 @@ class TrainingActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetection
 
     override fun onDestroy() {
         super.onDestroy()
+        sessionRestTimer?.cancel()
         viewModel.countdownController.release()
         cameraManager?.stopCamera()
         videoModeController?.release()

@@ -62,9 +62,13 @@ class ExerciseRepository private constructor(private val context: Context) {
     private val workoutCache: WorkoutCacheManager by lazy {
         WorkoutRepository.getInstance(context).getCacheManager()
     }
+
+    private val programCache: ProgramCacheManager by lazy {
+        ProgramRepository.getInstance(context).getCacheManager()
+    }
     
     private val syncManager: SyncManager by lazy {
-        SyncManager(context, exerciseCache, audioCache, workoutCache)
+        SyncManager(context, exerciseCache, audioCache, workoutCache, programCache)
     }
     
     // State flows for UI observation
@@ -127,6 +131,10 @@ class ExerciseRepository private constructor(private val context: Context) {
                     if (result.workoutsUpdated > 0) {
                         WorkoutRepository.getInstance(context).reloadFromCache()
                         Log.d(TAG, "Triggered workout reload after sync")
+                    }
+                    if (result.programsUpdated > 0) {
+                        ProgramRepository.getInstance(context).reloadFromCache()
+                        Log.d(TAG, "Triggered program reload after sync")
                     }
                     isInitialized = true
                 }
@@ -258,6 +266,10 @@ class ExerciseRepository private constructor(private val context: Context) {
                     WorkoutRepository.getInstance(context).reloadFromCache()
                     Log.d(TAG, "Triggered workout reload after refresh")
                 }
+                if (result.programsUpdated > 0) {
+                    ProgramRepository.getInstance(context).reloadFromCache()
+                    Log.d(TAG, "Triggered program reload after refresh")
+                }
                 
                 // Download new audio files (non-blocking background task)
                 if (syncManager.hasPendingAudioDownloads()) {
@@ -297,6 +309,10 @@ class ExerciseRepository private constructor(private val context: Context) {
             if (result.workoutsUpdated > 0) {
                 WorkoutRepository.getInstance(context).reloadFromCache()
                 Log.d(TAG, "Triggered workout reload after update check")
+            }
+            if (result.programsUpdated > 0) {
+                ProgramRepository.getInstance(context).reloadFromCache()
+                Log.d(TAG, "Triggered program reload after update check")
             }
         }
         

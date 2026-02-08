@@ -888,12 +888,24 @@ function BilateralTabContent({ leftJoint, rightJoint, bilateralCode, onUpdateBot
 // ============================================
 
 export function JointConfigStep() {
-  const { jointConfig, setJointConfig, countingMethod } = useWizardStore();
+  const {
+    jointConfig,
+    setJointConfig,
+    countingMethod,
+    cameraPosition,
+    alternatingConfig,
+    jointConfigVariants,
+    setJointConfigVariants,
+    activeJointVariantIndex,
+    setActiveJointVariantIndex,
+  } = useWizardStore();
   const [activeTabIndex, setActiveTabIndex] = useState(0);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   
   const trackedJoints = jointConfig.trackedJoints || [];
   const isHold = countingMethod.countingMethodCode === 'hold';
+  const variantCount = cameraPosition.cameraPositionIds?.length || 0;
+  const isAlternatingEnabled = Boolean(alternatingConfig.enabled) && variantCount > 1;
   
   // Build UI tabs from tracked joints
   const uiTabs = useMemo(() => buildUITabs(trackedJoints), [trackedJoints]);
@@ -912,6 +924,27 @@ export function JointConfigStep() {
     
     return errors;
   }, [trackedJoints, hasPrimary]);
+
+  const handleSwitchVariant = useCallback(
+    (nextIndex: number) => {
+      const updated = {
+        ...jointConfigVariants,
+        [activeJointVariantIndex]: trackedJoints,
+      };
+      setJointConfigVariants(updated);
+      setActiveJointVariantIndex(nextIndex);
+      setJointConfig({ trackedJoints: updated[nextIndex] || [] });
+      setActiveTabIndex(0);
+    },
+    [
+      activeJointVariantIndex,
+      jointConfigVariants,
+      trackedJoints,
+      setJointConfigVariants,
+      setActiveJointVariantIndex,
+      setJointConfig,
+    ]
+  );
   
   // Get available joints (not already added)
   const availableJoints = useMemo(() => {
@@ -1004,6 +1037,31 @@ export function JointConfigStep() {
           {isHold ? ' For hold exercises, angles are checked continuously.' : ' Primary joints are used for rep counting.'}
         </p>
       </div>
+
+      {isAlternatingEnabled && (
+        <div className="bg-indigo-50 border border-indigo-200 rounded-lg p-4 space-y-3">
+          <div className="flex items-center justify-between">
+            <div>
+              <h4 className="font-semibold text-indigo-900">Alternating Variants</h4>
+              <p className="text-sm text-indigo-700">Edit joints per variant index.</p>
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="text-sm text-indigo-700">Variant</span>
+              <select
+                value={activeJointVariantIndex}
+                onChange={(e) => handleSwitchVariant(Number(e.target.value))}
+                className="px-3 py-2 border border-indigo-200 rounded-lg bg-white text-indigo-900"
+              >
+                {Array.from({ length: variantCount }).map((_, index) => (
+                  <option key={index} value={index}>
+                    {alternatingConfig.variants[index]?.label?.en || `Variant ${index + 1}`} ({index})
+                  </option>
+                ))}
+              </select>
+            </div>
+          </div>
+        </div>
+      )}
       
       {/* Validation Errors */}
       {validationErrors.length > 0 && (

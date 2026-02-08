@@ -4,10 +4,11 @@ import com.google.gson.annotations.SerializedName
 import com.trainingvalidator.poc.training.models.ExerciseConfig
 import com.trainingvalidator.poc.training.models.WorkoutConfig
 import com.trainingvalidator.poc.training.models.LocalizedText
-import com.trainingvalidator.poc.training.models.WorkoutType
-import com.trainingvalidator.poc.training.models.ExecutionMode
 import com.trainingvalidator.poc.training.models.WorkoutExercise
 import com.trainingvalidator.poc.training.models.ReportMetricsConfig
+import com.trainingvalidator.poc.training.models.AlternatingConfig
+import com.trainingvalidator.poc.training.models.ProgramConfig
+import com.trainingvalidator.poc.training.models.ProgramWeek
 
 /**
  * Mobile Sync API Response Models
@@ -35,7 +36,20 @@ data class SyncData(
     val deletedExerciseIds: List<String>,
     val workouts: List<WorkoutConfigWithMeta> = emptyList(),
     val deletedWorkoutIds: List<String> = emptyList(),
+    val programs: List<ProgramConfigWithMeta> = emptyList(),
+    val deletedProgramIds: List<String> = emptyList(),
+    val userPrograms: List<UserProgramExport> = emptyList(),
     val audioManifest: AudioManifest
+)
+
+data class UserProgramExport(
+    val id: String,
+    val programId: String? = null,
+    val name: LocalizedText? = null,
+    val startDate: String,
+    val isActive: Boolean,
+    val customizations: Map<String, Any>? = null,
+    val updatedAt: String
 )
 
 /**
@@ -79,7 +93,11 @@ data class ExerciseConfigWithMeta(
     val isBilateral: Boolean = false,
     
     /** Does this exercise have position checks? (for Alignment metric) */
-    val hasPositionChecks: Boolean = false
+    val hasPositionChecks: Boolean = false,
+
+    /** Alternating config */
+    val isAlternating: Boolean = false,
+    val alternatingConfig: AlternatingConfig? = null
 ) {
     /**
      * Convert to ExerciseConfig (without meta)
@@ -104,6 +122,8 @@ data class ExerciseConfigWithMeta(
             defaultWeight = defaultWeight,
             reportMetrics = reportMetrics,
             hasPositionChecks = hasPositionChecks,
+            isAlternating = isAlternating,
+            alternatingConfig = alternatingConfig,
             fileName = slug  // Use slug as fileName for compatibility
         )
     }
@@ -115,10 +135,12 @@ data class ExerciseConfigWithMeta(
 data class SyncMeta(
     val totalExercises: Int,
     val totalWorkouts: Int = 0,
+    val totalPrograms: Int = 0,
     val isFullSync: Boolean,
     val serverVersion: String,
     val exercisesInResponse: Int,
-    val workoutsInResponse: Int = 0
+    val workoutsInResponse: Int = 0,
+    val programsInResponse: Int = 0
 )
 
 /**
@@ -133,13 +155,10 @@ data class WorkoutConfigWithMeta(
     // WorkoutConfig fields
     val name: LocalizedText,
     val description: LocalizedText? = null,
-    val type: WorkoutType = WorkoutType.CIRCUIT,
-    val executionMode: ExecutionMode = ExecutionMode.SEQUENTIAL,
-    val repsPerSwitch: Int? = null,
-    val rounds: Int = 1,
-    val restBetweenExercisesMs: Long? = null,
-    val restBetweenRoundsMs: Long = 60000,
-    val restBetweenSwitchMs: Long? = null,
+    val coverImageUrl: String? = null,
+    val difficulty: String = "beginner",
+    val estimatedDurationMin: Int? = null,
+    val tags: List<String> = emptyList(),
     val exercises: List<WorkoutExercise> = emptyList()
 ) {
     /**
@@ -149,15 +168,42 @@ data class WorkoutConfigWithMeta(
         return WorkoutConfig(
             name = name,
             description = description,
-            type = type,
-            executionMode = executionMode,
-            repsPerSwitch = repsPerSwitch ?: 0,
-            rounds = rounds,
-            restBetweenExercisesMs = restBetweenExercisesMs ?: 10000L,
-            restBetweenRoundsMs = restBetweenRoundsMs,
-            restBetweenSwitchMs = restBetweenSwitchMs ?: 0L,
+            coverImageUrl = coverImageUrl,
+            difficulty = difficulty,
+            estimatedDurationMin = estimatedDurationMin,
+            tags = tags,
             exercises = exercises,
             fileName = slug  // Use slug as fileName for compatibility
+        )
+    }
+}
+
+/**
+ * Program config with additional metadata from server
+ */
+data class ProgramConfigWithMeta(
+    val id: String,
+    val slug: String,
+    val updatedAt: String,
+    val name: LocalizedText,
+    val description: LocalizedText? = null,
+    val coverImageUrl: String? = null,
+    val durationWeeks: Int,
+    val difficulty: String = "beginner",
+    val tags: List<String> = emptyList(),
+    val weeks: List<ProgramWeek> = emptyList()
+) {
+    fun toProgramConfig(): ProgramConfig {
+        return ProgramConfig(
+            id = id,
+            slug = slug,
+            name = name,
+            description = description,
+            coverImageUrl = coverImageUrl,
+            durationWeeks = durationWeeks,
+            difficulty = difficulty,
+            tags = tags,
+            weeks = weeks
         )
     }
 }

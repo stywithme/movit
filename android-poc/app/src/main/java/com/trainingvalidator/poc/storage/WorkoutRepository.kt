@@ -3,7 +3,6 @@ package com.trainingvalidator.poc.storage
 import android.content.Context
 import android.util.Log
 import com.trainingvalidator.poc.training.models.WorkoutConfig
-import com.trainingvalidator.poc.training.models.WorkoutType
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -165,13 +164,6 @@ class WorkoutRepository private constructor(private val context: Context) {
      */
     fun hasWorkout(slug: String): Boolean {
         return workoutMap.containsKey(slug)
-    }
-    
-    /**
-     * Get workouts by type
-     */
-    fun getWorkoutsByType(type: WorkoutType): List<WorkoutConfig> {
-        return _workouts.value.filter { it.type == type }
     }
     
     /**

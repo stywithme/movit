@@ -536,6 +536,19 @@ export interface WeightConfig {
 }
 
 /**
+ * Alternating configuration for exercise
+ */
+export interface AlternatingVariantInput {
+  label: LocalizedText;
+  variantIndex: number;
+}
+
+export interface AlternatingConfigInput {
+  switchEvery: number;
+  variants: AlternatingVariantInput[];
+}
+
+/**
  * Exercise creation input
  */
 export interface CreateExerciseInput {
@@ -554,6 +567,9 @@ export interface CreateExerciseInput {
   
   // Weight configuration
   weightConfig?: WeightConfig;
+
+  // Alternating configuration
+  alternatingConfig?: AlternatingConfigInput;
   
   // Report metrics configuration
   reportMetrics?: ReportMetricsConfig;

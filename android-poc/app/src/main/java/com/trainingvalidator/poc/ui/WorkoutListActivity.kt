@@ -15,7 +15,6 @@ import com.trainingvalidator.poc.databinding.ActivityWorkoutListBinding
 import com.trainingvalidator.poc.storage.WorkoutRepository
 import com.trainingvalidator.poc.training.loader.WorkoutLoader
 import com.trainingvalidator.poc.training.models.WorkoutConfig
-import com.trainingvalidator.poc.training.models.WorkoutType
 import androidx.appcompat.app.AppCompatDelegate
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -134,13 +133,8 @@ class WorkoutListActivity : AppCompatActivity() {
             val durationMinutes = (workout.getEstimatedDurationMs() / 60000).toInt()
             holder.tvDuration.text = getString(R.string.duration_minutes_format, durationMinutes)
             
-            // Workout type badge
-            holder.tvDifficulty.text = when (workout.type) {
-                WorkoutType.CIRCUIT -> getString(R.string.workout_type_circuit)
-                WorkoutType.SUPER_SET -> getString(R.string.workout_type_super_set)
-                WorkoutType.AMRAP -> getString(R.string.workout_type_amrap)
-                WorkoutType.EMOM -> getString(R.string.workout_type_emom)
-            }
+            // Workout difficulty badge
+            holder.tvDifficulty.text = formatDifficulty(workout.difficulty)
 
             // Optional: muscles not available in workout config
             holder.tvMuscles.visibility = View.GONE
@@ -160,5 +154,11 @@ class WorkoutListActivity : AppCompatActivity() {
             appLocales[0]
         }
         return locale?.language ?: "en"
+    }
+
+    private fun formatDifficulty(difficulty: String): String {
+        if (difficulty.isBlank()) return getString(R.string.workout_detail_default_difficulty)
+        val normalized = difficulty.replace('_', ' ').lowercase()
+        return normalized.replaceFirstChar { if (it.isLowerCase()) it.titlecase() else it.toString() }
     }
 }

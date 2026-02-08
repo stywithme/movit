@@ -318,10 +318,14 @@ export function MessagePickerModal({
                               {msg.context || msg.category}
                             </span>
                             {msg.content.audioAr && (
-                              <Volume2 className="h-3 w-3 text-green-500" title="Has Arabic audio" />
+                              <span title="Has Arabic audio">
+                                <Volume2 className="h-3 w-3 text-green-500" />
+                              </span>
                             )}
                             {msg.content.audioEn && (
-                              <Volume2 className="h-3 w-3 text-blue-500" title="Has English audio" />
+                              <span title="Has English audio">
+                                <Volume2 className="h-3 w-3 text-blue-500" />
+                              </span>
                             )}
                           </div>
 

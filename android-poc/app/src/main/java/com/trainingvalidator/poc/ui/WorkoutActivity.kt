@@ -11,6 +11,7 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
 import com.trainingvalidator.poc.R
 import com.trainingvalidator.poc.databinding.ActivityWorkoutBinding
+import com.trainingvalidator.poc.storage.ExerciseRepository
 import com.trainingvalidator.poc.storage.WorkoutRepository
 import com.trainingvalidator.poc.training.models.*
 import com.trainingvalidator.poc.training.workout.LoadedExercise
@@ -25,13 +26,7 @@ import com.trainingvalidator.poc.training.workout.WorkoutRunner
  *    - Show "Preparing" panel with next exercise info
  *    - Launch TrainingActivity for each exercise
  *    - On return, show rest period or move to next exercise
- *    - Repeat until all exercises and rounds are complete
- * 
- * 2. ALTERNATING Mode (Hot-Swap):
- *    - Launch TrainingActivity ONCE in Workout Mode
- *    - TrainingActivity handles hot-swap internally (no camera restart)
- *    - Faster, smoother transitions between exercises
- *    - Used for true alternating workouts (1 rep left, 1 rep right, etc.)
+ *    - Repeat until all exercises and sets are complete
  * 
  * This activity acts as an orchestrator - it doesn't do pose detection itself,
  * but delegates to TrainingActivity.
@@ -51,7 +46,7 @@ class WorkoutActivity : AppCompatActivity() {
         const val RESULT_ACCURACY = "accuracy"
         const val RESULT_IS_COMPLETED = "is_completed"
         
-        // Extra for alternating mode
+        // Reserved for legacy workout mode (not used in simplified flow)
         const val EXTRA_MAX_REPS_THIS_SESSION = "max_reps_this_session"
     }
 
@@ -70,13 +65,6 @@ class WorkoutActivity : AppCompatActivity() {
         handleTrainingResult(result.resultCode, result.data)
     }
     
-    // Activity result launcher for TrainingActivity in Workout Mode (Hot-Swap)
-    private val workoutModeLauncher = registerForActivityResult(
-        ActivityResultContracts.StartActivityForResult()
-    ) { result ->
-        handleWorkoutModeResult(result.resultCode, result.data)
-    }
-
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         
@@ -140,27 +128,8 @@ class WorkoutActivity : AppCompatActivity() {
             showPreparingPanel(loadedExercise)
         }
         
-        runner.onRestStarted = { durationMs, isRoundRest ->
-            if (isRoundRest) {
-                showRoundCompletePanel(durationMs)
-            } else {
-                showRestPanel(durationMs)
-            }
-        }
-        
-        runner.onExerciseSwitched = { loadedExercise, previousName ->
-            // In alternating mode with no rest, immediately start next exercise
-            Log.d(TAG, "Switched from $previousName to ${loadedExercise.getDisplayName()}")
-            // Auto-start the next exercise (no preparing panel in fast alternating mode)
-            if (runner.isAlternatingMode && workoutConfig?.restBetweenSwitchMs == 0L) {
-                startCurrentExercise()
-            } else {
-                showPreparingPanel(loadedExercise)
-            }
-        }
-        
-        runner.onRoundCompleted = { roundNumber, totalRounds ->
-            Log.d(TAG, "Round $roundNumber of $totalRounds completed")
+        runner.onRestStarted = { durationMs, _ ->
+            showRestPanel(durationMs)
         }
         
         runner.onWorkoutCompleted = { result ->
@@ -203,14 +172,8 @@ class WorkoutActivity : AppCompatActivity() {
         // Start the workout
         startTimeMs = System.currentTimeMillis()
         
-        // Check if this is alternating mode - use Hot-Swap
-        if (workoutConfig?.isAlternating() == true) {
-            // Alternating mode: Launch TrainingActivity ONCE in Workout Mode
-            startWorkoutModeTraining()
-        } else {
-            // Sequential mode: Use traditional flow
-            workoutRunner?.start()
-        }
+        // Sequential mode: Use traditional flow
+        workoutRunner?.start()
         
         // Setup back button handler (modern way)
         onBackPressedDispatcher.addCallback(this, object : OnBackPressedCallback(true) {
@@ -241,32 +204,18 @@ class WorkoutActivity : AppCompatActivity() {
         binding.tvNextExerciseName.text = exercise.getDisplayName("en")
         binding.tvNextExerciseNameAr.text = exercise.getDisplayName("ar")
         
-        // Target info - show effective target for this session (may be limited in alternating mode)
         val targetText = when {
             exercise.isHoldExercise() -> {
                 val seconds = exercise.getTargetDurationSec() ?: 30
-                "Target: Hold for $seconds seconds"
-            }
-            exercise.hasRepLimit() -> {
-                // Alternating mode: show reps for this session
-                val repsThisSession = exercise.maxRepsThisSession ?: 1
-                val totalReps = exercise.getTargetReps() ?: 10
-                val completed = workoutRunner?.progress?.value?.exerciseRepsCompleted?.get(exercise.indexInRound) ?: 0
-                "Do $repsThisSession rep${if (repsThisSession > 1) "s" else ""} ($completed/$totalReps total)"
+                "Set ${exercise.setIndex}/${exercise.totalSets} • Hold for $seconds seconds"
             }
             else -> {
                 val reps = exercise.getTargetReps() ?: 10
-                "Target: $reps reps"
+                "Set ${exercise.setIndex}/${exercise.totalSets} • $reps reps"
             }
         }
         binding.tvNextExerciseTarget.text = targetText
-        
-        // Update button text for alternating mode
-        if (workoutRunner?.isAlternatingMode == true) {
-            binding.btnStartExercise.text = "Go!"
-        } else {
-            binding.btnStartExercise.text = "Start Exercise"
-        }
+        binding.btnStartExercise.text = "Start Set"
         
         updateProgressDisplay()
     }
@@ -275,29 +224,22 @@ class WorkoutActivity : AppCompatActivity() {
         hideAllPanels()
         binding.panelRest.visibility = View.VISIBLE
         
-        binding.tvRestTitle.text = "Rest Time"
+        val progress = workoutRunner?.progress?.value
+        val isBetweenSets = progress?.currentSetIndex?.let { it > 1 } ?: false
+        binding.tvRestTitle.text = if (isBetweenSets) "Rest Between Sets" else "Rest Between Exercises"
         
-        // Get next exercise name
-        val nextExercise = workoutRunner?.currentExercise?.value
-        binding.tvRestNextExercise.text = nextExercise?.getDisplayName("en") ?: "Next Exercise"
+        // Get next exercise name (based on upcoming index)
+        val nextExerciseName = try {
+            val nextIndex = workoutRunner?.progress?.value?.currentExerciseIndex ?: 0
+            val slug = workoutConfig?.exercises?.getOrNull(nextIndex)?.exercise
+            val repo = ExerciseRepository.getInstance(this)
+            if (slug != null) repo.getExercise(slug)?.name?.en else null
+        } catch (e: Exception) {
+            null
+        }
+        binding.tvRestNextExercise.text = nextExerciseName ?: "Next Exercise"
         
         startRestCountdown(durationMs, binding.tvRestCountdown)
-        
-        updateProgressDisplay()
-    }
-
-    private fun showRoundCompletePanel(durationMs: Long) {
-        hideAllPanels()
-        binding.panelRoundComplete.visibility = View.VISIBLE
-        
-        val progress = workoutRunner?.progress?.value ?: return
-        
-        binding.tvRoundCompleteTitle.text = "Round ${progress.currentRound - 1} Complete!"
-        
-        val remainingRounds = progress.totalRounds - progress.currentRound + 1
-        binding.tvRoundCompleteSubtitle.text = "$remainingRounds more round${if (remainingRounds > 1) "s" else ""} to go"
-        
-        startRestCountdown(durationMs, binding.tvRoundRestCountdown)
         
         updateProgressDisplay()
     }
@@ -311,8 +253,8 @@ class WorkoutActivity : AppCompatActivity() {
         val minutes = (totalTimeMs / 60000).toInt()
         val seconds = ((totalTimeMs % 60000) / 1000).toInt()
         
-        binding.tvSummaryExercises.text = result.totalExercises.toString()
-        binding.tvSummaryRounds.text = result.completedRounds.toString()
+        binding.tvSummaryExercises.text = result.totalSets.toString()
+        binding.tvSummaryRounds.text = result.totalExercises.toString()
         binding.tvSummaryTime.text = String.format("%02d:%02d", minutes, seconds)
         binding.tvSummaryAccuracy.text = "${result.getOverallAccuracy().toInt()}%"
         
@@ -331,82 +273,6 @@ class WorkoutActivity : AppCompatActivity() {
         restTimer = null
     }
 
-    // ==================== Workout Mode (Hot-Swap) ====================
-    
-    /**
-     * Start training in Workout Mode (Hot-Swap)
-     * Launches TrainingActivity ONCE with workout_name instead of exercise_name
-     * TrainingActivity handles all exercise switching internally
-     */
-    private fun startWorkoutModeTraining() {
-        val name = workoutName ?: return
-        
-        Log.d(TAG, "Starting Workout Mode (Hot-Swap) for: $name")
-        
-        // Hide preparing panel - TrainingActivity handles everything
-        hideAllPanels()
-        
-        // Show a brief loading indicator
-        binding.panelPreparing.visibility = View.VISIBLE
-        binding.tvNextExerciseName.text = workoutConfig?.name?.en ?: "Workout"
-        binding.tvNextExerciseNameAr.text = workoutConfig?.name?.ar ?: ""
-        binding.tvNextExerciseTarget.text = "Loading workout..."
-        binding.btnStartExercise.visibility = View.GONE
-        
-        // Launch TrainingActivity in Workout Mode
-        val intent = Intent(this, TrainingActivity::class.java).apply {
-            putExtra(TrainingActivity.EXTRA_WORKOUT_NAME, name)
-            putExtra(TrainingActivity.EXTRA_IS_WORKOUT_MODE, true)
-            // Kept for backward compatibility, ignored by new engine
-            putExtra(TrainingActivity.EXTRA_DIFFICULTY, "")
-            putExtra(TrainingActivity.EXTRA_TRAINING_MODE, TrainingActivity.MODE_CAMERA)
-        }
-        
-        workoutModeLauncher.launch(intent)
-    }
-    
-    /**
-     * Handle result from TrainingActivity in Workout Mode
-     * Workout is fully complete when this returns
-     */
-    private fun handleWorkoutModeResult(resultCode: Int, data: Intent?) {
-        val repsCompleted = data?.getIntExtra(RESULT_REPS_COMPLETED, 0) ?: 0
-        val durationMs = data?.getLongExtra(RESULT_DURATION_MS, 0L) ?: 0L
-        val accuracy = data?.getFloatExtra(RESULT_ACCURACY, 0f) ?: 0f
-        val isCompleted = data?.getBooleanExtra(RESULT_IS_COMPLETED, true) ?: true
-        
-        Log.d(TAG, "Workout Mode result: reps=$repsCompleted, duration=$durationMs, completed=$isCompleted")
-        
-        // Show completion panel
-        showWorkoutModeCompletePanel(repsCompleted, durationMs, accuracy, isCompleted)
-    }
-    
-    /**
-     * Show completion panel for Workout Mode
-     */
-    private fun showWorkoutModeCompletePanel(
-        totalReps: Int,
-        durationMs: Long,
-        accuracy: Float,
-        isCompleted: Boolean
-    ) {
-        hideAllPanels()
-        binding.panelComplete.visibility = View.VISIBLE
-        
-        // Calculate total time
-        val totalTimeMs = System.currentTimeMillis() - startTimeMs
-        val minutes = (totalTimeMs / 60000).toInt()
-        val seconds = ((totalTimeMs % 60000) / 1000).toInt()
-        
-        binding.tvSummaryExercises.text = "${workoutConfig?.exercises?.size ?: 0}"
-        binding.tvSummaryRounds.text = "${workoutConfig?.rounds ?: 1}"
-        binding.tvSummaryTime.text = String.format("%02d:%02d", minutes, seconds)
-        binding.tvSummaryAccuracy.text = "${accuracy.toInt()}%"
-        
-        // Progress bar full
-        binding.progressBarWorkout.progress = 100
-    }
-
     // ==================== Exercise Launch (Sequential Mode) ====================
 
     private fun startCurrentExercise() {
@@ -417,24 +283,25 @@ class WorkoutActivity : AppCompatActivity() {
         
         // Launch TrainingActivity with the exercise
         val intent = Intent(this, TrainingActivity::class.java).apply {
-            putExtra(TrainingActivity.EXTRA_EXERCISE_NAME, exercise.config.fileName)
+            putExtra(TrainingActivity.EXTRA_EXERCISE_NAME, exercise.workoutExercise.exercise)
             // Kept for backward compatibility, ignored by new engine
             putExtra(TrainingActivity.EXTRA_DIFFICULTY, "")
             putExtra(TrainingActivity.EXTRA_POSE_VARIANT, exercise.workoutExercise.variantIndex)
             putExtra(TrainingActivity.EXTRA_TRAINING_MODE, TrainingActivity.MODE_CAMERA)
-            
-            // In alternating mode, pass the rep limit for this session
-            if (runner.isAlternatingMode && exercise.hasRepLimit()) {
-                putExtra(EXTRA_MAX_REPS_THIS_SESSION, exercise.maxRepsThisSession ?: 1)
-            }
-            
-            // Pass target override if specified (for sequential mode)
-            exercise.workoutExercise.target.reps?.let {
+
+            // Pass target override if specified
+            exercise.workoutExercise.targetReps?.let {
                 putExtra(TrainingActivity.EXTRA_TARGET_REPS_OVERRIDE, it)
             }
-            exercise.workoutExercise.target.durationSec?.let {
-                putExtra(TrainingActivity.EXTRA_TARGET_DURATION_OVERRIDE, it)
+            exercise.workoutExercise.targetDurationSec?.let {
+                putExtra(TrainingActivity.EXTRA_TARGET_DURATION_OVERRIDE, it * 1000L)
             }
+
+            // Pass weight (per-set overrides have priority)
+            val perSetWeight = exercise.workoutExercise.weightPerSet?.getOrNull(exercise.setIndex - 1)
+            val weightKg = perSetWeight ?: exercise.workoutExercise.weightKg
+            weightKg?.let { putExtra(TrainingActivity.EXTRA_WEIGHT_KG, it) }
+            putExtra(TrainingActivity.EXTRA_WEIGHT_UNIT, "kg")
         }
         
         trainingLauncher.launch(intent)

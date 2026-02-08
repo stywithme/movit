@@ -2,6 +2,7 @@ package com.trainingvalidator.poc.network
 
 import retrofit2.Response
 import retrofit2.http.GET
+import retrofit2.http.Header
 import retrofit2.http.Query
 import retrofit2.http.Streaming
 import retrofit2.http.Url
@@ -23,6 +24,7 @@ interface MobileSyncApi {
      */
     @GET("api/mobile/sync")
     suspend fun sync(
+        @Header("Authorization") authorization: String? = null,
         @Query("updatedAfter") updatedAfter: String? = null,
         @Query("forceRefresh") forceRefresh: Boolean? = null
     ): Response<MobileSyncResponse>

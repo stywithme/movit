@@ -29,10 +29,12 @@ import type {
   RepCountingConfig,
   ReportMetricsConfig,
   MetricCode,
-  isZoneBasedMessage,
-  isSimpleMessage,
+  AlternatingConfig,
+  MessageAssignment,
+  MessageAssignmentTarget,
   ZoneBasedMessage,
 } from '@/lib/types/android-schema';
+import { isZoneBasedMessage, isSimpleMessage } from '@/lib/types/android-schema';
 
 import { validateExerciseConfig } from '@/lib/types/android-schema';
 
@@ -77,6 +79,10 @@ interface DbExercise {
   maxWeight?: number | null;
   defaultWeight?: number | null;
   reportMetrics?: unknown | null;
+
+  // Alternating configuration
+  isAlternating?: boolean | null;
+  alternatingConfig?: unknown | null;
 }
 
 interface DbPoseVariant {
@@ -251,6 +257,15 @@ export function buildExerciseConfig(
   if (hasPositionChecks) {
     config.hasPositionChecks = true;
   }
+
+  // Include alternating config
+  if (dbExercise.isAlternating) {
+    const alternatingConfig = parseAlternatingConfig(dbExercise.alternatingConfig);
+    if (alternatingConfig) {
+      config.isAlternating = true;
+      config.alternatingConfig = alternatingConfig;
+    }
+  }
   
   return config;
 }
@@ -272,9 +287,11 @@ function buildPoseVariantConfig(
   // Parse trackedJointsConfig from JSON
   const trackedJoints = parseTrackedJoints(dbVariant.trackedJointsConfig);
   
+  const includeMessages = Boolean(options.includeMessages);
+
   // Parse position checks
   const positionChecks = dbVariant.positionChecks.map((check) =>
-    buildPositionCheck(check, options.includeMessages)
+    buildPositionCheck(check, includeMessages)
   );
   
   // Group feedback messages by type (assignments only)
@@ -283,7 +300,7 @@ function buildPoseVariantConfig(
   const config: PoseVariantConfig = {
     name: toLocalizedText(dbVariant.name),
     cameraPosition,
-    trackedJoints: options.includeMessages
+    trackedJoints: includeMessages
       ? applyStateMessageAssignments(trackedJoints, dbVariant.messageAssignments)
       : trackedJoints,
   };
@@ -414,19 +431,25 @@ function buildFeedbackMessagesFromAssignments(assignments: DbMessageAssignment[]
 /**
  * Build message assignment references (library-based)
  */
-function buildMessageAssignmentRefs(assignments: DbMessageAssignment[]) {
+function buildMessageAssignmentRefs(assignments: DbMessageAssignment[]): MessageAssignment[] {
   return assignments
     .slice()
     .sort((a, b) => a.sortOrder - b.sortOrder)
-    .map((assignment) => ({
+    .map((assignment) => {
+      const zone = assignment.zone === 'up' || assignment.zone === 'down'
+        ? assignment.zone
+        : undefined;
+
+      return {
       messageId: assignment.messageId,
-      target: assignment.target,
+      target: assignment.target as MessageAssignmentTarget,
       context: assignment.context ?? undefined,
       jointCode: assignment.jointCode ?? undefined,
-      zone: assignment.zone ?? undefined,
+        zone,
       checkId: assignment.checkId ?? undefined,
       sortOrder: assignment.sortOrder,
-    }));
+      };
+    });
 }
 
 /**
@@ -528,6 +551,35 @@ function parseRepCountingConfig(
     minRepIntervalMs: parsed?.minRepIntervalMs ?? 1500,
     maxRepIntervalMs: parsed?.maxRepIntervalMs ?? 5000,
   };
+}
+
+function parseAlternatingConfig(config: unknown): AlternatingConfig | undefined {
+  if (!config || typeof config !== 'object') return undefined;
+  const record = config as Record<string, unknown>;
+  const switchEvery = typeof record.switchEvery === 'number' ? record.switchEvery : undefined;
+  const variantsRaw = Array.isArray(record.variants) ? record.variants : [];
+
+  if (!switchEvery || switchEvery <= 0 || variantsRaw.length === 0) {
+    return undefined;
+  }
+
+  const variants = variantsRaw
+    .map((variant) => {
+      const v = variant as Record<string, unknown>;
+      const label = v.label as Record<string, string> | undefined;
+      const variantIndex = typeof v.variantIndex === 'number' ? v.variantIndex : undefined;
+      if (!label || typeof label.en !== 'string' || typeof label.ar !== 'string') return null;
+      if (variantIndex === undefined || variantIndex < 0) return null;
+      return {
+        label: toLocalizedText(label),
+        variantIndex,
+      };
+    })
+    .filter((v): v is AlternatingConfig['variants'][number] => v !== null);
+
+  if (variants.length === 0) return undefined;
+
+  return { switchEvery, variants };
 }
 
 // ============================================

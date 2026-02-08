@@ -12,6 +12,7 @@ import com.trainingvalidator.poc.databinding.ActivityMainContainerBinding
  * 
  * Contains 4 tabs:
  * - Home
+ * - Programs
  * - Exercises
  * - History
  * - Profile
@@ -26,6 +27,7 @@ class MainContainerActivity : AppCompatActivity() {
 
     // Fragment instances (lazy)
     private val homeFragment by lazy { HomeFragment() }
+    private val programsFragment by lazy { ProgramsFragment() }
     private val exercisesFragment by lazy { ExercisesFragment() }
     private val historyFragment by lazy { HistoryFragment() }
     private val profileFragment by lazy { ProfileFragment() }
@@ -48,6 +50,7 @@ class MainContainerActivity : AppCompatActivity() {
         // Add all fragments but hide all except the active one
         supportFragmentManager.beginTransaction().apply {
             add(R.id.fragmentContainer, homeFragment, "home")
+            add(R.id.fragmentContainer, programsFragment, "programs").hide(programsFragment)
             add(R.id.fragmentContainer, exercisesFragment, "exercises").hide(exercisesFragment)
             add(R.id.fragmentContainer, historyFragment, "history").hide(historyFragment)
             add(R.id.fragmentContainer, profileFragment, "profile").hide(profileFragment)
@@ -58,6 +61,7 @@ class MainContainerActivity : AppCompatActivity() {
         binding.bottomNavigation.setOnItemSelectedListener { item ->
             val targetFragment = when (item.itemId) {
                 R.id.nav_home -> homeFragment
+                R.id.nav_programs -> programsFragment
                 R.id.nav_exercises -> exercisesFragment
                 R.id.nav_history -> historyFragment
                 R.id.nav_profile -> profileFragment

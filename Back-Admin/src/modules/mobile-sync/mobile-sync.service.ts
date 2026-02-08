@@ -8,6 +8,7 @@
 
 import { getPrisma } from '@/lib/prisma/client';
 import { buildExerciseConfig, exerciseFullInclude } from '@/modules/exercises/json-builder';
+import { programService } from '@/modules/programs/programs.service';
 import { workoutService } from '@/modules/workouts/workouts.service';
 import type { WorkoutExport } from '@/modules/workouts/workouts.types';
 import type {
@@ -204,6 +205,18 @@ export const mobileSyncService = {
       return result!;
     }).filter((w): w is WorkoutExport => w !== null);
     
+    // Fetch programs
+    const programsExport = await programService.getPublishedForMobile();
+    const filteredPrograms = updatedAfterDate
+      ? programsExport.filter((program) => new Date(program.updatedAt) > updatedAfterDate)
+      : programsExport;
+
+    const totalPrograms = await prisma.program.count({
+      where: { isPublished: true },
+    });
+
+    const deletedProgramIds: string[] = [];
+
     // Build audio manifest from message library
     const audioManifest = await this.buildAudioManifest(messageLibrary, baseUrl);
     
@@ -217,15 +230,19 @@ export const mobileSyncService = {
         deletedExerciseIds,
         workouts: workoutsExport,
         deletedWorkoutIds,
+        programs: filteredPrograms,
+        deletedProgramIds,
         audioManifest,
       },
       meta: {
         totalExercises,
         totalWorkouts,
+        totalPrograms,
         isFullSync,
         serverVersion: SERVER_VERSION,
         exercisesInResponse: exercisesWithMeta.length,
         workoutsInResponse: workoutsExport.length,
+        programsInResponse: filteredPrograms.length,
       },
     };
     

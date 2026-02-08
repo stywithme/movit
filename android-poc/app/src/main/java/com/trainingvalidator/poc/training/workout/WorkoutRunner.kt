@@ -7,34 +7,10 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 
 /**
- * WorkoutRunner - Orchestrates a sequence of exercises for SEQUENTIAL mode
- * 
- * This class is used by WorkoutActivity to manage workouts where each exercise
- * is run in a SEPARATE TrainingActivity launch. After each exercise completes,
- * the user returns to WorkoutActivity which shows rest periods and progress.
- * 
- * Execution Modes:
- * 
- * 1. SEQUENTIAL (primary use case for this class):
- *    Complete all reps of Exercise 1, then rest, then Exercise 2, etc.
- *    Ex1 (10 reps) → Rest → Ex2 (10 reps) → Rest → Ex3 (10 reps)
- *    Each exercise launches a separate TrainingActivity instance.
- * 
- * 2. ALTERNATING (handled by WorkoutTrainingEngine instead):
- *    For true alternating workouts (1 rep left, 1 rep right), use 
- *    WorkoutTrainingEngine with Hot-Swap for seamless camera-continuous switching.
- * 
- * Architecture Note:
- *   - WorkoutRunner: Sequential mode orchestration (multiple TrainingActivity launches)
- *   - WorkoutTrainingEngine: Hot-Swap mode (single TrainingActivity, engine swapping)
- * 
- * Usage:
- * 1. Create WorkoutRunner with WorkoutConfig
- * 2. Call start() to begin
- * 3. Observe currentExercise, state, and progress flows
- * 4. Call onExerciseCompleted() when TrainingActivity returns
- * 5. Handle rest periods in UI
- * 6. Repeat until isCompleted
+ * WorkoutRunner - Orchestrates a simple sequential workout
+ *
+ * The workout is a sequence of exercises. Each exercise can have multiple sets.
+ * WorkoutActivity launches TrainingActivity for each set, showing rest between sets/exercises.
  */
 class WorkoutRunner(
     private val workoutConfig: WorkoutConfig,
@@ -47,18 +23,11 @@ class WorkoutRunner(
     
     // ==================== State ====================
     
-    private var _currentRound = 1
     private var _currentExerciseIndex = 0
-    private var _completedExercisesTotal = 0
+    private var _currentSetIndex = 1
+    private var _completedSetsTotal = 0
     private var _startTime: Long = 0L
     private var _exerciseResults = mutableListOf<WorkoutExerciseResult>()
-    
-    // Alternating mode state
-    private var _exerciseRepsCompleted = mutableMapOf<Int, Int>()  // index -> reps done
-    private var _exerciseRepsTargets = mutableMapOf<Int, Int>()    // index -> target reps
-    private var _loadedExercises = mutableListOf<LoadedExercise>() // Pre-loaded for alternating
-    private var _totalRepsInRound = 0
-    private var _totalRepsCompleted = 0
     
     // ==================== State Flows ====================
     
@@ -80,8 +49,7 @@ class WorkoutRunner(
     // ==================== Callbacks ====================
     
     /**
-     * Called when a new exercise is ready to start
-     * In alternating mode, includes maxRepsThisSession
+     * Called when a new set is ready to start
      */
     var onExerciseReady: ((LoadedExercise) -> Unit)? = null
     
@@ -91,31 +59,9 @@ class WorkoutRunner(
     var onRestStarted: ((restDurationMs: Long, isRoundRest: Boolean) -> Unit)? = null
     
     /**
-     * Called when switching to next exercise in alternating mode (no rest)
-     */
-    var onExerciseSwitched: ((LoadedExercise, previousExerciseName: String) -> Unit)? = null
-    
-    /**
      * Called when workout is completed
      */
     var onWorkoutCompleted: ((WorkoutResult) -> Unit)? = null
-    
-    /**
-     * Called when round is completed (for multi-round workouts)
-     */
-    var onRoundCompleted: ((roundNumber: Int, totalRounds: Int) -> Unit)? = null
-    
-    // ==================== Public Properties ====================
-    
-    /**
-     * Check if this workout uses alternating mode
-     */
-    val isAlternatingMode: Boolean get() = workoutConfig.isAlternating()
-    
-    /**
-     * Get reps per switch (how many reps before switching exercise)
-     */
-    val repsPerSwitch: Int get() = workoutConfig.getEffectiveRepsPerSwitch()
     
     // ==================== Public API ====================
     
@@ -124,19 +70,14 @@ class WorkoutRunner(
      * Loads the first exercise and notifies listeners
      */
     fun start() {
-        Log.d(TAG, "Starting workout: ${workoutConfig.name.en} (mode: ${workoutConfig.executionMode})")
+        Log.d(TAG, "Starting workout: ${workoutConfig.name.en}")
         
-        _currentRound = 1
         _currentExerciseIndex = 0
-        _completedExercisesTotal = 0
+        _currentSetIndex = 1
+        _completedSetsTotal = 0
         _startTime = System.currentTimeMillis()
         _exerciseResults.clear()
         _isCompleted.value = false
-        
-        // Initialize alternating mode state
-        if (isAlternatingMode) {
-            initializeAlternatingMode()
-        }
         
         _state.value = WorkoutState.PREPARING
         updateProgress()
@@ -146,9 +87,6 @@ class WorkoutRunner(
     
     /**
      * Called when the current exercise session is completed
-     * 
-     * In SEQUENTIAL mode: Called when all reps of an exercise are done
-     * In ALTERNATING mode: Called when repsPerSwitch reps are done
      * 
      * @param completedReps Number of reps completed in this session
      * @param actualDurationMs Duration of this session
@@ -161,11 +99,7 @@ class WorkoutRunner(
         accuracy: Float = 0f,
         isCompleted: Boolean = true
     ) {
-        if (isAlternatingMode) {
-            handleAlternatingExerciseCompleted(completedReps ?: 0, accuracy)
-        } else {
-            handleSequentialExerciseCompleted(completedReps, actualDurationMs, accuracy, isCompleted)
-        }
+        handleSetCompleted(completedReps, actualDurationMs, accuracy, isCompleted)
     }
     
     /**
@@ -177,16 +111,8 @@ class WorkoutRunner(
         
         when (_state.value) {
             WorkoutState.RESTING -> {
-                // Load next exercise
+                // Continue with next set/exercise
                 _state.value = WorkoutState.PREPARING
-                loadCurrentExercise()
-            }
-            WorkoutState.ROUND_REST -> {
-                // Start new round
-                _state.value = WorkoutState.PREPARING
-                if (isAlternatingMode) {
-                    initializeAlternatingMode()  // Reset for new round
-                }
                 loadCurrentExercise()
             }
             else -> {
@@ -228,7 +154,7 @@ class WorkoutRunner(
      * Skip current rest period
      */
     fun skipRest() {
-        if (_state.value == WorkoutState.RESTING || _state.value == WorkoutState.ROUND_REST) {
+        if (_state.value == WorkoutState.RESTING) {
             onRestCompleted()
         }
     }
@@ -240,403 +166,208 @@ class WorkoutRunner(
         return WorkoutInfo(
             name = workoutConfig.name,
             description = workoutConfig.description,
-            type = workoutConfig.type,
+            difficulty = workoutConfig.difficulty,
             totalExercises = workoutConfig.exercises.size,
-            totalRounds = workoutConfig.rounds,
-            estimatedDurationMs = workoutConfig.getEstimatedDurationMs(),
-            isAlternating = isAlternatingMode,
-            repsPerSwitch = if (isAlternatingMode) repsPerSwitch else null
+            totalSets = workoutConfig.exercises.sumOf { it.sets.coerceAtLeast(1) },
+            estimatedDurationMs = workoutConfig.getEstimatedDurationMs()
         )
     }
     
-    /**
-     * Get remaining reps for current exercise (alternating mode)
-     */
-    fun getRemainingRepsForCurrentExercise(): Int {
-        if (!isAlternatingMode) return 0
-        val target = _exerciseRepsTargets[_currentExerciseIndex] ?: 0
-        val completed = _exerciseRepsCompleted[_currentExerciseIndex] ?: 0
-        return (target - completed).coerceAtLeast(0)
-    }
-    
-    /**
-     * Get reps for this switch session
-     * Returns min(repsPerSwitch, remaining reps for this exercise)
-     */
-    fun getRepsForThisSession(): Int {
-        if (!isAlternatingMode) return Int.MAX_VALUE
-        val remaining = getRemainingRepsForCurrentExercise()
-        return minOf(repsPerSwitch, remaining)
-    }
-    
-    // ==================== Private Methods - Initialization ====================
-    
-    private fun initializeAlternatingMode() {
-        _exerciseRepsCompleted.clear()
-        _exerciseRepsTargets.clear()
-        _loadedExercises.clear()
-        _totalRepsCompleted = 0
-        _totalRepsInRound = 0
-        
-        // Pre-load all exercises and set up targets
-        workoutConfig.exercises.forEachIndexed { index, workoutExercise ->
-            // Load exercise config from repository
-            val exerciseConfig = exerciseRepository.getExercise(workoutExercise.exercise)
-            if (exerciseConfig != null) {
-                val loadedExercise = LoadedExercise(
-                    config = exerciseConfig,
-                    workoutExercise = workoutExercise,
-                    round = _currentRound,
-                    indexInRound = index,
-                    totalInRound = workoutConfig.exercises.size,
-                    maxRepsThisSession = null  // Will be set when exercise starts
-                )
-                _loadedExercises.add(loadedExercise)
-                
-                // Set target reps
-                val targetReps = workoutExercise.target.reps 
-                    ?: exerciseConfig.repCountingConfig.reps
-                    ?: 10
-                
-                _exerciseRepsTargets[index] = targetReps
-                _exerciseRepsCompleted[index] = 0
-                _totalRepsInRound += targetReps
-            }
-        }
-        
-        Log.d(TAG, "Alternating mode initialized: ${_loadedExercises.size} exercises, " +
-                "$_totalRepsInRound total reps, $repsPerSwitch reps per switch")
-    }
-    
-    // ==================== Private Methods - Sequential Mode ====================
-    
-    private fun handleSequentialExerciseCompleted(
+    // ==================== Private Methods ====================
+
+    private fun handleSetCompleted(
         completedReps: Int?,
         actualDurationMs: Long?,
         accuracy: Float,
         isCompleted: Boolean
     ) {
         val currentWorkoutExercise = workoutConfig.getExercise(_currentExerciseIndex)
-        
-        // Record result
-        _exerciseResults.add(WorkoutExerciseResult(
-            exerciseName = currentWorkoutExercise?.exercise ?: "unknown",
-            round = _currentRound,
-            targetReps = currentWorkoutExercise?.target?.reps,
-            completedReps = completedReps,
-            targetDurationMs = currentWorkoutExercise?.target?.getDurationMs(),
-            actualDurationMs = actualDurationMs,
-            accuracy = accuracy,
-            isCompleted = isCompleted
-        ))
-        
-        _completedExercisesTotal++
-        
-        Log.d(TAG, "Sequential: Exercise completed: ${currentWorkoutExercise?.exercise} " +
-                "(Round $_currentRound, Index $_currentExerciseIndex)")
-        
-        // Move to next
-        _currentExerciseIndex++
-        
-        // Check if round is complete
-        if (_currentExerciseIndex >= workoutConfig.exercises.size) {
-            handleRoundComplete()
-        } else {
-            // More exercises in this round - start rest
-            startExerciseRest()
-        }
-    }
-    
-    // ==================== Private Methods - Alternating Mode ====================
-    
-    private fun handleAlternatingExerciseCompleted(completedReps: Int, accuracy: Float) {
-        val previousExerciseName = _currentExercise.value?.getDisplayName() ?: "Exercise"
-        
-        // Update reps completed for current exercise
-        val currentCompleted = _exerciseRepsCompleted[_currentExerciseIndex] ?: 0
-        val newCompleted = currentCompleted + completedReps
-        _exerciseRepsCompleted[_currentExerciseIndex] = newCompleted
-        _totalRepsCompleted += completedReps
-        
-        val targetForCurrent = _exerciseRepsTargets[_currentExerciseIndex] ?: 0
-        
-        Log.d(TAG, "Alternating: Exercise $_currentExerciseIndex completed $completedReps reps " +
-                "($newCompleted/$targetForCurrent total)")
-        
-        // Check if this exercise is now complete
-        if (newCompleted >= targetForCurrent) {
-            // This exercise is done, mark it
-            Log.d(TAG, "Exercise $_currentExerciseIndex fully completed")
-        }
-        
-        // Find next exercise that still has reps remaining
-        val nextIndex = findNextIncompleteExercise()
-        
-        if (nextIndex == -1) {
-            // All exercises in this round are complete
-            handleRoundComplete()
-        } else {
-            // Switch to next exercise
-            _currentExerciseIndex = nextIndex
-            updateProgress()
-            
-            // Check if we need rest between switches
-            if (workoutConfig.restBetweenSwitchMs > 0) {
-                startSwitchRest()
-            } else {
-                // No rest, immediate switch
-                loadCurrentExerciseForAlternating()
-                _currentExercise.value?.let { exercise ->
-                    onExerciseSwitched?.invoke(exercise, previousExerciseName)
-                }
-            }
-        }
-    }
-    
-    private fun findNextIncompleteExercise(): Int {
-        val exerciseCount = workoutConfig.exercises.size
-        
-        // Start from next exercise and wrap around
-        for (i in 1..exerciseCount) {
-            val index = (_currentExerciseIndex + i) % exerciseCount
-            val completed = _exerciseRepsCompleted[index] ?: 0
-            val target = _exerciseRepsTargets[index] ?: 0
-            
-            if (completed < target) {
-                return index
-            }
-        }
-        
-        // All exercises complete
-        return -1
-    }
-    
-    private fun loadCurrentExerciseForAlternating() {
-        if (_currentExerciseIndex >= _loadedExercises.size) {
-            Log.e(TAG, "Invalid exercise index: $_currentExerciseIndex")
+        val totalSetsForExercise = currentWorkoutExercise?.sets?.coerceAtLeast(1) ?: 1
+
+        _exerciseResults.add(
+            WorkoutExerciseResult(
+                exerciseName = currentWorkoutExercise?.exercise ?: "unknown",
+                setNumber = _currentSetIndex,
+                targetReps = currentWorkoutExercise?.targetReps,
+                completedReps = completedReps,
+                targetDurationMs = currentWorkoutExercise?.targetDurationSec?.let { it * 1000L },
+                actualDurationMs = actualDurationMs,
+                accuracy = accuracy,
+                isCompleted = isCompleted
+            )
+        )
+
+        _completedSetsTotal++
+
+        Log.d(
+            TAG,
+            "Set completed: ${currentWorkoutExercise?.exercise} " +
+                "(Set $_currentSetIndex/$totalSetsForExercise, Index $_currentExerciseIndex)"
+        )
+
+        val hasMoreSets = _currentSetIndex < totalSetsForExercise
+        if (hasMoreSets) {
+            _currentSetIndex++
+            startRest(currentWorkoutExercise?.restBetweenSetsMs ?: 0L)
             return
         }
-        
-        val baseExercise = _loadedExercises[_currentExerciseIndex]
-        val remaining = getRemainingRepsForCurrentExercise()
-        val repsThisSession = minOf(repsPerSwitch, remaining)
-        
-        // Create new LoadedExercise with updated maxRepsThisSession
-        val exerciseWithLimit = baseExercise.copy(
-            round = _currentRound,
-            maxRepsThisSession = repsThisSession
-        )
-        
-        _currentExercise.value = exerciseWithLimit
-        updateProgress()
-        
-        Log.d(TAG, "Alternating: Loaded ${baseExercise.config.name.en} " +
-                "(${repsThisSession} reps this session, ${remaining} remaining)")
-        
-        onExerciseReady?.invoke(exerciseWithLimit)
-    }
-    
-    private fun startSwitchRest() {
-        _state.value = WorkoutState.RESTING
-        _restTimeRemainingMs.value = workoutConfig.restBetweenSwitchMs
-        updateProgress()
-        
-        Log.d(TAG, "Rest between switches: ${workoutConfig.restBetweenSwitchMs}ms")
-        onRestStarted?.invoke(workoutConfig.restBetweenSwitchMs, false)
-    }
-    
-    // ==================== Private Methods - Common ====================
-    
-    private fun loadCurrentExercise() {
-        if (isAlternatingMode) {
-            loadCurrentExerciseForAlternating()
+
+        // Move to next exercise
+        _currentExerciseIndex++
+        _currentSetIndex = 1
+
+        if (_currentExerciseIndex >= workoutConfig.exercises.size) {
+            handleWorkoutComplete()
         } else {
-            loadCurrentExerciseSequential()
+            val restMs = currentWorkoutExercise?.restAfterExerciseMs ?: 0L
+            startRest(restMs)
         }
     }
-    
-    private fun loadCurrentExerciseSequential() {
+
+    private fun loadCurrentExercise() {
         val workoutExercise = workoutConfig.getExercise(_currentExerciseIndex)
-        
+
         if (workoutExercise == null) {
             Log.e(TAG, "No exercise at index $_currentExerciseIndex")
             return
         }
-        
-        // Load the exercise config from repository
+
         val exerciseConfig = exerciseRepository.getExercise(workoutExercise.exercise)
-        
+
         if (exerciseConfig == null) {
             Log.e(TAG, "Exercise not found in repository: ${workoutExercise.exercise}")
             onExerciseCompleted(isCompleted = false)
             return
         }
-        
+
+        val totalSetsForExercise = workoutExercise.sets.coerceAtLeast(1)
         val loadedExercise = LoadedExercise(
             config = exerciseConfig,
             workoutExercise = workoutExercise,
-            round = _currentRound,
-            indexInRound = _currentExerciseIndex,
-            totalInRound = workoutConfig.exercises.size,
-            maxRepsThisSession = null  // No limit in sequential mode
+            index = _currentExerciseIndex,
+            total = workoutConfig.exercises.size,
+            setIndex = _currentSetIndex,
+            totalSets = totalSetsForExercise
         )
-        
+
         _currentExercise.value = loadedExercise
         updateProgress()
-        
-        Log.d(TAG, "Sequential: Loaded ${exerciseConfig.name.en}")
-        
+
+        Log.d(TAG, "Loaded ${exerciseConfig.name.en} (Set $_currentSetIndex/$totalSetsForExercise)")
+
         onExerciseReady?.invoke(loadedExercise)
     }
-    
-    private fun handleRoundComplete() {
-        Log.d(TAG, "Round $_currentRound completed")
-        
-        onRoundCompleted?.invoke(_currentRound, workoutConfig.rounds)
-        
-        if (_currentRound >= workoutConfig.rounds) {
-            handleWorkoutComplete()
-        } else {
-            _currentRound++
-            _currentExerciseIndex = 0
-            startRoundRest()
+
+    private fun startRest(durationMs: Long) {
+        if (durationMs <= 0L) {
+            _state.value = WorkoutState.PREPARING
+            loadCurrentExercise()
+            return
         }
+
+        _state.value = WorkoutState.RESTING
+        _restTimeRemainingMs.value = durationMs
+        updateProgress()
+
+        Log.d(TAG, "Rest started: ${durationMs}ms")
+        onRestStarted?.invoke(durationMs, false)
     }
-    
+
     private fun handleWorkoutComplete() {
         Log.d(TAG, "Workout completed!")
-        
+
         _state.value = WorkoutState.COMPLETED
         _isCompleted.value = true
         _currentExercise.value = null
         updateProgress()
-        
+
         val result = WorkoutResult(
             workoutName = workoutConfig.name.en,
-            totalRounds = workoutConfig.rounds,
-            completedRounds = _currentRound,
-            totalExercises = _completedExercisesTotal,
+            totalExercises = workoutConfig.exercises.size,
+            totalSets = workoutConfig.exercises.sumOf { it.sets.coerceAtLeast(1) },
             exerciseResults = _exerciseResults.toList(),
             totalDurationMs = System.currentTimeMillis() - _startTime,
             startTime = _startTime,
             endTime = System.currentTimeMillis()
         )
-        
+
         onWorkoutCompleted?.invoke(result)
     }
-    
-    private fun startExerciseRest() {
-        _state.value = WorkoutState.RESTING
-        _restTimeRemainingMs.value = workoutConfig.restBetweenExercisesMs
-        updateProgress()
-        
-        Log.d(TAG, "Rest between exercises: ${workoutConfig.restBetweenExercisesMs}ms")
-        onRestStarted?.invoke(workoutConfig.restBetweenExercisesMs, false)
-    }
-    
-    private fun startRoundRest() {
-        _state.value = WorkoutState.ROUND_REST
-        _restTimeRemainingMs.value = workoutConfig.restBetweenRoundsMs
-        updateProgress()
-        
-        Log.d(TAG, "Rest between rounds: ${workoutConfig.restBetweenRoundsMs}ms")
-        onRestStarted?.invoke(workoutConfig.restBetweenRoundsMs, true)
-    }
-    
+
     private fun updateProgress() {
         _progress.value = createProgress()
     }
-    
+
     private fun createInitialProgress(): WorkoutProgress {
         return WorkoutProgress(
-            currentRound = 1,
-            totalRounds = workoutConfig.rounds,
             currentExerciseIndex = 0,
             totalExercises = workoutConfig.exercises.size,
-            completedExercises = 0,
+            currentSetIndex = 1,
+            totalSetsForExercise = 1,
+            completedSets = 0,
+            totalSets = workoutConfig.exercises.sumOf { it.sets.coerceAtLeast(1) },
             isResting = false,
             isCompleted = false,
-            isAlternating = workoutConfig.isAlternating()
+            currentExerciseName = ""
         )
     }
-    
+
     private fun createProgress(): WorkoutProgress {
         val currentName = _currentExercise.value?.getDisplayName() ?: ""
-        
+        val currentExercise = workoutConfig.getExercise(_currentExerciseIndex)
+        val totalSetsForExercise = currentExercise?.sets?.coerceAtLeast(1) ?: 1
+
         return WorkoutProgress(
-            currentRound = _currentRound,
-            totalRounds = workoutConfig.rounds,
             currentExerciseIndex = _currentExerciseIndex,
             totalExercises = workoutConfig.exercises.size,
-            completedExercises = _completedExercisesTotal,
-            isResting = _state.value == WorkoutState.RESTING || _state.value == WorkoutState.ROUND_REST,
+            currentSetIndex = _currentSetIndex,
+            totalSetsForExercise = totalSetsForExercise,
+            completedSets = _completedSetsTotal,
+            totalSets = workoutConfig.exercises.sumOf { it.sets.coerceAtLeast(1) },
+            isResting = _state.value == WorkoutState.RESTING,
             isCompleted = _isCompleted.value,
-            // Alternating mode fields
-            isAlternating = isAlternatingMode,
-            exerciseRepsCompleted = _exerciseRepsCompleted.toMap(),
-            exerciseRepsTargets = _exerciseRepsTargets.toMap(),
-            currentExerciseName = currentName,
-            totalRepsCompleted = _totalRepsCompleted,
-            totalRepsTarget = _totalRepsInRound
+            currentExerciseName = currentName
         )
     }
 }
 
 /**
  * Loaded exercise with all resolved values
- * Ready to be passed to TrainingEngine
- * 
- * @param maxRepsThisSession In alternating mode, the max reps for this session
- *                           (null = no limit, complete full target)
  */
 data class LoadedExercise(
     val config: ExerciseConfig,
     val workoutExercise: WorkoutExercise,
-    val round: Int,
-    val indexInRound: Int,
-    val totalInRound: Int,
-    val maxRepsThisSession: Int? = null  // For alternating mode
+    val index: Int,
+    val total: Int,
+    val setIndex: Int,
+    val totalSets: Int
 ) {
     /**
      * Get the target reps (from workout override or exercise default)
      */
     fun getTargetReps(): Int? {
-        return workoutExercise.target.reps
+        return workoutExercise.targetReps
             ?: config.repCountingConfig.reps
     }
-    
-    /**
-     * Get the effective target for this session
-     * In alternating mode, this is min(targetReps, maxRepsThisSession)
-     */
-    fun getEffectiveTargetReps(): Int {
-        val fullTarget = getTargetReps() ?: 10
-        return maxRepsThisSession ?: fullTarget
-    }
-    
+
     /**
      * Get the target duration in seconds (from workout override or exercise default)
      */
     fun getTargetDurationSec(): Int? {
-        return workoutExercise.target.durationSec
+        return workoutExercise.targetDurationSec
             ?: config.repCountingConfig.duration
     }
-    
+
     /**
      * Check if this is a hold exercise
      */
     fun isHoldExercise(): Boolean = config.countingMethod == CountingMethod.HOLD
-    
-    /**
-     * Check if this session has a rep limit (alternating mode)
-     */
-    fun hasRepLimit(): Boolean = maxRepsThisSession != null
-    
+
     /**
      * Get display name
      */
     fun getDisplayName(language: String = "en"): String = config.name.get(language)
-    
+
     /**
      * Get variant name
      */
@@ -651,12 +382,10 @@ data class LoadedExercise(
 data class WorkoutInfo(
     val name: LocalizedText,
     val description: LocalizedText?,
-    val type: WorkoutType,
+    val difficulty: String,
     val totalExercises: Int,
-    val totalRounds: Int,
-    val estimatedDurationMs: Long,
-    val isAlternating: Boolean = false,
-    val repsPerSwitch: Int? = null
+    val totalSets: Int,
+    val estimatedDurationMs: Long
 ) {
     fun getEstimatedDurationMinutes(): Int = (estimatedDurationMs / 60000).toInt()
 }

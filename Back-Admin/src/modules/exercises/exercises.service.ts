@@ -14,6 +14,7 @@ import type {
   PositionCheckInput, 
   FeedbackMessageAssignmentInput,
   RepCountingConfig,
+  AlternatingConfigInput,
 } from './exercises.types';
 
 // ============================================
@@ -65,6 +66,8 @@ interface CreateExerciseInput {
     optional?: string[];
     excluded?: string[];
   };
+  // Alternating configuration
+  alternatingConfig?: AlternatingConfigInput;
 }
 
 interface UpdateExerciseInput extends Partial<CreateExerciseInput> {
@@ -223,6 +226,9 @@ export const exerciseService = {
         status: 'draft',
         createdBy,
         updatedBy: createdBy,
+        // Alternating configuration
+        isAlternating: Boolean(data.alternatingConfig),
+        alternatingConfig: data.alternatingConfig ? (data.alternatingConfig as object) : undefined,
         // Weight configuration
         supportsWeight: data.supportsWeight ?? false,
         minWeight: data.minWeight ?? null,
@@ -367,6 +373,10 @@ export const exerciseService = {
     if (data.countingMethodId !== undefined) updateData.countingMethodId = data.countingMethodId;
     if (data.repCountingConfig !== undefined) updateData.repCountingConfig = data.repCountingConfig;
     if (data.status !== undefined) updateData.status = data.status;
+    if (data.alternatingConfig !== undefined) {
+      updateData.isAlternating = Boolean(data.alternatingConfig);
+      updateData.alternatingConfig = data.alternatingConfig ? (data.alternatingConfig as object) : null;
+    }
     // Weight configuration
     if (data.supportsWeight !== undefined) updateData.supportsWeight = data.supportsWeight;
     if (data.minWeight !== undefined) updateData.minWeight = data.minWeight;

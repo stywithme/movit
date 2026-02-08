@@ -35,11 +35,11 @@
                 android:background="@drawable/bg_chip_accent"
                 android:paddingHorizontal="@dimen/spacing_sm"
                 android:paddingVertical="@dimen/spacing_xs"
-                android:text="@string/workout_type_circuit"
+                android:text="@string/workout_detail_default_difficulty"
                 android:textColor="@color/on_primary"
                 android:textSize="10sp"
                 android:textStyle="bold"
-                tools:text="CIRCUIT" />
+                tools:text="BEGINNER" />
 
             <TextView
                 android:id="@+id/tvWorkoutName"

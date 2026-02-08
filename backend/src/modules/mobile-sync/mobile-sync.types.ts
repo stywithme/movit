@@ -7,6 +7,7 @@
  */
 
 import type { ExerciseConfig, LocalizedText } from '@/lib/types/android-schema';
+import type { ProgramExport } from '@/modules/programs/programs.types';
 import type { WorkoutExport } from '@/modules/workouts/workouts.types';
 
 // ============================================
@@ -58,16 +59,41 @@ export interface SyncData {
    * List of workouts (Super Sets / Circuits)
    */
   workouts: WorkoutExport[];
+
+  /**
+   * List of programs (Weeks / Days / Sessions)
+   */
+  programs: ProgramExport[];
   
   /**
    * IDs of workouts that were deleted since last sync
    */
   deletedWorkoutIds: string[];
+
+  /**
+   * IDs of programs that were deleted since last sync
+   */
+  deletedProgramIds: string[];
+
+  /**
+   * User programs (enrollments/customizations)
+   */
+  userPrograms?: UserProgramExport[];
   
   /**
    * Audio files manifest for download
    */
   audioManifest: AudioManifest;
+}
+
+export interface UserProgramExport {
+  id: string;
+  programId?: string | null;
+  name?: LocalizedText;
+  startDate: string;
+  isActive: boolean;
+  customizations?: Record<string, unknown> | null;
+  updatedAt: string;
 }
 
 export interface ExerciseConfigWithMeta extends ExerciseConfig {
@@ -97,6 +123,11 @@ export interface SyncMeta {
    * Total number of published workouts
    */
   totalWorkouts: number;
+
+  /**
+   * Total number of published programs
+   */
+  totalPrograms: number;
   
   /**
    * Whether this is a full sync or incremental
@@ -117,6 +148,11 @@ export interface SyncMeta {
    * Number of workouts in this response
    */
   workoutsInResponse: number;
+
+  /**
+   * Number of programs in this response
+   */
+  programsInResponse: number;
 }
 
 // ============================================

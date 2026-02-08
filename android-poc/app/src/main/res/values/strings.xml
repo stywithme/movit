@@ -8,6 +8,8 @@
     <!-- Common -->
     <string name="next">Next</string>
     <string name="skip">Skip</string>
+    <string name="add_20s">+20s</string>
+    <string name="edit_rest">Edit</string>
     <string name="back">Back</string>
     <string name="done">Done</string>
     <string name="cancel">Cancel</string>
@@ -24,6 +26,15 @@
     <!-- Navigation -->
     <string name="home">Home</string>
     <string name="exercises">Exercises</string>
+    <string name="programs">Programs</string>
+    <string name="programs_subtitle">Choose a program and plan your training</string>
+    <string name="browse_programs">Browse Programs</string>
+    <string name="active_program">Active Program</string>
+    <string name="today_plan">Today's Plan</string>
+    <string name="today_plan_title_format">Week %1$d · Day %2$d</string>
+    <string name="today_plan_session_format">%1$s • %2$d items</string>
+    <string name="view_program">View Program</string>
+    <string name="program_stats_format">%1$d weeks · %2$d sessions</string>
     <string name="history">History</string>
     
     <!-- Accessibility -->
@@ -210,14 +221,19 @@
     <!-- Workout Detail -->
     <string name="workout_detail_timeline">Workout Timeline</string>
     <string name="workout_detail_rounds">Rounds</string>
+    <string name="sets">Sets</string>
     <string name="workout_detail_start_workout">Start Workout</string>
     <string name="workout_detail_round_format">ROUND %1$d</string>
     <string name="workout_detail_rest_format">Rest %1$d sec</string>
     <string name="workout_detail_round_rest_format">Round rest %1$d sec</string>
     <string name="workout_detail_reps_format">%1$d reps</string>
     <string name="workout_detail_hold_format">Hold %1$d sec</string>
+    <string name="workout_detail_sets_reps_format">%1$d sets × %2$d reps</string>
+    <string name="workout_detail_sets_hold_format">%1$d sets × %2$d sec</string>
+    <string name="workout_detail_sets_generic_format">%1$d sets • %2$s</string>
     <string name="workout_detail_reps_exercise">Rep-based exercise</string>
     <string name="workout_detail_hold_exercise">Hold exercise</string>
+    <string name="workout_detail_default_difficulty">Workout</string>
     <string name="workout_detail_alternating_mode">Alternating Mode</string>
     <string name="workout_detail_alternating_desc_with_rest">Exercises alternate every %1$d rep(s) with %2$d sec rest between switches.</string>
     <string name="workout_detail_alternating_desc_no_rest">Exercises alternate every %1$d rep(s) with no rest between switches.</string>
@@ -376,9 +392,68 @@
     <string name="share">Share</string>
     <string name="quality">Quality</string>
     <string name="weight">Weight</string>
+    <string name="weight_check_title">Confirm Weight</string>
+    <string name="weight_check_desc">Adjust the weight for this exercise before starting.</string>
+    <string name="weight_input_hint">Weight (kg)</string>
+    <string name="weight_min_max_format">Allowed range: %1$.1f - %2$.1f kg</string>
+    <string name="weight_min_only_format">Minimum: %1$.1f kg</string>
+    <string name="weight_max_only_format">Maximum: %1$.1f kg</string>
+    <string name="weight_min_error">Weight must be at least %1$.1f kg</string>
+    <string name="weight_max_error">Weight must be at most %1$.1f kg</string>
+    <string name="weight_start">Start</string>
+    <string name="weight_clear">No Weight</string>
     <string name="train_again">Train Again</string>
+    <string name="weeks_count_format">%1$d weeks</string>
+    <string name="sessions_count_format">%1$d sessions</string>
+    <string name="sessions_progress_format">Progress: %1$d/%2$d sessions</string>
+    <string name="days_count_format">%1$d days</string>
+    <string name="week_title_only">Week %1$d</string>
+    <string name="week_title_with_name">Week %1$d • %2$s</string>
+    <string name="week_default_desc">Training week overview</string>
+    <string name="week_stats_format">%1$d days • %2$d rest • %3$d sessions</string>
+    <string name="week_progress_format">Progress: %1$d/%2$d sessions</string>
+    <string name="week_progress_completed">Progress: Completed</string>
+    <string name="day_title_only">Day %1$d</string>
+    <string name="day_title_with_name">Day %1$d • %2$s</string>
+    <string name="rest_day">Rest day</string>
+    <string name="session_items_count_format">%1$d items</string>
+    <string name="start_session">Start</string>
+    <string name="continue_session">Continue</string>
+    <string name="restart_session">Restart</string>
+    <string name="session_status_completed">Completed</string>
+    <string name="session_status_not_started">Not started</string>
+    <string name="rest_time">Rest time</string>
+    <string name="session_complete">Session complete</string>
+    <string name="session_report_items_format">Completed %1$d items</string>
+    <string name="session_report_sets_format">Sets %1$d/%2$d</string>
+    <string name="session_report_duration_format">Duration %1$02d:%2$02d</string>
+    <string name="session_report_accuracy_format">Accuracy %1$d%%</string>
+    <string name="session_report_exercises_title">Exercise Breakdown</string>
+    <string name="session_report_weights_format">Weights: %1$s</string>
+    <string name="session_report_weights_empty">Weights: --</string>
+    <string name="session_exit_title">Exit Session?</string>
+    <string name="session_exit_message">You can continue later, but this session will be incomplete.</string>
+    <string name="session_exit_keep">Keep Training</string>
+    <string name="session_exit_exit">Exit</string>
     <string name="your_performance">Your Performance</string>
     <string name="reps_journey">Reps Journey</string>
     <string name="tips_for_you">Tips for You</string>
     <string name="show_details">Show Details</string>
+
+    <!-- Session Training Mode -->
+    <string name="session_start_set">Start Set</string>
+    <string name="session_exercise_label">EXERCISE %1$d/%2$d</string>
+    <string name="session_set_reps_format">Set %1$d of %2$d · %3$d reps</string>
+    <string name="session_set_duration_format">Set %1$d of %2$d · %3$ds hold</string>
+    <string name="session_set_only_format">Set %1$d of %2$d</string>
+    <string name="session_weight_format">Weight: %1$.1f kg</string>
+    <string name="session_rest_between_sets">REST BETWEEN SETS</string>
+    <string name="session_rest_between_exercises">REST BETWEEN EXERCISES</string>
+    <string name="rest_seconds_hint">Rest seconds</string>
+    <string name="session_rest_next_set_format">Next: %1$s · Set %2$d/%3$d</string>
+    <string name="session_rest_next_exercise_format">Next: %1$s</string>
+    <string name="session_complete_sets_format">Sets: %1$d/%2$d</string>
+    <string name="session_complete_reps_format">Total Reps: %1$d</string>
+    <string name="session_complete_duration_format">Duration: %1$02d:%2$02d</string>
+    <string name="session_complete_accuracy_format">Average Accuracy: %1$d%%</string>
 </resources>

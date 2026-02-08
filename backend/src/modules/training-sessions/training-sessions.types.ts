@@ -188,3 +188,25 @@ export interface HistoryQueryParams {
   startDate?: string;
   endDate?: string;
 }
+
+// ============================================
+// Program Session Reporting
+// ============================================
+
+export interface ProgramSessionStartPayload {
+  programId?: string;
+  weekNumber: number;
+  dayNumber: number;
+  startedAt?: number; // Unix timestamp
+}
+
+export interface ProgramSessionCompletePayload {
+  completedAt?: number; // Unix timestamp
+  totalDurationMs?: number;
+  totalExercises?: number;
+  totalSets?: number;
+  completedSets?: number;
+  totalReps?: number;
+  avgAccuracy?: number;
+  report?: Record<string, unknown>;
+}

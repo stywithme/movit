@@ -23,9 +23,9 @@ import com.trainingvalidator.poc.storage.WorkoutRepository
 import com.trainingvalidator.poc.storage.SyncManager
 import com.trainingvalidator.poc.training.models.ExerciseConfig
 import com.trainingvalidator.poc.training.models.WorkoutConfig
-import com.trainingvalidator.poc.training.models.WorkoutType
 import com.trainingvalidator.poc.ui.PreWorkoutActivity
 import com.trainingvalidator.poc.ui.WorkoutListActivity
+import com.trainingvalidator.poc.ui.ProgramListActivity
 import com.trainingvalidator.poc.ui.WorkoutActivity
 import com.trainingvalidator.poc.ui.WorkoutDetailActivity
 import kotlinx.coroutines.launch
@@ -123,7 +123,7 @@ class ExercisesFragment : Fragment() {
 
         // Featured program
         binding.btnStartProgram.setOnClickListener {
-            startActivity(Intent(requireContext(), WorkoutListActivity::class.java))
+            startActivity(Intent(requireContext(), ProgramListActivity::class.java))
         }
 
         // Avatar -> Profile
@@ -319,12 +319,7 @@ class ExercisesFragment : Fragment() {
                 desc.get(language).ifBlank { desc.en }
             } ?: ""
 
-            holder.tvType.text = when (workout.type) {
-                WorkoutType.CIRCUIT -> getString(R.string.workout_type_circuit)
-                WorkoutType.SUPER_SET -> getString(R.string.workout_type_super_set)
-                WorkoutType.AMRAP -> getString(R.string.workout_type_amrap)
-                WorkoutType.EMOM -> getString(R.string.workout_type_emom)
-            }
+            holder.tvType.text = formatDifficulty(workout.difficulty)
 
             holder.tvExerciseCount.text = getString(
                 R.string.exercises_count_format,
@@ -348,5 +343,11 @@ class ExercisesFragment : Fragment() {
             appLocales[0]
         }
         return locale?.language ?: "en"
+    }
+
+    private fun formatDifficulty(difficulty: String?): String {
+        if (difficulty.isNullOrBlank()) return getString(R.string.workout_detail_default_difficulty)
+        val normalized = difficulty.replace('_', ' ').lowercase()
+        return normalized.replaceFirstChar { if (it.isLowerCase()) it.titlecase() else it.toString() }
     }
 }

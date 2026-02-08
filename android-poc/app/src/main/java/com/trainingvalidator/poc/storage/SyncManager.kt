@@ -6,6 +6,7 @@ import com.trainingvalidator.poc.network.ApiClient
 import com.trainingvalidator.poc.network.ExerciseConfigWithMeta
 import com.trainingvalidator.poc.network.MessageTemplate
 import com.trainingvalidator.poc.network.MobileSyncResponse
+import com.trainingvalidator.poc.storage.AuthManager
 import com.trainingvalidator.poc.training.models.FeedbackMessages
 import com.trainingvalidator.poc.training.models.LocalizedText
 import com.trainingvalidator.poc.training.models.PoseVariant
@@ -47,7 +48,8 @@ class SyncManager(
     private val context: Context,
     private val exerciseCache: ExerciseCacheManager,
     private val audioCache: AudioCacheManager,
-    private val workoutCache: WorkoutCacheManager? = null
+    private val workoutCache: WorkoutCacheManager? = null,
+    private val programCache: ProgramCacheManager? = null
 ) {
     
     companion object {
@@ -63,6 +65,7 @@ class SyncManager(
     // Store last audio manifest for background downloads
     private var lastAudioManifest: com.trainingvalidator.poc.network.AudioManifest? = null
     private var lastAudioBaseUrl: String? = null
+    private val userProgramStore = UserProgramStore(context)
     
     // ==================== Result Types ====================
     
@@ -75,6 +78,8 @@ class SyncManager(
             val exercisesDeleted: Int,
             val workoutsUpdated: Int = 0,
             val workoutsDeleted: Int = 0,
+            val programsUpdated: Int = 0,
+            val programsDeleted: Int = 0,
             val audioFilesDownloaded: Int,
             val isFullSync: Boolean
         ) : SyncResult()
@@ -136,7 +141,9 @@ class SyncManager(
             
             Log.d(TAG, "Starting incremental sync (lastSync: $lastSync)")
             
+            val authHeader = AuthManager.getAuthorizationHeader(context)
             val response = ApiClient.mobileSyncApi.sync(
+                authorization = authHeader,
                 updatedAfter = lastSync,
                 forceRefresh = null
             )
@@ -183,7 +190,9 @@ class SyncManager(
         try {
             Log.d(TAG, "Starting full refresh")
             
+            val authHeader = AuthManager.getAuthorizationHeader(context)
             val response = ApiClient.mobileSyncApi.sync(
+                authorization = authHeader,
                 updatedAfter = null,
                 forceRefresh = true
             )
@@ -270,13 +279,17 @@ class SyncManager(
         val deletedExerciseIds = data.deletedExerciseIds ?: emptyList()
         val workouts = data.workouts ?: emptyList()
         val deletedWorkoutIds = data.deletedWorkoutIds ?: emptyList()
+        val programs = data.programs ?: emptyList()
+        val deletedProgramIds = data.deletedProgramIds ?: emptyList()
+        val userPrograms = data.userPrograms ?: emptyList()
         val audioManifest = data.audioManifest
         
         // Check if there are any changes
         val hasExerciseChanges = exercises.isNotEmpty() || deletedExerciseIds.isNotEmpty()
         val hasWorkoutChanges = workouts.isNotEmpty() || deletedWorkoutIds.isNotEmpty()
+        val hasProgramChanges = programs.isNotEmpty() || deletedProgramIds.isNotEmpty()
         
-        if (!hasExerciseChanges && !hasWorkoutChanges) {
+        if (!hasExerciseChanges && !hasWorkoutChanges && !hasProgramChanges) {
             Log.d(TAG, "No changes since last sync")
             
             // Still update timestamp
@@ -326,6 +339,31 @@ class SyncManager(
                 )
             }
         }
+
+        // Save programs
+        var programsUpdatedCount = 0
+        var programsDeletedCount = 0
+        if (hasProgramChanges && programCache != null) {
+            programCache.savePrograms(programs, isFullSync)
+            programsUpdatedCount = programs.size
+
+            if (deletedProgramIds.isNotEmpty()) {
+                programCache.removePrograms(deletedProgramIds)
+                programsDeletedCount = deletedProgramIds.size
+            }
+
+            if (meta != null) {
+                programCache.saveMetadata(
+                    timestamp = response.timestamp,
+                    programCount = meta.totalPrograms,
+                    serverVersion = meta.serverVersion
+                )
+            }
+        }
+
+        if (userPrograms.isNotEmpty()) {
+            userProgramStore.saveUserPrograms(userPrograms)
+        }
         
         // Save exercise metadata
         if (meta != null) {
@@ -346,13 +384,16 @@ class SyncManager(
         }
         
         Log.d(TAG, "Sync complete: ${exercises.size} exercises updated, ${deletedExerciseIds.size} deleted, " +
-                   "$workoutsUpdatedCount workouts updated, $workoutsDeletedCount deleted")
+                   "$workoutsUpdatedCount workouts updated, $workoutsDeletedCount deleted, " +
+                   "$programsUpdatedCount programs updated, $programsDeletedCount deleted")
         
         return SyncResult.Success(
             exercisesUpdated = exercises.size,
             exercisesDeleted = deletedExerciseIds.size,
             workoutsUpdated = workoutsUpdatedCount,
             workoutsDeleted = workoutsDeletedCount,
+            programsUpdated = programsUpdatedCount,
+            programsDeleted = programsDeletedCount,
             audioFilesDownloaded = 0, // Audio download is now separate
             isFullSync = isFullSync
         )
@@ -533,12 +574,15 @@ class SyncManager(
     fun getSyncStatus(): SyncStatus {
         val exerciseCacheStats = exerciseCache.getCacheStats()
         val workoutCacheStats = workoutCache?.getCacheStats()
+        val programCacheStats = programCache?.getCacheStats()
         
         return SyncStatus(
             hasExercises = exerciseCache.hasExercises(),
             exerciseCount = exerciseCacheStats.exerciseCount,
             hasWorkouts = workoutCache?.hasWorkouts() ?: false,
             workoutCount = workoutCacheStats?.workoutCount ?: 0,
+            hasPrograms = programCache?.hasPrograms() ?: false,
+            programCount = programCacheStats?.programCount ?: 0,
             lastSyncTimestamp = exerciseCacheStats.lastSyncTimestamp,
             serverVersion = exerciseCacheStats.serverVersion,
             isSyncing = isSyncing
@@ -550,6 +594,8 @@ class SyncManager(
         val exerciseCount: Int,
         val hasWorkouts: Boolean = false,
         val workoutCount: Int = 0,
+        val hasPrograms: Boolean = false,
+        val programCount: Int = 0,
         val lastSyncTimestamp: String?,
         val serverVersion: String?,
         val isSyncing: Boolean

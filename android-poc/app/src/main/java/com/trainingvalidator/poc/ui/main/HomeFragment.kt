@@ -6,10 +6,19 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import androidx.fragment.app.Fragment
+import androidx.lifecycle.lifecycleScope
 import com.trainingvalidator.poc.R
 import com.trainingvalidator.poc.databinding.FragmentHomeBinding
 import com.trainingvalidator.poc.ui.TrainingActivity
+import com.trainingvalidator.poc.ui.ProgramDetailActivity
+import com.trainingvalidator.poc.ui.ProgramSessionActivity
+import com.trainingvalidator.poc.storage.ProgramRepository
+import com.trainingvalidator.poc.storage.ProgramSessionReportStore
+import com.trainingvalidator.poc.training.models.ProgramConfig
 import java.util.Calendar
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 /**
  * HomeFragment - Main dashboard with stats and quick actions
@@ -33,6 +42,7 @@ class HomeFragment : Fragment() {
         
         setupGreeting()
         loadUserData()
+        loadActiveProgram()
         setupListeners()
     }
 
@@ -84,6 +94,95 @@ class HomeFragment : Fragment() {
         binding.ivAvatar.setOnClickListener {
             // Navigate to profile
             (activity as? MainContainerActivity)?.navigateToTab(R.id.nav_profile)
+        }
+    }
+
+    private fun loadActiveProgram() {
+        lifecycleScope.launch {
+            val programRepo = ProgramRepository.getInstance(requireContext())
+            withContext(Dispatchers.IO) {
+                programRepo.initialize()
+            }
+
+            val activeProgram = programRepo.getActiveProgram()
+            val fallbackProgram = programRepo.getAllPrograms().firstOrNull()
+            val program = activeProgram ?: fallbackProgram
+
+            if (program == null) {
+                binding.cardActiveProgram.visibility = View.GONE
+                return@launch
+            }
+
+            val totalSessions = program.weeks.sumOf { week ->
+                week.days.sumOf { day -> day.sessions.size }
+            }
+
+            binding.cardActiveProgram.visibility = View.VISIBLE
+            binding.tvActiveProgramName.text = program.name.en
+            binding.tvActiveProgramStats.text = getString(
+                R.string.program_stats_format,
+                program.durationWeeks,
+                totalSessions
+            )
+            binding.btnViewProgram.setOnClickListener {
+                val intent = Intent(requireContext(), ProgramDetailActivity::class.java).apply {
+                    putExtra(ProgramDetailActivity.EXTRA_PROGRAM_SLUG, program.slug)
+                }
+                startActivity(intent)
+            }
+
+            bindTodayPlan(program)
+        }
+    }
+
+    private fun bindTodayPlan(program: ProgramConfig) {
+        val reportStore = ProgramSessionReportStore(requireContext())
+        val language = java.util.Locale.getDefault().language
+
+        val orderedSessions = program.weeks.sortedBy { it.weekNumber }.flatMap { week ->
+            week.days.sortedBy { it.dayNumber }.flatMap { day ->
+                if (day.isRestDay) {
+                    emptyList()
+                } else {
+                    day.sessions.sortedBy { it.sortOrder }.map { session ->
+                        Triple(week, day, session)
+                    }
+                }
+            }
+        }
+
+        val nextSession = orderedSessions.firstOrNull { triple ->
+            val session = triple.third
+            reportStore.getBySession(session.id) == null
+        }
+
+        if (nextSession == null) {
+            binding.cardTodayPlan.visibility = View.GONE
+            return
+        }
+
+        val week = nextSession.first
+        val day = nextSession.second
+        val session = nextSession.third
+        val sessionName = session.name.get(language).ifBlank { session.name.en }
+
+        binding.cardTodayPlan.visibility = View.VISIBLE
+        binding.tvTodayPlanTitle.text = getString(
+            R.string.today_plan_title_format,
+            week.weekNumber,
+            day.dayNumber
+        )
+        binding.tvTodayPlanSubtitle.text = getString(
+            R.string.today_plan_session_format,
+            sessionName,
+            session.items.size
+        )
+        binding.btnStartTodayPlan.setOnClickListener {
+            val intent = Intent(requireContext(), ProgramSessionActivity::class.java).apply {
+                putExtra(ProgramSessionActivity.EXTRA_PROGRAM_SLUG, program.slug)
+                putExtra(ProgramSessionActivity.EXTRA_SESSION_ID, session.id)
+            }
+            startActivity(intent)
         }
     }
 

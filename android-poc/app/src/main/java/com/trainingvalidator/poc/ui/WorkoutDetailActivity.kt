@@ -23,9 +23,8 @@ import com.trainingvalidator.poc.training.models.*
  * WorkoutDetailActivity - Shows workout overview with timeline before starting
  *
  * Displays:
- * - Workout hero header (name, type, description)
- * - Stats row (exercises count, duration, rounds)
- * - Execution mode info (for alternating workouts)
+ * - Workout hero header (name, difficulty, description)
+ * - Stats row (exercises count, duration, total sets)
  * - Timeline of exercises with rest periods between them
  * - Start button
  *
@@ -91,22 +90,17 @@ class WorkoutDetailActivity : AppCompatActivity() {
             desc.get(language).ifBlank { desc.en }
         } ?: ""
 
-        // Workout type badge
-        binding.tvWorkoutTypeBadge.text = when (config.type) {
-            WorkoutType.CIRCUIT -> getString(R.string.workout_type_circuit)
-            WorkoutType.SUPER_SET -> getString(R.string.workout_type_super_set)
-            WorkoutType.AMRAP -> getString(R.string.workout_type_amrap)
-            WorkoutType.EMOM -> getString(R.string.workout_type_emom)
-        }
+        // Difficulty badge
+        binding.tvWorkoutTypeBadge.text = formatDifficulty(config.difficulty)
 
         // Stats
         binding.tvStatExercises.text = config.exercises.size.toString()
         val durationMinutes = (config.getEstimatedDurationMs() / 60000).toInt()
         binding.tvStatDuration.text = getString(R.string.duration_minutes_format, durationMinutes)
-        binding.tvStatRounds.text = config.rounds.toString()
+        binding.tvStatRounds.text = config.exercises.sumOf { it.sets }.toString()
 
         // Execution mode info
-        setupExecutionModeInfo(config)
+        setupExecutionModeInfo()
 
         // Timeline
         setupTimeline(config)
@@ -117,23 +111,8 @@ class WorkoutDetailActivity : AppCompatActivity() {
         }
     }
 
-    private fun setupExecutionModeInfo(config: WorkoutConfig) {
-        if (config.isAlternating()) {
-            binding.cardExecutionMode.visibility = View.VISIBLE
-            binding.tvExecutionModeTitle.text = getString(R.string.workout_detail_alternating_mode)
-
-            val repsPerSwitch = config.getEffectiveRepsPerSwitch()
-            val restBetween = config.restBetweenSwitchMs / 1000
-
-            val desc = if (restBetween > 0) {
-                getString(R.string.workout_detail_alternating_desc_with_rest, repsPerSwitch, restBetween)
-            } else {
-                getString(R.string.workout_detail_alternating_desc_no_rest, repsPerSwitch)
-            }
-            binding.tvExecutionModeDesc.text = desc
-        } else {
-            binding.cardExecutionMode.visibility = View.GONE
-        }
+    private fun setupExecutionModeInfo() {
+        binding.cardExecutionMode.visibility = View.GONE
     }
 
     private fun setupTimeline(config: WorkoutConfig) {
@@ -144,85 +123,77 @@ class WorkoutDetailActivity : AppCompatActivity() {
     }
 
     /**
-     * Build the timeline items list based on workout type and execution mode.
-     *
-     * Sequential: Round header → Exercise → Rest → Exercise → Rest → ... → Round rest → Round header → ...
-     * Alternating: Round header → Exercise → Exercise → ... (no rest between, info card handles explanation)
+     * Build the timeline items list for workout templates.
+     * Exercise → Rest → Exercise → Rest → ...
      */
     private fun buildTimelineItems(config: WorkoutConfig): List<TimelineItem> {
         val items = mutableListOf<TimelineItem>()
         val exerciseRepo = ExerciseRepository.getInstance(this)
         val language = getCurrentLanguage()
 
-        for (round in 1..config.rounds) {
-            // Round header (only if multiple rounds)
-            if (config.rounds > 1) {
-                items.add(TimelineItem.RoundHeader(
-                    round = round,
-                    isFirst = round == 1
-                ))
+        config.exercises.forEachIndexed { index, workoutExercise ->
+            val exerciseConfig = exerciseRepo.getExercise(workoutExercise.exercise)
+            val exerciseName = exerciseConfig?.name?.get(language)?.ifBlank {
+                exerciseConfig.name.en
+            } ?: workoutExercise.exercise
+
+            val targetText = when {
+                workoutExercise.targetDurationSec != null -> {
+                    getString(
+                        R.string.workout_detail_sets_hold_format,
+                        workoutExercise.sets,
+                        workoutExercise.targetDurationSec
+                    )
+                }
+                workoutExercise.targetReps != null -> {
+                    getString(
+                        R.string.workout_detail_sets_reps_format,
+                        workoutExercise.sets,
+                        workoutExercise.targetReps
+                    )
+                }
+                else -> {
+                    val fallback = exerciseConfig?.let { cfg ->
+                        when (cfg.countingMethod) {
+                            CountingMethod.HOLD -> getString(R.string.workout_detail_hold_exercise)
+                            else -> getString(R.string.workout_detail_reps_exercise)
+                        }
+                    } ?: ""
+                    getString(R.string.workout_detail_sets_generic_format, workoutExercise.sets, fallback)
+                }
             }
 
-            config.exercises.forEachIndexed { index, workoutExercise ->
-                // Resolve exercise name from repository
-                val exerciseConfig = exerciseRepo.getExercise(workoutExercise.exercise)
-                val exerciseName = exerciseConfig?.name?.get(language)?.ifBlank {
-                    exerciseConfig.name.en
-                } ?: workoutExercise.exercise
-
-                // Target text
-                val targetText = when {
-                    workoutExercise.target.durationSec != null -> {
-                        getString(R.string.workout_detail_hold_format, workoutExercise.target.durationSec)
-                    }
-                    workoutExercise.target.reps != null -> {
-                        getString(R.string.workout_detail_reps_format, workoutExercise.target.reps)
-                    }
-                    else -> {
-                        // Fallback to exercise config default
-                        exerciseConfig?.let { cfg ->
-                            when (cfg.countingMethod) {
-                                CountingMethod.HOLD -> getString(R.string.workout_detail_hold_exercise)
-                                else -> getString(R.string.workout_detail_reps_exercise)
-                            }
-                        } ?: ""
-                    }
-                }
-
-                items.add(TimelineItem.Exercise(
+            items.add(
+                TimelineItem.Exercise(
                     number = index + 1,
                     name = exerciseName,
                     target = targetText,
                     exerciseSlug = workoutExercise.exercise,
                     isFirst = items.isEmpty(),
-                    isLast = round == config.rounds && index == config.exercises.size - 1
-                ))
+                    isLast = index == config.exercises.size - 1
+                )
+            )
 
-                // Rest period between exercises (not after the last exercise in a round)
-                if (!config.isAlternating() && index < config.exercises.size - 1) {
-                    val restSeconds = config.restBetweenExercisesMs / 1000
-                    if (restSeconds > 0) {
-                        items.add(TimelineItem.Rest(
+            if (index < config.exercises.size - 1) {
+                val restSeconds = workoutExercise.restAfterExerciseMs / 1000
+                if (restSeconds > 0) {
+                    items.add(
+                        TimelineItem.Rest(
                             durationSeconds = restSeconds,
                             isRoundRest = false
-                        ))
-                    }
-                }
-            }
-
-            // Round rest (not after the last round)
-            if (config.rounds > 1 && round < config.rounds) {
-                val roundRestSeconds = config.restBetweenRoundsMs / 1000
-                if (roundRestSeconds > 0) {
-                    items.add(TimelineItem.Rest(
-                        durationSeconds = roundRestSeconds,
-                        isRoundRest = true
-                    ))
+                        )
+                    )
                 }
             }
         }
 
         return items
+    }
+
+    private fun formatDifficulty(difficulty: String): String {
+        if (difficulty.isBlank()) return getString(R.string.workout_detail_default_difficulty)
+        val normalized = difficulty.replace('_', ' ').lowercase()
+        return normalized.replaceFirstChar { if (it.isLowerCase()) it.titlecase() else it.toString() }
     }
 
     private fun startWorkout() {

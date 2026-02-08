@@ -8,7 +8,6 @@ export class WorkoutsController {
   @Get()
   async list(
     @Query('status') status?: string,
-    @Query('type') type?: string,
     @Query('search') search?: string,
     @Query('page') page?: string,
     @Query('limit') limit?: string
@@ -16,7 +15,6 @@ export class WorkoutsController {
     try {
       const result = await workoutService.list({
         status: (status as 'draft' | 'published') || undefined,
-        type: (type as 'circuit' | 'super_set') || undefined,
         search: search || undefined,
         page: Number.parseInt(page || '1', 10),
         limit: Number.parseInt(limit || '20', 10),

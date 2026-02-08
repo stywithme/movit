@@ -8,6 +8,7 @@
 
 import { getPrisma } from '@/lib/prisma/client';
 import { buildExerciseConfig, exerciseFullInclude } from '@/modules/exercises/json-builder';
+import { programService } from '@/modules/programs/programs.service';
 import { workoutService } from '@/modules/workouts/workouts.service';
 import type { WorkoutExport } from '@/modules/workouts/workouts.types';
 import type {
@@ -18,6 +19,7 @@ import type {
   AudioManifest,
   AudioFileInfo,
   MessageTemplate,
+  UserProgramExport,
 } from './mobile-sync.types';
 import * as fs from 'fs/promises';
 import * as path from 'path';
@@ -25,6 +27,12 @@ import { getGcsBucket, parseObjectNameFromUrl } from '@/lib/storage';
 
 // Server version for API compatibility
 const SERVER_VERSION = '1.0.0';
+
+function toSyncLocalizedText(value: Record<string, unknown> | null | undefined) {
+  const ar = typeof value?.ar === 'string' ? value.ar : '';
+  const en = typeof value?.en === 'string' ? value.en : '';
+  return { ar, en };
+}
 
 export const mobileSyncService = {
   /**
@@ -34,7 +42,7 @@ export const mobileSyncService = {
    * @param baseUrl Base URL for audio files
    * @returns MobileSyncResponse
    */
-  async sync(params: SyncRequestParams, baseUrl: string): Promise<MobileSyncResponse> {
+  async sync(params: SyncRequestParams, baseUrl: string, userId?: string | null): Promise<MobileSyncResponse> {
     const prisma = await getPrisma();
     const now = new Date();
     // Explicit boolean for type safety
@@ -204,9 +212,57 @@ export const mobileSyncService = {
       return result!;
     }).filter((w): w is WorkoutExport => w !== null);
     
+    // Fetch programs
+    const filteredPrograms = await programService.getPublishedForMobile(updatedAfterDate);
+
+    const totalPrograms = await prisma.program.count({
+      where: { isPublished: true, deletedAt: null },
+    });
+
+    let deletedProgramIds: string[] = [];
+    if (updatedAfterDate) {
+      const deletedPrograms = await prisma.program.findMany({
+        where: {
+          deletedAt: { gt: updatedAfterDate },
+        },
+        select: { id: true },
+      });
+
+      const unpublishedPrograms = await prisma.program.findMany({
+        where: {
+          isPublished: false,
+          deletedAt: null,
+          updatedAt: { gt: updatedAfterDate },
+        },
+        select: { id: true },
+      });
+
+      deletedProgramIds = [
+        ...deletedPrograms.map((p) => p.id),
+        ...unpublishedPrograms.map((p) => p.id),
+      ];
+    }
+
     // Build audio manifest from message library
     const audioManifest = await this.buildAudioManifest(messageLibrary, baseUrl);
     
+    let userPrograms: UserProgramExport[] | undefined;
+    if (userId) {
+      const userProgramRows = await prisma.userProgram.findMany({
+        where: { userId },
+        orderBy: { updatedAt: 'desc' },
+      });
+      userPrograms = userProgramRows.map((row) => ({
+        id: row.id,
+        programId: row.programId,
+        name: row.name ? toSyncLocalizedText(row.name as Record<string, unknown>) : undefined,
+        startDate: row.startDate.toISOString(),
+        isActive: row.isActive,
+        customizations: (row.customizations as Record<string, unknown>) || null,
+        updatedAt: row.updatedAt.toISOString(),
+      }));
+    }
+
     // Build response
     const response: MobileSyncResponse = {
       success: true,
@@ -217,15 +273,20 @@ export const mobileSyncService = {
         deletedExerciseIds,
         workouts: workoutsExport,
         deletedWorkoutIds,
+        programs: filteredPrograms,
+        deletedProgramIds,
+        userPrograms,
         audioManifest,
       },
       meta: {
         totalExercises,
         totalWorkouts,
+        totalPrograms,
         isFullSync,
         serverVersion: SERVER_VERSION,
         exercisesInResponse: exercisesWithMeta.length,
         workoutsInResponse: workoutsExport.length,
+        programsInResponse: filteredPrograms.length,
       },
     };
     

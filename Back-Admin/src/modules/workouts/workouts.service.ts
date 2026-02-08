@@ -6,6 +6,7 @@
  */
 
 import { getPrisma } from '@/lib/prisma/client';
+import { DEFAULT_REST_TIMES } from './workouts.types';
 import type {
   CreateWorkoutInput,
   UpdateWorkoutInput,
@@ -13,7 +14,6 @@ import type {
   WorkoutExerciseInput,
   WorkoutExport,
   WorkoutExerciseExport,
-  DEFAULT_REST_TIMES,
 } from './workouts.types';
 
 // ============================================
@@ -110,10 +110,6 @@ export const workoutService = {
       where.status = filters.status;
     }
 
-    if (filters?.type) {
-      where.type = filters.type;
-    }
-
     if (filters?.search) {
       where.OR = [
         { name: { path: ['en'], string_contains: filters.search } },
@@ -181,13 +177,15 @@ export const workoutService = {
         name: data.name as object,
         description: (data.description as object) || undefined,
         slug,
-        type: data.type,
-        executionMode: data.executionMode,
-        rounds: data.rounds ?? 1,
-        repsPerSwitch: data.repsPerSwitch ?? undefined,
-        restBetweenSwitchMs: data.restBetweenSwitchMs ?? undefined,
-        restBetweenExercisesMs: data.restBetweenExercisesMs ?? undefined,
-        restBetweenRoundsMs: data.restBetweenRoundsMs ?? 60000,
+        coverImageUrl: data.coverImageUrl ?? undefined,
+        difficulty: data.difficulty ?? 'beginner',
+        estimatedDurationMin: data.estimatedDurationMin ?? undefined,
+        tags: data.tags ?? undefined,
+        // Deprecated fields (legacy support)
+        type: 'circuit',
+        executionMode: 'sequential',
+        rounds: 1,
+        restBetweenRoundsMs: 60000,
         status: 'draft',
         createdBy,
         updatedBy: createdBy,
@@ -218,6 +216,11 @@ export const workoutService = {
         difficulty: ex.difficulty ?? 'beginner',
         targetReps: ex.targetReps ?? undefined,
         targetDuration: ex.targetDuration ?? undefined,
+        sets: ex.sets ?? 1,
+        restBetweenSetsMs: ex.restBetweenSetsMs ?? DEFAULT_REST_TIMES.restBetweenSetsMs,
+        restAfterExerciseMs: ex.restAfterExerciseMs ?? DEFAULT_REST_TIMES.restAfterExerciseMs,
+        weightKg: ex.weightKg ?? undefined,
+        weightPerSet: ex.weightPerSet ?? undefined,
         notes: (ex.notes as object) || undefined,
         sortOrder: ex.sortOrder ?? index,
       })),
@@ -236,13 +239,10 @@ export const workoutService = {
 
     if (data.name !== undefined) updateData.name = data.name;
     if (data.description !== undefined) updateData.description = data.description;
-    if (data.type !== undefined) updateData.type = data.type;
-    if (data.executionMode !== undefined) updateData.executionMode = data.executionMode;
-    if (data.rounds !== undefined) updateData.rounds = data.rounds;
-    if (data.repsPerSwitch !== undefined) updateData.repsPerSwitch = data.repsPerSwitch;
-    if (data.restBetweenSwitchMs !== undefined) updateData.restBetweenSwitchMs = data.restBetweenSwitchMs;
-    if (data.restBetweenExercisesMs !== undefined) updateData.restBetweenExercisesMs = data.restBetweenExercisesMs;
-    if (data.restBetweenRoundsMs !== undefined) updateData.restBetweenRoundsMs = data.restBetweenRoundsMs;
+    if (data.coverImageUrl !== undefined) updateData.coverImageUrl = data.coverImageUrl;
+    if (data.difficulty !== undefined) updateData.difficulty = data.difficulty;
+    if (data.estimatedDurationMin !== undefined) updateData.estimatedDurationMin = data.estimatedDurationMin;
+    if (data.tags !== undefined) updateData.tags = data.tags;
     if (data.status !== undefined) updateData.status = data.status;
 
     await prisma.workout.update({
@@ -330,6 +330,11 @@ export const workoutService = {
       difficulty: ex.difficulty as 'beginner' | 'normal' | 'advanced',
       targetReps: ex.targetReps ?? undefined,
       targetDuration: ex.targetDuration ?? undefined,
+      sets: ex.sets ?? 1,
+      restBetweenSetsMs: ex.restBetweenSetsMs ?? DEFAULT_REST_TIMES.restBetweenSetsMs,
+      restAfterExerciseMs: ex.restAfterExerciseMs ?? DEFAULT_REST_TIMES.restAfterExerciseMs,
+      weightKg: ex.weightKg ?? undefined,
+      weightPerSet: (ex.weightPerSet as number[]) ?? undefined,
       notes: parseLocalizedText(ex.notes),
       sortOrder: index,
     }));
@@ -338,13 +343,10 @@ export const workoutService = {
       {
         name: newName,
         description: parseLocalizedText(original.description),
-        type: original.type as 'circuit' | 'super_set',
-        executionMode: original.executionMode as 'sequential' | 'alternating',
-        rounds: original.rounds,
-        repsPerSwitch: original.repsPerSwitch ?? undefined,
-        restBetweenSwitchMs: original.restBetweenSwitchMs ?? undefined,
-        restBetweenExercisesMs: original.restBetweenExercisesMs ?? undefined,
-        restBetweenRoundsMs: original.restBetweenRoundsMs,
+        coverImageUrl: original.coverImageUrl ?? undefined,
+        difficulty: original.difficulty as 'beginner' | 'intermediate' | 'advanced',
+        estimatedDurationMin: original.estimatedDurationMin ?? undefined,
+        tags: (original.tags as string[]) || undefined,
         exercises,
       },
       createdBy
@@ -373,15 +375,17 @@ export const workoutService = {
     if (!workout) return null;
 
     const exercises: WorkoutExerciseExport[] = workout.exercises.map((we) => {
-      const target: { reps?: number; durationSec?: number } = {};
-      if (we.targetReps) target.reps = we.targetReps;
-      if (we.targetDuration) target.durationSec = we.targetDuration;
-
       return {
         exercise: we.exercise.slug,
         variantIndex: we.variantIndex,
         difficulty: we.difficulty as 'beginner' | 'normal' | 'advanced',
-        target,
+        targetReps: we.targetReps ?? undefined,
+        targetDuration: we.targetDuration ?? undefined,
+        sets: we.sets ?? 1,
+        restBetweenSetsMs: we.restBetweenSetsMs ?? DEFAULT_REST_TIMES.restBetweenSetsMs,
+        restAfterExerciseMs: we.restAfterExerciseMs ?? DEFAULT_REST_TIMES.restAfterExerciseMs,
+        weightKg: we.weightKg ?? undefined,
+        weightPerSet: (we.weightPerSet as number[]) || undefined,
         notes: parseLocalizedText(we.notes),
       };
     });
@@ -391,13 +395,10 @@ export const workoutService = {
       slug: workout.slug,
       name: parseLocalizedText(workout.name) || { ar: '', en: '' },
       description: parseLocalizedText(workout.description),
-      type: workout.type as 'circuit' | 'super_set',
-      executionMode: workout.executionMode as 'sequential' | 'alternating',
-      rounds: workout.rounds,
-      repsPerSwitch: workout.repsPerSwitch ?? undefined,
-      restBetweenSwitchMs: workout.restBetweenSwitchMs ?? undefined,
-      restBetweenExercisesMs: workout.restBetweenExercisesMs ?? undefined,
-      restBetweenRoundsMs: workout.restBetweenRoundsMs,
+      coverImageUrl: workout.coverImageUrl ?? undefined,
+      difficulty: workout.difficulty as 'beginner' | 'intermediate' | 'advanced',
+      estimatedDurationMin: workout.estimatedDurationMin ?? undefined,
+      tags: (workout.tags as string[]) || undefined,
       exercises,
       updatedAt: workout.updatedAt.toISOString(),
     };

@@ -1,8 +1,19 @@
 import { Body, Controller, Get, Param, Post, Query, Req, Res } from '@nestjs/common';
 import type { Request, Response } from 'express';
 import { verifyMobileToken } from '@/modules/auth/auth.service';
-import { getAllHistory, getExerciseHistory, saveSession } from './training-sessions.service';
-import type { SessionUploadPayload } from './training-sessions.types';
+import {
+  completeProgramSessionReport,
+  getAllHistory,
+  getExerciseHistory,
+  saveSession,
+  startProgramSessionReport,
+  updateProgramSessionReport,
+} from './training-sessions.service';
+import type {
+  ProgramSessionCompletePayload,
+  ProgramSessionStartPayload,
+  SessionUploadPayload,
+} from './training-sessions.types';
 
 @Controller('mobile/sessions')
 export class MobileSessionsController {
@@ -70,6 +81,80 @@ export class MobileSessionsController {
       console.error('[Sessions] Error fetching sessions:', error);
       res.status(500);
       return { success: false, error: 'Failed to fetch sessions' };
+    }
+  }
+
+  @Post(':sessionId/start')
+  async startProgramSession(
+    @Req() req: Request,
+    @Param('sessionId') sessionId: string,
+    @Body() body: ProgramSessionStartPayload,
+    @Res({ passthrough: true }) res: Response
+  ) {
+    try {
+      const authResult = await verifyMobileToken(req);
+      if (!authResult.success || !authResult.userId) {
+        res.status(401);
+        return { success: false, error: authResult.error || 'Unauthorized' };
+      }
+
+      if (!body?.weekNumber || !body?.dayNumber) {
+        res.status(400);
+        return { success: false, error: 'Missing required fields: weekNumber, dayNumber' };
+      }
+
+      const report = await startProgramSessionReport(authResult.userId, sessionId, body);
+      return { success: true, data: report };
+    } catch (error) {
+      console.error('[Program Sessions] Error starting session:', error);
+      res.status(500);
+      return { success: false, error: error instanceof Error ? error.message : 'Failed to start session' };
+    }
+  }
+
+  @Post(':sessionId/complete')
+  async completeProgramSession(
+    @Req() req: Request,
+    @Param('sessionId') sessionId: string,
+    @Body() body: ProgramSessionCompletePayload,
+    @Res({ passthrough: true }) res: Response
+  ) {
+    try {
+      const authResult = await verifyMobileToken(req);
+      if (!authResult.success || !authResult.userId) {
+        res.status(401);
+        return { success: false, error: authResult.error || 'Unauthorized' };
+      }
+
+      const report = await completeProgramSessionReport(authResult.userId, sessionId, body || {});
+      return { success: true, data: report };
+    } catch (error) {
+      console.error('[Program Sessions] Error completing session:', error);
+      res.status(500);
+      return { success: false, error: error instanceof Error ? error.message : 'Failed to complete session' };
+    }
+  }
+
+  @Post(':sessionId/report')
+  async reportProgramSession(
+    @Req() req: Request,
+    @Param('sessionId') sessionId: string,
+    @Body() body: ProgramSessionCompletePayload,
+    @Res({ passthrough: true }) res: Response
+  ) {
+    try {
+      const authResult = await verifyMobileToken(req);
+      if (!authResult.success || !authResult.userId) {
+        res.status(401);
+        return { success: false, error: authResult.error || 'Unauthorized' };
+      }
+
+      const report = await updateProgramSessionReport(authResult.userId, sessionId, body || {});
+      return { success: true, data: report };
+    } catch (error) {
+      console.error('[Program Sessions] Error reporting session:', error);
+      res.status(500);
+      return { success: false, error: error instanceof Error ? error.message : 'Failed to report session' };
     }
   }
 

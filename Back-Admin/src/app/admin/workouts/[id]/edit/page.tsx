@@ -29,6 +29,11 @@ interface WorkoutExercise {
   difficulty: 'beginner' | 'normal' | 'advanced';
   targetReps?: number;
   targetDuration?: number;
+  sets: number;
+  restBetweenSetsMs: number;
+  restAfterExerciseMs: number;
+  weightKg?: number;
+  weightPerSet?: number[];
   notes: { ar: string; en: string };
 }
 
@@ -37,13 +42,10 @@ interface Workout {
   name: LocalizedText;
   description: LocalizedText | null;
   slug: string;
-  type: 'circuit' | 'super_set';
-  executionMode: 'sequential' | 'alternating';
-  rounds: number;
-  repsPerSwitch: number | null;
-  restBetweenSwitchMs: number | null;
-  restBetweenExercisesMs: number | null;
-  restBetweenRoundsMs: number;
+  coverImageUrl: string | null;
+  difficulty: 'beginner' | 'intermediate' | 'advanced';
+  estimatedDurationMin: number | null;
+  tags: string[] | null;
   status: string;
   exercises: {
     id: string;
@@ -52,6 +54,11 @@ interface Workout {
     difficulty: string;
     targetReps: number | null;
     targetDuration: number | null;
+    sets: number | null;
+    restBetweenSetsMs: number | null;
+    restAfterExerciseMs: number | null;
+    weightKg: number | null;
+    weightPerSet: number[] | null;
     notes: LocalizedText | null;
     sortOrder: number;
     exercise: Exercise;
@@ -71,13 +78,10 @@ export default function EditWorkoutPage() {
   // Form state
   const [name, setName] = useState({ ar: '', en: '' });
   const [description, setDescription] = useState({ ar: '', en: '' });
-  const [type, setType] = useState<'circuit' | 'super_set'>('circuit');
-  const [executionMode, setExecutionMode] = useState<'sequential' | 'alternating'>('sequential');
-  const [rounds, setRounds] = useState(1);
-  const [repsPerSwitch, setRepsPerSwitch] = useState(3);
-  const [restBetweenSwitchMs, setRestBetweenSwitchMs] = useState(5000);
-  const [restBetweenExercisesMs, setRestBetweenExercisesMs] = useState(15000);
-  const [restBetweenRoundsMs, setRestBetweenRoundsMs] = useState(60000);
+  const [coverImageUrl, setCoverImageUrl] = useState('');
+  const [difficulty, setDifficulty] = useState<'beginner' | 'intermediate' | 'advanced'>('beginner');
+  const [estimatedDurationMin, setEstimatedDurationMin] = useState<number | ''>('');
+  const [tags, setTags] = useState('');
   const [workoutExercises, setWorkoutExercises] = useState<WorkoutExercise[]>([]);
   const [status, setStatus] = useState<'draft' | 'published'>('draft');
 
@@ -92,13 +96,10 @@ export default function EditWorkoutPage() {
           const workout: Workout = data.data;
           setName(workout.name);
           setDescription(workout.description || { ar: '', en: '' });
-          setType(workout.type);
-          setExecutionMode(workout.executionMode);
-          setRounds(workout.rounds);
-          setRepsPerSwitch(workout.repsPerSwitch || 3);
-          setRestBetweenSwitchMs(workout.restBetweenSwitchMs || 5000);
-          setRestBetweenExercisesMs(workout.restBetweenExercisesMs || 15000);
-          setRestBetweenRoundsMs(workout.restBetweenRoundsMs);
+          setCoverImageUrl(workout.coverImageUrl || '');
+          setDifficulty(workout.difficulty);
+          setEstimatedDurationMin(workout.estimatedDurationMin ?? '');
+          setTags((workout.tags || []).join(', '));
           setStatus(workout.status as 'draft' | 'published');
 
           // Map exercises
@@ -111,6 +112,11 @@ export default function EditWorkoutPage() {
               difficulty: we.difficulty as 'beginner' | 'normal' | 'advanced',
               targetReps: we.targetReps || undefined,
               targetDuration: we.targetDuration || undefined,
+              sets: we.sets ?? 1,
+              restBetweenSetsMs: we.restBetweenSetsMs ?? 30000,
+              restAfterExerciseMs: we.restAfterExerciseMs ?? 60000,
+              weightKg: we.weightKg ?? undefined,
+              weightPerSet: we.weightPerSet || undefined,
               notes: (we.notes as LocalizedText) || { ar: '', en: '' },
             }))
           );
@@ -162,6 +168,11 @@ export default function EditWorkoutPage() {
         difficulty: 'beginner',
         targetReps: isHold ? undefined : 10,
         targetDuration: isHold ? 30 : undefined,
+        sets: 3,
+        restBetweenSetsMs: 30000,
+        restAfterExerciseMs: 60000,
+        weightKg: undefined,
+        weightPerSet: undefined,
         notes: { ar: '', en: '' },
       },
     ]);
@@ -217,19 +228,24 @@ export default function EditWorkoutPage() {
       const payload = {
         name,
         description: description.en || description.ar ? description : undefined,
-        type,
-        executionMode,
-        rounds,
-        repsPerSwitch: executionMode === 'alternating' ? repsPerSwitch : undefined,
-        restBetweenSwitchMs: executionMode === 'alternating' ? restBetweenSwitchMs : undefined,
-        restBetweenExercisesMs: executionMode === 'sequential' ? restBetweenExercisesMs : undefined,
-        restBetweenRoundsMs,
+        coverImageUrl: coverImageUrl || undefined,
+        difficulty,
+        estimatedDurationMin: typeof estimatedDurationMin === 'number' ? estimatedDurationMin : undefined,
+        tags: tags
+          .split(',')
+          .map((tag) => tag.trim())
+          .filter(Boolean),
         exercises: workoutExercises.map((ex, index) => ({
           exerciseId: ex.exerciseId,
           variantIndex: ex.variantIndex,
           difficulty: ex.difficulty,
           targetReps: ex.targetReps || undefined,
           targetDuration: ex.targetDuration || undefined,
+          sets: ex.sets,
+          restBetweenSetsMs: ex.restBetweenSetsMs,
+          restAfterExerciseMs: ex.restAfterExerciseMs,
+          weightKg: ex.weightKg || undefined,
+          weightPerSet: ex.weightPerSet && ex.weightPerSet.length > 0 ? ex.weightPerSet : undefined,
           notes: ex.notes.en || ex.notes.ar ? ex.notes : undefined,
           sortOrder: index,
         })),
@@ -270,7 +286,7 @@ export default function EditWorkoutPage() {
       <div className="flex justify-between items-center">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Edit Workout</h1>
-          <p className="text-gray-600 mt-1">Update workout configuration</p>
+          <p className="text-gray-600 mt-1">Update workout template configuration</p>
         </div>
         <span
           className={`inline-flex px-3 py-1 text-sm font-medium rounded-full ${
@@ -333,88 +349,53 @@ export default function EditWorkoutPage() {
           </div>
         </Card>
 
-        {/* Workout Configuration */}
+        {/* Workout Template Configuration */}
         <Card className="p-6">
-          <h2 className="text-lg font-semibold mb-4">Workout Configuration</h2>
+          <h2 className="text-lg font-semibold mb-4">Workout Template Configuration</h2>
 
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <Label>Type *</Label>
-              <Select
-                value={type}
-                onChange={(e) => setType(e.target.value as 'circuit' | 'super_set')}
-                options={[
-                  { value: 'circuit', label: 'Circuit' },
-                  { value: 'super_set', label: 'Super Set' },
-                ]}
+              <Label>Cover Image URL</Label>
+              <Input
+                value={coverImageUrl}
+                onChange={(e) => setCoverImageUrl(e.target.value)}
+                placeholder="https://..."
               />
             </div>
             <div>
-              <Label>Execution Mode *</Label>
+              <Label>Difficulty</Label>
               <Select
-                value={executionMode}
-                onChange={(e) => setExecutionMode(e.target.value as 'sequential' | 'alternating')}
+                value={difficulty}
+                onChange={(e) =>
+                  setDifficulty(e.target.value as 'beginner' | 'intermediate' | 'advanced')
+                }
                 options={[
-                  { value: 'sequential', label: 'Sequential (One exercise then next)' },
-                  { value: 'alternating', label: 'Alternating (Switch between exercises)' },
+                  { value: 'beginner', label: 'Beginner' },
+                  { value: 'intermediate', label: 'Intermediate' },
+                  { value: 'advanced', label: 'Advanced' },
                 ]}
               />
             </div>
           </div>
 
-          <div className="grid grid-cols-3 gap-4 mt-4">
+          <div className="grid grid-cols-2 gap-4 mt-4">
             <div>
-              <Label>Rounds</Label>
-              <Input
-                type="number"
-                min={1}
-                value={rounds}
-                onChange={(e) => setRounds(parseInt(e.target.value) || 1)}
-              />
-            </div>
-
-            {executionMode === 'alternating' && (
-              <>
-                <div>
-                  <Label>Reps Per Switch</Label>
-                  <Input
-                    type="number"
-                    min={1}
-                    value={repsPerSwitch}
-                    onChange={(e) => setRepsPerSwitch(parseInt(e.target.value) || 1)}
-                  />
-                </div>
-                <div>
-                  <Label>Rest Between Switch (sec)</Label>
-                  <Input
-                    type="number"
-                    min={0}
-                    value={restBetweenSwitchMs / 1000}
-                    onChange={(e) => setRestBetweenSwitchMs((parseInt(e.target.value) || 0) * 1000)}
-                  />
-                </div>
-              </>
-            )}
-
-            {executionMode === 'sequential' && (
-              <div>
-                <Label>Rest Between Exercises (sec)</Label>
-                <Input
-                  type="number"
-                  min={0}
-                  value={restBetweenExercisesMs / 1000}
-                  onChange={(e) => setRestBetweenExercisesMs((parseInt(e.target.value) || 0) * 1000)}
-                />
-              </div>
-            )}
-
-            <div>
-              <Label>Rest Between Rounds (sec)</Label>
+              <Label>Estimated Duration (min)</Label>
               <Input
                 type="number"
                 min={0}
-                value={restBetweenRoundsMs / 1000}
-                onChange={(e) => setRestBetweenRoundsMs((parseInt(e.target.value) || 0) * 1000)}
+                value={estimatedDurationMin}
+                onChange={(e) =>
+                  setEstimatedDurationMin(e.target.value ? parseInt(e.target.value) : '')
+                }
+              />
+            </div>
+            <div>
+              <Label>Tags (comma separated)</Label>
+              <Input
+                value={tags}
+                onChange={(e) => setTags(e.target.value)}
+                placeholder="upper-body, no-equipment"
               />
             </div>
           </div>
@@ -472,66 +453,138 @@ export default function EditWorkoutPage() {
                     </div>
 
                     {/* Exercise details */}
-                    <div className="flex-1 grid grid-cols-4 gap-4">
-                      <div className="col-span-2">
-                        <Label>Exercise</Label>
-                        <Select
-                          value={we.exerciseId}
-                          onChange={(e) => updateExercise(index, { exerciseId: e.target.value })}
-                          options={exercises.map((ex) => ({
-                            value: ex.id,
-                            label: `${ex.name.en} (${ex.name.ar})`,
-                          }))}
-                        />
+                    <div className="flex-1">
+                      <div className="grid grid-cols-4 gap-4">
+                        <div className="col-span-2">
+                          <Label>Exercise</Label>
+                          <Select
+                            value={we.exerciseId}
+                            onChange={(e) => updateExercise(index, { exerciseId: e.target.value })}
+                            options={exercises.map((ex) => ({
+                              value: ex.id,
+                              label: `${ex.name.en} (${ex.name.ar})`,
+                            }))}
+                          />
+                        </div>
+
+                        <div>
+                          <Label>Difficulty</Label>
+                          <Select
+                            value={we.difficulty}
+                            onChange={(e) =>
+                              updateExercise(index, {
+                                difficulty: e.target.value as 'beginner' | 'normal' | 'advanced',
+                              })
+                            }
+                            options={[
+                              { value: 'beginner', label: 'Beginner' },
+                              { value: 'normal', label: 'Normal' },
+                              { value: 'advanced', label: 'Advanced' },
+                            ]}
+                          />
+                        </div>
+
+                        <div>
+                          {we.exercise?.countingMethod?.code === 'hold' ? (
+                            <>
+                              <Label>Duration (sec)</Label>
+                              <Input
+                                type="number"
+                                min={1}
+                                value={we.targetDuration || ''}
+                                onChange={(e) =>
+                                  updateExercise(index, {
+                                    targetDuration: parseInt(e.target.value) || undefined,
+                                  })
+                                }
+                              />
+                            </>
+                          ) : (
+                            <>
+                              <Label>Target Reps</Label>
+                              <Input
+                                type="number"
+                                min={1}
+                                value={we.targetReps || ''}
+                                onChange={(e) =>
+                                  updateExercise(index, {
+                                    targetReps: parseInt(e.target.value) || undefined,
+                                  })
+                                }
+                              />
+                            </>
+                          )}
+                        </div>
                       </div>
 
-                      <div>
-                        <Label>Difficulty</Label>
-                        <Select
-                          value={we.difficulty}
-                          onChange={(e) =>
-                            updateExercise(index, {
-                              difficulty: e.target.value as 'beginner' | 'normal' | 'advanced',
-                            })
-                          }
-                          options={[
-                            { value: 'beginner', label: 'Beginner' },
-                            { value: 'normal', label: 'Normal' },
-                            { value: 'advanced', label: 'Advanced' },
-                          ]}
-                        />
-                      </div>
-
-                      <div>
-                        {we.exercise?.countingMethod?.code === 'hold' ? (
-                          <>
-                            <Label>Duration (sec)</Label>
-                            <Input
-                              type="number"
-                              min={1}
-                              value={we.targetDuration || ''}
-                              onChange={(e) =>
-                                updateExercise(index, {
-                                  targetDuration: parseInt(e.target.value) || undefined,
-                                })
-                              }
-                            />
-                          </>
-                        ) : (
-                          <>
-                            <Label>Target Reps</Label>
-                            <Input
-                              type="number"
-                              min={1}
-                              value={we.targetReps || ''}
-                              onChange={(e) =>
-                                updateExercise(index, {
-                                  targetReps: parseInt(e.target.value) || undefined,
-                                })
-                              }
-                            />
-                          </>
-                        )}
+                      <div className="mt-3 grid grid-cols-5 gap-4">
+                        <div>
+                          <Label>Sets</Label>
+                          <Input
+                            type="number"
+                            min={1}
+                            value={we.sets}
+                            onChange={(e) =>
+                              updateExercise(index, {
+                                sets: parseInt(e.target.value) || 1,
+                              })
+                            }
+                          />
+                        </div>
+                        <div>
+                          <Label>Rest Between Sets (sec)</Label>
+                          <Input
+                            type="number"
+                            min={0}
+                            value={we.restBetweenSetsMs / 1000}
+                            onChange={(e) =>
+                              updateExercise(index, {
+                                restBetweenSetsMs: (parseInt(e.target.value) || 0) * 1000,
+                              })
+                            }
+                          />
+                        </div>
+                        <div>
+                          <Label>Rest After Exercise (sec)</Label>
+                          <Input
+                            type="number"
+                            min={0}
+                            value={we.restAfterExerciseMs / 1000}
+                            onChange={(e) =>
+                              updateExercise(index, {
+                                restAfterExerciseMs: (parseInt(e.target.value) || 0) * 1000,
+                              })
+                            }
+                          />
+                        </div>
+                        <div>
+                          <Label>Weight (kg)</Label>
+                          <Input
+                            type="number"
+                            min={0}
+                            value={we.weightKg ?? ''}
+                            onChange={(e) =>
+                              updateExercise(index, {
+                                weightKg: e.target.value ? parseFloat(e.target.value) : undefined,
+                              })
+                            }
+                          />
+                        </div>
+                        <div>
+                          <Label>Weight per Set</Label>
+                          <Input
+                            value={we.weightPerSet?.join(', ') || ''}
+                            onChange={(e) =>
+                              updateExercise(index, {
+                                weightPerSet: e.target.value
+                                  .split(',')
+                                  .map((val) => parseFloat(val.trim()))
+                                  .filter((val) => !Number.isNaN(val)),
+                              })
+                            }
+                            placeholder="10, 12.5, 15"
+                          />
+                        </div>
                       </div>
                     </div>
 
@@ -586,7 +639,7 @@ export default function EditWorkoutPage() {
           <Button type="button" variant="outline" onClick={() => router.push('/admin/workouts')}>
             Cancel
           </Button>
-          <Button type="submit" disabled={loading || workoutExercises.length < 2}>
+          <Button type="submit" disabled={loading || workoutExercises.length < 1}>
             {loading ? 'Saving...' : 'Save Changes'}
           </Button>
         </div>

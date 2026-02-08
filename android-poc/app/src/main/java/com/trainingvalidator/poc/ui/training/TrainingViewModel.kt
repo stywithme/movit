@@ -320,10 +320,10 @@ class TrainingViewModel(
             LoadedExercise(
                 config = exerciseConfig,
                 workoutExercise = workoutExercise,
-                round = 1,
-                indexInRound = index,
-                totalInRound = workoutConfig.exercises.size,
-                maxRepsThisSession = null
+                index = index,
+                total = workoutConfig.exercises.size,
+                setIndex = 1,
+                totalSets = workoutExercise.sets.coerceAtLeast(1)
             )
         }.filterNotNull()
         
@@ -333,10 +333,7 @@ class TrainingViewModel(
         }
         
         // Create workout engine
-        workoutTrainingEngine = WorkoutTrainingEngine(
-            exercises = loadedExercises,
-            workoutConfig = workoutConfig
-        )
+        workoutTrainingEngine = WorkoutTrainingEngine(exercises = loadedExercises)
         
         // Set first exercise
         val firstExercise = loadedExercises.first()
@@ -963,6 +960,27 @@ class TrainingViewModel(
         _weightKg = weightKg
         _weightUnit = unit
         // Note: MotionRecorder uses default weight, individual reps can have different weights
+    }
+
+    /**
+     * Update weight for this session and refresh MotionRecorder defaults.
+     */
+    fun updateSessionWeight(weightKg: Float?, unit: String = "kg") {
+        _weightKg = weightKg
+        _weightUnit = unit
+
+        val config = _exerciseConfig.value ?: return
+        val exerciseId = config.fileName.ifEmpty { config.name.en }
+        val trackedJoints = config.getTrackedJoints(_poseVariantIndex.value).map { it.joint }
+
+        motionRecorder = MotionRecorder(
+            trackedJoints = trackedJoints,
+            exerciseId = exerciseId,
+            defaultWeightKg = weightKg,
+            weightUnit = unit
+        )
+
+        trainingEngine?.motionRecorder = motionRecorder
     }
     
     // ==================== Lifecycle ====================

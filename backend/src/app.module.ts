@@ -11,6 +11,7 @@ import { CameraPositionsModule } from './modules/camera-positions/camera-positio
 import { AuthModule } from './modules/auth/auth.module';
 import { ExercisesModule } from './modules/exercises/exercises.module';
 import { WorkoutsModule } from './modules/workouts/workouts.module';
+import { ProgramsModule } from './modules/programs/programs.module';
 import { MessagesModule } from './modules/messages/messages.module';
 import { TrainingSessionsModule } from './modules/training-sessions/training-sessions.module';
 import { MobileSyncModule } from './modules/mobile-sync/mobile-sync.module';
@@ -38,6 +39,7 @@ import { AnalyticsModule } from './modules/analytics/analytics.module';
     AuthModule,
     ExercisesModule,
     WorkoutsModule,
+    ProgramsModule,
     MessagesModule,
     TrainingSessionsModule,
     MobileSyncModule,

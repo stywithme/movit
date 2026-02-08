@@ -11,6 +11,7 @@
 import { useEffect, useState, useCallback } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import { useWizardStore } from '@/components/wizard/WizardContext';
+import type { LocalizedText } from '@/lib/types/localized';
 import { WizardStepper } from '@/components/wizard/WizardStepper';
 import { AutoSaveIndicator } from '@/components/wizard/AutoSaveIndicator';
 import {
@@ -85,8 +86,15 @@ export default function EditExercisePage() {
         const repConfig = exercise.repCountingConfig as Record<string, number> | null;
         const isHold = exercise.countingMethod?.code === 'hold';
         
-        // Map tracked joints from first variant
+        // Map tracked joints per variant
         const trackedJoints = (firstVariant?.trackedJointsConfig as TrackedJointData[]) || [];
+        const jointConfigVariants = (exercise.poseVariants || []).reduce(
+          (acc: Record<number, TrackedJointData[]>, variant: { trackedJointsConfig?: TrackedJointData[] }, index: number) => {
+            acc[index] = (variant.trackedJointsConfig as TrackedJointData[]) || [];
+            return acc;
+          },
+          {}
+        );
         
         // Map position checks
         const positionChecks = (firstVariant?.positionChecks || []).map((pc: Record<string, unknown>) => ({
@@ -159,6 +167,8 @@ export default function EditExercisePage() {
           jointConfig: {
             trackedJoints,
           },
+          jointConfigVariants,
+          activeJointVariantIndex: 0,
           positionChecks: {
             positionChecks,
           },
@@ -190,6 +200,16 @@ export default function EditExercisePage() {
             primary: ((exercise.reportMetrics as Record<string, string[]> | null)?.primary ?? ['form_score']) as import('@/modules/exercises/exercises.types').MetricCode[],
             optional: ((exercise.reportMetrics as Record<string, string[]> | null)?.optional ?? []) as import('@/modules/exercises/exercises.types').MetricCode[],
             excluded: ((exercise.reportMetrics as Record<string, string[]> | null)?.excluded ?? []) as import('@/modules/exercises/exercises.types').MetricCode[],
+          },
+          alternatingConfig: {
+            enabled: Boolean(exercise.isAlternating),
+            switchEvery: (exercise.alternatingConfig as { switchEvery?: number } | null)?.switchEvery || 1,
+            variants:
+              (exercise.alternatingConfig as { variants?: Array<{ label?: LocalizedText; variantIndex?: number }> } | null)
+                ?.variants?.map((variant) => ({
+                  label: variant.label || { ar: '', en: '' },
+                  variantIndex: variant.variantIndex ?? 0,
+                })) || [],
           },
         });
         
@@ -269,6 +289,13 @@ export default function EditExercisePage() {
           maxRepIntervalMs: store.repConfig.maxRepIntervalMs || 5000,
         };
     
+    const jointVariants = store.alternatingConfig.enabled
+      ? {
+          ...store.jointConfigVariants,
+          [store.activeJointVariantIndex]: store.jointConfig.trackedJoints || [],
+        }
+      : {};
+
     return {
       name: store.basicInfo.name,
       description: store.basicInfo.description,
@@ -280,16 +307,43 @@ export default function EditExercisePage() {
       equipment: store.extras.equipment,
       tags: store.extras.tags,
       repCountingConfig,
-      poseVariants: store.cameraPosition.cameraPositionIds?.map((cameraPositionId, index) => ({
-        name: store.basicInfo.name,
-        cameraPositionId,
-        expectedFacingDirection: store.cameraPosition.expectedFacingDirection,
-        referenceImageUrl: store.cameraPosition.referenceImages?.[cameraPositionId] || undefined,
-        trackedJointsConfig,
-        positionChecks,
-        messageAssignments: feedbackAssignments.length > 0 ? feedbackAssignments : undefined,
-        sortOrder: index + 1,
-      })),
+      poseVariants: store.cameraPosition.cameraPositionIds?.map((cameraPositionId, index) => {
+        const jointsForVariant = store.alternatingConfig.enabled
+          ? (jointVariants[index] || [])
+          : (store.jointConfig.trackedJoints || []);
+        const mappedJoints = jointsForVariant.map((joint: TrackedJointData) => {
+          if (joint.role === 'primary') {
+            return {
+              joint: joint.joint,
+              role: 'primary',
+              startPose: joint.startPose,
+              upRange: joint.upRange,
+              downRange: joint.downRange,
+              stateMessages: joint.stateMessages,
+              pairedWith: joint.pairedWith,
+              invertIndicator: joint.invertIndicator,
+            };
+          }
+          return {
+            joint: joint.joint,
+            role: 'secondary',
+            startPose: joint.startPose,
+            range: joint.range,
+            stateMessages: joint.stateMessages,
+            pairedWith: joint.pairedWith,
+          };
+        });
+        return {
+          name: store.basicInfo.name,
+          cameraPositionId,
+          expectedFacingDirection: store.cameraPosition.expectedFacingDirection,
+          referenceImageUrl: store.cameraPosition.referenceImages?.[cameraPositionId] || undefined,
+          trackedJointsConfig: mappedJoints.length > 0 ? mappedJoints : trackedJointsConfig,
+          positionChecks,
+          messageAssignments: feedbackAssignments.length > 0 ? feedbackAssignments : undefined,
+          sortOrder: index + 1,
+        };
+      }),
       // Weight configuration
       supportsWeight: store.weightConfig.supportsWeight,
       minWeight: store.weightConfig.minWeight,
@@ -301,6 +355,15 @@ export default function EditExercisePage() {
         optional: store.reportMetrics.optional,
         excluded: store.reportMetrics.excluded,
       },
+      alternatingConfig: store.alternatingConfig.enabled && store.alternatingConfig.variants.length > 0
+        ? {
+            switchEvery: store.alternatingConfig.switchEvery,
+            variants: store.alternatingConfig.variants.map((variant) => ({
+              label: variant.label,
+              variantIndex: variant.variantIndex,
+            })),
+          }
+        : undefined,
     };
   }, []);
   

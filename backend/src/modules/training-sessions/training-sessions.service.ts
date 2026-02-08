@@ -6,6 +6,7 @@
  */
 
 import { prisma } from '@/lib/prisma/client';
+import { Prisma } from '@prisma/client';
 import {
   SessionUploadPayload,
   TrainingSessionResponse,
@@ -15,6 +16,8 @@ import {
   ProgressionData,
   RepMetricsData,
   SessionMetrics as SessionMetricsType,
+  ProgramSessionStartPayload,
+  ProgramSessionCompletePayload,
 } from './training-sessions.types';
 
 // ============================================
@@ -309,6 +312,109 @@ export async function deleteSession(
   }
 
   return result.count > 0;
+}
+
+// ============================================
+// Program Session Reports
+// ============================================
+
+export async function startProgramSessionReport(
+  userId: string,
+  sessionId: string,
+  payload: ProgramSessionStartPayload
+) {
+  const session = await prisma.programSession.findFirst({
+    where: { id: sessionId },
+    include: { day: { include: { week: true } } },
+  });
+
+  if (!session) {
+    throw new Error('Program session not found');
+  }
+
+  const weekNumber = session.day.week.weekNumber;
+  const dayNumber = session.day.dayNumber;
+
+  if (payload.weekNumber !== weekNumber || payload.dayNumber !== dayNumber) {
+    throw new Error('Invalid week/day for session');
+  }
+
+  return prisma.programSessionReport.create({
+    data: {
+      userId,
+      programId: session.day.week.programId,
+      programSessionId: session.id,
+      weekNumber,
+      dayNumber,
+      startedAt: payload.startedAt ? new Date(payload.startedAt) : new Date(),
+      status: 'in_progress',
+    },
+  });
+}
+
+export async function completeProgramSessionReport(
+  userId: string,
+  sessionId: string,
+  payload: ProgramSessionCompletePayload
+) {
+  const report = await prisma.programSessionReport.findFirst({
+    where: {
+      userId,
+      programSessionId: sessionId,
+      status: 'in_progress',
+    },
+    orderBy: { createdAt: 'desc' },
+  });
+
+  if (!report) {
+    throw new Error('Active report not found');
+  }
+
+  return prisma.programSessionReport.update({
+    where: { id: report.id },
+    data: {
+      status: 'completed',
+      completedAt: payload.completedAt ? new Date(payload.completedAt) : new Date(),
+      totalDurationMs: payload.totalDurationMs ?? report.totalDurationMs ?? undefined,
+      totalExercises: payload.totalExercises ?? report.totalExercises ?? undefined,
+      totalSets: payload.totalSets ?? report.totalSets ?? undefined,
+      completedSets: payload.completedSets ?? report.completedSets ?? undefined,
+      totalReps: payload.totalReps ?? report.totalReps ?? undefined,
+      avgAccuracy: payload.avgAccuracy ?? report.avgAccuracy ?? undefined,
+      report: (payload.report ?? report.report) as Prisma.InputJsonValue | undefined,
+    },
+  });
+}
+
+export async function updateProgramSessionReport(
+  userId: string,
+  sessionId: string,
+  payload: ProgramSessionCompletePayload
+) {
+  const report = await prisma.programSessionReport.findFirst({
+    where: {
+      userId,
+      programSessionId: sessionId,
+    },
+    orderBy: { createdAt: 'desc' },
+  });
+
+  if (!report) {
+    throw new Error('Report not found');
+  }
+
+  return prisma.programSessionReport.update({
+    where: { id: report.id },
+    data: {
+      totalDurationMs: payload.totalDurationMs ?? report.totalDurationMs ?? undefined,
+      totalExercises: payload.totalExercises ?? report.totalExercises ?? undefined,
+      totalSets: payload.totalSets ?? report.totalSets ?? undefined,
+      completedSets: payload.completedSets ?? report.completedSets ?? undefined,
+      totalReps: payload.totalReps ?? report.totalReps ?? undefined,
+      avgAccuracy: payload.avgAccuracy ?? report.avgAccuracy ?? undefined,
+      report: (payload.report ?? report.report) as Prisma.InputJsonValue | undefined,
+    },
+  });
 }
 
 // ============================================

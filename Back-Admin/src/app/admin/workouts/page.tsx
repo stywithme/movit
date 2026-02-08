@@ -10,9 +10,7 @@ interface Workout {
   name: LocalizedText;
   description: LocalizedText | null;
   slug: string;
-  type: 'circuit' | 'super_set';
-  executionMode: 'sequential' | 'alternating';
-  rounds: number;
+  difficulty: 'beginner' | 'intermediate' | 'advanced';
   status: string;
   createdAt: string;
   updatedAt: string;
@@ -28,22 +26,11 @@ interface Pagination {
   totalPages: number;
 }
 
-const TYPE_LABELS = {
-  circuit: 'Circuit',
-  super_set: 'Super Set',
-};
-
-const MODE_LABELS = {
-  sequential: 'Sequential',
-  alternating: 'Alternating',
-};
-
 export default function WorkoutsListPage() {
   const [workouts, setWorkouts] = useState<Workout[]>([]);
   const [pagination, setPagination] = useState<Pagination | null>(null);
   const [loading, setLoading] = useState(true);
   const [statusFilter, setStatusFilter] = useState<string>('');
-  const [typeFilter, setTypeFilter] = useState<string>('');
   const [searchQuery, setSearchQuery] = useState('');
 
   const fetchWorkouts = async (page = 1) => {
@@ -52,7 +39,6 @@ export default function WorkoutsListPage() {
       const params = new URLSearchParams();
       params.set('page', page.toString());
       if (statusFilter) params.set('status', statusFilter);
-      if (typeFilter) params.set('type', typeFilter);
       if (searchQuery) params.set('search', searchQuery);
 
       const res = await fetch(`/api/workouts?${params}`);
@@ -71,7 +57,7 @@ export default function WorkoutsListPage() {
 
   useEffect(() => {
     fetchWorkouts();
-  }, [statusFilter, typeFilter]);
+  }, [statusFilter]);
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
@@ -126,7 +112,7 @@ export default function WorkoutsListPage() {
       <div className="flex justify-between items-center">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Workouts</h1>
-          <p className="text-gray-600 mt-1">Manage Super Sets and Circuits</p>
+          <p className="text-gray-600 mt-1">Manage workout templates</p>
         </div>
         <Link
           href="/admin/workouts/new"
@@ -161,20 +147,6 @@ export default function WorkoutsListPage() {
               </button>
             </div>
           </form>
-
-          {/* Type Filter */}
-          <div className="w-40">
-            <label className="block text-sm font-medium text-gray-700 mb-1">Type</label>
-            <Select
-              value={typeFilter}
-              onChange={(e) => setTypeFilter(e.target.value)}
-              options={[
-                { value: '', label: 'All Types' },
-                { value: 'circuit', label: 'Circuit' },
-                { value: 'super_set', label: 'Super Set' },
-              ]}
-            />
-          </div>
 
           {/* Status Filter */}
           <div className="w-40">
@@ -211,16 +183,10 @@ export default function WorkoutsListPage() {
                   Workout
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                  Type
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                  Mode
+                  Difficulty
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
                   Exercises
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                  Rounds
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
                   Status
@@ -240,22 +206,12 @@ export default function WorkoutsListPage() {
                     </div>
                   </td>
                   <td className="px-6 py-4">
-                    <span className={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${
-                      workout.type === 'super_set' 
-                        ? 'bg-purple-100 text-purple-800' 
-                        : 'bg-blue-100 text-blue-800'
-                    }`}>
-                      {TYPE_LABELS[workout.type]}
+                    <span className="inline-flex px-2 py-1 text-xs font-medium rounded-full bg-gray-100 text-gray-700">
+                      {workout.difficulty}
                     </span>
                   </td>
                   <td className="px-6 py-4 text-sm text-gray-600">
-                    {MODE_LABELS[workout.executionMode]}
-                  </td>
-                  <td className="px-6 py-4 text-sm text-gray-600">
                     {workout._count.exercises}
-                  </td>
-                  <td className="px-6 py-4 text-sm text-gray-600">
-                    {workout.rounds}
                   </td>
                   <td className="px-6 py-4">
                     <span

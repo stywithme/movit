@@ -23,6 +23,7 @@ import {
   Tags,
   Repeat,
   MessageSquare,
+  CalendarDays,
 } from 'lucide-react';
 
 interface NavItem {
@@ -60,6 +61,7 @@ export function Sidebar() {
     title: 'Content',
     items: [
       { title: 'Exercises', href: '/admin/exercises', icon: Dumbbell },
+      { title: 'Programs', href: '/admin/programs', icon: CalendarDays },
       { title: 'Workouts', href: '/admin/workouts', icon: Repeat },
       { title: 'Attributes', href: '/admin/attributes', icon: Tags },
       { title: 'Messages', href: '/admin/messages', icon: MessageSquare },

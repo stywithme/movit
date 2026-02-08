@@ -33,8 +33,8 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 
-# prisma
-/src/generated/prisma
+# prisma (synced from backend - do not edit directly)
+/prisma/schema.prisma
 
 #Sound Files
 public/audio/tts
