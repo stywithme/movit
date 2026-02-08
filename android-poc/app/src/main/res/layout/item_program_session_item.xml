@@ -54,6 +54,34 @@
                 android:text="3 sets • 10 reps" />
         </LinearLayout>
 
+        <LinearLayout
+            android:id="@+id/layoutSetControls"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="@dimen/spacing_sm"
+            android:orientation="vertical"
+            android:visibility="gone">
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnSetPlus"
+                style="@style/Widget.WayToFix.Button.Secondary"
+                android:layout_width="32dp"
+                android:layout_height="32dp"
+                android:text="+"
+                android:textSize="14sp"
+                android:contentDescription="Increase sets" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnSetMinus"
+                style="@style/Widget.WayToFix.Button.Secondary"
+                android:layout_width="32dp"
+                android:layout_height="32dp"
+                android:layout_marginTop="@dimen/spacing_xs"
+                android:text="-"
+                android:textSize="16sp"
+                android:contentDescription="Decrease sets" />
+        </LinearLayout>
+
         <com.google.android.material.button.MaterialButton
             android:id="@+id/btnEditItem"
             style="@style/Widget.WayToFix.Button.Secondary"

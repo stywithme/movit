@@ -194,6 +194,13 @@
             android:exported="false"
             android:screenOrientation="portrait"
             android:theme="@style/Theme.WayToFix" />
+
+        <!-- Weekly Report Activity -->
+        <activity
+            android:name=".ui.WeeklyReportActivity"
+            android:exported="false"
+            android:screenOrientation="portrait"
+            android:theme="@style/Theme.WayToFix" />
         
         <!-- Workout Activity (runs workout sessions) -->
         <activity

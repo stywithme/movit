@@ -26,11 +26,11 @@
     <!-- Navigation -->
     <string name="home">Home</string>
     <string name="exercises">Exercises</string>
-    <string name="programs">Programs</string>
+    <string name="programs_history">Programs</string>
     <string name="programs_subtitle">Choose a program and plan your training</string>
     <string name="browse_programs">Browse Programs</string>
     <string name="active_program">Active Program</string>
-    <string name="today_plan">Today's Plan</string>
+    <string name="today_plan">Today Plan</string>
     <string name="today_plan_title_format">Week %1$d · Day %2$d</string>
     <string name="today_plan_session_format">%1$s • %2$d items</string>
     <string name="view_program">View Program</string>
@@ -413,6 +413,10 @@
     <string name="week_stats_format">%1$d days • %2$d rest • %3$d sessions</string>
     <string name="week_progress_format">Progress: %1$d/%2$d sessions</string>
     <string name="week_progress_completed">Progress: Completed</string>
+    <string name="weekly_report">Weekly Report</string>
+    <string name="weekly_report_subtitle">Weekly progress summary</string>
+    <string name="week_reps_format">Reps: %1$d</string>
+    <string name="week_accuracy_format">Avg accuracy: %1$d%%</string>
     <string name="day_title_only">Day %1$d</string>
     <string name="day_title_with_name">Day %1$d • %2$s</string>
     <string name="rest_day">Rest day</string>
@@ -450,6 +454,8 @@
     <string name="session_rest_between_sets">REST BETWEEN SETS</string>
     <string name="session_rest_between_exercises">REST BETWEEN EXERCISES</string>
     <string name="rest_seconds_hint">Rest seconds</string>
+    <string name="alternating_label_format">Alternating: %1$s</string>
+    <string name="session_set_indicator_format">Set %1$d of %2$d</string>
     <string name="session_rest_next_set_format">Next: %1$s · Set %2$d/%3$d</string>
     <string name="session_rest_next_exercise_format">Next: %1$s</string>
     <string name="session_complete_sets_format">Sets: %1$d/%2$d</string>

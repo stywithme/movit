@@ -110,11 +110,11 @@ data class ExerciseConfigWithMeta(
             imageUrl = imageUrl,
             category = category,
             countingMethod = countingMethod,
-            muscles = muscles,
-            equipment = equipment,
-            tags = tags,
-            poseVariants = poseVariants,
-            repCountingConfig = repCountingConfig,
+            muscles = muscles ?: emptyList(),
+            equipment = equipment ?: emptyList(),
+            tags = tags ?: emptyList(),
+            poseVariants = poseVariants ?: emptyList(),
+            repCountingConfig = repCountingConfig ?: com.trainingvalidator.poc.training.models.RepCountingConfig(),
             // Weight & Metrics
             supportsWeight = supportsWeight,
             minWeight = minWeight,
@@ -169,10 +169,10 @@ data class WorkoutConfigWithMeta(
             name = name,
             description = description,
             coverImageUrl = coverImageUrl,
-            difficulty = difficulty,
+            difficulty = difficulty ?: "beginner",
             estimatedDurationMin = estimatedDurationMin,
-            tags = tags,
-            exercises = exercises,
+            tags = tags ?: emptyList(),
+            exercises = exercises ?: emptyList(),
             fileName = slug  // Use slug as fileName for compatibility
         )
     }
@@ -201,9 +201,9 @@ data class ProgramConfigWithMeta(
             description = description,
             coverImageUrl = coverImageUrl,
             durationWeeks = durationWeeks,
-            difficulty = difficulty,
-            tags = tags,
-            weeks = weeks
+            difficulty = difficulty ?: "beginner",
+            tags = tags ?: emptyList(),
+            weeks = weeks ?: emptyList()
         )
     }
 }

@@ -13,10 +13,8 @@ import com.trainingvalidator.poc.storage.ExerciseRepository
 import com.trainingvalidator.poc.storage.ProgramRepository
 import com.trainingvalidator.poc.storage.ProgramSessionReportStore
 import com.trainingvalidator.poc.storage.AuthManager
-import com.trainingvalidator.poc.network.ApiConfig
+import com.trainingvalidator.poc.network.ApiClient
 import com.trainingvalidator.poc.training.models.ProgramSessionItem
-import okhttp3.MediaType.Companion.toMediaType
-import okhttp3.RequestBody.Companion.toRequestBody
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -54,6 +52,7 @@ class ProgramSessionActivity : AppCompatActivity() {
     private var currentDayNumber: Int = 1
     private var currentProgramId: String? = null
     private val reportStore by lazy { ProgramSessionReportStore(this) }
+    private var itemTouchHelper: androidx.recyclerview.widget.ItemTouchHelper? = null
 
     private val sessionLauncher = registerForActivityResult(
         androidx.activity.result.contract.ActivityResultContracts.StartActivityForResult()
@@ -82,6 +81,7 @@ class ProgramSessionActivity : AppCompatActivity() {
 
         binding.rvSessionItems.layoutManager = LinearLayoutManager(this)
         binding.rvSessionItems.adapter = ProgramSessionItemAdapter(sessionItems)
+        setupDragAndDrop()
     }
 
     private fun loadSession() {
@@ -159,6 +159,49 @@ class ProgramSessionActivity : AppCompatActivity() {
     private fun recalculateTotalSets() {
         totalSetsPlanned = sessionItems.sumOf { item ->
             if (item.type == "exercise") item.sets?.coerceAtLeast(1) ?: 1 else 0
+        }
+    }
+
+    private fun setupDragAndDrop() {
+        val callback = object : androidx.recyclerview.widget.ItemTouchHelper.SimpleCallback(
+            androidx.recyclerview.widget.ItemTouchHelper.UP or androidx.recyclerview.widget.ItemTouchHelper.DOWN,
+            0
+        ) {
+            override fun getMovementFlags(
+                recyclerView: androidx.recyclerview.widget.RecyclerView,
+                viewHolder: androidx.recyclerview.widget.RecyclerView.ViewHolder
+            ): Int {
+                if (!isEditMode) return 0
+                return makeMovementFlags(
+                    androidx.recyclerview.widget.ItemTouchHelper.UP or androidx.recyclerview.widget.ItemTouchHelper.DOWN,
+                    0
+                )
+            }
+
+            override fun onMove(
+                recyclerView: androidx.recyclerview.widget.RecyclerView,
+                viewHolder: androidx.recyclerview.widget.RecyclerView.ViewHolder,
+                target: androidx.recyclerview.widget.RecyclerView.ViewHolder
+            ): Boolean {
+                val from = viewHolder.bindingAdapterPosition
+                val to = target.bindingAdapterPosition
+                if (from == androidx.recyclerview.widget.RecyclerView.NO_POSITION ||
+                    to == androidx.recyclerview.widget.RecyclerView.NO_POSITION) {
+                    return false
+                }
+                java.util.Collections.swap(sessionItems, from, to)
+                recyclerView.adapter?.notifyItemMoved(from, to)
+                return true
+            }
+
+            override fun onSwiped(
+                viewHolder: androidx.recyclerview.widget.RecyclerView.ViewHolder,
+                direction: Int
+            ) = Unit
+        }
+
+        itemTouchHelper = androidx.recyclerview.widget.ItemTouchHelper(callback).also {
+            it.attachToRecyclerView(binding.rvSessionItems)
         }
     }
 
@@ -243,6 +286,9 @@ class ProgramSessionActivity : AppCompatActivity() {
             val tvItemTitle: android.widget.TextView = view.findViewById(R.id.tvItemTitle)
             val tvItemSubtitle: android.widget.TextView = view.findViewById(R.id.tvItemSubtitle)
             val btnEditItem: com.google.android.material.button.MaterialButton = view.findViewById(R.id.btnEditItem)
+            val layoutSetControls: android.view.View = view.findViewById(R.id.layoutSetControls)
+            val btnSetPlus: com.google.android.material.button.MaterialButton = view.findViewById(R.id.btnSetPlus)
+            val btnSetMinus: com.google.android.material.button.MaterialButton = view.findViewById(R.id.btnSetMinus)
         }
 
         override fun onCreateViewHolder(parent: android.view.ViewGroup, viewType: Int): ViewHolder {
@@ -287,6 +333,21 @@ class ProgramSessionActivity : AppCompatActivity() {
             holder.btnEditItem.setOnClickListener {
                 openEditItemDialog(position)
             }
+
+            holder.layoutSetControls.visibility = if (!isRest && isEditMode) View.VISIBLE else View.GONE
+            holder.btnSetPlus.setOnClickListener {
+                val current = item.sets?.coerceAtLeast(1) ?: 1
+                sessionItems[position] = item.copy(sets = current + 1)
+                recalculateTotalSets()
+                notifyItemChanged(position)
+            }
+            holder.btnSetMinus.setOnClickListener {
+                val current = item.sets?.coerceAtLeast(1) ?: 1
+                val next = (current - 1).coerceAtLeast(1)
+                sessionItems[position] = item.copy(sets = next)
+                recalculateTotalSets()
+                notifyItemChanged(position)
+            }
         }
 
         override fun getItemCount(): Int = items.size
@@ -325,32 +386,38 @@ class ProgramSessionActivity : AppCompatActivity() {
         inputRestBetweenSets.setText(item.restBetweenSetsMs?.toString() ?: "")
         inputWeight.setText(item.weightKg?.toString() ?: "")
 
-        android.app.AlertDialog.Builder(this)
-            .setView(dialogView)
-            .setPositiveButton(getString(R.string.save)) { dialog, _ ->
-                val selectedSlug = options.getOrNull(spinner.selectedItemPosition)?.second
-                val updated = item.copy(
-                    exerciseSlug = selectedSlug ?: item.exerciseSlug,
-                    sets = inputSets.text.toString().toIntOrNull() ?: item.sets,
-                    targetReps = inputReps.text.toString().toIntOrNull(),
-                    targetDuration = inputDuration.text.toString().toIntOrNull(),
-                    restBetweenSetsMs = inputRestBetweenSets.text.toString().toLongOrNull(),
-                    weightKg = inputWeight.text.toString().toFloatOrNull()
-                )
-                sessionItems[position] = updated
-                if (selectedSlug != null) {
-                    val config = availableExercises.firstOrNull { it.fileName == selectedSlug }
-                    if (config != null) {
-                        exerciseNameMap[selectedSlug] =
-                            config.name.get(language).ifBlank { config.name.en }
-                    }
+        val bottomSheet = com.google.android.material.bottomsheet.BottomSheetDialog(this)
+        bottomSheet.setContentView(dialogView)
+        bottomSheet.setCancelable(true)
+
+        val saveButton = dialogView.findViewById<com.google.android.material.button.MaterialButton>(R.id.btnSave)
+        val cancelButton = dialogView.findViewById<com.google.android.material.button.MaterialButton>(R.id.btnCancel)
+
+        saveButton.setOnClickListener {
+            val selectedSlug = options.getOrNull(spinner.selectedItemPosition)?.second
+            val updated = item.copy(
+                exerciseSlug = selectedSlug ?: item.exerciseSlug,
+                sets = inputSets.text.toString().toIntOrNull() ?: item.sets,
+                targetReps = inputReps.text.toString().toIntOrNull(),
+                targetDuration = inputDuration.text.toString().toIntOrNull(),
+                restBetweenSetsMs = inputRestBetweenSets.text.toString().toLongOrNull(),
+                weightKg = inputWeight.text.toString().toFloatOrNull()
+            )
+            sessionItems[position] = updated
+            if (selectedSlug != null) {
+                val config = availableExercises.firstOrNull { it.fileName == selectedSlug }
+                if (config != null) {
+                    exerciseNameMap[selectedSlug] =
+                        config.name.get(language).ifBlank { config.name.en }
                 }
-                recalculateTotalSets()
-                binding.rvSessionItems.adapter?.notifyItemChanged(position)
-                dialog.dismiss()
             }
-            .setNegativeButton(getString(R.string.cancel)) { dialog, _ -> dialog.dismiss() }
-            .show()
+            recalculateTotalSets()
+            binding.rvSessionItems.adapter?.notifyItemChanged(position)
+            bottomSheet.dismiss()
+        }
+
+        cancelButton.setOnClickListener { bottomSheet.dismiss() }
+        bottomSheet.show()
     }
 
     private fun saveLocalSessionReport(
@@ -397,14 +464,21 @@ class ProgramSessionActivity : AppCompatActivity() {
 
     private fun sendSessionStart() {
         val token = AuthManager.getAccessToken(this) ?: return
-        val payload = mapOf(
-            "programId" to currentProgramId,
+        val sessionId = intent.getStringExtra(EXTRA_SESSION_ID) ?: return
+        val payload = mapOf<String, Any>(
+            "programId" to (currentProgramId ?: ""),
             "weekNumber" to currentWeekNumber,
             "dayNumber" to currentDayNumber,
             "startedAt" to System.currentTimeMillis()
         )
 
-        postSessionEndpoint("start", payload, token)
+        CoroutineScope(Dispatchers.IO).launch {
+            try {
+                ApiClient.mobileSyncApi.startSession(sessionId, "Bearer $token", payload)
+            } catch (e: Exception) {
+                Log.w(TAG, "Failed to post session start: ${e.message}")
+            }
+        }
     }
 
     private fun sendSessionComplete(
@@ -416,6 +490,9 @@ class ProgramSessionActivity : AppCompatActivity() {
         avgAccuracy: Float,
         reportJson: String?
     ) {
+        val token = AuthManager.getAccessToken(this) ?: return
+        val sessionId = intent.getStringExtra(EXTRA_SESSION_ID) ?: return
+
         val payloadMap = mutableMapOf<String, Any>(
             "completedAt" to System.currentTimeMillis(),
             "totalDurationMs" to durationMs,
@@ -432,32 +509,17 @@ class ProgramSessionActivity : AppCompatActivity() {
             payloadMap["report"] = reportElement
         }
 
-        val token = AuthManager.getAccessToken(this) ?: return
-        postSessionEndpoint("complete", payloadMap, token)
-        postSessionEndpoint("report", payloadMap, token)
-    }
-
-    private fun postSessionEndpoint(path: String, payload: Any, token: String) {
-        val sessionId = intent.getStringExtra(EXTRA_SESSION_ID) ?: return
-        val gson = com.google.gson.Gson()
-        val json = gson.toJson(payload)
-
-        val client = okhttp3.OkHttpClient()
-        val body = json.toRequestBody("application/json".toMediaType())
-        val request = okhttp3.Request.Builder()
-            .url("${ApiConfig.getEffectiveBaseUrl()}api/mobile/sessions/$sessionId/$path")
-            .addHeader("Authorization", "Bearer $token")
-            .post(body)
-            .build()
-
-        client.newCall(request).enqueue(object : okhttp3.Callback {
-            override fun onFailure(call: okhttp3.Call, e: java.io.IOException) {
-                Log.w(TAG, "Failed to post session $path: ${e.message}")
+        CoroutineScope(Dispatchers.IO).launch {
+            try {
+                ApiClient.mobileSyncApi.completeSession(sessionId, "Bearer $token", payloadMap)
+            } catch (e: Exception) {
+                Log.w(TAG, "Failed to post session complete: ${e.message}")
             }
-
-            override fun onResponse(call: okhttp3.Call, response: okhttp3.Response) {
-                response.close()
+            try {
+                ApiClient.mobileSyncApi.reportSession(sessionId, "Bearer $token", payloadMap)
+            } catch (e: Exception) {
+                Log.w(TAG, "Failed to post session report: ${e.message}")
             }
-        })
+        }
     }
 }

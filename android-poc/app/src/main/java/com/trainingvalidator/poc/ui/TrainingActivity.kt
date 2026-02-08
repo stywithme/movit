@@ -164,6 +164,12 @@ class TrainingActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetection
     private var sessionRestTimer: android.os.CountDownTimer? = null
     private var sessionRestRemainingMs: Long = 0L
     private var sessionSetStartTimeMs: Long = 0L
+    private val sessionExerciseConfigMap = mutableMapOf<String, com.trainingvalidator.poc.training.models.ExerciseConfig>()
+
+    private data class AlternatingVariantInfo(
+        val variantIndex: Int,
+        val label: String
+    )
 
     // Tracks pose presence transitions to avoid leaving stale form feedback visible when pose is lost.
     // This is intentionally Activity-local (UI concern) and does not affect session state machine behavior.
@@ -573,10 +579,12 @@ class TrainingActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetection
         // Resolve exercise names
         val exerciseRepo = ExerciseRepository.getInstance(this)
         val language = java.util.Locale.getDefault().language
+        sessionExerciseConfigMap.clear()
         items.filter { it.type == "exercise" && it.exerciseSlug != null }.forEach { item ->
             val slug = item.exerciseSlug ?: return@forEach
             val config = exerciseRepo.getExercise(slug)
             if (config != null) {
+                sessionExerciseConfigMap[slug] = config
                 val name = config.name.get(language).ifBlank { config.name.en }
                 engine.setExerciseName(slug, name)
             }
@@ -668,6 +676,10 @@ class TrainingActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetection
         // Exercise name
         binding.tvSessionExerciseName.text = state.exerciseName
 
+        val alternatingInfo = resolveAlternatingVariant(state.item, state.setNumber)
+        updateAlternatingLabels(alternatingInfo)
+        updateSessionSetIndicator(state.setNumber, state.totalSets)
+
         // Set info: "Set 1 of 3 · 12 reps" or "Set 1 of 3 · 30s hold"
         val targetReps = item.targetReps
         val targetDuration = item.targetDuration
@@ -697,7 +709,7 @@ class TrainingActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetection
 
         // "Start Set" button
         binding.btnSessionStartSet.setOnClickListener {
-            onSessionStartSetClicked(state)
+            onSessionStartSetClicked(state, alternatingInfo)
         }
     }
 
@@ -705,7 +717,8 @@ class TrainingActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetection
      * Handle "Start Set" click: load exercise into ViewModel and start training.
      */
     private fun onSessionStartSetClicked(
-        state: com.trainingvalidator.poc.training.session.SessionTrainingEngine.State.PreExercise
+        state: com.trainingvalidator.poc.training.session.SessionTrainingEngine.State.PreExercise,
+        alternatingInfo: AlternatingVariantInfo?
     ) {
         val engine = sessionTrainingEngine ?: return
         val item = state.item
@@ -716,6 +729,7 @@ class TrainingActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetection
 
         // Show normal training UI
         binding.bottomStatsBar.visibility = View.VISIBLE
+        updateSessionSetIndicator(state.setNumber, state.totalSets)
 
         // Reset supervisor for fresh exercise flow
         viewModel.supervisor.reset()
@@ -725,11 +739,12 @@ class TrainingActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetection
         val targetReps = item.targetReps?.takeIf { it > 0 }
         val targetDurationMs = item.targetDuration?.takeIf { it > 0 }?.let { it * 1000L }
         val weight = engine.getCurrentSetWeight()
+        val poseVariantIndex = alternatingInfo?.variantIndex ?: 0
 
         // Load exercise into ViewModel (triggers supervisor → SETUP_POSE → COUNTDOWN → TRAINING)
         if (!viewModel.loadExercise(
                 exerciseName = slug,
-                poseVariantIndex = 0,
+                poseVariantIndex = poseVariantIndex,
                 targetRepsOverride = targetReps,
                 targetDurationMsOverride = targetDurationMs,
                 context = this,
@@ -765,6 +780,48 @@ class TrainingActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetection
         if (viewModel.feedbackManager == null) {
             viewModel.initializeFeedback(this, isVideoMode)
         }
+    }
+
+    private fun resolveAlternatingVariant(
+        item: com.trainingvalidator.poc.training.models.ProgramSessionItem,
+        setNumber: Int
+    ): AlternatingVariantInfo? {
+        val slug = item.exerciseSlug ?: return null
+        val config = sessionExerciseConfigMap[slug] ?: return null
+        val alternating = config.alternatingConfig ?: return null
+        if (!config.isAlternating || alternating.variants.isEmpty()) return null
+
+        val switchEvery = alternating.switchEvery.coerceAtLeast(1)
+        val index = ((setNumber - 1) / switchEvery) % alternating.variants.size
+        val variant = alternating.variants[index]
+        val label = variant.label.get(java.util.Locale.getDefault().language)
+            .ifBlank { variant.label.en }
+        val maxIndex = (config.poseVariants.size - 1).coerceAtLeast(0)
+        val safeIndex = variant.variantIndex.coerceIn(0, maxIndex)
+        return AlternatingVariantInfo(safeIndex, label.ifBlank { "Variant ${index + 1}" })
+    }
+
+    private fun updateAlternatingLabels(info: AlternatingVariantInfo?) {
+        if (info == null) {
+            binding.tvSessionAlternatingLabel.visibility = View.GONE
+            binding.tvAlternatingLabel.visibility = View.GONE
+            return
+        }
+
+        val text = getString(R.string.alternating_label_format, info.label)
+        binding.tvSessionAlternatingLabel.text = text
+        binding.tvSessionAlternatingLabel.visibility = View.VISIBLE
+        binding.tvAlternatingLabel.text = text
+        binding.tvAlternatingLabel.visibility = View.VISIBLE
+    }
+
+    private fun updateSessionSetIndicator(setNumber: Int, totalSets: Int) {
+        binding.tvSessionSetIndicator.text = getString(
+            R.string.session_set_indicator_format,
+            setNumber,
+            totalSets
+        )
+        binding.tvSessionSetIndicator.visibility = View.VISIBLE
     }
 
     /**
@@ -971,6 +1028,9 @@ class TrainingActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetection
         binding.sessionPreExercisePanel.visibility = View.GONE
         binding.sessionRestPanel.visibility = View.GONE
         binding.sessionCompletePanel.visibility = View.GONE
+        binding.tvSessionAlternatingLabel.visibility = View.GONE
+        binding.tvAlternatingLabel.visibility = View.GONE
+        binding.tvSessionSetIndicator.visibility = View.GONE
         sessionRestTimer?.cancel()
     }
 

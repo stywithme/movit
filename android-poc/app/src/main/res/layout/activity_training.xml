@@ -701,6 +701,32 @@
         </LinearLayout>
 
     </LinearLayout>
+
+    <TextView
+        android:id="@+id/tvAlternatingLabel"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:textColor="@color/pro_gold"
+        android:textSize="12sp"
+        android:layout_marginBottom="@dimen/spacing_xs"
+        android:visibility="gone"
+        app:layout_constraintBottom_toTopOf="@id/tvSessionSetIndicator"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        tools:text="Alternating: Variant" />
+
+    <TextView
+        android:id="@+id/tvSessionSetIndicator"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:textColor="#CCFFFFFF"
+        android:textSize="12sp"
+        android:layout_marginBottom="@dimen/spacing_sm"
+        android:visibility="gone"
+        app:layout_constraintBottom_toTopOf="@id/bottomStatsBar"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        tools:text="Set 1 of 3" />
     
     <!-- Hidden Switch Camera Button (moved to Settings dialog) -->
     <ImageButton
@@ -829,6 +855,16 @@
             android:textStyle="bold"
             android:layout_marginTop="@dimen/spacing_sm"
             tools:text="Push-ups" />
+
+        <TextView
+            android:id="@+id/tvSessionAlternatingLabel"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:textColor="@color/pro_gold"
+            android:textSize="14sp"
+            android:layout_marginTop="@dimen/spacing_xs"
+            android:visibility="gone"
+            tools:text="Alternating: Variant" />
 
         <TextView
             android:id="@+id/tvSessionSetInfo"

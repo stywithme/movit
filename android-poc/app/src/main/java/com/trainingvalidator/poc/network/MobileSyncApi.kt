@@ -1,8 +1,11 @@
 package com.trainingvalidator.poc.network
 
 import retrofit2.Response
+import retrofit2.http.Body
 import retrofit2.http.GET
 import retrofit2.http.Header
+import retrofit2.http.POST
+import retrofit2.http.Path
 import retrofit2.http.Query
 import retrofit2.http.Streaming
 import retrofit2.http.Url
@@ -38,4 +41,36 @@ interface MobileSyncApi {
     @Streaming
     @GET
     suspend fun downloadAudio(@Url url: String): Response<ResponseBody>
+
+    // ─── Program Session Endpoints ──────────────────────────────
+
+    /**
+     * Notify server that a program session has started.
+     */
+    @POST("api/mobile/sessions/{sessionId}/start")
+    suspend fun startSession(
+        @Path("sessionId") sessionId: String,
+        @Header("Authorization") authorization: String,
+        @Body payload: Map<String, @JvmSuppressWildcards Any>
+    ): Response<ResponseBody>
+
+    /**
+     * Notify server that a program session has been completed.
+     */
+    @POST("api/mobile/sessions/{sessionId}/complete")
+    suspend fun completeSession(
+        @Path("sessionId") sessionId: String,
+        @Header("Authorization") authorization: String,
+        @Body payload: Map<String, @JvmSuppressWildcards Any>
+    ): Response<ResponseBody>
+
+    /**
+     * Submit a detailed session report.
+     */
+    @POST("api/mobile/sessions/{sessionId}/report")
+    suspend fun reportSession(
+        @Path("sessionId") sessionId: String,
+        @Header("Authorization") authorization: String,
+        @Body payload: Map<String, @JvmSuppressWildcards Any>
+    ): Response<ResponseBody>
 }

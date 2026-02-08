@@ -95,6 +95,14 @@ class ProgramDetailActivity : AppCompatActivity() {
         binding.tvProgramSessions.text = getString(R.string.sessions_count_format, totalSessions)
         binding.tvProgramDifficulty.text = formatDifficulty(program.difficulty)
 
+        binding.btnWeeklyReport.setOnClickListener {
+            val intent = Intent(this, WeeklyReportActivity::class.java).apply {
+                putExtra(WeeklyReportActivity.EXTRA_PROGRAM_SLUG, program.slug)
+                putExtra(WeeklyReportActivity.EXTRA_PROGRAM_ID, programId)
+            }
+            startActivity(intent)
+        }
+
         binding.rvWeeks.adapter = WeekAdapter(program.weeks, programId)
     }
 

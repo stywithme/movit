@@ -141,7 +141,7 @@ class SyncManager(
             
             Log.d(TAG, "Starting incremental sync (lastSync: $lastSync)")
             
-            val authHeader = AuthManager.getAuthorizationHeader(context)
+            val authHeader = AuthManager.getAuthHeader(context)
             val response = ApiClient.mobileSyncApi.sync(
                 authorization = authHeader,
                 updatedAfter = lastSync,
@@ -190,7 +190,7 @@ class SyncManager(
         try {
             Log.d(TAG, "Starting full refresh")
             
-            val authHeader = AuthManager.getAuthorizationHeader(context)
+            val authHeader = AuthManager.getAuthHeader(context)
             val response = ApiClient.mobileSyncApi.sync(
                 authorization = authHeader,
                 updatedAfter = null,
