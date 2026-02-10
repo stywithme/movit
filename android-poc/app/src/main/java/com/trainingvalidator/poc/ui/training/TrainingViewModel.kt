@@ -23,19 +23,13 @@ import com.trainingvalidator.poc.training.feedback.FeedbackManager
 // NOTE: ExerciseLoader and WorkoutLoader removed - using repository only (no assets fallback)
 import com.trainingvalidator.poc.training.models.ExerciseConfig
 import com.trainingvalidator.poc.storage.ExerciseRepository
-import com.trainingvalidator.poc.storage.WorkoutRepository
-import com.trainingvalidator.poc.training.models.WorkoutConfig
 import com.trainingvalidator.poc.training.session.PauseReason
 import com.trainingvalidator.poc.training.session.SessionState
 import com.trainingvalidator.poc.training.session.SessionSupervisor
 import com.trainingvalidator.poc.training.session.SupervisorAction
 import com.trainingvalidator.poc.training.session.SupervisorSignal
-import com.trainingvalidator.poc.training.workout.LoadedExercise
-import com.trainingvalidator.poc.training.workout.SwitchResult
-import com.trainingvalidator.poc.training.workout.WorkoutTrainingEngine
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow
@@ -78,9 +72,6 @@ class TrainingViewModel(
     private val _exerciseConfig = MutableStateFlow<ExerciseConfig?>(null)
     val exerciseConfig: StateFlow<ExerciseConfig?> = _exerciseConfig.asStateFlow()
     
-    private val _workoutConfig = MutableStateFlow<WorkoutConfig?>(null)
-    val workoutConfig: StateFlow<WorkoutConfig?> = _workoutConfig.asStateFlow()
-    
     // NOTE: difficulty has been REMOVED - all users get the same exercise
     
     private val _poseVariantIndex = MutableStateFlow(0)
@@ -88,9 +79,6 @@ class TrainingViewModel(
     
     private val _isVideoMode = MutableStateFlow(false)
     val isVideoMode: StateFlow<Boolean> = _isVideoMode.asStateFlow()
-    
-    private val _isWorkoutMode = MutableStateFlow(false)
-    val isWorkoutMode: StateFlow<Boolean> = _isWorkoutMode.asStateFlow()
     
     // ==================== Training State ====================
     
@@ -140,19 +128,12 @@ class TrainingViewModel(
     var trainingEngine: TrainingEngine? = null
         private set
     
-    var workoutTrainingEngine: WorkoutTrainingEngine? = null
-        private set
-    
     var feedbackManager: FeedbackManager? = null
         private set
     
     // ==================== Internal State ====================
     
     private var sessionStartTime: Long = 0L
-    private var currentRepsInSession = 0
-    
-    @Volatile
-    private var isSwitchingExercise = false
     
     // Flag to prevent concurrent frame processing on background thread
     // This ensures frames are processed one at a time, dropping excess frames
@@ -220,7 +201,6 @@ class TrainingViewModel(
         _exerciseConfig.value = config
         _exerciseName.value = config.name.en
         _poseVariantIndex.value = poseVariantIndex
-        _isWorkoutMode.value = false
         
         // Store weight settings
         _weightKg = weightKg
@@ -259,92 +239,6 @@ class TrainingViewModel(
         supervisor.onExerciseLoaded()
         
         Log.d(TAG, "Loaded exercise: ${config.name.en}")
-        return true
-    }
-    
-    /**
-     * Load workout for hot-swap mode
-     * 
-     * NOTE: difficultyStr is kept for API compatibility but is ignored.
-     * 
-     * @param workoutName Name of the workout to load
-     * @param difficultyStr Ignored (legacy parameter)
-     * @param context Required context for repository access
-     */
-    fun loadWorkout(
-        workoutName: String, 
-        difficultyStr: String = "",
-        context: Context? = null
-    ): Boolean {
-        // Load from repository (cached/synced data from backend)
-        // No fallback to assets - repository is the single source of truth
-        if (context == null) {
-            Log.e(TAG, "Context is required to load workout from repository")
-            return false
-        }
-        
-        val workoutConfig = try {
-            WorkoutRepository.getInstance(context).getWorkout(workoutName)
-        } catch (e: Exception) {
-            Log.e(TAG, "Failed to access WorkoutRepository for workout: $workoutName", e)
-            null
-        }
-        
-        if (workoutConfig == null) {
-            Log.e(TAG, "Failed to load workout: $workoutName - not available in repository")
-            return false
-        }
-        
-        _workoutConfig.value = workoutConfig
-        _isWorkoutMode.value = true
-        
-        // Get repository for exercises
-        val repository = try {
-            ExerciseRepository.getInstance(context)
-        } catch (e: Exception) {
-            Log.e(TAG, "Failed to access ExerciseRepository", e)
-            return false
-        }
-        
-        // Load all exercises from repository (no fallback to assets)
-        val loadedExercises = workoutConfig.exercises.mapIndexed { index, workoutExercise ->
-            val exerciseConfig = repository.getExercise(workoutExercise.exercise)
-            
-            if (exerciseConfig == null) {
-                Log.e(TAG, "Exercise not found in repository: ${workoutExercise.exercise}")
-                return@mapIndexed null
-            }
-            
-            Log.d(TAG, "Loaded exercise from repository: ${workoutExercise.exercise}")
-            
-            LoadedExercise(
-                config = exerciseConfig,
-                workoutExercise = workoutExercise,
-                index = index,
-                total = workoutConfig.exercises.size,
-                setIndex = 1,
-                totalSets = workoutExercise.sets.coerceAtLeast(1)
-            )
-        }.filterNotNull()
-        
-        if (loadedExercises.isEmpty()) {
-            Log.e(TAG, "No valid exercises in workout")
-            return false
-        }
-        
-        // Create workout engine
-        workoutTrainingEngine = WorkoutTrainingEngine(exercises = loadedExercises)
-        
-        // Set first exercise
-        val firstExercise = loadedExercises.first()
-        _exerciseConfig.value = firstExercise.config
-        _exerciseName.value = firstExercise.config.name.en
-        _poseVariantIndex.value = firstExercise.workoutExercise.variantIndex
-        
-        // Notify supervisor
-        supervisor.onExerciseLoaded()
-        
-        Log.d(TAG, "Loaded workout: ${workoutConfig.name.en} with ${loadedExercises.size} exercises")
         return true
     }
     
@@ -475,12 +369,8 @@ class TrainingViewModel(
                 feedbackManager?.resetMessageStates()
                 isEngineProcessingFrame = false  // Reset frame processing flag
                 
-                if (_isWorkoutMode.value) {
-                    startWorkoutTraining()
-                } else {
-                    trainingEngine?.start()
-                    observeTrainingEngine()
-                }
+                trainingEngine?.start()
+                observeTrainingEngine()
                 
                 viewModelScope.launch {
                     _events.emit(TrainingUIEvent.TrainingStarted)
@@ -626,19 +516,6 @@ class TrainingViewModel(
         supervisor.processSignal(SupervisorSignal.StartRequested)
     }
     
-    private fun startWorkoutTraining() {
-        val workoutEngine = workoutTrainingEngine ?: return
-        
-        trainingEngine = workoutEngine.start()
-        trainingEngine?.start()
-        updateRandomMessagesFromEngine()
-        
-        observeWorkoutTrainingEngine()
-        currentRepsInSession = 0
-        
-        Log.d(TAG, "Workout training started: ${workoutEngine.currentExercise.value?.getDisplayName()}")
-    }
-    
     @Deprecated("Use requestPause() instead")
     fun pauseTraining() {
         requestPause()
@@ -743,64 +620,6 @@ class TrainingViewModel(
         }
     }
     
-    private fun observeWorkoutTrainingEngine() {
-        engineObserverJob?.cancel()
-        
-        val engine = trainingEngine ?: return
-        val workoutEngine = workoutTrainingEngine ?: return
-        
-        engineObserverJob = viewModelScope.launch {
-            // Observe rep count for workout
-            launch {
-                engine.repCount.collect { count ->
-                    val progressInfo = workoutEngine.getProgressInfo()
-                    val displayCount = progressInfo.totalRepsCompleted + count
-                    
-                    _repCount.value = displayCount
-                    _progressText.value = "$displayCount / ${progressInfo.totalRepsTarget}"
-                    
-                    // Check for exercise switch
-                    if (count > 0 && count > currentRepsInSession && !isSwitchingExercise) {
-                        currentRepsInSession = count
-                        
-                        val repsLimit = workoutEngine.getRepsForCurrentSession()
-                        if (count >= repsLimit && supervisor.state.value == SessionState.TRAINING) {
-                            isSwitchingExercise = true
-                            delay(500)
-                            handleWorkoutRepLimitReached(count)
-                        }
-                    }
-                }
-            }
-            
-            // Observe phase
-            launch {
-                engine.currentPhase.collect { phase ->
-                    _currentPhase.value = phase
-                }
-            }
-            
-            // Observe feedback events
-            launch {
-                engine.events.collect { event ->
-                    feedbackManager?.emit(event)
-                    _feedbackEvents.emit(event)
-                    
-                    // Forward visibility events to supervisor
-                    when (event) {
-                        is FeedbackEvent.VisibilityPaused -> {
-                            supervisor.processSignal(SupervisorSignal.VisibilityPaused)
-                        }
-                        is FeedbackEvent.VisibilityResumeCountdown -> {
-                            supervisor.processSignal(SupervisorSignal.VisibilityRestored)
-                        }
-                        else -> {}
-                    }
-                }
-            }
-        }
-    }
-
     /**
      * Configure random feedback messages from the current engine
      * Called when engine or feedback manager is initialized.
@@ -808,79 +627,6 @@ class TrainingViewModel(
     private fun updateRandomMessagesFromEngine() {
         val engine = trainingEngine ?: return
         feedbackManager?.setRandomMessages(engine.feedbackMessages)
-    }
-    
-    private fun handleWorkoutRepLimitReached(completedReps: Int) {
-        val workoutEngine = workoutTrainingEngine ?: return
-        val engine = trainingEngine
-        
-        val correctReps = engine?.getCorrectReps() ?: completedReps
-        val result = workoutEngine.onRepsCompleted(completedReps, correctReps)
-        
-        when (result) {
-            is SwitchResult.Continue -> {}
-            
-            is SwitchResult.SwitchNow -> {
-                performHotSwap(result.nextExerciseName, result.repsThisSession)
-            }
-            
-            is SwitchResult.RoundComplete -> {
-                viewModelScope.launch {
-                    _events.emit(TrainingUIEvent.RoundCompleted(result.roundNumber, result.totalRounds))
-                }
-            }
-            
-            is SwitchResult.WorkoutComplete -> {
-                completeWorkout()
-            }
-        }
-    }
-    
-    private fun performHotSwap(nextExerciseName: String, repsThisSession: Int) {
-        val workoutEngine = workoutTrainingEngine ?: return
-        val previousName = trainingEngine?.getExerciseConfig()?.name?.en ?: ""
-        
-        trainingEngine?.stop()
-        
-        val newEngine = workoutEngine.switchToNextExercise()
-        if (newEngine == null) {
-            completeWorkout()
-            return
-        }
-        
-        trainingEngine = newEngine
-        newEngine.start()
-        updateRandomMessagesFromEngine()
-        
-        currentRepsInSession = 0
-        isSwitchingExercise = false
-        
-        val currentExercise = workoutEngine.currentExercise.value
-        _exerciseConfig.value = currentExercise?.config
-        _exerciseName.value = currentExercise?.config?.name?.en ?: ""
-        _poseVariantIndex.value = currentExercise?.workoutExercise?.variantIndex ?: 0
-        
-        observeWorkoutTrainingEngine()
-        
-        viewModelScope.launch {
-            _events.emit(TrainingUIEvent.ExerciseSwitched(previousName, nextExerciseName, repsThisSession))
-        }
-        
-        Log.d(TAG, "Hot-swapped from $previousName to $nextExerciseName")
-    }
-    
-    private fun completeWorkout() {
-        val workoutEngine = workoutTrainingEngine ?: return
-        
-        isSwitchingExercise = false
-        
-        viewModelScope.launch {
-            _events.emit(TrainingUIEvent.WorkoutCompleted(
-                totalReps = workoutEngine.getProgressInfo().totalRepsCompleted,
-                accuracy = workoutEngine.getOverallAccuracy(),
-                durationMs = System.currentTimeMillis() - sessionStartTime
-            ))
-        }
     }
     
     // ==================== Helpers ====================
@@ -921,11 +667,6 @@ class TrainingViewModel(
      * Get session duration
      */
     fun getSessionDurationMs(): Long = System.currentTimeMillis() - sessionStartTime
-    
-    /**
-     * Get workout overall accuracy
-     */
-    fun getWorkoutAccuracy(): Float = workoutTrainingEngine?.getOverallAccuracy() ?: 0f
     
     // ==================== Analytics ====================
     
@@ -991,7 +732,6 @@ class TrainingViewModel(
         supervisorObserverJob?.cancel()
         countdownController.release()
         feedbackManager?.release()
-        workoutTrainingEngine?.stop()
         supervisor.reset()
     }
     
@@ -1038,23 +778,6 @@ sealed class TrainingUIEvent {
     
     /** No pose warning (before auto-pause) */
     data class NoPoseWarning(val elapsedMs: Long) : TrainingUIEvent()
-    
-    /** Exercise switched in workout mode */
-    data class ExerciseSwitched(
-        val fromExercise: String,
-        val toExercise: String,
-        val repsThisSession: Int
-    ) : TrainingUIEvent()
-    
-    /** Round completed in workout mode */
-    data class RoundCompleted(val roundNumber: Int, val totalRounds: Int) : TrainingUIEvent()
-    
-    /** Workout completed */
-    data class WorkoutCompleted(
-        val totalReps: Int,
-        val accuracy: Float,
-        val durationMs: Long
-    ) : TrainingUIEvent()
     
     /** Pause video playback (video mode) */
     object PauseVideoPlayback : TrainingUIEvent()

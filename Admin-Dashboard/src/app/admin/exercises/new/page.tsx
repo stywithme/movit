@@ -1,17 +1,24 @@
 'use client';
 
 /**
- * Exercise Edit Page (State-Based System)
- * =======================================
+ * Exercise Creation Wizard Page
+ * =============================
  * 
- * Edit existing exercise using the 7-step wizard.
- * Loads exercise data and maps to wizard state.
+ * 7-step wizard for creating exercises with state-based JSON schema.
+ * 
+ * Steps:
+ * 1. Basic Info + Counting Method
+ * 2. Camera Position
+ * 3. Joint Configuration (State-based ranges)
+ * 4. Position Checks (optional)
+ * 5. Rep/Duration Config
+ * 6. Extras (attributes + feedback)
+ * 7. Review & Publish
  */
 
 import { useEffect, useState, useCallback } from 'react';
-import { useRouter, useParams } from 'next/navigation';
+import { useRouter } from 'next/navigation';
 import { useWizardStore } from '@/components/wizard/WizardContext';
-import type { LocalizedText } from '@/lib/types/localized';
 import { WizardStepper } from '@/components/wizard/WizardStepper';
 import { AutoSaveIndicator } from '@/components/wizard/AutoSaveIndicator';
 import {
@@ -37,184 +44,41 @@ interface LookupData {
   tags: Array<{ id: string; code: string; name: { ar: string; en: string } }>;
 }
 
-export default function EditExercisePage() {
+export default function NewExercisePage() {
   const router = useRouter();
-  const params = useParams();
-  const exerciseId = params.id as string;
-  
   const { 
     currentStep, 
     setStep, 
     resetWizard, 
-    loadExercise,
+    exerciseId, 
     setSaveStatus, 
     markAsSaved, 
-    setExerciseId,
-    exerciseStatus,
+    setExerciseId 
   } = useWizardStore();
   
   const [lookupData, setLookupData] = useState<LookupData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  const extractApiError = async (response: Response, fallbackMessage: string) => {
+    try {
+      const data = await response.json();
+      if (typeof data?.error === 'string' && data.error.trim()) return data.error;
+      if (Array.isArray(data?.errors) && data.errors.length > 0) return data.errors.join(', ');
+    } catch {
+      // Ignore JSON parsing errors and use fallback
+    }
+    return fallbackMessage;
+  };
   
-  // Fetch lookup data and exercise
+  // Fetch lookup data
   useEffect(() => {
-    async function fetchData() {
+    async function fetchLookupData() {
       try {
-        // Fetch lookup data
-        const lookupResponse = await fetch('/api/attributes/lookup');
-        if (!lookupResponse.ok) throw new Error('Failed to fetch lookup data');
-        const lookupJson = await lookupResponse.json();
-        setLookupData(lookupJson.data);
-        
-        // Fetch exercise data
-        const exerciseResponse = await fetch(`/api/exercises/${exerciseId}`);
-        if (!exerciseResponse.ok) throw new Error('Exercise not found');
-        const exerciseJson = await exerciseResponse.json();
-        
-        if (!exerciseJson.success || !exerciseJson.data) {
-          throw new Error('Exercise not found');
-        }
-        
-        const exercise = exerciseJson.data;
-        
-        // Map exercise data to wizard state
-        const firstVariant = exercise.poseVariants?.[0];
-        const primaryImageUrl = exercise.media?.find((m: { isPrimary: boolean; type: string }) => 
-          m.isPrimary && m.type === 'image'
-        )?.url || '';
-        const repConfig = exercise.repCountingConfig as Record<string, number> | null;
-        const isHold = exercise.countingMethod?.code === 'hold';
-        
-        // Map tracked joints per variant
-        const trackedJoints = (firstVariant?.trackedJointsConfig as TrackedJointData[]) || [];
-        const jointConfigVariants = (exercise.poseVariants || []).reduce(
-          (acc: Record<number, TrackedJointData[]>, variant: { trackedJointsConfig?: TrackedJointData[] }, index: number) => {
-            acc[index] = (variant.trackedJointsConfig as TrackedJointData[]) || [];
-            return acc;
-          },
-          {}
-        );
-        
-        // Map position checks
-        const positionChecks = (firstVariant?.positionChecks || []).map((pc: Record<string, unknown>) => ({
-          checkId: pc.checkId as string,
-          type: pc.type as string,
-          landmarks: pc.landmarks as { primary: string; secondary: string; tertiary?: string; quaternary?: string },
-          condition: pc.condition as { operator: string; threshold: number },
-          activePhases: pc.activePhases as string[],
-          errorMessage: pc.errorMessage as { ar: string; en: string },
-          severity: pc.severity as string || 'warning',
-          cooldownMs: (pc.cooldownMs as number) || 2000,
-          minErrorFrames: (pc.minErrorFrames as number) || 3,
-        }));
-        
-        // Map feedback assignments (library-based)
-        const feedbackAssignments = (firstVariant?.messageAssignments || [])
-          .filter((assignment: Record<string, unknown>) => assignment.target === 'feedback')
-          .map((assignment: Record<string, unknown>) => ({
-            messageId: assignment.messageId as string,
-            context: assignment.context as 'motivational' | 'tip',
-            message: (assignment.message as { content?: { ar?: string; en?: string; audioAr?: string; audioEn?: string } } | undefined)?.content,
-          }));
-        
-        // Map attributes
-        const muscles = exercise.attributes
-          ?.filter((a: { attributeValue?: { attribute?: { code: string } } }) => 
-            a.attributeValue?.attribute?.code === 'muscle')
-          .map((a: { attributeValueId: string }) => a.attributeValueId) || [];
-        
-        const equipment = exercise.attributes
-          ?.filter((a: { attributeValue?: { attribute?: { code: string } } }) => 
-            a.attributeValue?.attribute?.code === 'equipment')
-          .map((a: { attributeValueId: string }) => a.attributeValueId) || [];
-        
-        const tags = exercise.attributes
-          ?.filter((a: { attributeValue?: { attribute?: { code: string } } }) => 
-            a.attributeValue?.attribute?.code === 'tag')
-          .map((a: { attributeValueId: string }) => a.attributeValueId) || [];
-        
-        // Load into wizard state
-        const referenceImages = (exercise.poseVariants || []).reduce(
-          (acc: Record<string, string>, pv: { cameraPositionId: string; referenceImageUrl?: string | null }) => {
-            if (pv.referenceImageUrl) {
-              acc[pv.cameraPositionId] = pv.referenceImageUrl;
-            }
-            return acc;
-          },
-          {}
-        );
-        loadExercise({
-          exerciseId: exercise.id,
-          exerciseStatus: exercise.status,
-          currentStep: 1,
-          basicInfo: {
-            name: exercise.name || { ar: '', en: '' },
-            description: exercise.description || { ar: '', en: '' },
-            instructions: exercise.instructions || { ar: '', en: '' },
-            categoryId: exercise.categoryId || '',
-            imageUrl: primaryImageUrl,
-          },
-          countingMethod: {
-            countingMethodId: exercise.countingMethodId || '',
-            countingMethodCode: exercise.countingMethod?.code,
-          },
-          cameraPosition: {
-            cameraPositionIds: exercise.poseVariants?.map((pv: { cameraPositionId: string }) => pv.cameraPositionId) || [],
-            expectedFacingDirection: firstVariant?.expectedFacingDirection || 'auto_detect',
-            referenceImages,
-          },
-          jointConfig: {
-            trackedJoints,
-          },
-          jointConfigVariants,
-          activeJointVariantIndex: 0,
-          positionChecks: {
-            positionChecks,
-          },
-          repConfig: isHold
-            ? {
-                duration: repConfig?.duration || 30,
-                gracePeriodMs: repConfig?.gracePeriodMs || 2500,
-              }
-            : {
-                reps: repConfig?.reps || 12,
-                minRepIntervalMs: repConfig?.minRepIntervalMs || 1500,
-                maxRepIntervalMs: repConfig?.maxRepIntervalMs || 5000,
-              },
-          extras: {
-            muscles,
-            equipment,
-            tags,
-            feedbackAssignments,
-          },
-          // Weight configuration
-          weightConfig: {
-            supportsWeight: exercise.supportsWeight ?? false,
-            minWeight: exercise.minWeight ?? undefined,
-            maxWeight: exercise.maxWeight ?? undefined,
-            defaultWeight: exercise.defaultWeight ?? undefined,
-          },
-          // Report metrics configuration
-          reportMetrics: {
-            primary: ((exercise.reportMetrics as Record<string, string[]> | null)?.primary ?? ['form_score']) as import('@/modules/exercises/exercises.types').MetricCode[],
-            optional: ((exercise.reportMetrics as Record<string, string[]> | null)?.optional ?? []) as import('@/modules/exercises/exercises.types').MetricCode[],
-            excluded: ((exercise.reportMetrics as Record<string, string[]> | null)?.excluded ?? []) as import('@/modules/exercises/exercises.types').MetricCode[],
-          },
-          alternatingConfig: {
-            enabled: Boolean(exercise.isAlternating),
-            switchEvery: (exercise.alternatingConfig as { switchEvery?: number } | null)?.switchEvery || 1,
-            variants:
-              (exercise.alternatingConfig as { variants?: Array<{ label?: LocalizedText; variantIndex?: number }> } | null)
-                ?.variants?.map((variant) => ({
-                  label: variant.label || { ar: '', en: '' },
-                  variantIndex: variant.variantIndex ?? 0,
-                })) || [],
-          },
-        });
-        
-        setExerciseId(exercise.id);
-        
+        const response = await fetch('/api/attributes/lookup');
+        if (!response.ok) throw new Error('Failed to fetch lookup data');
+        const data = await response.json();
+        setLookupData(data.data);
       } catch (err) {
         setError(err instanceof Error ? err.message : 'An error occurred');
       } finally {
@@ -222,8 +86,8 @@ export default function EditExercisePage() {
       }
     }
     
-    fetchData();
-  }, [exerciseId, loadExercise, setExerciseId]);
+    fetchLookupData();
+  }, []);
   
   // Build API payload from store
   const buildPayload = useCallback(() => {
@@ -233,6 +97,18 @@ export default function EditExercisePage() {
     // Build tracked joints for API
     const trackedJointsConfig = (store.jointConfig.trackedJoints || []).map((joint: TrackedJointData) => {
       if (joint.role === 'primary') {
+        if (isHold) {
+          return {
+            joint: joint.joint,
+            role: 'primary',
+            startPose: joint.startPose,
+            range: joint.range,
+            stateMessages: joint.stateMessages,
+            pairedWith: joint.pairedWith,
+            invertIndicator: joint.invertIndicator,
+          };
+        }
+
         return {
           joint: joint.joint,
           role: 'primary',
@@ -313,6 +189,18 @@ export default function EditExercisePage() {
           : (store.jointConfig.trackedJoints || []);
         const mappedJoints = jointsForVariant.map((joint: TrackedJointData) => {
           if (joint.role === 'primary') {
+            if (isHold) {
+              return {
+                joint: joint.joint,
+                role: 'primary',
+                startPose: joint.startPose,
+                range: joint.range,
+                stateMessages: joint.stateMessages,
+                pairedWith: joint.pairedWith,
+                invertIndicator: joint.invertIndicator,
+              };
+            }
+
             return {
               joint: joint.joint,
               role: 'primary',
@@ -355,6 +243,7 @@ export default function EditExercisePage() {
         optional: store.reportMetrics.optional,
         excluded: store.reportMetrics.excluded,
       },
+      // Alternating configuration (optional)
       alternatingConfig: store.alternatingConfig.enabled && store.alternatingConfig.variants.length > 0
         ? {
             switchEvery: store.alternatingConfig.switchEvery,
@@ -367,22 +256,47 @@ export default function EditExercisePage() {
     };
   }, []);
   
-  // Handle step change with auto-save
+  // Auto-save on step change
   const handleStepChange = useCallback(async (newStep: number) => {
     if (newStep < 1 || newStep > TOTAL_STEPS) return;
     
     const store = useWizardStore.getState();
     
-    // Auto-save if dirty
-    if (store.isDirty && store.exerciseId) {
+    // Only auto-save if dirty and has basic info
+    if (store.isDirty && store.basicInfo.name?.en) {
       setSaveStatus('saving');
       
       try {
-        await fetch(`/api/exercises/${store.exerciseId}`, {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(buildPayload()),
-        });
+        if (store.exerciseId) {
+          const updateResponse = await fetch(`/api/exercises/${store.exerciseId}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(buildPayload()),
+          });
+          if (!updateResponse.ok) {
+            throw new Error(await extractApiError(updateResponse, 'Save failed'));
+          }
+          const updateData = await updateResponse.json();
+          if (!updateData?.success) {
+            throw new Error(updateData?.error || 'Save failed');
+          }
+        } else {
+          const response = await fetch('/api/exercises', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(buildPayload()),
+          });
+          if (!response.ok) {
+            throw new Error(await extractApiError(response, 'Save failed'));
+          }
+          const data = await response.json();
+          if (!data?.success) {
+            throw new Error(data?.error || 'Save failed');
+          }
+          if (data.data?.id) {
+            setExerciseId(data.data.id);
+          }
+        }
         markAsSaved();
       } catch (err) {
         setSaveStatus('error', err instanceof Error ? err.message : 'Save failed');
@@ -390,18 +304,43 @@ export default function EditExercisePage() {
     }
     
     setStep(newStep);
-  }, [setSaveStatus, markAsSaved, setStep, buildPayload]);
+  }, [setSaveStatus, markAsSaved, setExerciseId, setStep, buildPayload]);
   
-  // Save changes
-  const handleSave = async () => {
+  // Save as draft
+  const handleSaveDraft = async () => {
     setSaveStatus('saving');
     
     try {
-      await fetch(`/api/exercises/${exerciseId}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(buildPayload()),
-      });
+      if (exerciseId) {
+        const updateResponse = await fetch(`/api/exercises/${exerciseId}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(buildPayload()),
+        });
+        if (!updateResponse.ok) {
+          throw new Error(await extractApiError(updateResponse, 'Save failed'));
+        }
+        const updateData = await updateResponse.json();
+        if (!updateData?.success) {
+          throw new Error(updateData?.error || 'Save failed');
+        }
+      } else {
+        const response = await fetch('/api/exercises', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(buildPayload()),
+        });
+        if (!response.ok) {
+          throw new Error(await extractApiError(response, 'Save failed'));
+        }
+        const data = await response.json();
+        if (!data?.success) {
+          throw new Error(data?.error || 'Save failed');
+        }
+        if (data.data?.id) {
+          setExerciseId(data.data.id);
+        }
+      }
       markAsSaved();
     } catch (err) {
       setSaveStatus('error', err instanceof Error ? err.message : 'Save failed');
@@ -413,17 +352,51 @@ export default function EditExercisePage() {
     setSaveStatus('saving');
     
     try {
-      // Save first
-      await fetch(`/api/exercises/${exerciseId}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(buildPayload()),
-      });
+      let id = exerciseId;
       
-      // Then publish
-      await fetch(`/api/exercises/${exerciseId}/publish`, { method: 'POST' });
-      markAsSaved();
-      router.push('/admin/exercises');
+      if (!id) {
+        const response = await fetch('/api/exercises', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(buildPayload()),
+        });
+        if (!response.ok) {
+          throw new Error(await extractApiError(response, 'Save failed'));
+        }
+        const data = await response.json();
+        if (!data?.success) {
+          throw new Error(data?.error || 'Save failed');
+        }
+        id = data.data?.id;
+        if (id) setExerciseId(id);
+      } else {
+        const updateResponse = await fetch(`/api/exercises/${id}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(buildPayload()),
+        });
+        if (!updateResponse.ok) {
+          throw new Error(await extractApiError(updateResponse, 'Save failed'));
+        }
+        const updateData = await updateResponse.json();
+        if (!updateData?.success) {
+          throw new Error(updateData?.error || 'Save failed');
+        }
+      }
+      
+      if (id) {
+        const publishResponse = await fetch(`/api/exercises/${id}/publish`, { method: 'PUT' });
+        if (!publishResponse.ok) {
+          throw new Error(await extractApiError(publishResponse, 'Publish failed'));
+        }
+        const publishData = await publishResponse.json();
+        if (!publishData?.success) {
+          throw new Error(publishData?.error || 'Publish failed');
+        }
+        markAsSaved();
+        resetWizard();
+        router.push('/admin/exercises');
+      }
     } catch (err) {
       setSaveStatus('error', err instanceof Error ? err.message : 'Publish failed');
     }
@@ -483,10 +456,10 @@ export default function EditExercisePage() {
         <div className="text-center">
           <p className="text-red-600 mb-4">{error}</p>
           <button 
-            onClick={() => router.push('/admin/exercises')}
+            onClick={() => window.location.reload()}
             className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
           >
-            Back to Exercises
+            Retry
           </button>
         </div>
       </div>
@@ -502,8 +475,10 @@ export default function EditExercisePage() {
             <div className="flex items-center gap-4">
               <button
                 onClick={() => {
-                  resetWizard();
-                  router.push('/admin/exercises');
+                  if (confirm('Discard changes and go back?')) {
+                    resetWizard();
+                    router.push('/admin/exercises');
+                  }
                 }}
                 className="p-2 hover:bg-gray-100 rounded-lg"
               >
@@ -512,24 +487,17 @@ export default function EditExercisePage() {
                 </svg>
               </button>
               <div>
-                <div className="flex items-center gap-2">
-                  <h1 className="text-xl font-bold text-gray-900">Edit Exercise</h1>
-                  <span className={`text-xs px-2 py-1 rounded ${
-                    exerciseStatus === 'published' ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'
-                  }`}>
-                    {exerciseStatus === 'published' ? 'Published' : 'Draft'}
-                  </span>
-                </div>
+                <h1 className="text-xl font-bold text-gray-900">Create Exercise</h1>
                 <p className="text-sm text-gray-500">State-based configuration</p>
               </div>
             </div>
             <div className="flex items-center gap-3">
               <AutoSaveIndicator />
               <button
-                onClick={handleSave}
+                onClick={handleSaveDraft}
                 className="px-4 py-2 text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200"
               >
-                Save
+                Save Draft
               </button>
               {currentStep === TOTAL_STEPS && (
                 <button

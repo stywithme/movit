@@ -34,6 +34,25 @@
             android:textSize="12sp"
             android:text="Progress: 2/5 sessions" />
 
+        <com.google.android.material.progressindicator.LinearProgressIndicator
+            android:id="@+id/progressWeek"
+            android:layout_width="match_parent"
+            android:layout_height="6dp"
+            android:layout_marginTop="@dimen/spacing_sm"
+            android:indeterminate="false"
+            app:indicatorColor="@color/primary"
+            app:trackColor="@color/surface_border"
+            app:trackThickness="6dp" />
+
+        <TextView
+            android:id="@+id/tvWeekMessage"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="@dimen/spacing_sm"
+            android:textColor="@color/text_secondary"
+            android:textSize="12sp"
+            android:text="Great momentum this week." />
+
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
@@ -57,6 +76,15 @@
                 android:textSize="12sp"
                 android:text="Avg accuracy: 86%" />
         </LinearLayout>
+
+        <TextView
+            android:id="@+id/tvWeekDuration"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="2dp"
+            android:textColor="@color/text_hint"
+            android:textSize="12sp"
+            android:text="Time: 45m" />
     </LinearLayout>
 
 </com.google.android.material.card.MaterialCardView>

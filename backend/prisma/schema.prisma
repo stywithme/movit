@@ -350,15 +350,6 @@ model Workout {
   estimatedDurationMin   Int?
   tags                   Json?     // [ "upper-body", "no-equipment", ... ]
   
-  // Workout configuration (deprecated - kept for backward compatibility)
-  type                   String    // circuit | super_set
-  executionMode          String    // sequential | alternating
-  rounds                 Int       @default(1)
-  repsPerSwitch          Int?      // For alternating mode: reps before switching exercise
-  restBetweenSwitchMs    Int?      // For alternating mode: rest between switches
-  restBetweenExercisesMs Int?      // For sequential mode: rest between exercises
-  restBetweenRoundsMs    Int       @default(60000)
-  
   // Status & metadata
   status                 String    @default("draft") // draft, published
   publishedAt            DateTime?
@@ -372,7 +363,6 @@ model Workout {
   programSessionItems ProgramSessionItem[]
 
   @@index([status])
-  @@index([type])
   @@index([deletedAt])
   @@map("workouts")
 }

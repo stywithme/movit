@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:padding="@dimen/spacing_lg">
+
+    <TextView
+        android:id="@+id/tvExerciseSummaryTitle"
+        style="@style/TextAppearance.WayToFix.Headline3"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:textColor="@color/text_primary"
+        android:text="Push-ups" />
+
+    <TextView
+        android:id="@+id/tvExerciseSummaryMessage"
+        style="@style/TextAppearance.WayToFix.Body2"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="@dimen/spacing_sm"
+        android:textColor="@color/text_secondary"
+        android:text="Strong work. Your form stayed steady." />
+
+    <TextView
+        android:id="@+id/tvExerciseSummaryStats"
+        style="@style/TextAppearance.WayToFix.Caption"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="@dimen/spacing_sm"
+        android:textColor="@color/text_secondary"
+        android:text="Quality 84% · Sets 3/3 · Reps 30" />
+
+    <TextView
+        android:id="@+id/tvExerciseSummaryTip"
+        style="@style/TextAppearance.WayToFix.Caption"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="@dimen/spacing_sm"
+        android:textColor="@color/text_secondary"
+        android:text="Tip: Keep your core tight on the last reps." />
+
+</LinearLayout>

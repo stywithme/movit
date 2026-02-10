@@ -36,6 +36,14 @@ function validateSessionItem(item: ProgramSessionItemInput, index: number): stri
     if (item.targetDuration !== undefined && item.targetDuration <= 0) {
       errors.push(`${prefix}: targetDuration must be positive`);
     }
+    const hasTargetReps = item.targetReps !== undefined;
+    const hasTargetDuration = item.targetDuration !== undefined;
+    if (!hasTargetReps && !hasTargetDuration) {
+      errors.push(`${prefix}: either targetReps or targetDuration is required for exercise items`);
+    }
+    if (hasTargetReps && hasTargetDuration) {
+      errors.push(`${prefix}: provide only one target (targetReps or targetDuration), not both`);
+    }
     if (item.restBetweenSetsMs !== undefined && item.restBetweenSetsMs < 0) {
       errors.push(`${prefix}: restBetweenSetsMs must be non-negative`);
     }

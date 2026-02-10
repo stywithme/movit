@@ -354,6 +354,15 @@ function parseTrackedJoints(config: unknown): TrackedJoint[] {
     }
     
     if (joint.role === 'primary') {
+      // Hold exercises: primary has single range
+      if (joint.range) {
+        return {
+          ...baseJoint,
+          role: 'primary' as const,
+          range: joint.range as StateRanges,
+        } as PrimaryTrackedJoint;
+      }
+      // Rep exercises (up_down, push_pull): primary has upRange/downRange
       return {
         ...baseJoint,
         role: 'primary' as const,

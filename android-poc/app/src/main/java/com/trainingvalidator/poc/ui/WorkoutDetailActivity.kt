@@ -1,6 +1,5 @@
 package com.trainingvalidator.poc.ui
 
-import android.content.Intent
 import android.os.Bundle
 import android.util.Log
 import android.view.LayoutInflater
@@ -29,7 +28,7 @@ import com.trainingvalidator.poc.training.models.*
  * - Start button
  *
  * Navigation:
- * - ExercisesFragment / WorkoutListActivity → WorkoutDetailActivity → WorkoutActivity
+ * - ExercisesFragment / WorkoutListActivity → WorkoutDetailActivity (template preview)
  */
 class WorkoutDetailActivity : AppCompatActivity() {
 
@@ -105,9 +104,10 @@ class WorkoutDetailActivity : AppCompatActivity() {
         // Timeline
         setupTimeline(config)
 
-        // Start button
+        // Start button (template only)
+        binding.btnStartWorkout.text = getString(R.string.workout_template_only)
         binding.btnStartWorkout.setOnClickListener {
-            startWorkout()
+            showTemplateNotice()
         }
     }
 
@@ -196,13 +196,9 @@ class WorkoutDetailActivity : AppCompatActivity() {
         return normalized.replaceFirstChar { if (it.isLowerCase()) it.titlecase() else it.toString() }
     }
 
-    private fun startWorkout() {
-        val config = workoutConfig ?: return
-
-        val intent = Intent(this, WorkoutActivity::class.java).apply {
-            putExtra(WorkoutActivity.EXTRA_WORKOUT_NAME, config.fileName)
-        }
-        startActivity(intent)
+    private fun showTemplateNotice() {
+        Toast.makeText(this, getString(R.string.workout_template_only_message), Toast.LENGTH_LONG)
+            .show()
     }
 
     private fun getCurrentLanguage(): String {

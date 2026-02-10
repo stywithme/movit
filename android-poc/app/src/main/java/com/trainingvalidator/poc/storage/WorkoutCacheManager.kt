@@ -216,19 +216,23 @@ class WorkoutCacheManager(private val context: Context) {
         }
         
         for (workoutMeta in workouts) {
-            val cached = CachedWorkout(
-                id = workoutMeta.id,
-                slug = workoutMeta.slug,
-                updatedAt = workoutMeta.updatedAt,
-                config = workoutMeta.toWorkoutConfig()
-            )
-            
-            // Save to disk
-            val file = File(workoutsDir, "${cached.slug}.json")
-            file.writeText(gson.toJson(cached))
-            
-            // Update memory cache
-            workoutCache[cached.slug] = cached
+            try {
+                val cached = CachedWorkout(
+                    id = workoutMeta.id,
+                    slug = workoutMeta.slug,
+                    updatedAt = workoutMeta.updatedAt,
+                    config = workoutMeta.toWorkoutConfig()
+                )
+                
+                // Save to disk
+                val file = File(workoutsDir, "${cached.slug}.json")
+                file.writeText(gson.toJson(cached))
+                
+                // Update memory cache
+                workoutCache[cached.slug] = cached
+            } catch (e: Exception) {
+                Log.w(TAG, "Skipping invalid workout payload: slug=${workoutMeta.slug}", e)
+            }
         }
         
         Log.d(TAG, "Saved ${workouts.size} workouts")

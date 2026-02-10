@@ -149,11 +149,15 @@ class SyncManager(
             )
             
             if (!response.isSuccessful) {
+                // Allow immediate retry on network/server failure.
+                lastSyncAttempt = 0
                 return@withContext SyncResult.Error("Server error: ${response.code()}")
             }
             
             val body = response.body()
             if (body == null || !body.success) {
+                // Allow immediate retry when payload is invalid.
+                lastSyncAttempt = 0
                 return@withContext SyncResult.Error(body?.error ?: "Unknown error")
             }
             
@@ -161,9 +165,11 @@ class SyncManager(
             
         } catch (e: UnknownHostException) {
             Log.w(TAG, "Offline - using cached data")
+            lastSyncAttempt = 0
             return@withContext SyncResult.Offline
         } catch (e: Exception) {
             Log.e(TAG, "Sync failed", e)
+            lastSyncAttempt = 0
             return@withContext SyncResult.Error(e.message ?: "Unknown error", e)
         } finally {
             isSyncing = false

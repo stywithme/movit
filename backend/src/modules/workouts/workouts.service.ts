@@ -181,11 +181,6 @@ export const workoutService = {
         difficulty: data.difficulty ?? 'beginner',
         estimatedDurationMin: data.estimatedDurationMin ?? undefined,
         tags: data.tags ?? undefined,
-        // Deprecated fields (legacy support)
-        type: 'circuit',
-        executionMode: 'sequential',
-        rounds: 1,
-        restBetweenRoundsMs: 60000,
         status: 'draft',
         createdBy,
         updatedBy: createdBy,

@@ -27,7 +27,7 @@ import kotlinx.coroutines.withContext
  * Flow:
  * 1. User sees all workouts as cards
  * 2. User taps a workout card
- * 3. Navigate to WorkoutActivity (or WorkoutDetailActivity)
+ * 3. Navigate to WorkoutDetailActivity
  */
 class WorkoutListActivity : AppCompatActivity() {
 

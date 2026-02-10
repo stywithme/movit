@@ -180,7 +180,10 @@ class HomeFragment : Fragment() {
         binding.btnStartTodayPlan.setOnClickListener {
             val intent = Intent(requireContext(), ProgramSessionActivity::class.java).apply {
                 putExtra(ProgramSessionActivity.EXTRA_PROGRAM_SLUG, program.slug)
-                putExtra(ProgramSessionActivity.EXTRA_SESSION_ID, session.id)
+                putExtra(ProgramSessionActivity.EXTRA_PROGRAM_ID, program.id)
+                putExtra(ProgramSessionActivity.EXTRA_WEEK_NUMBER, week.weekNumber)
+                putExtra(ProgramSessionActivity.EXTRA_DAY_NUMBER, day.dayNumber)
+                putExtra(ProgramSessionActivity.EXTRA_TARGET_SESSION_ID, session.id)
             }
             startActivity(intent)
         }

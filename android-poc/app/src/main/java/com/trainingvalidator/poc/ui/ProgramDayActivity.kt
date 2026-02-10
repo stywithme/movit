@@ -165,7 +165,7 @@ class ProgramDayActivity : AppCompatActivity() {
                     getString(R.string.start_session)
                 }
                 btnPrimary.setOnClickListener {
-                    openSession(session)
+                    openSession(day.dayNumber, session)
                 }
 
                 btnSecondary.visibility = if (isCompleted) View.VISIBLE else View.GONE
@@ -182,11 +182,14 @@ class ProgramDayActivity : AppCompatActivity() {
         override fun getItemCount() = days.size
     }
 
-    private fun openSession(session: ProgramSession) {
+    private fun openSession(dayNumber: Int, session: ProgramSession) {
         val slug = program?.slug ?: return
         val intent = Intent(this, ProgramSessionActivity::class.java).apply {
             putExtra(ProgramSessionActivity.EXTRA_PROGRAM_SLUG, slug)
-            putExtra(ProgramSessionActivity.EXTRA_SESSION_ID, session.id)
+            putExtra(ProgramSessionActivity.EXTRA_PROGRAM_ID, program?.id ?: "")
+            putExtra(ProgramSessionActivity.EXTRA_WEEK_NUMBER, weekNumber)
+            putExtra(ProgramSessionActivity.EXTRA_DAY_NUMBER, dayNumber)
+            putExtra(ProgramSessionActivity.EXTRA_TARGET_SESSION_ID, session.id)
         }
         startActivity(intent)
     }

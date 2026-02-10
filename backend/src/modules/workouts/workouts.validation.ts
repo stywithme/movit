@@ -40,6 +40,14 @@ export function validateWorkoutExercise(
   if (exercise.targetDuration !== undefined && exercise.targetDuration <= 0) {
     errors.push(`${prefix}: targetDuration must be positive`);
   }
+  const hasTargetReps = exercise.targetReps !== undefined;
+  const hasTargetDuration = exercise.targetDuration !== undefined;
+  if (!hasTargetReps && !hasTargetDuration) {
+    errors.push(`${prefix}: either targetReps or targetDuration is required`);
+  }
+  if (hasTargetReps && hasTargetDuration) {
+    errors.push(`${prefix}: provide only one target (targetReps or targetDuration), not both`);
+  }
 
   if (exercise.sets !== undefined && exercise.sets <= 0) {
     errors.push(`${prefix}: sets must be positive`);

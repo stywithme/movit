@@ -55,7 +55,6 @@ import com.trainingvalidator.poc.training.report.FrameCaptureManager
 import com.trainingvalidator.poc.training.report.ReportGenerator
 import com.trainingvalidator.poc.storage.ReportStorage
 import com.trainingvalidator.poc.storage.ExerciseRepository
-import com.trainingvalidator.poc.storage.WorkoutRepository
 import com.trainingvalidator.poc.storage.AnalyticsStorage
 import com.trainingvalidator.poc.storage.AuthManager
 import com.trainingvalidator.poc.network.SessionSyncService
@@ -95,11 +94,8 @@ class TrainingActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetection
         const val EXTRA_POSE_VARIANT = "pose_variant"
         const val EXTRA_TRAINING_MODE = "training_mode"
         const val EXTRA_VIDEO_URI = "video_uri"
-        const val EXTRA_MAX_REPS_THIS_SESSION = "max_reps_this_session"
         const val EXTRA_TARGET_REPS_OVERRIDE = "target_reps_override"
         const val EXTRA_TARGET_DURATION_OVERRIDE = "target_duration_override"
-        const val EXTRA_WORKOUT_NAME = "workout_name"
-        const val EXTRA_IS_WORKOUT_MODE = "is_workout_mode"
         const val EXTRA_INDICATOR_TYPE = "indicator_type"
         const val EXTRA_WEIGHT_KG = "weight_kg"           // Weight in kilograms (optional)
         const val EXTRA_WEIGHT_UNIT = "weight_unit"       // "kg" or "lbs" (default: kg)
@@ -155,6 +151,8 @@ class TrainingActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetection
     private var isVideoMode = false
     private var videoUri: Uri? = null
     private var lastRepCount = 0
+    private var currentSessionSetRunId: Long = 0L
+    private var lastCompletedSessionSetRunId: Long = -1L
     private var isWeightDialogVisible = false
     private var hasShownWeightDialog = false
 
@@ -309,7 +307,7 @@ class TrainingActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetection
     }
     
     /**
-     * Initialize Exercise and Workout Repositories to ensure cached/synced data is available.
+     * Initialize Exercise Repository to ensure cached/synced data is available.
      * This is needed when TrainingActivity is launched directly (e.g., from deep link).
      * 
      * Strategy: Cache First, then Backend Sync if cache is empty.
@@ -317,7 +315,7 @@ class TrainingActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetection
     private fun initializeExerciseRepository() {
         try {
             kotlinx.coroutines.runBlocking {
-                // Initialize ExerciseRepository (this also syncs workouts via SyncManager)
+                // Initialize ExerciseRepository (syncs exercises and programs via SyncManager)
                 val exerciseRepo = ExerciseRepository.getInstance(this@TrainingActivity)
                 val exerciseSuccess = exerciseRepo.initialize(autoSync = true)
                 
@@ -325,16 +323,6 @@ class TrainingActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetection
                     Log.d(TAG, "ExerciseRepository initialized successfully")
                 } else {
                     Log.w(TAG, "ExerciseRepository initialized but no exercises available")
-                }
-                
-                // Initialize WorkoutRepository (loads from cache synced by ExerciseRepository)
-                val workoutRepo = WorkoutRepository.getInstance(this@TrainingActivity)
-                val workoutSuccess = workoutRepo.initialize()
-                
-                if (workoutSuccess) {
-                    Log.d(TAG, "WorkoutRepository initialized successfully")
-                } else {
-                    Log.w(TAG, "WorkoutRepository initialized but no workouts available")
                 }
             }
         } catch (e: Exception) {
@@ -378,7 +366,7 @@ class TrainingActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetection
             return
         }
         
-        // ── SINGLE EXERCISE / WORKOUT MODE ──
+        // ── SINGLE EXERCISE MODE ──
         val exerciseName = intent.getStringExtra(EXTRA_EXERCISE_NAME) ?: DEFAULT_EXERCISE
         val difficultyStr = intent.getStringExtra(EXTRA_DIFFICULTY) ?: DEFAULT_DIFFICULTY
         val poseVariantIndex = intent.getIntExtra(EXTRA_POSE_VARIANT, 0)
@@ -397,40 +385,24 @@ class TrainingActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetection
         }
         val weightUnit = intent.getStringExtra(EXTRA_WEIGHT_UNIT) ?: "kg"
         
-        // Workout mode
-        val workoutName = intent.getStringExtra(EXTRA_WORKOUT_NAME)
-        val isWorkoutMode = intent.getBooleanExtra(EXTRA_IS_WORKOUT_MODE, false) || workoutName != null
-        
-        // Load exercise or workout via ViewModel
-        if (isWorkoutMode && workoutName != null) {
-            if (!viewModel.loadWorkout(workoutName, difficultyStr, context = this)) {
-                Toast.makeText(
-                    this,
-                    getString(R.string.failed_to_load_workout_format, workoutName),
-                    Toast.LENGTH_LONG
-                ).show()
-                finish()
-                return
-            }
-        } else {
-            if (!viewModel.loadExercise(
-                    exerciseName,
-                    difficultyStr,
-                    poseVariantIndex,
-                    targetRepsOverride,
-                    targetDurationOverride,
-                    context = this,
-                    weightKg = weightKg,
-                    weightUnit = weightUnit
-                )) {
-                Toast.makeText(
-                    this,
-                    getString(R.string.failed_to_load_exercise_format, exerciseName),
-                    Toast.LENGTH_LONG
-                ).show()
-                finish()
-                return
-            }
+        // Load exercise via ViewModel
+        if (!viewModel.loadExercise(
+                exerciseName,
+                difficultyStr,
+                poseVariantIndex,
+                targetRepsOverride,
+                targetDurationOverride,
+                context = this,
+                weightKg = weightKg,
+                weightUnit = weightUnit
+            )) {
+            Toast.makeText(
+                this,
+                getString(R.string.failed_to_load_exercise_format, exerciseName),
+                Toast.LENGTH_LONG
+            ).show()
+            finish()
+            return
         }
         
         maybeShowWeightDialog()
@@ -573,6 +545,19 @@ class TrainingActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetection
             return
         }
 
+        val invalidExerciseItem = items.firstOrNull { it.type == "exercise" && it.exerciseSlug.isNullOrBlank() }
+        if (invalidExerciseItem != null) {
+            Log.e(TAG, "Invalid session payload: exercise item without exerciseSlug")
+            Toast.makeText(
+                this,
+                getString(R.string.session_invalid_payload),
+                Toast.LENGTH_LONG
+            ).show()
+            setResult(RESULT_CANCELED)
+            finish()
+            return
+        }
+
         // Create engine
         val engine = com.trainingvalidator.poc.training.session.SessionTrainingEngine(items)
 
@@ -617,6 +602,7 @@ class TrainingActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetection
                         // Training handled by supervisor - panels already hidden
                     }
                     is com.trainingvalidator.poc.training.session.SessionTrainingEngine.State.SetRest -> {
+                        showCelebrationMessage(getString(R.string.session_celebrate_set))
                         showSessionRest(
                             durationMs = sessionState.durationMs,
                             title = getString(R.string.session_rest_between_sets),
@@ -629,6 +615,7 @@ class TrainingActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetection
                         )
                     }
                     is com.trainingvalidator.poc.training.session.SessionTrainingEngine.State.ExerciseRest -> {
+                        showCelebrationMessage(getString(R.string.session_celebrate_exercise))
                         showSessionRest(
                             durationMs = sessionState.durationMs,
                             title = getString(R.string.session_rest_between_exercises),
@@ -639,6 +626,7 @@ class TrainingActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetection
                         )
                     }
                     is com.trainingvalidator.poc.training.session.SessionTrainingEngine.State.SessionComplete -> {
+                        showCelebrationMessage(getString(R.string.session_celebrate_session))
                         showSessionComplete(sessionState.report)
                     }
                 }
@@ -752,23 +740,25 @@ class TrainingActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetection
                 weightUnit = "kg"
             )) {
             Log.e(TAG, "Failed to load exercise for session: $slug")
-            // Skip this exercise
-            engine.onSetCompleted(
-                com.trainingvalidator.poc.training.session.SessionTrainingEngine.SetMetrics(
-                    exerciseSlug = slug,
-                    exerciseIndex = state.exerciseIndex,
-                    setNumber = state.setNumber,
-                    repsCompleted = 0,
-                    durationMs = 0L,
-                    accuracy = 0f,
-                    weightKg = weight
-                )
-            )
+            Toast.makeText(
+                this,
+                getString(R.string.session_exercise_load_failed),
+                Toast.LENGTH_LONG
+            ).show()
+            setResult(RESULT_CANCELED)
+            finish()
             return
         }
 
+        updateCounterLabelForCurrentExercise()
+
         // Mark session engine as training
         engine.startTraining()
+
+        // Track a unique run id for this set attempt.
+        // Both ExerciseCompleted and TrainingCompleted can arrive for the same set,
+        // so completion must be accepted once per run id only.
+        currentSessionSetRunId += 1L
 
         // Record set start time for duration tracking
         sessionSetStartTimeMs = System.currentTimeMillis()
@@ -843,6 +833,7 @@ class TrainingActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetection
 
         binding.tvSessionRestTitle.text = title
         binding.tvSessionRestNext.text = nextInfo
+        binding.tvSessionRestTip.text = getRestTip(title)
 
         startSessionRestTimer(durationMs)
 
@@ -901,6 +892,44 @@ class TrainingActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetection
             }
             .setNegativeButton(getString(R.string.cancel)) { dialog, _ -> dialog.dismiss() }
             .show()
+    }
+
+    private fun showCelebrationMessage(message: String) {
+        binding.glassmorphicMessage.showMessage(message, GlassmorphicMessageView.TYPE_MOTIVATION, 800)
+        vibrateShort()
+    }
+
+    private fun vibrateShort() {
+        val vibrator = if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.S) {
+            val manager = getSystemService(android.content.Context.VIBRATOR_MANAGER_SERVICE) as android.os.VibratorManager
+            manager.defaultVibrator
+        } else {
+            @Suppress("DEPRECATION")
+            getSystemService(android.content.Context.VIBRATOR_SERVICE) as android.os.Vibrator
+        }
+        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
+            vibrator.vibrate(android.os.VibrationEffect.createOneShot(80, android.os.VibrationEffect.DEFAULT_AMPLITUDE))
+        } else {
+            @Suppress("DEPRECATION")
+            vibrator.vibrate(80)
+        }
+    }
+
+    private fun getRestTip(title: String): String {
+        val tips = if (title.contains(getString(R.string.session_rest_between_sets), true)) {
+            listOf(
+                getString(R.string.rest_tip_breathe),
+                getString(R.string.rest_tip_quality),
+                getString(R.string.rest_tip_focus)
+            )
+        } else {
+            listOf(
+                getString(R.string.rest_tip_next),
+                getString(R.string.rest_tip_recovery),
+                getString(R.string.rest_tip_consistency)
+            )
+        }
+        return tips.random()
     }
 
     private fun playRestEndAlert() {
@@ -1260,12 +1289,14 @@ class TrainingActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetection
         lifecycleScope.launch {
             viewModel.exerciseName.collectLatest { name ->
                 AnimationUtils.crossfadeText(binding.tvExerciseName, name)
+                updateCounterLabelForCurrentExercise()
             }
         }
         
         // Observe rep count
         lifecycleScope.launch {
             viewModel.repCount.collectLatest { count ->
+                if (viewModel.isHoldExercise()) return@collectLatest
                 if (count != lastRepCount && count > 0) {
                     AnimationUtils.animateCounterChange(
                         binding.tvRepCount,
@@ -1312,20 +1343,20 @@ class TrainingActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetection
         }
         
         // Observe hold state
-        if (viewModel.isHoldExercise()) {
-            lifecycleScope.launch {
-                viewModel.holdElapsedMs.collectLatest { elapsed ->
-                    elapsed?.let {
-                        binding.tvRepCount.text = formatTimeMs(it)
-                        binding.tvProgress.text = "${formatTimeMs(it)} / ${formatTimeMs(viewModel.getTargetDurationMs())}"
-                    }
+        lifecycleScope.launch {
+            viewModel.holdElapsedMs.collectLatest { elapsed ->
+                if (!viewModel.isHoldExercise()) return@collectLatest
+                elapsed?.let {
+                    binding.tvRepCount.text = formatTimeMs(it)
+                    binding.tvProgress.text = "${formatTimeMs(it)} / ${formatTimeMs(viewModel.getTargetDurationMs())}"
                 }
             }
-            
-            lifecycleScope.launch {
-                viewModel.holdState.collectLatest { holdState ->
-                    holdState?.let { updateUIForHoldState(it) }
-                }
+        }
+
+        lifecycleScope.launch {
+            viewModel.holdState.collectLatest { holdState ->
+                if (!viewModel.isHoldExercise()) return@collectLatest
+                holdState?.let { updateUIForHoldState(it) }
             }
         }
         
@@ -1436,7 +1467,7 @@ class TrainingActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetection
             is TrainingUIEvent.ExerciseCompleted,
             is TrainingUIEvent.TrainingCompleted -> {
                 if (isSessionMode) {
-                    onSessionSetCompleted()
+                    tryHandleSessionSetCompleted()
                 } else {
                     completeTraining()
                 }
@@ -1448,23 +1479,6 @@ class TrainingActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetection
             
             is TrainingUIEvent.NoPoseWarning -> {
                 handleNoPoseWarning(event.elapsedMs)
-            }
-            
-            is TrainingUIEvent.ExerciseSwitched -> {
-                showExerciseSwitchIndicator(event.fromExercise, event.toExercise, event.repsThisSession)
-                
-                val trackedIndices = viewModel.getTrackedLandmarkIndices()
-                binding.skeletonOverlay.setTrainingMode(true, trackedIndices, useFrontCamera)
-            }
-            
-            is TrainingUIEvent.RoundCompleted -> {
-                binding.glassmorphicMessage.showMotivation(
-                    "Round ${event.roundNumber} Complete! ${event.totalRounds - event.roundNumber} more to go"
-                )
-            }
-            
-            is TrainingUIEvent.WorkoutCompleted -> {
-                completeWorkout(event.totalReps, event.accuracy, event.durationMs)
             }
             
             is TrainingUIEvent.PauseVideoPlayback -> {
@@ -1481,6 +1495,29 @@ class TrainingActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetection
                 // Intentionally no-op: future events should not crash UI.
             }
         }
+    }
+
+    private fun tryHandleSessionSetCompleted() {
+        if (currentSessionSetRunId <= 0L) {
+            Log.w(TAG, "Ignoring completion event without active set run id")
+            return
+        }
+
+        if (lastCompletedSessionSetRunId == currentSessionSetRunId) {
+            Log.d(
+                TAG,
+                "Ignoring duplicate session completion event for runId=$currentSessionSetRunId"
+            )
+            return
+        }
+
+        lastCompletedSessionSetRunId = currentSessionSetRunId
+        onSessionSetCompleted()
+    }
+
+    private fun updateCounterLabelForCurrentExercise() {
+        val labelRes = if (viewModel.isHoldExercise()) R.string.time else R.string.reps
+        binding.tvRepsLabel.text = getString(labelRes)
     }
     
     // ==================== UI Updates ====================
@@ -1682,22 +1719,6 @@ class TrainingActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetection
         binding.tvRepCount.setTextColor(color)
     }
     
-    private fun showExerciseSwitchIndicator(fromExercise: String, toExercise: String, repsThisSession: Int) {
-        val message = if (repsThisSession == 1) {
-            "→ $toExercise"
-        } else {
-            "→ $toExercise ($repsThisSession reps)"
-        }
-        
-        binding.glassmorphicMessage.showMessage(
-            message,
-            GlassmorphicMessageView.TYPE_INFO,
-            durationMs = 800
-        )
-        
-        AnimationUtils.crossfadeText(binding.tvExerciseName, toExercise)
-    }
-    
     // ==================== Completion ====================
     
     private var hasCompletedTraining = false  // Prevent duplicate calls
@@ -1725,37 +1746,13 @@ class TrainingActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetection
         generateReportAndNavigate()
     }
     
-    private fun completeWorkout(totalReps: Int, accuracy: Float, durationMs: Long) {
-        binding.skeletonOverlay.setTrainingMode(false)
-        
-        binding.tvSummaryReps.text = "$totalReps"
-        binding.tvSummaryCorrect.text = "${viewModel.workoutConfig.value?.exercises?.size ?: 0} exercises"
-        binding.tvSummaryAccuracy.text = "${accuracy.toInt()}%"
-        
-        val minutes = (durationMs / 60000).toInt()
-        val seconds = ((durationMs % 60000) / 1000).toInt()
-        binding.tvSummaryDuration.text = String.format("%02d:%02d", minutes, seconds)
-        
-        binding.btnFinish.setOnClickListener { finishWithResult() }
-        
-        binding.glassmorphicMessage.showMotivation("🎉 Workout Complete!")
-    }
-    
     private fun finishWithResult() {
         val resultIntent = android.content.Intent().apply {
-            if (viewModel.isWorkoutMode.value && viewModel.workoutTrainingEngine != null) {
-                val progressInfo = viewModel.workoutTrainingEngine!!.getProgressInfo()
-                putExtra(RESULT_REPS_COMPLETED, progressInfo.totalRepsCompleted)
-                putExtra(RESULT_DURATION_MS, viewModel.getSessionDurationMs())
-                putExtra(RESULT_ACCURACY, viewModel.getWorkoutAccuracy())
-                putExtra(RESULT_IS_COMPLETED, viewModel.workoutTrainingEngine!!.isWorkoutCompleted.value)
-            } else {
-                val engine = viewModel.trainingEngine
-                putExtra(RESULT_REPS_COMPLETED, engine?.getCurrentRep() ?: 0)
-                putExtra(RESULT_DURATION_MS, viewModel.getSessionDurationMs())
-                putExtra(RESULT_ACCURACY, engine?.getAccuracy() ?: 0f)
-                putExtra(RESULT_IS_COMPLETED, engine?.isCompleted?.value ?: false)
-            }
+            val engine = viewModel.trainingEngine
+            putExtra(RESULT_REPS_COMPLETED, engine?.getCurrentRep() ?: 0)
+            putExtra(RESULT_DURATION_MS, viewModel.getSessionDurationMs())
+            putExtra(RESULT_ACCURACY, engine?.getAccuracy() ?: 0f)
+            putExtra(RESULT_IS_COMPLETED, engine?.isCompleted?.value ?: false)
         }
         
         setResult(RESULT_OK, resultIntent)

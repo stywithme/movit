@@ -26,7 +26,6 @@ import com.trainingvalidator.poc.training.models.WorkoutConfig
 import com.trainingvalidator.poc.ui.PreWorkoutActivity
 import com.trainingvalidator.poc.ui.WorkoutListActivity
 import com.trainingvalidator.poc.ui.ProgramListActivity
-import com.trainingvalidator.poc.ui.WorkoutActivity
 import com.trainingvalidator.poc.ui.WorkoutDetailActivity
 import kotlinx.coroutines.launch
 

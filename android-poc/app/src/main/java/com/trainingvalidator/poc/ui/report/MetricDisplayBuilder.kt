@@ -309,11 +309,18 @@ object MetricDisplayBuilder {
         isArabic: Boolean
     ): MessageItem {
         val quickInsight = report.quickInsight ?: QuickInsightGenerator.generate(report)
+        val progressLine = buildProgressLine(report, isArabic)
+        val baseSubtitle = if (isArabic) quickInsight.subtitle.ar else quickInsight.subtitle.en
+        val mergedSubtitle = when {
+            progressLine.isBlank() -> baseSubtitle
+            baseSubtitle.isBlank() -> progressLine
+            else -> "$baseSubtitle\n$progressLine"
+        }
         
         return MessageItem(
             icon = quickInsight.icon,
             text = if (isArabic) quickInsight.title.ar else quickInsight.title.en,
-            subtext = if (isArabic) quickInsight.subtitle.ar else quickInsight.subtitle.en,
+            subtext = mergedSubtitle,
             type = quickInsight.type
         )
     }
@@ -367,6 +374,36 @@ object MetricDisplayBuilder {
             score >= 70 -> MetricStatus.FAIR
             else -> MetricStatus.NEEDS_WORK
         }
+    }
+
+    private fun buildProgressLine(report: PostTrainingReport, isArabic: Boolean): String {
+        val summary = report.summary
+        val hasNoReps = summary.totalReps == 0 && report.repTimeline.isEmpty()
+
+        val qualityText = if (hasNoReps) {
+            ""
+        } else {
+            val score = report.overallQuality?.getFormattedScore() ?: summary.getFormattedScore()
+            if (isArabic) "الجودة $score" else "Quality $score"
+        }
+
+        val timeText = if (isArabic) {
+            "الوقت ${summary.getFormattedDuration()}"
+        } else {
+            "Time ${summary.getFormattedDuration()}"
+        }
+
+        val repsOrHold = if (report.isHoldExercise()) {
+            val hold = report.holdSummary?.getFormattedAchieved() ?: ""
+            if (hold.isBlank()) "" else if (isArabic) "الثبات $hold" else "Hold $hold"
+        } else {
+            val repsCount = maxOf(summary.totalReps, report.repTimeline.size)
+            if (isArabic) "العدات $repsCount" else "Reps $repsCount"
+        }
+
+        return listOf(qualityText, repsOrHold, timeText)
+            .filter { it.isNotBlank() }
+            .joinToString(separator = " · ")
     }
 }
 

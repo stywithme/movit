@@ -110,11 +110,11 @@ data class ExerciseConfigWithMeta(
             imageUrl = imageUrl,
             category = category,
             countingMethod = countingMethod,
-            muscles = muscles ?: emptyList(),
-            equipment = equipment ?: emptyList(),
-            tags = tags ?: emptyList(),
-            poseVariants = poseVariants ?: emptyList(),
-            repCountingConfig = repCountingConfig ?: com.trainingvalidator.poc.training.models.RepCountingConfig(),
+            muscles = muscles,
+            equipment = equipment,
+            tags = tags,
+            poseVariants = poseVariants,
+            repCountingConfig = repCountingConfig,
             // Weight & Metrics
             supportsWeight = supportsWeight,
             minWeight = minWeight,
@@ -158,8 +158,8 @@ data class WorkoutConfigWithMeta(
     val coverImageUrl: String? = null,
     val difficulty: String = "beginner",
     val estimatedDurationMin: Int? = null,
-    val tags: List<String> = emptyList(),
-    val exercises: List<WorkoutExercise> = emptyList()
+    val tags: List<String>? = emptyList(),
+    val exercises: List<WorkoutExercise>? = emptyList()
 ) {
     /**
      * Convert to WorkoutConfig (without meta)
@@ -169,7 +169,7 @@ data class WorkoutConfigWithMeta(
             name = name,
             description = description,
             coverImageUrl = coverImageUrl,
-            difficulty = difficulty ?: "beginner",
+            difficulty = difficulty,
             estimatedDurationMin = estimatedDurationMin,
             tags = tags ?: emptyList(),
             exercises = exercises ?: emptyList(),
@@ -190,8 +190,8 @@ data class ProgramConfigWithMeta(
     val coverImageUrl: String? = null,
     val durationWeeks: Int,
     val difficulty: String = "beginner",
-    val tags: List<String> = emptyList(),
-    val weeks: List<ProgramWeek> = emptyList()
+    val tags: List<String>? = emptyList(),
+    val weeks: List<ProgramWeek>? = emptyList()
 ) {
     fun toProgramConfig(): ProgramConfig {
         return ProgramConfig(
@@ -201,7 +201,7 @@ data class ProgramConfigWithMeta(
             description = description,
             coverImageUrl = coverImageUrl,
             durationWeeks = durationWeeks,
-            difficulty = difficulty ?: "beginner",
+            difficulty = difficulty,
             tags = tags ?: emptyList(),
             weeks = weeks ?: emptyList()
         )

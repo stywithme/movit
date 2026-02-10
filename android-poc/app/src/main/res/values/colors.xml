@@ -30,6 +30,7 @@
     <color name="surface_elevated">#142A0C</color>     <!-- Elevated cards -->
     <color name="surface_border">#1E3A12</color>       <!-- Border for cards/inputs -->
     <color name="surface_border_accent">#2A4A1C</color><!-- Active/focused border -->
+    <color name="divider">#1A2A1C</color>              <!-- Divider lines -->
 
     <!-- ═══════════════════════════════════════════════════ -->
     <!-- TEXT COLORS (Core System) -->

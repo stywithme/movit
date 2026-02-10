@@ -150,17 +150,21 @@ class ProgramCacheManager(private val context: Context) {
         }
 
         for (programMeta in programs) {
-            val cached = CachedProgram(
-                id = programMeta.id,
-                slug = programMeta.slug,
-                updatedAt = programMeta.updatedAt,
-                config = programMeta.toProgramConfig()
-            )
+            try {
+                val cached = CachedProgram(
+                    id = programMeta.id,
+                    slug = programMeta.slug,
+                    updatedAt = programMeta.updatedAt,
+                    config = programMeta.toProgramConfig()
+                )
 
-            val file = File(programsDir, "${cached.slug}.json")
-            file.writeText(gson.toJson(cached))
+                val file = File(programsDir, "${cached.slug}.json")
+                file.writeText(gson.toJson(cached))
 
-            programCache[cached.slug] = cached
+                programCache[cached.slug] = cached
+            } catch (e: Exception) {
+                Log.w(TAG, "Skipping invalid program payload: slug=${programMeta.slug}", e)
+            }
         }
 
         Log.d(TAG, "Saved ${programs.size} programs")

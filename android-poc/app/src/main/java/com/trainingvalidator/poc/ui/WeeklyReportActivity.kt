@@ -79,8 +79,12 @@ class WeeklyReportActivity : AppCompatActivity() {
         inner class ViewHolder(view: android.view.View) : RecyclerView.ViewHolder(view) {
             val tvWeekTitle: TextView = view.findViewById(R.id.tvWeekTitle)
             val tvWeekProgress: TextView = view.findViewById(R.id.tvWeekProgress)
+            val progressWeek: com.google.android.material.progressindicator.LinearProgressIndicator =
+                view.findViewById(R.id.progressWeek)
+            val tvWeekMessage: TextView = view.findViewById(R.id.tvWeekMessage)
             val tvWeekReps: TextView = view.findViewById(R.id.tvWeekReps)
             val tvWeekAccuracy: TextView = view.findViewById(R.id.tvWeekAccuracy)
+            val tvWeekDuration: TextView = view.findViewById(R.id.tvWeekDuration)
         }
 
         override fun onCreateViewHolder(parent: android.view.ViewGroup, viewType: Int): ViewHolder {
@@ -95,6 +99,7 @@ class WeeklyReportActivity : AppCompatActivity() {
             val totalSessions = week.days.sumOf { day -> day.sessions.size }
             val completedSessions = reports.size
             val totalReps = reports.sumOf { it.totalReps }
+            val totalDurationMs = reports.sumOf { it.totalDurationMs }
             val avgAccuracy = if (reports.isNotEmpty()) {
                 reports.map { it.averageAccuracy }.average().toFloat()
             } else {
@@ -107,10 +112,43 @@ class WeeklyReportActivity : AppCompatActivity() {
             } else {
                 getString(R.string.week_progress_format, completedSessions, totalSessions)
             }
+            holder.progressWeek.progress = if (totalSessions > 0) {
+                (completedSessions * 100) / totalSessions
+            } else {
+                0
+            }
+
+            holder.tvWeekMessage.text = getWeekMessage(completedSessions, totalSessions, avgAccuracy)
             holder.tvWeekReps.text = getString(R.string.week_reps_format, totalReps)
             holder.tvWeekAccuracy.text = getString(R.string.week_accuracy_format, avgAccuracy.toInt())
+            holder.tvWeekDuration.text = getString(
+                R.string.week_duration_format,
+                formatDuration(totalDurationMs)
+            )
         }
 
         override fun getItemCount() = weeks.size
+    }
+
+    private fun getWeekMessage(completed: Int, total: Int, avgAccuracy: Float): String {
+        if (total == 0) return getString(R.string.week_message_start)
+        val progress = completed.toFloat() / total
+        return when {
+            completed == 0 -> getString(R.string.week_message_start)
+            progress >= 0.9f && avgAccuracy >= 85 -> getString(R.string.week_message_excellent)
+            progress >= 0.6f -> getString(R.string.week_message_good)
+            else -> getString(R.string.week_message_keep_going)
+        }
+    }
+
+    private fun formatDuration(durationMs: Long): String {
+        val totalMinutes = (durationMs / 60000).toInt()
+        val hours = totalMinutes / 60
+        val minutes = totalMinutes % 60
+        return if (hours > 0) {
+            getString(R.string.duration_hours_minutes_format, hours, minutes)
+        } else {
+            getString(R.string.duration_minutes_format, minutes)
+        }
     }
 }

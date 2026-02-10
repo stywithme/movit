@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout
     xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:orientation="vertical"
@@ -10,57 +11,109 @@
         android:id="@+id/tvDialogTitle"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="Edit Exercise"
+        android:text="@string/ds_edit_exercise_title"
         android:textColor="@color/text_primary"
         android:textSize="18sp"
         android:textStyle="bold" />
+
+    <!-- Exercise selector -->
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="@dimen/spacing_md"
+        android:text="Exercise"
+        android:textColor="@color/text_secondary"
+        android:textSize="12sp" />
 
     <Spinner
         android:id="@+id/spinnerExercise"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginTop="@dimen/spacing_md" />
+        android:layout_marginTop="4dp"
+        android:background="@color/surface_variant"
+        android:padding="@dimen/spacing_sm" />
 
-    <EditText
-        android:id="@+id/inputSets"
+    <!-- Sets -->
+    <com.google.android.material.textfield.TextInputLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_marginTop="@dimen/spacing_md"
-        android:hint="Sets"
-        android:inputType="number" />
+        android:hint="@string/ds_sets_label"
+        style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox">
 
-    <EditText
-        android:id="@+id/inputTargetReps"
+        <com.google.android.material.textfield.TextInputEditText
+            android:id="@+id/inputSets"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:inputType="number"
+            android:textColor="@color/text_primary" />
+    </com.google.android.material.textfield.TextInputLayout>
+
+    <!-- Target Reps -->
+    <com.google.android.material.textfield.TextInputLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_marginTop="@dimen/spacing_sm"
-        android:hint="Target Reps"
-        android:inputType="number" />
+        android:hint="@string/ds_reps_label"
+        style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox">
 
-    <EditText
-        android:id="@+id/inputTargetDuration"
+        <com.google.android.material.textfield.TextInputEditText
+            android:id="@+id/inputTargetReps"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:inputType="number"
+            android:textColor="@color/text_primary" />
+    </com.google.android.material.textfield.TextInputLayout>
+
+    <!-- Target Duration -->
+    <com.google.android.material.textfield.TextInputLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_marginTop="@dimen/spacing_sm"
-        android:hint="Target Duration (sec)"
-        android:inputType="number" />
+        android:hint="@string/ds_duration_label"
+        style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox">
 
-    <EditText
-        android:id="@+id/inputRestBetweenSets"
+        <com.google.android.material.textfield.TextInputEditText
+            android:id="@+id/inputTargetDuration"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:inputType="number"
+            android:textColor="@color/text_primary" />
+    </com.google.android.material.textfield.TextInputLayout>
+
+    <!-- Rest Between Sets -->
+    <com.google.android.material.textfield.TextInputLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_marginTop="@dimen/spacing_sm"
-        android:hint="Rest Between Sets (ms)"
-        android:inputType="number" />
+        android:hint="@string/ds_rest_between_sets_label"
+        style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox">
 
-    <EditText
-        android:id="@+id/inputWeightKg"
+        <com.google.android.material.textfield.TextInputEditText
+            android:id="@+id/inputRestBetweenSets"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:inputType="number"
+            android:textColor="@color/text_primary" />
+    </com.google.android.material.textfield.TextInputLayout>
+
+    <!-- Weight -->
+    <com.google.android.material.textfield.TextInputLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_marginTop="@dimen/spacing_sm"
-        android:hint="Weight (kg)"
-        android:inputType="numberDecimal" />
+        android:hint="@string/ds_weight_label"
+        style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox">
 
+        <com.google.android.material.textfield.TextInputEditText
+            android:id="@+id/inputWeightKg"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:inputType="numberDecimal"
+            android:textColor="@color/text_primary" />
+    </com.google.android.material.textfield.TextInputLayout>
+
+    <!-- Buttons -->
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
@@ -82,7 +135,7 @@
             android:layout_height="44dp"
             android:layout_marginStart="@dimen/spacing_sm"
             android:layout_weight="1"
-            android:text="@string/save" />
+            android:text="@string/ds_save" />
     </LinearLayout>
 
 </LinearLayout>

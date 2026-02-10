@@ -29,8 +29,83 @@
     <string name="programs_history">Programs</string>
     <string name="programs_subtitle">Choose a program and plan your training</string>
     <string name="browse_programs">Browse Programs</string>
+    <string name="programs_empty_title">No programs found</string>
+    <string name="programs_empty_subtitle">Sync to load programs</string>
     <string name="active_program">Active Program</string>
     <string name="today_plan">Today Plan</string>
+    <string name="programs_start_today">Start Today\'s Session</string>
+    <string name="programs_today_plan">Today\'s Plan</string>
+    <string name="programs_overview">Program Overview</string>
+    <string name="programs_view_full">View Full Program</string>
+    <string name="programs_no_active_title">Ready to start training?</string>
+    <string name="programs_no_active_subtitle">We built a beginner program to guide you step by step.</string>
+    <string name="programs_start_first">Start My First Program</string>
+    <string name="programs_browse_other">Browse other programs</string>
+    <string name="programs_complete_title">Program complete</string>
+    <string name="programs_complete_subtitle">You\'ve finished this program. Time for the next challenge.</string>
+    <string name="programs_complete_label">All sessions completed</string>
+    <string name="programs_view_journey">See Your Journey</string>
+    <string name="programs_start_next">Start Next Challenge</string>
+    <string name="programs_today_format">Today: %1$s</string>
+    <string name="programs_day_title_format">Day %1$d</string>
+    <string name="programs_day_title_only">Day %1$d</string>
+    <string name="programs_day_detail_title_format">%1$s</string>
+    <string name="programs_day_progress_format">Day %1$d of %2$d</string>
+    <string name="programs_exercises_count_format">%1$d exercises</string>
+    <string name="programs_week_summary_format">Week %1$d of %2$d · %3$s</string>
+    <string name="programs_week_message_first_day">Every journey starts with one step</string>
+    <string name="programs_week_message_consistency">Consistency beats perfection</string>
+    <string name="programs_week_message_default">You\'re doing great!</string>
+    <string name="programs_plan_rest_format">Rest %1$ds</string>
+    <string name="programs_plan_rounds_format">%1$d rounds</string>
+    <string name="programs_plan_reps_format">%1$d reps</string>
+    <string name="programs_plan_hold_format">%1$ds hold</string>
+    <string name="programs_plan_next">Next</string>
+    <string name="programs_rest_label">Rest</string>
+    <string name="programs_rest_short">R</string>
+    <string name="programs_exercise_unknown">Exercise</string>
+    <string name="programs_motivation_default">You\'re doing great!</string>
+    <string name="programs_motivation_first_day">Every journey starts with a single step</string>
+    <string name="programs_motivation_consistency">Consistency beats perfection</string>
+    <string name="programs_motivation_streak">Keep the streak alive</string>
+    <string name="programs_motivation_returning">Welcome back. Let\'s build momentum again</string>
+    <string name="programs_motivation_halfway">Halfway there. You are doing great.</string>
+    <string name="programs_motivation_format_progress">🔥 %1$d days · %2$d%% · %3$s</string>
+    <string name="programs_overview_meta_format">%1$s · %2$d%% complete</string>
+    <string name="programs_sessions_count_format">%1$d sessions</string>
+    <string name="programs_session_done">Done</string>
+    <string name="programs_session_not_started">Not started</string>
+    <string name="programs_view_summary">View Summary</string>
+    <string name="programs_start_session">Start Session</string>
+    <string name="programs_rest_day_hint">Rest day. Take it easy and recover.</string>
+    <string name="return_title">Welcome back</string>
+    <string name="return_subtitle">We can continue from where you left off or start the week fresh.</string>
+    <string name="return_continue">Continue from last session</string>
+    <string name="return_restart_week">Start week fresh</string>
+    <string name="return_greeting_format">%1$s Welcome back!</string>
+    <string name="programs_customize">Customize</string>
+    <string name="programs_customize_done">Done</string>
+    <string name="programs_advanced_options">Advanced options</string>
+    <string name="replace">Replace</string>
+    <string name="replace_exercise_title">Replace Exercise</string>
+    <string name="replace_easier">Easier alternatives</string>
+    <string name="replace_similar">Similar level</string>
+    <string name="replace_harder">More challenging</string>
+    <string name="replace_recommended">Recommended</string>
+    <string name="replace_edit_details">Edit details instead</string>
+    <string name="replace_hint_bodyweight">Same muscles, less strain</string>
+    <string name="replace_hint_weighted">More challenge, more strength</string>
+    <string name="add_exercise_title">Add Exercise</string>
+    <string name="add_exercise_button">Add Exercise</string>
+    <string name="add_rest_title">Add Rest</string>
+    <string name="add_rest_subtitle">Choose a rest duration</string>
+    <string name="add_rest_button">Add Rest</string>
+    <string name="week_message_start">Start strong this week</string>
+    <string name="week_message_good">Great momentum this week</string>
+    <string name="week_message_excellent">Outstanding week. Keep it up.</string>
+    <string name="week_message_keep_going">Good effort. You are building a habit.</string>
+    <string name="week_duration_format">Time: %1$s</string>
+    <string name="duration_hours_minutes_format">%1$dh %2$dm</string>
     <string name="today_plan_title_format">Week %1$d · Day %2$d</string>
     <string name="today_plan_session_format">%1$s • %2$d items</string>
     <string name="view_program">View Program</string>
@@ -223,6 +298,8 @@
     <string name="workout_detail_rounds">Rounds</string>
     <string name="sets">Sets</string>
     <string name="workout_detail_start_workout">Start Workout</string>
+    <string name="workout_template_only">Template Only</string>
+    <string name="workout_template_only_message">This workout is a template. Use Programs to train.</string>
     <string name="workout_detail_round_format">ROUND %1$d</string>
     <string name="workout_detail_rest_format">Rest %1$d sec</string>
     <string name="workout_detail_round_rest_format">Round rest %1$d sec</string>
@@ -435,6 +512,24 @@
     <string name="session_report_exercises_title">Exercise Breakdown</string>
     <string name="session_report_weights_format">Weights: %1$s</string>
     <string name="session_report_weights_empty">Weights: --</string>
+    <string name="session_report_quality_format">Quality: %1$s</string>
+    <string name="session_message_excellent">Amazing session. Your form and focus were strong.</string>
+    <string name="session_message_good">Great job. You made real progress today.</string>
+    <string name="session_message_keep_going">Good effort. Keep going and you will build momentum.</string>
+    <string name="session_message_get_started">Ready to begin? One small step today is enough.</string>
+    <string name="quality_excellent">Excellent</string>
+    <string name="quality_good">Good</string>
+    <string name="quality_ok">Okay</string>
+    <string name="quality_keep_practicing">Keep practicing</string>
+    <string name="session_share_text_format">I completed %1$d/%2$d sets in %3$02d:%4$02d with %5$d%% quality.</string>
+    <string name="exercise_summary_message_excellent">Outstanding form. You nailed it.</string>
+    <string name="exercise_summary_message_good">Great job. Your form stayed solid.</string>
+    <string name="exercise_summary_message_ok">Good effort. Keep building control.</string>
+    <string name="exercise_summary_message_keep_practicing">Nice try. You will improve quickly.</string>
+    <string name="exercise_summary_tip_keep">Tip: Maintain the same pace next time.</string>
+    <string name="exercise_summary_tip_focus">Tip: Focus on control through the last reps.</string>
+    <string name="exercise_summary_tip_slow">Tip: Slow down and prioritize form.</string>
+    <string name="exercise_summary_stats_format">Quality %1$d%% · Sets %2$d/%3$d · Reps %4$d</string>
     <string name="session_exit_title">Exit Session?</string>
     <string name="session_exit_message">You can continue later, but this session will be incomplete.</string>
     <string name="session_exit_keep">Keep Training</string>
@@ -453,6 +548,15 @@
     <string name="session_weight_format">Weight: %1$.1f kg</string>
     <string name="session_rest_between_sets">REST BETWEEN SETS</string>
     <string name="session_rest_between_exercises">REST BETWEEN EXERCISES</string>
+    <string name="session_celebrate_set">Set complete!</string>
+    <string name="session_celebrate_exercise">Exercise complete!</string>
+    <string name="session_celebrate_session">Session complete!</string>
+    <string name="rest_tip_breathe">Slow breath in, slow breath out.</string>
+    <string name="rest_tip_quality">Quality beats speed. You are doing great.</string>
+    <string name="rest_tip_focus">Focus on control for the next round.</string>
+    <string name="rest_tip_next">Next up: stay steady and smooth.</string>
+    <string name="rest_tip_recovery">Rest helps your muscles recover.</string>
+    <string name="rest_tip_consistency">Consistency builds real progress.</string>
     <string name="rest_seconds_hint">Rest seconds</string>
     <string name="alternating_label_format">Alternating: %1$s</string>
     <string name="session_set_indicator_format">Set %1$d of %2$d</string>
@@ -462,4 +566,124 @@
     <string name="session_complete_reps_format">Total Reps: %1$d</string>
     <string name="session_complete_duration_format">Duration: %1$02d:%2$02d</string>
     <string name="session_complete_accuracy_format">Average Accuracy: %1$d%%</string>
+    <string name="session_invalid_payload">Session data is invalid. Please sync and try again.</string>
+    <string name="session_exercise_load_failed">Failed to load exercise. Please return and adjust the session.</string>
+
+    <!-- ═══════════════════════════════════════════════════ -->
+    <!-- Program Page (Redesigned)                          -->
+    <!-- ═══════════════════════════════════════════════════ -->
+    <!-- Browse State -->
+    <string name="pg_browse_title">Programs</string>
+    <string name="pg_browse_subtitle">Choose a training program to start your journey</string>
+    <string name="pg_view_details">View Details</string>
+    <string name="pg_subscribe">Subscribe</string>
+    <string name="pg_stats_format">%1$d weeks · %2$d sessions</string>
+
+    <!-- Identity Card -->
+    <string name="pg_position_format">Week %1$d of %2$d · Day %3$d</string>
+    <string name="pg_days_trained_format">📅 %1$d days trained</string>
+    <string name="pg_streak_format">🔥 %1$d day streak</string>
+
+    <!-- Week Calendar -->
+    <string name="pg_week_format">Week %1$d</string>
+
+    <!-- Today Section -->
+    <string name="pg_today_format">TODAY — Day %1$d</string>
+    <string name="pg_today_rest">TODAY — Rest Day</string>
+    <string name="pg_session_exercises_format">%1$d exercises · ~%2$d min</string>
+    <string name="pg_more_items_format">+%1$d more items</string>
+    <string name="pg_start_session">▶  Start Session</string>
+    <string name="pg_continue_session">▶  Continue Session</string>
+    <string name="pg_session_completed">✅ Completed</string>
+
+    <!-- Session Item Display -->
+    <string name="pg_item_sets_reps_format">%1$d sets · %2$d reps</string>
+    <string name="pg_item_sets_hold_format">%1$d sets · %2$ds hold</string>
+    <string name="pg_item_rest_format">Rest %1$ds</string>
+
+    <!-- Day Complete -->
+    <string name="pg_day_complete_title">🎉 Day Complete!</string>
+    <string name="pg_day_complete_format">%1$d/%2$d sessions completed · Total: %3$d min</string>
+    <string name="pg_view_day_summary">View Day Summary</string>
+
+    <!-- Rest Day -->
+    <string name="pg_rest_day_title">☁️ Rest Day</string>
+    <string name="pg_rest_day_message">Your muscles grow while you rest. Enjoy it!</string>
+    <string name="pg_rest_tomorrow_format">Tomorrow: %1$s · %2$d exercises</string>
+
+    <!-- Report Section -->
+    <string name="pg_report_title">Your Progress</string>
+    <string name="pg_report_days_label">Days\nTrained</string>
+    <string name="pg_report_exercises_label">Exercises\nDone</string>
+    <string name="pg_report_time_label">Total\nTime</string>
+    <string name="pg_report_reps_label">Total\nReps</string>
+    <string name="pg_report_accuracy_label">Avg\nAccuracy</string>
+    <string name="pg_report_sets_label">Sets\nDone</string>
+    <string name="pg_report_insight_improving">📈 Your form is improving! Keep it up.</string>
+    <string name="pg_report_insight_started">💪 Great start! Keep the momentum going.</string>
+    <string name="pg_report_insight_consistent">🔥 Consistency is your superpower!</string>
+    <string name="pg_view_full_reports">View Full Reports →</string>
+    <string name="pg_browse_all_programs">Browse All Programs</string>
+
+    <!-- Program Complete -->
+    <string name="pg_complete_title">🏆 You Did It!</string>
+    <string name="pg_complete_subtitle">You\'ve completed the program. Look how far you\'ve come!</string>
+    <string name="pg_view_journey">See Your Journey</string>
+    <string name="pg_start_next">Start Next Challenge</string>
+
+    <!-- ═══════════════════════════════════════════════════ -->
+    <!-- Day Session Page                                   -->
+    <!-- ═══════════════════════════════════════════════════ -->
+    <string name="ds_day_title_format">Day %1$d — %2$s</string>
+    <string name="ds_day_subtitle_format">Week %1$d · %2$d sessions</string>
+    <string name="ds_start_session">Start Session</string>
+    <string name="ds_continue_session">Continue</string>
+    <string name="ds_session_completed">Completed</string>
+    <string name="ds_session_up_next">Up Next</string>
+    <string name="ds_session_locked">Locked</string>
+
+    <!-- Session card -->
+    <string name="ds_exercises_meta_format">%1$d exercises · ~%2$d min</string>
+    <string name="ds_items_meta_format">%1$d items · ~%2$d min</string>
+
+    <!-- Timeline items -->
+    <string name="ds_sets_reps_format">%1$d sets · %2$d reps</string>
+    <string name="ds_sets_hold_format">%1$d sets · %2$ds hold</string>
+    <string name="ds_sets_reps_weight_format">%1$d sets · %2$d reps · %3$.1f kg</string>
+    <string name="ds_sets_hold_weight_format">%1$d sets · %2$ds hold · %3$.1f kg</string>
+    <string name="ds_rest_format">Rest · %1$ds</string>
+    <string name="ds_sets_only_format">%1$d sets</string>
+
+    <!-- Edit mode -->
+    <string name="ds_rename">Rename</string>
+    <string name="ds_delete">Delete</string>
+    <string name="ds_done">Done</string>
+    <string name="ds_reset_all">Reset to Original</string>
+    <string name="ds_edit_mode">Edit</string>
+
+    <!-- Rename dialog -->
+    <string name="ds_rename_session_title">Rename Session</string>
+    <string name="ds_rename_en_hint">Name (English)</string>
+    <string name="ds_rename_ar_hint">Name (Arabic)</string>
+
+    <!-- Delete confirmation -->
+    <string name="ds_delete_session_title">Delete Session?</string>
+    <string name="ds_delete_session_message">This session will be removed from today\'s plan. You can reset to original anytime.</string>
+    <string name="ds_delete_item_title">Remove Item?</string>
+    <string name="ds_delete_item_message">This item will be removed from the session.</string>
+
+    <!-- Edit item dialog -->
+    <string name="ds_edit_exercise_title">Edit Exercise</string>
+    <string name="ds_edit_rest_title">Edit Rest</string>
+    <string name="ds_sets_label">Sets</string>
+    <string name="ds_reps_label">Reps</string>
+    <string name="ds_duration_label">Duration (s)</string>
+    <string name="ds_weight_label">Weight (kg)</string>
+    <string name="ds_rest_between_sets_label">Rest Between Sets (s)</string>
+    <string name="ds_rest_duration_label">Rest Duration (s)</string>
+    <string name="ds_save">Save</string>
+
+    <!-- Status -->
+    <string name="ds_modified_hint">✏️ Modified</string>
+    <string name="ds_no_sessions_message">No sessions for today</string>
 </resources>

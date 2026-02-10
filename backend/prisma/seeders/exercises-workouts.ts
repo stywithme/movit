@@ -425,13 +425,7 @@ export async function seedExercisesAndWorkouts(
     const workoutJson = JSON.parse(raw) as {
       name: { ar: string; en: string };
       description?: { ar: string; en: string };
-      type: 'circuit' | 'super_set';
-      executionMode: 'sequential' | 'alternating';
-      repsPerSwitch?: number;
-      restBetweenSwitchMs?: number;
       restBetweenExercisesMs?: number;
-      restBetweenRoundsMs?: number;
-      rounds?: number;
       exercises: Array<{
         exercise: string;
         variantIndex?: number;
@@ -448,13 +442,6 @@ export async function seedExercisesAndWorkouts(
       update: {
         name: workoutJson.name,
         description: workoutJson.description || undefined,
-        type: workoutJson.type,
-        executionMode: workoutJson.executionMode,
-        rounds: workoutJson.rounds ?? 1,
-        repsPerSwitch: workoutJson.repsPerSwitch ?? undefined,
-        restBetweenSwitchMs: workoutJson.restBetweenSwitchMs ?? undefined,
-        restBetweenExercisesMs: workoutJson.restBetweenExercisesMs ?? undefined,
-        restBetweenRoundsMs: workoutJson.restBetweenRoundsMs ?? 60000,
         status: 'published',
         publishedAt: new Date(),
       },
@@ -462,13 +449,6 @@ export async function seedExercisesAndWorkouts(
         slug,
         name: workoutJson.name,
         description: workoutJson.description || undefined,
-        type: workoutJson.type,
-        executionMode: workoutJson.executionMode,
-        rounds: workoutJson.rounds ?? 1,
-        repsPerSwitch: workoutJson.repsPerSwitch ?? undefined,
-        restBetweenSwitchMs: workoutJson.restBetweenSwitchMs ?? undefined,
-        restBetweenExercisesMs: workoutJson.restBetweenExercisesMs ?? undefined,
-        restBetweenRoundsMs: workoutJson.restBetweenRoundsMs ?? 60000,
         status: 'published',
         publishedAt: new Date(),
       },
@@ -489,6 +469,11 @@ export async function seedExercisesAndWorkouts(
         throw new Error(`Workout exercise not found: ${exerciseEntry.exercise}`);
       }
 
+      const isLast = index >= workoutJson.exercises.length - 1;
+      const restAfterExerciseMs = isLast
+        ? 0
+        : workoutJson.restBetweenExercisesMs ?? 60000;
+
       await prisma.workoutExercise.create({
         data: {
           workoutId: workoutRecord.id,
@@ -497,6 +482,9 @@ export async function seedExercisesAndWorkouts(
           difficulty: exerciseEntry.difficulty ?? 'beginner',
           targetReps: exerciseEntry.target?.reps ?? undefined,
           targetDuration: exerciseEntry.target?.durationSec ?? undefined,
+          sets: 1,
+          restBetweenSetsMs: 30000,
+          restAfterExerciseMs,
           notes: exerciseEntry.notes || undefined,
           sortOrder: index,
         },
