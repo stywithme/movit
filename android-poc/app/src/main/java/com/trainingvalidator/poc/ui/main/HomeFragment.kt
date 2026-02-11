@@ -12,6 +12,7 @@ import com.trainingvalidator.poc.databinding.FragmentHomeBinding
 import com.trainingvalidator.poc.ui.TrainingActivity
 import com.trainingvalidator.poc.ui.ProgramDetailActivity
 import com.trainingvalidator.poc.ui.ProgramSessionActivity
+import com.trainingvalidator.poc.storage.DayCustomizationStore
 import com.trainingvalidator.poc.storage.ProgramRepository
 import com.trainingvalidator.poc.storage.ProgramSessionReportStore
 import com.trainingvalidator.poc.training.models.ProgramConfig
@@ -137,15 +138,25 @@ class HomeFragment : Fragment() {
 
     private fun bindTodayPlan(program: ProgramConfig) {
         val reportStore = ProgramSessionReportStore(requireContext())
+        val customizationStore = DayCustomizationStore(requireContext())
         val language = java.util.Locale.getDefault().language
 
+        // Use effective (customized) sessions when available
         val orderedSessions = program.weeks.sortedBy { it.weekNumber }.flatMap { week ->
             week.days.sortedBy { it.dayNumber }.flatMap { day ->
                 if (day.isRestDay) {
                     emptyList()
                 } else {
-                    day.sessions.sortedBy { it.sortOrder }.map { session ->
-                        Triple(week, day, session)
+                    val effectiveSessions = customizationStore.getEffectiveSessions(
+                        programId = program.id,
+                        weekNumber = week.weekNumber,
+                        dayNumber = day.dayNumber,
+                        originalSessions = day.sessions
+                    )
+                    effectiveSessions.sortedBy { it.sortOrder }.map { cs ->
+                        Triple(week, day, com.trainingvalidator.poc.training.models.ProgramSession(
+                            id = cs.id, name = cs.name, sortOrder = cs.sortOrder, items = cs.items
+                        ))
                     }
                 }
             }

@@ -5,6 +5,7 @@ import retrofit2.http.Body
 import retrofit2.http.GET
 import retrofit2.http.Header
 import retrofit2.http.POST
+import retrofit2.http.PUT
 import retrofit2.http.Path
 import retrofit2.http.Query
 import retrofit2.http.Streaming
@@ -70,6 +71,18 @@ interface MobileSyncApi {
     @POST("api/mobile/sessions/{sessionId}/report")
     suspend fun reportSession(
         @Path("sessionId") sessionId: String,
+        @Header("Authorization") authorization: String,
+        @Body payload: Map<String, @JvmSuppressWildcards Any>
+    ): Response<ResponseBody>
+
+    // ─── User Program Customization Endpoints ─────────────────
+
+    /**
+     * Update user program customizations (session modifications, reorders, etc.)
+     */
+    @PUT("api/mobile/user-programs/{id}")
+    suspend fun updateUserProgram(
+        @Path("id") userProgramId: String,
         @Header("Authorization") authorization: String,
         @Body payload: Map<String, @JvmSuppressWildcards Any>
     ): Response<ResponseBody>

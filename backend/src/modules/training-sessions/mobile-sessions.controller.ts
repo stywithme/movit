@@ -126,6 +126,8 @@ export class MobileSessionsController {
         return { success: false, error: authResult.error || 'Unauthorized' };
       }
 
+      // Single endpoint for completing + reporting. The completeProgramSessionReport
+      // function handles progress tracking and report creation in one call.
       const report = await completeProgramSessionReport(authResult.userId, sessionId, body || {});
       return { success: true, data: report };
     } catch (error) {
@@ -135,6 +137,10 @@ export class MobileSessionsController {
     }
   }
 
+  /**
+   * Kept for backward compatibility — new mobile versions should use /complete only.
+   * This now delegates to updateProgramSessionReport which only patches metrics.
+   */
   @Post(':sessionId/report')
   async reportProgramSession(
     @Req() req: Request,

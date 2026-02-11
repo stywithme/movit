@@ -69,14 +69,33 @@ class SessionTrainingEngine(
 
     // ==================== Metrics Data Classes ====================
 
+    /**
+     * Per-rep detail captured during training.
+     * This is the atomic unit of all reporting — everything aggregates from here.
+     */
+    data class RepDetail(
+        val repNumber: Int,
+        val score: Float,           // Form quality score (0-100)
+        val worstState: Int,        // 0=PERFECT, 1=NORMAL, 2=PAD, 3=WARNING, 4=DANGER
+        val isCounted: Boolean,     // Was this rep valid?
+        val durationMs: Long
+    )
+
+    /**
+     * Per-set metrics — enriched with rep-level details.
+     * Accuracy = completion rate; formScore = quality of movement.
+     */
     data class SetMetrics(
         val exerciseSlug: String,
         val exerciseIndex: Int,
         val setNumber: Int,
         val repsCompleted: Int,
+        val repsTarget: Int,
         val durationMs: Long,
-        val accuracy: Float,
-        val weightKg: Float?
+        val accuracy: Float,        // Completion rate: repsCompleted / repsTarget * 100
+        val formScore: Float,       // Average rep score (form quality, 0-100)
+        val weightKg: Float?,
+        val repDetails: List<RepDetail> = emptyList()
     )
 
     data class ExerciseReport(
@@ -85,7 +104,8 @@ class SessionTrainingEngine(
         val setsCompleted: Int,
         val totalSets: Int,
         val totalReps: Int,
-        val averageAccuracy: Float,
+        val averageAccuracy: Float,  // Average completion rate across sets
+        val averageFormScore: Float,  // Average form quality across sets
         val setMetrics: List<SetMetrics>
     )
 
@@ -95,7 +115,8 @@ class SessionTrainingEngine(
         val totalSetsPlanned: Int,
         val totalReps: Int,
         val totalDurationMs: Long,
-        val averageAccuracy: Float,
+        val averageAccuracy: Float,  // Overall completion rate
+        val averageFormScore: Float,  // Overall form quality (0-100)
         val exerciseReports: List<ExerciseReport>
     )
 
@@ -311,9 +332,13 @@ class SessionTrainingEngine(
                 totalReps = sets.sumOf { it.repsCompleted },
                 averageAccuracy = if (sets.isNotEmpty())
                     sets.map { it.accuracy }.average().toFloat() else 0f,
+                averageFormScore = if (sets.isNotEmpty())
+                    sets.map { it.formScore }.average().toFloat() else 0f,
                 setMetrics = sets
             )
         }.filterNotNull()
+
+        val allFormScores = allSetMetrics.map { it.formScore }
 
         return SessionReport(
             totalExercises = exerciseItems.size,
@@ -323,6 +348,8 @@ class SessionTrainingEngine(
             totalDurationMs = totalDuration,
             averageAccuracy = if (allSetMetrics.isNotEmpty())
                 allSetMetrics.map { it.accuracy }.average().toFloat() else 0f,
+            averageFormScore = if (allFormScores.isNotEmpty())
+                allFormScores.average().toFloat() else 0f,
             exerciseReports = exerciseReports
         )
     }

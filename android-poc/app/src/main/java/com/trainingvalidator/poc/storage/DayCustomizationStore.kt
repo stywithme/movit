@@ -35,10 +35,10 @@ class DayCustomizationStore(context: Context) {
      * Contains the full modified session list with all items.
      */
     data class DayCustomization(
-        val programId: String,
-        val weekNumber: Int,
-        val dayNumber: Int,
-        val sessions: List<CustomizedSession>,
+        val programId: String = "",
+        val weekNumber: Int = 0,
+        val dayNumber: Int = 0,
+        val sessions: List<CustomizedSession> = emptyList(),
         val lastModifiedAt: Long = System.currentTimeMillis()
     )
 
@@ -47,10 +47,10 @@ class DayCustomizationStore(context: Context) {
      * Mirrors ProgramSession but is fully mutable.
      */
     data class CustomizedSession(
-        val id: String,
-        val name: LocalizedText,
-        val sortOrder: Int,
-        val items: List<ProgramSessionItem>,
+        val id: String = "",
+        val name: LocalizedText = LocalizedText(),
+        val sortOrder: Int = 0,
+        val items: List<ProgramSessionItem> = emptyList(),
         val isDeleted: Boolean = false
     )
 
@@ -68,11 +68,17 @@ class DayCustomizationStore(context: Context) {
      */
     fun get(programId: String, weekNumber: Int, dayNumber: Int): DayCustomization? {
         val key = buildKey(programId, weekNumber, dayNumber)
-        val json = prefs.getString(key, null) ?: return null
+        val json = prefs.getString(key, null)
+        if (json == null) {
+            Log.d(TAG, "get: NO DATA for key=$key (all keys: ${prefs.all.keys.filter { it.startsWith(KEY_PREFIX) }})")
+            return null
+        }
         return try {
-            gson.fromJson(json, DayCustomization::class.java)
+            val result = gson.fromJson(json, DayCustomization::class.java)
+            Log.d(TAG, "get: FOUND key=$key, sessions=${result?.sessions?.size ?: 0}, json_length=${json.length}")
+            result
         } catch (e: Exception) {
-            Log.w(TAG, "Failed to parse customization for $key", e)
+            Log.e(TAG, "get: PARSE FAILED for key=$key, json_length=${json.length}", e)
             null
         }
     }
@@ -87,10 +93,25 @@ class DayCustomizationStore(context: Context) {
         dayNumber: Int,
         originalSessions: List<ProgramSession>
     ): List<CustomizedSession> {
+        val key = buildKey(programId, weekNumber, dayNumber)
         val customization = get(programId, weekNumber, dayNumber)
         if (customization != null) {
-            return customization.sessions.filter { !it.isDeleted }
+            // Normalize sortOrder on read to fix any stale values from older saves.
+            // The array order IS the source of truth — sortOrder must match array index.
+            val result = customization.sessions
+                .filter { !it.isDeleted }
+                .mapIndexed { sIdx, session ->
+                    session.copy(
+                        sortOrder = sIdx,
+                        items = session.items.mapIndexed { iIdx, item ->
+                            item.copy(sortOrder = iIdx)
+                        }
+                    )
+                }
+            Log.d(TAG, "getEffectiveSessions: CUSTOMIZED key=$key, sessions=${result.size}")
+            return result
         }
+        Log.d(TAG, "getEffectiveSessions: NO CUSTOMIZATION for key=$key, using ${originalSessions.size} original sessions")
         // Convert original sessions to customized format
         return originalSessions.map { session ->
             CustomizedSession(
@@ -126,6 +147,11 @@ class DayCustomizationStore(context: Context) {
         dayNumber: Int,
         sessions: List<CustomizedSession>
     ) {
+        val key = buildKey(programId, weekNumber, dayNumber)
+        Log.d(TAG, "saveSessions: key=$key, sessions=${sessions.size}")
+        sessions.forEach { s ->
+            Log.d(TAG, "  saving session '${s.name.en}' sortOrder=${s.sortOrder}, items=${s.items.size}")
+        }
         save(DayCustomization(
             programId = programId,
             weekNumber = weekNumber,
@@ -240,6 +266,57 @@ class DayCustomizationStore(context: Context) {
      */
     fun hasCustomization(programId: String, weekNumber: Int, dayNumber: Int): Boolean {
         return prefs.contains(buildKey(programId, weekNumber, dayNumber))
+    }
+
+    // ═══════════════════════════════════════════════════════════
+    // Hydrate from Backend (sync response)
+    // ═══════════════════════════════════════════════════════════
+
+    /**
+     * Populate local DayCustomizationStore from backend customizations
+     * (received via sync in UserProgramExport.customizations).
+     *
+     * Called after sync to ensure local store matches backend.
+     * Only imports keys that don't already exist locally (local edits take priority).
+     *
+     * Expected format from backend:
+     *   { "day_1_1": [ { id, name, sortOrder, isDeleted, items: [...] }, ... ], ... }
+     */
+    @Suppress("UNCHECKED_CAST")
+    fun hydrateFromBackend(programId: String, customizations: Map<String, Any>?) {
+        if (customizations.isNullOrEmpty()) {
+            Log.d(TAG, "hydrateFromBackend: no customizations for programId=$programId")
+            return
+        }
+
+        var imported = 0
+        for ((dayKey, value) in customizations) {
+            // Parse key format: "day_{weekNumber}_{dayNumber}"
+            val parts = dayKey.removePrefix("day_").split("_")
+            if (parts.size != 2) continue
+            val weekNumber = parts[0].toIntOrNull() ?: continue
+            val dayNumber = parts[1].toIntOrNull() ?: continue
+
+            // Skip if local customization already exists (local takes priority)
+            if (hasCustomization(programId, weekNumber, dayNumber)) {
+                Log.d(TAG, "hydrateFromBackend: SKIP $dayKey — local customization exists")
+                continue
+            }
+
+            // Parse sessions from backend format
+            try {
+                val sessionsJson = gson.toJson(value)
+                val sessionsType = object : TypeToken<List<CustomizedSession>>() {}.type
+                val sessions: List<CustomizedSession> = gson.fromJson(sessionsJson, sessionsType)
+
+                saveSessions(programId, weekNumber, dayNumber, sessions)
+                imported++
+                Log.d(TAG, "hydrateFromBackend: IMPORTED $dayKey (${sessions.size} sessions)")
+            } catch (e: Exception) {
+                Log.w(TAG, "hydrateFromBackend: FAILED to parse $dayKey", e)
+            }
+        }
+        Log.d(TAG, "hydrateFromBackend: done — imported $imported day(s) for programId=$programId")
     }
 
     // ═══════════════════════════════════════════════════════════

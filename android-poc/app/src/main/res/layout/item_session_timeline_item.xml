@@ -164,47 +164,17 @@
                     app:tint="@color/error" />
             </LinearLayout>
 
-            <!-- Quick set controls (visible in edit mode for exercises) -->
-            <LinearLayout
-                android:id="@+id/layoutQuickEdit"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:gravity="center_vertical"
-                android:orientation="horizontal"
-                android:visibility="gone">
-
-                <com.google.android.material.button.MaterialButton
-                    android:id="@+id/btnSetMinus"
-                    style="@style/Widget.MaterialComponents.Button.OutlinedButton"
-                    android:layout_width="32dp"
-                    android:layout_height="32dp"
-                    android:insetTop="0dp"
-                    android:insetBottom="0dp"
-                    android:padding="0dp"
-                    android:text="−"
-                    android:textSize="18sp" />
-
-                <TextView
-                    android:id="@+id/tvSetCount"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_marginHorizontal="8dp"
-                    android:textColor="@color/text_primary"
-                    android:textSize="15sp"
-                    android:textStyle="bold"
-                    tools:text="3" />
-
-                <com.google.android.material.button.MaterialButton
-                    android:id="@+id/btnSetPlus"
-                    style="@style/Widget.MaterialComponents.Button.OutlinedButton"
-                    android:layout_width="32dp"
-                    android:layout_height="32dp"
-                    android:insetTop="0dp"
-                    android:insetBottom="0dp"
-                    android:padding="0dp"
-                    android:text="+"
-                    android:textSize="18sp" />
-            </LinearLayout>
+            <!-- Drag handle for reordering (visible in edit mode) -->
+            <ImageButton
+                android:id="@+id/btnDragHandle"
+                android:layout_width="32dp"
+                android:layout_height="32dp"
+                android:layout_marginStart="4dp"
+                android:background="?attr/selectableItemBackgroundBorderless"
+                android:contentDescription="Reorder"
+                android:src="@drawable/ic_drag_handle"
+                android:visibility="gone"
+                app:tint="@color/text_hint" />
         </LinearLayout>
     </com.google.android.material.card.MaterialCardView>
 </LinearLayout>

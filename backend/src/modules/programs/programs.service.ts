@@ -722,11 +722,44 @@ export const programService = {
 
   async updateUserProgram(userProgramId: string, userId: string, data: UpdateUserProgramInput) {
     const prisma = await getPrisma();
+
+    // Merge customizations instead of replacing them
+    // This way customizing day 1 won't erase day 2's customizations
+    let mergedCustomizations: Prisma.InputJsonValue | undefined = undefined;
+    if (data.customizations) {
+      // Validate customization keys match expected format: "day_{weekNumber}_{dayNumber}"
+      const customizationKeyRegex = /^day_\d+_\d+$/;
+      for (const key of Object.keys(data.customizations)) {
+        if (!customizationKeyRegex.test(key)) {
+          throw new Error(
+            `Invalid customization key: "${key}". Expected format: "day_{weekNumber}_{dayNumber}"`
+          );
+        }
+        const value = data.customizations[key];
+        if (!Array.isArray(value)) {
+          throw new Error(
+            `Invalid customization value for key "${key}". Expected array of sessions.`
+          );
+        }
+      }
+
+      const existing = await prisma.userProgram.findFirst({
+        where: { id: userProgramId, userId },
+        select: { customizations: true },
+      });
+      const existingCustomizations =
+        (existing?.customizations as Record<string, unknown>) || {};
+      mergedCustomizations = {
+        ...existingCustomizations,
+        ...data.customizations,
+      } as Prisma.InputJsonValue;
+    }
+
     return prisma.userProgram.updateMany({
       where: { id: userProgramId, userId },
       data: {
         name: data.name ? (data.name as object) : undefined,
-        customizations: toInputJson(data.customizations),
+        customizations: mergedCustomizations,
         isActive: data.isActive ?? undefined,
       },
     });
@@ -736,17 +769,40 @@ export const programService = {
     const prisma = await getPrisma();
     const userProgram = await prisma.userProgram.findFirst({
       where: { userId, isActive: true },
-      include: { program: { include: programFullInclude } },
+      include: {
+        program: { include: programFullInclude },
+        progress: true,
+      },
     });
     if (!userProgram || !userProgram.program) return null;
 
+    const program = userProgram.program;
     const dayIndex = getProgramDayIndex(userProgram.startDate, new Date());
-    const totalWeeks = Math.max(1, userProgram.program.durationWeeks || 1);
-    const weekNumber = (Math.floor(dayIndex / 7) % totalWeeks) + 1;
-    const dayNumber = (dayIndex % 7) + 1;
+    const totalDays = program.durationWeeks * 7;
 
-    const week = userProgram.program.weeks.find((w) => w.weekNumber === weekNumber);
+    // Check if program is completed (past the total duration)
+    const isProgramComplete = dayIndex >= totalDays;
+
+    // Calculate week and day from date (1-indexed)
+    // dayIndex 0 = week 1, day 1; dayIndex 6 = week 1, day 7; dayIndex 7 = week 2, day 1
+    const weekNumber = isProgramComplete
+      ? program.durationWeeks
+      : Math.min(Math.floor(dayIndex / 7) + 1, program.durationWeeks);
+    const dayNumber = isProgramComplete
+      ? 7
+      : (dayIndex % 7) + 1;
+
+    const week = program.weeks.find((w) => w.weekNumber === weekNumber);
     const day = week?.days.find((d) => d.dayNumber === dayNumber);
+
+    // Build progress map for the response
+    const progressMap: Record<string, string> = {};
+    if (userProgram.progress) {
+      for (const p of userProgram.progress) {
+        const key = `${p.weekNumber}_${p.dayNumber}${p.sessionId ? '_' + p.sessionId : ''}`;
+        progressMap[key] = p.status;
+      }
+    }
 
     return {
       userProgramId: userProgram.id,
@@ -754,6 +810,8 @@ export const programService = {
       weekNumber,
       dayNumber,
       date: new Date().toISOString(),
+      isProgramComplete,
+      progress: progressMap,
       sessions: day
         ? day.sessions.map((session) => ({
             id: session.id,

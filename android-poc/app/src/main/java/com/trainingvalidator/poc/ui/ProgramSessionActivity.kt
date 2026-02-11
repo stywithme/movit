@@ -1,11 +1,14 @@
 package com.trainingvalidator.poc.ui
 
+import android.annotation.SuppressLint
 import android.content.Intent
 import android.graphics.drawable.GradientDrawable
 import android.os.Bundle
 import android.util.Log
 import android.view.LayoutInflater
+import android.view.MotionEvent
 import android.view.View
+import android.view.ViewGroup
 import android.widget.EditText
 import android.widget.FrameLayout
 import android.widget.ImageButton
@@ -15,6 +18,9 @@ import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
+import androidx.recyclerview.widget.ItemTouchHelper
+import androidx.recyclerview.widget.LinearLayoutManager
+import androidx.recyclerview.widget.RecyclerView
 import coil.load
 import com.google.android.material.button.MaterialButton
 import com.google.android.material.card.MaterialCardView
@@ -307,7 +313,7 @@ class ProgramSessionActivity : AppCompatActivity() {
         val ivExpand = view.findViewById<ImageView>(R.id.ivExpandIcon)
         val layoutExpanded = view.findViewById<LinearLayout>(R.id.layoutExpandedContent)
         val layoutHeader = view.findViewById<LinearLayout>(R.id.layoutSessionHeader)
-        val layoutTimeline = view.findViewById<LinearLayout>(R.id.layoutTimelineItems)
+        val rvTimeline = view.findViewById<RecyclerView>(R.id.rvTimelineItems)
         val layoutEditBar = view.findViewById<LinearLayout>(R.id.layoutSessionEditBar)
         val btnRename = view.findViewById<MaterialButton>(R.id.btnRenameSession)
         val btnDelete = view.findViewById<MaterialButton>(R.id.btnDeleteSession)
@@ -356,9 +362,9 @@ class ProgramSessionActivity : AppCompatActivity() {
             renderAllSessions()
         }
 
-        // --- Timeline items ---
+        // --- Timeline items (RecyclerView with drag-and-drop) ---
         if (isExpanded) {
-            renderTimelineItems(layoutTimeline, session)
+            setupTimelineRecyclerView(rvTimeline, session)
         }
 
         // --- Edit bar ---
@@ -374,148 +380,216 @@ class ProgramSessionActivity : AppCompatActivity() {
         return view
     }
 
-    private fun renderTimelineItems(
-        container: LinearLayout,
+    @SuppressLint("ClickableViewAccessibility")
+    private fun setupTimelineRecyclerView(
+        recyclerView: RecyclerView,
         session: DayCustomizationStore.CustomizedSession
     ) {
-        container.removeAllViews()
         val completedSessionIds = getCompletedSessionIds()
         val isSessionCompleted = session.id in completedSessionIds
-        val items = session.items
 
-        items.forEachIndexed { index, item ->
-            val itemView = LayoutInflater.from(this)
-                .inflate(R.layout.item_session_timeline_item, container, false)
+        val adapter = TimelineItemAdapter(
+            items = session.items.toMutableList(),
+            sessionId = session.id,
+            isSessionCompleted = isSessionCompleted,
+            totalCount = session.items.size
+        )
 
-            val viewLineTop = itemView.findViewById<View>(R.id.viewLineTop)
-            val viewLineBottom = itemView.findViewById<View>(R.id.viewLineBottom)
-            val viewDot = itemView.findViewById<View>(R.id.viewDot)
-            val cardItem = itemView.findViewById<MaterialCardView>(R.id.cardItem)
-            val ivItemImage = itemView.findViewById<ImageView>(R.id.ivItemImage)
-            val ivIcon = itemView.findViewById<ImageView>(R.id.ivItemIcon)
-            val tvName = itemView.findViewById<TextView>(R.id.tvItemName)
-            val tvDetail = itemView.findViewById<TextView>(R.id.tvItemDetail)
-            val layoutAlwaysActions = itemView.findViewById<LinearLayout>(R.id.layoutAlwaysActions)
-            val btnSwapExercise = itemView.findViewById<ImageButton>(R.id.btnSwapExercise)
-            val layoutEditControls = itemView.findViewById<LinearLayout>(R.id.layoutItemEditControls)
-            val layoutQuickEdit = itemView.findViewById<LinearLayout>(R.id.layoutQuickEdit)
-            val btnEditItem = itemView.findViewById<ImageButton>(R.id.btnEditItem)
-            val btnDeleteItem = itemView.findViewById<ImageButton>(R.id.btnDeleteItem)
-            val btnSetMinus = itemView.findViewById<MaterialButton>(R.id.btnSetMinus)
-            val btnSetPlus = itemView.findViewById<MaterialButton>(R.id.btnSetPlus)
-            val tvSetCount = itemView.findViewById<TextView>(R.id.tvSetCount)
+        recyclerView.layoutManager = LinearLayoutManager(this)
+        recyclerView.adapter = adapter
+        recyclerView.isNestedScrollingEnabled = false
 
+        // Drag-and-drop via ItemTouchHelper
+        val touchHelper = ItemTouchHelper(object : ItemTouchHelper.SimpleCallback(
+            ItemTouchHelper.UP or ItemTouchHelper.DOWN, 0
+        ) {
+            override fun isLongPressDragEnabled() = false // drag only from handle
+
+            override fun onMove(
+                rv: RecyclerView,
+                viewHolder: RecyclerView.ViewHolder,
+                target: RecyclerView.ViewHolder
+            ): Boolean {
+                val from = viewHolder.bindingAdapterPosition
+                val to = target.bindingAdapterPosition
+                if (from == RecyclerView.NO_POSITION || to == RecyclerView.NO_POSITION) return false
+                adapter.moveItem(from, to)
+                return true
+            }
+
+            override fun onSwiped(viewHolder: RecyclerView.ViewHolder, direction: Int) = Unit
+
+            override fun clearView(rv: RecyclerView, viewHolder: RecyclerView.ViewHolder) {
+                super.clearView(rv, viewHolder)
+                // Persist after drag ends — sortOrder is normalized inside persistCustomizations()
+                val sessionIndex = sessions.indexOfFirst { it.id == session.id }
+                if (sessionIndex >= 0) {
+                    val reorderedItems = adapter.items.toList()
+                    Log.d(TAG, "Drag ended: session=${session.name.en}, items reordered (${reorderedItems.size})")
+                    sessions[sessionIndex] = sessions[sessionIndex].copy(items = reorderedItems)
+                    persistCustomizations()
+                }
+            }
+        })
+        touchHelper.attachToRecyclerView(recyclerView)
+        adapter.touchHelper = touchHelper
+    }
+
+    // ═══════════════════════════════════════════════════════════
+    // Timeline Item Adapter (with drag-and-drop support)
+    // ═══════════════════════════════════════════════════════════
+
+    @SuppressLint("ClickableViewAccessibility")
+    private inner class TimelineItemAdapter(
+        val items: MutableList<ProgramSessionItem>,
+        private val sessionId: String,
+        private val isSessionCompleted: Boolean,
+        private val totalCount: Int
+    ) : RecyclerView.Adapter<TimelineItemAdapter.VH>() {
+
+        var touchHelper: ItemTouchHelper? = null
+
+        inner class VH(view: View) : RecyclerView.ViewHolder(view) {
+            val viewLineTop: View = view.findViewById(R.id.viewLineTop)
+            val viewLineBottom: View = view.findViewById(R.id.viewLineBottom)
+            val viewDot: View = view.findViewById(R.id.viewDot)
+            val cardItem: MaterialCardView = view.findViewById(R.id.cardItem)
+            val ivItemImage: ImageView = view.findViewById(R.id.ivItemImage)
+            val ivIcon: ImageView = view.findViewById(R.id.ivItemIcon)
+            val tvName: TextView = view.findViewById(R.id.tvItemName)
+            val tvDetail: TextView = view.findViewById(R.id.tvItemDetail)
+            val layoutAlwaysActions: LinearLayout = view.findViewById(R.id.layoutAlwaysActions)
+            val btnSwapExercise: ImageButton = view.findViewById(R.id.btnSwapExercise)
+            val layoutEditControls: LinearLayout = view.findViewById(R.id.layoutItemEditControls)
+            val btnEditItem: ImageButton = view.findViewById(R.id.btnEditItem)
+            val btnDeleteItem: ImageButton = view.findViewById(R.id.btnDeleteItem)
+            val btnDragHandle: ImageButton = view.findViewById(R.id.btnDragHandle)
+        }
+
+        override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): VH {
+            val view = LayoutInflater.from(parent.context)
+                .inflate(R.layout.item_session_timeline_item, parent, false)
+            return VH(view)
+        }
+
+        override fun getItemCount() = items.size
+
+        override fun onBindViewHolder(holder: VH, position: Int) {
+            val item = items[position]
             val isRest = item.type == "rest"
 
             // --- Timeline connector lines ---
-            val lineTopParams = viewLineTop.layoutParams as FrameLayout.LayoutParams
-            val lineBottomParams = viewLineBottom.layoutParams as FrameLayout.LayoutParams
-            lineTopParams.height = if (index == 0) 0 else dpToPx(24)
-            lineBottomParams.height = if (index == items.lastIndex) 0 else dpToPx(24)
-            viewLineTop.layoutParams = lineTopParams
-            viewLineBottom.layoutParams = lineBottomParams
+            val lineTopParams = holder.viewLineTop.layoutParams as FrameLayout.LayoutParams
+            val lineBottomParams = holder.viewLineBottom.layoutParams as FrameLayout.LayoutParams
+            lineTopParams.height = if (position == 0) 0 else dpToPx(24)
+            lineBottomParams.height = if (position == items.lastIndex) 0 else dpToPx(24)
+            holder.viewLineTop.layoutParams = lineTopParams
+            holder.viewLineBottom.layoutParams = lineBottomParams
 
             // --- Status colors ---
             val dotColor: Int
             val itemBgColor: Int
             if (isSessionCompleted) {
-                dotColor = ContextCompat.getColor(this, R.color.success)
-                itemBgColor = ContextCompat.getColor(this, R.color.surface)
-            } else if (index == 0 && !isSessionCompleted) {
-                dotColor = ContextCompat.getColor(this, R.color.primary)
-                itemBgColor = ContextCompat.getColor(this, R.color.surface)
+                dotColor = ContextCompat.getColor(this@ProgramSessionActivity, R.color.success)
+                itemBgColor = ContextCompat.getColor(this@ProgramSessionActivity, R.color.surface)
+            } else if (position == 0) {
+                dotColor = ContextCompat.getColor(this@ProgramSessionActivity, R.color.primary)
+                itemBgColor = ContextCompat.getColor(this@ProgramSessionActivity, R.color.surface)
             } else {
-                dotColor = ContextCompat.getColor(this, R.color.text_hint)
-                itemBgColor = ContextCompat.getColor(this, R.color.surface_variant)
+                dotColor = ContextCompat.getColor(this@ProgramSessionActivity, R.color.text_hint)
+                itemBgColor = ContextCompat.getColor(this@ProgramSessionActivity, R.color.surface_variant)
             }
-            (viewDot.background as? GradientDrawable)?.setColor(dotColor)
-            cardItem.setCardBackgroundColor(itemBgColor)
+            (holder.viewDot.background as? GradientDrawable)?.setColor(dotColor)
+            holder.cardItem.setCardBackgroundColor(itemBgColor)
 
             // --- Image / Icon ---
             if (isRest) {
-                ivItemImage.visibility = View.GONE
-                ivIcon.visibility = View.VISIBLE
-                ivIcon.setImageResource(R.drawable.ic_rest)
-                ivIcon.setColorFilter(ContextCompat.getColor(this, R.color.text_hint))
+                holder.ivItemImage.visibility = View.GONE
+                holder.ivIcon.visibility = View.VISIBLE
+                holder.ivIcon.setImageResource(R.drawable.ic_rest)
+                holder.ivIcon.setColorFilter(ContextCompat.getColor(this@ProgramSessionActivity, R.color.text_hint))
             } else {
                 val slug = item.exerciseSlug ?: ""
                 val config = exerciseConfigMap[slug]
                 val imageUrl = config?.imageUrl
-
                 if (!imageUrl.isNullOrBlank()) {
-                    ivItemImage.visibility = View.VISIBLE
-                    ivIcon.visibility = View.GONE
-                    ivItemImage.load(imageUrl) {
+                    holder.ivItemImage.visibility = View.VISIBLE
+                    holder.ivIcon.visibility = View.GONE
+                    holder.ivItemImage.load(imageUrl) {
                         placeholder(R.drawable.ic_exercise)
                         error(R.drawable.ic_exercise)
                         crossfade(true)
                     }
                 } else {
-                    ivItemImage.visibility = View.GONE
-                    ivIcon.visibility = View.VISIBLE
-                    ivIcon.setImageResource(R.drawable.ic_exercise)
-                    ivIcon.setColorFilter(ContextCompat.getColor(this, R.color.primary))
+                    holder.ivItemImage.visibility = View.GONE
+                    holder.ivIcon.visibility = View.VISIBLE
+                    holder.ivIcon.setImageResource(R.drawable.ic_exercise)
+                    holder.ivIcon.setColorFilter(ContextCompat.getColor(this@ProgramSessionActivity, R.color.primary))
                 }
             }
 
             // --- Name & Detail ---
             if (isRest) {
-                tvName.text = getString(R.string.rest_time)
+                holder.tvName.text = getString(R.string.rest_time)
                 val sec = (item.restDurationMs ?: 0L) / 1000L
-                tvDetail.text = getString(R.string.ds_rest_format, sec)
+                holder.tvDetail.text = getString(R.string.ds_rest_format, sec)
             } else {
                 val slug = item.exerciseSlug ?: ""
-                tvName.text = exerciseNameMap[slug] ?: slug
-                tvDetail.text = buildExerciseDetailText(item)
+                holder.tvName.text = exerciseNameMap[slug] ?: slug
+                holder.tvDetail.text = buildExerciseDetailText(item)
             }
 
-            // --- Always-visible actions (swap for exercises, not in edit mode) ---
+            // --- Swap icon (always visible for exercises, not in edit mode) ---
             if (!isRest && !isEditMode) {
-                layoutAlwaysActions.visibility = View.VISIBLE
-                btnSwapExercise.setOnClickListener {
-                    showReplaceExerciseSheet(session.id, index, item)
+                holder.layoutAlwaysActions.visibility = View.VISIBLE
+                holder.btnSwapExercise.setOnClickListener {
+                    val pos = holder.bindingAdapterPosition
+                    if (pos != RecyclerView.NO_POSITION) {
+                        showReplaceExerciseSheet(sessionId, pos, items[pos])
+                    }
                 }
             } else {
-                layoutAlwaysActions.visibility = View.GONE
+                holder.layoutAlwaysActions.visibility = View.GONE
             }
 
-            // --- Edit mode controls ---
+            // --- Edit mode: edit, delete, drag handle ---
             if (isEditMode) {
-                // Show edit + delete icons AND quick set controls for exercises
-                layoutEditControls.visibility = View.VISIBLE
-                layoutAlwaysActions.visibility = View.GONE
+                holder.layoutEditControls.visibility = View.VISIBLE
+                holder.btnDragHandle.visibility = View.VISIBLE
+                holder.layoutAlwaysActions.visibility = View.GONE
 
-                btnEditItem.setOnClickListener {
-                    if (isRest) showEditRestDialog(session.id, index, item)
-                    else showEditExerciseDialog(session.id, index, item)
+                holder.btnEditItem.setOnClickListener {
+                    val pos = holder.bindingAdapterPosition
+                    if (pos != RecyclerView.NO_POSITION) {
+                        val currentItem = items[pos]
+                        if (currentItem.type == "rest") showEditRestDialog(sessionId, pos, currentItem)
+                        else showEditExerciseDialog(sessionId, pos, currentItem)
+                    }
                 }
-                btnDeleteItem.setOnClickListener {
-                    showDeleteItemDialog(session.id, index)
+                holder.btnDeleteItem.setOnClickListener {
+                    val pos = holder.bindingAdapterPosition
+                    if (pos != RecyclerView.NO_POSITION) {
+                        showDeleteItemDialog(sessionId, pos)
+                    }
                 }
 
-                // Show set +/- in edit mode for exercises
-                if (!isRest) {
-                    layoutQuickEdit.visibility = View.VISIBLE
-                    tvSetCount.text = (item.sets ?: 1).toString()
-                    btnSetPlus.setOnClickListener {
-                        val current = item.sets ?: 1
-                        updateItemInSession(session.id, index, item.copy(sets = current + 1))
+                // Start drag on touch of handle
+                holder.btnDragHandle.setOnTouchListener { _, event ->
+                    if (event.actionMasked == MotionEvent.ACTION_DOWN) {
+                        touchHelper?.startDrag(holder)
                     }
-                    btnSetMinus.setOnClickListener {
-                        val current = item.sets ?: 1
-                        if (current > 1) {
-                            updateItemInSession(session.id, index, item.copy(sets = current - 1))
-                        }
-                    }
-                } else {
-                    layoutQuickEdit.visibility = View.GONE
+                    false
                 }
             } else {
-                layoutEditControls.visibility = View.GONE
-                layoutQuickEdit.visibility = View.GONE
+                holder.layoutEditControls.visibility = View.GONE
+                holder.btnDragHandle.visibility = View.GONE
             }
+        }
 
-            container.addView(itemView)
+        fun moveItem(from: Int, to: Int) {
+            val moved = items.removeAt(from)
+            items.add(to, moved)
+            notifyItemMoved(from, to)
         }
     }
 
@@ -604,13 +678,14 @@ class ProgramSessionActivity : AppCompatActivity() {
             val durationMs = data.getLongExtra(TrainingActivity.RESULT_DURATION_MS, 0L)
             val totalReps = data.getIntExtra(TrainingActivity.RESULT_SESSION_TOTAL_REPS, 0)
             val avgAccuracy = data.getFloatExtra(TrainingActivity.RESULT_SESSION_AVG_ACCURACY, 0f)
+            val avgFormScore = data.getFloatExtra(TrainingActivity.RESULT_SESSION_AVG_FORM_SCORE, 0f)
             val reportJson = data.getStringExtra(TrainingActivity.RESULT_SESSION_REPORT_JSON)
             val sessionId = launchedSessionId
 
-            // Save local report
-            saveLocalSessionReport(sessionId, durationMs, totalSets, completedSets, totalReps, avgAccuracy, reportJson)
+            // Save local report (with form score)
+            saveLocalSessionReport(sessionId, durationMs, totalSets, completedSets, totalReps, avgAccuracy, avgFormScore, reportJson)
 
-            // Send to backend
+            // Send to backend (single call, with offline queue)
             sendSessionComplete(
                 sessionId ?: "",
                 durationMs,
@@ -619,6 +694,7 @@ class ProgramSessionActivity : AppCompatActivity() {
                 completedSets,
                 totalReps,
                 avgAccuracy,
+                avgFormScore,
                 reportJson
             )
 
@@ -998,7 +1074,87 @@ class ProgramSessionActivity : AppCompatActivity() {
 
     private fun persistCustomizations() {
         val pid = programId ?: return
-        customizationStore.saveSessions(pid, weekNumber, dayNumber, sessions.toList())
+
+        // Normalize sortOrder for sessions AND their items to match current list positions.
+        // This ensures sortedBy { it.sortOrder } always produces the correct order everywhere.
+        val normalized = sessions.mapIndexed { sIdx, session ->
+            session.copy(
+                sortOrder = sIdx,
+                items = session.items.mapIndexed { iIdx, item ->
+                    item.copy(sortOrder = iIdx)
+                }
+            )
+        }
+        sessions.clear()
+        sessions.addAll(normalized)
+
+        Log.d(TAG, "persistCustomizations: programId=$pid, week=$weekNumber, day=$dayNumber, sessions=${normalized.size}")
+        customizationStore.saveSessions(pid, weekNumber, dayNumber, normalized)
+
+        // Sync to backend
+        syncCustomizationsToBackend()
+    }
+
+    /**
+     * Send current customizations to the backend via PUT /api/mobile/user-programs/:id
+     * Builds a structured customizations map keyed by "day_{weekNumber}_{dayNumber}"
+     */
+    private fun syncCustomizationsToBackend() {
+        val token = AuthManager.getAccessToken(this)
+        if (token.isNullOrBlank()) {
+            Log.w(TAG, "Skip customization sync: missing access token")
+            return
+        }
+        val programRepo = ProgramRepository.getInstance(this)
+        val userProgramId = programRepo.getActiveUserProgramId()
+        if (userProgramId.isNullOrBlank()) {
+            Log.w(TAG, "Skip customization sync: missing active userProgramId")
+            return
+        }
+
+        // Build the customizations payload with the current day's sessions
+        val dayKey = "day_${weekNumber}_${dayNumber}"
+        val sessionsPayload = sessions.map { session ->
+            mapOf(
+                "id" to session.id,
+                "name" to mapOf("en" to session.name.en, "ar" to session.name.ar),
+                "sortOrder" to session.sortOrder,
+                "isDeleted" to session.isDeleted,
+                "items" to session.items.map { item ->
+                    val itemMap = mutableMapOf<String, Any?>(
+                        "type" to item.type,
+                        "sortOrder" to (item.sortOrder ?: 0)
+                    )
+                    item.exerciseSlug?.let { itemMap["exerciseSlug"] = it }
+                    item.sets?.let { itemMap["sets"] = it }
+                    item.targetReps?.let { itemMap["targetReps"] = it }
+                    item.targetDuration?.let { itemMap["targetDuration"] = it }
+                    item.restBetweenSetsMs?.let { itemMap["restBetweenSetsMs"] = it }
+                    item.restDurationMs?.let { itemMap["restDurationMs"] = it }
+                    item.weightKg?.let { itemMap["weightKg"] = it }
+                    itemMap.filterValues { it != null }
+                }
+            )
+        }
+
+        val payload = mapOf<String, Any>(
+            "customizations" to mapOf(dayKey to sessionsPayload)
+        )
+
+        CoroutineScope(Dispatchers.IO).launch {
+            try {
+                val response = ApiClient.mobileSyncApi.updateUserProgram(
+                    userProgramId, "Bearer $token", payload
+                )
+                if (response.isSuccessful) {
+                    Log.d(TAG, "Synced customizations to backend for $dayKey")
+                } else {
+                    Log.w(TAG, "Failed to sync customizations: ${response.code()}")
+                }
+            } catch (e: Exception) {
+                Log.w(TAG, "Failed to sync customizations to backend: ${e.message}")
+            }
+        }
     }
 
     private fun saveLocalSessionReport(
@@ -1008,6 +1164,7 @@ class ProgramSessionActivity : AppCompatActivity() {
         completedSets: Int,
         totalReps: Int,
         avgAccuracy: Float,
+        avgFormScore: Float,
         reportJson: String?
     ) {
         val pid = programId ?: return
@@ -1032,6 +1189,7 @@ class ProgramSessionActivity : AppCompatActivity() {
                 totalSetsCompleted = completedSets,
                 totalReps = totalReps,
                 averageAccuracy = avgAccuracy,
+                averageFormScore = avgFormScore,
                 totalDurationMs = durationMs,
                 report = report
             )
@@ -1067,9 +1225,10 @@ class ProgramSessionActivity : AppCompatActivity() {
         completedSets: Int,
         totalReps: Int,
         avgAccuracy: Float,
+        avgFormScore: Float,
         reportJson: String?
     ) {
-        val token = AuthManager.getAccessToken(this) ?: return
+        val token = AuthManager.getAccessToken(this)
         val payloadMap = mutableMapOf<String, Any>(
             "completedAt" to System.currentTimeMillis(),
             "totalDurationMs" to durationMs,
@@ -1077,23 +1236,44 @@ class ProgramSessionActivity : AppCompatActivity() {
             "totalSets" to totalSets,
             "completedSets" to completedSets,
             "totalReps" to totalReps,
-            "avgAccuracy" to avgAccuracy
+            "avgAccuracy" to avgAccuracy,
+            "avgFormScore" to avgFormScore
         )
         if (!reportJson.isNullOrBlank()) {
             val gson = com.google.gson.Gson()
             payloadMap["report"] = gson.fromJson(reportJson, com.google.gson.JsonElement::class.java)
         }
 
+        // Always save to offline queue first (offline-first approach)
+        reportStore.addPendingSync(
+            ProgramSessionReportStore.PendingSyncEntry(
+                sessionId = sessionId,
+                programId = programId ?: "",
+                weekNumber = weekNumber,
+                dayNumber = dayNumber,
+                payload = payloadMap
+            )
+        )
+
+        // Attempt to sync immediately if online
+        if (token == null) {
+            Log.w(TAG, "No auth token — report queued for later sync")
+            return
+        }
+
         CoroutineScope(Dispatchers.IO).launch {
             try {
-                ApiClient.mobileSyncApi.completeSession(sessionId, "Bearer $token", payloadMap)
+                // Single call to /complete (backend handles report + progress in one call)
+                val response = ApiClient.mobileSyncApi.completeSession(sessionId, "Bearer $token", payloadMap)
+                if (response.isSuccessful) {
+                    // Remove from offline queue on success
+                    reportStore.removePendingSync(sessionId)
+                    Log.d(TAG, "Session complete synced successfully")
+                } else {
+                    Log.w(TAG, "Session complete sync failed (${response.code()}) — will retry")
+                }
             } catch (e: Exception) {
-                Log.w(TAG, "Failed to post session complete: ${e.message}")
-            }
-            try {
-                ApiClient.mobileSyncApi.reportSession(sessionId, "Bearer $token", payloadMap)
-            } catch (e: Exception) {
-                Log.w(TAG, "Failed to post session report: ${e.message}")
+                Log.w(TAG, "Failed to sync session complete: ${e.message} — queued for retry")
             }
         }
     }

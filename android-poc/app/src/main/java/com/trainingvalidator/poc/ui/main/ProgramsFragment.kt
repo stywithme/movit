@@ -19,9 +19,12 @@ import com.google.android.material.button.MaterialButton
 import com.google.android.material.card.MaterialCardView
 import com.trainingvalidator.poc.R
 import com.trainingvalidator.poc.databinding.FragmentProgramsBinding
+import com.trainingvalidator.poc.storage.DayCustomizationStore
 import com.trainingvalidator.poc.storage.ExerciseRepository
+import com.trainingvalidator.poc.storage.ProgramDayCalculator
 import com.trainingvalidator.poc.storage.ProgramRepository
 import com.trainingvalidator.poc.storage.ProgramSessionReportStore
+import com.trainingvalidator.poc.training.session.ReportAggregator
 import com.trainingvalidator.poc.training.models.ProgramConfig
 import com.trainingvalidator.poc.training.models.ProgramDay
 import com.trainingvalidator.poc.training.models.ProgramSession
@@ -51,6 +54,7 @@ class ProgramsFragment : Fragment() {
     private lateinit var programRepo: ProgramRepository
     private lateinit var exerciseRepo: ExerciseRepository
     private lateinit var reportStore: ProgramSessionReportStore
+    private lateinit var customizationStore: DayCustomizationStore
 
     private var expandedSessionIndex = 0 // First session expanded by default
 
@@ -90,6 +94,7 @@ class ProgramsFragment : Fragment() {
             programRepo = ProgramRepository.getInstance(requireContext())
             exerciseRepo = ExerciseRepository.getInstance(requireContext())
             reportStore = ProgramSessionReportStore(requireContext())
+            customizationStore = DayCustomizationStore(requireContext())
 
             withContext(Dispatchers.IO) {
                 programRepo.initialize()
@@ -129,11 +134,22 @@ class ProgramsFragment : Fragment() {
         binding.layoutActiveProgramState.visibility = View.VISIBLE
         binding.cardProgramComplete.visibility = View.GONE
 
-        val language = getCurrentLanguage()
-        val currentRef = findCurrentDayRef(program)
+        // Migrate legacy SharedPreferences reports (one-time)
+        reportStore.migrateFromSharedPreferences(requireContext())
 
-        if (currentRef == null) {
-            // Program complete
+        val language = getCurrentLanguage()
+
+        // Use date-based calculation for current day
+        val userProgram = programRepo.getActiveUserProgramExport()
+        val currentRef = if (userProgram != null) {
+            ProgramDayCalculator.getCurrentDay(program, userProgram)
+        } else {
+            // Fallback: if no user program enrollment, use first day
+            null
+        }
+
+        if (currentRef == null || currentRef.isProgramComplete) {
+            // Program complete or no enrollment
             showProgramComplete(program)
             return
         }
@@ -297,11 +313,17 @@ class ProgramsFragment : Fragment() {
 
     /**
      * Returns the Saturday of the current week for the provided reference date.
+     * Calendar.SATURDAY = 7, Calendar.SUNDAY = 1, ..., Calendar.FRIDAY = 6
      */
     private fun getWeekStartSaturday(reference: Calendar): Calendar {
         val cal = reference.clone() as Calendar
         val dayOfWeek = cal.get(Calendar.DAY_OF_WEEK)
-        val daysSinceSaturday = if (dayOfWeek == Calendar.SATURDAY) 0 else dayOfWeek
+        // Calculate days since last Saturday
+        // SATURDAY(7)→0, SUNDAY(1)→1, MONDAY(2)→2, ..., FRIDAY(6)→6
+        val daysSinceSaturday = when (dayOfWeek) {
+            Calendar.SATURDAY -> 0
+            else -> dayOfWeek // SUNDAY=1, MON=2, ..., FRI=6
+        }
         cal.add(Calendar.DAY_OF_YEAR, -daysSinceSaturday)
         return cal
     }
@@ -374,9 +396,29 @@ class ProgramsFragment : Fragment() {
             return
         }
 
-        // Render sessions
-        val sessions = day.sessions.sortedBy { it.sortOrder }
-        val allCompleted = sessions.all { reportStore.getBySession(it.id) != null }
+        // Render sessions — use effective (customized) sessions if available
+        val effectiveSessions = customizationStore.getEffectiveSessions(
+            programId = program.id,
+            weekNumber = week.weekNumber,
+            dayNumber = day.dayNumber,
+            originalSessions = day.sessions
+        )
+        val sessions = effectiveSessions.map { cs ->
+            ProgramSession(
+                id = cs.id,
+                name = cs.name,
+                sortOrder = cs.sortOrder,
+                items = cs.items
+            )
+        }.sortedBy { it.sortOrder }
+        // Use date-based day completion check via ProgramDayCalculator
+        val allCompleted = ProgramDayCalculator.isDayComplete(
+            program = program,
+            weekNumber = week.weekNumber,
+            dayNumber = day.dayNumber,
+            reportStore = reportStore,
+            customizationStore = customizationStore
+        )
 
         // Check if all sessions are completed → show day complete banner
         if (allCompleted && sessions.isNotEmpty()) {
@@ -548,35 +590,43 @@ class ProgramsFragment : Fragment() {
         }
         binding.cardProgramReport.visibility = View.VISIBLE
 
+        // Build week reports using the unified ReportAggregator
+        val weekReports = program.weeks.map { week ->
+            val dayReports = week.days.map { day ->
+                val sessionReports = reportStore.getByDay(program.id, week.weekNumber, day.dayNumber)
+                ReportAggregator.aggregateDay(
+                    programId = program.id,
+                    weekNumber = week.weekNumber,
+                    dayNumber = day.dayNumber,
+                    sessionReports = sessionReports,
+                    totalSessionsInDay = day.sessions.size
+                )
+            }
+            val nonRestDays = week.days.count { !it.isRestDay && it.sessions.isNotEmpty() }
+            ReportAggregator.aggregateWeek(program.id, week.weekNumber, dayReports, nonRestDays)
+        }
+        val programReport = ReportAggregator.aggregateProgram(program.id, weekReports)
+
         // Row 1: Days Trained
-        val daysTrained = getDaysTrainedCount(program)
-        binding.tvReportDays.text = daysTrained.toString()
+        binding.tvReportDays.text = programReport.daysTrained.toString()
 
         // Row 1: Total exercises done
-        val totalExercises = allReports.sumOf { (it.report?.exerciseReports?.size ?: 0) }
-        binding.tvReportExercises.text = totalExercises.toString()
+        binding.tvReportExercises.text = programReport.totalExercises.toString()
 
         // Row 1: Total time
-        val totalMs = allReports.sumOf { it.totalDurationMs }
-        val totalHours = totalMs / 3600000
-        val totalMins = (totalMs % 3600000) / 60000
-        binding.tvReportTime.text = if (totalHours > 0) "${totalHours}h ${totalMins}m" else "${totalMins}m"
+        binding.tvReportTime.text = ReportAggregator.formatDuration(programReport.totalDurationMs)
 
         // Row 2: Total Reps
-        val totalReps = allReports.sumOf { it.totalReps }
-        binding.tvReportReps.text = totalReps.toString()
+        binding.tvReportReps.text = programReport.totalReps.toString()
 
-        // Row 2: Average Accuracy
-        val avgAccuracy = if (allReports.isNotEmpty()) {
-            allReports.map { it.averageAccuracy }.average().toFloat()
-        } else 0f
-        binding.tvReportAccuracy.text = "${avgAccuracy.toInt()}%"
+        // Row 2: Form Score (not completion rate)
+        val formRating = ReportAggregator.getFormRating(programReport.averageFormScore)
+        binding.tvReportAccuracy.text = "${programReport.averageFormScore.toInt()}%"
 
         // Row 2: Total Sets Completed
-        val totalSets = allReports.sumOf { it.totalSetsCompleted }
-        binding.tvReportSets.text = totalSets.toString()
+        binding.tvReportSets.text = programReport.totalSets.toString()
 
-        // Insight message
+        // Insight message based on form progression
         val completedSessions = allReports.size
         binding.tvReportInsight.text = when {
             completedSessions >= 10 -> getString(R.string.pg_report_insight_consistent)
@@ -637,7 +687,16 @@ class ProgramsFragment : Fragment() {
             ?: getString(R.string.programs_day_title_only, day.dayNumber)
         tvTitle.text = getString(R.string.programs_day_detail_title_format, dayTitle)
 
-        val sessions = day.sessions.sortedBy { it.sortOrder }
+        // Use effective (customized) sessions if available
+        val effectiveSessionsSheet = customizationStore.getEffectiveSessions(
+            programId = program.id,
+            weekNumber = week.weekNumber,
+            dayNumber = day.dayNumber,
+            originalSessions = day.sessions
+        )
+        val sessions = effectiveSessionsSheet.map { cs ->
+            ProgramSession(id = cs.id, name = cs.name, sortOrder = cs.sortOrder, items = cs.items)
+        }.sortedBy { it.sortOrder }
         tvSubtitle.text = getString(R.string.programs_sessions_count_format, sessions.size)
         layoutSessions.removeAllViews()
         tvRestHint.visibility = if (day.isRestDay) View.VISIBLE else View.GONE
@@ -744,36 +803,8 @@ class ProgramsFragment : Fragment() {
     // Helpers
     // ═══════════════════════════════════════════════════════════
 
-    /**
-     * Find the current day the user should be working on.
-     * Returns null if program is complete.
-     */
-    private fun findCurrentDayRef(program: ProgramConfig): DayRef? {
-        val ordered = program.weeks.sortedBy { it.weekNumber }.flatMap { week ->
-            week.days.sortedBy { it.dayNumber }.map { day -> DayRef(week, day) }
-        }
-        // Find first day with incomplete sessions (skip rest days)
-        return ordered.firstOrNull { ref ->
-            if (ref.day.isRestDay) {
-                // Rest days are "incomplete" only if ALL previous days are done
-                // For simplicity, skip rest days in finding "current"
-                false
-            } else {
-                val totalSessions = ref.day.sessions.size
-                val completedSessions = reportStore.getByDay(
-                    program.id, ref.week.weekNumber, ref.day.dayNumber
-                ).size
-                totalSessions > 0 && completedSessions < totalSessions
-            }
-        } ?: run {
-            // If all non-rest days completed, check if we're on a rest day
-            ordered.firstOrNull { ref ->
-                ref.day.isRestDay && reportStore.getByDay(
-                    program.id, ref.week.weekNumber, ref.day.dayNumber
-                ).isEmpty()
-            }
-        }
-    }
+    // findCurrentDayRef is now replaced by ProgramDayCalculator.getCurrentDay()
+    // which uses date-based calculation matching the backend logic.
 
     private fun findTomorrowDay(program: ProgramConfig, week: ProgramWeek, today: ProgramDay): ProgramDay? {
         val allDays = program.weeks.sortedBy { it.weekNumber }.flatMap { w ->

@@ -357,7 +357,8 @@ export async function completeProgramSessionReport(
   sessionId: string,
   payload: ProgramSessionCompletePayload
 ) {
-  const report = await prisma.programSessionReport.findFirst({
+  // Find the active report (or the most recent one for this session)
+  let report = await prisma.programSessionReport.findFirst({
     where: {
       userId,
       programSessionId: sessionId,
@@ -366,24 +367,138 @@ export async function completeProgramSessionReport(
     orderBy: { createdAt: 'desc' },
   });
 
+  // If no in_progress report, create one on the fly (supports offline-first: mobile may
+  // call /complete without having called /start if it was offline when training began)
   if (!report) {
-    throw new Error('Active report not found');
+    const session = await prisma.programSession.findFirst({
+      where: { id: sessionId },
+      include: { day: { include: { week: true } } },
+    });
+
+    if (!session) {
+      throw new Error('Program session not found');
+    }
+
+    report = await prisma.programSessionReport.create({
+      data: {
+        userId,
+        programId: session.day.week.programId,
+        programSessionId: session.id,
+        weekNumber: session.day.week.weekNumber,
+        dayNumber: session.day.dayNumber,
+        startedAt: new Date(),
+        status: 'in_progress',
+      },
+    });
   }
 
-  return prisma.programSessionReport.update({
+  const completedAt = payload.completedAt ? new Date(payload.completedAt) : new Date();
+
+  // Update the report to completed
+  const updatedReport = await prisma.programSessionReport.update({
     where: { id: report.id },
     data: {
       status: 'completed',
-      completedAt: payload.completedAt ? new Date(payload.completedAt) : new Date(),
+      completedAt,
       totalDurationMs: payload.totalDurationMs ?? report.totalDurationMs ?? undefined,
       totalExercises: payload.totalExercises ?? report.totalExercises ?? undefined,
       totalSets: payload.totalSets ?? report.totalSets ?? undefined,
       completedSets: payload.completedSets ?? report.completedSets ?? undefined,
       totalReps: payload.totalReps ?? report.totalReps ?? undefined,
       avgAccuracy: payload.avgAccuracy ?? report.avgAccuracy ?? undefined,
+      avgFormScore: payload.avgFormScore ?? undefined,
       report: (payload.report ?? report.report) as Prisma.InputJsonValue | undefined,
     },
   });
+
+  // ── Activate UserProgramProgress ──
+  // Find the user's active program to update progress tracking
+  try {
+    const userProgram = await prisma.userProgram.findFirst({
+      where: { userId, programId: report.programId ?? undefined, isActive: true },
+    });
+
+    if (userProgram) {
+      await prisma.userProgramProgress.upsert({
+        where: {
+          userProgramId_weekNumber_dayNumber_sessionId: {
+            userProgramId: userProgram.id,
+            weekNumber: report.weekNumber,
+            dayNumber: report.dayNumber,
+            sessionId,
+          },
+        },
+        create: {
+          userProgramId: userProgram.id,
+          weekNumber: report.weekNumber,
+          dayNumber: report.dayNumber,
+          sessionId,
+          completedAt,
+          status: 'completed',
+        },
+        update: {
+          completedAt,
+          status: 'completed',
+        },
+      });
+
+      // Check if ALL sessions for this day are completed → mark day as completed
+      const daySession = await prisma.programSession.findFirst({
+        where: { id: sessionId },
+        include: {
+          day: {
+            include: {
+              sessions: { select: { id: true } },
+            },
+          },
+        },
+      });
+
+      if (daySession) {
+        const allSessionIds = daySession.day.sessions.map((s) => s.id);
+        const completedReports = await prisma.programSessionReport.findMany({
+          where: {
+            userId,
+            programSessionId: { in: allSessionIds },
+            status: 'completed',
+          },
+          select: { programSessionId: true },
+        });
+        const completedSessionIds = new Set(completedReports.map((r) => r.programSessionId));
+
+        if (allSessionIds.every((id) => completedSessionIds.has(id))) {
+          // All sessions in this day are done — upsert day-level progress
+          await prisma.userProgramProgress.upsert({
+            where: {
+              userProgramId_weekNumber_dayNumber_sessionId: {
+                userProgramId: userProgram.id,
+                weekNumber: report.weekNumber,
+                dayNumber: report.dayNumber,
+                sessionId: '__day__', // sentinel for day-level completion
+              },
+            },
+            create: {
+              userProgramId: userProgram.id,
+              weekNumber: report.weekNumber,
+              dayNumber: report.dayNumber,
+              sessionId: '__day__',
+              completedAt,
+              status: 'completed',
+            },
+            update: {
+              completedAt,
+              status: 'completed',
+            },
+          });
+        }
+      }
+    }
+  } catch (progressError) {
+    // Don't fail the main report update if progress tracking fails
+    console.warn('[Sessions] Failed to update program progress:', progressError);
+  }
+
+  return updatedReport;
 }
 
 export async function updateProgramSessionReport(
@@ -412,6 +527,7 @@ export async function updateProgramSessionReport(
       completedSets: payload.completedSets ?? report.completedSets ?? undefined,
       totalReps: payload.totalReps ?? report.totalReps ?? undefined,
       avgAccuracy: payload.avgAccuracy ?? report.avgAccuracy ?? undefined,
+      avgFormScore: payload.avgFormScore ?? report.avgFormScore ?? undefined,
       report: (payload.report ?? report.report) as Prisma.InputJsonValue | undefined,
     },
   });

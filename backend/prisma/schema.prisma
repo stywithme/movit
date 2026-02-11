@@ -422,6 +422,7 @@ model Program {
   programSessionReports ProgramSessionReport[]
 
   @@index([deletedAt])
+  @@index([isPublished])
   @@map("programs")
 }
 
@@ -531,8 +532,9 @@ model UserProgramProgress {
 
   userProgram   UserProgram @relation(fields: [userProgramId], references: [id], onDelete: Cascade)
 
-  @@unique([userProgramId, weekNumber, dayNumber])
+  @@unique([userProgramId, weekNumber, dayNumber, sessionId])
   @@index([userProgramId])
+  @@index([userProgramId, weekNumber])
   @@map("user_program_progress")
 }
 
@@ -551,7 +553,8 @@ model ProgramSessionReport {
   totalSets         Int?
   completedSets     Int?
   totalReps         Int?
-  avgAccuracy       Float?
+  avgAccuracy       Float?   // Completion rate (reps done / reps planned)
+  avgFormScore      Float?   // Form quality score (0-100, from rep-level scoring)
   report            Json?
   createdAt         DateTime @default(now())
   updatedAt         DateTime @updatedAt
@@ -563,6 +566,7 @@ model ProgramSessionReport {
   @@index([userId])
   @@index([programId])
   @@index([programSessionId])
+  @@index([userId, programId])
   @@map("program_session_reports")
 }
 

@@ -369,6 +369,16 @@ class SyncManager(
 
         if (userPrograms.isNotEmpty()) {
             userProgramStore.saveUserPrograms(userPrograms)
+
+            // Hydrate DayCustomizationStore from backend customizations
+            // This ensures customizations survive app reinstall/data clear
+            val customizationStore = DayCustomizationStore(context)
+            userPrograms.forEach { up ->
+                val pid = up.programId
+                if (pid != null && !up.customizations.isNullOrEmpty()) {
+                    customizationStore.hydrateFromBackend(pid, up.customizations)
+                }
+            }
         }
         
         // Save exercise metadata

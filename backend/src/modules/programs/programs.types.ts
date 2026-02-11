@@ -78,6 +78,8 @@ export interface TodayPlanResponse {
   weekNumber: number;
   dayNumber: number;
   date: string;
+  isProgramComplete: boolean;
+  progress: Record<string, string>; // "weekNum_dayNum_sessionId" → status
   sessions: ProgramExportSession[];
 }
 

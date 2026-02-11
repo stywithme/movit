@@ -2,6 +2,7 @@ package com.trainingvalidator.poc.storage
 
 import android.content.Context
 import android.util.Log
+import com.trainingvalidator.poc.network.UserProgramExport
 import com.trainingvalidator.poc.training.models.ProgramConfig
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -94,6 +95,22 @@ class ProgramRepository private constructor(private val context: Context) {
         val active = userProgramStore.getActiveUserProgram()
         val programId = active?.programId ?: return null
         return getProgramById(programId)
+    }
+
+    /**
+     * Get the UserProgram enrollment ID for the active program.
+     * This is needed for PUT /api/mobile/user-programs/:id
+     */
+    fun getActiveUserProgramId(): String? {
+        return userProgramStore.getActiveUserProgram()?.id
+    }
+
+    /**
+     * Get the full UserProgramExport for the active program.
+     * Needed for date-based day calculation (contains startDate).
+     */
+    fun getActiveUserProgramExport(): UserProgramExport? {
+        return userProgramStore.getActiveUserProgram()
     }
 
     fun getProgramSlugs(): List<String> {

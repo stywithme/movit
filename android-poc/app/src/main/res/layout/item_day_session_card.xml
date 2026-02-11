@@ -158,15 +158,17 @@
                     app:tint="@color/text_secondary" />
             </LinearLayout>
 
-            <!-- Timeline items container -->
-            <LinearLayout
-                android:id="@+id/layoutTimelineItems"
+            <!-- Timeline items (RecyclerView for drag-and-drop) -->
+            <androidx.recyclerview.widget.RecyclerView
+                android:id="@+id/rvTimelineItems"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:orientation="vertical"
+                android:nestedScrollingEnabled="false"
+                android:overScrollMode="never"
                 android:paddingHorizontal="@dimen/spacing_base"
                 android:paddingTop="@dimen/spacing_sm"
-                android:paddingBottom="@dimen/spacing_base" />
+                android:paddingBottom="@dimen/spacing_base"
+                android:clipToPadding="false" />
         </LinearLayout>
     </LinearLayout>
 </com.google.android.material.card.MaterialCardView>

@@ -113,6 +113,7 @@ class TrainingActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetection
         const val RESULT_SESSION_SETS_PLANNED = "session_sets_planned"
         const val RESULT_SESSION_TOTAL_REPS = "session_total_reps"
         const val RESULT_SESSION_AVG_ACCURACY = "session_avg_accuracy"
+        const val RESULT_SESSION_AVG_FORM_SCORE = "session_avg_form_score"
         const val RESULT_SESSION_REPORT_JSON = "session_report_json"
         
         // Training modes
@@ -1009,23 +1010,45 @@ class TrainingActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetection
         val accuracy = trainingEng?.getAccuracy() ?: 0f
         val durationMs = System.currentTimeMillis() - sessionSetStartTimeMs
         val weight = engine.getCurrentSetWeight()
+        val targetReps = currentItem.targetReps ?: reps
 
         // Stop the training engine for this set
         trainingEng?.stop()
         stopElapsedTimeTimer()
+
+        // Build per-rep details from the training engine's rep results
+        val repDetails = trainingEng?.getRepResults()?.map { repResult ->
+            com.trainingvalidator.poc.training.session.SessionTrainingEngine.RepDetail(
+                repNumber = repResult.repNumber,
+                score = repResult.score,
+                worstState = repResult.worstState.ordinal,
+                isCounted = repResult.isCounted,
+                durationMs = repResult.durationMs
+            )
+        } ?: emptyList()
+
+        // Form score = average rep score (quality of movement, 0-100)
+        val formScore = if (repDetails.isNotEmpty()) {
+            repDetails.map { it.score }.average().toFloat()
+        } else {
+            accuracy // Fallback to completion rate if no rep data
+        }
 
         val metrics = com.trainingvalidator.poc.training.session.SessionTrainingEngine.SetMetrics(
             exerciseSlug = currentItem.exerciseSlug ?: "",
             exerciseIndex = engine.getCurrentExerciseIndex(),
             setNumber = engine.getCurrentSetNumber(),
             repsCompleted = reps,
+            repsTarget = targetReps,
             durationMs = durationMs,
-            accuracy = accuracy,
-            weightKg = weight
+            accuracy = if (targetReps > 0) (reps.toFloat() / targetReps * 100f) else accuracy,
+            formScore = formScore,
+            weightKg = weight,
+            repDetails = repDetails
         )
 
         Log.d(TAG, "Session set completed: ${metrics.exerciseSlug} " +
-                "set ${metrics.setNumber}, reps=$reps, accuracy=${accuracy.toInt()}%")
+                "set ${metrics.setNumber}, reps=$reps, formScore=${formScore.toInt()}")
 
         engine.onSetCompleted(metrics)
     }
@@ -1044,6 +1067,7 @@ class TrainingActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetection
             putExtra(RESULT_SESSION_SETS_PLANNED, report.totalSetsPlanned)
             putExtra(RESULT_SESSION_TOTAL_REPS, report.totalReps)
             putExtra(RESULT_SESSION_AVG_ACCURACY, report.averageAccuracy)
+            putExtra(RESULT_SESSION_AVG_FORM_SCORE, report.averageFormScore)
             putExtra(RESULT_SESSION_REPORT_JSON, reportJson)
         }
         setResult(RESULT_OK, resultIntent)
