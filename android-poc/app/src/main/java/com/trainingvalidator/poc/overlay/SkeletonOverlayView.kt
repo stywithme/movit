@@ -17,7 +17,6 @@ import com.trainingvalidator.poc.pose.BodyLandmarks
 import com.trainingvalidator.poc.pose.JointLandmarkMapping
 import com.trainingvalidator.poc.training.config.SettingsManager
 import com.trainingvalidator.poc.training.engine.JointArrowInfo
-import com.trainingvalidator.poc.training.engine.JointZone
 import com.trainingvalidator.poc.training.engine.PositionError
 import com.trainingvalidator.poc.training.models.CheckSeverity
 import com.trainingvalidator.poc.training.models.JointState
@@ -820,8 +819,8 @@ class SkeletonOverlayView @JvmOverloads constructor(
         // Handle errors first
         if (arrowInfo.isError) {
             val distanceOutside = when (arrowInfo.zone) {
-                JointZone.TOO_HIGH -> currentAngle - upMax
-                JointZone.TOO_LOW -> downMin - currentAngle
+                com.trainingvalidator.poc.training.engine.JointZone.TOO_HIGH -> currentAngle - upMax
+                com.trainingvalidator.poc.training.engine.JointZone.TOO_LOW -> downMin - currentAngle
                 else -> 0.0
             }
             // Quick ramp to danger color (within 10°)
@@ -831,7 +830,7 @@ class SkeletonOverlayView @JvmOverloads constructor(
         
         // For valid zones, use unified gradient approach
         return when (arrowInfo.zone) {
-            JointZone.DOWN_ZONE -> {
+            com.trainingvalidator.poc.training.engine.JointZone.DOWN_ZONE -> {
                 val rangeSize = downMax - downMin
                 if (rangeSize <= 0) return perfectColor
                 
@@ -843,7 +842,7 @@ class SkeletonOverlayView @JvmOverloads constructor(
                 getColorForNormalizedPositionLegacy(normalizedDist, isOuterSide)
             }
             
-            JointZone.UP_ZONE -> {
+            com.trainingvalidator.poc.training.engine.JointZone.UP_ZONE -> {
                 val rangeSize = upMax - upMin
                 if (rangeSize <= 0) return perfectColor
                 
@@ -855,7 +854,7 @@ class SkeletonOverlayView @JvmOverloads constructor(
                 getColorForNormalizedPositionLegacy(normalizedDist, isOuterSide)
             }
             
-            JointZone.TRANSITION -> transitionColor
+            com.trainingvalidator.poc.training.engine.JointZone.TRANSITION -> transitionColor
             
             else -> perfectColor
         }

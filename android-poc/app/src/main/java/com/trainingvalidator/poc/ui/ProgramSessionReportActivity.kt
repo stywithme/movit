@@ -16,6 +16,7 @@ class ProgramSessionReportActivity : AppCompatActivity() {
         const val EXTRA_DURATION_MS = "duration_ms"
         const val EXTRA_AVG_ACCURACY = "avg_accuracy"
         const val EXTRA_SESSION_REPORT_JSON = "session_report_json"
+        const val EXTRA_REPORT_IDS = "report_ids"
     }
 
     private lateinit var binding: ActivityProgramSessionReportBinding
@@ -36,24 +37,22 @@ class ProgramSessionReportActivity : AppCompatActivity() {
         val minutes = (durationMs / 60000).toInt()
         val seconds = ((durationMs % 60000) / 1000).toInt()
         val completionRatio = if (totalSets > 0) completedSets.toFloat() / totalSets else 0f
+
+        // Session Rating Badge
+        val rating = getFormRating(avgAccuracy)
+        binding.tvSessionRating.text = rating
+
         binding.tvSessionMessage.text = getSessionMessage(avgAccuracy, completionRatio)
-        binding.tvSessionSummary.text = getString(
-            com.trainingvalidator.poc.R.string.session_report_items_format,
-            totalItems
-        )
+
+        // Hero metrics — show just the numbers, no labels (labels are in XML)
+        binding.tvSessionDuration.text = String.format("%02d:%02d", minutes, seconds)
+        binding.tvSessionSummary.text = totalItems.toString()
+        binding.tvSessionAccuracy.text = "${avgAccuracy.toInt()}%"
+
         binding.tvSessionSets.text = getString(
             com.trainingvalidator.poc.R.string.session_report_sets_format,
             completedSets,
             totalSets
-        )
-        binding.tvSessionDuration.text = getString(
-            com.trainingvalidator.poc.R.string.session_report_duration_format,
-            minutes,
-            seconds
-        )
-        binding.tvSessionAccuracy.text = getString(
-            com.trainingvalidator.poc.R.string.session_report_accuracy_format,
-            avgAccuracy.toInt()
         )
 
         if (!reportJson.isNullOrBlank()) {
@@ -70,6 +69,9 @@ class ProgramSessionReportActivity : AppCompatActivity() {
                 }
                 binding.tvSessionExerciseHeader.visibility = android.view.View.VISIBLE
                 binding.rvSessionExercises.visibility = android.view.View.VISIBLE
+
+                // Insights: strongest and weakest exercises
+                renderInsights(report.exerciseReports)
             }
         }
 
@@ -137,7 +139,18 @@ class ProgramSessionReportActivity : AppCompatActivity() {
             }
 
             holder.itemView.setOnClickListener {
-                showExerciseSummarySheet(item)
+                // If a rich report exists (PostTrainingReport), navigate to the full report
+                val reportId = item.reportId
+                if (reportId != null) {
+                    val intent = com.trainingvalidator.poc.ui.report.ReportPagerActivity.createIntent(
+                        this@ProgramSessionReportActivity,
+                        reportId
+                    )
+                    startActivity(intent)
+                } else {
+                    // Fallback to simple bottom sheet summary
+                    showExerciseSummarySheet(item)
+                }
             }
         }
 
@@ -182,6 +195,36 @@ class ProgramSessionReportActivity : AppCompatActivity() {
         tvTip.text = tip
 
         dialog.show()
+    }
+
+    private fun renderInsights(
+        exercises: List<com.trainingvalidator.poc.training.session.SessionTrainingEngine.ExerciseReport>
+    ) {
+        if (exercises.size < 2) return
+
+        val strongest = exercises.maxByOrNull { it.averageFormScore }
+        val weakest = exercises.minByOrNull { it.averageFormScore }
+
+        if (strongest != null && weakest != null && strongest != weakest) {
+            binding.layoutInsights.visibility = android.view.View.VISIBLE
+            binding.tvInsightStrongest.text = getString(
+                com.trainingvalidator.poc.R.string.session_report_strongest,
+                "${strongest.exerciseName} (${strongest.averageFormScore.toInt()}%)"
+            )
+            binding.tvInsightWeakest.text = getString(
+                com.trainingvalidator.poc.R.string.session_report_weakest,
+                "${weakest.exerciseName} (${weakest.averageFormScore.toInt()}%)"
+            )
+        }
+    }
+
+    private fun getFormRating(score: Float): String {
+        return when {
+            score >= 85f -> getString(com.trainingvalidator.poc.R.string.session_report_excellent)
+            score >= 70f -> getString(com.trainingvalidator.poc.R.string.session_report_good)
+            score >= 50f -> getString(com.trainingvalidator.poc.R.string.session_report_solid)
+            else -> getString(com.trainingvalidator.poc.R.string.session_report_keep_going)
+        }
     }
 
     private fun getSessionMessage(avgAccuracy: Float, completionRatio: Float): String {

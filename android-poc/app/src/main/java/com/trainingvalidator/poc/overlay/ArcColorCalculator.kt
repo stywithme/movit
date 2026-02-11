@@ -1,7 +1,6 @@
 package com.trainingvalidator.poc.overlay
 
 import android.graphics.Color
-import com.trainingvalidator.poc.training.engine.JointZone
 import com.trainingvalidator.poc.training.models.JointState
 import com.trainingvalidator.poc.training.models.StateConfig
 import com.trainingvalidator.poc.training.models.StateRanges
@@ -48,28 +47,12 @@ object ArcColorCalculator {
     // ==================== Zone Determination (Same as Engine) ====================
     
     /**
-     * Determine which zone an angle belongs to
-     * 
-     * This uses the SAME logic as FormValidator.determineZone() to ensure
-     * visual feedback matches the Engine's state.
-     * 
-     * Zone layout (from PhaseStateMachine):
-     *   180° ───── TOO_HIGH (above upRange.max)
-     *        ───── upRange.max
-     *              UP_ZONE (within upRange)
-     *        ───── upRange.min
-     *              TRANSITION (between upRange.min and downRange.max)
-     *        ───── downRange.max
-     *              DOWN_ZONE (within downRange)
-     *        ───── downRange.min
-     *    0°  ───── TOO_LOW (below downRange.min)
-     * 
-     * @param angle Current angle to check
-     * @param upRangeMin Minimum of UP zone
-     * @param upRangeMax Maximum of UP zone
-     * @param downRangeMin Minimum of DOWN zone
-     * @param downRangeMax Maximum of DOWN zone
-     * @return JointZone for this angle
+     * Determine which zone an angle belongs to.
+     *
+     * Returns a pair of (ZoneType, isOutOfBounds).
+     * isOutOfBounds is true when the angle exceeds the defined ranges.
+     *
+     * @return Pair(ZoneType, isOutOfBounds)
      */
     fun determineZone(
         angle: Double,
@@ -77,13 +60,13 @@ object ArcColorCalculator {
         upRangeMax: Double,
         downRangeMin: Double,
         downRangeMax: Double
-    ): JointZone {
+    ): Pair<ZoneType, Boolean> {
         return when {
-            angle > upRangeMax -> JointZone.TOO_HIGH
-            angle >= upRangeMin -> JointZone.UP_ZONE
-            angle > downRangeMax -> JointZone.TRANSITION
-            angle >= downRangeMin -> JointZone.DOWN_ZONE
-            else -> JointZone.TOO_LOW
+            angle > upRangeMax -> Pair(ZoneType.UP_ZONE, true)      // was TOO_HIGH
+            angle >= upRangeMin -> Pair(ZoneType.UP_ZONE, false)
+            angle > downRangeMax -> Pair(ZoneType.TRANSITION, false)
+            angle >= downRangeMin -> Pair(ZoneType.DOWN_ZONE, false)
+            else -> Pair(ZoneType.DOWN_ZONE, true)                  // was TOO_LOW
         }
     }
     
@@ -92,14 +75,15 @@ object ArcColorCalculator {
     /**
      * Get solid color for a specific zone
      * 
-     * @param zone The joint zone
+     * @param zone The zone type
+     * @param isOutOfBounds Whether the angle is outside valid bounds (error state)
      * @return Color for that zone
      */
-    fun getZoneColor(zone: JointZone): Int {
+    fun getZoneColor(zone: ZoneType, isOutOfBounds: Boolean = false): Int {
+        if (isOutOfBounds) return COLOR_ERROR
         return when (zone) {
-            JointZone.TOO_HIGH, JointZone.TOO_LOW -> COLOR_ERROR
-            JointZone.UP_ZONE, JointZone.DOWN_ZONE -> COLOR_OPTIMAL
-            JointZone.TRANSITION -> COLOR_TRANSITION
+            ZoneType.UP_ZONE, ZoneType.DOWN_ZONE -> COLOR_OPTIMAL
+            ZoneType.TRANSITION -> COLOR_TRANSITION
         }
     }
     
@@ -137,22 +121,22 @@ object ArcColorCalculator {
         downRangeMax: Double
     ): Int {
         // Use Engine-compatible zone determination
-        val zone = determineZone(angle, upRangeMin, upRangeMax, downRangeMin, downRangeMax)
+        val (zone, isOutOfBounds) = determineZone(angle, upRangeMin, upRangeMax, downRangeMin, downRangeMax)
+        
+        if (isOutOfBounds) return COLOR_ERROR
         
         return when (zone) {
-            JointZone.TOO_HIGH, JointZone.TOO_LOW -> COLOR_ERROR
-            
-            JointZone.UP_ZONE -> {
+            ZoneType.UP_ZONE -> {
                 // Apply gradient within UP zone (Asymmetric)
-                getGradientColorInZone(angle, upRangeMin, upRangeMax, JointZone.UP_ZONE)
+                getGradientColorInZone(angle, upRangeMin, upRangeMax, ZoneType.UP_ZONE)
             }
             
-            JointZone.DOWN_ZONE -> {
+            ZoneType.DOWN_ZONE -> {
                 // Apply gradient within DOWN zone (Asymmetric)
-                getGradientColorInZone(angle, downRangeMin, downRangeMax, JointZone.DOWN_ZONE)
+                getGradientColorInZone(angle, downRangeMin, downRangeMax, ZoneType.DOWN_ZONE)
             }
             
-            JointZone.TRANSITION -> COLOR_TRANSITION
+            ZoneType.TRANSITION -> COLOR_TRANSITION
         }
     }
     
@@ -167,7 +151,7 @@ object ArcColorCalculator {
         angle: Double, 
         min: Double, 
         max: Double,
-        zone: JointZone
+        zone: ZoneType
     ): Int {
         return getColorForAngleInRange(angle, min, max, zone)
     }
@@ -180,7 +164,7 @@ object ArcColorCalculator {
         angle: Double, 
         rangeMin: Double, 
         rangeMax: Double,
-        zone: JointZone? = null // Optional for backward compatibility
+        zone: ZoneType? = null // Optional for backward compatibility
     ): Int {
         val center = (rangeMin + rangeMax) / 2
         val halfRange = (rangeMax - rangeMin) / 2
@@ -193,8 +177,8 @@ object ArcColorCalculator {
         
         // Determine if we are on the "Outer" side (towards error) or "Inner" side (towards transition)
         val isOuterSide = when (zone) {
-            JointZone.UP_ZONE -> angle > center    // UpZone: Higher angles are outer (towards TOO_HIGH)
-            JointZone.DOWN_ZONE -> angle < center  // DownZone: Lower angles are outer (towards TOO_LOW)
+            ZoneType.UP_ZONE -> angle > center    // UpZone: Higher angles are outer (towards TOO_HIGH)
+            ZoneType.DOWN_ZONE -> angle < center  // DownZone: Lower angles are outer (towards TOO_LOW)
             else -> true // Default to symmetric behavior if zone not specified
         }
 
@@ -380,12 +364,5 @@ object ArcColorCalculator {
                 interpolateColor(COLOR_BOUNDARY, COLOR_WARNING, t)
             }
         }
-    }
-    
-    /**
-     * Extension to check if angle is in range
-     */
-    private fun com.trainingvalidator.poc.training.models.AngleRange.contains(angle: Double): Boolean {
-        return angle >= min && angle <= max
     }
 }

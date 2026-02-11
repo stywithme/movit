@@ -10,6 +10,34 @@ datasource db {
 }
 
 // ============================================
+// ENUMS — DB-level validation for status fields
+// ============================================
+
+enum ContentStatus {
+  draft
+  published
+}
+
+enum Difficulty {
+  beginner
+  intermediate
+  advanced
+}
+
+enum ReportStatus {
+  in_progress
+  completed
+  abandoned
+}
+
+enum ProgressStatus {
+  pending
+  in_progress
+  completed
+  skipped
+}
+
+// ============================================
 // ATTRIBUTES (Lookup Tables)
 // ============================================
 
@@ -71,7 +99,7 @@ model Exercise {
   description      Json?     // { "ar": "...", "en": "..." }
   instructions     Json?     // { "ar": "...", "en": "..." }
   slug             String    @unique
-  status           String    @default("draft") // draft, published
+  status           ContentStatus @default(draft)
   
   // Rep counting config (unified - no difficulty levels)
   // { "reps": 12, "minRepIntervalMs": 1500, "maxRepIntervalMs": 5000 }
@@ -346,12 +374,12 @@ model Workout {
 
   // Template metadata
   coverImageUrl          String?
-  difficulty             String    @default("beginner") // beginner, intermediate, advanced
+  difficulty             Difficulty @default(beginner)
   estimatedDurationMin   Int?
   tags                   Json?     // [ "upper-body", "no-equipment", ... ]
   
   // Status & metadata
-  status                 String    @default("draft") // draft, published
+  status                 ContentStatus @default(draft)
   publishedAt            DateTime?
   createdBy              String?
   updatedBy              String?
@@ -407,7 +435,7 @@ model Program {
   slug          String   @unique
   coverImageUrl String?
   durationWeeks Int
-  difficulty    String   @default("beginner") // beginner, intermediate, advanced
+  difficulty    Difficulty @default(beginner)
   isDefault     Boolean  @default(false)
   isPublished   Boolean  @default(false)
   tags          Json?
@@ -432,7 +460,9 @@ model ProgramWeek {
   weekNumber  Int
   name        Json?
   description Json?
-  sortOrder   Int      @default(0)
+  sortOrder   Int      @default(0) // Typically equals weekNumber; kept for admin reordering flexibility
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 
   program     Program  @relation(fields: [programId], references: [id], onDelete: Cascade)
   days        ProgramDay[]
@@ -448,6 +478,8 @@ model ProgramDay {
   dayNumber Int
   isRestDay Boolean  @default(false)
   name      Json?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   week      ProgramWeek     @relation(fields: [weekId], references: [id], onDelete: Cascade)
   sessions  ProgramSession[]
@@ -462,6 +494,8 @@ model ProgramSession {
   dayId     String
   name      Json
   sortOrder Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   day       ProgramDay         @relation(fields: [dayId], references: [id], onDelete: Cascade)
   items     ProgramSessionItem[]
@@ -490,10 +524,12 @@ model ProgramSessionItem {
 
   sourceWorkoutId   String?
   isModified        Boolean  @default(false)
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
 
   session           ProgramSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
-  exercise          Exercise?      @relation(fields: [exerciseId], references: [id])
-  sourceWorkout     Workout?       @relation(fields: [sourceWorkoutId], references: [id])
+  exercise          Exercise?      @relation(fields: [exerciseId], references: [id], onDelete: SetNull)
+  sourceWorkout     Workout?       @relation(fields: [sourceWorkoutId], references: [id], onDelete: SetNull)
 
   @@index([sessionId])
   @@index([exerciseId])
@@ -526,9 +562,9 @@ model UserProgramProgress {
   userProgramId String
   weekNumber    Int
   dayNumber     Int
-  sessionId     String?
+  sessionId     String         @default("__day__") // Actual session ID, or "__day__" for day-level completion
   completedAt   DateTime?
-  status        String   @default("pending") // pending | in_progress | completed | skipped
+  status        ProgressStatus @default(pending)
 
   userProgram   UserProgram @relation(fields: [userProgramId], references: [id], onDelete: Cascade)
 
@@ -547,7 +583,7 @@ model ProgramSessionReport {
   dayNumber         Int
   startedAt         DateTime @default(now())
   completedAt       DateTime?
-  status            String   @default("in_progress") // in_progress | completed | abandoned
+  status            ReportStatus @default(in_progress)
   totalDurationMs   Int?
   totalExercises    Int?
   totalSets         Int?
@@ -567,6 +603,8 @@ model ProgramSessionReport {
   @@index([programId])
   @@index([programSessionId])
   @@index([userId, programId])
+  @@index([userId, programSessionId, status])
+  @@index([userId, weekNumber, dayNumber])
   @@map("program_session_reports")
 }
 
@@ -658,6 +696,7 @@ model RefreshToken {
 
   @@index([userId])
   @@index([token])
+  @@index([expiresAt])
   @@map("refresh_tokens")
 }
 

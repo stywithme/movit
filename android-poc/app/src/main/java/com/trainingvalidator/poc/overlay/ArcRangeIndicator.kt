@@ -5,11 +5,9 @@ import android.graphics.Canvas
 import android.graphics.Paint
 import android.graphics.Paint.Cap
 import android.graphics.RectF
-import com.trainingvalidator.poc.training.engine.JointZone
 import com.trainingvalidator.poc.training.models.AngleColorResolver
 import com.trainingvalidator.poc.training.models.JointState
 import com.trainingvalidator.poc.training.models.StateConfig
-import com.trainingvalidator.poc.training.models.StateRanges
 import com.trainingvalidator.poc.training.models.ZoneType
 
 /**
@@ -147,12 +145,12 @@ class ArcRangeIndicator {
         
         // Draw segments in order from 0° to 180° (joint angles)
         
-        // 1. TOO_LOW zone (0° to downRangeMin)
+        // 1. TOO_LOW zone (0° to downRangeMin) - out of bounds error
         if (data.downRangeMin > 0) {
             drawSolidSegment(
                 canvas, data,
                 0.0, data.downRangeMin,
-                JointZone.TOO_LOW, alpha
+                ZoneType.DOWN_ZONE, alpha, isOutOfBounds = true
             )
         }
         
@@ -161,9 +159,9 @@ class ArcRangeIndicator {
             drawGradientSegment(
                 canvas, data,
                 data.downRangeMin, data.downRangeMax,
-                ArcColorCalculator.getZoneColor(JointZone.DOWN_ZONE),
+                ArcColorCalculator.getZoneColor(ZoneType.DOWN_ZONE),
                 strokeWidth, alpha,
-                JointZone.DOWN_ZONE
+                ZoneType.DOWN_ZONE
             )
         }
         
@@ -172,7 +170,7 @@ class ArcRangeIndicator {
             drawSolidSegment(
                 canvas, data,
                 data.downRangeMax, data.upRangeMin,
-                JointZone.TRANSITION, alpha
+                ZoneType.TRANSITION, alpha
             )
         }
         
@@ -181,18 +179,18 @@ class ArcRangeIndicator {
             drawGradientSegment(
                 canvas, data,
                 data.upRangeMin, data.upRangeMax,
-                ArcColorCalculator.getZoneColor(JointZone.UP_ZONE),
+                ArcColorCalculator.getZoneColor(ZoneType.UP_ZONE),
                 strokeWidth, alpha,
-                JointZone.UP_ZONE
+                ZoneType.UP_ZONE
             )
         }
         
-        // 5. TOO_HIGH zone (upRangeMax to 180°)
+        // 5. TOO_HIGH zone (upRangeMax to 180°) - out of bounds error
         if (data.upRangeMax < 180.0) {
             drawSolidSegment(
                 canvas, data,
                 data.upRangeMax, 180.0,
-                JointZone.TOO_HIGH, alpha
+                ZoneType.UP_ZONE, alpha, isOutOfBounds = true
             )
         }
     }
@@ -205,8 +203,9 @@ class ArcRangeIndicator {
         data: ArcRangeData,
         startJointAngle: Double,
         endJointAngle: Double,
-        zone: JointZone,
-        alpha: Int
+        zone: ZoneType,
+        alpha: Int,
+        isOutOfBounds: Boolean = false
     ) {
         val startCanvas = data.toCanvasAngle(startJointAngle)
         val endCanvas = data.toCanvasAngle(endJointAngle)
@@ -217,7 +216,7 @@ class ArcRangeIndicator {
         
         segmentPaint.shader = null
         segmentPaint.color = ArcColorCalculator.withAlpha(
-            ArcColorCalculator.getZoneColor(zone),
+            ArcColorCalculator.getZoneColor(zone, isOutOfBounds),
             alpha
         )
         
@@ -243,7 +242,7 @@ class ArcRangeIndicator {
         centerColor: Int,
         strokeWidth: Float,
         alpha: Int,
-        zone: JointZone? = null
+        zone: ZoneType? = null
     ) {
         val totalRange = rangeMax - rangeMin
         

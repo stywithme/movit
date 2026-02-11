@@ -1,32 +1,49 @@
 package com.trainingvalidator.poc.ui.main
 
 import android.os.Bundle
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import android.widget.ImageView
 import android.widget.TextView
-import androidx.cardview.widget.CardView
 import androidx.fragment.app.Fragment
+import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
+import com.github.mikephil.charting.charts.BarChart
+import com.github.mikephil.charting.charts.LineChart
+import com.github.mikephil.charting.data.*
+import com.google.android.material.tabs.TabLayout
+import com.google.android.material.tabs.TabLayoutMediator
 import com.trainingvalidator.poc.R
 import com.trainingvalidator.poc.databinding.FragmentHistoryBinding
+import com.trainingvalidator.poc.network.MetricsResponse
+import com.trainingvalidator.poc.network.WeekMetrics
+import com.trainingvalidator.poc.storage.ProgramRepository
+import com.trainingvalidator.poc.storage.ReportRepository
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 /**
- * HistoryFragment - Workout history with stats
+ * HistoryFragment — Reimplemented as the Reports Hub.
+ *
+ * 4 Tabs: Overview | Exercises | Trends | Records
+ * Data comes from the unified reports endpoint via ReportRepository.
  */
 class HistoryFragment : Fragment() {
 
+    companion object {
+        private const val TAG = "ReportsHub"
+    }
+
     private var _binding: FragmentHistoryBinding? = null
     private val binding get() = _binding!!
-    
-    private val historyItems = mutableListOf<HistoryEntry>()
+
+    private var metrics: MetricsResponse? = null
 
     override fun onCreateView(
-        inflater: LayoutInflater,
-        container: ViewGroup?,
-        savedInstanceState: Bundle?
+        inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?
     ): View {
         _binding = FragmentHistoryBinding.inflate(inflater, container, false)
         return binding.root
@@ -34,46 +51,8 @@ class HistoryFragment : Fragment() {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-        
-        setupUI()
-        loadMockData()
-    }
-
-    private fun setupUI() {
-        binding.rvHistory.layoutManager = LinearLayoutManager(requireContext())
-        binding.rvHistory.adapter = HistoryAdapter(historyItems)
-    }
-
-    private fun loadMockData() {
-        binding.tvWeeklyAverage.text = getString(R.string.sample_weekly_average)
-        binding.tvTotalTime.text = getString(R.string.sample_total_time)
-
-        // Mock history data
-        historyItems.addAll(listOf(
-            HistoryEntry(
-                getString(R.string.sample_exercise_squats),
-                getString(R.string.sample_date_today, "10:30 AM"),
-                92
-            ),
-            HistoryEntry(
-                getString(R.string.sample_exercise_pushups),
-                getString(R.string.sample_date_today, "9:15 AM"),
-                88
-            ),
-            HistoryEntry(
-                getString(R.string.sample_exercise_deadlifts),
-                getString(R.string.sample_date_yesterday, "6:00 PM"),
-                75
-            )
-        ))
-        
-        binding.rvHistory.adapter?.notifyDataSetChanged()
-        
-        if (historyItems.isEmpty()) {
-            binding.layoutEmpty.visibility = View.VISIBLE
-        } else {
-            binding.layoutEmpty.visibility = View.GONE
-        }
+        setupTabs()
+        loadData()
     }
 
     override fun onDestroyView() {
@@ -81,45 +60,85 @@ class HistoryFragment : Fragment() {
         _binding = null
     }
 
-    data class HistoryEntry(
-        val exerciseName: String,
-        val date: String,
-        val score: Int
-    )
+    private fun setupTabs() {
+        val tabTitles = listOf(
+            getString(R.string.reports_tab_overview),
+            getString(R.string.reports_tab_exercises),
+            getString(R.string.reports_tab_trends),
+            getString(R.string.reports_tab_records)
+        )
 
-    inner class HistoryAdapter(
-        private val items: List<HistoryEntry>
-    ) : RecyclerView.Adapter<HistoryAdapter.ViewHolder>() {
+        val adapter = ReportsTabAdapter(this)
+        binding.viewPager.adapter = adapter
 
-        inner class ViewHolder(view: View) : RecyclerView.ViewHolder(view) {
-            val card: CardView = view.findViewById(R.id.cardHistory)
-            val tvName: TextView = view.findViewById(R.id.tvExerciseName)
-            val tvDate: TextView = view.findViewById(R.id.tvDate)
-            val tvScore: TextView = view.findViewById(R.id.tvScore)
-        }
+        TabLayoutMediator(binding.tabLayout, binding.viewPager) { tab, position ->
+            tab.text = tabTitles[position]
+        }.attach()
+    }
 
-        override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
-            val view = LayoutInflater.from(parent.context)
-                .inflate(R.layout.item_history_entry, parent, false)
-            return ViewHolder(view)
-        }
+    private fun loadData() {
+        lifecycleScope.launch {
+            val programRepo = ProgramRepository.getInstance(requireContext())
+            withContext(Dispatchers.IO) { programRepo.initialize() }
 
-        override fun onBindViewHolder(holder: ViewHolder, position: Int) {
-            val item = items[position]
-            
-            holder.tvName.text = item.exerciseName
-            holder.tvDate.text = item.date
-            holder.tvScore.text = "${item.score}%"
-            
-            // Color based on score
-            val scoreColor = when {
-                item.score >= 85 -> R.color.success
-                item.score >= 70 -> R.color.warning
-                else -> R.color.error
+            val activeProgram = programRepo.getActiveProgram()
+            if (activeProgram == null) {
+                Log.d(TAG, "No active program — showing empty state")
+                return@launch
             }
-            holder.tvScore.setTextColor(resources.getColor(scoreColor, null))
+
+            val reportRepo = ReportRepository.getInstance(requireContext())
+            val result = withContext(Dispatchers.IO) {
+                reportRepo.getProgramMetrics(activeProgram.id, includeChildren = true)
+            }
+
+            if (_binding == null) return@launch
+
+            if (result != null && result.success) {
+                metrics = result
+                // Notify child fragments of data update
+                updateChildFragments()
+            }
+        }
+    }
+
+    fun getMetrics(): MetricsResponse? = metrics
+
+    private fun updateChildFragments() {
+        val adapter = binding.viewPager.adapter as? ReportsTabAdapter ?: return
+        adapter.notifyDataChanged(metrics)
+    }
+
+    // ─── Tab Adapter ───
+
+    class ReportsTabAdapter(fragment: Fragment) :
+        androidx.viewpager2.adapter.FragmentStateAdapter(fragment) {
+
+        private val fragments = mutableListOf<Fragment>()
+
+        override fun getItemCount(): Int = 4
+
+        override fun createFragment(position: Int): Fragment {
+            val f = when (position) {
+                0 -> ReportsOverviewFragment()
+                1 -> ReportsExercisesFragment()
+                2 -> ReportsTrendsFragment()
+                3 -> ReportsRecordsFragment()
+                else -> ReportsOverviewFragment()
+            }
+            fragments.add(f)
+            return f
         }
 
-        override fun getItemCount() = items.size
+        fun notifyDataChanged(metrics: MetricsResponse?) {
+            for (f in fragments) {
+                when (f) {
+                    is ReportsOverviewFragment -> f.updateData(metrics)
+                    is ReportsExercisesFragment -> f.updateData(metrics)
+                    is ReportsTrendsFragment -> f.updateData(metrics)
+                    is ReportsRecordsFragment -> f.updateData(metrics)
+                }
+            }
+        }
     }
 }

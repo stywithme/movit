@@ -625,6 +625,58 @@
     <string name="pg_view_full_reports">View Full Reports →</string>
     <string name="pg_browse_all_programs">Browse All Programs</string>
 
+    <!-- Reports Dashboard Enhancement -->
+    <string name="pg_form_score_trend">Form Score Trend</string>
+    <string name="pg_vs_last_week_format">vs. Last Week: %+.0f%%</string>
+    <string name="pg_grade_label">Grade</string>
+
+    <!-- Reports Hub -->
+    <string name="reports_title">Reports</string>
+    <string name="reports_tab_overview">Overview</string>
+    <string name="reports_tab_exercises">Exercises</string>
+    <string name="reports_tab_trends">Trends</string>
+    <string name="reports_tab_records">Records</string>
+    <string name="reports_total_workouts">Workouts</string>
+    <string name="reports_total_reps">Total Reps</string>
+    <string name="reports_total_volume">Volume (kg)</string>
+    <string name="reports_total_time">Total Time</string>
+    <string name="reports_form_journey">Form Score Journey</string>
+    <string name="reports_consistency">Consistency</string>
+    <string name="reports_improvement">Improvement</string>
+    <string name="reports_no_data">Complete your first workout to see reports</string>
+    <string name="reports_times_trained_format">Trained %d times</string>
+    <string name="reports_form_score_format">Form: %d%%</string>
+    <string name="reports_exercise_detail">Exercise Detail</string>
+    <string name="reports_volume_progression">Volume Progression</string>
+    <string name="reports_personal_records">Personal Records</string>
+    <string name="reports_best_form_score">Best Form Score</string>
+    <string name="reports_heaviest_weight">Heaviest Weight</string>
+    <string name="reports_most_reps">Most Reps</string>
+    <string name="reports_improvement_rate">Improvement Rate</string>
+    <string name="reports_attendance">Attendance</string>
+    <string name="reports_fatigue_pattern">Fatigue Pattern</string>
+    <string name="reports_longest_streak">Longest Streak</string>
+    <string name="reports_milestones">Milestones</string>
+    <string name="reports_week_format">Week %d</string>
+    <string name="reports_set_format">Set %d</string>
+
+    <!-- Day Detail -->
+    <string name="day_detail_title">Day Detail</string>
+    <string name="day_detail_rest_day_message">Rest day — your body recovers and grows stronger.</string>
+    <string name="day_detail_next_training">Next training day countdown</string>
+    <string name="day_detail_total_time">Total Time</string>
+    <string name="day_detail_avg_form">Avg Form</string>
+
+    <!-- Session Report Enhancement -->
+    <string name="session_report_excellent">Excellent session!</string>
+    <string name="session_report_good">Good work!</string>
+    <string name="session_report_solid">Solid effort!</string>
+    <string name="session_report_keep_going">Every session counts!</string>
+    <string name="session_report_vs_previous">vs. Previous</string>
+    <string name="session_report_strongest">Strongest: %s</string>
+    <string name="session_report_weakest">Needs work: %s</string>
+    <string name="session_report_improved_format">Improved %+.1f%% since last session</string>
+
     <!-- Program Complete -->
     <string name="pg_complete_title">🏆 You Did It!</string>
     <string name="pg_complete_subtitle">You\'ve completed the program. Look how far you\'ve come!</string>

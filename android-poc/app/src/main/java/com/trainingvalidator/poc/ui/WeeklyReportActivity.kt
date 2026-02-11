@@ -1,27 +1,35 @@
 package com.trainingvalidator.poc.ui
 
 import android.os.Bundle
+import android.util.Log
+import android.view.View
 import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
+import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.trainingvalidator.poc.R
 import com.trainingvalidator.poc.databinding.ActivityWeeklyReportBinding
+import com.trainingvalidator.poc.network.MetricsResponse
+import com.trainingvalidator.poc.network.WeekMetrics
 import com.trainingvalidator.poc.storage.ProgramRepository
 import com.trainingvalidator.poc.storage.ProgramSessionReportStore
+import com.trainingvalidator.poc.storage.ReportRepository
 import com.trainingvalidator.poc.training.models.ProgramConfig
 import com.trainingvalidator.poc.training.models.ProgramWeek
-import kotlinx.coroutines.CoroutineScope
+import com.trainingvalidator.poc.training.session.ReportAggregator
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
 /**
- * WeeklyReportActivity - Displays per-week progress summary for a program.
+ * WeeklyReportActivity — Enhanced with unified metrics endpoint.
+ * Shows per-week progress with comparison data and aggregated metrics.
  */
 class WeeklyReportActivity : AppCompatActivity() {
 
     companion object {
+        private const val TAG = "WeeklyReport"
         const val EXTRA_PROGRAM_SLUG = "program_slug"
         const val EXTRA_PROGRAM_ID = "program_id"
     }
@@ -48,7 +56,7 @@ class WeeklyReportActivity : AppCompatActivity() {
             return
         }
 
-        CoroutineScope(Dispatchers.Main).launch {
+        lifecycleScope.launch {
             val repository = ProgramRepository.getInstance(this@WeeklyReportActivity)
             withContext(Dispatchers.IO) {
                 repository.initialize()
@@ -60,7 +68,11 @@ class WeeklyReportActivity : AppCompatActivity() {
                 return@launch
             }
 
+            // First: show local data immediately
             bindProgram(program, programId)
+
+            // Then: fetch unified metrics from backend for enhanced display
+            fetchUnifiedMetrics(program, programId)
         }
     }
 
@@ -68,12 +80,32 @@ class WeeklyReportActivity : AppCompatActivity() {
         val language = java.util.Locale.getDefault().language
         binding.tvProgramName.text = program.name.get(language).ifBlank { program.name.en }
         binding.tvProgramSubtitle.text = getString(R.string.weekly_report_subtitle)
-        binding.rvWeeklyReports.adapter = WeeklyAdapter(program.weeks, programId)
+        binding.rvWeeklyReports.adapter = WeeklyAdapter(program.weeks, programId, null)
+    }
+
+    private fun fetchUnifiedMetrics(program: ProgramConfig, programId: String) {
+        lifecycleScope.launch {
+            try {
+                val reportRepo = ReportRepository.getInstance(this@WeeklyReportActivity)
+                val metrics = withContext(Dispatchers.IO) {
+                    reportRepo.getProgramMetrics(programId, includeChildren = true)
+                }
+
+                if (metrics != null && metrics.success && metrics.summary?.weeks != null) {
+                    // Re-bind with unified data
+                    binding.rvWeeklyReports.adapter =
+                        WeeklyAdapter(program.weeks, programId, metrics.summary?.weeks)
+                }
+            } catch (e: Exception) {
+                Log.w(TAG, "Failed to fetch unified metrics", e)
+            }
+        }
     }
 
     inner class WeeklyAdapter(
         private val weeks: List<ProgramWeek>,
-        private val programId: String
+        private val programId: String,
+        private val unifiedWeeks: List<WeekMetrics>?
     ) : RecyclerView.Adapter<WeeklyAdapter.ViewHolder>() {
 
         inner class ViewHolder(view: android.view.View) : RecyclerView.ViewHolder(view) {
@@ -95,16 +127,57 @@ class WeeklyReportActivity : AppCompatActivity() {
 
         override fun onBindViewHolder(holder: ViewHolder, position: Int) {
             val week = weeks[position]
+            val unified = unifiedWeeks?.find { it.weekNumber == week.weekNumber }
+
+            if (unified != null) {
+                // Use unified endpoint data
+                bindFromUnified(holder, week, unified)
+            } else {
+                // Fallback to local data
+                bindFromLocal(holder, week, programId)
+            }
+        }
+
+        private fun bindFromUnified(holder: ViewHolder, week: ProgramWeek, unified: WeekMetrics) {
+            holder.tvWeekTitle.text = getString(R.string.week_title_only, week.weekNumber)
+
+            val progressPercent = if (unified.daysTotal > 0) {
+                (unified.daysTrained * 100) / unified.daysTotal
+            } else 0
+            holder.progressWeek.progress = progressPercent
+
+            holder.tvWeekProgress.text = if (unified.daysTrained >= unified.daysTotal && unified.daysTotal > 0) {
+                getString(R.string.week_progress_completed)
+            } else {
+                getString(R.string.week_progress_format, unified.daysTrained, unified.daysTotal)
+            }
+
+            // Week-over-week comparison as message
+            val comparison = unified.weekOverWeekChange
+            holder.tvWeekMessage.text = if (comparison != null) {
+                val delta = comparison.formScore
+                val dir = if (delta >= 0) "+" else ""
+                "Form ${dir}${delta.toInt()}% vs previous week"
+            } else {
+                getWeekMessage(unified.daysTrained, unified.daysTotal, unified.averageFormScore)
+            }
+
+            holder.tvWeekReps.text = getString(R.string.week_reps_format, unified.totalReps)
+            holder.tvWeekAccuracy.text = getString(R.string.week_accuracy_format, unified.averageFormScore.toInt())
+            holder.tvWeekDuration.text = getString(
+                R.string.week_duration_format,
+                ReportAggregator.formatDuration(unified.totalTrainingTime)
+            )
+        }
+
+        /**
+         * Fallback: display basic counts from local store (no metric calculations).
+         * Backend is the source of truth; this only shows raw counts for offline mode.
+         */
+        private fun bindFromLocal(holder: ViewHolder, week: ProgramWeek, programId: String) {
             val reports = reportStore.getByWeek(programId, week.weekNumber)
             val totalSessions = week.days.sumOf { day -> day.sessions.size }
             val completedSessions = reports.size
-            val totalReps = reports.sumOf { it.totalReps }
-            val totalDurationMs = reports.sumOf { it.totalDurationMs }
-            val avgAccuracy = if (reports.isNotEmpty()) {
-                reports.map { it.averageAccuracy }.average().toFloat()
-            } else {
-                0f
-            }
 
             holder.tvWeekTitle.text = getString(R.string.week_title_only, week.weekNumber)
             holder.tvWeekProgress.text = if (totalSessions > 0 && completedSessions >= totalSessions) {
@@ -114,16 +187,14 @@ class WeeklyReportActivity : AppCompatActivity() {
             }
             holder.progressWeek.progress = if (totalSessions > 0) {
                 (completedSessions * 100) / totalSessions
-            } else {
-                0
-            }
+            } else 0
 
-            holder.tvWeekMessage.text = getWeekMessage(completedSessions, totalSessions, avgAccuracy)
-            holder.tvWeekReps.text = getString(R.string.week_reps_format, totalReps)
-            holder.tvWeekAccuracy.text = getString(R.string.week_accuracy_format, avgAccuracy.toInt())
+            holder.tvWeekMessage.text = getWeekMessage(completedSessions, totalSessions, 0f)
+            holder.tvWeekReps.text = getString(R.string.week_reps_format, reports.sumOf { it.totalReps })
+            holder.tvWeekAccuracy.text = getString(R.string.week_accuracy_format, 0)
             holder.tvWeekDuration.text = getString(
                 R.string.week_duration_format,
-                formatDuration(totalDurationMs)
+                formatDuration(reports.sumOf { it.totalDurationMs })
             )
         }
 

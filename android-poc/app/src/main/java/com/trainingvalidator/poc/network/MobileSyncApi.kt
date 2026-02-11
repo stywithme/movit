@@ -43,6 +43,25 @@ interface MobileSyncApi {
     @GET
     suspend fun downloadAudio(@Url url: String): Response<ResponseBody>
 
+    // ─── Unified Reports Endpoint ────────────────────────────────
+
+    /**
+     * Unified metrics endpoint — returns aggregated metrics at any scope.
+     * scope: program | week | day | session | exercise
+     */
+    @GET("api/mobile/reports/metrics")
+    suspend fun getMetrics(
+        @Header("Authorization") authorization: String,
+        @Query("programId") programId: String,
+        @Query("scope") scope: String,
+        @Query("weekNumber") weekNumber: Int? = null,
+        @Query("dayNumber") dayNumber: Int? = null,
+        @Query("sessionId") sessionId: String? = null,
+        @Query("exerciseSlug") exerciseSlug: String? = null,
+        @Query("includeHistory") includeHistory: Boolean? = null,
+        @Query("includeChildren") includeChildren: Boolean? = null
+    ): Response<MetricsResponse>
+
     // ─── Program Session Endpoints ──────────────────────────────
 
     /**

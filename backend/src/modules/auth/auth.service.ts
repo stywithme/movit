@@ -593,6 +593,19 @@ export const authService = {
   },
 
   /**
+   * Remove expired refresh tokens from the database.
+   * Should be called periodically (e.g., daily via cron) to prevent table bloat.
+   * @returns Number of deleted tokens
+   */
+  async cleanupExpiredTokens(): Promise<number> {
+    const prisma = await getPrisma();
+    const result = await prisma.refreshToken.deleteMany({
+      where: { expiresAt: { lt: new Date() } },
+    });
+    return result.count;
+  },
+
+  /**
    * Delete account (soft delete)
    */
   async deleteAccount(userId: string): Promise<void> {

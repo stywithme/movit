@@ -106,7 +106,8 @@ class SessionTrainingEngine(
         val totalReps: Int,
         val averageAccuracy: Float,  // Average completion rate across sets
         val averageFormScore: Float,  // Average form quality across sets
-        val setMetrics: List<SetMetrics>
+        val setMetrics: List<SetMetrics>,
+        val reportId: String? = null  // ID of the rich PostTrainingReport (if generated)
     )
 
     data class SessionReport(
@@ -117,8 +118,25 @@ class SessionTrainingEngine(
         val totalDurationMs: Long,
         val averageAccuracy: Float,  // Overall completion rate
         val averageFormScore: Float,  // Overall form quality (0-100)
-        val exerciseReports: List<ExerciseReport>
+        val exerciseReports: List<ExerciseReport>,
+        val reportIds: List<String> = emptyList()  // IDs of rich PostTrainingReports per exercise
     )
+
+    /**
+     * Callback interface for exercise completion events.
+     * Called when the LAST set of an exercise finishes, before rest/next-exercise.
+     * This allows the host Activity to generate a rich PostTrainingReport while
+     * the TrainingEngine still has the exercise data loaded.
+     */
+    interface OnExerciseCompletedListener {
+        /**
+         * Called when all sets for an exercise are done.
+         * @param exerciseIndex Index of the completed exercise
+         * @param exerciseSlug Exercise slug identifier
+         * @param sets All SetMetrics collected for this exercise
+         */
+        fun onExerciseCompleted(exerciseIndex: Int, exerciseSlug: String, sets: List<SetMetrics>)
+    }
 
     // ==================== State Flow ====================
 
@@ -150,6 +168,12 @@ class SessionTrainingEngine(
     /** Exercise names resolved externally (slug → localized name). */
     private val exerciseNames = mutableMapOf<String, String>()
 
+    /** Rich report IDs per exercise (slug → reportId). */
+    private val exerciseReportIds = mutableMapOf<String, String>()
+
+    /** Listener for exercise completion events. */
+    var onExerciseCompletedListener: OnExerciseCompletedListener? = null
+
     // ==================== Init ====================
 
     init {
@@ -179,6 +203,11 @@ class SessionTrainingEngine(
     /** Register a resolved exercise name (call before start). */
     fun setExerciseName(slug: String, name: String) {
         exerciseNames[slug] = name
+    }
+
+    /** Associate a rich PostTrainingReport ID with a completed exercise. */
+    fun setExerciseReportId(slug: String, reportId: String) {
+        exerciseReportIds[slug] = reportId
     }
 
     /** Total exercise count (not including rest items). */
@@ -260,7 +289,16 @@ class SessionTrainingEngine(
                 showPreExercise()
             }
         } else {
-            // All sets done → next exercise
+            // All sets done → notify listener then move to next exercise
+            val slug = currentItem.item.exerciseSlug
+            if (slug != null) {
+                val exerciseSets = allSetMetrics.filter { it.exerciseSlug == slug }
+                onExerciseCompletedListener?.onExerciseCompleted(
+                    exerciseIndex = currentExerciseIdx,
+                    exerciseSlug = slug,
+                    sets = exerciseSets
+                )
+            }
             moveToNextExercise()
         }
     }
@@ -334,7 +372,8 @@ class SessionTrainingEngine(
                     sets.map { it.accuracy }.average().toFloat() else 0f,
                 averageFormScore = if (sets.isNotEmpty())
                     sets.map { it.formScore }.average().toFloat() else 0f,
-                setMetrics = sets
+                setMetrics = sets,
+                reportId = exerciseReportIds[slug]
             )
         }.filterNotNull()
 
@@ -350,7 +389,8 @@ class SessionTrainingEngine(
                 allSetMetrics.map { it.accuracy }.average().toFloat() else 0f,
             averageFormScore = if (allFormScores.isNotEmpty())
                 allFormScores.average().toFloat() else 0f,
-            exerciseReports = exerciseReports
+            exerciseReports = exerciseReports,
+            reportIds = exerciseReportIds.values.toList()
         )
     }
 }

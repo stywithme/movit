@@ -34,6 +34,14 @@ import com.trainingvalidator.poc.ui.ProgramListActivity
 import com.trainingvalidator.poc.ui.ProgramSessionActivity
 import com.trainingvalidator.poc.ui.ProgramSessionReportActivity
 import com.trainingvalidator.poc.ui.WeeklyReportActivity
+import android.graphics.Color
+import android.util.Log
+import com.github.mikephil.charting.charts.LineChart
+import com.github.mikephil.charting.data.Entry
+import com.github.mikephil.charting.data.LineData
+import com.github.mikephil.charting.data.LineDataSet
+import com.trainingvalidator.poc.network.MetricsResponse
+import com.trainingvalidator.poc.storage.ReportRepository
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -55,8 +63,11 @@ class ProgramsFragment : Fragment() {
     private lateinit var exerciseRepo: ExerciseRepository
     private lateinit var reportStore: ProgramSessionReportStore
     private lateinit var customizationStore: DayCustomizationStore
+    private lateinit var reportRepo: ReportRepository
 
     private var expandedSessionIndex = 0 // First session expanded by default
+    private var isFirstLoad = true
+    private var cachedProgramMetrics: MetricsResponse? = null
 
     // ═══════════════════════════════════════════════════════════
     // Lifecycle
@@ -71,13 +82,23 @@ class ProgramsFragment : Fragment() {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
+        isFirstLoad = true
         loadPage()
     }
 
     override fun onResume() {
         super.onResume()
-        // Refresh when returning from session activity
-        if (_binding != null) loadPage()
+        if (_binding == null) return
+
+        if (isFirstLoad) {
+            // Skip — onViewCreated already triggered loadPage()
+            isFirstLoad = false
+            return
+        }
+
+        // Returning from another activity (e.g., after completing a session).
+        // Reload cache (might have new reports) and re-render, then background sync.
+        loadPage()
     }
 
     override fun onDestroyView() {
@@ -89,24 +110,129 @@ class ProgramsFragment : Fragment() {
     // Main Load
     // ═══════════════════════════════════════════════════════════
 
+    companion object {
+        private const val TAG = "ProgramsFragment"
+        private const val MAX_PREVIEW_ITEMS = 4
+    }
+
+    /**
+     * Offline-first load strategy:
+     * 1. Load from cache immediately and show UI (fast, works offline)
+     * 2. Trigger network sync in background
+     * 3. When sync completes and has updates, reload cache and refresh UI
+     */
     private fun loadPage() {
         lifecycleScope.launch {
             programRepo = ProgramRepository.getInstance(requireContext())
             exerciseRepo = ExerciseRepository.getInstance(requireContext())
             reportStore = ProgramSessionReportStore(requireContext())
             customizationStore = DayCustomizationStore(requireContext())
+            reportRepo = ReportRepository.getInstance(requireContext())
 
+            // Step 1: Load from cache immediately (offline-first)
             withContext(Dispatchers.IO) {
                 programRepo.initialize()
                 exerciseRepo.initialize(autoSync = false)
             }
 
-            val activeProgram = programRepo.getActiveProgram()
+            renderCurrentState()
 
-            if (activeProgram != null) {
-                showActiveProgramState(activeProgram)
-            } else {
-                showBrowseState()
+            // Step 2: Sync with backend in background
+            syncAndRefresh()
+        }
+    }
+
+    /**
+     * Render the current state from cache.
+     */
+    private fun renderCurrentState() {
+        val activeProgram = programRepo.getActiveProgram()
+
+        if (activeProgram != null) {
+            showActiveProgramState(activeProgram)
+        } else {
+            showBrowseState()
+        }
+    }
+
+    /**
+     * Background sync: fetch latest data from backend,
+     * then refresh the UI if anything changed.
+     *
+     * Network is the source of truth when available.
+     * Cache is only the fallback for offline mode.
+     *
+     * IMPORTANT: Even when sync is Skipped/NoChanges, we still reload
+     * from cache because another component (e.g. ExercisesFragment) may
+     * have already synced and updated the cache in the background.
+     */
+    private fun syncAndRefresh() {
+        lifecycleScope.launch {
+            try {
+                val result = withContext(Dispatchers.IO) {
+                    exerciseRepo.checkForUpdates()
+                }
+
+                // If view was destroyed during sync, bail out
+                if (_binding == null) return@launch
+
+                when (result) {
+                    is com.trainingvalidator.poc.storage.SyncManager.SyncResult.Success -> {
+                        Log.d(TAG, "Sync success: programs=${result.programsUpdated}, exercises=${result.exercisesUpdated}")
+                    }
+                    is com.trainingvalidator.poc.storage.SyncManager.SyncResult.NoChanges -> {
+                        Log.d(TAG, "Sync: no changes")
+                    }
+                    is com.trainingvalidator.poc.storage.SyncManager.SyncResult.Offline -> {
+                        Log.d(TAG, "Offline — using cached data")
+                    }
+                    is com.trainingvalidator.poc.storage.SyncManager.SyncResult.Skipped -> {
+                        Log.d(TAG, "Sync skipped — another sync may have updated cache")
+                    }
+                    is com.trainingvalidator.poc.storage.SyncManager.SyncResult.Error -> {
+                        Log.w(TAG, "Sync error: ${result.message}")
+                    }
+                }
+
+                // Always reload from cache and re-render after any sync attempt.
+                // Another component's sync may have updated programs/userPrograms/reports.
+                withContext(Dispatchers.IO) {
+                    programRepo.reloadFromCache()
+                }
+                renderCurrentState()
+
+                // Fetch unified metrics from backend for sparkline & grade
+                fetchUnifiedMetrics()
+
+            } catch (e: Exception) {
+                Log.w(TAG, "Background sync failed", e)
+            }
+        }
+    }
+
+    /**
+     * Fetch program-level metrics from the unified reports endpoint.
+     * Updates sparkline, program grade, and comparison data.
+     */
+    private fun fetchUnifiedMetrics() {
+        val activeProgram = programRepo.getActiveProgram() ?: return
+        val programId = activeProgram.id
+
+        lifecycleScope.launch {
+            try {
+                val metrics = withContext(Dispatchers.IO) {
+                    reportRepo.getProgramMetrics(programId, includeChildren = true)
+                }
+
+                if (_binding == null) return@launch
+
+                if (metrics != null && metrics.success) {
+                    cachedProgramMetrics = metrics
+                    renderProgramGrade(metrics)
+                    renderSparkline(metrics)
+                }
+            } catch (e: Exception) {
+                Log.w(TAG, "Failed to fetch unified metrics", e)
             }
         }
     }
@@ -224,12 +350,19 @@ class ProgramsFragment : Fragment() {
         binding.layoutWeekLabels.removeAllViews()
 
         val inflater = LayoutInflater.from(requireContext())
-        val days = week.days.sortedBy { it.dayNumber }
+
+        // Build a map of existing program days by dayNumber
+        val dayMap = week.days.associateBy { it.dayNumber }
 
         val today = Calendar.getInstance()
         val weekStartSaturday = getWeekStartSaturday(today)
 
-        days.forEachIndexed { index, day ->
+        // Always render 7 days (Sat=1 through Fri=7).
+        // If a day is missing from the program, treat it as a rest day.
+        for (dayNumber in 1..7) {
+            val day = dayMap[dayNumber]
+            val isImplicitRestDay = day == null || day.isRestDay
+
             val dayView = inflater.inflate(R.layout.item_week_day_circle, binding.layoutWeekCalendar, false)
             val card = dayView.findViewById<MaterialCardView>(R.id.cardDay)
             val tvNumber = dayView.findViewById<TextView>(R.id.tvDayNumber)
@@ -237,21 +370,27 @@ class ProgramsFragment : Fragment() {
             val tvLabel = dayView.findViewById<TextView>(R.id.tvDayLabel)
 
             // Week is fixed Sat -> Fri. dayNumber=1 means Saturday.
-            val realDate = calculateDateFromSaturdayStart(weekStartSaturday, day.dayNumber)
+            val realDate = calculateDateFromSaturdayStart(weekStartSaturday, dayNumber)
             val calendarDate = realDate.get(Calendar.DAY_OF_MONTH)
             val isToday = isSameDay(realDate, today)
             val isPast = realDate.before(today) && !isToday
 
-            val dayReports = reportStore.getByDay(program.id, week.weekNumber, day.dayNumber)
-            val isCompleted = day.sessions.isNotEmpty() && dayReports.size >= day.sessions.size
-            val isMissed = isPast && !isCompleted && !day.isRestDay && day.sessions.isNotEmpty()
+            // Check completion using reports (day may be null for implicit rest days)
+            val hasSessions = day != null && !day.isRestDay && day.sessions.isNotEmpty()
+            val dayReports = if (hasSessions) {
+                reportStore.getByDay(program.id, week.weekNumber, dayNumber)
+            } else {
+                emptyList()
+            }
+            val isCompleted = hasSessions && dayReports.size >= (day?.sessions?.size ?: 0)
+            val isMissed = isPast && !isCompleted && hasSessions
 
             // Day label from actual real date (not static position)
             tvLabel.text = getWeekdayShortLabel(realDate)
 
             when {
-                // Rest day
-                day.isRestDay -> {
+                // Rest day (explicit or implicit — no ProgramDay entry)
+                isImplicitRestDay -> {
                     tvNumber.visibility = View.GONE
                     ivCheck.visibility = View.VISIBLE
                     ivCheck.setImageResource(R.drawable.ic_rest)
@@ -304,7 +443,9 @@ class ProgramsFragment : Fragment() {
             }
 
             dayView.setOnClickListener {
-                showDayDetailSheet(program, week, day)
+                if (day != null) {
+                    showDayDetailSheet(program, week, day)
+                }
             }
 
             binding.layoutWeekCalendar.addView(dayView)
@@ -582,62 +723,66 @@ class ProgramsFragment : Fragment() {
     // ─────────────────────────────────────────────────────
 
     private fun renderReportSummary(program: ProgramConfig) {
-        val allReports = reportStore.getAll().filter { it.programId == program.id }
+        // Use unified metrics from backend if available (set by fetchUnifiedMetrics)
+        val metrics = cachedProgramMetrics
+        if (metrics != null && metrics.success && metrics.summary != null) {
+            renderReportSummaryFromBackend(program, metrics)
+            return
+        }
 
+        // Fallback: basic counts from local report store (offline mode)
+        val allReports = reportStore.getAll().filter { it.programId == program.id }
         if (allReports.isEmpty()) {
             binding.cardProgramReport.visibility = View.GONE
             return
         }
         binding.cardProgramReport.visibility = View.VISIBLE
 
-        // Build week reports using the unified ReportAggregator
-        val weekReports = program.weeks.map { week ->
-            val dayReports = week.days.map { day ->
-                val sessionReports = reportStore.getByDay(program.id, week.weekNumber, day.dayNumber)
-                ReportAggregator.aggregateDay(
-                    programId = program.id,
-                    weekNumber = week.weekNumber,
-                    dayNumber = day.dayNumber,
-                    sessionReports = sessionReports,
-                    totalSessionsInDay = day.sessions.size
-                )
-            }
-            val nonRestDays = week.days.count { !it.isRestDay && it.sessions.isNotEmpty() }
-            ReportAggregator.aggregateWeek(program.id, week.weekNumber, dayReports, nonRestDays)
-        }
-        val programReport = ReportAggregator.aggregateProgram(program.id, weekReports)
+        binding.tvReportDays.text = allReports.map { "${it.weekNumber}-${it.dayNumber}" }.toSet().size.toString()
+        binding.tvReportExercises.text = allReports.sumOf { it.report?.exerciseReports?.size ?: 0 }.toString()
+        binding.tvReportTime.text = ReportAggregator.formatDuration(allReports.sumOf { it.totalDurationMs })
+        binding.tvReportReps.text = allReports.sumOf { it.totalReps }.toString()
 
-        // Row 1: Days Trained
-        binding.tvReportDays.text = programReport.daysTrained.toString()
+        val avgForm = allReports.mapNotNull { it.averageFormScore.takeIf { s -> s > 0f } }
+        binding.tvReportAccuracy.text = if (avgForm.isNotEmpty()) "${avgForm.average().toInt()}%" else "—"
+        binding.tvReportSets.text = allReports.sumOf { it.totalSetsCompleted }.toString()
 
-        // Row 1: Total exercises done
-        binding.tvReportExercises.text = programReport.totalExercises.toString()
-
-        // Row 1: Total time
-        binding.tvReportTime.text = ReportAggregator.formatDuration(programReport.totalDurationMs)
-
-        // Row 2: Total Reps
-        binding.tvReportReps.text = programReport.totalReps.toString()
-
-        // Row 2: Form Score (not completion rate)
-        val formRating = ReportAggregator.getFormRating(programReport.averageFormScore)
-        binding.tvReportAccuracy.text = "${programReport.averageFormScore.toInt()}%"
-
-        // Row 2: Total Sets Completed
-        binding.tvReportSets.text = programReport.totalSets.toString()
-
-        // Insight message based on form progression
-        val completedSessions = allReports.size
         binding.tvReportInsight.text = when {
-            completedSessions >= 10 -> getString(R.string.pg_report_insight_consistent)
-            completedSessions >= 3 -> getString(R.string.pg_report_insight_improving)
+            allReports.size >= 10 -> getString(R.string.pg_report_insight_consistent)
+            allReports.size >= 3 -> getString(R.string.pg_report_insight_improving)
             else -> getString(R.string.pg_report_insight_started)
         }
+        binding.btnViewFullReports.setOnClickListener { openWeeklyReport(program) }
+    }
 
-        // View full reports
-        binding.btnViewFullReports.setOnClickListener {
-            openWeeklyReport(program)
+    /**
+     * Render report summary using unified backend metrics (source of truth).
+     */
+    private fun renderReportSummaryFromBackend(program: ProgramConfig, metrics: MetricsResponse) {
+        binding.cardProgramReport.visibility = View.VISIBLE
+        val summary = metrics.summary!!
+
+        binding.tvReportDays.text = (summary.daysTrained ?: 0).toString()
+        binding.tvReportExercises.text = "—" // Not directly in program-level summary
+        binding.tvReportTime.text = ReportAggregator.formatDuration(summary.totalTrainingTime ?: 0L)
+        binding.tvReportReps.text = (summary.totalReps ?: 0).toString()
+        binding.tvReportAccuracy.text = "${(summary.overallFormScore ?: 0f).toInt()}%"
+        binding.tvReportSets.text = (summary.totalVolume ?: 0f).toInt().toString()
+
+        // Insights from backend engine
+        val insights = metrics.insights
+        binding.tvReportInsight.text = if (!insights.isNullOrEmpty()) {
+            insights.first().let { "${it.icon} ${it.message}" }
+        } else {
+            val daysTrained = summary.daysTrained ?: 0
+            when {
+                daysTrained >= 10 -> getString(R.string.pg_report_insight_consistent)
+                daysTrained >= 3 -> getString(R.string.pg_report_insight_improving)
+                else -> getString(R.string.pg_report_insight_started)
+            }
         }
+
+        binding.btnViewFullReports.setOnClickListener { openWeeklyReport(program) }
     }
 
     // ─────────────────────────────────────────────────────
@@ -800,6 +945,85 @@ class ProgramsFragment : Fragment() {
     }
 
     // ═══════════════════════════════════════════════════════════
+    // Unified Metrics Rendering (Grade, Sparkline)
+    // ═══════════════════════════════════════════════════════════
+
+    private fun renderProgramGrade(metrics: MetricsResponse) {
+        val grade = metrics.summary?.programGrade
+        if (grade != null) {
+            binding.tvProgramGrade.text = grade
+            binding.tvProgramGrade.visibility = View.VISIBLE
+        } else {
+            binding.tvProgramGrade.visibility = View.GONE
+        }
+    }
+
+    private fun renderSparkline(metrics: MetricsResponse) {
+        val weeklyScores = metrics.summary?.weeklyFormScores
+        if (weeklyScores == null || weeklyScores.all { it == 0f }) {
+            binding.cardWeeklySparkline.visibility = View.GONE
+            return
+        }
+
+        binding.cardWeeklySparkline.visibility = View.VISIBLE
+
+        // Build chart entries from weekly form scores
+        val entries = weeklyScores.mapIndexed { index, score ->
+            Entry(index.toFloat(), score)
+        }
+
+        val dataSet = LineDataSet(entries, "").apply {
+            color = requireContext().getColor(R.color.primary)
+            lineWidth = 2.5f
+            setDrawCircles(true)
+            circleRadius = 3f
+            setCircleColor(requireContext().getColor(R.color.primary))
+            setDrawCircleHole(false)
+            setDrawValues(false)
+            setDrawFilled(true)
+            fillColor = requireContext().getColor(R.color.primary)
+            fillAlpha = 30
+            mode = LineDataSet.Mode.CUBIC_BEZIER
+        }
+
+        val chart = binding.chartSparkline
+        chart.data = LineData(dataSet)
+
+        // Minimal chart styling — clean sparkline look
+        chart.description.isEnabled = false
+        chart.legend.isEnabled = false
+        chart.setTouchEnabled(false)
+        chart.setDrawGridBackground(false)
+        chart.setDrawBorders(false)
+        chart.setViewPortOffsets(0f, 8f, 0f, 8f)
+
+        chart.xAxis.isEnabled = false
+        chart.axisLeft.isEnabled = false
+        chart.axisRight.isEnabled = false
+
+        chart.invalidate()
+
+        // Week comparison text
+        val weeks = metrics.summary?.weeks
+        if (weeks != null && weeks.size >= 2) {
+            val currentWeek = weeks.last()
+            val change = currentWeek.weekOverWeekChange
+            if (change != null) {
+                val delta = change.formScore
+                binding.tvWeekComparison.text = getString(R.string.pg_vs_last_week_format, delta)
+                binding.tvWeekComparison.setTextColor(
+                    requireContext().getColor(if (delta >= 0) R.color.success else R.color.error)
+                )
+                binding.tvWeekComparison.visibility = View.VISIBLE
+            } else {
+                binding.tvWeekComparison.visibility = View.GONE
+            }
+        } else {
+            binding.tvWeekComparison.visibility = View.GONE
+        }
+    }
+
+    // ═══════════════════════════════════════════════════════════
     // Helpers
     // ═══════════════════════════════════════════════════════════
 
@@ -936,7 +1160,4 @@ class ProgramsFragment : Fragment() {
 
     private data class DayRef(val week: ProgramWeek, val day: ProgramDay)
 
-    companion object {
-        private const val MAX_PREVIEW_ITEMS = 4
-    }
 }

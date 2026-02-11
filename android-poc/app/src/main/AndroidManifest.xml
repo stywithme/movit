@@ -202,6 +202,13 @@
             android:screenOrientation="portrait"
             android:theme="@style/Theme.WayToFix" />
         
+        <!-- Exercise History Activity -->
+        <activity
+            android:name=".ui.ExerciseHistoryActivity"
+            android:exported="false"
+            android:screenOrientation="portrait"
+            android:theme="@style/Theme.WayToFix" />
+
         <!-- Post-Training Report Pager Activity (Full-screen swipeable) -->
         <activity
             android:name=".ui.report.ReportPagerActivity"

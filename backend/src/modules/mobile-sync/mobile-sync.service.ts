@@ -20,6 +20,7 @@ import type {
   AudioFileInfo,
   MessageTemplate,
   UserProgramExport,
+  SessionReportExport,
 } from './mobile-sync.types';
 import * as fs from 'fs/promises';
 import * as path from 'path';
@@ -247,6 +248,7 @@ export const mobileSyncService = {
     const audioManifest = await this.buildAudioManifest(messageLibrary, baseUrl);
     
     let userPrograms: UserProgramExport[] | undefined;
+    let sessionReports: SessionReportExport[] | undefined;
     if (userId) {
       const userProgramRows = await prisma.userProgram.findMany({
         where: { userId },
@@ -260,6 +262,33 @@ export const mobileSyncService = {
         isActive: row.isActive,
         customizations: (row.customizations as Record<string, unknown>) || null,
         updatedAt: row.updatedAt.toISOString(),
+      }));
+
+      // Fetch completed session reports for this user
+      const reportRows = await prisma.programSessionReport.findMany({
+        where: {
+          userId,
+          status: 'completed',
+        },
+        orderBy: [{ weekNumber: 'asc' }, { dayNumber: 'asc' }],
+      });
+      sessionReports = reportRows.map((r) => ({
+        id: r.id,
+        sessionId: r.programSessionId,
+        programId: r.programId ?? '',
+        weekNumber: r.weekNumber,
+        dayNumber: r.dayNumber,
+        startedAt: r.startedAt.toISOString(),
+        completedAt: r.completedAt?.toISOString() ?? r.startedAt.toISOString(),
+        status: r.status,
+        totalDurationMs: r.totalDurationMs ?? 0,
+        totalExercises: r.totalExercises ?? 0,
+        totalSets: r.totalSets ?? 0,
+        completedSets: r.completedSets ?? 0,
+        totalReps: r.totalReps ?? 0,
+        avgAccuracy: r.avgAccuracy ?? 0,
+        avgFormScore: r.avgFormScore ?? undefined,
+        report: r.report ?? undefined,
       }));
     }
 
@@ -276,6 +305,7 @@ export const mobileSyncService = {
         programs: filteredPrograms,
         deletedProgramIds,
         userPrograms,
+        sessionReports,
         audioManifest,
       },
       meta: {

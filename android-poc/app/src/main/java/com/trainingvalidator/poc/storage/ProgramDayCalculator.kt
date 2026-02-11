@@ -181,18 +181,37 @@ object ProgramDayCalculator {
         dayIndex: Int,
         isProgramComplete: Boolean
     ): CurrentDayRef? {
-        // Try to find the exact match first
-        for (week in program.weeks.sortedBy { it.weekNumber }) {
-            for (day in week.days.sortedBy { it.dayNumber }) {
-                if (week.weekNumber == targetWeek && day.dayNumber == targetDay) {
-                    return CurrentDayRef(week, day, targetWeek, targetDay, dayIndex, isProgramComplete)
-                }
+        // 1. Try to find the target week
+        val week = program.weeks.firstOrNull { it.weekNumber == targetWeek }
+        if (week != null) {
+            // Try exact day match
+            val exactDay = week.days.firstOrNull { it.dayNumber == targetDay }
+            if (exactDay != null) {
+                return CurrentDayRef(week, exactDay, targetWeek, targetDay, dayIndex, isProgramComplete)
+            }
+
+            // Find the closest day in this week (prefer the nearest day number)
+            val closestDay = week.days.minByOrNull { kotlin.math.abs(it.dayNumber - targetDay) }
+            if (closestDay != null) {
+                return CurrentDayRef(week, closestDay, targetWeek, closestDay.dayNumber, dayIndex, isProgramComplete)
             }
         }
 
-        // If not found, return last available day
+        // 2. Week not found — find the closest available week
+        val closestWeek = program.weeks.minByOrNull { kotlin.math.abs(it.weekNumber - targetWeek) }
+        if (closestWeek != null) {
+            val day = closestWeek.days.firstOrNull { it.dayNumber == targetDay }
+                ?: closestWeek.days.minByOrNull { kotlin.math.abs(it.dayNumber - targetDay) }
+
+            if (day != null) {
+                return CurrentDayRef(closestWeek, day, closestWeek.weekNumber, day.dayNumber, dayIndex, isProgramComplete)
+            }
+        }
+
+        // 3. Last resort: return the last day of the last week
+        // ONLY mark as complete if dayIndex actually exceeded the program duration
         val lastWeek = program.weeks.maxByOrNull { it.weekNumber } ?: return null
         val lastDay = lastWeek.days.maxByOrNull { it.dayNumber } ?: return null
-        return CurrentDayRef(lastWeek, lastDay, lastWeek.weekNumber, lastDay.dayNumber, dayIndex, true)
+        return CurrentDayRef(lastWeek, lastDay, lastWeek.weekNumber, lastDay.dayNumber, dayIndex, isProgramComplete)
     }
 }

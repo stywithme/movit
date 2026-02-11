@@ -1,6 +1,5 @@
 package com.trainingvalidator.poc.overlay
 
-import com.trainingvalidator.poc.training.engine.JointZone
 import com.trainingvalidator.poc.training.models.JointState
 import com.trainingvalidator.poc.training.models.JointStateInfo
 import com.trainingvalidator.poc.training.models.StateRanges
@@ -43,9 +42,9 @@ data class ArcRangeData(
     val downRangeMax: Double,
     
     /** Current zone the joint is in */
-    val zone: JointZone,
+    val zone: ZoneType,
     
-    /** Whether joint is in error zone (TOO_HIGH or TOO_LOW) */
+    /** Whether joint is in error zone (out of bounds) */
     val isError: Boolean,
     
     /** Whether joint is approaching boundary (warning state) */
@@ -151,23 +150,6 @@ data class ArcRangeData(
                 stateInfo.currentAngle
             }
             
-            // Convert ZoneType to legacy JointZone
-            val legacyZone = when (stateInfo.currentZone) {
-                ZoneType.UP_ZONE -> when (stateInfo.state) {
-                    JointState.DANGER, JointState.WARNING -> {
-                        if (stateInfo.currentAngle > 90) JointZone.TOO_HIGH else JointZone.TOO_LOW
-                    }
-                    else -> JointZone.UP_ZONE
-                }
-                ZoneType.DOWN_ZONE -> when (stateInfo.state) {
-                    JointState.DANGER, JointState.WARNING -> {
-                        if (stateInfo.currentAngle < 90) JointZone.TOO_LOW else JointZone.TOO_HIGH
-                    }
-                    else -> JointZone.DOWN_ZONE
-                }
-                ZoneType.TRANSITION -> JointZone.TRANSITION
-            }
-            
             return ArcRangeData(
                 jointCode = stateInfo.jointCode,
                 centerX = centerX,
@@ -177,7 +159,7 @@ data class ArcRangeData(
                 upRangeMax = upMax,
                 downRangeMin = downMin,
                 downRangeMax = downMax,
-                zone = legacyZone,
+                zone = stateInfo.currentZone,
                 isError = stateInfo.state == JointState.DANGER || stateInfo.state == JointState.WARNING,
                 isWarning = stateInfo.state == JointState.PAD,
                 isPrimary = stateInfo.isPrimary,
@@ -194,6 +176,7 @@ data class ArcRangeData(
          * Create ArcRangeData from JointArrowInfo (Legacy)
          * @deprecated Use fromStateInfo() instead
          */
+        @Suppress("DEPRECATION")
         @Deprecated("Use fromStateInfo() with JointStateInfo instead")
         fun fromArrowInfo(
             jointCode: String,
@@ -201,6 +184,14 @@ data class ArcRangeData(
             centerY: Float,
             arrowInfo: com.trainingvalidator.poc.training.engine.JointArrowInfo
         ): ArcRangeData {
+            // Convert legacy JointZone to ZoneType
+            val zoneType = when (arrowInfo.zone) {
+                com.trainingvalidator.poc.training.engine.JointZone.UP_ZONE -> ZoneType.UP_ZONE
+                com.trainingvalidator.poc.training.engine.JointZone.DOWN_ZONE -> ZoneType.DOWN_ZONE
+                com.trainingvalidator.poc.training.engine.JointZone.TRANSITION -> ZoneType.TRANSITION
+                com.trainingvalidator.poc.training.engine.JointZone.TOO_HIGH -> ZoneType.UP_ZONE
+                com.trainingvalidator.poc.training.engine.JointZone.TOO_LOW -> ZoneType.DOWN_ZONE
+            }
             return ArcRangeData(
                 jointCode = jointCode,
                 centerX = centerX,
@@ -210,7 +201,7 @@ data class ArcRangeData(
                 upRangeMax = arrowInfo.upRangeMax,
                 downRangeMin = arrowInfo.downRangeMin,
                 downRangeMax = arrowInfo.downRangeMax,
-                zone = arrowInfo.zone,
+                zone = zoneType,
                 isError = arrowInfo.isError,
                 isWarning = arrowInfo.isWarning,
                 isPrimary = arrowInfo.isPrimary

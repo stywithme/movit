@@ -83,7 +83,8 @@ import okhttp3.RequestBody.Companion.toRequestBody
  * - User interactions
  * - Forwarding pose data to ViewModel
  */
-class TrainingActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetectionListener {
+class TrainingActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetectionListener,
+    com.trainingvalidator.poc.training.session.SessionTrainingEngine.OnExerciseCompletedListener {
 
     companion object {
         private const val TAG = "TrainingActivity"
@@ -115,6 +116,7 @@ class TrainingActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetection
         const val RESULT_SESSION_AVG_ACCURACY = "session_avg_accuracy"
         const val RESULT_SESSION_AVG_FORM_SCORE = "session_avg_form_score"
         const val RESULT_SESSION_REPORT_JSON = "session_report_json"
+        const val RESULT_SESSION_REPORT_IDS = "session_report_ids"
         
         // Training modes
         const val MODE_CAMERA = "camera"
@@ -577,6 +579,9 @@ class TrainingActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetection
         }
 
         sessionTrainingEngine = engine
+
+        // Register for exercise completion callbacks (rich report generation)
+        engine.onExerciseCompletedListener = this
 
         // Observe session engine state
         observeSessionEngineState()
@@ -1070,9 +1075,77 @@ class TrainingActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetection
             putExtra(RESULT_SESSION_AVG_ACCURACY, report.averageAccuracy)
             putExtra(RESULT_SESSION_AVG_FORM_SCORE, report.averageFormScore)
             putExtra(RESULT_SESSION_REPORT_JSON, reportJson)
+            putStringArrayListExtra(
+                RESULT_SESSION_REPORT_IDS,
+                ArrayList(report.reportIds)
+            )
         }
         setResult(RESULT_OK, resultIntent)
         finish()
+    }
+
+    // ==================== OnExerciseCompletedListener ====================
+
+    /**
+     * Called by SessionTrainingEngine when the LAST set of an exercise completes.
+     * Generates a rich PostTrainingReport using the current TrainingEngine data
+     * (which still has this exercise loaded) and saves it to ReportStorage.
+     */
+    override fun onExerciseCompleted(
+        exerciseIndex: Int,
+        exerciseSlug: String,
+        sets: List<com.trainingvalidator.poc.training.session.SessionTrainingEngine.SetMetrics>
+    ) {
+        val engine = viewModel.trainingEngine ?: run {
+            Log.w(TAG, "onExerciseCompleted: TrainingEngine is null, skipping report generation")
+            return
+        }
+        val exerciseConfig = sessionExerciseConfigMap[exerciseSlug] ?: run {
+            Log.w(TAG, "onExerciseCompleted: ExerciseConfig not found for $exerciseSlug")
+            return
+        }
+
+        val frameCaptures = frameCaptureManager?.getAllCaptures() ?: emptyList()
+        val sessionDurationMs = sets.sumOf { it.durationMs }
+
+        Log.d(TAG, "onExerciseCompleted: Generating rich report for $exerciseSlug " +
+                "(${sets.size} sets, ${frameCaptures.size} frames)")
+
+        // Generate report in background to avoid blocking the main thread
+        lifecycleScope.launch(Dispatchers.IO) {
+            try {
+                val report = ReportGenerator.generateFromEngine(
+                    engine = engine,
+                    exerciseConfig = exerciseConfig,
+                    sessionDurationMs = sessionDurationMs,
+                    frameCaptures = frameCaptures,
+                    sessionMetrics = null  // Skip session metrics in session mode
+                )
+
+                val saved = reportStorage?.save(report) ?: false
+                Log.d(TAG, "onExerciseCompleted: Report saved for $exerciseSlug: " +
+                        "id=${report.id}, saved=$saved")
+
+                if (saved) {
+                    sessionTrainingEngine?.setExerciseReportId(exerciseSlug, report.id)
+                }
+            } catch (e: Exception) {
+                Log.e(TAG, "onExerciseCompleted: Failed to generate report for $exerciseSlug", e)
+            }
+        }
+
+        // Reset frame capture manager for the next exercise
+        resetFrameCaptureManagerForNextExercise()
+    }
+
+    /**
+     * Reset the FrameCaptureManager with a new session ID for the next exercise.
+     * Each exercise in a session gets its own set of frame captures.
+     */
+    private fun resetFrameCaptureManagerForNextExercise() {
+        val newSessionId = java.util.UUID.randomUUID().toString()
+        Log.d(TAG, "Resetting FrameCaptureManager for next exercise: sessionId=$newSessionId")
+        frameCaptureManager = FrameCaptureManager(this, newSessionId)
     }
 
     /**

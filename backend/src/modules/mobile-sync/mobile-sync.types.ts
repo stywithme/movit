@@ -79,6 +79,12 @@ export interface SyncData {
    * User programs (enrollments/customizations)
    */
   userPrograms?: UserProgramExport[];
+
+  /**
+   * Completed session reports for the user (backend → mobile sync).
+   * Ensures reports survive app reinstall and are consistent across devices.
+   */
+  sessionReports?: SessionReportExport[];
   
   /**
    * Audio files manifest for download
@@ -94,6 +100,25 @@ export interface UserProgramExport {
   isActive: boolean;
   customizations?: Record<string, unknown> | null;
   updatedAt: string;
+}
+
+export interface SessionReportExport {
+  id: string;
+  sessionId: string;       // programSessionId
+  programId: string;
+  weekNumber: number;
+  dayNumber: number;
+  startedAt: string;       // ISO
+  completedAt: string;     // ISO
+  status: string;
+  totalDurationMs: number;
+  totalExercises: number;
+  totalSets: number;
+  completedSets: number;
+  totalReps: number;
+  avgAccuracy: number;
+  avgFormScore?: number;
+  report?: unknown;        // Full JSON report (ExerciseReports, SetMetrics, RepDetails)
 }
 
 export interface ExerciseConfigWithMeta extends ExerciseConfig {

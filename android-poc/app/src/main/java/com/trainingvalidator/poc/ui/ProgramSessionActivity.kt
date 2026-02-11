@@ -613,12 +613,14 @@ class ProgramSessionActivity : AppCompatActivity() {
 
     private fun updateBottomBar() {
         val completedSessionIds = getCompletedSessionIds()
-        val nextSession = sessions.firstOrNull { it.id !in completedSessionIds }
+        val hasNextSession = sessions.any { it.id !in completedSessionIds }
 
-        if (nextSession != null) {
+        if (hasNextSession) {
             binding.btnStartSession.text = getString(R.string.ds_start_session)
             binding.btnStartSession.isEnabled = true
-            binding.btnStartSession.setOnClickListener { startSession(nextSession) }
+            // Always use startNextSession() to read from the CURRENT sessions list.
+            // Never capture a session reference here — it would become stale after edits.
+            binding.btnStartSession.setOnClickListener { startNextSession() }
         } else {
             binding.btnStartSession.text = getString(R.string.ds_session_completed)
             binding.btnStartSession.isEnabled = false
@@ -680,6 +682,7 @@ class ProgramSessionActivity : AppCompatActivity() {
             val avgAccuracy = data.getFloatExtra(TrainingActivity.RESULT_SESSION_AVG_ACCURACY, 0f)
             val avgFormScore = data.getFloatExtra(TrainingActivity.RESULT_SESSION_AVG_FORM_SCORE, 0f)
             val reportJson = data.getStringExtra(TrainingActivity.RESULT_SESSION_REPORT_JSON)
+            val reportIds = data.getStringArrayListExtra(TrainingActivity.RESULT_SESSION_REPORT_IDS)
             val sessionId = launchedSessionId
 
             // Save local report (with form score)
@@ -703,23 +706,22 @@ class ProgramSessionActivity : AppCompatActivity() {
             renderAllSessions()
             updateBottomBar()
 
-            // Check if all sessions are done
-            val completedSessionIds = getCompletedSessionIds()
-            if (sessions.all { it.id in completedSessionIds }) {
-                // All sessions complete — navigate to report
-                val session = sessions.firstOrNull { it.id == sessionId }
-                val reportIntent = Intent(this, ProgramSessionReportActivity::class.java).apply {
-                    putExtra(ProgramSessionReportActivity.EXTRA_TOTAL_ITEMS, session?.items?.size ?: 0)
-                    putExtra(ProgramSessionReportActivity.EXTRA_TOTAL_SETS, totalSets)
-                    putExtra(ProgramSessionReportActivity.EXTRA_COMPLETED_SETS, completedSets)
-                    putExtra(ProgramSessionReportActivity.EXTRA_DURATION_MS, durationMs)
-                    putExtra(ProgramSessionReportActivity.EXTRA_AVG_ACCURACY, avgAccuracy)
-                    if (!reportJson.isNullOrBlank()) {
-                        putExtra(ProgramSessionReportActivity.EXTRA_SESSION_REPORT_JSON, reportJson)
-                    }
+            // Navigate to session report after EACH session (rich per-exercise reports)
+            val session = sessions.firstOrNull { it.id == sessionId }
+            val reportIntent = Intent(this, ProgramSessionReportActivity::class.java).apply {
+                putExtra(ProgramSessionReportActivity.EXTRA_TOTAL_ITEMS, session?.items?.size ?: 0)
+                putExtra(ProgramSessionReportActivity.EXTRA_TOTAL_SETS, totalSets)
+                putExtra(ProgramSessionReportActivity.EXTRA_COMPLETED_SETS, completedSets)
+                putExtra(ProgramSessionReportActivity.EXTRA_DURATION_MS, durationMs)
+                putExtra(ProgramSessionReportActivity.EXTRA_AVG_ACCURACY, avgAccuracy)
+                if (!reportJson.isNullOrBlank()) {
+                    putExtra(ProgramSessionReportActivity.EXTRA_SESSION_REPORT_JSON, reportJson)
                 }
-                startActivity(reportIntent)
+                if (!reportIds.isNullOrEmpty()) {
+                    putStringArrayListExtra(ProgramSessionReportActivity.EXTRA_REPORT_IDS, reportIds)
+                }
             }
+            startActivity(reportIntent)
         }
     }
 

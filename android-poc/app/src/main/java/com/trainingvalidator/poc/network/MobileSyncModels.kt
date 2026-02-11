@@ -39,7 +39,31 @@ data class SyncData(
     val programs: List<ProgramConfigWithMeta> = emptyList(),
     val deletedProgramIds: List<String> = emptyList(),
     val userPrograms: List<UserProgramExport> = emptyList(),
+    val sessionReports: List<SessionReportExport> = emptyList(),
     val audioManifest: AudioManifest
+)
+
+/**
+ * Completed session report from the backend.
+ * Used to sync training history to the mobile app.
+ */
+data class SessionReportExport(
+    val id: String,
+    val sessionId: String,
+    val programId: String,
+    val weekNumber: Int,
+    val dayNumber: Int,
+    val startedAt: String,
+    val completedAt: String,
+    val status: String,
+    val totalDurationMs: Int = 0,
+    val totalExercises: Int = 0,
+    val totalSets: Int = 0,
+    val completedSets: Int = 0,
+    val totalReps: Int = 0,
+    val avgAccuracy: Double = 0.0,
+    val avgFormScore: Double? = null,
+    val report: Any? = null
 )
 
 data class UserProgramExport(

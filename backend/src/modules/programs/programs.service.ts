@@ -900,18 +900,23 @@ export const programService = {
   async enrollUser(userId: string, programId: string, name?: LocalizedText) {
     const prisma = await getPrisma();
 
-    await prisma.userProgram.updateMany({
-      where: { userId, isActive: true },
-      data: { isActive: false },
-    });
+    // Use a transaction to guarantee atomicity:
+    // deactivate all existing programs, then create the new one.
+    // Prevents race conditions that could leave multiple active programs.
+    return prisma.$transaction(async (tx) => {
+      await tx.userProgram.updateMany({
+        where: { userId, isActive: true },
+        data: { isActive: false },
+      });
 
-    return prisma.userProgram.create({
-      data: {
-        userId,
-        programId,
-        name: (name as object) || undefined,
-        isActive: true,
-      },
+      return tx.userProgram.create({
+        data: {
+          userId,
+          programId,
+          name: (name as object) || undefined,
+          isActive: true,
+        },
+      });
     });
   },
 };

@@ -168,7 +168,7 @@
                                 android:drawablePadding="4dp"
                                 android:gravity="center_vertical"
                                 android:textColor="@color/text_secondary"
-                                tools:text="📅 12 days trained" />
+                                tools:text="12 days trained" />
 
                             <View
                                 android:layout_width="1dp"
@@ -184,12 +184,28 @@
                                 android:drawablePadding="4dp"
                                 android:gravity="center_vertical"
                                 android:textColor="@color/text_secondary"
-                                tools:text="🔥 3 day streak" />
+                                tools:text="3 day streak" />
 
                             <View
                                 android:layout_width="0dp"
                                 android:layout_height="0dp"
                                 android:layout_weight="1" />
+
+                            <!-- Program Grade Badge -->
+                            <TextView
+                                android:id="@+id/tvProgramGrade"
+                                android:layout_width="28dp"
+                                android:layout_height="28dp"
+                                android:background="@drawable/glass_pill_background"
+                                android:gravity="center"
+                                android:textColor="@color/primary"
+                                android:textSize="13sp"
+                                android:textStyle="bold"
+                                tools:text="A" />
+
+                            <View
+                                android:layout_width="6dp"
+                                android:layout_height="0dp" />
 
                             <TextView
                                 android:id="@+id/tvProgressPercent"
@@ -242,6 +258,61 @@
                     android:gravity="center"
                     android:orientation="horizontal"
                     android:paddingHorizontal="@dimen/spacing_sm" />
+
+                <!-- ─────────────────────────────────────────── -->
+                <!-- SECTION 2b: Weekly Sparkline                 -->
+                <!-- ─────────────────────────────────────────── -->
+                <com.google.android.material.card.MaterialCardView
+                    android:id="@+id/cardWeeklySparkline"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginHorizontal="@dimen/screen_padding_horizontal"
+                    android:layout_marginTop="@dimen/spacing_md"
+                    android:visibility="gone"
+                    app:cardBackgroundColor="@color/surface"
+                    app:cardCornerRadius="@dimen/radius_base"
+                    app:cardElevation="0dp"
+                    app:strokeColor="@color/surface_border"
+                    app:strokeWidth="1dp">
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="vertical"
+                        android:padding="@dimen/spacing_base">
+
+                        <LinearLayout
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:gravity="center_vertical"
+                            android:orientation="horizontal">
+
+                            <TextView
+                                style="@style/TextAppearance.WayToFix.Caption"
+                                android:layout_width="0dp"
+                                android:layout_height="wrap_content"
+                                android:layout_weight="1"
+                                android:text="@string/pg_form_score_trend"
+                                android:textColor="@color/text_secondary"
+                                android:textStyle="bold" />
+
+                            <TextView
+                                android:id="@+id/tvWeekComparison"
+                                style="@style/TextAppearance.WayToFix.Caption"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:textColor="@color/success"
+                                tools:text="vs. Last Week: +5%" />
+                        </LinearLayout>
+
+                        <com.github.mikephil.charting.charts.LineChart
+                            android:id="@+id/chartSparkline"
+                            android:layout_width="match_parent"
+                            android:layout_height="80dp"
+                            android:layout_marginTop="@dimen/spacing_xs" />
+
+                    </LinearLayout>
+                </com.google.android.material.card.MaterialCardView>
 
                 <!-- ─────────────────────────────────────────── -->
                 <!-- SECTION 3: Today                            -->

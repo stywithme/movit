@@ -18,6 +18,7 @@ import { MobileSyncModule } from './modules/mobile-sync/mobile-sync.module';
 import { UploadsModule } from './modules/uploads/uploads.module';
 import { AiModule } from './modules/ai/ai.module';
 import { AnalyticsModule } from './modules/analytics/analytics.module';
+import { ReportsModule } from './modules/reports/reports.module';
 
 @Module({
   imports: [
@@ -46,6 +47,7 @@ import { AnalyticsModule } from './modules/analytics/analytics.module';
     UploadsModule,
     AiModule,
     AnalyticsModule,
+    ReportsModule,
   ],
 })
 export class AppModule {}

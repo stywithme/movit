@@ -97,6 +97,9 @@ dependencies {
     implementation("com.squareup.okhttp3:okhttp:$okhttpVersion")
     implementation("com.squareup.okhttp3:logging-interceptor:$okhttpVersion")
     
+    // Charts — MPAndroidChart for sparklines, bar charts, line charts
+    implementation("com.github.PhilJay:MPAndroidChart:v3.1.0")
+
     // ViewPager2 for Report tabs
     implementation("androidx.viewpager2:viewpager2:1.1.0")
     

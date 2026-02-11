@@ -301,13 +301,62 @@ class SyncManager(
         val userPrograms = data.userPrograms ?: emptyList()
         val audioManifest = data.audioManifest
         
-        // Check if there are any changes
+        // ── Always process user-specific data (userPrograms, sessionReports) ──
+        // These must be handled regardless of exercise/program changes,
+        // otherwise the startDate and training reports never sync.
+        if (userPrograms.isNotEmpty()) {
+            userProgramStore.saveUserPrograms(userPrograms)
+            Log.d(TAG, "Saved ${userPrograms.size} user programs (startDate, active status)")
+
+            // Hydrate DayCustomizationStore from backend customizations
+            val customizationStore = DayCustomizationStore(context)
+            userPrograms.forEach { up ->
+                val pid = up.programId
+                if (pid != null && !up.customizations.isNullOrEmpty()) {
+                    customizationStore.hydrateFromBackend(pid, up.customizations)
+                }
+            }
+        }
+
+        // Sync session reports from backend → local store
+        val sessionReports = data.sessionReports ?: emptyList()
+        if (sessionReports.isNotEmpty()) {
+            val reportStore = ProgramSessionReportStore(context)
+            var reportsHydrated = 0
+            for (sr in sessionReports) {
+                val existing = reportStore.getBySession(sr.sessionId)
+                if (existing == null) {
+                    reportStore.save(
+                        ProgramSessionReportStore.ProgramSessionLocalReport(
+                            sessionId = sr.sessionId,
+                            programId = sr.programId,
+                            weekNumber = sr.weekNumber,
+                            dayNumber = sr.dayNumber,
+                            completedAt = parseIsoTimestamp(sr.completedAt),
+                            totalSetsPlanned = sr.totalSets,
+                            totalSetsCompleted = sr.completedSets,
+                            totalReps = sr.totalReps,
+                            averageAccuracy = sr.avgAccuracy.toFloat(),
+                            averageFormScore = (sr.avgFormScore ?: 0.0).toFloat(),
+                            totalDurationMs = sr.totalDurationMs.toLong(),
+                            report = null
+                        )
+                    )
+                    reportsHydrated++
+                }
+            }
+            if (reportsHydrated > 0) {
+                Log.d(TAG, "Hydrated $reportsHydrated session reports from backend")
+            }
+        }
+
+        // Check if there are content changes (exercises, workouts, programs)
         val hasExerciseChanges = exercises.isNotEmpty() || deletedExerciseIds.isNotEmpty()
         val hasWorkoutChanges = workouts.isNotEmpty() || deletedWorkoutIds.isNotEmpty()
         val hasProgramChanges = programs.isNotEmpty() || deletedProgramIds.isNotEmpty()
         
         if (!hasExerciseChanges && !hasWorkoutChanges && !hasProgramChanges) {
-            Log.d(TAG, "No changes since last sync")
+            Log.d(TAG, "No content changes since last sync (user data still synced)")
             
             // Still update timestamp
             if (meta != null) {
@@ -378,19 +427,8 @@ class SyncManager(
             }
         }
 
-        if (userPrograms.isNotEmpty()) {
-            userProgramStore.saveUserPrograms(userPrograms)
-
-            // Hydrate DayCustomizationStore from backend customizations
-            // This ensures customizations survive app reinstall/data clear
-            val customizationStore = DayCustomizationStore(context)
-            userPrograms.forEach { up ->
-                val pid = up.programId
-                if (pid != null && !up.customizations.isNullOrEmpty()) {
-                    customizationStore.hydrateFromBackend(pid, up.customizations)
-                }
-            }
-        }
+        // NOTE: userPrograms and sessionReports are already processed above
+        // (before the hasChanges check) to ensure they always sync.
         
         // Save exercise metadata
         if (meta != null) {
@@ -580,6 +618,25 @@ class SyncManager(
         }
     }
     
+    /**
+     * Parse ISO timestamp string to milliseconds epoch.
+     */
+    private fun parseIsoTimestamp(iso: String): Long {
+        return try {
+            val sdf = java.text.SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'", java.util.Locale.US)
+            sdf.timeZone = java.util.TimeZone.getTimeZone("UTC")
+            sdf.parse(iso)?.time ?: System.currentTimeMillis()
+        } catch (_: Exception) {
+            try {
+                val sdf = java.text.SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'", java.util.Locale.US)
+                sdf.timeZone = java.util.TimeZone.getTimeZone("UTC")
+                sdf.parse(iso)?.time ?: System.currentTimeMillis()
+            } catch (_: Exception) {
+                System.currentTimeMillis()
+            }
+        }
+    }
+
     /**
      * Check if we should skip sync due to recent attempt
      */
