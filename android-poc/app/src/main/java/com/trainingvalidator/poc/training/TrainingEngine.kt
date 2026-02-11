@@ -1099,6 +1099,9 @@ class TrainingEngine(
     fun getAccuracy(): Float = repCounter.getAccuracy()
     fun getProgress(): Float = repCounter.getProgress()
     fun isTrainingActive(): Boolean = isRunning && !isPaused
+
+    /** Get all rep results for detailed reporting. */
+    fun getRepResults(): List<RepResult> = repCounter.repResults
     
     /** Legacy compatibility */
     fun getCorrectReps(): Int = repCounter.countedCount

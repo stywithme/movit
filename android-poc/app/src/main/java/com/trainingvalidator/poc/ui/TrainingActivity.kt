@@ -1018,12 +1018,13 @@ class TrainingActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetection
 
         // Build per-rep details from the training engine's rep results
         val repDetails = trainingEng?.getRepResults()?.map { repResult ->
+            val repDurationMs = repResult.phaseTimings.values.sum()
             com.trainingvalidator.poc.training.session.SessionTrainingEngine.RepDetail(
                 repNumber = repResult.repNumber,
                 score = repResult.score,
                 worstState = repResult.worstState.ordinal,
                 isCounted = repResult.isCounted,
-                durationMs = repResult.durationMs
+                durationMs = repDurationMs
             )
         } ?: emptyList()
 

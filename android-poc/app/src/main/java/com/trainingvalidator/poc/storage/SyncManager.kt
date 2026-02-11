@@ -161,7 +161,18 @@ class SyncManager(
                 return@withContext SyncResult.Error(body?.error ?: "Unknown error")
             }
             
-            return@withContext processSyncResponse(body, isFullSync = body.meta?.isFullSync ?: false)
+            val result = processSyncResponse(body, isFullSync = body.meta?.isFullSync ?: false)
+
+            // After successful sync, flush any pending session reports (offline queue)
+            if (result is SyncResult.Success || result is SyncResult.NoChanges) {
+                try {
+                    flushPendingSessionReports()
+                } catch (e: Exception) {
+                    Log.w(TAG, "Failed to flush pending reports after sync", e)
+                }
+            }
+
+            return@withContext result
             
         } catch (e: UnknownHostException) {
             Log.w(TAG, "Offline - using cached data")
@@ -577,6 +588,56 @@ class SyncManager(
         return elapsed < MIN_SYNC_INTERVAL_MS
     }
     
+    // ==================== Offline Queue Sync ====================
+
+    /**
+     * Flush pending session reports that were queued while offline.
+     * Call this after a successful sync or when network becomes available.
+     *
+     * @return Number of reports successfully synced
+     */
+    suspend fun flushPendingSessionReports(): Int = withContext(Dispatchers.IO) {
+        val reportStore = ProgramSessionReportStore(context)
+        val pendingQueue = reportStore.getPendingSyncQueue()
+
+        if (pendingQueue.isEmpty()) {
+            Log.d(TAG, "No pending session reports to sync")
+            return@withContext 0
+        }
+
+        val authHeader = AuthManager.getAuthHeader(context)
+        if (authHeader == null) {
+            Log.w(TAG, "No auth token — cannot flush pending reports")
+            return@withContext 0
+        }
+
+        var synced = 0
+        for (entry in pendingQueue) {
+            try {
+                @Suppress("UNCHECKED_CAST")
+                val payload = entry.payload as Map<String, Any>
+                val response = ApiClient.mobileSyncApi.completeSession(
+                    entry.sessionId,
+                    authHeader,
+                    payload
+                )
+                if (response.isSuccessful) {
+                    reportStore.removePendingSync(entry.sessionId)
+                    synced++
+                    Log.d(TAG, "Flushed pending report for session: ${entry.sessionId}")
+                } else {
+                    Log.w(TAG, "Failed to flush report for session ${entry.sessionId}: ${response.code()}")
+                }
+            } catch (e: Exception) {
+                Log.w(TAG, "Failed to flush report for session ${entry.sessionId}: ${e.message}")
+                // Don't remove from queue — will retry next time
+            }
+        }
+
+        Log.d(TAG, "Flushed $synced / ${pendingQueue.size} pending session reports")
+        return@withContext synced
+    }
+
     // ==================== Status Methods ====================
     
     /**
