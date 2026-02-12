@@ -79,7 +79,7 @@ object ApiClient {
                              ctx, 
                              newTokens.accessToken, 
                              newTokens.refreshToken,
-                             newTokens.expiresIn
+                             newTokens.expiresIn.toLong()
                          )
                          
                          // Retry original request with new token
