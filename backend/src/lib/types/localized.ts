@@ -68,34 +68,34 @@ export type JointRole = 'primary' | 'secondary';
 /**
  * Expected facing direction
  */
-export type FacingDirection = 
-  | 'facing_right' 
-  | 'facing_left' 
-  | 'facing_camera' 
-  | 'facing_away' 
+export type FacingDirection =
+  | 'facing_right'
+  | 'facing_left'
+  | 'facing_camera'
+  | 'facing_away'
   | 'auto_detect';
 
 /**
- * Position check types (7 types as per Android schema)
+ * Position check types (7 types - synced with Android PositionCheckType enum)
  */
-export type PositionCheckType = 
+export type PositionCheckType =
   | 'forward_comparison'
-  | 'vertical_alignment'
-  | 'horizontal_alignment'
+  | 'vertical_comparison'
+  | 'sideways_comparison'
   | 'distance_ratio'
-  | 'angle_constraint'
-  | 'relative_position'
-  | 'symmetry_check';
+  | 'horizontal_alignment'
+  | 'vertical_alignment'
+  | 'depth_alignment';
 
 /**
- * Condition operators for position checks
+ * Condition operators for position checks (synced with Android PositionOperator enum)
  */
-export type ConditionOperator = 
+export type ConditionOperator =
   | 'should_not_exceed'
   | 'should_exceed'
-  | 'should_be_within'
-  | 'should_equal'
-  | 'approximately_equal';
+  | 'approximately_equal'
+  | 'greater_than_ratio'
+  | 'less_than_ratio';
 
 /**
  * Severity levels for errors/warnings
@@ -105,14 +105,14 @@ export type Severity = 'error' | 'warning' | 'tip';
 /**
  * Phase names (matching Android engine)
  */
-export type PhaseName = 
+export type PhaseName =
   | 'idle'
-  | 'start' 
-  | 'down' 
-  | 'bottom' 
-  | 'up' 
-  | 'push' 
-  | 'extended' 
+  | 'start'
+  | 'down'
+  | 'bottom'
+  | 'up'
+  | 'push'
+  | 'extended'
   | 'pull'
   | 'hold'
   | 'count';

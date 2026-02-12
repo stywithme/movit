@@ -209,7 +209,7 @@ export function expandBilateralJoint(code: string): { left: string; right: strin
 /**
  * Available metrics for reports
  */
-export type MetricCode = 
+export type MetricCode =
   // Core (always available)
   | 'form_score'
   | 'rep_count'
@@ -256,48 +256,80 @@ export interface MetricDefinition {
  */
 export const METRIC_DEFINITIONS: MetricDefinition[] = [
   // Core
-  { code: 'form_score', label: { ar: 'جودة الأداء', en: 'Form Score' }, unit: '%', category: 'core',
-    autoInclude: { repBased: true, hold: true, bilateral: true, weighted: true } },
-  { code: 'rep_count', label: { ar: 'عدد العدات', en: 'Rep Count' }, unit: '', category: 'core',
-    autoInclude: { repBased: true, hold: false, bilateral: true, weighted: true } },
-  { code: 'duration', label: { ar: 'المدة', en: 'Duration' }, unit: 's', category: 'core',
-    autoInclude: { repBased: true, hold: true, bilateral: true, weighted: true } },
-  
+  {
+    code: 'form_score', label: { ar: 'جودة الأداء', en: 'Form Score' }, unit: '%', category: 'core',
+    autoInclude: { repBased: true, hold: true, bilateral: true, weighted: true }
+  },
+  {
+    code: 'rep_count', label: { ar: 'عدد العدات', en: 'Rep Count' }, unit: '', category: 'core',
+    autoInclude: { repBased: true, hold: false, bilateral: true, weighted: true }
+  },
+  {
+    code: 'duration', label: { ar: 'المدة', en: 'Duration' }, unit: 's', category: 'core',
+    autoInclude: { repBased: true, hold: true, bilateral: true, weighted: true }
+  },
+
   // Kinematic
-  { code: 'rom', label: { ar: 'المدى الحركي', en: 'Range of Motion' }, unit: '°', category: 'kinematic',
-    autoInclude: { repBased: true, hold: false, bilateral: true, weighted: true } },
-  { code: 'symmetry', label: { ar: 'التوازن', en: 'Symmetry' }, unit: '%', category: 'kinematic',
-    autoInclude: { repBased: false, hold: false, bilateral: true, weighted: false } },
-  { code: 'stability', label: { ar: 'الثبات', en: 'Stability' }, unit: '%', category: 'kinematic',
-    autoInclude: { repBased: false, hold: true, bilateral: true, weighted: false } },
-  
+  {
+    code: 'rom', label: { ar: 'المدى الحركي', en: 'Range of Motion' }, unit: '°', category: 'kinematic',
+    autoInclude: { repBased: true, hold: false, bilateral: true, weighted: true }
+  },
+  {
+    code: 'symmetry', label: { ar: 'التوازن', en: 'Symmetry' }, unit: '%', category: 'kinematic',
+    autoInclude: { repBased: false, hold: false, bilateral: true, weighted: false }
+  },
+  {
+    code: 'stability', label: { ar: 'الثبات', en: 'Stability' }, unit: '%', category: 'kinematic',
+    autoInclude: { repBased: false, hold: true, bilateral: true, weighted: false }
+  },
+
   // Temporal
-  { code: 'tempo', label: { ar: 'الإيقاع', en: 'Tempo' }, unit: 's', category: 'temporal',
-    autoInclude: { repBased: true, hold: false, bilateral: true, weighted: true } },
-  { code: 'tut', label: { ar: 'الوقت تحت الضغط', en: 'Time Under Tension' }, unit: 's', category: 'temporal',
-    autoInclude: { repBased: true, hold: false, bilateral: true, weighted: true } },
-  { code: 'hold_duration', label: { ar: 'مدة الثبات', en: 'Hold Duration' }, unit: 's', category: 'temporal',
-    autoInclude: { repBased: false, hold: true, bilateral: true, weighted: false } },
-  
+  {
+    code: 'tempo', label: { ar: 'الإيقاع', en: 'Tempo' }, unit: 's', category: 'temporal',
+    autoInclude: { repBased: true, hold: false, bilateral: true, weighted: true }
+  },
+  {
+    code: 'tut', label: { ar: 'الوقت تحت الضغط', en: 'Time Under Tension' }, unit: 's', category: 'temporal',
+    autoInclude: { repBased: true, hold: false, bilateral: true, weighted: true }
+  },
+  {
+    code: 'hold_duration', label: { ar: 'مدة الثبات', en: 'Hold Duration' }, unit: 's', category: 'temporal',
+    autoInclude: { repBased: false, hold: true, bilateral: true, weighted: false }
+  },
+
   // Quality
-  { code: 'alignment', label: { ar: 'دقة المحاذاة', en: 'Alignment Accuracy' }, unit: '%', category: 'quality',
-    autoInclude: { repBased: false, hold: false, bilateral: false, weighted: false, hasPositionChecks: true } },
-  { code: 'form_consistency', label: { ar: 'ثبات الشكل', en: 'Form Consistency' }, unit: '%', category: 'quality',
-    autoInclude: { repBased: true, hold: false, bilateral: true, weighted: true }, minReps: 4 },
-  { code: 'fatigue_index', label: { ar: 'نقطة التعب', en: 'Fatigue Index' }, unit: '#', category: 'quality',
-    autoInclude: { repBased: true, hold: false, bilateral: true, weighted: true }, minReps: 4 },
-  
+  {
+    code: 'alignment', label: { ar: 'دقة المحاذاة', en: 'Alignment Accuracy' }, unit: '%', category: 'quality',
+    autoInclude: { repBased: false, hold: false, bilateral: false, weighted: false, hasPositionChecks: true }
+  },
+  {
+    code: 'form_consistency', label: { ar: 'ثبات الشكل', en: 'Form Consistency' }, unit: '%', category: 'quality',
+    autoInclude: { repBased: true, hold: false, bilateral: true, weighted: true }, minReps: 4
+  },
+  {
+    code: 'fatigue_index', label: { ar: 'نقطة التعب', en: 'Fatigue Index' }, unit: '#', category: 'quality',
+    autoInclude: { repBased: true, hold: false, bilateral: true, weighted: true }, minReps: 4
+  },
+
   // Power
-  { code: 'velocity', label: { ar: 'السرعة', en: 'Velocity' }, unit: '°/s', category: 'power',
-    autoInclude: { repBased: false, hold: false, bilateral: false, weighted: false } },
-  
+  {
+    code: 'velocity', label: { ar: 'السرعة', en: 'Velocity' }, unit: '°/s', category: 'power',
+    autoInclude: { repBased: false, hold: false, bilateral: false, weighted: false }
+  },
+
   // Load
-  { code: 'weight', label: { ar: 'الوزن', en: 'Weight' }, unit: 'kg', category: 'load',
-    autoInclude: { repBased: false, hold: false, bilateral: false, weighted: true } },
-  { code: 'volume', label: { ar: 'الحجم الكلي', en: 'Total Volume' }, unit: 'kg', category: 'load',
-    autoInclude: { repBased: false, hold: false, bilateral: false, weighted: true } },
-  { code: 'est_1rm', label: { ar: 'القوة القصوى', en: 'Est. 1RM' }, unit: 'kg', category: 'load',
-    autoInclude: { repBased: false, hold: false, bilateral: false, weighted: true } },
+  {
+    code: 'weight', label: { ar: 'الوزن', en: 'Weight' }, unit: 'kg', category: 'load',
+    autoInclude: { repBased: false, hold: false, bilateral: false, weighted: true }
+  },
+  {
+    code: 'volume', label: { ar: 'الحجم الكلي', en: 'Total Volume' }, unit: 'kg', category: 'load',
+    autoInclude: { repBased: false, hold: false, bilateral: false, weighted: true }
+  },
+  {
+    code: 'est_1rm', label: { ar: 'القوة القصوى', en: 'Est. 1RM' }, unit: 'kg', category: 'load',
+    autoInclude: { repBased: false, hold: false, bilateral: false, weighted: true }
+  },
 ];
 
 /**
@@ -320,14 +352,14 @@ export function getAutoIncludedMetrics(options: {
 }): MetricCode[] {
   const { countingMethod, isBilateral, supportsWeight, hasPositionChecks } = options;
   const isRepBased = countingMethod !== 'hold';
-  
+
   return METRIC_DEFINITIONS
     .filter(m => {
       // Special case: alignment requires position checks
       if (m.autoInclude.hasPositionChecks) {
         return hasPositionChecks === true;
       }
-      
+
       if (isRepBased && m.autoInclude.repBased) return true;
       if (!isRepBased && m.autoInclude.hold) return true;
       if (isBilateral && m.autoInclude.bilateral && m.code === 'symmetry') return true;
@@ -351,9 +383,9 @@ export function getAutoExcludedMetrics(options: {
 }): MetricCode[] {
   const { countingMethod, isBilateral, supportsWeight, hasPositionChecks } = options;
   const isHold = countingMethod === 'hold';
-  
+
   const excluded: MetricCode[] = [];
-  
+
   // Hold exercise restrictions
   if (isHold) {
     excluded.push('rep_count', 'tempo', 'tut', 'rom', 'form_consistency', 'fatigue_index', 'velocity');
@@ -361,22 +393,22 @@ export function getAutoExcludedMetrics(options: {
     // Rep-based exercise restrictions
     excluded.push('hold_duration');
   }
-  
+
   // Weight restrictions
   if (!supportsWeight) {
     excluded.push('weight', 'volume', 'est_1rm');
   }
-  
+
   // Bilateral restrictions
   if (!isBilateral) {
     excluded.push('symmetry');
   }
-  
+
   // Position Checks restrictions (Alignment)
   if (!hasPositionChecks) {
     excluded.push('alignment');
   }
-  
+
   return excluded;
 }
 
@@ -401,25 +433,25 @@ export function getDefaultPrimaryMetrics(options: {
   supportsWeight: boolean;
 }): MetricCode[] {
   const { countingMethod, isBilateral, supportsWeight } = options;
-  
+
   if (countingMethod === 'hold') {
-    return supportsWeight 
+    return supportsWeight
       ? ['form_score', 'hold_duration', 'weight']
       : ['form_score', 'hold_duration'];
   }
-  
+
   if (isBilateral && supportsWeight) {
     return ['form_score', 'symmetry', 'weight'];
   }
-  
+
   if (isBilateral) {
     return ['form_score', 'symmetry', 'rom'];
   }
-  
+
   if (supportsWeight) {
     return ['form_score', 'rom', 'weight'];
   }
-  
+
   return ['form_score', 'rom'];
 }
 
@@ -441,12 +473,12 @@ export interface PositionCheckLandmarks {
  * Position check condition (single threshold)
  */
 export interface PositionCheckCondition {
-  operator: 
-    | 'should_not_exceed'
-    | 'should_exceed'
-    | 'should_be_within'
-    | 'should_equal'
-    | 'approximately_equal';
+  operator:
+  | 'should_not_exceed'
+  | 'should_exceed'
+  | 'approximately_equal'
+  | 'greater_than_ratio'
+  | 'less_than_ratio';
   threshold: number;
 }
 
@@ -564,13 +596,13 @@ export interface CreateExerciseInput {
   tags?: string[];
   repCountingConfig?: RepCountingConfig;
   poseVariants?: PoseVariantInput[];
-  
+
   // Weight configuration
   weightConfig?: WeightConfig;
 
   // Alternating configuration
   alternatingConfig?: AlternatingConfigInput;
-  
+
   // Report metrics configuration
   reportMetrics?: ReportMetricsConfig;
 }
@@ -607,7 +639,7 @@ export function isPrimaryJoint(joint: TrackedJoint): joint is PrimaryTrackedJoin
  */
 export function isSecondaryJoint(joint: TrackedJoint): joint is SecondaryTrackedJoint {
   return joint.role === 'secondary';
-  }
+}
 
 /**
  * Get outer min from StateRanges
@@ -637,7 +669,7 @@ export function getOuterMax(ranges: StateRanges): number {
  * Create default primary joint
  */
 export function createDefaultPrimaryJoint(jointCode: string): PrimaryTrackedJoint {
-        return {
+  return {
     joint: jointCode,
     role: 'primary',
     startPose: { min: 150, max: 180 },
@@ -680,14 +712,14 @@ export function createDefaultSecondaryJoint(jointCode: string): SecondaryTracked
  * @param useZoneMessages - If true, creates zone-based messages (up/down)
  */
 export function createDefaultStateMessages(
-  jointCode: string, 
+  jointCode: string,
   useZoneMessages: boolean = false
 ): StateMessages {
   const jointName = jointCode.replace(/_/g, ' ').replace(/left |right /gi, '');
   const isLeft = jointCode.startsWith('left_');
   const side = isLeft ? 'left' : 'right';
   const sideAr = isLeft ? 'اليسرى' : 'اليمنى';
-  
+
   if (useZoneMessages) {
     // Zone-based messages for up_down and push_pull exercises
     return {
@@ -712,19 +744,19 @@ export function createDefaultStateMessages(
       },
     };
   }
-  
+
   // Simple messages for hold exercises
   return {
     perfect: { ar: 'ممتاز!', en: 'Perfect!' },
     normal: { ar: 'جيد', en: 'Good' },
     pad: { ar: 'مقبول', en: 'Acceptable' },
-    warning: { 
-      ar: `تحقق من وضع ${jointName} ${sideAr}`, 
-      en: `Check your ${side} ${jointName} position` 
+    warning: {
+      ar: `تحقق من وضع ${jointName} ${sideAr}`,
+      en: `Check your ${side} ${jointName} position`
     },
-    danger: { 
-      ar: `توقف! ${jointName} ${sideAr} في وضع خطير`, 
-      en: `Stop! ${side} ${jointName} in dangerous position` 
+    danger: {
+      ar: `توقف! ${jointName} ${sideAr} في وضع خطير`,
+      en: `Stop! ${side} ${jointName} in dangerous position`
     },
   };
 }
@@ -735,9 +767,9 @@ export function createDefaultStateMessages(
 export function copyToPairedJoint(source: TrackedJoint): TrackedJoint | null {
   const pairedCode = getPairedJointCode(source.joint);
   if (!pairedCode) return null;
-  
+
   const newMessages = createDefaultStateMessages(pairedCode);
-  
+
   if (isPrimaryJoint(source)) {
     return {
       ...source,
@@ -776,19 +808,19 @@ export function getDefaultRepCountingConfig(countingMethod: CountingMethodCode):
  * Validate StateRanges for transition zone (for primary joints)
  */
 export function validateTransitionZone(
-  upRange: StateRanges, 
+  upRange: StateRanges,
   downRange: StateRanges
 ): { valid: boolean; error?: string } {
   const upMin = getOuterMin(upRange);
   const downMax = getOuterMax(downRange);
-  
+
   if (upMin <= downMax) {
-  return {
+    return {
       valid: false,
       error: `Invalid transition zone: upRange min (${upMin}) must be greater than downRange max (${downMax})`,
     };
   }
-  
+
   return { valid: true };
 }
 

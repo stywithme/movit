@@ -76,7 +76,7 @@ const TEMPLATES: Array<{
       name: 'Elbow Stable',
       description: 'Elbow stays close to body (curls)',
       data: {
-        type: 'vertical_alignment',
+        type: 'sideways_comparison',
         landmarks: { primary: 'left_elbow', secondary: 'left_hip' },
         condition: { operator: 'approximately_equal', threshold: 0.08 },
         activePhases: ['up', 'down'],
@@ -89,21 +89,21 @@ const TEMPLATES: Array<{
   ];
 
 const POSITION_CHECK_TYPES: Array<{ value: PositionCheckType; label: string; description: string }> = [
-  { value: 'forward_comparison', label: 'Forward Comparison', description: 'Compare X positions' },
-  { value: 'vertical_alignment', label: 'Vertical Alignment', description: 'Compare X alignment' },
-  { value: 'horizontal_alignment', label: 'Horizontal Alignment', description: 'Compare Y alignment' },
-  { value: 'distance_ratio', label: 'Distance Ratio', description: 'Compare distances' },
-  { value: 'angle_constraint', label: 'Angle Constraint', description: 'Check angle between 3 points' },
-  { value: 'relative_position', label: 'Relative Position', description: 'Check relative position' },
-  { value: 'symmetry_check', label: 'Symmetry Check', description: 'Check left/right symmetry' },
+  { value: 'forward_comparison', label: 'Forward Comparison', description: 'Compare positions along forward axis (X in side view, Z in front view). E.g. knee-over-toe.' },
+  { value: 'vertical_comparison', label: 'Vertical Comparison', description: 'Compare heights (Y axis): is one point above/below another? E.g. hands above shoulders.' },
+  { value: 'sideways_comparison', label: 'Sideways Comparison', description: 'Compare lateral positions (Z in side view, X in front view). E.g. elbow staying close to torso.' },
+  { value: 'distance_ratio', label: 'Distance Ratio', description: 'Compare the ratio of two distances. Requires 4 landmarks. E.g. stance width vs shoulder width.' },
+  { value: 'horizontal_alignment', label: 'Horizontal Alignment', description: 'Check if points are on the same horizontal line (similar Y). E.g. shoulders level.' },
+  { value: 'vertical_alignment', label: 'Vertical Alignment', description: 'Check if points are on the same vertical line (similar X). E.g. wrist over elbow in plank.' },
+  { value: 'depth_alignment', label: 'Depth Alignment', description: 'Check if points are at the same depth from camera (similar Z). Advanced use.' },
 ];
 
-const OPERATORS: Array<{ value: ConditionOperator; label: string }> = [
-  { value: 'should_not_exceed', label: 'Should Not Exceed' },
-  { value: 'should_exceed', label: 'Should Exceed' },
-  { value: 'should_be_within', label: 'Should Be Within' },
-  { value: 'should_equal', label: 'Should Equal' },
-  { value: 'approximately_equal', label: 'Approximately Equal' },
+const OPERATORS: Array<{ value: ConditionOperator; label: string; description: string }> = [
+  { value: 'should_not_exceed', label: 'Should Not Exceed', description: 'Primary must NOT go past secondary by more than threshold' },
+  { value: 'should_exceed', label: 'Should Exceed', description: 'Primary MUST go past secondary by at least threshold' },
+  { value: 'approximately_equal', label: 'Approximately Equal', description: 'Difference between points must be less than threshold' },
+  { value: 'greater_than_ratio', label: 'Greater Than Ratio', description: 'Distance ratio must be greater than threshold (for Distance Ratio type)' },
+  { value: 'less_than_ratio', label: 'Less Than Ratio', description: 'Distance ratio must be less than threshold (for Distance Ratio type)' },
 ];
 
 const PHASE_OPTIONS: PhaseName[] = ['start', 'down', 'bottom', 'up', 'push', 'extended', 'pull', 'hold'];

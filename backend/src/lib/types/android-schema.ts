@@ -44,11 +44,11 @@ export type CameraPosition = 'side_view' | 'front_view' | 'back_view';
 /**
  * Expected facing direction
  */
-export type FacingDirection = 
-  | 'facing_right' 
-  | 'facing_left' 
-  | 'facing_camera' 
-  | 'facing_away' 
+export type FacingDirection =
+  | 'facing_right'
+  | 'facing_left'
+  | 'facing_camera'
+  | 'facing_away'
   | 'auto_detect';
 
 /**
@@ -57,26 +57,26 @@ export type FacingDirection =
 export type JointRole = 'primary' | 'secondary';
 
 /**
- * Position check types
+ * Position check types (synced with Android PositionCheckType enum)
  */
-export type PositionCheckType = 
+export type PositionCheckType =
   | 'forward_comparison'
-  | 'vertical_alignment'
-  | 'horizontal_alignment'
+  | 'vertical_comparison'
+  | 'sideways_comparison'
   | 'distance_ratio'
-  | 'angle_constraint'
-  | 'relative_position'
-  | 'symmetry_check';
+  | 'horizontal_alignment'
+  | 'vertical_alignment'
+  | 'depth_alignment';
 
 /**
- * Condition operators for position checks
+ * Condition operators for position checks (synced with Android PositionOperator enum)
  */
-export type ConditionOperator = 
+export type ConditionOperator =
   | 'should_not_exceed'
   | 'should_exceed'
-  | 'should_be_within'
-  | 'should_equal'
-  | 'approximately_equal';
+  | 'approximately_equal'
+  | 'greater_than_ratio'
+  | 'less_than_ratio';
 
 /**
  * Severity levels for errors
@@ -91,14 +91,14 @@ export type MessageAssignmentTarget = 'joint_state' | 'feedback' | 'position';
 /**
  * Phase names (used in activePhases)
  */
-export type PhaseName = 
+export type PhaseName =
   | 'idle'
-  | 'start' 
-  | 'down' 
-  | 'bottom' 
-  | 'up' 
-  | 'push' 
-  | 'extended' 
+  | 'start'
+  | 'down'
+  | 'bottom'
+  | 'up'
+  | 'push'
+  | 'extended'
   | 'pull'
   | 'hold'
   | 'count';
@@ -367,25 +367,25 @@ export interface ExerciseConfig {
   /** Rep counting config at exercise level (not per difficulty) */
   repCountingConfig: RepCountingConfig;
   poseVariants: PoseVariantConfig[];
-  
+
   // ═══════════════════════════════════════════════════════════════
   // WEIGHT & METRICS CONFIGURATION
   // ═══════════════════════════════════════════════════════════════
-  
+
   /** Does this exercise support weights? */
   supportsWeight?: boolean;
-  
+
   /** Weight limits (kg) */
   minWeight?: number;
   maxWeight?: number;
   defaultWeight?: number;
-  
+
   /** Report metrics configuration */
   reportMetrics?: ReportMetricsConfig;
-  
+
   /** Is this exercise bilateral (has paired joints)? - auto-detected */
   isBilateral?: boolean;
-  
+
   /** Does this exercise have position checks? - auto-detected */
   hasPositionChecks?: boolean;
 
@@ -415,7 +415,7 @@ export interface AlternatingConfig {
 /**
  * Available metric codes for mobile app
  */
-export type MetricCode = 
+export type MetricCode =
   // Core
   | 'FORM_SCORE'
   | 'REP_COUNT'
@@ -505,7 +505,7 @@ export function isHoldConfig(config: RepCountingConfig): boolean {
  */
 export function validateAngleRange(range: AngleRange, name: string): string[] {
   const errors: string[] = [];
-  
+
   if (range.min < 0 || range.min > 180) {
     errors.push(`${name}: min must be between 0 and 180`);
   }
@@ -515,7 +515,7 @@ export function validateAngleRange(range: AngleRange, name: string): string[] {
   if (range.min > range.max) {
     errors.push(`${name}: min (${range.min}) cannot be greater than max (${range.max})`);
   }
-  
+
   return errors;
 }
 
@@ -524,15 +524,15 @@ export function validateAngleRange(range: AngleRange, name: string): string[] {
  */
 export function validateStateRanges(ranges: StateRanges, name: string): string[] {
   const errors: string[] = [];
-  
+
   // Perfect is required
   if (!ranges.perfect) {
     errors.push(`${name}: 'perfect' range is required`);
     return errors;
   }
-  
+
   errors.push(...validateAngleRange(ranges.perfect, `${name}.perfect`));
-  
+
   // Validate optional ranges
   if (ranges.normal) {
     errors.push(...validateAngleRange(ranges.normal, `${name}.normal`));
@@ -541,7 +541,7 @@ export function validateStateRanges(ranges: StateRanges, name: string): string[]
       errors.push(`${name}.normal: should extend at least one boundary of perfect range`);
     }
   }
-  
+
   if (ranges.pad) {
     errors.push(...validateAngleRange(ranges.pad, `${name}.pad`));
     const outerRef = ranges.normal || ranges.perfect;
@@ -549,15 +549,15 @@ export function validateStateRanges(ranges: StateRanges, name: string): string[]
       errors.push(`${name}.pad: should extend at least one boundary of normal/perfect range`);
     }
   }
-  
+
   if (ranges.warning) {
     errors.push(...validateAngleRange(ranges.warning, `${name}.warning`));
   }
-  
+
   if (ranges.danger) {
     errors.push(...validateAngleRange(ranges.danger, `${name}.danger`));
   }
-  
+
   return errors;
 }
 
@@ -574,11 +574,11 @@ function isHoldPrimaryJoint(joint: PrimaryTrackedJoint): joint is HoldPrimaryTra
  */
 export function validatePrimaryJoint(joint: TrackedJoint): string[] {
   const errors: string[] = [];
-  
+
   if (joint.role !== 'primary') return errors;
-  
+
   const primary = joint as PrimaryTrackedJoint;
-  
+
   // Check if it's a Hold mode joint (has range instead of upRange/downRange)
   if (isHoldPrimaryJoint(primary)) {
     // Hold mode: validate single range
@@ -590,19 +590,19 @@ export function validatePrimaryJoint(joint: TrackedJoint): string[] {
   } else {
     // Up/Down mode: validate upRange and downRange
     const upDownPrimary = primary as UpDownPrimaryTrackedJoint;
-    
+
     if (!upDownPrimary.upRange) {
       errors.push(`Primary joint ${upDownPrimary.joint} is missing upRange`);
     } else {
       errors.push(...validateStateRanges(upDownPrimary.upRange, `${upDownPrimary.joint}.upRange`));
     }
-    
+
     if (!upDownPrimary.downRange) {
       errors.push(`Primary joint ${upDownPrimary.joint} is missing downRange`);
     } else {
       errors.push(...validateStateRanges(upDownPrimary.downRange, `${upDownPrimary.joint}.downRange`));
     }
-    
+
     // Validate transition zone (upRange min should be > downRange max)
     if (upDownPrimary.upRange && upDownPrimary.downRange) {
       const upMin = getOuterMin(upDownPrimary.upRange);
@@ -612,7 +612,7 @@ export function validatePrimaryJoint(joint: TrackedJoint): string[] {
       }
     }
   }
-  
+
   return errors;
 }
 
@@ -621,17 +621,17 @@ export function validatePrimaryJoint(joint: TrackedJoint): string[] {
  */
 export function validateSecondaryJoint(joint: TrackedJoint): string[] {
   const errors: string[] = [];
-  
+
   if (joint.role !== 'secondary') return errors;
-  
+
   const secondary = joint as SecondaryTrackedJoint;
-  
+
   if (!secondary.range) {
     errors.push(`Secondary joint ${secondary.joint} is missing range`);
   } else {
     errors.push(...validateStateRanges(secondary.range, `${secondary.joint}.range`));
   }
-  
+
   return errors;
 }
 
@@ -664,16 +664,16 @@ export function getOuterMax(ranges: StateRanges): number {
  */
 export function validateExerciseConfig(config: ExerciseConfig): string[] {
   const errors: string[] = [];
-  
+
   // Basic validation
   if (!config.name?.en) {
     errors.push('Exercise must have an English name');
   }
-  
+
   if (!config.countingMethod) {
     errors.push('Exercise must have a counting method');
   }
-  
+
   if (!config.repCountingConfig) {
     errors.push('Exercise must have repCountingConfig');
   } else {
@@ -685,26 +685,26 @@ export function validateExerciseConfig(config: ExerciseConfig): string[] {
       errors.push('Rep-based exercises must have reps in repCountingConfig');
     }
   }
-  
+
   // Must have at least one pose variant
   if (!config.poseVariants || config.poseVariants.length === 0) {
     errors.push('Exercise must have at least one pose variant');
     return errors;
   }
-  
+
   for (const variant of config.poseVariants) {
     // Must have at least one tracked joint
     if (!variant.trackedJoints || variant.trackedJoints.length === 0) {
       errors.push(`Pose variant "${variant.name.en}" must have at least one tracked joint`);
       continue;
     }
-    
+
     // Must have at least one primary joint
     const primaryJoints = variant.trackedJoints.filter(j => j.role === 'primary');
     if (primaryJoints.length === 0) {
       errors.push(`Pose variant "${variant.name.en}" must have at least one primary joint`);
     }
-    
+
     // Validate each joint
     for (const joint of variant.trackedJoints) {
       if (joint.role === 'primary') {
@@ -713,22 +713,22 @@ export function validateExerciseConfig(config: ExerciseConfig): string[] {
         errors.push(...validateSecondaryJoint(joint));
       }
     }
-    
+
     // Validate position checks if present
     if (variant.positionChecks) {
       for (const check of variant.positionChecks) {
         if (!check.id) {
           errors.push('Position check must have an id');
-    }
+        }
         if (!check.landmarks?.primary || !check.landmarks?.secondary) {
           errors.push(`Position check "${check.id}" must have primary and secondary landmarks`);
-    }
+        }
         if (check.condition?.threshold === undefined) {
           errors.push(`Position check "${check.id}" must have a threshold`);
         }
       }
     }
   }
-  
+
   return errors;
 }

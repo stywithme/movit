@@ -76,7 +76,7 @@ export const StateRangesSchema = z.object({
       });
     }
   }
-  
+
   // Validate that pad extends beyond normal (or perfect) if present
   if (data.pad) {
     const outerRef = data.normal || data.perfect;
@@ -90,7 +90,7 @@ export const StateRangesSchema = z.object({
       });
     }
   }
-  
+
   // Warning/Danger should be outside counted ranges
   if (data.warning && data.danger) {
     // Check they don't overlap incorrectly
@@ -196,7 +196,7 @@ export const UpDownPrimaryTrackedJointSchema = z.object({
   // Validate transition zone: upRange min should be > downRange max
   const upMin = getOuterMinFromRanges(data.upRange);
   const downMax = getOuterMaxFromRanges(data.downRange);
-  
+
   if (upMin <= downMax) {
     ctx.addIssue({
       code: z.ZodIssueCode.custom,
@@ -238,7 +238,7 @@ export const PrimaryTrackedJointSchema = z.object({
 }).superRefine((data, ctx) => {
   const hasUpDown = data.upRange && data.downRange;
   const hasRange = data.range;
-  
+
   // Must have either upRange/downRange OR range
   if (!hasUpDown && !hasRange) {
     ctx.addIssue({
@@ -247,12 +247,12 @@ export const PrimaryTrackedJointSchema = z.object({
       path: ['range'],
     });
   }
-  
+
   // Validate transition zone for up/down mode
   if (hasUpDown) {
     const upMin = getOuterMinFromRanges(data.upRange!);
     const downMax = getOuterMaxFromRanges(data.downRange!);
-    
+
     if (upMin <= downMax) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
@@ -320,9 +320,9 @@ export const PositionCheckConditionSchema = z.object({
   operator: z.enum([
     'should_not_exceed',
     'should_exceed',
-    'should_be_within',
-    'should_equal',
     'approximately_equal',
+    'greater_than_ratio',
+    'less_than_ratio',
   ]),
   threshold: z.number().min(0, 'Threshold must be >= 0'),
 });
@@ -331,12 +331,12 @@ export const PositionCheckSchema = z.object({
   checkId: z.string().min(1, 'Check ID is required'),
   type: z.enum([
     'forward_comparison',
-    'vertical_alignment',
-    'horizontal_alignment',
+    'vertical_comparison',
+    'sideways_comparison',
     'distance_ratio',
-    'angle_constraint',
-    'relative_position',
-    'symmetry_check',
+    'horizontal_alignment',
+    'vertical_alignment',
+    'depth_alignment',
   ]),
   landmarks: PositionCheckLandmarksSchema,
   condition: PositionCheckConditionSchema,
@@ -451,7 +451,7 @@ export function validateStep(step: number, data: Partial<WizardData>): {
   errors: string[];
 } {
   const errors: string[] = [];
-  
+
   try {
     switch (step) {
       case 1:
@@ -508,7 +508,7 @@ export function canPublish(data: Partial<WizardData>): {
 } {
   const errors: string[] = [];
   const incompleteSteps: number[] = [];
-  
+
   // Step 1: Basic info
   try {
     BasicInfoSchema.parse(data.basicInfo);
@@ -518,7 +518,7 @@ export function canPublish(data: Partial<WizardData>): {
       errors.push(...e.issues.map(err => `Step 1: ${err.message}`));
     }
   }
-  
+
   // Step 2: Counting method
   try {
     CountingMethodSchema.parse(data.countingMethod);
@@ -528,7 +528,7 @@ export function canPublish(data: Partial<WizardData>): {
       errors.push(...e.issues.map(err => `Step 2: ${err.message}`));
     }
   }
-  
+
   // Step 3: Camera position
   try {
     CameraPositionSchema.parse(data.cameraPosition);
@@ -538,7 +538,7 @@ export function canPublish(data: Partial<WizardData>): {
       errors.push(...e.issues.map(err => `Step 3: ${err.message}`));
     }
   }
-  
+
   // Step 4: Joint config
   try {
     JointConfigSchema.parse(data.jointConfig);
@@ -548,7 +548,7 @@ export function canPublish(data: Partial<WizardData>): {
       errors.push(...e.issues.map(err => `Step 4: ${err.message}`));
     }
   }
-  
+
   // Step 5: Position checks (optional)
   try {
     PositionChecksSchema.parse(data.positionChecks);
@@ -558,7 +558,7 @@ export function canPublish(data: Partial<WizardData>): {
       errors.push(...e.issues.map(err => `Step 5: ${err.message}`));
     }
   }
-  
+
   // Step 6: Rep config
   try {
     // Validate based on counting method
@@ -576,7 +576,7 @@ export function canPublish(data: Partial<WizardData>): {
     incompleteSteps.push(6);
     errors.push(`Step 6: ${e instanceof Error ? e.message : 'Invalid config'}`);
   }
-  
+
   // Step 7: Extras (optional but should be valid if present)
   try {
     ExtrasSchema.parse(data.extras);
@@ -586,7 +586,7 @@ export function canPublish(data: Partial<WizardData>): {
       errors.push(...e.issues.map(err => `Step 7: ${err.message}`));
     }
   }
-  
+
   return {
     valid: incompleteSteps.length === 0,
     errors,
