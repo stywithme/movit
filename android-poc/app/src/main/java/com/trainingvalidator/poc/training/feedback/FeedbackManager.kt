@@ -581,12 +581,16 @@ class FeedbackManager(
         val localizedText = event.error.message
         val displayText = localizedText.get(config.language)
         
+        Log.d(TAG, "⚡ Position WARNING received: checkId=${event.error.checkId}, text='${displayText.take(40)}', isVideoMode=$isVideoMode, isTtsEnabled=$isTtsEnabled")
+        
         // Use MessageOrchestrator for smart delivery
         val decision = messageOrchestrator.decide(
             messageKey = "position_warn:${event.error.checkId}",
             category = MessageOrchestrator.Category.WARNING,
             messageText = displayText
         )
+        
+        Log.d(TAG, "⚡ Position WARNING decision: channel=${decision.channel}, repeat=#${decision.repeatCount}, isFirst=${decision.isFirstOccurrence}")
         
         // Deliver with LocalizedText for audio support
         deliverLocalizedMessage(localizedText, displayText, decision, MessageType.WARNING)

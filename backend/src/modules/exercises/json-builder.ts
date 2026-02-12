@@ -73,7 +73,7 @@ interface DbExercise {
     };
   }>;
   poseVariants: DbPoseVariant[];
-  
+
   // Weight & Metrics configuration
   supportsWeight?: boolean | null;
   minWeight?: number | null;
@@ -152,32 +152,32 @@ export function buildExerciseConfig(
 ): ExerciseConfig {
   const { includeMessages = true, includeAssignments = true } = options;
   const countingMethod = dbExercise.countingMethod.code as CountingMethod;
-  
+
   // Extract attribute codes by type
   const muscles: string[] = [];
   const equipment: string[] = [];
   const tags: string[] = [];
-  
+
   for (const attr of dbExercise.attributes) {
     const attrCode = attr.attributeValue.attribute.code;
     const valueCode = attr.attributeValue.code;
-    
+
     if (attrCode === 'muscle') muscles.push(valueCode);
     else if (attrCode === 'equipment') equipment.push(valueCode);
     else if (attrCode === 'tag') tags.push(valueCode);
   }
-  
+
   // Build rep counting config
   const repCountingConfig = parseRepCountingConfig(dbExercise.repCountingConfig, countingMethod);
-  
+
   // Build pose variants
   const poseVariants = dbExercise.poseVariants.map(pv =>
     buildPoseVariantConfig(pv, { includeMessages, includeAssignments })
   );
-  
+
   // Auto-detect bilateral (has paired joints)
   const isBilateral = detectBilateral(poseVariants);
-  
+
   const config: ExerciseConfig = {
     name: toLocalizedText(dbExercise.name),
     category: {
@@ -196,7 +196,7 @@ export function buildExerciseConfig(
   if (primaryImage?.url) {
     config.imageUrl = primaryImage.url;
   }
-  
+
   // Only include optional fields if they have values
   if (dbExercise.description) {
     config.description = toLocalizedText(dbExercise.description);
@@ -204,11 +204,11 @@ export function buildExerciseConfig(
   if (dbExercise.instructions) {
     config.instructions = toLocalizedText(dbExercise.instructions);
   }
-  
+
   // ═══════════════════════════════════════════════════════════════
   // WEIGHT & METRICS CONFIGURATION
   // ═══════════════════════════════════════════════════════════════
-  
+
   // Weight configuration
   if (dbExercise.supportsWeight) {
     config.supportsWeight = true;
@@ -222,12 +222,12 @@ export function buildExerciseConfig(
       config.defaultWeight = dbExercise.defaultWeight;
     }
   }
-  
+
   // Check for position checks in any pose variant
-  const hasPositionChecks = poseVariants.some(pv => 
+  const hasPositionChecks = poseVariants.some(pv =>
     pv.positionChecks && pv.positionChecks.length > 0
   );
-  
+
   // Report metrics configuration
   // Always merge user-excluded with auto-excluded (disabled) metrics
   const autoExcluded = getAutoExcludedMetricCodes({
@@ -236,24 +236,24 @@ export function buildExerciseConfig(
     supportsWeight: !!dbExercise.supportsWeight,
     hasPositionChecks,
   });
-  
+
   if (dbExercise.reportMetrics) {
     config.reportMetrics = parseReportMetrics(dbExercise.reportMetrics, autoExcluded);
   } else {
     // Generate default based on exercise type
     config.reportMetrics = generateDefaultMetrics(
-      countingMethod, 
-      isBilateral, 
+      countingMethod,
+      isBilateral,
       !!dbExercise.supportsWeight,
       hasPositionChecks
     );
   }
-  
+
   // Include bilateral flag
   if (isBilateral) {
     config.isBilateral = true;
   }
-  
+
   // Include position checks flag
   if (hasPositionChecks) {
     config.hasPositionChecks = true;
@@ -267,7 +267,7 @@ export function buildExerciseConfig(
       config.alternatingConfig = alternatingConfig;
     }
   }
-  
+
   return config;
 }
 
@@ -279,23 +279,23 @@ function buildPoseVariantConfig(
   options: BuildExerciseConfigOptions
 ): PoseVariantConfig {
   // Use schemaCode for Android, fallback to code if not set
-  const cameraPosition = (dbVariant.cameraPosition.schemaCode || 
+  const cameraPosition = (dbVariant.cameraPosition.schemaCode ||
     mapCameraCodeToSchema(dbVariant.cameraPosition.code)) as CameraPosition;
-  
-  const expectedFacingDirection = (dbVariant.expectedFacingDirection || 
+
+  const expectedFacingDirection = (dbVariant.expectedFacingDirection ||
     'auto_detect') as FacingDirection;
-  
+
   // Parse trackedJointsConfig from JSON
   const trackedJoints = parseTrackedJoints(dbVariant.trackedJointsConfig);
-  
+
   // Parse position checks
   const positionChecks = dbVariant.positionChecks.map((check) =>
     buildPositionCheck(check, Boolean(options.includeMessages))
   );
-  
+
   // Group feedback messages by type (assignments only)
   const feedbackMessages = buildFeedbackMessagesFromAssignments(dbVariant.messageAssignments);
-  
+
   const config: PoseVariantConfig = {
     name: toLocalizedText(dbVariant.name),
     cameraPosition,
@@ -303,16 +303,16 @@ function buildPoseVariantConfig(
       ? applyStateMessageAssignments(trackedJoints, dbVariant.messageAssignments)
       : trackedJoints,
   };
-  
+
   // Only include optional fields if they have values
   if (expectedFacingDirection !== 'auto_detect') {
     config.expectedFacingDirection = expectedFacingDirection;
   }
-  
+
   if (positionChecks.length > 0) {
     config.positionChecks = positionChecks;
   }
-  
+
   if (
     options.includeMessages &&
     (feedbackMessages.motivational.length > 0 || feedbackMessages.tips.length > 0)
@@ -323,7 +323,7 @@ function buildPoseVariantConfig(
   if (options.includeAssignments && dbVariant.messageAssignments.length > 0) {
     config.messageAssignments = buildMessageAssignmentRefs(dbVariant.messageAssignments);
   }
-  
+
   return config;
 }
 
@@ -334,14 +334,14 @@ function parseTrackedJoints(config: unknown): TrackedJoint[] {
   if (!config || !Array.isArray(config)) {
     return [];
   }
-  
+
   return config.map((joint: Record<string, unknown>) => {
     const baseJoint = {
       joint: joint.joint as string,
       role: joint.role as 'primary' | 'secondary',
       startPose: joint.startPose as AngleRange,
     };
-    
+
     // Add optional fields
     if (joint.stateMessages) {
       Object.assign(baseJoint, { stateMessages: joint.stateMessages as StateMessages });
@@ -352,7 +352,7 @@ function parseTrackedJoints(config: unknown): TrackedJoint[] {
     if (joint.invertIndicator) {
       Object.assign(baseJoint, { invertIndicator: joint.invertIndicator as boolean });
     }
-    
+
     if (joint.role === 'primary') {
       // Hold exercises: primary has single range
       if (joint.range) {
@@ -387,14 +387,14 @@ function buildPositionCheck(
   includeMessages: boolean
 ): PositionCheck {
   const condition = dbCheck.condition as { operator: string; threshold?: number; thresholds?: Record<string, number> };
-  
+
   // Support both old (thresholds) and new (threshold) format
   let threshold = condition.threshold;
   if (threshold === undefined && condition.thresholds) {
     // Use normal threshold as default for backwards compatibility
     threshold = condition.thresholds.normal ?? condition.thresholds.beginner ?? 0.05;
   }
-  
+
   return {
     id: dbCheck.checkId,
     type: dbCheck.type as PositionCheck['type'],
@@ -404,7 +404,9 @@ function buildPositionCheck(
       threshold: threshold ?? 0.05,
     },
     activePhases: dbCheck.activePhases as PhaseName[],
-    ...(includeMessages ? { errorMessage: toLocalizedText(dbCheck.errorMessage) } : {}),
+    // Position check errorMessage is inline (not from message library),
+    // so it must ALWAYS be included regardless of includeMessages flag
+    errorMessage: toLocalizedText(dbCheck.errorMessage),
     severity: dbCheck.severity as PositionCheck['severity'],
     cooldownMs: dbCheck.cooldownMs,
     minErrorFrames: dbCheck.minErrorFrames,
@@ -419,11 +421,11 @@ function buildFeedbackMessagesFromAssignments(assignments: DbMessageAssignment[]
     motivational: [],
     tips: [],
   };
-  
+
   const feedbackAssignments = assignments
     .filter(a => a.target === 'feedback')
     .sort((a, b) => a.sortOrder - b.sortOrder);
-  
+
   for (const assignment of feedbackAssignments) {
     const message = toLocalizedText(assignment.message.content);
     if (assignment.context === 'motivational') {
@@ -432,7 +434,7 @@ function buildFeedbackMessagesFromAssignments(assignments: DbMessageAssignment[]
       result.tips.push(message);
     }
   }
-  
+
   return result;
 }
 
@@ -466,7 +468,7 @@ function applyStateMessageAssignments(
 ): TrackedJoint[] {
   const stateAssignments = assignments.filter(a => a.target === 'joint_state' && a.jointCode && a.context);
   if (stateAssignments.length === 0) return trackedJoints;
-  
+
   const assignmentsByJoint = new Map<string, DbMessageAssignment[]>();
   for (const assignment of stateAssignments) {
     const jointCode = assignment.jointCode!;
@@ -474,13 +476,13 @@ function applyStateMessageAssignments(
     list.push(assignment);
     assignmentsByJoint.set(jointCode, list);
   }
-  
+
   return trackedJoints.map((joint) => {
     const jointAssignments = assignmentsByJoint.get(joint.joint);
     if (!jointAssignments || jointAssignments.length === 0) return joint;
-    
+
     const mergedStateMessages: StateMessages = { ...(joint.stateMessages || {}) };
-    
+
     const sorted = [...jointAssignments].sort((a, b) => a.sortOrder - b.sortOrder);
     for (const assignment of sorted) {
       const stateKey = assignment.context as keyof StateMessages;
@@ -489,7 +491,7 @@ function applyStateMessageAssignments(
       const zone = assignment.zone;
       setStateMessage(mergedStateMessages, stateKey, localizedText, zone);
     }
-    
+
     return {
       ...joint,
       stateMessages: mergedStateMessages,
@@ -510,10 +512,10 @@ function setStateMessage(
     stateMessages[state] = message;
     return;
   }
-  
+
   const zoneKey = zone === 'down' ? 'down' : 'up';
   const existing = stateMessages[state];
-  
+
   if (existing && isZoneBasedMessage(existing)) {
     stateMessages[state] = {
       ...existing,
@@ -521,7 +523,7 @@ function setStateMessage(
     } as ZoneBasedMessage;
     return;
   }
-  
+
   if (existing && isSimpleMessage(existing)) {
     const zoneMessage: ZoneBasedMessage = {
       [zoneKey]: message,
@@ -529,7 +531,7 @@ function setStateMessage(
     stateMessages[state] = zoneMessage;
     return;
   }
-  
+
   stateMessages[state] = {
     [zoneKey]: message,
   } as ZoneBasedMessage;
@@ -543,14 +545,14 @@ function parseRepCountingConfig(
   countingMethod: CountingMethod
 ): RepCountingConfig {
   const parsed = config as Record<string, number> | null;
-  
+
   if (countingMethod === 'hold') {
     return {
       duration: parsed?.duration ?? 30,
       gracePeriodMs: parsed?.gracePeriodMs ?? 2500,
     };
   }
-  
+
   return {
     reps: parsed?.reps ?? 12,
     minRepIntervalMs: parsed?.minRepIntervalMs ?? 1500,
@@ -626,9 +628,9 @@ function getAutoExcludedMetricCodes(options: {
 }): MetricCode[] {
   const { countingMethod, isBilateral, supportsWeight, hasPositionChecks } = options;
   const isHold = countingMethod === 'hold';
-  
+
   const excluded: MetricCode[] = [];
-  
+
   // Hold exercise restrictions
   if (isHold) {
     excluded.push('REP_COUNT', 'TEMPO', 'TUT', 'ROM', 'FORM_CONSISTENCY', 'FATIGUE_INDEX', 'VELOCITY');
@@ -636,22 +638,22 @@ function getAutoExcludedMetricCodes(options: {
     // Rep-based exercise restrictions
     excluded.push('HOLD_DURATION');
   }
-  
+
   // Weight restrictions
   if (!supportsWeight) {
     excluded.push('WEIGHT', 'VOLUME', 'EST_1RM');
   }
-  
+
   // Bilateral restrictions
   if (!isBilateral) {
     excluded.push('SYMMETRY');
   }
-  
+
   // Position Checks restrictions (Alignment)
   if (!hasPositionChecks) {
     excluded.push('ALIGNMENT');
   }
-  
+
   return excluded;
 }
 
@@ -663,21 +665,21 @@ function getAutoExcludedMetricCodes(options: {
 function parseReportMetrics(config: unknown, autoExcluded: MetricCode[] = []): ReportMetricsConfig {
   const parsed = config as Record<string, unknown> | null;
   if (!parsed) {
-    return { 
+    return {
       primary: ['FORM_SCORE'],
       excluded: autoExcluded.length > 0 ? autoExcluded : undefined,
     };
   }
-  
+
   // Convert all metric codes to uppercase
   const primaryCodes = (parsed.primary as string[]) || ['form_score'];
   const optionalCodes = (parsed.optional as string[]) || [];
   const userExcludedCodes = (parsed.excluded as string[]) || [];
-  
+
   // Merge user-excluded with auto-excluded (disabled) metrics
   const userExcludedUpper = userExcludedCodes.map(toAndroidMetricCode);
   const allExcluded = [...new Set([...userExcludedUpper, ...autoExcluded])];
-  
+
   return {
     primary: primaryCodes.map(toAndroidMetricCode),
     optional: optionalCodes.length > 0 ? optionalCodes.map(toAndroidMetricCode) : undefined,
@@ -698,7 +700,7 @@ function generateDefaultMetrics(
   const isHold = countingMethod === 'hold';
   const primary: MetricCode[] = ['FORM_SCORE'];
   const optional: MetricCode[] = [];
-  
+
   if (isHold) {
     primary.push('HOLD_DURATION');
     optional.push('STABILITY');
@@ -706,21 +708,21 @@ function generateDefaultMetrics(
     primary.push('ROM');
     optional.push('TEMPO', 'TUT');
   }
-  
+
   if (isBilateral && !isHold) {
     primary.push('SYMMETRY');
   }
-  
+
   if (supportsWeight) {
     primary.push('WEIGHT');
     optional.push('VOLUME', 'EST_1RM');
   }
-  
+
   // Only add ALIGNMENT if exercise has position checks
   if (hasPositionChecks) {
     optional.push('ALIGNMENT');
   }
-  
+
   // Get auto-excluded (disabled) metrics
   const excluded = getAutoExcludedMetricCodes({
     countingMethod,
@@ -728,7 +730,7 @@ function generateDefaultMetrics(
     supportsWeight,
     hasPositionChecks,
   });
-  
+
   return {
     primary: primary.slice(0, 3), // Max 3 primary
     optional,
@@ -745,7 +747,7 @@ function toLocalizedText(json: Record<string, string> | null | undefined): Local
     ar: json?.ar ?? '',
     en: json?.en ?? '',
   };
-  
+
   // Include audio URLs if present
   if (json?.audioAr) {
     result.audioAr = json.audioAr;
@@ -753,7 +755,7 @@ function toLocalizedText(json: Record<string, string> | null | undefined): Local
   if (json?.audioEn) {
     result.audioEn = json.audioEn;
   }
-  
+
   return result;
 }
 
@@ -770,7 +772,7 @@ function mapCameraCodeToSchema(code: string): CameraPosition {
     'back': 'back_view',
     'back_view': 'back_view',
   };
-  
+
   return mapping[code] ?? 'side_view';
 }
 
@@ -785,11 +787,11 @@ function mapCameraCodeToSchema(code: string): CameraPosition {
 export function buildAndValidateExerciseConfig(dbExercise: DbExercise): ExerciseConfig {
   const config = buildExerciseConfig(dbExercise);
   const errors = validateExerciseConfig(config);
-  
+
   if (errors.length > 0) {
     throw new Error(`Exercise validation failed:\n${errors.join('\n')}`);
   }
-  
+
   return config;
 }
 
@@ -802,7 +804,7 @@ export function buildExerciseConfigWithValidation(
 ): { config: ExerciseConfig; errors: string[] } {
   const config = buildExerciseConfig(dbExercise);
   const errors = validateExerciseConfig(config);
-  
+
   return { config, errors };
 }
 

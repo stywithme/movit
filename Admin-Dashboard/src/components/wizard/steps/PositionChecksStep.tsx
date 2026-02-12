@@ -273,6 +273,37 @@ function PositionCheckCard({ check, index, onUpdate, onRemove }: PositionCheckCa
                 ))}
               </select>
             </div>
+            {/* Tertiary & Quaternary Landmarks (Distance Ratio only) */}
+            {check.type === 'distance_ratio' && (
+              <>
+                <div>
+                  <Label>Tertiary Landmark</Label>
+                  <select
+                    value={check.landmarks.tertiary || ''}
+                    onChange={(e) => updateField('landmarks', { ...check.landmarks, tertiary: e.target.value })}
+                    className="w-full mt-1 px-3 py-2 text-gray-900 border rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  >
+                    <option value="">Select landmark...</option>
+                    {AVAILABLE_LANDMARKS.map((l) => (
+                      <option key={l} value={l}>{l.replace(/_/g, ' ')}</option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <Label>Quaternary Landmark</Label>
+                  <select
+                    value={check.landmarks.quaternary || ''}
+                    onChange={(e) => updateField('landmarks', { ...check.landmarks, quaternary: e.target.value })}
+                    className="w-full mt-1 px-3 py-2 text-gray-900 border rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  >
+                    <option value="">Select landmark...</option>
+                    {AVAILABLE_LANDMARKS.map((l) => (
+                      <option key={l} value={l}>{l.replace(/_/g, ' ')}</option>
+                    ))}
+                  </select>
+                </div>
+              </>
+            )}
           </div>
 
           {/* Active Phases */}
@@ -392,8 +423,9 @@ function PositionCheckCard({ check, index, onUpdate, onRemove }: PositionCheckCa
             </div>
           </div>
         </CardContent>
-      )}
-    </Card>
+      )
+      }
+    </Card >
   );
 }
 

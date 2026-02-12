@@ -348,6 +348,23 @@ export const PositionCheckSchema = z.object({
   severity: z.enum(['error', 'warning', 'tip']).default('warning'),
   cooldownMs: z.number().min(0).default(2000),
   minErrorFrames: z.number().min(1).default(3),
+}).superRefine((data, ctx) => {
+  if (data.type === 'distance_ratio') {
+    if (!data.landmarks.tertiary) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: 'Tertiary landmark is required for Distance Ratio check',
+        path: ['landmarks', 'tertiary'],
+      });
+    }
+    if (!data.landmarks.quaternary) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: 'Quaternary landmark is required for Distance Ratio check',
+        path: ['landmarks', 'quaternary'],
+      });
+    }
+  }
 });
 
 export const PositionChecksSchema = z.object({
