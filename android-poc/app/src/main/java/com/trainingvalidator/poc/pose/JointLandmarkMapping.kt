@@ -73,7 +73,11 @@ object JointLandmarkMapping {
         "left_foot_index" to 31,
         "left_toe" to 31,  // Alias
         "right_foot_index" to 32,
-        "right_toe" to 32  // Alias
+        "right_toe" to 32,  // Alias
+        
+        // Virtual landmarks (computed midpoints)
+        "neck" to 33,              // Midpoint of shoulders
+        "spine" to 34              // Midpoint of hips
     )
     
     /**
@@ -113,7 +117,11 @@ object JointLandmarkMapping {
         29 to "left_heel",
         30 to "right_heel",
         31 to "left_foot_index",
-        32 to "right_foot_index"
+        32 to "right_foot_index",
+        
+        // Virtual landmarks
+        33 to "neck",
+        34 to "spine"
     )
     
     /**
@@ -121,11 +129,13 @@ object JointLandmarkMapping {
      */
     val trackedJointCodes = setOf(
         "left_shoulder", "right_shoulder",
+        "left_shoulder_cross", "right_shoulder_cross",
         "left_elbow", "right_elbow",
         "left_wrist", "right_wrist",
         "left_hip", "right_hip",
         "left_knee", "right_knee",
-        "left_ankle", "right_ankle"
+        "left_ankle", "right_ankle",
+        "neck", "neck_left", "neck_right", "neck_spine", "spine"
     )
     
     /**
@@ -188,6 +198,9 @@ object JointLandmarkMapping {
             "right_elbow" -> listOf(12, 14, 16)
             "left_shoulder" -> listOf(13, 11, 23)  // elbow, shoulder, hip
             "right_shoulder" -> listOf(14, 12, 24)
+            // Cross Shoulders: elbow, shoulder, opposite_shoulder
+            "left_shoulder_cross" -> listOf(13, 11, 12)
+            "right_shoulder_cross" -> listOf(14, 12, 11)
             "left_wrist" -> listOf(13, 15, 19)  // elbow, wrist, index
             "right_wrist" -> listOf(14, 16, 20)
             
@@ -198,6 +211,16 @@ object JointLandmarkMapping {
             "right_knee" -> listOf(24, 26, 28)
             "left_ankle" -> listOf(25, 27, 31)  // knee, ankle, foot
             "right_ankle" -> listOf(26, 28, 32)
+            
+            // Virtual joints
+            // Neck Left angle: left_shoulder(11) -> neck(33) -> nose(0)
+            "neck", "neck_left" -> listOf(11, 33, 0)
+            // Neck Right angle: right_shoulder(12) -> neck(33) -> nose(0)
+            "neck_right" -> listOf(12, 33, 0)
+            // Neck Spine angle: spine(34) -> neck(33) -> nose(0)
+            "neck_spine" -> listOf(34, 33, 0)
+            // Spine angle: neck(33) -> spine(34) -> left_knee(25)
+            "spine" -> listOf(33, 34, 25)
             
             else -> emptyList()
         }

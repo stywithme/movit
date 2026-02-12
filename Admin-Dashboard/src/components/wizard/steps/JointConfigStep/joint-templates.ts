@@ -62,7 +62,7 @@ export const JOINT_DEFAULTS: Record<string, StateRangesDefaults> = {
       warning: { min: 0, max: 150 },
     },
   },
-  
+
   // Elbows - Push-up / Curl pattern
   left_elbow: {
     upRange: {
@@ -98,7 +98,7 @@ export const JOINT_DEFAULTS: Record<string, StateRangesDefaults> = {
       warning: { min: 0, max: 40 },
     },
   },
-  
+
   // Spine - Posture
   spine: {
     upRange: {
@@ -121,7 +121,73 @@ export const JOINT_DEFAULTS: Record<string, StateRangesDefaults> = {
       danger: { min: 35, max: 90 },
     },
   },
-  
+
+  // Neck Left - Head posture via Left Shoulder (Left Shoulder -> Neck -> Nose ≈ 90°)
+  // Best for Right Side View camera
+  neck_left: {
+    upRange: {
+      perfect: { min: 80, max: 100 },
+      normal: { min: 70, max: 110 },
+      pad: { min: 60, max: 120 },
+      warning: { min: 45, max: 60 },
+      danger: { min: 0, max: 45 },
+    },
+    downRange: {
+      perfect: { min: 80, max: 100 },
+      normal: { min: 70, max: 110 },
+      pad: { min: 60, max: 120 },
+    },
+    range: {
+      perfect: { min: 80, max: 100 },
+      normal: { min: 70, max: 110 },
+      warning: { min: 50, max: 70 },
+    },
+  },
+
+  // Neck Right - Head posture via Right Shoulder (Right Shoulder -> Neck -> Nose ≈ 90°)
+  // Best for Left Side View camera
+  neck_right: {
+    upRange: {
+      perfect: { min: 80, max: 100 },
+      normal: { min: 70, max: 110 },
+      pad: { min: 60, max: 120 },
+      warning: { min: 45, max: 60 },
+      danger: { min: 0, max: 45 },
+    },
+    downRange: {
+      perfect: { min: 80, max: 100 },
+      normal: { min: 70, max: 110 },
+      pad: { min: 60, max: 120 },
+    },
+    range: {
+      perfect: { min: 80, max: 100 },
+      normal: { min: 70, max: 110 },
+      warning: { min: 50, max: 70 },
+    },
+  },
+
+  // Neck Spine - Head posture via Spine (Spine -> Neck -> Nose)
+  // Best for Front View camera
+  neck_spine: {
+    upRange: {
+      perfect: { min: 155, max: 180 },
+      normal: { min: 145, max: 180 },
+      pad: { min: 135, max: 180 },
+      warning: { min: 120, max: 135 },
+      danger: { min: 0, max: 120 },
+    },
+    downRange: {
+      perfect: { min: 155, max: 180 },
+      normal: { min: 145, max: 180 },
+      pad: { min: 135, max: 180 },
+    },
+    range: {
+      perfect: { min: 155, max: 180 },
+      normal: { min: 145, max: 180 },
+      warning: { min: 120, max: 145 },
+    },
+  },
+
   // Hips
   left_hip: {
     upRange: {
@@ -157,7 +223,7 @@ export const JOINT_DEFAULTS: Record<string, StateRangesDefaults> = {
       warning: { min: 140, max: 155 },
     },
   },
-  
+
   // Shoulders
   left_shoulder: {
     upRange: {
@@ -193,7 +259,44 @@ export const JOINT_DEFAULTS: Record<string, StateRangesDefaults> = {
       warning: { min: 30, max: 60 },
     },
   },
-  
+
+  // Cross Shoulders - arm angle relative to shoulder line (Elbow -> Shoulder -> Opposite Shoulder)
+  // Arm at side ≈ 90°, arm forward ≈ small angle, arm raised ≈ 180°
+  left_shoulder_cross: {
+    upRange: {
+      perfect: { min: 80, max: 100 },
+      normal: { min: 70, max: 110 },
+      pad: { min: 60, max: 120 },
+    },
+    downRange: {
+      perfect: { min: 20, max: 50 },
+      normal: { min: 10, max: 60 },
+      pad: { min: 0, max: 70 },
+    },
+    range: {
+      perfect: { min: 80, max: 100 },
+      normal: { min: 70, max: 110 },
+      warning: { min: 50, max: 70 },
+    },
+  },
+  right_shoulder_cross: {
+    upRange: {
+      perfect: { min: 80, max: 100 },
+      normal: { min: 70, max: 110 },
+      pad: { min: 60, max: 120 },
+    },
+    downRange: {
+      perfect: { min: 20, max: 50 },
+      normal: { min: 10, max: 60 },
+      pad: { min: 0, max: 70 },
+    },
+    range: {
+      perfect: { min: 80, max: 100 },
+      normal: { min: 70, max: 110 },
+      warning: { min: 50, max: 70 },
+    },
+  },
+
   // Ankles
   left_ankle: {
     upRange: {
@@ -229,7 +332,7 @@ export const JOINT_DEFAULTS: Record<string, StateRangesDefaults> = {
       pad: { min: 70, max: 110 },
     },
   },
-  
+
   // Wrists
   left_wrist: {
     upRange: {
@@ -265,7 +368,7 @@ export const JOINT_DEFAULTS: Record<string, StateRangesDefaults> = {
       warning: { min: 0, max: 150 },
     },
   },
-  
+
   // Heels
   left_heel: {
     upRange: {
@@ -301,7 +404,7 @@ export const JOINT_DEFAULTS: Record<string, StateRangesDefaults> = {
       warning: { min: 30, max: 90 },
     },
   },
-  
+
   // Foot Index
   left_foot_index: {
     upRange: {
@@ -337,7 +440,7 @@ export const JOINT_DEFAULTS: Record<string, StateRangesDefaults> = {
       warning: { min: 40, max: 90 },
     },
   },
-  
+
   // Pinky, Index, Thumb (hands) - Generic defaults
   left_pinky: {
     upRange: { perfect: { min: 160, max: 180 }, normal: { min: 150, max: 180 } },
@@ -485,48 +588,54 @@ export function buildTrackedJoint(
 ): TrackedJointData {
   const defaults = JOINT_DEFAULTS[jointCode] || DEFAULT_STATE_RANGES;
   const useZoneMessages = !isHold && role === 'primary';
-  
+
   // Build state messages based on exercise type
-  const stateMessages = useZoneMessages 
+  const stateMessages = useZoneMessages
     ? {
-        // Zone-based messages for up_down and push_pull primary joints
-        perfect: {
-          up: { ar: 'ممتاز!', en: 'Perfect!' },
-          down: { ar: 'ممتاز!', en: 'Perfect!' },
-        },
-        normal: {
-          up: { ar: 'جيد', en: 'Good' },
-          down: { ar: 'جيد', en: 'Good' },
-        },
-        warning: {
-          up: { ar: 'تحقق من وضعك', en: 'Check your position' },
-          down: { ar: 'تحقق من وضعك', en: 'Check your position' },
-        },
-        danger: {
-          down: { ar: 'توقف! وضع خطير', en: 'Stop! Dangerous position' },
-        },
-      }
+      // Zone-based messages for up_down and push_pull primary joints
+      perfect: {
+        up: { ar: 'ممتاز!', en: 'Perfect!' },
+        down: { ar: 'ممتاز!', en: 'Perfect!' },
+      },
+      normal: {
+        up: { ar: 'جيد', en: 'Good' },
+        down: { ar: 'جيد', en: 'Good' },
+      },
+      warning: {
+        up: { ar: 'تحقق من وضعك', en: 'Check your position' },
+        down: { ar: 'تحقق من وضعك', en: 'Check your position' },
+      },
+      danger: {
+        down: { ar: 'توقف! وضع خطير', en: 'Stop! Dangerous position' },
+      },
+    }
     : {
-        // Simple messages for hold or secondary joints
-        perfect: { ar: 'ممتاز!', en: 'Perfect!' },
-        normal: { ar: 'جيد', en: 'Good' },
-        pad: { ar: 'مقبول', en: 'Acceptable' },
-        warning: { ar: 'تحقق من وضعك', en: 'Check your position' },
-        danger: { ar: 'توقف! وضع خطير', en: 'Stop! Dangerous position' },
-      };
-  
+      // Simple messages for hold or secondary joints
+      perfect: { ar: 'ممتاز!', en: 'Perfect!' },
+      normal: { ar: 'جيد', en: 'Good' },
+      pad: { ar: 'مقبول', en: 'Acceptable' },
+      warning: { ar: 'تحقق من وضعك', en: 'Check your position' },
+      danger: { ar: 'توقف! وضع خطير', en: 'Stop! Dangerous position' },
+    };
+
   const baseJoint = {
     joint: jointCode,
     startPose: { min: 150, max: 180 },
     pairedWith,
     stateMessages,
   };
-  
+
   // Adjust startPose based on joint type
-  if (jointCode.includes('shoulder')) {
+  if (jointCode.includes('shoulder_cross')) {
+    baseJoint.startPose = { min: 80, max: 100 };
+  } else if (jointCode.includes('shoulder')) {
     baseJoint.startPose = { min: 0, max: 30 };
   } else if (jointCode === 'spine') {
     baseJoint.startPose = { min: 0, max: 20 };
+  } else if (jointCode === 'neck_left' || jointCode === 'neck_right') {
+    baseJoint.startPose = { min: 80, max: 100 };
+  } else if (jointCode === 'neck_spine') {
+    baseJoint.startPose = { min: 155, max: 180 };
   } else if (jointCode.includes('ankle')) {
     baseJoint.startPose = { min: 75, max: 110 };
   } else if (jointCode.includes('knee') || jointCode.includes('hip')) {
@@ -535,7 +644,7 @@ export function buildTrackedJoint(
       baseJoint.startPose = { min: 75, max: 110 };
     }
   }
-  
+
   if (role === 'primary') {
     if (isHold) {
       // Hold mode: primary has single range (like secondary)
@@ -591,7 +700,7 @@ export const STATE_COLORS: Record<JointStateName, { bg: string; border: string; 
   pad: { bg: 'bg-orange-100', border: 'border-orange-500', text: 'text-orange-700' },
   warning: { bg: 'bg-red-100', border: 'border-red-400', text: 'text-red-600' },
   danger: { bg: 'bg-red-200', border: 'border-red-600', text: 'text-red-800' },
-    };
+};
 
 /**
  * State labels for display

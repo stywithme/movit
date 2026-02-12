@@ -48,8 +48,12 @@ object BodyLandmarks {
     const val LEFT_FOOT_INDEX = 31
     const val RIGHT_FOOT_INDEX = 32
 
-    // Total landmarks count
-    const val TOTAL_LANDMARKS = 33
+    // Virtual landmarks (computed midpoints, not from MediaPipe)
+    const val NECK = 33              // Midpoint of left_shoulder + right_shoulder
+    const val SPINE = 34             // Midpoint of left_hip + right_hip
+
+    // Total landmarks count (33 MediaPipe + 2 virtual)
+    const val TOTAL_LANDMARKS = 35
 
     /**
      * Get landmark name by index
@@ -89,6 +93,8 @@ object BodyLandmarks {
             RIGHT_HEEL -> "Right Heel"
             LEFT_FOOT_INDEX -> "Left Foot Index"
             RIGHT_FOOT_INDEX -> "Right Foot Index"
+            NECK -> "Neck"
+            SPINE -> "Spine"
             else -> "Unknown"
         }
     }

@@ -30,10 +30,16 @@ class JointAngleTracker(
             "right_elbow" to { angles: JointAngles -> angles.rightElbow },
             "left_shoulder" to { angles: JointAngles -> angles.leftShoulder },
             "right_shoulder" to { angles: JointAngles -> angles.rightShoulder },
+            "left_shoulder_cross" to { angles: JointAngles -> angles.leftShoulderCross },
+            "right_shoulder_cross" to { angles: JointAngles -> angles.rightShoulderCross },
             
             // Torso
             "left_hip" to { angles: JointAngles -> angles.leftHip },
             "right_hip" to { angles: JointAngles -> angles.rightHip },
+            "neck" to { angles: JointAngles -> angles.neckLeft },          // Alias for neck_left
+            "neck_left" to { angles: JointAngles -> angles.neckLeft },
+            "neck_right" to { angles: JointAngles -> angles.neckRight },
+            "neck_spine" to { angles: JointAngles -> angles.neckSpine },
             "spine" to { angles: JointAngles -> angles.spine },
             
             // Legs

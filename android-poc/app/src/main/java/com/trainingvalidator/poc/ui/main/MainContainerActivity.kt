@@ -39,6 +39,9 @@ class MainContainerActivity : AppCompatActivity() {
         
         WindowCompat.setDecorFitsSystemWindows(window, false)
         
+        // Initialize API Client with context for token refresh
+        com.trainingvalidator.poc.network.ApiClient.init(applicationContext)
+        
         binding = ActivityMainContainerBinding.inflate(layoutInflater)
         setContentView(binding.root)
         

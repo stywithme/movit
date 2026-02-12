@@ -61,7 +61,7 @@ class LandmarkSmoother(
         landmarks: List<NormalizedLandmark>,
         timestamp: Long
     ): List<SmoothedLandmark> {
-        return landmarks.mapIndexed { index, landmark ->
+        val result = landmarks.mapIndexed { index, landmark ->
             val visibility = landmark.visibility().orElse(0f)
             val presence = landmark.presence().orElse(0f)
             
@@ -91,6 +91,8 @@ class LandmarkSmoother(
                 presence = presence
             )
         }
+        
+        return appendVirtualLandmarks(result)
     }
     
     /**
@@ -126,7 +128,7 @@ class LandmarkSmoother(
         }.toMutableList()
         
         previousLandmarks = smoothed
-        return smoothed
+        return appendVirtualLandmarks(smoothed)
     }
     
     /**
@@ -136,7 +138,7 @@ class LandmarkSmoother(
      * so we apply lighter smoothing or none.
      */
     fun convertWorld(landmarks: List<Landmark>): List<SmoothedLandmark> {
-        return landmarks.map { landmark ->
+        return appendVirtualLandmarks(landmarks.map { landmark ->
             SmoothedLandmark(
                 x = landmark.x(),
                 y = landmark.y(),
@@ -144,7 +146,45 @@ class LandmarkSmoother(
                 visibility = landmark.visibility().orElse(0f),
                 presence = landmark.presence().orElse(0f)
             )
-        }
+        })
+    }
+    
+    /**
+     * Append virtual landmarks (neck, spine) computed as midpoints.
+     * 
+     * Index 33 = Neck  = midpoint(left_shoulder[11], right_shoulder[12])
+     * Index 34 = Spine = midpoint(left_hip[23], right_hip[24])
+     * 
+     * These enable angle calculations and position checks for
+     * joints that don't exist as raw MediaPipe landmarks.
+     */
+    private fun appendVirtualLandmarks(landmarks: List<SmoothedLandmark>): List<SmoothedLandmark> {
+        if (landmarks.size < 33) return landmarks  // Not enough data
+        
+        val ls = landmarks[11]  // left_shoulder
+        val rs = landmarks[12]  // right_shoulder
+        val lh = landmarks[23]  // left_hip
+        val rh = landmarks[24]  // right_hip
+        
+        // Neck = midpoint of shoulders
+        val neck = SmoothedLandmark(
+            x = (ls.x + rs.x) / 2f,
+            y = (ls.y + rs.y) / 2f,
+            z = (ls.z + rs.z) / 2f,
+            visibility = minOf(ls.visibility, rs.visibility),
+            presence = minOf(ls.presence, rs.presence)
+        )
+        
+        // Spine = midpoint of hips
+        val spine = SmoothedLandmark(
+            x = (lh.x + rh.x) / 2f,
+            y = (lh.y + rh.y) / 2f,
+            z = (lh.z + rh.z) / 2f,
+            visibility = minOf(lh.visibility, rh.visibility),
+            presence = minOf(lh.presence, rh.presence)
+        )
+        
+        return landmarks + listOf(neck, spine)
     }
 
     /**

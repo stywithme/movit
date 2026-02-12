@@ -51,6 +51,7 @@ const JOINT_OPTIONS: JointOption[] = [
   // ============================================
   { code: 'divider_bilateral', label: { ar: '━━━ مفاصل مزدوجة (الأكثر استخداماً) ━━━', en: '━━━ Bilateral Joints (Most Common) ━━━' }, type: 'single' },
   { code: 'shoulders', label: { ar: 'الكتفين', en: 'Shoulders (Both)' }, type: 'bilateral', leftJoint: 'left_shoulder', rightJoint: 'right_shoulder' },
+  { code: 'shoulders_cross', label: { ar: 'الكتفين (تقاطع)', en: 'Shoulders Cross (Both)' }, type: 'bilateral', leftJoint: 'left_shoulder_cross', rightJoint: 'right_shoulder_cross' },
   { code: 'elbows', label: { ar: 'الكوعين', en: 'Elbows (Both)' }, type: 'bilateral', leftJoint: 'left_elbow', rightJoint: 'right_elbow' },
   { code: 'wrists', label: { ar: 'الرسغين', en: 'Wrists (Both)' }, type: 'bilateral', leftJoint: 'left_wrist', rightJoint: 'right_wrist' },
   { code: 'hips', label: { ar: 'الوركين', en: 'Hips (Both)' }, type: 'bilateral', leftJoint: 'left_hip', rightJoint: 'right_hip' },
@@ -58,7 +59,7 @@ const JOINT_OPTIONS: JointOption[] = [
   { code: 'ankles', label: { ar: 'الكاحلين', en: 'Ankles (Both)' }, type: 'bilateral', leftJoint: 'left_ankle', rightJoint: 'right_ankle' },
   { code: 'heels', label: { ar: 'الكعبين', en: 'Heels (Both)' }, type: 'bilateral', leftJoint: 'left_heel', rightJoint: 'right_heel' },
   { code: 'foot_indexes', label: { ar: 'أصابع القدمين', en: 'Foot Indexes (Both)' }, type: 'bilateral', leftJoint: 'left_foot_index', rightJoint: 'right_foot_index' },
-  
+
   // ============================================
   // SINGLE JOINTS - Upper Body
   // ============================================
@@ -66,21 +67,26 @@ const JOINT_OPTIONS: JointOption[] = [
   // Shoulders
   { code: 'left_shoulder', label: { ar: 'الكتف الأيسر', en: 'Left Shoulder' }, type: 'single' },
   { code: 'right_shoulder', label: { ar: 'الكتف الأيمن', en: 'Right Shoulder' }, type: 'single' },
+  { code: 'left_shoulder_cross', label: { ar: 'الكتف الأيسر (تقاطع)', en: 'Left Shoulder Cross' }, type: 'single' },
+  { code: 'right_shoulder_cross', label: { ar: 'الكتف الأيمن (تقاطع)', en: 'Right Shoulder Cross' }, type: 'single' },
   // Elbows
   { code: 'left_elbow', label: { ar: 'المرفق الأيسر', en: 'Left Elbow' }, type: 'single' },
   { code: 'right_elbow', label: { ar: 'المرفق الأيمن', en: 'Right Elbow' }, type: 'single' },
   // Wrists
   { code: 'left_wrist', label: { ar: 'الرسغ الأيسر', en: 'Left Wrist' }, type: 'single' },
   { code: 'right_wrist', label: { ar: 'الرسغ الأيمن', en: 'Right Wrist' }, type: 'single' },
-  
+
   // ============================================
   // SINGLE JOINTS - Core
   // ============================================
   { code: 'divider_core', label: { ar: '━━━ الجذع ━━━', en: '━━━ Core ━━━' }, type: 'single' },
+  { code: 'neck_left', label: { ar: 'الرقبة (كتف أيسر)', en: 'Neck (Left Shoulder)' }, type: 'single' },
+  { code: 'neck_right', label: { ar: 'الرقبة (كتف أيمن)', en: 'Neck (Right Shoulder)' }, type: 'single' },
+  { code: 'neck_spine', label: { ar: 'الرقبة (عمودي)', en: 'Neck (Spine)' }, type: 'single' },
   { code: 'spine', label: { ar: 'العمود الفقري', en: 'Spine' }, type: 'single' },
   { code: 'left_hip', label: { ar: 'الورك الأيسر', en: 'Left Hip' }, type: 'single' },
   { code: 'right_hip', label: { ar: 'الورك الأيمن', en: 'Right Hip' }, type: 'single' },
-  
+
   // ============================================
   // SINGLE JOINTS - Lower Body
   // ============================================
@@ -97,7 +103,7 @@ const JOINT_OPTIONS: JointOption[] = [
   // Foot Index
   { code: 'left_foot_index', label: { ar: 'أصبع القدم الأيسر', en: 'Left Foot Index' }, type: 'single' },
   { code: 'right_foot_index', label: { ar: 'أصبع القدم الأيمن', en: 'Right Foot Index' }, type: 'single' },
-  
+
   // ============================================
   // SINGLE JOINTS - Hands (Less Common)
   // ============================================
@@ -119,6 +125,7 @@ const JOINT_OPTIONS: JointOption[] = [
 // Maps bilateral code to its display name and joints
 const BILATERAL_MAPPING: Record<string, { label: { ar: string; en: string }, leftJoint: string, rightJoint: string }> = {
   shoulders: { label: { ar: 'الكتفين', en: 'Shoulders' }, leftJoint: 'left_shoulder', rightJoint: 'right_shoulder' },
+  shoulders_cross: { label: { ar: 'الكتفين (تقاطع)', en: 'Shoulders Cross' }, leftJoint: 'left_shoulder_cross', rightJoint: 'right_shoulder_cross' },
   elbows: { label: { ar: 'الكوعين', en: 'Elbows' }, leftJoint: 'left_elbow', rightJoint: 'right_elbow' },
   wrists: { label: { ar: 'الرسغين', en: 'Wrists' }, leftJoint: 'left_wrist', rightJoint: 'right_wrist' },
   hips: { label: { ar: 'الوركين', en: 'Hips' }, leftJoint: 'left_hip', rightJoint: 'right_hip' },
@@ -142,19 +149,19 @@ function getBilateralCode(jointCode: string): string | null {
 function buildUITabs(trackedJoints: TrackedJointData[]): UITab[] {
   const tabs: UITab[] = [];
   const processedBilaterals = new Set<string>();
-  
+
   trackedJoints.forEach((joint, index) => {
     const bilateralCode = getBilateralCode(joint.joint);
-    
+
     if (bilateralCode && joint.pairedWith) {
       // This is part of a bilateral pair
       if (!processedBilaterals.has(bilateralCode)) {
         processedBilaterals.add(bilateralCode);
-        
+
         const mapping = BILATERAL_MAPPING[bilateralCode];
         const leftIndex = trackedJoints.findIndex(j => j.joint === mapping.leftJoint);
         const rightIndex = trackedJoints.findIndex(j => j.joint === mapping.rightJoint);
-        
+
         if (leftIndex >= 0 && rightIndex >= 0) {
           tabs.push({
             id: bilateralCode,
@@ -176,7 +183,7 @@ function buildUITabs(trackedJoints: TrackedJointData[]): UITab[] {
       });
     }
   });
-  
+
   return tabs;
 }
 
@@ -245,10 +252,10 @@ function StateRangeEditor({ label, ranges, onChange, showWarningDanger = true, s
     }
     return null;
   };
-  const safeRanges: StateRangesData = ranges?.perfect 
-    ? ranges 
+  const safeRanges: StateRangesData = ranges?.perfect
+    ? ranges
     : { perfect: { min: 150, max: 180 } };
-  
+
   const updateState = (state: JointStateName, field: 'min' | 'max', value: number) => {
     const currentRange = safeRanges[state];
     if (state === 'perfect') {
@@ -271,7 +278,7 @@ function StateRangeEditor({ label, ranges, onChange, showWarningDanger = true, s
 
   const toggleState = (state: JointStateName) => {
     if (state === 'perfect') return;
-    
+
     if (safeRanges[state]) {
       const newRanges = { ...safeRanges };
       delete newRanges[state];
@@ -299,16 +306,16 @@ function StateRangeEditor({ label, ranges, onChange, showWarningDanger = true, s
         {label}
         <span className="text-xs font-normal text-gray-500">(degrees)</span>
       </h4>
-      
+
       {/* Visual Range Bar */}
       <div className="relative h-8 bg-gray-200 rounded-lg overflow-hidden">
         {statesToShow.map((state) => {
           const range = safeRanges[state];
           if (!range) return null;
-          
+
           const left = (range.min / 180) * 100;
           const width = ((range.max - range.min) / 180) * 100;
-          
+
           return (
             <div
               key={state}
@@ -328,7 +335,7 @@ function StateRangeEditor({ label, ranges, onChange, showWarningDanger = true, s
           </div>
         ))}
       </div>
-      
+
       {/* State Inputs */}
       <div className="grid grid-cols-1 gap-2 mt-6">
         {statesToShow.map((state) => {
@@ -337,26 +344,24 @@ function StateRangeEditor({ label, ranges, onChange, showWarningDanger = true, s
           const isEnabled = isRequired || !!range;
           const colors = STATE_COLORS[state];
           const config = STATE_CONFIG[state];
-          
+
           return (
             <div
               key={state}
-              className={`flex items-center gap-3 p-2 rounded-lg transition-all ${
-                isEnabled ? `${colors.bg} ${colors.border} border` : 'bg-gray-50 border border-dashed border-gray-300'
-              }`}
+              className={`flex items-center gap-3 p-2 rounded-lg transition-all ${isEnabled ? `${colors.bg} ${colors.border} border` : 'bg-gray-50 border border-dashed border-gray-300'
+                }`}
             >
               {!isRequired && (
                 <button
                   type="button"
                   onClick={() => toggleState(state)}
-                  className={`w-5 h-5 rounded border-2 flex items-center justify-center transition-colors ${
-                    isEnabled ? `${colors.border} ${colors.bg}` : 'border-gray-300 bg-white'
-                  }`}
+                  className={`w-5 h-5 rounded border-2 flex items-center justify-center transition-colors ${isEnabled ? `${colors.border} ${colors.bg}` : 'border-gray-300 bg-white'
+                    }`}
                 >
                   {isEnabled && <span className="text-xs">✓</span>}
                 </button>
               )}
-              
+
               <div className={`w-24 ${isRequired ? 'ml-8' : ''}`}>
                 <span className={`font-medium text-sm ${isEnabled ? colors.text : 'text-gray-400'}`}>
                   {STATE_LABELS[state].en}
@@ -370,7 +375,7 @@ function StateRangeEditor({ label, ranges, onChange, showWarningDanger = true, s
                   <span>• {config.rate}%</span>
                 </div>
               </div>
-              
+
               {isEnabled && range && (
                 <div className="flex items-center gap-2 flex-1">
                   <div className="flex items-center gap-1">
@@ -400,7 +405,7 @@ function StateRangeEditor({ label, ranges, onChange, showWarningDanger = true, s
                   </div>
                 </div>
               )}
-              
+
               {/* Message icon (only when enabled and message support is available) */}
               {isEnabled && onStateMessagesChange && (() => {
                 const msg = getMessageForState(state);
@@ -411,16 +416,15 @@ function StateRangeEditor({ label, ranges, onChange, showWarningDanger = true, s
                     className="relative group flex-shrink-0"
                     title={msg ? `${msg.en}\n${msg.ar}` : 'Assign message from library'}
                   >
-                    <MessageSquare className={`h-4 w-4 transition-colors ${
-                      msg ? 'text-blue-600' : 'text-gray-400 group-hover:text-blue-500'
-                    }`} />
+                    <MessageSquare className={`h-4 w-4 transition-colors ${msg ? 'text-blue-600' : 'text-gray-400 group-hover:text-blue-500'
+                      }`} />
                     {msg && (
                       <span className="absolute -top-1 -right-1 w-2 h-2 bg-blue-500 rounded-full" />
                     )}
                   </button>
                 );
               })()}
-              
+
               {!isEnabled && (
                 <span className="text-sm text-gray-400 italic">Click to enable</span>
               )}
@@ -428,7 +432,7 @@ function StateRangeEditor({ label, ranges, onChange, showWarningDanger = true, s
           );
         })}
       </div>
-      
+
       {/* Message Picker Modal */}
       {onStateMessagesChange && (
         <MessagePickerModal
@@ -461,7 +465,7 @@ interface JointTabContentProps {
 
 function JointTabContent({ joint, onUpdate, onRemove, onCopyToMirror, isHold, hasMirror }: JointTabContentProps) {
   const isPrimary = joint.role === 'primary';
-  
+
   const updateStartPose = (field: 'min' | 'max', value: number) => {
     onUpdate({
       ...joint,
@@ -499,7 +503,7 @@ function JointTabContent({ joint, onUpdate, onRemove, onCopyToMirror, isHold, ha
             </span>
           )}
         </div>
-        
+
         <div className="flex items-center gap-2">
           {hasMirror && onCopyToMirror && (
             <button
@@ -521,7 +525,7 @@ function JointTabContent({ joint, onUpdate, onRemove, onCopyToMirror, isHold, ha
           </button>
         </div>
       </div>
-      
+
       {/* Role Toggle */}
       <div className="flex items-center gap-4 p-4 bg-gray-50 rounded-lg">
         <label className="text-sm font-medium text-gray-700">Role:</label>
@@ -529,28 +533,26 @@ function JointTabContent({ joint, onUpdate, onRemove, onCopyToMirror, isHold, ha
           <button
             type="button"
             onClick={() => updateRole('primary')}
-            className={`px-4 py-2 text-sm rounded-lg transition-all ${
-              isPrimary 
-                ? 'bg-blue-500 text-white font-bold shadow-md' 
-                : 'bg-white text-gray-600 border hover:bg-gray-50'
-            }`}
+            className={`px-4 py-2 text-sm rounded-lg transition-all ${isPrimary
+              ? 'bg-blue-500 text-white font-bold shadow-md'
+              : 'bg-white text-gray-600 border hover:bg-gray-50'
+              }`}
           >
             🎯 Primary (Rep Counting)
           </button>
           <button
             type="button"
             onClick={() => updateRole('secondary')}
-            className={`px-4 py-2 text-sm rounded-lg transition-all ${
-              !isPrimary 
-                ? 'bg-purple-500 text-white font-bold shadow-md' 
-                : 'bg-white text-gray-600 border hover:bg-gray-50'
-            }`}
+            className={`px-4 py-2 text-sm rounded-lg transition-all ${!isPrimary
+              ? 'bg-purple-500 text-white font-bold shadow-md'
+              : 'bg-white text-gray-600 border hover:bg-gray-50'
+              }`}
           >
             📌 Secondary (Form Check)
           </button>
         </div>
       </div>
-      
+
       {/* Invert Indicator */}
       <div className="flex items-center justify-between p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
         <div>
@@ -560,18 +562,16 @@ function JointTabContent({ joint, onUpdate, onRemove, onCopyToMirror, isHold, ha
         <button
           type="button"
           onClick={toggleInvertIndicator}
-          className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-            joint.invertIndicator ? 'bg-yellow-500' : 'bg-gray-200'
-          }`}
+          className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${joint.invertIndicator ? 'bg-yellow-500' : 'bg-gray-200'
+            }`}
         >
           <span
-            className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-              joint.invertIndicator ? 'translate-x-6' : 'translate-x-1'
-            }`}
+            className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${joint.invertIndicator ? 'translate-x-6' : 'translate-x-1'
+              }`}
           />
         </button>
       </div>
-      
+
       {/* Start Pose */}
       <div className="bg-gray-50 rounded-lg p-4">
         <h4 className="font-semibold text-gray-800 mb-3">Start Position Range</h4>
@@ -603,7 +603,7 @@ function JointTabContent({ joint, onUpdate, onRemove, onCopyToMirror, isHold, ha
           </div>
         </div>
       </div>
-      
+
       {/* State Ranges */}
       {isPrimary && !isHold ? (
         <div className="grid md:grid-cols-2 gap-6">
@@ -665,7 +665,7 @@ function BilateralTabContent({ leftJoint, rightJoint, bilateralCode, onUpdateBot
   const joint = leftJoint;
   const isPrimary = joint.role === 'primary';
   const mapping = BILATERAL_MAPPING[bilateralCode];
-  
+
   const updateStartPose = (field: 'min' | 'max', value: number) => {
     onUpdateBoth((j) => ({
       ...j,
@@ -721,7 +721,7 @@ function BilateralTabContent({ leftJoint, rightJoint, bilateralCode, onUpdateBot
             (Left + Right)
           </span>
         </div>
-        
+
         <button
           type="button"
           onClick={onRemove}
@@ -731,14 +731,14 @@ function BilateralTabContent({ leftJoint, rightJoint, bilateralCode, onUpdateBot
           Remove Both
         </button>
       </div>
-      
+
       {/* Info Banner */}
       <div className="bg-purple-50 border border-purple-200 rounded-lg p-3">
         <p className="text-sm text-purple-700">
           ✨ Settings below apply to <strong>both {mapping?.label.en.toLowerCase() || 'joints'}</strong> automatically.
         </p>
       </div>
-      
+
       {/* Role Toggle */}
       <div className="flex items-center gap-4 p-4 bg-gray-50 rounded-lg">
         <label className="text-sm font-medium text-gray-700">Role:</label>
@@ -746,28 +746,26 @@ function BilateralTabContent({ leftJoint, rightJoint, bilateralCode, onUpdateBot
           <button
             type="button"
             onClick={() => updateRole('primary')}
-            className={`px-4 py-2 text-sm rounded-lg transition-all ${
-              isPrimary 
-                ? 'bg-blue-500 text-white font-bold shadow-md' 
-                : 'bg-white text-gray-600 border hover:bg-gray-50'
-            }`}
+            className={`px-4 py-2 text-sm rounded-lg transition-all ${isPrimary
+              ? 'bg-blue-500 text-white font-bold shadow-md'
+              : 'bg-white text-gray-600 border hover:bg-gray-50'
+              }`}
           >
             🎯 Primary (Rep Counting)
           </button>
           <button
             type="button"
             onClick={() => updateRole('secondary')}
-            className={`px-4 py-2 text-sm rounded-lg transition-all ${
-              !isPrimary 
-                ? 'bg-purple-500 text-white font-bold shadow-md' 
-                : 'bg-white text-gray-600 border hover:bg-gray-50'
-            }`}
+            className={`px-4 py-2 text-sm rounded-lg transition-all ${!isPrimary
+              ? 'bg-purple-500 text-white font-bold shadow-md'
+              : 'bg-white text-gray-600 border hover:bg-gray-50'
+              }`}
           >
             📌 Secondary (Form Check)
           </button>
         </div>
       </div>
-      
+
       {/* Invert Indicator */}
       <div className="flex items-center justify-between p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
         <div>
@@ -777,18 +775,16 @@ function BilateralTabContent({ leftJoint, rightJoint, bilateralCode, onUpdateBot
         <button
           type="button"
           onClick={toggleInvertIndicator}
-          className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-            joint.invertIndicator ? 'bg-yellow-500' : 'bg-gray-200'
-          }`}
+          className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${joint.invertIndicator ? 'bg-yellow-500' : 'bg-gray-200'
+            }`}
         >
           <span
-            className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-              joint.invertIndicator ? 'translate-x-6' : 'translate-x-1'
-            }`}
+            className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${joint.invertIndicator ? 'translate-x-6' : 'translate-x-1'
+              }`}
           />
         </button>
       </div>
-      
+
       {/* Start Pose */}
       <div className="bg-gray-50 rounded-lg p-4">
         <h4 className="font-semibold text-gray-800 mb-3">Start Position Range</h4>
@@ -820,7 +816,7 @@ function BilateralTabContent({ leftJoint, rightJoint, bilateralCode, onUpdateBot
           </div>
         </div>
       </div>
-      
+
       {/* State Ranges */}
       {isPrimary && !isHold ? (
         <div className="grid md:grid-cols-2 gap-6">
@@ -860,7 +856,7 @@ function BilateralTabContent({ leftJoint, rightJoint, bilateralCode, onUpdateBot
           onStateMessagesChange={(messages) => onUpdateBoth((j) => ({ ...j, stateMessages: messages }))}
         />
       )}
-      
+
       {/* Visual Comparison */}
       <div className="bg-gray-50 rounded-lg p-4 border">
         <h4 className="font-medium text-gray-700 mb-3 text-sm">📊 Current Values</h4>
@@ -901,27 +897,27 @@ export function JointConfigStep() {
   } = useWizardStore();
   const [activeTabIndex, setActiveTabIndex] = useState(0);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
-  
+
   const trackedJoints = jointConfig.trackedJoints || [];
   const isHold = countingMethod.countingMethodCode === 'hold';
   const variantCount = cameraPosition.cameraPositionIds?.length || 0;
   const isAlternatingEnabled = Boolean(alternatingConfig.enabled) && variantCount > 1;
-  
+
   // Build UI tabs from tracked joints
   const uiTabs = useMemo(() => buildUITabs(trackedJoints), [trackedJoints]);
-  
+
   // Validation
   const hasPrimary = trackedJoints.some(j => j.role === 'primary');
   const validationErrors = useMemo(() => {
     const errors: string[] = [];
-    
+
     if (trackedJoints.length === 0) {
       errors.push('Add at least one joint to track');
     }
     if (!hasPrimary && trackedJoints.length > 0) {
       errors.push('At least one primary joint is required for rep counting');
     }
-    
+
     return errors;
   }, [trackedJoints, hasPrimary]);
 
@@ -945,7 +941,7 @@ export function JointConfigStep() {
       setJointConfig,
     ]
   );
-  
+
   // Get available joints (not already added)
   const availableJoints = useMemo(() => {
     const existingCodes = trackedJoints.map(j => j.joint);
@@ -958,19 +954,19 @@ export function JointConfigStep() {
       return !existingCodes.includes(opt.code);
     });
   }, [trackedJoints]);
-  
+
   // Add joint(s)
   const handleAddJoint = useCallback((option: JointOption) => {
     if (option.code.startsWith('divider')) return;
-    
+
     const newJoints: TrackedJointData[] = [];
     const role = trackedJoints.length === 0 ? 'primary' : 'secondary';
-    
+
     if (option.type === 'bilateral' && option.leftJoint && option.rightJoint) {
       // Add both joints as a pair
       const leftJoint = buildTrackedJoint(option.leftJoint, role, option.rightJoint, isHold);
       const rightJoint = buildTrackedJoint(option.rightJoint, role, option.leftJoint, isHold);
-      
+
       // Check if either already exists
       const existingCodes = trackedJoints.map(j => j.joint);
       if (!existingCodes.includes(option.leftJoint)) newJoints.push(leftJoint);
@@ -980,7 +976,7 @@ export function JointConfigStep() {
       const newJoint = buildTrackedJoint(option.code, role, undefined, isHold);
       newJoints.push(newJoint);
     }
-    
+
     if (newJoints.length > 0) {
       setJointConfig({ trackedJoints: [...trackedJoints, ...newJoints] });
       // Switch to the new tab (will be at the end)
@@ -988,25 +984,25 @@ export function JointConfigStep() {
     }
     setIsDropdownOpen(false);
   }, [trackedJoints, setJointConfig, isHold, uiTabs.length]);
-  
+
   // Update joint
   const handleUpdateJoint = useCallback((index: number, joint: TrackedJointData) => {
     const newJoints = [...trackedJoints];
     newJoints[index] = joint;
     setJointConfig({ trackedJoints: newJoints });
   }, [trackedJoints, setJointConfig]);
-  
+
   // Remove single joint
   const handleRemoveJoint = useCallback((index: number) => {
     const newJoints = trackedJoints.filter((_, i) => i !== index);
     setJointConfig({ trackedJoints: newJoints });
-    
+
     // Adjust active tab (will be recalculated by uiTabs)
     if (activeTabIndex >= uiTabs.length - 1) {
       setActiveTabIndex(Math.max(0, uiTabs.length - 2));
     }
   }, [trackedJoints, setJointConfig, activeTabIndex, uiTabs.length]);
-  
+
   // Update both bilateral joints at once
   const handleUpdateBilateral = useCallback((leftIndex: number, rightIndex: number, updater: (joint: TrackedJointData) => TrackedJointData) => {
     const newJoints = [...trackedJoints];
@@ -1014,26 +1010,26 @@ export function JointConfigStep() {
     newJoints[rightIndex] = updater(newJoints[rightIndex]);
     setJointConfig({ trackedJoints: newJoints });
   }, [trackedJoints, setJointConfig]);
-  
+
   // Remove bilateral pair
   const handleRemoveBilateral = useCallback((leftIndex: number, rightIndex: number) => {
     const indicesToRemove = new Set([leftIndex, rightIndex]);
     const newJoints = trackedJoints.filter((_, i) => !indicesToRemove.has(i));
     setJointConfig({ trackedJoints: newJoints });
-    
+
     // Adjust active tab
     if (activeTabIndex >= uiTabs.length - 1) {
       setActiveTabIndex(Math.max(0, uiTabs.length - 2));
     }
   }, [trackedJoints, setJointConfig, activeTabIndex, uiTabs.length]);
-  
+
   return (
     <div className="space-y-6">
       {/* Header */}
       <div>
         <h2 className="text-2xl font-bold text-gray-900 mb-2">Joint Configuration</h2>
         <p className="text-gray-500">
-          Add joints to track and configure their angle ranges. 
+          Add joints to track and configure their angle ranges.
           {isHold ? ' For hold exercises, angles are checked continuously.' : ' Primary joints are used for rep counting.'}
         </p>
       </div>
@@ -1062,7 +1058,7 @@ export function JointConfigStep() {
           </div>
         </div>
       )}
-      
+
       {/* Validation Errors */}
       {validationErrors.length > 0 && (
         <div className="bg-red-50 border border-red-200 rounded-lg p-4">
@@ -1074,7 +1070,7 @@ export function JointConfigStep() {
           </ul>
         </div>
       )}
-      
+
       {/* Add Joint Button */}
       <div className="relative">
         <button
@@ -1086,13 +1082,13 @@ export function JointConfigStep() {
           Add Joint
           <ChevronDown className={`w-4 h-4 transition-transform ${isDropdownOpen ? 'rotate-180' : ''}`} />
         </button>
-        
+
         {/* Dropdown */}
         {isDropdownOpen && (
           <>
-            <div 
-              className="fixed inset-0 z-10" 
-              onClick={() => setIsDropdownOpen(false)} 
+            <div
+              className="fixed inset-0 z-10"
+              onClick={() => setIsDropdownOpen(false)}
             />
             <div className="absolute top-full left-0 mt-2 w-72 bg-white border border-gray-200 rounded-xl shadow-xl z-20 max-h-96 overflow-y-auto">
               {availableJoints.map((option) => {
@@ -1103,7 +1099,7 @@ export function JointConfigStep() {
                     </div>
                   );
                 }
-                
+
                 return (
                   <button
                     key={option.code}
@@ -1111,11 +1107,10 @@ export function JointConfigStep() {
                     onClick={() => handleAddJoint(option)}
                     className="w-full px-4 py-3 text-left hover:bg-blue-50 transition-colors flex items-center gap-3"
                   >
-                    <span className={`w-8 h-8 rounded-full flex items-center justify-center text-sm ${
-                      option.type === 'bilateral' 
-                        ? 'bg-purple-100 text-purple-600' 
-                        : 'bg-gray-100 text-gray-600'
-                    }`}>
+                    <span className={`w-8 h-8 rounded-full flex items-center justify-center text-sm ${option.type === 'bilateral'
+                      ? 'bg-purple-100 text-purple-600'
+                      : 'bg-gray-100 text-gray-600'
+                      }`}>
                       {option.type === 'bilateral' ? '⟷' : '•'}
                     </span>
                     <div>
@@ -1130,7 +1125,7 @@ export function JointConfigStep() {
                   </button>
                 );
               })}
-              
+
               {availableJoints.filter(o => !o.code.startsWith('divider')).length === 0 && (
                 <div className="px-4 py-6 text-center text-gray-500">
                   All joints added
@@ -1140,7 +1135,7 @@ export function JointConfigStep() {
           </>
         )}
       </div>
-      
+
       {/* Joint Tabs */}
       {uiTabs.length > 0 && (
         <div className="bg-white rounded-xl border shadow-sm overflow-hidden">
@@ -1149,26 +1144,25 @@ export function JointConfigStep() {
             {uiTabs.map((tab, index) => {
               const isActive = activeTabIndex === index;
               const isBilateral = tab.type === 'bilateral';
-              
+
               // Get role from the first joint
               const firstJointIndex = tab.type === 'bilateral' ? tab.leftJointIndex! : tab.singleJointIndex!;
               const firstJoint = trackedJoints[firstJointIndex];
               const isPrimary = firstJoint?.role === 'primary';
-              
+
               return (
                 <button
                   key={tab.id}
                   type="button"
                   onClick={() => setActiveTabIndex(index)}
-                  className={`flex-shrink-0 px-4 py-3 text-sm font-medium transition-colors border-b-2 ${
-                    isActive
-                      ? isBilateral
-                        ? 'border-purple-500 bg-purple-50 text-purple-700'
-                        : isPrimary
-                          ? 'border-blue-500 bg-blue-50 text-blue-700'
-                          : 'border-gray-500 bg-gray-50 text-gray-700'
-                      : 'border-transparent hover:bg-gray-50 text-gray-600'
-                  }`}
+                  className={`flex-shrink-0 px-4 py-3 text-sm font-medium transition-colors border-b-2 ${isActive
+                    ? isBilateral
+                      ? 'border-purple-500 bg-purple-50 text-purple-700'
+                      : isPrimary
+                        ? 'border-blue-500 bg-blue-50 text-blue-700'
+                        : 'border-gray-500 bg-gray-50 text-gray-700'
+                    : 'border-transparent hover:bg-gray-50 text-gray-600'
+                    }`}
                 >
                   <span className="flex items-center gap-2">
                     {isBilateral ? (
@@ -1183,15 +1177,15 @@ export function JointConfigStep() {
               );
             })}
           </div>
-          
+
           {/* Tab Content */}
           {uiTabs[activeTabIndex] && (() => {
             const tab = uiTabs[activeTabIndex];
-            
+
             if (tab.type === 'bilateral' && tab.leftJointIndex !== undefined && tab.rightJointIndex !== undefined) {
               const leftJoint = trackedJoints[tab.leftJointIndex];
               const rightJoint = trackedJoints[tab.rightJointIndex];
-              
+
               return (
                 <BilateralTabContent
                   leftJoint={leftJoint}
@@ -1204,7 +1198,7 @@ export function JointConfigStep() {
               );
             } else if (tab.singleJointIndex !== undefined) {
               const joint = trackedJoints[tab.singleJointIndex];
-              
+
               return (
                 <JointTabContent
                   joint={joint}
@@ -1215,12 +1209,12 @@ export function JointConfigStep() {
                 />
               );
             }
-            
+
             return null;
           })()}
         </div>
       )}
-      
+
       {/* Empty State */}
       {uiTabs.length === 0 && (
         <div className="bg-gray-50 rounded-xl p-12 text-center border-2 border-dashed border-gray-300">
@@ -1229,7 +1223,7 @@ export function JointConfigStep() {
           <p className="text-sm text-gray-400">Click &quot;Add Joint&quot; to start configuring tracked joints</p>
         </div>
       )}
-      
+
       {/* Help */}
       <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl p-4 border border-blue-100">
         <h4 className="font-semibold text-blue-800 mb-2">💡 Tips</h4>

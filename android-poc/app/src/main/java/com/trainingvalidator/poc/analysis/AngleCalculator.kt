@@ -189,6 +189,26 @@ object AngleCalculator {
                 use3D
             ),
             
+            // Cross Shoulders - arm angle relative to shoulder line
+            // Left: Left Elbow(13) -> Left Shoulder(11) -> Right Shoulder(12)
+            leftShoulderCross = calculateAngleSmoothed(
+                landmarks,
+                BodyLandmarks.LEFT_ELBOW,
+                BodyLandmarks.LEFT_SHOULDER,
+                BodyLandmarks.RIGHT_SHOULDER,
+                visibilityThreshold,
+                use3D
+            ),
+            // Right: Right Elbow(14) -> Right Shoulder(12) -> Left Shoulder(11)
+            rightShoulderCross = calculateAngleSmoothed(
+                landmarks,
+                BodyLandmarks.RIGHT_ELBOW,
+                BodyLandmarks.RIGHT_SHOULDER,
+                BodyLandmarks.LEFT_SHOULDER,
+                visibilityThreshold,
+                use3D
+            ),
+            
             // Hips
             leftHip = calculateAngleSmoothed(
                 landmarks,
@@ -243,11 +263,53 @@ object AngleCalculator {
                 use3D
             ),
             
-            // Neck - using midpoints (simplified for smoothed version)
-            neck = null, // Skip for smoothed version to avoid complexity
+            // Neck variants - using virtual landmark (index 33 = midpoint of shoulders)
+            // Each variant uses a different reference point for different camera angles
             
-            // Spine
-            spine = calculateSpineAngleSmoothed(landmarks, visibilityThreshold, use3D)
+            // neck_left: Left Shoulder(11) -> Neck(33) -> Nose(0)
+            // Best for Right Side View camera
+            neckLeft = calculateAngleSmoothed(
+                landmarks,
+                BodyLandmarks.LEFT_SHOULDER,
+                BodyLandmarks.NECK,
+                BodyLandmarks.NOSE,
+                visibilityThreshold,
+                use3D
+            ),
+            
+            // neck_right: Right Shoulder(12) -> Neck(33) -> Nose(0)
+            // Best for Left Side View camera
+            neckRight = calculateAngleSmoothed(
+                landmarks,
+                BodyLandmarks.RIGHT_SHOULDER,
+                BodyLandmarks.NECK,
+                BodyLandmarks.NOSE,
+                visibilityThreshold,
+                use3D
+            ),
+            
+            // neck_spine: Spine(34) -> Neck(33) -> Nose(0)
+            // Best for Front View camera
+            neckSpine = calculateAngleSmoothed(
+                landmarks,
+                BodyLandmarks.SPINE,
+                BodyLandmarks.NECK,
+                BodyLandmarks.NOSE,
+                visibilityThreshold,
+                use3D
+            ),
+            
+            // Spine - using virtual landmarks (neck=33, spine=34)
+            // Angle: neck(33) -> spine(34) -> left_knee(25)
+            // Falls back to angle-from-vertical if virtual landmarks unavailable
+            spine = calculateAngleSmoothed(
+                landmarks,
+                BodyLandmarks.NECK,
+                BodyLandmarks.SPINE,
+                BodyLandmarks.LEFT_KNEE,
+                visibilityThreshold,
+                use3D
+            ) ?: calculateSpineAngleSmoothed(landmarks, visibilityThreshold, use3D)
         )
         
         return rawAngles
@@ -329,11 +391,15 @@ data class JointAngles(
     val rightElbow: Double?,
     val leftShoulder: Double?,
     val rightShoulder: Double?,
+    val leftShoulderCross: Double?,   // Left Elbow -> Left Shoulder -> Right Shoulder
+    val rightShoulderCross: Double?,  // Right Elbow -> Right Shoulder -> Left Shoulder
     
     // Torso
     val leftHip: Double?,
     val rightHip: Double?,
-    val neck: Double?,
+    val neckLeft: Double?,     // Left Shoulder -> Neck -> Nose
+    val neckRight: Double?,    // Right Shoulder -> Neck -> Nose
+    val neckSpine: Double?,    // Spine -> Neck -> Nose
     val spine: Double?,
     
     // Legs
@@ -351,13 +417,17 @@ data class JointAngles(
             "right_elbow" -> rightElbow
             "left_shoulder" -> leftShoulder
             "right_shoulder" -> rightShoulder
+            "left_shoulder_cross" -> leftShoulderCross
+            "right_shoulder_cross" -> rightShoulderCross
             "left_hip" -> leftHip
             "right_hip" -> rightHip
             "left_knee" -> leftKnee
             "right_knee" -> rightKnee
             "left_ankle" -> leftAnkle
             "right_ankle" -> rightAnkle
-            "neck" -> neck
+            "neck", "neck_left" -> neckLeft
+            "neck_right" -> neckRight
+            "neck_spine" -> neckSpine
             "spine" -> spine
             else -> null
         }
@@ -372,13 +442,17 @@ data class JointAngles(
             "right_elbow" to (rightElbow ?: 0.0),
             "left_shoulder" to (leftShoulder ?: 0.0),
             "right_shoulder" to (rightShoulder ?: 0.0),
+            "left_shoulder_cross" to (leftShoulderCross ?: 0.0),
+            "right_shoulder_cross" to (rightShoulderCross ?: 0.0),
             "left_hip" to (leftHip ?: 0.0),
             "right_hip" to (rightHip ?: 0.0),
             "left_knee" to (leftKnee ?: 0.0),
             "right_knee" to (rightKnee ?: 0.0),
             "left_ankle" to (leftAnkle ?: 0.0),
             "right_ankle" to (rightAnkle ?: 0.0),
-            "neck" to (neck ?: 0.0),
+            "neck_left" to (neckLeft ?: 0.0),
+            "neck_right" to (neckRight ?: 0.0),
+            "neck_spine" to (neckSpine ?: 0.0),
             "spine" to (spine ?: 0.0)
         )
     }
@@ -390,10 +464,15 @@ data class JointAngles(
             appendLine("Right Elbow: ${rightElbow?.let { "%.1f°".format(it) } ?: "N/A"}")
             appendLine("Left Shoulder: ${leftShoulder?.let { "%.1f°".format(it) } ?: "N/A"}")
             appendLine("Right Shoulder: ${rightShoulder?.let { "%.1f°".format(it) } ?: "N/A"}")
+            appendLine("Left Shoulder Cross: ${leftShoulderCross?.let { "%.1f°".format(it) } ?: "N/A"}")
+            appendLine("Right Shoulder Cross: ${rightShoulderCross?.let { "%.1f°".format(it) } ?: "N/A"}")
             appendLine("Left Hip: ${leftHip?.let { "%.1f°".format(it) } ?: "N/A"}")
             appendLine("Right Hip: ${rightHip?.let { "%.1f°".format(it) } ?: "N/A"}")
             appendLine("Left Knee: ${leftKnee?.let { "%.1f°".format(it) } ?: "N/A"}")
             appendLine("Right Knee: ${rightKnee?.let { "%.1f°".format(it) } ?: "N/A"}")
+            appendLine("Neck (Left):  ${neckLeft?.let { "%.1f°".format(it) } ?: "N/A"}")
+            appendLine("Neck (Right): ${neckRight?.let { "%.1f°".format(it) } ?: "N/A"}")
+            appendLine("Neck (Spine): ${neckSpine?.let { "%.1f°".format(it) } ?: "N/A"}")
             appendLine("Spine: ${spine?.let { "%.1f°".format(it) } ?: "N/A"}")
         }
     }
@@ -415,11 +494,16 @@ data class JointAngles(
             // Swap shoulders
             leftShoulder = rightShoulder,
             rightShoulder = leftShoulder,
+            // Swap cross shoulders
+            leftShoulderCross = rightShoulderCross,
+            rightShoulderCross = leftShoulderCross,
             // Swap hips
             leftHip = rightHip,
             rightHip = leftHip,
-            // Keep neck and spine as-is (center joints)
-            neck = neck,
+            // Swap neck left/right, keep spine variant as-is
+            neckLeft = neckRight,
+            neckRight = neckLeft,
+            neckSpine = neckSpine,
             spine = spine,
             // Swap knees
             leftKnee = rightKnee,

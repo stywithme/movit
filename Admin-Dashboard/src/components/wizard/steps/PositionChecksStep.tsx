@@ -26,67 +26,67 @@ const TEMPLATES: Array<{
   description: string;
   data: Omit<PositionCheckData, 'checkId'>;
 }> = [
-  {
-    id: 'knee_over_toe',
-    name: 'Knee Over Toe',
-    description: 'Knees don\'t go past toes (squats)',
-    data: {
-      type: 'forward_comparison',
-      landmarks: { primary: 'left_knee', secondary: 'left_foot_index' },
-      condition: { operator: 'should_not_exceed', threshold: 0.05 },
-      activePhases: ['down', 'bottom'],
-      errorMessage: { ar: 'لا تدع ركبتك تتجاوز أصابع قدميك', en: 'Don\'t let your knee go past your toes', audioAr: undefined, audioEn: undefined },
-      severity: 'warning',
-      cooldownMs: 2000,
-      minErrorFrames: 3,
+    {
+      id: 'knee_over_toe',
+      name: 'Knee Over Toe',
+      description: 'Knees don\'t go past toes (squats)',
+      data: {
+        type: 'forward_comparison',
+        landmarks: { primary: 'left_knee', secondary: 'left_foot_index' },
+        condition: { operator: 'should_not_exceed', threshold: 0.05 },
+        activePhases: ['down', 'bottom'],
+        errorMessage: { ar: 'لا تدع ركبتك تتجاوز أصابع قدميك', en: 'Don\'t let your knee go past your toes', audioAr: undefined, audioEn: undefined },
+        severity: 'warning',
+        cooldownMs: 2000,
+        minErrorFrames: 3,
+      },
     },
-  },
-  {
-    id: 'back_straight',
-    name: 'Back Straight',
-    description: 'Keep back aligned (form check)',
-    data: {
-      type: 'vertical_alignment',
-      landmarks: { primary: 'left_shoulder', secondary: 'left_hip' },
-      condition: { operator: 'approximately_equal', threshold: 0.08 },
-      activePhases: ['start', 'down', 'bottom', 'up'],
-      errorMessage: { ar: 'حافظ على استقامة ظهرك', en: 'Keep your back straight', audioAr: undefined, audioEn: undefined },
-      severity: 'warning',
-      cooldownMs: 2000,
-      minErrorFrames: 4,
+    {
+      id: 'back_straight',
+      name: 'Back Straight',
+      description: 'Keep back aligned (form check)',
+      data: {
+        type: 'vertical_alignment',
+        landmarks: { primary: 'left_shoulder', secondary: 'left_hip' },
+        condition: { operator: 'approximately_equal', threshold: 0.08 },
+        activePhases: ['start', 'down', 'bottom', 'up'],
+        errorMessage: { ar: 'حافظ على استقامة ظهرك', en: 'Keep your back straight', audioAr: undefined, audioEn: undefined },
+        severity: 'warning',
+        cooldownMs: 2000,
+        minErrorFrames: 4,
+      },
     },
-  },
-  {
-    id: 'hip_hinge',
-    name: 'Hip Hinge',
-    description: 'Proper hip hinge pattern',
-    data: {
-      type: 'forward_comparison',
-      landmarks: { primary: 'left_hip', secondary: 'left_knee' },
-      condition: { operator: 'should_exceed', threshold: 0.03 },
-      activePhases: ['down', 'bottom'],
-      errorMessage: { ar: 'ادفع وركك للخلف', en: 'Push your hips back', audioAr: undefined, audioEn: undefined },
-      severity: 'tip',
-      cooldownMs: 3000,
-      minErrorFrames: 5,
+    {
+      id: 'hip_hinge',
+      name: 'Hip Hinge',
+      description: 'Proper hip hinge pattern',
+      data: {
+        type: 'forward_comparison',
+        landmarks: { primary: 'left_hip', secondary: 'left_knee' },
+        condition: { operator: 'should_exceed', threshold: 0.03 },
+        activePhases: ['down', 'bottom'],
+        errorMessage: { ar: 'ادفع وركك للخلف', en: 'Push your hips back', audioAr: undefined, audioEn: undefined },
+        severity: 'tip',
+        cooldownMs: 3000,
+        minErrorFrames: 5,
+      },
     },
-  },
-  {
-    id: 'elbow_stable',
-    name: 'Elbow Stable',
-    description: 'Elbow stays close to body (curls)',
-    data: {
-      type: 'vertical_alignment',
-      landmarks: { primary: 'left_elbow', secondary: 'left_hip' },
-      condition: { operator: 'approximately_equal', threshold: 0.08 },
-      activePhases: ['up', 'down'],
-      errorMessage: { ar: 'ثبّت مرفقك بجانب جسمك', en: 'Keep your elbow close to your body', audioAr: undefined, audioEn: undefined },
-      severity: 'warning',
-      cooldownMs: 2000,
-      minErrorFrames: 4,
+    {
+      id: 'elbow_stable',
+      name: 'Elbow Stable',
+      description: 'Elbow stays close to body (curls)',
+      data: {
+        type: 'vertical_alignment',
+        landmarks: { primary: 'left_elbow', secondary: 'left_hip' },
+        condition: { operator: 'approximately_equal', threshold: 0.08 },
+        activePhases: ['up', 'down'],
+        errorMessage: { ar: 'ثبّت مرفقك بجانب جسمك', en: 'Keep your elbow close to your body', audioAr: undefined, audioEn: undefined },
+        severity: 'warning',
+        cooldownMs: 2000,
+        minErrorFrames: 4,
+      },
     },
-  },
-];
+  ];
 
 const POSITION_CHECK_TYPES: Array<{ value: PositionCheckType; label: string; description: string }> = [
   { value: 'forward_comparison', label: 'Forward Comparison', description: 'Compare X positions' },
@@ -112,7 +112,7 @@ const AVAILABLE_LANDMARKS = [
   'left_knee', 'right_knee', 'left_hip', 'right_hip',
   'left_shoulder', 'right_shoulder', 'left_ankle', 'right_ankle',
   'left_elbow', 'right_elbow', 'left_wrist', 'right_wrist',
-  'left_foot_index', 'right_foot_index', 'nose', 'spine',
+  'left_foot_index', 'right_foot_index', 'nose', 'neck', 'spine',
 ];
 
 // ============================================
@@ -129,13 +129,13 @@ interface PositionCheckCardProps {
 function PositionCheckCard({ check, index, onUpdate, onRemove }: PositionCheckCardProps) {
   const [expanded, setExpanded] = useState(false);
   const [messagePickerOpen, setMessagePickerOpen] = useState(false);
-  
+
   const severityColors = {
     error: 'bg-red-100 border-red-400 text-red-700',
     warning: 'bg-yellow-100 border-yellow-400 text-yellow-700',
     tip: 'bg-blue-100 border-blue-400 text-blue-700',
   };
-  
+
   const updateField = <K extends keyof PositionCheckData>(field: K, value: PositionCheckData[K]) => {
     onUpdate(index, { ...check, [field]: value });
   };
@@ -178,10 +178,10 @@ function PositionCheckCard({ check, index, onUpdate, onRemove }: PositionCheckCa
               onClick={() => setExpanded(!expanded)}
               className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
             >
-              <svg 
-                className={`w-5 h-5 text-gray-500 transition-transform ${expanded ? 'rotate-180' : ''}`} 
-                fill="none" 
-                stroke="currentColor" 
+              <svg
+                className={`w-5 h-5 text-gray-500 transition-transform ${expanded ? 'rotate-180' : ''}`}
+                fill="none"
+                stroke="currentColor"
                 viewBox="0 0 24 24"
               >
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
@@ -199,7 +199,7 @@ function PositionCheckCard({ check, index, onUpdate, onRemove }: PositionCheckCa
           </div>
         </div>
       </CardHeader>
-      
+
       {expanded && (
         <CardContent className="pt-0 space-y-4">
           {/* Type & Operator */}
@@ -229,7 +229,7 @@ function PositionCheckCard({ check, index, onUpdate, onRemove }: PositionCheckCa
               </select>
             </div>
           </div>
-          
+
           {/* Threshold */}
           <div>
             <Label>Threshold</Label>
@@ -246,7 +246,7 @@ function PositionCheckCard({ check, index, onUpdate, onRemove }: PositionCheckCa
               <span className="text-sm text-gray-500">(0-1 normalized value)</span>
             </div>
           </div>
-          
+
           {/* Landmarks */}
           <div className="grid md:grid-cols-2 gap-4">
             <div>
@@ -274,7 +274,7 @@ function PositionCheckCard({ check, index, onUpdate, onRemove }: PositionCheckCa
               </select>
             </div>
           </div>
-          
+
           {/* Active Phases */}
           <div>
             <Label>Active Phases</Label>
@@ -291,11 +291,10 @@ function PositionCheckCard({ check, index, onUpdate, onRemove }: PositionCheckCa
                         : [...check.activePhases, phase];
                       updateField('activePhases', newPhases);
                     }}
-                    className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
-                      isActive 
-                        ? 'bg-blue-500 text-white' 
-                        : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                    }`}
+                    className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${isActive
+                      ? 'bg-blue-500 text-white'
+                      : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                      }`}
                   >
                     {phase}
                   </button>
@@ -303,7 +302,7 @@ function PositionCheckCard({ check, index, onUpdate, onRemove }: PositionCheckCa
               })}
             </div>
           </div>
-          
+
           {/* Error Messages */}
           <div className="space-y-2">
             <div className="flex items-center justify-between">
@@ -357,7 +356,7 @@ function PositionCheckCard({ check, index, onUpdate, onRemove }: PositionCheckCa
             description="Choose a message from the library for this check."
             createDefaults={{ category: 'position', context: 'error' }}
           />
-          
+
           {/* Severity & Timing */}
           <div className="grid md:grid-cols-3 gap-4">
             <div>
@@ -404,9 +403,9 @@ function PositionCheckCard({ check, index, onUpdate, onRemove }: PositionCheckCa
 
 export function PositionChecksStep() {
   const { positionChecks, addPositionCheck, updatePositionCheck, removePositionCheck } = useWizardStore();
-  
+
   const checks = positionChecks.positionChecks || [];
-  
+
   const addFromTemplate = (template: typeof TEMPLATES[number]) => {
     const check: PositionCheckData = {
       ...template.data,
@@ -414,7 +413,7 @@ export function PositionChecksStep() {
     };
     addPositionCheck(check);
   };
-  
+
   const addCustomCheck = () => {
     const check: PositionCheckData = {
       checkId: `custom_${Date.now()}`,
@@ -429,7 +428,7 @@ export function PositionChecksStep() {
     };
     addPositionCheck(check);
   };
-  
+
   return (
     <div className="space-y-6">
       <div>
@@ -441,7 +440,7 @@ export function PositionChecksStep() {
           Add position-based validations for real-time form feedback.
         </p>
       </div>
-      
+
       {/* Info */}
       <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 flex items-start gap-3">
         <span className="text-2xl">💡</span>
@@ -453,7 +452,7 @@ export function PositionChecksStep() {
           </p>
         </div>
       </div>
-      
+
       {/* Quick Templates */}
       <div>
         <Label className="mb-3 block">Quick Templates</Label>
@@ -471,7 +470,7 @@ export function PositionChecksStep() {
           ))}
         </div>
       </div>
-      
+
       {/* Existing Checks */}
       <div className="space-y-3">
         <div className="flex items-center justify-between">
@@ -486,7 +485,7 @@ export function PositionChecksStep() {
             </button>
           )}
         </div>
-        
+
         {checks.length === 0 ? (
           <Card className="p-8 text-center border-dashed">
             <p className="text-gray-500">No position checks added</p>
@@ -506,10 +505,10 @@ export function PositionChecksStep() {
           </div>
         )}
       </div>
-      
+
       {/* Add Custom */}
-      <Button 
-        variant="outline" 
+      <Button
+        variant="outline"
         className="w-full border-dashed"
         onClick={addCustomCheck}
       >
