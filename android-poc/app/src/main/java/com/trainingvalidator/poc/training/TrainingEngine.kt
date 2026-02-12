@@ -131,8 +131,9 @@ class TrainingEngine(
 
     private val lastPositionEventTimes = mutableMapOf<String, Long>()
     
-    // NOTE: Camera warning throttling is now handled exclusively by MessageOrchestrator
-    // in FeedbackManager for consistent message management
+    // Camera warning event throttle (UI overlay uses StateFlow, but FeedbackEvent is throttled)
+    private var lastCameraWarningEventTime = 0L
+    private val CAMERA_WARNING_EVENT_COOLDOWN_MS = 2000L  // Only emit event every 2s
     
     // ==================== Position Validator ====================
     
@@ -864,8 +865,13 @@ class TrainingEngine(
             }
             
             positionValidation?.cameraWarning?.let { warning ->
-                // Always emit - throttling is handled by MessageOrchestrator in FeedbackManager
-                emitEvent(FeedbackEvent.CameraPositionWarning(warning))
+                // Throttle event emission - UI overlay uses StateFlow (_cameraWarning),
+                // but FeedbackEvent is rate-limited to prevent MessageOrchestrator spam
+                val now = nowMs()
+                if (now - lastCameraWarningEventTime >= CAMERA_WARNING_EVENT_COOLDOWN_MS) {
+                    lastCameraWarningEventTime = now
+                    emitEvent(FeedbackEvent.CameraPositionWarning(warning))
+                }
             }
             
             // 11. Handle based on counting method

@@ -48,6 +48,7 @@ class MotionRecorder(
     private val currentRepBuffer = mutableListOf<FrameSample>()
     private var currentRepStartT: Int = 0
     private var lastStates: ByteArray? = null  // For state-change detection
+    private var maxFramesWarningLogged = false  // Prevent log spam when buffer is full
     
     // Completed rep METRICS only (no raw frames stored)
     private val completedRepMetrics = mutableListOf<RepMetricsData>()
@@ -122,8 +123,16 @@ class MotionRecorder(
         
         // Safety: limit frames per rep
         if (currentRepBuffer.size >= MAX_FRAMES_PER_REP) {
-            Log.w(TAG, "Max frames per rep reached ($MAX_FRAMES_PER_REP), skipping")
-            return
+            if (!maxFramesWarningLogged) {
+                Log.w(TAG, "Max frames per rep reached ($MAX_FRAMES_PER_REP), discarding stale buffer and restarting")
+                maxFramesWarningLogged = true
+            }
+            // Auto-clear stale buffer so fresh frames can be recorded
+            // (if rep never completes, old data isn't useful)
+            currentRepBuffer.clear()
+            lastStates = null
+            currentRepStartT = (timestamp - sessionStartMs).toInt()
+            // Don't return - let the new frame be recorded below
         }
         
         // Calculate relative time
@@ -190,6 +199,9 @@ class MotionRecorder(
             Log.w(TAG, "No frames recorded for rep $repNumber")
             return
         }
+        
+        // Reset warning flag for next rep
+        maxFramesWarningLogged = false
         
         val endT = currentRepBuffer.lastOrNull()?.t ?: currentRepStartT
         val durationMs = endT - currentRepStartT

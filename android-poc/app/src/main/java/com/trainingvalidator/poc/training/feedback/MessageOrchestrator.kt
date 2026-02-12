@@ -93,6 +93,9 @@ class MessageOrchestrator {
     // Last message shown (to prevent same motivation twice in a row)
     private var lastMotivationMessage: String? = null
     
+    // Track which message keys already logged their "max repeats" warning (prevent log spam)
+    private val maxRepeatsLoggedKeys = mutableSetOf<String>()
+    
     /**
      * Decide how to deliver a message
      * 
@@ -161,7 +164,9 @@ class MessageOrchestrator {
         val maxRepeats = getMaxRepeats(category)
         if (state.repeatCount >= maxRepeats) {
             // Max repeats reached - go silent (visual overlay takes over)
-            Log.d(TAG, "Max repeats ($maxRepeats) reached for $messageKey - going silent")
+            if (maxRepeatsLoggedKeys.add(messageKey)) {
+                Log.d(TAG, "Max repeats ($maxRepeats) reached for $messageKey - going silent")
+            }
             return DeliveryDecision(
                 channel = DeliveryChannel.SILENT,
                 repeatCount = state.repeatCount,
@@ -247,6 +252,7 @@ class MessageOrchestrator {
         currentActiveUntil = 0L
         currentActiveCategory = null
         lastMotivationMessage = null
+        maxRepeatsLoggedKeys.clear()
         Log.d(TAG, "All message states reset")
     }
 

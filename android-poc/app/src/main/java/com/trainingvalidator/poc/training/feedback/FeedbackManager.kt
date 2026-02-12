@@ -336,7 +336,7 @@ class FeedbackManager(
         when (decision.channel) {
             MessageOrchestrator.DeliveryChannel.SILENT -> {
                 // No message - visual overlay handles it
-                Log.d(TAG, "Message silenced: $displayText (repeat #${decision.repeatCount})")
+                // Note: No log here - would fire every frame and cause spam
             }
             
             MessageOrchestrator.DeliveryChannel.HAPTIC_ONLY -> {

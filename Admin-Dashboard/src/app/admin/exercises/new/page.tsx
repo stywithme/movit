@@ -46,16 +46,16 @@ interface LookupData {
 
 export default function NewExercisePage() {
   const router = useRouter();
-  const { 
-    currentStep, 
-    setStep, 
-    resetWizard, 
-    exerciseId, 
-    setSaveStatus, 
-    markAsSaved, 
-    setExerciseId 
+  const {
+    currentStep,
+    setStep,
+    resetWizard,
+    exerciseId,
+    setSaveStatus,
+    markAsSaved,
+    setExerciseId
   } = useWizardStore();
-  
+
   const [lookupData, setLookupData] = useState<LookupData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -70,7 +70,14 @@ export default function NewExercisePage() {
     }
     return fallbackMessage;
   };
-  
+
+  // Reset wizard on mount to clear any stale data from previous exercises
+  // This ensures "Create New Exercise" always starts with a clean slate
+  useEffect(() => {
+    resetWizard();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   // Fetch lookup data
   useEffect(() => {
     async function fetchLookupData() {
@@ -85,15 +92,15 @@ export default function NewExercisePage() {
         setLoading(false);
       }
     }
-    
+
     fetchLookupData();
   }, []);
-  
+
   // Build API payload from store
   const buildPayload = useCallback(() => {
     const store = useWizardStore.getState();
     const isHold = store.countingMethod.countingMethodCode === 'hold';
-    
+
     // Build tracked joints for API
     const trackedJointsConfig = (store.jointConfig.trackedJoints || []).map((joint: TrackedJointData) => {
       if (joint.role === 'primary') {
@@ -130,7 +137,7 @@ export default function NewExercisePage() {
         };
       }
     });
-    
+
     // Build position checks
     const positionChecks = (store.positionChecks.positionChecks || []).map((pc: PositionCheckData, idx: number) => ({
       checkId: pc.checkId,
@@ -144,7 +151,7 @@ export default function NewExercisePage() {
       minErrorFrames: pc.minErrorFrames,
       sortOrder: idx + 1,
     }));
-    
+
     // Build feedback message assignments (library-based)
     const feedbackAssignments = (store.extras.feedbackAssignments || []).map((assignment, idx) => ({
       messageId: assignment.messageId,
@@ -152,24 +159,24 @@ export default function NewExercisePage() {
       context: assignment.context,
       sortOrder: idx + 1,
     }));
-    
+
     // Build rep counting config
     const repCountingConfig = isHold
       ? {
-          duration: store.repConfig.duration || 30,
-          gracePeriodMs: store.repConfig.gracePeriodMs || 2500,
-        }
+        duration: store.repConfig.duration || 30,
+        gracePeriodMs: store.repConfig.gracePeriodMs || 2500,
+      }
       : {
-          reps: store.repConfig.reps || 12,
-          minRepIntervalMs: store.repConfig.minRepIntervalMs || 1500,
-          maxRepIntervalMs: store.repConfig.maxRepIntervalMs || 5000,
-        };
-    
+        reps: store.repConfig.reps || 12,
+        minRepIntervalMs: store.repConfig.minRepIntervalMs || 1500,
+        maxRepIntervalMs: store.repConfig.maxRepIntervalMs || 5000,
+      };
+
     const jointVariants = store.alternatingConfig.enabled
       ? {
-          ...store.jointConfigVariants,
-          [store.activeJointVariantIndex]: store.jointConfig.trackedJoints || [],
-        }
+        ...store.jointConfigVariants,
+        [store.activeJointVariantIndex]: store.jointConfig.trackedJoints || [],
+      }
       : {};
 
     return {
@@ -246,26 +253,26 @@ export default function NewExercisePage() {
       // Alternating configuration (optional)
       alternatingConfig: store.alternatingConfig.enabled && store.alternatingConfig.variants.length > 0
         ? {
-            switchEvery: store.alternatingConfig.switchEvery,
-            variants: store.alternatingConfig.variants.map((variant) => ({
-              label: variant.label,
-              variantIndex: variant.variantIndex,
-            })),
-          }
+          switchEvery: store.alternatingConfig.switchEvery,
+          variants: store.alternatingConfig.variants.map((variant) => ({
+            label: variant.label,
+            variantIndex: variant.variantIndex,
+          })),
+        }
         : undefined,
     };
   }, []);
-  
+
   // Auto-save on step change
   const handleStepChange = useCallback(async (newStep: number) => {
     if (newStep < 1 || newStep > TOTAL_STEPS) return;
-    
+
     const store = useWizardStore.getState();
-    
+
     // Only auto-save if dirty and has basic info
     if (store.isDirty && store.basicInfo.name?.en) {
       setSaveStatus('saving');
-      
+
       try {
         if (store.exerciseId) {
           const updateResponse = await fetch(`/api/exercises/${store.exerciseId}`, {
@@ -302,14 +309,14 @@ export default function NewExercisePage() {
         setSaveStatus('error', err instanceof Error ? err.message : 'Save failed');
       }
     }
-    
+
     setStep(newStep);
   }, [setSaveStatus, markAsSaved, setExerciseId, setStep, buildPayload]);
-  
+
   // Save as draft
   const handleSaveDraft = async () => {
     setSaveStatus('saving');
-    
+
     try {
       if (exerciseId) {
         const updateResponse = await fetch(`/api/exercises/${exerciseId}`, {
@@ -346,14 +353,14 @@ export default function NewExercisePage() {
       setSaveStatus('error', err instanceof Error ? err.message : 'Save failed');
     }
   };
-  
+
   // Publish
   const handlePublish = async () => {
     setSaveStatus('saving');
-    
+
     try {
       let id = exerciseId;
-      
+
       if (!id) {
         const response = await fetch('/api/exercises', {
           method: 'POST',
@@ -383,7 +390,7 @@ export default function NewExercisePage() {
           throw new Error(updateData?.error || 'Save failed');
         }
       }
-      
+
       if (id) {
         const publishResponse = await fetch(`/api/exercises/${id}/publish`, { method: 'PUT' });
         if (!publishResponse.ok) {
@@ -401,17 +408,17 @@ export default function NewExercisePage() {
       setSaveStatus('error', err instanceof Error ? err.message : 'Publish failed');
     }
   };
-  
+
   // Render current step
   const renderStep = () => {
     if (!lookupData) return null;
-    
+
     switch (currentStep) {
       case 1:
         return (
-          <BasicInfoStep 
-            categories={lookupData.categories} 
-            countingMethods={lookupData.countingMethods} 
+          <BasicInfoStep
+            categories={lookupData.categories}
+            countingMethods={lookupData.countingMethods}
           />
         );
       case 2:
@@ -424,24 +431,24 @@ export default function NewExercisePage() {
         return <RepConfigStep />;
       case 6:
         return (
-          <ExtrasStep 
-            muscles={lookupData.muscles} 
-            equipment={lookupData.equipment} 
-            tags={lookupData.tags} 
+          <ExtrasStep
+            muscles={lookupData.muscles}
+            equipment={lookupData.equipment}
+            tags={lookupData.tags}
           />
         );
       case 7:
         return <ReviewStep />;
       default:
         return (
-          <BasicInfoStep 
-            categories={lookupData.categories} 
-            countingMethods={lookupData.countingMethods} 
+          <BasicInfoStep
+            categories={lookupData.categories}
+            countingMethods={lookupData.countingMethods}
           />
         );
     }
   };
-  
+
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
@@ -449,13 +456,13 @@ export default function NewExercisePage() {
       </div>
     );
   }
-  
+
   if (error) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
         <div className="text-center">
           <p className="text-red-600 mb-4">{error}</p>
-          <button 
+          <button
             onClick={() => window.location.reload()}
             className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
           >
@@ -465,7 +472,7 @@ export default function NewExercisePage() {
       </div>
     );
   }
-  
+
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
@@ -511,11 +518,11 @@ export default function NewExercisePage() {
           </div>
         </div>
       </div>
-      
+
       {/* Stepper */}
       <div className="bg-white border-b">
         <div className="w-full px-4 sm:px-6 lg:px-8 py-4">
-          <WizardStepper 
+          <WizardStepper
             currentStep={currentStep}
             totalSteps={TOTAL_STEPS}
             onStepClick={handleStepChange}
@@ -531,39 +538,37 @@ export default function NewExercisePage() {
           />
         </div>
       </div>
-      
+
       {/* Content */}
       <div className="w-full px-4 sm:px-6 lg:px-8 py-8">
         {renderStep()}
       </div>
-      
+
       {/* Footer Navigation */}
       <div className="fixed bottom-0 left-0 right-0 bg-white border-t p-4">
         <div className="w-full px-4 sm:px-6 lg:px-8 flex justify-between">
           <button
             onClick={() => handleStepChange(currentStep - 1)}
             disabled={currentStep === 1}
-            className={`px-6 py-2 rounded-lg transition-colors ${
-              currentStep === 1 
-                ? 'bg-gray-100 text-gray-400 cursor-not-allowed' 
+            className={`px-6 py-2 rounded-lg transition-colors ${currentStep === 1
+                ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
                 : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-            }`}
+              }`}
           >
             ← Previous
           </button>
-          
+
           <div className="text-sm text-gray-500">
             Step {currentStep} of {TOTAL_STEPS}
           </div>
-          
+
           <button
             onClick={() => handleStepChange(currentStep + 1)}
             disabled={currentStep === TOTAL_STEPS}
-            className={`px-6 py-2 rounded-lg transition-colors ${
-              currentStep === TOTAL_STEPS 
-                ? 'bg-gray-100 text-gray-400 cursor-not-allowed' 
+            className={`px-6 py-2 rounded-lg transition-colors ${currentStep === TOTAL_STEPS
+                ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
                 : 'bg-blue-600 text-white hover:bg-blue-700'
-            }`}
+              }`}
           >
             Next →
           </button>

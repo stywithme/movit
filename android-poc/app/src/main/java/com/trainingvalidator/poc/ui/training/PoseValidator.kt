@@ -151,19 +151,7 @@ class PoseValidator {
      * Get angle for a specific joint from JointAngles
      */
     private fun getAngleForJoint(angles: JointAngles, jointCode: String): Double? {
-        return when (jointCode) {
-            "left_shoulder" -> angles.leftShoulder
-            "right_shoulder" -> angles.rightShoulder
-            "left_elbow" -> angles.leftElbow
-            "right_elbow" -> angles.rightElbow
-            "left_hip" -> angles.leftHip
-            "right_hip" -> angles.rightHip
-            "left_knee" -> angles.leftKnee
-            "right_knee" -> angles.rightKnee
-            "left_ankle" -> angles.leftAnkle
-            "right_ankle" -> angles.rightAnkle
-            else -> null
-        }
+        return angles.getAngle(jointCode)
     }
     
     /**
