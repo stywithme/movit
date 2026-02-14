@@ -85,6 +85,28 @@ class JointAngleTracker(
     }
     
     /**
+     * Extract angles for tracked joints, filtered to only the active joint codes.
+     * Used by TrainingEngine in bilateral mode to only process the active side's joints.
+     * 
+     * @param angles All joint angles from AngleCalculator
+     * @param activeJointCodes Set of joint codes that are active (e.g., right-side + shared)
+     * @return Map of joint code to angle value (only active tracked joints)
+     */
+    fun extractTrackedAngles(angles: JointAngles, activeJointCodes: Set<String>): Map<String, Double> {
+        val result = mutableMapOf<String, Double>()
+        
+        for (joint in trackedJoints) {
+            if (joint.joint !in activeJointCodes) continue
+            val angleValue = getAngleForJoint(angles, joint.joint)
+            if (angleValue != null) {
+                result[joint.joint] = angleValue
+            }
+        }
+        
+        return result
+    }
+    
+    /**
      * Extract angles for primary joints only (used for rep counting)
      */
     fun extractPrimaryAngles(angles: JointAngles): Map<String, Double> {

@@ -181,7 +181,39 @@ data class PerformanceSummary(
     val formConsistency: Float? = null,
     
     /** Fatigue Index - rep number where fatigue started (null = no fatigue) */
-    val fatigueIndex: Int? = null
+    val fatigueIndex: Int? = null,
+    
+    // ═══════════════════════════════════════════════════════════════
+    // NEW METRICS (V2) — From MetricsCalculator/MotionRecorder
+    // ═══════════════════════════════════════════════════════════════
+    
+    /** Average Tempo [eccentric, isometric, concentric] in ms (from SessionMetrics) */
+    val avgTempo: IntArray? = null,
+    
+    /** Average Velocity × 100 (from SessionMetrics) */
+    val avgVelocity: Short? = null,
+    
+    /** Velocity Loss % (0-100) — Max VL% in session (from SessionMetrics) */
+    val velocityLoss: Float? = null,
+    
+    /** Tempo Consistency (0-100) — how consistent rep timing is (from SessionMetrics) */
+    val tempoConsistency: Float? = null,
+    
+    /** Total TUT in ms — sum of actual rep durations (from SessionMetrics) */
+    val totalTUT: Int? = null,
+    
+    // ═══════════════════════════════════════════════════════════════
+    // POSITION CHECK STATS — From RepResult aggregation
+    // ═══════════════════════════════════════════════════════════════
+    
+    /** Number of reps that had at least one ERROR-severity position check violation */
+    val positionErrorReps: Int = 0,
+    
+    /** Number of reps that had at least one WARNING-severity position check violation */
+    val positionWarningReps: Int = 0,
+    
+    /** Number of reps that had at least one TIP-severity position check */
+    val positionTipReps: Int = 0
 ) {
     // Legacy compatibility
     val accuracy: Float get() = countedRatio * 100f
@@ -985,8 +1017,10 @@ data class SafetyMetrics(
 data class ControlMetrics(
     val overallScore: MetricWithStatus,
     val tempo: TempoDisplay?,
-    val totalTUT: Int?,                   // Time Under Tension in seconds
-    val fatigueIndex: Int?                // Rep number where fatigue started
+    val totalTUT: Int?,                   // Time Under Tension in seconds (sum of rep durations)
+    val fatigueIndex: Int?,               // Rep number where fatigue started
+    val velocityLoss: MetricWithStatus? = null,     // Velocity Loss % (neuromuscular fatigue)
+    val tempoConsistency: MetricWithStatus? = null   // Tempo consistency across reps
 ) {
     fun getCardScore(): Float = overallScore.value
 }

@@ -466,20 +466,98 @@ function PositionCheckCard({ check, index, onUpdate, onRemove }: PositionCheckCa
 }
 
 // ============================================
+// BILATERAL AUTO-MIRROR HELPERS
+// ============================================
+
+/**
+ * Check if a landmark code is side-specific (left_ or right_ prefix)
+ */
+function isSidedLandmark(code: string): boolean {
+  return code.startsWith('left_') || code.startsWith('right_');
+}
+
+/**
+ * Mirror a single landmark code: left_ <-> right_
+ */
+function mirrorLandmark(code: string): string {
+  if (code.startsWith('left_')) return code.replace('left_', 'right_');
+  if (code.startsWith('right_')) return code.replace('right_', 'left_');
+  return code;
+}
+
+/**
+ * Check if a position check has any sided landmarks that need mirroring
+ */
+function hasSidedLandmarks(check: PositionCheckData): boolean {
+  const { primary, secondary, tertiary, quaternary } = check.landmarks;
+  return [primary, secondary, tertiary, quaternary].some(
+    (l) => l !== undefined && isSidedLandmark(l)
+  );
+}
+
+/**
+ * Create a mirrored copy of a position check (swap left_ <-> right_ in all landmarks)
+ */
+function mirrorPositionCheck(check: PositionCheckData): PositionCheckData {
+  return {
+    ...check,
+    checkId: `${check.checkId}_mirror`,
+    landmarks: {
+      primary: mirrorLandmark(check.landmarks.primary),
+      secondary: mirrorLandmark(check.landmarks.secondary),
+      tertiary: check.landmarks.tertiary ? mirrorLandmark(check.landmarks.tertiary) : undefined,
+      quaternary: check.landmarks.quaternary ? mirrorLandmark(check.landmarks.quaternary) : undefined,
+    },
+  };
+}
+
+/**
+ * Check if a checkId is an auto-mirrored check
+ */
+function isMirroredCheck(checkId: string): boolean {
+  return checkId.endsWith('_mirror');
+}
+
+// ============================================
 // MAIN COMPONENT
 // ============================================
 
 export function PositionChecksStep() {
-  const { positionChecks, addPositionCheck, updatePositionCheck, removePositionCheck } = useWizardStore();
+  const { positionChecks, setPositionChecks, bilateralConfig } = useWizardStore();
 
-  const checks = positionChecks.positionChecks || [];
+  const allChecks = positionChecks.positionChecks || [];
+  const isBilateralEnabled = Boolean(bilateralConfig.enabled);
+
+  // Separate source checks from auto-mirrored checks
+  const sourceChecks = allChecks.filter((c) => !isMirroredCheck(c.checkId));
+  const mirroredChecks = allChecks.filter((c) => isMirroredCheck(c.checkId));
+
+  /**
+   * Rebuild all checks: source checks + auto-generated mirrors
+   */
+  const rebuildChecks = (newSourceChecks: PositionCheckData[]) => {
+    if (!isBilateralEnabled) {
+      setPositionChecks({ positionChecks: newSourceChecks });
+      return;
+    }
+
+    // Auto-generate mirrors for sided checks
+    const mirrors: PositionCheckData[] = [];
+    for (const check of newSourceChecks) {
+      if (hasSidedLandmarks(check)) {
+        mirrors.push(mirrorPositionCheck(check));
+      }
+    }
+
+    setPositionChecks({ positionChecks: [...newSourceChecks, ...mirrors] });
+  };
 
   const addFromTemplate = (template: typeof TEMPLATES[number]) => {
     const check: PositionCheckData = {
       ...template.data,
       checkId: `${template.id}_${Date.now()}`,
     };
-    addPositionCheck(check);
+    rebuildChecks([...sourceChecks, check]);
   };
 
   const addCustomCheck = () => {
@@ -494,8 +572,27 @@ export function PositionChecksStep() {
       cooldownMs: 2000,
       minErrorFrames: 3,
     };
-    addPositionCheck(check);
+    rebuildChecks([...sourceChecks, check]);
   };
+
+  const handleUpdateCheck = (index: number, check: PositionCheckData) => {
+    const newSourceChecks = [...sourceChecks];
+    newSourceChecks[index] = check;
+    rebuildChecks(newSourceChecks);
+  };
+
+  const handleRemoveCheck = (index: number) => {
+    const newSourceChecks = sourceChecks.filter((_, i) => i !== index);
+    rebuildChecks(newSourceChecks);
+  };
+
+  const handleClearAll = () => {
+    rebuildChecks([]);
+  };
+
+  const totalChecks = isBilateralEnabled
+    ? sourceChecks.length + mirroredChecks.length
+    : sourceChecks.length;
 
   return (
     <div className="space-y-6">
@@ -508,6 +605,20 @@ export function PositionChecksStep() {
           Add position-based validations for real-time form feedback.
         </p>
       </div>
+
+      {/* Bilateral Info */}
+      {isBilateralEnabled && (
+        <div className="bg-indigo-50 border border-indigo-200 rounded-xl p-4 flex items-start gap-3">
+          <span className="text-2xl">⟷</span>
+          <div className="text-sm text-indigo-700">
+            <p className="font-medium mb-1">Bilateral Auto-Mirroring Active</p>
+            <p>
+              Position checks with sided landmarks (left/right) will automatically generate a mirrored
+              check for the opposite side. Mirrored checks are shown below as read-only.
+            </p>
+          </div>
+        </div>
+      )}
 
       {/* Info */}
       <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 flex items-start gap-3">
@@ -539,14 +650,14 @@ export function PositionChecksStep() {
         </div>
       </div>
 
-      {/* Existing Checks */}
+      {/* Source Checks */}
       <div className="space-y-3">
         <div className="flex items-center justify-between">
-          <Label>Configured Checks ({checks.length})</Label>
-          {checks.length > 0 && (
+          <Label>Configured Checks ({totalChecks})</Label>
+          {sourceChecks.length > 0 && (
             <button
               type="button"
-              onClick={() => checks.forEach((_, i) => removePositionCheck(i))}
+              onClick={handleClearAll}
               className="text-xs text-red-600 hover:text-red-700"
             >
               Clear All
@@ -554,25 +665,66 @@ export function PositionChecksStep() {
           )}
         </div>
 
-        {checks.length === 0 ? (
+        {sourceChecks.length === 0 ? (
           <Card className="p-8 text-center border-dashed">
             <p className="text-gray-500">No position checks added</p>
             <p className="text-sm text-gray-400 mt-1">Use templates above or add a custom check</p>
           </Card>
         ) : (
           <div className="space-y-3">
-            {checks.map((check, index) => (
+            {sourceChecks.map((check, index) => (
               <PositionCheckCard
                 key={check.checkId}
                 check={check}
                 index={index}
-                onUpdate={updatePositionCheck}
-                onRemove={removePositionCheck}
+                onUpdate={handleUpdateCheck}
+                onRemove={handleRemoveCheck}
               />
             ))}
           </div>
         )}
       </div>
+
+      {/* Auto-Mirrored Checks (read-only) */}
+      {isBilateralEnabled && mirroredChecks.length > 0 && (
+        <div className="space-y-3">
+          <div className="flex items-center gap-2">
+            <Label>Auto-Mirrored Checks ({mirroredChecks.length})</Label>
+            <span className="text-xs bg-gray-100 text-gray-500 px-2 py-0.5 rounded">Read-only</span>
+          </div>
+          <div className="space-y-3 opacity-75">
+            {mirroredChecks.map((check) => (
+              <Card
+                key={check.checkId}
+                className="border-l-4 border-l-gray-300 p-4"
+              >
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs bg-indigo-100 text-indigo-700 px-2 py-0.5 rounded-full font-medium">
+                      Auto-mirrored
+                    </span>
+                    <span className="text-sm font-medium text-gray-700">
+                      {check.checkId.replace(/_mirror$/, '').replace(/_\d+$/, '').replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
+                    </span>
+                  </div>
+                  <span className={`px-2 py-1 rounded text-xs font-bold uppercase ${
+                    check.severity === 'error' ? 'bg-red-100 text-red-700' :
+                    check.severity === 'warning' ? 'bg-yellow-100 text-yellow-700' :
+                    'bg-blue-100 text-blue-700'
+                  }`}>
+                    {check.severity}
+                  </span>
+                </div>
+                <div className="mt-2 text-xs text-gray-500">
+                  {check.type.replace(/_/g, ' ')} | {check.landmarks.primary} vs {check.landmarks.secondary}
+                  {check.landmarks.tertiary && ` vs ${check.landmarks.tertiary}`}
+                  {check.landmarks.quaternary && ` vs ${check.landmarks.quaternary}`}
+                </div>
+              </Card>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Add Custom */}
       <Button

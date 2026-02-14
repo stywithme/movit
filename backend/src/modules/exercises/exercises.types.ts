@@ -226,8 +226,10 @@ export type MetricCode =
   | 'alignment'
   | 'form_consistency'
   | 'fatigue_index'
+  | 'tempo_consistency'
   // Power
   | 'velocity'
+  | 'velocity_loss'
   // Load
   | 'weight'
   | 'volume'
@@ -311,10 +313,20 @@ export const METRIC_DEFINITIONS: MetricDefinition[] = [
     autoInclude: { repBased: true, hold: false, bilateral: true, weighted: true }, minReps: 4
   },
 
+  // Quality (V2)
+  {
+    code: 'tempo_consistency', label: { ar: 'ثبات الإيقاع', en: 'Tempo Consistency' }, unit: '%', category: 'quality',
+    autoInclude: { repBased: true, hold: false, bilateral: true, weighted: true }, minReps: 3
+  },
+
   // Power
   {
     code: 'velocity', label: { ar: 'السرعة', en: 'Velocity' }, unit: '°/s', category: 'power',
     autoInclude: { repBased: false, hold: false, bilateral: false, weighted: false }
+  },
+  {
+    code: 'velocity_loss', label: { ar: 'فقدان السرعة', en: 'Velocity Loss' }, unit: '%', category: 'power',
+    autoInclude: { repBased: true, hold: false, bilateral: true, weighted: true }, minReps: 3
   },
 
   // Load
@@ -388,7 +400,7 @@ export function getAutoExcludedMetrics(options: {
 
   // Hold exercise restrictions
   if (isHold) {
-    excluded.push('rep_count', 'tempo', 'tut', 'rom', 'form_consistency', 'fatigue_index', 'velocity');
+    excluded.push('rep_count', 'tempo', 'tut', 'rom', 'form_consistency', 'fatigue_index', 'velocity', 'velocity_loss', 'tempo_consistency');
   } else {
     // Rep-based exercise restrictions
     excluded.push('hold_duration');
@@ -569,16 +581,12 @@ export interface WeightConfig {
 }
 
 /**
- * Alternating configuration for exercise
+ * Bilateral configuration for exercise
+ * Controls per-rep left/right side alternation
  */
-export interface AlternatingVariantInput {
-  label: LocalizedText;
-  variantIndex: number;
-}
-
-export interface AlternatingConfigInput {
-  switchEvery: number;
-  variants: AlternatingVariantInput[];
+export interface BilateralConfigInput {
+  switchEvery: number;           // Switch side every N reps (default: 1)
+  startSide: 'left' | 'right';  // Which side starts (default: 'right')
 }
 
 /**
@@ -601,8 +609,8 @@ export interface CreateExerciseInput {
   // Weight configuration
   weightConfig?: WeightConfig;
 
-  // Alternating configuration
-  alternatingConfig?: AlternatingConfigInput;
+  // Bilateral configuration
+  bilateralConfig?: BilateralConfigInput;
 
   // Report metrics configuration
   reportMetrics?: ReportMetricsConfig;

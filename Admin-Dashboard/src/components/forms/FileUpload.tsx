@@ -2,7 +2,7 @@
 
 import { useRef, useState } from 'react';
 import { Button } from '@/components/ui';
-import type { UploadCategory } from '@/lib/storage';
+import type { UploadCategory } from '@/lib/types/upload';
 
 interface FileUploadProps {
   label: string;

@@ -42,9 +42,9 @@ data class ExerciseConfig(
     /** Does this exercise have position checks? (for Alignment metric) */
     val hasPositionChecks: Boolean = false,
 
-    /** Alternating config (multi-variant exercise) */
-    val isAlternating: Boolean = false,
-    val alternatingConfig: AlternatingConfig? = null,
+    /** Bilateral config (per-rep side alternation) */
+    val isBilateral: Boolean = false,
+    val bilateralConfig: BilateralConfig? = null,
     
     // Runtime field - set by ExerciseLoader
     @Transient
@@ -150,17 +150,12 @@ data class ExerciseConfig(
 }
 
 /**
- * Alternating configuration for an exercise.
- * Each variant points to a pose variant index and has a label for UI.
+ * Bilateral configuration for an exercise.
+ * Controls per-rep left/right side alternation.
  */
-data class AlternatingConfig(
-    val switchEvery: Int = 1,
-    val variants: List<AlternatingVariant> = emptyList()
-)
-
-data class AlternatingVariant(
-    val label: LocalizedText,
-    val variantIndex: Int
+data class BilateralConfig(
+    val switchEvery: Int = 1,       // Switch side every N reps (default: 1)
+    val startSide: String = "right" // "left" or "right"
 )
 
 /**
@@ -276,9 +271,11 @@ enum class MetricCode {
     ALIGNMENT,
     FORM_CONSISTENCY,
     FATIGUE_INDEX,
+    TEMPO_CONSISTENCY,
     
     // Power
     VELOCITY,
+    VELOCITY_LOSS,
     
     // Load
     WEIGHT,

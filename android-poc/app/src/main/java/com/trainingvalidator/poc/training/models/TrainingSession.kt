@@ -18,6 +18,8 @@ import com.trainingvalidator.poc.training.report.PerformanceRating
  * 
  * @param errors Angle-based errors from FormValidator
  * @param positionErrors Position-based errors from PositionValidator (severity: ERROR only)
+ * @param positionWarningCount Count of WARNING-severity position check violations during this rep
+ * @param positionTipCount Count of TIP-severity position check violations during this rep
  */
 data class RepResult(
     val repNumber: Int,
@@ -27,6 +29,8 @@ data class RepResult(
     val isInvalidated: Boolean = false,    // Whether DANGER was reached
     val errors: List<JointError> = emptyList(),
     val positionErrors: List<PositionError> = emptyList(),
+    val positionWarningCount: Int = 0,     // WARNING-severity position check violations
+    val positionTipCount: Int = 0,         // TIP-severity position check violations
     val phaseTimings: Map<String, Long> = emptyMap(),
     val timestamp: Long = System.currentTimeMillis()
 ) {

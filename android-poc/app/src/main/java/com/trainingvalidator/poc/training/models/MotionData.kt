@@ -238,11 +238,12 @@ data class RepRecord(
 data class RepMetrics(
     val rom: Short,                 // Range of Motion × 10
     val symmetry: Short?,           // Bilateral symmetry × 10 (null for single-side exercises)
-    val stability: Short,           // Core stability × 10
+    val stability: Short,           // Trunk stability × 10 (spine angle variance or hip fallback)
     val tempo: IntArray,            // [eccentric, iso, concentric] in ms
     val velocity: Short?,           // Mean concentric velocity × 100
     val formScore: Short,           // Overall form score × 10
-    val alignmentAccuracy: Short    // Time in correct position × 10
+    val alignmentAccuracy: Short,   // Time in correct position × 10
+    val velocityLoss: Short? = null // Velocity loss % × 10 compared to best rep (null for first rep)
 ) {
     // Required for data class with arrays
     override fun equals(other: Any?): Boolean {
@@ -255,7 +256,8 @@ data class RepMetrics(
                tempo.contentEquals(other.tempo) &&
                velocity == other.velocity &&
                formScore == other.formScore &&
-               alignmentAccuracy == other.alignmentAccuracy
+               alignmentAccuracy == other.alignmentAccuracy &&
+               velocityLoss == other.velocityLoss
     }
     
     override fun hashCode(): Int {
@@ -266,6 +268,7 @@ data class RepMetrics(
         result = 31 * result + (velocity ?: 0)
         result = 31 * result + formScore
         result = 31 * result + alignmentAccuracy
+        result = 31 * result + (velocityLoss ?: 0)
         return result
     }
 }
@@ -286,7 +289,7 @@ data class SessionMetrics(
     val avgAlignmentAccuracy: Short,
     
     // Temporal metrics
-    val totalTUT: Int,              // Total Time Under Tension (ms)
+    val totalTUT: Int,              // Total Time Under Tension (ms) — sum of rep durations
     
     // Load metrics
     val totalVolume: Float?,        // Total volume (reps × weight)
@@ -299,7 +302,11 @@ data class SessionMetrics(
     
     // Quality metrics
     val formConsistency: Short?,    // DTW score (1000 = perfect consistency)
-    val fatigueIndex: Short?        // Rep number where fatigue started (null = no fatigue)
+    val fatigueIndex: Short?,       // Rep number where fatigue started (null = no fatigue)
+    
+    // New metrics (V2)
+    val velocityLoss: Short? = null,        // Max VL% × 10 in session (0 = no loss, 1000 = 100% loss)
+    val tempoConsistency: Short? = null     // Tempo consistency × 10 (1000 = perfectly consistent)
 ) {
     /**
      * Get TUT in seconds
@@ -333,7 +340,9 @@ data class SessionMetrics(
                maxWeight == other.maxWeight &&
                est1RM == other.est1RM &&
                formConsistency == other.formConsistency &&
-               fatigueIndex == other.fatigueIndex
+               fatigueIndex == other.fatigueIndex &&
+               velocityLoss == other.velocityLoss &&
+               tempoConsistency == other.tempoConsistency
     }
     
     override fun hashCode(): Int {
@@ -350,6 +359,8 @@ data class SessionMetrics(
         result = 31 * result + (est1RM?.hashCode() ?: 0)
         result = 31 * result + (formConsistency ?: 0)
         result = 31 * result + (fatigueIndex ?: 0)
+        result = 31 * result + (velocityLoss ?: 0)
+        result = 31 * result + (tempoConsistency ?: 0)
         return result
     }
 }

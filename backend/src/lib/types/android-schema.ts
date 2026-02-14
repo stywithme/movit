@@ -389,23 +389,17 @@ export interface ExerciseConfig {
   /** Does this exercise have position checks? - auto-detected */
   hasPositionChecks?: boolean;
 
-  /** Alternating config (multi-variant exercise) */
-  isAlternating?: boolean;
-  alternatingConfig?: AlternatingConfig;
+  /** Bilateral configuration (per-rep side alternation) */
+  bilateralConfig?: BilateralConfig;
 }
 
 // ============================================
-// ALTERNATING EXERCISE CONFIGURATION
+// BILATERAL EXERCISE CONFIGURATION
 // ============================================
 
-export interface AlternatingVariantConfig {
-  label: LocalizedText;
-  variantIndex: number;
-}
-
-export interface AlternatingConfig {
-  switchEvery: number;
-  variants: AlternatingVariantConfig[];
+export interface BilateralConfig {
+  switchEvery: number;           // Switch side every N reps (default: 1)
+  startSide: string;             // 'left' or 'right'
 }
 
 // ============================================
@@ -432,8 +426,10 @@ export type MetricCode =
   | 'ALIGNMENT'
   | 'FORM_CONSISTENCY'
   | 'FATIGUE_INDEX'
+  | 'TEMPO_CONSISTENCY'
   // Power
   | 'VELOCITY'
+  | 'VELOCITY_LOSS'
   // Load
   | 'WEIGHT'
   | 'VOLUME'

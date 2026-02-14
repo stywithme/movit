@@ -33,12 +33,8 @@ export function ExtrasStep({ muscles, equipment, tags }: ExtrasStepProps) {
     countingMethod,
     jointConfig,
     positionChecks,
-    cameraPosition,
-    alternatingConfig,
-    setAlternatingConfig,
-    addAlternatingVariant,
-    updateAlternatingVariant,
-    removeAlternatingVariant,
+    bilateralConfig,
+    setBilateralConfig,
   } = useWizardStore();
   
   // Determine exercise type for auto-suggestions
@@ -46,7 +42,6 @@ export function ExtrasStep({ muscles, equipment, tags }: ExtrasStepProps) {
   const hasPairedJoints = (jointConfig.trackedJoints || []).some((j) => j.pairedWith);
   const isBilateral = hasPairedJoints;
   const hasPositionChecks = (positionChecks.positionChecks || []).length > 0;
-  const variantCount = cameraPosition.cameraPositionIds?.length || 0;
   
   const toggleAttribute = (type: 'muscles' | 'equipment' | 'tags', id: string) => {
     const current = extras[type] || [];
@@ -232,39 +227,39 @@ export function ExtrasStep({ muscles, equipment, tags }: ExtrasStepProps) {
         </Card>
       </div>
 
-      {/* Alternating Configuration */}
+      {/* Bilateral Configuration */}
       <div className="space-y-4 pt-6 border-t">
         <div className="flex items-center gap-2">
           <Library className="h-5 w-5 text-indigo-500" />
-          <h3 className="text-xl font-bold text-gray-900">Alternating Configuration</h3>
-          <Label tooltip="Enable if this exercise alternates between different variants during a single set." />
+          <h3 className="text-xl font-bold text-gray-900">Bilateral Configuration</h3>
+          <Label tooltip="Enable if this exercise alternates between left and right sides per rep (e.g., alternating lunges, alternating bicep curls)." />
         </div>
 
         <Card>
           <CardContent className="pt-6 space-y-4">
             <div className="flex items-center justify-between">
               <div>
-                <p className="font-medium text-gray-900">Enable Alternating</p>
+                <p className="font-medium text-gray-900">Bilateral Exercise</p>
                 <p className="text-sm text-gray-500">
-                  Define how variants switch during a set (e.g., Squat → Push-up).
+                  Alternates between left and right sides per rep. Paired joints will be auto-mirrored.
                 </p>
               </div>
               <button
                 type="button"
-                onClick={() => setAlternatingConfig({ enabled: !alternatingConfig.enabled })}
+                onClick={() => setBilateralConfig({ enabled: !bilateralConfig.enabled })}
                 className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-                  alternatingConfig.enabled ? 'bg-indigo-500' : 'bg-gray-200'
+                  bilateralConfig.enabled ? 'bg-indigo-500' : 'bg-gray-200'
                 }`}
               >
                 <span
                   className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-                    alternatingConfig.enabled ? 'translate-x-6' : 'translate-x-1'
+                    bilateralConfig.enabled ? 'translate-x-6' : 'translate-x-1'
                   }`}
                 />
               </button>
             </div>
 
-            {alternatingConfig.enabled && (
+            {bilateralConfig.enabled && (
               <div className="space-y-4 border-t pt-4">
                 <div className="grid grid-cols-2 gap-4">
                   <div>
@@ -272,94 +267,34 @@ export function ExtrasStep({ muscles, equipment, tags }: ExtrasStepProps) {
                     <Input
                       type="number"
                       min={1}
-                      value={alternatingConfig.switchEvery}
+                      value={bilateralConfig.switchEvery}
                       onChange={(e) =>
-                        setAlternatingConfig({ switchEvery: Number.parseInt(e.target.value, 10) || 1 })
+                        setBilateralConfig({ switchEvery: Number.parseInt(e.target.value, 10) || 1 })
                       }
                     />
+                    <p className="text-xs text-gray-400 mt-1">How many reps before switching sides</p>
                   </div>
-                  <div className="text-sm text-gray-500 flex items-center">
-                    {variantCount > 0
-                      ? `Available variants: ${variantCount}`
-                      : 'Add camera positions to define variants.'}
-                  </div>
-                </div>
-
-                <div className="flex items-center justify-between">
                   <div>
-                    <p className="font-medium text-gray-900">Alternating Variants</p>
-                    <p className="text-sm text-gray-500">Define labels and variant index order.</p>
+                    <Label>Start Side</Label>
+                    <select
+                      value={bilateralConfig.startSide}
+                      onChange={(e) => setBilateralConfig({ startSide: e.target.value as 'left' | 'right' })}
+                      className="w-full px-3 py-2 border border-gray-200 rounded-lg bg-white text-gray-900"
+                    >
+                      <option value="right">Right</option>
+                      <option value="left">Left</option>
+                    </select>
+                    <p className="text-xs text-gray-400 mt-1">Which side starts first</p>
                   </div>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    onClick={() =>
-                      addAlternatingVariant({
-                        label: { ar: '', en: '' },
-                        variantIndex: 0,
-                      })
-                    }
-                  >
-                    Add Variant
-                  </Button>
                 </div>
 
-                {alternatingConfig.variants.length === 0 && (
-                  <p className="text-sm text-gray-500">No variants defined yet.</p>
-                )}
-
-                {alternatingConfig.variants.map((variant, index) => (
-                  <Card key={`variant-${index}`} className="p-4 space-y-3 border border-gray-200">
-                    <div className="flex items-center justify-between">
-                      <span className="text-sm font-semibold">Variant {index + 1}</span>
-                      <Button type="button" variant="outline" onClick={() => removeAlternatingVariant(index)}>
-                        Remove
-                      </Button>
-                    </div>
-                    <div className="grid grid-cols-3 gap-4">
-                      <div>
-                        <Label>Label (EN)</Label>
-                        <Input
-                          value={variant.label.en}
-                          onChange={(e) =>
-                            updateAlternatingVariant(index, {
-                              ...variant,
-                              label: { ...variant.label, en: e.target.value },
-                            })
-                          }
-                        />
-                      </div>
-                      <div>
-                        <Label>Label (AR)</Label>
-                        <Input
-                          dir="rtl"
-                          value={variant.label.ar}
-                          onChange={(e) =>
-                            updateAlternatingVariant(index, {
-                              ...variant,
-                              label: { ...variant.label, ar: e.target.value },
-                            })
-                          }
-                        />
-                      </div>
-                      <div>
-                        <Label>Variant Index</Label>
-                        <Input
-                          type="number"
-                          min={0}
-                          max={variantCount > 0 ? variantCount - 1 : undefined}
-                          value={variant.variantIndex}
-                          onChange={(e) =>
-                            updateAlternatingVariant(index, {
-                              ...variant,
-                              variantIndex: Number.parseInt(e.target.value, 10) || 0,
-                            })
-                          }
-                        />
-                      </div>
-                    </div>
-                  </Card>
-                ))}
+                <div className="bg-indigo-50 border border-indigo-200 rounded-lg p-3">
+                  <p className="text-sm text-indigo-800">
+                    When bilateral is enabled, configure joints for the <strong>{bilateralConfig.startSide}</strong> side
+                    in the Joint Config step. The opposite side will be auto-mirrored automatically.
+                    Shared joints (spine, neck, nose) will be used on both sides.
+                  </p>
+                </div>
               </div>
             )}
           </CardContent>

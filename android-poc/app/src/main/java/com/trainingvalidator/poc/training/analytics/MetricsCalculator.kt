@@ -13,8 +13,8 @@ import kotlin.math.sqrt
  * Metric Categories:
  * 1. Kinematic (ROM, Symmetry, Stability)
  * 2. Temporal (Tempo, TUT)
- * 3. Power (Velocity)
- * 4. Quality (Alignment, Consistency, Fatigue)
+ * 3. Power (Velocity, Velocity Loss)
+ * 4. Quality (Alignment, Consistency, Fatigue, Tempo Consistency)
  * 5. Load (Volume, 1RM)
  */
 object MetricsCalculator {
@@ -28,21 +28,40 @@ object MetricsCalculator {
      * @param primaryJointIndex Index of primary joint for ROM/velocity
      * @param leftJointIndex Index of left joint for symmetry (null for single-side)
      * @param rightJointIndex Index of right joint for symmetry (null for single-side)
-     * @param hipIndices Indices of left and right hip for stability
+     * @param stabilityJointIndex Index of spine joint for trunk stability (falls back to hip)
+     * @param hipIndices Indices of left and right hip for stability fallback
      * @param phaseTimings Phase durations [eccentric, iso, concentric]
      * @param score Form score from RepCounter
+     * @param bestVelocity Best velocity seen so far for velocity loss calculation
      */
     fun calculateRepMetrics(
         frames: List<FrameSample>,
         primaryJointIndex: Int,
         leftJointIndex: Int? = null,
         rightJointIndex: Int? = null,
+        stabilityJointIndex: Int? = null,
         hipIndices: Pair<Int, Int>? = null,
         phaseTimings: IntArray,
-        score: Short
+        score: Short,
+        bestVelocity: Short? = null
     ): RepMetrics {
         if (frames.isEmpty()) {
             return createEmptyRepMetrics(phaseTimings, score)
+        }
+        
+        val velocity = calculateVelocity(frames, primaryJointIndex)
+        
+        // Velocity Loss: VL% = (V_best - V_current) / V_best × 100
+        val velocityLoss = if (bestVelocity != null && bestVelocity > 0 && velocity != null) {
+            val vl = ((bestVelocity - velocity).toFloat() / bestVelocity * 1000).toInt()
+            vl.coerceIn(0, 1000).toShort()
+        } else null
+        
+        // Trunk stability: prefer spine angle variance, fall back to hip midpoint variance
+        val stability = if (stabilityJointIndex != null) {
+            calculateTrunkStability(frames, stabilityJointIndex)
+        } else {
+            hipIndices?.let { calculateStability(frames, it) } ?: 1000
         }
         
         return RepMetrics(
@@ -50,11 +69,12 @@ object MetricsCalculator {
             symmetry = if (leftJointIndex != null && rightJointIndex != null) {
                 calculateSymmetry(frames, leftJointIndex, rightJointIndex)
             } else null,
-            stability = hipIndices?.let { calculateStability(frames, it) } ?: 1000,
+            stability = stability,
             tempo = phaseTimings,
-            velocity = calculateVelocity(frames, primaryJointIndex),
+            velocity = velocity,
             formScore = score,
-            alignmentAccuracy = calculateAlignmentAccuracy(frames)
+            alignmentAccuracy = calculateAlignmentAccuracy(frames),
+            velocityLoss = velocityLoss
         )
     }
     
@@ -69,7 +89,8 @@ object MetricsCalculator {
             tempo = phaseTimings,
             velocity = null,
             formScore = score,
-            alignmentAccuracy = 1000
+            alignmentAccuracy = 1000,
+            velocityLoss = null
         )
     }
     
@@ -82,30 +103,44 @@ object MetricsCalculator {
      * @param primaryJointIndex Index of primary joint
      * @param leftJointIndex Index of left joint for symmetry
      * @param rightJointIndex Index of right joint for symmetry
-     * @param hipIndices Hip joint indices for stability
+     * @param stabilityJointIndex Index of spine joint for trunk stability
+     * @param hipIndices Hip joint indices for stability fallback
      */
     fun calculateSessionMetrics(
         reps: List<RepRecord>,
         primaryJointIndex: Int,
         leftJointIndex: Int? = null,
         rightJointIndex: Int? = null,
+        stabilityJointIndex: Int? = null,
         hipIndices: Pair<Int, Int>? = null
     ): SessionMetrics {
         if (reps.isEmpty()) {
             return createEmptySessionMetrics()
         }
         
-        // Calculate metrics for each rep
+        // Track best velocity for VL% calculation
+        var bestVelocity: Short? = null
+        
+        // Calculate metrics for each rep with progressive VL%
         val repMetricsList = reps.map { rep ->
-            calculateRepMetrics(
+            val metrics = calculateRepMetrics(
                 frames = rep.frames,
                 primaryJointIndex = primaryJointIndex,
                 leftJointIndex = leftJointIndex,
                 rightJointIndex = rightJointIndex,
+                stabilityJointIndex = stabilityJointIndex,
                 hipIndices = hipIndices,
                 phaseTimings = rep.phases,
-                score = rep.score
+                score = rep.score,
+                bestVelocity = bestVelocity
             )
+            // Update best velocity
+            metrics.velocity?.let { v ->
+                if (bestVelocity == null || v > bestVelocity!!) {
+                    bestVelocity = v
+                }
+            }
+            metrics
         }
         
         // Aggregate averages
@@ -123,7 +158,7 @@ object MetricsCalculator {
             repMetricsList.map { it.tempo.getOrElse(i) { 0 } }.average().toInt()
         }
         
-        // Total TUT (sum of all rep durations)
+        // Total TUT (sum of all rep durations — NOT session duration)
         val totalTUT = reps.sumOf { it.durationMs }
         
         // Load metrics
@@ -140,6 +175,11 @@ object MetricsCalculator {
         val formConsistency = calculateFormConsistency(reps, primaryJointIndex)
         val fatigueIndex = calculateFatigueIndex(reps)
         
+        // New metrics (V2)
+        val maxVelocityLoss = repMetricsList.mapNotNull { it.velocityLoss }
+            .maxOrNull()
+        val tempoConsistency = calculateTempoConsistencyFromRepMetrics(repMetricsList)
+        
         return SessionMetrics(
             avgRom = avgRom,
             avgSymmetry = avgSymmetry,
@@ -153,7 +193,9 @@ object MetricsCalculator {
             maxWeight = maxWeight,
             est1RM = est1RM,
             formConsistency = formConsistency,
-            fatigueIndex = fatigueIndex
+            fatigueIndex = fatigueIndex,
+            velocityLoss = maxVelocityLoss,
+            tempoConsistency = tempoConsistency
         )
     }
     
@@ -174,7 +216,9 @@ object MetricsCalculator {
             maxWeight = null,
             est1RM = null,
             formConsistency = null,
-            fatigueIndex = null
+            fatigueIndex = null,
+            velocityLoss = null,
+            tempoConsistency = null
         )
     }
     
@@ -201,6 +245,9 @@ object MetricsCalculator {
     /**
      * Calculate bilateral symmetry (how similar left and right sides are)
      * 
+     * For non-bilateral exercises: compares left/right angles frame-by-frame.
+     * For bilateral (alternating) exercises: use calculateBilateralRomSymmetry() instead.
+     * 
      * @return Symmetry score × 10 (1000 = perfect symmetry, 0 = 180° difference)
      */
     fun calculateSymmetry(frames: List<FrameSample>, leftIdx: Int, rightIdx: Int): Short {
@@ -221,9 +268,65 @@ object MetricsCalculator {
     }
     
     /**
-     * Calculate core stability from hip angle variance
+     * Calculate bilateral ROM symmetry using LSI (Limb Symmetry Index).
      * 
-     * Lower variance = higher stability score
+     * For alternating bilateral exercises, compares ROM between left-side reps
+     * and right-side reps. This is scientifically validated (LSI).
+     * 
+     * LSI = min(avgLeftRom, avgRightRom) / max(avgLeftRom, avgRightRom) × 100
+     * 
+     * @param leftRepsRom List of ROM values (×10) for left-side reps
+     * @param rightRepsRom List of ROM values (×10) for right-side reps
+     * @return Symmetry score × 10 (1000 = perfect symmetry)
+     */
+    fun calculateBilateralRomSymmetry(leftRepsRom: List<Short>, rightRepsRom: List<Short>): Short? {
+        if (leftRepsRom.isEmpty() || rightRepsRom.isEmpty()) return null
+        
+        val avgLeft = leftRepsRom.map { it.toInt() }.average()
+        val avgRight = rightRepsRom.map { it.toInt() }.average()
+        
+        val maxAvg = maxOf(avgLeft, avgRight)
+        val minAvg = minOf(avgLeft, avgRight)
+        
+        if (maxAvg <= 0) return 1000
+        
+        val lsi = (minAvg / maxAvg * 1000).toInt().coerceIn(0, 1000)
+        return lsi.toShort()
+    }
+    
+    /**
+     * Calculate trunk stability from spine angle variance.
+     * 
+     * Uses spine joint angle standard deviation as a proxy for trunk stability.
+     * Lower variance = trunk stays stable during movement = higher score.
+     * 
+     * Scientific basis: Trunk angle consistency during exercise indicates
+     * neuromuscular control. This is more relevant than hip angle midpoint
+     * which naturally changes during movements like squats.
+     * 
+     * @return Stability score × 10 (1000 = perfectly stable trunk)
+     */
+    fun calculateTrunkStability(frames: List<FrameSample>, spineIndex: Int): Short {
+        if (frames.isEmpty()) return 1000
+        
+        val spineAngles = frames.mapNotNull { frame ->
+            frame.angles.getOrNull(spineIndex)?.toInt()
+        }
+        
+        if (spineAngles.size < 2) return 1000
+        
+        val std = standardDeviation(spineAngles)
+        // Low std = high stability.
+        // 300 units (30°) std deviation = 0% stability (very unstable trunk)
+        val score = ((1 - std / 300.0).coerceIn(0.0, 1.0) * 1000).toInt()
+        return score.toShort()
+    }
+    
+    /**
+     * Calculate core stability from hip angle variance (FALLBACK).
+     * 
+     * Used when spine joint is not tracked. Measures hip midpoint variance.
+     * Less accurate than trunk stability but works for any exercise with hips.
      * 
      * @return Stability score × 10 (1000 = perfectly stable)
      */
@@ -250,7 +353,7 @@ object MetricsCalculator {
     /**
      * Calculate mean concentric velocity (angular velocity during lifting phase)
      * 
-     * @return Velocity × 100 (degrees/second / 100)
+     * @return Velocity × 100 (degrees/second / 10)
      */
     fun calculateVelocity(frames: List<FrameSample>, jointIndex: Int): Short? {
         // Filter to concentric phase only
@@ -269,6 +372,29 @@ object MetricsCalculator {
         // Velocity in degrees/second, divided by 10 for storage
         val velocity = (angleDelta / timeSec / 10).toInt().coerceIn(0, Short.MAX_VALUE.toInt())
         return velocity.toShort()
+    }
+    
+    /**
+     * Calculate Velocity Loss % from a list of per-rep velocities.
+     * 
+     * VL% = (V_best - V_current) / V_best × 100
+     * 
+     * Scientific basis: Velocity loss is a validated neuromuscular fatigue indicator
+     * in Velocity-Based Training (VBT) literature. More objective than score-based
+     * fatigue detection.
+     * 
+     * @param velocities Per-rep velocities in order (×100 format)
+     * @return Max velocity loss × 10 (0 = no loss, 1000 = 100% loss), null if < 2 reps
+     */
+    fun calculateVelocityLoss(velocities: List<Short>): Short? {
+        if (velocities.size < 2) return null
+        
+        val best = velocities.maxOrNull() ?: return null
+        if (best <= 0) return null
+        
+        val lastVelocity = velocities.last()
+        val vl = ((best - lastVelocity).toFloat() / best * 1000).toInt()
+        return vl.coerceIn(0, 1000).toShort()
     }
     
     // ==================== Quality Metrics ====================
@@ -388,6 +514,59 @@ object MetricsCalculator {
         return null // No significant fatigue detected
     }
     
+    /**
+     * Calculate tempo consistency from per-rep tempo data.
+     * 
+     * Measures how consistent the exercise rhythm is across reps.
+     * Uses standard deviation of total rep durations.
+     * 
+     * @param repMetrics List of RepMetrics with tempo data
+     * @return Tempo consistency × 10 (1000 = perfectly consistent), null if < 3 reps
+     */
+    fun calculateTempoConsistencyFromRepMetrics(repMetrics: List<RepMetrics>): Short? {
+        if (repMetrics.size < 3) return null
+        
+        // Total duration per rep (sum of eccentric + iso + concentric)
+        val durations = repMetrics.map { 
+            it.tempo.sum() 
+        }.filter { it > 0 }
+        
+        if (durations.size < 3) return null
+        
+        val std = standardDeviation(durations)
+        val mean = durations.average()
+        
+        if (mean <= 0) return 1000
+        
+        // Coefficient of variation (CV) as consistency metric
+        // CV < 10% = excellent (score 100%), CV > 50% = poor (score 0%)
+        val cv = (std / mean) * 100
+        val score = ((100 - (cv * 2.5)).coerceIn(0.0, 100.0) * 10).toInt()
+        return score.toShort()
+    }
+    
+    /**
+     * Calculate tempo consistency from rep duration list.
+     * 
+     * @param durations List of rep durations in ms
+     * @return Tempo consistency × 10 (1000 = perfectly consistent), null if < 3 reps
+     */
+    fun calculateTempoConsistency(durations: List<Int>): Short? {
+        if (durations.size < 3) return null
+        
+        val filtered = durations.filter { it > 0 }
+        if (filtered.size < 3) return null
+        
+        val std = standardDeviation(filtered)
+        val mean = filtered.average()
+        
+        if (mean <= 0) return 1000
+        
+        val cv = (std / mean) * 100
+        val score = ((100 - (cv * 2.5)).coerceIn(0.0, 100.0) * 10).toInt()
+        return score.toShort()
+    }
+    
     // ==================== Load Metrics ====================
     
     /**
@@ -401,10 +580,11 @@ object MetricsCalculator {
     }
     
     /**
-     * Calculate total training volume (sum of weight × 1 for each rep)
+     * Calculate total training volume (sum of weight per counted rep)
      */
     fun calculateVolume(reps: List<RepRecord>): Float {
-        return reps.sumOf { (it.weightKg ?: 0f).toDouble() }.toFloat()
+        return reps.filter { it.isCounted() }
+            .sumOf { (it.weightKg ?: 0f).toDouble() }.toFloat()
     }
     
     // ==================== Helper Functions ====================

@@ -41,15 +41,10 @@ export interface ReportMetricsData {
   excluded: MetricCode[];
 }
 
-export interface AlternatingVariantForm {
-  label: { ar: string; en: string };
-  variantIndex: number;
-}
-
-export interface AlternatingConfigData {
+export interface BilateralConfigData {
   enabled: boolean;
   switchEvery: number;
-  variants: AlternatingVariantForm[];
+  startSide: 'left' | 'right';
 }
 
 // ============================================
@@ -84,7 +79,7 @@ export interface WizardState {
   // Weight & Metrics configuration
   weightConfig: WeightConfigData;
   reportMetrics: ReportMetricsData;
-  alternatingConfig: AlternatingConfigData;
+  bilateralConfig: BilateralConfigData;
 }
 
 export interface WizardActions {
@@ -108,11 +103,8 @@ export interface WizardActions {
   setWeightConfig: (data: Partial<WeightConfigData>) => void;
   setReportMetrics: (data: Partial<ReportMetricsData>) => void;
 
-  // Alternating config
-  setAlternatingConfig: (data: Partial<AlternatingConfigData>) => void;
-  addAlternatingVariant: (variant: AlternatingVariantForm) => void;
-  updateAlternatingVariant: (index: number, variant: AlternatingVariantForm) => void;
-  removeAlternatingVariant: (index: number) => void;
+  // Bilateral config
+  setBilateralConfig: (data: Partial<BilateralConfigData>) => void;
   
   // Joint helpers
   addTrackedJoint: (joint: TrackedJointData) => void;
@@ -203,10 +195,10 @@ const initialState: WizardState = {
     optional: [],
     excluded: [],
   },
-  alternatingConfig: {
+  bilateralConfig: {
     enabled: false,
     switchEvery: 1,
-    variants: [],
+    startSide: 'right',
   },
 };
 
@@ -304,33 +296,8 @@ export const useWizardStore = create<WizardStore>()(
         isDirty: true,
       })),
 
-      setAlternatingConfig: (data) => set((state) => ({
-        alternatingConfig: { ...state.alternatingConfig, ...data },
-        isDirty: true,
-      })),
-
-      addAlternatingVariant: (variant) => set((state) => ({
-        alternatingConfig: {
-          ...state.alternatingConfig,
-          variants: [...state.alternatingConfig.variants, variant],
-        },
-        isDirty: true,
-      })),
-
-      updateAlternatingVariant: (index, variant) => set((state) => {
-        const variants = [...state.alternatingConfig.variants];
-        variants[index] = variant;
-        return {
-          alternatingConfig: { ...state.alternatingConfig, variants },
-          isDirty: true,
-        };
-      }),
-
-      removeAlternatingVariant: (index) => set((state) => ({
-        alternatingConfig: {
-          ...state.alternatingConfig,
-          variants: state.alternatingConfig.variants.filter((_, i) => i !== index),
-        },
+      setBilateralConfig: (data) => set((state) => ({
+        bilateralConfig: { ...state.bilateralConfig, ...data },
         isDirty: true,
       })),
       
@@ -453,7 +420,7 @@ export const useWizardStore = create<WizardStore>()(
         extras: state.extras,
         weightConfig: state.weightConfig,
         reportMetrics: state.reportMetrics,
-        alternatingConfig: state.alternatingConfig,
+        bilateralConfig: state.bilateralConfig,
       }),
     }
   )

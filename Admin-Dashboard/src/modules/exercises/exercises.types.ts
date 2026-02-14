@@ -568,16 +568,12 @@ export interface WeightConfig {
 }
 
 /**
- * Alternating configuration for exercise
+ * Bilateral configuration for exercise
+ * Controls per-rep left/right side alternation
  */
-export interface AlternatingVariantInput {
-  label: LocalizedText;
-  variantIndex: number;
-}
-
-export interface AlternatingConfigInput {
-  switchEvery: number;
-  variants: AlternatingVariantInput[];
+export interface BilateralConfigInput {
+  switchEvery: number;           // Switch side every N reps (default: 1)
+  startSide: 'left' | 'right';  // Which side starts (default: 'right')
 }
 
 /**
@@ -600,8 +596,8 @@ export interface CreateExerciseInput {
   // Weight configuration
   weightConfig?: WeightConfig;
 
-  // Alternating configuration
-  alternatingConfig?: AlternatingConfigInput;
+  // Bilateral configuration
+  bilateralConfig?: BilateralConfigInput;
 
   // Report metrics configuration
   reportMetrics?: ReportMetricsConfig;

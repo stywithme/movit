@@ -36,7 +36,7 @@ import type {
   MetricCode,
   MessageAssignmentTarget,
   ZoneBasedMessage,
-  AlternatingConfig,
+  BilateralConfig,
 } from '@/lib/types/android-schema';
 
 // ============================================
@@ -81,9 +81,9 @@ interface DbExercise {
   defaultWeight?: number | null;
   reportMetrics?: unknown | null;
 
-  // Alternating configuration
-  isAlternating?: boolean | null;
-  alternatingConfig?: unknown | null;
+  // Bilateral configuration
+  isBilateral?: boolean | null;
+  bilateralConfig?: unknown | null;
 }
 
 interface DbPoseVariant {
@@ -249,23 +249,22 @@ export function buildExerciseConfig(
     );
   }
 
-  // Include bilateral flag
-  if (isBilateral) {
+  // Include bilateral flag (from auto-detection OR explicit DB setting)
+  if (isBilateral || dbExercise.isBilateral) {
     config.isBilateral = true;
+  }
+
+  // Include bilateral config (from explicit DB setting only)
+  if (dbExercise.isBilateral) {
+    const bilateralConfig = parseBilateralConfig(dbExercise.bilateralConfig);
+    if (bilateralConfig) {
+      config.bilateralConfig = bilateralConfig;
+    }
   }
 
   // Include position checks flag
   if (hasPositionChecks) {
     config.hasPositionChecks = true;
-  }
-
-  // Include alternating config
-  if (dbExercise.isAlternating) {
-    const alternatingConfig = parseAlternatingConfig(dbExercise.alternatingConfig);
-    if (alternatingConfig) {
-      config.isAlternating = true;
-      config.alternatingConfig = alternatingConfig;
-    }
   }
 
   return config;
@@ -560,33 +559,16 @@ function parseRepCountingConfig(
   };
 }
 
-function parseAlternatingConfig(config: unknown): AlternatingConfig | undefined {
+function parseBilateralConfig(config: unknown): BilateralConfig | undefined {
   if (!config || typeof config !== 'object') return undefined;
   const record = config as Record<string, unknown>;
-  const switchEvery = typeof record.switchEvery === 'number' ? record.switchEvery : undefined;
-  const variantsRaw = Array.isArray(record.variants) ? record.variants : [];
+  const switchEvery = typeof record.switchEvery === 'number' ? record.switchEvery : 1;
+  const startSide = typeof record.startSide === 'string' ? record.startSide : 'right';
 
-  if (!switchEvery || switchEvery <= 0 || variantsRaw.length === 0) {
-    return undefined;
-  }
+  if (switchEvery <= 0) return undefined;
+  if (startSide !== 'left' && startSide !== 'right') return undefined;
 
-  const variants = variantsRaw
-    .map((variant) => {
-      const v = variant as Record<string, unknown>;
-      const label = v.label as Record<string, string> | undefined;
-      const variantIndex = typeof v.variantIndex === 'number' ? v.variantIndex : undefined;
-      if (!label || typeof label.en !== 'string' || typeof label.ar !== 'string') return null;
-      if (variantIndex === undefined || variantIndex < 0) return null;
-      return {
-        label: toLocalizedText(label),
-        variantIndex,
-      };
-    })
-    .filter((v): v is AlternatingConfig['variants'][number] => v !== null);
-
-  if (variants.length === 0) return undefined;
-
-  return { switchEvery, variants };
+  return { switchEvery, startSide };
 }
 
 // ============================================
@@ -633,7 +615,7 @@ function getAutoExcludedMetricCodes(options: {
 
   // Hold exercise restrictions
   if (isHold) {
-    excluded.push('REP_COUNT', 'TEMPO', 'TUT', 'ROM', 'FORM_CONSISTENCY', 'FATIGUE_INDEX', 'VELOCITY');
+    excluded.push('REP_COUNT', 'TEMPO', 'TUT', 'ROM', 'FORM_CONSISTENCY', 'FATIGUE_INDEX', 'VELOCITY', 'VELOCITY_LOSS', 'TEMPO_CONSISTENCY');
   } else {
     // Rep-based exercise restrictions
     excluded.push('HOLD_DURATION');
@@ -706,7 +688,7 @@ function generateDefaultMetrics(
     optional.push('STABILITY');
   } else {
     primary.push('ROM');
-    optional.push('TEMPO', 'TUT');
+    optional.push('TEMPO', 'TUT', 'VELOCITY_LOSS', 'TEMPO_CONSISTENCY');
   }
 
   if (isBilateral && !isHold) {

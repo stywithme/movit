@@ -123,7 +123,8 @@ object ReportGenerator {
             dangerAlerts = dangerAlerts,
             consistency = consistency,
             isHoldExercise = exerciseConfig.isHoldExercise(),
-            fatigueIndex = performanceSummary.fatigueIndex
+            fatigueIndex = performanceSummary.fatigueIndex,
+            performanceSummary = performanceSummary
         )
         
         return PostTrainingReport(
@@ -240,6 +241,21 @@ object ReportGenerator {
             romFromSession ?: if (scores.isNotEmpty()) scores.average().toFloat() else null
         } else null
         
+        // ═══════════════════════════════════════════════════════════════
+        // NEW METRICS (V2) — Extract from SessionMetrics
+        // ═══════════════════════════════════════════════════════════════
+        
+        val avgTempo = sessionMetrics?.avgTempo
+        val avgVelocity = sessionMetrics?.avgVelocity
+        val velocityLoss = sessionMetrics?.velocityLoss?.let { it / 10f } // Convert ×10 to %
+        val tempoConsistency = sessionMetrics?.tempoConsistency?.let { it / 10f } // Convert ×10 to %
+        val totalTUT = sessionMetrics?.totalTUT
+        
+        // Position Check stats — aggregate from repDetails
+        val positionErrorReps = summary.repDetails.count { it.positionErrors.isNotEmpty() }
+        val positionWarningReps = summary.repDetails.count { it.positionWarningCount > 0 }
+        val positionTipReps = summary.repDetails.count { it.positionTipCount > 0 }
+        
         return PerformanceSummary(
             totalReps = summary.totalReps,
             durationMs = durationMs,
@@ -253,7 +269,15 @@ object ReportGenerator {
             shouldCelebrate = shouldCelebrate,
             avgROM = avgROM,
             formConsistency = formConsistency,
-            fatigueIndex = fatigueIndex
+            fatigueIndex = fatigueIndex,
+            avgTempo = avgTempo,
+            avgVelocity = avgVelocity,
+            velocityLoss = velocityLoss,
+            tempoConsistency = tempoConsistency,
+            totalTUT = totalTUT,
+            positionErrorReps = positionErrorReps,
+            positionWarningReps = positionWarningReps,
+            positionTipReps = positionTipReps
         )
     }
 
@@ -917,7 +941,8 @@ object ReportGenerator {
         dangerAlerts: List<DangerAlert>,
         consistency: ConsistencyMetrics?,
         isHoldExercise: Boolean,
-        fatigueIndex: Int?
+        fatigueIndex: Int?,
+        performanceSummary: PerformanceSummary? = null
     ): OverallQualityScore {
         
         // 1. Calculate Form Score
@@ -926,8 +951,15 @@ object ReportGenerator {
         // 2. Calculate Safety Score
         val safetyScore = calculateSafetyScoreForOverall(errorAnalysis, dangerAlerts, summary.totalReps)
         
-        // 3. Calculate Control Score (uses fatigueIndex for unified calculation)
-        val controlScore = calculateControlScoreForOverall(timeline, consistency, fatigueIndex)
+        // 3. Calculate Control Score (uses V2 metrics when available)
+        val controlScore = calculateControlScoreForOverall(
+            timeline = timeline,
+            consistency = consistency,
+            fatigueIndex = fatigueIndex,
+            tempoConsistency = performanceSummary?.tempoConsistency,
+            velocityLoss = performanceSummary?.velocityLoss,
+            formConsistency = performanceSummary?.formConsistency
+        )
         
         // 4. Calculate Overall using OverallQualityScore
         return OverallQualityScore.calculate(
@@ -1008,12 +1040,18 @@ object ReportGenerator {
     private fun calculateControlScoreForOverall(
         timeline: List<RepTimelineEntry>,
         consistency: ConsistencyMetrics?,
-        fatigueIndex: Int?
+        fatigueIndex: Int?,
+        tempoConsistency: Float? = null,
+        velocityLoss: Float? = null,
+        formConsistency: Float? = null
     ): Float {
         return PerformanceMetricsBuilder.calculateControlScoreValue(
             totalReps = timeline.size,
             consistency = consistency,
-            fatigueIndex = fatigueIndex
+            fatigueIndex = fatigueIndex,
+            tempoConsistency = tempoConsistency,
+            velocityLoss = velocityLoss,
+            formConsistency = formConsistency
         )
     }
 }

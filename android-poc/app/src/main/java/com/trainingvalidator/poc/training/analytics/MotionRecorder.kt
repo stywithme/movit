@@ -58,6 +58,10 @@ class MotionRecorder(
     private var leftJointIndex: Int? = null
     private var rightJointIndex: Int? = null
     private var hipIndices: Pair<Int, Int>? = null
+    private var spineJointIndex: Int? = null
+    
+    // Track best velocity for VL% calculation across reps
+    private var bestVelocity: Short? = null
     
     /**
      * Start recording a new session
@@ -68,6 +72,7 @@ class MotionRecorder(
         currentRepBuffer.clear()
         completedRepMetrics.clear()
         lastStates = null
+        bestVelocity = null
         
         // Determine joint indices for metrics
         setupJointIndices()
@@ -90,11 +95,17 @@ class MotionRecorder(
             rightJointIndex = rightKnee
         }
         
-        // Find hips for stability
+        // Find hips for stability (fallback)
         val leftHip = trackedJoints.indexOfFirst { it.contains("left_hip", true) }
         val rightHip = trackedJoints.indexOfFirst { it.contains("right_hip", true) }
         if (leftHip >= 0 && rightHip >= 0) {
             hipIndices = Pair(leftHip, rightHip)
+        }
+        
+        // Find spine for trunk stability (preferred over hip fallback)
+        val spine = trackedJoints.indexOfFirst { it.equals("spine", true) }
+        if (spine >= 0) {
+            spineJointIndex = spine
         }
     }
     
@@ -216,18 +227,39 @@ class MotionRecorder(
         )
         
         // Calculate metrics from buffered frames
+        val velocity = MetricsCalculator.calculateVelocity(currentRepBuffer, primaryJointIndex)
+        
+        // Velocity Loss: compare current velocity against session best
+        val velocityLoss = if (bestVelocity != null && bestVelocity!! > 0 && velocity != null) {
+            val vl = ((bestVelocity!! - velocity).toFloat() / bestVelocity!! * 1000).toInt()
+            vl.coerceIn(0, 1000).toShort()
+        } else null
+        
+        // Update best velocity for next rep
+        velocity?.let { v ->
+            if (bestVelocity == null || v > bestVelocity!!) {
+                bestVelocity = v
+            }
+        }
+        
+        // Trunk stability: prefer spine angle variance, fall back to hip midpoint variance
+        val stability = if (spineJointIndex != null) {
+            MetricsCalculator.calculateTrunkStability(currentRepBuffer, spineJointIndex!!)
+        } else {
+            hipIndices?.let { MetricsCalculator.calculateStability(currentRepBuffer, it) } ?: 1000
+        }
+        
         val repMetrics = RepMetrics(
             rom = MetricsCalculator.calculateROM(currentRepBuffer, primaryJointIndex),
             symmetry = if (leftJointIndex != null && rightJointIndex != null) {
                 MetricsCalculator.calculateSymmetry(currentRepBuffer, leftJointIndex!!, rightJointIndex!!)
             } else null,
-            stability = hipIndices?.let { 
-                MetricsCalculator.calculateStability(currentRepBuffer, it) 
-            } ?: 1000,
+            stability = stability,
             tempo = phases,
-            velocity = MetricsCalculator.calculateVelocity(currentRepBuffer, primaryJointIndex),
+            velocity = velocity,
             formScore = (score * 10).toInt().toShort(),
-            alignmentAccuracy = MetricsCalculator.calculateAlignmentAccuracy(currentRepBuffer)
+            alignmentAccuracy = MetricsCalculator.calculateAlignmentAccuracy(currentRepBuffer),
+            velocityLoss = velocityLoss
         )
         
         // Store ONLY metrics, not raw frames
@@ -333,6 +365,13 @@ class MotionRecorder(
         val formConsistency = calculateFormConsistencyFromMetrics()
         val fatigueIndex = calculateFatigueIndexFromMetrics()
         
+        // New metrics (V2)
+        val maxVelocityLoss = repMetricsList.mapNotNull { it.velocityLoss }
+            .maxOrNull()
+        val tempoConsistency = MetricsCalculator.calculateTempoConsistency(
+            completedRepMetrics.map { it.durationMs }
+        )
+        
         return SessionMetrics(
             avgRom = avgRom,
             avgSymmetry = avgSymmetry,
@@ -346,7 +385,9 @@ class MotionRecorder(
             maxWeight = maxWeight,
             est1RM = est1RM,
             formConsistency = formConsistency,
-            fatigueIndex = fatigueIndex
+            fatigueIndex = fatigueIndex,
+            velocityLoss = maxVelocityLoss,
+            tempoConsistency = tempoConsistency
         )
     }
     
@@ -391,7 +432,9 @@ class MotionRecorder(
             maxWeight = null,
             est1RM = null,
             formConsistency = null,
-            fatigueIndex = null
+            fatigueIndex = null,
+            velocityLoss = null,
+            tempoConsistency = null
         )
     }
     

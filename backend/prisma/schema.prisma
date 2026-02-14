@@ -115,10 +115,10 @@ model Exercise {
   defaultWeight     Float?                      // Default weight for new users (kg)
 
   // ============================================
-  // ALTERNATING CONFIGURATION
+  // BILATERAL CONFIGURATION
   // ============================================
-  isAlternating     Boolean   @default(false)
-  alternatingConfig Json?     // See alternating config in docs (variants + switchEvery)
+  isBilateral       Boolean   @default(false)
+  bilateralConfig   Json?     // { switchEvery: number, startSide: 'left' | 'right' }
   
   // ============================================
   // REPORT METRICS CONFIGURATION

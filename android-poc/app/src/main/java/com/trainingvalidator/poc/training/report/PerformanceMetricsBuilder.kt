@@ -9,16 +9,23 @@ import com.trainingvalidator.poc.training.models.MetricCode
  * PerformanceMetricsBuilder - Builds EnhancedPerformanceMetrics from report data
  * 
  * Aggregates metrics into the 3 main cards:
- * - Form (الشكل)
- * - Safety (الأمان)
- * - Control (التحكم)
+ * - Form (الشكل): FormScore, ROM, Symmetry (LSI for bilateral), FormConsistency
+ * - Safety (الأمان): PositionCheck-based Alignment, Trunk Stability, DangerCount
+ * - Control (التحكم): Tempo, TUT, VelocityLoss, TempoConsistency, FatigueIndex
  * 
  * SINGLE SOURCE OF TRUTH PRINCIPLE:
- * - Uses pre-calculated metrics from PerformanceSummary (formConsistency, fatigueIndex, avgROM)
+ * - Uses pre-calculated metrics from PerformanceSummary
  * - These values are calculated ONCE in ReportGenerator using MetricsCalculator
  * - This class only FORMATS metrics for display, does NOT recalculate them
  * 
- * Uses ScoreCalculator for score rate constants.
+ * V2 IMPROVEMENTS:
+ * - Alignment uses PositionCheck data (ERROR/WARNING/TIP severity levels)
+ * - Symmetry uses LSI (Limb Symmetry Index) for bilateral alternating exercises
+ * - Stability uses trunk stability (spine angle variance from MetricsCalculator)
+ * - Safety Score combines Position alignment + DANGER events + Trunk stability
+ * - Control Score incorporates VelocityLoss%, TempoConsistency, FormConsistency
+ * - Tempo uses real phase data from SessionMetrics (not estimated from duration)
+ * - TUT uses sum of rep durations (not session duration)
  */
 object PerformanceMetricsBuilder {
     
@@ -39,9 +46,7 @@ object PerformanceMetricsBuilder {
     
     /**
      * Build Form metrics card
-     * Combines: FormScore, ROM, Symmetry, FormConsistency
-     * 
-     * Uses pre-calculated values from PerformanceSummary where available.
+     * Combines: FormScore, ROM, Symmetry (LSI for bilateral), FormConsistency
      */
     private fun buildFormMetrics(report: PostTrainingReport, config: ExerciseConfigSnapshot?): FormMetrics {
         val summary = report.summary
@@ -55,7 +60,7 @@ object PerformanceMetricsBuilder {
             formatROMMetric(summary.avgROM)
         } else null
         
-        // Symmetry - calculate only if enabled (will be null for non-bilateral)
+        // Symmetry — uses LSI approach for bilateral alternating exercises
         val symmetryMetric = if (shouldShow(config, MetricCode.SYMMETRY)) {
             calculateSymmetryMetric(report)
         } else null
@@ -75,86 +80,97 @@ object PerformanceMetricsBuilder {
     
     /**
      * Build Safety metrics card
-     * Combines: AlignmentAccuracy, TempoConsistency (stability field), DangerCount
      * 
-     * NOTE: The "stability" field actually measures TEMPO CONSISTENCY (timing variation),
-     * not hip/core stability. True hip stability requires frame data not available here.
+     * V2: Combines PositionCheck-based Alignment, Trunk Stability, DangerCount.
+     * 
+     * Safety Score formula (weighted):
+     * - 40% Position Check Alignment (reps without ERROR/WARNING position violations)
+     * - 30% DANGER-free ratio (reps without DANGER joint state)
+     * - 30% Trunk Stability (from SessionMetrics — spine angle variance)
      */
     private fun buildSafetyMetrics(report: PostTrainingReport, config: ExerciseConfigSnapshot?): SafetyMetrics {
+        val summary = report.summary
         val dangerCount = report.dangerAlerts.size
+        val totalReps = summary.totalReps
         
-        // Calculate overall safety score
-        val totalReps = report.summary.totalReps
-        val safeReps = totalReps - dangerCount
-        val safetyPercentage = if (totalReps > 0) (safeReps.toFloat() / totalReps) * 100 else 100f
+        // Calculate overall safety score with multi-factor formula
+        val safetyScore = calculateSafetyScore(report)
         
-        val safetyScore = MetricWithStatus.fromPercentage(
-            safetyPercentage,
-            advice = if (dangerCount > 0) {
-                LocalizedText(
-                    ar = "راجع تنبيهات الأمان",
-                    en = "Review safety alerts"
-                )
-            } else null
-        )
-        
-        // Alignment accuracy - calculate only if enabled
+        // Alignment — uses PositionCheck data (ERROR + WARNING + TIP)
         val alignmentMetric = if (shouldShow(config, MetricCode.ALIGNMENT)) {
             calculateAlignmentMetric(report)
         } else null
         
-        // Tempo Consistency (stored in stability field for backward compatibility)
-        // Measures timing variation between reps, NOT hip stability
-        val tempoConsistencyMetric = if (shouldShow(config, MetricCode.STABILITY)) {
-            calculateTempoConsistencyMetric(report)
+        // Trunk Stability — uses pre-calculated avgStability from SessionMetrics
+        val stabilityMetric = if (shouldShow(config, MetricCode.STABILITY)) {
+            calculateStabilityMetric(report)
         } else null
         
         return SafetyMetrics(
             overallScore = safetyScore,
             alignmentAccuracy = alignmentMetric,
-            stability = tempoConsistencyMetric,
+            stability = stabilityMetric,
             dangerCount = dangerCount
         )
     }
     
     /**
      * Build Control metrics card
-     * Combines: Tempo, TUT, FatigueIndex
      * 
-     * Uses pre-calculated fatigueIndex from PerformanceSummary.
+     * V2: Combines Tempo (real data), TUT (rep-based), VelocityLoss, 
+     * TempoConsistency, FatigueIndex.
+     * 
+     * Control Score formula (weighted):
+     * - 30% Tempo Consistency (CV of rep durations)
+     * - 25% Velocity Loss % (neuromuscular fatigue)
+     * - 25% Form Consistency (score variance across reps)
+     * - 20% Fatigue penalty (if fatigue detected early)
      */
     private fun buildControlMetrics(report: PostTrainingReport, config: ExerciseConfigSnapshot?): ControlMetrics {
+        val summary = report.summary
         val isHold = config?.isHoldExercise() == true
         
-        // Calculate tempo - for rep-based exercises
+        // Tempo — uses real phase data from SessionMetrics
         val tempoDisplay = if (!isHold && shouldShow(config, MetricCode.TEMPO)) {
             calculateTempoDisplay(report)
         } else null
         
-        // Total Time Under Tension - for rep-based exercises
+        // TUT — uses sum of rep durations (not session duration)
         val totalTUT = if (!isHold && shouldShow(config, MetricCode.TUT)) {
-            (report.summary.durationMs / 1000).toInt()
+            summary.totalTUT?.let { it / 1000 }
+                ?: (summary.durationMs / 1000).toInt()  // Fallback for backward compatibility
         } else null
         
-        // Fatigue index - use pre-calculated value from summary (Single Source of Truth)
+        // Fatigue index - use pre-calculated value from summary
         val fatigueIndex = if (shouldShow(config, MetricCode.FATIGUE_INDEX)) {
-            report.summary.fatigueIndex
+            summary.fatigueIndex
         } else null
         
-        // Control score based on consistency and fatigue
+        // Velocity Loss %
+        val velocityLossMetric = summary.velocityLoss?.let { vl ->
+            formatVelocityLossMetric(vl)
+        }
+        
+        // Tempo Consistency
+        val tempoConsistencyMetric = summary.tempoConsistency?.let { tc ->
+            formatTempoConsistencyMetric(tc)
+        }
+        
+        // Control score — multi-factor calculation
         val controlScore = calculateControlScore(report, fatigueIndex)
         
         return ControlMetrics(
             overallScore = controlScore,
             tempo = tempoDisplay,
             totalTUT = totalTUT,
-            fatigueIndex = fatigueIndex
+            fatigueIndex = fatigueIndex,
+            velocityLoss = velocityLossMetric,
+            tempoConsistency = tempoConsistencyMetric
         )
     }
     
     /**
      * Build Load metrics (for weighted exercises)
-     * Always calculates if weight data is present
      */
     private fun buildLoadMetrics(report: PostTrainingReport, config: ExerciseConfigSnapshot?): LoadMetrics? {
         val weight = report.summary.weightKg ?: return null
@@ -169,7 +185,7 @@ object PerformanceMetricsBuilder {
     }
     
     // ═══════════════════════════════════════════════════════════════
-    // Helper calculation methods
+    // FORM CARD HELPERS
     // ═══════════════════════════════════════════════════════════════
     
     private fun shouldShow(config: ExerciseConfigSnapshot?, metric: MetricCode): Boolean {
@@ -178,13 +194,10 @@ object PerformanceMetricsBuilder {
     }
     
     private fun calculateFormScore(report: PostTrainingReport, breakdown: StateBreakdown): MetricWithStatus {
-        // Prefer timeline scores when available to match overall quality logic.
         val timelineScores = report.repTimeline.map { it.score }
         val scoreValue = if (timelineScores.isNotEmpty()) {
             timelineScores.average().toFloat()
         } else {
-            // Fallback: Use state breakdown with ScoreCalculator rates
-            // PERFECT = 100, NORMAL = 80, PAD = 60, WARNING = 40, DANGER = 0
             val total = breakdown.total.toFloat()
             if (total == 0f) {
                 0f
@@ -209,12 +222,6 @@ object PerformanceMetricsBuilder {
         )
     }
     
-    /**
-     * Format ROM metric from pre-calculated value.
-     *
-     * NOTE: avgROM uses real MotionRecorder metrics when available,
-     * otherwise falls back to a score-based proxy.
-     */
     private fun formatROMMetric(avgROM: Float?): MetricWithStatus? {
         if (avgROM == null) return null
         
@@ -228,51 +235,66 @@ object PerformanceMetricsBuilder {
         )
     }
     
+    /**
+     * Calculate Symmetry metric.
+     * 
+     * For bilateral alternating exercises: Uses LSI (Limb Symmetry Index).
+     * Compares average scores between left-side and right-side reps.
+     * 
+     * For non-bilateral exercises with paired joints: Uses error-based approach.
+     */
     private fun calculateSymmetryMetric(report: PostTrainingReport): MetricWithStatus? {
-        // Check if exercise is bilateral
         if (report.exerciseConfig?.isBilateral != true) {
-            return null  // Symmetry not applicable for unilateral exercises
-        }
-        
-        // Check for symmetry-related errors (left/right differences)
-        val symmetryErrors = report.errorAnalysis.filter { 
-            it.jointCode.contains("left") || it.jointCode.contains("right")
-        }
-        
-        // Use timeline size as total (includes all reps, not just counted)
-        val totalReps = report.repTimeline.size.coerceAtLeast(report.summary.totalReps)
-        
-        // No symmetry data available when no reps completed
-        if (totalReps == 0) {
             return null
         }
         
-        if (symmetryErrors.isEmpty()) {
+        val totalReps = report.repTimeline.size.coerceAtLeast(report.summary.totalReps)
+        if (totalReps < 2) return null
+        
+        // For bilateral alternating: Compare left-side reps vs right-side reps
+        // Side is deterministic: odd reps = startSide, even reps = otherSide
+        // We use rep scores as a proxy for performance comparison (LSI approach)
+        val leftScores = mutableListOf<Float>()
+        val rightScores = mutableListOf<Float>()
+        
+        report.repTimeline.forEachIndexed { index, rep ->
+            // Simple alternating: even index = right (startSide), odd index = left
+            // This matches default bilateral config: startSide = "right", switchEvery = 1
+            if (index % 2 == 0) {
+                rightScores.add(rep.score)
+            } else {
+                leftScores.add(rep.score)
+            }
+        }
+        
+        if (leftScores.isEmpty() || rightScores.isEmpty()) {
             return MetricWithStatus.fromPercentage(
                 100f,
-                advice = LocalizedText(ar = "متوازن تماماً", en = "Perfectly balanced")
+                advice = LocalizedText(ar = "بيانات غير كافية", en = "Insufficient data")
             )
         }
         
-        // Calculate symmetry: penalize based on unique affected reps, not total error count
-        val affectedReps = symmetryErrors.flatMap { it.affectedReps }.toSet().size
-        val symmetryScore = ((totalReps - affectedReps).toFloat() / totalReps) * 100
+        // LSI = min(avgLeft, avgRight) / max(avgLeft, avgRight) × 100
+        val avgLeft = leftScores.average().toFloat()
+        val avgRight = rightScores.average().toFloat()
+        val maxAvg = maxOf(avgLeft, avgRight)
+        val minAvg = minOf(avgLeft, avgRight)
+        
+        val lsiScore = if (maxAvg > 0) {
+            (minAvg / maxAvg * 100f).coerceIn(0f, 100f)
+        } else 100f
         
         return MetricWithStatus.fromPercentage(
-            symmetryScore.coerceIn(0f, 100f),
-            advice = if (symmetryScore >= 80) {
-                LocalizedText(ar = "توازن جيد", en = "Good balance")
-            } else {
-                LocalizedText(ar = "عدم توازن طفيف", en = "Slight imbalance detected")
+            lsiScore,
+            advice = when {
+                lsiScore >= 95 -> LocalizedText(ar = "متوازن تماماً", en = "Perfectly balanced")
+                lsiScore >= 85 -> LocalizedText(ar = "توازن جيد", en = "Good balance")
+                lsiScore >= 75 -> LocalizedText(ar = "فرق طفيف بين الجانبين", en = "Slight side difference")
+                else -> LocalizedText(ar = "عدم توازن واضح — ركز على الجانب الأضعف", en = "Noticeable imbalance — focus on weaker side")
             }
         )
     }
     
-    /**
-     * Format form consistency from pre-calculated value
-     * 
-     * Uses value calculated in ReportGenerator (Single Source of Truth).
-     */
     private fun formatFormConsistencyMetric(formConsistency: Float?): MetricWithStatus? {
         if (formConsistency == null) return null
         
@@ -286,82 +308,161 @@ object PerformanceMetricsBuilder {
         )
     }
     
-    private fun calculateAlignmentMetric(report: PostTrainingReport): MetricWithStatus? {
-        // Use timeline size as total (includes all reps)
-        val totalReps = report.repTimeline.size.coerceAtLeast(report.summary.totalReps)
+    // ═══════════════════════════════════════════════════════════════
+    // SAFETY CARD HELPERS
+    // ═══════════════════════════════════════════════════════════════
+    
+    /**
+     * Calculate overall Safety Score using multi-factor formula.
+     * 
+     * Components:
+     * - Position Check Alignment: % reps without ERROR/WARNING position violations (40%)
+     * - DANGER-free ratio: % reps without DANGER joint state (30%)
+     * - Trunk Stability: from MetricsCalculator avgStability (30%)
+     */
+    private fun calculateSafetyScore(report: PostTrainingReport): MetricWithStatus {
+        val summary = report.summary
+        val totalReps = summary.totalReps
+        val dangerCount = report.dangerAlerts.size
         
-        // No alignment data available when no reps completed
         if (totalReps == 0) {
-            return null
+            return MetricWithStatus.fromPercentage(100f)
         }
         
-        // Calculate alignment from state breakdown
-        // Count reps without WARNING or DANGER states
-        val breakdown = report.summary.stateBreakdown
-        val goodReps = breakdown.perfectCount + breakdown.normalCount + breakdown.padCount
-        val totalFromBreakdown = breakdown.total
+        // Factor 1: Position Check Alignment (40%)
+        // Reps without any ERROR or WARNING position check violations
+        val positionCleanReps = totalReps - summary.positionErrorReps - summary.positionWarningReps
+        val positionAlignmentPct = (positionCleanReps.coerceAtLeast(0).toFloat() / totalReps) * 100f
         
-        val alignmentScore = if (totalFromBreakdown > 0) {
-            (goodReps.toFloat() / totalFromBreakdown) * 100
-        } else {
-            // Fallback: calculate from timeline
-            val goodRepsFromTimeline = report.repTimeline.count { 
-                it.worstState in listOf(JointState.PERFECT, JointState.NORMAL, JointState.PAD)
-            }
-            if (report.repTimeline.isNotEmpty()) {
-                (goodRepsFromTimeline.toFloat() / report.repTimeline.size) * 100
-            } else 100f
-        }
+        // Factor 2: DANGER-free ratio (30%)
+        val dangerFreePct = ((totalReps - dangerCount).toFloat() / totalReps) * 100f
+        
+        // Factor 3: Trunk Stability (30%) — from SessionMetrics
+        val trunkStabilityPct = summary.avgStability ?: 90f  // Default 90% if not available
+        
+        val safetyScore = (
+            positionAlignmentPct * 0.40f +
+            dangerFreePct * 0.30f +
+            trunkStabilityPct * 0.30f
+        ).coerceIn(0f, 100f)
         
         return MetricWithStatus.fromPercentage(
-            alignmentScore.coerceIn(0f, 100f),
-            advice = if (alignmentScore >= 90) {
-                LocalizedText(ar = "محاذاة ممتازة", en = "Excellent alignment")
-            } else if (alignmentScore >= 70) {
-                LocalizedText(ar = "محاذاة جيدة", en = "Good alignment")
-            } else {
-                LocalizedText(ar = "تحقق من وضعية المفاصل", en = "Check joint positions")
+            safetyScore,
+            advice = when {
+                dangerCount > 0 -> LocalizedText(
+                    ar = "راجع تنبيهات الأمان",
+                    en = "Review safety alerts"
+                )
+                summary.positionErrorReps > 0 -> LocalizedText(
+                    ar = "تحقق من وضعية الجسم",
+                    en = "Check body positioning"
+                )
+                safetyScore >= 90 -> LocalizedText(ar = "أداء آمن", en = "Safe performance")
+                else -> LocalizedText(ar = "انتبه لوضعية الجسم", en = "Watch your body positioning")
             }
         )
     }
     
     /**
-     * Calculate Tempo Consistency metric (stored in stability field)
+     * Calculate Alignment Accuracy from PositionCheck data.
      * 
-     * Measures timing consistency between reps (NOT hip/core stability).
-     * Lower timing variation = higher consistency score.
+     * V2: Uses PositionValidator severity levels (ERROR/WARNING/TIP):
+     * - ERROR position violations: Strong negative impact (-15 per rep)
+     * - WARNING position violations: Moderate negative impact (-8 per rep)  
+     * - TIP position checks: Minor negative impact (-3 per rep)
+     * - JointState WARNING/DANGER: Also factor in (-10 per rep)
      * 
-     * NOTE: True hip stability requires frame data from MetricsCalculator.calculateStability()
-     * which needs hip joint angle variance. This metric is a tempo-based proxy.
+     * This produces a more accurate alignment score because PositionChecks
+     * measure spatial relationships (knee-over-toe, body alignment) which
+     * are fundamentally different from angle-based JointState errors.
      */
-    private fun calculateTempoConsistencyMetric(report: PostTrainingReport): MetricWithStatus? {
-        val consistency = report.consistency ?: return null
+    private fun calculateAlignmentMetric(report: PostTrainingReport): MetricWithStatus? {
+        val summary = report.summary
+        val totalReps = report.repTimeline.size.coerceAtLeast(summary.totalReps)
         
-        // Less timing variation = more consistent tempo
-        val variationMs = consistency.variationMs
-        val tempoConsistencyScore = when {
-            variationMs < 500 -> 100f
-            variationMs < 1000 -> 90f
-            variationMs < 1500 -> 80f
-            variationMs < 2000 -> 70f
-            else -> 60f
-        }
+        if (totalReps == 0) return null
+        
+        // Start at 100, deduct for violations
+        var deduction = 0f
+        
+        // Position Check violations (the core alignment indicators)
+        val errorPenalty = summary.positionErrorReps * 15f
+        val warningPenalty = summary.positionWarningReps * 8f
+        val tipPenalty = summary.positionTipReps * 3f
+        
+        // JointState violations (angle-based errors, complementary to position checks)
+        val stateBreakdown = summary.stateBreakdown
+        val jointStatePenalty = (stateBreakdown.warningCount + stateBreakdown.dangerCount) * 10f
+        
+        deduction = errorPenalty + warningPenalty + tipPenalty + jointStatePenalty
+        
+        // Normalize deduction against total reps (so it's proportional)
+        val maxPossibleDeduction = totalReps * 15f  // If every rep had ERROR, score = 0
+        val alignmentScore = if (maxPossibleDeduction > 0) {
+            ((1 - deduction / maxPossibleDeduction) * 100).coerceIn(0f, 100f)
+        } else 100f
         
         return MetricWithStatus.fromPercentage(
-            tempoConsistencyScore,
-            advice = if (tempoConsistencyScore >= 80) {
-                LocalizedText(ar = "إيقاع ثابت", en = "Consistent tempo")
-            } else {
-                LocalizedText(ar = "تفاوت في السرعة", en = "Speed variation detected")
+            alignmentScore,
+            advice = when {
+                summary.positionErrorReps > 0 -> LocalizedText(
+                    ar = "أخطاء وضعية في ${summary.positionErrorReps} عدات",
+                    en = "Position errors in ${summary.positionErrorReps} reps"
+                )
+                summary.positionWarningReps > 0 -> LocalizedText(
+                    ar = "تحذيرات في ${summary.positionWarningReps} عدات",
+                    en = "Warnings in ${summary.positionWarningReps} reps"
+                )
+                alignmentScore >= 90 -> LocalizedText(ar = "محاذاة ممتازة", en = "Excellent alignment")
+                alignmentScore >= 70 -> LocalizedText(ar = "محاذاة جيدة", en = "Good alignment")
+                else -> LocalizedText(ar = "تحقق من وضعية المفاصل", en = "Check joint positions")
             }
         )
     }
     
-    private fun calculateTempoDisplay(report: PostTrainingReport): TempoDisplay? {
-        val consistency = report.consistency ?: return null
+    /**
+     * Calculate Trunk Stability metric.
+     * 
+     * V2: Uses pre-calculated avgStability from SessionMetrics which is based on:
+     * - Spine angle variance (if spine is tracked) — preferred
+     * - Hip midpoint variance (fallback)
+     */
+    private fun calculateStabilityMetric(report: PostTrainingReport): MetricWithStatus? {
+        val stabilityValue = report.summary.avgStability ?: return null
         
-        // Estimate tempo from average duration
-        // Assume: 40% eccentric, 20% isometric, 40% concentric
+        return MetricWithStatus.fromPercentage(
+            stabilityValue,
+            advice = when {
+                stabilityValue >= 90 -> LocalizedText(ar = "ثبات ممتاز للجذع", en = "Excellent trunk stability")
+                stabilityValue >= 75 -> LocalizedText(ar = "ثبات جيد", en = "Good stability")
+                else -> LocalizedText(ar = "حافظ على استقامة الجذع", en = "Keep your trunk stable")
+            }
+        )
+    }
+    
+    // ═══════════════════════════════════════════════════════════════
+    // CONTROL CARD HELPERS
+    // ═══════════════════════════════════════════════════════════════
+    
+    /**
+     * Calculate Tempo from real phase data in SessionMetrics.
+     * 
+     * V2: Uses actual eccentric/isometric/concentric timing from MetricsCalculator
+     * instead of estimating from total duration.
+     */
+    private fun calculateTempoDisplay(report: PostTrainingReport): TempoDisplay? {
+        // Prefer real tempo data from SessionMetrics
+        val avgTempo = report.summary.avgTempo
+        if (avgTempo != null && avgTempo.sum() > 0) {
+            return TempoDisplay(
+                eccentricMs = avgTempo.getOrElse(0) { 0 },
+                isometricMs = avgTempo.getOrElse(1) { 0 },
+                concentricMs = avgTempo.getOrElse(2) { 0 }
+            )
+        }
+        
+        // Fallback: estimate from consistency data (backward compatibility)
+        val consistency = report.consistency ?: return null
         val avgMs = consistency.averageDurationMs
         
         return TempoDisplay(
@@ -371,11 +472,63 @@ object PerformanceMetricsBuilder {
         )
     }
     
+    /**
+     * Format Velocity Loss % metric.
+     * 
+     * VL% indicates neuromuscular fatigue within the session.
+     * Lower is better (0% = no velocity loss = no mechanical fatigue).
+     * 
+     * Display: Inverted (100 - VL%) so higher = better for the user.
+     */
+    private fun formatVelocityLossMetric(velocityLossPct: Float): MetricWithStatus? {
+        if (velocityLossPct < 0) return null
+        
+        // Invert: 0% loss = 100% score, 100% loss = 0% score
+        val displayScore = (100f - velocityLossPct).coerceIn(0f, 100f)
+        
+        return MetricWithStatus.fromPercentage(
+            displayScore,
+            advice = when {
+                velocityLossPct < 10 -> LocalizedText(ar = "سرعة ثابتة", en = "Consistent velocity")
+                velocityLossPct < 20 -> LocalizedText(ar = "انخفاض طفيف في السرعة", en = "Slight velocity drop")
+                velocityLossPct < 35 -> LocalizedText(ar = "تعب ميكانيكي واضح", en = "Noticeable mechanical fatigue")
+                else -> LocalizedText(ar = "تعب شديد — قلل الحمل أو العدات", en = "Severe fatigue — reduce load or reps")
+            }
+        )
+    }
+    
+    /**
+     * Format Tempo Consistency metric from pre-calculated value.
+     */
+    private fun formatTempoConsistencyMetric(tempoConsistencyPct: Float): MetricWithStatus? {
+        return MetricWithStatus.fromPercentage(
+            tempoConsistencyPct,
+            advice = when {
+                tempoConsistencyPct >= 85 -> LocalizedText(ar = "إيقاع ثابت ممتاز", en = "Excellent tempo consistency")
+                tempoConsistencyPct >= 70 -> LocalizedText(ar = "إيقاع جيد", en = "Good tempo")
+                else -> LocalizedText(ar = "تفاوت في سرعة الأداء", en = "Speed variation detected")
+            }
+        )
+    }
+    
+    /**
+     * Calculate Control Score with multi-factor formula.
+     * 
+     * V2 Components:
+     * - Tempo Consistency: 30% (CV of rep durations)
+     * - Velocity Loss inversion: 25% (100 - VL%)
+     * - Form Consistency: 25% (score variance across reps)
+     * - Fatigue penalty: 20% (penalizes early fatigue detection)
+     */
     private fun calculateControlScore(report: PostTrainingReport, fatigueIndex: Int?): MetricWithStatus {
+        val summary = report.summary
         val scoreValue = calculateControlScoreValue(
-            totalReps = report.summary.totalReps,
+            totalReps = summary.totalReps,
             consistency = report.consistency,
-            fatigueIndex = fatigueIndex
+            fatigueIndex = fatigueIndex,
+            tempoConsistency = summary.tempoConsistency,
+            velocityLoss = summary.velocityLoss,
+            formConsistency = summary.formConsistency
         )
         
         return MetricWithStatus.fromPercentage(
@@ -386,6 +539,7 @@ object PerformanceMetricsBuilder {
                     en = "Fatigue started at rep #$fatigueIndex"
                 )
                 scoreValue >= 90 -> LocalizedText(ar = "تحكم ممتاز", en = "Excellent control")
+                scoreValue >= 70 -> LocalizedText(ar = "تحكم جيد", en = "Good control")
                 else -> LocalizedText(ar = "حافظ على الإيقاع", en = "Maintain the tempo")
             }
         )
@@ -393,21 +547,51 @@ object PerformanceMetricsBuilder {
     
     /**
      * Shared Control score calculation for report and overall quality.
+     * 
+     * V2: Multi-factor formula with real metrics.
+     * Falls back to legacy calculation when new metrics are unavailable.
      */
     internal fun calculateControlScoreValue(
         totalReps: Int,
         consistency: ConsistencyMetrics?,
-        fatigueIndex: Int?
+        fatigueIndex: Int?,
+        tempoConsistency: Float? = null,
+        velocityLoss: Float? = null,
+        formConsistency: Float? = null
     ): Float {
-        if (totalReps <= 0) return 50f  // Neutral when no reps are available
+        if (totalReps <= 0) return 50f
         
+        // If we have V2 metrics, use the multi-factor formula
+        if (tempoConsistency != null || velocityLoss != null || formConsistency != null) {
+            // Factor 1: Tempo Consistency (30%)
+            val tcScore = tempoConsistency ?: 80f
+            
+            // Factor 2: Velocity stability (25%) — 100 - VL%
+            val vlScore = if (velocityLoss != null) (100f - velocityLoss) else 85f
+            
+            // Factor 3: Form Consistency (25%)
+            val fcScore = formConsistency ?: 80f
+            
+            // Factor 4: Fatigue penalty (20%) — no fatigue = 100%, early fatigue = lower
+            val fatiguePenalty = if (fatigueIndex != null) {
+                val fatigueRatio = fatigueIndex.toFloat() / totalReps
+                (fatigueRatio * 100f).coerceIn(30f, 100f)
+            } else 100f
+            
+            return (
+                tcScore * 0.30f +
+                vlScore * 0.25f +
+                fcScore * 0.25f +
+                fatiguePenalty * 0.20f
+            ).coerceIn(0f, 100f)
+        }
+        
+        // Legacy fallback (backward compatibility)
         var score = 80f
         
-        // Bonus for no fatigue
         if (fatigueIndex == null) {
             score += 10f
         } else {
-            // Penalize based on how early fatigue started
             val fatigueRatio = fatigueIndex.toFloat() / totalReps
             if (fatigueRatio < 0.5) {
                 score -= 20f
@@ -416,7 +600,6 @@ object PerformanceMetricsBuilder {
             }
         }
         
-        // Bonus for consistent timing
         consistency?.let {
             if (it.variationMs < 1000) {
                 score += 10f

@@ -6,7 +6,7 @@ import com.trainingvalidator.poc.training.models.WorkoutConfig
 import com.trainingvalidator.poc.training.models.LocalizedText
 import com.trainingvalidator.poc.training.models.WorkoutExercise
 import com.trainingvalidator.poc.training.models.ReportMetricsConfig
-import com.trainingvalidator.poc.training.models.AlternatingConfig
+import com.trainingvalidator.poc.training.models.BilateralConfig
 import com.trainingvalidator.poc.training.models.ProgramConfig
 import com.trainingvalidator.poc.training.models.ProgramWeek
 
@@ -119,9 +119,8 @@ data class ExerciseConfigWithMeta(
     /** Does this exercise have position checks? (for Alignment metric) */
     val hasPositionChecks: Boolean = false,
 
-    /** Alternating config */
-    val isAlternating: Boolean = false,
-    val alternatingConfig: AlternatingConfig? = null
+    /** Bilateral config (per-rep side alternation) */
+    val bilateralConfig: BilateralConfig? = null
 ) {
     /**
      * Convert to ExerciseConfig (without meta)
@@ -146,8 +145,8 @@ data class ExerciseConfigWithMeta(
             defaultWeight = defaultWeight,
             reportMetrics = reportMetrics,
             hasPositionChecks = hasPositionChecks,
-            isAlternating = isAlternating,
-            alternatingConfig = alternatingConfig,
+            isBilateral = isBilateral,
+            bilateralConfig = bilateralConfig,
             fileName = slug  // Use slug as fileName for compatibility
         )
     }

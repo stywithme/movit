@@ -167,10 +167,7 @@ class TrainingActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetection
     private var sessionSetStartTimeMs: Long = 0L
     private val sessionExerciseConfigMap = mutableMapOf<String, com.trainingvalidator.poc.training.models.ExerciseConfig>()
 
-    private data class AlternatingVariantInfo(
-        val variantIndex: Int,
-        val label: String
-    )
+    // Alternating variant info removed - bilateral side management is now handled by TrainingEngine
 
     // Tracks pose presence transitions to avoid leaving stale form feedback visible when pose is lost.
     // This is intentionally Activity-local (UI concern) and does not affect session state machine behavior.
@@ -670,8 +667,7 @@ class TrainingActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetection
         // Exercise name
         binding.tvSessionExerciseName.text = state.exerciseName
 
-        val alternatingInfo = resolveAlternatingVariant(state.item, state.setNumber)
-        updateAlternatingLabels(alternatingInfo)
+        hideAlternatingLabels()
         updateSessionSetIndicator(state.setNumber, state.totalSets)
 
         // Set info: "Set 1 of 3 · 12 reps" or "Set 1 of 3 · 30s hold"
@@ -703,7 +699,7 @@ class TrainingActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetection
 
         // "Start Set" button
         binding.btnSessionStartSet.setOnClickListener {
-            onSessionStartSetClicked(state, alternatingInfo)
+            onSessionStartSetClicked(state)
         }
     }
 
@@ -711,8 +707,7 @@ class TrainingActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetection
      * Handle "Start Set" click: load exercise into ViewModel and start training.
      */
     private fun onSessionStartSetClicked(
-        state: com.trainingvalidator.poc.training.session.SessionTrainingEngine.State.PreExercise,
-        alternatingInfo: AlternatingVariantInfo?
+        state: com.trainingvalidator.poc.training.session.SessionTrainingEngine.State.PreExercise
     ) {
         val engine = sessionTrainingEngine ?: return
         val item = state.item
@@ -733,7 +728,7 @@ class TrainingActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetection
         val targetReps = item.targetReps?.takeIf { it > 0 }
         val targetDurationMs = item.targetDuration?.takeIf { it > 0 }?.let { it * 1000L }
         val weight = engine.getCurrentSetWeight()
-        val poseVariantIndex = alternatingInfo?.variantIndex ?: 0
+        val poseVariantIndex = 0  // Bilateral uses single poseVariant, side switching handled by TrainingEngine
 
         // Load exercise into ViewModel (triggers supervisor → SETUP_POSE → COUNTDOWN → TRAINING)
         if (!viewModel.loadExercise(
@@ -778,37 +773,13 @@ class TrainingActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetection
         }
     }
 
-    private fun resolveAlternatingVariant(
-        item: com.trainingvalidator.poc.training.models.ProgramSessionItem,
-        setNumber: Int
-    ): AlternatingVariantInfo? {
-        val slug = item.exerciseSlug ?: return null
-        val config = sessionExerciseConfigMap[slug] ?: return null
-        val alternating = config.alternatingConfig ?: return null
-        if (!config.isAlternating || alternating.variants.isEmpty()) return null
-
-        val switchEvery = alternating.switchEvery.coerceAtLeast(1)
-        val index = ((setNumber - 1) / switchEvery) % alternating.variants.size
-        val variant = alternating.variants[index]
-        val label = variant.label.get(java.util.Locale.getDefault().language)
-            .ifBlank { variant.label.en }
-        val maxIndex = (config.poseVariants.size - 1).coerceAtLeast(0)
-        val safeIndex = variant.variantIndex.coerceIn(0, maxIndex)
-        return AlternatingVariantInfo(safeIndex, label.ifBlank { "Variant ${index + 1}" })
-    }
-
-    private fun updateAlternatingLabels(info: AlternatingVariantInfo?) {
-        if (info == null) {
-            binding.tvSessionAlternatingLabel.visibility = View.GONE
-            binding.tvAlternatingLabel.visibility = View.GONE
-            return
-        }
-
-        val text = getString(R.string.alternating_label_format, info.label)
-        binding.tvSessionAlternatingLabel.text = text
-        binding.tvSessionAlternatingLabel.visibility = View.VISIBLE
-        binding.tvAlternatingLabel.text = text
-        binding.tvAlternatingLabel.visibility = View.VISIBLE
+    /**
+     * Hide alternating labels (legacy UI elements).
+     * Bilateral side display is now driven by TrainingEngine.bilateralSide StateFlow.
+     */
+    private fun hideAlternatingLabels() {
+        binding.tvSessionAlternatingLabel.visibility = View.GONE
+        binding.tvAlternatingLabel.visibility = View.GONE
     }
 
     private fun updateSessionSetIndicator(setNumber: Int, totalSets: Int) {

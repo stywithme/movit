@@ -56,6 +56,16 @@ class TrainingEngine(
         private const val STATE_MESSAGE_COOLDOWN_MS_DEFAULT = 2000L
     }
     
+    // ==================== Bilateral Side ====================
+    
+    /**
+     * Bilateral side enum for per-rep left/right alternation
+     */
+    enum class BilateralSide {
+        LEFT, RIGHT;
+        fun flip(): BilateralSide = if (this == LEFT) RIGHT else LEFT
+    }
+    
     // ==================== Configuration ====================
     
     private val poseVariant: PoseVariant = exerciseConfig.poseVariants[poseVariantIndex]
@@ -66,6 +76,60 @@ class TrainingEngine(
     
     // OPTIMIZED: Pre-computed Set for O(1) lookup instead of O(n) any{} on every frame
     private val primaryJointCodes: Set<String> = primaryJoints.map { it.joint }.toSet()
+    
+    // ==================== Bilateral Joint Grouping ====================
+    
+    private val isBilateral: Boolean = exerciseConfig.isBilateral
+    private val bilateralConfig: BilateralConfig? = exerciseConfig.bilateralConfig
+    
+    /** Joints that belong to the left side (joint code starts with "left_") */
+    private val leftJoints: List<TrackedJoint> = trackedJoints.filter { it.joint.startsWith("left_") }
+    /** Joints that belong to the right side (joint code starts with "right_") */
+    private val rightJoints: List<TrackedJoint> = trackedJoints.filter { it.joint.startsWith("right_") }
+    /** Shared joints (spine, neck, nose, etc.) - active on both sides */
+    private val sharedJoints: List<TrackedJoint> = trackedJoints.filter { 
+        !it.joint.startsWith("left_") && !it.joint.startsWith("right_") 
+    }
+    
+    /** Current active side for bilateral exercises */
+    private var _currentBilateralSide: BilateralSide = when (bilateralConfig?.startSide) {
+        "left" -> BilateralSide.LEFT
+        else -> BilateralSide.RIGHT
+    }
+    
+    /** Observable current bilateral side */
+    private val _bilateralSide = MutableStateFlow(_currentBilateralSide)
+    val bilateralSide: StateFlow<BilateralSide> = _bilateralSide
+    
+    /**
+     * Get active joints for the current bilateral side.
+     * For non-bilateral exercises, returns all tracked joints.
+     */
+    private fun getActiveJoints(): List<TrackedJoint> {
+        if (!isBilateral) return trackedJoints
+        return when (_currentBilateralSide) {
+            BilateralSide.LEFT -> leftJoints + sharedJoints
+            BilateralSide.RIGHT -> rightJoints + sharedJoints
+        }
+    }
+    
+    /**
+     * Get active joint codes for the current bilateral side (for filtering).
+     */
+    private fun getActiveJointCodes(): Set<String> {
+        return getActiveJoints().map { it.joint }.toSet()
+    }
+    
+    /**
+     * Get active primary joint codes for the current bilateral side.
+     */
+    private fun getActivePrimaryJointCodes(): Set<String> {
+        if (!isBilateral) return primaryJointCodes
+        return getActiveJoints()
+            .filter { it.role == JointRole.PRIMARY }
+            .map { it.joint }
+            .toSet()
+    }
     
     /**
      * Effective target reps: override takes precedence, then exercise config
@@ -685,7 +749,13 @@ class TrainingEngine(
             }
             
             // 1. Extract tracked joint angles (raw) - MUST happen first for arrowInfos
-            val rawTrackedAngles = jointTracker.extractTrackedAngles(angles)
+            // For bilateral exercises, only extract angles for the active side's joints
+            val activeJointCodes = if (isBilateral) getActiveJointCodes() else null
+            val rawTrackedAngles = if (activeJointCodes != null) {
+                jointTracker.extractTrackedAngles(angles, activeJointCodes)
+            } else {
+                jointTracker.extractTrackedAngles(angles)
+            }
             
             if (rawTrackedAngles.isEmpty()) {
                 return
@@ -697,9 +767,10 @@ class TrainingEngine(
             _currentAngles.value = smoothedAngles
             
             // 3. Extract primary joint angles (from smoothed)
-            // OPTIMIZED: Uses pre-computed Set for O(1) lookup instead of O(n) any{}
+            // For bilateral exercises, use the active side's primary joint codes
+            val activePrimaryJointCodes = if (isBilateral) getActivePrimaryJointCodes() else primaryJointCodes
             val primaryAngles = smoothedAngles.filterKeys { jointCode ->
-                primaryJointCodes.contains(jointCode)
+                activePrimaryJointCodes.contains(jointCode)
             }
             
             // 4. Check if in start position (using smoothed angles)
@@ -853,12 +924,18 @@ class TrainingEngine(
             }
             
             positionValidation?.warnings?.forEach { error ->
+                // Track for alignment metrics (does NOT affect rep scoring)
+                repCounter.addPositionWarning(error)
+                
                 if (shouldEmitPositionEvent(error.checkId)) {
                     emitEvent(FeedbackEvent.PositionWarningDetected(error))
                 }
             }
 
             positionValidation?.tips?.forEach { tip ->
+                // Track for alignment metrics (does NOT affect rep scoring)
+                repCounter.addPositionTip(tip)
+                
                 if (shouldEmitPositionEvent(tip.checkId)) {
                     emitEvent(FeedbackEvent.PositionTipDetected(tip))
                 }
@@ -923,6 +1000,16 @@ class TrainingEngine(
         
         // Clear phase timings for next rep
         stateMachine.clearTimings()
+        
+        // Bilateral: Switch side after every N reps
+        if (isBilateral) {
+            val switchEvery = bilateralConfig?.switchEvery ?: 1
+            if (repCounter.count % switchEvery == 0) {
+                _currentBilateralSide = _currentBilateralSide.flip()
+                _bilateralSide.value = _currentBilateralSide
+                Log.d(TAG, "Bilateral side switched to: $_currentBilateralSide")
+            }
+        }
         
         Log.d(TAG, "Rep ${repCounter.count} completed. Correct: ${repCounter.correctCount}/${repCounter.count}")
     }

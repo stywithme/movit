@@ -10,6 +10,7 @@ import jwt from 'jsonwebtoken';
 
 const ADMIN_JWT_SECRET = process.env.ADMIN_JWT_SECRET || 'your-admin-jwt-secret-change-in-production';
 const ADMIN_TOKEN_EXPIRY = '7d';
+const SEVEN_DAYS_MS = 1000 * 60 * 60 * 24 * 7; // Express maxAge is in milliseconds
 export const ADMIN_COOKIE_NAME = 'admin_token';
 
 export interface AdminJwtPayload {
@@ -48,7 +49,7 @@ export function setAdminAuthCookie(response: Response, token: string) {
     sameSite: 'lax',
     secure: process.env.NODE_ENV === 'production',
     path: '/',
-    maxAge: 60 * 60 * 24 * 7,
+    maxAge: SEVEN_DAYS_MS,
   });
 }
 

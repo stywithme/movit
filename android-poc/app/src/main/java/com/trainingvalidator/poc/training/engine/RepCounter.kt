@@ -86,9 +86,17 @@ class RepCounter(
     
     /**
      * Position errors accumulated during current rep
-     * Only ERROR severity position errors are tracked here
+     * Only ERROR severity position errors are tracked here (full objects for report)
      */
     private val currentPositionErrors = mutableListOf<PositionError>()
+    
+    /**
+     * Position check violation counts per severity (for alignment metrics)
+     * WARNING and TIP counts are tracked separately — they don't affect rep scoring
+     * but provide valuable data for the Alignment Accuracy metric.
+     */
+    private var currentPositionWarningCount = 0
+    private var currentPositionTipCount = 0
     
     /**
      * Worst state reached during current rep
@@ -188,7 +196,7 @@ class RepCounter(
     }
     
     /**
-     * Add a position error to current rep
+     * Add a position error to current rep (ERROR severity — affects rep scoring)
      */
     fun addPositionError(error: PositionError) {
         if (error.severity != CheckSeverity.ERROR) return
@@ -197,6 +205,22 @@ class RepCounter(
         if (!exists) {
             currentPositionErrors.add(error)
         }
+    }
+    
+    /**
+     * Record a WARNING-severity position check violation for alignment metrics.
+     * Does NOT affect rep scoring or counting — only tracked for analytics.
+     */
+    fun addPositionWarning(error: PositionError) {
+        currentPositionWarningCount++
+    }
+    
+    /**
+     * Record a TIP-severity position check for alignment metrics.
+     * Does NOT affect rep scoring or counting — only tracked for analytics.
+     */
+    fun addPositionTip(error: PositionError) {
+        currentPositionTipCount++
     }
     
     /**
@@ -301,6 +325,8 @@ class RepCounter(
             isInvalidated = isInvalidated,
             errors = currentRepErrors.toList(),
             positionErrors = currentPositionErrors.toList(),
+            positionWarningCount = currentPositionWarningCount,
+            positionTipCount = currentPositionTipCount,
             phaseTimings = currentPhaseTimings
         )
         
@@ -337,6 +363,8 @@ class RepCounter(
     private fun resetCurrentRepTracking() {
         currentRepErrors.clear()
         currentPositionErrors.clear()
+        currentPositionWarningCount = 0
+        currentPositionTipCount = 0
         currentPhaseTimings = emptyMap()
         currentRepWorstState = JointState.PERFECT
         stateTimeTracking.clear()

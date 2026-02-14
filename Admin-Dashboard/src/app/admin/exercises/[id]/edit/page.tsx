@@ -212,15 +212,10 @@ export default function EditExercisePage() {
             optional: ((exercise.reportMetrics as Record<string, string[]> | null)?.optional ?? []) as import('@/modules/exercises/exercises.types').MetricCode[],
             excluded: ((exercise.reportMetrics as Record<string, string[]> | null)?.excluded ?? []) as import('@/modules/exercises/exercises.types').MetricCode[],
           },
-          alternatingConfig: {
-            enabled: Boolean(exercise.isAlternating),
-            switchEvery: (exercise.alternatingConfig as { switchEvery?: number } | null)?.switchEvery || 1,
-            variants:
-              (exercise.alternatingConfig as { variants?: Array<{ label?: LocalizedText; variantIndex?: number }> } | null)
-                ?.variants?.map((variant) => ({
-                  label: variant.label || { ar: '', en: '' },
-                  variantIndex: variant.variantIndex ?? 0,
-                })) || [],
+          bilateralConfig: {
+            enabled: Boolean(exercise.isBilateral),
+            switchEvery: (exercise.bilateralConfig as { switchEvery?: number } | null)?.switchEvery || 1,
+            startSide: ((exercise.bilateralConfig as { startSide?: string } | null)?.startSide || 'right') as 'left' | 'right',
           },
         });
         
@@ -312,13 +307,6 @@ export default function EditExercisePage() {
           maxRepIntervalMs: store.repConfig.maxRepIntervalMs || 5000,
         };
     
-    const jointVariants = store.alternatingConfig.enabled
-      ? {
-          ...store.jointConfigVariants,
-          [store.activeJointVariantIndex]: store.jointConfig.trackedJoints || [],
-        }
-      : {};
-
     return {
       name: store.basicInfo.name,
       description: store.basicInfo.description,
@@ -331,9 +319,8 @@ export default function EditExercisePage() {
       tags: store.extras.tags,
       repCountingConfig,
       poseVariants: store.cameraPosition.cameraPositionIds?.map((cameraPositionId, index) => {
-        const jointsForVariant = store.alternatingConfig.enabled
-          ? (jointVariants[index] || [])
-          : (store.jointConfig.trackedJoints || []);
+        // All joints go into a single poseVariant (no per-variant splitting)
+        const jointsForVariant = store.jointConfig.trackedJoints || [];
         const mappedJoints = jointsForVariant.map((joint: TrackedJointData) => {
           if (joint.role === 'primary') {
             if (isHold) {
@@ -390,13 +377,11 @@ export default function EditExercisePage() {
         optional: store.reportMetrics.optional,
         excluded: store.reportMetrics.excluded,
       },
-      alternatingConfig: store.alternatingConfig.enabled && store.alternatingConfig.variants.length > 0
+      // Bilateral configuration (optional)
+      bilateralConfig: store.bilateralConfig.enabled
         ? {
-            switchEvery: store.alternatingConfig.switchEvery,
-            variants: store.alternatingConfig.variants.map((variant) => ({
-              label: variant.label,
-              variantIndex: variant.variantIndex,
-            })),
+            switchEvery: store.bilateralConfig.switchEvery,
+            startSide: store.bilateralConfig.startSide,
           }
         : undefined,
     };

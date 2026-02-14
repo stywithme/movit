@@ -172,13 +172,6 @@ export default function NewExercisePage() {
         maxRepIntervalMs: store.repConfig.maxRepIntervalMs || 5000,
       };
 
-    const jointVariants = store.alternatingConfig.enabled
-      ? {
-        ...store.jointConfigVariants,
-        [store.activeJointVariantIndex]: store.jointConfig.trackedJoints || [],
-      }
-      : {};
-
     return {
       name: store.basicInfo.name,
       description: store.basicInfo.description,
@@ -191,9 +184,8 @@ export default function NewExercisePage() {
       tags: store.extras.tags,
       repCountingConfig,
       poseVariants: store.cameraPosition.cameraPositionIds?.map((cameraPositionId, index) => {
-        const jointsForVariant = store.alternatingConfig.enabled
-          ? (jointVariants[index] || [])
-          : (store.jointConfig.trackedJoints || []);
+        // All joints go into a single poseVariant (no per-variant splitting)
+        const jointsForVariant = store.jointConfig.trackedJoints || [];
         const mappedJoints = jointsForVariant.map((joint: TrackedJointData) => {
           if (joint.role === 'primary') {
             if (isHold) {
@@ -250,14 +242,11 @@ export default function NewExercisePage() {
         optional: store.reportMetrics.optional,
         excluded: store.reportMetrics.excluded,
       },
-      // Alternating configuration (optional)
-      alternatingConfig: store.alternatingConfig.enabled && store.alternatingConfig.variants.length > 0
+      // Bilateral configuration (optional)
+      bilateralConfig: store.bilateralConfig.enabled
         ? {
-          switchEvery: store.alternatingConfig.switchEvery,
-          variants: store.alternatingConfig.variants.map((variant) => ({
-            label: variant.label,
-            variantIndex: variant.variantIndex,
-          })),
+          switchEvery: store.bilateralConfig.switchEvery,
+          startSide: store.bilateralConfig.startSide,
         }
         : undefined,
     };
