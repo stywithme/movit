@@ -343,11 +343,12 @@ export const PositionCheckSchema = z.object({
   activePhases: z.array(z.enum([
     'idle', 'start', 'down', 'bottom', 'up',
     'push', 'extended', 'pull', 'hold', 'count',
-  ])).min(1, 'Select at least one active phase'),
-  errorMessage: LocalizedTextSchema,
-  severity: z.enum(['error', 'warning', 'tip']).default('warning'),
-  cooldownMs: z.number().min(0).default(2000),
-  minErrorFrames: z.number().min(1).default(3),
+  ])).min(1, 'Please select at least one phase'),
+  errorMessage: LocalizedTextOptionalSchema, // Will be filled from library if messageId is present
+  messageId: z.string().optional(),
+  severity: z.enum(['error', 'warning', 'tip']),
+  cooldownMs: z.number().int().min(0, 'Cooldown must be positive'),
+  minErrorFrames: z.number().int().min(1, 'Must persist for at least 1 frame'),
 }).superRefine((data, ctx) => {
   if (data.type === 'distance_ratio') {
     if (!data.landmarks.tertiary) {

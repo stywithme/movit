@@ -32,6 +32,8 @@ class JointAngleTracker(
             "right_shoulder" to { angles: JointAngles -> angles.rightShoulder },
             "left_shoulder_cross" to { angles: JointAngles -> angles.leftShoulderCross },
             "right_shoulder_cross" to { angles: JointAngles -> angles.rightShoulderCross },
+            "left_wrist" to { angles: JointAngles -> angles.leftWrist },
+            "right_wrist" to { angles: JointAngles -> angles.rightWrist },
             
             // Torso
             "left_hip" to { angles: JointAngles -> angles.leftHip },

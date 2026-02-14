@@ -238,13 +238,13 @@ export const exerciseService = {
         reportMetrics: data.reportMetrics ? (data.reportMetrics as object) : undefined,
         media: data.imageUrl
           ? {
-              create: {
-                type: 'image',
-                url: data.imageUrl,
-                isPrimary: true,
-                sortOrder: 1,
-              },
-            }
+            create: {
+              type: 'image',
+              url: data.imageUrl,
+              isPrimary: true,
+              sortOrder: 1,
+            },
+          }
           : undefined,
       },
       include: {
@@ -328,9 +328,25 @@ export const exerciseService = {
     }
 
     // Create message assignments (library-based, optional)
-    if (pv.messageAssignments && pv.messageAssignments.length > 0) {
+    const assignmentsToCreate = [...(pv.messageAssignments || [])];
+
+    // Add assignments from linked position checks
+    if (pv.positionChecks && pv.positionChecks.length > 0) {
+      pv.positionChecks.forEach((pc, idx) => {
+        if (pc.messageId) {
+          assignmentsToCreate.push({
+            messageId: pc.messageId,
+            target: 'position',
+            checkId: pc.checkId,
+            sortOrder: (pc.sortOrder ?? idx + 1) + 100, // Ensure unique sort order
+          });
+        }
+      });
+    }
+
+    if (assignmentsToCreate.length > 0) {
       await prisma.feedbackMessageAssignment.createMany({
-        data: pv.messageAssignments.map((assignment, idx) => ({
+        data: assignmentsToCreate.map((assignment, idx) => ({
           poseVariantId: poseVariant.id,
           messageId: assignment.messageId,
           target: assignment.target,
@@ -353,13 +369,13 @@ export const exerciseService = {
     const prisma = await getPrisma();
     const existingMedia = data.imageUrl !== undefined
       ? await prisma.exerciseMedia.findFirst({
-          where: {
-            exerciseId: id,
-            type: 'image',
-            isPrimary: true,
-          },
-          select: { url: true },
-        })
+        where: {
+          exerciseId: id,
+          type: 'image',
+          isPrimary: true,
+        },
+        select: { url: true },
+      })
       : null;
 
     const updateData: Record<string, unknown> = {
@@ -595,7 +611,7 @@ export const exerciseService = {
     // Determine if bilateral from tracked joints
     const trackedJoints = exercise.poseVariants[0]?.trackedJointsConfig as any[] || [];
     const hasPairedJoints = trackedJoints.some((j: any) => j.pairedWith);
-    
+
     // Get counting method code
     const countingMethodCode = (exercise.countingMethod as any)?.code as string;
     const isHold = countingMethodCode === 'hold';
@@ -604,7 +620,7 @@ export const exerciseService = {
       id: exercise.id,
       name: exercise.name,
       countingMethod: countingMethodCode,
-      
+
       // Weight config
       weight: {
         supported: exercise.supportsWeight,
@@ -612,7 +628,7 @@ export const exerciseService = {
         max: exercise.maxWeight,
         default: exercise.defaultWeight,
       },
-      
+
       // Metrics config
       metrics: {
         isBilateral: hasPairedJoints,

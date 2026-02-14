@@ -21,6 +21,7 @@ interface AudioControlsProps {
   onStop: () => void;
   onDelete: () => void;
   size?: 'sm' | 'md';
+  readOnly?: boolean;
 }
 
 export function AudioControls({
@@ -34,6 +35,7 @@ export function AudioControls({
   onStop,
   onDelete,
   size = 'sm',
+  readOnly = false,
 }: AudioControlsProps) {
   const iconSize = size === 'sm' ? 14 : 16;
   const buttonClass = `
@@ -47,12 +49,19 @@ export function AudioControls({
   return (
     <div className="flex items-center gap-1">
       {/* Audio indicator */}
-      <span 
-        className={`text-xs font-medium ${hasAudio ? 'text-green-600' : 'text-gray-400'}`}
-        title={hasAudio ? `${langLabel} audio available` : `No ${langLabel} audio`}
-      >
-        <Volume2 size={iconSize} className={hasAudio ? '' : 'opacity-50'} />
-      </span>
+      {!hasAudio && readOnly ? (
+        <span className="text-xs text-gray-400 opacity-50">
+          <Volume2 size={iconSize} />
+        </span>
+      ) : (
+        <span
+          className={`text-xs font-medium ${hasAudio ? 'text-green-600' : 'text-gray-400'}`}
+          title={hasAudio ? `${langLabel} audio available` : `No ${langLabel} audio`}
+        >
+          {/* Only show indicator if not readOnly or if audio exists */}
+          {!readOnly && <Volume2 size={iconSize} className={hasAudio ? '' : 'opacity-50'} />}
+        </span>
+      )}
 
       {/* Play/Stop button */}
       {hasAudio && (
@@ -70,31 +79,33 @@ export function AudioControls({
         </button>
       )}
 
-      {/* Generate/Regenerate button */}
-      <button
-        type="button"
-        onClick={onGenerate}
-        disabled={!hasText || isGenerating}
-        className={`
-          ${buttonClass}
-          ${hasAudio 
-            ? 'text-amber-600 hover:text-amber-700 hover:bg-amber-50' 
-            : 'text-blue-600 hover:text-blue-700 hover:bg-blue-50'
-          }
-        `}
-        title={hasAudio ? 'Regenerate audio' : 'Generate audio'}
-      >
-        {isGenerating ? (
-          <Loader2 size={iconSize} className="animate-spin" />
-        ) : hasAudio ? (
-          <RefreshCw size={iconSize} />
-        ) : (
-          <Volume2 size={iconSize} />
-        )}
-      </button>
+      {/* Generate/Regenerate button - Hidden in readOnly */}
+      {!readOnly && (
+        <button
+          type="button"
+          onClick={onGenerate}
+          disabled={!hasText || isGenerating}
+          className={`
+            ${buttonClass}
+            ${hasAudio
+              ? 'text-amber-600 hover:text-amber-700 hover:bg-amber-50'
+              : 'text-blue-600 hover:text-blue-700 hover:bg-blue-50'
+            }
+          `}
+          title={hasAudio ? 'Regenerate audio' : 'Generate audio'}
+        >
+          {isGenerating ? (
+            <Loader2 size={iconSize} className="animate-spin" />
+          ) : hasAudio ? (
+            <RefreshCw size={iconSize} />
+          ) : (
+            <Volume2 size={iconSize} />
+          )}
+        </button>
+      )}
 
-      {/* Delete button */}
-      {hasAudio && (
+      {/* Delete button - Hidden in readOnly */}
+      {!readOnly && hasAudio && (
         <button
           type="button"
           onClick={onDelete}

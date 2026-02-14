@@ -1,6 +1,5 @@
 package com.trainingvalidator.poc.analysis
 
-import com.google.mediapipe.tasks.components.containers.NormalizedLandmark
 import com.trainingvalidator.poc.pose.BodyLandmarks
 import kotlin.math.atan2
 import kotlin.math.abs
@@ -263,6 +262,24 @@ object AngleCalculator {
                 use3D
             ),
             
+            // Wrists
+            leftWrist = calculateAngleSmoothed(
+                landmarks,
+                BodyLandmarks.LEFT_ELBOW,
+                BodyLandmarks.LEFT_WRIST,
+                BodyLandmarks.LEFT_INDEX,
+                visibilityThreshold,
+                use3D
+            ),
+            rightWrist = calculateAngleSmoothed(
+                landmarks,
+                BodyLandmarks.RIGHT_ELBOW,
+                BodyLandmarks.RIGHT_WRIST,
+                BodyLandmarks.RIGHT_INDEX,
+                visibilityThreshold,
+                use3D
+            ),
+            
             // Neck variants - using virtual landmark (index 33 = midpoint of shoulders)
             // Each variant uses a different reference point for different camera angles
             
@@ -300,13 +317,21 @@ object AngleCalculator {
             ),
             
             // Spine - using virtual landmarks (neck=33, spine=34)
-            // Angle: neck(33) -> spine(34) -> left_knee(25)
-            // Falls back to angle-from-vertical if virtual landmarks unavailable
+            // Fallback chain: LEFT_KNEE → RIGHT_KNEE → angle-from-vertical
+            // This ensures consistent 3-point calculation even in side views
+            // where one knee may be occluded
             spine = calculateAngleSmoothed(
                 landmarks,
                 BodyLandmarks.NECK,
                 BodyLandmarks.SPINE,
                 BodyLandmarks.LEFT_KNEE,
+                visibilityThreshold,
+                use3D
+            ) ?: calculateAngleSmoothed(
+                landmarks,
+                BodyLandmarks.NECK,
+                BodyLandmarks.SPINE,
+                BodyLandmarks.RIGHT_KNEE,
                 visibilityThreshold,
                 use3D
             ) ?: calculateSpineAngleSmoothed(landmarks, visibilityThreshold, use3D)
@@ -393,6 +418,8 @@ data class JointAngles(
     val rightShoulder: Double?,
     val leftShoulderCross: Double?,   // Left Elbow -> Left Shoulder -> Right Shoulder
     val rightShoulderCross: Double?,  // Right Elbow -> Right Shoulder -> Left Shoulder
+    val leftWrist: Double?,           // Left Elbow -> Left Wrist -> Left Index
+    val rightWrist: Double?,          // Right Elbow -> Right Wrist -> Right Index
     
     // Torso
     val leftHip: Double?,
@@ -419,6 +446,8 @@ data class JointAngles(
             "right_shoulder" -> rightShoulder
             "left_shoulder_cross" -> leftShoulderCross
             "right_shoulder_cross" -> rightShoulderCross
+            "left_wrist" -> leftWrist
+            "right_wrist" -> rightWrist
             "left_hip" -> leftHip
             "right_hip" -> rightHip
             "left_knee" -> leftKnee
@@ -434,27 +463,30 @@ data class JointAngles(
     }
 
     /**
-     * Get all angles as a map
+     * Get all non-null angles as a map
+     * Only includes angles where a valid value was calculated
      */
     fun toMap(): Map<String, Double> {
-        return mapOf(
-            "left_elbow" to (leftElbow ?: 0.0),
-            "right_elbow" to (rightElbow ?: 0.0),
-            "left_shoulder" to (leftShoulder ?: 0.0),
-            "right_shoulder" to (rightShoulder ?: 0.0),
-            "left_shoulder_cross" to (leftShoulderCross ?: 0.0),
-            "right_shoulder_cross" to (rightShoulderCross ?: 0.0),
-            "left_hip" to (leftHip ?: 0.0),
-            "right_hip" to (rightHip ?: 0.0),
-            "left_knee" to (leftKnee ?: 0.0),
-            "right_knee" to (rightKnee ?: 0.0),
-            "left_ankle" to (leftAnkle ?: 0.0),
-            "right_ankle" to (rightAnkle ?: 0.0),
-            "neck_left" to (neckLeft ?: 0.0),
-            "neck_right" to (neckRight ?: 0.0),
-            "neck_spine" to (neckSpine ?: 0.0),
-            "spine" to (spine ?: 0.0)
-        )
+        return buildMap {
+            leftElbow?.let { put("left_elbow", it) }
+            rightElbow?.let { put("right_elbow", it) }
+            leftShoulder?.let { put("left_shoulder", it) }
+            rightShoulder?.let { put("right_shoulder", it) }
+            leftShoulderCross?.let { put("left_shoulder_cross", it) }
+            rightShoulderCross?.let { put("right_shoulder_cross", it) }
+            leftWrist?.let { put("left_wrist", it) }
+            rightWrist?.let { put("right_wrist", it) }
+            leftHip?.let { put("left_hip", it) }
+            rightHip?.let { put("right_hip", it) }
+            leftKnee?.let { put("left_knee", it) }
+            rightKnee?.let { put("right_knee", it) }
+            leftAnkle?.let { put("left_ankle", it) }
+            rightAnkle?.let { put("right_ankle", it) }
+            neckLeft?.let { put("neck_left", it) }
+            neckRight?.let { put("neck_right", it) }
+            neckSpine?.let { put("neck_spine", it) }
+            spine?.let { put("spine", it) }
+        }
     }
     
     override fun toString(): String {
@@ -466,6 +498,8 @@ data class JointAngles(
             appendLine("Right Shoulder: ${rightShoulder?.let { "%.1f°".format(it) } ?: "N/A"}")
             appendLine("Left Shoulder Cross: ${leftShoulderCross?.let { "%.1f°".format(it) } ?: "N/A"}")
             appendLine("Right Shoulder Cross: ${rightShoulderCross?.let { "%.1f°".format(it) } ?: "N/A"}")
+            appendLine("Left Wrist: ${leftWrist?.let { "%.1f°".format(it) } ?: "N/A"}")
+            appendLine("Right Wrist: ${rightWrist?.let { "%.1f°".format(it) } ?: "N/A"}")
             appendLine("Left Hip: ${leftHip?.let { "%.1f°".format(it) } ?: "N/A"}")
             appendLine("Right Hip: ${rightHip?.let { "%.1f°".format(it) } ?: "N/A"}")
             appendLine("Left Knee: ${leftKnee?.let { "%.1f°".format(it) } ?: "N/A"}")
@@ -497,6 +531,9 @@ data class JointAngles(
             // Swap cross shoulders
             leftShoulderCross = rightShoulderCross,
             rightShoulderCross = leftShoulderCross,
+            // Swap wrists
+            leftWrist = rightWrist,
+            rightWrist = leftWrist,
             // Swap hips
             leftHip = rightHip,
             rightHip = leftHip,

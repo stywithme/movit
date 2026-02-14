@@ -143,17 +143,24 @@ function PositionCheckCard({ check, index, onUpdate, onRemove }: PositionCheckCa
   const handleMessageSelect = (messages: MessageOption[]) => {
     if (messages.length === 0) return;
     const msg = messages[0];
-    updateField('errorMessage', {
-      ar: msg.content.ar || '',
-      en: msg.content.en || '',
-      audioAr: msg.content.audioAr,
-      audioEn: msg.content.audioEn,
+    onUpdate(index, {
+      ...check,
+      messageId: msg.id,
+      errorMessage: {
+        ar: msg.content.ar || '',
+        en: msg.content.en || '',
+        audioAr: msg.content.audioAr,
+        audioEn: msg.content.audioEn,
+      }
     });
   };
 
   const clearErrorMessage = () => {
     updateField('errorMessage', { ar: '', en: '', audioAr: undefined, audioEn: undefined });
+    updateField('messageId', undefined);
   };
+
+  const isLinked = !!check.messageId;
 
   return (
     <Card className={`border-l-4 ${check.severity === 'error' ? 'border-l-red-500' : check.severity === 'warning' ? 'border-l-yellow-500' : 'border-l-blue-500'}`}>
@@ -337,44 +344,73 @@ function PositionCheckCard({ check, index, onUpdate, onRemove }: PositionCheckCa
           {/* Error Messages */}
           <div className="space-y-2">
             <div className="flex items-center justify-between">
-              <Label>Error Message</Label>
               <div className="flex items-center gap-2">
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  icon={<Library className="h-4 w-4" />}
-                  onClick={() => setMessagePickerOpen(true)}
-                >
-                  From Library
-                </Button>
+                <Label>Error Message</Label>
+                {isLinked && (
+                  <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200 flex items-center gap-1">
+                    <Library className="h-3 w-3" />
+                    Linked to Library
+                  </Badge>
+                )}
+              </div>
+              <div className="flex items-center gap-2">
+                {!isLinked ? (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    icon={<Library className="h-4 w-4" />}
+                    onClick={() => setMessagePickerOpen(true)}
+                  >
+                    From Library
+                  </Button>
+                ) : (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                    onClick={() => updateField('messageId', undefined)}
+                  >
+                    Unlink
+                  </Button>
+                )}
                 <Button
                   variant="ghost"
                   size="sm"
                   icon={<Plus className="h-4 w-4" />}
                   onClick={clearErrorMessage}
                 >
-                  Write New
+                  Clear
                 </Button>
               </div>
             </div>
+
+            {/* Show readonly view if linked, otherwise editable input */}
             <SmartLocalizedInput
               label=""
-              value={check.errorMessage}
-              onChange={(value) => updateField('errorMessage', value)}
+              value={check.errorMessage || { ar: '', en: '' }}
+              onChange={(value) => !isLinked && updateField('errorMessage', value)}
               audioValue={{
-                ar: check.errorMessage.audioAr,
-                en: check.errorMessage.audioEn,
+                ar: check.errorMessage?.audioAr,
+                en: check.errorMessage?.audioEn,
               }}
-              onAudioChange={(audio) => updateField('errorMessage', {
-                ...check.errorMessage,
+              onAudioChange={(audio) => !isLinked && updateField('errorMessage', {
+                ...(check.errorMessage || { ar: '', en: '' }),
                 audioAr: audio.ar,
                 audioEn: audio.en,
               })}
-              enableTranslation
-              enableTTS
+              enableTranslation={!isLinked}
+              enableTTS={!isLinked}
+              readOnly={isLinked}
               translationContext="fitness exercise form correction message"
               variant="compact"
+              className={isLinked ? "opacity-75 bg-gray-50" : ""}
             />
+            {isLinked && (
+              <p className="text-xs text-blue-600 flex items-center gap-1">
+                <Library className="h-3 w-3" />
+                This message is managed in the Message Library. Unlink to edit locally.
+              </p>
+            )}
           </div>
 
           <MessagePickerModal

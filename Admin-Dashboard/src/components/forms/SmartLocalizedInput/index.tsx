@@ -38,47 +38,50 @@ export function SmartLocalizedInput({
   onAudioChange: externalOnAudioChange,
   translationContext,
   variant = 'default',
+  readOnly = false,
 }: SmartLocalizedInputProps) {
   const [activeTab, setActiveTab] = useState<SupportedLanguage>('en');
-  
+
   // Internal audio state (used when external props not provided)
   const [internalAudioValue, setInternalAudioValue] = useState<{ ar?: string; en?: string }>({});
-  
+
   // Use external or internal audio state
   const audioValue = externalAudioValue ?? internalAudioValue;
   const onAudioChange = externalOnAudioChange ?? setInternalAudioValue;
-  
+
   // Translation hook
-  const { 
-    isTranslating, 
-    translate, 
-    error: translateError 
+  const {
+    isTranslating,
+    translate,
+    error: translateError
   } = useTranslation({ context: translationContext });
-  
+
   // TTS hook
-  const { 
-    isGenerating, 
-    isPlaying, 
-    generateSpeech, 
-    play, 
-    stop, 
+  const {
+    isGenerating,
+    isPlaying,
+    generateSpeech,
+    play,
+    stop,
     deleteAudio,
-    error: ttsError 
+    error: ttsError
   } = useTextToSpeech();
 
   // Handle text change
   const handleChange = useCallback((lang: SupportedLanguage, newValue: string) => {
+    if (readOnly) return;
     onChange({
       ...value,
       [lang]: newValue,
     });
-  }, [onChange, value]);
+  }, [onChange, value, readOnly]);
 
   // Handle translation
   const handleTranslate = useCallback(async (fromLang: SupportedLanguage) => {
+    if (readOnly) return;
     const toLang = fromLang === 'en' ? 'ar' : 'en';
     const sourceText = value[fromLang];
-    
+
     if (!sourceText?.trim()) return;
 
     const translated = await translate(sourceText, fromLang, toLang);
@@ -90,18 +93,19 @@ export function SmartLocalizedInput({
       // Switch to target tab to show result
       setActiveTab(toLang);
     }
-  }, [translate, value, onChange]);
+  }, [translate, value, onChange, readOnly]);
 
   // Handle TTS generation
   const handleGenerateAudio = useCallback(async (lang: SupportedLanguage) => {
+    if (readOnly) return;
     const text = value[lang];
     if (!text?.trim()) return;
 
     const existingUrl = lang === 'ar' ? audioValue?.ar : audioValue?.en;
     const audioUrl = await generateSpeech(text, lang, existingUrl);
-    
+
     console.log('[SmartInput] Generated audio URL:', audioUrl);
-    
+
     if (audioUrl) {
       // Update audio state
       const newAudioValue = {
@@ -113,7 +117,7 @@ export function SmartLocalizedInput({
       // Auto-play the generated audio
       play(audioUrl);
     }
-  }, [value, audioValue, generateSpeech, onAudioChange, play]);
+  }, [value, audioValue, generateSpeech, onAudioChange, play, readOnly]);
 
   // Handle audio playback
   const handlePlay = useCallback((lang: SupportedLanguage) => {
@@ -125,6 +129,7 @@ export function SmartLocalizedInput({
 
   // Handle audio deletion
   const handleDeleteAudio = useCallback(async (lang: SupportedLanguage) => {
+    if (readOnly) return;
     const url = audioValue?.[lang];
     if (url) {
       await deleteAudio(url);
@@ -134,13 +139,13 @@ export function SmartLocalizedInput({
       };
       onAudioChange(newAudioValue);
     }
-  }, [audioValue, deleteAudio, onAudioChange]);
+  }, [audioValue, deleteAudio, onAudioChange, readOnly]);
 
   // Render input based on type
   const renderInput = (lang: SupportedLanguage) => {
     const isArabic = lang === 'ar';
     const currentValue = value[lang] || '';
-    const currentPlaceholder = isArabic 
+    const currentPlaceholder = isArabic
       ? (placeholder.ar || `أدخل ${label} بالعربية`)
       : (placeholder.en || `Enter ${label.toLowerCase()} in English`);
 
@@ -157,10 +162,12 @@ export function SmartLocalizedInput({
           dir={isArabic ? 'rtl' : 'ltr'}
           rows={multiline ? rows : undefined}
           className="pr-10"
+          readOnly={readOnly}
+          disabled={readOnly}
         />
-        
+
         {/* Translate button inside input */}
-        {enableTranslation && (
+        {enableTranslation && !readOnly && (
           <div className="absolute top-1/2 -translate-y-1/2 right-1">
             <TranslateButton
               isTranslating={isTranslating}
@@ -182,14 +189,14 @@ export function SmartLocalizedInput({
           {label}
           {required && <span className="text-red-500 ml-1">*</span>}
         </label>
-        
+
         <div className="grid grid-cols-2 gap-3">
           {/* English */}
           <div className="space-y-1">
             <div className="flex items-center justify-between">
               <span className="text-xs font-medium text-gray-500">EN</span>
               <div className="flex items-center gap-1">
-                {enableTranslation && (
+                {enableTranslation && !readOnly && (
                   <TranslateButton
                     isTranslating={isTranslating}
                     sourceLanguage="en"
@@ -210,6 +217,7 @@ export function SmartLocalizedInput({
                     onStop={stop}
                     onDelete={() => handleDeleteAudio('en')}
                     size="sm"
+                    readOnly={readOnly}
                   />
                 )}
               </div>
@@ -223,6 +231,8 @@ export function SmartLocalizedInput({
                 error={!!error}
                 rows={rows}
                 dir="ltr"
+                readOnly={readOnly}
+                disabled={readOnly}
               />
             ) : (
               <Input
@@ -232,16 +242,18 @@ export function SmartLocalizedInput({
                 required={required}
                 error={!!error}
                 dir="ltr"
+                readOnly={readOnly}
+                disabled={readOnly}
               />
             )}
           </div>
-          
+
           {/* Arabic */}
           <div className="space-y-1">
             <div className="flex items-center justify-between">
               <span className="text-xs font-medium text-gray-500">AR</span>
               <div className="flex items-center gap-1">
-                {enableTranslation && (
+                {enableTranslation && !readOnly && (
                   <TranslateButton
                     isTranslating={isTranslating}
                     sourceLanguage="ar"
@@ -262,6 +274,7 @@ export function SmartLocalizedInput({
                     onStop={stop}
                     onDelete={() => handleDeleteAudio('ar')}
                     size="sm"
+                    readOnly={readOnly}
                   />
                 )}
               </div>
@@ -275,6 +288,8 @@ export function SmartLocalizedInput({
                 error={!!error}
                 rows={rows}
                 dir="rtl"
+                readOnly={readOnly}
+                disabled={readOnly}
               />
             ) : (
               <Input
@@ -284,6 +299,8 @@ export function SmartLocalizedInput({
                 required={required}
                 error={!!error}
                 dir="rtl"
+                readOnly={readOnly}
+                disabled={readOnly}
               />
             )}
           </div>
@@ -306,7 +323,7 @@ export function SmartLocalizedInput({
           <div className="flex items-center justify-between">
             <span className="text-xs font-medium text-gray-500">EN</span>
             <div className="flex items-center gap-0.5">
-              {enableTranslation && (
+              {enableTranslation && !readOnly && (
                 <TranslateButton
                   isTranslating={isTranslating}
                   sourceLanguage="en"
@@ -327,6 +344,7 @@ export function SmartLocalizedInput({
                   onStop={stop}
                   onDelete={() => handleDeleteAudio('en')}
                   size="sm"
+                  readOnly={readOnly}
                 />
               )}
             </div>
@@ -339,15 +357,17 @@ export function SmartLocalizedInput({
             error={!!error}
             dir="ltr"
             className="text-sm"
+            readOnly={readOnly}
+            disabled={readOnly}
           />
         </div>
-        
+
         {/* Arabic */}
         <div className="space-y-1">
           <div className="flex items-center justify-between">
             <span className="text-xs font-medium text-gray-500">AR</span>
             <div className="flex items-center gap-0.5">
-              {enableTranslation && (
+              {enableTranslation && !readOnly && (
                 <TranslateButton
                   isTranslating={isTranslating}
                   sourceLanguage="ar"
@@ -368,6 +388,7 @@ export function SmartLocalizedInput({
                   onStop={stop}
                   onDelete={() => handleDeleteAudio('ar')}
                   size="sm"
+                  readOnly={readOnly}
                 />
               )}
             </div>
@@ -380,6 +401,8 @@ export function SmartLocalizedInput({
             error={!!error}
             dir="rtl"
             className="text-sm"
+            readOnly={readOnly}
+            disabled={readOnly}
           />
         </div>
       </div>
@@ -400,11 +423,10 @@ export function SmartLocalizedInput({
           <button
             type="button"
             onClick={() => setActiveTab('en')}
-            className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
-              activeTab === 'en'
-                ? 'border-blue-500 text-blue-600'
-                : 'border-transparent text-gray-500 hover:text-gray-700'
-            }`}
+            className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${activeTab === 'en'
+              ? 'border-blue-500 text-blue-600'
+              : 'border-transparent text-gray-500 hover:text-gray-700'
+              }`}
           >
             English
             {audioValue?.en && <span className="ml-1 text-green-500">🔊</span>}
@@ -412,17 +434,16 @@ export function SmartLocalizedInput({
           <button
             type="button"
             onClick={() => setActiveTab('ar')}
-            className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
-              activeTab === 'ar'
-                ? 'border-blue-500 text-blue-600'
-                : 'border-transparent text-gray-500 hover:text-gray-700'
-            }`}
+            className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${activeTab === 'ar'
+              ? 'border-blue-500 text-blue-600'
+              : 'border-transparent text-gray-500 hover:text-gray-700'
+              }`}
           >
             العربية
             {audioValue?.ar && <span className="ml-1 text-green-500">🔊</span>}
           </button>
         </div>
-        
+
         {/* Audio controls for active tab */}
         {enableTTS && (
           <AudioControls

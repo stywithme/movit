@@ -48,7 +48,7 @@ export interface SmartLocalizedInputProps {
   label: string;
   value: LocalizedText;
   onChange: (value: LocalizedText) => void;
-  
+
   // Optional props
   placeholder?: { ar?: string; en?: string };
   required?: boolean;
@@ -56,18 +56,19 @@ export interface SmartLocalizedInputProps {
   rows?: number;
   error?: string;
   className?: string;
-  
+  readOnly?: boolean;
+
   // AI Features
   enableTranslation?: boolean;
   enableTTS?: boolean;
-  
+
   // Audio
   audioValue?: { ar?: string; en?: string };
   onAudioChange?: (audio: { ar?: string; en?: string }) => void;
-  
+
   // Translation context
   translationContext?: string;
-  
+
   // Variant
   variant?: 'default' | 'compact' | 'inline';
 }

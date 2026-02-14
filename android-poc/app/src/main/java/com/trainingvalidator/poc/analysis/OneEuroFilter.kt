@@ -122,10 +122,29 @@ class OneEuroFilter(
 }
 
 /**
+ * FilterResult3D - Reusable container for 3D filter output
+ * 
+ * Avoids allocating a new Triple on every frame (~1000/sec for 33 landmarks at 30fps).
+ * Supports Kotlin destructuring via componentN operators.
+ */
+class FilterResult3D {
+    var x: Float = 0f
+    var y: Float = 0f
+    var z: Float = 0f
+    
+    operator fun component1() = x
+    operator fun component2() = y
+    operator fun component3() = z
+}
+
+/**
  * OneEuroFilter3D - One Euro Filter for 3D coordinates
  * 
  * Applies independent filtering to X, Y, Z axes.
  * Each axis adapts independently based on its movement speed.
+ * 
+ * Performance: Uses a reusable FilterResult3D to avoid allocation per frame.
+ * Kotlin destructuring still works: val (sx, sy, sz) = filter.filter(x, y, z, t)
  */
 class OneEuroFilter3D(
     minCutoff: Float = 1.0f,
@@ -136,17 +155,19 @@ class OneEuroFilter3D(
     private val yFilter = OneEuroFilter(minCutoff, beta, dCutoff)
     private val zFilter = OneEuroFilter(minCutoff, beta, dCutoff)
     
+    /** Reusable result object — values are immediately destructured by callers */
+    private val result = FilterResult3D()
+    
     /**
      * Filter a 3D point
      * 
-     * @return Filtered (x, y, z) as Triple
+     * @return Reusable FilterResult3D (supports destructuring)
      */
-    fun filter(x: Float, y: Float, z: Float, timestamp: Long): Triple<Float, Float, Float> {
-        return Triple(
-            xFilter.filter(x, timestamp),
-            yFilter.filter(y, timestamp),
-            zFilter.filter(z, timestamp)
-        )
+    fun filter(x: Float, y: Float, z: Float, timestamp: Long): FilterResult3D {
+        result.x = xFilter.filter(x, timestamp)
+        result.y = yFilter.filter(y, timestamp)
+        result.z = zFilter.filter(z, timestamp)
+        return result
     }
     
     /**

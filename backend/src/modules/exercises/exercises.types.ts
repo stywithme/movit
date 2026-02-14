@@ -492,6 +492,7 @@ export interface PositionCheckInput {
   condition: PositionCheckCondition;
   activePhases: string[];
   errorMessage: LocalizedTextWithAudio;
+  messageId?: string; // Link to message library
   severity?: string;
   cooldownMs?: number;
   minErrorFrames?: number;
