@@ -6,126 +6,118 @@ import androidx.viewpager2.adapter.FragmentStateAdapter
 import com.trainingvalidator.poc.training.report.PostTrainingReport
 
 /**
- * RepPagerAdapter - Adapter for horizontal swiping between report pages
- * 
- * Page structure:
- * - Page 0: Exercise Summary (best frame + overall stats)
- * - Page 1: Reps Journey (chart of all reps)
- * - Page 2: Key Moments (best/worst comparison)
- * - Page 3: Tips (improvement suggestions)
- * - Page 4+: Individual rep details
+ * RepPagerAdapter — V2 Report Pager
+ *
+ * Navigates 7 screens per exercise (no individual-rep pages):
+ *
+ *  0  Hero             — Overall score + reps + duration + QuickInsight + Share
+ *  1  Overview         — Reps Journey chart + Form / Safety / Control cards
+ *  2  Best vs Worst    — Mirrored visual comparison
+ *  3  Form Details     — ROM, Symmetry, Form Consistency
+ *  4  Safety Details   — Alignment, Stability, DangerAlerts
+ *  5  Control+Fatigue  — Tempo, TUT, VL%, Fatigue analysis, Load
+ *  6  Tips & Export    — Exercise-message tips + PDF / Share
+ *
+ * Pages are dynamically included/excluded based on data availability:
+ *  - Overview  → hidden when < 2 reps (nothing to chart)
+ *  - Best/Worst → hidden when no best reps or 0 reps
+ *  - Form/Safety/Control detail screens → always shown (adapt internally)
+ *  - Tips → always shown
  */
 class RepPagerAdapter(
     activity: FragmentActivity,
     private val report: PostTrainingReport,
     private val isArabic: Boolean
 ) : FragmentStateAdapter(activity) {
-    
+
     companion object {
-        // Page type constants
-        private const val TYPE_SUMMARY = 0
-        private const val TYPE_JOURNEY = 1
-        private const val TYPE_KEY_MOMENTS = 2
-        private const val TYPE_TIPS = 3
-        private const val TYPE_REP = 4
+        const val TYPE_HERO = 0
+        const val TYPE_OVERVIEW = 1
+        const val TYPE_BEST_WORST = 2
+        const val TYPE_FORM_DETAILS = 3
+        const val TYPE_SAFETY_DETAILS = 4
+        const val TYPE_CONTROL_DETAILS = 5
+        const val TYPE_TIPS = 6
     }
-    
+
     private val repCount = report.repTimeline.size
-    
-    // Determine which fixed pages to show based on data
-    private val showJourney = repCount >= 2 // Need at least 2 reps for a journey
-    private val showKeyMoments = report.bestReps.isNotEmpty()
-    private val showTips = true // Always show (shows "perfect" message if no tips)
-    
-    // Build the page list dynamically as (type, repIndex)
-    private val pageList: List<Pair<Int, Int>> = buildList {
-        add(TYPE_SUMMARY to -1)
-        if (showJourney) add(TYPE_JOURNEY to -1)
-        if (showKeyMoments) add(TYPE_KEY_MOMENTS to -1)
-        if (showTips) add(TYPE_TIPS to -1)
-        // Add individual reps
-        for (i in 0 until repCount) {
-            add(TYPE_REP to i)
+    private val isHold = report.exerciseConfig?.isHoldExercise() == true
+
+    // Build the dynamic page list based on available data
+    private val pageList: List<Int> = buildList {
+        add(TYPE_HERO)
+
+        // Overview: need ≥ 2 reps for a meaningful chart (or hold exercise for timeline)
+        if (repCount >= 2 || isHold) {
+            add(TYPE_OVERVIEW)
         }
+
+        // Best vs Worst: need at least one best rep AND it's not a hold exercise
+        if (!isHold && report.bestReps.isNotEmpty() && repCount >= 2) {
+            add(TYPE_BEST_WORST)
+        }
+
+        // Detail screens — always present; each adapts internally
+        add(TYPE_FORM_DETAILS)
+        add(TYPE_SAFETY_DETAILS)
+        add(TYPE_CONTROL_DETAILS)
+
+        // Tips — always shown
+        add(TYPE_TIPS)
     }
-    
+
     override fun getItemCount(): Int = pageList.size
-    
+
     override fun createFragment(position: Int): Fragment {
-        val (pageType, repIndex) = pageList[position]
-        
-        val fragment: Fragment = when (pageType) {
-            TYPE_SUMMARY -> createSummaryFragment(position)
-            TYPE_JOURNEY -> createJourneyFragment()
-            TYPE_KEY_MOMENTS -> createKeyMomentsFragment()
-            TYPE_TIPS -> createTipsFragment()
-            TYPE_REP -> createRepFragment(repIndex, position)
-            else -> createSummaryFragment(position)
-        }
-        
-        return fragment
-    }
-    
-    private fun createSummaryFragment(position: Int): Fragment {
-        val fragment = ReportPageFragment.newSummaryInstance()
-        fragment.setData(report, isArabic, itemCount, position)
-        return fragment
-    }
-    
-    private fun createJourneyFragment(): Fragment {
-        val fragment = RepsJourneyFragment.newInstance()
-        fragment.setData(report, isArabic)
-        return fragment
-    }
-    
-    private fun createKeyMomentsFragment(): Fragment {
-        val fragment = KeyMomentsFragment.newInstance()
-        fragment.setData(report, isArabic)
-        return fragment
-    }
-    
-    private fun createTipsFragment(): Fragment {
-        val fragment = TipsFragment.newInstance()
-        fragment.setData(report, isArabic)
-        return fragment
-    }
-    
-    private fun createRepFragment(repIndex: Int, position: Int): Fragment {
-        val fragment = ReportPageFragment.newRepInstance(repIndex)
-        fragment.setData(report, isArabic, itemCount, position)
-        return fragment
-    }
-    
-    /**
-     * Get page title for accessibility and indicators
-     */
-    fun getPageTitle(position: Int): String {
-        val (pageType, repIndex) = pageList[position]
-        
-        return when (pageType) {
-            TYPE_SUMMARY -> if (isArabic) "ملخص التمرين" else "Exercise Summary"
-            TYPE_JOURNEY -> if (isArabic) "رحلة العدات" else "Reps Journey"
-            TYPE_KEY_MOMENTS -> if (isArabic) "لحظات مميزة" else "Key Moments"
-            TYPE_TIPS -> if (isArabic) "نصائح" else "Tips"
-            TYPE_REP -> {
-                val repNum = report.repTimeline.getOrNull(repIndex)?.repNumber ?: (repIndex + 1)
-                if (isArabic) "العدة #$repNum" else "Rep #$repNum"
+        return when (pageList[position]) {
+            TYPE_HERO -> ReportPageFragment.newSummaryInstance().also {
+                it.setData(report, isArabic, itemCount, position)
             }
+
+            TYPE_OVERVIEW -> PerformanceOverviewFragment.newInstance().also {
+                it.setData(report, isArabic)
+            }
+
+            TYPE_BEST_WORST -> BestWorstComparisonFragment.newInstance().also {
+                it.setData(report, isArabic)
+            }
+
+            TYPE_FORM_DETAILS -> FormDetailsFragment.newInstance().also {
+                it.setData(report, isArabic)
+            }
+
+            TYPE_SAFETY_DETAILS -> SafetyDetailsFragment.newInstance().also {
+                it.setData(report, isArabic)
+            }
+
+            TYPE_CONTROL_DETAILS -> ControlFatigueFragment.newInstance().also {
+                it.setData(report, isArabic)
+            }
+
+            TYPE_TIPS -> TipsExportFragment.newInstance().also {
+                it.setData(report, isArabic)
+            }
+
+            else -> ReportPageFragment.newSummaryInstance().also {
+                it.setData(report, isArabic, itemCount, position)
+            }
+        }
+    }
+
+    /** Human-readable page title for accessibility and indicators. */
+    fun getPageTitle(position: Int): String {
+        return when (pageList.getOrNull(position)) {
+            TYPE_HERO -> if (isArabic) "ملخص التمرين" else "Exercise Summary"
+            TYPE_OVERVIEW -> if (isArabic) "نظرة شاملة" else "Performance Overview"
+            TYPE_BEST_WORST -> if (isArabic) "أفضل وأسوأ عدة" else "Best vs Worst"
+            TYPE_FORM_DETAILS -> if (isArabic) "تفاصيل الشكل" else "Form Details"
+            TYPE_SAFETY_DETAILS -> if (isArabic) "تفاصيل الأمان" else "Safety Details"
+            TYPE_CONTROL_DETAILS -> if (isArabic) "التحكم والتعب" else "Control & Fatigue"
+            TYPE_TIPS -> if (isArabic) "النصائح" else "Tips"
             else -> ""
         }
     }
-    
-    /**
-     * Get the index of the first rep page
-     */
-    fun getFirstRepPageIndex(): Int {
-        return pageList.indexOfFirst { it.first == TYPE_REP }.takeIf { it >= 0 } ?: itemCount
-    }
-    
-    /**
-     * Check if a position is a rep page
-     */
-    fun isRepPage(position: Int): Boolean {
-        return pageList.getOrNull(position)?.first == TYPE_REP
-    }
+
+    /** Returns the page type constant at the given adapter position. */
+    fun getPageType(position: Int): Int = pageList.getOrElse(position) { TYPE_HERO }
 }

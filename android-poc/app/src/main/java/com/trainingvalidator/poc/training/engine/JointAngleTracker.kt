@@ -50,6 +50,32 @@ class JointAngleTracker(
             "left_ankle" to { angles: JointAngles -> angles.leftAnkle },
             "right_ankle" to { angles: JointAngles -> angles.rightAnkle }
         )
+        
+        /**
+         * Bilateral mirror map: maps each sided joint to its opposite side.
+         * Shared joints (spine, neck, etc.) are NOT in this map.
+         * Used for runtime flipping: when the exercise is configured for right_elbow
+         * but we need to measure the left side, we look up left_elbow's angle instead.
+         */
+        val MIRROR_MAP: Map<String, String> = mapOf(
+            // Arms
+            "left_elbow" to "right_elbow", "right_elbow" to "left_elbow",
+            "left_shoulder" to "right_shoulder", "right_shoulder" to "left_shoulder",
+            "left_shoulder_cross" to "right_shoulder_cross", "right_shoulder_cross" to "left_shoulder_cross",
+            "left_wrist" to "right_wrist", "right_wrist" to "left_wrist",
+            // Torso
+            "left_hip" to "right_hip", "right_hip" to "left_hip",
+            // Legs
+            "left_knee" to "right_knee", "right_knee" to "left_knee",
+            "left_ankle" to "right_ankle", "right_ankle" to "left_ankle"
+        )
+        
+        /**
+         * Get the mirrored joint code. Shared joints return themselves.
+         */
+        fun mirrorJointCode(jointCode: String): String {
+            return MIRROR_MAP[jointCode] ?: jointCode
+        }
     }
     
     /**
@@ -85,21 +111,31 @@ class JointAngleTracker(
     }
     
     /**
-     * Extract angles for tracked joints, filtered to only the active joint codes.
-     * Used by TrainingEngine in bilateral mode to only process the active side's joints.
+     * Extract angles for tracked joints with optional bilateral flipping.
+     * When isFlipped=true, reads the OPPOSITE side's angle from JointAngles
+     * but stores it under the ORIGINAL config key.
+     * 
+     * Example: config has "right_elbow", isFlipped=true
+     *   -> reads angles.leftElbow (the mirrored side)
+     *   -> stores result["right_elbow"] = leftElbowAngle
+     *   -> PhaseStateMachine/FormValidator see "right_elbow" with left side's angle
+     * 
+     * Shared joints (spine, neck, etc.) read from the same key regardless of flip.
      * 
      * @param angles All joint angles from AngleCalculator
-     * @param activeJointCodes Set of joint codes that are active (e.g., right-side + shared)
-     * @return Map of joint code to angle value (only active tracked joints)
+     * @param isFlipped true when measuring the opposite side in bilateral mode
+     * @return Map of config joint code to angle value
      */
-    fun extractTrackedAngles(angles: JointAngles, activeJointCodes: Set<String>): Map<String, Double> {
+    fun extractTrackedAngles(angles: JointAngles, isFlipped: Boolean): Map<String, Double> {
+        if (!isFlipped) return extractTrackedAngles(angles)
+        
         val result = mutableMapOf<String, Double>()
         
         for (joint in trackedJoints) {
-            if (joint.joint !in activeJointCodes) continue
-            val angleValue = getAngleForJoint(angles, joint.joint)
+            val lookupCode = mirrorJointCode(joint.joint)
+            val angleValue = getAngleForJoint(angles, lookupCode)
             if (angleValue != null) {
-                result[joint.joint] = angleValue
+                result[joint.joint] = angleValue  // key stays as config key
             }
         }
         

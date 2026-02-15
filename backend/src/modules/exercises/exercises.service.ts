@@ -253,11 +253,13 @@ export const exerciseService = {
       },
     });
 
-    // Add muscles, equipment, and tags
+    // Add muscles, equipment, and tags (deduplicated)
     const attributeIds = [
-      ...(data.muscles || []),
-      ...(data.equipment || []),
-      ...(data.tags || []),
+      ...new Set([
+        ...(data.muscles || []),
+        ...(data.equipment || []),
+        ...(data.tags || []),
+      ]),
     ];
 
     if (attributeIds.length > 0) {
@@ -266,6 +268,7 @@ export const exerciseService = {
           exerciseId: exercise.id,
           attributeValueId,
         })),
+        skipDuplicates: true,
       });
     }
 
@@ -434,9 +437,11 @@ export const exerciseService = {
 
     // Update attributes if provided
     const attributeIds = [
-      ...(data.muscles || []),
-      ...(data.equipment || []),
-      ...(data.tags || []),
+      ...new Set([
+        ...(data.muscles || []),
+        ...(data.equipment || []),
+        ...(data.tags || []),
+      ]),
     ];
 
     if (data.muscles || data.equipment || data.tags) {
@@ -450,6 +455,7 @@ export const exerciseService = {
             exerciseId: id,
             attributeValueId,
           })),
+          skipDuplicates: true,
         });
       }
     }

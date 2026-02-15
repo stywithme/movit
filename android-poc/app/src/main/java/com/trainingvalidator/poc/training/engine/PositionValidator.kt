@@ -56,7 +56,8 @@ class PositionValidator(
      */
     fun validate(
         landmarks: List<SmoothedLandmark>,
-        currentPhase: Phase
+        currentPhase: Phase,
+        isBilateralFlipped: Boolean = false
     ): PositionValidationResult {
         if (landmarks.size < 33 || positionChecks.isEmpty()) {
             return PositionValidationResult.empty()
@@ -85,8 +86,9 @@ class PositionValidator(
                 continue
             }
             
-            // Validate the check
-            val result = validateCheck(check, landmarks, cameraResult, effectiveFacing)
+            // Validate the check (mirror landmark names if bilateral is flipped)
+            val effectiveCheck = if (isBilateralFlipped) mirrorCheckLandmarks(check) else check
+            val result = validateCheck(effectiveCheck, landmarks, cameraResult, effectiveFacing)
             
             if (!result.passed && !result.skipped) {
                 // Increment frame count for stability (cap at requiredFrames)
@@ -482,6 +484,21 @@ class PositionValidator(
         // Use JointLandmarkMapping as Single Source of Truth
         val index = JointLandmarkMapping.jointToLandmark(name) ?: return null
         return landmarks.getOrNull(index)
+    }
+    
+    /**
+     * Mirror position check landmark names for bilateral flipping.
+     * Swaps left_* <-> right_* in primary, secondary, tertiary, quaternary.
+     * Shared landmarks (nose, spine, neck, etc.) pass through unchanged.
+     */
+    private fun mirrorCheckLandmarks(check: PositionCheck): PositionCheck {
+        val mirrored = LandmarkGroup(
+            primary = JointAngleTracker.mirrorJointCode(check.landmarks.primary),
+            secondary = JointAngleTracker.mirrorJointCode(check.landmarks.secondary),
+            tertiary = check.landmarks.tertiary?.let { JointAngleTracker.mirrorJointCode(it) },
+            quaternary = check.landmarks.quaternary?.let { JointAngleTracker.mirrorJointCode(it) }
+        )
+        return check.copy(landmarks = mirrored)
     }
     
     private fun calculate3DDistance(l1: SmoothedLandmark, l2: SmoothedLandmark): Float {

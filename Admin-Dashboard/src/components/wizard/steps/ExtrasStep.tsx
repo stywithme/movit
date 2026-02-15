@@ -40,7 +40,7 @@ export function ExtrasStep({ muscles, equipment, tags }: ExtrasStepProps) {
   // Determine exercise type for auto-suggestions
   const isHold = countingMethod.countingMethodCode === 'hold';
   const hasPairedJoints = (jointConfig.trackedJoints || []).some((j) => j.pairedWith);
-  const isBilateral = hasPairedJoints;
+  const isBilateral = bilateralConfig.enabled || hasPairedJoints;
   const hasPositionChecks = (positionChecks.positionChecks || []).length > 0;
   
   const toggleAttribute = (type: 'muscles' | 'equipment' | 'tags', id: string) => {
@@ -314,7 +314,15 @@ export function ExtrasStep({ muscles, equipment, tags }: ExtrasStepProps) {
           <p className="text-sm text-blue-800 font-medium mb-2">Auto-detected exercise type:</p>
           <div className="flex flex-wrap gap-2">
             <Badge variant={isHold ? 'teal' : 'default'}>{isHold ? 'Hold Exercise' : 'Rep-based Exercise'}</Badge>
-            {isBilateral && <Badge variant="purple">Bilateral (Symmetry enabled)</Badge>}
+            {isBilateral && (
+              <Badge variant="purple">
+                {bilateralConfig.enabled && hasPairedJoints
+                  ? 'Bilateral + Paired Joints (Symmetry enabled)'
+                  : bilateralConfig.enabled
+                    ? 'Bilateral (Symmetry enabled)'
+                    : 'Paired Joints (Symmetry enabled)'}
+              </Badge>
+            )}
             {weightConfig.supportsWeight && <Badge variant="orange">Weighted (Volume & 1RM enabled)</Badge>}
             {hasPositionChecks && <Badge variant="primary">Has Position Checks (Alignment enabled)</Badge>}
           </div>
@@ -358,10 +366,10 @@ export function ExtrasStep({ muscles, equipment, tags }: ExtrasStepProps) {
                   disabledReason = 'Enable weight first';
                 }
                 
-                // Bilateral restrictions
+                // Bilateral / paired-joints restrictions
                 if (!isBilateral && metric.code === 'symmetry') {
                   isDisabled = true;
-                  disabledReason = 'Only for bilateral exercises';
+                  disabledReason = 'Enable bilateral mode or add paired joints';
                 }
                 
                 // Position Checks restrictions (Alignment)

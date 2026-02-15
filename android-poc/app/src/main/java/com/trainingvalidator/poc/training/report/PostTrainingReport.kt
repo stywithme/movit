@@ -586,7 +586,11 @@ data class RepTimelineEntry(
     val isInvalidated: Boolean = false,  // DANGER
     
     // State message (shown for non-PERFECT reps)
-    val stateMessage: LocalizedText? = null
+    val stateMessage: LocalizedText? = null,
+
+    // Position check counts (for chart + alignment metrics)
+    val positionWarningCount: Int = 0,
+    val positionErrorCount: Int = 0
 ) {
     fun getFormattedDuration(): String {
         val seconds = durationMs / 1000.0

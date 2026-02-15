@@ -157,9 +157,17 @@ object ReportGenerator {
         exerciseConfig: ExerciseConfig,
         sessionDurationMs: Long,
         frameCaptures: List<FrameCapture> = emptyList(),
-        sessionMetrics: SessionMetrics? = null
+        sessionMetrics: SessionMetrics? = null,
+        weightKg: Float? = null,
+        weightUnit: String = "kg"
     ): PostTrainingReport {
-        val summary = engine.stop()
+        val baseSummary = engine.stop()
+
+        // Attach weight data if provided (TrainingEngine doesn't track weight)
+        val summary = if (weightKg != null && weightKg > 0) {
+            baseSummary.copy(weightKg = weightKg, weightUnit = weightUnit)
+        } else baseSummary
+
         val visibilityStats = engine.getVisibilityStats()
         val cameraWarnings = if (engine.hasPositionChecks()) 1 else 0
         
@@ -242,8 +250,14 @@ object ReportGenerator {
         } else null
         
         // ═══════════════════════════════════════════════════════════════
-        // NEW METRICS (V2) — Extract from SessionMetrics
+        // KINEMATIC & V2 METRICS — Extract from SessionMetrics
         // ═══════════════════════════════════════════════════════════════
+        
+        // Symmetry (0-1000 scale → 0-100%)
+        val avgSymmetry = sessionMetrics?.avgSymmetry?.let { it / 10f }
+        
+        // Trunk Stability (0-1000 scale → 0-100%)
+        val avgStability = sessionMetrics?.avgStability?.let { it / 10f }
         
         val avgTempo = sessionMetrics?.avgTempo
         val avgVelocity = sessionMetrics?.avgVelocity
@@ -256,6 +270,18 @@ object ReportGenerator {
         val positionWarningReps = summary.repDetails.count { it.positionWarningCount > 0 }
         val positionTipReps = summary.repDetails.count { it.positionTipCount > 0 }
         
+        // ═══════════════════════════════════════════════════════════════
+        // WEIGHT & LOAD (from SessionSummary)
+        // ═══════════════════════════════════════════════════════════════
+        val weightKg = summary.weightKg
+        val weightUnit = summary.weightUnit
+        val totalVolume = if (weightKg != null && weightKg > 0) {
+            weightKg * summary.countedReps
+        } else null
+        val est1RM = if (weightKg != null && weightKg > 0 && summary.countedReps > 0) {
+            MetricsCalculator.calculateEst1RM(weightKg, summary.countedReps)
+        } else null
+
         return PerformanceSummary(
             totalReps = summary.totalReps,
             durationMs = durationMs,
@@ -267,7 +293,13 @@ object ReportGenerator {
             countedRatio = summary.countedRatio,
             stateBreakdown = stateBreakdown,
             shouldCelebrate = shouldCelebrate,
+            weightKg = weightKg,
+            weightUnit = weightUnit,
+            totalVolume = totalVolume,
+            est1RM = est1RM,
             avgROM = avgROM,
+            avgSymmetry = avgSymmetry,
+            avgStability = avgStability,
             formConsistency = formConsistency,
             fatigueIndex = fatigueIndex,
             avgTempo = avgTempo,
@@ -416,10 +448,12 @@ object ReportGenerator {
         repDetails: List<RepResult>,
         frameCaptures: List<FrameCapture>
     ): List<BestRepHighlight> {
-        // Sort by score descending
+        // Sort by score descending, then by fewest issues (position warnings/errors)
         val sortedReps = repDetails
             .filter { it.isCounted }
-            .sortedByDescending { it.score }
+            .sortedWith(compareByDescending<RepResult> { it.score }
+                .thenBy { it.positionWarningCount + it.positionErrors.size }
+                .thenBy { it.errors.size })
         
         if (sortedReps.isEmpty()) {
             Log.d(TAG, "No counted reps found")
@@ -449,26 +483,52 @@ object ReportGenerator {
         repDetails: List<RepResult>,
         frameCaptures: List<FrameCapture>
     ): WorstRepHighlight? {
-        // Find rep with lowest score or DANGER/WARNING state
-        val worstRep = repDetails
-            .filter { !it.isCounted || it.isInvalidated }
-            .minByOrNull { it.score }
-            ?: repDetails.minByOrNull { it.score }
-            ?: return null
-        
+        if (repDetails.isEmpty()) return null
+
+        // Compute median rep duration to detect timing anomalies
+        val durations = repDetails.map { calculateRepDuration(it) }.sorted()
+        val medianDuration = if (durations.size >= 2) {
+            durations[durations.size / 2]
+        } else {
+            durations.firstOrNull() ?: 0L
+        }
+
+        // Composite "badness" score: lower is worse, higher is better
+        // Start from rep score, then subtract penalties
+        val worstRep = repDetails.minByOrNull { rep ->
+            val baseFitness = rep.score.toDouble()
+
+            // Penalty for position errors (most severe)
+            val errorPenalty = rep.positionErrors.size * 20.0 +
+                    rep.errors.size * 15.0
+
+            // Penalty for position warnings
+            val warningPenalty = rep.positionWarningCount * 5.0
+
+            // Penalty for timing anomaly (duration deviating from median by > 50%)
+            val repDuration = calculateRepDuration(rep)
+            val timingPenalty = if (medianDuration > 0) {
+                val deviation = kotlin.math.abs(repDuration - medianDuration).toDouble() / medianDuration
+                if (deviation > 0.5) deviation * 10.0 else 0.0
+            } else 0.0
+
+            baseFitness - errorPenalty - warningPenalty - timingPenalty
+        } ?: return null
+
         val primaryError = worstRep.errors.firstOrNull()?.message
             ?: worstRep.positionErrors.firstOrNull()?.message
             ?: StateDisplayConfig.getDisplayInfo(worstRep.worstState).toLocalizedText()
-        
-        val frame = frameCaptures.find { 
-            it.repNumber == worstRep.repNumber && 
-            (it.captureType == CaptureType.ERROR_FRAME || it.captureType == CaptureType.DANGER_FRAME)
-        }
-        
+
+        val frame = frameCaptures.find {
+            it.repNumber == worstRep.repNumber &&
+                (it.captureType == CaptureType.ERROR_FRAME || it.captureType == CaptureType.DANGER_FRAME)
+        } ?: frameCaptures.find { it.repNumber == worstRep.repNumber }
+
         return WorstRepHighlight(
             repNumber = worstRep.repNumber,
             durationMs = calculateRepDuration(worstRep),
-            errorCount = worstRep.getTotalErrorCount(),
+            errorCount = worstRep.getTotalErrorCount()
+                + worstRep.positionWarningCount,     // Include warnings in count
             worstState = worstRep.worstState,
             primaryError = primaryError,
             frameCapture = frame
@@ -628,7 +688,9 @@ object ReportGenerator {
                 score = rep.score,
                 isCounted = rep.isCounted,
                 isInvalidated = rep.isInvalidated,
-                stateMessage = stateMessage
+                stateMessage = stateMessage,
+                positionWarningCount = rep.positionWarningCount,
+                positionErrorCount = rep.positionErrors.size
             )
         }
     }

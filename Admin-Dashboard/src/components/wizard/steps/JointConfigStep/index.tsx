@@ -10,7 +10,7 @@
  * - State-based angle range editors
  */
 
-import { useCallback, useState, useMemo, useEffect, useRef } from 'react';
+import { useCallback, useState, useMemo } from 'react';
 import { useWizardStore } from '../../WizardContext';
 import { buildTrackedJoint, STATE_COLORS, STATE_LABELS } from './joint-templates';
 import { SmartLocalizedInput } from '@/components/forms';
@@ -143,79 +143,6 @@ function getBilateralCode(jointCode: string): string | null {
     }
   }
   return null;
-}
-
-// ============================================
-// SIDE MIRROR MAP (for auto-mirroring)
-// ============================================
-// Maps each sided joint code to its opposite side
-const SIDE_MIRROR: Record<string, string> = {};
-for (const mapping of Object.values(BILATERAL_MAPPING)) {
-  SIDE_MIRROR[mapping.leftJoint] = mapping.rightJoint;
-  SIDE_MIRROR[mapping.rightJoint] = mapping.leftJoint;
-}
-
-/**
- * Auto-mirror single-sided joints to create bilateral pairs.
- * Returns a new array with mirrored joints added, or null if no changes needed.
- */
-function autoMirrorJoints(
-  trackedJoints: TrackedJointData[],
-  isHold: boolean
-): TrackedJointData[] | null {
-  const existingCodes = new Set(trackedJoints.map(j => j.joint));
-  const newJoints = trackedJoints.map(j => ({ ...j })); // shallow clone each
-  let modified = false;
-
-  for (let i = 0; i < trackedJoints.length; i++) {
-    const joint = trackedJoints[i];
-    const mirrorCode = SIDE_MIRROR[joint.joint];
-
-    if (!mirrorCode) continue; // Not a sided joint (e.g., spine, neck)
-
-    if (!existingCodes.has(mirrorCode)) {
-      // Mirror is missing - create it
-      const mirroredJoint = buildTrackedJoint(mirrorCode, joint.role, joint.joint, isHold);
-      // Copy angle ranges and state config from the source joint
-      mirroredJoint.startPose = { ...joint.startPose };
-      if (joint.role === 'primary') {
-        const src = joint as PrimaryTrackedJointData;
-        const dst = mirroredJoint as PrimaryTrackedJointData;
-        dst.stateRanges = JSON.parse(JSON.stringify(src.stateRanges));
-        if (src.stateMessages) {
-          dst.stateMessages = JSON.parse(JSON.stringify(src.stateMessages));
-        }
-      }
-      newJoints.push(mirroredJoint);
-      existingCodes.add(mirrorCode);
-      modified = true;
-
-      // Update the original joint to have pairedWith
-      if (!newJoints[i].pairedWith) {
-        newJoints[i] = { ...newJoints[i], pairedWith: mirrorCode };
-        modified = true;
-      }
-    } else if (!joint.pairedWith) {
-      // Mirror exists but pairedWith is not set - fix it
-      newJoints[i] = { ...newJoints[i], pairedWith: mirrorCode };
-      modified = true;
-    }
-  }
-
-  // Also ensure all mirrored joints have pairedWith set correctly
-  if (modified) {
-    for (let i = 0; i < newJoints.length; i++) {
-      const mirrorCode = SIDE_MIRROR[newJoints[i].joint];
-      if (mirrorCode && !newJoints[i].pairedWith) {
-        const mirrorExists = newJoints.some(j => j.joint === mirrorCode);
-        if (mirrorExists) {
-          newJoints[i] = { ...newJoints[i], pairedWith: mirrorCode };
-        }
-      }
-    }
-  }
-
-  return modified ? newJoints : null;
 }
 
 // Helper: Build UI tabs from tracked joints
@@ -987,35 +914,6 @@ export function JointConfigStep() {
   const isHold = countingMethod.countingMethodCode === 'hold';
   const isBilateralEnabled = Boolean(bilateralConfig.enabled);
 
-  // ============================================
-  // AUTO-MIRROR JOINTS WHEN BILATERAL IS ENABLED
-  // ============================================
-  // When bilateral mode is enabled, automatically create mirrored joints
-  // for any single-sided joints (e.g., right_elbow → left_elbow)
-  const prevBilateralRef = useRef(isBilateralEnabled);
-  
-  useEffect(() => {
-    // Run auto-mirroring when:
-    // 1. Bilateral was just toggled ON, or
-    // 2. Bilateral is ON and joints exist (handles page load with bilateral already enabled)
-    if (!isBilateralEnabled) {
-      prevBilateralRef.current = false;
-      return;
-    }
-
-    if (trackedJoints.length === 0) {
-      prevBilateralRef.current = true;
-      return;
-    }
-
-    const mirrored = autoMirrorJoints(trackedJoints, isHold);
-    if (mirrored) {
-      setJointConfig({ trackedJoints: mirrored });
-    }
-    prevBilateralRef.current = true;
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isBilateralEnabled]); // Only re-run when bilateral mode toggles
-
   // Build UI tabs from tracked joints
   const uiTabs = useMemo(() => buildUITabs(trackedJoints), [trackedJoints]);
 
@@ -1064,21 +962,9 @@ export function JointConfigStep() {
       if (!existingCodes.includes(option.leftJoint)) newJoints.push(leftJoint);
       if (!existingCodes.includes(option.rightJoint)) newJoints.push(rightJoint);
     } else {
-      // Single joint - auto-create mirror if bilateral mode is enabled
-      const mirrorCode = SIDE_MIRROR[option.code];
-      if (isBilateralEnabled && mirrorCode) {
-        // Auto-create bilateral pair: add both the joint and its mirror
-        const sourceJoint = buildTrackedJoint(option.code, role, mirrorCode, isHold);
-        const mirrorJoint = buildTrackedJoint(mirrorCode, role, option.code, isHold);
-
-        const existingCodes = trackedJoints.map(j => j.joint);
-        if (!existingCodes.includes(option.code)) newJoints.push(sourceJoint);
-        if (!existingCodes.includes(mirrorCode)) newJoints.push(mirrorJoint);
-      } else {
-        // Normal single joint (no bilateral)
-        const newJoint = buildTrackedJoint(option.code, role, undefined, isHold);
-        newJoints.push(newJoint);
-      }
+      // Single joint
+      const newJoint = buildTrackedJoint(option.code, role, undefined, isHold);
+      newJoints.push(newJoint);
     }
 
     if (newJoints.length > 0) {
@@ -1087,7 +973,7 @@ export function JointConfigStep() {
       setActiveTabIndex(uiTabs.length);
     }
     setIsDropdownOpen(false);
-  }, [trackedJoints, setJointConfig, isHold, uiTabs.length, isBilateralEnabled]);
+  }, [trackedJoints, setJointConfig, isHold, uiTabs.length]);
 
   // Update joint
   const handleUpdateJoint = useCallback((index: number, joint: TrackedJointData) => {
@@ -1142,8 +1028,8 @@ export function JointConfigStep() {
         <div className="bg-indigo-50 border border-indigo-200 rounded-lg p-4">
           <h4 className="font-semibold text-indigo-900">Bilateral Mode Active</h4>
           <p className="text-sm text-indigo-700 mt-1">
-            Configure joints for the <strong>{bilateralConfig.startSide}</strong> side.
-            Paired joints (left/right) will be auto-mirrored to the opposite side.
+            Configure joints for the <strong>{bilateralConfig.startSide}</strong> side only.
+            The opposite side will be created automatically when you save.
             Shared joints (spine, neck, nose) will be used on both sides.
           </p>
         </div>

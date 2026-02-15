@@ -175,8 +175,9 @@ export function buildExerciseConfig(
     buildPoseVariantConfig(pv, { includeMessages, includeAssignments })
   );
 
-  // Auto-detect bilateral (has paired joints)
-  const isBilateral = detectBilateral(poseVariants);
+  // Bilateral: from explicit DB setting OR auto-detected paired joints
+  const hasPairedJoints = detectBilateral(poseVariants);
+  const isBilateral = hasPairedJoints || !!dbExercise.isBilateral;
 
   const config: ExerciseConfig = {
     name: toLocalizedText(dbExercise.name),
@@ -249,8 +250,8 @@ export function buildExerciseConfig(
     );
   }
 
-  // Include bilateral flag (from auto-detection OR explicit DB setting)
-  if (isBilateral || dbExercise.isBilateral) {
+  // Include bilateral flag
+  if (isBilateral) {
     config.isBilateral = true;
   }
 

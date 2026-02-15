@@ -1085,12 +1085,17 @@ class TrainingActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetection
         // Generate report in background to avoid blocking the main thread
         lifecycleScope.launch(Dispatchers.IO) {
             try {
+                val sessionUpload = viewModel.finalizeAndGetSessionUpload()
+                val sessionMetrics = sessionUpload?.sessionMetrics
+
                 val report = ReportGenerator.generateFromEngine(
                     engine = engine,
                     exerciseConfig = exerciseConfig,
                     sessionDurationMs = sessionDurationMs,
                     frameCaptures = frameCaptures,
-                    sessionMetrics = null  // Skip session metrics in session mode
+                    sessionMetrics = sessionMetrics,
+                    weightKg = viewModel.getWeightKg(),
+                    weightUnit = viewModel.getWeightUnit()
                 )
 
                 val saved = reportStorage?.save(report) ?: false
@@ -2049,7 +2054,9 @@ class TrainingActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetection
                     exerciseConfig = exerciseConfig,
                     sessionDurationMs = viewModel.getSessionDurationMs(),
                     frameCaptures = frameCaptures,
-                    sessionMetrics = sessionMetrics
+                    sessionMetrics = sessionMetrics,
+                    weightKg = viewModel.getWeightKg(),
+                    weightUnit = viewModel.getWeightUnit()
                 )
                 
                 Log.d(TAG, "Report generated: id=${report.id}, accuracy=${report.summary.accuracy}%")
@@ -2397,6 +2404,7 @@ class TrainingActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetection
                     // Update skeleton overlay with JointStateInfo
                     val stateInfos = viewModel.trainingEngine?.jointStateInfos?.value ?: emptyMap()
                     val positionErrors = viewModel.trainingEngine?.positionErrors?.value ?: emptyList()
+                    val bilateralFlipped = viewModel.trainingEngine?.isBilateralFlipped ?: false
                     
                     binding.skeletonOverlay.updateWithStateInfos(
                         smoothedLandmarks = smoothedLandmarks,
@@ -2404,7 +2412,8 @@ class TrainingActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetection
                         inputImageHeight = result.imageHeight,
                         angles = angles,
                         stateInfos = stateInfos,
-                        positionErrors = positionErrors
+                        positionErrors = positionErrors,
+                        bilateralFlipped = bilateralFlipped
                     )
                 }
             } finally {
@@ -2550,6 +2559,7 @@ class TrainingActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetection
                 // Update skeleton overlay with JointStateInfo
                 val stateInfos = viewModel.trainingEngine?.jointStateInfos?.value ?: emptyMap()
                 val positionErrors = viewModel.trainingEngine?.positionErrors?.value ?: emptyList()
+                val bilateralFlipped = viewModel.trainingEngine?.isBilateralFlipped ?: false
                 
                 binding.skeletonOverlay.updateWithStateInfos(
                     smoothedLandmarks = smoothedLandmarks,
@@ -2557,7 +2567,8 @@ class TrainingActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetection
                     inputImageHeight = imageHeight,
                     angles = angles,
                     stateInfos = stateInfos,
-                    positionErrors = positionErrors
+                    positionErrors = positionErrors,
+                    bilateralFlipped = bilateralFlipped
                 )
             }
             

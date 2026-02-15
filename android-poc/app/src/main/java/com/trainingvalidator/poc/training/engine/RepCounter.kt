@@ -91,12 +91,15 @@ class RepCounter(
     private val currentPositionErrors = mutableListOf<PositionError>()
     
     /**
-     * Position check violation counts per severity (for alignment metrics)
-     * WARNING and TIP counts are tracked separately — they don't affect rep scoring
+     * Position check violation tracking per severity (for alignment metrics).
+     * WARNING and TIP are tracked separately — they don't affect rep scoring
      * but provide valuable data for the Alignment Accuracy metric.
+     *
+     * We deduplicate by checkId so a warning that fires for 30+ frames
+     * is counted once, not once per frame.
      */
-    private var currentPositionWarningCount = 0
-    private var currentPositionTipCount = 0
+    private val currentPositionWarningIds = mutableSetOf<String>()
+    private val currentPositionTipIds = mutableSetOf<String>()
     
     /**
      * Worst state reached during current rep
@@ -111,9 +114,25 @@ class RepCounter(
     private var currentTrackingState: JointState = JointState.PERFECT
     
     /**
-     * NEW: Track all joint states for weighted scoring
+     * Track all joint states for weighted scoring.
+     *
+     * IMPORTANT: This is the *instantaneous* snapshot from the latest frame.
+     * It is used only as fallback / for real-time UI display.
      */
     private var currentJointStates: Map<String, JointStateInfo> = emptyMap()
+
+    /**
+     * Accumulated worst state per joint across the entire current rep.
+     *
+     * When a rep completes the joints are typically in TRANSITION (moving
+     * back to start position).  If we scored from the instantaneous
+     * [currentJointStates] all joints would be TRANSITION → skipped →
+     * totalWeight = 0 → score = 0%.
+     *
+     * Instead we keep the worst state each joint reached during the rep
+     * and score from that.
+     */
+    private val repAccumulatedStates = mutableMapOf<String, JointStateInfo>()
     
     /**
      * Phase timings for current rep
@@ -144,19 +163,29 @@ class RepCounter(
      * @param jointStates Map of joint code to its state info
      */
     fun updateJointStates(jointStates: Map<String, JointStateInfo>) {
-        // Store for score calculation
+        // Store instantaneous snapshot (real-time UI / fallback)
         currentJointStates = jointStates
-        
-        // Also update worst state for backward compatibility
+
+        // ── Accumulate worst state per joint across the rep ──────
+        for ((jointCode, stateInfo) in jointStates) {
+            if (stateInfo.state == JointState.TRANSITION) continue
+
+            val existing = repAccumulatedStates[jointCode]
+            if (existing == null || stateInfo.state.isWorseThan(existing.state)) {
+                repAccumulatedStates[jointCode] = stateInfo
+            }
+        }
+
+        // Also update global worst state for backward compatibility
         val worstState = jointStates.values
             .map { it.state }
             .filter { it != JointState.TRANSITION }
             .maxByOrNull { it.priority } ?: JointState.PERFECT
-        
+
         if (worstState.isWorseThan(currentRepWorstState)) {
             currentRepWorstState = worstState
         }
-        
+
         // For HOLD exercises, track time in worst state
         if (isHoldExercise) {
             updateStateTimeTracking(worstState)
@@ -209,18 +238,20 @@ class RepCounter(
     
     /**
      * Record a WARNING-severity position check violation for alignment metrics.
+     * Deduplicated by checkId — counted once per rep regardless of frame count.
      * Does NOT affect rep scoring or counting — only tracked for analytics.
      */
     fun addPositionWarning(error: PositionError) {
-        currentPositionWarningCount++
+        currentPositionWarningIds.add(error.checkId)
     }
-    
+
     /**
      * Record a TIP-severity position check for alignment metrics.
+     * Deduplicated by checkId — counted once per rep regardless of frame count.
      * Does NOT affect rep scoring or counting — only tracked for analytics.
      */
     fun addPositionTip(error: PositionError) {
-        currentPositionTipCount++
+        currentPositionTipIds.add(error.checkId)
     }
     
     /**
@@ -245,8 +276,11 @@ class RepCounter(
             // For hold exercises, calculate from time tracking
             updateStateTimeTracking(currentTrackingState)
             ScoreCalculator.calculateHoldScore(stateTimeTracking).score
+        } else if (repAccumulatedStates.isNotEmpty()) {
+            // Use accumulated worst-per-joint for accuracy
+            ScoreCalculator.calculateRepScore(repAccumulatedStates, primaryJoints).score
         } else if (currentJointStates.isNotEmpty()) {
-            // NEW: Use weighted scoring if we have joint states
+            // Fallback: instantaneous snapshot
             ScoreCalculator.calculateRepScore(currentJointStates, primaryJoints).score
         } else {
             // Fallback: use worst state rate
@@ -289,15 +323,23 @@ class RepCounter(
             score = holdResult.score
             isInvalidated = holdResult.isInvalidated
             isCounted = !isInvalidated && score > 0
+        } else if (repAccumulatedStates.isNotEmpty()) {
+            // Rep-based with weighted scoring — uses accumulated worst per joint
+            val repResult = ScoreCalculator.calculateRepScore(repAccumulatedStates, primaryJoints)
+            score = repResult.score
+            isCounted = repResult.isCounted
+            isInvalidated = repResult.isInvalidated
+
+            Log.d(TAG, "Weighted score: ${score.toInt()}%, worst=${repResult.worstState}, " +
+                    "dangerJoints=${repResult.dangerJoints}, joints=${repAccumulatedStates.size}")
         } else if (currentJointStates.isNotEmpty()) {
-            // NEW: Rep-based with weighted scoring
+            // Fallback: frame snapshot (should rarely happen)
             val repResult = ScoreCalculator.calculateRepScore(currentJointStates, primaryJoints)
             score = repResult.score
             isCounted = repResult.isCounted
             isInvalidated = repResult.isInvalidated
-            
-            Log.d(TAG, "Weighted score: ${score.toInt()}%, worst=${repResult.worstState}, " +
-                    "dangerJoints=${repResult.dangerJoints}")
+
+            Log.d(TAG, "Snapshot score: ${score.toInt()}%, worst=${repResult.worstState}")
         } else {
             // Fallback: Legacy worst state scoring
             val config = StateConfig.getConfig(currentRepWorstState)
@@ -325,8 +367,8 @@ class RepCounter(
             isInvalidated = isInvalidated,
             errors = currentRepErrors.toList(),
             positionErrors = currentPositionErrors.toList(),
-            positionWarningCount = currentPositionWarningCount,
-            positionTipCount = currentPositionTipCount,
+            positionWarningCount = currentPositionWarningIds.size,
+            positionTipCount = currentPositionTipIds.size,
             phaseTimings = currentPhaseTimings
         )
         
@@ -363,14 +405,15 @@ class RepCounter(
     private fun resetCurrentRepTracking() {
         currentRepErrors.clear()
         currentPositionErrors.clear()
-        currentPositionWarningCount = 0
-        currentPositionTipCount = 0
+        currentPositionWarningIds.clear()
+        currentPositionTipIds.clear()
         currentPhaseTimings = emptyMap()
         currentRepWorstState = JointState.PERFECT
         stateTimeTracking.clear()
         lastStateUpdateTime = 0L
         currentTrackingState = JointState.PERFECT
-        currentJointStates = emptyMap()  // Reset joint states
+        currentJointStates = emptyMap()
+        repAccumulatedStates.clear()
     }
     
     // ==================== Query Methods ====================

@@ -101,8 +101,9 @@ export default function NewExercisePage() {
     const store = useWizardStore.getState();
     const isHold = store.countingMethod.countingMethodCode === 'hold';
 
-    // Build tracked joints for API
-    const trackedJointsConfig = (store.jointConfig.trackedJoints || []).map((joint: TrackedJointData) => {
+    // Build tracked joints for API (sent as-is; bilateral mirroring handled at runtime by TrainingEngine)
+    const allJoints = store.jointConfig.trackedJoints || [];
+    const trackedJointsConfig = allJoints.map((joint: TrackedJointData) => {
       if (joint.role === 'primary') {
         if (isHold) {
           return {
@@ -184,8 +185,8 @@ export default function NewExercisePage() {
       tags: store.extras.tags,
       repCountingConfig,
       poseVariants: store.cameraPosition.cameraPositionIds?.map((cameraPositionId, index) => {
-        // All joints go into a single poseVariant (no per-variant splitting)
-        const jointsForVariant = store.jointConfig.trackedJoints || [];
+        // All joints go into a single poseVariant (bilateral mirroring handled at runtime)
+        const jointsForVariant = allJoints;
         const mappedJoints = jointsForVariant.map((joint: TrackedJointData) => {
           if (joint.role === 'primary') {
             if (isHold) {

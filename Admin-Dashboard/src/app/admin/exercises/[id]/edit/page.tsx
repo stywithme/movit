@@ -97,7 +97,7 @@ export default function EditExercisePage() {
         const repConfig = exercise.repCountingConfig as Record<string, number> | null;
         const isHold = exercise.countingMethod?.code === 'hold';
         
-        // Map tracked joints per variant
+        // Map tracked joints per variant (stored as-is; bilateral mirroring handled at runtime)
         const trackedJoints = (firstVariant?.trackedJointsConfig as TrackedJointData[]) || [];
         const jointConfigVariants = (exercise.poseVariants || []).reduce(
           (acc: Record<number, TrackedJointData[]>, variant: { trackedJointsConfig?: TrackedJointData[] }, index: number) => {
@@ -236,8 +236,9 @@ export default function EditExercisePage() {
     const store = useWizardStore.getState();
     const isHold = store.countingMethod.countingMethodCode === 'hold';
     
-    // Build tracked joints for API
-    const trackedJointsConfig = (store.jointConfig.trackedJoints || []).map((joint: TrackedJointData) => {
+    // Build tracked joints for API (sent as-is; bilateral mirroring handled at runtime by TrainingEngine)
+    const allJoints = store.jointConfig.trackedJoints || [];
+    const trackedJointsConfig = allJoints.map((joint: TrackedJointData) => {
       if (joint.role === 'primary') {
         if (isHold) {
           return {
@@ -319,8 +320,8 @@ export default function EditExercisePage() {
       tags: store.extras.tags,
       repCountingConfig,
       poseVariants: store.cameraPosition.cameraPositionIds?.map((cameraPositionId, index) => {
-        // All joints go into a single poseVariant (no per-variant splitting)
-        const jointsForVariant = store.jointConfig.trackedJoints || [];
+        // All joints go into a single poseVariant (bilateral mirroring handled at runtime)
+        const jointsForVariant = allJoints;
         const mappedJoints = jointsForVariant.map((joint: TrackedJointData) => {
           if (joint.role === 'primary') {
             if (isHold) {

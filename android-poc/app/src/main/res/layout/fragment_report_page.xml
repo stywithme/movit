@@ -3,7 +3,7 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@color/background">
+    android:background="#FF000000">
 
     <!-- Full Screen Image -->
     <ImageView
@@ -31,215 +31,234 @@
 
     </LinearLayout>
 
-    <!-- Gradient Overlay (bottom fade) -->
+    <!-- Dark overlay -->
     <View
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:background="@drawable/gradient_report_overlay" />
 
-    <!-- Top Info (Exercise name + Page type) -->
+    <!-- ═══ Top: Exercise name ═══ -->
     <LinearLayout
         android:id="@+id/topInfoContainer"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_gravity="top"
         android:orientation="vertical"
-        android:paddingHorizontal="24dp"
+        android:paddingHorizontal="28dp"
         android:paddingTop="80dp">
 
-        <!-- Page Type Badge (Session / Rep #) -->
         <TextView
             android:id="@+id/tvPageType"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:textColor="@color/text_secondary"
-            android:textSize="14sp"
-            android:textAllCaps="true"
-            android:letterSpacing="0.1"
-            tools:text="REP #2" />
+            android:visibility="gone"
+            tools:text="EXERCISE SUMMARY" />
 
-        <!-- Exercise Name -->
         <TextView
             android:id="@+id/tvExerciseName"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:textColor="@color/text_primary"
-            android:textSize="32sp"
+            android:textColor="#FFFFFFFF"
+            android:textSize="28sp"
             android:textStyle="bold"
-            android:layout_marginTop="4dp"
-            tools:text="Squats" />
+            android:layout_marginTop="6dp"
+            android:fontFamily="sans-serif-black"
+            android:lineSpacingMultiplier="1.05"
+            tools:text="Bicep Curl\nRight Arm" />
 
     </LinearLayout>
 
-    <!-- Bottom Content Overlay - scrollable with max height constraint -->
-    <ScrollView
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_gravity="bottom"
-        android:fillViewport="false"
-        android:scrollbars="none"
-        android:overScrollMode="never">
-        
+    <!-- ═══ Left side: Vertical metrics stack ═══ -->
     <LinearLayout
-        android:id="@+id/bottomOverlay"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:orientation="vertical"
-        android:paddingHorizontal="24dp"
-        android:paddingBottom="120dp"
-        android:paddingTop="16dp">
-
-        <!-- Primary Stats Row -->
-        <LinearLayout
-            android:id="@+id/primaryStatsRow"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:orientation="horizontal"
-            android:gravity="center_vertical"
-            android:background="@drawable/bg_glass_card"
-            android:padding="16dp">
-
-            <!-- Stat 1 -->
-            <LinearLayout
-                android:id="@+id/stat1Container"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:orientation="vertical"
-                android:gravity="center">
-
-                <TextView
-                    android:id="@+id/tvStat1Value"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:textColor="@color/primary"
-                    android:textSize="28sp"
-                    android:textStyle="bold"
-                    tools:text="89%" />
-
-                <TextView
-                    android:id="@+id/tvStat1Label"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:textColor="@color/text_secondary"
-                    android:textSize="12sp"
-                    tools:text="Quality" />
-
-            </LinearLayout>
-
-            <!-- Stat 2 -->
-            <LinearLayout
-                android:id="@+id/stat2Container"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:orientation="vertical"
-                android:gravity="center">
-
-                <TextView
-                    android:id="@+id/tvStat2Value"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:textColor="@color/text_primary"
-                    android:textSize="28sp"
-                    android:textStyle="bold"
-                    tools:text="00:45" />
-
-                <TextView
-                    android:id="@+id/tvStat2Label"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:textColor="@color/text_secondary"
-                    android:textSize="12sp"
-                    tools:text="Duration" />
-
-            </LinearLayout>
-
-            <!-- Stat 3 -->
-            <LinearLayout
-                android:id="@+id/stat3Container"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:orientation="vertical"
-                android:gravity="center">
-
-                <TextView
-                    android:id="@+id/tvStat3Value"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:textColor="@color/text_primary"
-                    android:textSize="28sp"
-                    android:textStyle="bold"
-                    tools:text="4" />
-
-                <TextView
-                    android:id="@+id/tvStat3Label"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:textColor="@color/text_secondary"
-                    android:textSize="12sp"
-                    tools:text="Reps" />
-
-            </LinearLayout>
-
-        </LinearLayout>
-
-        <!-- Message / Insight -->
-        <TextView
-            android:id="@+id/tvMessage"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="16dp"
-            android:textColor="@color/text_primary"
-            android:textSize="16sp"
-            android:gravity="center"
-            android:lineSpacingExtra="4dp"
-            tools:text="🟢 Excellent form! Try adding weight next time." />
-
-        <!-- Secondary Metrics (dynamic) -->
-        <LinearLayout
-            android:id="@+id/secondaryMetricsContainer"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:orientation="vertical"
-            android:layout_marginTop="16dp"
-            android:visibility="gone"
-            tools:visibility="visible">
-
-            <!-- Metrics will be added programmatically -->
-
-        </LinearLayout>
-
-    </LinearLayout>
-    
-    </ScrollView>
-
-    <!-- Page Indicator Dots -->
-    <LinearLayout
-        android:id="@+id/pageIndicatorContainer"
+        android:id="@+id/primaryStatsRow"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_gravity="bottom|center_horizontal"
-        android:layout_marginBottom="90dp"
-        android:orientation="horizontal"
-        android:gravity="center">
+        android:layout_gravity="start|center_vertical"
+        android:orientation="vertical"
+        android:paddingStart="28dp"
+        android:paddingEnd="16dp">
 
-        <!-- Dots will be added programmatically -->
+        <!-- Stat 1: Quality (hero metric — big + accent) -->
+        <LinearLayout
+            android:id="@+id/stat1Container"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:orientation="vertical">
+
+            <TextView
+                android:id="@+id/tvStat1Value"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:textColor="@color/primary"
+                android:textSize="52sp"
+                android:textStyle="bold"
+                android:fontFamily="sans-serif-black"
+                android:includeFontPadding="false"
+                tools:text="75%" />
+
+            <TextView
+                android:id="@+id/tvStat1Label"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:textColor="#80FFFFFF"
+                android:textSize="13sp"
+                android:fontFamily="sans-serif-medium"
+                android:textAllCaps="true"
+                android:letterSpacing="0.1"
+                android:layout_marginTop="0dp"
+                tools:text="Quality" />
+
+        </LinearLayout>
+
+        <!-- Divider line -->
+        <View
+            android:layout_width="40dp"
+            android:layout_height="1dp"
+            android:layout_marginVertical="16dp"
+            android:background="#33FFFFFF" />
+
+        <!-- Stat 2: Reps -->
+        <LinearLayout
+            android:id="@+id/stat2Container"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:orientation="vertical">
+
+            <TextView
+                android:id="@+id/tvStat2Value"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:textColor="#FFFFFFFF"
+                android:textSize="32sp"
+                android:textStyle="bold"
+                android:fontFamily="sans-serif-medium"
+                android:includeFontPadding="false"
+                tools:text="12" />
+
+            <TextView
+                android:id="@+id/tvStat2Label"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:textColor="#80FFFFFF"
+                android:textSize="12sp"
+                android:fontFamily="sans-serif"
+                android:layout_marginTop="2dp"
+                tools:text="Reps" />
+
+        </LinearLayout>
+
+        <!-- Divider line -->
+        <View
+            android:layout_width="40dp"
+            android:layout_height="1dp"
+            android:layout_marginVertical="16dp"
+            android:background="#33FFFFFF" />
+
+        <!-- Stat 3: Weight / Duration -->
+        <LinearLayout
+            android:id="@+id/stat3Container"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:orientation="vertical">
+
+            <TextView
+                android:id="@+id/tvStat3Value"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:textColor="#FFFFFFFF"
+                android:textSize="32sp"
+                android:textStyle="bold"
+                android:fontFamily="sans-serif-medium"
+                android:includeFontPadding="false"
+                tools:text="00:40" />
+
+            <TextView
+                android:id="@+id/tvStat3Label"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:textColor="#80FFFFFF"
+                android:textSize="12sp"
+                android:fontFamily="sans-serif"
+                android:layout_marginTop="2dp"
+                tools:text="Duration" />
+
+        </LinearLayout>
+
+        <!-- Divider before share -->
+        <View
+            android:layout_width="40dp"
+            android:layout_height="1dp"
+            android:layout_marginVertical="20dp"
+            android:background="#33FFFFFF" />
+
+        <!-- Share Button — pill shape, accent border -->
+        <LinearLayout
+            android:id="@+id/btnShareHero"
+            android:layout_width="wrap_content"
+            android:layout_height="44dp"
+            android:orientation="horizontal"
+            android:gravity="center"
+            android:paddingHorizontal="20dp"
+            android:background="@drawable/bg_share_pill"
+            android:clickable="true"
+            android:focusable="true"
+            android:foreground="?attr/selectableItemBackgroundBorderless">
+
+            <ImageView
+                android:layout_width="18dp"
+                android:layout_height="18dp"
+                android:src="@drawable/ic_share"
+                android:importantForAccessibility="no"
+                android:tint="@color/primary" />
+
+            <TextView
+                android:id="@+id/tvShareLabel"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="8dp"
+                android:text="Share"
+                android:textColor="#FFFFFFFF"
+                android:textSize="14sp"
+                android:fontFamily="sans-serif-medium"
+                android:letterSpacing="0.03" />
+
+        </LinearLayout>
 
     </LinearLayout>
 
-    <!-- Swipe Hint -->
+    <!-- ═══ Bottom: Swipe hint ═══ -->
     <TextView
         android:id="@+id/tvSwipeHint"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_gravity="center_horizontal"
-        android:layout_marginBottom="70dp"
-        android:layout_marginTop="8dp"
-        android:text="← Swipe for reps"
-        android:textColor="@color/text_hint"
+        android:layout_gravity="bottom|center_horizontal"
+        android:layout_marginBottom="36dp"
+        android:text="Swipe for details →"
+        android:textColor="#55FFFFFF"
         android:textSize="12sp"
+        android:fontFamily="sans-serif"
+        android:letterSpacing="0.05"
+        android:visibility="gone" />
+
+    <!-- Hidden (binding compatibility) -->
+    <TextView
+        android:id="@+id/tvMessage"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        android:visibility="gone" />
+
+    <LinearLayout
+        android:id="@+id/secondaryMetricsContainer"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        android:orientation="vertical"
+        android:visibility="gone" />
+
+    <LinearLayout
+        android:id="@+id/pageIndicatorContainer"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        android:orientation="horizontal"
         android:visibility="gone" />
 
 </FrameLayout>

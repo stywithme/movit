@@ -45,14 +45,7 @@ object MetricDisplayBuilder {
             status = if (hasNoReps) null else getStatusFromScore(qualityScore)
         ))
         
-        // 2. Duration - always shown
-        stats.add(StatItem(
-            value = summary.getFormattedDuration(),
-            label = if (isArabic) "المدة" else "Duration",
-            isPrimary = false
-        ))
-        
-        // 3. Reps or Hold Duration
+        // 2. Reps or Hold Duration
         if (isHold) {
             val holdSummary = report.holdSummary
             stats.add(StatItem(
@@ -61,11 +54,26 @@ object MetricDisplayBuilder {
                 isPrimary = false
             ))
         } else {
-            // Use totalReps or timeline size (whichever is larger)
             val repsCount = maxOf(summary.totalReps, report.repTimeline.size)
             stats.add(StatItem(
                 value = repsCount.toString(),
                 label = if (isArabic) "العدات" else "Reps",
+                isPrimary = false
+            ))
+        }
+
+        // 3. Weight (if available) or Duration as fallback
+        val formattedWeight = report.summary.getFormattedWeight()
+        if (formattedWeight != null) {
+            stats.add(StatItem(
+                value = formattedWeight,
+                label = if (isArabic) "الوزن" else "Weight",
+                isPrimary = false
+            ))
+        } else {
+            stats.add(StatItem(
+                value = summary.getFormattedDuration(),
+                label = if (isArabic) "المدة" else "Duration",
                 isPrimary = false
             ))
         }

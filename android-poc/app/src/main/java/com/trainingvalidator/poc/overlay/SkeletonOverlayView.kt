@@ -178,6 +178,7 @@ class SkeletonOverlayView @JvmOverloads constructor(
     private var rawTrackedLandmarkIndices: Set<Int> = emptySet()  // Original (non-mirrored) indices
     private var isTrainingMode: Boolean = false
     private var isFrontCamera: Boolean = false  // For mirroring tracked indices
+    private var isBilateralFlipped: Boolean = false  // For bilateral side flipping
     
     // Joint state info for each tracked joint (calculated by FormValidator)
     // NEW: Uses JointStateInfo from unified state system
@@ -300,7 +301,8 @@ class SkeletonOverlayView @JvmOverloads constructor(
         inputImageHeight: Int = 1,
         angles: JointAngles? = null,
         stateInfos: Map<String, JointStateInfo>,
-        positionErrors: List<PositionError> = emptyList()
+        positionErrors: List<PositionError> = emptyList(),
+        bilateralFlipped: Boolean = false
     ) {
         landmarks = smoothedLandmarks
         val dimensionsChanged = imageWidth != inputImageWidth || imageHeight != inputImageHeight
@@ -309,6 +311,7 @@ class SkeletonOverlayView @JvmOverloads constructor(
         jointAngles = angles
         jointStateInfos = stateInfos
         this.positionErrors = positionErrors
+        this.isBilateralFlipped = bilateralFlipped
         // OPTIMIZED: Only recalculate scale factor if dimensions changed
         if (dimensionsChanged) {
             recalculateScaleFactor()
@@ -1024,7 +1027,9 @@ class SkeletonOverlayView @JvmOverloads constructor(
         
         for ((jointCode, stateInfo) in jointStateInfos) {
             // Get the center landmark for this joint
-            val angleLandmarks = JointLandmarkMapping.getLandmarksForAngle(jointCode)
+            // Use bilateral-aware joint code for landmark lookup
+            val landmarkJointCode = getEffectiveLandmarkJointCode(jointCode)
+            val angleLandmarks = JointLandmarkMapping.getLandmarksForAngle(landmarkJointCode)
             if (angleLandmarks.size != 3) continue
             
             val centerIdx = angleLandmarks[1]
@@ -1144,6 +1149,17 @@ class SkeletonOverlayView @JvmOverloads constructor(
     }
     
     /**
+     * Get the effective joint code for landmark lookup, accounting for bilateral flipping.
+     * 
+     * Bilateral flip mirrors the JOINT CODE so we look up landmarks on the opposite side.
+     * E.g., config says "right_elbow" but user is doing left side → look up "left_elbow" landmarks.
+     * Front camera mirroring is applied separately at the INDEX level.
+     */
+    private fun getEffectiveLandmarkJointCode(jointCode: String): String {
+        return if (isBilateralFlipped) mirrorJointCode(jointCode) else jointCode
+    }
+    
+    /**
      * Convert joint code to landmark index
      * Uses JointLandmarkMapping as single source of truth
      */
@@ -1184,8 +1200,9 @@ class SkeletonOverlayView @JvmOverloads constructor(
             // Only show Arc for PRIMARY joints
             if (!stateInfo.isPrimary) continue
             
-            // Get center landmark for this joint
-            val angleLandmarks = JointLandmarkMapping.getLandmarksForAngle(jointCode)
+            // Get center landmark for this joint (bilateral-aware)
+            val landmarkJointCode = getEffectiveLandmarkJointCode(jointCode)
+            val angleLandmarks = JointLandmarkMapping.getLandmarksForAngle(landmarkJointCode)
             if (angleLandmarks.size != 3) continue
             
             val centerIdx = angleLandmarks[1]
@@ -1233,8 +1250,9 @@ class SkeletonOverlayView @JvmOverloads constructor(
             
             val currentAngle = stateInfo.currentAngle
             
-            // Get the 3 landmarks that form this angle
-            val angleLandmarks = JointLandmarkMapping.getLandmarksForAngle(jointCode)
+            // Get the 3 landmarks that form this angle (bilateral-aware)
+            val landmarkJointCode = getEffectiveLandmarkJointCode(jointCode)
+            val angleLandmarks = JointLandmarkMapping.getLandmarksForAngle(landmarkJointCode)
             if (angleLandmarks.size != 3) continue
             
             val (upperIdx, centerIdx, lowerIdx) = angleLandmarks

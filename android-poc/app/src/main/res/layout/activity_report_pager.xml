@@ -46,7 +46,7 @@
             android:textStyle="bold"
             android:gravity="center" />
 
-        <!-- Share Button -->
+        <!-- Share Button (hidden — moved to Hero screen) -->
         <ImageButton
             android:id="@+id/btnShare"
             android:layout_width="48dp"
@@ -54,7 +54,8 @@
             android:background="?attr/selectableItemBackgroundBorderless"
             android:src="@drawable/ic_share"
             android:contentDescription="@string/share"
-            app:tint="@color/text_primary" />
+            app:tint="@color/text_primary"
+            android:visibility="gone" />
 
     </LinearLayout>
 

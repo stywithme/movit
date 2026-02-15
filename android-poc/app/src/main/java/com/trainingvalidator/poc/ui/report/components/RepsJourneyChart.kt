@@ -46,6 +46,15 @@ class RepsJourneyChart @JvmOverloads constructor(
     private val colorHigh = 0xFF4CAF50.toInt()    // Green
     private val colorMedium = 0xFFFFC107.toInt()  // Yellow
     private val colorLow = 0xFFFF5252.toInt()     // Red
+    private val colorWarning = 0xFFFF9800.toInt() // Orange — position warning
+
+    // Marker paints
+    private val bestMarkerPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+        color = 0xFF4CAF50.toInt(); style = Paint.Style.STROKE; strokeWidth = 2f * resources.displayMetrics.density
+    }
+    private val worstMarkerPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+        color = 0xFFFF5252.toInt(); style = Paint.Style.STROKE; strokeWidth = 2f * resources.displayMetrics.density
+    }
     
     // Layout
     private val barRect = RectF()
@@ -81,6 +90,8 @@ class RepsJourneyChart @JvmOverloads constructor(
         
         // Draw bars
         repData.forEachIndexed { index, rep ->
+            val hasPositionIssues = rep.positionWarningCount > 0 || rep.positionErrorCount > 0
+
             // Minimum bar height for visibility (at least 5% if score is 0 but rep exists)
             val minBarRatio = if (rep.score <= 0) 0.05f else rep.score / 100f
             val barHeight = (minBarRatio * chartHeight).coerceAtLeast(8 * resources.displayMetrics.density)
@@ -88,13 +99,22 @@ class RepsJourneyChart @JvmOverloads constructor(
             val top = paddingVertical + (chartHeight - barHeight)
             val right = left + barWidth
             val bottom = paddingVertical + chartHeight
-            
-            // Bar color based on score
-            barPaint.color = getBarColor(rep.score)
-            
+
+            // Bar color — orange for reps with position issues, otherwise score-based
+            barPaint.color = if (hasPositionIssues) colorWarning else getBarColor(rep.score)
+
             barRect.set(left, top, right, bottom)
             canvas.drawRoundRect(barRect, cornerRadius, cornerRadius, barPaint)
-            
+
+            // Best / worst border highlight
+            if (rep.isBestRep) {
+                barRect.inset(-1f, -1f)
+                canvas.drawRoundRect(barRect, cornerRadius, cornerRadius, bestMarkerPaint)
+            } else if (rep.isWorstRep) {
+                barRect.inset(-1f, -1f)
+                canvas.drawRoundRect(barRect, cornerRadius, cornerRadius, worstMarkerPaint)
+            }
+
             // Rep number
             if (barCount <= 15 || index % 2 == 0) {
                 val labelY = bottom + textPaint.textSize + 4 * resources.displayMetrics.density

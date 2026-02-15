@@ -77,59 +77,31 @@ class TrainingEngine(
     // OPTIMIZED: Pre-computed Set for O(1) lookup instead of O(n) any{} on every frame
     private val primaryJointCodes: Set<String> = primaryJoints.map { it.joint }.toSet()
     
-    // ==================== Bilateral Joint Grouping ====================
+    // ==================== Bilateral Runtime Flipping ====================
     
     private val isBilateral: Boolean = exerciseConfig.isBilateral
     private val bilateralConfig: BilateralConfig? = exerciseConfig.bilateralConfig
     
-    /** Joints that belong to the left side (joint code starts with "left_") */
-    private val leftJoints: List<TrackedJoint> = trackedJoints.filter { it.joint.startsWith("left_") }
-    /** Joints that belong to the right side (joint code starts with "right_") */
-    private val rightJoints: List<TrackedJoint> = trackedJoints.filter { it.joint.startsWith("right_") }
-    /** Shared joints (spine, neck, nose, etc.) - active on both sides */
-    private val sharedJoints: List<TrackedJoint> = trackedJoints.filter { 
-        !it.joint.startsWith("left_") && !it.joint.startsWith("right_") 
-    }
-    
-    /** Current active side for bilateral exercises */
-    private var _currentBilateralSide: BilateralSide = when (bilateralConfig?.startSide) {
+    /** The startSide from config (e.g., "right") — this is the side the joints are configured for */
+    private val bilateralStartSide: BilateralSide = when (bilateralConfig?.startSide) {
         "left" -> BilateralSide.LEFT
         else -> BilateralSide.RIGHT
     }
+    
+    /** Current active side for bilateral exercises */
+    private var _currentBilateralSide: BilateralSide = bilateralStartSide
     
     /** Observable current bilateral side */
     private val _bilateralSide = MutableStateFlow(_currentBilateralSide)
     val bilateralSide: StateFlow<BilateralSide> = _bilateralSide
     
     /**
-     * Get active joints for the current bilateral side.
-     * For non-bilateral exercises, returns all tracked joints.
+     * Whether the current bilateral side is flipped relative to the configured side.
+     * When true, JointAngleTracker reads the OPPOSITE side's angles and
+     * the overlay should draw indicators on the mirrored landmarks.
      */
-    private fun getActiveJoints(): List<TrackedJoint> {
-        if (!isBilateral) return trackedJoints
-        return when (_currentBilateralSide) {
-            BilateralSide.LEFT -> leftJoints + sharedJoints
-            BilateralSide.RIGHT -> rightJoints + sharedJoints
-        }
-    }
-    
-    /**
-     * Get active joint codes for the current bilateral side (for filtering).
-     */
-    private fun getActiveJointCodes(): Set<String> {
-        return getActiveJoints().map { it.joint }.toSet()
-    }
-    
-    /**
-     * Get active primary joint codes for the current bilateral side.
-     */
-    private fun getActivePrimaryJointCodes(): Set<String> {
-        if (!isBilateral) return primaryJointCodes
-        return getActiveJoints()
-            .filter { it.role == JointRole.PRIMARY }
-            .map { it.joint }
-            .toSet()
-    }
+    val isBilateralFlipped: Boolean
+        get() = isBilateral && _currentBilateralSide != bilateralStartSide
     
     /**
      * Effective target reps: override takes precedence, then exercise config
@@ -749,13 +721,8 @@ class TrainingEngine(
             }
             
             // 1. Extract tracked joint angles (raw) - MUST happen first for arrowInfos
-            // For bilateral exercises, only extract angles for the active side's joints
-            val activeJointCodes = if (isBilateral) getActiveJointCodes() else null
-            val rawTrackedAngles = if (activeJointCodes != null) {
-                jointTracker.extractTrackedAngles(angles, activeJointCodes)
-            } else {
-                jointTracker.extractTrackedAngles(angles)
-            }
+            // For bilateral exercises, reads the OPPOSITE side's angles when flipped
+            val rawTrackedAngles = jointTracker.extractTrackedAngles(angles, isBilateralFlipped)
             
             if (rawTrackedAngles.isEmpty()) {
                 return
@@ -767,10 +734,9 @@ class TrainingEngine(
             _currentAngles.value = smoothedAngles
             
             // 3. Extract primary joint angles (from smoothed)
-            // For bilateral exercises, use the active side's primary joint codes
-            val activePrimaryJointCodes = if (isBilateral) getActivePrimaryJointCodes() else primaryJointCodes
+            // Config keys are the same regardless of bilateral flip
             val primaryAngles = smoothedAngles.filterKeys { jointCode ->
-                activePrimaryJointCodes.contains(jointCode)
+                primaryJointCodes.contains(jointCode)
             }
             
             // 4. Check if in start position (using smoothed angles)
@@ -894,7 +860,7 @@ class TrainingEngine(
             
             // 8. Position validation (if landmarks provided and validator exists)
             val positionValidation = if (landmarks != null && positionValidator != null) {
-                positionValidator.validate(landmarks, currentPhase)
+                positionValidator.validate(landmarks, currentPhase, isBilateralFlipped)
             } else null
             
             // Update position-related state flows
