@@ -104,8 +104,12 @@ class TrainingActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetection
         // Session mode extras
         const val EXTRA_IS_SESSION_MODE = "is_session_mode"
         const val EXTRA_SESSION_ITEMS_JSON = "session_items_json"
+
+        // Assessment mode: skip report page, return report ID via result
+        const val EXTRA_ASSESSMENT_MODE = "assessment_mode"
         
         // Result extras
+        const val RESULT_REPORT_ID = "report_id"
         const val RESULT_REPS_COMPLETED = "reps_completed"
         const val RESULT_DURATION_MS = "duration_ms"
         const val RESULT_ACCURACY = "accuracy"
@@ -158,6 +162,9 @@ class TrainingActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetection
     private var lastCompletedSessionSetRunId: Long = -1L
     private var isWeightDialogVisible = false
     private var hasShownWeightDialog = false
+
+    // Assessment mode (suppresses report page, returns report ID)
+    private var isAssessmentMode = false
 
     // Session mode state
     private var isSessionMode = false
@@ -357,6 +364,9 @@ class TrainingActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetection
         val indicatorType = intent.getStringExtra(EXTRA_INDICATOR_TYPE) 
             ?: com.trainingvalidator.poc.training.config.SettingsManager.getIndicatorType()
         binding.skeletonOverlay.setIndicatorType(indicatorType)
+
+        // Assessment mode flag
+        isAssessmentMode = intent.getBooleanExtra(EXTRA_ASSESSMENT_MODE, false)
 
         // ── SESSION MODE ──
         isSessionMode = intent.getBooleanExtra(EXTRA_IS_SESSION_MODE, false)
@@ -1241,6 +1251,8 @@ class TrainingActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetection
                 if (::landmarkSmoother.isInitialized) {
                     landmarkSmoother.reset()
                 }
+                // Keep overlay mirroring in sync with the active camera
+                binding.skeletonOverlay.updateFrontCameraState(useFrontCamera)
                 tvCurrentCamera.text = if (useFrontCamera) getString(R.string.front_camera) else getString(R.string.back_camera)
             }
         }
@@ -2068,6 +2080,17 @@ class TrainingActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetection
                 launch(Dispatchers.Main) {
                     binding.glassmorphicMessage.hide()
                     
+                    if (isAssessmentMode) {
+                        // Assessment mode: return report ID without showing report page
+                        val resultIntent = android.content.Intent().apply {
+                            putExtra(RESULT_REPORT_ID, report.id)
+                            putExtra(RESULT_IS_COMPLETED, true)
+                        }
+                        setResult(RESULT_OK, resultIntent)
+                        finish()
+                        return@launch
+                    }
+
                     if (saved) {
                         Log.d(TAG, "Navigating to ReportPagerActivity with id: ${report.id}")
                         
@@ -2375,19 +2398,19 @@ class TrainingActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetection
                 val smoothedLandmarks = landmarkSmoother.smooth(result.landmarks, result.timestampMs)
                 
                 val worldLandmarks = result.worldLandmarks?.let {
-                    landmarkSmoother.convertWorld(it)
+                    landmarkSmoother.convertWorld(it, result.timestampMs)
                 }
                 
                 val rawAngles = if (worldLandmarks != null) {
                     AngleCalculator.calculateAllAnglesSmoothed(
                         worldLandmarks,
-                        visibilityThreshold = 0.3f,
+                        visibilityThreshold = 0.5f,
                         use3D = true
                     )
                 } else {
                     AngleCalculator.calculateAllAnglesSmoothed(
                         smoothedLandmarks,
-                        visibilityThreshold = 0.3f
+                        visibilityThreshold = 0.5f
                     )
                 }
                 

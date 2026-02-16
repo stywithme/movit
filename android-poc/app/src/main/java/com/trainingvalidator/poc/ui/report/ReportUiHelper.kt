@@ -263,6 +263,56 @@ object ReportUiHelper {
         }
     }
 
+    // ─── Arc gauge (wraps ArcGaugeView for quick use) ─────────
+    fun arcGauge(context: Context, score: Float, sizeDp: Int = 72, label: String? = null): com.trainingvalidator.poc.ui.report.components.ArcGaugeView {
+        return com.trainingvalidator.poc.ui.report.components.ArcGaugeView(context).apply {
+            layoutParams = LinearLayout.LayoutParams(dp(context, sizeDp), dp(context, sizeDp))
+            setScore(score, label)
+        }
+    }
+
+    // ─── Metric chip (compact: label + value + optional color dot) ─
+    fun metricChip(
+        context: Context,
+        label: String,
+        value: String,
+        color: Int? = null
+    ): LinearLayout {
+        val dp = { v: Int -> dp(context, v) }
+        return LinearLayout(context).apply {
+            orientation = LinearLayout.HORIZONTAL
+            gravity = Gravity.CENTER_VERTICAL
+            layoutParams = LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.WRAP_CONTENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT
+            ).apply { marginEnd = dp(12) }
+            setPadding(dp(10), dp(5), dp(10), dp(5))
+            background = GradientDrawable().apply {
+                setColor(0x0DFFFFFF)
+                cornerRadius = dp(8).toFloat()
+            }
+
+            addView(TextView(context).apply {
+                text = label; textSize = 11f; setTextColor(TEXT_MUTED)
+            })
+            addView(TextView(context).apply {
+                text = value; textSize = 13f; setTextColor(TEXT_WHITE)
+                setTypeface(typeface, android.graphics.Typeface.BOLD)
+                setPadding(dp(4), 0, 0, 0)
+            })
+            color?.let { c ->
+                addView(View(context).apply {
+                    layoutParams = LinearLayout.LayoutParams(dp(6), dp(6)).apply {
+                        marginStart = dp(5)
+                    }
+                    background = GradientDrawable().apply {
+                        shape = GradientDrawable.OVAL; setColor(c)
+                    }
+                })
+            }
+        }
+    }
+
     // ─── Colour from score ──────────────────────────────────────
     fun colorFromScore(score: Float): Int = when {
         score >= 90 -> GREEN

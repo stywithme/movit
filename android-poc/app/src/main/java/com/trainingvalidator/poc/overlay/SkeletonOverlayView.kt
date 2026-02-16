@@ -385,6 +385,25 @@ class SkeletonOverlayView @JvmOverloads constructor(
     }
     
     /**
+     * Update front camera state without resetting training mode.
+     * Call this when camera is switched mid-training to keep overlay
+     * mirroring in sync with the active camera.
+     */
+    fun updateFrontCameraState(useFrontCamera: Boolean) {
+        if (isFrontCamera == useFrontCamera) return
+        isFrontCamera = useFrontCamera
+        
+        // Recompute mirrored tracked indices
+        trackedLandmarkIndices = if (useFrontCamera) {
+            rawTrackedLandmarkIndices.map { BodyLandmarks.getMirroredIndex(it) }.toSet()
+        } else {
+            rawTrackedLandmarkIndices
+        }
+        
+        invalidate()
+    }
+    
+    /**
      * Update state infos (for real-time feedback)
      * NEW: Uses JointStateInfo from unified state system
      */

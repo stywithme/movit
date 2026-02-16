@@ -283,23 +283,22 @@ class MainActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetectionList
                 result.timestampMs
             )
             
-            // Convert world landmarks WITHOUT smoothing (they're already stable)
+            // Convert and smooth world landmarks (One Euro Filter for stable 3D angles)
             val worldLandmarks = result.worldLandmarks?.let {
-                landmarkSmoother.convertWorld(it)
+                landmarkSmoother.convertWorld(it, result.timestampMs)
             }
             
             // Calculate angles using world landmarks (3D) if available
-            // Using lower visibility threshold (0.3) for angles to show more often
             val rawAngles = if (worldLandmarks != null) {
                 AngleCalculator.calculateAllAnglesSmoothed(
                     worldLandmarks, 
-                    visibilityThreshold = 0.3f,
+                    visibilityThreshold = 0.5f,
                     use3D = true
                 )
             } else {
                 AngleCalculator.calculateAllAnglesSmoothed(
                     smoothedLandmarks,
-                    visibilityThreshold = 0.3f
+                    visibilityThreshold = 0.5f
                 )
             }
             

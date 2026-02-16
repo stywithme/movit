@@ -32,6 +32,11 @@ class LandmarkSmoother(
     // Array is faster than Map for integer-indexed lookups
     private val landmarkFilters = arrayOfNulls<OneEuroFilter3D>(NUM_LANDMARKS)
     
+    // Separate filters for world landmarks (3D meter-scale coordinates)
+    // World landmarks need their own smoothing because they operate in a different
+    // coordinate space and their Z values can be particularly noisy
+    private val worldLandmarkFilters = arrayOfNulls<OneEuroFilter3D>(NUM_LANDMARKS)
+    
     // Legacy EMA storage
     private var previousLandmarks: MutableList<SmoothedLandmark>? = null
     
@@ -132,21 +137,48 @@ class LandmarkSmoother(
     }
     
     /**
-     * Convert world landmarks to SmoothedLandmark
+     * Convert and smooth world landmarks to SmoothedLandmark
      * 
-     * World landmarks are in meters and generally more stable,
-     * so we apply lighter smoothing or none.
+     * World landmarks are in meters and generally more stable than normalized,
+     * but still exhibit jitter (especially Z-axis depth estimates).
+     * Applying One Euro Filter ensures angle calculations derived from these
+     * landmarks are stable and consistent frame-to-frame.
+     * 
+     * @param landmarks Raw world landmarks from MediaPipe
+     * @param timestamp Current frame timestamp in milliseconds (for filter rate)
      */
-    fun convertWorld(landmarks: List<Landmark>): List<SmoothedLandmark> {
-        return appendVirtualLandmarks(landmarks.map { landmark ->
-            SmoothedLandmark(
-                x = landmark.x(),
-                y = landmark.y(),
-                z = landmark.z(),
-                visibility = landmark.visibility().orElse(0f),
-                presence = landmark.presence().orElse(0f)
+    fun convertWorld(landmarks: List<Landmark>, timestamp: Long): List<SmoothedLandmark> {
+        val result = landmarks.mapIndexed { index, landmark ->
+            val visibility = landmark.visibility().orElse(0f)
+            val presence = landmark.presence().orElse(0f)
+            
+            // Get or create filter for this world landmark
+            var filter = if (index < NUM_LANDMARKS) worldLandmarkFilters[index] else null
+            if (filter == null) {
+                filter = OneEuroFilter3D(minCutoff, beta)
+                if (index < NUM_LANDMARKS) {
+                    worldLandmarkFilters[index] = filter
+                }
+            }
+            
+            // Apply adaptive filtering
+            val (smoothX, smoothY, smoothZ) = filter.filter(
+                landmark.x(),
+                landmark.y(),
+                landmark.z(),
+                timestamp
             )
-        })
+            
+            SmoothedLandmark(
+                x = smoothX,
+                y = smoothY,
+                z = smoothZ,
+                visibility = visibility,
+                presence = presence
+            )
+        }
+        
+        return appendVirtualLandmarks(result)
     }
     
     /**
@@ -197,6 +229,10 @@ class LandmarkSmoother(
             landmarkFilters[i]?.reset()
             landmarkFilters[i] = null
         }
+        for (i in worldLandmarkFilters.indices) {
+            worldLandmarkFilters[i]?.reset()
+            worldLandmarkFilters[i] = null
+        }
         previousLandmarks = null
     }
     
@@ -208,6 +244,9 @@ class LandmarkSmoother(
         // Clear filters to use new parameters on next frame
         for (i in landmarkFilters.indices) {
             landmarkFilters[i] = null
+        }
+        for (i in worldLandmarkFilters.indices) {
+            worldLandmarkFilters[i] = null
         }
     }
     

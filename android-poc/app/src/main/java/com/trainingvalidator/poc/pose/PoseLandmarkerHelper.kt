@@ -16,6 +16,7 @@ import com.google.mediapipe.tasks.core.Delegate
 import com.google.mediapipe.tasks.vision.core.RunningMode
 import com.google.mediapipe.tasks.vision.poselandmarker.PoseLandmarker
 import com.google.mediapipe.tasks.vision.poselandmarker.PoseLandmarkerResult
+import java.util.concurrent.ConcurrentHashMap
 
 /**
  * ModelType - Enum for supported MediaPipe models
@@ -73,10 +74,11 @@ class PoseLandmarkerHelper(
     private var lastImageWidth = 0
     private var lastImageHeight = 0
     
-    // Store front camera state for result callback
-    // This is needed to correctly swap LEFT/RIGHT landmarks for angle calculation
-    @Volatile
-    private var lastIsFrontCamera = false
+    // Per-frame camera state: maps frame timestamp → isFrontCamera
+    // This avoids a race condition where detectAsync() is called with a new frame
+    // (updating a shared variable) before onPoseResult() returns for the previous frame.
+    // Using ConcurrentHashMap ensures each frame's result is paired with the correct camera state.
+    private val frameCameraState = ConcurrentHashMap<Long, Boolean>()
     
     // Reusable bitmap buffer to reduce GC pressure
     private var bitmapBuffer: Bitmap? = null
@@ -151,11 +153,12 @@ class PoseLandmarkerHelper(
         }
 
         try {
-            // Store front camera state for result callback
-            lastIsFrontCamera = isFrontCamera
-            
             // Use SystemClock.uptimeMillis() for consistent timestamps (Google's approach)
             val frameTime = SystemClock.uptimeMillis()
+            
+            // Store front camera state keyed by this frame's timestamp
+            // Will be retrieved in onPoseResult() when the async callback fires
+            frameCameraState[frameTime] = isFrontCamera
             
             // Get or create bitmap buffer matching the ImageProxy dimensions
             val buffer = bitmapBuffer?.takeIf { 
@@ -239,6 +242,10 @@ class PoseLandmarkerHelper(
         val frameTimestampMs = result.timestampMs()
         val inferenceTime = finishTimeMs - frameTimestampMs
         
+        // Retrieve and remove the camera state for THIS specific frame
+        // This eliminates the race condition with the old @Volatile approach
+        val isFrontCamera = frameCameraState.remove(frameTimestampMs) ?: false
+        
         if (result.landmarks().isEmpty()) {
             listener.onNoPoseDetected()
             return
@@ -260,7 +267,7 @@ class PoseLandmarkerHelper(
                 imageWidth = input.width,
                 imageHeight = input.height,
                 modelType = currentModelType.displayName,
-                isFrontCamera = lastIsFrontCamera
+                isFrontCamera = isFrontCamera
             )
         )
     }
@@ -280,6 +287,9 @@ class PoseLandmarkerHelper(
         poseLandmarker?.close()
         poseLandmarker = null
         isInitialized = false
+        
+        // Clear per-frame camera state
+        frameCameraState.clear()
         
         // Clean up pooled bitmaps to free memory
         transformedBitmapPool.forEachIndexed { i, bmp ->

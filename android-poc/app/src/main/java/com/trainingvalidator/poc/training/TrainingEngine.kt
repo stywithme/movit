@@ -860,7 +860,7 @@ class TrainingEngine(
             
             // 8. Position validation (if landmarks provided and validator exists)
             val positionValidation = if (landmarks != null && positionValidator != null) {
-                positionValidator.validate(landmarks, currentPhase, isBilateralFlipped)
+                positionValidator.validate(landmarks, currentPhase, isBilateralFlipped, isFrontCamera)
             } else null
             
             // Update position-related state flows

@@ -2,6 +2,7 @@ import { NestFactory } from '@nestjs/core';
 import cookieParser from 'cookie-parser';
 import os from 'os';
 import { AppModule } from './app.module';
+import { RequestLoggingInterceptor } from './lib/interceptors/request-logging.interceptor';
 
 function getLanIp(): string | null {
   const interfaces = os.networkInterfaces();
@@ -19,6 +20,7 @@ function getLanIp(): string | null {
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
   app.setGlobalPrefix('api');
+  app.useGlobalInterceptors(new RequestLoggingInterceptor());
   app.use(cookieParser());
   app.enableCors({
     origin: process.env.ADMIN_APP_ORIGIN?.split(',') || true,

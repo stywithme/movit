@@ -16,6 +16,11 @@ export const muscleCodeMap: Record<string, string> = {
 };
 
 export const muscleNameMap: Record<string, { ar: string; en: string }> = {
+  hip_flexors: { ar: 'قابضات الورك', en: 'Hip Flexors' },
+  rotator_cuff: { ar: 'الكفّة المدوّرة', en: 'Rotator Cuff' },
+  upper_back: { ar: 'أعلى الظهر', en: 'Upper Back' },
+  lower_back: { ar: 'أسفل الظهر', en: 'Lower Back' },
+  ankle_stabilizers: { ar: 'ثبات الكاحل', en: 'Ankle Stabilizers' },
   chest: { ar: 'الصدر', en: 'Chest' },
   shoulders: { ar: 'الأكتاف', en: 'Shoulders' },
   arms: { ar: 'الذراعين', en: 'Arms' },
@@ -36,6 +41,10 @@ export const equipmentNameMap: Record<string, { ar: string; en: string }> = {
 };
 
 export const tagNameMap: Record<string, { ar: string; en: string }> = {
+  assessment: { ar: 'تقييم', en: 'Assessment' },
+  bilateral: { ar: 'ثنائي', en: 'Bilateral' },
+  flexibility: { ar: 'مرونة', en: 'Flexibility' },
+  mobility: { ar: 'مرونة حركية', en: 'Mobility' },
   compound: { ar: 'مركب', en: 'Compound' },
   upper_body: { ar: 'الجزء العلوي', en: 'Upper Body' },
   lower_body: { ar: 'الجزء السفلي', en: 'Lower Body' },

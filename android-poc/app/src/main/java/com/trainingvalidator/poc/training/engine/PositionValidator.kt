@@ -57,7 +57,8 @@ class PositionValidator(
     fun validate(
         landmarks: List<SmoothedLandmark>,
         currentPhase: Phase,
-        isBilateralFlipped: Boolean = false
+        isBilateralFlipped: Boolean = false,
+        isFrontCamera: Boolean = false
     ): PositionValidationResult {
         if (landmarks.size < 33 || positionChecks.isEmpty()) {
             return PositionValidationResult.empty()
@@ -86,8 +87,12 @@ class PositionValidator(
                 continue
             }
             
-            // Validate the check (mirror landmark names if bilateral is flipped)
-            val effectiveCheck = if (isBilateralFlipped) mirrorCheckLandmarks(check) else check
+            // Mirror landmark names when needed:
+            // - Bilateral flip: config says right_elbow but user is doing left side
+            // - Front camera: image is mirrored, so MediaPipe's left = person's right
+            // XOR: if both active, they cancel out (double mirror = no mirror)
+            val shouldMirrorLandmarks = isBilateralFlipped xor isFrontCamera
+            val effectiveCheck = if (shouldMirrorLandmarks) mirrorCheckLandmarks(check) else check
             val result = validateCheck(effectiveCheck, landmarks, cameraResult, effectiveFacing)
             
             if (!result.passed && !result.skipped) {

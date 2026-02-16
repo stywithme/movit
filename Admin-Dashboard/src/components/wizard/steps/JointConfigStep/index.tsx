@@ -54,8 +54,8 @@ const JOINT_OPTIONS: JointOption[] = [
   { code: 'shoulders_cross', label: { ar: 'الكتفين (تقاطع)', en: 'Shoulders Cross (Both)' }, type: 'bilateral', leftJoint: 'left_shoulder_cross', rightJoint: 'right_shoulder_cross' },
   { code: 'elbows', label: { ar: 'الكوعين', en: 'Elbows (Both)' }, type: 'bilateral', leftJoint: 'left_elbow', rightJoint: 'right_elbow' },
   { code: 'wrists', label: { ar: 'الرسغين', en: 'Wrists (Both)' }, type: 'bilateral', leftJoint: 'left_wrist', rightJoint: 'right_wrist' },
-  { code: 'hips', label: { ar: 'الوركين', en: 'Hips (Both)' }, type: 'bilateral', leftJoint: 'left_hip', rightJoint: 'right_hip' },
   { code: 'knees', label: { ar: 'الركبتين', en: 'Knees (Both)' }, type: 'bilateral', leftJoint: 'left_knee', rightJoint: 'right_knee' },
+  { code: 'hips', label: { ar: 'الوركين', en: 'Hips (Both)' }, type: 'bilateral', leftJoint: 'left_hip', rightJoint: 'right_hip' },
   { code: 'ankles', label: { ar: 'الكاحلين', en: 'Ankles (Both)' }, type: 'bilateral', leftJoint: 'left_ankle', rightJoint: 'right_ankle' },
   { code: 'heels', label: { ar: 'الكعبين', en: 'Heels (Both)' }, type: 'bilateral', leftJoint: 'left_heel', rightJoint: 'right_heel' },
   { code: 'foot_indexes', label: { ar: 'أصابع القدمين', en: 'Foot Indexes (Both)' }, type: 'bilateral', leftJoint: 'left_foot_index', rightJoint: 'right_foot_index' },
@@ -932,16 +932,16 @@ export function JointConfigStep() {
     return errors;
   }, [trackedJoints, hasPrimary]);
 
-  // Get available joints (not already added)
+  // Get all joints with "already added" status (show all, disable already-added ones)
   const availableJoints = useMemo(() => {
     const existingCodes = trackedJoints.map(j => j.joint);
-    return JOINT_OPTIONS.filter(opt => {
-      if (opt.code.startsWith('divider')) return true;
+    return JOINT_OPTIONS.map(opt => {
+      if (opt.code.startsWith('divider')) return { ...opt, alreadyAdded: false };
       if (opt.type === 'bilateral') {
-        // Hide if both joints already exist
-        return !existingCodes.includes(opt.leftJoint!) || !existingCodes.includes(opt.rightJoint!);
+        const bothExist = existingCodes.includes(opt.leftJoint!) && existingCodes.includes(opt.rightJoint!);
+        return { ...opt, alreadyAdded: bothExist };
       }
-      return !existingCodes.includes(opt.code);
+      return { ...opt, alreadyAdded: existingCodes.includes(opt.code) };
     });
   }, [trackedJoints]);
 
@@ -1066,7 +1066,7 @@ export function JointConfigStep() {
               className="fixed inset-0 z-10"
               onClick={() => setIsDropdownOpen(false)}
             />
-            <div className="absolute top-full left-0 mt-2 w-72 bg-white border border-gray-200 rounded-xl shadow-xl z-20 max-h-96 overflow-y-auto">
+            <div className="absolute top-full left-0 mt-2 w-72 bg-white border border-gray-200 rounded-xl shadow-xl z-20 max-h-[32rem] overflow-y-auto">
               {availableJoints.map((option) => {
                 if (option.code.startsWith('divider')) {
                   return (
@@ -1076,33 +1076,47 @@ export function JointConfigStep() {
                   );
                 }
 
+                const isAdded = option.alreadyAdded;
+
                 return (
                   <button
                     key={option.code}
                     type="button"
-                    onClick={() => handleAddJoint(option)}
-                    className="w-full px-4 py-3 text-left hover:bg-blue-50 transition-colors flex items-center gap-3"
+                    onClick={() => !isAdded && handleAddJoint(option)}
+                    disabled={isAdded}
+                    className={`w-full px-4 py-3 text-left transition-colors flex items-center gap-3 ${
+                      isAdded
+                        ? 'opacity-50 cursor-not-allowed bg-gray-50'
+                        : 'hover:bg-blue-50 cursor-pointer'
+                    }`}
                   >
-                    <span className={`w-8 h-8 rounded-full flex items-center justify-center text-sm ${option.type === 'bilateral'
-                      ? 'bg-purple-100 text-purple-600'
-                      : 'bg-gray-100 text-gray-600'
+                    <span className={`w-8 h-8 rounded-full flex items-center justify-center text-sm ${
+                      isAdded
+                        ? 'bg-gray-200 text-gray-400'
+                        : option.type === 'bilateral'
+                          ? 'bg-purple-100 text-purple-600'
+                          : 'bg-gray-100 text-gray-600'
                       }`}>
-                      {option.type === 'bilateral' ? '⟷' : '•'}
+                      {isAdded ? '✓' : option.type === 'bilateral' ? '⟷' : '•'}
                     </span>
-                    <div>
-                      <div className="font-medium text-gray-800">{option.label.en}</div>
+                    <div className="flex-1 min-w-0">
+                      <div className={`font-medium ${isAdded ? 'text-gray-400' : 'text-gray-800'}`}>{option.label.en}</div>
                       <div className="text-xs text-gray-500">{option.label.ar}</div>
                     </div>
-                    {option.type === 'bilateral' && (
+                    {isAdded ? (
+                      <span className="ml-auto text-xs bg-green-100 text-green-600 px-2 py-0.5 rounded-full whitespace-nowrap">
+                        Added
+                      </span>
+                    ) : option.type === 'bilateral' ? (
                       <span className="ml-auto text-xs bg-purple-100 text-purple-600 px-2 py-0.5 rounded-full">
                         Pair
                       </span>
-                    )}
+                    ) : null}
                   </button>
                 );
               })}
 
-              {availableJoints.filter(o => !o.code.startsWith('divider')).length === 0 && (
+              {availableJoints.filter(o => !o.code.startsWith('divider') && !o.alreadyAdded).length === 0 && (
                 <div className="px-4 py-6 text-center text-gray-500">
                   All joints added
                 </div>

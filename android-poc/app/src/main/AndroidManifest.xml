@@ -216,6 +216,31 @@
             android:screenOrientation="portrait"
             android:theme="@style/Theme.WayToFix" />
 
+        <!-- ═══════════════════════════════════════════════════ -->
+        <!-- BODY SCAN / ASSESSMENT -->
+        <!-- ═══════════════════════════════════════════════════ -->
+
+        <!-- PAR-Q+ Pre-Screening -->
+        <activity
+            android:name=".assessment.ui.PreScreeningActivity"
+            android:exported="false"
+            android:screenOrientation="portrait"
+            android:theme="@style/Theme.WayToFix" />
+
+        <!-- Assessment Session (workout flow) -->
+        <activity
+            android:name=".assessment.ui.AssessmentSessionActivity"
+            android:exported="false"
+            android:screenOrientation="portrait"
+            android:theme="@style/Theme.WayToFix" />
+
+        <!-- Assessment Results -->
+        <activity
+            android:name=".assessment.ui.AssessmentResultActivity"
+            android:exported="false"
+            android:screenOrientation="portrait"
+            android:theme="@style/Theme.WayToFix" />
+
         <!-- FileProvider for screenshot sharing -->
         <provider
             android:name="androidx.core.content.FileProvider"

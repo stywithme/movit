@@ -102,6 +102,9 @@ export async function seedExercisesAndWorkouts(
       equipment?: string[];
       tags?: string[];
       repCountingConfig?: Record<string, unknown>;
+      isBilateral?: boolean;
+      bilateralConfig?: { switchEvery?: number; startSide?: string };
+      supportsWeight?: boolean;
       poseVariants?: Array<{
         name: { ar: string; en: string };
         cameraPosition: string;
@@ -149,6 +152,9 @@ export async function seedExercisesAndWorkouts(
         categoryId: categoryValue.id,
         countingMethodId: countingMethodValue.id,
         repCountingConfig: (exerciseJson.repCountingConfig as object) || undefined,
+        isBilateral: exerciseJson.isBilateral ?? false,
+        bilateralConfig: exerciseJson.bilateralConfig ? (exerciseJson.bilateralConfig as object) : undefined,
+        supportsWeight: exerciseJson.supportsWeight ?? false,
         status: 'published',
         publishedAt: new Date(),
       },
@@ -160,6 +166,9 @@ export async function seedExercisesAndWorkouts(
         categoryId: categoryValue.id,
         countingMethodId: countingMethodValue.id,
         repCountingConfig: (exerciseJson.repCountingConfig as object) || undefined,
+        isBilateral: exerciseJson.isBilateral ?? false,
+        bilateralConfig: exerciseJson.bilateralConfig ? (exerciseJson.bilateralConfig as object) : undefined,
+        supportsWeight: exerciseJson.supportsWeight ?? false,
         status: 'published',
         publishedAt: new Date(),
       },

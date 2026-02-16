@@ -9,6 +9,7 @@ import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
 import com.trainingvalidator.poc.R
 import com.trainingvalidator.poc.databinding.FragmentHomeBinding
+import com.trainingvalidator.poc.assessment.ui.PreScreeningActivity
 import com.trainingvalidator.poc.ui.TrainingActivity
 import com.trainingvalidator.poc.ui.ProgramDetailActivity
 import com.trainingvalidator.poc.ui.ProgramSessionActivity
@@ -81,6 +82,10 @@ class HomeFragment : Fragment() {
         binding.btnContinue.setOnClickListener {
             // Start training
             startActivity(Intent(requireContext(), TrainingActivity::class.java))
+        }
+
+        binding.cardBodyScan.setOnClickListener {
+            startActivity(Intent(requireContext(), PreScreeningActivity::class.java))
         }
 
         binding.cardStartCamera.setOnClickListener {

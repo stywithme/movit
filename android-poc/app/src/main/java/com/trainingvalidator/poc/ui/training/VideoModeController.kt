@@ -223,19 +223,19 @@ class VideoModeController(
                     )
                     
                     val worldLandmarks = poseResult.worldLandmarks?.let {
-                        smoother.convertWorld(it)
+                        smoother.convertWorld(it, timestampMs)
                     }
                     
                     val rawAngles = if (worldLandmarks != null) {
                         AngleCalculator.calculateAllAnglesSmoothed(
                             worldLandmarks,
-                            visibilityThreshold = 0.3f,
+                            visibilityThreshold = 0.5f,
                             use3D = true
                         )
                     } else {
                         AngleCalculator.calculateAllAnglesSmoothed(
                             smoothedLandmarks,
-                            visibilityThreshold = 0.3f
+                            visibilityThreshold = 0.5f
                         )
                     }
                     

@@ -677,6 +677,9 @@ model User {
   trainingSessions TrainingSession[]
   userPrograms     UserProgram[]
   programSessionReports ProgramSessionReport[]
+  
+  // Body Scan / Assessment results
+  bodyScanResults  BodyScanResult[]
 
   @@index([email])
   @@index([googleId])
@@ -698,6 +701,74 @@ model RefreshToken {
   @@index([token])
   @@index([expiresAt])
   @@map("refresh_tokens")
+}
+
+// ============================================
+// BODY SCAN / ASSESSMENT
+// ============================================
+
+/// Body Scan result - Complete assessment snapshot
+model BodyScanResult {
+  id              String   @id @default(uuid())
+  userId          String
+  
+  // Assessment type
+  type            String   @default("initial") // initial | periodic | post_program
+  
+  // Overall scores
+  bodyScore       Float    // 0-100 (motivational summary only)
+  mobilityScore   Float    // 0-100 Domain Score
+  controlScore    Float    // 0-100 Domain Score
+  symmetryScore   Float?   // 0-100 Domain Score (null if no bilateral tests)
+  safetyScore     Float    // 0-100 Domain Score
+  
+  // Fitness level classification
+  fitnessLevel    String   // excellent | good | average | limited | needs_rehab
+  
+  // Regional assessments (detailed per-region data)
+  regions         Json     // AssessmentRegion[]
+  
+  // Symmetry data
+  symmetryData    Json?    // { shoulder: LSI%, hip: LSI%, knee: LSI% }
+  
+  // Hypothesis cards (observed compensations + possible causes)
+  hypotheses      Json?    // HypothesisCard[]
+  
+  // Safety gates (blocked exercises/movements)
+  safetyGates     Json?    // SafetyGate[]
+  
+  // Pain flags
+  painFlags       Json?    // { movement: string, region: string }[]
+  
+  // Recommendations
+  recommendations Json?    // { priority: number, type: string, exercises: string[] }[]
+  
+  // PAR-Q+ screening result
+  parqPassed      Boolean  @default(true)
+  parqFlags       Json?    // Which questions were answered "yes"
+  
+  // Linked raw training reports (PostTrainingReport IDs for each movement)
+  rawReportIds    Json?    // string[]
+  
+  // Comparison with previous assessment
+  previousId      String?  // Link to previous BodyScanResult for progress tracking
+  
+  // Metadata
+  durationMs      Int?     // Total assessment duration
+  movementCount   Int      @default(3) // How many movements were performed
+  
+  completedAt     DateTime @default(now())
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  previous        BodyScanResult? @relation("AssessmentProgress", fields: [previousId], references: [id])
+  nextAssessments BodyScanResult[] @relation("AssessmentProgress")
+
+  @@index([userId])
+  @@index([userId, type])
+  @@index([userId, completedAt])
+  @@map("body_scan_results")
 }
 
 // ============================================

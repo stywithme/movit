@@ -193,6 +193,8 @@
     <string name="start">ابدأ</string>
     <string name="start_camera">تشغيل الكاميرا</string>
     <string name="analyze_video">تحليل فيديو</string>
+    <string name="body_scan_title">فحص الجسم</string>
+    <string name="body_scan_subtitle">قيّم مرونتك وتوازنك وتماثلك</string>
     <string name="form_checklist">قائمة التحقق</string>
     <string name="steps_format">%1$d خطوات</string>
     <string name="looping_preview">معاينة متكررة</string>
