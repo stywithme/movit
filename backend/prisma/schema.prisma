@@ -45,7 +45,7 @@ enum ProgressStatus {
 model Attribute {
   id          String   @id @default(uuid())
   code        String   @unique
-  name        Json     // { "ar": "...", "en": "..." }
+  name        Json // { "ar": "...", "en": "..." }
   description String?
   sortOrder   Int      @default(0)
   isSystem    Boolean  @default(false)
@@ -61,26 +61,26 @@ model AttributeValue {
   id          String   @id @default(uuid())
   attributeId String
   code        String   @unique
-  name        Json     // { "ar": "...", "en": "..." }
-  description Json?    // { "ar": "...", "en": "..." }
+  name        Json // { "ar": "...", "en": "..." }
+  description Json? // { "ar": "...", "en": "..." }
   icon        String?
   color       String?
   sortOrder   Int      @default(0)
   isActive    Boolean  @default(true)
   createdAt   DateTime @default(now())
-  
+
   // Metadata for special types (e.g., bilateral joints)
   // { "type": "bilateral", "leftJoint": "left_knee", "rightJoint": "right_knee" }
-  metadata    Json?
+  metadata Json?
 
   attribute Attribute @relation(fields: [attributeId], references: [id], onDelete: Cascade)
 
   // Relations to exercises
-  exercisesAsCategory      Exercise[]          @relation("ExerciseCategory")
-  exercisesAsCountingMethod Exercise[]         @relation("ExerciseCountingMethod")
-  exerciseAttributes       ExerciseAttribute[]
-  difficultyLevelsAsType   DifficultyLevel[]   @relation("DifficultyLevelType")
-  cameraPositionJoints     CameraPositionJoint[] @relation("CameraPositionJoint")
+  exercisesAsCategory       Exercise[]            @relation("ExerciseCategory")
+  exercisesAsCountingMethod Exercise[]            @relation("ExerciseCountingMethod")
+  exerciseAttributes        ExerciseAttribute[]
+  difficultyLevelsAsType    DifficultyLevel[]     @relation("DifficultyLevelType")
+  cameraPositionJoints      CameraPositionJoint[] @relation("CameraPositionJoint")
 
   @@index([attributeId])
   @@map("attribute_values")
@@ -92,34 +92,34 @@ model AttributeValue {
 
 /// Main exercise entity
 model Exercise {
-  id               String    @id @default(uuid())
+  id               String        @id @default(uuid())
   categoryId       String
   countingMethodId String
-  name             Json      // { "ar": "...", "en": "..." }
-  description      Json?     // { "ar": "...", "en": "..." }
-  instructions     Json?     // { "ar": "...", "en": "..." }
-  slug             String    @unique
+  name             Json // { "ar": "...", "en": "..." }
+  description      Json? // { "ar": "...", "en": "..." }
+  instructions     Json? // { "ar": "...", "en": "..." }
+  slug             String        @unique
   status           ContentStatus @default(draft)
-  
+
   // Rep counting config (unified - no difficulty levels)
   // { "reps": 12, "minRepIntervalMs": 1500, "maxRepIntervalMs": 5000 }
   // or { "duration": 30, "gracePeriodMs": 2500 } for hold exercises
   repCountingConfig Json?
-  
+
   // ============================================
   // WEIGHT CONFIGURATION
   // ============================================
-  supportsWeight    Boolean   @default(false)  // Does this exercise use weights?
-  minWeight         Float?                      // Minimum weight (kg)
-  maxWeight         Float?                      // Maximum weight (kg)
-  defaultWeight     Float?                      // Default weight for new users (kg)
+  supportsWeight Boolean @default(false) // Does this exercise use weights?
+  minWeight      Float? // Minimum weight (kg)
+  maxWeight      Float? // Maximum weight (kg)
+  defaultWeight  Float? // Default weight for new users (kg)
 
   // ============================================
   // BILATERAL CONFIGURATION
   // ============================================
-  isBilateral       Boolean   @default(false)
-  bilateralConfig   Json?     // { switchEvery: number, startSide: 'left' | 'right' }
-  
+  isBilateral     Boolean @default(false)
+  bilateralConfig Json? // { switchEvery: number, startSide: 'left' | 'right' }
+
   // ============================================
   // REPORT METRICS CONFIGURATION
   // ============================================
@@ -129,23 +129,24 @@ model Exercise {
   //   "optional": ["velocity", "stability"],      // Admin-selected extras
   //   "excluded": ["tempo"]                       // Explicitly hidden
   // }
-  reportMetrics     Json?
-  
-  publishedAt      DateTime?
-  createdBy        String?
-  updatedBy        String?
-  createdAt        DateTime  @default(now())
-  updatedAt        DateTime  @updatedAt
-  deletedAt        DateTime?
+  reportMetrics Json?
 
-  category         AttributeValue      @relation("ExerciseCategory", fields: [categoryId], references: [id])
-  countingMethod   AttributeValue      @relation("ExerciseCountingMethod", fields: [countingMethodId], references: [id])
-  attributes       ExerciseAttribute[]
-  media            ExerciseMedia[]
-  poseVariants     PoseVariant[]
-  workoutExercises WorkoutExercise[]
-  programSessionItems ProgramSessionItem[]
-  trainingSessions TrainingSession[]
+  publishedAt DateTime?
+  createdBy   String?
+  updatedBy   String?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  deletedAt   DateTime?
+
+  category                  AttributeValue               @relation("ExerciseCategory", fields: [categoryId], references: [id])
+  countingMethod            AttributeValue               @relation("ExerciseCountingMethod", fields: [countingMethodId], references: [id])
+  attributes                ExerciseAttribute[]
+  media                     ExerciseMedia[]
+  poseVariants              PoseVariant[]
+  workoutExercises          WorkoutExercise[]
+  programSessionItems       ProgramSessionItem[]
+  trainingSessions          TrainingSession[]
+  assessmentTemplateEntries AssessmentTemplateExercise[]
 
   @@index([categoryId])
   @@index([countingMethodId])
@@ -174,7 +175,7 @@ model ExerciseAttribute {
 model ExerciseMedia {
   id         String   @id @default(uuid())
   exerciseId String
-  type       String   // image, video
+  type       String // image, video
   url        String
   altText    String?
   sortOrder  Int      @default(0)
@@ -195,9 +196,9 @@ model ExerciseMedia {
 model CameraPosition {
   id          String   @id @default(uuid())
   code        String   @unique
-  schemaCode  String?  // exported/mobile: side_view, front_view, back_view
-  name        Json     // { "ar": "...", "en": "..." }
-  description Json?    // { "ar": "...", "en": "..." }
+  schemaCode  String? // exported/mobile: side_view, front_view, back_view
+  name        Json // { "ar": "...", "en": "..." }
+  description Json? // { "ar": "...", "en": "..." }
   imageUrl    String?
   isActive    Boolean  @default(true)
   sortOrder   Int      @default(0)
@@ -232,28 +233,28 @@ model CameraPositionJoint {
 
 /// Pose variants (different camera positions for an exercise)
 model PoseVariant {
-  id                      String   @id @default(uuid())
-  exerciseId              String
-  cameraPositionId        String
-  name                    Json     // { "ar": "...", "en": "..." }
-  description             Json?    // { "ar": "...", "en": "..." }
-  referenceImageUrl       String?
-  
-  expectedFacingDirection String?  // 'facing_right' | 'facing_left' | 'facing_camera' | 'facing_away' | 'auto_detect'
-  
+  id                String  @id @default(uuid())
+  exerciseId        String
+  cameraPositionId  String
+  name              Json // { "ar": "...", "en": "..." }
+  description       Json? // { "ar": "...", "en": "..." }
+  referenceImageUrl String?
+
+  expectedFacingDirection String? // 'facing_right' | 'facing_left' | 'facing_camera' | 'facing_away' | 'auto_detect'
+
   // CORE CONFIGURATION (Source of Truth)
   // Contains: Primary/Secondary joints, Start Pose, Up/Down Ranges per difficulty
-  trackedJointsConfig     Json?    
+  trackedJointsConfig Json?
 
-  sortOrder               Int      @default(0)
-  createdAt               DateTime @default(now())
-  updatedAt               DateTime @updatedAt
+  sortOrder Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
-  exercise         Exercise          @relation(fields: [exerciseId], references: [id], onDelete: Cascade)
-  cameraPosition   CameraPosition    @relation(fields: [cameraPositionId], references: [id])
-  
-  difficultyLevels DifficultyLevel[]
-  positionChecks   PositionCheck[]   
+  exercise       Exercise       @relation(fields: [exerciseId], references: [id], onDelete: Cascade)
+  cameraPosition CameraPosition @relation(fields: [cameraPositionId], references: [id])
+
+  difficultyLevels   DifficultyLevel[]
+  positionChecks     PositionCheck[]
   messageAssignments FeedbackMessageAssignment[]
 
   @@index([exerciseId])
@@ -263,23 +264,23 @@ model PoseVariant {
 
 /// Position-based validation checks (knee over toe, hip alignment, etc.)
 model PositionCheck {
-  id              String   @id @default(uuid())
-  poseVariantId   String
-  checkId         String   // Unique within variant (e.g., "knee_over_toe")
-  
-  type            String   // PositionCheckType enum as string
-  landmarks       Json     // { "primary": "left_knee", "secondary": "left_foot_index", ... }
-  condition       Json     // { "operator": "should_not_exceed", "thresholds": { ... } }
-  activePhases    Json     // ["down", "bottom"]
-  errorMessage    Json     // { "ar": "...", "en": "..." }
-  
-  severity        String   @default("warning") // 'error' | 'warning' | 'tip'
-  cooldownMs      Int      @default(2000)
-  minErrorFrames  Int      @default(3)
-  sortOrder       Int      @default(0)
-  
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
+  id            String @id @default(uuid())
+  poseVariantId String
+  checkId       String // Unique within variant (e.g., "knee_over_toe")
+
+  type         String // PositionCheckType enum as string
+  landmarks    Json // { "primary": "left_knee", "secondary": "left_foot_index", ... }
+  condition    Json // { "operator": "should_not_exceed", "thresholds": { ... } }
+  activePhases Json // ["down", "bottom"]
+  errorMessage Json // { "ar": "...", "en": "..." }
+
+  severity       String @default("warning") // 'error' | 'warning' | 'tip'
+  cooldownMs     Int    @default(2000)
+  minErrorFrames Int    @default(3)
+  sortOrder      Int    @default(0)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   poseVariant PoseVariant @relation(fields: [poseVariantId], references: [id], onDelete: Cascade)
 
@@ -294,22 +295,22 @@ model PositionCheck {
 
 /// Difficulty levels for each pose variant
 model DifficultyLevel {
-  id               String   @id @default(uuid())
+  id               String @id @default(uuid())
   poseVariantId    String
   difficultyTypeId String
-  name             Json     // { "ar": "...", "en": "..." }
-  description      Json?    // { "ar": "...", "en": "..." }
-  
-  repCountingConfig Json?   // { "reps": 12, "duration": 30, ... }
-  phases            Json?   // ["start", "down", "up"] - Just the list required by Android
-  romConfig         Json?   // Optional: General ROM info if needed
-  
-  sortOrder        Int      @default(0)
-  createdAt        DateTime @default(now())
-  updatedAt        DateTime @updatedAt
+  name             Json // { "ar": "...", "en": "..." }
+  description      Json? // { "ar": "...", "en": "..." }
 
-  poseVariant      PoseVariant       @relation(fields: [poseVariantId], references: [id], onDelete: Cascade)
-  difficultyType   AttributeValue    @relation("DifficultyLevelType", fields: [difficultyTypeId], references: [id])
+  repCountingConfig Json? // { "reps": 12, "duration": 30, ... }
+  phases            Json? // ["start", "down", "up"] - Just the list required by Android
+  romConfig         Json? // Optional: General ROM info if needed
+
+  sortOrder Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  poseVariant    PoseVariant    @relation(fields: [poseVariantId], references: [id], onDelete: Cascade)
+  difficultyType AttributeValue @relation("DifficultyLevelType", fields: [difficultyTypeId], references: [id])
 
   @@index([poseVariantId])
   @@index([difficultyTypeId])
@@ -320,9 +321,9 @@ model DifficultyLevel {
 model FeedbackMessageTemplate {
   id        String   @id @default(uuid())
   code      String   @unique
-  category  String   // state | position | motivational | tip | system
-  context   String?  // perfect | normal | pad | warning | danger | general
-  content   Json     // { "ar": "...", "en": "...", "audioAr": "...", "audioEn": "..." }
+  category  String // state | position | motivational | tip | system
+  context   String? // perfect | normal | pad | warning | danger | general
+  content   Json // { "ar": "...", "en": "...", "audioAr": "...", "audioEn": "..." }
   tags      String[]
   isSystem  Boolean  @default(false)
   isActive  Boolean  @default(true)
@@ -338,23 +339,23 @@ model FeedbackMessageTemplate {
 
 /// Assign reusable messages to a specific pose variant context
 model FeedbackMessageAssignment {
-  id            String   @id @default(uuid())
+  id            String @id @default(uuid())
   poseVariantId String
   messageId     String
-  
+
   // Target context for this assignment
-  target        String   // joint_state | feedback | position
-  context       String?  // perfect | normal | pad | warning | danger | motivational | tip | error
-  jointCode     String?  // For joint_state assignments
-  zone          String?  // up | down (for zone-specific messages)
-  checkId       String?  // For position check assignments
-  
-  sortOrder     Int      @default(0)
-  createdAt     DateTime @default(now())
-  
-  poseVariant PoseVariant @relation(fields: [poseVariantId], references: [id], onDelete: Cascade)
+  target    String // joint_state | feedback | position
+  context   String? // perfect | normal | pad | warning | danger | motivational | tip | error
+  jointCode String? // For joint_state assignments
+  zone      String? // up | down (for zone-specific messages)
+  checkId   String? // For position check assignments
+
+  sortOrder Int      @default(0)
+  createdAt DateTime @default(now())
+
+  poseVariant PoseVariant             @relation(fields: [poseVariantId], references: [id], onDelete: Cascade)
   message     FeedbackMessageTemplate @relation(fields: [messageId], references: [id])
-  
+
   @@index([poseVariantId])
   @@index([messageId])
   @@index([target, context])
@@ -367,25 +368,25 @@ model FeedbackMessageAssignment {
 
 /// Workout - Super Set or Circuit training session
 model Workout {
-  id                     String    @id @default(uuid())
-  name                   Json      // { "ar": "...", "en": "..." }
-  description            Json?     // { "ar": "...", "en": "..." }
-  slug                   String    @unique
+  id          String @id @default(uuid())
+  name        Json // { "ar": "...", "en": "..." }
+  description Json? // { "ar": "...", "en": "..." }
+  slug        String @unique
 
   // Template metadata
-  coverImageUrl          String?
-  difficulty             Difficulty @default(beginner)
-  estimatedDurationMin   Int?
-  tags                   Json?     // [ "upper-body", "no-equipment", ... ]
-  
+  coverImageUrl        String?
+  difficulty           Difficulty @default(beginner)
+  estimatedDurationMin Int?
+  tags                 Json? // [ "upper-body", "no-equipment", ... ]
+
   // Status & metadata
-  status                 ContentStatus @default(draft)
-  publishedAt            DateTime?
-  createdBy              String?
-  updatedBy              String?
-  createdAt              DateTime  @default(now())
-  updatedAt              DateTime  @updatedAt
-  deletedAt              DateTime?
+  status      ContentStatus @default(draft)
+  publishedAt DateTime?
+  createdBy   String?
+  updatedBy   String?
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+  deletedAt   DateTime?
 
   exercises           WorkoutExercise[]
   programSessionItems ProgramSessionItem[]
@@ -397,24 +398,24 @@ model Workout {
 
 /// WorkoutExercise - Exercise within a workout with specific configuration
 model WorkoutExercise {
-  id             String   @id @default(uuid())
-  workoutId      String
-  exerciseId     String
-  
+  id         String @id @default(uuid())
+  workoutId  String
+  exerciseId String
+
   // Exercise configuration for this workout
-  variantIndex   Int      @default(0)    // Which pose variant to use
-  difficulty     String   @default("beginner") // beginner, normal, advanced
-  targetReps     Int?                     // Target reps (for rep-based exercises)
-  targetDuration Int?                     // Target duration in seconds (for hold exercises)
-  sets           Int      @default(1)
-  restBetweenSetsMs   Int @default(30000)
-  restAfterExerciseMs Int @default(60000)
-  weightKg       Float?
-  weightPerSet   Json?                    // [10, 12.5, 15] - optional progressive weights
-  notes          Json?                    // { "ar": "...", "en": "..." } - Optional notes
-  
-  sortOrder      Int      @default(0)
-  createdAt      DateTime @default(now())
+  variantIndex        Int    @default(0) // Which pose variant to use
+  difficulty          String @default("beginner") // beginner, normal, advanced
+  targetReps          Int? // Target reps (for rep-based exercises)
+  targetDuration      Int? // Target duration in seconds (for hold exercises)
+  sets                Int    @default(1)
+  restBetweenSetsMs   Int    @default(30000)
+  restAfterExerciseMs Int    @default(60000)
+  weightKg            Float?
+  weightPerSet        Json? // [10, 12.5, 15] - optional progressive weights
+  notes               Json? // { "ar": "...", "en": "..." } - Optional notes
+
+  sortOrder Int      @default(0)
+  createdAt DateTime @default(now())
 
   workout  Workout  @relation(fields: [workoutId], references: [id], onDelete: Cascade)
   exercise Exercise @relation(fields: [exerciseId], references: [id])
@@ -429,28 +430,49 @@ model WorkoutExercise {
 // ============================================
 
 model Program {
-  id            String   @id @default(uuid())
+  id            String     @id @default(uuid())
   name          Json
   description   Json?
-  slug          String   @unique
+  slug          String     @unique
   coverImageUrl String?
   durationWeeks Int
   difficulty    Difficulty @default(beginner)
-  isDefault     Boolean  @default(false)
-  isPublished   Boolean  @default(false)
+  isDefault     Boolean    @default(false)
+  isPublished   Boolean    @default(false)
   tags          Json?
   createdBy     String?
   updatedBy     String?
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  createdAt     DateTime   @default(now())
+  updatedAt     DateTime   @updatedAt
   deletedAt     DateTime?
 
-  weeks         ProgramWeek[]
-  userPrograms  UserProgram[]
+  // ── Prescription metadata (Phase 2) ──
+  type                  String   @default("training") // training | mobility | therapeutic
+  targetDomain          String? // mobility | strength | control | symmetry
+  targetRegions         String[] @default([])
+  levelRangeMin         Int      @default(1) // Minimum user level (1-5)
+  levelRangeMax         Int      @default(5) // Maximum user level (1-5)
+  entryCriteria         Json? // { "mobilityScore": { "max": 50 } }
+  exitCriteria          Json? // { "mobilityScore": { "min": 70 } }
+  contraindications     String[] @default([])
+  prescriptionPriority  Int      @default(100) // Lower = higher priority
+  prerequisiteProgramId String? // FK → Program
+  nextProgramId         String? // FK → Program
+
+  weeks                 ProgramWeek[]
+  userPrograms          UserProgram[]
   programSessionReports ProgramSessionReport[]
+  progressionRules      ProgressionRule[]
+
+  prerequisiteProgram Program?  @relation("ProgramChain", fields: [prerequisiteProgramId], references: [id])
+  dependentPrograms   Program[] @relation("ProgramChain")
+  nextProgram         Program?  @relation("ProgramNext", fields: [nextProgramId], references: [id])
+  previousPrograms    Program[] @relation("ProgramNext")
 
   @@index([deletedAt])
   @@index([isPublished])
+  @@index([type])
+  @@index([levelRangeMin, levelRangeMax])
   @@map("programs")
 }
 
@@ -460,12 +482,13 @@ model ProgramWeek {
   weekNumber  Int
   name        Json?
   description Json?
-  sortOrder   Int      @default(0) // Typically equals weekNumber; kept for admin reordering flexibility
+  weekType    String   @default("normal") // normal | deload | testing
+  sortOrder   Int      @default(0)
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
-  program     Program  @relation(fields: [programId], references: [id], onDelete: Cascade)
-  days        ProgramDay[]
+  program Program      @relation(fields: [programId], references: [id], onDelete: Cascade)
+  days    ProgramDay[]
 
   @@unique([programId, weekNumber])
   @@index([programId])
@@ -477,12 +500,13 @@ model ProgramDay {
   weekId    String
   dayNumber Int
   isRestDay Boolean  @default(false)
+  dayType   String   @default("training") // training | rest | active_recovery | assessment
   name      Json?
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  week      ProgramWeek     @relation(fields: [weekId], references: [id], onDelete: Cascade)
-  sessions  ProgramSession[]
+  week     ProgramWeek      @relation(fields: [weekId], references: [id], onDelete: Cascade)
+  sessions ProgramSession[]
 
   @@unique([weekId, dayNumber])
   @@index([weekId])
@@ -490,50 +514,64 @@ model ProgramDay {
 }
 
 model ProgramSession {
-  id        String   @id @default(uuid())
-  dayId     String
-  name      Json
-  sortOrder Int      @default(0)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id                   String   @id @default(uuid())
+  dayId                String
+  name                 Json
+  sortOrder            Int      @default(0)
+  estimatedDurationMin Int? // Expected session duration in minutes
+  sessionCategory      String? // main | warmup | cooldown | supplementary
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
 
-  day       ProgramDay         @relation(fields: [dayId], references: [id], onDelete: Cascade)
-  items     ProgramSessionItem[]
-  reports   ProgramSessionReport[]
+  day     ProgramDay             @relation(fields: [dayId], references: [id], onDelete: Cascade)
+  items   ProgramSessionItem[]
+  reports ProgramSessionReport[]
 
   @@index([dayId])
   @@map("program_sessions")
 }
 
 model ProgramSessionItem {
-  id                String   @id @default(uuid())
-  sessionId         String
-  sortOrder         Int      @default(0)
-  type              String   // exercise | rest
+  id        String @id @default(uuid())
+  sessionId String
+  sortOrder Int    @default(0)
+  type      String // exercise | rest
 
   exerciseId        String?
-  sets              Int?     @default(1)
+  sets              Int?    @default(1)
   targetReps        Int?
   targetDuration    Int?
-  restBetweenSetsMs Int?     @default(30000)
+  restBetweenSetsMs Int?    @default(30000)
   weightKg          Float?
   weightPerSet      Json?
   notes             Json?
 
-  restDurationMs    Int?
+  restDurationMs Int?
 
-  sourceWorkoutId   String?
-  isModified        Boolean  @default(false)
-  createdAt         DateTime @default(now())
-  updatedAt         DateTime @updatedAt
+  sourceWorkoutId String?
+  isModified      Boolean @default(false)
 
-  session           ProgramSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
-  exercise          Exercise?      @relation(fields: [exerciseId], references: [id], onDelete: SetNull)
-  sourceWorkout     Workout?       @relation(fields: [sourceWorkoutId], references: [id], onDelete: SetNull)
+  // ── Personalization fields (Phase 4) ──
+  levelOverride     Int? // If set, use this level's defaults instead of user's level
+  targetROM         Float? // Target ROM for this exercise (from assessment data)
+  targetFormScore   Float? // Minimum acceptable form score
+  difficultyCode    String? // beginner | normal | advanced
+  alternatives      String[] @default([]) // Exercise slugs that can substitute
+  progressionRuleId String? // FK → ProgressionRule
+  isPersonalized    Boolean  @default(false) // True if adjusted by Prescription/Progression Engine
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  session         ProgramSession   @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  exercise        Exercise?        @relation(fields: [exerciseId], references: [id], onDelete: SetNull)
+  sourceWorkout   Workout?         @relation(fields: [sourceWorkoutId], references: [id], onDelete: SetNull)
+  progressionRule ProgressionRule? @relation(fields: [progressionRuleId], references: [id], onDelete: SetNull)
 
   @@index([sessionId])
   @@index([exerciseId])
   @@index([sourceWorkoutId])
+  @@index([progressionRuleId])
   @@map("program_session_items")
 }
 
@@ -548,9 +586,10 @@ model UserProgram {
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
 
-  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  program        Program? @relation(fields: [programId], references: [id])
-  progress       UserProgramProgress[]
+  user            User                  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  program         Program?              @relation(fields: [programId], references: [id])
+  progress        UserProgramProgress[]
+  activePlanSlots ActivePlanProgram[]
 
   @@index([userId])
   @@index([programId])
@@ -558,7 +597,7 @@ model UserProgram {
 }
 
 model UserProgramProgress {
-  id            String   @id @default(uuid())
+  id            String         @id @default(uuid())
   userProgramId String
   weekNumber    Int
   dayNumber     Int
@@ -566,7 +605,7 @@ model UserProgramProgress {
   completedAt   DateTime?
   status        ProgressStatus @default(pending)
 
-  userProgram   UserProgram @relation(fields: [userProgramId], references: [id], onDelete: Cascade)
+  userProgram UserProgram @relation(fields: [userProgramId], references: [id], onDelete: Cascade)
 
   @@unique([userProgramId, weekNumber, dayNumber, sessionId])
   @@index([userProgramId])
@@ -575,29 +614,29 @@ model UserProgramProgress {
 }
 
 model ProgramSessionReport {
-  id                String   @id @default(uuid())
-  userId            String
-  programId         String?
-  programSessionId  String
-  weekNumber        Int
-  dayNumber         Int
-  startedAt         DateTime @default(now())
-  completedAt       DateTime?
-  status            ReportStatus @default(in_progress)
-  totalDurationMs   Int?
-  totalExercises    Int?
-  totalSets         Int?
-  completedSets     Int?
-  totalReps         Int?
-  avgAccuracy       Float?   // Completion rate (reps done / reps planned)
-  avgFormScore      Float?   // Form quality score (0-100, from rep-level scoring)
-  report            Json?
-  createdAt         DateTime @default(now())
-  updatedAt         DateTime @updatedAt
+  id               String       @id @default(uuid())
+  userId           String
+  programId        String?
+  programSessionId String
+  weekNumber       Int
+  dayNumber        Int
+  startedAt        DateTime     @default(now())
+  completedAt      DateTime?
+  status           ReportStatus @default(in_progress)
+  totalDurationMs  Int?
+  totalExercises   Int?
+  totalSets        Int?
+  completedSets    Int?
+  totalReps        Int?
+  avgAccuracy      Float? // Completion rate (reps done / reps planned)
+  avgFormScore     Float? // Form quality score (0-100, from rep-level scoring)
+  report           Json?
+  createdAt        DateTime     @default(now())
+  updatedAt        DateTime     @updatedAt
 
-  user              User            @relation(fields: [userId], references: [id], onDelete: Cascade)
-  program           Program?        @relation(fields: [programId], references: [id])
-  programSession    ProgramSession  @relation(fields: [programSessionId], references: [id], onDelete: Cascade)
+  user           User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  program        Program?       @relation(fields: [programId], references: [id])
+  programSession ProgramSession @relation(fields: [programSessionId], references: [id], onDelete: Cascade)
 
   @@index([userId])
   @@index([programId])
@@ -614,17 +653,17 @@ model ProgramSessionReport {
 
 /// Admin users for the dashboard
 model Admin {
-  id        String    @id @default(uuid())
-  email     String    @unique
-  password  String
-  name      String
-  role      String    @default("admin") // admin, super_admin
-  isActive  Boolean   @default(true)
-  resetToken String?
+  id               String    @id @default(uuid())
+  email            String    @unique
+  password         String
+  name             String
+  role             String    @default("admin") // admin, super_admin
+  isActive         Boolean   @default(true)
+  resetToken       String?
   resetTokenExpiry DateTime?
-  createdAt DateTime  @default(now())
-  updatedAt DateTime  @updatedAt
-  deletedAt DateTime?
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+  deletedAt        DateTime?
 
   @@map("admins")
 }
@@ -635,51 +674,63 @@ model Admin {
 
 /// Mobile app users
 model User {
-  id              String    @id @default(uuid())
-  email           String    @unique
-  password        String?   // Nullable for OAuth users
-  name            String
-  avatarUrl       String?
-  
+  id        String  @id @default(uuid())
+  email     String  @unique
+  password  String? // Nullable for OAuth users
+  name      String
+  avatarUrl String?
+
   // OAuth providers
-  googleId        String?   @unique
-  provider        String    @default("email") // email, google
-  
+  googleId String? @unique
+  provider String  @default("email") // email, google
+
   // Settings
   preferredLanguage String  @default("en") // en, ar
   voiceFeedback     Boolean @default(true)
   notifications     Boolean @default(true)
-  
+
   // Subscription
-  isPro           Boolean   @default(false)
+  isPro              Boolean   @default(false)
   subscriptionExpiry DateTime?
-  
+
   // Stats
-  totalWorkouts   Int       @default(0)
-  totalMinutes    Int       @default(0)
-  
+  totalWorkouts Int @default(0)
+  totalMinutes  Int @default(0)
+
   // Password reset
-  resetToken      String?
+  resetToken       String?
   resetTokenExpiry DateTime?
-  
+
   // Status
-  isActive        Boolean   @default(true)
-  emailVerified   Boolean   @default(false)
-  
-  createdAt       DateTime  @default(now())
-  updatedAt       DateTime  @updatedAt
-  deletedAt       DateTime?
+  isActive      Boolean @default(true)
+  emailVerified Boolean @default(false)
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
 
   // Refresh tokens for secure logout
-  refreshTokens   RefreshToken[]
-  
+  refreshTokens RefreshToken[]
+
   // Training sessions history
-  trainingSessions TrainingSession[]
-  userPrograms     UserProgram[]
+  trainingSessions      TrainingSession[]
+  userPrograms          UserProgram[]
   programSessionReports ProgramSessionReport[]
-  
+
   // Body Scan / Assessment results
-  bodyScanResults  BodyScanResult[]
+  bodyScanResults BodyScanResult[]
+
+  // Level profiles
+  levelProfiles UserLevelProfile[]
+
+  // Active training plan
+  activePlan ActivePlan?
+
+  // Progression history
+  progressionHistory ProgressionHistory[]
+
+  // Reassessment schedules
+  reassessmentSchedules ReassessmentSchedule[]
 
   @@index([email])
   @@index([googleId])
@@ -688,12 +739,12 @@ model User {
 
 /// Refresh tokens for JWT authentication
 model RefreshToken {
-  id          String   @id @default(uuid())
-  userId      String
-  token       String   @unique
-  deviceInfo  String?  // Device name/info for session management
-  expiresAt   DateTime
-  createdAt   DateTime @default(now())
+  id         String   @id @default(uuid())
+  userId     String
+  token      String   @unique
+  deviceInfo String? // Device name/info for session management
+  expiresAt  DateTime
+  createdAt  DateTime @default(now())
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
@@ -704,70 +755,317 @@ model RefreshToken {
 }
 
 // ============================================
+// LEVEL SYSTEM
+// ============================================
+
+/// Level - Named training stage (1-5). Defines difficulty tier and default training parameters.
+model Level {
+  id             String  @id @default(uuid())
+  number         Int     @unique // 1-5
+  code           String  @unique // foundation, building, intermediate, advanced, elite
+  name           Json // { "ar": "...", "en": "..." }
+  description    Json? // { "ar": "...", "en": "..." }
+  icon           String?
+  color          String?
+  entryThreshold Float // Minimum bodyScore to enter (0, 25, 45, 65, 85)
+  maxThreshold   Float? // Maximum bodyScore for this level (null = no upper limit)
+
+  // Default training parameters when a program doesn't specify its own
+  defaultSetsMin           Int    @default(2)
+  defaultSetsMax           Int    @default(3)
+  defaultRepsMin           Int    @default(8)
+  defaultRepsMax           Int    @default(12)
+  defaultIntensityGuide    String @default("bodyweight_only") // bodyweight_only/light/moderate/heavy/max_effort
+  defaultRestBetweenSetsMs Int    @default(60000)
+  defaultSessionDurMin     Int    @default(20) // minutes
+  defaultSessionDurMax     Int    @default(30) // minutes
+  defaultWeeklyFreqMin     Int    @default(2) // days per week
+  defaultWeeklyFreqMax     Int    @default(3) // days per week
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  assessmentTemplates AssessmentTemplate[]
+
+  @@map("levels")
+}
+
+/// UserLevelProfile - Snapshot of user's current level across all dimensions.
+/// Updated after each assessment.
+model UserLevelProfile {
+  id           String @id @default(uuid())
+  userId       String
+  overallLevel Int // Simple level number (1-5) shown to user
+  bodyScore    Float // Latest assessment bodyScore (0-100)
+
+  // Per-domain level breakdown (stored as JSON)
+  // [{ domain: "mobility", level: 3, score: 52.5 }, ...]
+  domainLevels Json
+
+  // Per-body-region level breakdown (stored as JSON)
+  // [{ region: "shoulder", level: 2, score: 35.0, isLimiting: true }, ...]
+  regionLevels Json
+
+  // Domains/regions holding the user back (stored as JSON)
+  // [{ type: "domain", code: "mobility", currentLevel: 2, targetLevel: 3, gap: 1 }, ...]
+  limitingFactors Json
+
+  // Link to the assessment that produced this profile
+  assessmentId String
+
+  // When this profile was computed
+  classifiedAt DateTime @default(now())
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  user       User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  assessment BodyScanResult @relation(fields: [assessmentId], references: [id], onDelete: Cascade)
+
+  @@unique([assessmentId])
+  @@index([userId])
+  @@index([userId, classifiedAt])
+  @@map("user_level_profiles")
+}
+
+// ============================================
+// ACTIVE PLAN (Phase 3)
+// ============================================
+
+/// ActivePlan — User's current training schedule with ordered programs.
+model ActivePlan {
+  id        String   @id @default(uuid())
+  userId    String   @unique // One active plan per user
+  status    String   @default("active") // active | paused | completed
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user     User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+  programs ActivePlanProgram[]
+
+  @@map("active_plans")
+}
+
+/// ActivePlanProgram — A program slot within the active plan.
+model ActivePlanProgram {
+  id                 String    @id @default(uuid())
+  activePlanId       String
+  userProgramId      String
+  sortOrder          Int       @default(0) // Order in the plan
+  status             String    @default("upcoming") // upcoming | active | completed | skipped
+  scheduledStartDate DateTime?
+  actualStartDate    DateTime?
+  completedAt        DateTime?
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
+
+  activePlan  ActivePlan  @relation(fields: [activePlanId], references: [id], onDelete: Cascade)
+  userProgram UserProgram @relation(fields: [userProgramId], references: [id], onDelete: Cascade)
+
+  @@index([activePlanId])
+  @@index([userProgramId])
+  @@map("active_plan_programs")
+}
+
+// ============================================
+// PROGRESSION ENGINE (Phase 4)
+// ============================================
+
+/// ProgressionRule — Defines how training parameters change based on performance.
+model ProgressionRule {
+  id           String   @id @default(uuid())
+  name         String // Human-readable name
+  scope        String // global | program | exercise
+  programId    String? // If scope is "program"
+  exerciseSlug String? // If scope is "exercise"
+  trigger      String // session_completed | week_completed | set_completed
+  conditions   Json // ProgressionCondition[]
+  action       Json // ProgressionAction
+  priority     Int      @default(0) // Higher = evaluated first
+  isActive     Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  program Program?             @relation(fields: [programId], references: [id], onDelete: SetNull)
+  history ProgressionHistory[]
+  items   ProgramSessionItem[]
+
+  @@index([scope])
+  @@index([programId])
+  @@index([isActive])
+  @@map("progression_rules")
+}
+
+/// ProgressionHistory — Audit log of every change made by the Progression Engine.
+model ProgressionHistory {
+  id            String   @id @default(uuid())
+  userId        String
+  ruleId        String
+  sessionId     String? // FK → TrainingSession that triggered it
+  field         String // What changed: "weightKg" | "targetReps" | "sets"
+  previousValue Float // Before
+  newValue      Float // After
+  reason        String // Human-readable explanation
+  appliedAt     DateTime @default(now())
+
+  user User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  rule ProgressionRule @relation(fields: [ruleId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([ruleId])
+  @@index([userId, appliedAt])
+  @@map("progression_history")
+}
+
+// ============================================
+// REASSESSMENT SCHEDULE (Phase 3)
+// ============================================
+
+/// ReassessmentSchedule — Tracks when users should be reassessed.
+model ReassessmentSchedule {
+  id            String   @id @default(uuid())
+  userId        String
+  reason        String // program_complete | periodic | progression_trigger | manual
+  scheduledDate DateTime
+  status        String   @default("pending") // pending | completed | skipped | overdue
+  assessmentId  String? // FK → BodyScanResult (filled after completion)
+  notes         String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  user       User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  assessment BodyScanResult? @relation(fields: [assessmentId], references: [id], onDelete: SetNull)
+
+  @@index([userId])
+  @@index([userId, status])
+  @@index([scheduledDate])
+  @@map("reassessment_schedules")
+}
+
+// ============================================
+// ASSESSMENT TEMPLATES
+// ============================================
+
+model AssessmentTemplate {
+  id            String    @id @default(uuid())
+  name          Json // { "ar": "...", "en": "..." }
+  description   Json?
+  type          String    @default("initial") // initial | periodic | post_program | level_specific
+  targetLevelId String? // FK → Level (optional, for level_specific type)
+  levelRangeMin Int       @default(1)
+  levelRangeMax Int       @default(5)
+  domainWeights Json      @default("{\"mobility\":0.35,\"control\":0.25,\"symmetry\":0.20,\"safety\":0.20}")
+  isDefault     Boolean   @default(false)
+  isPublished   Boolean   @default(false)
+  sortOrder     Int       @default(0)
+  createdBy     String?
+  updatedBy     String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  deletedAt     DateTime?
+
+  targetLevel Level?                       @relation(fields: [targetLevelId], references: [id], onDelete: SetNull)
+  exercises   AssessmentTemplateExercise[]
+  assessments BodyScanResult[]
+
+  @@index([type])
+  @@index([targetLevelId])
+  @@index([isPublished])
+  @@map("assessment_templates")
+}
+
+model AssessmentTemplateExercise {
+  id                   String   @id @default(uuid())
+  templateId           String
+  exerciseId           String
+  sortOrder            Int      @default(0)
+  targetRegion         String // hip | knee | shoulder | core | lower_back | balance
+  side                 String   @default("center") // left | right | center | bilateral
+  entryType            String   @default("core") // core | adaptive
+  activationCondition  Json? // For adaptive exercises: { metric, operator, value }
+  referenceNormDegrees Float? // Normal ROM in degrees
+  thresholds           Json? // { excellent: 85, good: 65, average: 45, limited: 25 }
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+
+  template AssessmentTemplate @relation(fields: [templateId], references: [id], onDelete: Cascade)
+  exercise Exercise           @relation(fields: [exerciseId], references: [id], onDelete: Cascade)
+
+  @@unique([templateId, exerciseId])
+  @@index([templateId])
+  @@index([exerciseId])
+  @@map("assessment_template_exercises")
+}
+
+// ============================================
 // BODY SCAN / ASSESSMENT
 // ============================================
 
 /// Body Scan result - Complete assessment snapshot
 model BodyScanResult {
-  id              String   @id @default(uuid())
-  userId          String
-  
-  // Assessment type
-  type            String   @default("initial") // initial | periodic | post_program
-  
-  // Overall scores
-  bodyScore       Float    // 0-100 (motivational summary only)
-  mobilityScore   Float    // 0-100 Domain Score
-  controlScore    Float    // 0-100 Domain Score
-  symmetryScore   Float?   // 0-100 Domain Score (null if no bilateral tests)
-  safetyScore     Float    // 0-100 Domain Score
-  
-  // Fitness level classification
-  fitnessLevel    String   // excellent | good | average | limited | needs_rehab
-  
-  // Regional assessments (detailed per-region data)
-  regions         Json     // AssessmentRegion[]
-  
-  // Symmetry data
-  symmetryData    Json?    // { shoulder: LSI%, hip: LSI%, knee: LSI% }
-  
-  // Hypothesis cards (observed compensations + possible causes)
-  hypotheses      Json?    // HypothesisCard[]
-  
-  // Safety gates (blocked exercises/movements)
-  safetyGates     Json?    // SafetyGate[]
-  
-  // Pain flags
-  painFlags       Json?    // { movement: string, region: string }[]
-  
-  // Recommendations
-  recommendations Json?    // { priority: number, type: string, exercises: string[] }[]
-  
-  // PAR-Q+ screening result
-  parqPassed      Boolean  @default(true)
-  parqFlags       Json?    // Which questions were answered "yes"
-  
-  // Linked raw training reports (PostTrainingReport IDs for each movement)
-  rawReportIds    Json?    // string[]
-  
-  // Comparison with previous assessment
-  previousId      String?  // Link to previous BodyScanResult for progress tracking
-  
-  // Metadata
-  durationMs      Int?     // Total assessment duration
-  movementCount   Int      @default(3) // How many movements were performed
-  
-  completedAt     DateTime @default(now())
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
+  id     String @id @default(uuid())
+  userId String
 
-  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  previous        BodyScanResult? @relation("AssessmentProgress", fields: [previousId], references: [id])
-  nextAssessments BodyScanResult[] @relation("AssessmentProgress")
+  // Assessment type
+  type       String  @default("initial") // initial | periodic | post_program
+  templateId String? // FK → AssessmentTemplate
+
+  // Overall scores
+  bodyScore     Float // 0-100 (motivational summary only)
+  mobilityScore Float // 0-100 Domain Score
+  controlScore  Float // 0-100 Domain Score
+  symmetryScore Float? // 0-100 Domain Score (null if no bilateral tests)
+  safetyScore   Float // 0-100 Domain Score
+
+  // Fitness level classification
+  fitnessLevel String // excellent | good | average | limited | needs_rehab
+
+  // Regional assessments (detailed per-region data)
+  regions Json // AssessmentRegion[]
+
+  // Symmetry data
+  symmetryData Json? // { shoulder: LSI%, hip: LSI%, knee: LSI% }
+
+  // Hypothesis cards (observed compensations + possible causes)
+  hypotheses Json? // HypothesisCard[]
+
+  // Safety gates (blocked exercises/movements)
+  safetyGates Json? // SafetyGate[]
+
+  // Pain flags
+  painFlags Json? // { movement: string, region: string }[]
+
+  // Recommendations
+  recommendations Json? // { priority: number, type: string, exercises: string[] }[]
+
+  // PAR-Q+ screening result
+  parqPassed Boolean @default(true)
+  parqFlags  Json? // Which questions were answered "yes"
+
+  // Linked raw training reports (PostTrainingReport IDs for each movement)
+  rawReportIds Json? // string[]
+
+  // Comparison with previous assessment
+  previousId String? // Link to previous BodyScanResult for progress tracking
+
+  // Metadata
+  durationMs    Int? // Total assessment duration
+  movementCount Int  @default(3) // How many movements were performed
+
+  completedAt DateTime @default(now())
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  user                  User                   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  template              AssessmentTemplate?    @relation(fields: [templateId], references: [id], onDelete: SetNull)
+  previous              BodyScanResult?        @relation("AssessmentProgress", fields: [previousId], references: [id])
+  nextAssessments       BodyScanResult[]       @relation("AssessmentProgress")
+  levelProfiles         UserLevelProfile[]
+  reassessmentSchedules ReassessmentSchedule[]
 
   @@index([userId])
   @@index([userId, type])
   @@index([userId, completedAt])
+  @@index([templateId])
   @@map("body_scan_results")
 }
 
@@ -777,39 +1075,39 @@ model BodyScanResult {
 
 /// Training session - A completed exercise session
 model TrainingSession {
-  id              String   @id @default(uuid())
-  
+  id String @id @default(uuid())
+
   // Foreign keys
-  userId          String
-  exerciseId      String
-  
+  userId     String
+  exerciseId String
+
   // Session info
-  timestamp       DateTime // When session started
-  durationMs      Int      // Total duration in milliseconds
-  
+  timestamp  DateTime // When session started
+  durationMs Int // Total duration in milliseconds
+
   // Rep counts
-  totalReps       Int
-  countedReps     Int      // Reps with PERFECT/NORMAL/PAD state
-  invalidReps     Int      // Reps with DANGER state
-  
+  totalReps   Int
+  countedReps Int // Reps with PERFECT/NORMAL/PAD state
+  invalidReps Int // Reps with DANGER state
+
   // Weight info (optional - for weighted exercises)
-  weightKg        Float?
-  weightUnit      String   @default("kg") // kg or lbs
-  
+  weightKg   Float?
+  weightUnit String @default("kg") // kg or lbs
+
   // Legacy report data (images, danger alerts, etc.)
-  legacyReport    Json?    // PostTrainingReport for backward compatibility
-  
+  legacyReport Json? // PostTrainingReport for backward compatibility
+
   // Sync status
-  deviceId        String?  // Device that uploaded this session
-  
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
+  deviceId String? // Device that uploaded this session
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   // Relations
-  user            User              @relation(fields: [userId], references: [id], onDelete: Cascade)
-  exercise        Exercise          @relation(fields: [exerciseId], references: [id])
-  sessionMetrics  SessionMetrics?   // One-to-one with metrics
-  repMetrics      RepMetrics[]      // One-to-many with rep metrics
+  user           User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  exercise       Exercise        @relation(fields: [exerciseId], references: [id])
+  sessionMetrics SessionMetrics? // One-to-one with metrics
+  repMetrics     RepMetrics[] // One-to-many with rep metrics
 
   @@index([userId])
   @@index([exerciseId])
@@ -820,74 +1118,74 @@ model TrainingSession {
 
 /// Session-level aggregated metrics
 model SessionMetrics {
-  id                    String   @id @default(uuid())
-  sessionId             String   @unique
-  
+  id        String @id @default(uuid())
+  sessionId String @unique
+
   // Kinematic metrics (averages)
-  avgRom                Int      // Average ROM × 10
-  avgSymmetry           Int?     // Average symmetry × 10
-  avgStability          Int      // Average stability × 10
-  avgVelocity           Int?     // Average velocity × 100
-  
+  avgRom       Int // Average ROM × 10
+  avgSymmetry  Int? // Average symmetry × 10
+  avgStability Int // Average stability × 10
+  avgVelocity  Int? // Average velocity × 100
+
   // Form metrics
-  avgFormScore          Int      // Average form score × 10
-  avgAlignmentAccuracy  Int      // Average alignment × 10
-  
+  avgFormScore         Int // Average form score × 10
+  avgAlignmentAccuracy Int // Average alignment × 10
+
   // Tempo (stored as JSON array [eccentric, iso, concentric])
-  avgTempo              Json     // IntArray as JSON
-  
+  avgTempo Json // IntArray as JSON
+
   // Temporal metrics
-  totalTUT              Int      // Total Time Under Tension (ms)
-  
+  totalTUT Int // Total Time Under Tension (ms)
+
   // Load metrics
-  totalVolume           Float?   // Total volume (reps × weight)
-  maxWeight             Float?   // Maximum weight used
-  est1RM                Float?   // Estimated 1 Rep Max
-  
+  totalVolume Float? // Total volume (reps × weight)
+  maxWeight   Float? // Maximum weight used
+  est1RM      Float? // Estimated 1 Rep Max
+
   // Advanced metrics (future)
-  relativeStrength      Float?   // Weight / body weight
-  intensityPercentage   Float?   // % of 1RM
-  
+  relativeStrength    Float? // Weight / body weight
+  intensityPercentage Float? // % of 1RM
+
   // Quality metrics
-  formConsistency       Int?     // DTW score × 10
-  fatigueIndex          Int?     // Rep number where fatigue started
-  
-  createdAt             DateTime @default(now())
-  
+  formConsistency Int? // DTW score × 10
+  fatigueIndex    Int? // Rep number where fatigue started
+
+  createdAt DateTime @default(now())
+
   session TrainingSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
-  
+
   @@map("session_metrics")
 }
 
 /// Individual rep metrics
 model RepMetrics {
-  id              String   @id @default(uuid())
-  sessionId       String
-  
+  id        String @id @default(uuid())
+  sessionId String
+
   // Rep info
-  repNumber       Int      // 1-based rep number
-  durationMs      Int      // Rep duration in ms
-  worstState      Int      // 0=PERFECT, 1=NORMAL, 2=PAD, 3=WARNING, 4=DANGER
-  score           Int      // Form score × 10
-  weightKg        Float?   // Weight for this specific rep
-  
+  repNumber  Int // 1-based rep number
+  durationMs Int // Rep duration in ms
+  worstState Int // 0=PERFECT, 1=NORMAL, 2=PAD, 3=WARNING, 4=DANGER
+  score      Int // Form score × 10
+  weightKg   Float? // Weight for this specific rep
+
   // Kinematic metrics
-  rom             Int      // Range of Motion × 10
-  symmetry        Int?     // Bilateral symmetry × 10
-  stability       Int      // Core stability × 10
-  velocity        Int?     // Mean velocity × 100
-  
+  rom       Int // Range of Motion × 10
+  symmetry  Int? // Bilateral symmetry × 10
+  stability Int // Core stability × 10
+  velocity  Int? // Mean velocity × 100
+
   // Form metrics
-  formScore       Int      // Form score × 10
-  alignmentAccuracy Int    // Alignment × 10
-  
+  formScore         Int // Form score × 10
+  alignmentAccuracy Int // Alignment × 10
+
   // Tempo (stored as JSON array [eccentric, iso, concentric])
-  tempo           Json     // IntArray as JSON
-  
-  createdAt       DateTime @default(now())
-  
+  tempo Json // IntArray as JSON
+
+  createdAt DateTime @default(now())
+
   session TrainingSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
-  
+
   @@index([sessionId])
   @@index([sessionId, repNumber])
   @@map("rep_metrics")

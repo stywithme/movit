@@ -42,9 +42,19 @@ data class DomainScores(
     val symmetry: Float?,
     val safety: Float
 ) {
+    /**
+     * Calculate body score using dynamic weights from template, or defaults.
+     */
     fun getBodyScore(): Float {
-        val symScore = symmetry ?: ((mobility + control) / 2f)
-        return (mobility * 0.35f) + (control * 0.25f) + (symScore * 0.20f) + (safety * 0.20f)
+        return try {
+            val weights = com.trainingvalidator.poc.assessment.engine.AssessmentTemplateManager.getDomainWeights()
+            val symScore = symmetry ?: ((mobility + control) / 2f)
+            (mobility * weights.mobility) + (control * weights.control) + (symScore * weights.symmetry) + (safety * weights.safety)
+        } catch (e: Exception) {
+            // Fallback to hardcoded weights
+            val symScore = symmetry ?: ((mobility + control) / 2f)
+            (mobility * 0.35f) + (control * 0.25f) + (symScore * 0.20f) + (safety * 0.20f)
+        }
     }
 }
 
@@ -56,7 +66,21 @@ enum class FitnessLevel(val labelAr: String, val labelEn: String) {
     NEEDS_REHAB("يحتاج تأهيل", "Needs Rehabilitation");
 
     companion object {
-        fun fromBodyScore(score: Float): FitnessLevel = when {
+        /**
+         * Determine fitness level from body score.
+         * Uses dynamic thresholds from LevelThresholdsManager when available.
+         * Falls back to hardcoded defaults when no thresholds are loaded.
+         */
+        fun fromBodyScore(score: Float): FitnessLevel {
+            return try {
+                com.trainingvalidator.poc.assessment.engine.LevelThresholdsManager.fromBodyScore(score)
+            } catch (e: Exception) {
+                // Fallback to hardcoded defaults
+                fromBodyScoreDefault(score)
+            }
+        }
+
+        private fun fromBodyScoreDefault(score: Float): FitnessLevel = when {
             score >= 85f -> EXCELLENT
             score >= 65f -> GOOD
             score >= 45f -> AVERAGE

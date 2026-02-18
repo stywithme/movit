@@ -24,6 +24,12 @@ import {
   Repeat,
   MessageSquare,
   CalendarDays,
+  BarChart3,
+  PieChart,
+  Signal,
+  FileCheck,
+  TrendingUp,
+  Map,
 } from 'lucide-react';
 
 interface NavItem {
@@ -41,7 +47,7 @@ interface NavGroup {
 export function Sidebar() {
   const pathname = usePathname();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  const [openGroups, setOpenGroups] = useState<string[]>(['Content', 'Administration']);
+  const [openGroups, setOpenGroups] = useState<string[]>(['Content', 'Training System', 'Analytics', 'Administration']);
 
   const toggleGroup = (title: string) => {
     setOpenGroups((prev) =>
@@ -62,10 +68,30 @@ export function Sidebar() {
     items: [
       { title: 'Exercises', href: '/admin/exercises', icon: Dumbbell },
       { title: 'Programs', href: '/admin/programs', icon: CalendarDays },
+      { title: 'Programs Map', href: '/admin/programs/map', icon: Map },
       { title: 'Workouts', href: '/admin/workouts', icon: Repeat },
       { title: 'Attributes', href: '/admin/attributes', icon: Tags },
       { title: 'Messages', href: '/admin/messages', icon: MessageSquare },
       { title: 'Camera Positions', href: '/admin/camera-positions', icon: Layers },
+    ],
+  };
+
+  const trainingSystemGroup: NavGroup = {
+    title: 'Training System',
+    items: [
+      { title: 'Levels', href: '/admin/levels', icon: Signal },
+      { title: 'Assessment Templates', href: '/admin/assessment-templates', icon: FileCheck },
+      { title: 'Progression Rules', href: '/admin/progression-rules', icon: TrendingUp },
+    ],
+  };
+
+  const analyticsGroup: NavGroup = {
+    title: 'Analytics',
+    items: [
+      { title: 'Overview', href: '/admin/analytics', icon: BarChart3 },
+      { title: 'Programs', href: '/admin/analytics/programs', icon: PieChart },
+      { title: 'Levels', href: '/admin/analytics/levels', icon: Layers },
+      { title: 'Assessments', href: '/admin/analytics/assessments', icon: Activity },
     ],
   };
 
@@ -149,7 +175,7 @@ export function Sidebar() {
           </div>
 
           {/* Groups */}
-          {[contentGroup, adminGroup].map((group) => (
+          {[contentGroup, trainingSystemGroup, analyticsGroup, adminGroup].map((group) => (
             <div key={group.title} className="space-y-1">
               <button
                 onClick={() => toggleGroup(group.title)}

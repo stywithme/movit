@@ -5,6 +5,13 @@ import { useParams, useRouter } from 'next/navigation';
 import { Input, Select, Label, Button, Card, Textarea } from '@/components/ui';
 import type { LocalizedText } from '@/lib/types/localized';
 
+interface ProgramSummaryRef {
+  id: string;
+  name: LocalizedText;
+}
+
+const TARGET_REGION_OPTIONS = ['shoulder', 'hip', 'spine', 'knee', 'core', 'balance'] as const;
+
 interface ExerciseSummary {
   id: string;
   name: LocalizedText;
@@ -77,6 +84,17 @@ interface ProgramResponse {
   durationWeeks: number;
   difficulty: 'beginner' | 'intermediate' | 'advanced';
   tags: string[] | null;
+  type?: string;
+  targetDomain?: string | null;
+  targetRegions?: string[] | null;
+  levelRangeMin?: number;
+  levelRangeMax?: number;
+  entryCriteria?: object | null;
+  exitCriteria?: object | null;
+  contraindications?: string[] | null;
+  prescriptionPriority?: number;
+  prerequisiteProgramId?: string | null;
+  nextProgramId?: string | null;
   weeks: Array<{
     weekNumber: number;
     name?: LocalizedText;
@@ -159,8 +177,21 @@ export default function EditProgramPage() {
   const [tags, setTags] = useState('');
   const [weeks, setWeeks] = useState<WeekForm[]>([createEmptyWeek(1)]);
 
+  const [programType, setProgramType] = useState('training');
+  const [targetDomain, setTargetDomain] = useState('none');
+  const [targetRegions, setTargetRegions] = useState<string[]>([]);
+  const [levelRangeMin, setLevelRangeMin] = useState(1);
+  const [levelRangeMax, setLevelRangeMax] = useState(10);
+  const [entryCriteria, setEntryCriteria] = useState('');
+  const [exitCriteria, setExitCriteria] = useState('');
+  const [contraindications, setContraindications] = useState<string[]>([]);
+  const [prescriptionPriority, setPrescriptionPriority] = useState(50);
+  const [prerequisiteProgramId, setPrerequisiteProgramId] = useState('');
+  const [nextProgramId, setNextProgramId] = useState('');
+
   const [exercises, setExercises] = useState<ExerciseSummary[]>([]);
   const [workouts, setWorkouts] = useState<WorkoutSummary[]>([]);
+  const [publishedPrograms, setPublishedPrograms] = useState<ProgramSummaryRef[]>([]);
 
   useEffect(() => {
     const fetchExercises = async () => {
@@ -197,6 +228,21 @@ export default function EditProgramPage() {
   }, []);
 
   useEffect(() => {
+    const fetchPublishedPrograms = async () => {
+      try {
+        const res = await fetch('/api/programs?status=published&limit=200');
+        const data = await res.json();
+        if (data.success) {
+          setPublishedPrograms(data.data);
+        }
+      } catch (error) {
+        console.error('Error fetching published programs:', error);
+      }
+    };
+    fetchPublishedPrograms();
+  }, []);
+
+  useEffect(() => {
     const fetchProgram = async () => {
       try {
         const res = await fetch(`/api/programs/${programId}`);
@@ -214,6 +260,18 @@ export default function EditProgramPage() {
         setDurationWeeks(program.durationWeeks);
         setDifficulty(program.difficulty);
         setTags((program.tags || []).join(', '));
+
+        setProgramType(program.type || 'training');
+        setTargetDomain(program.targetDomain || 'none');
+        setTargetRegions(program.targetRegions || []);
+        setLevelRangeMin(program.levelRangeMin ?? 1);
+        setLevelRangeMax(program.levelRangeMax ?? 10);
+        setEntryCriteria(program.entryCriteria ? JSON.stringify(program.entryCriteria, null, 2) : '');
+        setExitCriteria(program.exitCriteria ? JSON.stringify(program.exitCriteria, null, 2) : '');
+        setContraindications(program.contraindications || []);
+        setPrescriptionPriority(program.prescriptionPriority ?? 50);
+        setPrerequisiteProgramId(program.prerequisiteProgramId || '');
+        setNextProgramId(program.nextProgramId || '');
 
         const mappedWeeks: WeekForm[] =
           program.weeks?.map((week, weekIndex) => ({
@@ -276,6 +334,17 @@ export default function EditProgramPage() {
         label: `${workout.name.en} / ${workout.name.ar}`,
       })),
     [workouts]
+  );
+
+  const publishedProgramOptions = useMemo(
+    () => [
+      { value: '', label: 'None' },
+      ...publishedPrograms.map((p) => ({
+        value: p.id,
+        label: `${p.name.en} / ${p.name.ar}`,
+      })),
+    ],
+    [publishedPrograms]
   );
 
   const updateWeek = (weekIndex: number, updates: Partial<WeekForm>) => {
@@ -491,6 +560,15 @@ export default function EditProgramPage() {
     }
   };
 
+  const parseJsonField = (value: string): object | undefined => {
+    if (!value.trim()) return undefined;
+    try {
+      return JSON.parse(value);
+    } catch {
+      return undefined;
+    }
+  };
+
   const buildPayload = () => ({
     name,
     description: description.en || description.ar ? description : undefined,
@@ -501,6 +579,17 @@ export default function EditProgramPage() {
       .split(',')
       .map((tag) => tag.trim())
       .filter(Boolean),
+    type: programType,
+    targetDomain: targetDomain !== 'none' ? targetDomain : undefined,
+    targetRegions: targetRegions.length > 0 ? targetRegions : undefined,
+    levelRangeMin,
+    levelRangeMax,
+    entryCriteria: parseJsonField(entryCriteria),
+    exitCriteria: parseJsonField(exitCriteria),
+    contraindications: contraindications.length > 0 ? contraindications : undefined,
+    prescriptionPriority,
+    prerequisiteProgramId: prerequisiteProgramId || undefined,
+    nextProgramId: nextProgramId || undefined,
     weeks: weeks.map((week, weekIndex) => ({
       weekNumber: week.weekNumber || weekIndex + 1,
       name: week.name.en || week.name.ar ? week.name : undefined,
@@ -668,6 +757,156 @@ export default function EditProgramPage() {
                 value={tags}
                 onChange={(e) => setTags(e.target.value)}
                 placeholder="weight-loss, beginner"
+              />
+            </div>
+          </div>
+        </Card>
+
+        <Card className="p-6">
+          <h2 className="text-lg font-semibold mb-4">Prescription Settings</h2>
+
+          <div className="grid grid-cols-3 gap-4">
+            <div>
+              <Label>Program Type</Label>
+              <Select
+                value={programType}
+                onChange={(e) => setProgramType(e.target.value)}
+                options={[
+                  { value: 'training', label: 'Training' },
+                  { value: 'mobility', label: 'Mobility' },
+                  { value: 'therapeutic', label: 'Therapeutic' },
+                ]}
+              />
+            </div>
+            <div>
+              <Label>Target Domain</Label>
+              <Select
+                value={targetDomain}
+                onChange={(e) => setTargetDomain(e.target.value)}
+                options={[
+                  { value: 'none', label: 'None' },
+                  { value: 'mobility', label: 'Mobility' },
+                  { value: 'strength', label: 'Strength' },
+                  { value: 'control', label: 'Control' },
+                  { value: 'symmetry', label: 'Symmetry' },
+                ]}
+              />
+            </div>
+            <div>
+              <Label>Prescription Priority (1-100)</Label>
+              <Input
+                type="number"
+                min={1}
+                max={100}
+                value={prescriptionPriority}
+                onChange={(e) => setPrescriptionPriority(Number.parseInt(e.target.value, 10) || 1)}
+              />
+            </div>
+          </div>
+
+          <div className="mt-4">
+            <Label>Target Regions</Label>
+            <div className="flex flex-wrap gap-3 mt-1">
+              {TARGET_REGION_OPTIONS.map((region) => (
+                <label key={region} className="flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={targetRegions.includes(region)}
+                    onChange={(e) => {
+                      if (e.target.checked) {
+                        setTargetRegions((prev) => [...prev, region]);
+                      } else {
+                        setTargetRegions((prev) => prev.filter((r) => r !== region));
+                      }
+                    }}
+                    className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                  />
+                  <span className="text-sm text-gray-700 capitalize">{region}</span>
+                </label>
+              ))}
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4 mt-4">
+            <div>
+              <Label>Level Range Min</Label>
+              <Input
+                type="number"
+                min={1}
+                value={levelRangeMin}
+                onChange={(e) => setLevelRangeMin(Number.parseInt(e.target.value, 10) || 1)}
+              />
+            </div>
+            <div>
+              <Label>Level Range Max</Label>
+              <Input
+                type="number"
+                min={1}
+                value={levelRangeMax}
+                onChange={(e) => setLevelRangeMax(Number.parseInt(e.target.value, 10) || 1)}
+              />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4 mt-4">
+            <div>
+              <Label>Entry Criteria (JSON)</Label>
+              <Textarea
+                value={entryCriteria}
+                onChange={(e) => setEntryCriteria(e.target.value)}
+                placeholder={'{\n  "minFormScore": 70,\n  "minCompletionRate": 0.8\n}'}
+                rows={3}
+              />
+            </div>
+            <div>
+              <Label>Exit Criteria (JSON)</Label>
+              <Textarea
+                value={exitCriteria}
+                onChange={(e) => setExitCriteria(e.target.value)}
+                placeholder={'{\n  "minFormScore": 90,\n  "minWeeksCompleted": 4\n}'}
+                rows={3}
+              />
+            </div>
+          </div>
+
+          <div className="mt-4">
+            <Label>Contraindications</Label>
+            <div className="flex flex-wrap gap-3 mt-1">
+              {TARGET_REGION_OPTIONS.map((region) => (
+                <label key={region} className="flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={contraindications.includes(region)}
+                    onChange={(e) => {
+                      if (e.target.checked) {
+                        setContraindications((prev) => [...prev, region]);
+                      } else {
+                        setContraindications((prev) => prev.filter((r) => r !== region));
+                      }
+                    }}
+                    className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                  />
+                  <span className="text-sm text-gray-700 capitalize">{region}</span>
+                </label>
+              ))}
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4 mt-4">
+            <div>
+              <Label>Prerequisite Program</Label>
+              <Select
+                value={prerequisiteProgramId}
+                onChange={(e) => setPrerequisiteProgramId(e.target.value)}
+                options={publishedProgramOptions}
+              />
+            </div>
+            <div>
+              <Label>Next Program</Label>
+              <Select
+                value={nextProgramId}
+                onChange={(e) => setNextProgramId(e.target.value)}
+                options={publishedProgramOptions}
               />
             </div>
           </div>

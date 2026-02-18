@@ -5,6 +5,7 @@ import {
   completeProgramSessionReport,
   getAllHistory,
   getExerciseHistory,
+  getUserHomeStats,
   saveSession,
   startProgramSessionReport,
   updateProgramSessionReport,
@@ -161,6 +162,31 @@ export class MobileSessionsController {
       console.error('[Program Sessions] Error reporting session:', error);
       res.status(500);
       return { success: false, error: error instanceof Error ? error.message : 'Failed to report session' };
+    }
+  }
+
+  /**
+   * GET /mobile/sessions/stats — User home stats.
+   * Returns weekly workouts, average form score, streak, and total stats.
+   */
+  @Get('stats')
+  async getStats(
+    @Req() req: Request,
+    @Res({ passthrough: true }) res: Response
+  ) {
+    try {
+      const authResult = await verifyMobileToken(req);
+      if (!authResult.success || !authResult.userId) {
+        res.status(401);
+        return { success: false, error: 'Unauthorized' };
+      }
+
+      const stats = await getUserHomeStats(authResult.userId);
+      return { success: true, data: stats };
+    } catch (error) {
+      console.error('[Sessions] Error fetching stats:', error);
+      res.status(500);
+      return { success: false, error: 'Failed to fetch stats' };
     }
   }
 

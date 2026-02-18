@@ -14,13 +14,18 @@ import android.widget.*
 import androidx.activity.result.ActivityResultLauncher
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
+import androidx.lifecycle.lifecycleScope
+import com.trainingvalidator.poc.assessment.AssessmentUploadService
 import com.trainingvalidator.poc.assessment.engine.AdaptiveBatteryManager
 import com.trainingvalidator.poc.assessment.engine.AssessmentEngine
+import com.trainingvalidator.poc.assessment.engine.AssessmentTemplateManager
 import com.trainingvalidator.poc.assessment.models.AssessmentType
+import com.trainingvalidator.poc.assessment.models.BodyScanResult
 import com.trainingvalidator.poc.assessment.models.PainFlag
 import com.trainingvalidator.poc.storage.ReportStorage
 import com.trainingvalidator.poc.training.report.PostTrainingReport
 import com.trainingvalidator.poc.ui.TrainingActivity
+import kotlinx.coroutines.launch
 
 /**
  * AssessmentSessionActivity - Orchestrates the Body Scan assessment flow.
@@ -65,12 +70,8 @@ class AssessmentSessionActivity : AppCompatActivity() {
     private var startTimeMs = 0L
     private var currentExerciseSlug: String? = null
 
-    // Core exercises (always run)
-    private val coreExercises = listOf(
-        "assessment_overhead_squat",
-        "assessment_lunge",
-        "assessment_shoulder_mobility"
-    )
+    // Core exercises (loaded from template or defaults)
+    private var coreExercises = AssessmentTemplateManager.DEFAULT_CORE_EXERCISES.toMutableList()
 
     // Adaptive exercises (added when needed)
     private val adaptiveExercises = mutableListOf<String>()
@@ -99,6 +100,11 @@ class AssessmentSessionActivity : AppCompatActivity() {
 
         reportStorage = ReportStorage(this)
         startTimeMs = System.currentTimeMillis()
+
+        // Try to load assessment template from server
+        lifecycleScope.launch {
+            loadTemplate()
+        }
 
         // Register the activity result launcher before any UI setup
         exerciseLauncher = registerForActivityResult(
@@ -250,6 +256,19 @@ class AssessmentSessionActivity : AppCompatActivity() {
                                 Log.d(TAG, "Adaptive exercise added: ${decision.exercise.slug}")
                             }
                         }
+
+                        // Also check template-based adaptive exercises
+                        val templateAdaptive = AssessmentTemplateManager.getAdaptiveExercises()
+                        for (exercise in templateAdaptive) {
+                            if (exercise.exerciseSlug !in adaptiveExercises &&
+                                exercise.exerciseSlug !in coreExercises) {
+                                // Check activation condition from template
+                                if (shouldActivateFromTemplate(exercise, completedReports)) {
+                                    adaptiveExercises.add(exercise.exerciseSlug)
+                                    Log.d(TAG, "Template adaptive exercise added: ${exercise.exerciseSlug}")
+                                }
+                            }
+                        }
                     }
                 } else {
                     Log.w(TAG, "Report not found in storage for ID: $reportId")
@@ -303,21 +322,61 @@ class AssessmentSessionActivity : AppCompatActivity() {
             return
         }
 
-        val engine = AssessmentEngine()
-        val result = engine.process(
-            reports = completedReports,
-            userId = getUserId(),
-            assessmentType = assessmentType,
-            parqPassed = parqPassed,
-            parqFlags = parqFlags,
-            painFlags = painFlags,
-            previousResult = null,
-            durationMs = System.currentTimeMillis() - startTimeMs
-        )
+        // Phase 0: Fetch previous assessment for comparison, then process & upload
+        lifecycleScope.launch {
+            val previousAssessment = fetchPreviousAssessment()
 
-        val intent = AssessmentResultActivity.createIntent(this, result)
-        startActivity(intent)
-        finish()
+            val engine = AssessmentEngine()
+            val result = engine.process(
+                reports = completedReports,
+                userId = getUserId(),
+                assessmentType = assessmentType,
+                parqPassed = parqPassed,
+                parqFlags = parqFlags,
+                painFlags = painFlags,
+                previousResult = previousAssessment,
+                durationMs = System.currentTimeMillis() - startTimeMs
+            )
+
+            // Upload to backend (fire-and-forget — don't block the user)
+            uploadAssessment(result)
+
+            // Navigate to results screen
+            val intent = AssessmentResultActivity.createIntent(
+                this@AssessmentSessionActivity,
+                result
+            )
+            startActivity(intent)
+            finish()
+        }
+    }
+
+    /**
+     * Fetch the user's latest assessment as a BodyScanResult.
+     * Used to pass as previousResult to AssessmentEngine for comparison and linking.
+     */
+    private suspend fun fetchPreviousAssessment(): BodyScanResult? {
+        return try {
+            AssessmentUploadService.fetchLatestAsBodyScanResult(this)
+        } catch (e: Exception) {
+            Log.w(TAG, "Failed to fetch previous assessment", e)
+            null
+        }
+    }
+
+    /**
+     * Upload the assessment result to the backend.
+     * Runs in background — does not block the UI flow.
+     */
+    private fun uploadAssessment(result: BodyScanResult) {
+        lifecycleScope.launch {
+            val serverId = AssessmentUploadService.upload(this@AssessmentSessionActivity, result)
+            if (serverId != null) {
+                Log.d(TAG, "Assessment uploaded to server: $serverId")
+            } else {
+                Log.w(TAG, "Assessment upload failed — will retry on next sync")
+            }
+        }
     }
 
     private fun getUserId(): String {
@@ -325,15 +384,87 @@ class AssessmentSessionActivity : AppCompatActivity() {
         return prefs.getString("user_id", "unknown") ?: "unknown"
     }
 
+    private suspend fun loadTemplate() {
+        try {
+            val prefs = getSharedPreferences("app_prefs", Context.MODE_PRIVATE)
+            val token = prefs.getString("auth_token", null) ?: return
+            
+            val template = AssessmentTemplateManager.resolve(this, token)
+            if (template != null) {
+                val coreSlugs = template.exercises
+                    .filter { it.entryType == "core" }
+                    .sortedBy { it.sortOrder }
+                    .map { it.exerciseSlug }
+                
+                if (coreSlugs.isNotEmpty()) {
+                    coreExercises = coreSlugs.toMutableList()
+                    Log.d(TAG, "Loaded ${coreSlugs.size} core exercises from template")
+                    
+                    // Restart exercise display if still on first exercise
+                    if (currentExerciseIndex == 0 && completedReports.isEmpty()) {
+                        runOnUiThread { showExerciseIntro(0) }
+                    }
+                }
+            }
+        } catch (e: Exception) {
+            Log.w(TAG, "Failed to load template, using defaults", e)
+        }
+    }
+
+    private fun shouldActivateFromTemplate(
+        exercise: com.trainingvalidator.poc.network.TemplateExerciseData,
+        reports: List<PostTrainingReport>
+    ): Boolean {
+        val condition = exercise.activationCondition ?: return true
+        try {
+            val metric = condition["metric"]?.toString() ?: return true
+            val operator = condition["operator"]?.toString() ?: return true
+            val targetValue = (condition["value"] as? Number)?.toFloat() ?: return true
+
+            for (report in reports) {
+                val actualValue = when (metric) {
+                    "avgROM" -> report.summary.avgROM
+                    "avgStability" -> report.summary.avgStability
+                    "avgSymmetry" -> report.summary.avgSymmetry
+                    "accuracy" -> report.summary.accuracy.toFloat()
+                    else -> null
+                } ?: continue
+
+                val matches = when (operator) {
+                    "<" -> actualValue < targetValue
+                    "<=" -> actualValue <= targetValue
+                    ">" -> actualValue > targetValue
+                    ">=" -> actualValue >= targetValue
+                    else -> false
+                }
+                if (matches) return true
+            }
+        } catch (e: Exception) {
+            Log.w(TAG, "Failed to evaluate activation condition", e)
+        }
+        return false
+    }
+
     private fun getAllExercises(): List<String> = coreExercises + adaptiveExercises
 
-    private fun getExerciseDisplayName(slug: String): String = when (slug) {
-        "assessment_overhead_squat" -> "Overhead Squat"
-        "assessment_lunge" -> "Lunge"
-        "assessment_shoulder_mobility" -> "Shoulder Mobility"
-        "assessment_forward_fold" -> "Forward Fold"
-        "assessment_single_leg_balance" -> "Single-Leg Balance"
-        else -> slug
+    private fun getExerciseDisplayName(slug: String): String {
+        // Try to get from template exercise info
+        val info = AssessmentTemplateManager.getExerciseInfo(slug)
+        if (info != null) {
+            // Use slug as display name since template exercises might be dynamic
+            return slug.replace("assessment_", "")
+                .replace("_", " ")
+                .split(" ")
+                .joinToString(" ") { it.replaceFirstChar { c -> c.uppercase() } }
+        }
+        return when (slug) {
+            "assessment_overhead_squat" -> "Overhead Squat"
+            "assessment_lunge" -> "Lunge"
+            "assessment_shoulder_mobility" -> "Shoulder Mobility"
+            "assessment_forward_fold" -> "Forward Fold"
+            "assessment_single_leg_balance" -> "Single-Leg Balance"
+            else -> slug.replace("assessment_", "").replace("_", " ").replaceFirstChar { it.uppercase() }
+        }
     }
 
     private fun getExerciseDescription(slug: String): String = when (slug) {

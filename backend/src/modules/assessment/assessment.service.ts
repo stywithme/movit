@@ -6,6 +6,8 @@
  */
 
 import { getPrisma } from '@/lib/prisma/client';
+import { levelProfileService } from '@/modules/level-profile/level-profile.service';
+import { reassessmentService } from '@/modules/reassessment/reassessment.service';
 import type { BodyScanResultCreate, BodyScanProgress, DomainScores } from './assessment.types';
 
 // Minimum Detectable Change threshold (points) for "real" improvement
@@ -22,7 +24,7 @@ export const assessmentService = {
   async create(data: BodyScanResultCreate) {
     const prisma = await getPrisma();
 
-    return prisma.bodyScanResult.create({
+    const result = await prisma.bodyScanResult.create({
       data: {
         userId: data.userId,
         type: data.type,
@@ -46,6 +48,23 @@ export const assessmentService = {
         movementCount: data.movementCount,
       },
     });
+
+    // Phase 1: Auto-calculate level profile from the new assessment
+    try {
+      await levelProfileService.calculateFromAssessment(result.id);
+      console.log(`[Assessment] Level profile calculated for assessment ${result.id}`);
+    } catch (error) {
+      console.warn('[Assessment] Failed to calculate level profile:', error);
+    }
+
+    // Phase 3: Mark any pending reassessment as completed
+    try {
+      await reassessmentService.markCompleted(data.userId, result.id);
+    } catch (error) {
+      console.warn('[Assessment] Failed to mark reassessment:', error);
+    }
+
+    return result;
   },
 
   /**

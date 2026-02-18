@@ -9,6 +9,9 @@ import { seedPrograms } from './seeders/programs';
 import { seedUsers } from './seeders/users';
 import { seedUserPrograms } from './seeders/user-programs';
 import { seedAdmins } from './seeders/admins';
+import { seedLevels } from './seeders/levels';
+import { seedProgressionRules } from './seeders/progression-rules';
+import { seedAssessmentTemplates } from './seeders/assessment-templates';
 
 if (!process.env.DATABASE_URL) {
   throw new Error('DATABASE_URL is not set in environment variables');
@@ -36,6 +39,9 @@ async function main() {
   await seedPrograms(prisma);
   await seedUserPrograms(prisma);
   await seedAdmins(prisma);
+  await seedLevels(prisma);
+  await seedProgressionRules(prisma);
+  await seedAssessmentTemplates(prisma);
 
   console.log('🎉 Seeding completed!');
 }

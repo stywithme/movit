@@ -51,6 +51,16 @@ export async function seedPrograms(prisma: PrismaClient) {
       isDefault: true,
       isPublished: true,
       tags: ['beginner', 'foundation'],
+      // Prescription metadata
+      type: 'training',
+      targetDomain: null,
+      targetRegions: [],
+      levelRangeMin: 1,
+      levelRangeMax: 2,
+      prescriptionPriority: 50,
+      entryCriteria: {},
+      exitCriteria: { bodyScore: { min: 40 } },
+      contraindications: [],
     },
     create: {
       slug: 'starter-4-weeks',
@@ -61,6 +71,15 @@ export async function seedPrograms(prisma: PrismaClient) {
       isDefault: true,
       isPublished: true,
       tags: ['beginner', 'foundation'],
+      type: 'training',
+      targetDomain: null,
+      targetRegions: [],
+      levelRangeMin: 1,
+      levelRangeMax: 2,
+      prescriptionPriority: 50,
+      entryCriteria: {},
+      exitCriteria: { bodyScore: { min: 40 } },
+      contraindications: [],
     },
   });
 
@@ -334,5 +353,226 @@ export async function seedPrograms(prisma: PrismaClient) {
     { dayNumber: 7, isRestDay: true }, // Friday — Rest
   ]);
 
-  console.log('✅ Programs seeded (4 weeks × 7 days)');
+  console.log('  ✅ Starter program seeded (4 weeks × 7 days)');
+
+  // ════════════════════════════════════════════════════════════════
+  // PROGRAM 2 — Mobility Focus (3 weeks)
+  // Targets users with low mobility scores
+  // ════════════════════════════════════════════════════════════════
+  const mobilityProgram = await prisma.program.upsert({
+    where: { slug: 'mobility-focus-3w' },
+    update: {
+      name: { ar: 'برنامج المرونة والحركة', en: 'Mobility Focus Program' },
+      description: { ar: 'تحسين المرونة ونطاق الحركة خلال 3 أسابيع', en: 'Improve flexibility and range of motion over 3 weeks' },
+      durationWeeks: 3,
+      difficulty: 'beginner',
+      isPublished: true,
+      tags: ['mobility', 'flexibility', 'correction'],
+      type: 'mobility',
+      targetDomain: 'mobility',
+      targetRegions: ['shoulder', 'hip', 'spine'],
+      levelRangeMin: 1,
+      levelRangeMax: 3,
+      prescriptionPriority: 30,
+      entryCriteria: { mobilityScore: { max: 50 } },
+      exitCriteria: { mobilityScore: { min: 65 } },
+      contraindications: [],
+    },
+    create: {
+      slug: 'mobility-focus-3w',
+      name: { ar: 'برنامج المرونة والحركة', en: 'Mobility Focus Program' },
+      description: { ar: 'تحسين المرونة ونطاق الحركة خلال 3 أسابيع', en: 'Improve flexibility and range of motion over 3 weeks' },
+      durationWeeks: 3,
+      difficulty: 'beginner',
+      isPublished: true,
+      tags: ['mobility', 'flexibility', 'correction'],
+      type: 'mobility',
+      targetDomain: 'mobility',
+      targetRegions: ['shoulder', 'hip', 'spine'],
+      levelRangeMin: 1,
+      levelRangeMax: 3,
+      prescriptionPriority: 30,
+      entryCriteria: { mobilityScore: { max: 50 } },
+      exitCriteria: { mobilityScore: { min: 65 } },
+      contraindications: [],
+    },
+  });
+
+  await prisma.programWeek.deleteMany({ where: { programId: mobilityProgram.id } });
+
+  for (let w = 1; w <= 3; w++) {
+    await createWeekForProgram(prisma, mobilityProgram.id, w, [
+      {
+        dayNumber: 1,
+        sessions: [
+          buildSession({ ar: 'جلسة مرونة', en: 'Mobility Session' }, [
+            exItem(ex1, { sets: 2, reps: 12, duration: 40, restMs: 20000, sortOrder: 1 }),
+            restItem(45000, 2),
+            exItem(ex3, { sets: 2, reps: 10, duration: 35, restMs: 20000, sortOrder: 3 }),
+          ]),
+        ],
+      },
+      { dayNumber: 2, isRestDay: true },
+      {
+        dayNumber: 3,
+        sessions: [
+          buildSession({ ar: 'تمديد وتحرك', en: 'Stretch & Move' }, [
+            exItem(ex2, { sets: 2, reps: 10, duration: 35, restMs: 20000, sortOrder: 1 }),
+            restItem(40000, 2),
+            exItem(ex4, { sets: 2, reps: 10, duration: 35, restMs: 20000, sortOrder: 3 }),
+          ]),
+        ],
+      },
+      { dayNumber: 4, isRestDay: true },
+      {
+        dayNumber: 5,
+        sessions: [
+          buildSession({ ar: 'مرونة شاملة', en: 'Full Mobility' }, [
+            exItem(ex5, { sets: 2, reps: 10, duration: 40, restMs: 20000, sortOrder: 1 }),
+            restItem(40000, 2),
+            exItem(ex6, { sets: 2, reps: 10, duration: 35, restMs: 20000, sortOrder: 3 }),
+          ]),
+        ],
+      },
+      { dayNumber: 6, isRestDay: true },
+      { dayNumber: 7, isRestDay: true },
+    ]);
+  }
+
+  console.log('  ✅ Mobility Focus program seeded (3 weeks)');
+
+  // ════════════════════════════════════════════════════════════════
+  // PROGRAM 3 — Intermediate Strength (4 weeks)
+  // For users who completed the starter program
+  // ════════════════════════════════════════════════════════════════
+  const strengthProgram = await prisma.program.upsert({
+    where: { slug: 'intermediate-strength-4w' },
+    update: {
+      name: { ar: 'برنامج القوة المتوسط', en: 'Intermediate Strength Program' },
+      description: { ar: 'بناء القوة والتحكم لمستوى متقدم', en: 'Build strength and control for intermediate level' },
+      durationWeeks: 4,
+      difficulty: 'intermediate',
+      isPublished: true,
+      tags: ['strength', 'intermediate', 'progression'],
+      type: 'training',
+      targetDomain: 'strength',
+      targetRegions: [],
+      levelRangeMin: 2,
+      levelRangeMax: 4,
+      prescriptionPriority: 60,
+      entryCriteria: { bodyScore: { min: 40 } },
+      exitCriteria: { bodyScore: { min: 65 } },
+      contraindications: [],
+      prerequisiteProgramId: program.id,
+    },
+    create: {
+      slug: 'intermediate-strength-4w',
+      name: { ar: 'برنامج القوة المتوسط', en: 'Intermediate Strength Program' },
+      description: { ar: 'بناء القوة والتحكم لمستوى متقدم', en: 'Build strength and control for intermediate level' },
+      durationWeeks: 4,
+      difficulty: 'intermediate',
+      isPublished: true,
+      tags: ['strength', 'intermediate', 'progression'],
+      type: 'training',
+      targetDomain: 'strength',
+      targetRegions: [],
+      levelRangeMin: 2,
+      levelRangeMax: 4,
+      prescriptionPriority: 60,
+      entryCriteria: { bodyScore: { min: 40 } },
+      exitCriteria: { bodyScore: { min: 65 } },
+      contraindications: [],
+      prerequisiteProgramId: program.id,
+    },
+  });
+
+  // Link starter → intermediate
+  await prisma.program.update({
+    where: { id: program.id },
+    data: { nextProgramId: strengthProgram.id },
+  });
+
+  await prisma.programWeek.deleteMany({ where: { programId: strengthProgram.id } });
+
+  for (let w = 1; w <= 4; w++) {
+    const baseSets = w <= 2 ? 3 : 4;
+    const baseReps = w <= 2 ? 10 : 12;
+    const baseWeight = 5 + (w - 1) * 2.5;
+
+    await createWeekForProgram(prisma, strengthProgram.id, w, [
+      {
+        dayNumber: 1,
+        sessions: [
+          buildSession({ ar: 'قوة علوية', en: 'Upper Strength' }, [
+            exItem(ex1, { sets: baseSets, reps: baseReps, duration: 40, restMs: 45000, weight: baseWeight, sortOrder: 1 }),
+            restItem(60000, 2),
+            exItem(ex2, { sets: baseSets, reps: baseReps, duration: 40, restMs: 45000, weight: baseWeight, sortOrder: 3 }),
+          ]),
+        ],
+      },
+      {
+        dayNumber: 2,
+        sessions: [
+          buildSession({ ar: 'قوة سفلية', en: 'Lower Strength' }, [
+            exItem(ex3, { sets: baseSets, reps: baseReps, duration: 40, restMs: 45000, weight: baseWeight, sortOrder: 1 }),
+            restItem(60000, 2),
+            exItem(ex4, { sets: baseSets, reps: baseReps, duration: 40, restMs: 45000, weight: baseWeight, sortOrder: 3 }),
+          ]),
+        ],
+      },
+      { dayNumber: 3, isRestDay: true },
+      {
+        dayNumber: 4,
+        sessions: [
+          buildSession({ ar: 'قوة شاملة', en: 'Full Body Power' }, [
+            exItem(ex5, { sets: baseSets, reps: baseReps, duration: 45, restMs: 50000, weight: baseWeight + 2.5, sortOrder: 1 }),
+            restItem(60000, 2),
+            exItem(ex6, { sets: baseSets, reps: baseReps, duration: 40, restMs: 45000, weight: baseWeight, sortOrder: 3 }),
+          ]),
+        ],
+      },
+      { dayNumber: 5, isRestDay: true },
+      {
+        dayNumber: 6,
+        sessions: [
+          buildSession({ ar: 'تحدي القوة', en: 'Strength Challenge' }, [
+            exItem(ex1, { sets: baseSets + 1, reps: baseReps, duration: 45, restMs: 40000, weight: baseWeight + 2.5, sortOrder: 1 }),
+            restItem(50000, 2),
+            exItem(ex3, { sets: baseSets, reps: baseReps, duration: 40, restMs: 40000, weight: baseWeight, sortOrder: 3 }),
+          ]),
+        ],
+      },
+      { dayNumber: 7, isRestDay: true },
+    ]);
+  }
+
+  console.log('  ✅ Intermediate Strength program seeded (4 weeks)');
+  console.log('✅ All programs seeded (3 programs)');
+}
+
+// Helper to create a week for any program
+async function createWeekForProgram(
+  prisma: any,
+  programId: string,
+  weekNumber: number,
+  days: { dayNumber: number; isRestDay?: boolean; sessions?: any[] }[],
+) {
+  await prisma.programWeek.create({
+    data: {
+      programId,
+      weekNumber,
+      sortOrder: weekNumber,
+      name: { ar: `الأسبوع ${weekNumber}`, en: `Week ${weekNumber}` },
+      days: {
+        create: days.map((day) => ({
+          dayNumber: day.dayNumber,
+          isRestDay: day.isRestDay ?? false,
+          name: day.isRestDay ? { ar: 'راحة', en: 'Rest' } : undefined,
+          sessions: day.sessions
+            ? { create: day.sessions }
+            : undefined,
+        })),
+      },
+    },
+  });
 }

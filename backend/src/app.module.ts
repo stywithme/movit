@@ -20,6 +20,13 @@ import { AiModule } from './modules/ai/ai.module';
 import { AnalyticsModule } from './modules/analytics/analytics.module';
 import { ReportsModule } from './modules/reports/reports.module';
 import { AssessmentModule } from './modules/assessment/assessment.module';
+import { LevelProfileModule } from './modules/level-profile/level-profile.module';
+import { PrescriptionModule } from './modules/prescription/prescription.module';
+import { ActivePlanModule } from './modules/active-plan/active-plan.module';
+import { ProgressionModule } from './modules/progression/progression.module';
+import { ReassessmentModule } from './modules/reassessment/reassessment.module';
+import { LevelsModule } from './modules/levels';
+import { AssessmentTemplatesModule } from './modules/assessment-templates';
 
 @Module({
   imports: [
@@ -50,6 +57,13 @@ import { AssessmentModule } from './modules/assessment/assessment.module';
     AnalyticsModule,
     ReportsModule,
     AssessmentModule,
+    LevelProfileModule,
+    PrescriptionModule,
+    ActivePlanModule,
+    ProgressionModule,
+    ReassessmentModule,
+    LevelsModule,
+    AssessmentTemplatesModule,
   ],
 })
 export class AppModule {}

@@ -7,6 +7,8 @@
 
 import { prisma } from '@/lib/prisma/client';
 import { Prisma } from '@prisma/client';
+import { intX10ToFloat } from '@/lib/metrics';
+import { progressionService } from '@/modules/progression/progression.service';
 import {
   SessionUploadPayload,
   TrainingSessionResponse,
@@ -498,6 +500,22 @@ export async function completeProgramSessionReport(
     console.warn('[Sessions] Failed to update program progress:', progressError);
   }
 
+  // ── Progression Engine — evaluate rules after session completion ──
+  try {
+    const changes = await progressionService.evaluateAfterSession(
+      userId,
+      sessionId,
+      undefined, // Global rules don't need exerciseId
+      report.programId ?? undefined,
+    );
+    if (changes.length > 0) {
+      console.log(`[Progression] ${changes.length} change(s) applied for user ${userId}:`,
+        changes.map((c) => `${c.field}: ${c.previousValue} → ${c.newValue}`).join(', '));
+    }
+  } catch (progressionError) {
+    console.warn('[Sessions] Progression engine error (non-fatal):', progressionError);
+  }
+
   return updatedReport;
 }
 
@@ -531,6 +549,106 @@ export async function updateProgramSessionReport(
       report: (payload.report ?? report.report) as Prisma.InputJsonValue | undefined,
     },
   });
+}
+
+// ============================================
+// User Home Stats
+// ============================================
+
+export async function getUserHomeStats(userId: string) {
+  const now = new Date();
+
+  // Start of current week (Monday)
+  const startOfWeek = new Date(now);
+  startOfWeek.setDate(now.getDate() - ((now.getDay() + 6) % 7));
+  startOfWeek.setHours(0, 0, 0, 0);
+
+  // Weekly session count (completed program session reports this week)
+  const weeklySessionCount = await prisma.programSessionReport.count({
+    where: {
+      userId,
+      status: 'completed',
+      completedAt: { gte: startOfWeek },
+    },
+  });
+
+  // Average form score from last 5 completed sessions
+  const recentReports = await prisma.programSessionReport.findMany({
+    where: { userId, status: 'completed', avgFormScore: { not: null } },
+    orderBy: { completedAt: 'desc' },
+    take: 5,
+    select: { avgFormScore: true },
+  });
+
+  let avgFormScore = 0;
+  if (recentReports.length > 0) {
+    const total = recentReports.reduce((sum, r) => sum + (r.avgFormScore ?? 0), 0);
+    avgFormScore = Math.round((total / recentReports.length) * 10) / 10;
+  }
+
+  // Training streak: consecutive days with completed sessions (backwards from today)
+  const allCompletedDates = await prisma.programSessionReport.findMany({
+    where: { userId, status: 'completed', completedAt: { not: null } },
+    orderBy: { completedAt: 'desc' },
+    select: { completedAt: true },
+  });
+
+  let streak = 0;
+  if (allCompletedDates.length > 0) {
+    const trainedDays = new Set<string>();
+    for (const r of allCompletedDates) {
+      if (r.completedAt) {
+        trainedDays.add(r.completedAt.toISOString().split('T')[0]);
+      }
+    }
+
+    const today = now.toISOString().split('T')[0];
+    const yesterday = new Date(now.getTime() - 86400000).toISOString().split('T')[0];
+
+    // Start counting from today or yesterday
+    let checkDate = trainedDays.has(today) ? now : new Date(now.getTime() - 86400000);
+    if (!trainedDays.has(today) && !trainedDays.has(yesterday)) {
+      streak = 0;
+    } else {
+      for (let i = 0; i < 365; i++) {
+        const dateStr = checkDate.toISOString().split('T')[0];
+        if (trainedDays.has(dateStr)) {
+          streak++;
+          checkDate = new Date(checkDate.getTime() - 86400000);
+        } else {
+          break;
+        }
+      }
+    }
+  }
+
+  // Total lifetime stats from User record
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    select: { totalWorkouts: true, totalMinutes: true },
+  });
+
+  // Latest assessment info
+  const latestAssessment = await prisma.bodyScanResult.findFirst({
+    where: { userId },
+    orderBy: { completedAt: 'desc' },
+    select: { bodyScore: true, fitnessLevel: true, completedAt: true },
+  });
+
+  return {
+    weeklyWorkouts: weeklySessionCount,
+    avgFormScore,
+    streak,
+    totalWorkouts: user?.totalWorkouts ?? 0,
+    totalMinutes: user?.totalMinutes ?? 0,
+    latestAssessment: latestAssessment
+      ? {
+          bodyScore: latestAssessment.bodyScore,
+          fitnessLevel: latestAssessment.fitnessLevel,
+          completedAt: latestAssessment.completedAt.toISOString(),
+        }
+      : null,
+  };
 }
 
 // ============================================

@@ -43,6 +43,152 @@ interface MobileSyncApi {
     @GET
     suspend fun downloadAudio(@Url url: String): Response<ResponseBody>
 
+    // ─── Assessment Endpoints ────────────────────────────────────
+
+    /**
+     * Upload a Body Scan assessment result.
+     */
+    @POST("api/assessment")
+    suspend fun uploadAssessment(
+        @Header("Authorization") authorization: String,
+        @Body payload: Map<String, @JvmSuppressWildcards Any?>
+    ): Response<AssessmentUploadResponse>
+
+    /**
+     * Get the latest assessment for the authenticated user.
+     */
+    @GET("api/assessment/latest")
+    suspend fun getLatestAssessment(
+        @Header("Authorization") authorization: String
+    ): Response<AssessmentApiResponse>
+
+    /**
+     * Get assessment progress (current vs previous comparison).
+     */
+    @GET("api/assessment/progress")
+    suspend fun getAssessmentProgress(
+        @Header("Authorization") authorization: String
+    ): Response<AssessmentProgressResponse>
+
+    // ─── Assessment Template Endpoints ────────────────────────────
+
+    /**
+     * Resolve the appropriate assessment template for the user's current level.
+     */
+    @GET("api/mobile/assessment-templates/resolve")
+    suspend fun resolveAssessmentTemplate(
+        @Header("Authorization") authorization: String
+    ): Response<AssessmentTemplateResponse>
+
+    // ─── Level Profile Endpoints ──────────────────────────────
+
+    /**
+     * Get the user's current level profile.
+     */
+    @GET("api/mobile/level-profile")
+    suspend fun getLevelProfile(
+        @Header("Authorization") authorization: String
+    ): Response<LevelProfileResponse>
+
+    /**
+     * Get level profile history (all previous profiles for comparison).
+     */
+    @GET("api/mobile/level-profile/history")
+    suspend fun getLevelProfileHistory(
+        @Header("Authorization") authorization: String
+    ): Response<LevelProfileHistoryResponse>
+
+    /**
+     * Get all level definitions.
+     */
+    @GET("api/mobile/level-profile/levels")
+    suspend fun getLevels(
+        @Header("Authorization") authorization: String
+    ): Response<LevelsListResponse>
+
+    // ─── User Stats Endpoint ───────────────────────────────────
+
+    /**
+     * Get user home stats (weekly workouts, form score, streak).
+     */
+    @GET("api/mobile/sessions/stats")
+    suspend fun getUserStats(
+        @Header("Authorization") authorization: String
+    ): Response<UserStatsResponse>
+
+    // ─── Prescription Endpoint ────────────────────────────────────
+
+    /**
+     * Get recommended program based on latest assessment.
+     */
+    @POST("api/mobile/prescription/recommend")
+    suspend fun getRecommendation(
+        @Header("Authorization") authorization: String
+    ): Response<PrescriptionResponse>
+
+    // ─── Active Plan Endpoints ──────────────────────────────────
+
+    /**
+     * Get user's active plan.
+     */
+    @GET("api/mobile/plan")
+    suspend fun getActivePlan(
+        @Header("Authorization") authorization: String
+    ): Response<ActivePlanResponse>
+
+    /**
+     * Get today's training plan.
+     */
+    @GET("api/mobile/plan/today")
+    suspend fun getTodayPlan(
+        @Header("Authorization") authorization: String
+    ): Response<TodayPlanResponse>
+
+    /**
+     * Enroll in a program (adds to active plan).
+     */
+    @POST("api/mobile/plan/enroll")
+    suspend fun enrollProgram(
+        @Header("Authorization") authorization: String,
+        @Body payload: Map<String, @JvmSuppressWildcards Any>
+    ): Response<ActivePlanResponse>
+
+    /**
+     * Complete the active program and transition to next.
+     */
+    @POST("api/mobile/plan/complete")
+    suspend fun completeActiveProgram(
+        @Header("Authorization") authorization: String
+    ): Response<ActivePlanResponse>
+
+    // ─── Progression Endpoints ──────────────────────────────────
+
+    /**
+     * Get progression history (changes made by the Progression Engine).
+     */
+    @GET("api/mobile/progression/history")
+    suspend fun getProgressionHistory(
+        @Header("Authorization") authorization: String
+    ): Response<ProgressionHistoryResponse>
+
+    // ─── Reassessment Endpoints ─────────────────────────────────
+
+    /**
+     * Get upcoming reassessment schedules.
+     */
+    @GET("api/mobile/reassessment/upcoming")
+    suspend fun getUpcomingReassessments(
+        @Header("Authorization") authorization: String
+    ): Response<ReassessmentListResponse>
+
+    /**
+     * Manually request a reassessment.
+     */
+    @POST("api/mobile/reassessment/request")
+    suspend fun requestReassessment(
+        @Header("Authorization") authorization: String
+    ): Response<ReassessmentResponse>
+
     // ─── Unified Reports Endpoint ────────────────────────────────
 
     /**

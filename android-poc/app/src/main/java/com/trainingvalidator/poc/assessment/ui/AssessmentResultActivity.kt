@@ -11,9 +11,19 @@ import android.view.Gravity
 import android.view.View
 import android.widget.*
 import androidx.appcompat.app.AppCompatActivity
+import androidx.lifecycle.lifecycleScope
 import com.google.gson.Gson
+import com.trainingvalidator.poc.assessment.AssessmentUploadService
 import com.trainingvalidator.poc.assessment.models.*
+import com.trainingvalidator.poc.network.ApiClient
+import com.trainingvalidator.poc.network.RecommendedProgramData
+import com.trainingvalidator.poc.storage.AuthManager
 import com.trainingvalidator.poc.training.models.LocalizedText
+import com.trainingvalidator.poc.ui.ProgramListActivity
+import com.trainingvalidator.poc.ui.main.MainContainerActivity
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 /**
  * AssessmentResultActivity - Displays Body Scan results.
@@ -128,12 +138,126 @@ class AssessmentResultActivity : AppCompatActivity() {
         
         // Disclaimer
         content.addView(createDisclaimer())
+
+        // Recommended program section (loaded async)
+        val recommendationContainer = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+        }
+        content.addView(recommendationContainer)
+        loadRecommendation(recommendationContainer)
         
         // Action buttons
         content.addView(createActionButtons())
         
         scroll.addView(content)
         setContentView(scroll)
+    }
+
+    /**
+     * Load prescription recommendation from the backend and display it.
+     */
+    private fun loadRecommendation(container: LinearLayout) {
+        lifecycleScope.launch {
+            try {
+                val authHeader = AuthManager.getAuthHeader(this@AssessmentResultActivity) ?: return@launch
+                val response = withContext(Dispatchers.IO) {
+                    ApiClient.mobileSyncApi.getRecommendation(authHeader)
+                }
+                if (response.isSuccessful && response.body()?.success == true) {
+                    val data = response.body()?.data ?: return@launch
+                    val program = data.recommendedProgram ?: return@launch
+                    container.addView(createRecommendationSection(program, data.classification.reason))
+                }
+            } catch (e: Exception) {
+                Log.w(TAG, "Failed to load recommendation", e)
+            }
+        }
+    }
+
+    /**
+     * Create the "Recommended for you" UI card.
+     */
+    private fun createRecommendationSection(program: RecommendedProgramData, reason: String): LinearLayout {
+        return LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            setBackgroundColor(Color.parseColor("#1B3A1B"))
+            setPadding(dp(20), dp(20), dp(20), dp(20))
+            val lp = LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT
+            )
+            lp.topMargin = dp(8)
+            lp.bottomMargin = dp(16)
+            layoutParams = lp
+
+            // Title
+            addView(TextView(context).apply {
+                text = if (language == "ar") "البرنامج المقترح لك" else "Recommended for You"
+                setTextColor(Color.parseColor("#4CAF50"))
+                textSize = 16f
+                setTypeface(null, Typeface.BOLD)
+            })
+
+            // Reason
+            addView(TextView(context).apply {
+                text = reason
+                setTextColor(Color.parseColor("#81C784"))
+                textSize = 12f
+                setPadding(0, dp(4), 0, dp(12))
+            })
+
+            // Program name
+            val name = program.name["en"] ?: program.name.values.firstOrNull() ?: program.slug
+            addView(TextView(context).apply {
+                text = name
+                setTextColor(Color.WHITE)
+                textSize = 20f
+                setTypeface(null, Typeface.BOLD)
+            })
+
+            // Program info row
+            addView(TextView(context).apply {
+                text = "${program.durationWeeks} weeks • ${program.difficulty} • ${program.type}"
+                setTextColor(Color.parseColor("#B0B0B0"))
+                textSize = 13f
+                setPadding(0, dp(4), 0, dp(16))
+            })
+
+            // Enroll button
+            addView(Button(context).apply {
+                text = if (language == "ar") "ابدأ هذا البرنامج" else "Start This Program"
+                setTextColor(Color.WHITE)
+                setBackgroundColor(Color.parseColor("#4CAF50"))
+                textSize = 16f
+                setTypeface(null, Typeface.BOLD)
+                layoutParams = LinearLayout.LayoutParams(
+                    LinearLayout.LayoutParams.MATCH_PARENT,
+                    LinearLayout.LayoutParams.WRAP_CONTENT
+                )
+                setOnClickListener { enrollInProgram(program.id) }
+            })
+        }
+    }
+
+    /**
+     * Enroll in the recommended program via the ActivePlan API.
+     */
+    private fun enrollInProgram(programId: String) {
+        lifecycleScope.launch {
+            try {
+                val authHeader = AuthManager.getAuthHeader(this@AssessmentResultActivity) ?: return@launch
+                withContext(Dispatchers.IO) {
+                    ApiClient.mobileSyncApi.enrollProgram(
+                        authHeader,
+                        mapOf("programId" to programId)
+                    )
+                }
+                navigateToHome()
+            } catch (e: Exception) {
+                Log.w(TAG, "Failed to enroll in program", e)
+                navigateToHome()
+            }
+        }
     }
     
     // ═══════════════════════════════════════════════════════
@@ -497,7 +621,25 @@ class AssessmentResultActivity : AppCompatActivity() {
     private fun createActionButtons(): LinearLayout {
         return LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
-            
+
+            // Primary CTA: Navigate to programs to find a suitable program
+            addView(Button(context).apply {
+                text = if (language == "ar") "ابدأ برنامجك" else "Find Your Program"
+                setTextColor(Color.WHITE)
+                setBackgroundColor(Color.parseColor("#4CAF50"))
+                textSize = 16f
+                setTypeface(null, Typeface.BOLD)
+                layoutParams = LinearLayout.LayoutParams(
+                    LinearLayout.LayoutParams.MATCH_PARENT,
+                    LinearLayout.LayoutParams.WRAP_CONTENT
+                ).apply { bottomMargin = dp(8) }
+
+                setOnClickListener {
+                    navigateToPrograms()
+                }
+            })
+
+            // Secondary: Share results
             addView(Button(context).apply {
                 text = if (language == "ar") "شارك نتيجتك" else "Share Results"
                 setTextColor(Color.WHITE)
@@ -510,27 +652,47 @@ class AssessmentResultActivity : AppCompatActivity() {
                 ).apply { bottomMargin = dp(8) }
             })
             
-            addView(Button(context).apply {
-                text = if (language == "ar") "ابدأ برنامجك" else "Start Your Program"
-                setTextColor(Color.WHITE)
-                setBackgroundColor(Color.parseColor("#4CAF50"))
-                textSize = 15f
-                setTypeface(null, Typeface.BOLD)
-                layoutParams = LinearLayout.LayoutParams(
-                    LinearLayout.LayoutParams.MATCH_PARENT,
-                    LinearLayout.LayoutParams.WRAP_CONTENT
-                ).apply { bottomMargin = dp(8) }
-            })
-            
+            // Go to Home
             addView(TextView(context).apply {
                 text = if (language == "ar") "الصفحة الرئيسية" else "Go to Home"
                 setTextColor(Color.parseColor("#B0B0B0"))
                 textSize = 14f
                 gravity = Gravity.CENTER
                 setPadding(0, dp(8), 0, dp(16))
-                setOnClickListener { finish() }
+                setOnClickListener { navigateToHome() }
             })
         }
+    }
+
+    /**
+     * Navigate to programs list.
+     * Phase 0: Opens the programs list for manual selection.
+     * Phase 2: Will use Prescription Engine to recommend a specific program.
+     */
+    private fun navigateToPrograms() {
+        try {
+            val intent = Intent(this, ProgramListActivity::class.java)
+            startActivity(intent)
+            finish()
+        } catch (e: Exception) {
+            Log.w(TAG, "ProgramListActivity not available, going to Home", e)
+            navigateToHome()
+        }
+    }
+
+    /**
+     * Navigate to the main home screen.
+     */
+    private fun navigateToHome() {
+        try {
+            val intent = Intent(this, MainContainerActivity::class.java).apply {
+                flags = Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_NEW_TASK
+            }
+            startActivity(intent)
+        } catch (e: Exception) {
+            Log.w(TAG, "MainContainerActivity not available", e)
+        }
+        finish()
     }
     
     private fun createSectionTitle(title: String): TextView {

@@ -221,6 +221,18 @@ export const programService = {
         isPublished: false,
         createdBy,
         updatedBy: createdBy,
+        // Prescription metadata
+        type: data.type ?? 'training',
+        targetDomain: data.targetDomain ?? undefined,
+        targetRegions: data.targetRegions ?? [],
+        levelRangeMin: data.levelRangeMin ?? 1,
+        levelRangeMax: data.levelRangeMax ?? 5,
+        entryCriteria: data.entryCriteria as object ?? undefined,
+        exitCriteria: data.exitCriteria as object ?? undefined,
+        contraindications: data.contraindications ?? [],
+        prescriptionPriority: data.prescriptionPriority ?? 100,
+        prerequisiteProgramId: data.prerequisiteProgramId ?? undefined,
+        nextProgramId: data.nextProgramId ?? undefined,
         weeks: buildWeeksCreate(data.weeks),
       },
       include: programFullInclude,
@@ -243,6 +255,18 @@ export const programService = {
     if (data.tags !== undefined) updateData.tags = data.tags;
     if (data.isDefault !== undefined) updateData.isDefault = data.isDefault;
     if (data.isPublished !== undefined) updateData.isPublished = data.isPublished;
+    // Prescription metadata
+    if (data.type !== undefined) updateData.type = data.type;
+    if (data.targetDomain !== undefined) updateData.targetDomain = data.targetDomain;
+    if (data.targetRegions !== undefined) updateData.targetRegions = data.targetRegions;
+    if (data.levelRangeMin !== undefined) updateData.levelRangeMin = data.levelRangeMin;
+    if (data.levelRangeMax !== undefined) updateData.levelRangeMax = data.levelRangeMax;
+    if (data.entryCriteria !== undefined) updateData.entryCriteria = data.entryCriteria;
+    if (data.exitCriteria !== undefined) updateData.exitCriteria = data.exitCriteria;
+    if (data.contraindications !== undefined) updateData.contraindications = data.contraindications;
+    if (data.prescriptionPriority !== undefined) updateData.prescriptionPriority = data.prescriptionPriority;
+    if (data.prerequisiteProgramId !== undefined) updateData.prerequisiteProgramId = data.prerequisiteProgramId;
+    if (data.nextProgramId !== undefined) updateData.nextProgramId = data.nextProgramId;
 
     await prisma.program.update({
       where: { id },

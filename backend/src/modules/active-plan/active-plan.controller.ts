@@ -1,0 +1,106 @@
+/**
+ * ActivePlan Controller
+ * =====================
+ *
+ *   GET  /mobile/plan           — Get user's active plan
+ *   GET  /mobile/plan/today     — Get today's training plan
+ *   POST /mobile/plan/enroll    — Enroll in a program (adds to plan)
+ *   POST /mobile/plan/complete  — Complete the active program (transition to next)
+ */
+
+import { Controller, Get, Post, Req, Res, Body } from '@nestjs/common';
+import type { Request, Response } from 'express';
+import { verifyMobileToken } from '@/modules/auth/auth.service';
+import { activePlanService } from './active-plan.service';
+
+@Controller('mobile/plan')
+export class ActivePlanController {
+  @Get()
+  async getPlan(@Req() req: Request, @Res({ passthrough: true }) res: Response) {
+    try {
+      const authResult = await verifyMobileToken(req);
+      if (!authResult.success || !authResult.userId) {
+        res.status(401);
+        return { success: false, error: authResult.error || 'Unauthorized' };
+      }
+
+      const plan = await activePlanService.getOrCreate(authResult.userId);
+      return { success: true, data: plan };
+    } catch (error) {
+      console.error('[ActivePlan] Error:', error);
+      res.status(500);
+      return { success: false, error: 'Failed to fetch plan' };
+    }
+  }
+
+  @Get('today')
+  async getTodayPlan(@Req() req: Request, @Res({ passthrough: true }) res: Response) {
+    try {
+      const authResult = await verifyMobileToken(req);
+      if (!authResult.success || !authResult.userId) {
+        res.status(401);
+        return { success: false, error: authResult.error || 'Unauthorized' };
+      }
+
+      const plan = await activePlanService.getTodayPlan(authResult.userId);
+      return { success: true, data: plan };
+    } catch (error) {
+      console.error('[ActivePlan] Today Error:', error);
+      res.status(500);
+      return { success: false, error: 'Failed to fetch today plan' };
+    }
+  }
+
+  @Post('enroll')
+  async enroll(
+    @Req() req: Request,
+    @Res({ passthrough: true }) res: Response,
+    @Body() body: { programId: string },
+  ) {
+    try {
+      const authResult = await verifyMobileToken(req);
+      if (!authResult.success || !authResult.userId) {
+        res.status(401);
+        return { success: false, error: authResult.error || 'Unauthorized' };
+      }
+
+      if (!body.programId) {
+        res.status(400);
+        return { success: false, error: 'programId is required' };
+      }
+
+      const plan = await activePlanService.enrollProgram(
+        authResult.userId,
+        body.programId,
+      );
+      return { success: true, data: plan };
+    } catch (error) {
+      console.error('[ActivePlan] Enroll Error:', error);
+      res.status(500);
+      return { success: false, error: 'Failed to enroll in program' };
+    }
+  }
+
+  @Post('complete')
+  async completeProgram(@Req() req: Request, @Res({ passthrough: true }) res: Response) {
+    try {
+      const authResult = await verifyMobileToken(req);
+      if (!authResult.success || !authResult.userId) {
+        res.status(401);
+        return { success: false, error: authResult.error || 'Unauthorized' };
+      }
+
+      const plan = await activePlanService.completeActiveProgram(authResult.userId);
+      if (!plan) {
+        res.status(404);
+        return { success: false, error: 'No active plan found' };
+      }
+
+      return { success: true, data: plan };
+    } catch (error) {
+      console.error('[ActivePlan] Complete Error:', error);
+      res.status(500);
+      return { success: false, error: 'Failed to complete program' };
+    }
+  }
+}

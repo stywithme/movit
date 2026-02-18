@@ -37,6 +37,8 @@ export class ReportsController {
       }
 
       // ── Validate required params ──
+      // Phase 0: programId is still required for now, but we no longer
+      // require the program to be active (historical reports are allowed).
       if (!programId) {
         res.status(400);
         return { success: false, error: 'programId is required' };

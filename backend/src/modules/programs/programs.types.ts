@@ -60,6 +60,18 @@ export interface CreateProgramInput {
   tags?: string[];
   isDefault?: boolean;
   weeks?: ProgramWeekInput[];
+  // Prescription metadata (Phase 2)
+  type?: string;                   // training | mobility | therapeutic
+  targetDomain?: string;           // mobility | strength | control | symmetry
+  targetRegions?: string[];
+  levelRangeMin?: number;          // 1-5
+  levelRangeMax?: number;          // 1-5
+  entryCriteria?: Record<string, unknown>;
+  exitCriteria?: Record<string, unknown>;
+  contraindications?: string[];
+  prescriptionPriority?: number;
+  prerequisiteProgramId?: string;
+  nextProgramId?: string;
 }
 
 export interface UpdateProgramInput extends Partial<CreateProgramInput> {

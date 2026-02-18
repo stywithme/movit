@@ -241,6 +241,24 @@
             android:screenOrientation="portrait"
             android:theme="@style/Theme.WayToFix" />
 
+        <!-- ═══════════════════════════════════════════════════ -->
+        <!-- LEVEL SYSTEM -->
+        <!-- ═══════════════════════════════════════════════════ -->
+
+        <!-- Level Profile -->
+        <activity
+            android:name=".ui.LevelProfileActivity"
+            android:exported="false"
+            android:screenOrientation="portrait"
+            android:theme="@style/Theme.WayToFix" />
+
+        <!-- Plan Overview (Timeline) -->
+        <activity
+            android:name=".ui.PlanOverviewActivity"
+            android:exported="false"
+            android:screenOrientation="portrait"
+            android:theme="@style/Theme.WayToFix" />
+
         <!-- FileProvider for screenshot sharing -->
         <provider
             android:name="androidx.core.content.FileProvider"

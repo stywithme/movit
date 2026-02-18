@@ -360,8 +360,10 @@ export const reportsService = {
     const prisma = await getPrisma();
     const { programId, scope, weekNumber, dayNumber, sessionId, exerciseSlug, includeHistory, includeChildren } = query;
 
-    // ── Verify enrollment ──
-    const userProgram = await prisma.userProgram.findFirst({
+    // ── Verify enrollment (active OR historical) ──
+    // Phase 0 fix: allow querying reports for completed programs, not just active ones.
+    // Try active enrollment first, then fall back to any enrollment for this program.
+    let userProgram = await prisma.userProgram.findFirst({
       where: { userId, programId, isActive: true },
       include: {
         program: {
@@ -380,8 +382,30 @@ export const reportsService = {
       },
     });
 
+    if (!userProgram) {
+      userProgram = await prisma.userProgram.findFirst({
+        where: { userId, programId },
+        orderBy: { createdAt: 'desc' },
+        include: {
+          program: {
+            include: {
+              weeks: {
+                include: {
+                  days: {
+                    include: {
+                      sessions: { include: { items: true } },
+                    },
+                  },
+                },
+              },
+            },
+          },
+        },
+      });
+    }
+
     if (!userProgram || !userProgram.program) {
-      return { success: false, scope, summary: {} as never, error: 'No active enrollment found for this program' };
+      return { success: false, scope, summary: {} as never, error: 'No enrollment found for this program' };
     }
 
     const program = userProgram.program;
