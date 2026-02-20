@@ -80,9 +80,6 @@ class PoseLandmarkerHelper(
     // Using ConcurrentHashMap ensures each frame's result is paired with the correct camera state.
     private val frameCameraState = ConcurrentHashMap<Long, Boolean>()
     
-    // Reusable bitmap buffer to reduce GC pressure
-    private var bitmapBuffer: Bitmap? = null
-    
     // Reusable Matrix to avoid allocation on every frame
     private val reusableMatrix = Matrix()
     
@@ -143,8 +140,11 @@ class PoseLandmarkerHelper(
     }
 
     /**
-     * Process a camera frame for pose detection
-     * Uses Google's recommended approach for image conversion
+     * Process a camera frame for pose detection.
+     *
+     * Uses ImageProxy.toBitmap() (CameraX 1.3+) which handles YUV→RGB
+     * conversion efficiently, avoiding the RGBA_8888 output format that
+     * forces a slow software conversion inside CameraX and caps FPS at ~30.
      */
     fun detectPose(imageProxy: ImageProxy, isFrontCamera: Boolean) {
         if (!isInitialized || poseLandmarker == null) {
@@ -153,37 +153,20 @@ class PoseLandmarkerHelper(
         }
 
         try {
-            // Use SystemClock.uptimeMillis() for consistent timestamps (Google's approach)
             val frameTime = SystemClock.uptimeMillis()
-            
-            // Store front camera state keyed by this frame's timestamp
-            // Will be retrieved in onPoseResult() when the async callback fires
             frameCameraState[frameTime] = isFrontCamera
-            
-            // Get or create bitmap buffer matching the ImageProxy dimensions
-            val buffer = bitmapBuffer?.takeIf { 
-                it.width == imageProxy.width && it.height == imageProxy.height 
-            } ?: Bitmap.createBitmap(
-                imageProxy.width,
-                imageProxy.height,
-                Bitmap.Config.ARGB_8888
-            ).also { bitmapBuffer = it }
-            
-            // Store rotation before closing imageProxy
+
             val rotationDegrees = imageProxy.imageInfo.rotationDegrees
             val proxyWidth = imageProxy.width
             val proxyHeight = imageProxy.height
-            
-            // Copy pixels and close imageProxy immediately (single close point)
-            buffer.copyPixelsFromBuffer(imageProxy.planes[0].buffer)
+
+            // Convert YUV → Bitmap using CameraX's optimized path, then release.
+            val sourceBitmap = imageProxy.toBitmap()
             imageProxy.close()
-            
-            // Apply rotation and mirroring (after imageProxy is closed)
-            // OPTIMIZED: Reuse Matrix object instead of creating new one each frame
+
+            // Build the rotation + mirror matrix (reuse object)
             reusableMatrix.reset()
             reusableMatrix.postRotate(rotationDegrees.toFloat())
-            
-            // Mirror for front camera
             if (isFrontCamera) {
                 reusableMatrix.postScale(
                     -1f, 1f,
@@ -191,16 +174,14 @@ class PoseLandmarkerHelper(
                     proxyHeight.toFloat()
                 )
             }
-            
-            // OPTIMIZED: Reuse pooled bitmaps instead of allocating new Bitmap every frame
-            // Calculate output dimensions from matrix transformation
-            srcRectF.set(0f, 0f, buffer.width.toFloat(), buffer.height.toFloat())
+
+            // Calculate output dimensions
+            srcRectF.set(0f, 0f, sourceBitmap.width.toFloat(), sourceBitmap.height.toFloat())
             reusableMatrix.mapRect(dstRectF, srcRectF)
             val rotatedWidth = Math.round(dstRectF.width())
             val rotatedHeight = Math.round(dstRectF.height())
-            
-            // Alternate between 2 pooled bitmaps to avoid concurrent access
-            // (current frame write vs MediaPipe still reading previous frame)
+
+            // Alternate between 2 pooled bitmaps (current write vs MediaPipe reading previous)
             transformPoolIndex = (transformPoolIndex + 1) % 2
             var rotatedBitmap = transformedBitmapPool[transformPoolIndex]
             if (rotatedBitmap == null || rotatedBitmap.width != rotatedWidth ||
@@ -208,28 +189,23 @@ class PoseLandmarkerHelper(
                 rotatedBitmap = Bitmap.createBitmap(rotatedWidth, rotatedHeight, Bitmap.Config.ARGB_8888)
                 transformedBitmapPool[transformPoolIndex] = rotatedBitmap
             }
-            
-            // Draw transformed bitmap onto pooled bitmap using Canvas
-            // (replicates Bitmap.createBitmap(source, matrix) logic without allocation)
+
             val canvas = reusableCanvas ?: Canvas().also { reusableCanvas = it }
             canvas.setBitmap(rotatedBitmap)
             canvas.save()
             canvas.translate(-dstRectF.left, -dstRectF.top)
             canvas.concat(reusableMatrix)
-            canvas.drawBitmap(buffer, 0f, 0f, transformPaint)
+            canvas.drawBitmap(sourceBitmap, 0f, 0f, transformPaint)
             canvas.restore()
-            
-            // Store dimensions for the result callback
+
             lastImageWidth = rotatedBitmap.width
             lastImageHeight = rotatedBitmap.height
-            
-            // Convert to MediaPipe Image and detect
+
             val mpImage = BitmapImageBuilder(rotatedBitmap).build()
             poseLandmarker?.detectAsync(mpImage, frameTime)
-            
+
         } catch (e: Exception) {
             Log.e(TAG, "Error during pose detection: ${e.message}")
-            // Ensure imageProxy is closed even on error
             try { imageProxy.close() } catch (_: Exception) {}
         }
     }
@@ -296,8 +272,6 @@ class PoseLandmarkerHelper(
             bmp?.recycle()
             transformedBitmapPool[i] = null
         }
-        bitmapBuffer?.recycle()
-        bitmapBuffer = null
         reusableCanvas?.setBitmap(null)
         reusableCanvas = null
         

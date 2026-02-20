@@ -17,6 +17,7 @@ data class AppSettings(
     val smoothing: SmoothingSettings = SmoothingSettings(),
     val visibility: VisibilitySettings = VisibilitySettings(),
     val poseValidation: PoseValidationSettings = PoseValidationSettings(),
+    val setupValidation: SetupValidationSettings = SetupValidationSettings(),
     val overlayOpacity: OverlayOpacitySettings = OverlayOpacitySettings(),
     val rangeIndicator: RangeIndicatorSettings = RangeIndicatorSettings(),
     val lineIndicator: LineIndicatorSettings = LineIndicatorSettings()
@@ -207,6 +208,36 @@ data class OverlayOpacitySettings(
     val nonTracked: Float = 0.18f,
     val trackedCorrect: Float = 0.50f,
     val trackedError: Float = 0.75f
+)
+
+/**
+ * Setup validation settings - Controls the SETUP_POSE pre-training guidance
+ *
+ * Uses a rolling window (windowSize frames, requiredValid must be valid) instead of
+ * a strict N-consecutive approach to tolerate camera noise.
+ *
+ * @param windowSize       Total frames in the rolling window (default 12)
+ * @param requiredValid    Frames that must be valid within the window (default 9)
+ * @param closeThresholdDegrees  Distance (°) from range where joint is YELLOW vs RED
+ * @param voiceCooldownMs  Minimum ms between voice guidance messages
+ * @param cameraTipEnabled Whether to show camera-position tip in the VIEW card
+ * @param cameraCheckWindowSize  Rolling window size for camera detection (default 12)
+ * @param cameraCheckRequired    Frames agreeing on camera position (default 9)
+ * @param countdownToleranceFrames  Invalid frames during countdown that are silently ignored
+ * @param countdownFreezeFrames     Invalid frames that freeze (pause) the countdown
+ * @param countdownCancelFrames     Invalid frames that cancel the countdown entirely
+ */
+data class SetupValidationSettings(
+    val windowSize: Int = 12,
+    val requiredValid: Int = 9,
+    val closeThresholdDegrees: Double = 15.0,
+    val voiceCooldownMs: Long = 2500L,
+    val cameraTipEnabled: Boolean = true,
+    val cameraCheckWindowSize: Int = 12,
+    val cameraCheckRequired: Int = 9,
+    val countdownToleranceFrames: Int = 2,
+    val countdownFreezeFrames: Int = 4,
+    val countdownCancelFrames: Int = 6
 )
 
 /**

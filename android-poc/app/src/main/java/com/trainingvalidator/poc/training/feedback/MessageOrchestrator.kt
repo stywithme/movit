@@ -25,16 +25,18 @@ class MessageOrchestrator {
     companion object {
         private const val TAG = "MessageOrchestrator"
         
-        // Max repeats before going silent (visual overlay takes over)
-        private const val MAX_ERROR_REPEATS = 3
-        private const val MAX_WARNING_REPEATS = 2
-        private const val MAX_TIP_REPEATS = 1
+        // Max repeats before going silent
+        // NOTE: In Camera mode VISUAL_ONLY still speaks (low priority), so higher
+        // max repeats mean more correction chances without spam.
+        private const val MAX_ERROR_REPEATS = 6
+        private const val MAX_WARNING_REPEATS = 5
+        private const val MAX_TIP_REPEATS = 2
         
         // Progressive cooldowns (ms) - increase with each repeat
-        private val ERROR_COOLDOWNS = listOf(2000L, 4000L, 8000L)      // 2s, 4s, 8s
-        private val WARNING_COOLDOWNS = listOf(3000L, 6000L)           // 3s, 6s
-        private val TIP_COOLDOWNS = listOf(5000L)                       // 5s only
-        private val MOTIVATION_COOLDOWN = 10000L                        // 10s
+        private val ERROR_COOLDOWNS   = listOf(2000L, 3000L, 5000L, 8000L, 12000L, 20000L)
+        private val WARNING_COOLDOWNS = listOf(2500L, 4000L, 6000L, 10000L, 15000L)
+        private val TIP_COOLDOWNS     = listOf(5000L, 10000L)
+        private val MOTIVATION_COOLDOWN = 10000L
         
         // Time before considering issue "resolved" and resetting counter
         private const val ISSUE_RESOLVED_THRESHOLD_MS = 3000L
@@ -116,16 +118,18 @@ class MessageOrchestrator {
         val previousActiveTime = state.lastActiveTime
         state.lastActiveTime = now
         
-        // Check if another message is currently being displayed
-        // IMPORTANT: Higher priority messages can preempt lower priority ones.
+        // ONE AT A TIME: Only block if a STRICTLY HIGHER priority message is active.
+        // Same-priority messages (e.g. two position warnings) are allowed through —
+        // the audio player queues them. Only block lower-priority vs higher-priority
+        // (e.g. a TIP while a CRITICAL is active).
         if (currentActiveMessageKey != null &&
             currentActiveMessageKey != messageKey &&
             now < currentActiveUntil
         ) {
             val currentPriority = currentActiveCategory?.let { getCategoryPriority(it) } ?: 0
             val newPriority = getCategoryPriority(category)
-            if (newPriority <= currentPriority) {
-                // Another message (same or higher priority) is active - go silent for now
+            if (newPriority < currentPriority) {
+                // Strictly lower priority - silence it
                 return DeliveryDecision(
                     channel = DeliveryChannel.SILENT,
                     repeatCount = state.repeatCount,
@@ -133,8 +137,10 @@ class MessageOrchestrator {
                     suggestedCooldownMs = 0
                 )
             }
-            // Preempt: allow this higher priority message through
-            Log.d(TAG, "Preempting $currentActiveMessageKey ($currentPriority) with $messageKey ($newPriority)")
+            if (newPriority > currentPriority) {
+                Log.d(TAG, "Preempting $currentActiveMessageKey ($currentPriority) with $messageKey ($newPriority)")
+            }
+            // Same priority: let it through (audio player queues them)
         }
         
         // Check if issue was "resolved" and is now back
@@ -232,7 +238,7 @@ class MessageOrchestrator {
     }
     
     /**
-     * Force reset a message (for testing or manual override)
+     * Force reset a single message key
      */
     fun reset(messageKey: String) {
         messageStates.remove(messageKey)
@@ -240,6 +246,26 @@ class MessageOrchestrator {
             currentActiveMessageKey = null
             currentActiveUntil = 0L
             currentActiveCategory = null
+        }
+    }
+    
+    /**
+     * Reset all message states whose keys start with the given prefix.
+     * Used at rep boundaries to give position-check corrections a fresh chance.
+     * Example: resetCategory("position") resets all "position:*" and "position_warn:*" keys.
+     */
+    fun resetCategory(keyPrefix: String) {
+        val toRemove = messageStates.keys.filter { it.startsWith(keyPrefix) }
+        toRemove.forEach { key ->
+            messageStates.remove(key)
+            if (currentActiveMessageKey == key) {
+                currentActiveMessageKey = null
+                currentActiveUntil = 0L
+                currentActiveCategory = null
+            }
+        }
+        if (toRemove.isNotEmpty()) {
+            Log.d(TAG, "Reset ${toRemove.size} message states with prefix '$keyPrefix'")
         }
     }
     

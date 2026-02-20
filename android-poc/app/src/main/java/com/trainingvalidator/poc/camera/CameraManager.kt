@@ -1,8 +1,14 @@
 package com.trainingvalidator.poc.camera
 
 import android.content.Context
+import android.hardware.camera2.CameraCharacteristics
+import android.hardware.camera2.CaptureRequest
 import android.util.Log
-import androidx.camera.core.AspectRatio
+import android.util.Range
+import androidx.camera.camera2.interop.Camera2CameraControl
+import androidx.camera.camera2.interop.Camera2CameraInfo
+import androidx.camera.camera2.interop.CaptureRequestOptions
+import androidx.camera.core.Camera
 import androidx.camera.core.CameraSelector
 import androidx.camera.core.ImageAnalysis
 import androidx.camera.core.ImageProxy
@@ -18,13 +24,10 @@ import java.util.concurrent.Executors
 
 /**
  * CameraManager - Handles CameraX setup and frame delivery
- * 
- * Updated based on Google's official MediaPipe sample:
- * https://github.com/google-ai-edge/mediapipe-samples
- * 
- * Key improvements:
+ *
+ * Key features:
  * - Uses 4:3 aspect ratio (closest to model's expected input)
- * - Uses target rotation for proper orientation
+ * - Targets 60 FPS via Camera2CameraControl (session-level)
  * - Background executor for frame processing
  */
 class CameraManager(
@@ -37,10 +40,15 @@ class CameraManager(
     }
 
     private var cameraProvider: ProcessCameraProvider? = null
+    private var camera: Camera? = null
     private var imageAnalysis: ImageAnalysis? = null
     private val cameraExecutor: ExecutorService = Executors.newSingleThreadExecutor()
-    
+
     private var frameAnalyzer: ((ImageProxy) -> Unit)? = null
+
+    /** Diagnostic info populated after binding. */
+    var diagSupportedRanges: String = "N/A"; private set
+    var diagAppliedRange: String = "N/A"; private set
 
     /**
      * Start camera with specified lens facing
@@ -51,9 +59,9 @@ class CameraManager(
         onFrameAvailable: (ImageProxy) -> Unit
     ) {
         this.frameAnalyzer = onFrameAvailable
-        
+
         val cameraProviderFuture = ProcessCameraProvider.getInstance(context)
-        
+
         cameraProviderFuture.addListener({
             try {
                 cameraProvider = cameraProviderFuture.get()
@@ -68,23 +76,19 @@ class CameraManager(
     private fun bindCameraUseCases(useFrontCamera: Boolean) {
         val cameraProvider = cameraProvider ?: return
 
-        // Camera selector
         val cameraSelector = CameraSelector.Builder()
             .requireLensFacing(
-                if (useFrontCamera) CameraSelector.LENS_FACING_FRONT 
+                if (useFrontCamera) CameraSelector.LENS_FACING_FRONT
                 else CameraSelector.LENS_FACING_BACK
             )
             .build()
 
-        // Get target rotation from preview view
         val rotation = previewView.display?.rotation ?: android.view.Surface.ROTATION_0
 
-        // Create ResolutionSelector for 4:3 aspect ratio
         val resolutionSelector = ResolutionSelector.Builder()
             .setAspectRatioStrategy(AspectRatioStrategy.RATIO_4_3_FALLBACK_AUTO_STRATEGY)
             .build()
 
-        // Preview use case - Using 4:3 ratio (closest to MediaPipe models)
         val preview = Preview.Builder()
             .setResolutionSelector(resolutionSelector)
             .setTargetRotation(rotation)
@@ -93,37 +97,73 @@ class CameraManager(
                 it.setSurfaceProvider(previewView.surfaceProvider)
             }
 
-        // Image analysis use case for pose detection
-        // Using RGBA_8888 format as required by MediaPipe
         imageAnalysis = ImageAnalysis.Builder()
             .setResolutionSelector(resolutionSelector)
             .setTargetRotation(rotation)
             .setBackpressureStrategy(ImageAnalysis.STRATEGY_KEEP_ONLY_LATEST)
-            .setOutputImageFormat(ImageAnalysis.OUTPUT_IMAGE_FORMAT_RGBA_8888)
             .build()
             .also { analysis ->
                 analysis.setAnalyzer(cameraExecutor) { imageProxy ->
-                    // Pass every frame to analyzer (no frame skipping)
-                    // MediaPipe handles its own frame timing internally
                     frameAnalyzer?.invoke(imageProxy)
                 }
             }
 
         try {
-            // Unbind previous use cases
             cameraProvider.unbindAll()
 
-            // Bind use cases to camera
-            cameraProvider.bindToLifecycle(
+            camera = cameraProvider.bindToLifecycle(
                 lifecycleOwner,
                 cameraSelector,
                 preview,
                 imageAnalysis
             )
 
+            applyHighFps()
+
             Log.d(TAG, "Camera use cases bound successfully with 4:3 aspect ratio")
         } catch (e: Exception) {
             Log.e(TAG, "Use case binding failed: ${e.message}")
+        }
+    }
+
+    /**
+     * After binding, set the highest supported FPS range on the camera session.
+     * This affects ALL use cases (Preview + ImageAnalysis) together.
+     */
+    @androidx.camera.camera2.interop.ExperimentalCamera2Interop
+    private fun applyHighFps() {
+        val cam = camera ?: return
+
+        try {
+            val camera2Info = Camera2CameraInfo.from(cam.cameraInfo)
+            val supportedRanges: Array<Range<Int>>? = camera2Info.getCameraCharacteristic(
+                CameraCharacteristics.CONTROL_AE_AVAILABLE_TARGET_FPS_RANGES
+            )
+
+            diagSupportedRanges = supportedRanges?.joinToString { "[${it.lower},${it.upper}]" } ?: "null"
+            Log.d(TAG, "Supported FPS ranges: $diagSupportedRanges")
+
+            val bestRange = supportedRanges
+                ?.sortedWith(compareByDescending<Range<Int>> { it.upper }.thenByDescending { it.lower })
+                ?.firstOrNull()
+
+            if (bestRange != null) {
+                diagAppliedRange = "[${bestRange.lower},${bestRange.upper}]"
+                val camera2Control = Camera2CameraControl.from(cam.cameraControl)
+                camera2Control.setCaptureRequestOptions(
+                    CaptureRequestOptions.Builder()
+                        .setCaptureRequestOption(
+                            CaptureRequest.CONTROL_AE_TARGET_FPS_RANGE,
+                            bestRange
+                        )
+                        .build()
+                )
+                Log.d(TAG, "Applied FPS range: $diagAppliedRange")
+            } else {
+                diagAppliedRange = "none"
+            }
+        } catch (e: Exception) {
+            Log.w(TAG, "Failed to apply high FPS: ${e.message}")
         }
     }
 

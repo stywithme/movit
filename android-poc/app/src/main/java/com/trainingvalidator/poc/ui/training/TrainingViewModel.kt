@@ -64,7 +64,13 @@ class TrainingViewModel(
     @Deprecated("Use supervisor.state instead")
     val stateManager = TrainingStateManager()
     
+    @Deprecated("Use poseSetupGuide instead")
     val poseValidator = PoseValidator()
+
+    /** New rolling-window guided pose validation for SETUP_POSE. */
+    val poseSetupGuide = PoseSetupGuide(
+        language = com.trainingvalidator.poc.training.config.SettingsManager.settings.feedback.language
+    )
     val countdownController = CountdownController()
     
     // ==================== Training Configuration ====================
@@ -287,7 +293,13 @@ class TrainingViewModel(
     }
     
     // ==================== Supervisor Signal Methods ====================
-    
+
+    // Cached last frame data - used by TrainingActivity to drive skeleton setup guidance
+    @Volatile var lastSmoothedLandmarks: List<SmoothedLandmark>? = null
+        private set
+    @Volatile var lastImageSize: Pair<Int, Int> = Pair(1, 1)
+        private set
+
     /**
      * Called from Activity for every frame with detected pose
      */
@@ -295,8 +307,12 @@ class TrainingViewModel(
         angles: JointAngles,
         landmarks: List<SmoothedLandmark>?,
         isFrontCamera: Boolean,
-        timestampMs: Long
+        timestampMs: Long,
+        imageWidth: Int = 1,
+        imageHeight: Int = 1
     ) {
+        lastSmoothedLandmarks = landmarks
+        if (imageWidth > 1) lastImageSize = Pair(imageWidth, imageHeight)
         supervisor.processSignal(SupervisorSignal.PoseFrame(angles, landmarks, isFrontCamera, timestampMs))
     }
     
@@ -424,48 +440,76 @@ class TrainingViewModel(
             }
             
             is SupervisorAction.ValidatePose -> {
-                val result = poseValidator.validate(
-                    angles = action.angles,
-                    exerciseConfig = _exerciseConfig.value,
-                    poseVariantIndex = _poseVariantIndex.value
-                )
-                
-                // Emit validation update for UI
-                viewModelScope.launch {
-                    _events.emit(TrainingUIEvent.PoseValidationUpdate(result))
-                }
-                
-                // If pose confirmed, notify supervisor
-                if (result.isConfirmed) {
-                    supervisor.processSignal(SupervisorSignal.PoseConfirmed)
-                } else if (!result.isValid && supervisor.state.value == SessionState.COUNTDOWN) {
-                    // Pose became invalid during countdown
-                    supervisor.processSignal(SupervisorSignal.PoseInvalid)
-                } else if (!result.isValid && supervisor.state.value == SessionState.RESUME_COUNTDOWN) {
-                    supervisor.processSignal(SupervisorSignal.PoseInvalid)
+                val state = supervisor.state.value
+
+                when (state) {
+                    SessionState.SETUP_POSE, SessionState.RESUME_SETUP -> {
+                        val setupResult = poseSetupGuide.validate(
+                            angles = action.angles,
+                            landmarks = action.landmarks,
+                            exerciseConfig = _exerciseConfig.value,
+                            poseVariantIndex = _poseVariantIndex.value
+                        )
+
+                        viewModelScope.launch {
+                            _events.emit(TrainingUIEvent.SetupGuidanceUpdate(setupResult))
+                        }
+
+                        if (setupResult.isConfirmed) {
+                            supervisor.processSignal(SupervisorSignal.PoseConfirmed)
+                        }
+                    }
+
+                    SessionState.COUNTDOWN, SessionState.RESUME_COUNTDOWN -> {
+                        // Lightweight check: are angles still roughly in startPose?
+                        // This feeds the tolerant countdown — PoseInvalid signals are
+                        // handled with grace/freeze/cancel thresholds.
+                        val stillValid = isStartPoseRoughlyValid(action.angles)
+                        if (!stillValid) {
+                            supervisor.processSignal(SupervisorSignal.PoseInvalid)
+                        }
+                    }
+
+                    else -> { /* TRAINING, COMPLETED etc. — ignore */ }
                 }
             }
             
             // UI Commands
             is SupervisorAction.ShowSetupPose -> {
-                poseValidator.reset()
+                poseSetupGuide.reset()
                 viewModelScope.launch {
                     _events.emit(TrainingUIEvent.ShowSetupPose)
                 }
             }
-            
+
             is SupervisorAction.StartCountdown -> {
+                // Speak confirmation once and start countdown
+                feedbackManager?.speakPoseConfirmed()
                 countdownController.start()
                 viewModelScope.launch {
                     _events.emit(TrainingUIEvent.StartCountdown)
                 }
             }
-            
+
             is SupervisorAction.CancelCountdown -> {
                 countdownController.cancel()
-                poseValidator.reset()
+                poseSetupGuide.reset()
                 viewModelScope.launch {
                     _events.emit(TrainingUIEvent.CountdownCancelled)
+                }
+            }
+
+            is SupervisorAction.FreezeCountdown -> {
+                countdownController.freeze()
+                viewModelScope.launch {
+                    _events.emit(TrainingUIEvent.CountdownFrozen)
+                }
+            }
+
+            is SupervisorAction.UnfreezeCountdown -> {
+                countdownController.unfreeze()
+                viewModelScope.launch {
+                    _events.emit(TrainingUIEvent.CountdownUnfrozen)
                 }
             }
             
@@ -548,6 +592,31 @@ class TrainingViewModel(
         onPoseFrame(angles, smoothedLandmarks, isFrontCamera, SystemClock.uptimeMillis())
     }
     
+    // ==================== Countdown Pose Check ====================
+
+    /**
+     * Lightweight check: are ALL tracked joints still roughly inside startPose range?
+     * Uses a generous tolerance (closeThreshold from settings) so only gross violations
+     * trigger PoseInvalid during the countdown.
+     */
+    private fun isStartPoseRoughlyValid(angles: JointAngles): Boolean {
+        val config = _exerciseConfig.value ?: return true
+        val variant = config.poseVariants.getOrNull(_poseVariantIndex.value) ?: return true
+        val tolerance = com.trainingvalidator.poc.training.config.SettingsManager
+            .settings.setupValidation.closeThresholdDegrees.coerceAtLeast(10.0)
+
+        var checkedCount = 0
+        for (joint in variant.trackedJoints) {
+            val angle = angles.getAngle(joint.joint) ?: continue  // skip invisible joints
+            checkedCount++
+            val min = joint.startPose.min - tolerance
+            val max = joint.startPose.max + tolerance
+            if (angle < min || angle > max) return false
+        }
+        // If we couldn't see ANY joint at all, that's a problem
+        return checkedCount > 0
+    }
+
     // ==================== Engine Observers ====================
     
     private fun observeTrainingEngine() {
@@ -763,9 +832,19 @@ sealed class TrainingUIEvent {
     
     /** Countdown was cancelled (pose lost) */
     object CountdownCancelled : TrainingUIEvent()
+
+    /** Countdown was frozen (user temporarily left position) */
+    object CountdownFrozen : TrainingUIEvent()
+
+    /** Countdown was unfrozen (user returned to position) */
+    object CountdownUnfrozen : TrainingUIEvent()
     
-    /** Pose validation update */
+    /** Pose validation update (legacy - kept for backward compatibility) */
+    @Deprecated("Use SetupGuidanceUpdate instead")
     data class PoseValidationUpdate(val result: PoseValidator.ValidationResult) : TrainingUIEvent()
+
+    /** Setup guidance update from PoseSetupGuide (new rolling-window system) */
+    data class SetupGuidanceUpdate(val result: SetupResult) : TrainingUIEvent()
     
     /** Exercise completed (target reached) */
     object ExerciseCompleted : TrainingUIEvent()

@@ -41,8 +41,13 @@ import com.trainingvalidator.poc.training.session.PauseReason
 import com.trainingvalidator.poc.training.session.SessionState
 import com.trainingvalidator.poc.ui.components.AnimationUtils
 import com.trainingvalidator.poc.ui.components.GlassmorphicMessageView
+import com.trainingvalidator.poc.ui.training.CameraGuidance
 import com.trainingvalidator.poc.ui.training.CountdownController
+import com.trainingvalidator.poc.ui.training.Direction
+import com.trainingvalidator.poc.ui.training.GuidanceLevel
+import com.trainingvalidator.poc.ui.training.JointGuidance
 import com.trainingvalidator.poc.ui.training.PoseValidator
+import com.trainingvalidator.poc.ui.training.SetupResult
 import com.trainingvalidator.poc.ui.training.TrainingUIEvent
 import com.trainingvalidator.poc.ui.training.TrainingViewModel
 import com.trainingvalidator.poc.ui.training.VideoModeController
@@ -451,7 +456,7 @@ class TrainingActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetection
         
         // Initial state
         updateUIForSessionState(SessionState.SETUP_POSE)
-        showPoseRequirements()
+        showSetupPoseUI()
     }
 
     private fun maybeShowWeightDialog() {
@@ -1285,17 +1290,31 @@ class TrainingActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetection
                 AnimationUtils.animateCountdown(binding.tvCountdown, secondsRemaining.toString())
                 viewModel.feedbackManager?.speakCountdown(secondsRemaining)
             }
-            
+
             override fun onFinish() {
-                AnimationUtils.animateGoText(binding.tvCountdown) {
-                    // Notify supervisor that countdown finished
-                    viewModel.onCountdownFinished()
-                }
+                // Notify supervisor IMMEDIATELY - animation runs in parallel
+                viewModel.onCountdownFinished()
                 viewModel.feedbackManager?.speakGo()
+                AnimationUtils.animateGoText(binding.tvCountdown) { /* cosmetic only */ }
             }
-            
+
             override fun onCancelled() {
-                updateUIForSessionState(SessionState.SETUP_POSE)
+                // UI update handled by TrainingUIEvent.CountdownCancelled — no-op here
+            }
+
+            override fun onFrozen() {
+                // Dim the countdown number + show pulsing warning colour
+                binding.tvCountdown.alpha = 0.45f
+                binding.tvCountdown.setTextColor(
+                    ContextCompat.getColor(this@TrainingActivity, R.color.warning)
+                )
+            }
+
+            override fun onUnfrozen() {
+                binding.tvCountdown.alpha = 1f
+                binding.tvCountdown.setTextColor(
+                    ContextCompat.getColor(this@TrainingActivity, R.color.text_primary)
+                )
             }
         })
     }
@@ -1525,26 +1544,46 @@ class TrainingActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetection
     private fun handleUIEvent(event: TrainingUIEvent) {
         when (event) {
             is TrainingUIEvent.ShowSetupPose -> {
-                showPoseRequirements()
-                binding.tvPoseStatus.visibility = View.VISIBLE
+                showSetupPoseUI()
             }
-            
+
+            is TrainingUIEvent.SetupGuidanceUpdate -> {
+                updateSetupGuidanceUI(event.result)
+            }
+
             is TrainingUIEvent.StartCountdown -> {
-                // Countdown is now started by supervisor action
-                binding.tvPoseStatus.visibility = View.GONE
+                binding.setupPosePanel.visibility = View.GONE
+                binding.countdownPanel.visibility = View.VISIBLE
                 binding.tvCountdown.visibility = View.VISIBLE
                 binding.tvCountdown.alpha = 1f
+                binding.tvCountdown.setTextColor(
+                    ContextCompat.getColor(this, R.color.text_primary)
+                )
+                // Switch bottom bar FORM card back to "FORM" label
+                switchBottomBarToFormMode()
+                // Exit skeleton setup mode once countdown starts
+                binding.skeletonOverlay.clearSetupMode()
             }
-            
+
             is TrainingUIEvent.CountdownCancelled -> {
                 updateUIForSessionState(SessionState.SETUP_POSE)
+                showSetupPoseUI()
             }
-            
+
+            is TrainingUIEvent.CountdownFrozen -> {
+                // Handled directly by CountdownController listener callbacks above
+            }
+
+            is TrainingUIEvent.CountdownUnfrozen -> {
+                // Handled directly by CountdownController listener callbacks above
+            }
+
             is TrainingUIEvent.PoseValidationUpdate -> {
-                updatePoseValidationUI(event.result)
+                // Legacy no-op: SetupGuidanceUpdate handles everything now
             }
             
             is TrainingUIEvent.TrainingStarted -> {
+                binding.skeletonOverlay.clearSetupMode()
                 val trackedIndices = viewModel.getTrackedLandmarkIndices()
                 binding.skeletonOverlay.setTrainingMode(true, trackedIndices, useFrontCamera)
                 observeTrainingEngineState()
@@ -1628,11 +1667,13 @@ class TrainingActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetection
             }
             
             SessionState.COUNTDOWN -> {
-                // Reset smoother for clean training start (deterministic results)
                 if (::landmarkSmoother.isInitialized) {
                     landmarkSmoother.reset()
                 }
-                
+
+                binding.skeletonOverlay.clearSetupMode()
+                switchBottomBarToFormMode()
+
                 AnimationUtils.slideOutPanel(binding.setupPosePanel, AnimationUtils.Direction.BOTTOM) {
                     binding.countdownPanel.visibility = View.VISIBLE
                 }
@@ -1651,7 +1692,11 @@ class TrainingActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetection
                 binding.progressContainer.visibility = View.VISIBLE
                 binding.bottomStatsBar.visibility = View.VISIBLE
                 updatePlayPauseIcon(isPlaying = true)
-                
+
+                // Ensure setup overlay is off and bottom bar shows FORM
+                binding.skeletonOverlay.clearSetupMode()
+                switchBottomBarToFormMode()
+
                 // Start elapsed time timer
                 if (trainingStartTime == 0L) {
                     startElapsedTimeTimer()
@@ -1680,6 +1725,8 @@ class TrainingActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetection
             }
             
             SessionState.RESUME_COUNTDOWN -> {
+                binding.skeletonOverlay.clearSetupMode()
+                switchBottomBarToFormMode()
                 binding.setupPosePanel.visibility = View.GONE
                 binding.countdownPanel.visibility = View.VISIBLE
                 binding.heroCounterContainer.visibility = View.VISIBLE
@@ -1738,17 +1785,147 @@ class TrainingActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetection
         binding.vignetteOverlay.showWarning()
     }
     
-    private fun updatePoseValidationUI(result: PoseValidator.ValidationResult) {
-        val statusText = result.jointStatuses.joinToString("\n") { it.getStatusText() }
-        binding.tvPoseStatus.text = statusText
+    // ──────────────────────────────────────────────────────────────────────
+    // Setup Pose UI
+    // ──────────────────────────────────────────────────────────────────────
+
+    /** Show the setup panel and activate skeleton setup mode. */
+    private fun showSetupPoseUI() {
+        binding.setupPosePanel.visibility = View.VISIBLE
+        binding.countdownPanel.visibility = View.GONE
+        binding.skeletonOverlay.clearSetupMode()
+        // Clear stale joint rows from previous setup cycle
+        binding.jointGuidanceContainer.removeAllViews()
+        switchBottomBarToSetupMode()
     }
-    
-    private fun showPoseRequirements() {
-        val text = viewModel.poseValidator.getPoseRequirementsText(
-            viewModel.exerciseConfig.value,
-            viewModel.poseVariantIndex.value
-        )
-        binding.tvPoseRequirements.text = text
+
+    /**
+     * Update per-joint guidance rows in setupPosePanel and the progress bar.
+     * Also drives the skeleton overlay's setup guidance.
+     */
+    private fun updateSetupGuidanceUI(result: SetupResult) {
+        // Only process during setup states — ignore stale events from queue
+        val state = viewModel.supervisor.state.value
+        if (state != SessionState.SETUP_POSE && state != SessionState.RESUME_SETUP) return
+
+        // ── Skeleton overlay ──────────────────────────────────────────────
+        val landmarks = viewModel.lastSmoothedLandmarks
+        val imageSize  = viewModel.lastImageSize
+        if (landmarks != null) {
+            binding.skeletonOverlay.updateSetupGuidance(
+                guidances = result.joints,
+                smoothedLandmarks = landmarks,
+                imageW = imageSize.first,
+                imageH = imageSize.second
+            )
+        }
+
+        // ── Progress (bottom bar READY card) ────────────────────────────
+        updateReadyPercent(result.progress.percent)
+
+        // ── Bottom bar VIEW card ──────────────────────────────────────────
+        updateViewCard(result.camera)
+
+        // ── Joint guidance rows ───────────────────────────────────────────
+        updateJointGuidanceRows(result.joints)
+
+        // ── Voice guidance for worst joint ────────────────────────────────
+        val worstJoint = result.worstJoint
+        if (worstJoint != null && viewModel.poseSetupGuide.shouldSpeakGuidance(worstJoint)) {
+            viewModel.feedbackManager?.speakSetupGuidance(worstJoint)
+            viewModel.poseSetupGuide.onVoiceGuidanceSpoken(worstJoint)
+        }
+    }
+
+    /**
+     * Build/update the per-joint guidance rows inside [jointGuidanceContainer].
+     *
+     * We recycle existing TextViews by tag to avoid layout churn.
+     */
+    private fun updateJointGuidanceRows(joints: List<JointGuidance>) {
+        val container = binding.jointGuidanceContainer
+
+        joints.forEachIndexed { i, guidance ->
+            val row = container.findViewWithTag<android.widget.TextView>("joint_row_$i")
+                ?: android.widget.TextView(this).also { tv ->
+                    tv.tag = "joint_row_$i"
+                    tv.textSize = 16f
+                    tv.setPadding(0, 8, 0, 8)
+                    tv.typeface = android.graphics.Typeface.DEFAULT_BOLD
+                    container.addView(tv)
+                }
+
+            row.visibility = View.VISIBLE
+            val colorRes = when (guidance.level) {
+                GuidanceLevel.GREEN  -> R.color.success
+                GuidanceLevel.YELLOW -> R.color.warning
+                GuidanceLevel.RED    -> R.color.error
+            }
+            val icon = when (guidance.level) {
+                GuidanceLevel.GREEN  -> "✓"
+                GuidanceLevel.YELLOW -> "⚠"
+                GuidanceLevel.RED    -> "✗"
+            }
+            val arrow = when (guidance.direction) {
+                Direction.LOWER -> " ↓"
+                Direction.RAISE -> " ↑"
+                else            -> ""
+            }
+            val angleStr = "%.0f°".format(guidance.currentAngle)
+
+            row.text = "$icon  ${guidance.jointName}  $angleStr$arrow"
+            row.setTextColor(ContextCompat.getColor(this, colorRes))
+        }
+
+        for (i in joints.size until container.childCount) {
+            container.getChildAt(i).visibility = View.GONE
+        }
+    }
+
+    /**
+     * Update the bottom bar FORM/VIEW card with camera-position tip or form quality.
+     */
+    private fun updateViewCard(cameraGuidance: CameraGuidance?) {
+        if (cameraGuidance == null) return
+        val lang = viewModel.poseSetupGuide.language
+        val (text, colorRes) = if (cameraGuidance.isCorrect) {
+            (if (lang == "ar") "✓" else "✓ OK") to R.color.success
+        } else {
+            val label = cameraGuidance.tip?.get(lang) ?: "—"
+            label to R.color.warning
+        }
+        binding.tvFormStatus.text = text
+        binding.tvFormStatus.setTextColor(ContextCompat.getColor(this, colorRes))
+    }
+
+    /** Switch bottom bar to setup mode: TIME→READY, FORM→VIEW */
+    private fun switchBottomBarToSetupMode() {
+        val isAr = viewModel.poseSetupGuide.language == "ar"
+        // TIME card → READY card
+        binding.tvTimeCardLabel.text = if (isAr) "جاهز" else "READY"
+        binding.tvTimeElapsed.text = "0%"
+        binding.tvTimeElapsed.visibility = View.VISIBLE
+        binding.progressSetupReadyBar.visibility = View.VISIBLE
+        binding.progressSetupReadyBar.progress = 0
+        // FORM card → VIEW card
+        binding.tvFormCardLabel.text = if (isAr) "الوضعية" else "VIEW"
+    }
+
+    /** Update the READY percent in the bottom bar TIME card. */
+    private fun updateReadyPercent(percent: Int) {
+        binding.tvTimeElapsed.text = "$percent%"
+        binding.progressSetupReadyBar.progress = percent
+    }
+
+    /** Switch bottom bar back to training layout. */
+    private fun switchBottomBarToFormMode() {
+        binding.tvTimeCardLabel.text = getString(R.string.time)
+        binding.tvFormCardLabel.text = getString(R.string.form)
+        binding.progressSetupReadyBar.visibility = View.GONE
+        binding.tvTimeElapsed.text = "00:00"
+        binding.tvTimeElapsed.visibility = View.VISIBLE
+        binding.tvFormStatus.text = getString(R.string.good)
+        binding.tvFormStatus.setTextColor(ContextCompat.getColor(this, R.color.primary))
     }
     
     private fun updatePlayPauseIcon(isPlaying: Boolean) {
@@ -2422,8 +2599,11 @@ class TrainingActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetection
                     wasPoseDetectedLastFrame = true
                     
                     // Forward pose frame to supervisor via ViewModel
-                    viewModel.onPoseFrame(angles, smoothedLandmarks, result.isFrontCamera, result.timestampMs)
-                    
+                    viewModel.onPoseFrame(
+                        angles, smoothedLandmarks, result.isFrontCamera, result.timestampMs,
+                        imageWidth = result.imageWidth, imageHeight = result.imageHeight
+                    )
+
                     // Update skeleton overlay with JointStateInfo
                     val stateInfos = viewModel.trainingEngine?.jointStateInfos?.value ?: emptyMap()
                     val positionErrors = viewModel.trainingEngine?.positionErrors?.value ?: emptyList()
@@ -2470,10 +2650,9 @@ class TrainingActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetection
             // Always notify supervisor about NoPose
             viewModel.onNoPoseDetected(SystemClock.uptimeMillis())
             
-            // Update UI for setup pose state
+            // Update UI for setup pose state - show no-pose warning in the guidance container
             if (viewModel.supervisor.state.value == SessionState.SETUP_POSE) {
-                viewModel.poseValidator.reset()
-                binding.tvPoseStatus.text = "❌ No pose detected\nMake sure your full body is visible"
+                viewModel.poseSetupGuide.reset()
             }
         }
     }
@@ -2577,8 +2756,11 @@ class TrainingActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetection
                 timestampMs: Long
             ) {
                 wasPoseDetectedLastFrame = true
-                viewModel.onPoseFrame(angles, smoothedLandmarks, false, timestampMs)
-                
+                viewModel.onPoseFrame(
+                    angles, smoothedLandmarks, false, timestampMs,
+                    imageWidth = imageWidth, imageHeight = imageHeight
+                )
+
                 // Update skeleton overlay with JointStateInfo
                 val stateInfos = viewModel.trainingEngine?.jointStateInfos?.value ?: emptyMap()
                 val positionErrors = viewModel.trainingEngine?.positionErrors?.value ?: emptyList()

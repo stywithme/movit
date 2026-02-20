@@ -228,22 +228,26 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toStartOf="@id/heroCounterContainer" />
 
-    <!-- ==================== SETUP POSE PANEL (Glass Style) ==================== -->
-    
+    <!-- ==================== SETUP POSE PANEL (Enhanced) ==================== -->
+
     <LinearLayout
         android:id="@+id/setupPosePanel"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="vertical"
-        android:padding="@dimen/spacing_xl"
-        android:layout_marginHorizontal="@dimen/spacing_base"
-        android:layout_marginBottom="@dimen/spacing_base"
+        android:paddingHorizontal="@dimen/spacing_base"
+        android:paddingTop="@dimen/spacing_md"
+        android:paddingBottom="@dimen/spacing_md"
+        android:layout_marginHorizontal="@dimen/spacing_sm"
+        android:layout_marginBottom="@dimen/spacing_sm"
         android:background="@drawable/glass_deck_background"
         android:elevation="8dp"
+        android:visibility="gone"
         app:layout_constraintBottom_toTopOf="@id/bottomStatsBar"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent">
 
+        <!-- Header row: icon + title -->
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
@@ -251,57 +255,31 @@
             android:gravity="center_vertical">
 
             <ImageView
-                android:layout_width="20dp"
-                android:layout_height="20dp"
+                android:layout_width="18dp"
+                android:layout_height="18dp"
                 android:src="@drawable/ic_position"
                 android:contentDescription="Position"
                 app:tint="@color/primary" />
 
             <TextView
-                android:layout_width="wrap_content"
+                android:layout_width="0dp"
                 android:layout_height="wrap_content"
+                android:layout_weight="1"
                 android:text="@string/setup_position"
                 android:textColor="@color/primary"
-                android:textSize="18sp"
+                android:textSize="16sp"
                 android:textStyle="bold"
                 android:layout_marginStart="@dimen/spacing_sm" />
 
         </LinearLayout>
 
-        <TextView
-            android:id="@+id/tvPoseRequirements"
+        <!-- Per-joint guidance container (rows are added programmatically) -->
+        <LinearLayout
+            android:id="@+id/jointGuidanceContainer"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="@string/loading"
-            android:textColor="#CCFFFFFF"
-            android:textSize="14sp"
-            android:layout_marginTop="@dimen/spacing_md"
-            android:lineSpacingExtra="4dp" />
-
-        <View
-            android:layout_width="match_parent"
-            android:layout_height="1dp"
-            android:background="#1AFFFFFF"
-            android:layout_marginTop="@dimen/spacing_base"
-            android:layout_marginBottom="@dimen/spacing_base" />
-
-        <TextView
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="@string/current_status"
-            android:textColor="#66FFFFFF"
-            android:textSize="12sp" />
-
-        <TextView
-            android:id="@+id/tvPoseStatus"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="@string/waiting_for_pose"
-            android:textColor="@android:color/white"
-            android:textSize="13sp"
-            android:fontFamily="monospace"
-            android:layout_marginTop="@dimen/spacing_sm"
-            android:lineSpacingExtra="2dp" />
+            android:orientation="vertical"
+            android:layout_marginTop="@dimen/spacing_sm" />
 
     </LinearLayout>
 
@@ -622,7 +600,7 @@
         android:layout_marginBottom="@dimen/spacing_lg"
         app:layout_constraintBottom_toBottomOf="parent">
 
-        <!-- TIME Card (Left - takes remaining space) -->
+        <!-- TIME / READY Card (Left - switches between time and setup progress) -->
         <LinearLayout
             android:id="@+id/cardTime"
             android:layout_width="0dp"
@@ -634,7 +612,9 @@
             android:gravity="center"
             android:paddingVertical="@dimen/spacing_md">
 
+            <!-- TIME label (shown during training) -->
             <TextView
+                android:id="@+id/tvTimeCardLabel"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="@string/time"
@@ -642,6 +622,7 @@
                 android:textSize="11sp"
                 android:textAllCaps="true" />
 
+            <!-- Time value (training mode) -->
             <TextView
                 android:id="@+id/tvTimeElapsed"
                 android:layout_width="wrap_content"
@@ -650,6 +631,20 @@
                 android:textColor="@color/text_primary"
                 android:textSize="20sp"
                 android:textStyle="bold" />
+
+            <!-- Compact progress bar (setup mode only) -->
+            <ProgressBar
+                android:id="@+id/progressSetupReadyBar"
+                style="?android:attr/progressBarStyleHorizontal"
+                android:layout_width="match_parent"
+                android:layout_height="4dp"
+                android:layout_marginHorizontal="8dp"
+                android:layout_marginTop="4dp"
+                android:progress="0"
+                android:max="100"
+                android:progressTint="@color/primary"
+                android:progressBackgroundTint="#33FFFFFF"
+                android:visibility="gone" />
 
         </LinearLayout>
 
@@ -670,7 +665,7 @@
 
         </FrameLayout>
 
-        <!-- FORM Card (Right - takes remaining space) -->
+        <!-- FORM / VIEW Card (Right - toggles label depending on session state) -->
         <LinearLayout
             android:id="@+id/cardForm"
             android:layout_width="0dp"
@@ -683,6 +678,7 @@
             android:paddingVertical="@dimen/spacing_md">
 
             <TextView
+                android:id="@+id/tvFormCardLabel"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="@string/form"

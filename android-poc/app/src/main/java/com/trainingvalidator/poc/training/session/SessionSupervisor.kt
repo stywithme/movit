@@ -1,6 +1,7 @@
 package com.trainingvalidator.poc.training.session
 
 import android.util.Log
+import com.trainingvalidator.poc.training.config.SettingsManager
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow
@@ -32,11 +33,11 @@ class SessionSupervisor {
     
     companion object {
         private const val TAG = "SessionSupervisor"
-        
+
         // NoPose timing configuration
-        private const val NO_POSE_GRACE_MS = 1000L   // 1s - ignore brief glitches
-        private const val NO_POSE_WARN_MS = 2000L   // 2s - show warning (handled by UI)
-        private const val NO_POSE_PAUSE_MS = 4000L  // 4s - trigger auto-pause
+        private const val NO_POSE_GRACE_MS = 1000L  // 1s  - ignore brief glitches
+        private const val NO_POSE_WARN_MS  = 2000L  // 2s  - show warning (handled by UI)
+        private const val NO_POSE_PAUSE_MS = 4000L  // 4s  - trigger auto-pause
     }
     
     // ==================== State ====================
@@ -65,6 +66,12 @@ class SessionSupervisor {
     
     /** Whether current countdown is for resume (preserves rep count) vs fresh start */
     private var isResumeCountdown: Boolean = false
+
+    /** Consecutive invalid frames seen during an active countdown (for tolerant cancel). */
+    private var countdownInvalidFrames: Int = 0
+
+    /** Whether the countdown is currently frozen (pose lost, waiting for recovery). */
+    private var countdownFrozen: Boolean = false
     
     // ==================== Public API ====================
     
@@ -121,6 +128,8 @@ class SessionSupervisor {
         noPoseStartTime = 0L
         isResumeCountdown = false
         isVideoMode = false
+        countdownInvalidFrames = 0
+        countdownFrozen = false
         Log.d(TAG, "Supervisor reset to IDLE")
     }
     
@@ -176,37 +185,42 @@ class SessionSupervisor {
     private fun handleSetupPose(signal: SupervisorSignal) {
         when (signal) {
             is SupervisorSignal.PoseFrame -> {
-                // Forward to validator
-                emit(SupervisorAction.ValidatePose(signal.angles))
+                // Forward to PoseSetupGuide (carries landmarks for camera check)
+                emit(SupervisorAction.ValidatePose(signal.angles, signal.landmarks))
             }
-            
+
             is SupervisorSignal.PoseConfirmed -> {
-                // Start countdown
+                // Rolling window confirmed - start countdown
+                countdownInvalidFrames = 0
+                countdownFrozen = false
                 transitionTo(SessionState.COUNTDOWN)
                 emit(SupervisorAction.StartCountdown)
                 Log.d(TAG, "Pose confirmed - starting countdown")
             }
-            
+
             is SupervisorSignal.StartRequested -> {
-                // Video mode skips countdown
                 if (isVideoMode) {
                     transitionTo(SessionState.TRAINING)
                     emit(SupervisorAction.StartEngine)
                     Log.d(TAG, "Video mode - skipping countdown")
                 }
             }
-            
+
             is SupervisorSignal.NoPoseFrame -> {
-                // Just show warning in UI (already handled by existing code)
+                // UI can show a "stand in front of camera" hint
             }
-            
+
             else -> {}
         }
     }
-    
+
     private fun handleCountdown(signal: SupervisorSignal) {
+        val cfg = SettingsManager.settings.setupValidation
+
         when (signal) {
             is SupervisorSignal.CountdownFinished -> {
+                countdownInvalidFrames = 0
+                countdownFrozen = false
                 transitionTo(SessionState.TRAINING)
                 if (isResumeCountdown) {
                     emit(SupervisorAction.ResumeEngine)
@@ -217,29 +231,63 @@ class SessionSupervisor {
                 }
                 isResumeCountdown = false
             }
-            
+
             is SupervisorSignal.PoseFrame -> {
-                // Continue validating during countdown
-                emit(SupervisorAction.ValidatePose(signal.angles))
+                // Valid frame — reset tolerance and check if angles still in range
+                countdownInvalidFrames = 0
+                if (countdownFrozen) {
+                    countdownFrozen = false
+                    emit(SupervisorAction.UnfreezeCountdown)
+                    Log.d(TAG, "Pose recovered - unfreezing countdown")
+                }
+                // Lightweight validation — ViewModel will send PoseInvalid if angles are off
+                emit(SupervisorAction.ValidatePose(signal.angles, signal.landmarks))
             }
-            
+
             is SupervisorSignal.PoseInvalid -> {
-                // Pose lost during countdown - go back to setup
-                transitionTo(SessionState.SETUP_POSE)
-                emit(SupervisorAction.CancelCountdown)
-                emit(SupervisorAction.ShowSetupPose)
-                Log.d(TAG, "Pose invalid during countdown - back to setup")
+                handleCountdownPoseLost(cfg)
             }
-            
+
             is SupervisorSignal.NoPoseFrame -> {
-                // No pose during countdown - cancel
+                handleCountdownPoseLost(cfg)
+            }
+
+            else -> {}
+        }
+    }
+
+    /**
+     * Tolerant countdown invalidation:
+     * - ≤ toleranceFrames   → silently ignored
+     * - ≤ freezeFrames      → freeze countdown + warn user
+     * - > cancelFrames      → cancel countdown, back to SETUP_POSE
+     */
+    private fun handleCountdownPoseLost(
+        cfg: com.trainingvalidator.poc.training.config.SetupValidationSettings
+    ) {
+        countdownInvalidFrames++
+        when {
+            countdownInvalidFrames <= cfg.countdownToleranceFrames -> {
+                // Grace: tiny glitch - ignore silently
+            }
+            countdownInvalidFrames <= cfg.countdownFreezeFrames -> {
+                // Freeze: pause the visual countdown, show warning
+                if (!countdownFrozen) {
+                    countdownFrozen = true
+                    emit(SupervisorAction.FreezeCountdown)
+                    Log.d(TAG, "Countdown frozen at frame $countdownInvalidFrames")
+                }
+            }
+            countdownInvalidFrames > cfg.countdownCancelFrames -> {
+                // Cancel: too long out of position
+                val framesBeforeReset = countdownInvalidFrames
+                countdownInvalidFrames = 0
+                countdownFrozen = false
                 transitionTo(SessionState.SETUP_POSE)
                 emit(SupervisorAction.CancelCountdown)
                 emit(SupervisorAction.ShowSetupPose)
-                Log.d(TAG, "No pose during countdown - back to setup")
+                Log.d(TAG, "Countdown cancelled after $framesBeforeReset invalid frames")
             }
-            
-            else -> {}
         }
     }
     
@@ -345,7 +393,7 @@ class SessionSupervisor {
     private fun handleResumeSetup(signal: SupervisorSignal) {
         when (signal) {
             is SupervisorSignal.PoseFrame -> {
-                emit(SupervisorAction.ValidatePose(signal.angles))
+                emit(SupervisorAction.ValidatePose(signal.angles, signal.landmarks))
             }
             
             is SupervisorSignal.PoseConfirmed -> {
@@ -367,33 +415,43 @@ class SessionSupervisor {
     }
     
     private fun handleResumeCountdown(signal: SupervisorSignal) {
+        val cfg = SettingsManager.settings.setupValidation
         when (signal) {
             is SupervisorSignal.CountdownFinished -> {
+                countdownInvalidFrames = 0
+                countdownFrozen = false
                 transitionTo(SessionState.TRAINING)
                 // KEY: Use ResumeFromVisibilityPause to preserve rep count
                 emit(SupervisorAction.ResumeFromVisibilityPause)
                 Log.d(TAG, "Resume countdown finished - resuming with preserved rep count")
             }
-            
+
             is SupervisorSignal.PoseFrame -> {
-                emit(SupervisorAction.ValidatePose(signal.angles))
+                countdownInvalidFrames = 0
+                if (countdownFrozen) {
+                    countdownFrozen = false
+                    emit(SupervisorAction.UnfreezeCountdown)
+                }
+                emit(SupervisorAction.ValidatePose(signal.angles, signal.landmarks))
             }
-            
+
             is SupervisorSignal.PoseInvalid -> {
-                transitionTo(SessionState.AUTO_PAUSED)
-                emit(SupervisorAction.CancelCountdown)
-                emit(SupervisorAction.ShowAutoPaused(pauseReason ?: PauseReason.VISIBILITY))
-                Log.d(TAG, "Pose invalid during resume countdown - back to auto-paused")
+                handleCountdownPoseLost(cfg)
+                if (_state.value == SessionState.SETUP_POSE) {
+                    transitionTo(SessionState.AUTO_PAUSED)
+                    emit(SupervisorAction.ShowAutoPaused(pauseReason ?: PauseReason.VISIBILITY))
+                }
             }
-            
+
             is SupervisorSignal.NoPoseFrame -> {
-                transitionTo(SessionState.AUTO_PAUSED)
-                emit(SupervisorAction.CancelCountdown)
-                emit(SupervisorAction.ShowAutoPaused(PauseReason.NO_POSE))
-                if (isVideoMode) emit(SupervisorAction.PauseVideo)
-                Log.d(TAG, "No pose during resume countdown - back to auto-paused")
+                handleCountdownPoseLost(cfg)
+                if (_state.value == SessionState.SETUP_POSE) {
+                    transitionTo(SessionState.AUTO_PAUSED)
+                    emit(SupervisorAction.ShowAutoPaused(PauseReason.NO_POSE))
+                    if (isVideoMode) emit(SupervisorAction.PauseVideo)
+                }
             }
-            
+
             else -> {}
         }
     }

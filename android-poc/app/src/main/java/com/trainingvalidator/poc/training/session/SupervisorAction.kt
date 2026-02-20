@@ -47,11 +47,15 @@ sealed class SupervisorAction {
     ) : SupervisorAction()
     
     /**
-     * Validate pose through PoseValidator
+     * Validate pose through PoseSetupGuide
      * Emitted during SETUP_POSE, COUNTDOWN, RESUME_SETUP, RESUME_COUNTDOWN
+     *
+     * Carries both angles and landmarks so PoseSetupGuide can run
+     * camera-position detection alongside joint-angle validation.
      */
     data class ValidatePose(
-        val angles: JointAngles
+        val angles: JointAngles,
+        val landmarks: List<SmoothedLandmark>?
     ) : SupervisorAction()
     
     // ==================== UI Commands ====================
@@ -64,6 +68,12 @@ sealed class SupervisorAction {
     
     /** Cancel countdown and return to setup */
     object CancelCountdown : SupervisorAction()
+
+    /** Freeze (pause) the visible countdown display - pose temporarily lost */
+    object FreezeCountdown : SupervisorAction()
+
+    /** Unfreeze the countdown - pose recovered */
+    object UnfreezeCountdown : SupervisorAction()
     
     /** Show auto-paused overlay with reason */
     data class ShowAutoPaused(val reason: PauseReason) : SupervisorAction()

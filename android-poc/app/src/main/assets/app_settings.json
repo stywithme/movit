@@ -94,6 +94,30 @@
     "maxValidAngle": 175.0,
     "_maxValidAngle_comment": "الحد الأقصى للزاوية التي تعتبر صحيحة تشريحياً (بالدرجات) - الزوايا الأكبر مرفوضة كغير ممكنة"
   },
+
+  "setupValidation": {
+    "_comment": "إعدادات مرحلة الإعداد قبل التدريب (SETUP_POSE) - نظام النافذة المتحركة",
+    "windowSize": 12,
+    "_windowSize_comment": "عدد الفريمات في النافذة المتحركة للتأكيد",
+    "requiredValid": 9,
+    "_requiredValid_comment": "عدد الفريمات الصحيحة المطلوبة من النافذة (9 من 12 = 75٪)",
+    "closeThresholdDegrees": 15.0,
+    "_closeThresholdDegrees_comment": "عتبة 'قريب' - خارج النطاق بأقل من هذا = أصفر (YELLOW)، أكثر = أحمر (RED)",
+    "voiceCooldownMs": 2500,
+    "_voiceCooldownMs_comment": "الحد الأدنى بين رسائل الإرشاد الصوتي (بالميلي ثانية)",
+    "cameraTipEnabled": true,
+    "_cameraTipEnabled_comment": "تفعيل إرشاد وضع الكاميرا - يظهر في كارت VIEW",
+    "cameraCheckWindowSize": 12,
+    "_cameraCheckWindowSize_comment": "عدد الفريمات لفحص وضع الكاميرا",
+    "cameraCheckRequired": 9,
+    "_cameraCheckRequired_comment": "عدد الفريمات المتفقة لتأكيد وضع الكاميرا",
+    "countdownToleranceFrames": 2,
+    "_countdownToleranceFrames_comment": "عدد الفريمات المسموح تجاهلها أثناء العد التنازلي (ضوضاء)",
+    "countdownFreezeFrames": 4,
+    "_countdownFreezeFrames_comment": "عدد الفريمات قبل تجميد العد التنازلي مع تحذير",
+    "countdownCancelFrames": 6,
+    "_countdownCancelFrames_comment": "عدد الفريمات قبل إلغاء العد التنازلي والرجوع للإعداد"
+  },
   
   "overlayOpacity": {
     "_comment": "إعدادات شفافية overlay الهيكل العظمي - تحكم في وضوح أجزاء الهيكل",

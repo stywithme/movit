@@ -146,6 +146,13 @@
             android:screenOrientation="portrait"
             android:theme="@style/Theme.WayToFix.Training" />
         
+        <!-- Debug Activity (Measurement Testing) -->
+        <activity
+            android:name=".ui.debug.DebugActivity"
+            android:exported="false"
+            android:screenOrientation="portrait"
+            android:theme="@style/Theme.WayToFix.Training" />
+        
         <!-- Workout Detail Activity (Timeline before start) -->
         <activity
             android:name=".ui.WorkoutDetailActivity"

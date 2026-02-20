@@ -832,6 +832,48 @@ class FeedbackManager(
         tts?.speak(goText, TextToSpeech.QUEUE_FLUSH, null, "go")
     }
     
+    // ==================== Setup Pose Guidance ====================
+
+    /**
+     * Speak directional guidance for the worst joint during SETUP_POSE.
+     *
+     * Uses HIGH priority (QUEUE_FLUSH) so it interrupts any lower-priority speech.
+     * Callers are responsible for cooldown logic via [PoseSetupGuide.shouldSpeakGuidance].
+     *
+     * @param joint The joint with the worst deviation (as returned by [PoseSetupGuide])
+     */
+    fun speakSetupGuidance(joint: com.trainingvalidator.poc.ui.training.JointGuidance) {
+        if (!isTtsEnabled) return
+        val text = joint.message.get(config.language)
+        if (text.isBlank()) return
+
+        if (useAudioPlayer && audioPlayer != null) {
+            audioPlayer?.play(text, null, AudioFeedbackPlayer.Priority.HIGH)
+            return
+        }
+
+        if (!isTtsReady) return
+        isSpeaking = true
+        tts?.speak(text, TextToSpeech.QUEUE_FLUSH, null, "setup_${joint.jointCode}")
+        Log.d(TAG, "Setup guidance: $text")
+    }
+
+    /**
+     * Speak a short "well done, get ready" message when the pose is confirmed
+     * and the countdown is about to start.
+     */
+    fun speakPoseConfirmed() {
+        if (!isTtsEnabled) return
+        val text = if (config.language == "ar") "ممتاز، استعد!" else "Great, get ready!"
+        if (useAudioPlayer && audioPlayer != null) {
+            audioPlayer?.play(text, null, AudioFeedbackPlayer.Priority.HIGH)
+            return
+        }
+        if (!isTtsReady) return
+        isSpeaking = true
+        tts?.speak(text, TextToSpeech.QUEUE_FLUSH, null, "pose_confirmed")
+    }
+
     // ==================== Haptic (Vibration) ====================
     
     private fun vibrateError() {

@@ -23,6 +23,9 @@ import com.trainingvalidator.poc.training.models.JointState
 import com.trainingvalidator.poc.training.models.JointStateInfo
 import com.trainingvalidator.poc.training.models.StateConfig
 import com.trainingvalidator.poc.training.models.ZoneType
+import com.trainingvalidator.poc.ui.training.Direction
+import com.trainingvalidator.poc.ui.training.GuidanceLevel
+import com.trainingvalidator.poc.ui.training.JointGuidance
 import kotlin.math.max
 import kotlin.math.sin
 
@@ -224,6 +227,142 @@ class SkeletonOverlayView @JvmOverloads constructor(
     private var useArcIndicator: Boolean = false
     private var showIndicators = true
 
+    // ── Setup mode ────────────────────────────────────────────────────────
+    // When true the overlay renders only tracked joints with colour-coded
+    // guidance (GREEN/YELLOW/RED) and large angle labels instead of the
+    // full skeleton or training range indicators.
+
+    private var isSetupMode: Boolean = false
+    private var setupJointGuidances: List<JointGuidance> = emptyList()
+
+    // Paints reused across setup-mode draws (allocated once)
+    private val setupJointPaint = Paint().apply {
+        isAntiAlias = true
+        style = Paint.Style.FILL
+    }
+    private val setupJointStrokePaint = Paint().apply {
+        isAntiAlias = true
+        style = Paint.Style.STROKE
+        strokeWidth = 5f
+    }
+    private val setupLinePaint = Paint().apply {
+        isAntiAlias = true
+        style = Paint.Style.STROKE
+        strokeCap = Paint.Cap.ROUND
+        strokeWidth = 8f
+    }
+    private val setupTextPaint = Paint().apply {
+        isAntiAlias = true
+        textAlign = Paint.Align.CENTER
+        textSize = 52f   // ~32sp - readable from 2-3 metres
+        color = Color.WHITE
+        setShadowLayer(6f, 1f, 1f, Color.BLACK)
+        isFakeBoldText = true
+    }
+    private val setupTextBgPaint = Paint().apply {
+        isAntiAlias = true
+        style = Paint.Style.FILL
+        color = Color.argb(160, 0, 0, 0)
+    }
+    private val setupArrowPaint = Paint().apply {
+        isAntiAlias = true
+        style = Paint.Style.STROKE
+        strokeCap = Paint.Cap.ROUND
+        strokeJoin = Paint.Join.ROUND
+        strokeWidth = 6f
+    }
+
+    // ── Debug mode ───────────────────────────────────────────────────────
+    // Minimal overlay: circle on vertex joint, angle label, small dots on
+    // the two endpoint landmarks. No full skeleton, no bone lines.
+
+    private var isDebugMode: Boolean = false
+    private var debugJointCode: String? = null
+    private var debugAngleValue: Double? = null
+    private var debugEndpointIndices: List<Int> = emptyList()  // [pointA, pointC]
+    private var debugVertexIndex: Int = -1
+
+    private val debugDotPaint = Paint().apply {
+        isAntiAlias = true
+        style = Paint.Style.FILL
+        color = Color.parseColor("#B0FFFFFF")
+    }
+    private val debugLinePaint = Paint().apply {
+        isAntiAlias = true
+        style = Paint.Style.STROKE
+        strokeCap = Paint.Cap.ROUND
+        strokeWidth = 4f
+        color = Color.parseColor("#60FFFFFF")
+    }
+    private val debugCircleFillPaint = Paint().apply {
+        isAntiAlias = true
+        style = Paint.Style.FILL
+    }
+    private val debugCircleStrokePaint = Paint().apply {
+        isAntiAlias = true
+        style = Paint.Style.STROKE
+        strokeWidth = 5f
+    }
+    private val debugAngleTextPaint = Paint().apply {
+        isAntiAlias = true
+        textAlign = Paint.Align.CENTER
+        textSize = 52f
+        color = Color.WHITE
+        setShadowLayer(6f, 1f, 1f, Color.BLACK)
+        isFakeBoldText = true
+    }
+    private val debugAngleBgPaint = Paint().apply {
+        isAntiAlias = true
+        style = Paint.Style.FILL
+        color = Color.argb(160, 0, 0, 0)
+    }
+
+    /**
+     * Update overlay in debug mode: shows only the selected joint with
+     * a circle, its angle value, and small dots at the two arm endpoints.
+     *
+     * @param jointCode   The joint being tested (e.g. "left_knee")
+     * @param angle       Current angle value (nullable if not visible)
+     * @param endpointA   Landmark index of endpoint A (first arm)
+     * @param endpointC   Landmark index of endpoint C (second arm)
+     * @param vertexIdx   Landmark index of the vertex (center joint)
+     */
+    fun updateDebugJoint(
+        jointCode: String,
+        angle: Double?,
+        endpointA: Int,
+        endpointC: Int,
+        vertexIdx: Int,
+        smoothedLandmarks: List<SmoothedLandmark>?,
+        imageW: Int = imageWidth,
+        imageH: Int = imageHeight,
+        useFrontCamera: Boolean = false
+    ) {
+        isDebugMode = true
+        isSetupMode = false
+        isTrainingMode = false
+        debugJointCode = jointCode
+        debugAngleValue = angle
+        debugEndpointIndices = listOf(endpointA, endpointC)
+        debugVertexIndex = vertexIdx
+        isFrontCamera = useFrontCamera
+        landmarks = smoothedLandmarks
+        val dimChanged = imageWidth != imageW || imageHeight != imageH
+        imageWidth = imageW
+        imageHeight = imageH
+        if (dimChanged) recalculateScaleFactor()
+        invalidate()
+    }
+
+    /** Disable debug mode. */
+    fun clearDebugMode() {
+        isDebugMode = false
+        debugJointCode = null
+        debugAngleValue = null
+        debugEndpointIndices = emptyList()
+        debugVertexIndex = -1
+    }
+
     init {
         // Read indicator type from settings
         useArcIndicator = SettingsManager.useArcIndicator()
@@ -370,6 +509,10 @@ class SkeletonOverlayView @JvmOverloads constructor(
         useFrontCamera: Boolean = false
     ) {
         isTrainingMode = enabled
+        if (enabled) {
+            isSetupMode = false
+            setupJointGuidances = emptyList()
+        }
         isFrontCamera = useFrontCamera
         rawTrackedLandmarkIndices = trackedIndices
         
@@ -409,10 +552,49 @@ class SkeletonOverlayView @JvmOverloads constructor(
      */
     fun setStateInfos(stateInfos: Map<String, JointStateInfo>) {
         jointStateInfos = stateInfos
-        errorJointCodes = stateInfos.filter { 
-            it.value.state == JointState.DANGER || it.value.state == JointState.WARNING 
+        errorJointCodes = stateInfos.filter {
+            it.value.state == JointState.DANGER || it.value.state == JointState.WARNING
         }.keys
         invalidate()
+    }
+
+    // ── Setup mode public API ─────────────────────────────────────────────
+
+    /**
+     * Enable setup-mode overlay: shows only tracked joints with colour-coded
+     * guidance (GREEN / YELLOW / RED) and large readable angle labels.
+     *
+     * Call from TrainingActivity during SETUP_POSE state.
+     *
+     * @param guidances Per-joint guidance from PoseSetupGuide
+     * @param smoothedLandmarks Current smoothed landmarks
+     * @param imageW  Camera frame width
+     * @param imageH  Camera frame height
+     */
+    fun updateSetupGuidance(
+        guidances: List<JointGuidance>,
+        smoothedLandmarks: List<SmoothedLandmark>?,
+        imageW: Int = imageWidth,
+        imageH: Int = imageHeight
+    ) {
+        // Never override training mode — setup overlay is only for SETUP_POSE state
+        if (isTrainingMode) return
+
+        isSetupMode = true
+        setupJointGuidances = guidances
+        landmarks = smoothedLandmarks
+        val dimChanged = imageWidth != imageW || imageHeight != imageH
+        imageWidth = imageW
+        imageHeight = imageH
+        if (dimChanged) recalculateScaleFactor()
+        invalidate()
+    }
+
+    /** Disable setup mode (called when moving to COUNTDOWN or TRAINING). */
+    fun clearSetupMode() {
+        isSetupMode = false
+        setupJointGuidances = emptyList()
+        // Don't invalidate here — the next updateSkeleton/updateWithStateInfos will redraw
     }
     
     /**
@@ -521,37 +703,269 @@ class SkeletonOverlayView @JvmOverloads constructor(
         // Calculate flow phase from system time (replaces ValueAnimator continuous invalidation)
         updateFlowPhase()
 
-        // TRAINING MODE: Show Range Indicators (Arc or Line based on settings)
-        // NON-TRAINING MODE: Show full skeleton
-        if (isTrainingMode) {
-            // During training: Range Indicators + Glowing Joints + Position Errors
-            // No skeleton lines, no angles - just the essential guidance
-            
-            if (showIndicators && jointStateInfos.isNotEmpty()) {
-                if (useArcIndicator) {
-                    drawArcRangeIndicatorsNew(canvas, currentLandmarks)
-                } else {
-                    drawLineRangeIndicatorsNew(canvas, currentLandmarks)
+        // DEBUG MODE: single joint circle + angle label + endpoint dots
+        // SETUP MODE: colour-coded joints + large angle labels for pre-training guidance
+        // TRAINING MODE: range indicators + glowing joints
+        // DEFAULT MODE: full skeleton
+        when {
+            isDebugMode -> {
+                drawDebugJoint(canvas, currentLandmarks)
+                return
+            }
+            isSetupMode -> {
+                drawSetupGuidance(canvas, currentLandmarks)
+            }
+            isTrainingMode -> {
+                if (showIndicators && jointStateInfos.isNotEmpty()) {
+                    if (useArcIndicator) {
+                        drawArcRangeIndicatorsNew(canvas, currentLandmarks)
+                    } else {
+                        drawLineRangeIndicatorsNew(canvas, currentLandmarks)
+                    }
+                }
+                if (jointStateInfos.isNotEmpty()) {
+                    drawGlowingJoints(canvas, currentLandmarks)
+                }
+                if (positionErrors.isNotEmpty()) {
+                    drawPositionErrors(canvas, currentLandmarks)
                 }
             }
-            
-            // Draw glowing joints on all tracked joints (Primary + Secondary)
-            if (jointStateInfos.isNotEmpty()) {
-                drawGlowingJoints(canvas, currentLandmarks)
-            }
-            
-            if (positionErrors.isNotEmpty()) {
-                drawPositionErrors(canvas, currentLandmarks)
-            }
-        } else {
-            // Non-training mode: Show full skeleton
-            drawConnections(canvas, currentLandmarks)
-            drawLandmarks(canvas, currentLandmarks)
-            
-            if (showAngles) {
-                drawAngles(canvas, currentLandmarks)
+            else -> {
+                drawConnections(canvas, currentLandmarks)
+                drawLandmarks(canvas, currentLandmarks)
+                if (showAngles) {
+                    drawAngles(canvas, currentLandmarks)
+                }
             }
         }
+    }
+
+    // ──────────────────────────────────────────────────────────────────────
+    // Setup Mode Drawing
+    // ──────────────────────────────────────────────────────────────────────
+
+    /**
+     * Draw setup-mode guidance overlay:
+     * - Only tracked joints and their connecting bones
+     * - Large, coloured angle labels readable from 2-3 metres
+     * - Direction arrow (↑ / ↓) when joint is outside range
+     *
+     * Colours: GREEN #00E676 / YELLOW #FFD54F / RED #FF5252
+     */
+    private fun drawSetupGuidance(canvas: Canvas, landmarks: List<SmoothedLandmark>) {
+        if (setupJointGuidances.isEmpty()) return
+
+        // Front camera: landmark indices need mirroring (same as training mode)
+        fun effectiveIdx(raw: Int): Int =
+            if (isFrontCamera) BodyLandmarks.getMirroredIndex(raw) else raw
+
+        // Pre-compute screen positions keyed by RAW index, reading MIRRORED landmark data
+        val indexToScreenPos = mutableMapOf<Int, Pair<Float, Float>>()
+
+        for (guidance in setupJointGuidances) {
+            val rawIdx = JointLandmarkMapping.jointToLandmark(guidance.jointCode) ?: continue
+            val effIdx = effectiveIdx(rawIdx)
+            if (effIdx >= landmarks.size) continue
+            val lm = landmarks[effIdx]
+            if (!lm.isVisible(0.4f)) continue
+            val sx = lm.x * imageWidth * scaleFactor
+            val sy = lm.y * imageHeight * scaleFactor
+            indexToScreenPos[rawIdx] = Pair(sx, sy)
+
+            val adjacentRawIndices = getAdjacentLandmarkIndices(guidance.jointCode)
+            for (adjRaw in adjacentRawIndices) {
+                val adjEff = effectiveIdx(adjRaw)
+                if (adjEff < landmarks.size) {
+                    val adjLm = landmarks[adjEff]
+                    if (adjLm.isVisible(0.4f)) {
+                        indexToScreenPos[adjRaw] = Pair(
+                            adjLm.x * imageWidth * scaleFactor,
+                            adjLm.y * imageHeight * scaleFactor
+                        )
+                    }
+                }
+            }
+        }
+
+        val density = cachedDensity
+
+        // ── Pass 1: draw connecting bone lines ────────────────────────────
+        for (guidance in setupJointGuidances) {
+            val centerIdx = JointLandmarkMapping.jointToLandmark(guidance.jointCode) ?: continue
+            val centerPos = indexToScreenPos[centerIdx] ?: continue
+            val lineColor = guidanceLevelToColor(guidance.level)
+            setupLinePaint.color = lineColor
+            setupLinePaint.alpha = 200
+
+            for (adjIdx in getAdjacentLandmarkIndices(guidance.jointCode)) {
+                val adjPos = indexToScreenPos[adjIdx] ?: continue
+                canvas.drawLine(centerPos.first, centerPos.second,
+                    adjPos.first, adjPos.second, setupLinePaint)
+            }
+        }
+
+        // ── Pass 2: draw joint circles ────────────────────────────────────
+        for (guidance in setupJointGuidances) {
+            val idx = JointLandmarkMapping.jointToLandmark(guidance.jointCode) ?: continue
+            val pos = indexToScreenPos[idx] ?: continue
+            val color = guidanceLevelToColor(guidance.level)
+            val radiusDp = if (guidance.isPrimary) 22f else 14f
+            val radiusPx = radiusDp * density
+
+            // Filled circle (semi-transparent)
+            setupJointPaint.color = color
+            setupJointPaint.alpha = 100
+            canvas.drawCircle(pos.first, pos.second, radiusPx, setupJointPaint)
+
+            // Stroke ring
+            setupJointStrokePaint.color = color
+            setupJointStrokePaint.alpha = 230
+            canvas.drawCircle(pos.first, pos.second, radiusPx, setupJointStrokePaint)
+        }
+
+        // ── Pass 3: draw angle labels + direction arrows ──────────────────
+        for (guidance in setupJointGuidances) {
+            val idx = JointLandmarkMapping.jointToLandmark(guidance.jointCode) ?: continue
+            val pos = indexToScreenPos[idx] ?: continue
+            val color = guidanceLevelToColor(guidance.level)
+
+            val angleText = "%.0f°".format(guidance.currentAngle)
+            val arrowChar = when (guidance.direction) {
+                Direction.RAISE -> " ↑"
+                Direction.LOWER -> " ↓"
+                null -> if (guidance.level == GuidanceLevel.GREEN) " ✓" else ""
+            }
+            val labelText = angleText + arrowChar
+
+            val textWidth = setupTextPaint.measureText(labelText)
+            val textHeight = setupTextPaint.textSize
+            val padH = 10f * density
+            val padV = 6f * density
+
+            // Position label above the joint circle (offset depends on radius)
+            val radiusPx = (if (guidance.isPrimary) 22f else 14f) * density
+            val labelX = pos.first
+            val labelY = pos.second - radiusPx - textHeight * 0.3f
+
+            // Background rect
+            val bgLeft   = labelX - textWidth / 2f - padH
+            val bgRight  = labelX + textWidth / 2f + padH
+            val bgTop    = labelY - textHeight - padV
+            val bgBottom = labelY + padV
+            val bgRadius = 12f * density
+            canvas.drawRoundRect(bgLeft, bgTop, bgRight, bgBottom, bgRadius, bgRadius, setupTextBgPaint)
+
+            // Text
+            setupTextPaint.color = color
+            canvas.drawText(labelText, labelX, labelY, setupTextPaint)
+        }
+
+        // Reset paint alpha
+        setupJointPaint.alpha = 255
+        setupJointStrokePaint.alpha = 255
+        setupLinePaint.alpha = 255
+        setupTextPaint.color = Color.WHITE
+    }
+
+    /**
+     * Debug mode drawing: minimal overlay with just the tested joint.
+     * - Circle on the vertex (center joint)
+     * - Thin lines from vertex to the two angle endpoints
+     * - Small dots at the two endpoints
+     * - Large angle label above the vertex
+     */
+    private fun drawDebugJoint(canvas: Canvas, landmarks: List<SmoothedLandmark>) {
+        val vertexRaw = debugVertexIndex
+        if (vertexRaw < 0) return
+
+        fun effectiveIdx(raw: Int): Int =
+            if (isFrontCamera) BodyLandmarks.getMirroredIndex(raw) else raw
+
+        fun screenPos(rawIdx: Int): Pair<Float, Float>? {
+            val eff = effectiveIdx(rawIdx)
+            if (eff >= landmarks.size) return null
+            val lm = landmarks[eff]
+            if (!lm.isVisible(0.35f)) return null
+            return Pair(lm.x * imageWidth * scaleFactor, lm.y * imageHeight * scaleFactor)
+        }
+
+        val vertexPos = screenPos(vertexRaw) ?: return
+        val density = cachedDensity
+        val accentColor = Color.parseColor("#64B5F6") // Light blue
+
+        // ── 1. Thin lines from vertex to endpoints ──────────────────────
+        for (epIdx in debugEndpointIndices) {
+            val epPos = screenPos(epIdx) ?: continue
+            debugLinePaint.color = Color.argb(96, 100, 181, 246)
+            canvas.drawLine(vertexPos.first, vertexPos.second, epPos.first, epPos.second, debugLinePaint)
+        }
+
+        // ── 2. Small dots at endpoints ──────────────────────────────────
+        val dotRadius = 6f * density
+        for (epIdx in debugEndpointIndices) {
+            val epPos = screenPos(epIdx) ?: continue
+            debugDotPaint.color = Color.parseColor("#B0FFFFFF")
+            canvas.drawCircle(epPos.first, epPos.second, dotRadius, debugDotPaint)
+        }
+
+        // ── 3. Circle on vertex joint ───────────────────────────────────
+        val circleRadius = 22f * density
+        debugCircleFillPaint.color = accentColor
+        debugCircleFillPaint.alpha = 80
+        canvas.drawCircle(vertexPos.first, vertexPos.second, circleRadius, debugCircleFillPaint)
+
+        debugCircleStrokePaint.color = accentColor
+        debugCircleStrokePaint.alpha = 220
+        canvas.drawCircle(vertexPos.first, vertexPos.second, circleRadius, debugCircleStrokePaint)
+
+        // ── 4. Angle label above vertex ─────────────────────────────────
+        val angleVal = debugAngleValue
+        if (angleVal != null) {
+            val labelText = "%.1f°".format(angleVal)
+            val textWidth = debugAngleTextPaint.measureText(labelText)
+            val textHeight = debugAngleTextPaint.textSize
+            val padH = 10f * density
+            val padV = 6f * density
+
+            val labelX = vertexPos.first
+            val labelY = vertexPos.second - circleRadius - textHeight * 0.3f
+
+            val bgLeft   = labelX - textWidth / 2f - padH
+            val bgRight  = labelX + textWidth / 2f + padH
+            val bgTop    = labelY - textHeight - padV
+            val bgBottom = labelY + padV
+            val bgRadius = 12f * density
+            canvas.drawRoundRect(bgLeft, bgTop, bgRight, bgBottom, bgRadius, bgRadius, debugAngleBgPaint)
+
+            debugAngleTextPaint.color = Color.WHITE
+            canvas.drawText(labelText, labelX, labelY, debugAngleTextPaint)
+        }
+    }
+
+    /** Return the MediaPipe landmark indices adjacent to the joint (for bone drawing). */
+    private fun getAdjacentLandmarkIndices(jointCode: String): List<Int> {
+        return when (jointCode.lowercase()) {
+            "left_elbow"  -> listOf(BodyLandmarks.LEFT_SHOULDER, BodyLandmarks.LEFT_WRIST)
+            "right_elbow" -> listOf(BodyLandmarks.RIGHT_SHOULDER, BodyLandmarks.RIGHT_WRIST)
+            "left_shoulder" -> listOf(BodyLandmarks.LEFT_ELBOW, BodyLandmarks.LEFT_HIP)
+            "right_shoulder" -> listOf(BodyLandmarks.RIGHT_ELBOW, BodyLandmarks.RIGHT_HIP)
+            "left_wrist"  -> listOf(BodyLandmarks.LEFT_ELBOW)
+            "right_wrist" -> listOf(BodyLandmarks.RIGHT_ELBOW)
+            "left_knee"   -> listOf(BodyLandmarks.LEFT_HIP, BodyLandmarks.LEFT_ANKLE)
+            "right_knee"  -> listOf(BodyLandmarks.RIGHT_HIP, BodyLandmarks.RIGHT_ANKLE)
+            "left_hip"    -> listOf(BodyLandmarks.LEFT_KNEE, BodyLandmarks.LEFT_SHOULDER)
+            "right_hip"   -> listOf(BodyLandmarks.RIGHT_KNEE, BodyLandmarks.RIGHT_SHOULDER)
+            "left_ankle"  -> listOf(BodyLandmarks.LEFT_KNEE, BodyLandmarks.LEFT_HEEL)
+            "right_ankle" -> listOf(BodyLandmarks.RIGHT_KNEE, BodyLandmarks.RIGHT_HEEL)
+            "spine"       -> listOf(BodyLandmarks.LEFT_HIP, BodyLandmarks.RIGHT_HIP)
+            else -> emptyList()
+        }
+    }
+
+    private fun guidanceLevelToColor(level: GuidanceLevel): Int = when (level) {
+        GuidanceLevel.GREEN  -> Color.parseColor("#00E676")
+        GuidanceLevel.YELLOW -> Color.parseColor("#FFD54F")
+        GuidanceLevel.RED    -> Color.parseColor("#FF5252")
     }
 
     private fun drawConnections(canvas: Canvas, landmarks: List<SmoothedLandmark>) {

@@ -3,6 +3,7 @@ package com.trainingvalidator.poc.training.feedback
 import android.content.Context
 import android.media.MediaPlayer
 import android.speech.tts.TextToSpeech
+import android.speech.tts.UtteranceProgressListener
 import android.util.Log
 import com.trainingvalidator.poc.storage.AudioCacheManager
 import com.trainingvalidator.poc.training.models.LocalizedText
@@ -35,6 +36,7 @@ class AudioFeedbackPlayer(
     companion object {
         private const val TAG = "AudioFeedbackPlayer"
         private const val MIN_PLAY_INTERVAL_MS = 1000L
+        private const val TTS_SAFETY_TIMEOUT_MS = 6000L
     }
     
     /**
@@ -97,6 +99,20 @@ class AudioFeedbackPlayer(
                 if (isTtsReady) {
                     Log.d(TAG, "TTS initialized with language: $locale")
                     tts?.setSpeechRate(0.95f)
+                    
+                    tts?.setOnUtteranceProgressListener(object : UtteranceProgressListener() {
+                        override fun onStart(utteranceId: String?) {}
+                        override fun onDone(utteranceId: String?) {
+                            android.os.Handler(android.os.Looper.getMainLooper()).post {
+                                onTtsCompleted()
+                            }
+                        }
+                        override fun onError(utteranceId: String?) {
+                            android.os.Handler(android.os.Looper.getMainLooper()).post {
+                                onTtsCompleted()
+                            }
+                        }
+                    })
                 } else {
                     Log.w(TAG, "TTS language not supported: $locale")
                 }
@@ -242,6 +258,11 @@ class AudioFeedbackPlayer(
         }
     }
     
+    // Whether TTS is currently speaking (tracked via UtteranceProgressListener)
+    private var isTtsSpeaking = false
+    private var ttsTimeoutHandler: android.os.Handler? = null
+    private var ttsTimeoutRunnable: Runnable? = null
+    
     private fun playTts(text: String) {
         if (!isTtsReady) {
             Log.w(TAG, "TTS not ready, skipping: $text")
@@ -249,15 +270,34 @@ class AudioFeedbackPlayer(
             return
         }
         
+        isTtsSpeaking = true
         playbackListener?.onPlaybackStarted(text)
         tts?.speak(text, TextToSpeech.QUEUE_FLUSH, null, "feedback_${System.currentTimeMillis()}")
         Log.d(TAG, "Playing TTS: $text")
         
-        // TTS doesn't have reliable completion callback, estimate based on text length
-        val estimatedDurationMs = (text.length * 80L).coerceIn(500L, 5000L)
-        android.os.Handler(android.os.Looper.getMainLooper()).postDelayed({
-            onPlaybackComplete()
-        }, estimatedDurationMs)
+        // Safety timeout in case UtteranceProgressListener doesn't fire
+        cancelTtsTimeout()
+        val handler = android.os.Handler(android.os.Looper.getMainLooper())
+        val runnable = Runnable {
+            if (isTtsSpeaking) {
+                Log.w(TAG, "TTS safety timeout - forcing completion")
+                onTtsCompleted()
+            }
+        }
+        handler.postDelayed(runnable, TTS_SAFETY_TIMEOUT_MS)
+        ttsTimeoutHandler = handler
+        ttsTimeoutRunnable = runnable
+    }
+    
+    private fun onTtsCompleted() {
+        isTtsSpeaking = false
+        cancelTtsTimeout()
+        onPlaybackComplete()
+    }
+    
+    private fun cancelTtsTimeout() {
+        ttsTimeoutRunnable?.let { ttsTimeoutHandler?.removeCallbacks(it) }
+        ttsTimeoutRunnable = null
     }
     
     private fun onPlaybackComplete() {
@@ -310,10 +350,12 @@ class AudioFeedbackPlayer(
      */
     fun release() {
         stopAll()
+        cancelTtsTimeout()
         releaseMediaPlayer()
         tts?.shutdown()
         tts = null
         isTtsReady = false
+        isTtsSpeaking = false
         playbackListener = null
     }
     

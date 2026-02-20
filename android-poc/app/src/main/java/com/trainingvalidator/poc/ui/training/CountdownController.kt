@@ -4,101 +4,133 @@ import android.os.CountDownTimer
 import android.util.Log
 
 /**
- * CountdownController - Manages countdown timer logic
- * 
- * Handles the 3-2-1-GO countdown before training starts.
- * Also handles resume countdown after visibility pause.
+ * CountdownController - Manages the 3-2-1-GO countdown before training starts.
+ *
+ * Improvements over original:
+ * - Fixed tick calculation: uses ceiling division to avoid showing the same
+ *   number twice (CountDownTimer is not perfectly precise).
+ * - Freeze / Unfreeze: pauses the visual countdown when the user temporarily
+ *   leaves the start position, then resumes from where it stopped.
+ * - onCountdownFinished signal fires immediately (caller must not delay it
+ *   with animations - run animations in parallel instead).
  */
 class CountdownController(
     private val countdownSeconds: Int = DEFAULT_COUNTDOWN_SECONDS
 ) {
-    
+
     companion object {
         private const val TAG = "CountdownController"
         const val DEFAULT_COUNTDOWN_SECONDS = 3
     }
-    
-    /**
-     * Callback interface for countdown events
-     */
+
     interface CountdownListener {
-        /** Called on each countdown tick (3, 2, 1) */
+        /** Called every second: secondsRemaining is 3, 2, 1 */
         fun onTick(secondsRemaining: Int)
-        
-        /** Called when countdown reaches zero (GO!) */
+        /** Countdown reached zero - start training immediately */
         fun onFinish()
-        
-        /** Called when countdown is cancelled */
+        /** Countdown was cancelled (back to setup pose) */
         fun onCancelled()
+        /** Countdown is temporarily frozen (user moved out of position) */
+        fun onFrozen()
+        /** Countdown resumed after being frozen */
+        fun onUnfrozen()
     }
-    
+
     private var countdownTimer: CountDownTimer? = null
+
+    @Volatile private var isRunning = false
+    @Volatile private var isFrozen = false
+
+    private var millisRemaining: Long = 0L
     private var currentValue: Int = countdownSeconds
     private var listener: CountdownListener? = null
-    private var isRunning = false
-    
-    /**
-     * Set the countdown listener
-     */
+
     fun setListener(listener: CountdownListener) {
         this.listener = listener
     }
-    
-    /**
-     * Start the countdown
-     */
+
+    // ──────────────────────────────────────────────────────────────────────
+
+    /** Start a fresh countdown from [countdownSeconds]. */
     fun start() {
-        cancel() // Cancel any existing timer
-        
-        currentValue = countdownSeconds
-        isRunning = true
-        
-        Log.d(TAG, "Starting countdown from $countdownSeconds")
-        
-        countdownTimer = object : CountDownTimer((countdownSeconds * 1000).toLong(), 1000) {
-            override fun onTick(millisUntilFinished: Long) {
-                currentValue = (millisUntilFinished / 1000).toInt() + 1
-                Log.d(TAG, "Countdown tick: $currentValue")
-                listener?.onTick(currentValue)
-            }
-            
-            override fun onFinish() {
-                isRunning = false
-                Log.d(TAG, "Countdown finished!")
-                listener?.onFinish()
-            }
-        }.start()
-    }
-    
-    /**
-     * Cancel the countdown
-     */
-    fun cancel() {
-        if (isRunning) {
-            Log.d(TAG, "Countdown cancelled at $currentValue")
-            listener?.onCancelled()
-        }
-        
+        // Stop any existing timer without firing onCancelled
         countdownTimer?.cancel()
         countdownTimer = null
         isRunning = false
+        isFrozen = false
+        millisRemaining = countdownSeconds * 1000L
+        startInternalTimer(millisRemaining)
+        Log.d(TAG, "Countdown started from ${countdownSeconds}s")
     }
-    
+
     /**
-     * Check if countdown is currently running
+     * Temporarily freeze the countdown at the current position.
+     * The visual number stays visible; the timer is paused.
      */
+    fun freeze() {
+        if (!isRunning || isFrozen) return
+        isFrozen = true
+        countdownTimer?.cancel()
+        countdownTimer = null
+        isRunning = false
+        listener?.onFrozen()
+        Log.d(TAG, "Countdown frozen at ${currentValue}s (${millisRemaining}ms remaining)")
+    }
+
+    /**
+     * Resume a frozen countdown from where it paused.
+     */
+    fun unfreeze() {
+        if (!isFrozen || millisRemaining <= 0L) return
+        isFrozen = false
+        startInternalTimer(millisRemaining)
+        listener?.onUnfrozen()
+        Log.d(TAG, "Countdown unfrozen, resuming from ${millisRemaining}ms")
+    }
+
+    /** Cancel and reset completely. */
+    fun cancel() {
+        if (isRunning || isFrozen) {
+            listener?.onCancelled()
+        }
+        countdownTimer?.cancel()
+        countdownTimer = null
+        isRunning = false
+        isFrozen = false
+        millisRemaining = 0L
+        Log.d(TAG, "Countdown cancelled")
+    }
+
     fun isRunning(): Boolean = isRunning
-    
-    /**
-     * Get current countdown value
-     */
+    fun isFrozen(): Boolean = isFrozen
     fun getCurrentValue(): Int = currentValue
-    
-    /**
-     * Release resources
-     */
+
     fun release() {
         cancel()
         listener = null
+    }
+
+    // ──────────────────────────────────────────────────────────────────────
+
+    private fun startInternalTimer(fromMs: Long) {
+        isRunning = true
+        countdownTimer = object : CountDownTimer(fromMs, 1000L) {
+            override fun onTick(millisUntilFinished: Long) {
+                millisRemaining = millisUntilFinished
+                // Ceiling division: guarantees 3→2→1 without duplicates
+                currentValue = ((millisUntilFinished + 999L) / 1000L).toInt()
+                Log.d(TAG, "Tick: ${currentValue}s")
+                listener?.onTick(currentValue)
+            }
+
+            override fun onFinish() {
+                isRunning = false
+                millisRemaining = 0L
+                currentValue = 0
+                Log.d(TAG, "Countdown finished")
+                // Fire immediately - caller must NOT delay onCountdownFinished
+                listener?.onFinish()
+            }
+        }.start()
     }
 }
