@@ -35,6 +35,7 @@ class ReportsOverviewFragment : Fragment() {
         if (parentMetrics != null) updateData(parentMetrics)
     }
 
+    @Suppress("USELESS_ELVIS")
     fun updateData(metrics: MetricsResponse?) {
         metricsData = metrics
         val view = view ?: return

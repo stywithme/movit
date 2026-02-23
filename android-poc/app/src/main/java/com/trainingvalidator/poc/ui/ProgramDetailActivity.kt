@@ -7,6 +7,7 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.TextView
 import android.widget.LinearLayout
+import android.widget.ImageView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.recyclerview.widget.LinearLayoutManager
@@ -22,6 +23,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import android.widget.ProgressBar
 
 /**
  * ProgramDetailActivity - Shows program overview and week list
@@ -47,8 +49,18 @@ class ProgramDetailActivity : AppCompatActivity() {
     }
 
     private fun setupUI() {
-        binding.btnBack.setOnClickListener { finish() }
+        // Setup Toolbar
+        setSupportActionBar(binding.toolbar)
+        supportActionBar?.setDisplayHomeAsUpEnabled(true)
+        supportActionBar?.setDisplayShowTitleEnabled(false)
+        binding.toolbar.setNavigationOnClickListener { finish() }
+
         binding.rvWeeks.layoutManager = LinearLayoutManager(this)
+        
+        binding.btnStartProgram.setOnClickListener {
+            // For now, it just shows a toast. Eventually it will enroll the user.
+            Toast.makeText(this, "Enrollment logic coming soon", Toast.LENGTH_SHORT).show()
+        }
     }
 
     private fun loadProgram() {
@@ -79,8 +91,12 @@ class ProgramDetailActivity : AppCompatActivity() {
     private fun bindProgram(program: ProgramConfig) {
         val language = getCurrentLanguage()
         val programId = program.id
-
-        binding.tvProgramName.text = program.name.get(language).ifBlank { program.name.en }
+        
+        val programName = program.name.get(language).ifBlank { program.name.en }
+        
+        binding.collapsingToolbar.title = programName
+        binding.tvProgramName.text = programName
+        
         binding.tvProgramDescription.text = program.description?.let { desc ->
             desc.get(language).ifBlank { desc.en }
         } ?: ""
@@ -111,12 +127,16 @@ class ProgramDetailActivity : AppCompatActivity() {
         private val programId: String
     ) : RecyclerView.Adapter<WeekAdapter.ViewHolder>() {
 
+        private val expandedWeeks = mutableSetOf<Int>()
+
         inner class ViewHolder(view: View) : RecyclerView.ViewHolder(view) {
             val tvWeekTitle: TextView = view.findViewById(R.id.tvWeekTitle)
             val tvWeekSubtitle: TextView = view.findViewById(R.id.tvWeekSubtitle)
-            val tvWeekStats: TextView = view.findViewById(R.id.tvWeekStats)
             val tvWeekProgress: TextView = view.findViewById(R.id.tvWeekProgress)
+            val pbWeekProgress: ProgressBar = view.findViewById(R.id.pbWeekProgress)
             val layoutWeekDays: LinearLayout = view.findViewById(R.id.layoutWeekDays)
+            val layoutWeekHeader: LinearLayout = view.findViewById(R.id.layoutWeekHeader)
+            val ivExpand: ImageView = view.findViewById(R.id.ivExpand)
         }
 
         override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
@@ -129,29 +149,24 @@ class ProgramDetailActivity : AppCompatActivity() {
             val week = weeks[position]
             val language = getCurrentLanguage()
 
-            val title = week.name?.get(language)?.ifBlank { week.name?.en } ?: ""
+            val title = week.name?.let { it.get(language).ifBlank { it.en } } ?: ""
             holder.tvWeekTitle.text = if (title.isNotBlank()) {
                 getString(R.string.week_title_with_name, week.weekNumber, title)
             } else {
                 getString(R.string.week_title_only, week.weekNumber)
             }
 
-            holder.tvWeekSubtitle.text = week.description?.get(language)
-                ?.ifBlank { week.description?.en }
-                ?: getString(R.string.week_default_desc)
-
             val dayCount = week.days.size
             val restDays = week.days.count { it.isRestDay }
             val sessions = week.days.sumOf { it.sessions.size }
 
-            holder.tvWeekStats.text = getString(
-                R.string.week_stats_format,
-                dayCount,
-                restDays,
-                sessions
-            )
+            holder.tvWeekSubtitle.text = "$sessions Sessions • $restDays Rest Days"
 
             val completedSessions = reportStore.getByWeek(programId, week.weekNumber).size
+            
+            holder.pbWeekProgress.max = if (sessions > 0) sessions else 1
+            holder.pbWeekProgress.progress = completedSessions
+
             holder.tvWeekProgress.text = if (sessions > 0 && completedSessions >= sessions) {
                 getString(R.string.week_progress_completed)
             } else {
@@ -160,8 +175,17 @@ class ProgramDetailActivity : AppCompatActivity() {
 
             renderWeekDays(holder.layoutWeekDays, week, programId)
 
-            holder.itemView.setOnClickListener {
-                openWeek(week.weekNumber)
+            val isExpanded = expandedWeeks.contains(week.weekNumber)
+            holder.layoutWeekDays.visibility = if (isExpanded) View.VISIBLE else View.GONE
+            holder.ivExpand.rotation = if (isExpanded) 90f else 0f
+
+            holder.layoutWeekHeader.setOnClickListener {
+                if (expandedWeeks.contains(week.weekNumber)) {
+                    expandedWeeks.remove(week.weekNumber)
+                } else {
+                    expandedWeeks.add(week.weekNumber)
+                }
+                notifyItemChanged(position)
             }
         }
 
@@ -195,31 +219,44 @@ class ProgramDetailActivity : AppCompatActivity() {
 
     private fun renderWeekDays(container: LinearLayout, week: ProgramWeek, programId: String) {
         container.removeAllViews()
-        val daySize = resources.getDimensionPixelSize(R.dimen.spacing_lg)
-        val margin = resources.getDimensionPixelSize(R.dimen.spacing_xs)
+        val inflater = LayoutInflater.from(container.context)
+
         week.days.sortedBy { it.dayNumber }.forEach { day ->
             val completedSessions = reportStore.getByDay(programId, week.weekNumber, day.dayNumber)
             val isCompleted = !day.isRestDay && completedSessions.isNotEmpty() &&
                 completedSessions.size >= day.sessions.size
-            val tv = TextView(this).apply {
-                layoutParams = LinearLayout.LayoutParams(daySize, daySize).also { params ->
-                    params.marginEnd = margin
-                }
-                text = day.dayNumber.toString()
-                setTextColor(
-                    if (day.isRestDay) getColor(R.color.text_tertiary) else getColor(R.color.text_primary)
-                )
-                textSize = 12f
-                gravity = android.view.Gravity.CENTER
-                setBackgroundResource(
-                    when {
-                        day.isRestDay -> R.drawable.bg_circle_surface
-                        isCompleted -> R.drawable.bg_circle_success
-                        else -> R.drawable.bg_circle_primary_light
-                    }
-                )
+
+            val view = inflater.inflate(R.layout.item_program_day_compact, container, false)
+            
+            val ivDayIcon = view.findViewById<ImageView>(R.id.ivDayIcon)
+            val tvDayName = view.findViewById<TextView>(R.id.tvDayName)
+            val tvDayDetails = view.findViewById<TextView>(R.id.tvDayDetails)
+            val ivDayStatus = view.findViewById<ImageView>(R.id.ivDayStatus)
+
+            tvDayName.text = "Day ${day.dayNumber}"
+            
+            if (day.isRestDay) {
+                ivDayIcon.setImageResource(R.drawable.ic_rest)
+                ivDayIcon.imageTintList = android.content.res.ColorStateList.valueOf(getColor(R.color.text_tertiary))
+                tvDayDetails.text = "Rest Day"
+            } else {
+                ivDayIcon.setImageResource(R.drawable.ic_workout)
+                ivDayIcon.imageTintList = android.content.res.ColorStateList.valueOf(getColor(R.color.primary))
+                val sessionText = if (day.sessions.size == 1) "1 Session" else "${day.sessions.size} Sessions"
+                tvDayDetails.text = sessionText
             }
-            container.addView(tv)
+
+            if (isCompleted) {
+                ivDayStatus.visibility = View.VISIBLE
+            } else {
+                ivDayStatus.visibility = View.GONE
+            }
+
+            view.setOnClickListener {
+                openWeek(week.weekNumber)
+            }
+
+            container.addView(view)
         }
     }
 }

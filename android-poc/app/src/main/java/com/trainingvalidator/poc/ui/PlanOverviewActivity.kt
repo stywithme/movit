@@ -27,6 +27,7 @@ import kotlinx.coroutines.withContext
  */
 class PlanOverviewActivity : AppCompatActivity() {
 
+    @Suppress("DEPRECATION")
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         window.statusBarColor = Color.parseColor("#121212")

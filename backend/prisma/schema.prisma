@@ -100,6 +100,7 @@ model Exercise {
   instructions     Json? // { "ar": "...", "en": "..." }
   slug             String        @unique
   status           ContentStatus @default(draft)
+  isFeatured       Boolean       @default(false)
 
   // Rep counting config (unified - no difficulty levels)
   // { "reps": 12, "minRepIntervalMs": 1500, "maxRepIntervalMs": 5000 }
@@ -381,6 +382,7 @@ model Workout {
 
   // Status & metadata
   status      ContentStatus @default(draft)
+  isFeatured  Boolean       @default(false)
   publishedAt DateTime?
   createdBy   String?
   updatedBy   String?
@@ -438,6 +440,7 @@ model Program {
   durationWeeks Int
   difficulty    Difficulty @default(beginner)
   isDefault     Boolean    @default(false)
+  isFeatured    Boolean    @default(false)
   isPublished   Boolean    @default(false)
   tags          Json?
   createdBy     String?

@@ -44,6 +44,7 @@ class LevelProfileActivity : AppCompatActivity() {
 
     private val language: String get() = "en"
 
+    @Suppress("DEPRECATION")
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         window.statusBarColor = Color.parseColor("#121212")
@@ -197,7 +198,7 @@ class LevelProfileActivity : AppCompatActivity() {
                 setPadding(0, dp(24), 0, dp(32))
             })
 
-            content.addView(Button(context).apply {
+            content.addView(Button(context).apply btn@{
                 text = "Continue"
                 setTextColor(Color.WHITE)
                 setBackgroundColor(Color.parseColor("#4CAF50"))
@@ -205,7 +206,7 @@ class LevelProfileActivity : AppCompatActivity() {
                 setTypeface(null, Typeface.BOLD)
                 layoutParams = LinearLayout.LayoutParams(dp(200), LinearLayout.LayoutParams.WRAP_CONTENT)
                 setOnClickListener {
-                    (this@apply.parent?.parent as? FrameLayout)?.let {
+                    (this@btn.parent?.parent as? FrameLayout)?.let {
                         (it.parent as? FrameLayout)?.removeView(it)
                     }
                 }

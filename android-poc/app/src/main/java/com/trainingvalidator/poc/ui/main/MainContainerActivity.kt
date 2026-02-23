@@ -12,10 +12,9 @@ import com.trainingvalidator.poc.databinding.ActivityMainContainerBinding
  * 
  * Contains 4 tabs:
  * - Home
- * - Programs
- * - Exercises
- * - History
- * - Profile
+ * - Train
+ * - Explore
+ * - Reports
  */
 class MainContainerActivity : AppCompatActivity() {
 
@@ -27,10 +26,9 @@ class MainContainerActivity : AppCompatActivity() {
 
     // Fragment instances (lazy)
     private val homeFragment by lazy { HomeFragment() }
-    private val programsFragment by lazy { ProgramsFragment() }
-    private val exercisesFragment by lazy { ExercisesFragment() }
+    private val trainFragment by lazy { TrainFragment() }
+    private val exploreFragment by lazy { ExploreFragment() }
     private val historyFragment by lazy { HistoryFragment() }
-    private val profileFragment by lazy { ProfileFragment() }
 
     private var activeFragment: Fragment = homeFragment
 
@@ -53,10 +51,9 @@ class MainContainerActivity : AppCompatActivity() {
         // Add all fragments but hide all except the active one
         supportFragmentManager.beginTransaction().apply {
             add(R.id.fragmentContainer, homeFragment, "home")
-            add(R.id.fragmentContainer, programsFragment, "programs").hide(programsFragment)
-            add(R.id.fragmentContainer, exercisesFragment, "exercises").hide(exercisesFragment)
-            add(R.id.fragmentContainer, historyFragment, "history").hide(historyFragment)
-            add(R.id.fragmentContainer, profileFragment, "profile").hide(profileFragment)
+            add(R.id.fragmentContainer, trainFragment, "train").hide(trainFragment)
+            add(R.id.fragmentContainer, exploreFragment, "explore").hide(exploreFragment)
+            add(R.id.fragmentContainer, historyFragment, "reports").hide(historyFragment)
         }.commit()
     }
 
@@ -64,10 +61,9 @@ class MainContainerActivity : AppCompatActivity() {
         binding.bottomNavigation.setOnItemSelectedListener { item ->
             val targetFragment = when (item.itemId) {
                 R.id.nav_home -> homeFragment
-                R.id.nav_programs -> programsFragment
-                R.id.nav_exercises -> exercisesFragment
-                R.id.nav_history -> historyFragment
-                R.id.nav_profile -> profileFragment
+                R.id.nav_train -> trainFragment
+                R.id.nav_explore -> exploreFragment
+                R.id.nav_reports -> historyFragment
                 else -> return@setOnItemSelectedListener false
             }
             
@@ -92,6 +88,14 @@ class MainContainerActivity : AppCompatActivity() {
      * Navigate to a specific tab programmatically
      */
     fun navigateToTab(tabId: Int) {
-        binding.bottomNavigation.selectedItemId = tabId
+        // Map old tab IDs to new ones if necessary
+        val effectiveTabId = when (tabId) {
+            R.id.nav_home -> R.id.nav_home
+            R.id.nav_programs, R.id.nav_train -> R.id.nav_train // map legacy programs to train
+            R.id.nav_exercises, R.id.nav_explore -> R.id.nav_explore // map legacy exercises to explore
+            R.id.nav_history, R.id.nav_reports -> R.id.nav_reports // map legacy history to reports
+            else -> tabId
+        }
+        binding.bottomNavigation.selectedItemId = effectiveTabId
     }
 }

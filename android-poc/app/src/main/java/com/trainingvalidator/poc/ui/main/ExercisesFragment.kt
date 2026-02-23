@@ -127,28 +127,40 @@ class ExercisesFragment : Fragment() {
 
         // Avatar -> Profile
         binding.ivAvatar.setOnClickListener {
-            (activity as? MainContainerActivity)?.navigateToTab(R.id.nav_profile)
+            startActivity(Intent(requireContext(), com.trainingvalidator.poc.ui.profile.ProfileActivity::class.java))
         }
     }
 
     private fun initializeRepository() {
         viewLifecycleOwner.lifecycleScope.launch {
             try {
-                binding.progressBar.visibility = View.VISIBLE
-                
-                repository.initialize(autoSync = true)
+                // Offline-first: render cached data immediately, then sync in background.
+                repository.initialize(autoSync = false)
                 loadExercisesFromRepository()
 
                 workoutRepository.initialize()
                 loadWorkoutsFromRepository()
-                
+
+                // Background incremental refresh without blocking UI or showing loaders.
+                launch {
+                    try {
+                        val syncResult = repository.checkForUpdates()
+                        if (syncResult is com.trainingvalidator.poc.storage.SyncManager.SyncResult.Success &&
+                            (syncResult.exercisesUpdated > 0 || syncResult.workoutsUpdated > 0)
+                        ) {
+                            loadExercisesFromRepository()
+                            workoutRepository.reloadFromCache()
+                            loadWorkoutsFromRepository()
+                        }
+                    } catch (e: Exception) {
+                        Log.w(TAG, "Background sync failed, keeping cached content", e)
+                    }
+                }
             } catch (e: Exception) {
                 Log.e(TAG, "Failed to initialize repository", e)
                 // Show empty state - no fallback to assets
                 showNoExercisesAvailable()
                 showNoWorkoutsAvailable()
-            } finally {
-                binding.progressBar.visibility = View.GONE
             }
         }
     }

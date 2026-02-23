@@ -1,0 +1,189 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.core.widget.NestedScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/background"
+    android:fillViewport="true">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:paddingBottom="80dp">
+
+        <!-- Top Bar with User Avatar -->
+        <androidx.constraintlayout.widget.ConstraintLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:paddingHorizontal="20dp"
+            android:paddingTop="32dp"
+            android:paddingBottom="16dp">
+
+            <TextView
+                android:id="@+id/tvExploreTitle"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:text="Discover"
+                android:textAppearance="@style/TextAppearance.WayToFix.Headline2"
+                app:layout_constraintBottom_toBottomOf="parent"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toTopOf="parent" />
+
+            <com.google.android.material.imageview.ShapeableImageView
+                android:id="@+id/ivAvatar"
+                android:layout_width="40dp"
+                android:layout_height="40dp"
+                android:background="@drawable/bg_avatar_circle"
+                android:padding="2dp"
+                android:scaleType="centerCrop"
+                app:layout_constraintBottom_toBottomOf="parent"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintTop_toTopOf="parent"
+                app:srcCompat="@drawable/ic_person"
+                app:tint="@color/text_secondary" />
+
+        </androidx.constraintlayout.widget.ConstraintLayout>
+
+        <!-- Search Bar -->
+        <com.google.android.material.textfield.TextInputLayout
+            style="@style/Widget.WayToFix.TextInputLayout"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginHorizontal="20dp"
+            android:layout_marginBottom="24dp"
+            app:hintEnabled="false"
+            app:startIconDrawable="@drawable/ic_search"
+            app:startIconTint="@color/text_hint">
+
+            <com.google.android.material.textfield.TextInputEditText
+                android:id="@+id/etSearch"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:hint="Find workouts, exercises..."
+                android:imeOptions="actionSearch"
+                android:inputType="text"
+                android:paddingVertical="16dp"
+                android:textAppearance="@style/TextAppearance.WayToFix.Body1" />
+
+        </com.google.android.material.textfield.TextInputLayout>
+
+        <!-- Hero Section (Featured Content) -->
+        <FrameLayout
+            android:id="@+id/layoutHeroContainer"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:visibility="gone">
+            <include layout="@layout/item_explore_hero_card" android:id="@+id/layoutHero" />
+        </FrameLayout>
+
+        <!-- Categories / Quick Filters (Optional, can be static for now) -->
+        <HorizontalScrollView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:clipToPadding="false"
+            android:paddingHorizontal="20dp"
+            android:layout_marginBottom="24dp"
+            android:scrollbars="none">
+            <LinearLayout
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal">
+                
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="All"
+                    android:textColor="@color/white"
+                    android:background="@drawable/glass_pill_background"
+                    android:backgroundTint="@color/primary"
+                    android:paddingHorizontal="16dp"
+                    android:paddingVertical="8dp"
+                    android:textStyle="bold"
+                    android:layout_marginEnd="8dp"/>
+                    
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Programs"
+                    android:textColor="@color/text_primary"
+                    android:background="@drawable/glass_pill_background"
+                    android:paddingHorizontal="16dp"
+                    android:paddingVertical="8dp"
+                    android:layout_marginEnd="8dp"/>
+                    
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Workouts"
+                    android:textColor="@color/text_primary"
+                    android:background="@drawable/glass_pill_background"
+                    android:paddingHorizontal="16dp"
+                    android:paddingVertical="8dp"
+                    android:layout_marginEnd="8dp"/>
+                    
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Exercises"
+                    android:textColor="@color/text_primary"
+                    android:background="@drawable/glass_pill_background"
+                    android:paddingHorizontal="16dp"
+                    android:paddingVertical="8dp" />
+            </LinearLayout>
+        </HorizontalScrollView>
+
+        <!-- Placeholder Sections for Explore (Will populate with Recycler Views) -->
+        
+        <!-- Programs -->
+        <include layout="@layout/include_explore_section_header" android:id="@+id/headerPrograms" />
+        <androidx.recyclerview.widget.RecyclerView
+            android:id="@+id/rvPrograms"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:clipToPadding="false"
+            android:paddingHorizontal="20dp"
+            android:orientation="horizontal"
+            android:nestedScrollingEnabled="false"
+            app:layoutManager="androidx.recyclerview.widget.LinearLayoutManager" />
+            
+        <!-- Workouts -->
+        <include layout="@layout/include_explore_section_header" android:id="@+id/headerWorkouts" />
+        <androidx.recyclerview.widget.RecyclerView
+            android:id="@+id/rvWorkouts"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:clipToPadding="false"
+            android:paddingHorizontal="20dp"
+            android:orientation="horizontal"
+            android:nestedScrollingEnabled="false"
+            app:layoutManager="androidx.recyclerview.widget.LinearLayoutManager" />
+            
+        <!-- Levels -->
+        <include layout="@layout/include_explore_section_header" android:id="@+id/headerLevels" />
+        <androidx.recyclerview.widget.RecyclerView
+            android:id="@+id/rvLevels"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:clipToPadding="false"
+            android:paddingHorizontal="20dp"
+            android:orientation="horizontal"
+            android:nestedScrollingEnabled="false"
+            app:layoutManager="androidx.recyclerview.widget.LinearLayoutManager" />
+
+        <!-- Exercises -->
+        <include layout="@layout/include_explore_section_header" android:id="@+id/headerExercises" />
+        <androidx.recyclerview.widget.RecyclerView
+            android:id="@+id/rvExercises"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:clipToPadding="false"
+            android:paddingHorizontal="20dp"
+            android:orientation="horizontal"
+            android:nestedScrollingEnabled="false"
+            app:layoutManager="androidx.recyclerview.widget.LinearLayoutManager" />
+
+    </LinearLayout>
+
+</androidx.core.widget.NestedScrollView>

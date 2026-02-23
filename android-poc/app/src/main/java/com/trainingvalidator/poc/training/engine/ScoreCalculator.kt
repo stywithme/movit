@@ -224,7 +224,7 @@ object ScoreCalculator {
             normalTime * getScoreRate(JointState.NORMAL) +
             padTime * getScoreRate(JointState.PAD) +
             warningTime * getScoreRate(JointState.WARNING)
-        ).toFloat()
+        )
         
         val score = weightedSum / totalTime
         

@@ -41,6 +41,7 @@ class AssessmentResultActivity : AppCompatActivity() {
     private var result: BodyScanResult? = null
     private val language: String get() = "en"
     
+    @Suppress("DEPRECATION")
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         window.statusBarColor = Color.parseColor("#121212")

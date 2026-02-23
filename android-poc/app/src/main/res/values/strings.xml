@@ -23,6 +23,11 @@
     <string name="retry">Retry</string>
     <string name="or">or</string>
     
+    <string name="nav_train">Train</string>
+    <string name="nav_explore">Explore</string>
+    <string name="train_hero_ready_title">Ready to train?</string>
+    <string name="train_hero_ready_subtitle">Finish your weekly goal and hit your streak.</string>
+    
     <!-- Navigation -->
     <string name="home">Home</string>
     <string name="exercises">Exercises</string>

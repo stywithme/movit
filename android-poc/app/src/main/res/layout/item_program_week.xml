@@ -2,63 +2,92 @@
 <com.google.android.material.card.MaterialCardView
     xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:layout_marginBottom="@dimen/spacing_sm"
+    android:layout_marginBottom="16dp"
     app:cardBackgroundColor="@color/surface"
-    app:cardCornerRadius="@dimen/radius_md"
+    app:cardCornerRadius="16dp"
     app:cardElevation="0dp"
-    app:strokeWidth="0dp">
+    app:strokeColor="@color/surface_border"
+    app:strokeWidth="1dp">
 
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="vertical"
-        android:padding="@dimen/spacing_base">
+        android:padding="20dp">
 
-        <TextView
-            android:id="@+id/tvWeekTitle"
+        <LinearLayout
+            android:id="@+id/layoutWeekHeader"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:textColor="@color/text_primary"
-            android:textSize="16sp"
-            android:textStyle="bold"
-            android:text="Week 1" />
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:background="?attr/selectableItemBackground"
+            android:clickable="true"
+            android:focusable="true">
+            
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:orientation="vertical">
+                <TextView
+                    android:id="@+id/tvWeekTitle"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:textColor="@color/text_primary"
+                    style="@style/TextAppearance.WayToFix.Headline3"
+                    tools:text="Week 1: Base Movement" />
 
-        <TextView
-            android:id="@+id/tvWeekSubtitle"
+                <TextView
+                    android:id="@+id/tvWeekSubtitle"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="4dp"
+                    android:textColor="@color/text_secondary"
+                    android:textSize="13sp"
+                    tools:text="5 Sessions • 2 Rest" />
+            </LinearLayout>
+            
+            <!-- A small chevron button -->
+            <ImageView
+                android:id="@+id/ivExpand"
+                android:layout_width="24dp"
+                android:layout_height="24dp"
+                android:src="@drawable/ic_chevron_right"
+                app:tint="@color/primary" />
+        </LinearLayout>
+
+        <!-- Progress Bar -->
+        <ProgressBar
+            android:id="@+id/pbWeekProgress"
+            style="?android:attr/progressBarStyleHorizontal"
             android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="2dp"
-            android:textColor="@color/text_secondary"
-            android:textSize="12sp"
-            android:text="Base movement focus" />
-
-        <TextView
-            android:id="@+id/tvWeekStats"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="@dimen/spacing_sm"
-            android:textColor="@color/text_hint"
-            android:textSize="12sp"
-            android:text="7 days • 2 rest • 5 sessions" />
-
+            android:layout_height="4dp"
+            android:layout_marginTop="16dp"
+            android:progressTint="@color/primary"
+            android:progressBackgroundTint="@color/surface_border"
+            tools:progress="40" />
+            
         <TextView
             android:id="@+id/tvWeekProgress"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="2dp"
-            android:textColor="@color/text_secondary"
-            android:textSize="12sp"
-            android:text="Progress: 0/5 sessions" />
+            android:layout_marginTop="8dp"
+            android:textColor="@color/text_tertiary"
+            android:textSize="11sp"
+            tools:text="Progress: 2/5 sessions" />
 
+        <!-- Timeline of Days (Vertical List) -->
         <LinearLayout
             android:id="@+id/layoutWeekDays"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="@dimen/spacing_sm"
-            android:orientation="horizontal" />
+            android:layout_marginTop="16dp"
+            android:orientation="vertical"
+            android:visibility="gone" />
 
     </LinearLayout>
-
 </com.google.android.material.card.MaterialCardView>

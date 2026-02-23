@@ -346,21 +346,21 @@ class PerformanceOverviewFragment : Fragment() {
             chips.add(H.metricChip(ctx,
                 if (isArabic) "المدى" else "ROM",
                 it.displayValue,
-                it.status?.getColor()
+                it.status.getColor()
             ))
         }
         form.symmetry?.let {
             chips.add(H.metricChip(ctx,
                 if (isArabic) "التوازن" else "Sym",
                 it.displayValue,
-                it.status?.getColor()
+                it.status.getColor()
             ))
         }
         form.formConsistency?.let {
             chips.add(H.metricChip(ctx,
                 if (isArabic) "الثبات" else "Cons",
                 it.displayValue,
-                it.status?.getColor()
+                it.status.getColor()
             ))
         }
         return chips
@@ -372,14 +372,14 @@ class PerformanceOverviewFragment : Fragment() {
             chips.add(H.metricChip(ctx,
                 if (isArabic) "المحاذاة" else "Align",
                 it.displayValue,
-                it.status?.getColor()
+                it.status.getColor()
             ))
         }
         safety.stability?.let {
             chips.add(H.metricChip(ctx,
                 if (isArabic) "الثبات" else "Stab",
                 it.displayValue,
-                it.status?.getColor()
+                it.status.getColor()
             ))
         }
         if (safety.dangerCount > 0) {

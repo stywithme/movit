@@ -7,6 +7,7 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.LinearLayout
 import android.widget.TextView
+import android.widget.ImageView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.recyclerview.widget.LinearLayoutManager
@@ -25,7 +26,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
 /**
- * ProgramDayActivity - Shows days and sessions for a selected week
+ * ProgramDayActivity - Shows days and sessions for a selected week (Week Plan)
  */
 class ProgramDayActivity : AppCompatActivity() {
 
@@ -52,7 +53,11 @@ class ProgramDayActivity : AppCompatActivity() {
     }
 
     private fun setupUI() {
-        binding.btnBack.setOnClickListener { finish() }
+        setSupportActionBar(binding.toolbar)
+        supportActionBar?.setDisplayHomeAsUpEnabled(true)
+        supportActionBar?.setDisplayShowTitleEnabled(false)
+        binding.toolbar.setNavigationOnClickListener { finish() }
+
         binding.rvDays.layoutManager = LinearLayoutManager(this)
     }
 
@@ -89,8 +94,22 @@ class ProgramDayActivity : AppCompatActivity() {
             return
         }
 
-        binding.tvWeekTitle.text = getString(R.string.week_title_only, week.weekNumber)
-        binding.rvDays.adapter = DayAdapter(week.days, program.id)
+        val language = getCurrentLanguage()
+        val title = week.name?.let { it.get(language).ifBlank { it.en } } ?: ""
+        
+        binding.tvWeekTitle.text = if (title.isNotBlank()) {
+            getString(R.string.week_title_with_name, week.weekNumber, title)
+        } else {
+            getString(R.string.week_title_only, week.weekNumber)
+        }
+        
+        val sessionsCount = week.days.sumOf { it.sessions.size }
+        val restDaysCount = week.days.count { it.isRestDay }
+        binding.tvWeekSubtitle.text = "$sessionsCount Sessions • $restDaysCount Rest Days"
+
+        // Sort days logically
+        val sortedDays = week.days.sortedBy { it.dayNumber }
+        binding.rvDays.adapter = DayAdapter(sortedDays, program.id)
     }
 
     inner class DayAdapter(
@@ -99,6 +118,7 @@ class ProgramDayActivity : AppCompatActivity() {
     ) : RecyclerView.Adapter<DayAdapter.ViewHolder>() {
 
         inner class ViewHolder(view: View) : RecyclerView.ViewHolder(view) {
+            val ivDayIcon: ImageView = view.findViewById(R.id.ivDayIcon)
             val tvDayTitle: TextView = view.findViewById(R.id.tvDayTitle)
             val tvDaySubtitle: TextView = view.findViewById(R.id.tvDaySubtitle)
             val sessionsContainer: LinearLayout = view.findViewById(R.id.sessionsContainer)
@@ -114,7 +134,7 @@ class ProgramDayActivity : AppCompatActivity() {
             val day = days[position]
             val language = getCurrentLanguage()
 
-            val dayName = day.name?.get(language)?.ifBlank { day.name?.en } ?: ""
+            val dayName = day.name?.let { it.get(language).ifBlank { it.en } } ?: ""
             holder.tvDayTitle.text = if (dayName.isNotBlank()) {
                 getString(R.string.day_title_with_name, day.dayNumber, dayName)
             } else {
@@ -122,9 +142,14 @@ class ProgramDayActivity : AppCompatActivity() {
             }
 
             if (day.isRestDay) {
+                holder.ivDayIcon.setImageResource(R.drawable.ic_rest)
+                holder.ivDayIcon.imageTintList = android.content.res.ColorStateList.valueOf(getColor(R.color.text_tertiary))
                 holder.tvDaySubtitle.text = getString(R.string.rest_day)
                 holder.sessionsContainer.removeAllViews()
                 return
+            } else {
+                holder.ivDayIcon.setImageResource(R.drawable.ic_workout)
+                holder.ivDayIcon.imageTintList = android.content.res.ColorStateList.valueOf(getColor(R.color.primary))
             }
 
             val completedSessions = reportStore.getByDay(programId, weekNumber, day.dayNumber).size
@@ -139,38 +164,45 @@ class ProgramDayActivity : AppCompatActivity() {
                 val sessionView = LayoutInflater.from(holder.itemView.context)
                     .inflate(R.layout.item_program_session, holder.sessionsContainer, false)
 
+                val ivSessionIcon = sessionView.findViewById<ImageView>(R.id.ivSessionIcon)
                 val tvSessionName = sessionView.findViewById<TextView>(R.id.tvSessionName)
-                val tvSessionSubtitle = sessionView.findViewById<TextView>(R.id.tvSessionSubtitle)
-                val tvSessionStatus = sessionView.findViewById<TextView>(R.id.tvSessionStatus)
-                val btnPrimary = sessionView.findViewById<com.google.android.material.button.MaterialButton>(R.id.btnSessionPrimary)
-                val btnSecondary = sessionView.findViewById<com.google.android.material.button.MaterialButton>(R.id.btnSessionSecondary)
+                val tvSessionDetails = sessionView.findViewById<TextView>(R.id.tvSessionDetails)
+                val ivSessionStatus = sessionView.findViewById<ImageView>(R.id.ivSessionStatus)
+                val ivSessionPlay = sessionView.findViewById<ImageView>(R.id.ivSessionPlay)
+                val layoutSessionScore = sessionView.findViewById<LinearLayout>(R.id.layoutSessionScore)
+                val btnSessionRestart = sessionView.findViewById<ImageView>(R.id.btnSessionRestart)
 
                 tvSessionName.text = session.name.get(language).ifBlank { session.name.en }
-                tvSessionSubtitle.text = getString(
-                    R.string.session_items_count_format,
-                    session.items.size
-                )
+                
+                // Details (e.g., 6 exercises • 25 min)
+                val duration = "${session.items.size * 5} min" // Rough estimate
+                tvSessionDetails.text = "${session.items.size} exercises • $duration"
 
                 val report = reportStore.getBySession(session.id)
                 val isCompleted = report != null
-                tvSessionStatus.text = if (isCompleted) {
-                    getString(R.string.session_status_completed)
+                
+                if (isCompleted) {
+                    ivSessionStatus.visibility = View.VISIBLE
+                    ivSessionPlay.visibility = View.GONE
+                    layoutSessionScore.visibility = View.VISIBLE
+                    
+                    // Dim the entire card to show it's done
+                    sessionView.alpha = 0.7f
                 } else {
-                    getString(R.string.session_status_not_started)
+                    ivSessionStatus.visibility = View.GONE
+                    ivSessionPlay.visibility = View.VISIBLE
+                    layoutSessionScore.visibility = View.GONE
+                    
+                    sessionView.alpha = 1.0f
                 }
 
-                btnPrimary.text = if (isCompleted) {
-                    getString(R.string.continue_session)
-                } else {
-                    getString(R.string.start_session)
-                }
-                btnPrimary.setOnClickListener {
+                // Click card to start/resume
+                sessionView.setOnClickListener {
                     openSession(day.dayNumber, session)
                 }
 
-                btnSecondary.visibility = if (isCompleted) View.VISIBLE else View.GONE
-                btnSecondary.text = getString(R.string.restart_session)
-                btnSecondary.setOnClickListener {
+                // Click restart icon to reset
+                btnSessionRestart.setOnClickListener {
                     reportStore.delete(session.id)
                     notifyItemChanged(position)
                 }
@@ -202,5 +234,11 @@ class ProgramDayActivity : AppCompatActivity() {
             appLocales[0]
         }
         return locale?.language ?: "en"
+    }
+
+    override fun onResume() {
+        super.onResume()
+        // Refresh when coming back (might have completed a session)
+        program?.let { bindWeek(it) }
     }
 }

@@ -28,6 +28,85 @@ export interface SyncRequestParams {
   forceRefresh?: boolean;
 }
 
+export interface ExploreRequestParams {
+  /**
+   * ISO timestamp for incremental sync.
+   * If provided, only items updated after this time are returned.
+   */
+  updatedAfter?: string;
+
+  /**
+   * Max items per section.
+   */
+  limit?: number;
+}
+
+export interface MobileExploreResponse {
+  success: boolean;
+  timestamp: string;
+  data: ExploreData;
+  meta: ExploreMeta;
+}
+
+export interface ExploreData {
+  levels: ExploreLevelItem[];
+  programs: ExploreProgramItem[];
+  workouts: ExploreWorkoutItem[];
+  exercises: ExploreExerciseItem[];
+  deletedProgramIds: string[];
+  deletedWorkoutIds: string[];
+  deletedExerciseIds: string[];
+}
+
+export interface ExploreLevelItem {
+  number: number;
+  code: string;
+  name: LocalizedText;
+  description?: LocalizedText | null;
+  color?: string | null;
+  updatedAt?: string;
+}
+
+export interface ExploreProgramItem {
+  id: string;
+  slug: string;
+  name: LocalizedText;
+  difficulty: string;
+  durationWeeks: number;
+  coverImageUrl?: string | null;
+  updatedAt: string;
+}
+
+export interface ExploreWorkoutItem {
+  id: string;
+  slug: string;
+  name: LocalizedText;
+  difficulty: string;
+  estimatedDurationMin?: number | null;
+  coverImageUrl?: string | null;
+  exerciseCount: number;
+  updatedAt: string;
+}
+
+export interface ExploreExerciseItem {
+  id: string;
+  slug: string;
+  name: LocalizedText;
+  categoryCode?: string | null;
+  categoryName?: LocalizedText | null;
+  musclesCount: number;
+  updatedAt: string;
+}
+
+export interface ExploreMeta {
+  isFullSync: boolean;
+  serverVersion: string;
+  levelsInResponse: number;
+  programsInResponse: number;
+  workoutsInResponse: number;
+  exercisesInResponse: number;
+}
+
 // ============================================
 // RESPONSE TYPES
 // ============================================

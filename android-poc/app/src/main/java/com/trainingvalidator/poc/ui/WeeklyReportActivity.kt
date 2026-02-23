@@ -91,10 +91,11 @@ class WeeklyReportActivity : AppCompatActivity() {
                     reportRepo.getProgramMetrics(programId, includeChildren = true)
                 }
 
-                if (metrics != null && metrics.success && metrics.summary?.weeks != null) {
+                val weeks = metrics?.summary?.weeks
+                if (metrics != null && metrics.success && weeks != null) {
                     // Re-bind with unified data
                     binding.rvWeeklyReports.adapter =
-                        WeeklyAdapter(program.weeks, programId, metrics.summary?.weeks)
+                        WeeklyAdapter(program.weeks, programId, weeks)
                 }
             } catch (e: Exception) {
                 Log.w(TAG, "Failed to fetch unified metrics", e)

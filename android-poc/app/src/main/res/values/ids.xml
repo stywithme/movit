@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Legacy tab IDs kept for backward-compat navigation mapping -->
+    <item name="nav_programs" type="id" />
+    <item name="nav_exercises" type="id" />
+    <item name="nav_history" type="id" />
+    <item name="nav_profile" type="id" />
+</resources>

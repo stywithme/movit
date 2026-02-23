@@ -283,6 +283,7 @@ class SyncManager(
     /**
      * Process sync response and update caches
      */
+    @Suppress("USELESS_ELVIS")
     private suspend fun processSyncResponse(
         response: MobileSyncResponse,
         isFullSync: Boolean
@@ -290,7 +291,6 @@ class SyncManager(
         val data = response.data ?: return SyncResult.NoChanges
         val meta = response.meta
         
-        @Suppress("UNNECESSARY_SAFE_CALL", "USELESS_ELVIS")
         val exercises = data.exercises ?: emptyList()
         val messageLibrary = data.messageLibrary ?: emptyList()
         val deletedExerciseIds = data.deletedExerciseIds ?: emptyList()
@@ -671,8 +671,7 @@ class SyncManager(
         var synced = 0
         for (entry in pendingQueue) {
             try {
-                @Suppress("UNCHECKED_CAST")
-                val payload = entry.payload as Map<String, Any>
+                val payload = entry.payload
                 val response = ApiClient.mobileSyncApi.completeSession(
                     entry.sessionId,
                     authHeader,

@@ -1125,7 +1125,7 @@ class ProgramSessionActivity : AppCompatActivity() {
                 "items" to session.items.map { item ->
                     val itemMap = mutableMapOf<String, Any?>(
                         "type" to item.type,
-                        "sortOrder" to (item.sortOrder ?: 0)
+                        "sortOrder" to item.sortOrder
                     )
                     item.exerciseSlug?.let { itemMap["exerciseSlug"] = it }
                     item.sets?.let { itemMap["sets"] = it }

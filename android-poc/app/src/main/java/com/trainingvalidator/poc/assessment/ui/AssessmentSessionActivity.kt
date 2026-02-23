@@ -88,6 +88,7 @@ class AssessmentSessionActivity : AppCompatActivity() {
     // Activity result launcher for TrainingActivity
     private lateinit var exerciseLauncher: ActivityResultLauncher<Intent>
 
+    @Suppress("DEPRECATION")
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         window.statusBarColor = Color.parseColor("#121212")
@@ -426,7 +427,7 @@ class AssessmentSessionActivity : AppCompatActivity() {
                     "avgROM" -> report.summary.avgROM
                     "avgStability" -> report.summary.avgStability
                     "avgSymmetry" -> report.summary.avgSymmetry
-                    "accuracy" -> report.summary.accuracy.toFloat()
+                    "accuracy" -> report.summary.accuracy
                     else -> null
                 } ?: continue
 

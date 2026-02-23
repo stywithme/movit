@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="utf-8"?>
+<com.google.android.material.card.MaterialCardView
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="200dp"
+    android:layout_height="wrap_content"
+    android:layout_marginEnd="12dp"
+    app:cardBackgroundColor="@color/surface"
+    app:cardCornerRadius="12dp"
+    app:cardElevation="0dp"
+    app:strokeColor="@color/surface_border"
+    app:strokeWidth="1dp">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical">
+
+        <FrameLayout
+            android:layout_width="match_parent"
+            android:layout_height="100dp"
+            android:background="@color/surface_variant">
+            <!-- Icon centered -->
+            <ImageView
+                android:layout_width="32dp"
+                android:layout_height="32dp"
+                android:layout_gravity="center"
+                android:src="@drawable/ic_workout"
+                app:tint="@color/text_secondary" />
+        </FrameLayout>
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:padding="12dp">
+            
+            <TextView
+                android:id="@+id/tvWorkoutName"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                style="@style/TextAppearance.WayToFix.Headline3"
+                android:textColor="@color/text_primary"
+                android:maxLines="1"
+                android:ellipsize="end"
+                tools:text="Core Crusher" />
+
+            <TextView
+                android:id="@+id/tvWorkoutMeta"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="4dp"
+                android:textColor="@color/text_secondary"
+                android:textSize="12sp"
+                android:maxLines="1"
+                android:ellipsize="end"
+                tools:text="20 min • Abs" />
+        </LinearLayout>
+    </LinearLayout>
+</com.google.android.material.card.MaterialCardView>

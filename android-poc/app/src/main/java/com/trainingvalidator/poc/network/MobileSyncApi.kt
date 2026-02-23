@@ -32,6 +32,27 @@ interface MobileSyncApi {
         @Query("updatedAfter") updatedAfter: String? = null,
         @Query("forceRefresh") forceRefresh: Boolean? = null
     ): Response<MobileSyncResponse>
+
+    /**
+     * Unified explore endpoint for Home/Explore previews.
+     * Supports incremental sync by `updatedAfter`.
+     */
+    @GET("api/mobile/explore")
+    suspend fun getExplore(
+        @Header("Authorization") authorization: String? = null,
+        @Query("updatedAfter") updatedAfter: String? = null,
+        @Query("limit") limit: Int? = null
+    ): Response<ExploreResponse>
+
+    /**
+     * Unified home endpoint for the dashboard.
+     * Returns stats, level profile, active plan, and today's plan.
+     */
+    @GET("api/mobile/home")
+    suspend fun getHomeData(
+        @Header("Authorization") authorization: String
+    ): Response<HomeResponse>
+
     
     /**
      * Download an audio file.

@@ -31,6 +31,7 @@ class PreScreeningActivity : AppCompatActivity() {
     
     private val language: String get() = "en" // TODO: Get from user preferences
     
+    @Suppress("DEPRECATION")
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         window.statusBarColor = Color.parseColor("#121212")

@@ -13,7 +13,9 @@ import { workoutService } from '@/modules/workouts/workouts.service';
 import type { WorkoutExport } from '@/modules/workouts/workouts.types';
 import type {
   SyncRequestParams,
+  ExploreRequestParams,
   MobileSyncResponse,
+  MobileExploreResponse,
   SyncData,
   ExerciseConfigWithMeta,
   AudioManifest,
@@ -21,6 +23,7 @@ import type {
   MessageTemplate,
   UserProgramExport,
   SessionReportExport,
+  ExploreData,
 } from './mobile-sync.types';
 import * as fs from 'fs/promises';
 import * as path from 'path';
@@ -36,6 +39,193 @@ function toSyncLocalizedText(value: Record<string, unknown> | null | undefined) 
 }
 
 export const mobileSyncService = {
+  async getExplore(
+    params: ExploreRequestParams = {}
+  ): Promise<MobileExploreResponse> {
+    const prisma = await getPrisma();
+    const now = new Date();
+    const limit = Math.min(Math.max(params.limit ?? 6, 1), 20);
+    const isFullSync = !params.updatedAfter;
+
+    let updatedAfterDate: Date | null = null;
+    if (params.updatedAfter) {
+      const parsed = new Date(params.updatedAfter);
+      if (!isNaN(parsed.getTime())) {
+        updatedAfterDate = parsed;
+      }
+    }
+
+    const programWhere: Record<string, unknown> = {
+      isPublished: true,
+      deletedAt: null,
+    };
+    const workoutWhere: Record<string, unknown> = {
+      status: 'published',
+      deletedAt: null,
+    };
+    const exerciseWhere: Record<string, unknown> = {
+      status: 'published',
+      deletedAt: null,
+    };
+    const levelWhere: Record<string, unknown> = {};
+
+    if (updatedAfterDate) {
+      programWhere.updatedAt = { gt: updatedAfterDate };
+      workoutWhere.updatedAt = { gt: updatedAfterDate };
+      exerciseWhere.updatedAt = { gt: updatedAfterDate };
+      levelWhere.updatedAt = { gt: updatedAfterDate };
+    }
+
+    const [levels, programs, workouts, exercises] = await Promise.all([
+      prisma.level.findMany({
+        where: levelWhere,
+        orderBy: { number: 'asc' },
+        take: limit,
+      }),
+      prisma.program.findMany({
+        where: programWhere,
+        orderBy: [
+          { isFeatured: 'desc' },
+          { updatedAt: 'desc' },
+        ],
+        take: limit,
+      }),
+      prisma.workout.findMany({
+        where: workoutWhere,
+        include: {
+          exercises: {
+            select: { id: true },
+          },
+        },
+        orderBy: [
+          { isFeatured: 'desc' },
+          { updatedAt: 'desc' },
+        ],
+        take: limit,
+      }),
+      prisma.exercise.findMany({
+        where: exerciseWhere,
+        include: {
+          category: {
+            select: {
+              code: true,
+              name: true,
+            },
+          },
+          attributes: {
+            select: {
+              attributeValue: {
+                select: {
+                  attribute: {
+                    select: { code: true },
+                  },
+                },
+              },
+            },
+          },
+        },
+        orderBy: [
+          { isFeatured: 'desc' },
+          { updatedAt: 'desc' },
+        ],
+        take: limit,
+      }),
+    ]);
+
+    let deletedProgramIds: string[] = [];
+    let deletedWorkoutIds: string[] = [];
+    let deletedExerciseIds: string[] = [];
+    if (updatedAfterDate) {
+      const [deletedPrograms, unpublishedPrograms, deletedWorkouts, unpublishedWorkouts, deletedExercises, unpublishedExercises] =
+        await Promise.all([
+          prisma.program.findMany({
+            where: { deletedAt: { gt: updatedAfterDate } },
+            select: { id: true },
+          }),
+          prisma.program.findMany({
+            where: { isPublished: false, deletedAt: null, updatedAt: { gt: updatedAfterDate } },
+            select: { id: true },
+          }),
+          prisma.workout.findMany({
+            where: { deletedAt: { gt: updatedAfterDate } },
+            select: { id: true },
+          }),
+          prisma.workout.findMany({
+            where: { status: 'draft', deletedAt: null, updatedAt: { gt: updatedAfterDate } },
+            select: { id: true },
+          }),
+          prisma.exercise.findMany({
+            where: { deletedAt: { gt: updatedAfterDate } },
+            select: { id: true },
+          }),
+          prisma.exercise.findMany({
+            where: { status: 'draft', deletedAt: null, updatedAt: { gt: updatedAfterDate } },
+            select: { id: true },
+          }),
+        ]);
+
+      deletedProgramIds = [...deletedPrograms.map((p) => p.id), ...unpublishedPrograms.map((p) => p.id)];
+      deletedWorkoutIds = [...deletedWorkouts.map((w) => w.id), ...unpublishedWorkouts.map((w) => w.id)];
+      deletedExerciseIds = [...deletedExercises.map((e) => e.id), ...unpublishedExercises.map((e) => e.id)];
+    }
+
+    const data: ExploreData = {
+      levels: levels.map((l) => ({
+        number: l.number,
+        code: l.code,
+        name: toSyncLocalizedText(l.name as Record<string, unknown>),
+        description: l.description ? toSyncLocalizedText(l.description as Record<string, unknown>) : null,
+        color: l.color,
+        updatedAt: l.updatedAt?.toISOString?.() ?? now.toISOString(),
+      })),
+      programs: programs.map((p) => ({
+        id: p.id,
+        slug: p.slug,
+        name: toSyncLocalizedText(p.name as Record<string, unknown>),
+        difficulty: p.difficulty,
+        durationWeeks: p.durationWeeks,
+        coverImageUrl: p.coverImageUrl,
+        updatedAt: p.updatedAt.toISOString(),
+      })),
+      workouts: workouts.map((w) => ({
+        id: w.id,
+        slug: w.slug,
+        name: toSyncLocalizedText(w.name as Record<string, unknown>),
+        difficulty: w.difficulty,
+        estimatedDurationMin: w.estimatedDurationMin,
+        coverImageUrl: w.coverImageUrl,
+        exerciseCount: w.exercises.length,
+        updatedAt: w.updatedAt.toISOString(),
+      })),
+      exercises: exercises.map((e) => ({
+        id: e.id,
+        slug: e.slug,
+        name: toSyncLocalizedText(e.name as Record<string, unknown>),
+        categoryCode: e.category?.code ?? null,
+        categoryName: e.category?.name ? toSyncLocalizedText(e.category.name as Record<string, unknown>) : null,
+        musclesCount: e.attributes.filter((a) => a.attributeValue?.attribute?.code === 'muscle').length,
+        updatedAt: e.updatedAt.toISOString(),
+      })),
+      deletedProgramIds,
+      deletedWorkoutIds,
+      deletedExerciseIds,
+    };
+
+    return {
+      success: true,
+      timestamp: now.toISOString(),
+      data,
+      meta: {
+        isFullSync,
+        serverVersion: SERVER_VERSION,
+        levelsInResponse: data.levels.length,
+        programsInResponse: data.programs.length,
+        workoutsInResponse: data.workouts.length,
+        exercisesInResponse: data.exercises.length,
+      },
+    };
+  },
+
   /**
    * Perform sync operation
    * 

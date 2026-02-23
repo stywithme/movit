@@ -21,6 +21,8 @@
     <string name="retry">إعادة المحاولة</string>
     <string name="or">أو</string>
     
+    <string name="train_hero_ready_title">جاهز للتمرين؟</string>
+    <string name="train_hero_ready_subtitle">أكمل هدفك الأسبوعي وحافظ على استمراريتك.</string>
     <!-- Navigation -->
     <string name="home">الرئيسية</string>
     <string name="exercises">التمارين</string>
