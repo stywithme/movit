@@ -5,106 +5,124 @@
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:orientation="vertical"
-    android:padding="@dimen/spacing_lg">
+    android:padding="24dp">
 
     <TextView
         android:id="@+id/tvDialogTitle"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:text="@string/ds_edit_exercise_title"
-        android:textColor="@color/text_primary"
-        android:textSize="18sp"
-        android:textStyle="bold" />
+        style="@style/TextAppearance.WayToFix.Headline3"
+        android:textColor="@color/text_primary" />
 
-    <!-- Exercise selector -->
-    <TextView
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="@dimen/spacing_md"
-        android:text="Exercise"
-        android:textColor="@color/text_secondary"
-        android:textSize="12sp" />
-
-    <Spinner
-        android:id="@+id/spinnerExercise"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="4dp"
-        android:background="@color/surface_variant"
-        android:padding="@dimen/spacing_sm" />
-
-    <!-- Sets -->
+    <!-- Exercise selector (Exposed Dropdown Menu) -->
     <com.google.android.material.textfield.TextInputLayout
+        style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox.ExposedDropdownMenu"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginTop="@dimen/spacing_md"
-        android:hint="@string/ds_sets_label"
-        style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox">
+        android:layout_marginTop="20dp"
+        android:hint="Exercise">
 
-        <com.google.android.material.textfield.TextInputEditText
-            android:id="@+id/inputSets"
+        <AutoCompleteTextView
+            android:id="@+id/spinnerExercise"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:inputType="number"
+            android:inputType="none"
             android:textColor="@color/text_primary" />
     </com.google.android.material.textfield.TextInputLayout>
 
-    <!-- Target Reps -->
-    <com.google.android.material.textfield.TextInputLayout
+    <!-- Grid-like layout for Inputs -->
+    <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginTop="@dimen/spacing_sm"
-        android:hint="@string/ds_reps_label"
-        style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox">
+        android:layout_marginTop="16dp"
+        android:orientation="horizontal">
 
-        <com.google.android.material.textfield.TextInputEditText
-            android:id="@+id/inputTargetReps"
-            android:layout_width="match_parent"
+        <!-- Sets -->
+        <com.google.android.material.textfield.TextInputLayout
+            android:id="@+id/layoutSets"
+            style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
+            android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:inputType="number"
-            android:textColor="@color/text_primary" />
-    </com.google.android.material.textfield.TextInputLayout>
+            android:layout_weight="1"
+            android:layout_marginEnd="8dp"
+            android:hint="@string/ds_sets_label">
+            <com.google.android.material.textfield.TextInputEditText
+                android:id="@+id/inputSets"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:inputType="number"
+                android:textColor="@color/text_primary" />
+        </com.google.android.material.textfield.TextInputLayout>
 
-    <!-- Target Duration -->
-    <com.google.android.material.textfield.TextInputLayout
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="@dimen/spacing_sm"
-        android:hint="@string/ds_duration_label"
-        style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox">
-
-        <com.google.android.material.textfield.TextInputEditText
-            android:id="@+id/inputTargetDuration"
-            android:layout_width="match_parent"
+        <!-- Target Reps (Hidden if duration-based) -->
+        <com.google.android.material.textfield.TextInputLayout
+            android:id="@+id/layoutReps"
+            style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
+            android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:inputType="number"
-            android:textColor="@color/text_primary" />
-    </com.google.android.material.textfield.TextInputLayout>
+            android:layout_weight="1"
+            android:hint="@string/ds_reps_label">
+            <com.google.android.material.textfield.TextInputEditText
+                android:id="@+id/inputTargetReps"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:inputType="number"
+                android:textColor="@color/text_primary" />
+        </com.google.android.material.textfield.TextInputLayout>
+    </LinearLayout>
 
-    <!-- Rest Between Sets -->
-    <com.google.android.material.textfield.TextInputLayout
+    <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginTop="@dimen/spacing_sm"
-        android:hint="@string/ds_rest_between_sets_label"
-        style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox">
+        android:layout_marginTop="12dp"
+        android:orientation="horizontal">
 
-        <com.google.android.material.textfield.TextInputEditText
-            android:id="@+id/inputRestBetweenSets"
-            android:layout_width="match_parent"
+        <!-- Target Duration (Hidden if rep-based) -->
+        <com.google.android.material.textfield.TextInputLayout
+            android:id="@+id/layoutDuration"
+            style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
+            android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:inputType="number"
-            android:textColor="@color/text_primary" />
-    </com.google.android.material.textfield.TextInputLayout>
+            android:layout_weight="1"
+            android:layout_marginEnd="8dp"
+            android:hint="@string/ds_duration_label">
+            <com.google.android.material.textfield.TextInputEditText
+                android:id="@+id/inputTargetDuration"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:inputType="number"
+                android:textColor="@color/text_primary" />
+        </com.google.android.material.textfield.TextInputLayout>
 
-    <!-- Weight -->
+        <!-- Rest Between Sets -->
+        <com.google.android.material.textfield.TextInputLayout
+            android:id="@+id/layoutRest"
+            style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:hint="@string/ds_rest_between_sets_label">
+            <com.google.android.material.textfield.TextInputEditText
+                android:id="@+id/inputRestBetweenSets"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:inputType="number"
+                android:textColor="@color/text_primary" />
+        </com.google.android.material.textfield.TextInputLayout>
+    </LinearLayout>
+
+    <!-- Weight (Hidden if bodyweight) -->
     <com.google.android.material.textfield.TextInputLayout
+        android:id="@+id/layoutWeight"
+        style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginTop="@dimen/spacing_sm"
+        android:layout_marginTop="12dp"
         android:hint="@string/ds_weight_label"
-        style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox">
-
+        app:endIconMode="custom"
+        app:endIconDrawable="@drawable/ic_muscle"
+        app:endIconTint="@color/text_hint">
         <com.google.android.material.textfield.TextInputEditText
             android:id="@+id/inputWeightKg"
             android:layout_width="match_parent"
@@ -113,18 +131,18 @@
             android:textColor="@color/text_primary" />
     </com.google.android.material.textfield.TextInputLayout>
 
-    <!-- Buttons -->
+    <!-- Action Buttons -->
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginTop="@dimen/spacing_lg"
+        android:layout_marginTop="24dp"
         android:orientation="horizontal">
 
         <com.google.android.material.button.MaterialButton
             android:id="@+id/btnCancel"
             style="@style/Widget.WayToFix.Button.Secondary"
             android:layout_width="0dp"
-            android:layout_height="44dp"
+            android:layout_height="52dp"
             android:layout_weight="1"
             android:text="@string/cancel" />
 
@@ -132,8 +150,8 @@
             android:id="@+id/btnSave"
             style="@style/Widget.WayToFix.Button.Primary"
             android:layout_width="0dp"
-            android:layout_height="44dp"
-            android:layout_marginStart="@dimen/spacing_sm"
+            android:layout_height="52dp"
+            android:layout_marginStart="12dp"
             android:layout_weight="1"
             android:text="@string/ds_save" />
     </LinearLayout>

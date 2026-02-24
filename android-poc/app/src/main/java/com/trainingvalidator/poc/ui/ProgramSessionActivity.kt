@@ -902,7 +902,14 @@ class ProgramSessionActivity : AppCompatActivity() {
 
     private fun showEditExerciseDialog(sessionId: String, itemIndex: Int, item: ProgramSessionItem) {
         val dialogView = LayoutInflater.from(this).inflate(R.layout.dialog_session_item_edit, null)
-        val spinnerExercise = dialogView.findViewById<android.widget.Spinner>(R.id.spinnerExercise)
+        val spinnerExercise = dialogView.findViewById<android.widget.AutoCompleteTextView>(R.id.spinnerExercise)
+        
+        val layoutSets = dialogView.findViewById<View>(R.id.layoutSets)
+        val layoutReps = dialogView.findViewById<View>(R.id.layoutReps)
+        val layoutDuration = dialogView.findViewById<View>(R.id.layoutDuration)
+        val layoutRest = dialogView.findViewById<View>(R.id.layoutRest)
+        val layoutWeight = dialogView.findViewById<View>(R.id.layoutWeight)
+
         val inputSets = dialogView.findViewById<EditText>(R.id.inputSets)
         val inputReps = dialogView.findViewById<EditText>(R.id.inputTargetReps)
         val inputDuration = dialogView.findViewById<EditText>(R.id.inputTargetDuration)
@@ -915,10 +922,46 @@ class ProgramSessionActivity : AppCompatActivity() {
             name to ex.fileName
         }
         val labels = options.map { it.first }
-        val adapter = android.widget.ArrayAdapter(this, android.R.layout.simple_spinner_dropdown_item, labels)
-        spinnerExercise.adapter = adapter
+        
+        val adapter = android.widget.ArrayAdapter(this, android.R.layout.simple_dropdown_item_1line, labels)
+        spinnerExercise.setAdapter(adapter)
+        
+        var selectedExerciseSlug = item.exerciseSlug
+
+        // Helper function to update UI based on selected exercise capabilities
+        fun updateVisibilityForExercise(slug: String?) {
+            if (slug == null) return
+            val exConfig = exerciseConfigMap[slug] ?: return
+            
+            // If it has duration, show duration, hide reps
+            if (exConfig.repCountingConfig.duration != null) {
+                layoutReps.visibility = View.GONE
+                layoutDuration.visibility = View.VISIBLE
+            } else {
+                layoutReps.visibility = View.VISIBLE
+                layoutDuration.visibility = View.GONE
+            }
+
+            // Show weight only if supported
+            if (exConfig.supportsWeight) {
+                layoutWeight.visibility = View.VISIBLE
+            } else {
+                layoutWeight.visibility = View.GONE
+                inputWeight.setText("")
+            }
+        }
+
+        // Set initial text and selection
         val currentIndex = options.indexOfFirst { it.second == item.exerciseSlug }
-        if (currentIndex >= 0) spinnerExercise.setSelection(currentIndex)
+        if (currentIndex >= 0) {
+            spinnerExercise.setText(labels[currentIndex], false)
+            updateVisibilityForExercise(item.exerciseSlug)
+        }
+
+        spinnerExercise.setOnItemClickListener { _, _, position, _ ->
+            selectedExerciseSlug = options[position].second
+            updateVisibilityForExercise(selectedExerciseSlug)
+        }
 
         inputSets.setText((item.sets ?: 1).toString())
         inputReps.setText(item.targetReps?.toString() ?: "")
@@ -930,14 +973,13 @@ class ProgramSessionActivity : AppCompatActivity() {
         bottomSheet.setContentView(dialogView)
 
         dialogView.findViewById<MaterialButton>(R.id.btnSave).setOnClickListener {
-            val selectedSlug = options.getOrNull(spinnerExercise.selectedItemPosition)?.second
             val updated = item.copy(
-                exerciseSlug = selectedSlug ?: item.exerciseSlug,
+                exerciseSlug = selectedExerciseSlug,
                 sets = inputSets.text.toString().toIntOrNull() ?: item.sets,
-                targetReps = inputReps.text.toString().toIntOrNull(),
-                targetDuration = inputDuration.text.toString().toIntOrNull(),
+                targetReps = if (layoutReps.visibility == View.VISIBLE) inputReps.text.toString().toIntOrNull() else null,
+                targetDuration = if (layoutDuration.visibility == View.VISIBLE) inputDuration.text.toString().toIntOrNull() else null,
                 restBetweenSetsMs = inputRestBetween.text.toString().toLongOrNull()?.times(1000),
-                weightKg = inputWeight.text.toString().toFloatOrNull()
+                weightKg = if (layoutWeight.visibility == View.VISIBLE) inputWeight.text.toString().toFloatOrNull() else null
             )
             updateItemInSession(sessionId, itemIndex, updated)
             bottomSheet.dismiss()
