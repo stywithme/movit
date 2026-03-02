@@ -1,0 +1,108 @@
+{
+  "name": {
+    "ar": "التوازن على رجل واحدة (تقييم)",
+    "en": "Single-Leg Balance (Assessment)"
+  },
+  "description": {
+    "ar": "حركة تقييمية لفحص التوازن العام وثبات الكاحل والجذع والتماثل بين الجانبين",
+    "en": "Assessment movement to evaluate overall balance, ankle/trunk stability, and symmetry"
+  },
+  "instructions": {
+    "ar": "قف على رجل واحدة وارفع الرجل الأخرى قليلاً عن الأرض، حافظ على التوازن لمدة 15 ثانية ثم بدّل",
+    "en": "Stand on one leg, lift the other slightly off the ground, hold balance for 15 seconds then switch"
+  },
+  "category": {
+    "code": "assessment",
+    "name": {
+      "ar": "تقييم",
+      "en": "Assessment"
+    }
+  },
+  "countingMethod": "hold",
+  "muscles": ["calves", "glutes", "core", "ankle_stabilizers"],
+  "equipment": ["bodyweight"],
+  "tags": ["assessment", "balance", "unilateral", "bilateral"],
+  "isBilateral": true,
+  "bilateralConfig": {
+    "switchEvery": 1,
+    "startSide": "right"
+  },
+  "repCountingConfig": {
+    "duration": 15,
+    "gracePeriodMs": 2000
+  },
+  "poseVariants": [
+    {
+      "name": {
+        "ar": "زاوية جانبية",
+        "en": "Side View"
+      },
+      "cameraPosition": "side_view",
+      "expectedFacingDirection": "auto_detect",
+      "positionChecks": [
+        {
+          "id": "excessive_trunk_sway",
+          "type": "vertical_alignment",
+          "landmarks": {
+            "primary": "right_shoulder",
+            "secondary": "right_hip"
+          },
+          "condition": {
+            "operator": "approximately_equal",
+            "threshold": 0.08
+          },
+          "activePhases": ["start"],
+          "errorMessage": {
+            "ar": "تذبذب كبير في الجذع",
+            "en": "Excessive trunk sway"
+          },
+          "severity": "warning",
+          "cooldownMs": 3000,
+          "minErrorFrames": 4
+        }
+      ],
+      "trackedJoints": [
+        {
+          "joint": "right_knee",
+          "role": "primary",
+          "startPose": {"min": 120, "max": 180},
+          "range": {
+            "perfect": {"min": 150, "max": 175},
+            "normal": {"min": 135, "max": 180},
+            "pad": {"min": 120, "max": 180},
+            "warning": {"min": 100, "max": 120}
+          },
+          "stateMessages": {
+            "perfect": {"ar": "ثبات ممتاز", "en": "Excellent stability"},
+            "normal": {"ar": "ثبات جيد", "en": "Good stability"},
+            "warning": {"ar": "فقد التوازن", "en": "Balance lost"}
+          }
+        },
+        {
+          "joint": "right_hip",
+          "role": "secondary",
+          "startPose": {"min": 120, "max": 180},
+          "range": {
+            "perfect": {"min": 150, "max": 175},
+            "normal": {"min": 140, "max": 180},
+            "warning": {"min": 120, "max": 140}
+          },
+          "stateMessages": {
+            "perfect": {"ar": "ورك ثابت", "en": "Hip stable"},
+            "warning": {"ar": "ميل في الورك", "en": "Hip shift"}
+          }
+        }
+      ],
+      "feedbackMessages": {
+        "motivational": [
+          {"ar": "توازن رائع", "en": "Great balance"},
+          {"ar": "ثبات ممتاز", "en": "Excellent stability"}
+        ],
+        "tips": [
+          {"ar": "ركّز نظرك على نقطة ثابتة", "en": "Focus your eyes on a fixed point"},
+          {"ar": "شد عضلات بطنك", "en": "Engage your core"}
+        ]
+      }
+    }
+  ]
+}

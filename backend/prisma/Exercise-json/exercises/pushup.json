@@ -1,0 +1,212 @@
+{
+  "name": {
+    "ar": "تمرين الضغط",
+    "en": "Push-up"
+  },
+  "description": {
+    "ar": "تمرين كلاسيكي لتقوية الصدر والكتفين والذراعين",
+    "en": "Classic exercise to strengthen chest, shoulders and arms"
+  },
+  "instructions": {
+    "ar": "ابدأ بوضع اللوح الخشبي مع الذراعين ممدودتين، ثم انزل بصدرك نحو الأرض واصعد",
+    "en": "Start in plank position with arms extended, lower your chest toward the floor, then push back up"
+  },
+  "category": {
+    "code": "chest",
+    "name": {
+      "ar": "تمارين الصدر",
+      "en": "Chest"
+    }
+  },
+  "countingMethod": "push_pull",
+  "muscles": ["chest", "shoulders", "triceps", "core"],
+  "equipment": ["bodyweight"],
+  "tags": ["compound", "upper-body", "no-equipment"],
+  "repCountingConfig": {
+    "reps": 12,
+    "minRepIntervalMs": 1500,
+    "maxRepIntervalMs": 5000
+  },
+  "poseVariants": [
+    {
+      "name": {
+        "ar": "زاوية جانبية",
+        "en": "Side View"
+      },
+      "cameraPosition": "side_view",
+      "trackedJoints": [
+        {
+          "joint": "left_elbow",
+          "role": "primary",
+          "startPose": {
+            "min": 150,
+            "max": 180
+          },
+          "upRange": {
+            "perfect": { "min": 165, "max": 180 },
+            "normal": { "min": 160, "max": 180 },
+            "pad": { "min": 150, "max": 180 }
+          },
+          "downRange": {
+            "perfect": { "min": 50, "max": 80 },
+            "normal": { "min": 45, "max": 90 },
+            "pad": { "min": 40, "max": 110 },
+            "warning": { "min": 30, "max": 40 },
+            "danger": { "min": 0, "max": 30 }
+          },
+          "stateMessages": {
+            "perfect": {
+              "up": { "ar": "ممتاز! ذراعك مفرودة بالكامل", "en": "Perfect! Arm fully extended" },
+              "down": { "ar": "ممتاز! ضغط مثالي", "en": "Perfect! Great push-up" }
+            },
+            "normal": {
+              "up": { "ar": "جيد، حاول فرد الذراع أكثر", "en": "Good, try extending more" },
+              "down": { "ar": "جيد، حاول النزول أكثر قليلاً", "en": "Good, try going a bit lower" }
+            },
+            "pad": {
+              "down": { "ar": "مقبول، اقترب من الأرض أكثر", "en": "Acceptable, get closer to floor" }
+            },
+            "warning": {
+              "down": { "ar": "لا تنزل كثيراً", "en": "Don't go too low" }
+            },
+            "danger": {
+              "down": { "ar": "توقف! هذا قد يؤذي كتفك", "en": "Stop! This may hurt your shoulder" }
+            }
+          },
+          "pairedWith": "right_elbow"
+        },
+        {
+          "joint": "right_elbow",
+          "role": "primary",
+          "startPose": { "min": 150, "max": 180 },
+          "upRange": {
+            "perfect": { "min": 165, "max": 180 },
+            "normal": { "min": 160, "max": 180 },
+            "pad": { "min": 150, "max": 180 }
+          },
+          "downRange": {
+            "perfect": { "min": 50, "max": 80 },
+            "normal": { "min": 45, "max": 90 },
+            "pad": { "min": 40, "max": 110 },
+            "warning": { "min": 30, "max": 40 },
+            "danger": { "min": 0, "max": 30 }
+          },
+          "stateMessages": {
+            "perfect": {
+              "up": { "ar": "ممتاز! ذراعك مفرودة بالكامل", "en": "Perfect! Arm fully extended" },
+              "down": { "ar": "ممتاز! ضغط مثالي", "en": "Perfect! Great push-up" }
+            },
+            "normal": {
+              "up": { "ar": "جيد، حاول فرد الذراع أكثر", "en": "Good, try extending more" },
+              "down": { "ar": "جيد، حاول النزول أكثر قليلاً", "en": "Good, try going a bit lower" }
+            },
+            "pad": {
+              "down": { "ar": "مقبول، اقترب من الأرض أكثر", "en": "Acceptable, get closer to floor" }
+            },
+            "warning": {
+              "down": { "ar": "لا تنزل كثيراً", "en": "Don't go too low" }
+            },
+            "danger": {
+              "down": { "ar": "توقف! هذا قد يؤذي كتفك", "en": "Stop! This may hurt your shoulder" }
+            }
+          },
+          "pairedWith": "left_elbow"
+        },
+        {
+          "joint": "left_hip",
+          "role": "secondary",
+          "startPose": { "min": 160, "max": 180 },
+          "range": {
+            "perfect": { "min": 170, "max": 180 },
+            "normal": { "min": 165, "max": 180 },
+            "pad": { "min": 155, "max": 180 },
+            "warning": { "min": 140, "max": 155 },
+            "danger": { "min": 0, "max": 140 }
+          },
+          "stateMessages": {
+            "perfect": { "ar": "ممتاز - الجسم مستقيم", "en": "Great - body is straight" },
+            "warning": { "ar": "ارفع وسطك قليلاً", "en": "Raise your hips slightly" },
+            "danger": { "ar": "وسطك منخفض جداً!", "en": "Hips too low!" }
+          }
+        }
+      ],
+      "feedbackMessages": {
+        "motivational": [
+          { "ar": "ممتاز! استمر!", "en": "Excellent! Keep going!" },
+          { "ar": "أداء رائع!", "en": "Great performance!" },
+          { "ar": "قوي! لا تتوقف!", "en": "Strong! Don't stop!" }
+        ],
+        "tips": [
+          { "ar": "تنفس: زفير عند الصعود، شهيق عند النزول", "en": "Breathe: exhale going up, inhale going down" },
+          { "ar": "انظر للأمام قليلاً وليس للأسفل", "en": "Look slightly forward, not straight down" },
+          { "ar": "شد عضلات بطنك طوال الحركة", "en": "Keep your core engaged throughout" }
+        ]
+      }
+    },
+    {
+      "name": {
+        "ar": "زاوية أمامية",
+        "en": "Front View"
+      },
+      "cameraPosition": "front_view",
+      "trackedJoints": [
+        {
+          "joint": "left_elbow",
+          "role": "primary",
+          "startPose": { "min": 150, "max": 180 },
+          "upRange": {
+            "perfect": { "min": 165, "max": 180 },
+            "normal": { "min": 160, "max": 180 },
+            "pad": { "min": 150, "max": 180 }
+          },
+          "downRange": {
+            "perfect": { "min": 50, "max": 80 },
+            "normal": { "min": 45, "max": 90 },
+            "pad": { "min": 40, "max": 110 }
+          },
+          "stateMessages": {
+            "perfect": {
+              "up": { "ar": "ممتاز! ذراعك مفرودة", "en": "Perfect! Arm extended" },
+              "down": { "ar": "ممتاز! ضغط مثالي", "en": "Perfect! Great push-up" }
+            },
+            "normal": {
+              "down": { "ar": "جيد، حاول النزول أكثر", "en": "Good, try going lower" }
+            }
+          },
+          "pairedWith": "right_elbow"
+        },
+        {
+          "joint": "right_elbow",
+          "role": "primary",
+          "startPose": { "min": 150, "max": 180 },
+          "upRange": {
+            "perfect": { "min": 165, "max": 180 },
+            "normal": { "min": 160, "max": 180 },
+            "pad": { "min": 150, "max": 180 }
+          },
+          "downRange": {
+            "perfect": { "min": 50, "max": 80 },
+            "normal": { "min": 45, "max": 90 },
+            "pad": { "min": 40, "max": 110 }
+          },
+          "stateMessages": {
+            "perfect": {
+              "up": { "ar": "ممتاز! ذراعك مفرودة", "en": "Perfect! Arm extended" },
+              "down": { "ar": "ممتاز! ضغط مثالي", "en": "Perfect! Great push-up" }
+            },
+            "normal": {
+              "down": { "ar": "جيد، حاول النزول أكثر", "en": "Good, try going lower" }
+            }
+          },
+          "pairedWith": "left_elbow"
+        }
+      ],
+      "feedbackMessages": {
+        "motivational": [
+          { "ar": "ممتاز!", "en": "Excellent!" }
+        ],
+        "tips": []
+      }
+    }
+  ]
+}

@@ -9,8 +9,10 @@ plugins {
 val localProps = rootProject.file("local.properties")
 val apiProps = Properties()
 if (localProps.exists()) apiProps.load(localProps.inputStream())
-val apiPort = apiProps.getProperty("api.port", "3001")
+val apiMode = apiProps.getProperty("api.mode", "local")
+val apiPort = apiProps.getProperty("api.port", "4000")
 val apiPhysicalIp = apiProps.getProperty("api.physical_device_ip", "192.168.1.18")
+val apiServerUrl = apiProps.getProperty("api.server_url", "https://back.mongz.online/")
 
 android {
     namespace = "com.trainingvalidator.poc"
@@ -25,8 +27,10 @@ android {
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
+        buildConfigField("String", "API_MODE", "\"$apiMode\"")
         buildConfigField("int", "API_PORT", apiPort)
         buildConfigField("String", "API_PHYSICAL_IP", "\"$apiPhysicalIp\"")
+        buildConfigField("String", "API_SERVER_URL", "\"$apiServerUrl\"")
     }
 
     buildTypes {

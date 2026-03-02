@@ -1,0 +1,38 @@
+{
+  "name": {
+    "ar": "سوبر ست مختلط",
+    "en": "Mixed Superset"
+  },
+  "description": {
+    "ar": "تبادل بين سكوات وضغط - 3 عدات من كل تمرين",
+    "en": "Alternate between squat and pushup - 3 reps each"
+  },
+  "type": "super_set",
+  "executionMode": "alternating",
+  "repsPerSwitch": 3,
+  "restBetweenSwitchMs": 5000,
+  "restBetweenRoundsMs": 90000,
+  "rounds": 2,
+  "exercises": [
+    {
+      "exercise": "squat",
+      "variantIndex": 0,
+      "difficulty": "beginner",
+      "target": { "reps": 12 },
+      "notes": {
+        "ar": "انزل حتى يوازي الفخذ الأرض",
+        "en": "Lower until thighs parallel to ground"
+      }
+    },
+    {
+      "exercise": "pushup",
+      "variantIndex": 0,
+      "difficulty": "beginner",
+      "target": { "reps": 9 },
+      "notes": {
+        "ar": "حافظ على استقامة الظهر",
+        "en": "Keep your back straight"
+      }
+    }
+  ]
+}

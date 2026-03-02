@@ -1,0 +1,219 @@
+{
+  "name": {
+    "ar": "القرفصاء",
+    "en": "Squat"
+  },
+  "description": {
+    "ar": "تمرين لتقوية عضلات الأرجل والمؤخرة",
+    "en": "Exercise to strengthen legs and glutes"
+  },
+  "instructions": {
+    "ar": "قف بشكل مستقيم، ثم انزل ببطء حتى تصل ركبتيك لزاوية 90 درجة",
+    "en": "Stand straight, then slowly lower until your knees reach 90 degrees"
+  },
+  "category": {
+    "code": "legs",
+    "name": {
+      "ar": "تمارين الأرجل",
+      "en": "Legs"
+    }
+  },
+  "countingMethod": "up_down",
+  "muscles": ["quadriceps", "glutes", "hamstrings"],
+  "equipment": ["bodyweight", "barbell"],
+  "tags": [],
+  "repCountingConfig": {
+    "reps": 12,
+    "minRepIntervalMs": 800,
+    "maxRepIntervalMs": 5000
+  },
+  "poseVariants": [
+    {
+      "name": {
+        "ar": "زاوية جانبية",
+        "en": "Side View"
+      },
+      "cameraPosition": "side_view",
+      "expectedFacingDirection": "auto_detect",
+      "positionChecks": [
+        {
+          "id": "knee_over_toe",
+          "type": "forward_comparison",
+          "landmarks": {
+            "primary": "left_knee",
+            "secondary": "left_foot_index"
+          },
+          "condition": {
+            "operator": "should_not_exceed",
+            "threshold": 0.05
+          },
+          "activePhases": ["down", "bottom"],
+          "errorMessage": {
+            "ar": "لا تدع ركبتك تتجاوز أصابع قدميك",
+            "en": "Don't let your knee go past your toes"
+          },
+          "severity": "warning",
+          "cooldownMs": 2000,
+          "minErrorFrames": 5
+        },
+        {
+          "id": "hip_behind_knee",
+          "type": "forward_comparison",
+          "landmarks": {
+            "primary": "left_hip",
+            "secondary": "left_knee"
+          },
+          "condition": {
+            "operator": "should_exceed",
+            "threshold": 0.03
+          },
+          "activePhases": ["bottom"],
+          "errorMessage": {
+            "ar": "ادفع الورك للخلف أكثر",
+            "en": "Push your hips back more"
+          },
+          "severity": "warning",
+          "cooldownMs": 2000,
+          "minErrorFrames": 4
+        },
+        {
+          "id": "shoulder_knee_alignment",
+          "type": "vertical_alignment",
+          "landmarks": {
+            "primary": "left_shoulder",
+            "secondary": "left_knee"
+          },
+          "condition": {
+            "operator": "approximately_equal",
+            "threshold": 0.10
+          },
+          "activePhases": ["bottom"],
+          "errorMessage": {
+            "ar": "حافظ على محاذاة الكتف مع الركبة",
+            "en": "Keep shoulder aligned with knee"
+          },
+          "severity": "tip",
+          "cooldownMs": 3000,
+          "minErrorFrames": 6
+        }
+      ],
+      "trackedJoints": [
+        {
+          "joint": "left_knee",
+          "role": "primary",
+          "startPose": { "min": 120, "max": 180 },
+          "upRange": {
+            "perfect": { "min": 150, "max": 180 },
+            "normal":  { "min": 130, "max": 180 }
+          },
+          "downRange": {
+            "perfect": { "min": 60, "max": 90 },
+            "normal":  { "min": 50, "max": 120 },
+            "pad":     { "min": 40, "max": 100 },
+            "warning": { "min": 30, "max": 40 },
+            "danger":  { "min": 0, "max": 30 }
+          },
+          "stateMessages": {
+            "perfect": {
+              "up": { "ar": "ممتاز! قف مستقيماً", "en": "Perfect! Stand tall" },
+              "down": { "ar": "ممتاز! زاوية مثالية", "en": "Perfect! Great angle" }
+            },
+            "normal": {
+              "up": { "ar": "جيد، حاول الوقوف بشكل مستقيم", "en": "Good, try standing straighter" },
+              "down": { "ar": "جيد، حاول النزول أكثر قليلاً", "en": "Good, try going a bit lower" }
+            },
+            "pad": {
+              "down": { "ar": "مقبول، لكن يمكنك التحسن", "en": "Acceptable, but you can improve" }
+            },
+            "warning": {
+              "down": { "ar": "أنت تنزل أكثر من اللازم", "en": "You're going too low" }
+            },
+            "danger": {
+              "down": { "ar": "توقف! هذا قد يؤذي ركبتيك", "en": "Stop! This may hurt your knees" }
+            }
+          },
+          "pairedWith": "right_knee"
+        },
+        {
+          "joint": "right_knee",
+          "role": "primary",
+          "startPose": { "min": 120, "max": 180 },
+          "upRange": {
+            "perfect": { "min": 150, "max": 180 },
+            "normal":  { "min": 130, "max": 180 }
+          },
+          "downRange": {
+            "perfect": { "min": 60, "max": 90 },
+            "normal":  { "min": 50, "max": 120 },
+            "pad":     { "min": 40, "max": 100 },
+            "warning": { "min": 30, "max": 40 },
+            "danger":  { "min": 0, "max": 30 }
+          },
+          "stateMessages": {
+            "perfect": {
+              "up": { "ar": "ممتاز! قف مستقيماً", "en": "Perfect! Stand tall" },
+              "down": { "ar": "ممتاز! زاوية مثالية", "en": "Perfect! Great angle" }
+            },
+            "normal": {
+              "up": { "ar": "جيد، حاول الوقوف بشكل مستقيم", "en": "Good, try standing straighter" },
+              "down": { "ar": "جيد، حاول النزول أكثر قليلاً", "en": "Good, try going a bit lower" }
+            },
+            "pad": {
+              "down": { "ar": "مقبول، لكن يمكنك التحسن", "en": "Acceptable, but you can improve" }
+            },
+            "warning": {
+              "down": { "ar": "أنت تنزل أكثر من اللازم", "en": "You're going too low" }
+            },
+            "danger": {
+              "down": { "ar": "توقف! هذا قد يؤذي ركبتيك", "en": "Stop! This may hurt your knees" }
+            }
+          },
+          "pairedWith": "left_knee"
+        },
+        {
+          "joint": "left_hip",
+          "role": "secondary",
+          "startPose": { "min": 120, "max": 180 },
+          "range": {
+            "perfect": { "min": 160, "max": 180 },
+            "normal":  { "min": 155, "max": 180 },
+            "warning": { "min": 140, "max": 155 }
+          },
+          "stateMessages": {
+            "perfect": { "ar": "ممتاز - الورك ثابت", "en": "Great - hips are stable" },
+            "warning": { "ar": "حافظ على استقامة الورك", "en": "Keep your hips aligned" }
+          }
+        },
+        {
+          "joint": "spine",
+          "role": "secondary",
+          "startPose": { "min": 0, "max": 15 },
+          "range": {
+            "perfect": { "min": 0, "max": 10 },
+            "normal":  { "min": 0, "max": 15 },
+            "pad":     { "min": 0, "max": 20 },
+            "warning": { "min": 20, "max": 30 },
+            "danger":  { "min": 30, "max": 90 }
+          },
+          "stateMessages": {
+            "perfect": { "ar": "ممتاز - ظهرك مستقيم", "en": "Great - back is straight" },
+            "warning": { "ar": "حافظ على استقامة الجذع", "en": "Keep your torso upright" },
+            "danger": { "ar": "ظهرك منحني جداً! قد تتعرض للإصابة", "en": "Your back is too rounded! Risk of injury" }
+          }
+        }
+      ],
+      "feedbackMessages": {
+        "motivational": [
+          { "ar": "ممتاز! استمر!", "en": "Excellent! Keep going!" },
+          { "ar": "أداء رائع!", "en": "Great form!" },
+          { "ar": "قوي! لا تتوقف!", "en": "Strong! Don't stop!" }
+        ],
+        "tips": [
+          { "ar": "ادفع من كعبيك للصعود", "en": "Push through your heels to stand up" },
+          { "ar": "انظر للأمام وليس للأسفل", "en": "Look forward, not down" },
+          { "ar": "شد عضلات بطنك طوال الحركة", "en": "Keep your core engaged throughout" }
+        ]
+      }
+    }
+  ]
+}

@@ -68,10 +68,6 @@ export class ReportsController {
       // ── Get metrics ──
       const result = await reportsService.getMetrics(authResult.userId, query);
 
-      if (!result.success) {
-        res.status(404);
-      }
-
       return result;
     } catch (error) {
       console.error('[Reports] Error:', error);

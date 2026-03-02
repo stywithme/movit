@@ -1,0 +1,104 @@
+{
+  "name": {
+    "ar": "الانحناء الأمامي (تقييم)",
+    "en": "Forward Fold (Assessment)"
+  },
+  "description": {
+    "ar": "حركة تقييمية لفحص مرونة خلفية الفخذ وأسفل الظهر",
+    "en": "Assessment movement to evaluate hamstring and lower back flexibility"
+  },
+  "instructions": {
+    "ar": "قف بشكل مستقيم ثم انحنِ ببطء للأمام محاولاً لمس أصابع قدميك، ابق لمدة 10 ثواني",
+    "en": "Stand straight then slowly bend forward trying to touch your toes, hold for 10 seconds"
+  },
+  "category": {
+    "code": "assessment",
+    "name": {
+      "ar": "تقييم",
+      "en": "Assessment"
+    }
+  },
+  "countingMethod": "hold",
+  "muscles": ["hamstrings", "lower_back", "glutes"],
+  "equipment": ["bodyweight"],
+  "tags": ["assessment", "flexibility", "hold_tag"],
+  "repCountingConfig": {
+    "duration": 10,
+    "gracePeriodMs": 3000
+  },
+  "poseVariants": [
+    {
+      "name": {
+        "ar": "زاوية جانبية",
+        "en": "Side View"
+      },
+      "cameraPosition": "side_view",
+      "expectedFacingDirection": "auto_detect",
+      "positionChecks": [
+        {
+          "id": "knee_bend_compensation",
+          "type": "forward_comparison",
+          "landmarks": {
+            "primary": "left_knee",
+            "secondary": "left_hip"
+          },
+          "condition": {
+            "operator": "approximately_equal",
+            "threshold": 0.08
+          },
+          "activePhases": ["start"],
+          "errorMessage": {
+            "ar": "ثني الركبة أثناء الانحناء",
+            "en": "Knee bending during fold"
+          },
+          "severity": "warning",
+          "cooldownMs": 4000,
+          "minErrorFrames": 5
+        }
+      ],
+      "trackedJoints": [
+        {
+          "joint": "left_hip",
+          "role": "primary",
+          "startPose": { "min": 120, "max": 180 },
+          "range": {
+            "perfect": { "min": 60, "max": 95 },
+            "normal":  { "min": 90, "max": 120 },
+            "pad":     { "min": 110, "max": 140 },
+            "warning": { "min": 140, "max": 165 }
+          },
+          "stateMessages": {
+            "perfect": { "ar": "مرونة ممتازة", "en": "Excellent flexibility" },
+            "normal":  { "ar": "مرونة جيدة", "en": "Good flexibility" },
+            "pad":     { "ar": "مرونة مقبولة", "en": "Fair flexibility" },
+            "warning": { "ar": "مرونة محدودة", "en": "Limited flexibility" }
+          }
+        },
+        {
+          "joint": "left_knee",
+          "role": "secondary",
+          "startPose": { "min": 120, "max": 180 },
+          "range": {
+            "perfect": { "min": 150, "max": 175 },
+            "normal":  { "min": 140, "max": 180 },
+            "warning": { "min": 120, "max": 140 }
+          },
+          "stateMessages": {
+            "perfect": { "ar": "ركبة مستقيمة", "en": "Knee straight" },
+            "warning": { "ar": "ثني في الركبة", "en": "Knee bending" }
+          }
+        }
+      ],
+      "feedbackMessages": {
+        "motivational": [
+          { "ar": "ثبات جيد", "en": "Good hold" },
+          { "ar": "ممتاز", "en": "Excellent" }
+        ],
+        "tips": [
+          { "ar": "حافظ على ركبتيك مستقيمتين", "en": "Keep your knees straight" },
+          { "ar": "تنفّس ببطء واسترخ", "en": "Breathe slowly and relax" }
+        ]
+      }
+    }
+  ]
+}

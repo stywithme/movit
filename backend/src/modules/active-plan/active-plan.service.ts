@@ -92,9 +92,10 @@ export const activePlanService = {
     });
 
     if (!plan) {
-      // Create a new empty plan
-      plan = await prisma.activePlan.create({
-        data: { userId, status: 'active' },
+      plan = await prisma.activePlan.upsert({
+        where: { userId },
+        create: { userId, status: 'active' },
+        update: {},
         include: {
           programs: {
             orderBy: { sortOrder: 'asc' },
@@ -171,12 +172,11 @@ export const activePlanService = {
     const prisma = await getPrisma();
 
     // Ensure plan exists
-    let plan = await prisma.activePlan.findUnique({ where: { userId } });
-    if (!plan) {
-      plan = await prisma.activePlan.create({
-        data: { userId, status: 'active' },
-      });
-    }
+    let plan = await prisma.activePlan.upsert({
+      where: { userId },
+      create: { userId, status: 'active' },
+      update: {},
+    });
 
     // Create UserProgram enrollment
     const userProgram = await prisma.userProgram.create({

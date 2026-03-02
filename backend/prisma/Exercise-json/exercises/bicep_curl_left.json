@@ -1,0 +1,146 @@
+{
+  "name": {
+    "ar": "ثني الذراع الشمال (بايسبس)",
+    "en": "Bicep Curl - Left Arm"
+  },
+  "description": {
+    "ar": "تمرين لتقوية عضلة البايسبس للذراع الشمال فقط",
+    "en": "Exercise to strengthen the left arm biceps only"
+  },
+  "instructions": {
+    "ar": "قف بشكل مستقيم، اثني مرفقك الشمال لرفع الوزن نحو الكتف. الذراع اليمين ثابتة.",
+    "en": "Stand straight, bend left elbow to curl weight toward shoulder. Keep right arm still."
+  },
+  "category": {
+    "code": "arms",
+    "name": {
+      "ar": "تمارين الذراعين",
+      "en": "Arms"
+    }
+  },
+  "countingMethod": "up_down",
+  "muscles": ["biceps", "forearms"],
+  "equipment": ["dumbbell"],
+  "tags": ["isolation", "upper-body", "single-arm", "left"],
+  "repCountingConfig": {
+    "reps": 12,
+    "minRepIntervalMs": 1200,
+    "maxRepIntervalMs": 4000
+  },
+  "poseVariants": [
+    {
+      "name": {
+        "ar": "زاوية جانبية - الذراع الشمال",
+        "en": "Side View - Left Arm"
+      },
+      "cameraPosition": "front_view",
+      "expectedFacingDirection": "facing_camera",
+      "positionChecks": [
+        {
+          "id": "elbow_stable_left",
+          "type": "vertical_alignment",
+          "landmarks": {
+            "primary": "left_elbow",
+            "secondary": "left_hip"
+          },
+          "condition": {
+            "operator": "approximately_equal",
+            "threshold": 0.08
+          },
+          "activePhases": ["up", "down"],
+          "errorMessage": {
+            "ar": "ثبّت مرفقك الشمال بجانب جسمك",
+            "en": "Keep your left elbow close to your body"
+          },
+          "severity": "warning",
+          "cooldownMs": 2000,
+          "minErrorFrames": 4
+        }
+      ],
+      "trackedJoints": [
+        {
+          "joint": "left_elbow",
+          "role": "primary",
+          "invertIndicator": true,
+          "startPose": {
+            "min": 120,
+            "max": 180
+          },
+          "upRange": {
+            "perfect": { "min": 155, "max": 180 },
+            "normal": { "min": 150, "max": 180 },
+            "pad": { "min": 140, "max": 180 }
+          },
+          "downRange": {
+            "perfect": { "min": 60, "max": 90 },
+            "normal": { "min": 55, "max": 100 },
+            "pad": { "min": 50, "max": 115 }
+          },
+          "stateMessages": {
+            "perfect": {
+              "up": { "ar": "ممتاز! ذراعك مفرودة", "en": "Perfect! Arm extended" },
+              "down": { "ar": "ممتاز! ثني مثالي", "en": "Perfect! Great curl" }
+            },
+            "normal": {
+              "up": { "ar": "جيد، حاول فرد الذراع أكثر", "en": "Good, try extending more" },
+              "down": { "ar": "جيد، حاول الثني أكثر", "en": "Good, try curling more" }
+            },
+            "pad": {
+              "down": { "ar": "مقبول، اقترب من الكتف أكثر", "en": "Acceptable, get closer to shoulder" }
+            },
+            "warning": {
+              "down": { "ar": "ارفع الوزن أكثر", "en": "Curl up more" }
+            }
+          }
+        },
+        {
+          "joint": "right_elbow",
+          "role": "secondary",
+          "startPose": {
+            "min": 120,
+            "max": 180
+          },
+          "range": {
+            "perfect": { "min": 160, "max": 180 },
+            "normal": { "min": 150, "max": 180 },
+            "pad": { "min": 100, "max": 180 },
+            "warning": { "min": 70, "max": 100 }
+          },
+          "stateMessages": {
+            "perfect": { "ar": "ممتاز - الذراع اليمين ثابتة", "en": "Great - right arm is stable" },
+            "warning": { "ar": "حافظ على ثبات الذراع اليمين", "en": "Keep right arm still" }
+          }
+        },
+        {
+          "joint": "left_shoulder",
+          "role": "secondary",
+          "startPose": {
+            "min": 0,
+            "max": 30
+          },
+          "range": {
+            "perfect": { "min": 0, "max": 45 },
+            "normal": { "min": 0, "max": 55 },
+            "pad": { "min": 0, "max": 65 },
+            "warning": { "min": 65, "max": 90 }
+          },
+          "stateMessages": {
+            "perfect": { "ar": "ممتاز - الكتف ثابت", "en": "Great - shoulder is stable" },
+            "warning": { "ar": "لا ترفع كتفك - ثبّته", "en": "Don't lift your shoulder - keep it stable" }
+          }
+        }
+      ],
+      "feedbackMessages": {
+        "motivational": [
+          { "ar": "ممتاز! الذراع الشمال قوية!", "en": "Excellent! Strong left arm!" },
+          { "ar": "استمر! أداء رائع!", "en": "Keep going! Great form!" }
+        ],
+        "tips": [
+          { "ar": "اعصر عضلة البايسبس في أعلى الحركة", "en": "Squeeze bicep at the top" },
+          { "ar": "تنفس: زفير عند الرفع، شهيق عند النزول", "en": "Breathe: exhale lifting, inhale lowering" },
+          { "ar": "لا تحرك مرفقك - ثبّته بجانبك", "en": "Don't swing your elbow - keep it at your side" }
+        ]
+      }
+    }
+  ]
+}

@@ -1,0 +1,114 @@
+{
+  "name": {
+    "ar": "مرونة الكتف (تقييم)",
+    "en": "Shoulder Mobility (Assessment)"
+  },
+  "description": {
+    "ar": "حركة تقييمية لفحص مدى حركة الكتف والتماثل بين الجانبين",
+    "en": "Assessment movement to evaluate shoulder range of motion and bilateral symmetry"
+  },
+  "instructions": {
+    "ar": "قف بشكل مستقيم وارفع ذراعك ببطء فوق رأسك ثم أنزله، بدّل بين الذراعين",
+    "en": "Stand straight and slowly raise your arm overhead then lower it, alternate arms"
+  },
+  "category": {
+    "code": "assessment",
+    "name": {
+      "ar": "تقييم",
+      "en": "Assessment"
+    }
+  },
+  "countingMethod": "up_down",
+  "muscles": ["shoulders", "upper_back", "rotator_cuff"],
+  "equipment": ["bodyweight"],
+  "tags": ["assessment", "upper_body", "mobility", "bilateral"],
+  "isBilateral": true,
+  "bilateralConfig": {
+    "switchEvery": 1,
+    "startSide": "right"
+  },
+  "repCountingConfig": {
+    "reps": 10,
+    "minRepIntervalMs": 1500,
+    "maxRepIntervalMs": 6000
+  },
+  "poseVariants": [
+    {
+      "name": {
+        "ar": "زاوية جانبية",
+        "en": "Side View"
+      },
+      "cameraPosition": "side_view",
+      "expectedFacingDirection": "auto_detect",
+      "positionChecks": [
+        {
+          "id": "back_arch_compensation",
+          "type": "vertical_alignment",
+          "landmarks": {
+            "primary": "right_shoulder",
+            "secondary": "right_hip"
+          },
+          "condition": {
+            "operator": "approximately_equal",
+            "threshold": 0.1
+          },
+          "activePhases": ["up", "start"],
+          "errorMessage": {
+            "ar": "تقوّس الظهر أثناء رفع الذراع",
+            "en": "Back arching during arm raise"
+          },
+          "severity": "warning",
+          "cooldownMs": 3000,
+          "minErrorFrames": 4
+        }
+      ],
+      "trackedJoints": [
+        {
+          "joint": "right_shoulder",
+          "role": "primary",
+          "startPose": {"min": 40, "max": 100},
+          "upRange": {
+            "perfect": {"min": 140, "max": 175},
+            "normal": {"min": 120, "max": 180},
+            "pad": {"min": 100, "max": 180},
+            "warning": {"min": 80, "max": 100}
+          },
+          "downRange": {
+            "perfect": {"min": 50, "max": 80},
+            "normal": {"min": 40, "max": 100}
+          },
+          "stateMessages": {
+            "perfect": {"up": {"ar": "مدى حركة ممتاز", "en": "Excellent range of motion"}, "down": {"ar": "ممتاز", "en": "Perfect"}},
+            "normal": {"up": {"ar": "جيد", "en": "Good"}},
+            "warning": {"up": {"ar": "محدودية في الكتف", "en": "Limited shoulder mobility"}}
+          },
+          "invertIndicator": true
+        },
+        {
+          "joint": "right_hip",
+          "role": "secondary",
+          "startPose": {"min": 120, "max": 180},
+          "range": {
+            "perfect": {"min": 150, "max": 175},
+            "normal": {"min": 140, "max": 180},
+            "warning": {"min": 120, "max": 140}
+          },
+          "stateMessages": {
+            "perfect": {"ar": "جذع ثابت", "en": "Trunk stable"},
+            "warning": {"ar": "تقوّس في الظهر", "en": "Back arching"}
+          }
+        }
+      ],
+      "feedbackMessages": {
+        "motivational": [
+          {"ar": "حركة سلسة", "en": "Smooth movement"},
+          {"ar": "ممتاز", "en": "Excellent"}
+        ],
+        "tips": [
+          {"ar": "ارفع ذراعك ببطء", "en": "Raise your arm slowly"},
+          {"ar": "حافظ على ثبات الجذع", "en": "Keep your torso still"}
+        ]
+      }
+    }
+  ]
+}

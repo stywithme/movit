@@ -1,0 +1,70 @@
+{
+  "name": {
+    "ar": "ثبات الذراع المرفوعة",
+    "en": "Arm Hold"
+  },
+  "description": {
+    "ar": "تمرين بسيط لاختبار الثبات - ارفع ذراعك اليمنى للأعلى وابقِها مرفوعة",
+    "en": "Simple hold test - raise your right arm up and keep it raised"
+  },
+  "instructions": {
+    "ar": "قف بشكل مستقيم وارفع ذراعك اليمنى للأعلى بشكل مستقيم فوق رأسك",
+    "en": "Stand straight and raise your right arm straight up above your head"
+  },
+  "category": {
+    "code": "test",
+    "name": {
+      "ar": "اختبار",
+      "en": "Test"
+    }
+  },
+  "countingMethod": "hold",
+  "muscles": ["shoulders", "arms"],
+  "equipment": ["bodyweight"],
+  "tags": ["test", "easy", "hold"],
+  "repCountingConfig": {
+    "duration": 15,
+    "gracePeriodMs": 2500
+  },
+  "poseVariants": [
+    {
+      "name": {
+        "ar": "زاوية أمامية",
+        "en": "Front View"
+      },
+      "cameraPosition": "front_view",
+      "trackedJoints": [
+        {
+          "joint": "right_shoulder",
+          "role": "primary",
+          "startPose": {
+            "min": 120,
+            "max": 180
+          },
+          "range": {
+            "perfect": { "min": 160, "max": 180 },
+            "normal": { "min": 155, "max": 180 },
+            "pad": { "min": 145, "max": 180 },
+            "warning": { "min": 0, "max": 145 }
+          },
+          "stateMessages": {
+            "perfect": { "ar": "ممتاز! ثبات مثالي!", "en": "Perfect! Great hold!" },
+            "normal": { "ar": "جيد، حاول رفع الذراع أكثر", "en": "Good, try raising arm more" },
+            "pad": { "ar": "مقبول، لكن يمكنك التحسن", "en": "Acceptable, but you can improve" },
+            "warning": { "ar": "ارفع ذراعك أكثر", "en": "Raise arm higher" },
+            "danger": { "ar": "الذراع منخفضة جداً!", "en": "Arm too low!" }
+          }
+        }
+      ],
+      "feedbackMessages": {
+        "motivational": [
+          { "ar": "استمر! ذراعك مرفوعة!", "en": "Keep going! Arm up!" },
+          { "ar": "ممتاز! حافظ على الوضع!", "en": "Excellent! Hold it!" }
+        ],
+        "tips": [
+          { "ar": "حافظ على استقامة الذراع", "en": "Keep your arm straight" }
+        ]
+      }
+    }
+  ]
+}

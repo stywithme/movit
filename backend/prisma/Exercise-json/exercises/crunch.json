@@ -1,0 +1,101 @@
+{
+  "name": {
+    "ar": "تمرين البطن (كرانش)",
+    "en": "Crunch"
+  },
+  "description": {
+    "ar": "تمرين كلاسيكي لتقوية عضلات البطن العلوية",
+    "en": "Classic exercise to strengthen upper abdominal muscles"
+  },
+  "instructions": {
+    "ar": "استلقِ على ظهرك مع ثني الركبتين، ثم ارفع كتفيك عن الأرض نحو ركبتيك",
+    "en": "Lie on back with knees bent, lift shoulders off floor toward knees"
+  },
+  "category": {
+    "code": "core",
+    "name": {
+      "ar": "تمارين الجذع",
+      "en": "Core"
+    }
+  },
+  "countingMethod": "up_down",
+  "muscles": ["abs", "core"],
+  "equipment": ["bodyweight"],
+  "tags": ["isolation", "core", "no-equipment", "beginner-friendly"],
+  "repCountingConfig": {
+    "reps": 20,
+    "minRepIntervalMs": 800,
+    "maxRepIntervalMs": 3000
+  },
+  "poseVariants": [
+    {
+      "name": {
+        "ar": "زاوية جانبية",
+        "en": "Side View"
+      },
+      "cameraPosition": "side_view",
+      "expectedFacingDirection": "auto_detect",
+      "trackedJoints": [
+        {
+          "joint": "spine",
+          "role": "primary",
+          "startPose": { "min": 0, "max": 20 },
+          "upRange": {
+            "perfect": { "min": 40, "max": 60 },
+            "normal": { "min": 35, "max": 55 },
+            "pad": { "min": 30, "max": 50 },
+            "warning": { "min": 60, "max": 75 },
+            "danger": { "min": 75, "max": 90 }
+          },
+          "downRange": {
+            "perfect": { "min": 0, "max": 15 },
+            "normal": { "min": 0, "max": 20 },
+            "pad": { "min": 0, "max": 25 }
+          },
+          "stateMessages": {
+            "perfect": {
+              "up": { "ar": "ممتاز! كرانش مثالي", "en": "Perfect! Great crunch" },
+              "down": { "ar": "ممتاز! عودة مثالية", "en": "Perfect! Great return" }
+            },
+            "normal": {
+              "up": { "ar": "جيد، حاول رفع الكتفين أكثر", "en": "Good, try lifting shoulders more" },
+              "down": { "ar": "جيد، حاول النزول للأسفل", "en": "Good, try lowering more" }
+            },
+            "pad": {
+              "up": { "ar": "مقبول، لكن يمكنك التحسن", "en": "Acceptable, but you can improve" }
+            },
+            "warning": {
+              "up": { "ar": "لا ترفع كثيراً - هذا كرانش وليس sit-up", "en": "Don't go too high - this is a crunch, not sit-up" }
+            },
+            "danger": {
+              "up": { "ar": "توقف! ترفع أكثر من اللازم", "en": "Stop! You're going too high" }
+            }
+          }
+        },
+        {
+          "joint": "left_knee",
+          "role": "secondary",
+          "startPose": { "min": 80, "max": 110 },
+          "range": {
+            "perfect": { "min": 85, "max": 105 },
+            "normal": { "min": 80, "max": 110 },
+            "pad": { "min": 75, "max": 115 }
+          },
+          "stateMessages": {
+            "perfect": { "ar": "ممتاز - الركبتان مثنيتان", "en": "Great - knees are bent" }
+          }
+        }
+      ],
+      "feedbackMessages": {
+        "motivational": [
+          { "ar": "بطن قوية!", "en": "Strong abs!" },
+          { "ar": "ممتاز! استمر!", "en": "Excellent! Keep going!" }
+        ],
+        "tips": [
+          { "ar": "زفير عند الصعود، شهيق عند النزول", "en": "Exhale going up, inhale going down" },
+          { "ar": "تخيل أنك تقرب أضلاعك من حوضك", "en": "Imagine bringing ribs to pelvis" }
+        ]
+      }
+    }
+  ]
+}

@@ -1,0 +1,40 @@
+{
+  "name": {
+    "ar": "فحص الجسم الشامل",
+    "en": "Body Scan Assessment"
+  },
+  "description": {
+    "ar": "اختبار حركي شامل لتقييم مرونة الجسم والتوازن والتماثل. يتكون من 3 حركات أساسية وحركات إضافية عند الحاجة.",
+    "en": "Comprehensive movement assessment to evaluate body mobility, balance, and symmetry. Consists of 3 core movements with adaptive extras."
+  },
+  "restBetweenExercisesMs": 15000,
+  "exercises": [
+    {
+      "exercise": "assessment_overhead_squat",
+      "variantIndex": 0,
+      "target": { "reps": 5 },
+      "notes": {
+        "ar": "5 تكرارات بإيقاع مريح — هذا الاختبار يقيس مرونة الورك والكاحل والكتف وثبات الجذع",
+        "en": "5 reps at comfortable pace — this test measures hip, ankle, shoulder mobility and trunk stability"
+      }
+    },
+    {
+      "exercise": "assessment_lunge",
+      "variantIndex": 0,
+      "target": { "reps": 6 },
+      "notes": {
+        "ar": "3 تكرارات لكل رجل — يقيس التماثل بين الساقين والتوازن",
+        "en": "3 reps per leg — measures leg symmetry and balance"
+      }
+    },
+    {
+      "exercise": "assessment_shoulder_mobility",
+      "variantIndex": 0,
+      "target": { "reps": 10 },
+      "notes": {
+        "ar": "5 تكرارات لكل ذراع — يقيس مرونة الكتف والتماثل",
+        "en": "5 reps per arm — measures shoulder mobility and symmetry"
+      }
+    }
+  ]
+}

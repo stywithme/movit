@@ -1,0 +1,37 @@
+{
+  "name": {
+    "ar": "تبادل الذراعين - بايسبس",
+    "en": "Alternating Arms - Bicep Curl"
+  },
+  "description": {
+    "ar": "تمرين بايسبس تبادلي: الذراع الشمال ثم الذراع اليمين",
+    "en": "Alternating bicep curl workout: left arm then right arm"
+  },
+  "type": "circuit",
+  "executionMode": "sequential",
+  "rounds": 2,
+  "restBetweenExercisesMs": 10000,
+  "restBetweenRoundsMs": 60000,
+  "exercises": [
+    {
+      "exercise": "bicep_curl_left",
+      "variantIndex": 0,
+      "difficulty": "beginner",
+      "target": { "reps": 10 },
+      "notes": {
+        "ar": "ركز على الذراع الشمال فقط",
+        "en": "Focus on left arm only"
+      }
+    },
+    {
+      "exercise": "bicep_curl_right",
+      "variantIndex": 0,
+      "difficulty": "beginner",
+      "target": { "reps": 10 },
+      "notes": {
+        "ar": "ركز على الذراع اليمين فقط",
+        "en": "Focus on right arm only"
+      }
+    }
+  ]
+}

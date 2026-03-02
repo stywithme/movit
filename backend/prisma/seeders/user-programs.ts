@@ -138,8 +138,8 @@ export async function seedUserPrograms(prisma: PrismaClient) {
     try {
       return await prisma.program.findUnique({ where: { slug: 'starter-4-weeks' } });
     } catch (error: any) {
-      if (error?.code === 'P2021') {
-        console.warn('⚠️ Programs table missing. Skipping user program seed.');
+      if (error?.code === 'P2021' || error?.code === 'P2022') {
+        console.warn('⚠️ Programs table/column issue. Skipping user program seed.');
         return null;
       }
       throw error;

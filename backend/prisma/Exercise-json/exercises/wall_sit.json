@@ -1,0 +1,150 @@
+{
+  "name": {
+    "ar": "الجلوس على الحائط",
+    "en": "Wall Sit"
+  },
+  "description": {
+    "ar": "تمرين ثبات لتقوية عضلات الفخذ والقدرة على التحمل",
+    "en": "Isometric exercise to strengthen quadriceps and build endurance"
+  },
+  "instructions": {
+    "ar": "اسند ظهرك على الحائط وانزل حتى تصبح ركبتيك بزاوية 90 درجة كأنك جالس على كرسي غير مرئي",
+    "en": "Lean back against a wall and lower until knees are at 90 degrees like sitting on an invisible chair"
+  },
+  "category": {
+    "code": "legs",
+    "name": {
+      "ar": "تمارين الأرجل",
+      "en": "Legs"
+    }
+  },
+  "countingMethod": "hold",
+  "muscles": ["quadriceps", "glutes", "hamstrings", "core"],
+  "equipment": ["bodyweight"],
+  "tags": ["isometric", "endurance", "no-equipment"],
+  "repCountingConfig": {
+    "duration": 45,
+    "gracePeriodMs": 2500
+  },
+  "poseVariants": [
+    {
+      "name": {
+        "ar": "زاوية جانبية",
+        "en": "Side View"
+      },
+      "cameraPosition": "side_view",
+      "expectedFacingDirection": "auto_detect",
+      "positionChecks": [
+        {
+          "id": "back_against_wall",
+          "type": "vertical_alignment",
+          "landmarks": {
+            "primary": "left_shoulder",
+            "secondary": "left_hip"
+          },
+          "condition": {
+            "operator": "approximately_equal",
+            "threshold": 0.05
+          },
+          "activePhases": ["count", "hold"],
+          "errorMessage": {
+            "ar": "اسند ظهرك بالكامل على الحائط",
+            "en": "Press your back fully against the wall"
+          },
+          "severity": "error",
+          "cooldownMs": 2000,
+          "minErrorFrames": 5
+        },
+        {
+          "id": "knee_over_ankle",
+          "type": "vertical_alignment",
+          "landmarks": {
+            "primary": "left_knee",
+            "secondary": "left_ankle"
+          },
+          "condition": {
+            "operator": "approximately_equal",
+            "threshold": 0.07
+          },
+          "activePhases": ["count", "hold"],
+          "errorMessage": {
+            "ar": "حافظ على الركبة فوق الكاحل مباشرة",
+            "en": "Keep knee directly over ankle"
+          },
+          "severity": "warning",
+          "cooldownMs": 2000,
+          "minErrorFrames": 4
+        }
+      ],
+      "trackedJoints": [
+        {
+          "joint": "left_knee",
+          "role": "primary",
+          "startPose": {
+            "min": 75,
+            "max": 110
+          },
+          "range": {
+            "perfect": { "min": 88, "max": 95 },
+            "normal": { "min": 85, "max": 100 },
+            "pad": { "min": 80, "max": 110 },
+            "warning": { "min": 60, "max": 80 },
+            "danger": { "min": 0, "max": 60 }
+          },
+          "stateMessages": {
+            "perfect": { "ar": "ممتاز! وضعية مثالية", "en": "Perfect! Great position" },
+            "normal": { "ar": "جيد، حاول النزول أكثر قليلاً", "en": "Good, try going a bit lower" },
+            "pad": { "ar": "مقبول، لكن يمكنك التحسن", "en": "Acceptable, but you can improve" },
+            "warning": { "ar": "انزل أكثر - ركبتيك بزاوية 90 درجة", "en": "Lower down - knees at 90 degrees" },
+            "danger": { "ar": "توقف! ركبتيك منخفضة جداً", "en": "Stop! Knees too low" }
+          },
+          "pairedWith": "right_knee"
+        },
+        {
+          "joint": "right_knee",
+          "role": "primary",
+          "startPose": { "min": 75, "max": 110 },
+          "range": {
+            "perfect": { "min": 88, "max": 95 },
+            "normal": { "min": 85, "max": 100 },
+            "pad": { "min": 80, "max": 110 },
+            "warning": { "min": 60, "max": 80 },
+            "danger": { "min": 0, "max": 60 }
+          },
+          "stateMessages": {
+            "perfect": { "ar": "ممتاز! وضعية مثالية", "en": "Perfect! Great position" },
+            "normal": { "ar": "جيد، حاول النزول أكثر قليلاً", "en": "Good, try going a bit lower" },
+            "pad": { "ar": "مقبول، لكن يمكنك التحسن", "en": "Acceptable, but you can improve" },
+            "warning": { "ar": "انزل للوضع الصحيح", "en": "Lower to the correct position" },
+            "danger": { "ar": "توقف! ركبتيك منخفضة جداً", "en": "Stop! Knees too low" }
+          },
+          "pairedWith": "left_knee"
+        },
+        {
+          "joint": "left_hip",
+          "role": "secondary",
+          "startPose": { "min": 75, "max": 110 },
+          "range": {
+            "perfect": { "min": 88, "max": 95 },
+            "normal": { "min": 85, "max": 100 },
+            "pad": { "min": 80, "max": 110 }
+          },
+          "stateMessages": {
+            "perfect": { "ar": "ممتاز - الفخذان موازيان للأرض", "en": "Great - thighs parallel to floor" }
+          }
+        }
+      ],
+      "feedbackMessages": {
+        "motivational": [
+          { "ar": "استمر! أنت قوي!", "en": "Hold on! You're strong!" },
+          { "ar": "لا تستسلم!", "en": "Don't give up!" },
+          { "ar": "ثابر! أوشكت على الانتهاء!", "en": "Persist! Almost done!" }
+        ],
+        "tips": [
+          { "ar": "تنفس بانتظام ولا تحبس أنفاسك", "en": "Breathe steadily, don't hold breath" },
+          { "ar": "انظر للأمام لتحسين التركيز", "en": "Look forward to improve focus" }
+        ]
+      }
+    }
+  ]
+}

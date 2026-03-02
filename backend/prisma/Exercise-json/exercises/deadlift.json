@@ -1,0 +1,161 @@
+{
+  "name": {
+    "ar": "الرفعة الميتة",
+    "en": "Deadlift"
+  },
+  "description": {
+    "ar": "تمرين مركب لتقوية الظهر والأرجل والجذع بالكامل",
+    "en": "Compound exercise to strengthen back, legs, and entire core"
+  },
+  "instructions": {
+    "ar": "قف أمام البار، انحني لإمساكه، ثم ارفعه بدفع الوركين للأمام والوقوف",
+    "en": "Stand in front of bar, bend to grip it, lift by driving hips forward"
+  },
+  "category": {
+    "code": "back",
+    "name": {
+      "ar": "تمارين الظهر",
+      "en": "Back"
+    }
+  },
+  "countingMethod": "up_down",
+  "muscles": ["hamstrings", "glutes", "lower_back", "traps", "forearms"],
+  "equipment": ["barbell", "dumbbell", "kettlebell"],
+  "tags": ["compound", "strength", "full-body"],
+  "repCountingConfig": {
+    "reps": 10,
+    "minRepIntervalMs": 2000,
+    "maxRepIntervalMs": 6000
+  },
+  "poseVariants": [
+    {
+      "name": {
+        "ar": "زاوية جانبية",
+        "en": "Side View"
+      },
+      "cameraPosition": "side_view",
+      "expectedFacingDirection": "auto_detect",
+      "positionChecks": [
+        {
+          "id": "back_straight",
+          "type": "vertical_alignment",
+          "landmarks": {
+            "primary": "left_shoulder",
+            "secondary": "left_hip"
+          },
+          "condition": {
+            "operator": "approximately_equal",
+            "threshold": 0.08
+          },
+          "activePhases": ["up", "down"],
+          "errorMessage": {
+            "ar": "حافظ على استقامة ظهرك - لا تقوسه",
+            "en": "Keep back straight - don't round it"
+          },
+          "severity": "error",
+          "cooldownMs": 2000,
+          "minErrorFrames": 4
+        }
+      ],
+      "trackedJoints": [
+        {
+          "joint": "left_hip",
+          "role": "primary",
+          "startPose": { "min": 160, "max": 180 },
+          "upRange": {
+            "perfect": { "min": 170, "max": 180 },
+            "normal": { "min": 165, "max": 180 },
+            "pad": { "min": 155, "max": 180 }
+          },
+          "downRange": {
+            "perfect": { "min": 80, "max": 95 },
+            "normal": { "min": 75, "max": 100 },
+            "pad": { "min": 70, "max": 110 },
+            "warning": { "min": 50, "max": 70 },
+            "danger": { "min": 0, "max": 50 }
+          },
+          "stateMessages": {
+            "perfect": {
+              "up": { "ar": "ممتاز! قف مستقيماً", "en": "Perfect! Stand tall" },
+              "down": { "ar": "ممتاز! وضعية مثالية", "en": "Perfect! Great form" }
+            },
+            "normal": {
+              "up": { "ar": "جيد، حاول الوقوف بشكل مستقيم", "en": "Good, try standing straighter" },
+              "down": { "ar": "جيد، حاول النزول أكثر قليلاً", "en": "Good, try going a bit lower" }
+            },
+            "pad": {
+              "down": { "ar": "مقبول، لكن يمكنك التحسن", "en": "Acceptable, but you can improve" }
+            },
+            "warning": {
+              "down": { "ar": "انزل أكثر من اللازم", "en": "Going too low" }
+            },
+            "danger": {
+              "down": { "ar": "توقف! هذا قد يؤذي ظهرك", "en": "Stop! This may hurt your back" }
+            }
+          },
+          "pairedWith": "right_hip"
+        },
+        {
+          "joint": "right_hip",
+          "role": "primary",
+          "startPose": { "min": 160, "max": 180 },
+          "upRange": {
+            "perfect": { "min": 170, "max": 180 },
+            "normal": { "min": 165, "max": 180 },
+            "pad": { "min": 155, "max": 180 }
+          },
+          "downRange": {
+            "perfect": { "min": 80, "max": 95 },
+            "normal": { "min": 75, "max": 100 },
+            "pad": { "min": 70, "max": 110 },
+            "warning": { "min": 50, "max": 70 },
+            "danger": { "min": 0, "max": 50 }
+          },
+          "stateMessages": {
+            "perfect": {
+              "up": { "ar": "ممتاز! قف مستقيماً", "en": "Perfect! Stand tall" },
+              "down": { "ar": "ممتاز! وضعية مثالية", "en": "Perfect! Great form" }
+            },
+            "normal": {
+              "up": { "ar": "جيد، حاول الوقوف بشكل مستقيم", "en": "Good, try standing straighter" },
+              "down": { "ar": "جيد، حاول النزول أكثر قليلاً", "en": "Good, try going a bit lower" }
+            },
+            "pad": {
+              "down": { "ar": "مقبول، لكن يمكنك التحسن", "en": "Acceptable, but you can improve" }
+            },
+            "warning": {
+              "down": { "ar": "انزل أكثر من اللازم", "en": "Going too low" }
+            },
+            "danger": {
+              "down": { "ar": "توقف! هذا قد يؤذي ظهرك", "en": "Stop! This may hurt your back" }
+            }
+          },
+          "pairedWith": "left_hip"
+        },
+        {
+          "joint": "left_knee",
+          "role": "secondary",
+          "startPose": { "min": 160, "max": 180 },
+          "range": {
+            "perfect": { "min": 170, "max": 180 },
+            "normal": { "min": 165, "max": 180 },
+            "pad": { "min": 160, "max": 180 }
+          },
+          "stateMessages": {
+            "perfect": { "ar": "ممتاز - الركبة ثابتة", "en": "Great - knee is stable" }
+          }
+        }
+      ],
+      "feedbackMessages": {
+        "motivational": [
+          { "ar": "قوة هائلة!", "en": "Massive strength!" },
+          { "ar": "ممتاز!", "en": "Excellent!" }
+        ],
+        "tips": [
+          { "ar": "شد عضلات البطن لحماية ظهرك", "en": "Brace core to protect back" },
+          { "ar": "أبقِ البار قريباً من جسمك", "en": "Keep bar close to body" }
+        ]
+      }
+    }
+  ]
+}

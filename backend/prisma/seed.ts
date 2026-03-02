@@ -36,8 +36,15 @@ async function main() {
   await seedPosePositions(prisma);
   await seedExercisesAndWorkouts(prisma, ensureMessageTemplate);
   await seedUsers(prisma);
-  await seedPrograms(prisma);
-  await seedUserPrograms(prisma);
+
+  const exerciseCount = await prisma.exercise.count();
+  if (exerciseCount >= 4) {
+    await seedPrograms(prisma);
+    await seedUserPrograms(prisma);
+  } else {
+    console.warn('⚠️ Skipping programs & user programs (not enough exercises).');
+  }
+
   await seedAdmins(prisma);
   await seedLevels(prisma);
   await seedProgressionRules(prisma);

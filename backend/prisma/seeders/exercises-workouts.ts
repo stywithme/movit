@@ -17,6 +17,7 @@ export async function seedExercisesAndWorkouts(
 ) {
   const candidateAssetsDirs = [
     process.env.SEED_ASSETS_DIR,
+    path.resolve(__dirname, '../Exercise-json'),
     path.resolve(__dirname, '../../../Docs/Old-way-json'),
     path.resolve(__dirname, '../../../Docs/New-Project/Old-way-json'),
     path.resolve(__dirname, '../../data'),

@@ -1,0 +1,135 @@
+{
+  "name": {
+    "ar": "الطعن (تقييم)",
+    "en": "Lunge (Assessment)"
+  },
+  "description": {
+    "ar": "حركة تقييمية لفحص تماثل الساقين والتوازن الديناميكي ومرونة الورك",
+    "en": "Assessment movement to evaluate leg symmetry, dynamic balance, and hip mobility"
+  },
+  "instructions": {
+    "ar": "قف بشكل مستقيم، اخطو للأمام واثني ركبتك ببطء ثم عد للوضع الأصلي، بدّل بين الرجلين",
+    "en": "Stand straight, step forward and slowly bend your knee, return and alternate legs"
+  },
+  "category": {
+    "code": "assessment",
+    "name": {
+      "ar": "تقييم",
+      "en": "Assessment"
+    }
+  },
+  "countingMethod": "up_down",
+  "muscles": ["quadriceps", "glutes", "hamstrings", "hip_flexors", "core"],
+  "equipment": ["bodyweight"],
+  "tags": ["assessment", "unilateral", "balance", "bilateral"],
+  "isBilateral": true,
+  "bilateralConfig": {
+    "switchEvery": 1,
+    "startSide": "right"
+  },
+  "repCountingConfig": {
+    "reps": 6,
+    "minRepIntervalMs": 2500,
+    "maxRepIntervalMs": 8000
+  },
+  "poseVariants": [
+    {
+      "name": {
+        "ar": "زاوية جانبية",
+        "en": "Side View"
+      },
+      "cameraPosition": "side_view",
+      "expectedFacingDirection": "auto_detect",
+      "positionChecks": [
+        {
+          "id": "trunk_lean_forward",
+          "type": "vertical_alignment",
+          "landmarks": {
+            "primary": "right_shoulder",
+            "secondary": "right_hip"
+          },
+          "condition": {
+            "operator": "approximately_equal",
+            "threshold": 0.12
+          },
+          "activePhases": ["down", "bottom"],
+          "errorMessage": {
+            "ar": "ميل الجذع للأمام",
+            "en": "Forward trunk lean"
+          },
+          "severity": "warning",
+          "cooldownMs": 3000,
+          "minErrorFrames": 4
+        },
+        {
+          "id": "wobble_detected",
+          "type": "sideways_comparison",
+          "landmarks": {
+            "primary": "left_hip",
+            "secondary": "right_hip"
+          },
+          "condition": {
+            "operator": "approximately_equal",
+            "threshold": 0.06
+          },
+          "activePhases": ["down", "bottom", "up"],
+          "errorMessage": {
+            "ar": "اهتزاز ملحوظ أثناء الحركة",
+            "en": "Noticeable wobble during movement"
+          },
+          "severity": "tip",
+          "cooldownMs": 4000,
+          "minErrorFrames": 5
+        }
+      ],
+      "trackedJoints": [
+        {
+          "joint": "right_knee",
+          "role": "primary",
+          "startPose": {"min": 120, "max": 180},
+          "upRange": {
+            "perfect": {"min": 145, "max": 175},
+            "normal": {"min": 130, "max": 180},
+            "pad": {"min": 120, "max": 180}
+          },
+          "downRange": {
+            "perfect": {"min": 80, "max": 105},
+            "normal": {"min": 70, "max": 120},
+            "pad": {"min": 60, "max": 130},
+            "warning": {"min": 40, "max": 60},
+            "danger": {"min": 0, "max": 40}
+          },
+          "stateMessages": {
+            "perfect": {"up": {"ar": "ممتاز", "en": "Perfect"}, "down": {"ar": "عمق مثالي", "en": "Great depth"}},
+            "normal": {"down": {"ar": "جيد", "en": "Good"}}
+          }
+        },
+        {
+          "joint": "right_hip",
+          "role": "secondary",
+          "startPose": {"min": 120, "max": 180},
+          "range": {
+            "perfect": {"min": 150, "max": 175},
+            "normal": {"min": 140, "max": 180},
+            "pad": {"min": 120, "max": 180},
+            "warning": {"min": 100, "max": 120}
+          },
+          "stateMessages": {
+            "perfect": {"ar": "ظهر مستقيم", "en": "Back straight"},
+            "warning": {"ar": "حافظ على استقامة جذعك", "en": "Keep your torso upright"}
+          }
+        }
+      ],
+      "feedbackMessages": {
+        "motivational": [
+          {"ar": "توازن رائع", "en": "Great balance"},
+          {"ar": "ممتاز", "en": "Excellent"}
+        ],
+        "tips": [
+          {"ar": "خذ وقتك في كل خطوة", "en": "Take your time with each step"},
+          {"ar": "انظر للأمام لتحسين التوازن", "en": "Look forward to improve balance"}
+        ]
+      }
+    }
+  ]
+}
