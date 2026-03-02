@@ -16,6 +16,7 @@ import com.trainingvalidator.poc.network.LogoutRequest
 import com.trainingvalidator.poc.network.UpdateSettingsRequest
 import com.trainingvalidator.poc.storage.AuthManager
 import com.trainingvalidator.poc.ui.auth.SignInActivity
+import com.trainingvalidator.poc.ui.debug.DebugActivity
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -84,6 +85,10 @@ class ProfileActivity : AppCompatActivity() {
 
         binding.itemLanguage.setOnClickListener {
             showLanguageDialog()
+        }
+
+        binding.itemDebug.setOnClickListener {
+            startActivity(Intent(this, DebugActivity::class.java))
         }
 
         binding.itemLogOut.setOnClickListener {

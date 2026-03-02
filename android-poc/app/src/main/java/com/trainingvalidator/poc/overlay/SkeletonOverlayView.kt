@@ -16,6 +16,7 @@ import com.trainingvalidator.poc.analysis.SmoothedLandmark
 import com.trainingvalidator.poc.pose.BodyLandmarks
 import com.trainingvalidator.poc.pose.JointLandmarkMapping
 import com.trainingvalidator.poc.training.config.SettingsManager
+import com.trainingvalidator.poc.training.engine.CameraPositionDetector
 import com.trainingvalidator.poc.training.engine.JointArrowInfo
 import com.trainingvalidator.poc.training.engine.PositionError
 import com.trainingvalidator.poc.training.models.CheckSeverity
@@ -26,6 +27,7 @@ import com.trainingvalidator.poc.training.models.ZoneType
 import com.trainingvalidator.poc.ui.training.Direction
 import com.trainingvalidator.poc.ui.training.GuidanceLevel
 import com.trainingvalidator.poc.ui.training.JointGuidance
+import kotlin.math.hypot
 import kotlin.math.max
 import kotlin.math.sin
 
@@ -51,6 +53,7 @@ class SkeletonOverlayView @JvmOverloads constructor(
         private const val TRACKED_LINE_WIDTH = 8f
         private const val ERROR_LINE_WIDTH = 10f
         private const val TEXT_SIZE = 26f
+        private const val TORSO_REF_PX = 500f
         
         // Default visibility threshold (can be overridden by settings)
         private const val DEFAULT_VISIBILITY_THRESHOLD = 0.5f
@@ -201,6 +204,9 @@ class SkeletonOverlayView @JvmOverloads constructor(
     private var imageWidth: Int = 1
     private var imageHeight: Int = 1
     private var scaleFactor: Float = 1f
+    private var displayOffsetX: Float = 0f
+    private var displayOffsetY: Float = 0f
+    private var useFitCenter: Boolean = false
     
     // OPTIMIZED: Cached view dimensions for scale factor calculation
     private var cachedViewWidth: Int = 0
@@ -361,6 +367,69 @@ class SkeletonOverlayView @JvmOverloads constructor(
         debugAngleValue = null
         debugEndpointIndices = emptyList()
         debugVertexIndex = -1
+        smoothedDebugRadius = 0f
+    }
+
+    // ── Camera Detection mode ─────────────────────────────────────────────
+    // Shows key landmarks used by CameraPositionDetector with color coding.
+
+    private var isCameraDetectionMode: Boolean = false
+    private var camDetectResult: CameraPositionDetector.CameraDetectionResult? = null
+    private var camDetectMatchesExpected: Boolean = true
+
+    private val camLeftDotPaint = Paint().apply {
+        isAntiAlias = true; style = Paint.Style.FILL; color = Color.parseColor("#00E5FF")
+    }
+    private val camRightDotPaint = Paint().apply {
+        isAntiAlias = true; style = Paint.Style.FILL; color = Color.parseColor("#FF9100")
+    }
+    private val camNoseDotPaint = Paint().apply {
+        isAntiAlias = true; style = Paint.Style.FILL; color = Color.WHITE
+    }
+    private val camShoulderLinePaint = Paint().apply {
+        isAntiAlias = true; style = Paint.Style.STROKE; strokeCap = Paint.Cap.ROUND
+    }
+    private val camDepthBarPaint = Paint().apply {
+        isAntiAlias = true; style = Paint.Style.FILL
+    }
+    private val camLabelPaint = Paint().apply {
+        isAntiAlias = true; textAlign = Paint.Align.CENTER; color = Color.WHITE
+        isFakeBoldText = true; setShadowLayer(6f, 1f, 1f, Color.BLACK)
+    }
+    private val camSubLabelPaint = Paint().apply {
+        isAntiAlias = true; textAlign = Paint.Align.CENTER; color = Color.parseColor("#B0FFFFFF")
+        setShadowLayer(4f, 1f, 1f, Color.BLACK)
+    }
+    private val camBgPaint = Paint().apply {
+        isAntiAlias = true; style = Paint.Style.FILL; color = Color.argb(160, 0, 0, 0)
+    }
+
+    fun updateCameraDetection(
+        detectionResult: CameraPositionDetector.CameraDetectionResult,
+        matchesExpected: Boolean,
+        smoothedLandmarks: List<SmoothedLandmark>?,
+        imageW: Int = imageWidth,
+        imageH: Int = imageHeight,
+        useFrontCamera: Boolean = false
+    ) {
+        isCameraDetectionMode = true
+        isDebugMode = false
+        isSetupMode = false
+        isTrainingMode = false
+        camDetectResult = detectionResult
+        camDetectMatchesExpected = matchesExpected
+        isFrontCamera = useFrontCamera
+        landmarks = smoothedLandmarks
+        val dimChanged = imageWidth != imageW || imageHeight != imageH
+        imageWidth = imageW
+        imageHeight = imageH
+        if (dimChanged) recalculateScaleFactor()
+        invalidate()
+    }
+
+    fun clearCameraDetectionMode() {
+        isCameraDetectionMode = false
+        camDetectResult = null
     }
 
     init {
@@ -391,9 +460,32 @@ class SkeletonOverlayView @JvmOverloads constructor(
      */
     private fun recalculateScaleFactor() {
         if (cachedViewWidth > 0 && cachedViewHeight > 0 && imageWidth > 0 && imageHeight > 0) {
-            scaleFactor = max(cachedViewWidth.toFloat() / imageWidth, cachedViewHeight.toFloat() / imageHeight)
+            val scaleX = cachedViewWidth.toFloat() / imageWidth
+            val scaleY = cachedViewHeight.toFloat() / imageHeight
+            if (useFitCenter) {
+                scaleFactor = kotlin.math.min(scaleX, scaleY)
+                displayOffsetX = (cachedViewWidth - imageWidth * scaleFactor) / 2f
+                displayOffsetY = (cachedViewHeight - imageHeight * scaleFactor) / 2f
+            } else {
+                scaleFactor = max(scaleX, scaleY)
+                displayOffsetX = 0f
+                displayOffsetY = 0f
+            }
         }
     }
+
+    fun setScaleMode(fitCenter: Boolean) {
+        if (useFitCenter != fitCenter) {
+            useFitCenter = fitCenter
+            recalculateScaleFactor()
+        }
+    }
+
+    private fun toScreenX(normalizedX: Float): Float =
+        normalizedX * imageWidth * scaleFactor + displayOffsetX
+
+    private fun toScreenY(normalizedY: Float): Float =
+        normalizedY * imageHeight * scaleFactor + displayOffsetY
     
     /**
      * Calculate flow phase from system time (replaces ValueAnimator)
@@ -685,13 +777,14 @@ class SkeletonOverlayView @JvmOverloads constructor(
         errorJointCodes = emptySet()
         positionErrors = emptyList()
         
-        // Reset color smoothing state
         previousColors.clear()
         previousStates.clear()
-        
-        // Reset line indicator smoothing state
         lineRangeIndicator.reset()
-        
+        smoothedDebugRadius = 0f
+        smoothedSetupRadius.clear()
+        smoothedBodyScale = 0f
+        smoothedArcRadiusPx.clear()
+
         invalidate()
     }
 
@@ -700,14 +793,14 @@ class SkeletonOverlayView @JvmOverloads constructor(
         val currentLandmarks = landmarks ?: return
         if (currentLandmarks.isEmpty()) return
 
-        // Calculate flow phase from system time (replaces ValueAnimator continuous invalidation)
         updateFlowPhase()
+        val bodyScale = computeBodyScale(currentLandmarks)
 
-        // DEBUG MODE: single joint circle + angle label + endpoint dots
-        // SETUP MODE: colour-coded joints + large angle labels for pre-training guidance
-        // TRAINING MODE: range indicators + glowing joints
-        // DEFAULT MODE: full skeleton
         when {
+            isCameraDetectionMode -> {
+                drawCameraDetection(canvas, currentLandmarks)
+                return
+            }
             isDebugMode -> {
                 drawDebugJoint(canvas, currentLandmarks)
                 return
@@ -718,13 +811,13 @@ class SkeletonOverlayView @JvmOverloads constructor(
             isTrainingMode -> {
                 if (showIndicators && jointStateInfos.isNotEmpty()) {
                     if (useArcIndicator) {
-                        drawArcRangeIndicatorsNew(canvas, currentLandmarks)
+                        drawArcRangeIndicatorsNew(canvas, currentLandmarks, bodyScale)
                     } else {
-                        drawLineRangeIndicatorsNew(canvas, currentLandmarks)
+                        drawLineRangeIndicatorsNew(canvas, currentLandmarks, bodyScale)
                     }
                 }
                 if (jointStateInfos.isNotEmpty()) {
-                    drawGlowingJoints(canvas, currentLandmarks)
+                    drawGlowingJoints(canvas, currentLandmarks, bodyScale)
                 }
                 if (positionErrors.isNotEmpty()) {
                     drawPositionErrors(canvas, currentLandmarks)
@@ -752,14 +845,63 @@ class SkeletonOverlayView @JvmOverloads constructor(
      *
      * Colours: GREEN #00E676 / YELLOW #FFD54F / RED #FF5252
      */
+    private val smoothedSetupRadius = mutableMapOf<Int, Float>()
+    private var smoothedBodyScale: Float = 1f
+    /**
+     * Computes a body-relative scale factor from torso height on screen.
+     * Reference: ~500px torso = scale 1.0 (typical phone at arm's length).
+     * Falls back to shoulder width or last known value when torso isn't visible.
+     */
+    private fun computeBodyScale(landmarks: List<SmoothedLandmark>): Float {
+        fun effectiveIdx(raw: Int) = if (isFrontCamera) BodyLandmarks.getMirroredIndex(raw) else raw
+        fun lm(raw: Int): SmoothedLandmark? {
+            val eff = effectiveIdx(raw)
+            return if (eff < landmarks.size) landmarks[eff].takeIf { it.visibility > 0.3f } else null
+        }
+
+        val lShoulder = lm(BodyLandmarks.LEFT_SHOULDER)
+        val rShoulder = lm(BodyLandmarks.RIGHT_SHOULDER)
+        val lHip = lm(BodyLandmarks.LEFT_HIP)
+        val rHip = lm(BodyLandmarks.RIGHT_HIP)
+
+        val shoulderYs = listOfNotNull(lShoulder?.let { toScreenY(it.y) }, rShoulder?.let { toScreenY(it.y) })
+        val hipYs = listOfNotNull(lHip?.let { toScreenY(it.y) }, rHip?.let { toScreenY(it.y) })
+
+        val refPx: Float? = if (shoulderYs.isNotEmpty() && hipYs.isNotEmpty()) {
+            kotlin.math.abs(hipYs.average().toFloat() - shoulderYs.average().toFloat())
+        } else if (lShoulder != null && rShoulder != null) {
+            val sx = toScreenX(lShoulder.x) - toScreenX(rShoulder.x)
+            val sy = toScreenY(lShoulder.y) - toScreenY(rShoulder.y)
+            hypot(sx.toDouble(), sy.toDouble()).toFloat() * 1.8f
+        } else null
+
+        if (refPx == null || refPx < 30f) {
+            return if (smoothedBodyScale > 0f) smoothedBodyScale else 1f
+        }
+
+        val raw = (refPx / TORSO_REF_PX).coerceIn(0.15f, 2.5f)
+        smoothedBodyScale = if (smoothedBodyScale <= 0f) raw
+            else smoothedBodyScale + (raw - smoothedBodyScale) * 0.12f
+        return smoothedBodyScale
+    }
+
+    /**
+     * Asymmetric dampened scale: allows more aggressive shrinking when body is far,
+     * while keeping conservative growth when body is close.
+     * shrinkFactor/growFactor: 0.0 = no scaling, 1.0 = full linear scaling.
+     */
+    private fun dampenedScale(bodyScale: Float, shrinkFactor: Float, growFactor: Float, minScale: Float = 0f): Float {
+        val delta = bodyScale - 1f
+        val result = 1f + delta * (if (delta < 0f) shrinkFactor else growFactor)
+        return if (minScale > 0f) result.coerceAtLeast(minScale) else result
+    }
+
     private fun drawSetupGuidance(canvas: Canvas, landmarks: List<SmoothedLandmark>) {
         if (setupJointGuidances.isEmpty()) return
 
-        // Front camera: landmark indices need mirroring (same as training mode)
         fun effectiveIdx(raw: Int): Int =
             if (isFrontCamera) BodyLandmarks.getMirroredIndex(raw) else raw
 
-        // Pre-compute screen positions keyed by RAW index, reading MIRRORED landmark data
         val indexToScreenPos = mutableMapOf<Int, Pair<Float, Float>>()
 
         for (guidance in setupJointGuidances) {
@@ -767,27 +909,39 @@ class SkeletonOverlayView @JvmOverloads constructor(
             val effIdx = effectiveIdx(rawIdx)
             if (effIdx >= landmarks.size) continue
             val lm = landmarks[effIdx]
-            if (!lm.isVisible(0.4f)) continue
-            val sx = lm.x * imageWidth * scaleFactor
-            val sy = lm.y * imageHeight * scaleFactor
-            indexToScreenPos[rawIdx] = Pair(sx, sy)
+            if (!lm.isVisible(0.15f)) continue
+            indexToScreenPos[rawIdx] = Pair(toScreenX(lm.x), toScreenY(lm.y))
 
-            val adjacentRawIndices = getAdjacentLandmarkIndices(guidance.jointCode)
-            for (adjRaw in adjacentRawIndices) {
+            for (adjRaw in getAdjacentLandmarkIndices(guidance.jointCode)) {
                 val adjEff = effectiveIdx(adjRaw)
                 if (adjEff < landmarks.size) {
                     val adjLm = landmarks[adjEff]
-                    if (adjLm.isVisible(0.4f)) {
-                        indexToScreenPos[adjRaw] = Pair(
-                            adjLm.x * imageWidth * scaleFactor,
-                            adjLm.y * imageHeight * scaleFactor
-                        )
+                    if (adjLm.isVisible(0.15f)) {
+                        indexToScreenPos[adjRaw] = Pair(toScreenX(adjLm.x), toScreenY(adjLm.y))
                     }
                 }
             }
         }
 
         val density = cachedDensity
+        val jointRadiusPx = mutableMapOf<Int, Float>()
+
+        for (guidance in setupJointGuidances) {
+            val idx = JointLandmarkMapping.jointToLandmark(guidance.jointCode) ?: continue
+            val centerPos = indexToScreenPos[idx] ?: continue
+            val connectedPositions = getAdjacentLandmarkIndices(guidance.jointCode)
+                .mapNotNull { indexToScreenPos[it] }
+
+            val longestEdgePx = connectedPositions
+                .maxOfOrNull { p -> hypot((p.first - centerPos.first).toDouble(), (p.second - centerPos.second).toDouble()).toFloat() }
+                ?: 0f
+            val scale = if (guidance.isPrimary) 0.05f else 0.035f
+            val rawR = (longestEdgePx * scale).coerceIn(6f, 200f)
+            val prev = smoothedSetupRadius[idx]
+            val smoothR = if (prev == null || prev <= 0f) rawR else prev + (rawR - prev) * 0.25f
+            smoothedSetupRadius[idx] = smoothR
+            jointRadiusPx[idx] = smoothR
+        }
 
         // ── Pass 1: draw connecting bone lines ────────────────────────────
         for (guidance in setupJointGuidances) {
@@ -809,15 +963,12 @@ class SkeletonOverlayView @JvmOverloads constructor(
             val idx = JointLandmarkMapping.jointToLandmark(guidance.jointCode) ?: continue
             val pos = indexToScreenPos[idx] ?: continue
             val color = guidanceLevelToColor(guidance.level)
-            val radiusDp = if (guidance.isPrimary) 22f else 14f
-            val radiusPx = radiusDp * density
+            val radiusPx = jointRadiusPx[idx] ?: 20f
 
-            // Filled circle (semi-transparent)
             setupJointPaint.color = color
             setupJointPaint.alpha = 100
             canvas.drawCircle(pos.first, pos.second, radiusPx, setupJointPaint)
 
-            // Stroke ring
             setupJointStrokePaint.color = color
             setupJointStrokePaint.alpha = 230
             canvas.drawCircle(pos.first, pos.second, radiusPx, setupJointStrokePaint)
@@ -842,12 +993,10 @@ class SkeletonOverlayView @JvmOverloads constructor(
             val padH = 10f * density
             val padV = 6f * density
 
-            // Position label above the joint circle (offset depends on radius)
-            val radiusPx = (if (guidance.isPrimary) 22f else 14f) * density
+            val radiusPx = jointRadiusPx[idx] ?: 20f
             val labelX = pos.first
             val labelY = pos.second - radiusPx - textHeight * 0.3f
 
-            // Background rect
             val bgLeft   = labelX - textWidth / 2f - padH
             val bgRight  = labelX + textWidth / 2f + padH
             val bgTop    = labelY - textHeight - padV
@@ -855,17 +1004,17 @@ class SkeletonOverlayView @JvmOverloads constructor(
             val bgRadius = 12f * density
             canvas.drawRoundRect(bgLeft, bgTop, bgRight, bgBottom, bgRadius, bgRadius, setupTextBgPaint)
 
-            // Text
             setupTextPaint.color = color
             canvas.drawText(labelText, labelX, labelY, setupTextPaint)
         }
 
-        // Reset paint alpha
         setupJointPaint.alpha = 255
         setupJointStrokePaint.alpha = 255
         setupLinePaint.alpha = 255
         setupTextPaint.color = Color.WHITE
     }
+
+    private var smoothedDebugRadius: Float = 0f
 
     /**
      * Debug mode drawing: minimal overlay with just the tested joint.
@@ -885,31 +1034,38 @@ class SkeletonOverlayView @JvmOverloads constructor(
             val eff = effectiveIdx(rawIdx)
             if (eff >= landmarks.size) return null
             val lm = landmarks[eff]
-            if (!lm.isVisible(0.35f)) return null
-            return Pair(lm.x * imageWidth * scaleFactor, lm.y * imageHeight * scaleFactor)
+            if (!lm.isVisible(0.15f)) return null
+            return Pair(toScreenX(lm.x), toScreenY(lm.y))
         }
 
         val vertexPos = screenPos(vertexRaw) ?: return
         val density = cachedDensity
-        val accentColor = Color.parseColor("#64B5F6") // Light blue
+        val accentColor = Color.parseColor("#64B5F6")
+        val endpointPositions = debugEndpointIndices.mapNotNull { screenPos(it) }
+
+        // ── Adaptive radius from longest edge ────────────────────────────
+        val longestEdgePx = endpointPositions
+            .maxOfOrNull { p -> hypot((p.first - vertexPos.first).toDouble(), (p.second - vertexPos.second).toDouble()).toFloat() }
+            ?: 0f
+        val rawRadius = (longestEdgePx * 0.05f).coerceIn(6f, 200f)
+        smoothedDebugRadius = if (smoothedDebugRadius <= 0f) rawRadius
+            else smoothedDebugRadius + (rawRadius - smoothedDebugRadius) * 0.25f
+        val circleRadius = smoothedDebugRadius
+        val dotRadius = circleRadius * 0.25f
 
         // ── 1. Thin lines from vertex to endpoints ──────────────────────
-        for (epIdx in debugEndpointIndices) {
-            val epPos = screenPos(epIdx) ?: continue
+        for (epPos in endpointPositions) {
             debugLinePaint.color = Color.argb(96, 100, 181, 246)
             canvas.drawLine(vertexPos.first, vertexPos.second, epPos.first, epPos.second, debugLinePaint)
         }
 
         // ── 2. Small dots at endpoints ──────────────────────────────────
-        val dotRadius = 6f * density
-        for (epIdx in debugEndpointIndices) {
-            val epPos = screenPos(epIdx) ?: continue
+        for (epPos in endpointPositions) {
             debugDotPaint.color = Color.parseColor("#B0FFFFFF")
             canvas.drawCircle(epPos.first, epPos.second, dotRadius, debugDotPaint)
         }
 
         // ── 3. Circle on vertex joint ───────────────────────────────────
-        val circleRadius = 22f * density
         debugCircleFillPaint.color = accentColor
         debugCircleFillPaint.alpha = 80
         canvas.drawCircle(vertexPos.first, vertexPos.second, circleRadius, debugCircleFillPaint)
@@ -940,6 +1096,139 @@ class SkeletonOverlayView @JvmOverloads constructor(
             debugAngleTextPaint.color = Color.WHITE
             canvas.drawText(labelText, labelX, labelY, debugAngleTextPaint)
         }
+    }
+
+    // ──────────────────────────────────────────────────────────────────────
+    // Camera Detection Mode Drawing
+    // ──────────────────────────────────────────────────────────────────────
+
+    private fun drawCameraDetection(canvas: Canvas, landmarks: List<SmoothedLandmark>) {
+        val result = camDetectResult ?: return
+        val density = cachedDensity
+
+        fun effectiveIdx(raw: Int): Int =
+            if (isFrontCamera) BodyLandmarks.getMirroredIndex(raw) else raw
+
+        fun screenPos(rawIdx: Int): Pair<Float, Float>? {
+            val eff = effectiveIdx(rawIdx)
+            if (eff >= landmarks.size) return null
+            val lm = landmarks[eff]
+            if (!lm.isVisible(0.25f)) return null
+            return Pair(toScreenX(lm.x), toScreenY(lm.y))
+        }
+
+        fun rawLandmark(rawIdx: Int): SmoothedLandmark? {
+            val eff = effectiveIdx(rawIdx)
+            return if (eff < landmarks.size) landmarks[eff] else null
+        }
+
+        val leftShoulder = screenPos(BodyLandmarks.LEFT_SHOULDER)
+        val rightShoulder = screenPos(BodyLandmarks.RIGHT_SHOULDER)
+        val leftHip = screenPos(BodyLandmarks.LEFT_HIP)
+        val rightHip = screenPos(BodyLandmarks.RIGHT_HIP)
+        val leftKnee = screenPos(BodyLandmarks.LEFT_KNEE)
+        val rightKnee = screenPos(BodyLandmarks.RIGHT_KNEE)
+        val nose = screenPos(BodyLandmarks.NOSE)
+
+        val dotRadius = 10f * density
+        val smallDotRadius = 7f * density
+
+        // Left side landmarks (cyan)
+        listOf(leftShoulder, leftHip, leftKnee).forEach { pos ->
+            if (pos != null) canvas.drawCircle(pos.first, pos.second, dotRadius, camLeftDotPaint)
+        }
+        // Right side landmarks (orange)
+        listOf(rightShoulder, rightHip, rightKnee).forEach { pos ->
+            if (pos != null) canvas.drawCircle(pos.first, pos.second, dotRadius, camRightDotPaint)
+        }
+
+        // Nose (white, size scaled by visibility)
+        if (nose != null) {
+            val noseVis = rawLandmark(BodyLandmarks.NOSE)?.visibility ?: 0f
+            val noseRadius = smallDotRadius * (0.4f + 0.6f * noseVis.coerceIn(0f, 1f))
+            camNoseDotPaint.alpha = (100 + 155 * noseVis.coerceIn(0f, 1f)).toInt()
+            canvas.drawCircle(nose.first, nose.second, noseRadius, camNoseDotPaint)
+        }
+
+        // Shoulder line
+        if (leftShoulder != null && rightShoulder != null) {
+            val matchColor = if (camDetectMatchesExpected) Color.parseColor("#00E676") else Color.parseColor("#FF5252")
+            camShoulderLinePaint.color = matchColor
+            camShoulderLinePaint.strokeWidth = (3f + 5f * result.confidence) * density
+            canvas.drawLine(leftShoulder.first, leftShoulder.second,
+                rightShoulder.first, rightShoulder.second, camShoulderLinePaint)
+        }
+
+        // Z-depth bars next to shoulders
+        val leftShoulderLm = rawLandmark(BodyLandmarks.LEFT_SHOULDER)
+        val rightShoulderLm = rawLandmark(BodyLandmarks.RIGHT_SHOULDER)
+        if (leftShoulder != null && rightShoulder != null && leftShoulderLm != null && rightShoulderLm != null) {
+            val maxBarH = 40f * density
+            val barW = 6f * density
+            val offset = 16f * density
+            val maxZ = maxOf(kotlin.math.abs(leftShoulderLm.z), kotlin.math.abs(rightShoulderLm.z), 0.01f)
+
+            // Left bar: taller = closer (smaller Z)
+            val leftCloseness = (1f - (leftShoulderLm.z / maxZ).coerceIn(-1f, 1f)) / 2f
+            val leftBarH = maxBarH * leftCloseness.coerceIn(0.1f, 1f)
+            camDepthBarPaint.color = Color.parseColor("#00E5FF")
+            camDepthBarPaint.alpha = 180
+            canvas.drawRoundRect(
+                leftShoulder.first - offset - barW, leftShoulder.second - leftBarH / 2f,
+                leftShoulder.first - offset, leftShoulder.second + leftBarH / 2f,
+                barW / 2f, barW / 2f, camDepthBarPaint
+            )
+
+            // Right bar
+            val rightCloseness = (1f - (rightShoulderLm.z / maxZ).coerceIn(-1f, 1f)) / 2f
+            val rightBarH = maxBarH * rightCloseness.coerceIn(0.1f, 1f)
+            camDepthBarPaint.color = Color.parseColor("#FF9100")
+            camDepthBarPaint.alpha = 180
+            canvas.drawRoundRect(
+                rightShoulder.first + offset, rightShoulder.second - rightBarH / 2f,
+                rightShoulder.first + offset + barW, rightShoulder.second + rightBarH / 2f,
+                barW / 2f, barW / 2f, camDepthBarPaint
+            )
+        }
+
+        // Text labels on canvas
+        val canvasW = canvas.width.toFloat()
+        val centerX = canvasW / 2f
+
+        val posText = result.position.name.replace("_", " ")
+        val facingText = result.facingDirection.name.replace("_", " ")
+        val confText = "Confidence: %.0f%%".format(result.confidence * 100)
+        val closerText = "Closer: ${result.closerSide.name}"
+
+        val matchColor = if (camDetectMatchesExpected) Color.parseColor("#00E676") else Color.parseColor("#FF5252")
+
+        // Position label (large)
+        camLabelPaint.textSize = 40f * density
+        camLabelPaint.color = matchColor
+        val posY = 160f * density
+        val posTextW = camLabelPaint.measureText(posText)
+        canvas.drawRoundRect(
+            centerX - posTextW / 2f - 12 * density, posY - 36 * density,
+            centerX + posTextW / 2f + 12 * density, posY + 10 * density,
+            8 * density, 8 * density, camBgPaint
+        )
+        canvas.drawText(posText, centerX, posY, camLabelPaint)
+
+        // Facing label
+        camSubLabelPaint.textSize = 24f * density
+        val facingY = posY + 36 * density
+        val facingTextW = camSubLabelPaint.measureText(facingText)
+        canvas.drawRoundRect(
+            centerX - facingTextW / 2f - 10 * density, facingY - 22 * density,
+            centerX + facingTextW / 2f + 10 * density, facingY + 6 * density,
+            6 * density, 6 * density, camBgPaint
+        )
+        canvas.drawText(facingText, centerX, facingY, camSubLabelPaint)
+
+        // Confidence + closer side
+        camSubLabelPaint.textSize = 18f * density
+        val confY = facingY + 28 * density
+        canvas.drawText("$confText  |  $closerText", centerX, confY, camSubLabelPaint)
     }
 
     /** Return the MediaPipe landmark indices adjacent to the joint (for bone drawing). */
@@ -1040,10 +1329,10 @@ class SkeletonOverlayView @JvmOverloads constructor(
                         }
                         
                         canvas.drawLine(
-                            start.x * imageWidth * scaleFactor,
-                            start.y * imageHeight * scaleFactor,
-                            end.x * imageWidth * scaleFactor,
-                            end.y * imageHeight * scaleFactor,
+                            toScreenX(start.x),
+                            toScreenY(start.y),
+                            toScreenX(end.x),
+                            toScreenY(end.y),
                             linePaint
                         )
                         
@@ -1354,8 +1643,8 @@ class SkeletonOverlayView @JvmOverloads constructor(
     private fun drawLandmarks(canvas: Canvas, landmarks: List<SmoothedLandmark>) {
         landmarks.forEachIndexed { index, landmark ->
             if (landmark.visibility >= visibilityThreshold) {
-                val x = landmark.x * imageWidth * scaleFactor
-                val y = landmark.y * imageHeight * scaleFactor
+                val x = toScreenX(landmark.x)
+                val y = toScreenY(landmark.y)
                 
                 val jointCode = landmarkIndexToJointCode(index)
                 val isTracked = index in trackedLandmarkIndices
@@ -1434,8 +1723,8 @@ class SkeletonOverlayView @JvmOverloads constructor(
             if (index < landmarks.size) {
                 val landmark = landmarks[index]
                 if (landmark.visibility >= visibilityThreshold) {
-                    val x = landmark.x * imageWidth * scaleFactor
-                    val y = landmark.y * imageHeight * scaleFactor
+                    val x = toScreenX(landmark.x)
+                    val y = toScreenY(landmark.y)
                     
                     canvas.drawCircle(x, y, 25f, glowPaint)
                 }
@@ -1452,7 +1741,7 @@ class SkeletonOverlayView @JvmOverloads constructor(
      * - Animated glow effect with pulsing intensity
      * - Glow radius varies by joint importance (Primary larger than Secondary)
      */
-    private fun drawGlowingJoints(canvas: Canvas, landmarks: List<SmoothedLandmark>) {
+    private fun drawGlowingJoints(canvas: Canvas, landmarks: List<SmoothedLandmark>, bodyScale: Float = 1f) {
         if (jointStateInfos.isEmpty()) return
         
         // Animate glow intensity with flow phase
@@ -1473,8 +1762,8 @@ class SkeletonOverlayView @JvmOverloads constructor(
             if (landmark.visibility < visibilityThreshold) continue
             
             // Calculate screen coordinates
-            val x = landmark.x * imageWidth * scaleFactor
-            val y = landmark.y * imageHeight * scaleFactor
+            val x = toScreenX(landmark.x)
+            val y = toScreenY(landmark.y)
             
             // Get color from state (using StateConfig for consistency)
             val stateColor = stateInfo.color
@@ -1490,16 +1779,15 @@ class SkeletonOverlayView @JvmOverloads constructor(
                 JointState.DANGER -> 2.0f       // +100%
             }
             
-            // Base glow parameters (different for Primary vs Secondary)
             val (baseGlowRadius, baseInnerRadius, baseGlowAlpha) = if (stateInfo.isPrimary) {
                 Triple(28f, 10f, (baseGlowIntensity * 0.7f * 255).toInt())
             } else {
                 Triple(20f, 7f, (baseGlowIntensity * 0.5f * 255).toInt())
             }
-            
-            // Apply size multiplier
-            val glowRadius = baseGlowRadius * sizeMultiplier
-            val innerRadius = baseInnerRadius * sizeMultiplier
+
+            val glowScale = dampenedScale(bodyScale, 0.78f, 0.39f, minScale = 0.55f)
+            val glowRadius = baseGlowRadius * sizeMultiplier * glowScale * 1.3f
+            val innerRadius = baseInnerRadius * sizeMultiplier * glowScale * 1.3f
             
             // Alpha also increases with severity for more emphasis
             val finalGlowAlpha = when (stateInfo.state) {
@@ -1623,40 +1911,78 @@ class SkeletonOverlayView @JvmOverloads constructor(
      * 
      * Uses StateRanges for accurate gradient coloring matching LineRangeIndicator
      */
+    private val smoothedArcRadiusPx = mutableMapOf<String, Float>()
+
     private fun drawArcRangeIndicatorsNew(
         canvas: Canvas,
-        landmarks: List<SmoothedLandmark>
+        landmarks: List<SmoothedLandmark>,
+        bodyScale: Float
     ) {
         val density = cachedDensity
-        
+
         for ((jointCode, stateInfo) in jointStateInfos) {
-            // Only show Arc for PRIMARY joints
             if (!stateInfo.isPrimary) continue
-            
-            // Get center landmark for this joint (bilateral-aware)
+
             val landmarkJointCode = getEffectiveLandmarkJointCode(jointCode)
             val angleLandmarks = JointLandmarkMapping.getLandmarksForAngle(landmarkJointCode)
             if (angleLandmarks.size != 3) continue
-            
-            val centerIdx = angleLandmarks[1]
-            val effectiveCenterIdx = if (isFrontCamera) BodyLandmarks.getMirroredIndex(centerIdx) else centerIdx
-            
-            if (effectiveCenterIdx >= landmarks.size) continue
-            val centerLm = landmarks[effectiveCenterIdx]
+
+            val (upperIdx, centerIdx, lowerIdx) = angleLandmarks
+            val effUpper = if (isFrontCamera) BodyLandmarks.getMirroredIndex(upperIdx) else upperIdx
+            val effCenter = if (isFrontCamera) BodyLandmarks.getMirroredIndex(centerIdx) else centerIdx
+            val effLower = if (isFrontCamera) BodyLandmarks.getMirroredIndex(lowerIdx) else lowerIdx
+
+            if (effCenter >= landmarks.size) continue
+            val centerLm = landmarks[effCenter]
             if (centerLm.visibility < visibilityThreshold) continue
-            
-            // Convert to screen coordinates (same calculation as LineRangeIndicator)
-            val centerX = centerLm.x * imageWidth * scaleFactor
-            val centerY = centerLm.y * imageHeight * scaleFactor
-            
-            // Create ArcRangeData from JointStateInfo
+
+            val centerX = toScreenX(centerLm.x)
+            val centerY = toScreenY(centerLm.y)
+
+            // Compute arc radius from longest adjacent limb segment (pixels).
+            // Using max avoids shrinking when one limb is compressed by perspective.
+            val limbs = mutableListOf<Float>()
+            if (effUpper < landmarks.size && landmarks[effUpper].visibility > 0.2f) {
+                val dx = toScreenX(landmarks[effUpper].x) - centerX
+                val dy = toScreenY(landmarks[effUpper].y) - centerY
+                limbs.add(hypot(dx, dy))
+            }
+            if (effLower < landmarks.size && landmarks[effLower].visibility > 0.2f) {
+                val dx = toScreenX(landmarks[effLower].x) - centerX
+                val dy = toScreenY(landmarks[effLower].y) - centerY
+                limbs.add(hypot(dx, dy))
+            }
+
+            val refLimbPx = limbs.maxOrNull() ?: continue
+            // Arc: only 20% variation between smallest and largest state
+            val centerPx = 95f * (cachedDensity / 2.5f).coerceIn(0.8f, 1.4f)
+            val t = ((refLimbPx - 50f) / 280f).coerceIn(0f, 1f)
+            val factor = 0.9f + 0.2f * t
+            val rawRadiusPx = (centerPx * factor).coerceIn(40f, 180f)
+
+            val prev = smoothedArcRadiusPx[jointCode] ?: rawRadiusPx
+            val smoothed = prev + (rawRadiusPx - prev) * 0.2f
+            smoothedArcRadiusPx[jointCode] = smoothed
+
+            val radiusDp = smoothed / density
+            val strokeRatio = arcConfig.strokeWidthDp / arcConfig.radiusDp
+            val indicatorRatio = arcConfig.indicatorRadiusDp / arcConfig.radiusDp
+
+            val scaledConfig = ArcConfig(
+                radiusDp = radiusDp,
+                strokeWidthDp = radiusDp * strokeRatio,
+                indicatorRadiusDp = radiusDp * indicatorRatio,
+                showCurrentIndicator = arcConfig.showCurrentIndicator,
+                showRangeLabels = arcConfig.showRangeLabels,
+                animationEnabled = arcConfig.animationEnabled,
+                showOnlyOnError = arcConfig.showOnlyOnError,
+                showOnlyPrimary = arcConfig.showOnlyPrimary,
+                arcOpacity = arcConfig.arcOpacity
+            )
+
             val arcData = ArcRangeData.fromStateInfo(centerX, centerY, stateInfo)
-            
-            // Check if should show based on config
-            if (!arcRangeIndicator.shouldShowArc(arcData, arcConfig)) continue
-            
-            // Draw using StateRanges-based coloring
-            arcRangeIndicator.drawWithStateRanges(canvas, arcData, arcConfig, density)
+            if (!arcRangeIndicator.shouldShowArc(arcData, scaledConfig)) continue
+            arcRangeIndicator.drawWithStateRanges(canvas, arcData, scaledConfig, density)
         }
     }
     
@@ -1673,50 +1999,43 @@ class SkeletonOverlayView @JvmOverloads constructor(
      */
     private fun drawLineRangeIndicatorsNew(
         canvas: Canvas,
-        landmarks: List<SmoothedLandmark>
+        landmarks: List<SmoothedLandmark>,
+        bodyScale: Float
     ) {
         val density = cachedDensity
-        
+
         for ((jointCode, stateInfo) in jointStateInfos) {
-            // Only show Line Indicator for PRIMARY joints
             if (!stateInfo.isPrimary) continue
-            
+
             val currentAngle = stateInfo.currentAngle
-            
-            // Get the 3 landmarks that form this angle (bilateral-aware)
+
             val landmarkJointCode = getEffectiveLandmarkJointCode(jointCode)
             val angleLandmarks = JointLandmarkMapping.getLandmarksForAngle(landmarkJointCode)
             if (angleLandmarks.size != 3) continue
-            
+
             val (upperIdx, centerIdx, lowerIdx) = angleLandmarks
-            
-            // Apply mirroring for front camera
+
             val effectiveUpperIdx = if (isFrontCamera) BodyLandmarks.getMirroredIndex(upperIdx) else upperIdx
             val effectiveCenterIdx = if (isFrontCamera) BodyLandmarks.getMirroredIndex(centerIdx) else centerIdx
             val effectiveLowerIdx = if (isFrontCamera) BodyLandmarks.getMirroredIndex(lowerIdx) else lowerIdx
-            
-            // Validate center landmark
+
             if (effectiveCenterIdx >= landmarks.size) continue
             val centerLm = landmarks[effectiveCenterIdx]
             if (centerLm.visibility < visibilityThreshold) continue
-            
-            // Get UPPER landmark
+
             if (effectiveUpperIdx >= landmarks.size) continue
             val upperLm = landmarks[effectiveUpperIdx]
-            
-            // Get LOWER landmark
+
             if (effectiveLowerIdx >= landmarks.size) continue
             val lowerLm = landmarks[effectiveLowerIdx]
-            
-            // Calculate screen coordinates
-            val centerX = centerLm.x * imageWidth * scaleFactor
-            val centerY = centerLm.y * imageHeight * scaleFactor
-            val upperX = upperLm.x * imageWidth * scaleFactor
-            val upperY = upperLm.y * imageHeight * scaleFactor
-            val lowerX = lowerLm.x * imageWidth * scaleFactor
-            val lowerY = lowerLm.y * imageHeight * scaleFactor
-            
-            // Calculate distances
+
+            val centerX = toScreenX(centerLm.x)
+            val centerY = toScreenY(centerLm.y)
+            val upperX = toScreenX(upperLm.x)
+            val upperY = toScreenY(upperLm.y)
+            val lowerX = toScreenX(lowerLm.x)
+            val lowerY = toScreenY(lowerLm.y)
+
             val upperDistance = kotlin.math.sqrt(
                 (upperX - centerX) * (upperX - centerX) +
                 (upperY - centerY) * (upperY - centerY)
@@ -1725,13 +2044,18 @@ class SkeletonOverlayView @JvmOverloads constructor(
                 (lowerX - centerX) * (lowerX - centerX) +
                 (lowerY - centerY) * (lowerY - centerY)
             )
-            
-            // Max lengths from settings
+
             val upperMaxLength = upperDistance * SettingsManager.getLineIndicatorUpperLengthRatio()
             val lowerMaxLength = lowerDistance * SettingsManager.getLineIndicatorLowerLengthRatio()
-            
-            // Get style based on state
-            val style = LineStyleNew.forState(stateInfo, density)
+
+            val lineScale = dampenedScale(bodyScale, 1.0f, 0.52f, minScale = 0.45f)
+            val baseStyle = LineStyleNew.forState(stateInfo, density)
+            val style = LineStyleNew(
+                strokeWidth = baseStyle.strokeWidth * lineScale * 1.3f,
+                jointRadius = baseStyle.jointRadius * lineScale * 1.3f,
+                pulseSpeed = baseStyle.pulseSpeed,
+                showOuterRing = baseStyle.showOuterRing
+            )
             
             // Determine if this is a HOLD exercise (single range, not up/down)
             // Hold exercises have same ranges for both up and down
@@ -1884,19 +2208,13 @@ class SkeletonOverlayView @JvmOverloads constructor(
             if (effectiveLowerIdx >= landmarks.size) continue
             val lowerLm = landmarks[effectiveLowerIdx]
             
-            // Calculate screen coordinates for center
-            val centerX = centerLm.x * imageWidth * scaleFactor
-            val centerY = centerLm.y * imageHeight * scaleFactor
+            val centerX = toScreenX(centerLm.x)
+            val centerY = toScreenY(centerLm.y)
+            val upperX = toScreenX(upperLm.x)
+            val upperY = toScreenY(upperLm.y)
+            val lowerX = toScreenX(lowerLm.x)
+            val lowerY = toScreenY(lowerLm.y)
             
-            // Calculate screen coordinates for UPPER limb
-            val upperX = upperLm.x * imageWidth * scaleFactor
-            val upperY = upperLm.y * imageHeight * scaleFactor
-            
-            // Calculate screen coordinates for LOWER limb
-            val lowerX = lowerLm.x * imageWidth * scaleFactor
-            val lowerY = lowerLm.y * imageHeight * scaleFactor
-            
-            // Calculate distances
             val upperDistance = kotlin.math.sqrt(
                 (upperX - centerX) * (upperX - centerX) +
                 (upperY - centerY) * (upperY - centerY)
@@ -2043,8 +2361,8 @@ class SkeletonOverlayView @JvmOverloads constructor(
         val landmark = landmarks[index]
         if (landmark.visibility < 0.3f) return
         
-        val x = landmark.x * imageWidth * scaleFactor
-        val y = landmark.y * imageHeight * scaleFactor - 25f
+        val x = toScreenX(landmark.x)
+        val y = toScreenY(landmark.y) - 25f
         
         val hasError = jointCode in errorJointCodes
         
@@ -2108,10 +2426,10 @@ class SkeletonOverlayView @JvmOverloads constructor(
             return
         }
         
-        val x1 = lm1.x * imageWidth * scaleFactor
-        val y1 = lm1.y * imageHeight * scaleFactor
-        val x2 = lm2.x * imageWidth * scaleFactor
-        val y2 = lm2.y * imageHeight * scaleFactor
+        val x1 = toScreenX(lm1.x)
+        val y1 = toScreenY(lm1.y)
+        val x2 = toScreenX(lm2.x)
+        val y2 = toScreenY(lm2.y)
         
         // Choose paint based on severity
         val (linePaintToUse, circleRadius) = when (error.severity) {

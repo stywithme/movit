@@ -336,18 +336,20 @@ enum class CountingMethod {
 }
 
 /**
- * Pose variant - represents one camera angle/view
+ * Pose variant - represents one pose position for an exercise.
  * 
- * @param cameraPosition Expected camera position: "side_view", "front_view", "back_view"
- * @param expectedFacingDirection Expected body facing direction for position checks
+ * @param posePosition 3-axis pose code (e.g. "standing_front", "prone_side")
  * @param positionChecks Position-based validation checks (knee-over-toe, alignment, etc.)
- * 
- * NOTE: difficultyLevels have been REMOVED. Quality is now assessed via JointState.
  */
 data class PoseVariant(
     val name: LocalizedText,
-    val cameraPosition: String,
-    val expectedFacingDirection: FacingDirection? = null,
+    /** New field — pose position code (e.g. "standing_front", "prone_side"). */
+    val posePosition: String? = null,
+    /** @deprecated Legacy field — kept for backward compat with old JSON. */
+    val cameraPosition: String? = null,
+    val expectedPostures: List<String>? = null,
+    val expectedDirections: List<String>? = null,
+    val expectedRegions: List<String>? = null,
     val trackedJoints: List<TrackedJoint> = emptyList(),
     val positionChecks: List<PositionCheck> = emptyList(),
     val feedbackMessages: FeedbackMessages = FeedbackMessages(),
@@ -831,8 +833,8 @@ data class RepCountingConfig(
 // ==================== Position-Based Validation Models ====================
 
 /**
- * Expected facing direction of the person in the frame
- * Required for accurate position comparisons in side view
+ * @deprecated Facing is now always auto-detected by CameraPositionDetector.
+ * Kept for backward compat with old JSON files.
  */
 enum class FacingDirection {
     @SerializedName("facing_right")

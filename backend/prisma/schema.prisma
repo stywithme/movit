@@ -80,7 +80,7 @@ model AttributeValue {
   exercisesAsCountingMethod Exercise[]            @relation("ExerciseCountingMethod")
   exerciseAttributes        ExerciseAttribute[]
   difficultyLevelsAsType    DifficultyLevel[]     @relation("DifficultyLevelType")
-  cameraPositionJoints      CameraPositionJoint[] @relation("CameraPositionJoint")
+  posePositionJoints        PosePositionJoint[] @relation("PosePositionJoint")
 
   @@index([attributeId])
   @@map("attribute_values")
@@ -190,58 +190,60 @@ model ExerciseMedia {
 }
 
 // ============================================
-// CAMERA POSITIONS
+// POSE POSITIONS
 // ============================================
 
-/// Camera positions (front, side, back, etc.)
-model CameraPosition {
+/// Pose positions (standing_front, prone_side, supine_front, etc.)
+model PosePosition {
   id          String   @id @default(uuid())
   code        String   @unique
-  schemaCode  String? // exported/mobile: side_view, front_view, back_view
   name        Json // { "ar": "...", "en": "..." }
   description Json? // { "ar": "...", "en": "..." }
   imageUrl    String?
   isActive    Boolean  @default(true)
   sortOrder   Int      @default(0)
+
+  postures   Json @default("[\"any\"]") // e.g. ["standing"], ["lying_prone","lying_supine"]
+  directions Json @default("[\"any\"]") // e.g. ["front","side"], ["any"]
+  regions    Json @default("[\"any\"]") // e.g. ["full_body"], ["full_body","upper_body"]
+
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
-  joints       CameraPositionJoint[]
+  joints       PosePositionJoint[]
   poseVariants PoseVariant[]
 
-  @@map("camera_positions")
+  @@map("pose_positions")
 }
 
-/// Joints required for each camera position
-model CameraPositionJoint {
-  id               String   @id @default(uuid())
-  cameraPositionId String
-  jointId          String
-  createdAt        DateTime @default(now())
+/// Joints relevant for each pose position
+model PosePositionJoint {
+  id             String   @id @default(uuid())
+  posePositionId String
+  jointId        String
+  createdAt      DateTime @default(now())
 
-  cameraPosition CameraPosition @relation(fields: [cameraPositionId], references: [id], onDelete: Cascade)
-  joint          AttributeValue @relation("CameraPositionJoint", fields: [jointId], references: [id])
+  posePosition PosePosition   @relation(fields: [posePositionId], references: [id], onDelete: Cascade)
+  joint        AttributeValue @relation("PosePositionJoint", fields: [jointId], references: [id])
 
-  @@unique([cameraPositionId, jointId])
-  @@index([cameraPositionId])
+  @@unique([posePositionId, jointId])
+  @@index([posePositionId])
   @@index([jointId])
-  @@map("camera_position_joints")
+  @@map("pose_position_joints")
 }
 
 // ============================================
 // POSE VARIANTS
 // ============================================
 
-/// Pose variants (different camera positions for an exercise)
+/// Pose variants (different pose positions for an exercise)
 model PoseVariant {
-  id                String  @id @default(uuid())
-  exerciseId        String
-  cameraPositionId  String
-  name              Json // { "ar": "...", "en": "..." }
-  description       Json? // { "ar": "...", "en": "..." }
+  id              String  @id @default(uuid())
+  exerciseId      String
+  posePositionId  String
+  name            Json // { "ar": "...", "en": "..." }
+  description     Json? // { "ar": "...", "en": "..." }
   referenceImageUrl String?
-
-  expectedFacingDirection String? // 'facing_right' | 'facing_left' | 'facing_camera' | 'facing_away' | 'auto_detect'
 
   // CORE CONFIGURATION (Source of Truth)
   // Contains: Primary/Secondary joints, Start Pose, Up/Down Ranges per difficulty
@@ -251,15 +253,15 @@ model PoseVariant {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  exercise       Exercise       @relation(fields: [exerciseId], references: [id], onDelete: Cascade)
-  cameraPosition CameraPosition @relation(fields: [cameraPositionId], references: [id])
+  exercise     Exercise     @relation(fields: [exerciseId], references: [id], onDelete: Cascade)
+  posePosition PosePosition @relation(fields: [posePositionId], references: [id])
 
   difficultyLevels   DifficultyLevel[]
   positionChecks     PositionCheck[]
   messageAssignments FeedbackMessageAssignment[]
 
   @@index([exerciseId])
-  @@index([cameraPositionId])
+  @@index([posePositionId])
   @@map("pose_variants")
 }
 

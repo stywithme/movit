@@ -160,7 +160,6 @@ const initialState: WizardState = {
   },
   cameraPosition: {
     cameraPositionIds: [],
-    expectedFacingDirection: 'auto_detect',
     referenceImages: {},
   },
   jointConfig: {

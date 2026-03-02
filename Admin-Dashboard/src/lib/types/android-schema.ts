@@ -37,19 +37,16 @@ export interface LocalizedText {
 export type CountingMethod = 'up_down' | 'push_pull' | 'hold';
 
 /**
- * Camera position codes (as expected by Android)
+ * Pose position codes (single code; mobile derives direction/posture/region)
  */
-export type CameraPosition = 'side_view' | 'front_view' | 'back_view';
-
-/**
- * Expected facing direction
- */
-export type FacingDirection =
-  | 'facing_right'
-  | 'facing_left'
-  | 'facing_camera'
-  | 'facing_away'
-  | 'auto_detect';
+export type PosePosition =
+  | 'standing_front' | 'standing_back' | 'standing_side'
+  | 'standing_side_left' | 'standing_side_right' | 'standing_diagonal'
+  | 'standing_front_upper' | 'standing_back_upper' | 'standing_side_upper'
+  | 'standing_front_lower' | 'standing_back_lower' | 'standing_side_lower'
+  | 'prone_side' | 'prone_front'
+  | 'supine_side' | 'supine_front'
+  | 'side_lying';
 
 /**
  * Joint role in tracking
@@ -326,8 +323,7 @@ export interface MessageAssignment {
  */
 export interface PoseVariantConfig {
   name: LocalizedText;
-  cameraPosition: CameraPosition;
-  expectedFacingDirection?: FacingDirection;
+  posePosition: PosePosition;
   trackedJoints: TrackedJoint[];
   positionChecks?: PositionCheck[];
   feedbackMessages?: FeedbackMessages;

@@ -557,9 +557,8 @@ export interface PoseVariantInput {
   tempId?: string;
   name: LocalizedText;
   description?: LocalizedText;
-  cameraPositionId: string;
+  posePositionId: string;
   referenceImageUrl?: string;
-  expectedFacingDirection?: string;
   trackedJointsConfig?: TrackedJoint[];
   positionChecks?: PositionCheckInput[];
   messageAssignments?: FeedbackMessageAssignmentInput[];

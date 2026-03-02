@@ -1,6 +1,6 @@
 package com.trainingvalidator.poc.training.feedback
 
-import com.trainingvalidator.poc.training.engine.CameraPositionWarning
+import com.trainingvalidator.poc.training.engine.SceneAxisWarning
 import com.trainingvalidator.poc.training.engine.Phase
 import com.trainingvalidator.poc.training.engine.PositionError
 import com.trainingvalidator.poc.training.models.JointError
@@ -195,10 +195,10 @@ sealed class FeedbackEvent {
     ) : FeedbackEvent()
     
     /**
-     * Camera position warning - detected camera doesn't match expected
+     * Scene axis warnings - one or more axes (posture/direction/region) mismatch.
      */
-    data class CameraPositionWarning(
-        val warning: com.trainingvalidator.poc.training.engine.CameraPositionWarning,
+    data class SceneWarnings(
+        val warnings: List<SceneAxisWarning>,
         override val timestamp: Long = System.currentTimeMillis(),
         override val priority: FeedbackPriority = FeedbackPriority.MEDIUM
     ) : FeedbackEvent()

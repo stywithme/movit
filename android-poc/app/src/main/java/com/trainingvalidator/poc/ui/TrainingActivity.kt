@@ -47,6 +47,7 @@ import com.trainingvalidator.poc.ui.training.Direction
 import com.trainingvalidator.poc.ui.training.GuidanceLevel
 import com.trainingvalidator.poc.ui.training.JointGuidance
 import com.trainingvalidator.poc.ui.training.PoseValidator
+import com.trainingvalidator.poc.ui.training.SetupPhase
 import com.trainingvalidator.poc.ui.training.SetupResult
 import com.trainingvalidator.poc.ui.training.TrainingUIEvent
 import com.trainingvalidator.poc.ui.training.TrainingViewModel
@@ -1794,30 +1795,76 @@ class TrainingActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetection
         binding.setupPosePanel.visibility = View.VISIBLE
         binding.countdownPanel.visibility = View.GONE
         binding.skeletonOverlay.clearSetupMode()
-        // Clear stale joint rows from previous setup cycle
         binding.jointGuidanceContainer.removeAllViews()
+        binding.tvPhaseInstruction.visibility = View.GONE
+        binding.tvPhaseStep.visibility = View.GONE
+        binding.jointGuidanceContainer.visibility = View.VISIBLE
         switchBottomBarToSetupMode()
     }
 
     /**
-     * Update per-joint guidance rows in setupPosePanel and the progress bar.
-     * Also drives the skeleton overlay's setup guidance.
+     * Phase-aware setup guidance. Shows one thing at a time:
+     * REGION/POSTURE/DIRECTION → prominent instruction text
+     * ANGLES → per-joint guidance rows
      */
     private fun updateSetupGuidanceUI(result: SetupResult) {
-        // Only process during setup states — ignore stale events from queue
         val state = viewModel.supervisor.state.value
         if (state != SessionState.SETUP_POSE && state != SessionState.RESUME_SETUP) return
 
-        // ── Skeleton overlay ──────────────────────────────────────────────
-        val landmarks = viewModel.lastSmoothedLandmarks
-        val imageSize  = viewModel.lastImageSize
-        if (landmarks != null) {
-            binding.skeletonOverlay.updateSetupGuidance(
-                guidances = result.joints,
-                smoothedLandmarks = landmarks,
-                imageW = imageSize.first,
-                imageH = imageSize.second
-            )
+        val lang = viewModel.poseSetupGuide.language
+        val isAr = lang == "ar"
+        val phase = result.phase
+
+        // ── Header: title + step indicator ────────────────────────────────
+        val stepNum = phase.ordinal + 1
+        binding.tvPhaseStep.visibility = View.VISIBLE
+        binding.tvPhaseStep.text = if (isAr) "$stepNum / 4" else "$stepNum / 4"
+        binding.tvSetupTitle.text = when (phase) {
+            SetupPhase.REGION -> if (isAr) "منطقة الجسم" else "Body Region"
+            SetupPhase.POSTURE -> if (isAr) "وضعية الجسم" else "Body Posture"
+            SetupPhase.DIRECTION -> if (isAr) "اتجاه الكاميرا" else "Camera Direction"
+            SetupPhase.ANGLES -> if (isAr) "ضبط الزوايا" else "Adjust Angles"
+        }
+
+        // ── Phase instruction (scene phases) vs joint rows (angles phase) ─
+        if (phase != SetupPhase.ANGLES) {
+            val msg = result.phaseMessage?.get(lang) ?: ""
+            binding.tvPhaseInstruction.text = msg
+            binding.tvPhaseInstruction.visibility = View.VISIBLE
+            binding.jointGuidanceContainer.visibility = View.GONE
+            binding.skeletonOverlay.clearSetupMode()
+
+            // Voice guidance for scene phases
+            if (result.phaseMessage != null &&
+                viewModel.poseSetupGuide.shouldSpeakPhaseGuidance(phase)
+            ) {
+                viewModel.feedbackManager?.speakSetupPhaseGuidance(result.phaseMessage)
+                viewModel.poseSetupGuide.onPhaseGuidanceSpoken(phase)
+            }
+        } else {
+            binding.tvPhaseInstruction.visibility = View.GONE
+            binding.jointGuidanceContainer.visibility = View.VISIBLE
+
+            // Skeleton overlay for joint angles
+            val landmarks = viewModel.lastSmoothedLandmarks
+            val imageSize = viewModel.lastImageSize
+            if (landmarks != null) {
+                binding.skeletonOverlay.updateSetupGuidance(
+                    guidances = result.joints,
+                    smoothedLandmarks = landmarks,
+                    imageW = imageSize.first,
+                    imageH = imageSize.second
+                )
+            }
+
+            updateJointGuidanceRows(result.joints)
+
+            // Voice guidance for worst joint
+            val worstJoint = result.worstJoint
+            if (worstJoint != null && viewModel.poseSetupGuide.shouldSpeakGuidance(worstJoint)) {
+                viewModel.feedbackManager?.speakSetupGuidance(worstJoint)
+                viewModel.poseSetupGuide.onVoiceGuidanceSpoken(worstJoint)
+            }
         }
 
         // ── Progress (bottom bar READY card) ────────────────────────────
@@ -1825,16 +1872,6 @@ class TrainingActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetection
 
         // ── Bottom bar VIEW card ──────────────────────────────────────────
         updateViewCard(result.camera)
-
-        // ── Joint guidance rows ───────────────────────────────────────────
-        updateJointGuidanceRows(result.joints)
-
-        // ── Voice guidance for worst joint ────────────────────────────────
-        val worstJoint = result.worstJoint
-        if (worstJoint != null && viewModel.poseSetupGuide.shouldSpeakGuidance(worstJoint)) {
-            viewModel.feedbackManager?.speakSetupGuidance(worstJoint)
-            viewModel.poseSetupGuide.onVoiceGuidanceSpoken(worstJoint)
-        }
     }
 
     /**

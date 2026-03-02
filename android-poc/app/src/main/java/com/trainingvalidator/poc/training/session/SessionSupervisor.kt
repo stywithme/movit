@@ -186,7 +186,7 @@ class SessionSupervisor {
         when (signal) {
             is SupervisorSignal.PoseFrame -> {
                 // Forward to PoseSetupGuide (carries landmarks for camera check)
-                emit(SupervisorAction.ValidatePose(signal.angles, signal.landmarks))
+                emit(SupervisorAction.ValidatePose(signal.angles, signal.landmarks, signal.isFrontCamera))
             }
 
             is SupervisorSignal.PoseConfirmed -> {
@@ -241,7 +241,7 @@ class SessionSupervisor {
                     Log.d(TAG, "Pose recovered - unfreezing countdown")
                 }
                 // Lightweight validation — ViewModel will send PoseInvalid if angles are off
-                emit(SupervisorAction.ValidatePose(signal.angles, signal.landmarks))
+                emit(SupervisorAction.ValidatePose(signal.angles, signal.landmarks, signal.isFrontCamera))
             }
 
             is SupervisorSignal.PoseInvalid -> {
@@ -393,7 +393,7 @@ class SessionSupervisor {
     private fun handleResumeSetup(signal: SupervisorSignal) {
         when (signal) {
             is SupervisorSignal.PoseFrame -> {
-                emit(SupervisorAction.ValidatePose(signal.angles, signal.landmarks))
+                emit(SupervisorAction.ValidatePose(signal.angles, signal.landmarks, signal.isFrontCamera))
             }
             
             is SupervisorSignal.PoseConfirmed -> {
@@ -432,7 +432,7 @@ class SessionSupervisor {
                     countdownFrozen = false
                     emit(SupervisorAction.UnfreezeCountdown)
                 }
-                emit(SupervisorAction.ValidatePose(signal.angles, signal.landmarks))
+                emit(SupervisorAction.ValidatePose(signal.angles, signal.landmarks, signal.isFrontCamera))
             }
 
             is SupervisorSignal.PoseInvalid -> {

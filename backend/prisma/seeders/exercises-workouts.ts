@@ -15,7 +15,26 @@ export async function seedExercisesAndWorkouts(
   prisma: PrismaClient,
   ensureMessageTemplate: EnsureMessageTemplate
 ) {
-  const assetsDir = path.resolve(__dirname, '../../../Docs/Old-way-json');
+  const candidateAssetsDirs = [
+    process.env.SEED_ASSETS_DIR,
+    path.resolve(__dirname, '../../../Docs/Old-way-json'),
+    path.resolve(__dirname, '../../../Docs/New-Project/Old-way-json'),
+    path.resolve(__dirname, '../../data'),
+  ].filter((dir): dir is string => Boolean(dir));
+
+  let assetsDir = candidateAssetsDirs[0];
+  for (const candidate of candidateAssetsDirs) {
+    const exists = await fs
+      .stat(candidate)
+      .then(() => true)
+      .catch(() => false);
+    if (exists) {
+      assetsDir = candidate;
+      break;
+    }
+  }
+
+  console.log(`📁 Seed assets dir: ${assetsDir}`);
   const exercisesDir = path.join(assetsDir, 'exercises');
   const workoutsDir = path.join(assetsDir, 'workouts');
 
@@ -57,17 +76,49 @@ export async function seedExercisesAndWorkouts(
     return `tag_${normalized}`;
   };
 
-  const cameraPositions = await prisma.cameraPosition.findMany({
-    where: { schemaCode: { in: ['side_view', 'front_view', 'back_view'] } },
+  const posePositions = await prisma.posePosition.findMany({
+    where: { isActive: true },
     orderBy: { sortOrder: 'asc' },
   });
-  const cameraBySchema = new Map<string, string>();
-  for (const camera of cameraPositions) {
-    if (!camera.schemaCode) continue;
-    if (!cameraBySchema.has(camera.schemaCode)) {
-      cameraBySchema.set(camera.schemaCode, camera.id);
-    }
+  const positionByCode = new Map<string, string>();
+  for (const pp of posePositions) {
+    positionByCode.set(pp.code, pp.id);
   }
+  // Legacy/alias mapping for JSON files that don't use canonical posePosition codes.
+  const legacyMap: Record<string, string> = {
+    'side_view': 'standing_side',
+    'front_view': 'standing_front',
+    'back_view': 'standing_back',
+    'side_view_left': 'standing_side_left',
+    'side_view_right': 'standing_side_right',
+    'diagonal_view': 'standing_diagonal',
+    'front': 'standing_front',
+    'back': 'standing_back',
+    'side': 'standing_side',
+    'side_left': 'standing_side_left',
+    'side_right': 'standing_side_right',
+    'diagonal': 'standing_diagonal',
+  };
+
+  const resolvePosePositionCode = (variant: {
+    posePosition?: string;
+    cameraPosition?: string;
+  }): string => {
+    const raw = (variant.posePosition || variant.cameraPosition || 'standing_side').trim();
+
+    // 1) Canonical code already موجود في seed pose positions
+    if (positionByCode.has(raw)) return raw;
+
+    // 2) Normalize simple aliases (hyphen/case)
+    const normalized = raw.toLowerCase().replace(/-/g, '_');
+    if (positionByCode.has(normalized)) return normalized;
+
+    // 3) Legacy alias -> canonical code
+    const mapped = legacyMap[normalized];
+    if (mapped && positionByCode.has(mapped)) return mapped;
+
+    return normalized;
+  };
 
   const exercisesDirExists = await fs
     .stat(exercisesDir)
@@ -107,8 +158,8 @@ export async function seedExercisesAndWorkouts(
       supportsWeight?: boolean;
       poseVariants?: Array<{
         name: { ar: string; en: string };
-        cameraPosition: string;
-        expectedFacingDirection?: string;
+        cameraPosition?: string;
+        posePosition?: string;
         trackedJoints?: unknown[];
         positionChecks?: Array<{
           id: string;
@@ -260,17 +311,18 @@ export async function seedExercisesAndWorkouts(
 
     for (let pvIndex = 0; pvIndex < (exerciseJson.poseVariants || []).length; pvIndex++) {
       const variant = exerciseJson.poseVariants![pvIndex];
-      const cameraPositionId = cameraBySchema.get(variant.cameraPosition);
-      if (!cameraPositionId) {
-        throw new Error(`Camera position not found for ${variant.cameraPosition}`);
+      // Support both canonical posePosition and legacy/alias cameraPosition values.
+      const posCode = resolvePosePositionCode(variant);
+      const posePositionId = positionByCode.get(posCode);
+      if (!posePositionId) {
+        throw new Error(`Pose position not found for code "${posCode}" (variant: ${JSON.stringify(variant.name)})`);
       }
 
       const poseVariant = await prisma.poseVariant.create({
         data: {
           exerciseId: exerciseRecord.id,
-          cameraPositionId,
+          posePositionId,
           name: variant.name,
-          expectedFacingDirection: variant.expectedFacingDirection || 'auto_detect',
           trackedJointsConfig: (variant.trackedJoints as object) || undefined,
           sortOrder: pvIndex + 1,
         },

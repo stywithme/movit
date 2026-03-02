@@ -186,8 +186,9 @@ class PreWorkoutActivity : AppCompatActivity() {
         exercise.poseVariants.forEachIndexed { index, variant ->
             // Get localized variant name, fallback to camera position code
             val variantName = variant.name.get(language).ifBlank { variant.name.en }
+            val posCode = variant.posePosition ?: variant.cameraPosition ?: ""
             val buttonText = variantName.ifBlank { 
-                LocalizationHelper.getCameraPositionDisplayName(this, variant.cameraPosition)
+                LocalizationHelper.getCameraPositionDisplayName(this, posCode)
             }
             when (index) {
                 0 -> {

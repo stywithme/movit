@@ -227,7 +227,7 @@ class FeedbackManager(
             is FeedbackEvent.PositionErrorDetected -> handlePositionError(event)
             is FeedbackEvent.PositionWarningDetected -> handlePositionWarning(event)
             is FeedbackEvent.PositionTipDetected -> handlePositionTip(event)
-            is FeedbackEvent.CameraPositionWarning -> handleCameraWarning(event)
+            is FeedbackEvent.SceneWarnings -> handleSceneWarnings(event)
             
             // Visibility events (Camera mode audio feedback)
             is FeedbackEvent.VisibilityWarning -> handleVisibilityWarning(event)
@@ -627,21 +627,19 @@ class FeedbackManager(
         Log.d(TAG, "Position tip: ${event.error.checkId} (channel: ${decision.channel})")
     }
     
-    private suspend fun handleCameraWarning(event: FeedbackEvent.CameraPositionWarning) {
-        val localizedText = event.warning.message
-        val displayText = localizedText.get(config.language)
-        
-        // Use MessageOrchestrator for smart delivery
-        // Use WARNING category so user hears it at least once, then reduces
-        // Camera warnings are important but shouldn't spam
-        val decision = messageOrchestrator.decide(
-            messageKey = "camera:${event.warning.expectedPosition}",
-            category = MessageOrchestrator.Category.WARNING,
-            messageText = displayText
-        )
-        
-        // Deliver with LocalizedText for audio support
-        deliverLocalizedMessage(localizedText, displayText, decision, MessageType.WARNING)
+    private suspend fun handleSceneWarnings(event: FeedbackEvent.SceneWarnings) {
+        for (warning in event.warnings) {
+            val localizedText = warning.message
+            val displayText = localizedText.get(config.language)
+
+            val decision = messageOrchestrator.decide(
+                messageKey = "scene:${warning.axis}",
+                category = MessageOrchestrator.Category.WARNING,
+                messageText = displayText
+            )
+
+            deliverLocalizedMessage(localizedText, displayText, decision, MessageType.WARNING)
+        }
     }
     
     // ==================== Visibility Event Handlers ====================
@@ -835,12 +833,7 @@ class FeedbackManager(
     // ==================== Setup Pose Guidance ====================
 
     /**
-     * Speak directional guidance for the worst joint during SETUP_POSE.
-     *
-     * Uses HIGH priority (QUEUE_FLUSH) so it interrupts any lower-priority speech.
-     * Callers are responsible for cooldown logic via [PoseSetupGuide.shouldSpeakGuidance].
-     *
-     * @param joint The joint with the worst deviation (as returned by [PoseSetupGuide])
+     * Speak directional guidance for the worst joint during SETUP_POSE (ANGLES phase).
      */
     fun speakSetupGuidance(joint: com.trainingvalidator.poc.ui.training.JointGuidance) {
         if (!isTtsEnabled) return
@@ -856,6 +849,26 @@ class FeedbackManager(
         isSpeaking = true
         tts?.speak(text, TextToSpeech.QUEUE_FLUSH, null, "setup_${joint.jointCode}")
         Log.d(TAG, "Setup guidance: $text")
+    }
+
+    /**
+     * Speak scene-phase guidance (Region / Posture / Direction).
+     * Interrupts any current speech since the user must fix this before proceeding.
+     */
+    fun speakSetupPhaseGuidance(message: com.trainingvalidator.poc.training.models.LocalizedText) {
+        if (!isTtsEnabled) return
+        val text = message.get(config.language)
+        if (text.isBlank()) return
+
+        if (useAudioPlayer && audioPlayer != null) {
+            audioPlayer?.play(text, null, AudioFeedbackPlayer.Priority.HIGH)
+            return
+        }
+
+        if (!isTtsReady) return
+        isSpeaking = true
+        tts?.speak(text, TextToSpeech.QUEUE_FLUSH, null, "setup_phase")
+        Log.d(TAG, "Phase guidance: $text")
     }
 
     /**

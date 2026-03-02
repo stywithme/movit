@@ -55,7 +55,8 @@ sealed class SupervisorAction {
      */
     data class ValidatePose(
         val angles: JointAngles,
-        val landmarks: List<SmoothedLandmark>?
+        val landmarks: List<SmoothedLandmark>?,
+        val isFrontCamera: Boolean = false
     ) : SupervisorAction()
     
     // ==================== UI Commands ====================

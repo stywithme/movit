@@ -247,7 +247,7 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent">
 
-        <!-- Header row: icon + title -->
+        <!-- Header row: icon + title + step indicator -->
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
@@ -262,6 +262,7 @@
                 app:tint="@color/primary" />
 
             <TextView
+                android:id="@+id/tvSetupTitle"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
@@ -271,9 +272,29 @@
                 android:textStyle="bold"
                 android:layout_marginStart="@dimen/spacing_sm" />
 
+            <TextView
+                android:id="@+id/tvPhaseStep"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:textColor="@color/text_hint"
+                android:textSize="12sp"
+                android:visibility="gone" />
+
         </LinearLayout>
 
-        <!-- Per-joint guidance container (rows are added programmatically) -->
+        <!-- Phase instruction (shown during REGION/POSTURE/DIRECTION phases) -->
+        <TextView
+            android:id="@+id/tvPhaseInstruction"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="@dimen/spacing_md"
+            android:gravity="center"
+            android:textColor="@color/warning"
+            android:textSize="18sp"
+            android:textStyle="bold"
+            android:visibility="gone" />
+
+        <!-- Per-joint guidance container (shown during ANGLES phase) -->
         <LinearLayout
             android:id="@+id/jointGuidanceContainer"
             android:layout_width="match_parent"

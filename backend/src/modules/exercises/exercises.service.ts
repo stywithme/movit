@@ -33,9 +33,8 @@ interface PoseVariantInput {
   tempId?: string;
   name: LocalizedText;
   description?: LocalizedText;
-  cameraPositionId: string;
+  posePositionId: string;
   referenceImageUrl?: string;
-  expectedFacingDirection?: string;
   trackedJointsConfig?: TrackedJoint[];
   positionChecks?: PositionCheckInput[];
   messageAssignments?: FeedbackMessageAssignmentInput[];
@@ -183,7 +182,7 @@ export const exerciseService = {
         poseVariants: {
           orderBy: { sortOrder: 'asc' },
           include: {
-            cameraPosition: {
+            posePosition: {
               include: {
                 joints: {
                   include: {
@@ -296,11 +295,10 @@ export const exerciseService = {
     const poseVariant = await prisma.poseVariant.create({
       data: {
         exerciseId,
-        cameraPositionId: pv.cameraPositionId,
+        posePositionId: pv.posePositionId,
         name: pv.name as object,
         description: (pv.description as object) || undefined,
         referenceImageUrl: pv.referenceImageUrl || undefined,
-        expectedFacingDirection: pv.expectedFacingDirection || 'auto_detect',
         trackedJointsConfig: (pv.trackedJointsConfig as object) || undefined,
         sortOrder: pv.sortOrder ?? sortOrder + 1,
       },

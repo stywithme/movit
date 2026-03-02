@@ -37,7 +37,26 @@ const TOTAL_STEPS = 7;
 interface LookupData {
   categories: Array<{ id: string; code: string; name: { ar: string; en: string } }>;
   countingMethods: Array<{ id: string; code: string; name: { ar: string; en: string }; description?: { ar: string; en: string } }>;
-  cameraPositions: Array<{ id: string; code: string; name: { ar: string; en: string }; description?: { ar: string; en: string }; imageUrl?: string }>;
+  posePositions?: Array<{
+    id: string;
+    code: string;
+    name: { ar: string; en: string };
+    description?: { ar: string; en: string };
+    imageUrl?: string;
+    postures?: string[];
+    directions?: string[];
+    regions?: string[];
+  }>;
+  cameraPositions?: Array<{
+    id: string;
+    code: string;
+    name: { ar: string; en: string };
+    description?: { ar: string; en: string };
+    imageUrl?: string;
+    postures?: string[];
+    directions?: string[];
+    regions?: string[];
+  }>;
   joints: Array<{ id: string; code: string; name: { ar: string; en: string } }>;
   muscles: Array<{ id: string; code: string; name: { ar: string; en: string } }>;
   equipment: Array<{ id: string; code: string; name: { ar: string; en: string } }>;
@@ -184,7 +203,7 @@ export default function NewExercisePage() {
       equipment: store.extras.equipment,
       tags: store.extras.tags,
       repCountingConfig,
-      poseVariants: store.cameraPosition.cameraPositionIds?.map((cameraPositionId, index) => {
+      poseVariants: store.cameraPosition.cameraPositionIds?.map((posePositionId, index) => {
         // All joints go into a single poseVariant (bilateral mirroring handled at runtime)
         const jointsForVariant = allJoints;
         const mappedJoints = jointsForVariant.map((joint: TrackedJointData) => {
@@ -223,9 +242,8 @@ export default function NewExercisePage() {
         });
         return {
           name: store.basicInfo.name,
-          cameraPositionId,
-          expectedFacingDirection: store.cameraPosition.expectedFacingDirection,
-          referenceImageUrl: store.cameraPosition.referenceImages?.[cameraPositionId] || undefined,
+          posePositionId,
+          referenceImageUrl: store.cameraPosition.referenceImages?.[posePositionId] || undefined,
           trackedJointsConfig: mappedJoints.length > 0 ? mappedJoints : trackedJointsConfig,
           positionChecks,
           messageAssignments: feedbackAssignments.length > 0 ? feedbackAssignments : undefined,
@@ -412,7 +430,11 @@ export default function NewExercisePage() {
           />
         );
       case 2:
-        return <CameraPositionStep cameraPositions={lookupData.cameraPositions} />;
+        return (
+          <CameraPositionStep
+            cameraPositions={lookupData.posePositions || lookupData.cameraPositions || []}
+          />
+        );
       case 3:
         return <JointConfigStep />;
       case 4:
@@ -518,7 +540,7 @@ export default function NewExercisePage() {
             onStepClick={handleStepChange}
             stepLabels={[
               'Basic Info',
-              'Camera',
+              'Pose Axes',
               'Joints',
               'Checks',
               'Reps',

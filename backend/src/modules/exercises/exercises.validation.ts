@@ -159,22 +159,15 @@ export const CountingMethodSchema = z.object({
 export type CountingMethodData = z.infer<typeof CountingMethodSchema>;
 
 // ============================================
-// STEP 3: CAMERA POSITION
+// STEP 3: POSE POSITION
 // ============================================
 
-export const CameraPositionSchema = z.object({
-  cameraPositionIds: z.array(z.string().uuid()).min(1, 'Select at least one camera position'),
-  expectedFacingDirection: z.enum([
-    'facing_right',
-    'facing_left',
-    'facing_camera',
-    'facing_away',
-    'auto_detect',
-  ]).default('auto_detect'),
+export const PosePositionSchema = z.object({
+  posePositionIds: z.array(z.string().uuid()).min(1, 'Select at least one pose position'),
   referenceImages: z.record(z.string(), z.string().url().optional().or(z.literal(''))).optional(),
 });
 
-export type CameraPositionData = z.infer<typeof CameraPositionSchema>;
+export type PosePositionData = z.infer<typeof PosePositionSchema>;
 
 // ============================================
 // STEP 4: JOINT CONFIGURATION (State-based)
@@ -423,7 +416,7 @@ export const WizardDataSchema = z.object({
   // Step 2
   countingMethod: CountingMethodSchema,
   // Step 3
-  cameraPosition: CameraPositionSchema,
+  posePosition: PosePositionSchema,
   // Step 4 (per pose variant)
   jointConfig: JointConfigSchema,
   // Step 5
@@ -478,7 +471,7 @@ export function validateStep(step: number, data: Partial<WizardData>): {
         CountingMethodSchema.parse(data.countingMethod);
         break;
       case 3:
-        CameraPositionSchema.parse(data.cameraPosition);
+        PosePositionSchema.parse(data.posePosition);
         break;
       case 4:
         JointConfigSchema.parse(data.jointConfig);
@@ -546,9 +539,9 @@ export function canPublish(data: Partial<WizardData>): {
     }
   }
 
-  // Step 3: Camera position
+  // Step 3: Pose position
   try {
-    CameraPositionSchema.parse(data.cameraPosition);
+    PosePositionSchema.parse(data.posePosition);
   } catch (e) {
     incompleteSteps.push(3);
     if (e instanceof z.ZodError) {

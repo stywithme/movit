@@ -112,8 +112,7 @@ export function ReviewStep() {
         repCountingConfig,
         poseVariants: [{
           name: store.basicInfo.name || { ar: '', en: '' },
-          cameraPosition: 'side_view',
-          expectedFacingDirection: store.cameraPosition.expectedFacingDirection || 'auto_detect',
+          posePosition: 'standing_side',
           trackedJoints,
           positionChecks: positionChecks.length > 0 ? positionChecks : undefined,
           feedbackMessages: (feedbackMessages.motivational.length > 0 || feedbackMessages.tips.length > 0) 

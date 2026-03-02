@@ -25,8 +25,7 @@ import type {
   FeedbackMessages,
   LocalizedText,
   CountingMethod,
-  CameraPosition,
-  FacingDirection,
+  PosePosition,
   PhaseName,
   AngleRange,
   StateRanges,
@@ -90,11 +89,12 @@ interface DbPoseVariant {
   id: string;
   name: Record<string, string>;
   description?: Record<string, string> | null;
-  expectedFacingDirection?: string | null;
   trackedJointsConfig?: unknown;
-  cameraPosition: {
+  posePosition: {
     code: string;
-    schemaCode?: string | null;
+    postures: unknown;
+    directions: unknown;
+    regions: unknown;
   };
   positionChecks: DbPositionCheck[];
   messageAssignments: DbMessageAssignment[];
@@ -278,12 +278,10 @@ function buildPoseVariantConfig(
   dbVariant: DbPoseVariant,
   options: BuildExerciseConfigOptions
 ): PoseVariantConfig {
-  // Use schemaCode for Android, fallback to code if not set
-  const cameraPosition = (dbVariant.cameraPosition.schemaCode ||
-    mapCameraCodeToSchema(dbVariant.cameraPosition.code)) as CameraPosition;
-
-  const expectedFacingDirection = (dbVariant.expectedFacingDirection ||
-    'auto_detect') as FacingDirection;
+  const posePosition = dbVariant.posePosition.code as PosePosition;
+  const expectedPostures = (dbVariant.posePosition.postures as string[] | null) ?? ['any'];
+  const expectedDirections = (dbVariant.posePosition.directions as string[] | null) ?? ['any'];
+  const expectedRegions = (dbVariant.posePosition.regions as string[] | null) ?? ['any'];
 
   // Parse trackedJointsConfig from JSON
   const trackedJoints = parseTrackedJoints(dbVariant.trackedJointsConfig);
@@ -298,16 +296,14 @@ function buildPoseVariantConfig(
 
   const config: PoseVariantConfig = {
     name: toLocalizedText(dbVariant.name),
-    cameraPosition,
+    posePosition,
+    expectedPostures,
+    expectedDirections,
+    expectedRegions,
     trackedJoints: options.includeMessages
       ? applyStateMessageAssignments(trackedJoints, dbVariant.messageAssignments)
       : trackedJoints,
   };
-
-  // Only include optional fields if they have values
-  if (expectedFacingDirection !== 'auto_detect') {
-    config.expectedFacingDirection = expectedFacingDirection;
-  }
 
   if (positionChecks.length > 0) {
     config.positionChecks = positionChecks;
@@ -743,20 +739,20 @@ function toLocalizedText(json: Record<string, string> | null | undefined): Local
 }
 
 /**
- * Map internal camera code to Android schema code
+ * @deprecated Legacy mapping kept for reference. New system uses posePosition codes directly.
  */
-function mapCameraCodeToSchema(code: string): CameraPosition {
-  const mapping: Record<string, CameraPosition> = {
-    'side_left': 'side_view',
-    'side_right': 'side_view',
-    'side_view': 'side_view',
-    'front': 'front_view',
-    'front_view': 'front_view',
-    'back': 'back_view',
-    'back_view': 'back_view',
+function mapLegacyCameraCode(code: string): PosePosition {
+  const mapping: Record<string, PosePosition> = {
+    'side_left': 'standing_side',
+    'side_right': 'standing_side',
+    'side_view': 'standing_side',
+    'front': 'standing_front',
+    'front_view': 'standing_front',
+    'back': 'standing_back',
+    'back_view': 'standing_back',
   };
 
-  return mapping[code] ?? 'side_view';
+  return mapping[code] ?? 'standing_side';
 }
 
 // ============================================
@@ -838,10 +834,12 @@ export const exerciseFullInclude = {
   },
   poseVariants: {
     include: {
-      cameraPosition: {
+      posePosition: {
         select: {
           code: true,
-          schemaCode: true,
+          postures: true,
+          directions: true,
+          regions: true,
         },
       },
       positionChecks: {

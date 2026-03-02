@@ -7,7 +7,7 @@ import { AdminAuthModule } from './modules/admin-auth/admin-auth.module';
 import { AdminsModule } from './modules/admins/admins.module';
 import { UsersModule } from './modules/users/users.module';
 import { AttributesModule } from './modules/attributes/attributes.module';
-import { CameraPositionsModule } from './modules/camera-positions/camera-positions.module';
+import { PosePositionsModule } from './modules/pose-positions/pose-positions.module';
 import { AuthModule } from './modules/auth/auth.module';
 import { ExercisesModule } from './modules/exercises/exercises.module';
 import { WorkoutsModule } from './modules/workouts/workouts.module';
@@ -44,7 +44,7 @@ import { AssessmentTemplatesModule } from './modules/assessment-templates';
     AdminsModule,
     UsersModule,
     AttributesModule,
-    CameraPositionsModule,
+    PosePositionsModule,
     AuthModule,
     ExercisesModule,
     WorkoutsModule,

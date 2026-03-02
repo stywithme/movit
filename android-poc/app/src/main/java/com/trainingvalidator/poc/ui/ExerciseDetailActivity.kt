@@ -279,7 +279,8 @@ class ExerciseDetailActivity : AppCompatActivity() {
         
         // Show variant buttons
         exercise.poseVariants.forEachIndexed { index, variant ->
-            val text = "${variant.name.en}\n(${variant.cameraPosition})"
+            val posLabel = variant.posePosition ?: variant.cameraPosition ?: ""
+            val text = "${variant.name.en}\n($posLabel)"
             when (index) {
                 0 -> {
                     binding.btnVariant1.text = text

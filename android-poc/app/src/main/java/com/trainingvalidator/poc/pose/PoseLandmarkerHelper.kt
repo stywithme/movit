@@ -31,7 +31,8 @@ enum class ModelType(val fileName: String, val displayName: String) {
  */
 enum class RunMode {
     LIVE_STREAM,  // For camera (async with callback)
-    VIDEO         // For video (sync with return value)
+    VIDEO,        // For video (sync with return value)
+    IMAGE         // For single image (sync with return value)
 }
 
 /**
@@ -264,10 +265,11 @@ class PoseLandmarkerHelper(
         poseLandmarker = null
         isInitialized = false
         
-        // Clear per-frame camera state
+        closeVideoMode()
+        closeImageMode()
+        
         frameCameraState.clear()
         
-        // Clean up pooled bitmaps to free memory
         transformedBitmapPool.forEachIndexed { i, bmp ->
             bmp?.recycle()
             transformedBitmapPool[i] = null
@@ -435,6 +437,83 @@ class PoseLandmarkerHelper(
      * Check if VIDEO mode is ready
      */
     fun isVideoModeReady(): Boolean = isVideoModeInitialized
+    
+    // ==================== IMAGE Mode Support ====================
+    
+    private var imageModeLandmarker: PoseLandmarker? = null
+    private var isImageModeInitialized = false
+    
+    /**
+     * Initialize for IMAGE mode (single-frame synchronous detection).
+     *
+     * IMAGE mode uses detect() which has no temporal tracking —
+     * each frame is treated independently.
+     */
+    fun initializeForImage(modelType: ModelType = ModelType.FULL, useGpu: Boolean = true) {
+        currentModelType = modelType
+        
+        try {
+            val baseOptionsBuilder = BaseOptions.builder()
+                .setModelAssetPath(modelType.fileName)
+            
+            if (useGpu) {
+                baseOptionsBuilder.setDelegate(Delegate.GPU)
+            } else {
+                baseOptionsBuilder.setDelegate(Delegate.CPU)
+            }
+            
+            val options = PoseLandmarker.PoseLandmarkerOptions.builder()
+                .setBaseOptions(baseOptionsBuilder.build())
+                .setRunningMode(RunningMode.IMAGE)
+                .setNumPoses(NUM_POSES)
+                .setMinPoseDetectionConfidence(MIN_POSE_DETECTION_CONFIDENCE)
+                .setMinTrackingConfidence(MIN_POSE_TRACKING_CONFIDENCE)
+                .setMinPosePresenceConfidence(MIN_POSE_PRESENCE_CONFIDENCE)
+                .build()
+            
+            imageModeLandmarker = PoseLandmarker.createFromOptions(context, options)
+            isImageModeInitialized = true
+            
+            Log.d(TAG, "PoseLandmarker IMAGE mode initialized with GPU=$useGpu, Model=${modelType.displayName}")
+            
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed to initialize IMAGE mode: ${e.message}")
+            if (useGpu) {
+                Log.w(TAG, "Retrying IMAGE mode with CPU...")
+                initializeForImage(modelType, useGpu = false)
+            } else {
+                listener.onError("Failed to initialize IMAGE mode: ${e.message}")
+            }
+        }
+    }
+    
+    /**
+     * Detect pose from bitmap (IMAGE mode - synchronous, single frame).
+     */
+    fun detectPoseFromImage(bitmap: Bitmap): PoseResult? {
+        if (!isImageModeInitialized || imageModeLandmarker == null) {
+            Log.w(TAG, "IMAGE mode not initialized")
+            return null
+        }
+        
+        return try {
+            val mpImage = BitmapImageBuilder(bitmap).build()
+            val result = imageModeLandmarker?.detect(mpImage)
+            result?.let { convertToResult(it, bitmap.width, bitmap.height) }
+        } catch (e: Exception) {
+            Log.e(TAG, "Error in IMAGE mode detection: ${e.message}")
+            null
+        }
+    }
+    
+    fun closeImageMode() {
+        imageModeLandmarker?.close()
+        imageModeLandmarker = null
+        isImageModeInitialized = false
+        Log.d(TAG, "IMAGE mode landmarker closed")
+    }
+    
+    fun isImageModeReady(): Boolean = isImageModeInitialized
     
     /**
      * Get current run mode

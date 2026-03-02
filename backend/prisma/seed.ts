@@ -3,7 +3,7 @@ import { PrismaPg } from '@prisma/adapter-pg';
 import { clearDatabase } from './seeders/clear';
 import { seedAttributes } from './seeders/attributes';
 import { createMessageTemplateHelper, seedBaseMessageTemplates } from './seeders/messages';
-import { seedCameraPositions } from './seeders/camera-positions';
+import { seedPosePositions } from './seeders/pose-positions';
 import { seedExercisesAndWorkouts } from './seeders/exercises-workouts';
 import { seedPrograms } from './seeders/programs';
 import { seedUsers } from './seeders/users';
@@ -33,7 +33,7 @@ async function main() {
   const { ensureMessageTemplate } = createMessageTemplateHelper(prisma);
   await seedBaseMessageTemplates(ensureMessageTemplate);
 
-  await seedCameraPositions(prisma);
+  await seedPosePositions(prisma);
   await seedExercisesAndWorkouts(prisma, ensureMessageTemplate);
   await seedUsers(prisma);
   await seedPrograms(prisma);

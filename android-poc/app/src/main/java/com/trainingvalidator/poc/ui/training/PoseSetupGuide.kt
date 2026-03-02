@@ -4,7 +4,7 @@ import android.util.Log
 import com.trainingvalidator.poc.analysis.JointAngles
 import com.trainingvalidator.poc.analysis.SmoothedLandmark
 import com.trainingvalidator.poc.training.config.SettingsManager
-import com.trainingvalidator.poc.training.engine.CameraPositionDetector
+import com.trainingvalidator.poc.training.engine.*
 import com.trainingvalidator.poc.training.models.ExerciseConfig
 import com.trainingvalidator.poc.training.models.JointRole
 import com.trainingvalidator.poc.training.models.LocalizedText
@@ -13,16 +13,15 @@ import com.trainingvalidator.poc.training.models.TrackedJoint
 /**
  * PoseSetupGuide - Smart pre-training position guidance system
  *
- * Replaces PoseValidator with a richer, more user-friendly approach:
+ * Uses a sequential phase-gated approach:
  *
- * 1. **Rolling Window Confirmation** (9/12 frames) - tolerates camera noise
- * 2. **Per-joint colour guidance** (GREEN / YELLOW / RED)
- * 3. **Directional feedback** (RAISE / LOWER) per joint
- * 4. **Camera position tip** (soft - never blocks start)
- * 5. **Voice guidance** target: always the single worst joint
+ * **Phase 1 – REGION**: Ensure the correct body region is visible
+ * **Phase 2 – POSTURE**: Ensure the correct body posture
+ * **Phase 3 – DIRECTION**: Ensure the correct camera direction
+ * **Phase 4 – ANGLES**: Fine-tune joint angles (Rolling Window 9/12)
  *
- * Philosophy: "Guide, don't gate" - help the user reach the position,
- * never refuse to start unless the pose is clearly wrong.
+ * Each phase must be satisfied before advancing to the next.
+ * Voice and UI guidance focus on exactly the current blocking phase.
  */
 class PoseSetupGuide(
     val language: String = "ar"
@@ -52,34 +51,39 @@ class PoseSetupGuide(
             ?: DEFAULT_REQUIRED_VALID
     )
 
-    // ── Rolling window for camera position ────────────────────────────────
+    // ── 3-axis scene detector (direction + posture + region) ───────────────
 
-    private val cameraWindow = RollingCameraWindow(
-        size = SettingsManager.settings.setupValidation.cameraCheckWindowSize.takeIf { it > 0 }
+    private val sceneDetector = PoseSceneDetector(
+        windowSize = SettingsManager.settings.setupValidation.cameraCheckWindowSize.takeIf { it > 0 }
             ?: DEFAULT_CAM_WINDOW_SIZE,
-        required = SettingsManager.settings.setupValidation.cameraCheckRequired.takeIf { it > 0 }
+        requiredMajority = SettingsManager.settings.setupValidation.cameraCheckRequired.takeIf { it > 0 }
             ?: DEFAULT_CAM_REQUIRED
     )
 
-    // ── Last voice guidance state (to drive cooldown in caller) ───────────
+    // ── Voice guidance state ────────────────────────────────────────────
 
     private var lastVoiceJointCode: String? = null
     private var lastVoiceTimeMs: Long = 0L
 
+    private var lastVoicePhase: SetupPhase? = null
+    private var lastVoicePhaseTimeMs: Long = 0L
+
     // ──────────────────────────────────────────────────────────────────────
 
     /**
-     * Validate current pose and produce full setup guidance.
+     * Validate current pose using sequential phase gating.
      *
-     * Should be called every frame from the ValidatePose supervisor action.
+     * Checks axes in order: Region → Posture → Direction → Angles.
+     * Only advances to the next phase when the current one is satisfied.
      *
-     * @return [SetupResult] with per-joint guidance, camera tip, and overall progress
+     * @return [SetupResult] with current phase, guidance, and overall progress
      */
     fun validate(
         angles: JointAngles?,
         landmarks: List<SmoothedLandmark>?,
         exerciseConfig: ExerciseConfig?,
-        poseVariantIndex: Int
+        poseVariantIndex: Int,
+        isFrontCamera: Boolean = false
     ): SetupResult {
 
         if (angles == null || exerciseConfig == null) {
@@ -90,44 +94,84 @@ class PoseSetupGuide(
         val variant = exerciseConfig.poseVariants.getOrNull(poseVariantIndex)
             ?: return SetupResult.empty().also { jointWindow.add(false) }
 
+        // ── Build scene expectation ──────────────────────────────────────
+        val expectation = if (variant.expectedPostures != null) {
+            PoseSceneExpectation.fromJson(variant.expectedPostures, variant.expectedDirections, variant.expectedRegions)
+        } else {
+            val posCode = variant.posePosition ?: variant.cameraPosition ?: "standing_side"
+            PoseSceneExpectation.fromLegacyCode(posCode)
+        }
+
+        // ── Detect scene (3-axis) ────────────────────────────────────────
+        val sceneAvailable = landmarks != null &&
+                landmarks.size >= 33 &&
+                SettingsManager.settings.setupValidation.cameraTipEnabled
+
+        val scene = if (sceneAvailable) sceneDetector.detect(landmarks!!, isFrontCamera) else null
+        val axisMatch = if (scene != null) expectation.matchesScene(scene) else null
+
+        // ── Determine current phase (first failing axis in priority order) ─
+        // When scene detection is unavailable, skip straight to ANGLES
+        val phase: SetupPhase
+        val phaseMessage: LocalizedText?
+
+        if (axisMatch == null) {
+            phase = SetupPhase.ANGLES
+            phaseMessage = null
+        } else if (!axisMatch.regionMatch) {
+            phase = SetupPhase.REGION
+            phaseMessage = buildRegionTip(expectation.regions)
+        } else if (!axisMatch.postureMatch) {
+            phase = SetupPhase.POSTURE
+            phaseMessage = buildPostureTip(expectation.postures)
+        } else if (!axisMatch.directionMatch) {
+            phase = SetupPhase.DIRECTION
+            phaseMessage = buildDirectionTip(expectation.directions)
+        } else {
+            phase = SetupPhase.ANGLES
+            phaseMessage = null
+        }
+
+        // ── Joint guidance (only computed in ANGLES phase) ───────────────
         val visibilityThreshold = SettingsManager.getPoseValidationVisibility()
         val closeThreshold = SettingsManager.settings.setupValidation
             .closeThresholdDegrees.takeIf { it > 0.0 } ?: DEFAULT_CLOSE_THRESHOLD
 
-        // ── Per-joint guidance ────────────────────────────────────────────
-        val jointGuidances = variant.trackedJoints.mapNotNull { joint ->
-            buildJointGuidance(joint, angles, visibilityThreshold, closeThreshold)
+        val jointGuidances = if (phase == SetupPhase.ANGLES) {
+            variant.trackedJoints.mapNotNull { joint ->
+                buildJointGuidance(joint, angles, visibilityThreshold, closeThreshold)
+            }
+        } else {
+            emptyList()
         }
 
-        // Must have guidance for ALL tracked joints — if any is missing (null angle /
-        // invalid visibility) the frame is invalid. Prevents vacuous-truth confirmation
-        // when the user isn't visible.
-        val allJointsPresent = jointGuidances.size == variant.trackedJoints.size
-        val allJointsValid = allJointsPresent && jointGuidances.all { it.level == GuidanceLevel.GREEN }
+        // Rolling window only counts when ALL scene axes pass AND all joints valid
+        val allJointsPresent = phase == SetupPhase.ANGLES &&
+                jointGuidances.size == variant.trackedJoints.size
+        val allJointsValid = allJointsPresent &&
+                jointGuidances.all { it.level == GuidanceLevel.GREEN }
         jointWindow.add(allJointsValid)
 
-        // ── Camera position guidance ──────────────────────────────────────
-        val expectedCamera = variant.cameraPosition.takeIf { it.isNotBlank() }
-        val cameraGuidance = if (
-            expectedCamera != null &&
-            landmarks != null &&
-            landmarks.size >= 33 &&
-            SettingsManager.settings.setupValidation.cameraTipEnabled
-        ) {
-            val detected = CameraPositionDetector.detect(landmarks).position
-            cameraWindow.add(detected)
-            buildCameraGuidance(cameraWindow.dominantPosition(), expectedCamera)
-        } else {
-            null
-        }
+        // ── Camera guidance (for bottom bar VIEW card, backwards-compatible) ─
+        val cameraGuidance = if (scene != null) {
+            buildSceneGuidance(scene, expectation)
+        } else null
 
-        // ── Progress & confirmation ────────────────────────────────────────
+        // ── Progress ─────────────────────────────────────────────────────
+        val progressPercent = when (phase) {
+            SetupPhase.REGION -> 0
+            SetupPhase.POSTURE -> 25
+            SetupPhase.DIRECTION -> 50
+            SetupPhase.ANGLES -> {
+                val windowRatio = jointWindow.validRatio()
+                (50 + windowRatio * 50).toInt().coerceIn(50, 100)
+            }
+        }
         val progress = SetupProgress(
-            percent = (jointWindow.validRatio() * 100).toInt().coerceIn(0, 100),
+            percent = progressPercent,
             isConfirmed = jointWindow.isConfirmed()
         )
 
-        // ── Worst joint for voice guidance ────────────────────────────────
         val worstJoint = jointGuidances
             .filter { it.level != GuidanceLevel.GREEN }
             .maxByOrNull { it.distance }
@@ -137,6 +181,8 @@ class PoseSetupGuide(
         }
 
         return SetupResult(
+            phase = phase,
+            phaseMessage = phaseMessage,
             joints = jointGuidances,
             camera = cameraGuidance,
             progress = progress,
@@ -198,36 +244,110 @@ class PoseSetupGuide(
         )
     }
 
-    private fun buildCameraGuidance(
-        dominantDetected: CameraPositionDetector.DetectedCameraPosition?,
-        expectedPosition: String
+    private fun buildSceneGuidance(
+        scene: PoseSceneResult,
+        expectation: PoseSceneExpectation
     ): CameraGuidance {
-        val isCorrect = dominantDetected != null &&
-                CameraPositionDetector.matchesExpected(dominantDetected, expectedPosition)
+        val match = expectation.matchesScene(scene)
+        val tips = mutableListOf<LocalizedText>()
 
-        val detectedStr = dominantDetected?.let {
-            CameraPositionDetector.toJsonCameraPosition(it)
-        } ?: "unknown"
+        if (!match.directionMatch) {
+            tips.add(buildDirectionTip(expectation.directions))
+        }
+        if (!match.postureMatch) {
+            tips.add(buildPostureTip(expectation.postures))
+        }
+        if (!match.regionMatch) {
+            tips.add(buildRegionTip(expectation.regions))
+        }
 
-        val tip: LocalizedText? = if (!isCorrect) {
-            buildCameraTip(expectedPosition)
+        val combinedTip = if (tips.isNotEmpty()) {
+            LocalizedText(
+                ar = tips.joinToString(" • ") { it.ar },
+                en = tips.joinToString(" • ") { it.en }
+            )
         } else null
 
         return CameraGuidance(
-            isCorrect = isCorrect,
-            detectedPosition = detectedStr,
-            expectedPosition = expectedPosition,
-            tip = tip
+            isCorrect = match.allMatch,
+            detectedPosition = CameraPositionDetector.toJsonCameraPosition(scene.direction),
+            expectedPosition = expectation.directionLabel(),
+            tip = combinedTip
         )
     }
 
-    private fun buildCameraTip(expectedPosition: String): LocalizedText {
-        return when (expectedPosition) {
-            "side_view" -> LocalizedText(ar = "جانبي ↻", en = "Side ↻")
-            "front_view" -> LocalizedText(ar = "أمامي ↻", en = "Front ↻")
-            "back_view" -> LocalizedText(ar = "خلفي ↻", en = "Back ↻")
-            else -> LocalizedText(ar = "عدّل ↻", en = "Adjust ↻")
-        }
+    private fun buildDirectionTip(dirs: List<ExpectedDirection>): LocalizedText {
+        val arParts = dirs.mapNotNull { dirAr(it) }
+        val enParts = dirs.mapNotNull { dirEn(it) }
+        return LocalizedText(
+            ar = "صوّر من ${arParts.joinToString(" أو ")} ↻",
+            en = "Film from ${enParts.joinToString(" or ")} ↻"
+        )
+    }
+
+    private fun buildPostureTip(postures: List<BodyPosture>): LocalizedText {
+        val arParts = postures.mapNotNull { posAr(it) }
+        val enParts = postures.mapNotNull { posEn(it) }
+        return LocalizedText(
+            ar = arParts.joinToString(" أو "),
+            en = enParts.joinToString(" or ")
+        )
+    }
+
+    private fun buildRegionTip(regions: List<VisibleRegion>): LocalizedText {
+        val arParts = regions.mapNotNull { regAr(it) }
+        val enParts = regions.mapNotNull { regEn(it) }
+        return LocalizedText(
+            ar = "أظهر ${arParts.joinToString(" أو ")}",
+            en = "Show ${enParts.joinToString(" or ")}"
+        )
+    }
+
+    private fun dirAr(d: ExpectedDirection) = when (d) {
+        ExpectedDirection.FRONT -> "الأمام"
+        ExpectedDirection.BACK -> "الخلف"
+        ExpectedDirection.SIDE_ANY -> "الجانب"
+        ExpectedDirection.SIDE_LEFT -> "الجانب الأيسر"
+        ExpectedDirection.SIDE_RIGHT -> "الجانب الأيمن"
+        ExpectedDirection.DIAGONAL -> "بزاوية مائلة"
+        ExpectedDirection.ANY -> null
+    }
+    private fun dirEn(d: ExpectedDirection) = when (d) {
+        ExpectedDirection.FRONT -> "the front"
+        ExpectedDirection.BACK -> "the back"
+        ExpectedDirection.SIDE_ANY -> "the side"
+        ExpectedDirection.SIDE_LEFT -> "the left side"
+        ExpectedDirection.SIDE_RIGHT -> "the right side"
+        ExpectedDirection.DIAGONAL -> "an angle"
+        ExpectedDirection.ANY -> null
+    }
+    private fun posAr(p: BodyPosture) = when (p) {
+        BodyPosture.STANDING -> "قف مستقيماً"
+        BodyPosture.LYING_PRONE -> "استلقِ على وجهك"
+        BodyPosture.LYING_SUPINE -> "استلقِ على ظهرك"
+        BodyPosture.LYING_SIDE -> "استلقِ على جنبك"
+        BodyPosture.SITTING -> "اجلس"
+        BodyPosture.UNKNOWN -> null
+    }
+    private fun posEn(p: BodyPosture) = when (p) {
+        BodyPosture.STANDING -> "Stand upright"
+        BodyPosture.LYING_PRONE -> "Lie face down"
+        BodyPosture.LYING_SUPINE -> "Lie face up"
+        BodyPosture.LYING_SIDE -> "Lie on your side"
+        BodyPosture.SITTING -> "Sit down"
+        BodyPosture.UNKNOWN -> null
+    }
+    private fun regAr(r: VisibleRegion) = when (r) {
+        VisibleRegion.FULL_BODY -> "الجسم بالكامل"
+        VisibleRegion.UPPER_BODY -> "الجزء العلوي"
+        VisibleRegion.LOWER_BODY -> "الجزء السفلي"
+        VisibleRegion.UNKNOWN -> null
+    }
+    private fun regEn(r: VisibleRegion) = when (r) {
+        VisibleRegion.FULL_BODY -> "your full body"
+        VisibleRegion.UPPER_BODY -> "your upper body"
+        VisibleRegion.LOWER_BODY -> "your lower body"
+        VisibleRegion.UNKNOWN -> null
     }
 
     /**
@@ -324,8 +444,7 @@ class PoseSetupGuide(
     // ──────────────────────────────────────────────────────────────────────
 
     /**
-     * Returns whether enough cooldown has passed to speak voice guidance.
-     * Caller should check this before calling FeedbackManager.speakSetupGuidance().
+     * Returns whether enough cooldown has passed to speak joint voice guidance.
      */
     fun shouldSpeakGuidance(worstJoint: JointGuidance?): Boolean {
         if (worstJoint == null) return false
@@ -334,7 +453,6 @@ class PoseSetupGuide(
         val now = System.currentTimeMillis()
         val sameJoint = worstJoint.jointCode == lastVoiceJointCode
         val cooldownOk = (now - lastVoiceTimeMs) >= cooldownMs
-        // Always speak on first occurrence or when joint changes, or after cooldown
         return !sameJoint || cooldownOk
     }
 
@@ -342,6 +460,25 @@ class PoseSetupGuide(
     fun onVoiceGuidanceSpoken(joint: JointGuidance) {
         lastVoiceJointCode = joint.jointCode
         lastVoiceTimeMs = System.currentTimeMillis()
+    }
+
+    /**
+     * Returns whether the scene-phase voice should speak.
+     * Speaks immediately on phase change, then respects cooldown.
+     */
+    fun shouldSpeakPhaseGuidance(phase: SetupPhase): Boolean {
+        if (phase == SetupPhase.ANGLES) return false
+        val cooldownMs = SettingsManager.settings.setupValidation.voiceCooldownMs
+            .takeIf { it > 0L } ?: 2500L
+        val now = System.currentTimeMillis()
+        val samePhase = phase == lastVoicePhase
+        val cooldownOk = (now - lastVoicePhaseTimeMs) >= cooldownMs
+        return !samePhase || cooldownOk
+    }
+
+    fun onPhaseGuidanceSpoken(phase: SetupPhase) {
+        lastVoicePhase = phase
+        lastVoicePhaseTimeMs = System.currentTimeMillis()
     }
 
     /** Text displayed in the setup panel header - shows required angles. */
@@ -366,9 +503,11 @@ class PoseSetupGuide(
     /** Reset all rolling windows and voice cooldown. */
     fun reset() {
         jointWindow.reset()
-        cameraWindow.reset()
+        sceneDetector.reset()
         lastVoiceJointCode = null
         lastVoiceTimeMs = 0L
+        lastVoicePhase = null
+        lastVoicePhaseTimeMs = 0L
         Log.d(TAG, "PoseSetupGuide reset")
     }
 
@@ -389,10 +528,20 @@ class PoseSetupGuide(
 // Result types
 // ──────────────────────────────────────────────────────────────────────────
 
+/** Sequential setup phase - checked in this priority order. */
+enum class SetupPhase {
+    REGION,
+    POSTURE,
+    DIRECTION,
+    ANGLES
+}
+
 /**
  * Full result of one setup validation pass.
  */
 data class SetupResult(
+    val phase: SetupPhase,
+    val phaseMessage: LocalizedText?,
     val joints: List<JointGuidance>,
     val camera: CameraGuidance?,
     val progress: SetupProgress,
@@ -401,6 +550,8 @@ data class SetupResult(
 ) {
     companion object {
         fun empty() = SetupResult(
+            phase = SetupPhase.REGION,
+            phaseMessage = null,
             joints = emptyList(),
             camera = null,
             progress = SetupProgress(0, false),
@@ -487,25 +638,3 @@ class RollingWindow(val size: Int, val required: Int) {
     fun reset() = frames.clear()
 }
 
-/**
- * Rolling window that tracks camera positions and returns the dominant one.
- */
-class RollingCameraWindow(val size: Int, val required: Int) {
-
-    private val frames = ArrayDeque<CameraPositionDetector.DetectedCameraPosition>(size)
-
-    fun add(position: CameraPositionDetector.DetectedCameraPosition) {
-        if (frames.size >= size) frames.removeFirst()
-        frames.addLast(position)
-    }
-
-    /** Returns the most frequent position if it meets [required] threshold, else null. */
-    fun dominantPosition(): CameraPositionDetector.DetectedCameraPosition? {
-        if (frames.isEmpty()) return null
-        val counts = frames.groupingBy { it }.eachCount()
-        val (dominant, count) = counts.maxByOrNull { it.value } ?: return null
-        return if (count >= required) dominant else null
-    }
-
-    fun reset() = frames.clear()
-}

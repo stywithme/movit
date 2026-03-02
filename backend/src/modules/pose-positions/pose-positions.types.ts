@@ -1,32 +1,29 @@
 import { LocalizedText } from '@/lib/types/localized';
 
-/**
- * Camera Position creation input
- */
-export interface CreateCameraPositionInput {
+export interface CreatePosePositionInput {
   code: string;
   name: LocalizedText;
   description?: LocalizedText;
   imageUrl?: string;
-  jointIds: string[]; // Required joint IDs
+  postures?: string[];
+  directions?: string[];
+  regions?: string[];
+  jointIds: string[];
 }
 
-/**
- * Camera Position update input
- */
-export interface UpdateCameraPositionInput {
+export interface UpdatePosePositionInput {
   name?: LocalizedText;
   description?: LocalizedText;
   imageUrl?: string;
   isActive?: boolean;
   sortOrder?: number;
-  jointIds?: string[]; // Required joint IDs
+  postures?: string[];
+  directions?: string[];
+  regions?: string[];
+  jointIds?: string[];
 }
 
-/**
- * Camera Position with relations
- */
-export interface CameraPositionWithJoints {
+export interface PosePositionWithJoints {
   id: string;
   code: string;
   name: LocalizedText;
@@ -34,6 +31,9 @@ export interface CameraPositionWithJoints {
   imageUrl?: string | null;
   isActive: boolean;
   sortOrder: number;
+  postures: string[];
+  directions: string[];
+  regions: string[];
   createdAt: Date;
   updatedAt: Date;
   joints: {
@@ -42,5 +42,3 @@ export interface CameraPositionWithJoints {
     name: LocalizedText;
   }[];
 }
-
-

@@ -30,7 +30,26 @@ const TOTAL_STEPS = 7;
 interface LookupData {
   categories: Array<{ id: string; code: string; name: { ar: string; en: string } }>;
   countingMethods: Array<{ id: string; code: string; name: { ar: string; en: string }; description?: { ar: string; en: string } }>;
-  cameraPositions: Array<{ id: string; code: string; name: { ar: string; en: string }; description?: { ar: string; en: string }; imageUrl?: string }>;
+  posePositions?: Array<{
+    id: string;
+    code: string;
+    name: { ar: string; en: string };
+    description?: { ar: string; en: string };
+    imageUrl?: string;
+    postures?: string[];
+    directions?: string[];
+    regions?: string[];
+  }>;
+  cameraPositions?: Array<{
+    id: string;
+    code: string;
+    name: { ar: string; en: string };
+    description?: { ar: string; en: string };
+    imageUrl?: string;
+    postures?: string[];
+    directions?: string[];
+    regions?: string[];
+  }>;
   joints: Array<{ id: string; code: string; name: { ar: string; en: string } }>;
   muscles: Array<{ id: string; code: string; name: { ar: string; en: string } }>;
   equipment: Array<{ id: string; code: string; name: { ar: string; en: string } }>;
@@ -147,9 +166,10 @@ export default function EditExercisePage() {
         
         // Load into wizard state
         const referenceImages = (exercise.poseVariants || []).reduce(
-          (acc: Record<string, string>, pv: { cameraPositionId: string; referenceImageUrl?: string | null }) => {
+          (acc: Record<string, string>, pv: { posePositionId?: string; cameraPositionId?: string; referenceImageUrl?: string | null }) => {
+            const key = pv.posePositionId || pv.cameraPositionId;
             if (pv.referenceImageUrl) {
-              acc[pv.cameraPositionId] = pv.referenceImageUrl;
+              if (key) acc[key] = pv.referenceImageUrl;
             }
             return acc;
           },
@@ -171,8 +191,7 @@ export default function EditExercisePage() {
             countingMethodCode: exercise.countingMethod?.code,
           },
           cameraPosition: {
-            cameraPositionIds: exercise.poseVariants?.map((pv: { cameraPositionId: string }) => pv.cameraPositionId) || [],
-            expectedFacingDirection: firstVariant?.expectedFacingDirection || 'auto_detect',
+            cameraPositionIds: exercise.poseVariants?.map((pv: { posePositionId?: string; cameraPositionId?: string }) => pv.posePositionId || pv.cameraPositionId).filter(Boolean) || [],
             referenceImages,
           },
           jointConfig: {
@@ -319,7 +338,7 @@ export default function EditExercisePage() {
       equipment: store.extras.equipment,
       tags: store.extras.tags,
       repCountingConfig,
-      poseVariants: store.cameraPosition.cameraPositionIds?.map((cameraPositionId, index) => {
+      poseVariants: store.cameraPosition.cameraPositionIds?.map((posePositionId, index) => {
         // All joints go into a single poseVariant (bilateral mirroring handled at runtime)
         const jointsForVariant = allJoints;
         const mappedJoints = jointsForVariant.map((joint: TrackedJointData) => {
@@ -358,9 +377,8 @@ export default function EditExercisePage() {
         });
         return {
           name: store.basicInfo.name,
-          cameraPositionId,
-          expectedFacingDirection: store.cameraPosition.expectedFacingDirection,
-          referenceImageUrl: store.cameraPosition.referenceImages?.[cameraPositionId] || undefined,
+          posePositionId,
+          referenceImageUrl: store.cameraPosition.referenceImages?.[posePositionId] || undefined,
           trackedJointsConfig: mappedJoints.length > 0 ? mappedJoints : trackedJointsConfig,
           positionChecks,
           messageAssignments: feedbackAssignments.length > 0 ? feedbackAssignments : undefined,
@@ -492,7 +510,11 @@ export default function EditExercisePage() {
           />
         );
       case 2:
-        return <CameraPositionStep cameraPositions={lookupData.cameraPositions} />;
+        return (
+          <CameraPositionStep
+            cameraPositions={lookupData.posePositions || lookupData.cameraPositions || []}
+          />
+        );
       case 3:
         return <JointConfigStep />;
       case 4:
@@ -603,7 +625,7 @@ export default function EditExercisePage() {
             onStepClick={handleStepChange}
             stepLabels={[
               'Basic Info',
-              'Camera',
+              'Pose Axes',
               'Joints',
               'Checks',
               'Reps',

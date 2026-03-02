@@ -38,7 +38,7 @@ export class AttributesController {
         },
       });
 
-      const cameraPositions = await prisma.cameraPosition.findMany({
+      const posePositions = await prisma.posePosition.findMany({
         where: { isActive: true },
         orderBy: { sortOrder: 'asc' },
       });
@@ -62,13 +62,15 @@ export class AttributesController {
         muscles: getValuesByCode('muscle'),
         equipment: getValuesByCode('equipment'),
         tags: getValuesByCode('tag'),
-        cameraPositions: cameraPositions.map(cp => ({
-          id: cp.id,
-          code: cp.code,
-          schemaCode: cp.schemaCode,
-          name: cp.name as { ar: string; en: string },
-          description: cp.description as { ar: string; en: string } | undefined,
-          imageUrl: cp.imageUrl,
+        posePositions: posePositions.map(pp => ({
+          id: pp.id,
+          code: pp.code,
+          name: pp.name as { ar: string; en: string },
+          description: pp.description as { ar: string; en: string } | undefined,
+          imageUrl: pp.imageUrl,
+          postures: (pp.postures as string[] | null) ?? [],
+          directions: (pp.directions as string[] | null) ?? [],
+          regions: (pp.regions as string[] | null) ?? [],
         })),
       };
 

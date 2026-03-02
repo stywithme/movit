@@ -177,13 +177,23 @@ class TrainingEngine(
      * Position validator for position-based checks (knee-over-toe, alignment, etc.)
      * Null if no position checks are configured
      */
+    private val resolvedPosePositionCode: String =
+        poseVariant.posePosition ?: poseVariant.cameraPosition ?: "standing_side"
+
+    private val resolvedExpectation: PoseSceneExpectation =
+        if (poseVariant.expectedPostures != null) {
+            PoseSceneExpectation.fromJson(poseVariant.expectedPostures, poseVariant.expectedDirections, poseVariant.expectedRegions)
+        } else {
+            PoseSceneExpectation.fromLegacyCode(resolvedPosePositionCode)
+        }
+
     @Suppress("UNNECESSARY_SAFE_CALL")
-    private val positionValidator: PositionValidator? = 
+    private val positionValidator: PositionValidator? =
         poseVariant.positionChecks?.takeIf { it.isNotEmpty() }?.let {
             PositionValidator(
                 positionChecks = it,
-                expectedCameraPosition = poseVariant.cameraPosition,
-                expectedFacingDirection = poseVariant.expectedFacingDirection
+                posePositionCode = resolvedPosePositionCode,
+                sceneExpectation = resolvedExpectation
             )
         }
     
@@ -284,10 +294,10 @@ class TrainingEngine(
     val positionErrors: StateFlow<List<PositionError>> = _positionErrors
     
     /**
-     * Camera position warning (if detected camera doesn't match expected)
+     * Per-axis scene warnings (posture/direction/region mismatches).
      */
-    private val _cameraWarning = MutableStateFlow<CameraPositionWarning?>(null)
-    val cameraWarning: StateFlow<CameraPositionWarning?> = _cameraWarning
+    private val _sceneWarnings = MutableStateFlow<List<SceneAxisWarning>>(emptyList())
+    val sceneWarnings: StateFlow<List<SceneAxisWarning>> = _sceneWarnings
     
     // ==================== Visibility State Flows ====================
     
@@ -531,7 +541,7 @@ class TrainingEngine(
             
             // Reset position validation state
             _positionErrors.value = emptyList()
-            _cameraWarning.value = null
+            _sceneWarnings.value = emptyList()
             
             // Reset visibility monitor
             visibilityMonitor.reset()
@@ -641,7 +651,7 @@ class TrainingEngine(
             
             // Clear current errors (fresh start)
             _positionErrors.value = emptyList()
-            _cameraWarning.value = null
+            _sceneWarnings.value = emptyList()
         }
         
         emitEvent(FeedbackEvent.VisibilityResumed(repCount = repCounter.count))
@@ -865,9 +875,8 @@ class TrainingEngine(
             
             // Update position-related state flows
             positionValidation?.let {
-                // Include tips too so UI overlay can visualize them (different severity)
                 _positionErrors.value = it.errors + it.warnings + it.tips
-                _cameraWarning.value = it.cameraWarning
+                _sceneWarnings.value = it.sceneWarnings
             }
             
             // 9. Handle form errors (add to current rep)
@@ -907,13 +916,11 @@ class TrainingEngine(
                 }
             }
             
-            positionValidation?.cameraWarning?.let { warning ->
-                // Throttle event emission - UI overlay uses StateFlow (_cameraWarning),
-                // but FeedbackEvent is rate-limited to prevent MessageOrchestrator spam
+            positionValidation?.sceneWarnings?.takeIf { it.isNotEmpty() }?.let { warnings ->
                 val now = nowMs()
                 if (now - lastCameraWarningEventTime >= CAMERA_WARNING_EVENT_COOLDOWN_MS) {
                     lastCameraWarningEventTime = now
-                    emitEvent(FeedbackEvent.CameraPositionWarning(warning))
+                    emitEvent(FeedbackEvent.SceneWarnings(warnings))
                 }
             }
             

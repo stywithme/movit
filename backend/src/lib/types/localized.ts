@@ -51,29 +51,21 @@ export type FeedbackType = 'motivational' | 'tip';
 export type CountingMethodCode = 'up_down' | 'push_pull' | 'hold';
 
 /**
- * Camera position codes (internal - more specific)
+ * Pose position codes (single source of truth — mobile auto-detects axes)
  */
-export type CameraPositionCode = 'side_left' | 'side_right' | 'front' | 'back';
-
-/**
- * Camera position schema codes (for Android export)
- */
-export type CameraPositionSchemaCode = 'side_view' | 'front_view' | 'back_view';
+export type PosePositionCode =
+  | 'standing_front' | 'standing_back' | 'standing_side'
+  | 'standing_side_left' | 'standing_side_right' | 'standing_diagonal'
+  | 'standing_front_upper' | 'standing_back_upper' | 'standing_side_upper'
+  | 'standing_front_lower' | 'standing_back_lower' | 'standing_side_lower'
+  | 'prone_side' | 'prone_front'
+  | 'supine_side' | 'supine_front'
+  | 'side_lying';
 
 /**
  * Joint role in tracking
  */
 export type JointRole = 'primary' | 'secondary';
-
-/**
- * Expected facing direction
- */
-export type FacingDirection =
-  | 'facing_right'
-  | 'facing_left'
-  | 'facing_camera'
-  | 'facing_away'
-  | 'auto_detect';
 
 /**
  * Position check types (7 types - synced with Android PositionCheckType enum)

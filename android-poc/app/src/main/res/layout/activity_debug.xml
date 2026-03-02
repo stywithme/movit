@@ -14,6 +14,23 @@
         android:layout_height="match_parent"
         app:scaleType="fillStart" />
 
+    <!-- Video TextureView (hidden by default) -->
+    <TextureView
+        android:id="@+id/videoTextureView"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:visibility="gone" />
+
+    <!-- Static Image View (hidden by default) -->
+    <ImageView
+        android:id="@+id/staticImageView"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:scaleType="fitCenter"
+        android:background="@android:color/black"
+        android:visibility="gone"
+        android:contentDescription="Selected image" />
+
     <!-- Skeleton Overlay -->
     <com.trainingvalidator.poc.overlay.SkeletonOverlayView
         android:id="@+id/skeletonOverlay"
@@ -76,6 +93,19 @@
             android:contentDescription="Switch Camera"
             app:tint="@android:color/white" />
 
+        <View
+            android:layout_width="8dp"
+            android:layout_height="0dp" />
+
+        <ImageButton
+            android:id="@+id/btnSettings"
+            android:layout_width="36dp"
+            android:layout_height="36dp"
+            android:src="@android:drawable/ic_menu_preferences"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:contentDescription="Settings"
+            app:tint="@android:color/white" />
+
     </LinearLayout>
 
     <!-- Large Real-time Value Display (center overlay) -->
@@ -126,7 +156,7 @@
         android:visibility="gone"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@id/tvStatus"
-        app:layout_constraintBottom_toTopOf="@id/configPanel">
+        app:layout_constraintBottom_toTopOf="@id/videoControls">
 
         <TextView
             android:id="@+id/tvDebugInfo"
@@ -140,206 +170,50 @@
 
     </ScrollView>
 
-    <!-- Bottom Config Panel -->
+    <!-- Video Controls (visible only in Video mode) -->
     <LinearLayout
-        android:id="@+id/configPanel"
+        android:id="@+id/videoControls"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="vertical"
-        android:background="#DD000000"
+        android:background="#88000000"
         android:padding="12dp"
-        app:layout_constraintBottom_toBottomOf="parent">
+        app:layout_constraintBottom_toBottomOf="parent"
+        android:visibility="gone">
 
-        <!-- Tab Selector -->
-        <com.google.android.material.tabs.TabLayout
-            android:id="@+id/tabLayout"
-            android:layout_width="match_parent"
-            android:layout_height="36dp"
-            app:tabMode="fixed"
-            app:tabGravity="fill"
-            app:tabTextColor="#88FFFFFF"
-            app:tabSelectedTextColor="@android:color/white"
-            app:tabIndicatorColor="@android:color/white"
-            app:tabIndicatorHeight="2dp"
-            app:tabBackground="@android:color/transparent"
-            android:background="@android:color/transparent">
-
-            <com.google.android.material.tabs.TabItem
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="Joint Angles" />
-
-            <com.google.android.material.tabs.TabItem
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="Position Checks" />
-
-        </com.google.android.material.tabs.TabLayout>
-
-        <!-- Joint Angles Config -->
         <LinearLayout
-            android:id="@+id/jointAngleConfig"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="horizontal"
-            android:gravity="center_vertical"
-            android:paddingTop="10dp">
+            android:gravity="center_vertical">
+
+            <ImageButton
+                android:id="@+id/btnPlayPause"
+                android:layout_width="36dp"
+                android:layout_height="36dp"
+                android:src="@android:drawable/ic_media_play"
+                android:background="?attr/selectableItemBackgroundBorderless"
+                android:contentDescription="Play/Pause"
+                app:tint="@android:color/white" />
+
+            <SeekBar
+                android:id="@+id/seekBarVideo"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:layout_marginHorizontal="8dp"
+                android:max="1000"
+                android:progressTint="@android:color/white"
+                android:thumbTint="@android:color/white" />
 
             <TextView
+                android:id="@+id/tvVideoTime"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="Joint:"
-                android:textColor="@android:color/white"
-                android:textSize="14sp" />
-
-            <Spinner
-                android:id="@+id/spinnerJoint"
-                android:layout_width="0dp"
-                android:layout_height="40dp"
-                android:layout_weight="1"
-                android:layout_marginStart="8dp"
-                android:backgroundTint="@android:color/white"
-                android:popupBackground="#333333" />
-
-        </LinearLayout>
-
-        <!-- Position Check Config -->
-        <LinearLayout
-            android:id="@+id/positionCheckConfig"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:orientation="vertical"
-            android:paddingTop="10dp"
-            android:visibility="gone">
-
-            <!-- Row 1: Check Type -->
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="horizontal"
-                android:gravity="center_vertical">
-
-                <TextView
-                    android:layout_width="70dp"
-                    android:layout_height="wrap_content"
-                    android:text="Type:"
-                    android:textColor="@android:color/white"
-                    android:textSize="12sp" />
-
-                <Spinner
-                    android:id="@+id/spinnerCheckType"
-                    android:layout_width="0dp"
-                    android:layout_height="36dp"
-                    android:layout_weight="1"
-                    android:backgroundTint="@android:color/white"
-                    android:popupBackground="#333333" />
-
-            </LinearLayout>
-
-            <!-- Row 2: Primary + Secondary Landmarks -->
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="horizontal"
-                android:gravity="center_vertical"
-                android:layout_marginTop="4dp">
-
-                <TextView
-                    android:layout_width="70dp"
-                    android:layout_height="wrap_content"
-                    android:text="Primary:"
-                    android:textColor="@android:color/white"
-                    android:textSize="12sp" />
-
-                <Spinner
-                    android:id="@+id/spinnerPrimary"
-                    android:layout_width="0dp"
-                    android:layout_height="36dp"
-                    android:layout_weight="1"
-                    android:backgroundTint="@android:color/white"
-                    android:popupBackground="#333333" />
-
-            </LinearLayout>
-
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="horizontal"
-                android:gravity="center_vertical"
-                android:layout_marginTop="4dp">
-
-                <TextView
-                    android:layout_width="70dp"
-                    android:layout_height="wrap_content"
-                    android:text="Secondary:"
-                    android:textColor="@android:color/white"
-                    android:textSize="12sp" />
-
-                <Spinner
-                    android:id="@+id/spinnerSecondary"
-                    android:layout_width="0dp"
-                    android:layout_height="36dp"
-                    android:layout_weight="1"
-                    android:backgroundTint="@android:color/white"
-                    android:popupBackground="#333333" />
-
-            </LinearLayout>
-
-            <!-- Row 3: Operator + Threshold -->
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="horizontal"
-                android:gravity="center_vertical"
-                android:layout_marginTop="4dp">
-
-                <TextView
-                    android:layout_width="70dp"
-                    android:layout_height="wrap_content"
-                    android:text="Operator:"
-                    android:textColor="@android:color/white"
-                    android:textSize="12sp" />
-
-                <Spinner
-                    android:id="@+id/spinnerOperator"
-                    android:layout_width="0dp"
-                    android:layout_height="36dp"
-                    android:layout_weight="1"
-                    android:backgroundTint="@android:color/white"
-                    android:popupBackground="#333333" />
-
-            </LinearLayout>
-
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="horizontal"
-                android:gravity="center_vertical"
-                android:layout_marginTop="4dp">
-
-                <TextView
-                    android:layout_width="70dp"
-                    android:layout_height="wrap_content"
-                    android:text="Threshold:"
-                    android:textColor="@android:color/white"
-                    android:textSize="12sp" />
-
-                <EditText
-                    android:id="@+id/etThreshold"
-                    android:layout_width="0dp"
-                    android:layout_height="36dp"
-                    android:layout_weight="1"
-                    android:text="0.05"
-                    android:textColor="@android:color/white"
-                    android:textSize="13sp"
-                    android:fontFamily="monospace"
-                    android:inputType="numberDecimal|numberSigned"
-                    android:background="@android:color/transparent"
-                    android:paddingStart="8dp"
-                    android:hint="0.05"
-                    android:textColorHint="#66FFFFFF" />
-
-            </LinearLayout>
+                android:text="0:00 / 0:00"
+                android:textColor="#AAFFFFFF"
+                android:textSize="11sp"
+                android:fontFamily="monospace" />
 
         </LinearLayout>
 

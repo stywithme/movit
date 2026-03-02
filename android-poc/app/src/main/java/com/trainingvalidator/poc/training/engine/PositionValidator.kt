@@ -23,28 +23,26 @@ import kotlin.math.sqrt
  */
 class PositionValidator(
     private val positionChecks: List<PositionCheck>,
-    private val expectedCameraPosition: String,
-    private val expectedFacingDirection: FacingDirection?,
+    private val posePositionCode: String,
+    val sceneExpectation: PoseSceneExpectation,
     private val visibilityThreshold: Float = 0.5f
 ) {
     
     companion object {
         private const val TAG = "PositionValidator"
-        
-        // NOTE: Using JointLandmarkMapping as Single Source of Truth for landmark mapping
-        // Removed duplicate LANDMARK_INDEX_MAP - use JointLandmarkMapping.jointToLandmark() instead
-        
-        // Hysteresis buffer to prevent flickering
         private const val HYSTERESIS_BUFFER = 0.02f
-        
-        // Default minimum frames to confirm a position error (can be overridden per check)
         private const val DEFAULT_MIN_ERROR_FRAMES = 3
     }
     
-    // Error frame counting for stability
     private val errorFrameCounts = mutableMapOf<String, Int>()
     
-    // Cached camera detection result
+    /** Full 3-axis scene detector (direction + posture + region). */
+    private val sceneDetector = PoseSceneDetector()
+    
+    /** @deprecated Kept for legacy callers. Use [sceneExpectation] instead. */
+    val resolvedPosition: PosePosition? = PosePosition.fromCode(posePositionCode)
+    
+    private var cachedSceneResult: PoseSceneResult? = null
     private var cachedCameraResult: CameraPositionDetector.CameraDetectionResult? = null
     
     /**
@@ -64,15 +62,19 @@ class PositionValidator(
             return PositionValidationResult.empty()
         }
         
-        // 1. Detect camera position and facing
-        cachedCameraResult = CameraPositionDetector.detect(landmarks)
+        // 1. Full 3-axis scene detection (direction + posture + region)
+        val scene = sceneDetector.detect(landmarks, isFrontCamera)
+        cachedSceneResult = scene
+        cachedCameraResult = CameraPositionDetector.CameraDetectionResult(
+            scene.direction, scene.directionConfidence, scene.facing, scene.closerSide, scene.depthInfo
+        )
         val cameraResult = cachedCameraResult ?: return PositionValidationResult.empty()
         
-        // 2. Check if camera position matches expected
-        val cameraWarning = checkCameraPosition(cameraResult)
+        // 2. Per-axis scene matching
+        val sceneWarnings = checkSceneAxes(scene)
         
-        // 3. Determine effective facing direction
-        val effectiveFacing = determineEffectiveFacing(cameraResult)
+        // 3. Facing is always auto-detected
+        val effectiveFacing = scene.facing
         
         // 4. Run position checks
         val errors = mutableListOf<PositionError>()
@@ -121,45 +123,124 @@ class PositionValidator(
             errors = errors,
             warnings = warnings,
             tips = tips,
-            cameraWarning = cameraWarning,
+            sceneWarnings = sceneWarnings,
             detectedCameraPosition = cameraResult.position,
             detectedFacing = cameraResult.facingDirection
         )
     }
     
     /**
-     * Check if camera position matches expected
+     * Check each of the 3 scene axes independently. Returns a warning per
+     * mismatched axis so the UI / TTS can give specific guidance.
      */
-    private fun checkCameraPosition(
-        cameraResult: CameraPositionDetector.CameraDetectionResult
-    ): CameraPositionWarning? {
-        if (!CameraPositionDetector.matchesExpected(cameraResult.position, expectedCameraPosition)) {
-            return CameraPositionWarning(
-                expectedPosition = expectedCameraPosition,
-                detectedPosition = CameraPositionDetector.toJsonCameraPosition(cameraResult.position),
-                confidence = cameraResult.confidence,
-                message = LocalizedText(
-                    ar = "يُفضل التصوير من ${getPositionNameAr(expectedCameraPosition)} للحصول على نتائج أفضل",
-                    en = "For best results, film from ${expectedCameraPosition.replace("_", " ")}"
-                )
-            )
+    private fun checkSceneAxes(scene: PoseSceneResult): List<SceneAxisWarning> {
+        val result = sceneExpectation.matchesScene(scene)
+        if (result.allMatch) return emptyList()
+
+        val warnings = mutableListOf<SceneAxisWarning>()
+
+        if (!result.postureMatch) {
+            warnings.add(SceneAxisWarning(
+                axis = "posture",
+                expected = sceneExpectation.postures.map { it.name.lowercase() },
+                detected = scene.posture.name.lowercase(),
+                message = buildPostureWarning(sceneExpectation.postures)
+            ))
         }
-        return null
+
+        if (!result.directionMatch) {
+            warnings.add(SceneAxisWarning(
+                axis = "direction",
+                expected = sceneExpectation.directions.map { it.code },
+                detected = CameraPositionDetector.toJsonCameraPosition(scene.direction),
+                message = buildDirectionWarning(sceneExpectation.directions)
+            ))
+        }
+
+        if (!result.regionMatch) {
+            warnings.add(SceneAxisWarning(
+                axis = "region",
+                expected = sceneExpectation.regions.map { it.name.lowercase() },
+                detected = scene.region.name.lowercase(),
+                message = buildRegionWarning(sceneExpectation.regions)
+            ))
+        }
+
+        return warnings
     }
-    
-    /**
-     * Determine effective facing direction
-     */
-    private fun determineEffectiveFacing(
-        cameraResult: CameraPositionDetector.CameraDetectionResult
-    ): CameraPositionDetector.DetectedFacing {
-        return when (expectedFacingDirection) {
-            FacingDirection.FACING_RIGHT -> CameraPositionDetector.DetectedFacing.FACING_RIGHT
-            FacingDirection.FACING_LEFT -> CameraPositionDetector.DetectedFacing.FACING_LEFT
-            FacingDirection.FACING_CAMERA -> CameraPositionDetector.DetectedFacing.FACING_CAMERA
-            FacingDirection.FACING_AWAY -> CameraPositionDetector.DetectedFacing.FACING_AWAY
-            FacingDirection.AUTO_DETECT, null -> cameraResult.facingDirection
-        }
+
+    private fun buildPostureWarning(expected: List<BodyPosture>): LocalizedText {
+        val arParts = expected.mapNotNull { postureNameAr(it) }
+        val enParts = expected.mapNotNull { postureNameEn(it) }
+        return LocalizedText(
+            ar = arParts.joinToString(" أو "),
+            en = enParts.joinToString(" or ")
+        )
+    }
+
+    private fun buildDirectionWarning(expected: List<ExpectedDirection>): LocalizedText {
+        val arParts = expected.mapNotNull { directionNameAr(it) }
+        val enParts = expected.mapNotNull { directionNameEn(it) }
+        return LocalizedText(
+            ar = "صوّر من ${arParts.joinToString(" أو ")}",
+            en = "Film from ${enParts.joinToString(" or ")}"
+        )
+    }
+
+    private fun buildRegionWarning(expected: List<VisibleRegion>): LocalizedText {
+        val arParts = expected.mapNotNull { regionNameAr(it) }
+        val enParts = expected.mapNotNull { regionNameEn(it) }
+        return LocalizedText(
+            ar = "أظهر ${arParts.joinToString(" أو ")}",
+            en = "Show ${enParts.joinToString(" or ")}"
+        )
+    }
+
+    private fun postureNameAr(p: BodyPosture) = when (p) {
+        BodyPosture.STANDING -> "قف مستقيماً"
+        BodyPosture.LYING_PRONE -> "استلقِ على وجهك"
+        BodyPosture.LYING_SUPINE -> "استلقِ على ظهرك"
+        BodyPosture.LYING_SIDE -> "استلقِ على جنبك"
+        BodyPosture.SITTING -> "اجلس"
+        BodyPosture.UNKNOWN -> null
+    }
+    private fun postureNameEn(p: BodyPosture) = when (p) {
+        BodyPosture.STANDING -> "Stand upright"
+        BodyPosture.LYING_PRONE -> "Lie face down"
+        BodyPosture.LYING_SUPINE -> "Lie face up"
+        BodyPosture.LYING_SIDE -> "Lie on your side"
+        BodyPosture.SITTING -> "Sit down"
+        BodyPosture.UNKNOWN -> null
+    }
+    private fun directionNameAr(d: ExpectedDirection) = when (d) {
+        ExpectedDirection.FRONT -> "الأمام"
+        ExpectedDirection.BACK -> "الخلف"
+        ExpectedDirection.SIDE_ANY -> "الجانب"
+        ExpectedDirection.SIDE_LEFT -> "الجانب الأيسر"
+        ExpectedDirection.SIDE_RIGHT -> "الجانب الأيمن"
+        ExpectedDirection.DIAGONAL -> "بزاوية مائلة"
+        ExpectedDirection.ANY -> null
+    }
+    private fun directionNameEn(d: ExpectedDirection) = when (d) {
+        ExpectedDirection.FRONT -> "the front"
+        ExpectedDirection.BACK -> "the back"
+        ExpectedDirection.SIDE_ANY -> "the side"
+        ExpectedDirection.SIDE_LEFT -> "the left side"
+        ExpectedDirection.SIDE_RIGHT -> "the right side"
+        ExpectedDirection.DIAGONAL -> "an angle"
+        ExpectedDirection.ANY -> null
+    }
+    private fun regionNameAr(r: VisibleRegion) = when (r) {
+        VisibleRegion.FULL_BODY -> "الجسم بالكامل"
+        VisibleRegion.UPPER_BODY -> "الجزء العلوي"
+        VisibleRegion.LOWER_BODY -> "الجزء السفلي"
+        VisibleRegion.UNKNOWN -> null
+    }
+    private fun regionNameEn(r: VisibleRegion) = when (r) {
+        VisibleRegion.FULL_BODY -> "your full body"
+        VisibleRegion.UPPER_BODY -> "your upper body"
+        VisibleRegion.LOWER_BODY -> "your lower body"
+        VisibleRegion.UNKNOWN -> null
     }
     
     /**
@@ -256,7 +337,14 @@ class PositionValidator(
     }
     
     /**
-     * Get forward axis values adjusted for camera position and facing
+     * Get forward axis values adjusted for camera direction, facing, and posture.
+     *
+     * When standing:
+     *   side view  → forward = X (flip by facing)
+     *   front/back → forward = -Z
+     *
+     * When lying (camera from side):
+     *   forward (along the body) is Y-axis in the image
      */
     private fun getForwardAxisValues(
         primary: SmoothedLandmark,
@@ -264,33 +352,43 @@ class PositionValidator(
         cameraPosition: CameraPositionDetector.DetectedCameraPosition,
         facing: CameraPositionDetector.DetectedFacing
     ): Pair<Float, Float> {
+        val posture = cachedSceneResult?.posture ?: BodyPosture.STANDING
+        val isLying = posture == BodyPosture.LYING_PRONE || posture == BodyPosture.LYING_SUPINE || posture == BodyPosture.LYING_SIDE
+
+        if (isLying) {
+            val isSideCamera = cameraPosition == CameraPositionDetector.DetectedCameraPosition.SIDE_VIEW_LEFT ||
+                    cameraPosition == CameraPositionDetector.DetectedCameraPosition.SIDE_VIEW_RIGHT
+            return if (isSideCamera) {
+                // Lying + side camera: body length runs along Y
+                Pair(primary.y, secondary.y)
+            } else {
+                // Lying + front/back camera: body length runs along X
+                Pair(primary.x, secondary.x)
+            }
+        }
+
         return when (cameraPosition) {
             CameraPositionDetector.DetectedCameraPosition.SIDE_VIEW_LEFT,
             CameraPositionDetector.DetectedCameraPosition.SIDE_VIEW_RIGHT -> {
-                // In side view, FORWARD is X axis
                 when (facing) {
-                    CameraPositionDetector.DetectedFacing.FACING_RIGHT -> 
-                        Pair(primary.x, secondary.x)
-                    CameraPositionDetector.DetectedFacing.FACING_LEFT -> 
-                        Pair(-primary.x, -secondary.x)  // Flip for opposite facing
-                    else -> 
-                        Pair(primary.x, secondary.x)
+                    CameraPositionDetector.DetectedFacing.FACING_RIGHT -> Pair(primary.x, secondary.x)
+                    CameraPositionDetector.DetectedFacing.FACING_LEFT -> Pair(-primary.x, -secondary.x)
+                    else -> Pair(primary.x, secondary.x)
                 }
             }
-            
             CameraPositionDetector.DetectedCameraPosition.FRONT_VIEW,
             CameraPositionDetector.DetectedCameraPosition.BACK_VIEW -> {
-                // In front/back view, FORWARD is Z axis (depth)
-                // Smaller Z = closer to camera = more forward
                 Pair(-primary.z, -secondary.z)
             }
-            
-            else -> Pair(primary.x, secondary.x)  // Fallback to X
+            else -> Pair(primary.x, secondary.x)
         }
     }
-    
+
     /**
-     * Validate vertical comparison (Y axis - works in all views)
+     * Validate vertical comparison.
+     *
+     * Standing → Y axis (gravity vertical).
+     * Lying + side camera → X axis (body length axis in image).
      */
     private fun validateVerticalComparison(
         check: PositionCheck,
@@ -298,25 +396,34 @@ class PositionValidator(
         secondary: SmoothedLandmark,
         threshold: Double
     ): CheckResult {
-        // Y axis: smaller = higher on screen
-        val diff = primary.y - secondary.y
-        
+        val posture = cachedSceneResult?.posture ?: BodyPosture.STANDING
+        val isLying = posture == BodyPosture.LYING_PRONE || posture == BodyPosture.LYING_SUPINE || posture == BodyPosture.LYING_SIDE
+        val direction = cachedSceneResult?.direction
+        val isSideCamera = direction == CameraPositionDetector.DetectedCameraPosition.SIDE_VIEW_LEFT ||
+                direction == CameraPositionDetector.DetectedCameraPosition.SIDE_VIEW_RIGHT
+
+        val diff = if (isLying && isSideCamera) {
+            primary.x - secondary.x
+        } else {
+            primary.y - secondary.y
+        }
+
         val passed = when (check.condition.operator) {
             PositionOperator.SHOULD_NOT_EXCEED -> diff <= threshold + HYSTERESIS_BUFFER
             PositionOperator.SHOULD_EXCEED -> diff >= -threshold - HYSTERESIS_BUFFER
             PositionOperator.APPROXIMATELY_EQUAL -> abs(diff) <= threshold + HYSTERESIS_BUFFER
             else -> true
         }
-        
-        return if (passed) {
-            CheckResult.passed()
-        } else {
-            CheckResult.failed(createError(check, diff.toDouble(), threshold))
-        }
+
+        return if (passed) CheckResult.passed()
+        else CheckResult.failed(createError(check, diff.toDouble(), threshold))
     }
-    
+
     /**
-     * Validate sideways comparison
+     * Validate sideways comparison.
+     *
+     * Standing + side camera → Z axis; Standing + front → X axis.
+     * Lying + side camera → Z axis; Lying + front → Y axis.
      */
     private fun validateSidewaysComparison(
         check: PositionCheck,
@@ -325,32 +432,28 @@ class PositionValidator(
         threshold: Double,
         cameraResult: CameraPositionDetector.CameraDetectionResult
     ): CheckResult {
-        val (primaryValue, secondaryValue) = when (cameraResult.position) {
-            CameraPositionDetector.DetectedCameraPosition.SIDE_VIEW_LEFT,
-            CameraPositionDetector.DetectedCameraPosition.SIDE_VIEW_RIGHT -> {
-                // In side view, SIDEWAYS is Z axis
-                Pair(primary.z, secondary.z)
-            }
-            else -> {
-                // In front/back view, SIDEWAYS is X axis
-                Pair(primary.x, secondary.x)
-            }
+        val posture = cachedSceneResult?.posture ?: BodyPosture.STANDING
+        val isLying = posture == BodyPosture.LYING_PRONE || posture == BodyPosture.LYING_SUPINE || posture == BodyPosture.LYING_SIDE
+        val isSideCamera = cameraResult.position == CameraPositionDetector.DetectedCameraPosition.SIDE_VIEW_LEFT ||
+                cameraResult.position == CameraPositionDetector.DetectedCameraPosition.SIDE_VIEW_RIGHT
+
+        val (pv, sv) = when {
+            isSideCamera -> Pair(primary.z, secondary.z)
+            isLying -> Pair(primary.y, secondary.y)
+            else -> Pair(primary.x, secondary.x)
         }
-        
-        val diff = primaryValue - secondaryValue
-        
+
+        val diff = pv - sv
+
         val passed = when (check.condition.operator) {
             PositionOperator.APPROXIMATELY_EQUAL -> abs(diff) <= threshold + HYSTERESIS_BUFFER
             PositionOperator.SHOULD_NOT_EXCEED -> diff <= threshold + HYSTERESIS_BUFFER
             PositionOperator.SHOULD_EXCEED -> diff >= -threshold - HYSTERESIS_BUFFER
             else -> true
         }
-        
-        return if (passed) {
-            CheckResult.passed()
-        } else {
-            CheckResult.failed(createError(check, diff.toDouble(), threshold))
-        }
+
+        return if (passed) CheckResult.passed()
+        else CheckResult.failed(createError(check, diff.toDouble(), threshold))
     }
     
     /**
@@ -526,26 +629,17 @@ class PositionValidator(
         )
     }
     
-    private fun getPositionNameAr(position: String): String {
-        return when (position) {
-            "side_view" -> "الجانب"
-            "front_view" -> "الأمام"
-            "back_view" -> "الخلف"
-            else -> position
-        }
-    }
     
     /**
-     * Clear cooldowns (call when session resets)
+     * Clear cooldowns and reset scene detector (call when session resets)
      */
     fun clearCooldowns() {
         errorFrameCounts.clear()
+        sceneDetector.reset()
     }
     
-    /**
-     * Get last detected camera result
-     */
     fun getLastCameraResult(): CameraPositionDetector.CameraDetectionResult? = cachedCameraResult
+    fun getLastSceneResult(): PoseSceneResult? = cachedSceneResult
 }
 
 // ==================== Result Types ====================
@@ -555,24 +649,23 @@ class PositionValidator(
  */
 data class PositionValidationResult(
     val isValid: Boolean,
-    val errors: List<PositionError>,          // Severity: ERROR - affects rep
-    val warnings: List<PositionError>,        // Severity: WARNING - form feedback
-    val tips: List<PositionError>,            // Severity: TIP - improvement suggestions
-    val cameraWarning: CameraPositionWarning?,
+    val errors: List<PositionError>,
+    val warnings: List<PositionError>,
+    val tips: List<PositionError>,
+    val sceneWarnings: List<SceneAxisWarning>,
     val detectedCameraPosition: CameraPositionDetector.DetectedCameraPosition,
     val detectedFacing: CameraPositionDetector.DetectedFacing
 ) {
     companion object {
         fun empty() = PositionValidationResult(
-            true, emptyList(), emptyList(), emptyList(), null,
+            true, emptyList(), emptyList(), emptyList(), emptyList(),
             CameraPositionDetector.DetectedCameraPosition.UNKNOWN,
             CameraPositionDetector.DetectedFacing.UNKNOWN
         )
     }
-    
-    /**
-     * Get all issues (errors + warnings + tips)
-     */
+
+    val hasSceneWarnings: Boolean get() = sceneWarnings.isNotEmpty()
+
     fun getAllIssues(): List<PositionError> = errors + warnings + tips
 }
 
@@ -591,12 +684,12 @@ data class PositionError(
 )
 
 /**
- * Camera position warning
+ * Per-axis scene warning — one entry per mismatched axis (posture / direction / region).
  */
-data class CameraPositionWarning(
-    val expectedPosition: String,
-    val detectedPosition: String,
-    val confidence: Float,
+data class SceneAxisWarning(
+    val axis: String,
+    val expected: List<String>,
+    val detected: String,
     val message: LocalizedText
 )
 

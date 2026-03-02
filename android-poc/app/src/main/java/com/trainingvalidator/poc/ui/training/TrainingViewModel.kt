@@ -448,7 +448,8 @@ class TrainingViewModel(
                             angles = action.angles,
                             landmarks = action.landmarks,
                             exerciseConfig = _exerciseConfig.value,
-                            poseVariantIndex = _poseVariantIndex.value
+                            poseVariantIndex = _poseVariantIndex.value,
+                            isFrontCamera = action.isFrontCamera
                         )
 
                         viewModelScope.launch {
