@@ -87,6 +87,46 @@ class ProgramRepository private constructor(private val context: Context) {
         return programMap[slug]
     }
 
+    /**
+     * Get program by slug, syncing from server if not found in cache.
+     * Use this when opening a program detail screen to handle empty cache scenarios.
+     */
+    suspend fun getOrFetchProgram(slug: String): ProgramConfig? = withContext(Dispatchers.IO) {
+        initialize()
+        getProgram(slug)?.let { return@withContext it }
+
+        Log.w(TAG, "Program '$slug' not in cache, triggering sync...")
+        val exerciseRepo = ExerciseRepository.getInstance(context)
+        exerciseRepo.initialize(autoSync = true)
+
+        getProgram(slug)?.let { return@withContext it }
+
+        Log.w(TAG, "Still missing after incremental sync, trying full refresh...")
+        exerciseRepo.refresh()
+        reloadFromCache()
+
+        return@withContext getProgram(slug)
+    }
+
+    /**
+     * Get program by ID, syncing from server if not found in cache.
+     */
+    suspend fun getOrFetchProgramById(id: String): ProgramConfig? = withContext(Dispatchers.IO) {
+        initialize()
+        getProgramById(id)?.let { return@withContext it }
+
+        Log.w(TAG, "Program id='$id' not in cache, triggering sync...")
+        val exerciseRepo = ExerciseRepository.getInstance(context)
+        exerciseRepo.initialize(autoSync = true)
+
+        getProgramById(id)?.let { return@withContext it }
+
+        exerciseRepo.refresh()
+        reloadFromCache()
+
+        return@withContext getProgramById(id)
+    }
+
     fun getProgramById(id: String): ProgramConfig? {
         return programCache.getProgramById(id)
     }

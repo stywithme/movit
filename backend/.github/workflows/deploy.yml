@@ -14,7 +14,10 @@ jobs:
           host: ${{ secrets.SERVER_HOST }}
           username: ${{ secrets.SERVER_USER }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
+          command_timeout: 10m
           script: |
+            set -e
+
             export NVM_DIR="$HOME/.nvm"
             source "$NVM_DIR/nvm.sh"
 
@@ -24,7 +27,7 @@ jobs:
             git pull origin main
 
             echo "==> Installing dependencies..."
-            npm ci
+            npm install --prefer-offline
 
             echo "==> Generating Prisma client..."
             npx prisma generate
@@ -36,6 +39,8 @@ jobs:
             npm run build
 
             echo "==> Restarting PM2..."
-            pm2 restart pose-backend
+            pm2 delete pose-backend 2>/dev/null || true
+            pm2 start ecosystem.config.js --env production
+            pm2 save
 
-            echo "==> Done!"
+            echo "==> Deploy complete!"

@@ -163,11 +163,9 @@ class ProgramSessionActivity : AppCompatActivity() {
             val exerciseRepo = ExerciseRepository.getInstance(this@ProgramSessionActivity)
 
             withContext(Dispatchers.IO) {
-                programRepo.initialize()
-                exerciseRepo.initialize(autoSync = false)
+                exerciseRepo.initialize(autoSync = true)
             }
 
-            // Load exercises
             allExercises = exerciseRepo.getAllExercises()
             exerciseConfigMap.clear()
             exerciseNameMap.clear()
@@ -177,11 +175,12 @@ class ProgramSessionActivity : AppCompatActivity() {
                 exerciseNameMap[ex.fileName] = ex.name.get(language).ifBlank { ex.name.en }
             }
 
-            // Load program
-            val resolvedProgram = if (!programSlug.isNullOrBlank()) {
-                programRepo.getProgram(programSlug!!)
-            } else {
-                programRepo.getProgramById(programId!!)
+            val resolvedProgram = withContext(Dispatchers.IO) {
+                if (!programSlug.isNullOrBlank()) {
+                    programRepo.getOrFetchProgram(programSlug!!)
+                } else {
+                    programRepo.getOrFetchProgramById(programId!!)
+                }
             }
 
             if (resolvedProgram == null) {

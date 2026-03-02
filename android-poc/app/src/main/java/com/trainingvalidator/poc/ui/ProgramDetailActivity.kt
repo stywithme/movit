@@ -37,6 +37,9 @@ class ProgramDetailActivity : AppCompatActivity() {
     private lateinit var binding: ActivityProgramDetailBinding
     private var program: ProgramConfig? = null
     private val reportStore by lazy { ProgramSessionReportStore(this) }
+    private val homeRepository by lazy { com.trainingvalidator.poc.storage.HomeRepository.getInstance(this) }
+    private var isEnrolled = false
+    private var isEnrolling = false
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -58,9 +61,81 @@ class ProgramDetailActivity : AppCompatActivity() {
         binding.rvWeeks.layoutManager = LinearLayoutManager(this)
         
         binding.btnStartProgram.setOnClickListener {
-            // For now, it just shows a toast. Eventually it will enroll the user.
-            Toast.makeText(this, "Enrollment logic coming soon", Toast.LENGTH_SHORT).show()
+            handleCTA()
         }
+    }
+
+    private fun handleCTA() {
+        if (isEnrolled) {
+            // Already enrolled, go to week 1 (or overview)
+            openWeek(1)
+        } else {
+            enrollInProgram()
+        }
+    }
+
+    private fun enrollInProgram() {
+        if (isEnrolling || program == null) return
+        isEnrolling = true
+        binding.btnStartProgram.text = getString(R.string.loading)
+        binding.btnStartProgram.isEnabled = false
+
+        CoroutineScope(Dispatchers.IO).launch {
+            try {
+                val token = com.trainingvalidator.poc.storage.AuthManager.getAuthHeader(this@ProgramDetailActivity)
+                if (token == null) {
+                    withContext(Dispatchers.Main) {
+                        Toast.makeText(this@ProgramDetailActivity, "Please login first", Toast.LENGTH_SHORT).show()
+                        resetCTAButton()
+                    }
+                    return@launch
+                }
+                
+                val payload = mapOf("programId" to program!!.id)
+                val response = com.trainingvalidator.poc.network.ApiClient.mobileSyncApi.enrollProgram(token, payload)
+                
+                if (response.isSuccessful && response.body()?.success == true) {
+                    // Refresh home cache so Train/Home screens pick up the new enrollment
+                    homeRepository.syncFromServer()
+                    // Also force a content sync so ProgramCacheManager has the data
+                    try {
+                        val exerciseRepo = com.trainingvalidator.poc.storage.ExerciseRepository.getInstance(this@ProgramDetailActivity)
+                        exerciseRepo.checkForUpdates()
+                    } catch (_: Exception) { }
+                    withContext(Dispatchers.Main) {
+                        isEnrolled = true
+                        updateCTAButton()
+                        Toast.makeText(this@ProgramDetailActivity, "Successfully enrolled!", Toast.LENGTH_SHORT).show()
+                    }
+                } else {
+                    withContext(Dispatchers.Main) {
+                        Toast.makeText(this@ProgramDetailActivity, "Failed to enroll", Toast.LENGTH_SHORT).show()
+                        resetCTAButton()
+                    }
+                }
+            } catch (e: Exception) {
+                withContext(Dispatchers.Main) {
+                    Toast.makeText(this@ProgramDetailActivity, "Error: ${e.message}", Toast.LENGTH_SHORT).show()
+                    resetCTAButton()
+                }
+            } finally {
+                isEnrolling = false
+            }
+        }
+    }
+
+    private fun updateCTAButton() {
+        binding.btnStartProgram.isEnabled = true
+        if (isEnrolled) {
+            binding.btnStartProgram.text = "Resume Program"
+        } else {
+            binding.btnStartProgram.text = "Start Program"
+        }
+    }
+
+    private fun resetCTAButton() {
+        binding.btnStartProgram.isEnabled = true
+        updateCTAButton()
     }
 
     private fun loadProgram() {
@@ -73,11 +148,11 @@ class ProgramDetailActivity : AppCompatActivity() {
 
         CoroutineScope(Dispatchers.Main).launch {
             val repository = ProgramRepository.getInstance(this@ProgramDetailActivity)
-            withContext(Dispatchers.IO) {
-                repository.initialize()
+
+            program = withContext(Dispatchers.IO) {
+                repository.getOrFetchProgram(slug)
             }
 
-            program = repository.getProgram(slug)
             if (program == null) {
                 Toast.makeText(this@ProgramDetailActivity, "Program not found", Toast.LENGTH_SHORT).show()
                 finish()
@@ -85,6 +160,11 @@ class ProgramDetailActivity : AppCompatActivity() {
             }
 
             bindProgram(program!!)
+            
+            withContext(Dispatchers.IO) {
+                homeRepository.syncFromServer()
+            }
+            checkEnrollmentStatus()
         }
     }
 
@@ -120,6 +200,26 @@ class ProgramDetailActivity : AppCompatActivity() {
         }
 
         binding.rvWeeks.adapter = WeekAdapter(program.weeks, programId)
+        
+        checkEnrollmentStatus()
+    }
+
+    private fun checkEnrollmentStatus() {
+        val cachedPlan = homeRepository.getCachedData()?.activePlan
+        isEnrolled = cachedPlan?.programs?.any { it.program?.id == program?.id && it.status == "active" } == true
+        
+        // Ensure UI updates run on Main thread
+        runOnUiThread {
+            updateCTAButton()
+        }
+    }
+
+    override fun onResume() {
+        super.onResume()
+        if (program != null) {
+            checkEnrollmentStatus()
+            binding.rvWeeks.adapter?.notifyDataSetChanged()
+        }
     }
 
     inner class WeekAdapter(

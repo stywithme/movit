@@ -58,11 +58,10 @@ class WeeklyReportActivity : AppCompatActivity() {
 
         lifecycleScope.launch {
             val repository = ProgramRepository.getInstance(this@WeeklyReportActivity)
-            withContext(Dispatchers.IO) {
-                repository.initialize()
-            }
 
-            val program = repository.getProgram(slug)
+            val program = withContext(Dispatchers.IO) {
+                repository.getOrFetchProgram(slug)
+            }
             if (program == null) {
                 finish()
                 return@launch

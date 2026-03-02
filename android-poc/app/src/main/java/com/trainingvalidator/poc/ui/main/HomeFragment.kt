@@ -57,6 +57,14 @@ class HomeFragment : Fragment() {
         loadData()
     }
 
+    override fun onResume() {
+        super.onResume()
+        if (_binding != null) {
+            setupGreeting()
+            homeRepository.getCachedData()?.let { renderData(it) }
+        }
+    }
+
     private fun setupGreeting() {
         val hour = Calendar.getInstance().get(Calendar.HOUR_OF_DAY)
         val greetingRes = when {

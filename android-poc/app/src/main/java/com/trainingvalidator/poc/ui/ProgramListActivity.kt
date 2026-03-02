@@ -59,7 +59,18 @@ class ProgramListActivity : AppCompatActivity() {
                 repository.initialize()
             }
 
-            val loaded = repository.getAllPrograms()
+            var loaded = repository.getAllPrograms()
+
+            // If cache is empty, trigger sync and reload
+            if (loaded.isEmpty()) {
+                withContext(Dispatchers.IO) {
+                    val exerciseRepo = com.trainingvalidator.poc.storage.ExerciseRepository.getInstance(this@ProgramListActivity)
+                    exerciseRepo.initialize(autoSync = true)
+                    repository.reloadFromCache()
+                }
+                loaded = repository.getAllPrograms()
+            }
+
             if (loaded.isEmpty()) {
                 binding.layoutEmpty.visibility = View.VISIBLE
                 binding.rvPrograms.visibility = View.GONE

@@ -71,11 +71,11 @@ class ProgramDayActivity : AppCompatActivity() {
 
         CoroutineScope(Dispatchers.Main).launch {
             val repository = ProgramRepository.getInstance(this@ProgramDayActivity)
-            withContext(Dispatchers.IO) {
-                repository.initialize()
+
+            program = withContext(Dispatchers.IO) {
+                repository.getOrFetchProgram(slug)
             }
 
-            program = repository.getProgram(slug)
             if (program == null) {
                 Toast.makeText(this@ProgramDayActivity, "Program not found", Toast.LENGTH_SHORT).show()
                 finish()
