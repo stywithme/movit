@@ -1,4 +1,4 @@
-package com.trainingvalidator.poc.ui
+package com.trainingvalidator.poc.ui.workouts
 
 import android.os.Bundle
 import android.util.Log
@@ -12,6 +12,7 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.app.AppCompatDelegate
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
+import com.trainingvalidator.poc.ui.utils.currentLanguage
 import com.trainingvalidator.poc.R
 import com.trainingvalidator.poc.databinding.ActivityWorkoutDetailBinding
 import com.trainingvalidator.poc.storage.ExerciseRepository
@@ -78,7 +79,7 @@ class WorkoutDetailActivity : AppCompatActivity() {
 
     private fun setupUI() {
         val config = workoutConfig ?: return
-        val language = getCurrentLanguage()
+        val language = currentLanguage
 
         // Toolbar
         binding.toolbar.setNavigationOnClickListener { finish() }
@@ -129,7 +130,7 @@ class WorkoutDetailActivity : AppCompatActivity() {
     private fun buildTimelineItems(config: WorkoutConfig): List<TimelineItem> {
         val items = mutableListOf<TimelineItem>()
         val exerciseRepo = ExerciseRepository.getInstance(this)
-        val language = getCurrentLanguage()
+        val language = currentLanguage
 
         config.exercises.forEachIndexed { index, workoutExercise ->
             val exerciseConfig = exerciseRepo.getExercise(workoutExercise.exercise)
@@ -199,16 +200,6 @@ class WorkoutDetailActivity : AppCompatActivity() {
     private fun showTemplateNotice() {
         Toast.makeText(this, getString(R.string.workout_template_only_message), Toast.LENGTH_LONG)
             .show()
-    }
-
-    private fun getCurrentLanguage(): String {
-        val appLocales = AppCompatDelegate.getApplicationLocales()
-        val locale = if (appLocales.isEmpty) {
-            resources.configuration.locales[0]
-        } else {
-            appLocales[0]
-        }
-        return locale?.language ?: "en"
     }
 
     // ==================== Timeline Data Models ====================

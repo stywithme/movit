@@ -1,4 +1,4 @@
-package com.trainingvalidator.poc.ui
+package com.trainingvalidator.poc.ui.exercises
 
 import android.Manifest
 import android.content.Intent
@@ -16,10 +16,12 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.app.AppCompatDelegate
 import androidx.core.content.ContextCompat
+import com.trainingvalidator.poc.ui.utils.currentLanguage
 import com.trainingvalidator.poc.R
 import com.trainingvalidator.poc.databinding.ActivityExerciseDetailBinding
 import com.trainingvalidator.poc.training.models.CountingMethod
 import com.trainingvalidator.poc.training.models.ExerciseConfig
+import com.trainingvalidator.poc.ui.train.TrainingActivity
 
 /**
  * ExerciseDetailActivity - Shows exercise details and instructions
@@ -133,7 +135,7 @@ class ExerciseDetailActivity : AppCompatActivity() {
 
     private fun setupUI() {
         val exercise = exerciseConfig ?: return
-        val language = getCurrentLanguage()
+        val language = currentLanguage
         
         // Back button
         binding.btnBack.setOnClickListener { finish() }
@@ -417,16 +419,6 @@ class ExerciseDetailActivity : AppCompatActivity() {
             }
             legacyPickerLauncher.launch(intent)
         }
-    }
-    
-    private fun getCurrentLanguage(): String {
-        val appLocales = AppCompatDelegate.getApplicationLocales()
-        val locale = if (appLocales.isEmpty) {
-            resources.configuration.locales[0]
-        } else {
-            appLocales[0]
-        }
-        return locale?.language ?: "en"
     }
     
     /**

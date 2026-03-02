@@ -8,6 +8,8 @@
     android:layoutDirection="ltr"
     android:background="@color/background"
     tools:context=".ui.TrainingActivity">
+    <!-- layoutDirection="ltr" is intentional: the skeleton overlay and camera mirroring
+         require left-to-right landmark coordinates regardless of device locale. -->
 
     <!-- ==================== LAYER 0: Media Background ==================== -->
     

@@ -8,6 +8,7 @@
     android:layoutDirection="ltr"
     android:background="@android:color/black"
     tools:context=".ui.MainActivity">
+    <!-- layoutDirection="ltr" is intentional: camera overlay landmarks require LTR coordinates. -->
 
     <!-- Camera Preview - Using FILL_START to match Google's implementation -->
     <androidx.camera.view.PreviewView

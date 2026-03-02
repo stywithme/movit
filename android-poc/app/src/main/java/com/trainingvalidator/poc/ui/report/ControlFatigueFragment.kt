@@ -81,7 +81,7 @@ class ControlFatigueFragment : Fragment() {
         ))
 
         // ── Big score ────────────────────────────────────────────
-        val scoreCard = H.glassCard(ctx, H.colorFromScore(control.getCardScore()))
+        val scoreCard = H.glassCard(ctx, H.colorFromScore(ctx, control.getCardScore()))
         scoreCard.gravity = Gravity.CENTER_HORIZONTAL
         scoreCard.addView(H.scoreBadge(ctx, control.getCardScore(), 72).apply {
             (layoutParams as LinearLayout.LayoutParams).bottomMargin = H.dp(ctx, 6)
@@ -158,22 +158,22 @@ class ControlFatigueFragment : Fragment() {
             addView(TextView(ctx).apply { text = "⏱️"; textSize = 18f })
             addView(TextView(ctx).apply {
                 text = if (isArabic) "الإيقاع" else "Tempo"
-                textSize = 14f; setTextColor(H.TEXT_MUTED)
+                textSize = 14f; setTextColor(H.textMuted(ctx))
                 layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f)
                     .apply { marginStart = H.dp(ctx, 8) }
             })
             addView(TextView(ctx).apply {
                 text = tempo.getFormattedTempo()
-                textSize = 18f; setTextColor(H.TEXT_WHITE)
+                textSize = 18f; setTextColor(H.textWhite(ctx))
                 setTypeface(typeface, android.graphics.Typeface.BOLD)
             })
         })
 
         // Phase bars
         val phases = listOf(
-            Triple(if (isArabic) "إنزال" else "Eccentric", tempo.eccentricMs, H.BLUE),
-            Triple(if (isArabic) "ثبات" else "Isometric", tempo.isometricMs, H.YELLOW),
-            Triple(if (isArabic) "رفع" else "Concentric", tempo.concentricMs, H.GREEN)
+            Triple(if (isArabic) "إنزال" else "Eccentric", tempo.eccentricMs, H.colorBlue(ctx)),
+            Triple(if (isArabic) "ثبات" else "Isometric", tempo.isometricMs, H.colorYellow(ctx)),
+            Triple(if (isArabic) "رفع" else "Concentric", tempo.concentricMs, H.colorGreen(ctx))
         )
         val maxMs = phases.maxOf { it.second }.coerceAtLeast(1)
 
@@ -188,7 +188,7 @@ class ControlFatigueFragment : Fragment() {
             }
             // Label
             row.addView(TextView(ctx).apply {
-                text = label; textSize = 11f; setTextColor(H.TEXT_MUTED)
+                text = label; textSize = 11f; setTextColor(H.textMuted(ctx))
                 layoutParams = LinearLayout.LayoutParams(H.dp(ctx, 60), LinearLayout.LayoutParams.WRAP_CONTENT)
             })
             // Bar
@@ -242,7 +242,7 @@ class ControlFatigueFragment : Fragment() {
         }
         container.addView(TextView(ctx).apply {
             text = if (isArabic) "📉 تحليل التعب" else "📉 Fatigue Analysis"
-            textSize = 15f; setTextColor(H.TEXT_WHITE)
+            textSize = 15f; setTextColor(H.textWhite(ctx))
             setPadding(0, 0, 0, H.dp(ctx, 8))
         })
 
@@ -264,7 +264,7 @@ class ControlFatigueFragment : Fragment() {
             // Fatigue progress bar
             container.addView(H.progressRow(ctx,
                 if (isArabic) "نسبة العدات قبل التعب" else "Reps before fatigue",
-                ratio, if (ratio >= 70) H.GREEN else H.ORANGE
+                ratio, if (ratio >= 70) H.colorGreen(ctx) else H.colorOrange(ctx)
             ))
         } else {
             // No fatigue detected
@@ -277,7 +277,7 @@ class ControlFatigueFragment : Fragment() {
                 addView(TextView(ctx).apply {
                     text = if (isArabic) "✅ لم يُكتشف تعب — تحمل ممتاز!"
                     else "✅ No fatigue detected — excellent endurance!"
-                    textSize = 14f; setTextColor(H.GREEN); gravity = Gravity.CENTER
+                    textSize = 14f; setTextColor(H.colorGreen(ctx)); gravity = Gravity.CENTER
                 })
             })
         }
@@ -302,7 +302,7 @@ class ControlFatigueFragment : Fragment() {
         }
         container.addView(TextView(ctx).apply {
             text = if (isArabic) "🏋️ الأوزان والحمل" else "🏋️ Load Metrics"
-            textSize = 15f; setTextColor(H.TEXT_WHITE)
+            textSize = 15f; setTextColor(H.textWhite(ctx))
             setPadding(0, 0, 0, H.dp(ctx, 8))
         })
 

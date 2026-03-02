@@ -1,4 +1,4 @@
-package com.trainingvalidator.poc.ui
+package com.trainingvalidator.poc.ui.programs
 
 import android.content.Context
 import android.content.Intent
@@ -10,14 +10,15 @@ import android.util.TypedValue
 import android.view.Gravity
 import android.view.View
 import android.widget.*
+import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
+import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
+import androidx.lifecycle.repeatOnLifecycle
+import com.trainingvalidator.poc.R
 import com.trainingvalidator.poc.assessment.ui.PreScreeningActivity
 import com.trainingvalidator.poc.network.*
-import com.trainingvalidator.poc.storage.AuthManager
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 
 /**
  * PlanOverviewActivity — Shows the user's active training plan timeline.
@@ -27,6 +28,9 @@ import kotlinx.coroutines.withContext
  */
 class PlanOverviewActivity : AppCompatActivity() {
 
+    private val viewModel: PlanOverviewViewModel by viewModels()
+    private lateinit var container: LinearLayout
+
     @Suppress("DEPRECATION")
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -35,18 +39,37 @@ class PlanOverviewActivity : AppCompatActivity() {
         val root = ScrollView(this).apply {
             setBackgroundColor(Color.parseColor("#121212"))
         }
-        val container = LinearLayout(this).apply {
+        container = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
             setPadding(dp(20), dp(40), dp(20), dp(32))
         }
         root.addView(container)
         setContentView(root)
 
-        showLoading(container)
-        loadPlanData(container)
+        observeViewModel()
+        viewModel.loadPlanData()
     }
 
-    private fun showLoading(container: LinearLayout) {
+    private fun observeViewModel() {
+        lifecycleScope.launch {
+            repeatOnLifecycle(Lifecycle.State.STARTED) {
+                viewModel.uiState.collect { state ->
+                    container.removeAllViews()
+                    when (state) {
+                        is PlanOverviewUiState.Loading -> showLoading()
+                        is PlanOverviewUiState.NoAuth -> container.addView(createErrorState())
+                        is PlanOverviewUiState.Error -> {
+                            Log.e(TAG, "Plan load error: ${state.message}")
+                            container.addView(createErrorState())
+                        }
+                        is PlanOverviewUiState.Success -> renderPlan(state.data)
+                    }
+                }
+            }
+        }
+    }
+
+    private fun showLoading() {
         container.addView(ProgressBar(this).apply {
             layoutParams = LinearLayout.LayoutParams(
                 LinearLayout.LayoutParams.WRAP_CONTENT,
@@ -58,62 +81,31 @@ class PlanOverviewActivity : AppCompatActivity() {
         })
     }
 
-    private fun loadPlanData(container: LinearLayout) {
-        lifecycleScope.launch {
-            try {
-                val authHeader = AuthManager.getAuthHeader(this@PlanOverviewActivity) ?: return@launch
+    private fun renderPlan(data: PlanOverviewData) {
+        container.addView(createTitle(getString(R.string.plan_overview_title)))
 
-                val planResponse = withContext(Dispatchers.IO) {
-                    ApiClient.mobileSyncApi.getActivePlan(authHeader)
-                }
-                val progressionResponse = withContext(Dispatchers.IO) {
-                    ApiClient.mobileSyncApi.getProgressionHistory(authHeader)
-                }
-                val reassessmentResponse = withContext(Dispatchers.IO) {
-                    ApiClient.mobileSyncApi.getUpcomingReassessments(authHeader)
-                }
+        val plan = data.plan
+        if (plan == null || plan.programs.isEmpty()) {
+            container.addView(createEmptyState())
+            return
+        }
 
-                container.removeAllViews()
+        container.addView(createStatusBadge(plan.status))
+        for (slot in plan.programs) {
+            container.addView(createProgramTimelineItem(slot))
+        }
 
-                // Title
-                container.addView(createTitle("My Training Plan"))
+        if (data.reassessments.isNotEmpty()) {
+            container.addView(createSectionLabel(getString(R.string.plan_upcoming_reassessment)))
+            for (r in data.reassessments) {
+                container.addView(createReassessmentCard(r))
+            }
+        }
 
-                val plan = planResponse.body()?.data
-                if (plan == null || plan.programs.isEmpty()) {
-                    container.addView(createEmptyState())
-                    return@launch
-                }
-
-                // Plan status
-                container.addView(createStatusBadge(plan.status))
-
-                // Program timeline
-                for (slot in plan.programs) {
-                    container.addView(createProgramTimelineItem(slot))
-                }
-
-                // Reassessment section
-                val reassessments = reassessmentResponse.body()?.data
-                if (!reassessments.isNullOrEmpty()) {
-                    container.addView(createSectionLabel("Upcoming Reassessment"))
-                    for (r in reassessments) {
-                        container.addView(createReassessmentCard(r))
-                    }
-                }
-
-                // Progression history section
-                val history = progressionResponse.body()?.data
-                if (!history.isNullOrEmpty()) {
-                    container.addView(createSectionLabel("Recent Adjustments"))
-                    for (entry in history.take(5)) {
-                        container.addView(createProgressionCard(entry))
-                    }
-                }
-
-            } catch (e: Exception) {
-                Log.e(TAG, "Failed to load plan", e)
-                container.removeAllViews()
-                container.addView(createErrorState())
+        if (data.progression.isNotEmpty()) {
+            container.addView(createSectionLabel(getString(R.string.plan_recent_adjustments)))
+            for (entry in data.progression.take(5)) {
+                container.addView(createProgressionCard(entry))
             }
         }
     }

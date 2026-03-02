@@ -1,4 +1,4 @@
-package com.trainingvalidator.poc.ui
+package com.trainingvalidator.poc.ui.train
 
 import android.Manifest
 import android.content.Intent
@@ -15,6 +15,7 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.app.AppCompatDelegate
 import androidx.core.content.ContextCompat
 import coil.load
+import com.trainingvalidator.poc.ui.utils.currentLanguage
 import com.trainingvalidator.poc.R
 import com.trainingvalidator.poc.databinding.ActivityPreWorkoutBinding
 import com.trainingvalidator.poc.training.models.ExerciseConfig
@@ -112,7 +113,7 @@ class PreWorkoutActivity : AppCompatActivity() {
 
     private fun setupUI() {
         val exercise = exerciseConfig ?: return
-        val language = getCurrentLanguage()
+        val language = currentLanguage
 
         // Setup toolbar
         binding.toolbar.setNavigationOnClickListener { finish() }
@@ -153,7 +154,7 @@ class PreWorkoutActivity : AppCompatActivity() {
     
     private fun setupInstructions() {
         val exercise = exerciseConfig ?: return
-        val language = getCurrentLanguage()
+        val language = currentLanguage
 
         // Get instructions text
         val instructionsText = exercise.instructions?.let { instr ->
@@ -174,7 +175,7 @@ class PreWorkoutActivity : AppCompatActivity() {
 
     private fun setupCameraPositions() {
         val exercise = exerciseConfig ?: return
-        val language = getCurrentLanguage()
+        val language = currentLanguage
 
         if (exercise.poseVariants.size <= 1) {
             binding.cameraPositionSection.visibility = View.GONE
@@ -290,16 +291,6 @@ class PreWorkoutActivity : AppCompatActivity() {
             }
             legacyPickerLauncher.launch(intent)
         }
-    }
-
-    private fun getCurrentLanguage(): String {
-        val appLocales = AppCompatDelegate.getApplicationLocales()
-        val locale = if (appLocales.isEmpty) {
-            resources.configuration.locales[0]
-        } else {
-            appLocales[0]
-        }
-        return locale?.language ?: "en"
     }
 
     private fun startCameraTraining() {

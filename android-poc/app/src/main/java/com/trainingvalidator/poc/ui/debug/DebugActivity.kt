@@ -55,6 +55,7 @@ import com.trainingvalidator.poc.video.VideoManager
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.cancel
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
@@ -187,6 +188,7 @@ class DebugActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetectionLis
         videoManager?.release()
         poseLandmarkerHelper?.close()
         currentImageBitmap?.recycle()
+        mainScope.cancel()
     }
 
     // ==================== UI Setup ====================

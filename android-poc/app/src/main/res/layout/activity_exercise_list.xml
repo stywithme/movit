@@ -5,7 +5,7 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="#121212"
+    android:background="@color/report_background"
     tools:context=".ui.ExerciseListActivity">
 
     <!-- Header -->
@@ -15,14 +15,14 @@
         android:layout_height="wrap_content"
         android:orientation="vertical"
         android:padding="24dp"
-        android:background="#1E1E1E"
+        android:background="@color/report_card_background"
         app:layout_constraintTop_toTopOf="parent">
 
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Training Validator"
-            android:textColor="#00E676"
+            android:text="@string/app_name"
+            android:textColor="@color/feedback_correct"
             android:textSize="14sp"
             android:textStyle="bold"
             android:letterSpacing="0.1" />
@@ -30,8 +30,8 @@
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Choose Exercise"
-            android:textColor="@android:color/white"
+            android:text="@string/exercise_library"
+            android:textColor="@color/report_text_primary"
             android:textSize="28sp"
             android:textStyle="bold"
             android:layout_marginTop="8dp" />
@@ -39,8 +39,8 @@
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Select an exercise to start training"
-            android:textColor="#888888"
+            android:text="@string/exercise_list_subtitle"
+            android:textColor="@color/report_text_secondary"
             android:textSize="14sp"
             android:layout_marginTop="4dp" />
 
@@ -51,13 +51,13 @@
         android:id="@+id/btnWorkouts"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="🔥 Workout Programs"
+        android:text="@string/workouts"
         android:textSize="16sp"
         android:textStyle="bold"
         android:layout_marginHorizontal="16dp"
         android:layout_marginTop="8dp"
         app:cornerRadius="12dp"
-        app:backgroundTint="#FF6B35"
+        app:backgroundTint="@color/brand_accent_legacy"
         app:layout_constraintTop_toBottomOf="@id/header" />
 
     <!-- Exercise List -->

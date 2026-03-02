@@ -262,10 +262,14 @@ class TrainingEngine(
     private val _repCount = MutableStateFlow(0)
     val repCount: StateFlow<Int> = _repCount
     
+    @Suppress("DEPRECATION")
     private val _jointStatuses = MutableStateFlow<Map<String, JointStatus>>(emptyMap())
+    @Suppress("DEPRECATION")
     val jointStatuses: StateFlow<Map<String, JointStatus>> = _jointStatuses
     
+    @Suppress("DEPRECATION")
     private val _arrowInfos = MutableStateFlow<Map<String, JointArrowInfo>>(emptyMap())
+    @Suppress("DEPRECATION")
     val arrowInfos: StateFlow<Map<String, JointArrowInfo>> = _arrowInfos
     
     /** NEW: State-based joint info for modern UI components */
@@ -383,6 +387,7 @@ class TrainingEngine(
     @Volatile
     private var isPaused = false
     
+    @Suppress("DEPRECATION")
     @Volatile
     private var lastValidationResult: ValidationResult? = null
     
@@ -775,9 +780,12 @@ class TrainingEngine(
                 states = jointStateInfos
             )
             
-            // Also get legacy validation for backward compatibility
+            // Also get legacy validation for backward compatibility with overlay system
+            @Suppress("DEPRECATION")
             val validation = formValidator.validate(smoothedAngles, currentPhase)
+            @Suppress("DEPRECATION")
             lastValidationResult = validation
+            @Suppress("DEPRECATION")
             _jointStatuses.value = validation.jointStatuses
             
             // 6.1. Check for DANGER state (always, for UI feedback)
@@ -810,6 +818,7 @@ class TrainingEngine(
             
             // 7. Update arrow infos for visual feedback (using smoothed angles)
             // This MUST happen before visibility check so skeleton overlay always shows correct joints
+            @Suppress("DEPRECATION")
             _arrowInfos.value = formValidator.getJointArrowInfos(smoothedAngles)
             
             // 7.5. Check visibility of required joints (after arrowInfos update for UI)

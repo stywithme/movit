@@ -25,7 +25,7 @@
                 android:id="@+id/tvExploreTitle"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
-                android:text="Discover"
+                android:text="@string/explore_discover_title"
                 android:textAppearance="@style/TextAppearance.WayToFix.Headline2"
                 app:layout_constraintBottom_toBottomOf="parent"
                 app:layout_constraintStart_toStartOf="parent"
@@ -33,11 +33,12 @@
 
             <com.google.android.material.imageview.ShapeableImageView
                 android:id="@+id/ivAvatar"
-                android:layout_width="40dp"
-                android:layout_height="40dp"
+                android:layout_width="48dp"
+                android:layout_height="48dp"
                 android:background="@drawable/bg_avatar_circle"
                 android:padding="2dp"
                 android:scaleType="centerCrop"
+                android:contentDescription="@string/cd_avatar"
                 app:layout_constraintBottom_toBottomOf="parent"
                 app:layout_constraintEnd_toEndOf="parent"
                 app:layout_constraintTop_toTopOf="parent"
@@ -61,7 +62,7 @@
                 android:id="@+id/etSearch"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:hint="Find workouts, exercises..."
+                android:hint="@string/search_exercise"
                 android:imeOptions="actionSearch"
                 android:inputType="text"
                 android:paddingVertical="16dp"
@@ -94,7 +95,7 @@
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="All"
+                    android:text="@string/explore_filter_all"
                     android:textColor="@color/white"
                     android:background="@drawable/glass_pill_background"
                     android:backgroundTint="@color/primary"
@@ -106,7 +107,7 @@
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="Programs"
+                    android:text="@string/programs"
                     android:textColor="@color/text_primary"
                     android:background="@drawable/glass_pill_background"
                     android:paddingHorizontal="16dp"
@@ -116,7 +117,7 @@
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="Workouts"
+                    android:text="@string/workouts"
                     android:textColor="@color/text_primary"
                     android:background="@drawable/glass_pill_background"
                     android:paddingHorizontal="16dp"
@@ -126,7 +127,7 @@
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="Exercises"
+                    android:text="@string/exercises"
                     android:textColor="@color/text_primary"
                     android:background="@drawable/glass_pill_background"
                     android:paddingHorizontal="16dp"

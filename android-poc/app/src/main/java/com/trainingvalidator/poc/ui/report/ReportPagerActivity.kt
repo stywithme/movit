@@ -19,6 +19,7 @@ import androidx.lifecycle.lifecycleScope
 import androidx.viewpager2.widget.ViewPager2
 import java.io.File
 import java.io.FileOutputStream
+import com.trainingvalidator.poc.ui.utils.currentLanguage
 import com.trainingvalidator.poc.R
 import com.trainingvalidator.poc.databinding.ActivityReportPagerBinding
 import com.trainingvalidator.poc.training.report.PostTrainingReport
@@ -77,7 +78,7 @@ class ReportPagerActivity : AppCompatActivity() {
         binding = ActivityReportPagerBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
-        isArabic = getCurrentLanguage() == "ar"
+        isArabic = currentLanguage == "ar"
 
         setupButtons()
         observeViewModel()
@@ -253,15 +254,4 @@ class ReportPagerActivity : AppCompatActivity() {
         }
     }
 
-    // ─── Language ───────────────────────────────────────────────
-
-    private fun getCurrentLanguage(): String {
-        val appLocales = AppCompatDelegate.getApplicationLocales()
-        val locale = if (appLocales.isEmpty) {
-            resources.configuration.locales[0]
-        } else {
-            appLocales[0]
-        }
-        return locale?.language ?: "en"
-    }
 }

@@ -107,7 +107,13 @@ class AudioFeedbackPlayer(
                                 onTtsCompleted()
                             }
                         }
+                        @Deprecated("Use onError(String, Int) override", ReplaceWith(""))
                         override fun onError(utteranceId: String?) {
+                            android.os.Handler(android.os.Looper.getMainLooper()).post {
+                                onTtsCompleted()
+                            }
+                        }
+                        override fun onError(utteranceId: String?, errorCode: Int) {
                             android.os.Handler(android.os.Looper.getMainLooper()).post {
                                 onTtsCompleted()
                             }

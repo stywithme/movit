@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools">
 
@@ -106,35 +106,35 @@
         
         <!-- Exercise List (Legacy - kept for compatibility) -->
         <activity
-            android:name=".ui.ExerciseListActivity"
+            android:name=".ui.exercises.ExerciseListActivity"
             android:exported="false"
             android:screenOrientation="portrait"
             android:theme="@style/Theme.WayToFix" />
         
         <!-- Exercise Detail -->
         <activity
-            android:name=".ui.ExerciseDetailActivity"
+            android:name=".ui.exercises.ExerciseDetailActivity"
             android:exported="false"
             android:screenOrientation="portrait"
             android:theme="@style/Theme.WayToFix" />
         
         <!-- Pre-Workout Screen (New Design) -->
         <activity
-            android:name=".ui.PreWorkoutActivity"
+            android:name=".ui.train.PreWorkoutActivity"
             android:exported="false"
             android:screenOrientation="portrait"
             android:theme="@style/Theme.WayToFix" />
         
         <!-- Post-Workout Report Screen (New Design) -->
         <activity
-            android:name=".ui.PostWorkoutActivity"
+            android:name=".ui.train.PostWorkoutActivity"
             android:exported="false"
             android:screenOrientation="portrait"
             android:theme="@style/Theme.WayToFix" />
         
         <!-- Training Activity -->
         <activity
-            android:name=".ui.TrainingActivity"
+            android:name=".ui.train.TrainingActivity"
             android:exported="false"
             android:screenOrientation="portrait"
             android:theme="@style/Theme.WayToFix.Training" />
@@ -155,63 +155,63 @@
         
         <!-- Workout Detail Activity (Timeline before start) -->
         <activity
-            android:name=".ui.WorkoutDetailActivity"
+            android:name=".ui.workouts.WorkoutDetailActivity"
             android:exported="false"
             android:screenOrientation="portrait"
             android:theme="@style/Theme.WayToFix" />
 
         <!-- Workout List Activity -->
         <activity
-            android:name=".ui.WorkoutListActivity"
+            android:name=".ui.workouts.WorkoutListActivity"
             android:exported="false"
             android:screenOrientation="portrait"
             android:theme="@style/Theme.WayToFix" />
 
         <!-- Program List Activity -->
         <activity
-            android:name=".ui.ProgramListActivity"
+            android:name=".ui.programs.ProgramListActivity"
             android:exported="false"
             android:screenOrientation="portrait"
             android:theme="@style/Theme.WayToFix" />
 
         <!-- Program Detail Activity -->
         <activity
-            android:name=".ui.ProgramDetailActivity"
+            android:name=".ui.programs.ProgramDetailActivity"
             android:exported="false"
             android:screenOrientation="portrait"
             android:theme="@style/Theme.WayToFix" />
 
         <!-- Program Day Activity -->
         <activity
-            android:name=".ui.ProgramDayActivity"
+            android:name=".ui.programs.ProgramDayActivity"
             android:exported="false"
             android:screenOrientation="portrait"
             android:theme="@style/Theme.WayToFix" />
 
         <!-- Program Session Activity -->
         <activity
-            android:name=".ui.ProgramSessionActivity"
+            android:name=".ui.programs.ProgramSessionActivity"
             android:exported="false"
             android:screenOrientation="portrait"
             android:theme="@style/Theme.WayToFix" />
 
         <!-- Program Session Report Activity -->
         <activity
-            android:name=".ui.ProgramSessionReportActivity"
+            android:name=".ui.programs.ProgramSessionReportActivity"
             android:exported="false"
             android:screenOrientation="portrait"
             android:theme="@style/Theme.WayToFix" />
 
         <!-- Weekly Report Activity -->
         <activity
-            android:name=".ui.WeeklyReportActivity"
+            android:name=".ui.programs.WeeklyReportActivity"
             android:exported="false"
             android:screenOrientation="portrait"
             android:theme="@style/Theme.WayToFix" />
         
         <!-- Exercise History Activity -->
         <activity
-            android:name=".ui.ExerciseHistoryActivity"
+            android:name=".ui.exercises.ExerciseHistoryActivity"
             android:exported="false"
             android:screenOrientation="portrait"
             android:theme="@style/Theme.WayToFix" />
@@ -254,14 +254,14 @@
 
         <!-- Level Profile -->
         <activity
-            android:name=".ui.LevelProfileActivity"
+            android:name=".ui.level.LevelProfileActivity"
             android:exported="false"
             android:screenOrientation="portrait"
             android:theme="@style/Theme.WayToFix" />
 
         <!-- Plan Overview (Timeline) -->
         <activity
-            android:name=".ui.PlanOverviewActivity"
+            android:name=".ui.programs.PlanOverviewActivity"
             android:exported="false"
             android:screenOrientation="portrait"
             android:theme="@style/Theme.WayToFix" />

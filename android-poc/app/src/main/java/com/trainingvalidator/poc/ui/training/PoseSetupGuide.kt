@@ -103,11 +103,11 @@ class PoseSetupGuide(
         }
 
         // ── Detect scene (3-axis) ────────────────────────────────────────
-        val sceneAvailable = landmarks != null &&
-                landmarks.size >= 33 &&
-                SettingsManager.settings.setupValidation.cameraTipEnabled
+        val validLandmarks = landmarks?.takeIf {
+            it.size >= 33 && SettingsManager.settings.setupValidation.cameraTipEnabled
+        }
 
-        val scene = if (sceneAvailable) sceneDetector.detect(landmarks!!, isFrontCamera) else null
+        val scene = validLandmarks?.let { sceneDetector.detect(it, isFrontCamera) }
         val axisMatch = if (scene != null) expectation.matchesScene(scene) else null
 
         // ── Determine current phase (first failing axis in priority order) ─

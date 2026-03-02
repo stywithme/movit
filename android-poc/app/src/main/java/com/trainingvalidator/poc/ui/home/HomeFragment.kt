@@ -1,4 +1,4 @@
-package com.trainingvalidator.poc.ui.main
+package com.trainingvalidator.poc.ui.home
 
 import android.content.Intent
 import android.os.Bundle
@@ -14,11 +14,13 @@ import com.trainingvalidator.poc.databinding.FragmentHomeBinding
 import com.trainingvalidator.poc.network.HomeData
 import com.trainingvalidator.poc.storage.AuthManager
 import com.trainingvalidator.poc.storage.HomeRepository
-import com.trainingvalidator.poc.ui.LevelProfileActivity
-import com.trainingvalidator.poc.ui.PlanOverviewActivity
-import com.trainingvalidator.poc.ui.ProgramDetailActivity
-import com.trainingvalidator.poc.ui.ProgramSessionActivity
-import com.trainingvalidator.poc.ui.TrainingActivity
+import com.trainingvalidator.poc.ui.level.LevelProfileActivity
+import com.trainingvalidator.poc.ui.main.MainContainerActivity
+import com.trainingvalidator.poc.ui.programs.PlanOverviewActivity
+import com.trainingvalidator.poc.ui.programs.ProgramDetailActivity
+import com.trainingvalidator.poc.ui.programs.ProgramSessionActivity
+import com.trainingvalidator.poc.ui.train.TrainingActivity
+import com.trainingvalidator.poc.ui.utils.currentLanguage
 import java.util.Calendar
 import kotlinx.coroutines.launch
 
@@ -86,9 +88,11 @@ class HomeFragment : Fragment() {
         homeRepository.getCachedData()?.let { renderData(it) }
 
         // Sync from server in the background
-        lifecycleScope.launch {
+        viewLifecycleOwner.lifecycleScope.launch {
             try {
-                homeRepository.syncFromServer()?.let { renderData(it) }
+                homeRepository.syncFromServer()?.let {
+                    if (_binding != null) renderData(it)
+                }
             } catch (e: Exception) {
                 Log.w(TAG, "Background home sync failed", e)
             }
@@ -103,14 +107,18 @@ class HomeFragment : Fragment() {
             val formText = if (stats.avgFormScore > 0) "${stats.avgFormScore.toInt()}%" else "--"
             binding.tvFormScore.text = formText
             binding.tvStreak.text = if (stats.streak > 0) "${stats.streak}\uD83D\uDD25" else "0"
-            binding.tvHomeReportSummary.text =
-                "This week: ${stats.weeklyWorkouts} workouts • Form $formText • Streak ${stats.streak}"
+            binding.tvHomeReportSummary.text = getString(
+                R.string.home_report_summary_format,
+                stats.weeklyWorkouts,
+                formText,
+                stats.streak
+            )
         } else {
             val totalWorkouts = AuthManager.getTotalWorkouts(requireContext())
             binding.tvWeeklyWorkouts.text = "$totalWorkouts"
             binding.tvFormScore.text = "--"
             binding.tvStreak.text = "0"
-            binding.tvHomeReportSummary.text = "This week: $totalWorkouts workouts • Form -- • Streak 0"
+            binding.tvHomeReportSummary.text = getString(R.string.home_report_summary_empty, totalWorkouts)
         }
 
         // 2. Render Level Profile
@@ -119,8 +127,8 @@ class HomeFragment : Fragment() {
             val levelName = profile.levelInfo.name.en
             val levelNumber = profile.overallLevel
             binding.cardMyLevel.visibility = View.VISIBLE
-            binding.tvLevelName.text = "Level $levelNumber — $levelName"
-            binding.tvLevelScore.text = "Body Score: ${profile.bodyScore.toInt()}"
+            binding.tvLevelName.text = getString(R.string.home_level_name_format, levelNumber, levelName)
+            binding.tvLevelScore.text = getString(R.string.home_level_score_format, profile.bodyScore.toInt())
             binding.cardMyLevel.setOnClickListener {
                 startActivity(LevelProfileActivity.createIntent(requireContext()))
             }
@@ -131,7 +139,7 @@ class HomeFragment : Fragment() {
         // 3. Render Active Program
         val activeProgram = data.activePlan?.programs?.firstOrNull { it.status == "active" }
         val programInfo = activeProgram?.program
-        val language = java.util.Locale.getDefault().language
+        val language = requireContext().currentLanguage
 
         if (programInfo != null) {
             val programName = programInfo.name[language] ?: programInfo.name["en"] ?: ""

@@ -1,9 +1,9 @@
-package com.trainingvalidator.poc.ui
+﻿package com.trainingvalidator.poc.ui.exercises
 
 import android.os.Bundle
 import androidx.appcompat.app.AppCompatActivity
 import com.trainingvalidator.poc.R
-import com.trainingvalidator.poc.ui.main.ExercisesFragment
+import com.trainingvalidator.poc.ui.exercises.ExercisesFragment
 
 /**
  * Hosts `ExercisesFragment` as a standalone screen for Explore -> See All.

@@ -1,4 +1,4 @@
-package com.trainingvalidator.poc.ui
+package com.trainingvalidator.poc.ui.workouts
 
 import android.content.Intent
 import android.os.Bundle
@@ -10,6 +10,7 @@ import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
+import com.trainingvalidator.poc.ui.utils.currentLanguage
 import com.trainingvalidator.poc.R
 import com.trainingvalidator.poc.databinding.ActivityWorkoutListBinding
 import com.trainingvalidator.poc.storage.WorkoutRepository
@@ -118,7 +119,7 @@ class WorkoutListActivity : AppCompatActivity() {
 
         override fun onBindViewHolder(holder: ViewHolder, position: Int) {
             val workout = items[position]
-            val language = getCurrentLanguage()
+            val language = currentLanguage
             
             holder.tvName.text = workout.name.get(language).ifBlank { workout.name.en }
             holder.tvDescription.text = workout.description?.let { desc ->
@@ -144,16 +145,6 @@ class WorkoutListActivity : AppCompatActivity() {
         }
 
         override fun getItemCount() = items.size
-    }
-
-    private fun getCurrentLanguage(): String {
-        val appLocales = AppCompatDelegate.getApplicationLocales()
-        val locale = if (appLocales.isEmpty) {
-            resources.configuration.locales[0]
-        } else {
-            appLocales[0]
-        }
-        return locale?.language ?: "en"
     }
 
     private fun formatDifficulty(difficulty: String): String {

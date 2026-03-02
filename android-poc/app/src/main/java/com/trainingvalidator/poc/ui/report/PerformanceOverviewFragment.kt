@@ -153,7 +153,7 @@ class PerformanceOverviewFragment : Fragment() {
                 icon = "🎯",
                 title = if (isArabic) "الشكل" else "Form",
                 score = metrics.formCard.getCardScore(),
-                accentColor = H.colorFromScore(metrics.formCard.getCardScore()),
+                accentColor = H.colorFromScore(ctx, metrics.formCard.getCardScore()),
                 subItems = buildFormChips(ctx, metrics.formCard)
             )
         )
@@ -164,7 +164,7 @@ class PerformanceOverviewFragment : Fragment() {
                 icon = "🛡️",
                 title = if (isArabic) "الأمان" else "Safety",
                 score = metrics.safetyCard.getCardScore(),
-                accentColor = H.colorFromScore(metrics.safetyCard.getCardScore()),
+                accentColor = H.colorFromScore(ctx, metrics.safetyCard.getCardScore()),
                 subItems = buildSafetyChips(ctx, metrics.safetyCard)
             )
         )
@@ -175,7 +175,7 @@ class PerformanceOverviewFragment : Fragment() {
                 icon = "🎛️",
                 title = if (isArabic) "التحكم" else "Control",
                 score = metrics.controlCard.getCardScore(),
-                accentColor = H.colorFromScore(metrics.controlCard.getCardScore()),
+                accentColor = H.colorFromScore(ctx, metrics.controlCard.getCardScore()),
                 subItems = buildControlChips(ctx, metrics.controlCard)
             )
         )
@@ -195,9 +195,9 @@ class PerformanceOverviewFragment : Fragment() {
         val subtitle = if (isArabic) insight.subtitle.ar else insight.subtitle.en
 
         val color = when (insight.type) {
-            InsightType.CELEBRATION -> H.GREEN
-            InsightType.DANGER_WARNING -> H.RED
-            InsightType.FOCUS_POINT -> H.ORANGE
+            InsightType.CELEBRATION -> H.colorGreen(requireContext())
+            InsightType.DANGER_WARNING -> H.colorRed(requireContext())
+            InsightType.FOCUS_POINT -> H.colorOrange(requireContext())
         }
 
         // Icon
@@ -220,7 +220,7 @@ class PerformanceOverviewFragment : Fragment() {
         })
         if (subtitle.isNotBlank()) {
             textCol.addView(TextView(ctx).apply {
-                text = subtitle; textSize = 12f; setTextColor(H.TEXT_MUTED)
+                text = subtitle; textSize = 12f; setTextColor(H.textMuted(requireContext()))
                 maxLines = 2
                 setPadding(0, H.dp(ctx, 2), 0, 0)
             })
@@ -249,7 +249,7 @@ class PerformanceOverviewFragment : Fragment() {
                 LinearLayout.LayoutParams.WRAP_CONTENT
             ).apply { topMargin = H.dp(ctx, 10) }
             background = GradientDrawable().apply {
-                setColor(H.CARD_BG)
+                setColor(H.cardBg(requireContext()))
                 setStroke(1, 0x33FFFFFF)
                 cornerRadius = H.dp(ctx, 16).toFloat()
             }
@@ -286,7 +286,7 @@ class PerformanceOverviewFragment : Fragment() {
         rightCol.addView(TextView(ctx).apply {
             text = "$icon  $title"
             textSize = 16f
-            setTextColor(H.TEXT_WHITE)
+            setTextColor(H.textWhite(requireContext()))
             setTypeface(typeface, Typeface.BOLD)
             setPadding(0, 0, 0, H.dp(ctx, 6))
         })
@@ -386,7 +386,7 @@ class PerformanceOverviewFragment : Fragment() {
             chips.add(H.metricChip(ctx,
                 if (isArabic) "تحذير" else "Danger",
                 "${safety.dangerCount}",
-                H.RED
+                H.colorRed(requireContext())
             ))
         }
         return chips
@@ -408,7 +408,7 @@ class PerformanceOverviewFragment : Fragment() {
             chips.add(H.metricChip(ctx,
                 if (isArabic) "التعب" else "Fatigue",
                 "#$it",
-                if (it > (report?.repTimeline?.size ?: 0) * 0.7) H.GREEN else H.ORANGE
+                if (it > (report?.repTimeline?.size ?: 0) * 0.7) H.colorGreen(requireContext()) else H.colorOrange(requireContext())
             ))
         }
         return chips

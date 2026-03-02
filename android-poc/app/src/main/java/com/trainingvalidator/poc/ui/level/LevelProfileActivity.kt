@@ -1,4 +1,4 @@
-package com.trainingvalidator.poc.ui
+package com.trainingvalidator.poc.ui.level
 
 import android.content.Context
 import android.content.Intent
@@ -10,14 +10,20 @@ import android.util.TypedValue
 import android.view.Gravity
 import android.view.View
 import android.widget.*
+import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
+import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
+import androidx.lifecycle.repeatOnLifecycle
+import com.trainingvalidator.poc.R
 import com.trainingvalidator.poc.network.ApiClient
 import com.trainingvalidator.poc.network.DomainLevelData
 import com.trainingvalidator.poc.network.LevelProfileData
 import com.trainingvalidator.poc.network.LimitingFactorData
 import com.trainingvalidator.poc.network.RegionLevelData
 import com.trainingvalidator.poc.storage.AuthManager
+import com.trainingvalidator.poc.ui.programs.ProgramListActivity
+import com.trainingvalidator.poc.ui.utils.currentLanguage
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -42,14 +48,39 @@ class LevelProfileActivity : AppCompatActivity() {
         }
     }
 
-    private val language: String get() = "en"
+    private val viewModel: LevelProfileViewModel by viewModels()
+    private val language: String get() = currentLanguage
 
     @Suppress("DEPRECATION")
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         window.statusBarColor = Color.parseColor("#121212")
         showLoading()
-        fetchLevelProfile()
+        observeViewModel()
+        viewModel.fetchLevelProfile()
+    }
+
+    private fun observeViewModel() {
+        lifecycleScope.launch {
+            repeatOnLifecycle(Lifecycle.State.STARTED) {
+                viewModel.uiState.collect { state ->
+                    when (state) {
+                        is LevelProfileUiState.Loading -> showLoading()
+                        is LevelProfileUiState.NoAuth -> showError(getString(R.string.error_login_required))
+                        is LevelProfileUiState.NoProfile -> showNoProfile(state.reason)
+                        is LevelProfileUiState.Error -> {
+                            Log.e(TAG, "Error: ${state.message}")
+                            showError(getString(R.string.level_fetch_error))
+                        }
+                        is LevelProfileUiState.Success -> {
+                            previousProfile = state.previousProfile
+                            buildUI(state.profile)
+                            checkLevelUpCelebration(state.profile)
+                        }
+                    }
+                }
+            }
+        }
     }
 
     private fun showLoading() {
@@ -68,7 +99,7 @@ class LevelProfileActivity : AppCompatActivity() {
         })
 
         layout.addView(TextView(this).apply {
-            text = "Loading your level..."
+            text = getString(R.string.loading_level)
             setTextColor(Color.parseColor("#B0B0B0"))
             textSize = 14f
             gravity = Gravity.CENTER
@@ -79,55 +110,6 @@ class LevelProfileActivity : AppCompatActivity() {
     }
 
     private var previousProfile: LevelProfileData? = null
-
-    private fun fetchLevelProfile() {
-        lifecycleScope.launch {
-            try {
-                val authHeader = AuthManager.getAuthHeader(this@LevelProfileActivity)
-                if (authHeader == null) {
-                    showError("Please log in to view your level")
-                    return@launch
-                }
-
-                // Fetch current profile and history in parallel
-                val response = withContext(Dispatchers.IO) {
-                    ApiClient.mobileSyncApi.getLevelProfile(authHeader)
-                }
-
-                if (response.isSuccessful && response.body()?.success == true) {
-                    val data = response.body()?.data
-                    if (data != null) {
-                        // Fetch history to get previous profile for comparison
-                        try {
-                            val historyResponse = withContext(Dispatchers.IO) {
-                                ApiClient.mobileSyncApi.getLevelProfileHistory(authHeader)
-                            }
-                            if (historyResponse.isSuccessful) {
-                                val history = historyResponse.body()?.data
-                                // history[0] = current, history[1] = previous
-                                if (history != null && history.size >= 2) {
-                                    previousProfile = history[1]
-                                }
-                            }
-                        } catch (_: Exception) {}
-
-                        buildUI(data)
-
-                        // Check for level-up celebration
-                        checkLevelUpCelebration(data)
-                    } else {
-                        showError("No level profile found")
-                    }
-                } else {
-                    val error = response.body()?.error ?: "Failed to load"
-                    showNoProfile(error)
-                }
-            } catch (e: Exception) {
-                Log.e(TAG, "Error loading level profile", e)
-                showError("Connection error. Please try again.")
-            }
-        }
-    }
 
     /**
      * Check if the user just leveled up and show a celebration dialog.

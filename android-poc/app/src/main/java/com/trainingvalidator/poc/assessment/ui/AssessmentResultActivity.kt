@@ -1,4 +1,4 @@
-package com.trainingvalidator.poc.assessment.ui
+﻿package com.trainingvalidator.poc.assessment.ui
 
 import android.content.Context
 import android.content.Intent
@@ -19,7 +19,7 @@ import com.trainingvalidator.poc.network.ApiClient
 import com.trainingvalidator.poc.network.RecommendedProgramData
 import com.trainingvalidator.poc.storage.AuthManager
 import com.trainingvalidator.poc.training.models.LocalizedText
-import com.trainingvalidator.poc.ui.ProgramListActivity
+import com.trainingvalidator.poc.ui.programs.ProgramListActivity
 import com.trainingvalidator.poc.ui.main.MainContainerActivity
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch

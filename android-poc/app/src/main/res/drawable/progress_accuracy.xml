@@ -4,7 +4,7 @@
     <item android:id="@android:id/background">
         <shape android:shape="rectangle">
             <corners android:radius="4dp"/>
-            <solid android:color="#404040"/>
+            <solid android:color="@color/report_card_background"/>
         </shape>
     </item>
     
@@ -16,8 +16,8 @@
                 <gradient
                     android:type="linear"
                     android:angle="0"
-                    android:startColor="#4CAF50"
-                    android:endColor="#8BC34A"/>
+                    android:startColor="@color/success"
+                    android:endColor="@color/metric_good"/>
             </shape>
         </clip>
     </item>

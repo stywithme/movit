@@ -1,3 +1,4 @@
+@file:Suppress("DEPRECATION")
 package com.trainingvalidator.poc.overlay
 
 import android.graphics.Canvas

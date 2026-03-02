@@ -35,6 +35,7 @@
             android:layout_weight="1"
             android:scaleType="fitCenter"
             android:adjustViewBounds="true"
+            android:contentDescription="@string/cd_exercise"
             tools:background="#333333" />
 
         <!-- Info section -->

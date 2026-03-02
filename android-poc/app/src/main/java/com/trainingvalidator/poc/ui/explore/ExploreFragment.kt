@@ -1,4 +1,4 @@
-package com.trainingvalidator.poc.ui.main
+package com.trainingvalidator.poc.ui.explore
 
 import android.content.Intent
 import android.os.Bundle
@@ -14,6 +14,7 @@ import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.google.android.material.button.MaterialButton
+import com.trainingvalidator.poc.ui.utils.currentLanguage
 import com.trainingvalidator.poc.R
 import com.trainingvalidator.poc.databinding.FragmentExploreBinding
 import com.trainingvalidator.poc.network.ExploreData
@@ -23,13 +24,13 @@ import com.trainingvalidator.poc.network.ExploreProgramItem
 import com.trainingvalidator.poc.network.ExploreWorkoutItem
 import com.trainingvalidator.poc.network.LocalizedName
 import com.trainingvalidator.poc.storage.ExploreRepository
-import com.trainingvalidator.poc.ui.ExerciseListActivity
-import com.trainingvalidator.poc.ui.LevelProfileActivity
-import com.trainingvalidator.poc.ui.PreWorkoutActivity
-import com.trainingvalidator.poc.ui.ProgramDetailActivity
-import com.trainingvalidator.poc.ui.ProgramListActivity
-import com.trainingvalidator.poc.ui.WorkoutDetailActivity
-import com.trainingvalidator.poc.ui.WorkoutListActivity
+import com.trainingvalidator.poc.ui.exercises.ExerciseListActivity
+import com.trainingvalidator.poc.ui.level.LevelProfileActivity
+import com.trainingvalidator.poc.ui.train.PreWorkoutActivity
+import com.trainingvalidator.poc.ui.programs.ProgramDetailActivity
+import com.trainingvalidator.poc.ui.programs.ProgramListActivity
+import com.trainingvalidator.poc.ui.workouts.WorkoutDetailActivity
+import com.trainingvalidator.poc.ui.workouts.WorkoutListActivity
 import com.trainingvalidator.poc.assessment.ui.PreScreeningActivity
 import com.trainingvalidator.poc.ui.profile.ProfileActivity
 import kotlinx.coroutines.launch
@@ -57,10 +58,10 @@ class ExploreFragment : Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
-        binding.headerLevels.tvSectionTitle.text = "Levels"
-        binding.headerPrograms.tvSectionTitle.text = "Top Programs"
-        binding.headerWorkouts.tvSectionTitle.text = "Quick Workouts"
-        binding.headerExercises.tvSectionTitle.text = "Exercise Library"
+        binding.headerLevels.tvSectionTitle.text = getString(R.string.section_levels)
+        binding.headerPrograms.tvSectionTitle.text = getString(R.string.section_top_programs)
+        binding.headerWorkouts.tvSectionTitle.text = getString(R.string.section_quick_workouts)
+        binding.headerExercises.tvSectionTitle.text = getString(R.string.section_exercise_library)
 
         setupLists()
         setupListeners()
@@ -103,9 +104,11 @@ class ExploreFragment : Fragment() {
     private fun loadData() {
         exploreRepository.getCachedData()?.let { renderData(it) }
 
-        lifecycleScope.launch {
+        viewLifecycleOwner.lifecycleScope.launch {
             try {
-                exploreRepository.syncFromServer(limit = 8)?.let { renderData(it) }
+                exploreRepository.syncFromServer(limit = 8)?.let {
+                    if (_binding != null) renderData(it)
+                }
             } catch (e: Exception) {
                 Log.w("ExploreFragment", "Background explore sync failed", e)
             }
@@ -113,7 +116,7 @@ class ExploreFragment : Fragment() {
     }
 
     private fun renderData(data: ExploreData) {
-        val language = getCurrentLanguage()
+        val language = requireContext().currentLanguage
 
         // 1. Handle Hero Section (Featured)
         setupHeroSection(data, language)
@@ -126,8 +129,8 @@ class ExploreFragment : Fragment() {
                 ExploreLevelItem(
                     number = 0,
                     code = "assessment",
-                    name = LocalizedName(en = "Assessment", ar = "التقييم"),
-                    description = LocalizedName(en = "Start mobility and readiness assessment", ar = "ابدأ تقييم الحركة والجاهزية")
+                    name = LocalizedName(en = "Assessment", ar = "???????"),
+                    description = LocalizedName(en = "Start mobility and readiness assessment", ar = "???? ????? ?????? ?????????")
                 )
             )
         }
@@ -187,7 +190,7 @@ class ExploreFragment : Fragment() {
         if (featuredProgram != null) {
             heroContainer.visibility = View.VISIBLE
             tvHeroTitle.text = if (language == "ar") featuredProgram.name.ar else featuredProgram.name.en
-            tvHeroSubtitle.text = "${featuredProgram.durationWeeks} Weeks • ${featuredProgram.difficulty.replaceFirstChar { it.uppercase() }}"
+            tvHeroSubtitle.text = "${featuredProgram.durationWeeks} Weeks � ${featuredProgram.difficulty.replaceFirstChar { it.uppercase() }}"
             btnHeroAction.text = "View Program"
             btnHeroAction.setOnClickListener {
                 startActivity(Intent(requireContext(), ProgramDetailActivity::class.java).apply {
@@ -204,18 +207,10 @@ class ExploreFragment : Fragment() {
         _binding = null
     }
 
-    private fun getCurrentLanguage(): String {
-        val appLocales = AppCompatDelegate.getApplicationLocales()
-        val locale = if (appLocales.isEmpty) resources.configuration.locales[0] else appLocales[0]
-        return locale?.language ?: "en"
+    private fun cardWidth(fraction: Float): Int {
+        val displayMetrics = requireContext().resources.displayMetrics
+        return (displayMetrics.widthPixels * fraction).toInt()
     }
-
-    private fun cardWidth(percent: Float): Int =
-        (resources.displayMetrics.widthPixels * percent).toInt()
-
-    // ─────────────────────────────────────────────────────────
-    // Adapters
-    // ─────────────────────────────────────────────────────────
 
     inner class ExploreProgramAdapter(
         private val items: List<ExploreProgramItem>,
@@ -233,14 +228,14 @@ class ExploreFragment : Fragment() {
             val view = LayoutInflater.from(parent.context)
                 .inflate(R.layout.item_program_browse_card, parent, false)
             view.layoutParams = RecyclerView.LayoutParams(cardWidth(0.70f), ViewGroup.LayoutParams.WRAP_CONTENT).apply {
-                marginEnd = 32 // 12dp margin
+                marginEnd = 32
             }
             return ViewHolder(view)
         }
 
         override fun onBindViewHolder(holder: ViewHolder, position: Int) {
             val program = items[position]
-            val language = getCurrentLanguage()
+            val language = requireContext().currentLanguage
             holder.tvName.text = if (language == "ar") program.name.ar else program.name.en
             holder.tvDuration.text = "${program.durationWeeks} weeks"
             holder.tvDifficulty.text = program.difficulty.replaceFirstChar { it.uppercase() }
@@ -269,7 +264,7 @@ class ExploreFragment : Fragment() {
 
         override fun onBindViewHolder(holder: ViewHolder, position: Int) {
             val workout = items[position]
-            val language = getCurrentLanguage()
+            val language = requireContext().currentLanguage
             holder.tvName.text = if (language == "ar") workout.name.ar else workout.name.en
             
             val duration = workout.estimatedDurationMin?.let { "$it min" } ?: "Varies"
@@ -299,7 +294,7 @@ class ExploreFragment : Fragment() {
 
         override fun onBindViewHolder(holder: ViewHolder, position: Int) {
             val exercise = items[position]
-            val language = getCurrentLanguage()
+            val language = requireContext().currentLanguage
             holder.tvName.text = if (language == "ar") exercise.name.ar else exercise.name.en
             holder.root.setOnClickListener { onClick(exercise) }
         }
@@ -330,7 +325,7 @@ class ExploreFragment : Fragment() {
 
         override fun onBindViewHolder(holder: ViewHolder, position: Int) {
             val level = items[position]
-            val language = getCurrentLanguage()
+            val language = requireContext().currentLanguage
             
             if (level.number == 0) {
                 holder.tvLevelNumber.text = "START"

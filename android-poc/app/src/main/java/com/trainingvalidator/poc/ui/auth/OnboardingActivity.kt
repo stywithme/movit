@@ -124,6 +124,7 @@ class OnboardingActivity : AppCompatActivity() {
         // Navigate to Sign In
         startActivity(Intent(this, SignInActivity::class.java))
         finish()
+        @Suppress("DEPRECATION")
         overridePendingTransition(android.R.anim.fade_in, android.R.anim.fade_out)
     }
 }

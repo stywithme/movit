@@ -6,9 +6,16 @@
     <color name="primary">#8AF851</color>              <!-- Neon Green - Main accent -->
     <color name="primary_variant">#6BD93A</color>      <!-- Darker green for pressed states -->
     <color name="primary_light">#1A8AF851</color>      <!-- 10% opacity primary for backgrounds -->
-    <color name="on_primary">#091801</color>           <!-- Dark text on primary -->
+    <color name="on_primary">#091801</color>           <!-- Dark text on primary — alias of text_on_primary -->
     
-    <!-- Legacy Material Colors (Launcher & Compatibility) -->
+    <!-- ═══════════════════════════════════════════════════ -->
+    <!-- BRAND ACCENT LEGACY (Old orange, used on some older screens) -->
+    <!-- ═══════════════════════════════════════════════════ -->
+    <color name="brand_accent_legacy">#FF6B35</color>
+    <color name="brand_accent_legacy_13">#22FF6B35</color>   <!-- 13% opacity -->
+    <color name="brand_accent_legacy_20">#33FF6B35</color>   <!-- 20% opacity -->
+
+    <!-- Legacy Material Colors (Launcher & Compatibility — safe to remove when fully migrated) -->
     <color name="purple_200">#FFBB86FC</color>
     <color name="purple_500">#FF6200EE</color>
     <color name="purple_700">#FF3700B3</color>
@@ -85,8 +92,8 @@
     <!-- Glass UI Colors -->
     <color name="glass_background">#40000000</color>    <!-- 25% Black -->
     <color name="glass_background_dark">#26000000</color><!-- 15% Black -->
-    <color name="glass_border">#33FFFFFF</color>        <!-- 20% White -->
-    <color name="glass_border_subtle">#1AFFFFFF</color> <!-- 10% White -->
+    <color name="glass_border">#33FFFFFF</color>        <!-- 20% White — same as glass_card_border -->
+    <color name="glass_border_subtle">#1AFFFFFF</color> <!-- 10% White — same as glass_card_border_subtle -->
     <color name="skeleton_correct">#FF4CAF50</color>
     <color name="skeleton_warning">#FFFFC107</color>
     <color name="skeleton_error">#FFF44336</color>

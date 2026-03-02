@@ -30,6 +30,9 @@ class SplashActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         
+        // Follow system dark/light mode preference
+        AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_FOLLOW_SYSTEM)
+        
         applySavedLocale()
         
         // Edge-to-edge display
@@ -111,7 +114,7 @@ class SplashActivity : AppCompatActivity() {
             startActivity(Intent(this@SplashActivity, nextActivity))
             finish()
             
-            // Smooth transition
+            @Suppress("DEPRECATION")
             overridePendingTransition(android.R.anim.fade_in, android.R.anim.fade_out)
         }
     }

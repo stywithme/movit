@@ -1,4 +1,4 @@
-package com.trainingvalidator.poc.ui
+package com.trainingvalidator.poc.ui.train
 
 import android.Manifest
 import android.content.pm.PackageManager
@@ -23,7 +23,9 @@ import androidx.core.content.IntentCompat
 import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.WindowInsetsControllerCompat
+import androidx.lifecycle.ProcessLifecycleOwner
 import androidx.lifecycle.lifecycleScope
+import com.trainingvalidator.poc.training.analytics.SessionUpload
 import com.trainingvalidator.poc.R
 import com.trainingvalidator.poc.analysis.AngleCalculator
 import com.trainingvalidator.poc.analysis.JointAngles
@@ -66,6 +68,7 @@ import com.trainingvalidator.poc.storage.AuthManager
 import com.trainingvalidator.poc.network.SessionSyncService
 import com.trainingvalidator.poc.network.ApiConfig
 import com.trainingvalidator.poc.ui.report.ReportPagerActivity
+import com.trainingvalidator.poc.ui.utils.currentLanguage
 import com.trainingvalidator.poc.video.VideoManager
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.collectLatest
@@ -233,6 +236,21 @@ class TrainingActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetection
         setContentView(binding.root)
         
         window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+
+        // Handle back press with modern OnBackPressedDispatcher
+        onBackPressedDispatcher.addCallback(this, object : androidx.activity.OnBackPressedCallback(true) {
+            override fun handleOnBackPressed() {
+                if (isSessionMode && sessionTrainingEngine != null) {
+                    val currentState = sessionTrainingEngine?.state?.value
+                    if (currentState !is com.trainingvalidator.poc.training.session.SessionTrainingEngine.State.SessionComplete) {
+                        showExitSessionDialog()
+                        return
+                    }
+                }
+                isEnabled = false
+                onBackPressedDispatcher.onBackPressed()
+            }
+        })
         
         parseIntentExtras()
         setupUI()
@@ -249,17 +267,6 @@ class TrainingActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetection
         } else {
             checkCameraPermission()
         }
-    }
-
-    override fun onBackPressed() {
-        if (isSessionMode && sessionTrainingEngine != null) {
-            val currentState = sessionTrainingEngine?.state?.value
-            if (currentState !is com.trainingvalidator.poc.training.session.SessionTrainingEngine.State.SessionComplete) {
-                showExitSessionDialog()
-                return
-            }
-        }
-        super.onBackPressed()
     }
 
     private fun showExitSessionDialog() {
@@ -324,22 +331,25 @@ class TrainingActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetection
      * This is needed when TrainingActivity is launched directly (e.g., from deep link).
      * 
      * Strategy: Cache First, then Backend Sync if cache is empty.
+     * Uses lifecycleScope to avoid blocking the main thread (ANR risk).
      */
-    private fun initializeExerciseRepository() {
-        try {
-            kotlinx.coroutines.runBlocking {
-                // Initialize ExerciseRepository (syncs exercises and programs via SyncManager)
+    private fun initializeExerciseRepository(onReady: () -> Unit = {}) {
+        lifecycleScope.launch {
+            try {
                 val exerciseRepo = ExerciseRepository.getInstance(this@TrainingActivity)
-                val exerciseSuccess = exerciseRepo.initialize(autoSync = true)
-                
+                val exerciseSuccess = withContext(Dispatchers.IO) {
+                    exerciseRepo.initialize(autoSync = true)
+                }
                 if (exerciseSuccess) {
                     Log.d(TAG, "ExerciseRepository initialized successfully")
                 } else {
                     Log.w(TAG, "ExerciseRepository initialized but no exercises available")
                 }
+            } catch (e: Exception) {
+                Log.e(TAG, "Failed to initialize repositories", e)
+            } finally {
+                onReady()
             }
-        } catch (e: Exception) {
-            Log.e(TAG, "Failed to initialize repositories", e)
         }
     }
 
@@ -579,7 +589,7 @@ class TrainingActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetection
 
         // Resolve exercise names
         val exerciseRepo = ExerciseRepository.getInstance(this)
-        val language = java.util.Locale.getDefault().language
+        val language = currentLanguage
         sessionExerciseConfigMap.clear()
         items.filter { it.type == "exercise" && it.exerciseSlug != null }.forEach { item ->
             val slug = item.exerciseSlug ?: return@forEach
@@ -930,7 +940,13 @@ class TrainingActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetection
         tone.startTone(ToneGenerator.TONE_PROP_BEEP, 200)
         tone.release()
 
-        val vibrator = getSystemService(VIBRATOR_SERVICE) as? Vibrator
+        val vibrator = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            val vibratorManager = getSystemService(android.os.VibratorManager::class.java)
+            vibratorManager?.defaultVibrator
+        } else {
+            @Suppress("DEPRECATION")
+            getSystemService(VIBRATOR_SERVICE) as? Vibrator
+        }
         if (vibrator?.hasVibrator() == true) {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
                 vibrator.vibrate(VibrationEffect.createOneShot(200, VibrationEffect.DEFAULT_AMPLITUDE))
@@ -1542,6 +1558,7 @@ class TrainingActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetection
         }
     }
     
+    @Suppress("DEPRECATION")
     private fun handleUIEvent(event: TrainingUIEvent) {
         when (event) {
             is TrainingUIEvent.ShowSetupPose -> {
@@ -2323,12 +2340,11 @@ class TrainingActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetection
                     }
                 }
                 
-                // Sync to backend in background (non-blocking)
-                // Use GlobalScope since this Activity will be finished
-                @Suppress("OPT_IN_USAGE")
-                kotlinx.coroutines.GlobalScope.launch(Dispatchers.IO) {
+                // Sync to backend in background (non-blocking, lifecycle-safe)
+                // ProcessLifecycleOwner survives Activity finish since navigation already happened
+                androidx.lifecycle.ProcessLifecycleOwner.get().lifecycleScope.launch(Dispatchers.IO) {
                     try {
-                        syncSessionToBackendStandalone(report.id)
+                        syncSessionToBackendStandalone(report.id, sessionUpload)
                     } catch (e: Exception) {
                         Log.w(TAG, "Background sync failed, will retry later: ${e.message}")
                     }
@@ -2350,16 +2366,17 @@ class TrainingActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetection
     }
     
     /**
-     * Sync session data to backend (standalone version for GlobalScope)
-     * Uses applicationContext to survive Activity destruction
+     * Sync session data to backend. Accepts the already-finalized upload to avoid
+     * calling finalizeAndGetSessionUpload() twice (race condition risk).
+     * Uses applicationContext to survive Activity destruction.
      */
-    private suspend fun syncSessionToBackendStandalone(sessionId: String) {
+    private suspend fun syncSessionToBackendStandalone(
+        sessionId: String,
+        sessionUpload: SessionUpload?
+    ) {
         val appContext = applicationContext
         
         try {
-            // Get session upload from MotionRecorder
-            val sessionUpload = viewModel.finalizeAndGetSessionUpload(sessionId)
-            
             if (sessionUpload == null) {
                 Log.w(TAG, "No session data to sync (MotionRecorder not active)")
                 return

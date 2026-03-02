@@ -1,4 +1,4 @@
-package com.trainingvalidator.poc.ui
+package com.trainingvalidator.poc.ui.programs
 
 import android.os.Bundle
 import android.util.Log
@@ -18,6 +18,7 @@ import com.trainingvalidator.poc.storage.ReportRepository
 import com.trainingvalidator.poc.training.models.ProgramConfig
 import com.trainingvalidator.poc.training.models.ProgramWeek
 import com.trainingvalidator.poc.training.session.ReportAggregator
+import com.trainingvalidator.poc.ui.utils.currentLanguage
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -76,7 +77,7 @@ class WeeklyReportActivity : AppCompatActivity() {
     }
 
     private fun bindProgram(program: ProgramConfig, programId: String) {
-        val language = java.util.Locale.getDefault().language
+        val language = currentLanguage
         binding.tvProgramName.text = program.name.get(language).ifBlank { program.name.en }
         binding.tvProgramSubtitle.text = getString(R.string.weekly_report_subtitle)
         binding.rvWeeklyReports.adapter = WeeklyAdapter(program.weeks, programId, null)

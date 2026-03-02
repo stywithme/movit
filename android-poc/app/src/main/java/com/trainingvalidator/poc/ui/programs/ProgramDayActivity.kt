@@ -1,4 +1,4 @@
-package com.trainingvalidator.poc.ui
+package com.trainingvalidator.poc.ui.programs
 
 import android.content.Intent
 import android.os.Bundle
@@ -12,6 +12,7 @@ import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
+import com.trainingvalidator.poc.ui.utils.currentLanguage
 import com.trainingvalidator.poc.R
 import com.trainingvalidator.poc.databinding.ActivityProgramDayBinding
 import com.trainingvalidator.poc.storage.ProgramRepository
@@ -20,7 +21,7 @@ import com.trainingvalidator.poc.training.models.ProgramConfig
 import com.trainingvalidator.poc.training.models.ProgramDay
 import com.trainingvalidator.poc.training.models.ProgramSession
 import androidx.appcompat.app.AppCompatDelegate
-import kotlinx.coroutines.CoroutineScope
+import androidx.lifecycle.lifecycleScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -64,12 +65,12 @@ class ProgramDayActivity : AppCompatActivity() {
     private fun loadProgram() {
         val slug = intent.getStringExtra(EXTRA_PROGRAM_SLUG)
         if (slug.isNullOrBlank()) {
-            Toast.makeText(this, "Program not found", Toast.LENGTH_SHORT).show()
+            Toast.makeText(this, getString(R.string.error_program_not_found), Toast.LENGTH_SHORT).show()
             finish()
             return
         }
 
-        CoroutineScope(Dispatchers.Main).launch {
+        lifecycleScope.launch {
             val repository = ProgramRepository.getInstance(this@ProgramDayActivity)
 
             program = withContext(Dispatchers.IO) {
@@ -77,7 +78,7 @@ class ProgramDayActivity : AppCompatActivity() {
             }
 
             if (program == null) {
-                Toast.makeText(this@ProgramDayActivity, "Program not found", Toast.LENGTH_SHORT).show()
+                Toast.makeText(this@ProgramDayActivity, getString(R.string.error_program_not_found), Toast.LENGTH_SHORT).show()
                 finish()
                 return@launch
             }
@@ -89,12 +90,12 @@ class ProgramDayActivity : AppCompatActivity() {
     private fun bindWeek(program: ProgramConfig) {
         val week = program.weeks.firstOrNull { it.weekNumber == weekNumber }
         if (week == null) {
-            Toast.makeText(this, "Week not found", Toast.LENGTH_SHORT).show()
+            Toast.makeText(this, getString(R.string.error_week_not_found), Toast.LENGTH_SHORT).show()
             finish()
             return
         }
 
-        val language = getCurrentLanguage()
+        val language = currentLanguage
         val title = week.name?.let { it.get(language).ifBlank { it.en } } ?: ""
         
         binding.tvWeekTitle.text = if (title.isNotBlank()) {
@@ -105,7 +106,7 @@ class ProgramDayActivity : AppCompatActivity() {
         
         val sessionsCount = week.days.sumOf { it.sessions.size }
         val restDaysCount = week.days.count { it.isRestDay }
-        binding.tvWeekSubtitle.text = "$sessionsCount Sessions • $restDaysCount Rest Days"
+        binding.tvWeekSubtitle.text = getString(R.string.week_sessions_rest_format, sessionsCount, restDaysCount)
 
         // Sort days logically
         val sortedDays = week.days.sortedBy { it.dayNumber }
@@ -132,7 +133,7 @@ class ProgramDayActivity : AppCompatActivity() {
 
         override fun onBindViewHolder(holder: ViewHolder, position: Int) {
             val day = days[position]
-            val language = getCurrentLanguage()
+            val language = currentLanguage
 
             val dayName = day.name?.let { it.get(language).ifBlank { it.en } } ?: ""
             holder.tvDayTitle.text = if (dayName.isNotBlank()) {
@@ -224,16 +225,6 @@ class ProgramDayActivity : AppCompatActivity() {
             putExtra(ProgramSessionActivity.EXTRA_TARGET_SESSION_ID, session.id)
         }
         startActivity(intent)
-    }
-
-    private fun getCurrentLanguage(): String {
-        val appLocales = AppCompatDelegate.getApplicationLocales()
-        val locale = if (appLocales.isEmpty) {
-            resources.configuration.locales[0]
-        } else {
-            appLocales[0]
-        }
-        return locale?.language ?: "en"
     }
 
     override fun onResume() {

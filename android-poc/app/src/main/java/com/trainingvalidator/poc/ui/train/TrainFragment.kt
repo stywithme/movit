@@ -1,4 +1,4 @@
-package com.trainingvalidator.poc.ui.main
+package com.trainingvalidator.poc.ui.train
 
 import android.content.Intent
 import android.graphics.drawable.GradientDrawable
@@ -17,6 +17,7 @@ import androidx.recyclerview.widget.RecyclerView
 import com.google.android.material.bottomsheet.BottomSheetDialog
 import com.google.android.material.button.MaterialButton
 import com.google.android.material.card.MaterialCardView
+import com.trainingvalidator.poc.ui.utils.currentLanguage
 import com.trainingvalidator.poc.R
 import com.trainingvalidator.poc.databinding.FragmentTrainBinding
 import com.trainingvalidator.poc.storage.DayCustomizationStore
@@ -29,11 +30,11 @@ import com.trainingvalidator.poc.training.models.ProgramConfig
 import com.trainingvalidator.poc.training.models.ProgramDay
 import com.trainingvalidator.poc.training.models.ProgramSession
 import com.trainingvalidator.poc.training.models.ProgramWeek
-import com.trainingvalidator.poc.ui.ProgramDetailActivity
-import com.trainingvalidator.poc.ui.ProgramListActivity
-import com.trainingvalidator.poc.ui.ProgramSessionActivity
-import com.trainingvalidator.poc.ui.ProgramSessionReportActivity
-import com.trainingvalidator.poc.ui.WeeklyReportActivity
+import com.trainingvalidator.poc.ui.programs.ProgramDetailActivity
+import com.trainingvalidator.poc.ui.programs.ProgramListActivity
+import com.trainingvalidator.poc.ui.programs.ProgramSessionActivity
+import com.trainingvalidator.poc.ui.programs.ProgramSessionReportActivity
+import com.trainingvalidator.poc.ui.programs.WeeklyReportActivity
 import android.graphics.Color
 import android.util.Log
 import com.github.mikephil.charting.charts.LineChart
@@ -48,10 +49,10 @@ import kotlinx.coroutines.withContext
 import java.util.Calendar
 
 /**
- * TrainFragment — Redesigned program page.
+ * TrainFragment ? Redesigned program page.
  *
- * State 1: No active program → show browse list of all programs
- * State 2: Active program → show dashboard with identity card, week calendar,
+ * State 1: No active program ? show browse list of all programs
+ * State 2: Active program ? show dashboard with identity card, week calendar,
  *          today sessions, and report summary.
  */
 class TrainFragment : Fragment() {
@@ -69,9 +70,9 @@ class TrainFragment : Fragment() {
     private var isFirstLoad = true
     private var cachedProgramMetrics: MetricsResponse? = null
 
-    // ═══════════════════════════════════════════════════════════
+    // -----------------------------------------------------------
     // Lifecycle
-    // ═══════════════════════════════════════════════════════════
+    // -----------------------------------------------------------
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?
@@ -103,9 +104,9 @@ class TrainFragment : Fragment() {
         _binding = null
     }
 
-    // ═══════════════════════════════════════════════════════════
+    // -----------------------------------------------------------
     // Main Load
-    // ═══════════════════════════════════════════════════════════
+    // -----------------------------------------------------------
 
     companion object {
         private const val TAG = "TrainFragment"
@@ -119,7 +120,7 @@ class TrainFragment : Fragment() {
      * 3. When sync completes and has updates, reload cache and refresh UI
      */
     private fun loadPage() {
-        lifecycleScope.launch {
+        viewLifecycleOwner.lifecycleScope.launch {
             programRepo = ProgramRepository.getInstance(requireContext())
             exerciseRepo = ExerciseRepository.getInstance(requireContext())
             reportStore = ProgramSessionReportStore(requireContext())
@@ -131,6 +132,7 @@ class TrainFragment : Fragment() {
                 exerciseRepo.initialize(autoSync = false)
             }
 
+            if (_binding == null) return@launch
             renderCurrentState()
 
             syncAndRefresh()
@@ -152,7 +154,7 @@ class TrainFragment : Fragment() {
      * then refresh the UI if anything changed.
      */
     private fun syncAndRefresh() {
-        lifecycleScope.launch {
+        viewLifecycleOwner.lifecycleScope.launch {
             try {
                 val result = withContext(Dispatchers.IO) {
                     exerciseRepo.checkForUpdates()
@@ -168,10 +170,10 @@ class TrainFragment : Fragment() {
                         Log.d(TAG, "Sync: no changes")
                     }
                     is com.trainingvalidator.poc.storage.SyncManager.SyncResult.Offline -> {
-                        Log.d(TAG, "Offline — using cached data")
+                        Log.d(TAG, "Offline ? using cached data")
                     }
                     is com.trainingvalidator.poc.storage.SyncManager.SyncResult.Skipped -> {
-                        Log.d(TAG, "Sync skipped — another sync may have updated cache")
+                        Log.d(TAG, "Sync skipped ? another sync may have updated cache")
                     }
                     is com.trainingvalidator.poc.storage.SyncManager.SyncResult.Error -> {
                         Log.w(TAG, "Sync error: ${result.message}")
@@ -199,7 +201,7 @@ class TrainFragment : Fragment() {
         val activeProgram = programRepo.getActiveProgram() ?: return
         val programId = activeProgram.id
 
-        lifecycleScope.launch {
+        viewLifecycleOwner.lifecycleScope.launch {
             try {
                 val metrics = withContext(Dispatchers.IO) {
                     reportRepo.getProgramMetrics(programId, includeChildren = true)
@@ -218,9 +220,9 @@ class TrainFragment : Fragment() {
         }
     }
 
-    // ═══════════════════════════════════════════════════════════
+    // -----------------------------------------------------------
     // STATE 1: Browse Programs (No Active Program)
-    // ═══════════════════════════════════════════════════════════
+    // -----------------------------------------------------------
 
     private fun showBrowseState() {
         binding.layoutNoProgramState.visibility = View.VISIBLE
@@ -232,9 +234,9 @@ class TrainFragment : Fragment() {
         rv.adapter = ProgramBrowseAdapter(allPrograms)
     }
 
-    // ═══════════════════════════════════════════════════════════
+    // -----------------------------------------------------------
     // STATE 2: Active Program Dashboard
-    // ═══════════════════════════════════════════════════════════
+    // -----------------------------------------------------------
 
     private fun showActiveProgramState(program: ProgramConfig) {
         binding.layoutNoProgramState.visibility = View.GONE
@@ -243,7 +245,7 @@ class TrainFragment : Fragment() {
 
         reportStore.migrateFromSharedPreferences(requireContext())
 
-        val language = getCurrentLanguage()
+        val language = requireContext().currentLanguage
 
         val userProgram = programRepo.getActiveUserProgramExport()
         val currentRef = if (userProgram != null) {
@@ -268,12 +270,12 @@ class TrainFragment : Fragment() {
         binding.btnBrowseAllPrograms.setOnClickListener { openProgramList() }
     }
 
-    // ─────────────────────────────────────────────────────
+    // -----------------------------------------------------
     // Section 1: Program Identity Card
-    // ─────────────────────────────────────────────────────
+    // -----------------------------------------------------
 
     private fun renderIdentityCard(program: ProgramConfig, week: ProgramWeek, day: ProgramDay) {
-        val language = getCurrentLanguage()
+        val language = requireContext().currentLanguage
         val programName = program.name.get(language).ifBlank { program.name.en }
         binding.tvProgramName.text = programName
 
@@ -303,9 +305,9 @@ class TrainFragment : Fragment() {
         binding.cardProgramIdentity.setOnClickListener { openProgramDetail(program) }
     }
 
-    // ─────────────────────────────────────────────────────
+    // -----------------------------------------------------
     // Section 2: Week Calendar
-    // ─────────────────────────────────────────────────────
+    // -----------------------------------------------------
 
     private fun renderWeekCalendar(program: ProgramConfig, week: ProgramWeek, currentDay: ProgramDay) {
         binding.tvWeekTitle.text = getString(R.string.pg_week_format, week.weekNumber)
@@ -340,7 +342,7 @@ class TrainFragment : Fragment() {
             } else {
                 emptyList()
             }
-            val isCompleted = hasSessions && dayReports.size >= (day?.sessions?.size ?: 0)
+            val isCompleted = hasSessions && dayReports.size >= day.sessions.size
             val isMissed = isPast && !isCompleted && hasSessions
 
             tvLabel.text = getWeekdayShortLabel(realDate)
@@ -440,9 +442,9 @@ class TrainFragment : Fragment() {
         }
     }
 
-    // ─────────────────────────────────────────────────────
+    // -----------------------------------------------------
     // Section 3: Today Sessions
-    // ─────────────────────────────────────────────────────
+    // -----------------------------------------------------
 
     private fun renderTodaySection(
         program: ProgramConfig,
@@ -464,7 +466,7 @@ class TrainFragment : Fragment() {
             binding.cardRestDay.visibility = View.VISIBLE
             val tomorrowDay = findTomorrowDay(program, week, day)
             if (tomorrowDay != null) {
-                val tomorrowName = tomorrowDay.name?.get(language)?.ifBlank { tomorrowDay.name?.en }
+                val tomorrowName = tomorrowDay.name?.get(language)?.ifBlank { tomorrowDay.name.en }
                     ?: getString(R.string.programs_day_title_format, tomorrowDay.dayNumber)
                 val exerciseCount = tomorrowDay.sessions.sumOf { s -> s.items.count { it.type == "exercise" } }
                 binding.tvRestDayTomorrow.text = getString(
@@ -590,8 +592,9 @@ class TrainFragment : Fragment() {
             }
 
             btnAction.setOnClickListener {
-                if (isCompleted && report != null) {
-                    openSessionReport(report, session.items.size)
+                val r = report
+                if (r != null) {
+                    openSessionReport(r, session.items.size)
                 } else {
                     openSession(program, session, week.weekNumber, day.dayNumber)
                 }
@@ -620,14 +623,14 @@ class TrainFragment : Fragment() {
             tvStatus.visibility = View.GONE
 
             if (item.type == "rest") {
-                tvBullet.text = "·"
+                tvBullet.text = "?"
                 tvBullet.setTextColor(requireContext().getColor(R.color.text_tertiary))
                 tvTitle.text = getString(R.string.programs_rest_label)
                 tvTitle.setTextColor(requireContext().getColor(R.color.text_hint))
                 val seconds = (item.restDurationMs ?: 0L) / 1000
                 tvSubtitle.text = getString(R.string.pg_item_rest_format, seconds)
             } else {
-                tvBullet.text = "●"
+                tvBullet.text = "?"
                 tvBullet.setTextColor(requireContext().getColor(R.color.primary))
                 val exerciseName = item.exerciseSlug?.let { slug ->
                     exerciseRepo.getExercise(slug)?.name?.get(language)?.ifBlank {
@@ -648,9 +651,9 @@ class TrainFragment : Fragment() {
         }
     }
 
-    // ─────────────────────────────────────────────────────
+    // -----------------------------------------------------
     // Section 4: Report Summary
-    // ─────────────────────────────────────────────────────
+    // -----------------------------------------------------
 
     private fun renderReportSummary(program: ProgramConfig) {
         val metrics = cachedProgramMetrics
@@ -672,7 +675,7 @@ class TrainFragment : Fragment() {
         binding.tvReportReps.text = allReports.sumOf { it.totalReps }.toString()
 
         val avgForm = allReports.mapNotNull { it.averageFormScore.takeIf { s -> s > 0f } }
-        binding.tvReportAccuracy.text = if (avgForm.isNotEmpty()) "${avgForm.average().toInt()}%" else "—"
+        binding.tvReportAccuracy.text = if (avgForm.isNotEmpty()) "${avgForm.average().toInt()}%" else "?"
         binding.tvReportSets.text = allReports.sumOf { it.totalSetsCompleted }.toString()
 
         binding.tvReportInsight.text = when {
@@ -685,10 +688,10 @@ class TrainFragment : Fragment() {
 
     private fun renderReportSummaryFromBackend(program: ProgramConfig, metrics: MetricsResponse) {
         binding.cardProgramReport.visibility = View.VISIBLE
-        val summary = metrics.summary!!
+        val summary = metrics.summary ?: return
 
         binding.tvReportDays.text = (summary.daysTrained ?: 0).toString()
-        binding.tvReportExercises.text = "—"
+        binding.tvReportExercises.text = "?"
         binding.tvReportTime.text = ReportAggregator.formatDuration(summary.totalTrainingTime ?: 0L)
         binding.tvReportReps.text = (summary.totalReps ?: 0).toString()
         binding.tvReportAccuracy.text = "${(summary.overallFormScore ?: 0f).toInt()}%"
@@ -709,9 +712,9 @@ class TrainFragment : Fragment() {
         binding.btnViewFullReports.setOnClickListener { openWeeklyReport(program) }
     }
 
-    // ─────────────────────────────────────────────────────
+    // -----------------------------------------------------
     // Program Complete State
-    // ─────────────────────────────────────────────────────
+    // -----------------------------------------------------
 
     private fun showProgramComplete(program: ProgramConfig) {
         binding.cardProgramComplete.visibility = View.VISIBLE
@@ -735,9 +738,9 @@ class TrainFragment : Fragment() {
         binding.btnStartNext.setOnClickListener { openProgramList() }
     }
 
-    // ═══════════════════════════════════════════════════════════
+    // -----------------------------------------------------------
     // Day Detail Bottom Sheet
-    // ═══════════════════════════════════════════════════════════
+    // -----------------------------------------------------------
 
     private fun showDayDetailSheet(program: ProgramConfig, week: ProgramWeek, day: ProgramDay) {
         val dialog = BottomSheetDialog(requireContext())
@@ -749,8 +752,8 @@ class TrainFragment : Fragment() {
         val layoutSessions = sheet.findViewById<LinearLayout>(R.id.layoutDaySessions)
         val tvRestHint = sheet.findViewById<TextView>(R.id.tvDayRestHint)
 
-        val language = getCurrentLanguage()
-        val dayTitle = day.name?.get(language)?.ifBlank { day.name?.en }
+        val language = requireContext().currentLanguage
+        val dayTitle = day.name?.get(language)?.ifBlank { day.name.en }
             ?: getString(R.string.programs_day_title_only, day.dayNumber)
         tvTitle.text = getString(R.string.programs_day_detail_title_format, dayTitle)
 
@@ -793,8 +796,9 @@ class TrainFragment : Fragment() {
             else getString(R.string.programs_start_session)
             btnAction.setOnClickListener {
                 dialog.dismiss()
-                if (isCompleted && report != null) {
-                    openSessionReport(report, session.items.size)
+                val r = report
+                if (r != null) {
+                    openSessionReport(r, session.items.size)
                 } else {
                     openSession(program, session, week.weekNumber, day.dayNumber)
                 }
@@ -806,9 +810,9 @@ class TrainFragment : Fragment() {
         dialog.show()
     }
 
-    // ═══════════════════════════════════════════════════════════
+    // -----------------------------------------------------------
     // Navigation
-    // ═══════════════════════════════════════════════════════════
+    // -----------------------------------------------------------
 
     private fun openSession(
         program: ProgramConfig, session: ProgramSession,
@@ -864,9 +868,9 @@ class TrainFragment : Fragment() {
         })
     }
 
-    // ═══════════════════════════════════════════════════════════
+    // -----------------------------------------------------------
     // Unified Metrics Rendering (Grade, Sparkline)
-    // ═══════════════════════════════════════════════════════════
+    // -----------------------------------------------------------
 
     private fun renderProgramGrade(metrics: MetricsResponse) {
         val grade = metrics.summary?.programGrade
@@ -921,7 +925,7 @@ class TrainFragment : Fragment() {
 
         chart.invalidate()
 
-        val weeks = metrics.summary?.weeks
+        val weeks = metrics.summary.weeks
         if (weeks != null && weeks.size >= 2) {
             val currentWeek = weeks.last()
             val change = currentWeek.weekOverWeekChange
@@ -940,9 +944,9 @@ class TrainFragment : Fragment() {
         }
     }
 
-    // ═══════════════════════════════════════════════════════════
+    // -----------------------------------------------------------
     // Helpers
-    // ═══════════════════════════════════════════════════════════
+    // -----------------------------------------------------------
 
     private fun findTomorrowDay(program: ProgramConfig, week: ProgramWeek, today: ProgramDay): ProgramDay? {
         val allDays = program.weeks.sortedBy { it.weekNumber }.flatMap { w ->
@@ -1007,16 +1011,6 @@ class TrainFragment : Fragment() {
         return (totalSeconds / 60).coerceAtLeast(1)
     }
 
-    private fun getCurrentLanguage(): String {
-        val appLocales = AppCompatDelegate.getApplicationLocales()
-        val locale = if (appLocales.isEmpty) resources.configuration.locales[0] else appLocales[0]
-        return locale?.language ?: "en"
-    }
-
-    // ═══════════════════════════════════════════════════════════
-    // Browse Programs Adapter (State 1)
-    // ═══════════════════════════════════════════════════════════
-
     private inner class ProgramBrowseAdapter(
         private val programs: List<ProgramConfig>
     ) : RecyclerView.Adapter<ProgramBrowseAdapter.ViewHolder>() {
@@ -1039,18 +1033,18 @@ class TrainFragment : Fragment() {
 
         override fun onBindViewHolder(holder: ViewHolder, position: Int) {
             val program = programs[position]
-            val language = getCurrentLanguage()
+            val language = requireContext().currentLanguage
 
             holder.tvName.text = program.name.get(language).ifBlank { program.name.en }
             holder.tvDescription.text = program.description?.get(language)?.ifBlank {
-                program.description?.en
+                program.description.en
             } ?: ""
             holder.tvDuration.text = getString(R.string.weeks_count_format, program.durationWeeks)
 
             val diffIcon = when (program.difficulty) {
-                "intermediate" -> "⭐⭐"
-                "advanced" -> "⭐⭐⭐"
-                else -> "⭐"
+                "intermediate" -> "??"
+                "advanced" -> "???"
+                else -> "?"
             }
             holder.tvDifficulty.text = "$diffIcon ${program.difficulty.replaceFirstChar { it.uppercase() }}"
 
@@ -1066,9 +1060,9 @@ class TrainFragment : Fragment() {
         override fun getItemCount() = programs.size
     }
 
-    // ═══════════════════════════════════════════════════════════
+    // -----------------------------------------------------------
     // Data Classes
-    // ═══════════════════════════════════════════════════════════
+    // -----------------------------------------------------------
 
     private data class DayRef(val week: ProgramWeek, val day: ProgramDay)
 

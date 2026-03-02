@@ -9,6 +9,7 @@ import androidx.appcompat.app.AppCompatDelegate
 import androidx.core.os.LocaleListCompat
 import androidx.core.view.WindowCompat
 import androidx.lifecycle.lifecycleScope
+import com.trainingvalidator.poc.ui.utils.currentLanguage
 import com.trainingvalidator.poc.R
 import com.trainingvalidator.poc.databinding.ActivityProfileBinding
 import com.trainingvalidator.poc.network.ApiClient
@@ -114,7 +115,7 @@ class ProfileActivity : AppCompatActivity() {
     }
 
     private fun updateLanguageDisplay() {
-        val currentLanguage = getCurrentLanguage()
+        val currentLanguage = currentLanguage
         binding.tvCurrentLanguage.text = if (currentLanguage == "ar") {
             getString(R.string.language_arabic)
         } else {
@@ -122,27 +123,17 @@ class ProfileActivity : AppCompatActivity() {
         }
     }
 
-    private fun getCurrentLanguage(): String {
-        val appLocales = AppCompatDelegate.getApplicationLocales()
-        val locale = if (appLocales.isEmpty) {
-            resources.configuration.locales[0]
-        } else {
-            appLocales[0]
-        }
-        return locale?.language ?: "en"
-    }
-
     private fun showLanguageDialog() {
         val languages = arrayOf(
             getString(R.string.language_english),
             getString(R.string.language_arabic)
         )
-        val currentIndex = if (getCurrentLanguage() == "ar") 1 else 0
+        val currentIndex = if (currentLanguage == "ar") 1 else 0
 
         AlertDialog.Builder(this, R.style.Theme_WayToFix_Dialog)
             .setTitle(R.string.language)
             .setSingleChoiceItems(languages, currentIndex) { dialog, which ->
-                val newLocale = if (which == 1) Locale("ar") else Locale("en")
+                val newLocale = if (which == 1) Locale.forLanguageTag("ar") else Locale.forLanguageTag("en")
                 setAppLocale(newLocale)
                 dialog.dismiss()
             }

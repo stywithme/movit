@@ -8,6 +8,8 @@ import android.view.ViewGroup
 import android.widget.LinearLayout
 import android.widget.ScrollView
 import android.widget.TextView
+import androidx.core.content.ContextCompat
+import com.trainingvalidator.poc.R
 import com.trainingvalidator.poc.training.report.MetricStatus
 import com.trainingvalidator.poc.training.report.MetricWithStatus
 
@@ -20,17 +22,42 @@ import com.trainingvalidator.poc.training.report.MetricWithStatus
  */
 object ReportUiHelper {
 
-    // ─── Colour constants ────────────────────────────────────────
+    // ─── Context-aware colour resolvers (theme-responsive) ───────
+    fun bgDark(context: Context) = ContextCompat.getColor(context, R.color.report_background)
+    fun textWhite(context: Context) = ContextCompat.getColor(context, R.color.report_text_primary)
+    fun textMuted(context: Context) = ContextCompat.getColor(context, R.color.report_text_secondary)
+    fun cardBg(context: Context) = ContextCompat.getColor(context, R.color.glass_card_bg)
+    fun cardBorder(context: Context) = ContextCompat.getColor(context, R.color.glass_card_border)
+    fun colorGreen(context: Context) = ContextCompat.getColor(context, R.color.success)
+    fun colorLightGreen(context: Context) = ContextCompat.getColor(context, R.color.metric_good)
+    fun colorYellow(context: Context) = ContextCompat.getColor(context, R.color.warning)
+    fun colorRed(context: Context) = ContextCompat.getColor(context, R.color.error)
+    fun colorOrange(context: Context) = ContextCompat.getColor(context, R.color.warning)
+    fun colorBlue(context: Context) = ContextCompat.getColor(context, R.color.info)
+
+    // ─── Kept as integer constants for backward compatibility with callers that
+    //     pass them as default arguments — migrate call sites to use the functions above.
+    @Deprecated("Use bgDark(context) for theme support", ReplaceWith("bgDark(context)"))
     const val BG_DARK = 0xFF0A0F1A.toInt()
+    @Deprecated("Use textWhite(context) for theme support", ReplaceWith("textWhite(context)"))
     const val TEXT_WHITE = 0xFFFFFFFF.toInt()
+    @Deprecated("Use textMuted(context) for theme support", ReplaceWith("textMuted(context)"))
     const val TEXT_MUTED = 0xAAFFFFFF.toInt()
+    @Deprecated("Use cardBg(context) for theme support", ReplaceWith("cardBg(context)"))
     const val CARD_BG = 0x1AFFFFFF
+    @Deprecated("Use cardBorder(context) for theme support", ReplaceWith("cardBorder(context)"))
     const val CARD_BORDER_DEFAULT = 0x33FFFFFF
+    @Deprecated("Use colorGreen(context) for theme support", ReplaceWith("colorGreen(context)"))
     const val GREEN = 0xFF4CAF50.toInt()
+    @Deprecated("Use colorLightGreen(context) for theme support", ReplaceWith("colorLightGreen(context)"))
     const val LIGHT_GREEN = 0xFF8BC34A.toInt()
+    @Deprecated("Use colorYellow(context) for theme support", ReplaceWith("colorYellow(context)"))
     const val YELLOW = 0xFFFFC107.toInt()
+    @Deprecated("Use colorRed(context) for theme support", ReplaceWith("colorRed(context)"))
     const val RED = 0xFFFF5252.toInt()
+    @Deprecated("Use colorOrange(context) for theme support", ReplaceWith("colorOrange(context)"))
     const val ORANGE = 0xFFFF9800.toInt()
+    @Deprecated("Use colorBlue(context) for theme support", ReplaceWith("colorBlue(context)"))
     const val BLUE = 0xFF2196F3.toInt()
 
     fun dp(context: Context, dp: Int): Int =
@@ -56,7 +83,7 @@ object ReportUiHelper {
                 ViewGroup.LayoutParams.MATCH_PARENT,
                 ViewGroup.LayoutParams.WRAP_CONTENT
             )
-            setBackgroundColor(BG_DARK)
+            setBackgroundColor(bgDark(context))
             setPadding(dp(context, 24), dp(context, 80), dp(context, 24), dp(context, 120))
         }
     }
@@ -66,7 +93,7 @@ object ReportUiHelper {
         return TextView(context).apply {
             text = "$icon $title"
             textSize = 24f
-            setTextColor(TEXT_WHITE)
+            setTextColor(textWhite(context))
             setPadding(0, 0, 0, dp(context, 4))
         }
     }
@@ -75,7 +102,7 @@ object ReportUiHelper {
         return TextView(context).apply {
             text = subtitle
             textSize = 14f
-            setTextColor(TEXT_MUTED)
+            setTextColor(textMuted(context))
             setPadding(0, 0, 0, dp(context, 20))
         }
     }
@@ -83,9 +110,10 @@ object ReportUiHelper {
     // ─── Glass card container ───────────────────────────────────
     fun glassCard(
         context: Context,
-        borderColor: Int = CARD_BORDER_DEFAULT,
+        borderColor: Int = -1,
         marginTop: Int = 12
     ): LinearLayout {
+        val resolvedBorder = if (borderColor == -1) cardBorder(context) else borderColor
         return LinearLayout(context).apply {
             orientation = LinearLayout.VERTICAL
             layoutParams = LinearLayout.LayoutParams(
@@ -93,8 +121,8 @@ object ReportUiHelper {
                 LinearLayout.LayoutParams.WRAP_CONTENT
             ).apply { topMargin = dp(context, marginTop) }
             background = GradientDrawable().apply {
-                setColor(CARD_BG)
-                setStroke(1, borderColor)
+                setColor(cardBg(context))
+                setStroke(1, resolvedBorder)
                 cornerRadius = dp(context, 16).toFloat()
             }
             setPadding(dp(context, 16), dp(context, 16), dp(context, 16), dp(context, 16))
@@ -143,7 +171,7 @@ object ReportUiHelper {
             ).apply { topMargin = dp(8) }
             setPadding(dp(12), dp(10), dp(12), dp(10))
             background = GradientDrawable().apply {
-                setColor(0x0DFFFFFF)
+                setColor(cardBg(context))
                 cornerRadius = dp(8).toFloat()
             }
 
@@ -154,12 +182,12 @@ object ReportUiHelper {
             }
             topRow.addView(TextView(context).apply { text = icon; textSize = 18f })
             topRow.addView(TextView(context).apply {
-                text = label; textSize = 14f; setTextColor(TEXT_MUTED)
+                text = label; textSize = 14f; setTextColor(textMuted(context))
                 layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f)
                     .apply { marginStart = dp(8) }
             })
             topRow.addView(TextView(context).apply {
-                text = value; textSize = 16f; setTextColor(TEXT_WHITE)
+                text = value; textSize = 16f; setTextColor(textWhite(context))
                 setTypeface(typeface, android.graphics.Typeface.BOLD)
             })
             status?.let { s ->
@@ -176,7 +204,7 @@ object ReportUiHelper {
             // Advice line (optional)
             if (!advice.isNullOrBlank()) {
                 addView(TextView(context).apply {
-                    text = advice; textSize = 12f; setTextColor(TEXT_MUTED)
+                    text = advice; textSize = 12f; setTextColor(textMuted(context))
                     setPadding(dp(26), dp(2), 0, 0)
                 })
             }
@@ -202,7 +230,7 @@ object ReportUiHelper {
         context: Context,
         label: String,
         percentage: Float,
-        color: Int = GREEN
+        color: Int = 0xFF4CAF50.toInt()
     ): LinearLayout {
         val dp = { v: Int -> dp(context, v) }
         return LinearLayout(context).apply {
@@ -217,7 +245,7 @@ object ReportUiHelper {
                 orientation = LinearLayout.HORIZONTAL
             }
             header.addView(TextView(context).apply {
-                text = label; textSize = 13f; setTextColor(TEXT_MUTED)
+                text = label; textSize = 13f; setTextColor(textMuted(context))
                 layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f)
             })
             header.addView(TextView(context).apply {
@@ -293,10 +321,10 @@ object ReportUiHelper {
             }
 
             addView(TextView(context).apply {
-                text = label; textSize = 11f; setTextColor(TEXT_MUTED)
+                text = label; textSize = 11f; setTextColor(textMuted(context))
             })
             addView(TextView(context).apply {
-                text = value; textSize = 13f; setTextColor(TEXT_WHITE)
+                text = value; textSize = 13f; setTextColor(textWhite(context))
                 setTypeface(typeface, android.graphics.Typeface.BOLD)
                 setPadding(dp(4), 0, 0, 0)
             })
@@ -313,11 +341,19 @@ object ReportUiHelper {
         }
     }
 
-    // ─── Colour from score ──────────────────────────────────────
-    fun colorFromScore(score: Float): Int = when {
-        score >= 90 -> GREEN
-        score >= 80 -> LIGHT_GREEN
-        score >= 70 -> YELLOW
-        else -> RED
+    // ─── Colour from score (context-aware) ──────────────────────
+    fun colorFromScore(context: Context, score: Float): Int = when {
+        score >= 90 -> colorGreen(context)
+        score >= 80 -> colorLightGreen(context)
+        score >= 70 -> colorYellow(context)
+        else -> colorRed(context)
+    }
+
+    // ─── Colour from score (raw - for non-context situations) ───
+    fun colorFromScoreRaw(score: Float): Int = when {
+        score >= 90 -> 0xFF4CAF50.toInt()
+        score >= 80 -> 0xFF8BC34A.toInt()
+        score >= 70 -> 0xFFFFC107.toInt()
+        else -> 0xFFFF5252.toInt()
     }
 }

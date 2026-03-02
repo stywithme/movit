@@ -119,6 +119,8 @@
     
     <!-- Accessibility -->
     <string name="cd_profile">Profile</string>
+    <string name="cd_increase_sets">Increase sets</string>
+    <string name="cd_decrease_sets">Decrease sets</string>
     <string name="cd_filter">Filter</string>
     <string name="cd_avatar">Avatar</string>
     <string name="cd_edit_avatar">Edit avatar</string>
@@ -745,4 +747,57 @@
     <!-- Status -->
     <string name="ds_modified_hint">✏️ Modified</string>
     <string name="ds_no_sessions_message">No sessions for today</string>
+
+    <!-- Week Screen -->
+    <string name="error_week_not_found">Week not found</string>
+    <string name="week_sessions_rest_format">%1$d Sessions • %2$d Rest Days</string>
+
+    <!-- Common Emoji / Icon text -->
+    <string name="emoji_clipboard">📋</string>
+    <string name="emoji_calendar">📅</string>
+    <string name="no_workouts_found">No workouts found</string>
+
+    <!-- Home Screen -->
+    <string name="home_report_summary_format">This week: %1$d workouts • Form %2$s • Streak %3$d</string>
+    <string name="home_report_summary_empty">This week: %1$d workouts • Form -- • Streak 0</string>
+    <string name="home_level_name_format">Level %1$d — %2$s</string>
+    <string name="home_level_score_format">Body Score: %1$d</string>
+
+    <!-- Explore Sections -->
+    <string name="section_levels">Levels</string>
+    <string name="section_top_programs">Top Programs</string>
+    <string name="section_quick_workouts">Quick Workouts</string>
+    <string name="section_exercise_library">Exercise Library</string>
+
+    <!-- List Screen Headers -->
+    <string name="program_list_title">Training Programs</string>
+    <string name="program_list_subtitle">Select a program to plan your training</string>
+    <string name="workout_list_title">Workouts</string>
+    <string name="workout_list_subtitle">Choose a workout to get started</string>
+    <string name="exercise_list_subtitle">Explore our full exercise library</string>
+    <string name="explore_discover_title">Discover</string>
+    <string name="explore_filter_all">All</string>
+
+    <!-- Error messages -->
+    <string name="error_login_required">Please log in first</string>
+    <string name="error_enroll_failed">Failed to enroll in program</string>
+    <string name="error_generic">Error: %1$s</string>
+    <string name="error_program_not_found">Program not found</string>
+    <string name="enrolled_success">Successfully enrolled!</string>
+    <string name="resume_program">Resume Program</string>
+    <string name="start_program">Start Program</string>
+
+    <!-- Program day compact view -->
+    <string name="day_number_format">Day %1$d</string>
+    <string name="rest_day_label">Rest Day</string>
+
+    <!-- Level / Plan -->
+    <string name="loading_level">Loading your level…</string>
+    <string name="loading_plan">Loading plan…</string>
+    <string name="level_fetch_error">Failed to load level data</string>
+    <string name="plan_fetch_error">Failed to load plan data</string>
+    <string name="plan_overview_title">My Training Plan</string>
+    <string name="plan_upcoming_reassessment">Upcoming Reassessment</string>
+    <string name="plan_recent_adjustments">Recent Adjustments</string>
+
 </resources>

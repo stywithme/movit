@@ -23,9 +23,11 @@ import com.trainingvalidator.poc.pose.ModelType
 import com.trainingvalidator.poc.pose.PoseLandmarkerHelper
 import com.trainingvalidator.poc.pose.PoseResult
 import com.trainingvalidator.poc.training.config.SettingsManager
+import com.trainingvalidator.poc.ui.train.TrainingActivity
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.cancel
 import kotlinx.coroutines.launch
 import com.trainingvalidator.poc.network.SessionSyncService
 import com.trainingvalidator.poc.network.ApiConfig
@@ -397,5 +399,6 @@ class MainActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetectionList
         super.onDestroy()
         cameraManager?.stopCamera()
         poseLandmarkerHelper?.close()
+        mainScope.cancel()
     }
 }

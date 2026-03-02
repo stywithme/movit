@@ -1,4 +1,4 @@
-package com.trainingvalidator.poc.ui
+package com.trainingvalidator.poc.ui.exercises
 
 import android.os.Bundle
 import android.util.Log

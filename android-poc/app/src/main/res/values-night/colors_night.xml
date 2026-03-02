@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    Night (Dark) mode color overrides.
+    The app's default design is dark-first; these values mirror the current dark palette
+    so that Material DayNight theming works correctly in system-dark mode.
+    
+    When light-mode values are defined in values/colors.xml, this file provides
+    the dark counterparts that Android uses when the system is in dark mode.
+-->
+<resources>
+    <!-- Primary Brand -->
+    <color name="primary">#8AF851</color>
+    <color name="primary_variant">#6BD93A</color>
+    <color name="primary_light">#1A8AF851</color>
+    <color name="on_primary">#091801</color>
+
+    <!-- Backgrounds (dark) -->
+    <color name="background">#040A01</color>
+    <color name="surface">#0A1804</color>
+    <color name="surface_variant">#102208</color>
+    <color name="surface_elevated">#142A0C</color>
+    <color name="surface_border">#1E3A12</color>
+    <color name="surface_border_accent">#2A4A1C</color>
+    <color name="divider">#1A2A1C</color>
+
+    <!-- Text (dark mode — light text on dark bg) -->
+    <color name="text_primary">#E7F1F1</color>
+    <color name="text_secondary">#B8C8C8</color>
+    <color name="text_hint">#7A9090</color>
+    <color name="text_disabled">#5A7070</color>
+    <color name="text_tertiary">#4A6060</color>
+    <color name="text_on_primary">#091801</color>
+
+    <!-- Report colors (dark) -->
+    <color name="report_background">#FF121212</color>
+    <color name="report_card_background">#FF1E1E1E</color>
+    <color name="report_text_primary">#FFFFFFFF</color>
+    <color name="report_text_secondary">#FFB0B0B0</color>
+</resources>

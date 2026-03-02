@@ -77,7 +77,7 @@ class SafetyDetailsFragment : Fragment() {
         ))
 
         // ── Big score ────────────────────────────────────────────
-        val scoreCard = H.glassCard(ctx, H.colorFromScore(safety.getCardScore()))
+        val scoreCard = H.glassCard(ctx, H.colorFromScore(ctx, safety.getCardScore()))
         scoreCard.gravity = Gravity.CENTER_HORIZONTAL
         scoreCard.addView(H.scoreBadge(ctx, safety.getCardScore(), 72).apply {
             (layoutParams as LinearLayout.LayoutParams).bottomMargin = H.dp(ctx, 6)
@@ -144,7 +144,7 @@ class SafetyDetailsFragment : Fragment() {
         }
         container.addView(TextView(ctx).apply {
             text = if (isArabic) "ملخص فحص الوضعية" else "Position Check Summary"
-            textSize = 14f; setTextColor(H.TEXT_WHITE)
+            textSize = 14f; setTextColor(H.textWhite(requireContext()))
             setPadding(0, 0, 0, H.dp(ctx, 8))
         })
 
@@ -184,13 +184,13 @@ class SafetyDetailsFragment : Fragment() {
 
             addView(TextView(ctx).apply { text = icon; textSize = 18f })
             addView(TextView(ctx).apply {
-                text = label; textSize = 13f; setTextColor(H.TEXT_MUTED)
+                text = label; textSize = 13f; setTextColor(H.textMuted(requireContext()))
                 layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f)
                     .apply { marginStart = H.dp(ctx, 8) }
             })
             addView(TextView(ctx).apply {
                 text = if (isArabic) "$count عدات (${pct.toInt()}%)" else "$count reps (${pct.toInt()}%)"
-                textSize = 13f; setTextColor(H.TEXT_WHITE)
+                textSize = 13f; setTextColor(H.textWhite(requireContext()))
                 setTypeface(typeface, android.graphics.Typeface.BOLD)
             })
         }
@@ -210,7 +210,7 @@ class SafetyDetailsFragment : Fragment() {
         }
         container.addView(TextView(ctx).apply {
             text = if (isArabic) "🚨 تنبيهات أمان" else "🚨 Safety Alerts"
-            textSize = 16f; setTextColor(H.RED)
+            textSize = 16f; setTextColor(H.colorRed(requireContext()))
             setPadding(0, 0, 0, H.dp(ctx, 8))
         })
 
@@ -221,7 +221,7 @@ class SafetyDetailsFragment : Fragment() {
     }
 
     private fun buildDangerCard(ctx: android.content.Context, alert: DangerAlert): LinearLayout {
-        val card = H.glassCard(ctx, H.RED)
+        val card = H.glassCard(ctx, H.colorRed(requireContext()))
 
         // Joint + Rep
         card.addView(LinearLayout(ctx).apply {
@@ -233,21 +233,21 @@ class SafetyDetailsFragment : Fragment() {
             })
             addView(TextView(ctx).apply {
                 text = if (isArabic) alert.jointName.ar else alert.jointName.en
-                textSize = 15f; setTextColor(H.TEXT_WHITE)
+                textSize = 15f; setTextColor(H.textWhite(requireContext()))
                 setTypeface(typeface, android.graphics.Typeface.BOLD)
                 layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f)
                     .apply { marginStart = H.dp(ctx, 8) }
             })
             addView(TextView(ctx).apply {
                 text = if (isArabic) "العدة #${alert.repNumber}" else "Rep #${alert.repNumber}"
-                textSize = 12f; setTextColor(H.TEXT_MUTED)
+                textSize = 12f; setTextColor(H.textMuted(requireContext()))
             })
         })
 
         // Message
         card.addView(TextView(ctx).apply {
             text = if (isArabic) alert.dangerMessage.ar else alert.dangerMessage.en
-            textSize = 13f; setTextColor(H.TEXT_WHITE)
+            textSize = 13f; setTextColor(H.textWhite(requireContext()))
             setPadding(0, H.dp(ctx, 6), 0, 0)
         })
 
@@ -258,14 +258,14 @@ class SafetyDetailsFragment : Fragment() {
             } else {
                 "Angle: ${alert.getFormattedAngle()} | Safe: ${alert.getSafeRangeText()}"
             }
-            textSize = 11f; setTextColor(H.TEXT_MUTED)
+            textSize = 11f; setTextColor(H.textMuted(requireContext()))
             setPadding(0, H.dp(ctx, 4), 0, 0)
         })
 
         // Solution
         card.addView(TextView(ctx).apply {
             text = "💡 ${if (isArabic) alert.solutionTip.ar else alert.solutionTip.en}"
-            textSize = 12f; setTextColor(H.GREEN)
+            textSize = 12f; setTextColor(H.colorGreen(requireContext()))
             setPadding(0, H.dp(ctx, 6), 0, 0)
         })
 
@@ -277,7 +277,7 @@ class SafetyDetailsFragment : Fragment() {
     // ═══════════════════════════════════════════════════════════════
 
     private fun buildSafeMessage(ctx: android.content.Context): LinearLayout {
-        val card = H.glassCard(ctx, H.GREEN)
+        val card = H.glassCard(ctx, H.colorGreen(requireContext()))
         card.gravity = Gravity.CENTER
         card.addView(TextView(ctx).apply {
             text = "✅"
@@ -285,13 +285,13 @@ class SafetyDetailsFragment : Fragment() {
         })
         card.addView(TextView(ctx).apply {
             text = if (isArabic) "جلسة آمنة!" else "Safe Session!"
-            textSize = 18f; setTextColor(H.GREEN); gravity = Gravity.CENTER
+            textSize = 18f; setTextColor(H.colorGreen(requireContext())); gravity = Gravity.CENTER
             setPadding(0, H.dp(ctx, 6), 0, 0)
         })
         card.addView(TextView(ctx).apply {
             text = if (isArabic) "لم يُلاحظ أي وضع خطر خلال التمرين"
             else "No dangerous positions detected during the exercise"
-            textSize = 13f; setTextColor(H.TEXT_MUTED); gravity = Gravity.CENTER
+            textSize = 13f; setTextColor(H.textMuted(requireContext())); gravity = Gravity.CENTER
         })
         return card
     }

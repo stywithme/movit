@@ -1,4 +1,4 @@
-package com.trainingvalidator.poc.ui
+package com.trainingvalidator.poc.ui.programs
 
 import android.annotation.SuppressLint
 import android.content.Intent
@@ -25,6 +25,7 @@ import coil.load
 import com.google.android.material.button.MaterialButton
 import com.google.android.material.card.MaterialCardView
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
+import com.trainingvalidator.poc.ui.utils.currentLanguage
 import com.trainingvalidator.poc.R
 import com.trainingvalidator.poc.databinding.ActivityProgramSessionBinding
 import com.trainingvalidator.poc.network.ApiClient
@@ -38,7 +39,8 @@ import com.trainingvalidator.poc.training.models.LocalizedText
 import com.trainingvalidator.poc.training.models.ProgramConfig
 import com.trainingvalidator.poc.training.models.ProgramDay
 import com.trainingvalidator.poc.training.models.ProgramSessionItem
-import kotlinx.coroutines.CoroutineScope
+import androidx.lifecycle.lifecycleScope
+import com.trainingvalidator.poc.ui.train.TrainingActivity
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -158,7 +160,7 @@ class ProgramSessionActivity : AppCompatActivity() {
             return
         }
 
-        CoroutineScope(Dispatchers.Main).launch {
+        lifecycleScope.launch {
             val programRepo = ProgramRepository.getInstance(this@ProgramSessionActivity)
             val exerciseRepo = ExerciseRepository.getInstance(this@ProgramSessionActivity)
 
@@ -169,7 +171,7 @@ class ProgramSessionActivity : AppCompatActivity() {
             allExercises = exerciseRepo.getAllExercises()
             exerciseConfigMap.clear()
             exerciseNameMap.clear()
-            val language = getCurrentLanguage()
+            val language = currentLanguage
             allExercises.forEach { ex ->
                 exerciseConfigMap[ex.fileName] = ex
                 exerciseNameMap[ex.fileName] = ex.name.get(language).ifBlank { ex.name.en }
@@ -849,7 +851,7 @@ class ProgramSessionActivity : AppCompatActivity() {
         val layoutSimilar = sheet.findViewById<LinearLayout>(R.id.layoutReplaceSimilar)
         val layoutHarder = sheet.findViewById<LinearLayout>(R.id.layoutReplaceHarder)
 
-        val language = getCurrentLanguage()
+        val language = currentLanguage
         val currentSlug = item.exerciseSlug
         val currentConfig = currentSlug?.let { exerciseConfigMap[it] }
         val baseList = allExercises.filter { it.fileName != currentSlug }
@@ -915,7 +917,7 @@ class ProgramSessionActivity : AppCompatActivity() {
         val inputRestBetween = dialogView.findViewById<EditText>(R.id.inputRestBetweenSets)
         val inputWeight = dialogView.findViewById<EditText>(R.id.inputWeightKg)
 
-        val language = getCurrentLanguage()
+        val language = currentLanguage
         val options = allExercises.map { ex ->
             val name = ex.name.get(language).ifBlank { ex.name.en }
             name to ex.fileName
@@ -1035,7 +1037,7 @@ class ProgramSessionActivity : AppCompatActivity() {
 
         val inputSearch = sheet.findViewById<EditText>(R.id.inputAddExerciseSearch)
         val listContainer = sheet.findViewById<LinearLayout>(R.id.layoutAddExerciseList)
-        val language = getCurrentLanguage()
+        val language = currentLanguage
 
         fun renderList(query: String) {
             listContainer.removeAllViews()
@@ -1184,7 +1186,7 @@ class ProgramSessionActivity : AppCompatActivity() {
             "customizations" to mapOf(dayKey to sessionsPayload)
         )
 
-        CoroutineScope(Dispatchers.IO).launch {
+        lifecycleScope.launch(Dispatchers.IO) {
             try {
                 val response = ApiClient.mobileSyncApi.updateUserProgram(
                     userProgramId, "Bearer $token", payload
@@ -1251,7 +1253,7 @@ class ProgramSessionActivity : AppCompatActivity() {
             "dayNumber" to dayNumber,
             "startedAt" to System.currentTimeMillis()
         )
-        CoroutineScope(Dispatchers.IO).launch {
+        lifecycleScope.launch(Dispatchers.IO) {
             try {
                 ApiClient.mobileSyncApi.startSession(sessionId, "Bearer $token", payload)
             } catch (e: Exception) {
@@ -1304,7 +1306,7 @@ class ProgramSessionActivity : AppCompatActivity() {
             return
         }
 
-        CoroutineScope(Dispatchers.IO).launch {
+        lifecycleScope.launch(Dispatchers.IO) {
             try {
                 // Single call to /complete (backend handles report + progress in one call)
                 val response = ApiClient.mobileSyncApi.completeSession(sessionId, "Bearer $token", payloadMap)
@@ -1332,16 +1334,13 @@ class ProgramSessionActivity : AppCompatActivity() {
     }
 
     private fun getLocalizedName(text: LocalizedText): String {
-        val language = getCurrentLanguage()
+        val language = currentLanguage
         return when (language) {
             "ar" -> text.ar.ifBlank { text.en }
             else -> text.en.ifBlank { text.ar }
         }
     }
 
-    private fun getCurrentLanguage(): String {
-        return java.util.Locale.getDefault().language
-    }
 
     private fun estimateSessionDuration(items: List<ProgramSessionItem>): Int {
         var totalSeconds = 0

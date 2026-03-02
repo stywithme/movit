@@ -1,4 +1,4 @@
-package com.trainingvalidator.poc.assessment.ui
+﻿package com.trainingvalidator.poc.assessment.ui
 
 import android.app.Activity
 import android.content.Context
@@ -24,7 +24,7 @@ import com.trainingvalidator.poc.assessment.models.BodyScanResult
 import com.trainingvalidator.poc.assessment.models.PainFlag
 import com.trainingvalidator.poc.storage.ReportStorage
 import com.trainingvalidator.poc.training.report.PostTrainingReport
-import com.trainingvalidator.poc.ui.TrainingActivity
+import com.trainingvalidator.poc.ui.train.TrainingActivity
 import kotlinx.coroutines.launch
 
 /**

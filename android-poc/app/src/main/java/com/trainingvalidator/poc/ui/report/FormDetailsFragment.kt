@@ -75,7 +75,7 @@ class FormDetailsFragment : Fragment() {
         ))
 
         // ── Big score + rating ────────────────────────────────────
-        val scoreCard = H.glassCard(ctx, H.colorFromScore(form.getCardScore()))
+        val scoreCard = H.glassCard(ctx, H.colorFromScore(ctx, form.getCardScore()))
         scoreCard.gravity = Gravity.CENTER_HORIZONTAL
 
         scoreCard.addView(H.scoreBadge(ctx, form.getCardScore(), 72).apply {
@@ -92,7 +92,7 @@ class FormDetailsFragment : Fragment() {
             scoreCard.addView(TextView(ctx).apply {
                 text = if (isArabic) advice.ar else advice.en
                 textSize = 13f
-                setTextColor(H.TEXT_MUTED)
+                setTextColor(H.textMuted(requireContext()))
                 gravity = Gravity.CENTER
                 setPadding(0, H.dp(ctx, 4), 0, 0)
             })
@@ -108,7 +108,7 @@ class FormDetailsFragment : Fragment() {
                 ))
                 col.addView(H.progressRow(ctx,
                     if (isArabic) "المدى" else "ROM",
-                    rom.value, H.colorFromScore(rom.value)
+                    rom.value, H.colorFromScore(ctx, rom.value)
                 ))
             }
         }
@@ -184,10 +184,10 @@ class FormDetailsFragment : Fragment() {
             orientation = LinearLayout.VERTICAL
             gravity = Gravity.CENTER
             layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f)
-            addView(TextView(ctx).apply { text = side; textSize = 12f; setTextColor(H.TEXT_MUTED); gravity = Gravity.CENTER })
+            addView(TextView(ctx).apply { text = side; textSize = 12f; setTextColor(H.textMuted(requireContext())); gravity = Gravity.CENTER })
             addView(TextView(ctx).apply {
                 text = "${avg.toInt()}%"; textSize = 20f
-                setTextColor(H.colorFromScore(avg))
+                setTextColor(H.colorFromScore(ctx, avg))
                 gravity = Gravity.CENTER
                 setTypeface(typeface, android.graphics.Typeface.BOLD)
             })
@@ -208,7 +208,7 @@ class FormDetailsFragment : Fragment() {
         }
         container.addView(TextView(ctx).apply {
             text = if (isArabic) "توزيع الحالات" else "State Distribution"
-            textSize = 14f; setTextColor(H.TEXT_WHITE)
+            textSize = 14f; setTextColor(H.textWhite(requireContext()))
             setPadding(0, 0, 0, H.dp(ctx, 8))
         })
 
@@ -225,7 +225,7 @@ class FormDetailsFragment : Fragment() {
                 container.addView(H.progressRow(ctx, "$icon $label ($count)",
                     (count / total) * 100f,
                     when (icon) {
-                        "🟢" -> H.GREEN; "🟡" -> H.YELLOW; "🟠" -> H.ORANGE; else -> H.RED
+                        "🟢" -> H.colorGreen(requireContext()); "🟡" -> H.colorYellow(requireContext()); "🟠" -> H.colorOrange(requireContext()); else -> H.colorRed(requireContext())
                     }
                 ))
             }

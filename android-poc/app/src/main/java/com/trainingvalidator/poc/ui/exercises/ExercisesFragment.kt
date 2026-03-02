@@ -1,4 +1,4 @@
-package com.trainingvalidator.poc.ui.main
+package com.trainingvalidator.poc.ui.exercises
 
 import android.content.Intent
 import android.os.Bundle
@@ -16,6 +16,7 @@ import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.GridLayoutManager
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
+import com.trainingvalidator.poc.ui.utils.currentLanguage
 import com.trainingvalidator.poc.R
 import com.trainingvalidator.poc.databinding.FragmentExercisesBinding
 import com.trainingvalidator.poc.storage.ExerciseRepository
@@ -23,10 +24,10 @@ import com.trainingvalidator.poc.storage.WorkoutRepository
 import com.trainingvalidator.poc.storage.SyncManager
 import com.trainingvalidator.poc.training.models.ExerciseConfig
 import com.trainingvalidator.poc.training.models.WorkoutConfig
-import com.trainingvalidator.poc.ui.PreWorkoutActivity
-import com.trainingvalidator.poc.ui.WorkoutListActivity
-import com.trainingvalidator.poc.ui.ProgramListActivity
-import com.trainingvalidator.poc.ui.WorkoutDetailActivity
+import com.trainingvalidator.poc.ui.train.PreWorkoutActivity
+import com.trainingvalidator.poc.ui.workouts.WorkoutListActivity
+import com.trainingvalidator.poc.ui.programs.ProgramListActivity
+import com.trainingvalidator.poc.ui.workouts.WorkoutDetailActivity
 import kotlinx.coroutines.launch
 
 /**
@@ -277,7 +278,7 @@ class ExercisesFragment : Fragment() {
 
         override fun onBindViewHolder(holder: ViewHolder, position: Int) {
             val exercise = items[position]
-            val language = getCurrentLanguage()
+            val language = requireContext().currentLanguage
             
             holder.tvName.text = exercise.name.get(language).ifBlank { exercise.name.en }
             holder.tvCategory.text = exercise.category.name.get(language).ifBlank { exercise.category.name.en }
@@ -323,7 +324,7 @@ class ExercisesFragment : Fragment() {
 
         override fun onBindViewHolder(holder: ViewHolder, position: Int) {
             val workout = items[position]
-            val language = getCurrentLanguage()
+            val language = requireContext().currentLanguage
 
             holder.tvName.text = workout.name.get(language).ifBlank { workout.name.en }
             holder.tvDescription.text = workout.description?.let { desc ->
@@ -344,16 +345,6 @@ class ExercisesFragment : Fragment() {
         }
 
         override fun getItemCount() = items.size
-    }
-
-    private fun getCurrentLanguage(): String {
-        val appLocales = AppCompatDelegate.getApplicationLocales()
-        val locale = if (appLocales.isEmpty) {
-            resources.configuration.locales[0]
-        } else {
-            appLocales[0]
-        }
-        return locale?.language ?: "en"
     }
 
     private fun formatDifficulty(difficulty: String?): String {

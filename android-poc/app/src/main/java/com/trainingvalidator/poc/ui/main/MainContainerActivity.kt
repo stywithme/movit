@@ -6,6 +6,10 @@ import androidx.core.view.WindowCompat
 import androidx.fragment.app.Fragment
 import com.trainingvalidator.poc.R
 import com.trainingvalidator.poc.databinding.ActivityMainContainerBinding
+import com.trainingvalidator.poc.ui.explore.ExploreFragment
+import com.trainingvalidator.poc.ui.home.HomeFragment
+import com.trainingvalidator.poc.ui.reports.HistoryFragment
+import com.trainingvalidator.poc.ui.train.TrainFragment
 
 /**
  * MainContainerActivity - Main app container with Bottom Navigation
@@ -24,13 +28,12 @@ class MainContainerActivity : AppCompatActivity() {
 
     private lateinit var binding: ActivityMainContainerBinding
 
-    // Fragment instances (lazy)
-    private val homeFragment by lazy { HomeFragment() }
-    private val trainFragment by lazy { TrainFragment() }
-    private val exploreFragment by lazy { ExploreFragment() }
-    private val historyFragment by lazy { HistoryFragment() }
+    private lateinit var homeFragment: HomeFragment
+    private lateinit var trainFragment: TrainFragment
+    private lateinit var exploreFragment: ExploreFragment
+    private lateinit var historyFragment: HistoryFragment
 
-    private var activeFragment: Fragment = homeFragment
+    private lateinit var activeFragment: Fragment
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -43,12 +46,28 @@ class MainContainerActivity : AppCompatActivity() {
         binding = ActivityMainContainerBinding.inflate(layoutInflater)
         setContentView(binding.root)
         
-        setupFragments()
+        if (savedInstanceState == null) {
+            homeFragment = HomeFragment()
+            trainFragment = TrainFragment()
+            exploreFragment = ExploreFragment()
+            historyFragment = HistoryFragment()
+            activeFragment = homeFragment
+            setupFragments()
+        } else {
+            // Recover existing fragment instances to avoid duplication on config change
+            homeFragment = supportFragmentManager.findFragmentByTag("home") as? HomeFragment ?: HomeFragment()
+            trainFragment = supportFragmentManager.findFragmentByTag("train") as? TrainFragment ?: TrainFragment()
+            exploreFragment = supportFragmentManager.findFragmentByTag("explore") as? ExploreFragment ?: ExploreFragment()
+            historyFragment = supportFragmentManager.findFragmentByTag("reports") as? HistoryFragment ?: HistoryFragment()
+            activeFragment = listOf(homeFragment, trainFragment, exploreFragment, historyFragment)
+                .firstOrNull { !it.isHidden } ?: homeFragment
+        }
+        
         setupBottomNavigation()
     }
 
     private fun setupFragments() {
-        // Add all fragments but hide all except the active one
+        // Add all fragments but hide all except home
         supportFragmentManager.beginTransaction().apply {
             add(R.id.fragmentContainer, homeFragment, "home")
             add(R.id.fragmentContainer, trainFragment, "train").hide(trainFragment)

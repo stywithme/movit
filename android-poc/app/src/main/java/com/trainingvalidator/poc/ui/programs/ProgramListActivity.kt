@@ -1,4 +1,4 @@
-package com.trainingvalidator.poc.ui
+package com.trainingvalidator.poc.ui.programs
 
 import android.content.Intent
 import android.os.Bundle
@@ -10,6 +10,7 @@ import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
+import com.trainingvalidator.poc.ui.utils.currentLanguage
 import com.trainingvalidator.poc.R
 import com.trainingvalidator.poc.databinding.ActivityProgramListBinding
 import com.trainingvalidator.poc.storage.ProgramRepository
@@ -114,7 +115,7 @@ class ProgramListActivity : AppCompatActivity() {
 
         override fun onBindViewHolder(holder: ViewHolder, position: Int) {
             val program = items[position]
-            val language = getCurrentLanguage()
+            val language = currentLanguage
 
             holder.tvName.text = program.name.get(language).ifBlank { program.name.en }
             holder.tvDescription.text = program.description?.let { desc ->
@@ -134,16 +135,6 @@ class ProgramListActivity : AppCompatActivity() {
         }
 
         override fun getItemCount() = items.size
-    }
-
-    private fun getCurrentLanguage(): String {
-        val appLocales = AppCompatDelegate.getApplicationLocales()
-        val locale = if (appLocales.isEmpty) {
-            resources.configuration.locales[0]
-        } else {
-            appLocales[0]
-        }
-        return locale?.language ?: "en"
     }
 
     private fun formatDifficulty(difficulty: String): String {

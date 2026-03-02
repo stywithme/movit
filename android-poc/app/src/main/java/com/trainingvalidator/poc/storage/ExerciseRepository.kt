@@ -3,6 +3,7 @@ package com.trainingvalidator.poc.storage
 import android.content.Context
 import android.util.Log
 import com.trainingvalidator.poc.training.models.ExerciseConfig
+import kotlinx.coroutines.DelicateCoroutinesApi
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -141,6 +142,7 @@ class ExerciseRepository private constructor(private val context: Context) {
                 
                 // Start background audio download (non-blocking)
                 if (syncManager.hasPendingAudioDownloads()) {
+                    @OptIn(DelicateCoroutinesApi::class)
                     kotlinx.coroutines.GlobalScope.launch(Dispatchers.IO) {
                         try {
                             val downloaded = syncManager.downloadPendingAudio()
@@ -273,6 +275,7 @@ class ExerciseRepository private constructor(private val context: Context) {
                 
                 // Download new audio files (non-blocking background task)
                 if (syncManager.hasPendingAudioDownloads()) {
+                    @OptIn(DelicateCoroutinesApi::class)
                     kotlinx.coroutines.GlobalScope.launch(Dispatchers.IO) {
                         try {
                             val downloaded = syncManager.downloadPendingAudio()
@@ -318,6 +321,7 @@ class ExerciseRepository private constructor(private val context: Context) {
         
         // Download any new audio files
         if (result is SyncManager.SyncResult.Success && syncManager.hasPendingAudioDownloads()) {
+            @OptIn(DelicateCoroutinesApi::class)
             kotlinx.coroutines.GlobalScope.launch(Dispatchers.IO) {
                 try {
                     val downloaded = syncManager.downloadPendingAudio()
