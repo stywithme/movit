@@ -214,10 +214,11 @@ class ExercisesFragment : Fragment() {
         
         filteredExercises.clear()
         filteredExercises.addAll(exercises.filter { exercise ->
-            val matchesCategory = currentCategory == null || 
-                exercise.category.name.en.lowercase().contains(currentCategory!!) ||
-                exercise.category.name.ar.lowercase().contains(currentCategory!!) ||
-                exercise.muscles.any { it.lowercase().contains(currentCategory!!) }
+            val matchesCategory = currentCategory?.let { cat ->
+                exercise.category.name.en.lowercase().contains(cat) ||
+                exercise.category.name.ar.lowercase().contains(cat) ||
+                exercise.muscles.any { it.lowercase().contains(cat) }
+            } ?: true
             
             val matchesSearch = searchQuery.isEmpty() ||
                 exercise.name.en.lowercase().contains(searchQuery) ||

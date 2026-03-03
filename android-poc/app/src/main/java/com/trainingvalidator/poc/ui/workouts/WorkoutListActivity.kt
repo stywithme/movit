@@ -17,7 +17,7 @@ import com.trainingvalidator.poc.storage.WorkoutRepository
 import com.trainingvalidator.poc.training.loader.WorkoutLoader
 import com.trainingvalidator.poc.training.models.WorkoutConfig
 import androidx.appcompat.app.AppCompatDelegate
-import kotlinx.coroutines.CoroutineScope
+import androidx.lifecycle.lifecycleScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -62,7 +62,7 @@ class WorkoutListActivity : AppCompatActivity() {
 
     private fun loadWorkouts() {
         // Load workouts from repository (cached from server or assets)
-        CoroutineScope(Dispatchers.Main).launch {
+        lifecycleScope.launch {
             val repository = WorkoutRepository.getInstance(this@WorkoutListActivity)
             
             // Initialize repository if needed (loads from cache or assets)

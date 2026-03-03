@@ -155,7 +155,7 @@ class ProgramSessionActivity : AppCompatActivity() {
         targetSessionId = intent.getStringExtra(EXTRA_TARGET_SESSION_ID)
 
         if (programSlug.isNullOrBlank() && programId.isNullOrBlank()) {
-            Toast.makeText(this, "Program not found", Toast.LENGTH_SHORT).show()
+            Toast.makeText(this, getString(R.string.error_program_not_found), Toast.LENGTH_SHORT).show()
             finish()
             return
         }
@@ -178,15 +178,17 @@ class ProgramSessionActivity : AppCompatActivity() {
             }
 
             val resolvedProgram = withContext(Dispatchers.IO) {
-                if (!programSlug.isNullOrBlank()) {
-                    programRepo.getOrFetchProgram(programSlug!!)
-                } else {
-                    programRepo.getOrFetchProgramById(programId!!)
+                val slug = programSlug
+                val id = programId
+                when {
+                    !slug.isNullOrBlank() -> programRepo.getOrFetchProgram(slug)
+                    !id.isNullOrBlank()   -> programRepo.getOrFetchProgramById(id)
+                    else -> null
                 }
             }
 
             if (resolvedProgram == null) {
-                Toast.makeText(this@ProgramSessionActivity, "Program not found", Toast.LENGTH_SHORT).show()
+                Toast.makeText(this@ProgramSessionActivity, getString(R.string.error_program_not_found), Toast.LENGTH_SHORT).show()
                 finish()
                 return@launch
             }
@@ -202,7 +204,7 @@ class ProgramSessionActivity : AppCompatActivity() {
                 ?.firstOrNull { it.dayNumber == dayNumber }
 
             if (resolvedDay == null) {
-                Toast.makeText(this@ProgramSessionActivity, "Day not found", Toast.LENGTH_SHORT).show()
+                Toast.makeText(this@ProgramSessionActivity, getString(R.string.error_day_not_found), Toast.LENGTH_SHORT).show()
                 finish()
                 return@launch
             }
@@ -234,8 +236,9 @@ class ProgramSessionActivity : AppCompatActivity() {
         expandedSessionIds.clear()
         val completedSessionIds = getCompletedSessionIds()
 
-        if (targetSessionId != null && sessions.any { it.id == targetSessionId }) {
-            expandedSessionIds.add(targetSessionId!!)
+        val target = targetSessionId
+        if (target != null && sessions.any { it.id == target }) {
+            expandedSessionIds.add(target)
         } else {
             // Expand the first non-completed session
             val firstActive = sessions.firstOrNull { it.id !in completedSessionIds }
@@ -642,7 +645,7 @@ class ProgramSessionActivity : AppCompatActivity() {
 
     private fun startSession(session: DayCustomizationStore.CustomizedSession) {
         if (session.items.isEmpty()) {
-            Toast.makeText(this, "No exercises in this session", Toast.LENGTH_SHORT).show()
+            Toast.makeText(this, getString(R.string.error_no_exercises), Toast.LENGTH_SHORT).show()
             return
         }
 
@@ -1027,7 +1030,7 @@ class ProgramSessionActivity : AppCompatActivity() {
         // Determine which session to add to (the expanded one in edit mode)
         val targetSession = sessions.firstOrNull { it.id in expandedSessionIds }
         if (targetSession == null) {
-            Toast.makeText(this, "Expand a session first", Toast.LENGTH_SHORT).show()
+            Toast.makeText(this, getString(R.string.error_expand_session_first), Toast.LENGTH_SHORT).show()
             return
         }
 
@@ -1086,7 +1089,7 @@ class ProgramSessionActivity : AppCompatActivity() {
     private fun showAddRestSheet() {
         val targetSession = sessions.firstOrNull { it.id in expandedSessionIds }
         if (targetSession == null) {
-            Toast.makeText(this, "Expand a session first", Toast.LENGTH_SHORT).show()
+            Toast.makeText(this, getString(R.string.error_expand_session_first), Toast.LENGTH_SHORT).show()
             return
         }
 

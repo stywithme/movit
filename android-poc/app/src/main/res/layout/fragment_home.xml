@@ -176,7 +176,7 @@
                 android:layout_height="wrap_content"
                 android:layout_marginHorizontal="@dimen/screen_padding_horizontal"
                 android:layout_marginTop="@dimen/spacing_lg"
-                app:cardBackgroundColor="#1A1A2E"
+                app:cardBackgroundColor="@color/surface_variant"
                 app:cardCornerRadius="@dimen/radius_lg"
                 app:cardElevation="0dp"
                 android:visibility="gone">
@@ -198,7 +198,7 @@
                             style="@style/TextAppearance.WayToFix.Caption"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:text="Your Level"
+                            android:text="@string/home_your_level_label"
                             android:textColor="@color/text_secondary" />
 
                         <TextView
@@ -224,7 +224,7 @@
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="→"
+                        android:text="@string/home_arrow"
                         android:textColor="@android:color/white"
                         android:textSize="24sp" />
 
@@ -400,7 +400,7 @@
                 android:layout_height="wrap_content"
                 android:layout_marginHorizontal="@dimen/screen_padding_horizontal"
                 android:layout_marginTop="@dimen/spacing_sm"
-                app:cardBackgroundColor="#1B5E20"
+                app:cardBackgroundColor="@color/surface_elevated"
                 app:cardCornerRadius="@dimen/radius_base"
                 app:cardElevation="0dp">
 
@@ -431,14 +431,14 @@
                             android:layout_height="wrap_content"
                             android:layout_marginTop="4dp"
                             android:text="@string/body_scan_subtitle"
-                            android:textColor="#A5D6A7" />
+                            android:textColor="@color/feedback_correct" />
 
                     </LinearLayout>
 
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="→"
+                        android:text="@string/home_arrow"
                         android:textColor="@android:color/white"
                         android:textSize="24sp" />
 

@@ -213,7 +213,7 @@
                         android:layout_weight="1"
                         android:layout_marginEnd="@dimen/spacing_sm"
                         style="@style/Widget.WayToFix.Button.Secondary"
-                        android:text="Front"
+                        android:text="@string/camera_position_front"
                         android:visibility="gone"/>
 
                     <com.google.android.material.button.MaterialButton
@@ -223,7 +223,7 @@
                         android:layout_weight="1"
                         android:layout_marginStart="@dimen/spacing_sm"
                         style="@style/Widget.WayToFix.Button.Secondary"
-                        android:text="Side"
+                        android:text="@string/camera_position_side"
                         android:visibility="gone"/>
 
                 </LinearLayout>

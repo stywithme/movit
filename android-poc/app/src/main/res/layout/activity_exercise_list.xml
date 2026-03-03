@@ -86,14 +86,14 @@
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="🏋️"
+            android:text="@string/exercise_list_empty_emoji"
             android:textSize="64sp" />
 
         <TextView
             android:id="@+id/tvEmpty"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="No exercises found"
+            android:text="@string/exercise_list_empty_msg"
             android:textColor="@android:color/white"
             android:textSize="18sp"
             android:layout_marginTop="16dp" />
@@ -101,8 +101,8 @@
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Add JSON files to assets/exercises/"
-            android:textColor="#888888"
+            android:text="@string/exercise_list_empty_hint"
+            android:textColor="@color/text_secondary"
             android:textSize="14sp"
             android:layout_marginTop="8dp" />
 

@@ -2,6 +2,7 @@
 <com.google.android.material.card.MaterialCardView
     xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:layout_marginBottom="@dimen/spacing_sm"
@@ -27,7 +28,7 @@
             android:textColor="@color/on_primary"
             android:textSize="10sp"
             android:textStyle="bold"
-            android:text="EXERCISE" />
+            android:text="@string/session_item_exercise_label" />
 
         <LinearLayout
             android:layout_width="0dp"
@@ -43,7 +44,7 @@
                 android:textColor="@color/text_primary"
                 android:textSize="14sp"
                 android:textStyle="bold"
-                android:text="Squat" />
+                tools:text="Squat" />
 
             <TextView
                 android:id="@+id/tvItemSubtitle"
@@ -51,7 +52,7 @@
                 android:layout_height="wrap_content"
                 android:textColor="@color/text_hint"
                 android:textSize="12sp"
-                android:text="3 sets • 10 reps" />
+                tools:text="3 sets • 10 reps" />
         </LinearLayout>
 
         <LinearLayout

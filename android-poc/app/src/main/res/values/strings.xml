@@ -791,6 +791,71 @@
     <string name="day_number_format">Day %1$d</string>
     <string name="rest_day_label">Rest Day</string>
 
+    <!-- ProgramSessionActivity messages -->
+    <string name="error_day_not_found">Day not found</string>
+    <string name="error_no_exercises">No exercises in this session</string>
+    <string name="error_expand_session_first">Expand a session first</string>
+
+    <!-- TrainingActivity messages -->
+    <string name="error_video_playback">Error playing video</string>
+    <string name="results_saved">Results saved!</string>
+    <string name="btn_saved">Saved ✓</string>
+    <string name="error_save_failed">Failed to save results</string>
+    <string name="fps_format">FPS: %1$d</string>
+    <string name="training_target_format">Target: %1$s</string>
+    <string name="training_grace_periods_format">Grace periods: %1$d</string>
+
+    <!-- Layout strings – Home -->
+    <string name="home_your_level_label">Your Level</string>
+    <string name="home_arrow">→</string>
+
+    <!-- Layout strings – State distribution -->
+    <string name="state_perfect_label">Perfect</string>
+    <string name="state_normal_label">Normal</string>
+    <string name="state_warning_label">Warning</string>
+    <string name="state_danger_label">Danger</string>
+
+    <!-- Layout strings – Train empty state -->
+    <string name="train_empty_subtitle">Start your journey by choosing a program from the Explore tab.</string>
+    <string name="train_go_to_explore">Go to Explore</string>
+
+    <!-- Layout strings – Explore hero card -->
+    <string name="explore_hero_featured_badge">Featured</string>
+    <string name="explore_hero_view_program">View Program</string>
+
+    <!-- Layout strings – Pre-workout -->
+    <string name="camera_position_front">Front</string>
+    <string name="camera_position_side">Side</string>
+
+    <!-- Layout strings – Program day -->
+    <string name="program_day_week_plan_title">Week Plan</string>
+
+    <!-- Layout strings – Exercise list empty state -->
+    <string name="exercise_list_empty_emoji">🏋️</string>
+    <string name="exercise_list_empty_msg">No exercises found</string>
+    <string name="exercise_list_empty_hint">Add JSON files to assets/exercises/</string>
+
+    <!-- Layout strings – Improvement tip -->
+    <string name="improvement_next_focus">Next Focus</string>
+
+    <!-- Layout strings – Training settings dialog -->
+    <string name="indicator_line">📏 Line</string>
+    <string name="indicator_arc">⭕ Arc</string>
+
+    <!-- Layout strings – Report page -->
+    <string name="report_share">Share</string>
+    <string name="report_swipe_hint">Swipe for details →</string>
+
+    <!-- Layout strings – Program detail -->
+    <string name="program_syllabus_title">Program Syllabus</string>
+
+    <!-- Layout strings – Profile / Fragment -->
+    <string name="cd_stat_workouts">Workouts</string>
+    <string name="cd_stat_minutes">Minutes</string>
+
+    <!-- Layout strings – Item program session item -->
+    <string name="session_item_exercise_label">EXERCISE</string>
+
     <!-- Level / Plan -->
     <string name="loading_level">Loading your level…</string>
     <string name="loading_plan">Loading plan…</string>

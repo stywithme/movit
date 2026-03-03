@@ -1,21 +1,26 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <!-- ═══════════════════════════════════════════════════ -->
-    <!-- PRIMARY BRAND COLORS (From Design) -->
+    <!-- PRIMARY BRAND COLORS                               -->
     <!-- ═══════════════════════════════════════════════════ -->
-    <color name="primary">#8AF851</color>              <!-- Neon Green - Main accent -->
-    <color name="primary_variant">#6BD93A</color>      <!-- Darker green for pressed states -->
-    <color name="primary_light">#1A8AF851</color>      <!-- 10% opacity primary for backgrounds -->
-    <color name="on_primary">#091801</color>           <!-- Dark text on primary — alias of text_on_primary -->
-    
+    <color name="primary">#8AF851</color>               <!-- Neon Green - Main accent -->
+    <color name="primary_variant">#6BD93A</color>       <!-- Darker green for pressed states -->
+    <color name="primary_light">#1A8AF851</color>       <!-- 10% opacity primary for backgrounds -->
+    <color name="on_primary">#091801</color>            <!-- Dark text on primary -->
+    <!-- Aliases pointing to canonical values -->
+    <color name="text_on_primary">@color/on_primary</color>
+    <color name="nav_active">@color/primary</color>
+    <color name="card_form_accent">@color/primary</color>
+    <color name="chart_line">@color/primary</color>
+
     <!-- ═══════════════════════════════════════════════════ -->
-    <!-- BRAND ACCENT LEGACY (Old orange, used on some older screens) -->
+    <!-- BRAND ACCENT LEGACY (Old orange, kept for compat)  -->
     <!-- ═══════════════════════════════════════════════════ -->
     <color name="brand_accent_legacy">#FF6B35</color>
-    <color name="brand_accent_legacy_13">#22FF6B35</color>   <!-- 13% opacity -->
-    <color name="brand_accent_legacy_20">#33FF6B35</color>   <!-- 20% opacity -->
+    <color name="brand_accent_legacy_13">#22FF6B35</color>
+    <color name="brand_accent_legacy_20">#33FF6B35</color>
 
-    <!-- Legacy Material Colors (Launcher & Compatibility — safe to remove when fully migrated) -->
+    <!-- Legacy Material Colors (Launcher compatibility) -->
     <color name="purple_200">#FFBB86FC</color>
     <color name="purple_500">#FF6200EE</color>
     <color name="purple_700">#FF3700B3</color>
@@ -23,34 +28,33 @@
     <color name="teal_700">#FF018786</color>
 
     <!-- ═══════════════════════════════════════════════════ -->
-    <!-- BACKGROUND COLORS -->
+    <!-- BACKGROUND COLORS                                  -->
     <!-- ═══════════════════════════════════════════════════ -->
-    <color name="background">#040A01</color>           <!-- Main app background (Nearly black) -->
-    <color name="background_gradient_start">#040A01</color>
+    <color name="background">#040A01</color>
+    <color name="background_gradient_start">@color/background</color>
     <color name="background_gradient_end">#081402</color>
 
     <!-- ═══════════════════════════════════════════════════ -->
-    <!-- SURFACE COLORS (Cards, Inputs, Containers) -->
+    <!-- SURFACE COLORS (Cards, Inputs, Containers)         -->
     <!-- ═══════════════════════════════════════════════════ -->
-    <color name="surface">#0A1804</color>              <!-- Card background -->
-    <color name="surface_variant">#102208</color>      <!-- Lighter surface -->
-    <color name="surface_elevated">#142A0C</color>     <!-- Elevated cards -->
-    <color name="surface_border">#1E3A12</color>       <!-- Border for cards/inputs -->
-    <color name="surface_border_accent">#2A4A1C</color><!-- Active/focused border -->
-    <color name="divider">#1A2A1C</color>              <!-- Divider lines -->
+    <color name="surface">#0A1804</color>
+    <color name="surface_variant">#102208</color>
+    <color name="surface_elevated">#142A0C</color>
+    <color name="surface_border">#1E3A12</color>
+    <color name="surface_border_accent">#2A4A1C</color>
+    <color name="divider">#1A2A1C</color>
 
     <!-- ═══════════════════════════════════════════════════ -->
-    <!-- TEXT COLORS (Core System) -->
+    <!-- TEXT COLORS                                        -->
     <!-- ═══════════════════════════════════════════════════ -->
-    <color name="text_primary">#E7F1F1</color>         <!-- Main text (Light Grey) -->
-    <color name="text_secondary">#B8C8C8</color>       <!-- Secondary text (80% of primary) -->
-    <color name="text_hint">#7A9090</color>            <!-- Hint text (50% of primary) -->
-    <color name="text_disabled">#5A7070</color>        <!-- Disabled text (40% of primary) -->
-    <color name="text_tertiary">#4A6060</color>        <!-- Tertiary text -->
-    <color name="text_on_primary">#091801</color>      <!-- Text on primary buttons -->
+    <color name="text_primary">#E7F1F1</color>
+    <color name="text_secondary">#B8C8C8</color>
+    <color name="text_hint">#7A9090</color>
+    <color name="text_disabled">#5A7070</color>
+    <color name="text_tertiary">#4A6060</color>
 
     <!-- ═══════════════════════════════════════════════════ -->
-    <!-- SEMANTIC COLORS -->
+    <!-- SEMANTIC COLORS (canonical definitions)            -->
     <!-- ═══════════════════════════════════════════════════ -->
     <color name="success">#4CAF50</color>
     <color name="success_bg">#1A4CAF50</color>
@@ -62,104 +66,108 @@
     <color name="info_bg">#1A2196F3</color>
 
     <!-- ═══════════════════════════════════════════════════ -->
-    <!-- SPECIAL COLORS -->
+    <!-- SPECIAL / ACCENT COLORS                            -->
     <!-- ═══════════════════════════════════════════════════ -->
     <color name="pro_gold">#FFD700</color>
     <color name="pro_gold_variant">#FFC107</color>
-    <color name="difficulty_easy">#4CAF50</color>
-    <color name="difficulty_medium">#FFA726</color>
-    <color name="difficulty_hard">#FF5252</color>
-    
-    <!-- Navigation Selectors -->
-    <color name="nav_active">#8AF851</color>
     <color name="nav_inactive">#5A7070</color>
 
+    <!-- Difficulty — reference semantic colors -->
+    <color name="difficulty_easy">@color/success</color>
+    <color name="difficulty_medium">@color/warning</color>
+    <color name="difficulty_hard">@color/error</color>
+
     <!-- ═══════════════════════════════════════════════════ -->
-    <!-- LEGACY / SKELETON COLORS (Maintained for Engine) -->
+    <!-- FEEDBACK / SKELETON COLORS (Engine use)            -->
     <!-- ═══════════════════════════════════════════════════ -->
-    <color name="feedback_correct">#00E676</color>      <!-- Green -->
-    <color name="feedback_warning">#FFC107</color>      <!-- Amber -->
-    <color name="feedback_error">#FF5252</color>        <!-- Red -->
-    <color name="feedback_tip">#2196F3</color>          <!-- Blue -->
-    <color name="feedback_info">#9E9E9E</color>         <!-- Gray -->
-    
+    <color name="feedback_correct">#00E676</color>      <!-- Bright green (engine overlay) -->
+    <color name="feedback_warning">@color/pro_gold_variant</color>
+    <color name="feedback_error">@color/error</color>
+    <color name="feedback_tip">@color/info</color>
+    <color name="feedback_info">#9E9E9E</color>
+
     <!-- Skeleton Overlay Colors -->
-    <color name="overlay_tracked">#64B5F6</color>       <!-- Light Blue -->
-    <color name="overlay_faint">#40FFFFFF</color>       <!-- Faint White -->
-    <color name="overlay_glow">#4000E676</color>        <!-- Green Glow -->
-    <color name="overlay_position_error">#E91E63</color><!-- Pink -->
-    
-    <!-- Glass UI Colors -->
-    <color name="glass_background">#40000000</color>    <!-- 25% Black -->
-    <color name="glass_background_dark">#26000000</color><!-- 15% Black -->
-    <color name="glass_border">#33FFFFFF</color>        <!-- 20% White — same as glass_card_border -->
-    <color name="glass_border_subtle">#1AFFFFFF</color> <!-- 10% White — same as glass_card_border_subtle -->
-    <color name="skeleton_correct">#FF4CAF50</color>
-    <color name="skeleton_warning">#FFFFC107</color>
-    <color name="skeleton_error">#FFF44336</color>
-    <color name="skeleton_default">#FF2196F3</color>
+    <color name="overlay_tracked">#64B5F6</color>
+    <color name="overlay_faint">#40FFFFFF</color>
+    <color name="overlay_glow">#4000E676</color>
+    <color name="overlay_position_error">#E91E63</color>
+
+    <!-- Skeleton state colors — reference canonical -->
+    <color name="skeleton_correct">@color/success</color>
+    <color name="skeleton_warning">@color/pro_gold_variant</color>
+    <color name="skeleton_error">@color/error</color>
+    <color name="skeleton_default">@color/info</color>
+
     <color name="black">#FF000000</color>
     <color name="white">#FFFFFFFF</color>
-    
-    <!-- State Colors (Report) -->
-    <color name="state_perfect">#FF4CAF50</color>
+
+    <!-- ═══════════════════════════════════════════════════ -->
+    <!-- GLASS UI COLORS                                    -->
+    <!-- ═══════════════════════════════════════════════════ -->
+    <color name="glass_background">#40000000</color>
+    <color name="glass_background_dark">#26000000</color>
+    <color name="glass_border">#33FFFFFF</color>
+    <color name="glass_border_subtle">#1AFFFFFF</color>
+    <!-- Aliases -->
+    <color name="glass_card_bg">#1A1A1A1A</color>
+    <color name="glass_card_bg_light">#26FFFFFF</color>
+    <color name="glass_card_border">@color/glass_border</color>
+    <color name="glass_card_border_subtle">@color/glass_border_subtle</color>
+
+    <!-- ═══════════════════════════════════════════════════ -->
+    <!-- STATE COLORS (Training overlay / Report)           -->
+    <!-- ═══════════════════════════════════════════════════ -->
+    <color name="state_perfect">@color/success</color>
     <color name="state_normal">#FFFFEB3B</color>
     <color name="state_pad">#FFFF9800</color>
-    <color name="state_warning">#FFFF5252</color>
+    <color name="state_warning">@color/error</color>
     <color name="state_danger">#FFB71C1C</color>
     <color name="state_transition">#FF607D8B</color>
-    
-    <!-- State Background Colors (10% opacity) -->
-    <color name="state_perfect_bg">#1A4CAF50</color>
+
+    <color name="state_perfect_bg">@color/success_bg</color>
     <color name="state_normal_bg">#1AFFEB3B</color>
     <color name="state_pad_bg">#1AFF9800</color>
-    <color name="state_warning_bg">#1AFF5252</color>
+    <color name="state_warning_bg">@color/error_bg</color>
     <color name="state_danger_bg">#1AB71C1C</color>
-    
-    <!-- Report Colors -->
+
+    <!-- ═══════════════════════════════════════════════════ -->
+    <!-- REPORT COLORS                                      -->
+    <!-- ═══════════════════════════════════════════════════ -->
     <color name="report_background">#FF121212</color>
     <color name="report_card_background">#FF1E1E1E</color>
     <color name="report_text_primary">#FFFFFFFF</color>
     <color name="report_text_secondary">#FFB0B0B0</color>
-    
-    <!-- ═══════════════════════════════════════════════════════════ -->
-    <!-- REPORT V2 - Glassmorphic Design System                     -->
-    <!-- ═══════════════════════════════════════════════════════════ -->
-    
-    <!-- Glass Card Colors -->
-    <color name="glass_card_bg">#1A1A1A1A</color>           <!-- 10% white -->
-    <color name="glass_card_bg_light">#26FFFFFF</color>     <!-- 15% white -->
-    <color name="glass_card_border">#33FFFFFF</color>       <!-- 20% white -->
-    <color name="glass_card_border_subtle">#1AFFFFFF</color><!-- 10% white -->
-    
+
+    <!-- ═══════════════════════════════════════════════════ -->
+    <!-- REPORT V2 - Glassmorphic Design System             -->
+    <!-- ═══════════════════════════════════════════════════ -->
+
     <!-- Insight Card Colors -->
-    <color name="insight_celebration_bg">#1A4CAF50</color>  <!-- 10% green -->
+    <color name="insight_celebration_bg">@color/success_bg</color>
     <color name="insight_celebration_border">#334CAF50</color>
-    <color name="insight_focus_bg">#1AFFC107</color>        <!-- 10% yellow -->
+    <color name="insight_focus_bg">#1AFFC107</color>
     <color name="insight_focus_border">#33FFC107</color>
-    <color name="insight_danger_bg">#1AFF5252</color>       <!-- 10% red -->
+    <color name="insight_danger_bg">@color/error_bg</color>
     <color name="insight_danger_border">#33FF5252</color>
-    
-    <!-- Performance Card Colors -->
-    <color name="card_form_accent">#8AF851</color>          <!-- Primary green -->
-    <color name="card_safety_accent">#4CAF50</color>        <!-- Success green -->
-    <color name="card_control_accent">#2196F3</color>       <!-- Info blue -->
-    
-    <!-- Metric Status Colors -->
-    <color name="metric_excellent">#4CAF50</color>
+
+    <!-- Performance Card Colors — reference canonical -->
+    <color name="card_safety_accent">@color/success</color>
+    <color name="card_control_accent">@color/info</color>
+
+    <!-- Metric Status Colors — reference semantic -->
+    <color name="metric_excellent">@color/success</color>
     <color name="metric_good">#8BC34A</color>
-    <color name="metric_fair">#FFC107</color>
-    <color name="metric_needs_work">#FF5252</color>
-    
-    <!-- Chart Colors -->
-    <color name="chart_bar_high">#4CAF50</color>
-    <color name="chart_bar_medium">#FFC107</color>
-    <color name="chart_bar_low">#FF5252</color>
-    <color name="chart_line">#8AF851</color>
-    <color name="chart_grid">#1AFFFFFF</color>
-    
+    <color name="metric_fair">@color/pro_gold_variant</color>
+    <color name="metric_needs_work">@color/error</color>
+
+    <!-- Chart Colors — reference canonical -->
+    <color name="chart_bar_high">@color/success</color>
+    <color name="chart_bar_medium">@color/pro_gold_variant</color>
+    <color name="chart_bar_low">@color/error</color>
+    <color name="chart_grid">@color/glass_border_subtle</color>
+
     <!-- Hero Overlay -->
     <color name="hero_overlay_start">#00000000</color>
     <color name="hero_overlay_end">#CC040A01</color>
-    
+
 </resources>

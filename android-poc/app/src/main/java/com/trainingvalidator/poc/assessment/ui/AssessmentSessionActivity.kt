@@ -1,4 +1,4 @@
-﻿package com.trainingvalidator.poc.assessment.ui
+package com.trainingvalidator.poc.assessment.ui
 
 import android.app.Activity
 import android.content.Context

@@ -6,7 +6,7 @@
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:layout_marginBottom="16dp"
-    app:cardBackgroundColor="#2D2D2D"
+    app:cardBackgroundColor="@color/surface_variant"
     app:cardCornerRadius="12dp"
     app:cardElevation="2dp">
 
@@ -73,13 +73,13 @@
                         android:layout_width="match_parent"
                         android:layout_height="match_parent"
                         android:scaleType="centerCrop"
-                        android:background="#404040"
+                        android:background="@color/surface_elevated"
                         android:visibility="gone"/>
 
                     <LinearLayout
                         android:layout_width="match_parent"
                         android:layout_height="match_parent"
-                        android:background="#3DF44336"
+                        android:background="@color/error_bg"
                         android:gravity="center"
                         android:orientation="vertical">
 
@@ -96,7 +96,7 @@
                     android:layout_height="wrap_content"
                     android:layout_marginTop="4dp"
                     android:text="Your Form"
-                    android:textColor="#B0B0B0"
+                    android:textColor="@color/text_secondary"
                     android:textSize="11sp"/>
             </LinearLayout>
 
@@ -105,7 +105,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="→"
-                android:textColor="#B0B0B0"
+                android:textColor="@color/text_secondary"
                 android:textSize="24sp"
                 android:paddingHorizontal="8dp"/>
 
@@ -128,13 +128,13 @@
                         android:layout_width="match_parent"
                         android:layout_height="match_parent"
                         android:scaleType="centerCrop"
-                        android:background="#404040"
+                        android:background="@color/surface_elevated"
                         android:visibility="gone"/>
 
                     <LinearLayout
                         android:layout_width="match_parent"
                         android:layout_height="match_parent"
-                        android:background="#3D4CAF50"
+                        android:background="@color/success_bg"
                         android:gravity="center"
                         android:orientation="vertical">
 
@@ -151,7 +151,7 @@
                     android:layout_height="wrap_content"
                     android:layout_marginTop="4dp"
                     android:text="Your Best"
-                    android:textColor="#B0B0B0"
+                    android:textColor="@color/text_secondary"
                     android:textSize="11sp"/>
             </LinearLayout>
         </LinearLayout>
@@ -162,9 +162,9 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="12dp"
-            android:background="#1AFFD700"
+            android:background="@color/warning_bg"
             android:padding="12dp"
-            android:textColor="#FFD700"
+            android:textColor="@color/pro_gold"
             android:textSize="13sp"
             tools:text="💡 Go lower until thighs are parallel to the ground."/>
 
@@ -174,7 +174,7 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginTop="8dp"
-            android:textColor="#B0B0B0"
+            android:textColor="@color/text_secondary"
             android:textSize="12sp"
             tools:text="Reps: #2, #4, #5, #8"/>
     </LinearLayout>

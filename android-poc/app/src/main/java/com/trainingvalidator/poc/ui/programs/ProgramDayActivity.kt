@@ -77,13 +77,14 @@ class ProgramDayActivity : AppCompatActivity() {
                 repository.getOrFetchProgram(slug)
             }
 
-            if (program == null) {
+            val resolvedProgram = program
+            if (resolvedProgram == null) {
                 Toast.makeText(this@ProgramDayActivity, getString(R.string.error_program_not_found), Toast.LENGTH_SHORT).show()
                 finish()
                 return@launch
             }
 
-            bindWeek(program!!)
+            bindWeek(resolvedProgram)
         }
     }
 

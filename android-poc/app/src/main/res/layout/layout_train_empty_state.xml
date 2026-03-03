@@ -25,7 +25,7 @@
     <TextView
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="Start your journey by choosing a program from the Explore tab."
+        android:text="@string/train_empty_subtitle"
         android:textAppearance="@style/TextAppearance.WayToFix.Body1"
         android:textColor="@color/text_secondary"
         android:textAlignment="center"
@@ -35,7 +35,7 @@
         android:id="@+id/btnGoToExplore"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="Go to Explore"
+        android:text="@string/train_go_to_explore"
         android:paddingVertical="12dp"
         style="@style/Widget.WayToFix.Button.Primary" />
 

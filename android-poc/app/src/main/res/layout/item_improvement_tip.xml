@@ -6,7 +6,7 @@
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:layout_marginBottom="12dp"
-    app:cardBackgroundColor="#2D2D2D"
+    app:cardBackgroundColor="@color/surface_variant"
     app:cardCornerRadius="12dp"
     app:cardElevation="2dp">
 
@@ -60,8 +60,8 @@
                     android:background="@drawable/badge_next_focus"
                     android:paddingHorizontal="8dp"
                     android:paddingVertical="2dp"
-                    android:text="Next Focus"
-                    android:textColor="#9C27B0"
+                    android:text="@string/improvement_next_focus"
+                    android:textColor="@color/info"
                     android:textSize="10sp"
                     android:visibility="gone"
                     tools:visibility="visible"/>
@@ -72,7 +72,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="6dp"
-                android:textColor="#B0B0B0"
+                android:textColor="@color/text_secondary"
                 android:textSize="13sp"
                 android:lineSpacingExtra="2dp"
                 tools:text="Try to bend your knees more until thighs are parallel to the ground. Practice box squats to learn proper depth."/>

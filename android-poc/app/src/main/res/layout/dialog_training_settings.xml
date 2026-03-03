@@ -65,7 +65,7 @@
             android:layout_height="wrap_content"
             android:layout_weight="1"
             android:layout_marginEnd="@dimen/spacing_sm"
-            android:text="📏 Line"
+            android:text="@string/indicator_line"
             style="@style/Widget.WayToFix.Button.Secondary" />
 
         <com.google.android.material.button.MaterialButton
@@ -74,7 +74,7 @@
             android:layout_height="wrap_content"
             android:layout_weight="1"
             android:layout_marginStart="@dimen/spacing_sm"
-            android:text="⭕ Arc"
+            android:text="@string/indicator_arc"
             style="@style/Widget.WayToFix.Button.Secondary" />
 
     </LinearLayout>

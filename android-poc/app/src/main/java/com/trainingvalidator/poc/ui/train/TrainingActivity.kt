@@ -2542,8 +2542,8 @@ class TrainingActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetection
         if (viewModel.isHoldExercise()) {
             val holdElapsed = viewModel.holdElapsedMs.value ?: 0L
             binding.tvSummaryReps.text = formatTimeMs(holdElapsed)
-            binding.tvSummaryCorrect.text = "Target: ${formatTimeMs(viewModel.getTargetDurationMs())}"
-            binding.tvSummaryAccuracy.text = "Grace periods: ${viewModel.trainingEngine?.getGracePeriodCount() ?: 0}"
+            binding.tvSummaryCorrect.text = getString(R.string.training_target_format, formatTimeMs(viewModel.getTargetDurationMs()))
+            binding.tvSummaryAccuracy.text = getString(R.string.training_grace_periods_format, viewModel.trainingEngine?.getGracePeriodCount() ?: 0)
         } else {
             binding.tvSummaryReps.text = "${summary?.totalReps ?: 0}"
             binding.tvSummaryCorrect.text = "${summary?.correctReps ?: 0} correct"
@@ -2727,7 +2727,7 @@ class TrainingActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetection
             currentFps = frameCount
             frameCount = 0
             lastFpsUpdateTime = currentTime
-            binding.tvFps.text = "FPS: $currentFps"
+            binding.tvFps.text = getString(R.string.fps_format, currentFps)
         }
     }
 
@@ -2779,7 +2779,7 @@ class TrainingActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetection
                         viewModel.onVideoEnded()
                     }
                     VideoManager.PlaybackState.ERROR -> {
-                        binding.glassmorphicMessage.showError("Error playing video")
+                        binding.glassmorphicMessage.showError(getString(R.string.error_video_playback))
                     }
                     else -> {}
                 }
@@ -2845,11 +2845,11 @@ class TrainingActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetection
             
             override fun onResultsSaved(success: Boolean) {
                 if (success) {
-                    binding.glassmorphicMessage.showMotivation("Results saved!")
+                    binding.glassmorphicMessage.showMotivation(getString(R.string.results_saved))
                     binding.btnSaveResults.isEnabled = false
-                    binding.btnSaveResults.text = "Saved ✓"
+                    binding.btnSaveResults.text = getString(R.string.btn_saved)
                 } else {
-                    binding.glassmorphicMessage.showError("Failed to save results")
+                    binding.glassmorphicMessage.showError(getString(R.string.error_save_failed))
                 }
             }
             

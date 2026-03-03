@@ -1,4 +1,4 @@
-﻿package com.trainingvalidator.poc.ui.exercises
+package com.trainingvalidator.poc.ui.exercises
 
 import android.os.Bundle
 import androidx.appcompat.app.AppCompatActivity

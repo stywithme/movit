@@ -98,7 +98,7 @@
                     android:layout_width="match_parent"
                     android:layout_height="match_parent"
                     android:scaleType="fitCenter"
-                    android:background="#1A1A1A"
+                    android:background="@color/surface"
                     android:contentDescription="Error position" />
 
                 <!-- Error Badge -->
@@ -111,7 +111,7 @@
                     android:paddingHorizontal="8dp"
                     android:paddingVertical="4dp"
                     android:text="❌ Error"
-                    android:textColor="#FFFFFF"
+                    android:textColor="@color/white"
                     android:textSize="12sp" />
 
                 <!-- Tap to expand hint -->
@@ -125,7 +125,7 @@
                     android:paddingHorizontal="8dp"
                     android:paddingVertical="4dp"
                     android:text="🔍 Tap to expand"
-                    android:textColor="#FFFFFF"
+                    android:textColor="@color/white"
                     android:textSize="11sp" />
 
             </FrameLayout>
@@ -197,7 +197,7 @@
                         android:layout_width="match_parent"
                         android:layout_height="match_parent"
                         android:scaleType="fitCenter"
-                        android:background="#1A1A1A"
+                        android:background="@color/surface"
                         android:contentDescription="Error position" />
 
                     <!-- Error Badge -->
@@ -253,7 +253,7 @@
                         android:layout_width="match_parent"
                         android:layout_height="match_parent"
                         android:scaleType="fitCenter"
-                        android:background="#1A1A1A"
+                        android:background="@color/surface"
                         android:contentDescription="Correct position" />
 
                     <!-- Correct Badge -->

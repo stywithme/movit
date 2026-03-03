@@ -6,7 +6,7 @@
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:layout_marginBottom="12dp"
-    app:cardBackgroundColor="#1A3A2F"
+    app:cardBackgroundColor="@color/surface_elevated"
     app:cardCornerRadius="12dp"
     app:cardElevation="2dp">
 
@@ -27,7 +27,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
                 android:scaleType="fitCenter"
-                android:background="#1A1A1A"
+                android:background="@color/surface"
                 android:visibility="gone"
                 tools:visibility="visible"/>
 
@@ -36,7 +36,7 @@
                 android:id="@+id/placeholderFrame"
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
-                android:background="#2A4A3A"
+                android:background="@color/surface_elevated"
                 android:gravity="center"
                 android:orientation="vertical">
 
@@ -51,7 +51,7 @@
                     android:layout_height="wrap_content"
                     android:layout_marginTop="8dp"
                     android:text="Best Performance"
-                    android:textColor="#4CAF50"
+                    android:textColor="@color/success"
                     android:textSize="14sp"/>
             </LinearLayout>
 
@@ -80,7 +80,7 @@
                 android:background="#CC000000"
                 android:paddingHorizontal="12dp"
                 android:paddingVertical="6dp"
-                android:textColor="#4CAF50"
+                android:textColor="@color/success"
                 android:textSize="16sp"
                 android:textStyle="bold"
                 tools:text="Score: 95%"/>
@@ -130,9 +130,9 @@
                     android:id="@+id/tvDuration"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:textColor="#B0B0B0"
-                    android:textSize="14sp"
-                    tools:text="⏱ 2.1s"/>
+                android:textColor="@color/text_secondary"
+                android:textSize="14sp"
+                tools:text="⏱ 2.1s"/>
             </LinearLayout>
 
             <!-- Reason/Message -->
@@ -141,7 +141,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="8dp"
-                android:textColor="#A5D6A7"
+                android:textColor="@color/feedback_correct"
                 android:textSize="15sp"
                 android:lineSpacingExtra="4dp"
                 tools:text="✓ Excellent form! All joints in perfect position throughout the movement."/>

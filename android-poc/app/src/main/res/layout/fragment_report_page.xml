@@ -3,7 +3,7 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="#FF000000">
+    android:background="@color/black">
 
     <!-- Full Screen Image -->
     <ImageView
@@ -58,7 +58,7 @@
             android:id="@+id/tvExerciseName"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:textColor="#FFFFFFFF"
+            android:textColor="@color/white"
             android:textSize="28sp"
             android:textStyle="bold"
             android:layout_marginTop="6dp"
@@ -128,7 +128,7 @@
                 android:id="@+id/tvStat2Value"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:textColor="#FFFFFFFF"
+                android:textColor="@color/white"
                 android:textSize="32sp"
                 android:textStyle="bold"
                 android:fontFamily="sans-serif-medium"
@@ -165,7 +165,7 @@
                 android:id="@+id/tvStat3Value"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:textColor="#FFFFFFFF"
+                android:textColor="@color/white"
                 android:textSize="32sp"
                 android:textStyle="bold"
                 android:fontFamily="sans-serif-medium"
@@ -216,8 +216,8 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginStart="8dp"
-                android:text="Share"
-                android:textColor="#FFFFFFFF"
+                android:text="@string/report_share"
+                android:textColor="@color/white"
                 android:textSize="14sp"
                 android:fontFamily="sans-serif-medium"
                 android:letterSpacing="0.03" />
@@ -233,7 +233,7 @@
         android:layout_height="wrap_content"
         android:layout_gravity="bottom|center_horizontal"
         android:layout_marginBottom="36dp"
-        android:text="Swipe for details →"
+        android:text="@string/report_swipe_hint"
         android:textColor="#55FFFFFF"
         android:textSize="12sp"
         android:fontFamily="sans-serif"

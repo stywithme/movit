@@ -16,7 +16,7 @@ import com.trainingvalidator.poc.databinding.ActivityProgramListBinding
 import com.trainingvalidator.poc.storage.ProgramRepository
 import com.trainingvalidator.poc.training.models.ProgramConfig
 import androidx.appcompat.app.AppCompatDelegate
-import kotlinx.coroutines.CoroutineScope
+import androidx.lifecycle.lifecycleScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -53,7 +53,7 @@ class ProgramListActivity : AppCompatActivity() {
     }
 
     private fun loadPrograms() {
-        CoroutineScope(Dispatchers.Main).launch {
+        lifecycleScope.launch {
             val repository = ProgramRepository.getInstance(this@ProgramListActivity)
 
             withContext(Dispatchers.IO) {

@@ -757,6 +757,71 @@
     <string name="day_number_format">اليوم %1$d</string>
     <string name="rest_day_label">يوم راحة</string>
 
+    <!-- ProgramSessionActivity messages -->
+    <string name="error_day_not_found">اليوم غير موجود</string>
+    <string name="error_no_exercises">لا توجد تمارين في هذه الجلسة</string>
+    <string name="error_expand_session_first">افتح جلسة أولاً</string>
+
+    <!-- TrainingActivity messages -->
+    <string name="error_video_playback">خطأ في تشغيل الفيديو</string>
+    <string name="results_saved">تم حفظ النتائج!</string>
+    <string name="btn_saved">تم الحفظ ✓</string>
+    <string name="error_save_failed">فشل حفظ النتائج</string>
+    <string name="fps_format">FPS: %1$d</string>
+    <string name="training_target_format">الهدف: %1$s</string>
+    <string name="training_grace_periods_format">فترات السماح: %1$d</string>
+
+    <!-- Layout strings – Home -->
+    <string name="home_your_level_label">مستواك</string>
+    <string name="home_arrow">→</string>
+
+    <!-- Layout strings – State distribution -->
+    <string name="state_perfect_label">ممتاز</string>
+    <string name="state_normal_label">طبيعي</string>
+    <string name="state_warning_label">تحذير</string>
+    <string name="state_danger_label">خطر</string>
+
+    <!-- Layout strings – Train empty state -->
+    <string name="train_empty_subtitle">ابدأ رحلتك باختيار برنامج من تبويب الاستكشاف.</string>
+    <string name="train_go_to_explore">اذهب إلى الاستكشاف</string>
+
+    <!-- Layout strings – Explore hero card -->
+    <string name="explore_hero_featured_badge">مميز</string>
+    <string name="explore_hero_view_program">عرض البرنامج</string>
+
+    <!-- Layout strings – Pre-workout -->
+    <string name="camera_position_front">أمامي</string>
+    <string name="camera_position_side">جانبي</string>
+
+    <!-- Layout strings – Program day -->
+    <string name="program_day_week_plan_title">خطة الأسبوع</string>
+
+    <!-- Layout strings – Exercise list empty state -->
+    <string name="exercise_list_empty_emoji">🏋️</string>
+    <string name="exercise_list_empty_msg">لا توجد تمارين</string>
+    <string name="exercise_list_empty_hint">أضف ملفات JSON إلى assets/exercises/</string>
+
+    <!-- Layout strings – Improvement tip -->
+    <string name="improvement_next_focus">التركيز التالي</string>
+
+    <!-- Layout strings – Training settings dialog -->
+    <string name="indicator_line">📏 خط</string>
+    <string name="indicator_arc">⭕ قوس</string>
+
+    <!-- Layout strings – Report page -->
+    <string name="report_share">مشاركة</string>
+    <string name="report_swipe_hint">اسحب للتفاصيل →</string>
+
+    <!-- Layout strings – Program detail -->
+    <string name="program_syllabus_title">محتوى البرنامج</string>
+
+    <!-- Layout strings – Profile / Fragment -->
+    <string name="cd_stat_workouts">تمارين</string>
+    <string name="cd_stat_minutes">دقائق</string>
+
+    <!-- Layout strings – Item program session item -->
+    <string name="session_item_exercise_label">تمرين</string>
+
     <!-- Level / Plan -->
     <string name="loading_level">جاري تحميل مستواك…</string>
     <string name="loading_plan">جاري تحميل الخطة…</string>

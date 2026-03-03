@@ -15,7 +15,7 @@
         android:id="@+id/tvRepNumber"
         android:layout_width="32dp"
         android:layout_height="wrap_content"
-        android:textColor="#B0B0B0"
+        android:textColor="@color/text_secondary"
         android:textSize="14sp"
         android:gravity="center"
         tools:text="1"/>
@@ -35,7 +35,7 @@
         android:layout_width="0dp"
         android:layout_height="4dp"
         android:layout_weight="1"
-        android:background="#404040"
+        android:background="@color/surface_elevated"
         android:layout_marginHorizontal="8dp"/>
 
     <!-- Error Summary (if any) -->
@@ -43,10 +43,10 @@
         android:id="@+id/tvErrors"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:background="#33FFC107"
+        android:background="@color/warning_bg"
         android:paddingHorizontal="8dp"
         android:paddingVertical="2dp"
-        android:textColor="#FFC107"
+        android:textColor="@color/pro_gold_variant"
         android:textSize="11sp"
         android:visibility="gone"
         tools:visibility="visible"
@@ -57,7 +57,7 @@
         android:id="@+id/tvDuration"
         android:layout_width="48dp"
         android:layout_height="wrap_content"
-        android:textColor="#B0B0B0"
+        android:textColor="@color/text_secondary"
         android:textSize="12sp"
         android:gravity="end"
         android:layout_marginStart="8dp"

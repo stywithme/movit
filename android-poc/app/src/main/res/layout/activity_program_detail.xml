@@ -220,7 +220,7 @@
                 android:layout_height="wrap_content"
                 android:layout_marginHorizontal="24dp"
                 android:layout_marginBottom="16dp"
-                android:text="Program Syllabus"
+                android:text="@string/program_syllabus_title"
                 android:textColor="@color/text_primary" />
 
             <androidx.recyclerview.widget.RecyclerView
@@ -247,7 +247,7 @@
             style="@style/Widget.WayToFix.Button.Primary"
             android:layout_width="match_parent"
             android:layout_height="56dp"
-            android:text="Start Program"
+                android:text="@string/start_program"
             android:textSize="16sp" />
     </FrameLayout>
 
