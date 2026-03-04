@@ -2381,26 +2381,35 @@ class SkeletonOverlayView @JvmOverloads constructor(
     // ==================== Position Error Drawing ====================
     
     /**
-     * Draw visual indicator for position errors
-     * 
-     * SINGLE ERROR DISPLAY: Only shows the highest severity error to reduce clutter
-     * Priority: ERROR > WARNING > TIP
+     * Draw visual indicators for position errors.
+     *
+     * Shows up to two high-priority issues to improve guidance while keeping the
+     * overlay readable.
      */
     private fun drawPositionErrors(canvas: Canvas, landmarks: List<SmoothedLandmark>) {
-        // Select single highest priority error
-        val primaryError = getPrimaryPositionError() ?: return
-        
-        drawSinglePositionError(canvas, landmarks, primaryError)
+        val topErrors = getTopPositionErrors(limit = 2)
+        if (topErrors.isEmpty()) return
+
+        topErrors.forEach { error ->
+            drawSinglePositionError(canvas, landmarks, error)
+        }
     }
     
     /**
-     * Get the highest priority position error
-     * Priority: ERROR > WARNING > TIP
+     * Get top-priority position errors in descending severity.
      */
-    private fun getPrimaryPositionError(): PositionError? {
-        return positionErrors.firstOrNull { it.severity == CheckSeverity.ERROR }
-            ?: positionErrors.firstOrNull { it.severity == CheckSeverity.WARNING }
-            ?: positionErrors.firstOrNull()
+    private fun getTopPositionErrors(limit: Int): List<PositionError> {
+        if (positionErrors.isEmpty()) return emptyList()
+
+        return positionErrors
+            .sortedBy { severityRank(it.severity) }
+            .take(limit.coerceAtLeast(1))
+    }
+
+    private fun severityRank(severity: CheckSeverity): Int = when (severity) {
+        CheckSeverity.ERROR -> 0
+        CheckSeverity.WARNING -> 1
+        CheckSeverity.TIP -> 2
     }
     
     /**

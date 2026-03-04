@@ -22,6 +22,7 @@ import com.trainingvalidator.poc.training.feedback.FeedbackManager
 // NOTE: DifficultyType has been REMOVED - quality is now assessed via JointState
 // NOTE: ExerciseLoader and WorkoutLoader removed - using repository only (no assets fallback)
 import com.trainingvalidator.poc.training.models.ExerciseConfig
+import com.trainingvalidator.poc.training.models.JointRole
 import com.trainingvalidator.poc.storage.ExerciseRepository
 import com.trainingvalidator.poc.training.session.PauseReason
 import com.trainingvalidator.poc.training.session.SessionState
@@ -37,6 +38,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import kotlin.math.ceil
 
 /**
  * TrainingViewModel - Central state management for training
@@ -148,6 +150,11 @@ class TrainingViewModel(
     
     private var engineObserverJob: Job? = null
     private var supervisorObserverJob: Job? = null
+
+    // Countdown pose issue message throttling (prevents per-frame UI spam)
+    private var lastCountdownIssueTimeMs: Long = 0L
+    private var lastCountdownIssueKey: String? = null
+    private val countdownIssueCooldownMs: Long = 1200L
     
     // ==================== Initialization ====================
     
@@ -462,12 +469,29 @@ class TrainingViewModel(
                     }
 
                     SessionState.COUNTDOWN, SessionState.RESUME_COUNTDOWN -> {
-                        // Lightweight check: are angles still roughly in startPose?
-                        // This feeds the tolerant countdown — PoseInvalid signals are
-                        // handled with grace/freeze/cancel thresholds.
-                        val stillValid = isStartPoseRoughlyValid(action.angles)
+                        // During countdown we re-check scene (region/posture/direction)
+                        // and start pose to prevent starting from a drifted camera position.
+                        val setupResult = poseSetupGuide.validate(
+                            angles = action.angles,
+                            landmarks = action.landmarks,
+                            exerciseConfig = _exerciseConfig.value,
+                            poseVariantIndex = _poseVariantIndex.value,
+                            isFrontCamera = action.isFrontCamera
+                        )
+                        val hasSceneData = (action.landmarks?.size ?: 0) >= 33
+                        val sceneStillValid = hasSceneData && setupResult.phase == SetupPhase.ANGLES
+                        val startPoseStillValid = isStartPoseRoughlyValid(action.angles)
+                        val stillValid = sceneStillValid && startPoseStillValid
+
                         if (!stillValid) {
+                            if (shouldEmitCountdownPoseIssue(setupResult)) {
+                                viewModelScope.launch {
+                                    _events.emit(TrainingUIEvent.CountdownPoseIssue(setupResult))
+                                }
+                            }
                             supervisor.processSignal(SupervisorSignal.PoseInvalid)
+                        } else {
+                            resetCountdownPoseIssueThrottle()
                         }
                     }
 
@@ -477,6 +501,7 @@ class TrainingViewModel(
             
             // UI Commands
             is SupervisorAction.ShowSetupPose -> {
+                resetCountdownPoseIssueThrottle()
                 poseSetupGuide.reset()
                 viewModelScope.launch {
                     _events.emit(TrainingUIEvent.ShowSetupPose)
@@ -486,6 +511,7 @@ class TrainingViewModel(
             is SupervisorAction.StartCountdown -> {
                 // Speak confirmation once and start countdown
                 feedbackManager?.speakPoseConfirmed()
+                resetCountdownPoseIssueThrottle()
                 countdownController.start()
                 viewModelScope.launch {
                     _events.emit(TrainingUIEvent.StartCountdown)
@@ -493,6 +519,7 @@ class TrainingViewModel(
             }
 
             is SupervisorAction.CancelCountdown -> {
+                resetCountdownPoseIssueThrottle()
                 countdownController.cancel()
                 poseSetupGuide.reset()
                 viewModelScope.launch {
@@ -606,16 +633,64 @@ class TrainingViewModel(
         val tolerance = com.trainingvalidator.poc.training.config.SettingsManager
             .settings.setupValidation.closeThresholdDegrees.coerceAtLeast(10.0)
 
+        val totalTracked = variant.trackedJoints.size
+        if (totalTracked == 0) return true
+
+        val primaryJointCodes = variant.trackedJoints
+            .filter { it.role == JointRole.PRIMARY }
+            .map { it.joint }
+            .toSet()
+
+        // Require a reasonable portion of tracked joints to stay visible during countdown.
+        val minVisibleJoints = if (totalTracked == 1) 1 else {
+            ceil(totalTracked * 0.6).toInt().coerceAtLeast(2)
+        }
+
         var checkedCount = 0
+        var visiblePrimaryCount = 0
         for (joint in variant.trackedJoints) {
             val angle = angles.getAngle(joint.joint) ?: continue  // skip invisible joints
             checkedCount++
+
+            if (joint.joint in primaryJointCodes) {
+                visiblePrimaryCount++
+            }
+
             val min = joint.startPose.min - tolerance
             val max = joint.startPose.max + tolerance
             if (angle < min || angle > max) return false
         }
-        // If we couldn't see ANY joint at all, that's a problem
-        return checkedCount > 0
+
+        if (primaryJointCodes.isNotEmpty() && visiblePrimaryCount < primaryJointCodes.size) {
+            return false
+        }
+
+        return checkedCount >= minVisibleJoints
+    }
+
+    private fun shouldEmitCountdownPoseIssue(result: SetupResult): Boolean {
+        val key = when {
+            result.phase != SetupPhase.ANGLES -> "phase:${result.phase.name}"
+            result.worstJoint != null -> "joint:${result.worstJoint.jointCode}:${result.worstJoint.level.name}"
+            else -> "countdown:generic"
+        }
+
+        val now = SystemClock.uptimeMillis()
+        val sameKey = key == lastCountdownIssueKey
+        val cooldownPassed = (now - lastCountdownIssueTimeMs) >= countdownIssueCooldownMs
+
+        return if (!sameKey || cooldownPassed) {
+            lastCountdownIssueKey = key
+            lastCountdownIssueTimeMs = now
+            true
+        } else {
+            false
+        }
+    }
+
+    private fun resetCountdownPoseIssueThrottle() {
+        lastCountdownIssueTimeMs = 0L
+        lastCountdownIssueKey = null
     }
 
     // ==================== Engine Observers ====================
@@ -836,6 +911,9 @@ sealed class TrainingUIEvent {
 
     /** Countdown was frozen (user temporarily left position) */
     object CountdownFrozen : TrainingUIEvent()
+
+    /** Specific countdown guidance when pose drifts (phase/joint reason). */
+    data class CountdownPoseIssue(val result: SetupResult) : TrainingUIEvent()
 
     /** Countdown was unfrozen (user returned to position) */
     object CountdownUnfrozen : TrainingUIEvent()

@@ -1332,6 +1332,7 @@ class TrainingActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetection
                 binding.tvCountdown.setTextColor(
                     ContextCompat.getColor(this@TrainingActivity, R.color.text_primary)
                 )
+                binding.vignetteOverlay.clear()
             }
         })
     }
@@ -1592,6 +1593,10 @@ class TrainingActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetection
                 // Handled directly by CountdownController listener callbacks above
             }
 
+            is TrainingUIEvent.CountdownPoseIssue -> {
+                showCountdownPoseIssue(event.result)
+            }
+
             is TrainingUIEvent.CountdownUnfrozen -> {
                 // Handled directly by CountdownController listener callbacks above
             }
@@ -1817,6 +1822,23 @@ class TrainingActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetection
         binding.tvPhaseStep.visibility = View.GONE
         binding.jointGuidanceContainer.visibility = View.VISIBLE
         switchBottomBarToSetupMode()
+    }
+
+    /** Show a concise reason while countdown is frozen/canceling due pose drift. */
+    private fun showCountdownPoseIssue(result: SetupResult) {
+        val lang = viewModel.poseSetupGuide.language
+        val message = when {
+            result.phase != SetupPhase.ANGLES -> result.phaseMessage?.get(lang)
+            result.worstJoint != null -> result.worstJoint.message.get(lang)
+            else -> "Return to the start pose"
+        } ?: return
+
+        binding.glassmorphicMessage.showMessage(
+            message,
+            GlassmorphicMessageView.TYPE_WARNING,
+            1000
+        )
+        binding.vignetteOverlay.showWarning()
     }
 
     /**

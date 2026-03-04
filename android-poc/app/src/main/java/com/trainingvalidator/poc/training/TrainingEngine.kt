@@ -159,11 +159,13 @@ class TrainingEngine(
 
     /**
      * Per-check cooldown for emitting feedback events (visual overlay stays active, but events are throttled).
-     * Note: positionChecks may be null from Gson parsing even with default value
      */
-    @Suppress("UNNECESSARY_SAFE_CALL", "USELESS_ELVIS")
+    private val configuredPositionChecks: List<PositionCheck> = poseVariant.positionChecks
+
+    private val hasPositionChecksConfigured: Boolean = configuredPositionChecks.isNotEmpty()
+
     private val positionChecksById: Map<String, PositionCheck> =
-        (poseVariant.positionChecks ?: emptyList()).associateBy { it.id }
+        configuredPositionChecks.associateBy { it.id }
 
     private val lastPositionEventTimes = mutableMapOf<String, Long>()
     
@@ -175,7 +177,7 @@ class TrainingEngine(
     
     /**
      * Position validator for position-based checks (knee-over-toe, alignment, etc.)
-     * Null if no position checks are configured
+     * Always initialized (scene checks run even when positionChecks is empty)
      */
     private val resolvedPosePositionCode: String =
         poseVariant.posePosition ?: poseVariant.cameraPosition ?: "standing_side"
@@ -187,15 +189,11 @@ class TrainingEngine(
             PoseSceneExpectation.fromLegacyCode(resolvedPosePositionCode)
         }
 
-    @Suppress("UNNECESSARY_SAFE_CALL")
-    private val positionValidator: PositionValidator? =
-        poseVariant.positionChecks?.takeIf { it.isNotEmpty() }?.let {
-            PositionValidator(
-                positionChecks = it,
-                posePositionCode = resolvedPosePositionCode,
-                sceneExpectation = resolvedExpectation
-            )
-        }
+    private val positionValidator: PositionValidator = PositionValidator(
+        positionChecks = configuredPositionChecks,
+        posePositionCode = resolvedPosePositionCode,
+        sceneExpectation = resolvedExpectation
+    )
     
     // ==================== Visibility Monitor ====================
     
@@ -415,6 +413,13 @@ class TrainingEngine(
      */
     @Volatile
     private var currentFrameTimeMs: Long = 0L
+
+    /**
+     * True when frame timestamps come from an external timeline (e.g. video position)
+     * rather than uptime. Pause duration must follow the same timeline domain.
+     */
+    @Volatile
+    private var usesExternalFrameTimeline: Boolean = false
     
     /**
      * Flag to defer rep completion until after validation and error collection.
@@ -443,6 +448,18 @@ class TrainingEngine(
      */
     private fun nowMs(): Long {
         return if (currentFrameTimeMs > 0L) currentFrameTimeMs else SystemClock.uptimeMillis()
+    }
+
+    private fun pauseClockNowMs(): Long {
+        return if (usesExternalFrameTimeline) nowMs() else SystemClock.uptimeMillis()
+    }
+
+    private fun settlePauseDurationLocked() {
+        if (pauseStartTimeMs > 0L) {
+            val pausedFor = pauseClockNowMs() - pauseStartTimeMs
+            totalPausedDurationMs += maxOf(0L, pausedFor)
+            pauseStartTimeMs = 0L
+        }
     }
     
     /**
@@ -524,6 +541,7 @@ class TrainingEngine(
             isRunning = true
             isPaused = false
             currentFrameTimeMs = 0L
+            usesExternalFrameTimeline = false
             sessionStartTimeMs = 0L
             totalPausedDurationMs = 0L
             pauseStartTimeMs = 0L
@@ -531,7 +549,7 @@ class TrainingEngine(
             stateMachine.reset()
             repCounter.reset()
             holdTimer?.reset()
-            positionValidator?.clearCooldowns()
+            positionValidator.clearCooldowns()
             formValidator.reset()  // Reset zone hysteresis state
             lastPositionEventTimes.clear()
             // Camera warning throttle is now handled by MessageOrchestrator
@@ -574,8 +592,8 @@ class TrainingEngine(
         ))
         
         Log.d(TAG, "Training started (${if (isHoldExercise) "HOLD" else "REPS"} mode)")
-        if (positionValidator != null) {
-            Log.d(TAG, "Position checks enabled: ${poseVariant.positionChecks.size} checks")
+        if (hasPositionChecksConfigured) {
+            Log.d(TAG, "Position checks enabled: ${configuredPositionChecks.size} checks")
         }
     }
     
@@ -585,8 +603,10 @@ class TrainingEngine(
      */
     fun pause() {
         synchronized(stateLock) {
-            isPaused = true
-            pauseStartTimeMs = nowMs()
+            if (!isPaused) {
+                isPaused = true
+                pauseStartTimeMs = pauseClockNowMs()
+            }
         }
         emitEvent(FeedbackEvent.TrainingPaused(repCounter.count))
         Log.d(TAG, "Training paused at rep ${repCounter.count}")
@@ -598,10 +618,7 @@ class TrainingEngine(
      */
     fun resume() {
         synchronized(stateLock) {
-            if (pauseStartTimeMs > 0) {
-                totalPausedDurationMs += nowMs() - pauseStartTimeMs
-                pauseStartTimeMs = 0L
-            }
+            settlePauseDurationLocked()
             isPaused = false
         }
         emitEvent(FeedbackEvent.TrainingResumed())
@@ -622,6 +639,8 @@ class TrainingEngine(
      */
     fun resumeFromVisibilityPause() {
         synchronized(stateLock) {
+            settlePauseDurationLocked()
+
             // IMPORTANT:
             // Auto-pause is orchestrated by SessionSupervisor via PauseEngine -> TrainingEngine.pause()
             // So we must explicitly unpause here, otherwise processFrame() will keep returning early.
@@ -638,7 +657,7 @@ class TrainingEngine(
             formValidator.reset()
             
             // Clear position validation cooldowns
-            positionValidator?.clearCooldowns()
+            positionValidator.clearCooldowns()
             lastPositionEventTimes.clear()
             
             // Reset visibility-related state
@@ -676,7 +695,7 @@ class TrainingEngine(
             
             // If currently paused, add pending pause duration
             val pendingPause = if (isPaused && pauseStartTimeMs > 0) {
-                now - pauseStartTimeMs
+                pauseClockNowMs() - pauseStartTimeMs
             } else 0L
             
             actualDurationMs = maxOf(0L, totalElapsed - totalPausedDurationMs - pendingPause)
@@ -731,6 +750,8 @@ class TrainingEngine(
             // Update current frame time for deterministic timing
             val frameTimeMs = if (timestampMs > 0L) timestampMs else SystemClock.uptimeMillis()
             currentFrameTimeMs = frameTimeMs
+            usesExternalFrameTimeline =
+                timestampMs > 0L && kotlin.math.abs(SystemClock.uptimeMillis() - frameTimeMs) > 30_000L
             if (sessionStartTimeMs == 0L) {
                 sessionStartTimeMs = frameTimeMs
             }
@@ -796,7 +817,7 @@ class TrainingEngine(
             // For REP exercises: track during critical phases (BOTTOM/EXTENDED)
             // For HOLD exercises: track during COUNT phase (user is holding)
             val isCriticalPhase = when {
-                isHoldExercise -> currentPhase == Phase.COUNT && _holdState.value == HoldState.HOLDING
+                isHoldExercise -> currentPhase == Phase.COUNT
                 else -> currentPhase in listOf(Phase.BOTTOM, Phase.EXTENDED, Phase.COUNT)
             }
             
@@ -877,15 +898,18 @@ class TrainingEngine(
                 }
             }
             
-            // 8. Position validation (if landmarks provided and validator exists)
-            val positionValidation = if (landmarks != null && positionValidator != null) {
+            // 8. Position validation (if landmarks provided)
+            val positionValidation = if (landmarks != null) {
                 positionValidator.validate(landmarks, currentPhase, isBilateralFlipped, isFrontCamera)
             } else null
             
             // Update position-related state flows
-            positionValidation?.let {
-                _positionErrors.value = it.errors + it.warnings + it.tips
-                _sceneWarnings.value = it.sceneWarnings
+            if (positionValidation != null) {
+                _positionErrors.value = positionValidation.errors + positionValidation.warnings + positionValidation.tips
+                _sceneWarnings.value = positionValidation.sceneWarnings
+            } else {
+                _positionErrors.value = emptyList()
+                _sceneWarnings.value = emptyList()
             }
             
             // 9. Handle form errors (add to current rep)
@@ -1258,7 +1282,7 @@ class TrainingEngine(
     /**
      * Check if position validation is enabled for this exercise
      */
-    fun hasPositionChecks(): Boolean = positionValidator != null
+    fun hasPositionChecks(): Boolean = hasPositionChecksConfigured
     
     /**
      * Get current position errors
@@ -1269,7 +1293,7 @@ class TrainingEngine(
      * Get last detected camera result
      */
     fun getLastCameraResult(): CameraPositionDetector.CameraDetectionResult? = 
-        positionValidator?.getLastCameraResult()
+        positionValidator.getLastCameraResult()
     
     // ==================== Visibility Getters ====================
     

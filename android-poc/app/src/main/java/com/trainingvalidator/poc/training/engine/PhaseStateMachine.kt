@@ -106,7 +106,7 @@ class PhaseStateMachine(
      */
     var onRepCompleted: (() -> Unit)? = null
     
-    // Calculated thresholds from first primary joint's StateRanges
+    // Calculated thresholds aggregated across primary joints' StateRanges
     private val upRangeMin: Double
     private val upRangeMax: Double
     private val downRangeMin: Double
@@ -125,34 +125,22 @@ class PhaseStateMachine(
     
     
     init {
-        val joint = primaryJoints.first()
-        
-        // Use StateRanges to determine phase thresholds
-        // For phase detection, we use the EFFECTIVE bounds (outermost counted states)
-        if (joint.hasStateUpDownRanges()) {
-            val upRange = joint.getStateUpRange()
-            val downRange = joint.getStateDownRange()
-            
-            // upRangeMin = lowest min of counted states (pad/normal/perfect)
-            // This is where TRANSITION ends and UP_ZONE begins
-            upRangeMin = upRange.effectiveMin
-            
-            // upRangeMax = highest max (including warning/danger if defined)
-            upRangeMax = upRange.outermostMax
-            
-            // downRangeMin = lowest min (including warning/danger if defined)
-            downRangeMin = downRange.outermostMin
-            
-            // downRangeMax = highest max of counted states
-            // This is where DOWN_ZONE ends and TRANSITION begins
-            downRangeMax = downRange.effectiveMax
-        } else if (joint.hasStateHoldRange()) {
-            // For HOLD exercises with single range
-            val holdRange = joint.getStateHoldRange()
-            upRangeMin = holdRange.effectiveMin
-            upRangeMax = holdRange.outermostMax
-            downRangeMin = holdRange.outermostMin
-            downRangeMax = holdRange.effectiveMax
+        // Use StateRanges to determine phase thresholds.
+        // For multi-primary exercises, aggregate thresholds across all applicable joints
+        // so boundaries remain consistent with average-angle phase updates.
+        val upDownJoints = primaryJoints.filter { it.hasStateUpDownRanges() }
+        val holdRangeJoints = primaryJoints.filter { it.hasStateHoldRange() }
+
+        if (upDownJoints.isNotEmpty()) {
+            upRangeMin = upDownJoints.map { it.getStateUpRange().effectiveMin }.average()
+            upRangeMax = upDownJoints.map { it.getStateUpRange().outermostMax }.average()
+            downRangeMin = upDownJoints.map { it.getStateDownRange().outermostMin }.average()
+            downRangeMax = upDownJoints.map { it.getStateDownRange().effectiveMax }.average()
+        } else if (holdRangeJoints.isNotEmpty()) {
+            upRangeMin = holdRangeJoints.map { it.getStateHoldRange().effectiveMin }.average()
+            upRangeMax = holdRangeJoints.map { it.getStateHoldRange().outermostMax }.average()
+            downRangeMin = holdRangeJoints.map { it.getStateHoldRange().outermostMin }.average()
+            downRangeMax = holdRangeJoints.map { it.getStateHoldRange().effectiveMax }.average()
         } else {
             // Fallback defaults
             upRangeMin = 120.0

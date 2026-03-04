@@ -103,21 +103,19 @@ class PoseSetupGuide(
         }
 
         // ── Detect scene (3-axis) ────────────────────────────────────────
-        val validLandmarks = landmarks?.takeIf {
-            it.size >= 33 && SettingsManager.settings.setupValidation.cameraTipEnabled
-        }
+        val validLandmarks = landmarks?.takeIf { it.size >= 33 }
 
         val scene = validLandmarks?.let { sceneDetector.detect(it, isFrontCamera) }
         val axisMatch = if (scene != null) expectation.matchesScene(scene) else null
 
         // ── Determine current phase (first failing axis in priority order) ─
-        // When scene detection is unavailable, skip straight to ANGLES
+        // When scene detection is unavailable, keep user in REGION (not ANGLES).
         val phase: SetupPhase
         val phaseMessage: LocalizedText?
 
         if (axisMatch == null) {
-            phase = SetupPhase.ANGLES
-            phaseMessage = null
+            phase = SetupPhase.REGION
+            phaseMessage = buildRegionTip(expectation.regions)
         } else if (!axisMatch.regionMatch) {
             phase = SetupPhase.REGION
             phaseMessage = buildRegionTip(expectation.regions)
@@ -145,15 +143,29 @@ class PoseSetupGuide(
             emptyList()
         }
 
-        // Rolling window only counts when ALL scene axes pass AND all joints valid
-        val allJointsPresent = phase == SetupPhase.ANGLES &&
-                jointGuidances.size == variant.trackedJoints.size
-        val allJointsValid = allJointsPresent &&
-                jointGuidances.all { it.level == GuidanceLevel.GREEN }
-        jointWindow.add(allJointsValid)
+        // Rolling window: PRIMARY joints are required; visible secondary joints must be valid.
+        val guidanceByJoint = jointGuidances.associateBy { it.jointCode }
+        val requiredJointCodes = variant.trackedJoints
+            .filter { it.role == JointRole.PRIMARY }
+            .map { it.joint }
+            .ifEmpty { variant.trackedJoints.map { it.joint } }
+
+        val requiredJointsPresent = phase == SetupPhase.ANGLES &&
+                requiredJointCodes.all { guidanceByJoint.containsKey(it) }
+
+        val requiredJointsValid = requiredJointsPresent &&
+                requiredJointCodes.all { guidanceByJoint[it]?.level == GuidanceLevel.GREEN }
+
+        val visibleSecondaryGuidances = variant.trackedJoints
+            .filter { it.role != JointRole.PRIMARY }
+            .mapNotNull { guidanceByJoint[it.joint] }
+
+        val secondaryJointsValid = visibleSecondaryGuidances.all { it.level == GuidanceLevel.GREEN }
+
+        jointWindow.add(requiredJointsValid && secondaryJointsValid)
 
         // ── Camera guidance (for bottom bar VIEW card, backwards-compatible) ─
-        val cameraGuidance = if (scene != null) {
+        val cameraGuidance = if (scene != null && SettingsManager.settings.setupValidation.cameraTipEnabled) {
             buildSceneGuidance(scene, expectation)
         } else null
 
@@ -637,4 +649,3 @@ class RollingWindow(val size: Int, val required: Int) {
 
     fun reset() = frames.clear()
 }
-

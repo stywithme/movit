@@ -58,7 +58,7 @@ class PositionValidator(
         isBilateralFlipped: Boolean = false,
         isFrontCamera: Boolean = false
     ): PositionValidationResult {
-        if (landmarks.size < 33 || positionChecks.isEmpty()) {
+        if (landmarks.size < 33) {
             return PositionValidationResult.empty()
         }
         
