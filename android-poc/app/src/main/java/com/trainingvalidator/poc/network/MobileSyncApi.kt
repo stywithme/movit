@@ -185,12 +185,47 @@ interface MobileSyncApi {
     // ─── Progression Endpoints ──────────────────────────────────
 
     /**
-     * Get progression history (changes made by the Progression Engine).
+     * Get progression history (all changes made by the Progression Engine).
      */
     @GET("api/mobile/progression/history")
     suspend fun getProgressionHistory(
         @Header("Authorization") authorization: String
     ): Response<ProgressionHistoryResponse>
+
+    /**
+     * Get recent unseen progression changes — used for post-session notifications.
+     */
+    @GET("api/mobile/progression/recent")
+    suspend fun getRecentProgression(
+        @Header("Authorization") authorization: String
+    ): Response<ProgressionHistoryResponse>
+
+    /**
+     * Mark progression changes as seen/acknowledged.
+     */
+    @POST("api/mobile/progression/mark-seen")
+    suspend fun markProgressionSeen(
+        @Header("Authorization") authorization: String,
+        @Body payload: ProgressionMarkSeenRequest
+    ): Response<ProgressionMarkSeenResponse>
+
+    /**
+     * Get workout training configuration (full exercise data for the training engine).
+     */
+    @GET("api/mobile/workouts/{id}/training-config")
+    suspend fun getWorkoutTrainingConfig(
+        @Header("Authorization") authorization: String,
+        @Path("id") workoutId: String
+    ): Response<okhttp3.ResponseBody>
+
+    /**
+     * Upload a multi-exercise free session (Explore / Quick Start mode).
+     */
+    @POST("api/mobile/sessions/explore")
+    suspend fun uploadExploreSession(
+        @Header("Authorization") authorization: String,
+        @Body payload: Map<String, @JvmSuppressWildcards Any?>
+    ): Response<okhttp3.ResponseBody>
 
     // ─── Reassessment Endpoints ─────────────────────────────────
 

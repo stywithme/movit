@@ -1,8 +1,19 @@
 package com.trainingvalidator.poc.ui.programs
 
 import android.os.Bundle
+import android.util.Log
+import android.view.LayoutInflater
+import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
+import androidx.lifecycle.lifecycleScope
+import com.google.android.material.bottomsheet.BottomSheetDialog
 import com.trainingvalidator.poc.databinding.ActivityProgramSessionReportBinding
+import com.trainingvalidator.poc.network.ApiClient
+import com.trainingvalidator.poc.network.ProgressionMarkSeenRequest
+import com.trainingvalidator.poc.storage.AuthManager
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 /**
  * ProgramSessionReportActivity - Simple completion summary for a session
@@ -76,6 +87,10 @@ class ProgramSessionReportActivity : AppCompatActivity() {
         }
 
         binding.btnDone.setOnClickListener { finish() }
+
+        // Check for unseen progression changes and notify user
+        checkProgressionNotifications()
+
         binding.btnShare.setOnClickListener {
             val shareText = getString(
                 com.trainingvalidator.poc.R.string.session_share_text_format,
@@ -251,5 +266,70 @@ class ProgramSessionReportActivity : AppCompatActivity() {
             accuracy >= 70 -> getString(com.trainingvalidator.poc.R.string.quality_ok)
             else -> getString(com.trainingvalidator.poc.R.string.quality_keep_practicing)
         }
+    }
+
+    /**
+     * Fetches unseen progression changes from the server and shows a notification
+     * bottom sheet if there are any. Marks them as seen after display.
+     */
+    private fun checkProgressionNotifications() {
+        val authHeader = AuthManager.getAuthHeader(this) ?: return
+
+        lifecycleScope.launch {
+            try {
+                val response = withContext(Dispatchers.IO) {
+                    ApiClient.mobileSyncApi.getRecentProgression(authHeader)
+                }
+
+                if (!response.isSuccessful) return@launch
+                val changes = response.body()?.data ?: return@launch
+                if (changes.isEmpty()) return@launch
+
+                showProgressionSheet(changes.map { it.id to formatProgressionChange(it.field, it.previousValue, it.newValue) })
+
+                // Mark as seen
+                withContext(Dispatchers.IO) {
+                    runCatching {
+                        ApiClient.mobileSyncApi.markProgressionSeen(
+                            authHeader,
+                            ProgressionMarkSeenRequest(changes.map { it.id })
+                        )
+                    }
+                }
+            } catch (e: Exception) {
+                Log.w("ProgressionNotif", "Failed to check progression changes", e)
+            }
+        }
+    }
+
+    private fun formatProgressionChange(field: String, from: Double, to: Double): String {
+        val label = when (field) {
+            "weightKg" -> getString(com.trainingvalidator.poc.R.string.progression_field_weight)
+            "targetReps" -> getString(com.trainingvalidator.poc.R.string.progression_field_reps)
+            "sets" -> getString(com.trainingvalidator.poc.R.string.progression_field_sets)
+            else -> field
+        }
+        val arrow = if (to > from) "↑" else "↓"
+        return "$label: $from → $to $arrow"
+    }
+
+    private fun showProgressionSheet(changes: List<Pair<String, String>>) {
+        val dialog = BottomSheetDialog(this)
+        val view = LayoutInflater.from(this).inflate(
+            com.trainingvalidator.poc.R.layout.bottom_sheet_progression_notification, null
+        )
+        dialog.setContentView(view)
+
+        val tvTitle = view.findViewById<TextView>(com.trainingvalidator.poc.R.id.tvProgressionTitle)
+        val tvChanges = view.findViewById<TextView>(com.trainingvalidator.poc.R.id.tvProgressionChanges)
+        val btnGotIt = view.findViewById<com.google.android.material.button.MaterialButton>(
+            com.trainingvalidator.poc.R.id.btnProgressionGotIt
+        )
+
+        tvTitle.text = getString(com.trainingvalidator.poc.R.string.progression_sheet_title)
+        tvChanges.text = changes.joinToString("\n") { it.second }
+        btnGotIt.setOnClickListener { dialog.dismiss() }
+
+        dialog.show()
     }
 }

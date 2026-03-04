@@ -7,10 +7,12 @@ import {
   getExerciseHistory,
   getUserHomeStats,
   saveSession,
+  saveExploreSession,
   startProgramSessionReport,
   updateProgramSessionReport,
 } from './training-sessions.service';
 import type {
+  ExploreSessionUploadPayload,
   ProgramSessionCompletePayload,
   ProgramSessionStartPayload,
   SessionUploadPayload,
@@ -162,6 +164,42 @@ export class MobileSessionsController {
       console.error('[Program Sessions] Error reporting session:', error);
       res.status(500);
       return { success: false, error: error instanceof Error ? error.message : 'Failed to report session' };
+    }
+  }
+
+  /**
+   * POST /mobile/sessions/explore — Save a multi-exercise free session (Explore / Quick Start).
+   *
+   * All sessions in the payload share the same groupId so they can be
+   * retrieved and reported together as a single workout block.
+   */
+  @Post('explore')
+  async uploadExplore(
+    @Req() req: Request,
+    @Body() body: ExploreSessionUploadPayload,
+    @Res({ passthrough: true }) res: Response,
+  ) {
+    try {
+      const authResult = await verifyMobileToken(req);
+      if (!authResult.success || !authResult.userId) {
+        res.status(401);
+        return { success: false, error: authResult.error || 'Unauthorized' };
+      }
+
+      if (!body?.groupId || !Array.isArray(body?.sessions) || body.sessions.length === 0) {
+        res.status(400);
+        return { success: false, error: 'Missing required fields: groupId, sessions[]' };
+      }
+
+      const result = await saveExploreSession(authResult.userId, body);
+      return { success: true, data: result };
+    } catch (error) {
+      console.error('[Sessions] Error saving explore session:', error);
+      res.status(500);
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Failed to save explore session',
+      };
     }
   }
 

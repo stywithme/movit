@@ -113,10 +113,13 @@ async function resolveMetric(
     if (reports.length === 0) return null;
 
     const rates = reports.map((r) => {
-      if (!r.totalReps || r.totalReps === 0) return 100;
-      const planned = r.totalReps;
-      const done = r.completedSets ?? r.totalSets ?? 0;
-      return (r.avgAccuracy ?? (done / planned) * 100);
+      // Prefer avgAccuracy if available (already a percentage)
+      if (r.avgAccuracy != null && r.avgAccuracy > 0) return r.avgAccuracy;
+      // Fall back to sets completion rate: completedSets / totalSets * 100
+      const totalSets = r.totalSets ?? 0;
+      if (totalSets === 0) return 100;
+      const completedSets = r.completedSets ?? 0;
+      return (completedSets / totalSets) * 100;
     });
 
     return rates.reduce((sum, r) => sum + r, 0) / rates.length;
@@ -376,6 +379,77 @@ export const progressionService = {
       newValue: e.newValue,
       reason: e.reason,
       appliedAt: e.appliedAt.toISOString(),
+      seen: e.seen,
     }));
+  },
+
+  /**
+   * Get unseen progression changes for mobile notifications.
+   * Returns changes the user hasn't acknowledged yet.
+   */
+  async getRecent(userId: string): Promise<unknown[]> {
+    const prisma = await getPrisma();
+
+    const entries = await prisma.progressionHistory.findMany({
+      where: { userId, seen: false },
+      include: {
+        rule: { select: { name: true, exerciseSlug: true } },
+      },
+      orderBy: { appliedAt: 'desc' },
+      take: 10,
+    });
+
+    // Resolve exercise names for rules scoped to a specific exercise
+    const exerciseSlugs = [
+      ...new Set(entries.map((e) => e.rule.exerciseSlug).filter(Boolean) as string[]),
+    ];
+    const exerciseMap = new Map<string, Record<string, string>>();
+
+    if (exerciseSlugs.length > 0) {
+      const exercises = await prisma.exercise.findMany({
+        where: { slug: { in: exerciseSlugs } },
+        select: { slug: true, name: true },
+      });
+      for (const ex of exercises) {
+        exerciseMap.set(ex.slug, ex.name as Record<string, string>);
+      }
+    }
+
+    return entries.map((e) => {
+      const slug = e.rule.exerciseSlug ?? null;
+      return {
+        id: e.id,
+        ruleName: e.rule.name,
+        exerciseName: slug ? (exerciseMap.get(slug) ?? null) : null,
+        exerciseSlug: slug,
+        field: e.field,
+        previousValue: e.previousValue,
+        newValue: e.newValue,
+        reason: e.reason,
+        appliedAt: e.appliedAt.toISOString(),
+        seen: false,
+      };
+    });
+  },
+
+  /**
+   * Mark progression changes as seen (acknowledged by the user).
+   */
+  async markSeen(userId: string, ids: string[]): Promise<number> {
+    const prisma = await getPrisma();
+
+    const result = await prisma.progressionHistory.updateMany({
+      where: {
+        userId,
+        id: { in: ids },
+        seen: false,
+      },
+      data: {
+        seen: true,
+        seenAt: new Date(),
+      },
+    });
+
+    return result.count;
   },
 };

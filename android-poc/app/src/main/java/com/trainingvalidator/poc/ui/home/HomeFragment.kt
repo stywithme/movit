@@ -11,7 +11,9 @@ import androidx.lifecycle.lifecycleScope
 import com.trainingvalidator.poc.R
 import com.trainingvalidator.poc.assessment.ui.PreScreeningActivity
 import com.trainingvalidator.poc.databinding.FragmentHomeBinding
+import com.trainingvalidator.poc.network.HomeAlertData
 import com.trainingvalidator.poc.network.HomeData
+import com.trainingvalidator.poc.network.TrainModeData
 import com.trainingvalidator.poc.storage.AuthManager
 import com.trainingvalidator.poc.storage.HomeRepository
 import com.trainingvalidator.poc.ui.level.LevelProfileActivity
@@ -19,14 +21,23 @@ import com.trainingvalidator.poc.ui.main.MainContainerActivity
 import com.trainingvalidator.poc.ui.programs.PlanOverviewActivity
 import com.trainingvalidator.poc.ui.programs.ProgramDetailActivity
 import com.trainingvalidator.poc.ui.programs.ProgramSessionActivity
-import com.trainingvalidator.poc.ui.train.TrainingActivity
 import com.trainingvalidator.poc.ui.utils.currentLanguage
 import java.util.Calendar
 import kotlinx.coroutines.launch
 
 /**
- * HomeFragment - Main dashboard with stats and quick actions
- * Offline-first: cached content renders immediately, then background sync.
+ * HomeFragment — Command Center
+ *
+ * Offline-first: cached data renders immediately, then syncs from server.
+ * The entire UI is driven by `trainMode.status` from the enhanced home API.
+ *
+ * States handled:
+ *   no_assessment   → Prominent Body Scan CTA, Explore available
+ *   no_plan         → Assessment done, generating plan message
+ *   active          → Today's session card with START button
+ *   rest_day        → Rest day card with recovery tip
+ *   program_complete→ Level Up Challenge — reassessment prompt
+ *   reassessment_due→ Reassessment banner
  */
 class HomeFragment : Fragment() {
 
@@ -36,7 +47,7 @@ class HomeFragment : Fragment() {
 
     private var _binding: FragmentHomeBinding? = null
     private val binding get() = _binding!!
-    
+
     private lateinit var homeRepository: HomeRepository
 
     override fun onCreateView(
@@ -50,12 +61,12 @@ class HomeFragment : Fragment() {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-        
+
         homeRepository = HomeRepository.getInstance(requireContext())
-        
+
         setupGreeting()
         loadUserName()
-        setupListeners()
+        setupStaticListeners()
         loadData()
     }
 
@@ -63,9 +74,22 @@ class HomeFragment : Fragment() {
         super.onResume()
         if (_binding != null) {
             setupGreeting()
-            homeRepository.getCachedData()?.let { renderData(it) }
+            // Always sync from server on resume to reflect latest state
+            // (e.g. after Body Scan, after a training session, after plan enrollment)
+            viewLifecycleOwner.lifecycleScope.launch {
+                try {
+                    homeRepository.syncFromServer()?.let {
+                        if (_binding != null) renderData(it)
+                    }
+                } catch (e: Exception) {
+                    Log.w(TAG, "Resume home sync failed", e)
+                    homeRepository.getCachedData()?.let { renderData(it) }
+                }
+            }
         }
     }
+
+    // ── Initialization ────────────────────────────────────────────────────────
 
     private fun setupGreeting() {
         val hour = Calendar.getInstance().get(Calendar.HOUR_OF_DAY)
@@ -79,15 +103,12 @@ class HomeFragment : Fragment() {
 
     private fun loadUserName() {
         val name = AuthManager.getUserName(requireContext(), "Athlete")
-        val firstName = name.split(" ").firstOrNull() ?: name
-        binding.tvUserName.text = firstName
+        binding.tvUserName.text = name.split(" ").firstOrNull() ?: name
     }
-    
+
     private fun loadData() {
-        // Render cached data immediately
         homeRepository.getCachedData()?.let { renderData(it) }
 
-        // Sync from server in the background
         viewLifecycleOwner.lifecycleScope.launch {
             try {
                 homeRepository.syncFromServer()?.let {
@@ -98,73 +119,286 @@ class HomeFragment : Fragment() {
             }
         }
     }
-    
-    private fun renderData(data: HomeData) {
-        // 1. Render User Stats
-        val stats = data.userStats
-        if (stats != null) {
-            binding.tvWeeklyWorkouts.text = "${stats.weeklyWorkouts}"
-            val formText = if (stats.avgFormScore > 0) "${stats.avgFormScore.toInt()}%" else "--"
-            binding.tvFormScore.text = formText
-            binding.tvStreak.text = if (stats.streak > 0) "${stats.streak}\uD83D\uDD25" else "0"
-            binding.tvHomeReportSummary.text = getString(
-                R.string.home_report_summary_format,
-                stats.weeklyWorkouts,
-                formText,
-                stats.streak
-            )
-        } else {
-            val totalWorkouts = AuthManager.getTotalWorkouts(requireContext())
-            binding.tvWeeklyWorkouts.text = "$totalWorkouts"
-            binding.tvFormScore.text = "--"
-            binding.tvStreak.text = "0"
-            binding.tvHomeReportSummary.text = getString(R.string.home_report_summary_empty, totalWorkouts)
-        }
 
-        // 2. Render Level Profile
-        val profile = data.levelProfile
-        if (profile != null) {
-            val levelName = profile.levelInfo.name.en
-            val levelNumber = profile.overallLevel
+    // ── Rendering ─────────────────────────────────────────────────────────────
+
+    private fun renderData(data: HomeData) {
+        renderUserHeader(data)
+        renderStats(data)
+        renderTrainMode(data)
+        renderAlerts(data)
+    }
+
+    private fun renderUserHeader(data: HomeData) {
+        val user = data.user
+        val levelProfile = data.levelProfile // legacy fallback
+
+        if (user != null) {
+            if (user.level != null && user.bodyScore != null) {
+                binding.cardMyLevel.visibility = View.VISIBLE
+                binding.tvLevelName.text = getString(
+                    R.string.home_level_name_format,
+                    user.level,
+                    user.levelCode?.replaceFirstChar { it.uppercase() } ?: ""
+                )
+                binding.tvLevelScore.text = getString(
+                    R.string.home_level_score_format,
+                    user.bodyScore.toInt()
+                )
+                // Level progress bar (if available)
+                val progress = user.levelProgress ?: 0
+                binding.progressLevelBar.visibility = View.VISIBLE
+                binding.progressLevelBar.progress = progress
+
+                binding.cardMyLevel.setOnClickListener {
+                    startActivity(LevelProfileActivity.createIntent(requireContext()))
+                }
+            } else {
+                binding.cardMyLevel.visibility = View.GONE
+                binding.progressLevelBar.visibility = View.GONE
+            }
+        } else if (levelProfile != null) {
+            // Legacy fallback
+            val levelName = levelProfile.levelInfo.name.en
+            val levelNumber = levelProfile.overallLevel
             binding.cardMyLevel.visibility = View.VISIBLE
+            binding.progressLevelBar.visibility = View.GONE
             binding.tvLevelName.text = getString(R.string.home_level_name_format, levelNumber, levelName)
-            binding.tvLevelScore.text = getString(R.string.home_level_score_format, profile.bodyScore.toInt())
+            binding.tvLevelScore.text = getString(
+                R.string.home_level_score_format,
+                levelProfile.bodyScore.toInt()
+            )
             binding.cardMyLevel.setOnClickListener {
                 startActivity(LevelProfileActivity.createIntent(requireContext()))
             }
         } else {
             binding.cardMyLevel.visibility = View.GONE
+            binding.progressLevelBar.visibility = View.GONE
         }
+    }
 
-        // 3. Render Active Program
-        val activeProgram = data.activePlan?.programs?.firstOrNull { it.status == "active" }
-        val programInfo = activeProgram?.program
+    private fun renderStats(data: HomeData) {
+        val stats = data.stats
+        val legacyStats = data.userStats
+
+        val sessions = stats?.thisWeekSessions ?: legacyStats?.weeklyWorkouts ?: 0
+        val formScore = stats?.avgFormScore ?: legacyStats?.avgFormScore?.toInt() ?: 0
+        val streak = stats?.streak ?: legacyStats?.streak ?: 0
+
+        binding.tvWeeklyWorkouts.text = "$sessions"
+        binding.tvFormScore.text = if (formScore > 0) "$formScore%" else "--"
+        binding.tvStreak.text = if (streak > 0) "$streak\uD83D\uDD25" else "0"
+    }
+
+    private fun renderTrainMode(data: HomeData) {
+        val trainMode = data.trainMode
         val language = requireContext().currentLanguage
 
-        if (programInfo != null) {
-            val programName = programInfo.name[language] ?: programInfo.name["en"] ?: ""
+        if (trainMode == null) {
+            renderLegacyMode(data, language)
+            return
+        }
+
+        when (trainMode.status) {
+            "no_assessment" -> renderNoAssessmentState()
+            "no_plan"       -> renderNoPlanState()
+            "active"        -> renderActiveState(trainMode, language)
+            "rest_day"      -> renderRestDayState(trainMode)
+            "program_complete" -> renderProgramCompleteState(trainMode, language)
+            "reassessment_due" -> renderReassessmentDueState()
+            else            -> renderNoAssessmentState()
+        }
+    }
+
+    // ── TrainMode State Renderers ─────────────────────────────────────────────
+
+    private fun renderNoAssessmentState() {
+        hideAllTrainCards()
+        // Show a clear CTA card directing the new user to do their first Body Scan
+        binding.cardTodayPlan.visibility = View.VISIBLE
+        binding.tvTodayPlanLabel.text = getString(R.string.home_your_plan_label)
+        binding.tvTodayPlanTitle.text = getString(R.string.home_no_assessment_title)
+        binding.tvTodayPlanSubtitle.text = getString(R.string.home_no_assessment_subtitle)
+        binding.btnStartTodayPlan.visibility = View.VISIBLE
+        binding.btnStartTodayPlan.text = getString(R.string.start_body_scan)
+        binding.btnStartTodayPlan.setOnClickListener {
+            startActivity(Intent(requireContext(), com.trainingvalidator.poc.assessment.ui.PreScreeningActivity::class.java))
+        }
+        binding.tvSessionProgress.visibility = View.GONE
+    }
+
+    private fun renderNoPlanState() {
+        hideAllTrainCards()
+        binding.cardTodayPlan.visibility = View.VISIBLE
+        binding.tvTodayPlanLabel.text = getString(R.string.home_your_plan_label)
+        binding.tvTodayPlanTitle.text = getString(R.string.home_plan_generating_title)
+        binding.tvTodayPlanSubtitle.text = getString(R.string.home_plan_generating_subtitle)
+        binding.btnStartTodayPlan.visibility = View.GONE
+    }
+
+    private fun renderActiveState(trainMode: TrainModeData, language: String) {
+        val program = trainMode.activeProgram
+        val session = trainMode.todaySession
+
+        // Active program card
+        if (program != null) {
+            val programName = program.name[language] ?: program.name["en"] ?: ""
+            binding.cardActiveProgram.visibility = View.VISIBLE
+            binding.btnViewProgram.visibility = View.VISIBLE
+            binding.tvActiveProgramName.text = programName
+            binding.tvActiveProgramStats.text = getString(
+                R.string.program_week_progress_format,
+                program.weekNumber,
+                program.totalWeeks,
+                program.weekProgress.completed,
+                program.weekProgress.total
+            )
+            binding.btnViewProgram.setOnClickListener {
+                startActivity(PlanOverviewActivity.createIntent(requireContext()))
+            }
+        } else {
+            binding.cardActiveProgram.visibility = View.GONE
+        }
+
+        // Today's session card
+        if (session != null) {
+            val sessionName = session.name[language] ?: session.name["en"] ?: ""
+            binding.cardTodayPlan.visibility = View.VISIBLE
+            binding.tvTodayPlanLabel.text = getString(R.string.today_plan)
+            binding.tvTodayPlanTitle.text = getString(
+                R.string.today_plan_title_format,
+                program?.weekNumber ?: 1,
+                program?.dayNumber ?: 1
+            )
+            binding.tvTodayPlanSubtitle.text = if (session.estimatedMinutes != null) {
+                getString(
+                    R.string.today_plan_session_with_time_format,
+                    sessionName,
+                    session.exerciseCount,
+                    session.estimatedMinutes
+                )
+            } else {
+                getString(R.string.today_plan_session_format, sessionName, session.exerciseCount)
+            }
+            binding.btnStartTodayPlan.visibility = View.VISIBLE
+            binding.btnStartTodayPlan.text = getString(R.string.start_session)
+            binding.btnStartTodayPlan.setOnClickListener {
+                navigateToSession(session.sessionId, program, trainMode)
+            }
+
+            // Show session progress if multiple sessions
+            if (session.allSessionsCount > 1) {
+                binding.tvSessionProgress.visibility = View.VISIBLE
+                binding.tvSessionProgress.text = getString(
+                    R.string.session_progress_format,
+                    session.completedSessionsCount,
+                    session.allSessionsCount
+                )
+            } else {
+                binding.tvSessionProgress.visibility = View.GONE
+            }
+        } else {
+            binding.cardTodayPlan.visibility = View.GONE
+        }
+    }
+
+    private fun renderRestDayState(trainMode: TrainModeData) {
+        val program = trainMode.activeProgram
+        val language = requireContext().currentLanguage
+
+        if (program != null) {
+            val programName = program.name[language] ?: program.name["en"] ?: ""
+            binding.cardActiveProgram.visibility = View.VISIBLE
+            binding.btnViewProgram.visibility = View.VISIBLE
+            binding.tvActiveProgramName.text = programName
+            binding.tvActiveProgramStats.text = getString(
+                R.string.program_week_progress_format,
+                program.weekNumber,
+                program.totalWeeks,
+                program.weekProgress.completed,
+                program.weekProgress.total
+            )
+            binding.btnViewProgram.setOnClickListener {
+                startActivity(PlanOverviewActivity.createIntent(requireContext()))
+            }
+        }
+
+        binding.cardTodayPlan.visibility = View.VISIBLE
+        binding.tvTodayPlanLabel.text = getString(R.string.today_plan)
+        binding.tvTodayPlanTitle.text = getString(R.string.rest_day_title)
+        binding.tvTodayPlanSubtitle.text = getString(
+            if (trainMode.dayType == "active_recovery")
+                R.string.active_recovery_subtitle
+            else
+                R.string.rest_day_subtitle
+        )
+        binding.btnStartTodayPlan.visibility = View.GONE
+        binding.tvSessionProgress.visibility = View.GONE
+    }
+
+    private fun renderProgramCompleteState(trainMode: TrainModeData, language: String) {
+        val program = trainMode.activeProgram
+
+        if (program != null) {
+            val programName = program.name[language] ?: program.name["en"] ?: ""
             binding.cardActiveProgram.visibility = View.VISIBLE
             binding.tvActiveProgramName.text = programName
+            binding.tvActiveProgramStats.text = getString(R.string.program_complete_label)
+            binding.btnViewProgram.visibility = View.GONE
+        }
+
+        binding.cardTodayPlan.visibility = View.VISIBLE
+        binding.tvTodayPlanLabel.text = getString(R.string.home_your_plan_label)
+        binding.tvTodayPlanTitle.text = getString(R.string.program_complete_cta_title)
+        binding.tvTodayPlanSubtitle.text = getString(R.string.program_complete_cta_subtitle)
+        binding.btnStartTodayPlan.visibility = View.VISIBLE
+        binding.btnStartTodayPlan.text = getString(R.string.start_reassessment)
+        binding.btnStartTodayPlan.setOnClickListener {
+            startActivity(Intent(requireContext(), PreScreeningActivity::class.java))
+        }
+        binding.tvSessionProgress.visibility = View.GONE
+    }
+
+    private fun renderReassessmentDueState() {
+        hideAllTrainCards()
+        binding.cardTodayPlan.visibility = View.VISIBLE
+        binding.tvTodayPlanLabel.text = getString(R.string.home_your_plan_label)
+        binding.tvTodayPlanTitle.text = getString(R.string.reassessment_due_title)
+        binding.tvTodayPlanSubtitle.text = getString(R.string.reassessment_due_subtitle)
+        binding.btnStartTodayPlan.visibility = View.VISIBLE
+        binding.btnStartTodayPlan.text = getString(R.string.start_reassessment)
+        binding.btnStartTodayPlan.setOnClickListener {
+            startActivity(Intent(requireContext(), PreScreeningActivity::class.java))
+        }
+        binding.tvSessionProgress.visibility = View.GONE
+    }
+
+    // ── Legacy mode (before API upgrade) ─────────────────────────────────────
+
+    private fun renderLegacyMode(data: HomeData, language: String) {
+        val activeProgram = data.activePlan?.programs?.firstOrNull { it.status == "active" }
+        val programInfo = activeProgram?.program
+
+        if (programInfo != null) {
+            binding.cardActiveProgram.visibility = View.VISIBLE
+            binding.tvActiveProgramName.text =
+                programInfo.name[language] ?: programInfo.name["en"] ?: ""
             binding.tvActiveProgramStats.text = getString(
                 R.string.program_stats_format,
                 programInfo.durationWeeks,
                 activeProgram.progress.completedDays
             )
             binding.btnViewProgram.setOnClickListener {
-                val intent = Intent(requireContext(), ProgramDetailActivity::class.java).apply {
-                    putExtra(ProgramDetailActivity.EXTRA_PROGRAM_SLUG, programInfo.slug)
-                }
-                startActivity(intent)
-            }
-            binding.cardActiveProgram.setOnLongClickListener {
-                startActivity(PlanOverviewActivity.createIntent(requireContext()))
-                true
+                startActivity(
+                    Intent(requireContext(), ProgramDetailActivity::class.java).apply {
+                        putExtra(ProgramDetailActivity.EXTRA_PROGRAM_SLUG, programInfo.slug)
+                    }
+                )
             }
         } else {
             binding.cardActiveProgram.visibility = View.GONE
         }
 
-        // 4. Render Today's Plan
         val currentProgram = data.todayPlan?.currentProgram
         if (currentProgram != null && !currentProgram.isRestDay && currentProgram.sessions.isNotEmpty()) {
             val firstSession = currentProgram.sessions.firstOrNull { !it.isCompleted }
@@ -176,20 +410,19 @@ class HomeFragment : Fragment() {
                     currentProgram.weekNumber,
                     currentProgram.dayNumber
                 )
-                binding.tvTodayPlanSubtitle.text = getString(
-                    R.string.today_plan_session_format,
-                    sessionName,
-                    firstSession.itemCount
-                )
+                binding.tvTodayPlanSubtitle.text =
+                    getString(R.string.today_plan_session_format, sessionName, firstSession.itemCount)
+                binding.btnStartTodayPlan.visibility = View.VISIBLE
                 binding.btnStartTodayPlan.setOnClickListener {
-                    val intent = Intent(requireContext(), ProgramSessionActivity::class.java).apply {
-                        putExtra(ProgramSessionActivity.EXTRA_PROGRAM_SLUG, programInfo.slug)
-                        putExtra(ProgramSessionActivity.EXTRA_PROGRAM_ID, programInfo.id)
-                        putExtra(ProgramSessionActivity.EXTRA_WEEK_NUMBER, currentProgram.weekNumber)
-                        putExtra(ProgramSessionActivity.EXTRA_DAY_NUMBER, currentProgram.dayNumber)
-                        putExtra(ProgramSessionActivity.EXTRA_TARGET_SESSION_ID, firstSession.id)
-                    }
-                    startActivity(intent)
+                    startActivity(
+                        Intent(requireContext(), ProgramSessionActivity::class.java).apply {
+                            putExtra(ProgramSessionActivity.EXTRA_PROGRAM_SLUG, programInfo.slug)
+                            putExtra(ProgramSessionActivity.EXTRA_PROGRAM_ID, programInfo.id)
+                            putExtra(ProgramSessionActivity.EXTRA_WEEK_NUMBER, currentProgram.weekNumber)
+                            putExtra(ProgramSessionActivity.EXTRA_DAY_NUMBER, currentProgram.dayNumber)
+                            putExtra(ProgramSessionActivity.EXTRA_TARGET_SESSION_ID, firstSession.id)
+                        }
+                    )
                 }
             } else {
                 binding.cardTodayPlan.visibility = View.GONE
@@ -199,36 +432,102 @@ class HomeFragment : Fragment() {
         }
     }
 
-    private fun setupListeners() {
-        binding.cardContinue.setOnClickListener {
-            // Navigate to last exercise
+    // ── Alerts ────────────────────────────────────────────────────────────────
+
+    private fun renderAlerts(data: HomeData) {
+        val alerts = data.alerts
+        if (alerts.isNullOrEmpty()) {
+            binding.cardAlert.visibility = View.GONE
+            return
         }
 
-        binding.btnContinue.setOnClickListener {
-            // Start training
-            startActivity(Intent(requireContext(), TrainingActivity::class.java))
-        }
+        val topAlert = alerts.first()
+        val language = requireContext().currentLanguage
+        binding.cardAlert.visibility = View.VISIBLE
+        binding.tvAlertTitle.text = if (language == "ar") topAlert.titleAr else topAlert.titleEn
+        binding.tvAlertMessage.text = if (language == "ar") topAlert.messageAr else topAlert.messageEn
 
+        binding.cardAlert.setOnClickListener {
+            handleAlertAction(topAlert)
+        }
+    }
+
+    private fun handleAlertAction(alert: HomeAlertData) {
+        when (alert.type) {
+            "reassessment_due" ->
+                startActivity(Intent(requireContext(), PreScreeningActivity::class.java))
+            "progression_applied" ->
+                (activity as? MainContainerActivity)?.navigateToTab(R.id.nav_train)
+            else -> Unit
+        }
+    }
+
+    // ── Navigation ────────────────────────────────────────────────────────────
+
+    private fun navigateToSession(
+        sessionId: String,
+        program: com.trainingvalidator.poc.network.TrainActiveProgramData?,
+        trainMode: TrainModeData
+    ) {
+        val weekNumber = trainMode.activeProgram?.weekNumber ?: 1
+        val dayNumber = trainMode.activeProgram?.dayNumber ?: 1
+
+        // Use cached active plan for program slug/id
+        val cachedData = homeRepository.getCachedData()
+        val activePlanProgram = cachedData?.activePlan?.programs?.firstOrNull { it.status == "active" }
+        val programInfo = activePlanProgram?.program
+
+        if (programInfo != null) {
+            startActivity(
+                Intent(requireContext(), ProgramSessionActivity::class.java).apply {
+                    putExtra(ProgramSessionActivity.EXTRA_PROGRAM_SLUG, programInfo.slug)
+                    putExtra(ProgramSessionActivity.EXTRA_PROGRAM_ID, programInfo.id)
+                    putExtra(ProgramSessionActivity.EXTRA_WEEK_NUMBER, weekNumber)
+                    putExtra(ProgramSessionActivity.EXTRA_DAY_NUMBER, dayNumber)
+                    putExtra(ProgramSessionActivity.EXTRA_TARGET_SESSION_ID, sessionId)
+                }
+            )
+        } else {
+            // Fallback to plan overview
+            startActivity(PlanOverviewActivity.createIntent(requireContext()))
+        }
+    }
+
+    // ── Static Listeners ──────────────────────────────────────────────────────
+
+    private fun setupStaticListeners() {
         binding.cardBodyScan.setOnClickListener {
             startActivity(Intent(requireContext(), PreScreeningActivity::class.java))
         }
 
         binding.cardStartCamera.setOnClickListener {
-            // Navigate to train
-            (activity as? MainContainerActivity)?.navigateToTab(R.id.nav_train)
+            (activity as? MainContainerActivity)?.navigateToTab(R.id.nav_explore)
         }
 
         binding.cardAnalyzeVideo.setOnClickListener {
-            // Open video picker
+            (activity as? MainContainerActivity)?.navigateToTab(R.id.nav_explore)
         }
 
         binding.ivAvatar.setOnClickListener {
-            startActivity(Intent(requireContext(), com.trainingvalidator.poc.ui.profile.ProfileActivity::class.java))
+            startActivity(
+                Intent(requireContext(), com.trainingvalidator.poc.ui.profile.ProfileActivity::class.java)
+            )
         }
 
         binding.btnOpenReports.setOnClickListener {
             (activity as? MainContainerActivity)?.navigateToTab(R.id.nav_reports)
         }
+
+        // Hidden legacy buttons — kept to avoid crash if old layout is cached
+        binding.cardContinue.setOnClickListener { /* no-op */ }
+        binding.btnContinue.setOnClickListener { /* no-op */ }
+    }
+
+    // ── Helpers ───────────────────────────────────────────────────────────────
+
+    private fun hideAllTrainCards() {
+        binding.cardActiveProgram.visibility = View.GONE
+        binding.cardTodayPlan.visibility = View.GONE
     }
 
     override fun onDestroyView() {

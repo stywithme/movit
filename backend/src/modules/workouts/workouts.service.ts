@@ -408,4 +408,127 @@ export const workoutService = {
       .map((w) => this.buildWorkoutExport(w))
       .filter((w): w is WorkoutExport => w !== null);
   },
+
+  /**
+   * Get full training configuration for a workout.
+   * Returns everything the mobile training engine needs to run the workout:
+   * exercise data, pose variants, tracking config, position checks, etc.
+   */
+  async getTrainingConfig(workoutId: string) {
+    const prisma = await getPrisma();
+
+    const workout = await prisma.workout.findUnique({
+      where: { id: workoutId, status: 'published', deletedAt: null },
+      include: {
+        exercises: {
+          orderBy: { sortOrder: 'asc' },
+          include: {
+            exercise: {
+              include: {
+                poseVariants: {
+                  orderBy: { sortOrder: 'asc' },
+                  include: {
+                    posePosition: {
+                      select: { id: true, code: true, name: true, postures: true, directions: true },
+                    },
+                    difficultyLevels: {
+                      orderBy: { sortOrder: 'asc' },
+                      include: { difficultyType: { select: { code: true, name: true } } },
+                    },
+                    positionChecks: {
+                      orderBy: { sortOrder: 'asc' },
+                    },
+                    messageAssignments: {
+                      include: { message: { select: { content: true, category: true, context: true } } },
+                    },
+                  },
+                },
+                attributes: {
+                  include: { attributeValue: { select: { code: true, name: true } } },
+                },
+              },
+            },
+          },
+        },
+      },
+    });
+
+    if (!workout) return null;
+
+    return {
+      id: workout.id,
+      slug: workout.slug,
+      name: workout.name as Record<string, string>,
+      description: (workout.description ?? null) as Record<string, string> | null,
+      coverImageUrl: workout.coverImageUrl,
+      difficulty: workout.difficulty,
+      estimatedDurationMin: workout.estimatedDurationMin,
+      exercises: workout.exercises.map((we) => ({
+        workoutExerciseId: we.id,
+        sortOrder: we.sortOrder,
+        variantIndex: we.variantIndex,
+        difficulty: we.difficulty,
+        targetReps: we.targetReps,
+        targetDuration: we.targetDuration,
+        sets: we.sets,
+        restBetweenSetsMs: we.restBetweenSetsMs,
+        restAfterExerciseMs: we.restAfterExerciseMs,
+        weightKg: we.weightKg,
+        weightPerSet: (we.weightPerSet as number[]) ?? null,
+        notes: (we.notes ?? null) as Record<string, string> | null,
+        exercise: {
+          id: we.exercise.id,
+          slug: we.exercise.slug,
+          name: we.exercise.name as Record<string, string>,
+          instructions: (we.exercise.instructions ?? null) as Record<string, string> | null,
+          countingMethodId: we.exercise.countingMethodId,
+          repCountingConfig: we.exercise.repCountingConfig,
+          supportsWeight: we.exercise.supportsWeight,
+          isBilateral: we.exercise.isBilateral,
+          bilateralConfig: we.exercise.bilateralConfig,
+          reportMetrics: we.exercise.reportMetrics,
+          poseVariants: we.exercise.poseVariants.map((pv) => ({
+            id: pv.id,
+            name: pv.name as Record<string, string>,
+            sortOrder: pv.sortOrder,
+            trackedJointsConfig: pv.trackedJointsConfig,
+            referenceImageUrl: pv.referenceImageUrl,
+            posePosition: pv.posePosition,
+            difficultyLevels: pv.difficultyLevels.map((dl) => ({
+              id: dl.id,
+              difficultyCode: dl.difficultyType.code,
+              difficultyName: dl.difficultyType.name as Record<string, string>,
+              repCountingConfig: dl.repCountingConfig,
+              phases: dl.phases,
+              romConfig: dl.romConfig,
+            })),
+            positionChecks: pv.positionChecks.map((pc) => ({
+              checkId: pc.checkId,
+              type: pc.type,
+              landmarks: pc.landmarks,
+              condition: pc.condition,
+              activePhases: pc.activePhases,
+              errorMessage: pc.errorMessage as Record<string, string>,
+              severity: pc.severity,
+              cooldownMs: pc.cooldownMs,
+              minErrorFrames: pc.minErrorFrames,
+            })),
+            feedbackMessages: pv.messageAssignments.map((ma) => ({
+              target: ma.target,
+              context: ma.context,
+              jointCode: ma.jointCode,
+              zone: ma.zone,
+              checkId: ma.checkId,
+              content: ma.message.content as Record<string, string>,
+              category: ma.message.category,
+            })),
+          })),
+          attributes: we.exercise.attributes.map((a) => ({
+            code: a.attributeValue.code,
+            name: a.attributeValue.name as Record<string, string>,
+          })),
+        },
+      })),
+    };
+  },
 };

@@ -912,12 +912,17 @@ model ProgressionHistory {
   reason        String // Human-readable explanation
   appliedAt     DateTime @default(now())
 
+  // Notification tracking — whether the user has seen this change in the app
+  seen      Boolean  @default(false)
+  seenAt    DateTime?
+
   user User            @relation(fields: [userId], references: [id], onDelete: Cascade)
   rule ProgressionRule @relation(fields: [ruleId], references: [id], onDelete: Cascade)
 
   @@index([userId])
   @@index([ruleId])
   @@index([userId, appliedAt])
+  @@index([userId, seen])
   @@map("progression_history")
 }
 
@@ -1099,6 +1104,15 @@ model TrainingSession {
   weightKg   Float?
   weightUnit String @default("kg") // kg or lbs
 
+  // Session context — tracks the source/mode of the session
+  context   String @default("free") // free | program | assessment | explore_workout | quick_start
+
+  // Grouping — links sessions done together in Explore/Quick Start mode
+  groupId   String? // Shared ID for sessions performed in the same multi-exercise free session
+
+  // Source workout — if session was started from a Workout template
+  workoutId String?
+
   // Legacy report data (images, danger alerts, etc.)
   legacyReport Json? // PostTrainingReport for backward compatibility
 
@@ -1118,6 +1132,8 @@ model TrainingSession {
   @@index([exerciseId])
   @@index([timestamp])
   @@index([userId, exerciseId])
+  @@index([groupId])
+  @@index([context])
   @@map("training_sessions")
 }
 

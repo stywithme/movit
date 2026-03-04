@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:padding="@dimen/spacing_xl"
+    android:background="@color/surface">
+
+    <!-- Icon + Title -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center_vertical"
+        android:layout_marginBottom="@dimen/spacing_base">
+
+        <ImageView
+            android:layout_width="32dp"
+            android:layout_height="32dp"
+            android:src="@drawable/ic_trending_up"
+            app:tint="@color/primary"
+            android:layout_marginEnd="@dimen/spacing_sm"
+            android:contentDescription="@null"
+            xmlns:app="http://schemas.android.com/apk/res-auto" />
+
+        <TextView
+            android:id="@+id/tvProgressionTitle"
+            style="@style/TextAppearance.WayToFix.Headline3"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:textColor="@color/text_primary"
+            tools:text="Training Plan Adjusted" />
+
+    </LinearLayout>
+
+    <TextView
+        style="@style/TextAppearance.WayToFix.Caption"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="@string/progression_sheet_subtitle"
+        android:textColor="@color/text_secondary"
+        android:layout_marginBottom="@dimen/spacing_lg" />
+
+    <!-- Changes list -->
+    <TextView
+        android:id="@+id/tvProgressionChanges"
+        style="@style/TextAppearance.WayToFix.Body2"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:textColor="@color/text_primary"
+        android:lineSpacingExtra="6dp"
+        android:background="@color/surface_variant"
+        android:padding="@dimen/spacing_base"
+        android:layout_marginBottom="@dimen/spacing_xl"
+        tools:text="Weight: 10.0 → 12.5 ↑&#10;Reps: 12.0 → 14.0 ↑" />
+
+    <com.google.android.material.button.MaterialButton
+        android:id="@+id/btnProgressionGotIt"
+        style="@style/Widget.WayToFix.Button.Primary"
+        android:layout_width="match_parent"
+        android:layout_height="52dp"
+        android:text="@string/progression_sheet_got_it" />
+
+</LinearLayout>

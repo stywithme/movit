@@ -105,10 +105,17 @@ class WorkoutDetailActivity : AppCompatActivity() {
         // Timeline
         setupTimeline(config)
 
-        // Start button (template only)
-        binding.btnStartWorkout.text = getString(R.string.workout_template_only)
+        // Start workout — launches WorkoutSessionActivity for full multi-exercise training
+        binding.btnStartWorkout.text = getString(R.string.start_workout)
         binding.btnStartWorkout.setOnClickListener {
-            showTemplateNotice()
+            startWorkoutSession(config)
+        }
+
+        // Customize button — launches WorkoutCustomizeActivity to reorder/edit before starting
+        binding.btnCustomizeWorkout.visibility = View.VISIBLE
+        binding.btnCustomizeWorkout.setOnClickListener {
+            val intent = WorkoutCustomizeActivity.createIntent(this, config)
+            startActivity(intent)
         }
     }
 
@@ -191,15 +198,20 @@ class WorkoutDetailActivity : AppCompatActivity() {
         return items
     }
 
+    private fun startWorkoutSession(config: WorkoutConfig) {
+        val intent = WorkoutSessionActivity.createIntent(
+            context = this,
+            workoutConfig = config,
+            workoutId = null, // local workout — no backend ID yet
+            sessionContext = "explore_workout"
+        )
+        startActivity(intent)
+    }
+
     private fun formatDifficulty(difficulty: String): String {
         if (difficulty.isBlank()) return getString(R.string.workout_detail_default_difficulty)
         val normalized = difficulty.replace('_', ' ').lowercase()
         return normalized.replaceFirstChar { if (it.isLowerCase()) it.titlecase() else it.toString() }
-    }
-
-    private fun showTemplateNotice() {
-        Toast.makeText(this, getString(R.string.workout_template_only_message), Toast.LENGTH_LONG)
-            .show()
     }
 
     // ==================== Timeline Data Models ====================

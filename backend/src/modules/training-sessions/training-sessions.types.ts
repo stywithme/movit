@@ -74,9 +74,36 @@ export interface SessionUploadPayload {
   weightUnit: string;
   repMetrics: RepMetricsData[];
   sessionMetrics: SessionMetrics | null;
-  
+
+  // Context — source/mode of this session
+  context?: string;         // free | program | assessment | explore_workout | quick_start
+
+  // Grouping — shared ID for multi-exercise free sessions
+  groupId?: string;
+
+  // Source workout template (if applicable)
+  workoutId?: string;
+
   // Legacy report (optional - for backward compatibility)
   legacyReport?: LegacyReportData;
+}
+
+// ============================================
+// Explore Session Upload (multi-exercise free session)
+// ============================================
+
+export interface ExploreSessionUploadPayload {
+  groupId: string;                        // Client-generated UUID linking all sessions
+  workoutId?: string;                     // If started from a workout template
+  isCustomized?: boolean;                 // If user modified the workout
+  context: 'explore_workout' | 'quick_start';
+  sessions: (SessionUploadPayload & { context: string; groupId: string; workoutId?: string })[];
+}
+
+export interface ExploreSessionResponse {
+  groupId: string;
+  savedCount: number;
+  sessions: { id: string; exerciseId: string; totalReps: number }[];
 }
 
 // ============================================

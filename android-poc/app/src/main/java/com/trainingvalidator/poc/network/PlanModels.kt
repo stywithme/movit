@@ -132,11 +132,28 @@ data class ProgressionHistoryResponse(
 data class ProgressionEntryData(
     val id: String,
     val ruleName: String,
+    val exerciseName: Map<String, String>? = null,
+    val exerciseSlug: String? = null,
     val field: String,
     val previousValue: Double,
     val newValue: Double,
     val reason: String,
-    val appliedAt: String
+    val appliedAt: String,
+    val seen: Boolean = true
+)
+
+data class ProgressionMarkSeenRequest(
+    val ids: List<String>
+)
+
+data class ProgressionMarkSeenResponse(
+    val success: Boolean,
+    val data: ProgressionMarkSeenData? = null,
+    val error: String? = null
+)
+
+data class ProgressionMarkSeenData(
+    val markedCount: Int
 )
 
 // ── Reassessment ──

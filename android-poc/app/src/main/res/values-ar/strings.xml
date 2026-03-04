@@ -112,9 +112,62 @@
     <string name="week_duration_format">الوقت: %1$s</string>
     <string name="duration_hours_minutes_format">%1$d س %2$d د</string>
     <string name="today_plan_title_format">الأسبوع %1$d · اليوم %2$d</string>
-    <string name="today_plan_session_format">%1$s • %2$d عناصر</string>
+    <string name="today_plan_session_format">%1$s • %2$d تمرين</string>
+    <string name="today_plan_session_with_time_format">%1$s • %2$d تمرين • %3$d دقيقة</string>
     <string name="view_program">عرض البرنامج</string>
-    <string name="program_stats_format">%1$d أسابيع · %2$d جلسات</string>
+    <string name="program_stats_format">%1$d أسابيع · %2$d جلسات منجزة</string>
+    <string name="program_week_progress_format">الأسبوع %1$d من %2$d · %3$d/%4$d أيام</string>
+    <string name="session_progress_format">الجلسة %1$d من %2$d</string>
+
+    <!-- Home Train Mode States -->
+    <string name="home_your_plan_label">خطة التدريب</string>
+    <string name="home_no_assessment_title">ابدأ رحلتك</string>
+    <string name="home_no_assessment_subtitle">أكمل فحص الجسم للحصول على مستواك الرياضي وبرنامج مصمم خصيصاً لك.</string>
+    <string name="start_body_scan">ابدأ فحص الجسم</string>
+    <string name="home_plan_generating_title">جارٍ إعداد خطتك…</string>
+    <string name="home_plan_generating_subtitle">نقوم بتخصيص برنامجك. سيستغرق ذلك لحظة.</string>
+    <string name="rest_day_title">يوم راحة</string>
+    <string name="rest_day_subtitle">جسمك ينمو أثناء الراحة. حافظ على الترطيب والتمدد.</string>
+    <string name="active_recovery_subtitle">نشاط خفيف اليوم — تمشِّ أو تمدد أو استخدم الاسطوانة.</string>
+    <string name="program_complete_label">البرنامج مكتمل ✓</string>
+    <string name="program_complete_cta_title">تحدي رفع المستوى</string>
+    <string name="program_complete_cta_subtitle">أنهيت البرنامج! قم بـ Body Scan لقياس تقدمك وفتح المستوى التالي.</string>
+    <string name="reassessment_due_title">حان وقت إعادة التقييم</string>
+    <string name="reassessment_due_subtitle">أكمل Body Scan لتحديث مستواك والحصول على خطة جديدة.</string>
+    <string name="start_reassessment">ابدأ Body Scan</string>
+
+    <!-- Workout Session -->
+    <string name="start_workout">ابدأ التمرين</string>
+    <string name="workout_session_progress_format">تمرين %1$d من %2$d</string>
+    <string name="great_job">أحسنت!</string>
+    <string name="error_workout_not_found">لم يتم العثور على التمرين</string>
+    <string name="exit_workout_title">خروج من التمرين؟</string>
+    <string name="exit_workout_message">أكملت بعض التمارين. سيتم حفظ النتائج.</string>
+    <string name="exit_confirm">خروج وحفظ</string>
+
+    <!-- Workout Customize -->
+    <string name="workout_customize_summary_format">%1$d تمرين · %2$d مجموعة · ~%3$d دقيقة</string>
+    <string name="workout_customize_empty_error">أضف تمريناً واحداً على الأقل للبدء</string>
+    <string name="workout_customize_edit_sets">المجموعات</string>
+    <string name="workout_customize_edit_reps">التكرارات</string>
+    <string name="workout_customize_edit_rest">الراحة (ثانية)</string>
+
+    <!-- Common labels -->
+    <string name="rest">راحة</string>
+
+    <!-- Progression Notification -->
+    <string name="progression_sheet_title">تم تعديل التدريب</string>
+    <string name="progression_sheet_subtitle">بناءً على أدائك، قمنا بتحديث جلستك القادمة:</string>
+    <string name="progression_sheet_got_it">فهمت!</string>
+    <string name="progression_field_weight">الوزن</string>
+    <string name="progression_field_reps">التكرارات</string>
+    <string name="progression_field_sets">المجموعات</string>
+
+    <!-- Quick Start -->
+    <string name="quick_start_title">ابدأ الآن</string>
+    <string name="quick_start_select_prompt">اختر التمارين</string>
+    <string name="quick_start_button_format">ابدأ %1$d تمارين</string>
+    <string name="quick_start_select_error">اختر تمريناً واحداً على الأقل للبدء</string>
     
     <!-- Accessibility -->
     <string name="cd_profile">الملف الشخصي</string>

@@ -1,0 +1,156 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.cardview.widget.CardView
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:layout_marginHorizontal="@dimen/screen_padding_horizontal"
+    android:layout_marginVertical="@dimen/spacing_xs"
+    app:cardBackgroundColor="@color/surface"
+    app:cardCornerRadius="@dimen/radius_base"
+    app:cardElevation="0dp">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center_vertical"
+        android:padding="@dimen/spacing_base">
+
+        <!-- Drag handle -->
+        <ImageView
+            android:layout_width="24dp"
+            android:layout_height="24dp"
+            android:src="@drawable/ic_drag_handle"
+            app:tint="@color/text_tertiary"
+            android:layout_marginEnd="@dimen/spacing_sm"
+            android:contentDescription="@null" />
+
+        <!-- Number -->
+        <TextView
+            android:id="@+id/tvExerciseNumber"
+            style="@style/TextAppearance.WayToFix.Caption"
+            android:layout_width="24dp"
+            android:layout_height="24dp"
+            android:gravity="center"
+            android:background="@drawable/bg_chip_outline"
+            android:textColor="@color/primary"
+            android:layout_marginEnd="@dimen/spacing_sm"
+            tools:text="1" />
+
+        <!-- Name -->
+        <TextView
+            android:id="@+id/tvExerciseName"
+            style="@style/TextAppearance.WayToFix.Body2"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:textColor="@color/text_primary"
+            android:textStyle="bold"
+            tools:text="Push-up" />
+
+        <!-- Sets chip -->
+        <LinearLayout
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:gravity="center"
+            android:layout_marginStart="@dimen/spacing_xs"
+            android:background="@drawable/bg_chip_outline"
+            android:paddingHorizontal="@dimen/spacing_sm"
+            android:paddingVertical="@dimen/spacing_xs">
+
+            <TextView
+                android:id="@+id/tvSets"
+                style="@style/TextAppearance.WayToFix.Headline3"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:textColor="@color/primary"
+                android:gravity="center"
+                tools:text="3" />
+
+            <TextView
+                style="@style/TextAppearance.WayToFix.Caption"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/sets"
+                android:textColor="@color/text_tertiary"
+                android:gravity="center" />
+
+        </LinearLayout>
+
+        <!-- Reps chip -->
+        <LinearLayout
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:gravity="center"
+            android:layout_marginStart="@dimen/spacing_xs"
+            android:background="@drawable/bg_chip_outline"
+            android:paddingHorizontal="@dimen/spacing_sm"
+            android:paddingVertical="@dimen/spacing_xs">
+
+            <TextView
+                android:id="@+id/tvReps"
+                style="@style/TextAppearance.WayToFix.Headline3"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:textColor="@color/text_primary"
+                android:gravity="center"
+                tools:text="12" />
+
+            <TextView
+                style="@style/TextAppearance.WayToFix.Caption"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/reps"
+                android:textColor="@color/text_tertiary"
+                android:gravity="center" />
+
+        </LinearLayout>
+
+        <!-- Rest chip -->
+        <LinearLayout
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:gravity="center"
+            android:layout_marginStart="@dimen/spacing_xs"
+            android:background="@drawable/bg_chip_outline"
+            android:paddingHorizontal="@dimen/spacing_sm"
+            android:paddingVertical="@dimen/spacing_xs">
+
+            <TextView
+                android:id="@+id/tvRest"
+                style="@style/TextAppearance.WayToFix.Headline3"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:textColor="@color/text_secondary"
+                android:gravity="center"
+                tools:text="60s" />
+
+            <TextView
+                style="@style/TextAppearance.WayToFix.Caption"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/rest"
+                android:textColor="@color/text_tertiary"
+                android:gravity="center" />
+
+        </LinearLayout>
+
+        <!-- Remove button -->
+        <ImageButton
+            android:id="@+id/btnRemove"
+            android:layout_width="32dp"
+            android:layout_height="32dp"
+            android:layout_marginStart="@dimen/spacing_sm"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:src="@drawable/ic_delete"
+            app:tint="@color/error"
+            android:contentDescription="@string/delete" />
+
+    </LinearLayout>
+
+</androidx.cardview.widget.CardView>

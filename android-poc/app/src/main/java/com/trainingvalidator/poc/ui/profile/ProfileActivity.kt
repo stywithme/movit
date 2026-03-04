@@ -16,6 +16,7 @@ import com.trainingvalidator.poc.network.ApiClient
 import com.trainingvalidator.poc.network.LogoutRequest
 import com.trainingvalidator.poc.network.UpdateSettingsRequest
 import com.trainingvalidator.poc.storage.AuthManager
+import com.trainingvalidator.poc.storage.UserDataCleaner
 import com.trainingvalidator.poc.ui.auth.SignInActivity
 import com.trainingvalidator.poc.ui.debug.DebugActivity
 import kotlinx.coroutines.Dispatchers
@@ -183,6 +184,8 @@ class ProfileActivity : AppCompatActivity() {
                 }
             }
 
+            // Clear all user-specific caches before auth data to prevent data leakage
+            UserDataCleaner.clearAll(this@ProfileActivity)
             AuthManager.clearAuthData(this@ProfileActivity)
             startActivity(Intent(this@ProfileActivity, SignInActivity::class.java).apply {
                 flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK

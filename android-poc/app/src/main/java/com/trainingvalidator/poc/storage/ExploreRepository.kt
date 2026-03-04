@@ -32,6 +32,11 @@ class ExploreRepository private constructor(private val context: Context) {
                 instance ?: ExploreRepository(context.applicationContext).also { instance = it }
             }
         }
+
+        /** Resets the singleton so a new user gets a fresh instance after logout. */
+        fun resetInstance() {
+            synchronized(this) { instance = null }
+        }
     }
 
     private val prefs by lazy { context.getSharedPreferences(PREFS, Context.MODE_PRIVATE) }

@@ -1,0 +1,100 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/background">
+
+    <!-- Header -->
+    <LinearLayout
+        android:id="@+id/header"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center_vertical"
+        android:paddingHorizontal="@dimen/screen_padding_horizontal"
+        android:paddingTop="@dimen/spacing_3xl"
+        android:paddingBottom="@dimen/spacing_lg"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintStart_toStartOf="parent">
+
+        <ImageButton
+            android:id="@+id/btnBack"
+            android:layout_width="40dp"
+            android:layout_height="40dp"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:src="@drawable/ic_arrow_back"
+            android:contentDescription="@string/back" />
+
+        <TextView
+            android:id="@+id/tvWorkoutTitle"
+            style="@style/TextAppearance.WayToFix.Headline3"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:layout_marginStart="@dimen/spacing_sm"
+            android:textColor="@color/text_primary"
+            android:maxLines="1"
+            android:ellipsize="end"
+            tools:text="Upper Body Blast" />
+
+        <TextView
+            android:id="@+id/tvProgress"
+            style="@style/TextAppearance.WayToFix.Body2"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:textColor="@color/text_tertiary"
+            tools:text="1 of 4" />
+
+    </LinearLayout>
+
+    <!-- Progress bar -->
+    <ProgressBar
+        android:id="@+id/progressBar"
+        style="?android:attr/progressBarStyleHorizontal"
+        android:layout_width="match_parent"
+        android:layout_height="4dp"
+        android:max="4"
+        android:progress="1"
+        android:progressTint="@color/primary"
+        android:progressBackgroundTint="@color/surface_border"
+        app:layout_constraintTop_toBottomOf="@id/header"
+        app:layout_constraintStart_toStartOf="parent" />
+
+    <!-- Transition overlay — shown between exercises -->
+    <LinearLayout
+        android:id="@+id/layoutTransition"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:gravity="center"
+        android:padding="@dimen/spacing_2xl"
+        android:visibility="gone"
+        app:layout_constraintTop_toBottomOf="@id/progressBar"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        tools:visibility="gone">
+
+        <TextView
+            style="@style/TextAppearance.WayToFix.Headline2"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/great_job"
+            android:textColor="@color/text_primary"
+            android:gravity="center" />
+
+        <TextView
+            android:id="@+id/tvNextExercise"
+            style="@style/TextAppearance.WayToFix.Body1"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="@dimen/spacing_sm"
+            android:textColor="@color/text_secondary"
+            android:gravity="center"
+            tools:text="Next: Push-up" />
+
+    </LinearLayout>
+
+</androidx.constraintlayout.widget.ConstraintLayout>

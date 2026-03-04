@@ -8,6 +8,8 @@
 import { getPrisma } from '@/lib/prisma/client';
 import { levelProfileService } from '@/modules/level-profile/level-profile.service';
 import { reassessmentService } from '@/modules/reassessment/reassessment.service';
+import { prescriptionService } from '@/modules/prescription/prescription.service';
+import { activePlanService } from '@/modules/active-plan/active-plan.service';
 import type { BodyScanResultCreate, BodyScanProgress, DomainScores } from './assessment.types';
 
 // Minimum Detectable Change threshold (points) for "real" improvement
@@ -64,7 +66,39 @@ export const assessmentService = {
       console.warn('[Assessment] Failed to mark reassessment:', error);
     }
 
-    return result;
+    // Phase 4: Auto-prescription — if user has no active program, recommend and auto-enroll
+    let autoPrescription: { programId: string; programName: Record<string, string>; enrolled: boolean } | null = null;
+    try {
+      const prisma = await getPrisma();
+
+      // Check if user already has an active plan with a program
+      const existingPlan = await prisma.activePlan.findUnique({
+        where: { userId: data.userId },
+        include: {
+          programs: { where: { status: 'active' } },
+        },
+      });
+
+      const hasActiveProgram = existingPlan?.programs.length ? existingPlan.programs.length > 0 : false;
+
+      if (!hasActiveProgram) {
+        const prescription = await prescriptionService.recommend(data.userId);
+
+        if (prescription.recommendedProgram) {
+          await activePlanService.enrollProgram(data.userId, prescription.recommendedProgram.id);
+          autoPrescription = {
+            programId: prescription.recommendedProgram.id,
+            programName: prescription.recommendedProgram.name,
+            enrolled: true,
+          };
+          console.log(`[Assessment] Auto-enrolled user ${data.userId} in program ${prescription.recommendedProgram.id}`);
+        }
+      }
+    } catch (error) {
+      console.warn('[Assessment] Auto-prescription failed (non-fatal):', error);
+    }
+
+    return { ...result, autoPrescription };
   },
 
   /**

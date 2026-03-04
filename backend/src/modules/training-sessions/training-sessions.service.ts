@@ -11,6 +11,8 @@ import { intX10ToFloat } from '@/lib/metrics';
 import { progressionService } from '@/modules/progression/progression.service';
 import {
   SessionUploadPayload,
+  ExploreSessionUploadPayload,
+  ExploreSessionResponse,
   TrainingSessionResponse,
   ExerciseHistoryResponse,
   ExerciseHistoryItem,
@@ -28,7 +30,8 @@ import {
 
 export async function saveSession(
   userId: string,
-  payload: SessionUploadPayload
+  payload: SessionUploadPayload,
+  skipStatsUpdate = false,
 ): Promise<TrainingSessionResponse> {
   // Validate exercise exists (search by id OR slug)
   let exercise = await prisma.exercise.findUnique({
@@ -64,6 +67,9 @@ export async function saveSession(
         invalidReps: payload.invalidReps,
         weightKg: payload.weightKg,
         weightUnit: payload.weightUnit,
+        context: payload.context ?? 'free',
+        groupId: payload.groupId ?? null,
+        workoutId: payload.workoutId ?? null,
         legacyReport: payload.legacyReport as any,
       },
       update: {
@@ -72,6 +78,9 @@ export async function saveSession(
         countedReps: payload.countedReps,
         invalidReps: payload.invalidReps,
         weightKg: payload.weightKg,
+        context: payload.context ?? 'free',
+        groupId: payload.groupId ?? null,
+        workoutId: payload.workoutId ?? null,
         legacyReport: payload.legacyReport as any,
       },
     });
@@ -129,8 +138,10 @@ export async function saveSession(
     return session;
   });
 
-  // Update user stats
-  await updateUserStats(userId);
+  // Update user stats (skipped for bulk saves — caller updates once at the end)
+  if (!skipStatsUpdate) {
+    await updateUserStats(userId);
+  }
 
   console.log(`[Sessions] Saved session ${result.id}:`, {
     totalReps: result.totalReps,
@@ -139,6 +150,46 @@ export async function saveSession(
 
   // Fetch complete session for response
   return getSession(userId, result.id) as Promise<TrainingSessionResponse>;
+}
+
+// ============================================
+// Save Explore Session (multi-exercise free session)
+// ============================================
+
+export async function saveExploreSession(
+  userId: string,
+  payload: ExploreSessionUploadPayload,
+): Promise<ExploreSessionResponse> {
+  const savedSessions: { id: string; exerciseId: string; totalReps: number }[] = [];
+
+  // Save each exercise session without triggering a stats update per session.
+  // A single stats update is issued after all sessions are persisted.
+  for (const sessionPayload of payload.sessions) {
+    const enriched: SessionUploadPayload = {
+      ...sessionPayload,
+      context: payload.context,
+      groupId: payload.groupId,
+      workoutId: payload.workoutId,
+    };
+
+    const saved = await saveSession(userId, enriched, /* skipStatsUpdate */ true);
+    savedSessions.push({
+      id: saved.id,
+      exerciseId: saved.exerciseId,
+      totalReps: saved.totalReps,
+    });
+  }
+
+  // Single stats update after the full workout is saved
+  if (savedSessions.length > 0) {
+    await updateUserStats(userId);
+  }
+
+  return {
+    groupId: payload.groupId,
+    savedCount: savedSessions.length,
+    sessions: savedSessions,
+  };
 }
 
 // ============================================

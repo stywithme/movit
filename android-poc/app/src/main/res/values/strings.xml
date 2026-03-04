@@ -112,9 +112,61 @@
     <string name="week_duration_format">Time: %1$s</string>
     <string name="duration_hours_minutes_format">%1$dh %2$dm</string>
     <string name="today_plan_title_format">Week %1$d · Day %2$d</string>
-    <string name="today_plan_session_format">%1$s • %2$d items</string>
+    <string name="today_plan_session_format">%1$s • %2$d exercises</string>
+    <string name="today_plan_session_with_time_format">%1$s • %2$d exercises • %3$d min</string>
     <string name="view_program">View Program</string>
-    <string name="program_stats_format">%1$d weeks · %2$d sessions</string>
+    <string name="program_stats_format">%1$d weeks · %2$d sessions done</string>
+    <string name="program_week_progress_format">Week %1$d of %2$d · %3$d/%4$d days done</string>
+    <string name="session_progress_format">Session %1$d of %2$d</string>
+
+    <!-- Home Train Mode States -->
+    <string name="home_your_plan_label">Your Training Plan</string>
+    <string name="home_no_assessment_title">Start Your Journey</string>
+    <string name="home_no_assessment_subtitle">Complete a Body Scan to get your personal fitness level and a program built just for you.</string>
+    <string name="start_body_scan">Take Body Scan</string>
+    <string name="home_plan_generating_title">Building Your Plan…</string>
+    <string name="home_plan_generating_subtitle">We are personalizing your program. This takes just a moment.</string>
+    <string name="rest_day_title">Rest Day</string>
+    <string name="rest_day_subtitle">Your body grows during rest. Stay hydrated and stretch.</string>
+    <string name="active_recovery_subtitle">Light activity today — walk, stretch, or foam roll.</string>
+    <string name="program_complete_label">Program Complete ✓</string>
+    <string name="program_complete_cta_title">Level Up Challenge</string>
+    <string name="program_complete_cta_subtitle">You finished the program! Take the Body Scan to measure your progress and unlock the next level.</string>
+    <string name="reassessment_due_title">Time for Reassessment</string>
+    <string name="reassessment_due_subtitle">Complete a Body Scan to update your level and get a new personalized plan.</string>
+    <string name="start_reassessment">Start Body Scan</string>
+
+    <!-- Workout Session -->
+    <string name="start_workout">Start Workout</string>
+    <string name="workout_session_progress_format">Exercise %1$d of %2$d</string>
+    <string name="great_job">Great job!</string>
+    <string name="error_workout_not_found">Workout not found</string>
+    <string name="exit_workout_title">Exit Workout?</string>
+    <string name="exit_workout_message">You\'ve completed some exercises. Results will still be saved.</string>
+    <string name="exit_confirm">Exit &amp; Save</string>
+
+    <!-- Workout Customize -->
+    <string name="workout_customize_summary_format">%1$d exercises · %2$d sets · ~%3$d min</string>
+    <string name="workout_customize_empty_error">Add at least one exercise to start training</string>
+    <string name="workout_customize_edit_sets">Sets</string>
+    <string name="workout_customize_edit_reps">Reps</string>
+    <string name="workout_customize_edit_rest">Rest (seconds)</string>
+
+    <!-- Common labels (sets/reps defined in Workout Detail section below) -->
+
+    <!-- Progression Notification -->
+    <string name="progression_sheet_title">Training Adjusted</string>
+    <string name="progression_sheet_subtitle">Based on your performance, we\'ve updated your next session:</string>
+    <string name="progression_sheet_got_it">Got it!</string>
+    <string name="progression_field_weight">Weight</string>
+    <string name="progression_field_reps">Reps</string>
+    <string name="progression_field_sets">Sets</string>
+
+    <!-- Quick Start -->
+    <string name="quick_start_title">Quick Start</string>
+    <string name="quick_start_select_prompt">Select Exercises</string>
+    <string name="quick_start_button_format">Start %1$d Exercise(s)</string>
+    <string name="quick_start_select_error">Select at least one exercise to start</string>
     <string name="history">History</string>
     
     <!-- Accessibility -->
@@ -306,6 +358,7 @@
     <string name="workout_detail_timeline">Workout Timeline</string>
     <string name="workout_detail_rounds">Rounds</string>
     <string name="sets">Sets</string>
+    <string name="rest">Rest</string>
     <string name="workout_detail_start_workout">Start Workout</string>
     <string name="workout_template_only">Template Only</string>
     <string name="workout_template_only_message">This workout is a template. Use Programs to train.</string>
