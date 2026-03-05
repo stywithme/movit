@@ -1,10 +1,14 @@
-import { Body, Controller, Delete, Get, Param, Post, Put, Query, Res } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, Post, Put, Query, Res, UseGuards } from '@nestjs/common';
 import type { Response } from 'express';
 import { adminsService } from './admins.service';
+import { CaslGuard } from '@/lib/casl/casl.guard';
+import { CheckPermission } from '@/lib/casl/check-permission.decorator';
 
+@UseGuards(CaslGuard)
 @Controller('admins')
 export class AdminsController {
   @Get()
+  @CheckPermission('read', 'Admin')
   async list(
     @Query('status') status?: string,
     @Query('search') search?: string,
@@ -35,6 +39,7 @@ export class AdminsController {
   }
 
   @Post()
+  @CheckPermission('create', 'Admin')
   async create(@Body() body: any, @Res({ passthrough: true }) res: Response) {
     try {
       if (!body?.name || !body?.email || !body?.password) {
@@ -51,7 +56,7 @@ export class AdminsController {
         name: body.name,
         email: body.email,
         password: body.password,
-        role: body.role || 'admin',
+        roleId: body.roleId || null,
       });
 
       res.status(201);
@@ -68,6 +73,7 @@ export class AdminsController {
   }
 
   @Get(':id')
+  @CheckPermission('read', 'Admin')
   async getById(@Param('id') id: string, @Res({ passthrough: true }) res: Response) {
     try {
       const admin = await adminsService.getById(id);
@@ -84,17 +90,18 @@ export class AdminsController {
   }
 
   @Put(':id')
+  @CheckPermission('update', 'Admin')
   async update(@Param('id') id: string, @Body() body: any) {
     try {
       const admin =
         body?.isActive !== undefined
           ? await adminsService.setActive(id, Boolean(body.isActive))
           : await adminsService.update(id, {
-              name: body?.name,
-              email: body?.email,
-              role: body?.role,
-              isActive: body?.isActive,
-            });
+            name: body?.name,
+            email: body?.email,
+            roleId: body?.roleId,
+            isActive: body?.isActive,
+          });
 
       return { success: true, data: admin };
     } catch (error) {
@@ -104,6 +111,7 @@ export class AdminsController {
   }
 
   @Put(':id/password')
+  @CheckPermission('update', 'Admin')
   async updatePassword(@Param('id') id: string, @Body() body: any, @Res({ passthrough: true }) res: Response) {
     try {
       if (!body?.password || String(body.password).length < 6) {
@@ -121,6 +129,7 @@ export class AdminsController {
   }
 
   @Delete(':id')
+  @CheckPermission('delete', 'Admin')
   async remove(@Param('id') id: string, @Res({ passthrough: true }) res: Response) {
     try {
       await adminsService.delete(id);

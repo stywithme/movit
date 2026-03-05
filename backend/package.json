@@ -24,6 +24,7 @@
     "test:e2e": "jest --config ./test/jest-e2e.json"
   },
   "dependencies": {
+    "@casl/ability": "^6.8.0",
     "@google-cloud/storage": "^7.19.0",
     "@google/genai": "^1.40.0",
     "@nestjs/bullmq": "^11.0.4",

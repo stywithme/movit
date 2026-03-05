@@ -17,21 +17,46 @@ import type {
 const SALT_ROUNDS = 12;
 const RESET_TOKEN_EXPIRY_HOURS = 1;
 
-function toAdminPublic(admin: {
+type AdminWithRole = {
   id: string;
   email: string;
   name: string;
-  role: string;
+  isSuperAdmin: boolean;
   isActive: boolean;
   createdAt: Date;
-}): AdminPublic {
+  modelHasRoles?: {
+    roleId: string;
+    role: {
+      permissions: {
+        permission: {
+          action: string;
+          subject: string;
+        }
+      }[]
+    }
+  }[];
+};
+
+function toAdminPublic(admin: AdminWithRole): AdminPublic {
+  const firstRoleObj = admin.modelHasRoles?.[0];
+  const roleId = firstRoleObj?.roleId || null;
+  const role = firstRoleObj?.role;
+
+  const permissions = admin.isSuperAdmin
+    ? [{ action: 'manage', subject: 'all' }]
+    : role?.permissions.map(rp => ({
+      action: rp.permission.action,
+      subject: rp.permission.subject,
+    })) || [];
   return {
     id: admin.id,
     email: admin.email,
     name: admin.name,
-    role: admin.role,
+    roleId,
+    isSuperAdmin: admin.isSuperAdmin,
     isActive: admin.isActive,
     createdAt: admin.createdAt,
+    permissions,
   };
 }
 
@@ -59,7 +84,25 @@ export const adminAuthService = {
       throw new Error('Invalid email or password');
     }
 
-    return toAdminPublic(admin);
+    const mhr = await prisma.modelHasRole.findFirst({
+      where: { modelId: admin.id, modelType: 'Admin' },
+      include: {
+        role: {
+          include: {
+            permissions: {
+              include: { permission: true }
+            }
+          }
+        }
+      }
+    });
+
+    return toAdminPublic({
+      ...admin,
+      modelHasRoles: mhr ? [mhr] : []
+    });
+
+
   },
 
   /**
@@ -73,7 +116,24 @@ export const adminAuthService = {
     });
 
     if (!admin) return null;
-    return toAdminPublic(admin);
+
+    const mhr = await prisma.modelHasRole.findFirst({
+      where: { modelId: admin.id, modelType: 'Admin' },
+      include: {
+        role: {
+          include: {
+            permissions: {
+              include: { permission: true }
+            }
+          }
+        }
+      }
+    });
+
+    return toAdminPublic({
+      ...admin,
+      modelHasRoles: mhr ? [mhr] : []
+    });
   },
 
   /**
@@ -90,7 +150,23 @@ export const adminAuthService = {
       },
     });
 
-    return toAdminPublic(admin);
+    const mhr = await prisma.modelHasRole.findFirst({
+      where: { modelId: admin.id, modelType: 'Admin' },
+      include: {
+        role: {
+          include: {
+            permissions: {
+              include: { permission: true }
+            }
+          }
+        }
+      }
+    });
+
+    return toAdminPublic({
+      ...admin,
+      modelHasRoles: mhr ? [mhr] : []
+    });
   },
 
   /**

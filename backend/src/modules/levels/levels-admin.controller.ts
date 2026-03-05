@@ -11,30 +11,21 @@
  * All endpoints are protected by admin cookie-based auth.
  */
 
-import { Controller, Get, Post, Put, Delete, Req, Res, Param, Body } from '@nestjs/common';
+import { Controller, Get, Post, Put, Delete, Req, Res, Param, Body, UseGuards } from '@nestjs/common';
 import type { Request, Response } from 'express';
-import { getAdminIdFromRequest } from '@/lib/auth/admin';
+import { CaslGuard } from '@/lib/casl/casl.guard';
+import { CheckPermission } from '@/lib/casl/check-permission.decorator';
 import { levelsAdminService } from './levels-admin.service';
 
-function verifyAdmin(req: Request, res: Response): boolean {
-  const adminId = getAdminIdFromRequest(req);
-  if (!adminId) {
-    res.status(401);
-    return false;
-  }
-  return true;
-}
-
+@UseGuards(CaslGuard)
 @Controller('admin/levels')
 export class LevelsAdminController {
   /**
    * GET /admin/levels — List all levels ordered by number, with user counts.
    */
   @Get()
+  @CheckPermission('read', 'Level')
   async list(@Req() req: Request, @Res({ passthrough: true }) res: Response) {
-    if (!verifyAdmin(req, res)) {
-      return { success: false, error: 'Unauthorized' };
-    }
     try {
       const data = await levelsAdminService.list();
       return { success: true, data };
@@ -49,10 +40,8 @@ export class LevelsAdminController {
    * POST /admin/levels — Create a new level.
    */
   @Post()
+  @CheckPermission('create', 'Level')
   async create(@Req() req: Request, @Body() body: any, @Res({ passthrough: true }) res: Response) {
-    if (!verifyAdmin(req, res)) {
-      return { success: false, error: 'Unauthorized' };
-    }
     try {
       if (!body?.number || !body?.code || !body?.name) {
         res.status(400);
@@ -80,10 +69,8 @@ export class LevelsAdminController {
    * Body: { orderedIds: string[] }
    */
   @Put('reorder')
+  @CheckPermission('update', 'Level')
   async reorder(@Req() req: Request, @Body() body: any, @Res({ passthrough: true }) res: Response) {
-    if (!verifyAdmin(req, res)) {
-      return { success: false, error: 'Unauthorized' };
-    }
     try {
       if (!Array.isArray(body?.orderedIds) || body.orderedIds.length === 0) {
         res.status(400);
@@ -104,15 +91,13 @@ export class LevelsAdminController {
    * PUT /admin/levels/:id — Update a level.
    */
   @Put(':id')
+  @CheckPermission('update', 'Level')
   async update(
     @Req() req: Request,
     @Param('id') id: string,
     @Body() body: any,
     @Res({ passthrough: true }) res: Response,
   ) {
-    if (!verifyAdmin(req, res)) {
-      return { success: false, error: 'Unauthorized' };
-    }
     try {
       const data = await levelsAdminService.update(id, body);
       return { success: true, data };
@@ -133,14 +118,12 @@ export class LevelsAdminController {
    * DELETE /admin/levels/:id — Delete a level.
    */
   @Delete(':id')
+  @CheckPermission('delete', 'Level')
   async delete(
     @Req() req: Request,
     @Param('id') id: string,
     @Res({ passthrough: true }) res: Response,
   ) {
-    if (!verifyAdmin(req, res)) {
-      return { success: false, error: 'Unauthorized' };
-    }
     try {
       await levelsAdminService.delete(id);
       return { success: true, data: { deleted: true } };

@@ -16,7 +16,8 @@ export const ADMIN_COOKIE_NAME = 'admin_token';
 export interface AdminJwtPayload {
   adminId: string;
   email: string;
-  role: string;
+  roleId: string | null;
+  isSuperAdmin: boolean;
   type: 'admin';
   iat?: number;
   exp?: number;

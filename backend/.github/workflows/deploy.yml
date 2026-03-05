@@ -3,9 +3,40 @@ name: Deploy Backend
 on:
   push:
     branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: deploy-backend-main
+  cancel-in-progress: true
 
 jobs:
+  build:
+    name: Build Check
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Generate Prisma client
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/pose_db?schema=public
+        run: npx prisma generate
+
+      - name: Build project
+        run: npm run build
+
   deploy:
+    name: Deploy to Server
+    needs: build
     runs-on: ubuntu-latest
     steps:
       - name: Deploy to server
@@ -23,11 +54,12 @@ jobs:
 
             cd /var/www/pose-backend
 
-            echo "==> Pulling latest code..."
-            git pull origin main
+            echo "==> Syncing clean copy from origin/main..."
+            git fetch origin main
+            git reset --hard origin/main
 
             echo "==> Installing dependencies..."
-            npm install --prefer-offline
+            npm ci
 
             echo "==> Generating Prisma client..."
             npx prisma generate

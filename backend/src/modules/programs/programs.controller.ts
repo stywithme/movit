@@ -1,4 +1,4 @@
-import { Body, Controller, Delete, Get, Param, Post, Put, Query, Res } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, Post, Put, Query, Res, UseGuards } from '@nestjs/common';
 import type { Response } from 'express';
 import { programService } from './programs.service';
 import {
@@ -9,10 +9,14 @@ import {
   validateUpdateProgram,
   validateWeekInput,
 } from './programs.validation';
+import { CaslGuard } from '@/lib/casl/casl.guard';
+import { CheckPermission } from '@/lib/casl/check-permission.decorator';
 
+@UseGuards(CaslGuard)
 @Controller('programs')
 export class ProgramsController {
   @Get()
+  @CheckPermission('read', 'Program')
   async list(
     @Query('status') status?: string,
     @Query('search') search?: string,
@@ -39,6 +43,7 @@ export class ProgramsController {
   }
 
   @Post()
+  @CheckPermission('create', 'Program')
   async create(@Body() body: any, @Res({ passthrough: true }) res: Response) {
     try {
       const errors = validateCreateProgram(body);
@@ -58,6 +63,7 @@ export class ProgramsController {
   }
 
   @Get(':id')
+  @CheckPermission('read', 'Program')
   async getById(@Param('id') id: string, @Res({ passthrough: true }) res: Response) {
     try {
       const program = await programService.getById(id);
@@ -74,6 +80,7 @@ export class ProgramsController {
   }
 
   @Put(':id')
+  @CheckPermission('update', 'Program')
   async update(@Param('id') id: string, @Body() body: any, @Res({ passthrough: true }) res: Response) {
     try {
       const errors = validateUpdateProgram(body);
@@ -92,6 +99,7 @@ export class ProgramsController {
   }
 
   @Delete(':id')
+  @CheckPermission('delete', 'Program')
   async remove(@Param('id') id: string, @Res({ passthrough: true }) res: Response) {
     try {
       await programService.delete(id);
@@ -104,6 +112,7 @@ export class ProgramsController {
   }
 
   @Post(':id/publish')
+  @CheckPermission('publish', 'Program')
   async publish(@Param('id') id: string, @Res({ passthrough: true }) res: Response) {
     try {
       const program = await programService.publish(id);
@@ -116,6 +125,7 @@ export class ProgramsController {
   }
 
   @Delete(':id/publish')
+  @CheckPermission('publish', 'Program')
   async unpublish(@Param('id') id: string, @Res({ passthrough: true }) res: Response) {
     try {
       const program = await programService.unpublish(id);
@@ -128,6 +138,7 @@ export class ProgramsController {
   }
 
   @Post(':id/duplicate')
+  @CheckPermission('create', 'Program')
   async duplicate(@Param('id') id: string, @Res({ passthrough: true }) res: Response) {
     try {
       const program = await programService.duplicate(id);
@@ -141,6 +152,7 @@ export class ProgramsController {
   }
 
   @Post(':id/weeks')
+  @CheckPermission('update', 'Program')
   async createWeek(
     @Param('id') programId: string,
     @Body() body: any,
@@ -167,6 +179,7 @@ export class ProgramsController {
   }
 
   @Put(':id/weeks/:weekId')
+  @CheckPermission('update', 'Program')
   async updateWeek(
     @Param('id') programId: string,
     @Param('weekId') weekId: string,
@@ -194,6 +207,7 @@ export class ProgramsController {
   }
 
   @Delete(':id/weeks/:weekId')
+  @CheckPermission('update', 'Program')
   async deleteWeek(
     @Param('id') programId: string,
     @Param('weekId') weekId: string,
@@ -214,6 +228,7 @@ export class ProgramsController {
   }
 
   @Post(':id/weeks/:weekId/copy-to/:targetWeek')
+  @CheckPermission('update', 'Program')
   async copyWeek(
     @Param('id') programId: string,
     @Param('weekId') weekId: string,
@@ -241,6 +256,7 @@ export class ProgramsController {
   }
 
   @Post(':programId/weeks/:weekId/days')
+  @CheckPermission('update', 'Program')
   async createDay(
     @Param('programId') programId: string,
     @Param('weekId') weekId: string,
@@ -267,6 +283,7 @@ export class ProgramsController {
   }
 
   @Put(':programId/weeks/:weekId/days/:dayId')
+  @CheckPermission('update', 'Program')
   async updateDay(
     @Param('programId') programId: string,
     @Param('dayId') dayId: string,
@@ -293,6 +310,7 @@ export class ProgramsController {
   }
 
   @Delete(':programId/weeks/:weekId/days/:dayId')
+  @CheckPermission('update', 'Program')
   async deleteDay(
     @Param('programId') programId: string,
     @Param('dayId') dayId: string,
@@ -313,6 +331,7 @@ export class ProgramsController {
   }
 
   @Post(':programId/weeks/:weekId/days/:dayId/sessions')
+  @CheckPermission('update', 'Program')
   async createSession(
     @Param('programId') programId: string,
     @Param('dayId') dayId: string,
@@ -339,6 +358,7 @@ export class ProgramsController {
   }
 
   @Put(':programId/sessions/:sessionId')
+  @CheckPermission('update', 'Program')
   async updateSession(
     @Param('programId') programId: string,
     @Param('sessionId') sessionId: string,
@@ -365,6 +385,7 @@ export class ProgramsController {
   }
 
   @Delete(':programId/sessions/:sessionId')
+  @CheckPermission('update', 'Program')
   async deleteSession(
     @Param('programId') programId: string,
     @Param('sessionId') sessionId: string,
@@ -385,6 +406,7 @@ export class ProgramsController {
   }
 
   @Post(':programId/sessions/:sessionId/items')
+  @CheckPermission('update', 'Program')
   async createSessionItem(
     @Param('programId') programId: string,
     @Param('sessionId') sessionId: string,
@@ -411,6 +433,7 @@ export class ProgramsController {
   }
 
   @Put(':programId/sessions/:sessionId/items/:itemId')
+  @CheckPermission('update', 'Program')
   async updateSessionItem(
     @Param('programId') programId: string,
     @Param('itemId') itemId: string,
@@ -437,6 +460,7 @@ export class ProgramsController {
   }
 
   @Delete(':programId/sessions/:sessionId/items/:itemId')
+  @CheckPermission('update', 'Program')
   async deleteSessionItem(
     @Param('programId') programId: string,
     @Param('itemId') itemId: string,
@@ -457,6 +481,7 @@ export class ProgramsController {
   }
 
   @Post(':programId/sessions/:sessionId/import-workout/:workoutId')
+  @CheckPermission('update', 'Program')
   async importWorkout(
     @Param('programId') programId: string,
     @Param('sessionId') sessionId: string,

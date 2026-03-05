@@ -4,6 +4,9 @@ import React, { useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { cn } from '@/lib/utils';
+import { useAuthStore } from '@/lib/auth/auth-store';
+import { usePermissions } from '@/hooks/usePermissions';
+import type { Subject } from '@/hooks/usePermissions';
 import {
   LayoutDashboard,
   Activity,
@@ -30,6 +33,7 @@ import {
   FileCheck,
   TrendingUp,
   Map,
+  Key,
 } from 'lucide-react';
 
 interface NavItem {
@@ -37,6 +41,8 @@ interface NavItem {
   href: string;
   icon: React.ElementType;
   badge?: number;
+  /** CASL subject needed to read. If omitted = always visible */
+  requiredSubject?: Subject;
 }
 
 interface NavGroup {
@@ -51,11 +57,12 @@ export function Sidebar() {
 
   const toggleGroup = (title: string) => {
     setOpenGroups((prev) =>
-      prev.includes(title)
-        ? prev.filter((t) => t !== title)
-        : [...prev, title]
+      prev.includes(title) ? prev.filter((t) => t !== title) : [...prev, title]
     );
   };
+
+  const { user } = useAuthStore();
+  const { can, isSuperAdmin } = usePermissions();
 
   const mainNav: NavItem[] = [
     { title: 'Dashboard', href: '/admin', icon: LayoutDashboard },
@@ -66,42 +73,49 @@ export function Sidebar() {
   const contentGroup: NavGroup = {
     title: 'Content',
     items: [
-      { title: 'Exercises', href: '/admin/exercises', icon: Dumbbell },
-      { title: 'Programs', href: '/admin/programs', icon: CalendarDays },
-      { title: 'Programs Map', href: '/admin/programs/map', icon: Map },
-      { title: 'Workouts', href: '/admin/workouts', icon: Repeat },
-      { title: 'Attributes', href: '/admin/attributes', icon: Tags },
-      { title: 'Messages', href: '/admin/messages', icon: MessageSquare },
-      { title: 'Camera Positions', href: '/admin/camera-positions', icon: Layers },
+      { title: 'Exercises', href: '/admin/exercises', icon: Dumbbell, requiredSubject: 'Exercise' },
+      { title: 'Programs', href: '/admin/programs', icon: CalendarDays, requiredSubject: 'Program' },
+      { title: 'Programs Map', href: '/admin/programs/map', icon: Map, requiredSubject: 'ProgramMap' },
+      { title: 'Workouts', href: '/admin/workouts', icon: Repeat, requiredSubject: 'Workout' },
+      { title: 'Attributes', href: '/admin/attributes', icon: Tags, requiredSubject: 'Attribute' },
+      { title: 'Messages', href: '/admin/messages', icon: MessageSquare, requiredSubject: 'FeedbackMessage' },
+      { title: 'Camera Positions', href: '/admin/camera-positions', icon: Layers, requiredSubject: 'PosePosition' },
     ],
   };
 
   const trainingSystemGroup: NavGroup = {
     title: 'Training System',
     items: [
-      { title: 'Levels', href: '/admin/levels', icon: Signal },
-      { title: 'Assessment Templates', href: '/admin/assessment-templates', icon: FileCheck },
-      { title: 'Progression Rules', href: '/admin/progression-rules', icon: TrendingUp },
+      { title: 'Levels', href: '/admin/levels', icon: Signal, requiredSubject: 'Level' },
+      { title: 'Assessment Templates', href: '/admin/assessment-templates', icon: FileCheck, requiredSubject: 'AssessmentTemplate' },
+      { title: 'Progression Rules', href: '/admin/progression-rules', icon: TrendingUp, requiredSubject: 'ProgressionRule' },
     ],
   };
 
   const analyticsGroup: NavGroup = {
     title: 'Analytics',
     items: [
-      { title: 'Overview', href: '/admin/analytics', icon: BarChart3 },
-      { title: 'Programs', href: '/admin/analytics/programs', icon: PieChart },
-      { title: 'Levels', href: '/admin/analytics/levels', icon: Layers },
-      { title: 'Assessments', href: '/admin/analytics/assessments', icon: Activity },
+      { title: 'Overview', href: '/admin/analytics', icon: BarChart3, requiredSubject: 'Analytics' },
+      { title: 'Programs', href: '/admin/analytics/programs', icon: PieChart, requiredSubject: 'ProgramAnalytics' },
+      { title: 'Levels', href: '/admin/analytics/levels', icon: Layers, requiredSubject: 'LevelAnalytics' },
+      { title: 'Assessments', href: '/admin/analytics/assessments', icon: Activity, requiredSubject: 'AssessmentAnalytics' },
     ],
   };
 
   const adminGroup: NavGroup = {
     title: 'Administration',
     items: [
-      { title: 'Users', href: '/admin/users', icon: Users },
-      { title: 'Admins', href: '/admin/admins', icon: Shield },
+      { title: 'Users', href: '/admin/users', icon: Users, requiredSubject: 'User' },
+      { title: 'Admins', href: '/admin/admins', icon: Shield, requiredSubject: 'Admin' },
+      { title: 'Roles', href: '/admin/roles', icon: Key, requiredSubject: 'Role' },
       { title: 'Settings', href: '/admin/settings', icon: Settings },
     ],
+  };
+
+  /** Filter a single nav item — visible if no requiredSubject OR user can read it */
+  const canSeeItem = (item: NavItem): boolean => {
+    if (!item.requiredSubject) return true;
+    return can('read', item.requiredSubject);
   };
 
   const NavItemComponent = ({ item }: { item: NavItem }) => {
@@ -175,29 +189,33 @@ export function Sidebar() {
           </div>
 
           {/* Groups */}
-          {[contentGroup, trainingSystemGroup, analyticsGroup, adminGroup].map((group) => (
-            <div key={group.title} className="space-y-1">
-              <button
-                onClick={() => toggleGroup(group.title)}
-                className="w-full flex items-center justify-between px-3 py-2 text-sm font-semibold text-gray-500 hover:text-gray-900 uppercase tracking-wider"
-              >
-                <span>{group.title}</span>
-                {openGroups.includes(group.title) ? (
-                  <ChevronDown className="h-4 w-4" />
-                ) : (
-                  <ChevronRight className="h-4 w-4" />
+          {[contentGroup, trainingSystemGroup, analyticsGroup, adminGroup].map((group) => {
+            const visibleItems = group.items.filter(canSeeItem);
+            if (visibleItems.length === 0) return null;
+            return (
+              <div key={group.title} className="space-y-1">
+                <button
+                  onClick={() => toggleGroup(group.title)}
+                  className="w-full flex items-center justify-between px-3 py-2 text-sm font-semibold text-gray-500 hover:text-gray-900 uppercase tracking-wider"
+                >
+                  <span>{group.title}</span>
+                  {openGroups.includes(group.title) ? (
+                    <ChevronDown className="h-4 w-4" />
+                  ) : (
+                    <ChevronRight className="h-4 w-4" />
+                  )}
+                </button>
+
+                {openGroups.includes(group.title) && (
+                  <div className="space-y-1 mt-1">
+                    {visibleItems.map((item) => (
+                      <NavItemComponent key={item.href} item={item} />
+                    ))}
+                  </div>
                 )}
-              </button>
-              
-              {openGroups.includes(group.title) && (
-                <div className="space-y-1 mt-1">
-                  {group.items.map((item) => (
-                    <NavItemComponent key={item.href} item={item} />
-                  ))}
-                </div>
-              )}
-            </div>
-          ))}
+              </div>
+            );
+          })}
         </div>
 
         {/* Footer */}
@@ -207,18 +225,19 @@ export function Sidebar() {
               item={{ title: 'Documentation', href: '/admin/docs', icon: LifeBuoy }}
             />
           </div>
-          
+
           <div className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-gray-50 transition-colors cursor-pointer">
-            <div className="h-10 w-10 rounded-full bg-gray-200 flex items-center justify-center overflow-hidden">
-               {/* Placeholder Avatar */}
-               <span className="text-gray-500 font-medium">AD</span>
+            <div className="h-10 w-10 rounded-full bg-blue-100 flex items-center justify-center overflow-hidden">
+              <span className="text-blue-600 font-medium">
+                {user?.name?.slice(0, 2).toUpperCase() || 'AD'}
+              </span>
             </div>
             <div className="flex-1 min-w-0">
-              <p className="text-sm font-medium text-gray-900 truncate">Admin User</p>
-              <p className="text-xs text-gray-500 truncate">admin@validator.com</p>
+              <p className="text-sm font-medium text-gray-900 truncate">{user?.name || 'Admin User'}</p>
+              <p className="text-xs text-gray-500 truncate">{user?.email || 'admin@validator.com'}</p>
             </div>
             <Link href="/admin/logout" title="Logout">
-                <LogOut className="h-4 w-4 text-gray-400 hover:text-red-500" />
+              <LogOut className="h-4 w-4 text-gray-400 hover:text-red-500" />
             </Link>
           </div>
         </div>

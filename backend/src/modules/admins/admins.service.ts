@@ -15,11 +15,42 @@ const adminSelect = {
   id: true,
   name: true,
   email: true,
-  role: true,
+  isSuperAdmin: true,
   isActive: true,
   createdAt: true,
   updatedAt: true,
 };
+
+async function withRole(admin: any) {
+  if (!admin) return admin;
+  const prisma = await getPrisma();
+  const mhr = await prisma.modelHasRole.findFirst({
+    where: { modelId: admin.id, modelType: 'Admin' },
+    include: { role: { select: { id: true, name: true } } }
+  });
+  return {
+    ...admin,
+    roleId: mhr?.roleId || null,
+    role: mhr?.role || null,
+  };
+}
+
+async function prepareAdminsList(admins: any[]) {
+  if (!admins.length) return admins;
+  const prisma = await getPrisma();
+  const mhrs = await prisma.modelHasRole.findMany({
+    where: { modelId: { in: admins.map(a => a.id) }, modelType: 'Admin' },
+    include: { role: { select: { id: true, name: true } } }
+  });
+  return admins.map(admin => {
+    const mhr = mhrs.find(m => m.modelId === admin.id);
+    return {
+      ...admin,
+      roleId: mhr?.roleId || null,
+      role: mhr?.role || null,
+    };
+  });
+}
 
 export const adminsService = {
   /**
@@ -27,10 +58,11 @@ export const adminsService = {
    */
   async getById(id: string) {
     const prisma = await getPrisma();
-    return prisma.admin.findUnique({
+    const admin = await prisma.admin.findUnique({
       where: { id, deletedAt: null },
       select: adminSelect,
     });
+    return withRole(admin);
   },
 
   /**
@@ -73,8 +105,10 @@ export const adminsService = {
       prisma.admin.count({ where }),
     ]);
 
+    const adminsWithRoles = await prepareAdminsList(admins);
+
     return {
-      admins,
+      admins: adminsWithRoles,
       pagination: {
         page,
         limit,
@@ -101,15 +135,20 @@ export const adminsService = {
 
     const hashedPassword = await bcrypt.hash(data.password, SALT_ROUNDS);
 
-    return prisma.admin.create({
+    const admin = await prisma.admin.create({
       data: {
         name: data.name,
         email: data.email.toLowerCase(),
         password: hashedPassword,
-        role: data.role || 'admin',
       },
       select: adminSelect,
     });
+    if (data.roleId) {
+      await prisma.modelHasRole.create({
+        data: { roleId: data.roleId, modelId: admin.id, modelType: 'Admin' }
+      });
+    }
+    return withRole(admin);
   },
 
   /**
@@ -118,16 +157,28 @@ export const adminsService = {
   async update(id: string, data: UpdateAdminInput) {
     const prisma = await getPrisma();
 
-    return prisma.admin.update({
+    const admin = await prisma.admin.update({
       where: { id },
       data: {
         name: data.name,
         email: data.email ? data.email.toLowerCase() : undefined,
-        role: data.role,
         isActive: data.isActive,
       },
       select: adminSelect,
     });
+
+    if (data.roleId !== undefined) {
+      await prisma.modelHasRole.deleteMany({
+        where: { modelId: id, modelType: 'Admin' }
+      });
+      if (data.roleId) {
+        await prisma.modelHasRole.create({
+          data: { roleId: data.roleId, modelId: id, modelType: 'Admin' }
+        });
+      }
+    }
+
+    return withRole(admin);
   },
 
   /**
@@ -137,11 +188,12 @@ export const adminsService = {
     const prisma = await getPrisma();
     const hashedPassword = await bcrypt.hash(password, SALT_ROUNDS);
 
-    return prisma.admin.update({
+    const admin = await prisma.admin.update({
       where: { id },
       data: { password: hashedPassword },
       select: adminSelect,
     });
+    return withRole(admin);
   },
 
   /**
@@ -150,11 +202,12 @@ export const adminsService = {
   async setActive(id: string, isActive: boolean) {
     const prisma = await getPrisma();
 
-    return prisma.admin.update({
+    const admin = await prisma.admin.update({
       where: { id },
       data: { isActive },
       select: adminSelect,
     });
+    return withRole(admin);
   },
 
   /**
@@ -163,7 +216,7 @@ export const adminsService = {
   async delete(id: string) {
     const prisma = await getPrisma();
 
-    return prisma.admin.update({
+    const admin = await prisma.admin.update({
       where: { id },
       data: {
         deletedAt: new Date(),
@@ -171,5 +224,6 @@ export const adminsService = {
       },
       select: adminSelect,
     });
+    return withRole(admin);
   },
 };

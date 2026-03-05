@@ -1,10 +1,14 @@
-import { Body, Controller, Get, Param, Post, Res } from '@nestjs/common';
+import { Body, Controller, Get, Param, Post, Res, UseGuards } from '@nestjs/common';
 import type { Response } from 'express';
 import { getPrisma } from '@/lib/prisma/client';
+import { CaslGuard } from '@/lib/casl/casl.guard';
+import { CheckPermission } from '@/lib/casl/check-permission.decorator';
 
+@UseGuards(CaslGuard)
 @Controller('attributes')
 export class AttributesController {
   @Get()
+  @CheckPermission('read', 'Config')
   async list() {
     try {
       const prisma = await getPrisma();
@@ -26,6 +30,7 @@ export class AttributesController {
   }
 
   @Get('lookup')
+  @CheckPermission('read', 'Config')
   async lookup() {
     try {
       const prisma = await getPrisma();
@@ -82,6 +87,7 @@ export class AttributesController {
   }
 
   @Get(':code/values')
+  @CheckPermission('read', 'Config')
   async getValues(@Param('code') code: string, @Res({ passthrough: true }) res: Response) {
     try {
       const prisma = await getPrisma();
@@ -119,6 +125,7 @@ export class AttributesController {
   }
 
   @Post(':code/values')
+  @CheckPermission('update', 'Config')
   async createValue(
     @Param('code') code: string,
     @Body() body: any,

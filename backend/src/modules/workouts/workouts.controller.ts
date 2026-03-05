@@ -1,11 +1,15 @@
-import { Body, Controller, Delete, Get, Param, Post, Put, Query, Res } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, Post, Put, Query, Res, UseGuards } from '@nestjs/common';
 import type { Response } from 'express';
 import { workoutService } from './workouts.service';
 import { validateCreateWorkout, validateUpdateWorkout } from './workouts.validation';
+import { CaslGuard } from '@/lib/casl/casl.guard';
+import { CheckPermission } from '@/lib/casl/check-permission.decorator';
 
+@UseGuards(CaslGuard)
 @Controller('workouts')
 export class WorkoutsController {
   @Get()
+  @CheckPermission('read', 'Workout')
   async list(
     @Query('status') status?: string,
     @Query('search') search?: string,
@@ -32,6 +36,7 @@ export class WorkoutsController {
   }
 
   @Post()
+  @CheckPermission('create', 'Workout')
   async create(@Body() body: any, @Res({ passthrough: true }) res: Response) {
     try {
       const errors = validateCreateWorkout(body);
@@ -51,6 +56,7 @@ export class WorkoutsController {
   }
 
   @Get(':id')
+  @CheckPermission('read', 'Workout')
   async getById(@Param('id') id: string, @Res({ passthrough: true }) res: Response) {
     try {
       const workout = await workoutService.getById(id);
@@ -67,6 +73,7 @@ export class WorkoutsController {
   }
 
   @Put(':id')
+  @CheckPermission('update', 'Workout')
   async update(@Param('id') id: string, @Body() body: any, @Res({ passthrough: true }) res: Response) {
     try {
       const errors = validateUpdateWorkout(body);
@@ -85,6 +92,7 @@ export class WorkoutsController {
   }
 
   @Delete(':id')
+  @CheckPermission('delete', 'Workout')
   async remove(@Param('id') id: string, @Res({ passthrough: true }) res: Response) {
     try {
       await workoutService.delete(id);
@@ -97,6 +105,7 @@ export class WorkoutsController {
   }
 
   @Post(':id/publish')
+  @CheckPermission('publish', 'Workout')
   async publish(@Param('id') id: string, @Res({ passthrough: true }) res: Response) {
     try {
       const workout = await workoutService.publish(id);
@@ -109,6 +118,7 @@ export class WorkoutsController {
   }
 
   @Delete(':id/publish')
+  @CheckPermission('publish', 'Workout')
   async unpublish(@Param('id') id: string, @Res({ passthrough: true }) res: Response) {
     try {
       const workout = await workoutService.unpublish(id);
@@ -121,6 +131,7 @@ export class WorkoutsController {
   }
 
   @Post(':id/duplicate')
+  @CheckPermission('create', 'Workout')
   async duplicate(@Param('id') id: string, @Res({ passthrough: true }) res: Response) {
     try {
       const workout = await workoutService.duplicate(id);

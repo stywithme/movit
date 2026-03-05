@@ -11,7 +11,7 @@ export async function seedAdmins(prisma: PrismaClient) {
     where: { email: adminEmail },
     update: {
       name: adminName,
-      role: 'super_admin',
+      isSuperAdmin: true,
       isActive: true,
       deletedAt: null,
       ...(process.env.ADMIN_SEED_PASSWORD ? { password: hashedPassword } : {}),
@@ -20,7 +20,7 @@ export async function seedAdmins(prisma: PrismaClient) {
       name: adminName,
       email: adminEmail,
       password: hashedPassword,
-      role: 'super_admin',
+      isSuperAdmin: true,
       isActive: true,
     },
   });

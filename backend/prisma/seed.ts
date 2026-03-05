@@ -12,12 +12,14 @@ import { seedAdmins } from './seeders/admins';
 import { seedLevels } from './seeders/levels';
 import { seedProgressionRules } from './seeders/progression-rules';
 import { seedAssessmentTemplates } from './seeders/assessment-templates';
+import { seedPermissions } from './seeders/permissions';
+import { seedSystemConfig } from './seeders/system';
 
 if (!process.env.DATABASE_URL) {
   throw new Error('DATABASE_URL is not set in environment variables');
 }
 
-const adapter = new PrismaPg({ 
+const adapter = new PrismaPg({
   connectionString: process.env.DATABASE_URL,
 });
 
@@ -45,6 +47,8 @@ async function main() {
     console.warn('⚠️ Skipping programs & user programs (not enough exercises).');
   }
 
+  await seedSystemConfig(prisma);
+  await seedPermissions(prisma);
   await seedAdmins(prisma);
   await seedLevels(prisma);
   await seedProgressionRules(prisma);

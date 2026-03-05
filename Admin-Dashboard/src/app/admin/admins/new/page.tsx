@@ -1,18 +1,37 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { Input, Select } from '@/components/ui';
+import { Input } from '@/components/ui';
+
+interface RoleOption {
+  id: string;
+  name: string;
+}
 
 export default function NewAdminPage() {
   const router = useRouter();
   const [saving, setSaving] = useState(false);
+  const [roles, setRoles] = useState<RoleOption[]>([]);
   const [formData, setFormData] = useState({
     name: '',
     email: '',
     password: '',
-    role: 'admin',
+    roleId: '',
   });
+
+  useEffect(() => {
+    const fetchRoles = async () => {
+      try {
+        const res = await fetch('/api/admin/permissions/roles');
+        const data = await res.json();
+        if (data.success) setRoles(data.data);
+      } catch (err) {
+        console.error('Error fetching roles:', err);
+      }
+    };
+    fetchRoles();
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -22,7 +41,12 @@ export default function NewAdminPage() {
       const res = await fetch('/api/admins', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(formData),
+        body: JSON.stringify({
+          name: formData.name,
+          email: formData.email,
+          password: formData.password,
+          roleId: formData.roleId || null,
+        }),
       });
 
       const data = await res.json();
@@ -98,14 +122,18 @@ export default function NewAdminPage() {
 
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">Role</label>
-          <Select
-            value={formData.role}
-            onChange={(e) => setFormData((prev) => ({ ...prev, role: e.target.value }))}
-            options={[
-              { value: 'admin', label: 'Admin' },
-              { value: 'super_admin', label: 'Super Admin' },
-            ]}
-          />
+          <select
+            value={formData.roleId}
+            onChange={(e) => setFormData((prev) => ({ ...prev, roleId: e.target.value }))}
+            className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm bg-gray-50/50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white transition-all"
+          >
+            <option value="">— No Role —</option>
+            {roles.map((role) => (
+              <option key={role.id} value={role.id}>
+                {role.name}
+              </option>
+            ))}
+          </select>
         </div>
 
         <div className="flex justify-end pt-4 border-t border-gray-200">

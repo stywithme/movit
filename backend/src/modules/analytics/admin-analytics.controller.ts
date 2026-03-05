@@ -12,27 +12,18 @@
  * All endpoints are protected by admin cookie-based auth.
  */
 
-import { Controller, Get, Req, Res } from '@nestjs/common';
+import { Controller, Get, Req, Res, UseGuards } from '@nestjs/common';
 import type { Request, Response } from 'express';
-import { getAdminIdFromRequest } from '@/lib/auth/admin';
+import { CaslGuard } from '@/lib/casl/casl.guard';
+import { CheckPermission } from '@/lib/casl/check-permission.decorator';
 import { progressionAnalyticsService } from './progression-analytics.service';
 
-function verifyAdmin(req: Request, res: Response): boolean {
-  const adminId = getAdminIdFromRequest(req);
-  if (!adminId) {
-    res.status(401);
-    return false;
-  }
-  return true;
-}
-
+@UseGuards(CaslGuard)
 @Controller('admin/analytics')
 export class AdminAnalyticsController {
   @Get('rules')
+  @CheckPermission('read', 'Analytics')
   async getRuleEffectiveness(@Req() req: Request, @Res({ passthrough: true }) res: Response) {
-    if (!verifyAdmin(req, res)) {
-      return { success: false, error: 'Unauthorized' };
-    }
     try {
       const data = await progressionAnalyticsService.getRuleEffectiveness();
       return { success: true, data };
@@ -44,10 +35,8 @@ export class AdminAnalyticsController {
   }
 
   @Get('programs')
+  @CheckPermission('read', 'Analytics')
   async getProgramEffectiveness(@Req() req: Request, @Res({ passthrough: true }) res: Response) {
-    if (!verifyAdmin(req, res)) {
-      return { success: false, error: 'Unauthorized' };
-    }
     try {
       const data = await progressionAnalyticsService.getProgramEffectiveness();
       return { success: true, data };
@@ -59,10 +48,8 @@ export class AdminAnalyticsController {
   }
 
   @Get('user-trends')
+  @CheckPermission('read', 'Analytics')
   async getUserTrends(@Req() req: Request, @Res({ passthrough: true }) res: Response) {
-    if (!verifyAdmin(req, res)) {
-      return { success: false, error: 'Unauthorized' };
-    }
     try {
       const data = await progressionAnalyticsService.getUserTrends();
       return { success: true, data };
@@ -74,10 +61,8 @@ export class AdminAnalyticsController {
   }
 
   @Get('platform')
+  @CheckPermission('read', 'Analytics')
   async getPlatformStats(@Req() req: Request, @Res({ passthrough: true }) res: Response) {
-    if (!verifyAdmin(req, res)) {
-      return { success: false, error: 'Unauthorized' };
-    }
     try {
       const data = await progressionAnalyticsService.getPlatformStats();
       return { success: true, data };
@@ -89,10 +74,8 @@ export class AdminAnalyticsController {
   }
 
   @Get('levels')
+  @CheckPermission('read', 'Analytics')
   async getLevelDistribution(@Req() req: Request, @Res({ passthrough: true }) res: Response) {
-    if (!verifyAdmin(req, res)) {
-      return { success: false, error: 'Unauthorized' };
-    }
     try {
       const data = await progressionAnalyticsService.getLevelDistribution();
       return { success: true, data };
@@ -104,10 +87,8 @@ export class AdminAnalyticsController {
   }
 
   @Get('assessments')
+  @CheckPermission('read', 'Analytics')
   async getAssessmentAnalytics(@Req() req: Request, @Res({ passthrough: true }) res: Response) {
-    if (!verifyAdmin(req, res)) {
-      return { success: false, error: 'Unauthorized' };
-    }
     try {
       const data = await progressionAnalyticsService.getAssessmentAnalytics();
       return { success: true, data };
@@ -119,10 +100,8 @@ export class AdminAnalyticsController {
   }
 
   @Get('level-transitions')
+  @CheckPermission('read', 'Analytics')
   async getLevelTransitionStats(@Req() req: Request, @Res({ passthrough: true }) res: Response) {
-    if (!verifyAdmin(req, res)) {
-      return { success: false, error: 'Unauthorized' };
-    }
     try {
       const data = await progressionAnalyticsService.getLevelTransitionStats();
       return { success: true, data };

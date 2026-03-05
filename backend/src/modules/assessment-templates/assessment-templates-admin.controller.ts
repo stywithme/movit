@@ -17,26 +17,21 @@
  * All endpoints are protected by admin cookie-based auth.
  */
 
-import { Controller, Get, Post, Put, Delete, Req, Res, Param, Body, Query } from '@nestjs/common';
+import { Controller, Get, Post, Put, Delete, Req, Res, Param, Body, Query, UseGuards } from '@nestjs/common';
 import type { Request, Response } from 'express';
 import { getAdminIdFromRequest } from '@/lib/auth/admin';
+import { CaslGuard } from '@/lib/casl/casl.guard';
+import { CheckPermission } from '@/lib/casl/check-permission.decorator';
 import { assessmentTemplateService } from './assessment-templates-admin.service';
 
-function verifyAdmin(req: Request, res: Response): string | null {
-  const adminId = getAdminIdFromRequest(req);
-  if (!adminId) {
-    res.status(401);
-    return null;
-  }
-  return adminId;
-}
-
+@UseGuards(CaslGuard)
 @Controller('admin/assessment-templates')
 export class AssessmentTemplatesAdminController {
   /**
    * GET /admin/assessment-templates — List templates with optional filters.
    */
   @Get()
+  @CheckPermission('read', 'AssessmentTemplate')
   async list(
     @Req() req: Request,
     @Query('type') type: string | undefined,
@@ -44,9 +39,6 @@ export class AssessmentTemplatesAdminController {
     @Query('status') status: string | undefined,
     @Res({ passthrough: true }) res: Response,
   ) {
-    if (!verifyAdmin(req, res)) {
-      return { success: false, error: 'Unauthorized' };
-    }
     try {
       const data = await assessmentTemplateService.list({ type, levelId, status });
       return { success: true, data };
@@ -61,15 +53,13 @@ export class AssessmentTemplatesAdminController {
    * POST /admin/assessment-templates — Create a new template.
    */
   @Post()
+  @CheckPermission('create', 'AssessmentTemplate')
   async create(
     @Req() req: Request,
     @Body() body: any,
     @Res({ passthrough: true }) res: Response,
   ) {
-    const adminId = verifyAdmin(req, res);
-    if (!adminId) {
-      return { success: false, error: 'Unauthorized' };
-    }
+    const adminId = getAdminIdFromRequest(req)!;
     try {
       if (!body?.name) {
         res.status(400);
@@ -95,14 +85,12 @@ export class AssessmentTemplatesAdminController {
    * GET /admin/assessment-templates/:id — Get template by ID.
    */
   @Get(':id')
+  @CheckPermission('read', 'AssessmentTemplate')
   async getById(
     @Req() req: Request,
     @Param('id') id: string,
     @Res({ passthrough: true }) res: Response,
   ) {
-    if (!verifyAdmin(req, res)) {
-      return { success: false, error: 'Unauthorized' };
-    }
     try {
       const data = await assessmentTemplateService.getById(id);
       return { success: true, data };
@@ -118,16 +106,14 @@ export class AssessmentTemplatesAdminController {
    * PUT /admin/assessment-templates/:id — Update template.
    */
   @Put(':id')
+  @CheckPermission('update', 'AssessmentTemplate')
   async update(
     @Req() req: Request,
     @Param('id') id: string,
     @Body() body: any,
     @Res({ passthrough: true }) res: Response,
   ) {
-    const adminId = verifyAdmin(req, res);
-    if (!adminId) {
-      return { success: false, error: 'Unauthorized' };
-    }
+    const adminId = getAdminIdFromRequest(req)!;
     try {
       const data = await assessmentTemplateService.update(id, body, adminId);
       return { success: true, data };
@@ -151,14 +137,12 @@ export class AssessmentTemplatesAdminController {
    * DELETE /admin/assessment-templates/:id — Soft delete template.
    */
   @Delete(':id')
+  @CheckPermission('delete', 'AssessmentTemplate')
   async delete(
     @Req() req: Request,
     @Param('id') id: string,
     @Res({ passthrough: true }) res: Response,
   ) {
-    if (!verifyAdmin(req, res)) {
-      return { success: false, error: 'Unauthorized' };
-    }
     try {
       await assessmentTemplateService.delete(id);
       return { success: true, data: { deleted: true } };
@@ -180,14 +164,12 @@ export class AssessmentTemplatesAdminController {
    * POST /admin/assessment-templates/:id/publish — Publish template.
    */
   @Post(':id/publish')
+  @CheckPermission('publish', 'AssessmentTemplate')
   async publish(
     @Req() req: Request,
     @Param('id') id: string,
     @Res({ passthrough: true }) res: Response,
   ) {
-    if (!verifyAdmin(req, res)) {
-      return { success: false, error: 'Unauthorized' };
-    }
     try {
       const data = await assessmentTemplateService.publish(id);
       return { success: true, data };
@@ -209,14 +191,12 @@ export class AssessmentTemplatesAdminController {
    * DELETE /admin/assessment-templates/:id/publish — Unpublish template.
    */
   @Delete(':id/publish')
+  @CheckPermission('publish', 'AssessmentTemplate')
   async unpublish(
     @Req() req: Request,
     @Param('id') id: string,
     @Res({ passthrough: true }) res: Response,
   ) {
-    if (!verifyAdmin(req, res)) {
-      return { success: false, error: 'Unauthorized' };
-    }
     try {
       const data = await assessmentTemplateService.unpublish(id);
       return { success: true, data };
@@ -232,15 +212,13 @@ export class AssessmentTemplatesAdminController {
    * POST /admin/assessment-templates/:id/exercises — Add exercise to template.
    */
   @Post(':id/exercises')
+  @CheckPermission('update', 'AssessmentTemplate')
   async addExercise(
     @Req() req: Request,
     @Param('id') id: string,
     @Body() body: any,
     @Res({ passthrough: true }) res: Response,
   ) {
-    if (!verifyAdmin(req, res)) {
-      return { success: false, error: 'Unauthorized' };
-    }
     try {
       if (!body?.exerciseId || !body?.targetRegion) {
         res.status(400);
@@ -270,15 +248,13 @@ export class AssessmentTemplatesAdminController {
    * Body: { orderedIds: string[] }
    */
   @Put(':id/exercises/reorder')
+  @CheckPermission('update', 'AssessmentTemplate')
   async reorderExercises(
     @Req() req: Request,
     @Param('id') id: string,
     @Body() body: any,
     @Res({ passthrough: true }) res: Response,
   ) {
-    if (!verifyAdmin(req, res)) {
-      return { success: false, error: 'Unauthorized' };
-    }
     try {
       if (!Array.isArray(body?.orderedIds) || body.orderedIds.length === 0) {
         res.status(400);
@@ -299,6 +275,7 @@ export class AssessmentTemplatesAdminController {
    * PUT /admin/assessment-templates/:id/exercises/:entryId — Update exercise entry.
    */
   @Put(':id/exercises/:entryId')
+  @CheckPermission('update', 'AssessmentTemplate')
   async updateExercise(
     @Req() req: Request,
     @Param('id') id: string,
@@ -306,9 +283,6 @@ export class AssessmentTemplatesAdminController {
     @Body() body: any,
     @Res({ passthrough: true }) res: Response,
   ) {
-    if (!verifyAdmin(req, res)) {
-      return { success: false, error: 'Unauthorized' };
-    }
     try {
       const data = await assessmentTemplateService.updateExercise(id, entryId, body);
       return { success: true, data };
@@ -324,15 +298,13 @@ export class AssessmentTemplatesAdminController {
    * DELETE /admin/assessment-templates/:id/exercises/:entryId — Remove exercise entry.
    */
   @Delete(':id/exercises/:entryId')
+  @CheckPermission('update', 'AssessmentTemplate')
   async removeExercise(
     @Req() req: Request,
     @Param('id') id: string,
     @Param('entryId') entryId: string,
     @Res({ passthrough: true }) res: Response,
   ) {
-    if (!verifyAdmin(req, res)) {
-      return { success: false, error: 'Unauthorized' };
-    }
     try {
       await assessmentTemplateService.removeExercise(id, entryId);
       return { success: true, data: { deleted: true } };

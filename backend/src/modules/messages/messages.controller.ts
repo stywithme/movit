@@ -1,11 +1,15 @@
-import { Body, Controller, Delete, Get, Param, Post, Put, Query, Res } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, Post, Put, Query, Res, UseGuards } from '@nestjs/common';
 import type { Response } from 'express';
 import { messagesService } from './messages.service';
 import type { CreateMessageInput, UpdateMessageInput } from './messages.types';
+import { CaslGuard } from '@/lib/casl/casl.guard';
+import { CheckPermission } from '@/lib/casl/check-permission.decorator';
 
+@UseGuards(CaslGuard)
 @Controller('messages')
 export class MessagesController {
   @Get()
+  @CheckPermission('read', 'FeedbackMessage')
   async list(@Query('includeInactive') includeInactive?: string, @Query('category') category?: string) {
     try {
       const messages = await messagesService.list({
@@ -20,6 +24,7 @@ export class MessagesController {
   }
 
   @Post()
+  @CheckPermission('create', 'FeedbackMessage')
   async create(@Body() body: CreateMessageInput, @Res({ passthrough: true }) res: Response) {
     try {
       if (!body?.code || !body?.category || !body?.content) {
@@ -49,6 +54,7 @@ export class MessagesController {
   }
 
   @Get(':id')
+  @CheckPermission('read', 'FeedbackMessage')
   async getById(@Param('id') id: string, @Res({ passthrough: true }) res: Response) {
     try {
       const message = await messagesService.getById(id);
@@ -65,6 +71,7 @@ export class MessagesController {
   }
 
   @Put(':id')
+  @CheckPermission('update', 'FeedbackMessage')
   async update(
     @Param('id') id: string,
     @Body() body: UpdateMessageInput,
@@ -94,6 +101,7 @@ export class MessagesController {
   }
 
   @Delete(':id')
+  @CheckPermission('delete', 'FeedbackMessage')
   async remove(@Param('id') id: string, @Res({ passthrough: true }) res: Response) {
     try {
       await messagesService.delete(id);

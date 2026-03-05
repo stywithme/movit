@@ -1,10 +1,14 @@
-import { Body, Controller, Delete, Get, Param, Post, Put, Query, Res } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, Post, Put, Query, Res, UseGuards } from '@nestjs/common';
 import type { Response } from 'express';
 import { usersService } from './users.service';
+import { CaslGuard } from '@/lib/casl/casl.guard';
+import { CheckPermission } from '@/lib/casl/check-permission.decorator';
 
+@UseGuards(CaslGuard)
 @Controller('users')
 export class UsersController {
   @Get()
+  @CheckPermission('read', 'User')
   async list(
     @Query('status') status?: string,
     @Query('search') search?: string,
@@ -35,6 +39,7 @@ export class UsersController {
   }
 
   @Post()
+  @CheckPermission('create', 'User')
   async create(@Body() body: any, @Res({ passthrough: true }) res: Response) {
     try {
       if (!body?.name || !body?.email || !body?.password) {
@@ -74,6 +79,7 @@ export class UsersController {
   }
 
   @Put(':id')
+  @CheckPermission('update', 'User')
   async update(@Param('id') id: string, @Body() body: any) {
     try {
       const subscriptionExpiry =
@@ -87,13 +93,13 @@ export class UsersController {
         body?.isActive !== undefined
           ? await usersService.setActive(id, Boolean(body.isActive))
           : await usersService.update(id, {
-              name: body?.name,
-              email: body?.email,
-              avatarUrl: body?.avatarUrl,
-              isPro: body?.isPro,
-              subscriptionExpiry,
-              isActive: body?.isActive,
-            });
+            name: body?.name,
+            email: body?.email,
+            avatarUrl: body?.avatarUrl,
+            isPro: body?.isPro,
+            subscriptionExpiry,
+            isActive: body?.isActive,
+          });
 
       return { success: true, data: user };
     } catch (error) {
@@ -103,6 +109,7 @@ export class UsersController {
   }
 
   @Delete(':id')
+  @CheckPermission('delete', 'User')
   async remove(@Param('id') id: string, @Res({ passthrough: true }) res: Response) {
     try {
       await usersService.delete(id);

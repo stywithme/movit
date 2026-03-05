@@ -27,6 +27,9 @@ import { ProgressionModule } from './modules/progression/progression.module';
 import { ReassessmentModule } from './modules/reassessment/reassessment.module';
 import { LevelsModule } from './modules/levels';
 import { AssessmentTemplatesModule } from './modules/assessment-templates';
+import { CaslModule } from './lib/casl/casl.module';
+import { PermissionsModule } from './modules/permissions/permissions.module';
+import { GuardsModule } from './lib/guards/guards.module';
 
 @Module({
   imports: [
@@ -64,6 +67,9 @@ import { AssessmentTemplatesModule } from './modules/assessment-templates';
     ReassessmentModule,
     LevelsModule,
     AssessmentTemplatesModule,
+    CaslModule,
+    PermissionsModule,
+    GuardsModule,
   ],
 })
-export class AppModule {}
+export class AppModule { }

@@ -9,12 +9,12 @@ export interface CreateAdminInput {
   name: string;
   email: string;
   password: string;
-  role?: string;
+  roleId?: string | null;
 }
 
 export interface UpdateAdminInput {
   name?: string;
   email?: string;
-  role?: string;
+  roleId?: string | null;
   isActive?: boolean;
 }

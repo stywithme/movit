@@ -1,10 +1,14 @@
-import { Body, Controller, Delete, Get, Param, Post, Put, Query, Res } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, Post, Put, Query, Res, UseGuards } from '@nestjs/common';
 import type { Response } from 'express';
 import { exerciseService } from './exercises.service';
+import { CaslGuard } from '@/lib/casl/casl.guard';
+import { CheckPermission } from '@/lib/casl/check-permission.decorator';
 
+@UseGuards(CaslGuard)
 @Controller('exercises')
 export class ExercisesController {
   @Get()
+  @CheckPermission('read', 'Exercise')
   async list(
     @Query('status') status?: string,
     @Query('categoryId') categoryId?: string,
@@ -33,6 +37,7 @@ export class ExercisesController {
   }
 
   @Post()
+  @CheckPermission('create', 'Exercise')
   async create(@Body() body: any, @Res({ passthrough: true }) res: Response) {
     try {
       if (!body?.name || !body?.categoryId || !body?.countingMethodId) {
@@ -56,6 +61,7 @@ export class ExercisesController {
   }
 
   @Get('published')
+  @CheckPermission('read', 'Exercise')
   async listPublished() {
     try {
       const exercises = await exerciseService.getPublished();
@@ -67,6 +73,7 @@ export class ExercisesController {
   }
 
   @Get(':id')
+  @CheckPermission('read', 'Exercise')
   async getById(@Param('id') id: string, @Res({ passthrough: true }) res: Response) {
     try {
       const exercise = await exerciseService.getById(id);
@@ -83,6 +90,7 @@ export class ExercisesController {
   }
 
   @Put(':id')
+  @CheckPermission('update', 'Exercise')
   async update(@Param('id') id: string, @Body() body: any, @Res({ passthrough: true }) res: Response) {
     try {
       const exercise = await exerciseService.update(id, body);
@@ -95,6 +103,7 @@ export class ExercisesController {
   }
 
   @Delete(':id')
+  @CheckPermission('delete', 'Exercise')
   async remove(@Param('id') id: string, @Res({ passthrough: true }) res: Response) {
     try {
       await exerciseService.delete(id);
@@ -107,6 +116,7 @@ export class ExercisesController {
   }
 
   @Put(':id/publish')
+  @CheckPermission('publish', 'Exercise')
   async publish(@Param('id') id: string, @Res({ passthrough: true }) res: Response) {
     try {
       const exercise = await exerciseService.publish(id);
@@ -119,6 +129,7 @@ export class ExercisesController {
   }
 
   @Delete(':id/publish')
+  @CheckPermission('publish', 'Exercise')
   async unpublish(@Param('id') id: string, @Res({ passthrough: true }) res: Response) {
     try {
       const exercise = await exerciseService.unpublish(id);
@@ -131,6 +142,7 @@ export class ExercisesController {
   }
 
   @Get(':id/config')
+  @CheckPermission('read', 'Exercise')
   async getConfig(@Param('id') id: string, @Res({ passthrough: true }) res: Response) {
     try {
       const config = await exerciseService.getExerciseConfig(id);

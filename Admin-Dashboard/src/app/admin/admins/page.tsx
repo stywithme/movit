@@ -8,7 +8,7 @@ interface Admin {
   id: string;
   name: string;
   email: string;
-  role: string;
+  role: { id: string; name: string } | null;
   isActive: boolean;
   createdAt: string;
 }
@@ -174,15 +174,20 @@ export default function AdminsPage() {
                       </div>
                     </td>
                     <td className="px-6 py-4 text-sm text-gray-600">
-                      {admin.role}
+                      {admin.role ? (
+                        <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-blue-50 text-blue-700 border border-blue-100">
+                          {admin.role.name}
+                        </span>
+                      ) : (
+                        <span className="text-gray-400 text-xs">No role</span>
+                      )}
                     </td>
                     <td className="px-6 py-4">
                       <span
-                        className={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${
-                          admin.isActive
-                            ? 'bg-green-100 text-green-800'
-                            : 'bg-gray-100 text-gray-600'
-                        }`}
+                        className={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${admin.isActive
+                          ? 'bg-green-100 text-green-800'
+                          : 'bg-gray-100 text-gray-600'
+                          }`}
                       >
                         {admin.isActive ? 'Active' : 'Inactive'}
                       </span>

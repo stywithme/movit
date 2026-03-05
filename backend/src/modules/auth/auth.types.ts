@@ -99,9 +99,13 @@ export interface AuthResponse {
 }
 
 export interface JwtPayload {
+  sub: string;
   userId: string;
   email: string;
-  type: 'access' | 'refresh';
+  type: string; // 'regular' or 'premium' (or 'access'/'refresh' for old tokens)
+  tokenType?: 'access' | 'refresh'; // New tokens use this
+  isActive?: boolean;
+  subscriptionExpiry?: string | null;
   iat?: number;
   exp?: number;
 }

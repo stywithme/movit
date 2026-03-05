@@ -1,5 +1,7 @@
-import { Body, Controller, Delete, Post, Res } from '@nestjs/common';
+import { Body, Controller, Delete, Post, Res, UseGuards } from '@nestjs/common';
 import type { Response } from 'express';
+import { CaslGuard } from '@/lib/casl/casl.guard';
+import { CheckPermission } from '@/lib/casl/check-permission.decorator';
 import { translateText } from '@/lib/gemini';
 import { deleteAudioFile, generateSpeech } from '@/lib/gemini';
 
@@ -10,9 +12,11 @@ interface TranslateRequestBody {
   context?: string;
 }
 
+@UseGuards(CaslGuard)
 @Controller('ai')
 export class AiController {
   @Post('translate')
+  @CheckPermission('update', 'Exercise')
   async translate(@Body() body: TranslateRequestBody, @Res({ passthrough: true }) res: Response) {
     try {
       if (!body?.text || !body?.from || !body?.to) {
@@ -46,6 +50,7 @@ export class AiController {
   }
 
   @Post('tts')
+  @CheckPermission('update', 'Exercise')
   async tts(
     @Body() body: { text?: string; language?: 'ar' | 'en'; voiceName?: string },
     @Res({ passthrough: true }) res: Response
@@ -80,6 +85,7 @@ export class AiController {
   }
 
   @Delete('tts')
+  @CheckPermission('update', 'Exercise')
   async deleteTts(@Body() body: { audioPath?: string }, @Res({ passthrough: true }) res: Response) {
     try {
       if (!body?.audioPath) {

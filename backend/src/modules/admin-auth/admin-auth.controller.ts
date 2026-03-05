@@ -32,7 +32,8 @@ export class AdminAuthController {
       const token = signAdminToken({
         adminId: admin.id,
         email: admin.email,
-        role: admin.role,
+        roleId: admin.roleId,
+        isSuperAdmin: admin.isSuperAdmin,
       });
       setAdminAuthCookie(res, token);
       return { success: true, data: admin };

@@ -7,7 +7,10 @@ import {
   Res,
   UploadedFile,
   UseInterceptors,
+  UseGuards,
 } from '@nestjs/common';
+import { CaslGuard } from '@/lib/casl/casl.guard';
+import { CheckPermission } from '@/lib/casl/check-permission.decorator';
 import type { Response } from 'express';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { memoryStorage } from 'multer';
@@ -33,9 +36,11 @@ function resolveCategory(value?: string): UploadCategory | null {
   return null;
 }
 
+@UseGuards(CaslGuard)
 @Controller('uploads')
 export class UploadsController {
   @Post()
+  @CheckPermission('create', 'Upload')
   @UseInterceptors(
     FileInterceptor('file', {
       storage: memoryStorage(),
@@ -94,6 +99,7 @@ export class UploadsController {
   }
 
   @Delete()
+  @CheckPermission('delete', 'Upload')
   async remove(@Body() body: any, @Res({ passthrough: true }) res: Response) {
     try {
       const objectName = body?.objectName || (body?.url ? parseObjectNameFromUrl(body.url) : null);

@@ -5,9 +5,9 @@ import {
   Get,
   Patch,
   Post,
-  Put,
   Req,
   Res,
+  UseGuards,
 } from '@nestjs/common';
 import type { Request, Response } from 'express';
 import { authService } from './auth.service';
@@ -22,10 +22,16 @@ import {
   updateProfileSchema,
   updateSettingsSchema,
 } from './auth.types';
-import { getDeviceInfo, getUserIdFromRequest } from '@/lib/auth/middleware';
+import { getDeviceInfo } from '@/lib/auth/middleware';
+import { MobileAuthGuard } from '@/lib/guards/mobile-auth.guard';
+import { MobileAuth } from '@/lib/guards/mobile-auth.guard';
+import { UserPermissionGuard } from '@/lib/guards/user-permission.guard';
 
 @Controller('mobile/auth')
 export class MobileAuthController {
+
+  // ─── Public Routes (no guard) ──────────────────────────────────────────────
+
   @Post('register')
   async register(@Req() req: Request, @Body() body: unknown, @Res({ passthrough: true }) res: Response) {
     const parseResult = registerSchema.safeParse(body);
@@ -149,152 +155,6 @@ export class MobileAuthController {
     }
   }
 
-  @Post('logout')
-  async logout(@Body() body: unknown, @Res({ passthrough: true }) res: Response) {
-    const parseResult = refreshTokenSchema.safeParse(body);
-    if (!parseResult.success) {
-      res.status(400);
-      return {
-        success: false,
-        error: 'Validation failed',
-        details: parseResult.error.flatten().fieldErrors,
-      };
-    }
-
-    try {
-      await authService.logout(parseResult.data.refreshToken);
-      return { success: true, message: 'Logged out successfully' };
-    } catch (error) {
-      console.error('Logout error:', error);
-      res.status(500);
-      return { success: false, error: 'Logout failed' };
-    }
-  }
-
-  @Delete('logout')
-  async logoutAll(@Req() req: Request, @Res({ passthrough: true }) res: Response) {
-    try {
-      const userId = getUserIdFromRequest(req);
-      if (!userId) {
-        res.status(401);
-        return { success: false, error: 'Unauthorized' };
-      }
-      await authService.logoutAll(userId);
-      return { success: true, message: 'Logged out from all devices' };
-    } catch (error) {
-      console.error('Logout all error:', error);
-      res.status(500);
-      return { success: false, error: 'Logout failed' };
-    }
-  }
-
-  @Get('profile')
-  async profile(@Req() req: Request, @Res({ passthrough: true }) res: Response) {
-    try {
-      const userId = getUserIdFromRequest(req);
-      if (!userId) {
-        res.status(401);
-        return { success: false, error: 'Unauthorized' };
-      }
-
-      const user = await authService.getProfile(userId);
-      if (!user) {
-        res.status(404);
-        return { success: false, error: 'User not found' };
-      }
-
-      return { success: true, data: user };
-    } catch (error) {
-      console.error('Get profile error:', error);
-      res.status(500);
-      return { success: false, error: 'Failed to get profile' };
-    }
-  }
-
-  @Patch('profile')
-  async updateProfile(@Req() req: Request, @Body() body: unknown, @Res({ passthrough: true }) res: Response) {
-    try {
-      const userId = getUserIdFromRequest(req);
-      if (!userId) {
-        res.status(401);
-        return { success: false, error: 'Unauthorized' };
-      }
-
-      const parseResult = updateProfileSchema.safeParse(body);
-      if (!parseResult.success) {
-        res.status(400);
-        return {
-          success: false,
-          error: 'Validation failed',
-          details: parseResult.error.flatten().fieldErrors,
-        };
-      }
-
-      const user = await authService.updateProfile(userId, parseResult.data);
-      return { success: true, data: user };
-    } catch (error) {
-      console.error('Update profile error:', error);
-      res.status(500);
-      return { success: false, error: 'Failed to update profile' };
-    }
-  }
-
-  @Patch('settings')
-  async updateSettings(@Req() req: Request, @Body() body: unknown, @Res({ passthrough: true }) res: Response) {
-    try {
-      const userId = getUserIdFromRequest(req);
-      if (!userId) {
-        res.status(401);
-        return { success: false, error: 'Unauthorized' };
-      }
-
-      const parseResult = updateSettingsSchema.safeParse(body);
-      if (!parseResult.success) {
-        res.status(400);
-        return {
-          success: false,
-          error: 'Validation failed',
-          details: parseResult.error.flatten().fieldErrors,
-        };
-      }
-
-      const user = await authService.updateSettings(userId, parseResult.data);
-      return { success: true, data: user };
-    } catch (error) {
-      console.error('Update settings error:', error);
-      res.status(500);
-      return { success: false, error: 'Failed to update settings' };
-    }
-  }
-
-  @Post('change-password')
-  async changePassword(@Req() req: Request, @Body() body: unknown, @Res({ passthrough: true }) res: Response) {
-    try {
-      const userId = getUserIdFromRequest(req);
-      if (!userId) {
-        res.status(401);
-        return { success: false, error: 'Unauthorized' };
-      }
-
-      const parseResult = changePasswordSchema.safeParse(body);
-      if (!parseResult.success) {
-        res.status(400);
-        return {
-          success: false,
-          error: 'Validation failed',
-          details: parseResult.error.flatten().fieldErrors,
-        };
-      }
-
-      await authService.changePassword(userId, parseResult.data);
-      return { success: true, message: 'Password updated successfully' };
-    } catch (error) {
-      console.error('Change password error:', error);
-      res.status(500);
-      return { success: false, error: 'Failed to change password' };
-    }
-  }
-
   @Post('forgot-password')
   async forgotPassword(@Body() body: unknown, @Res({ passthrough: true }) res: Response) {
     const parseResult = forgotPasswordSchema.safeParse(body);
@@ -339,10 +199,184 @@ export class MobileAuthController {
     }
   }
 
+  // ─── Protected Routes (require auth + user permission) ────────────────────
+
+  @UseGuards(MobileAuthGuard, UserPermissionGuard)
+  @MobileAuth()
+  @Post('logout')
+  async logout(@Body() body: unknown, @Res({ passthrough: true }) res: Response) {
+    const parseResult = refreshTokenSchema.safeParse(body);
+    if (!parseResult.success) {
+      res.status(400);
+      return {
+        success: false,
+        error: 'Validation failed',
+        details: parseResult.error.flatten().fieldErrors,
+      };
+    }
+
+    try {
+      await authService.logout(parseResult.data.refreshToken);
+      return { success: true, message: 'Logged out successfully' };
+    } catch (error) {
+      console.error('Logout error:', error);
+      res.status(500);
+      return { success: false, error: 'Logout failed' };
+    }
+  }
+
+  @UseGuards(MobileAuthGuard, UserPermissionGuard)
+  @MobileAuth()
+  @Delete('logout')
+  async logoutAll(@Req() req: Request, @Res({ passthrough: true }) res: Response) {
+    try {
+      const userId = (req as any).userId;
+      if (!userId) {
+        res.status(401);
+        return { success: false, error: 'Unauthorized' };
+      }
+      await authService.logoutAll(userId);
+      return { success: true, message: 'Logged out from all devices' };
+    } catch (error) {
+      console.error('Logout all error:', error);
+      res.status(500);
+      return { success: false, error: 'Logout failed' };
+    }
+  }
+
+  @UseGuards(MobileAuthGuard, UserPermissionGuard)
+  @MobileAuth()
+  @Get('profile')
+  async profile(@Req() req: Request, @Res({ passthrough: true }) res: Response) {
+    try {
+      const userId = (req as any).userId;
+      if (!userId) {
+        res.status(401);
+        return { success: false, error: 'Unauthorized' };
+      }
+
+      const user = await authService.getProfile(userId);
+      if (!user) {
+        res.status(404);
+        return { success: false, error: 'User not found' };
+      }
+
+      // Attach permission info to the response
+      const userPermission = (req as any).userPermission;
+      return {
+        success: true,
+        data: {
+          ...user,
+          subscription: {
+            isPro: userPermission?.isPro ?? false,
+            isFree: userPermission?.isFree ?? true,
+            subscriptionExpiry: userPermission?.subscriptionExpiry ?? null,
+          },
+        },
+      };
+    } catch (error) {
+      console.error('Get profile error:', error);
+      res.status(500);
+      return { success: false, error: 'Failed to get profile' };
+    }
+  }
+
+  @UseGuards(MobileAuthGuard, UserPermissionGuard)
+  @MobileAuth()
+  @Patch('profile')
+  async updateProfile(@Req() req: Request, @Body() body: unknown, @Res({ passthrough: true }) res: Response) {
+    try {
+      const userId = (req as any).userId;
+      if (!userId) {
+        res.status(401);
+        return { success: false, error: 'Unauthorized' };
+      }
+
+      const parseResult = updateProfileSchema.safeParse(body);
+      if (!parseResult.success) {
+        res.status(400);
+        return {
+          success: false,
+          error: 'Validation failed',
+          details: parseResult.error.flatten().fieldErrors,
+        };
+      }
+
+      const user = await authService.updateProfile(userId, parseResult.data);
+      return { success: true, data: user };
+    } catch (error) {
+      console.error('Update profile error:', error);
+      res.status(500);
+      return { success: false, error: 'Failed to update profile' };
+    }
+  }
+
+  @UseGuards(MobileAuthGuard, UserPermissionGuard)
+  @MobileAuth()
+  @Patch('settings')
+  async updateSettings(@Req() req: Request, @Body() body: unknown, @Res({ passthrough: true }) res: Response) {
+    try {
+      const userId = (req as any).userId;
+      if (!userId) {
+        res.status(401);
+        return { success: false, error: 'Unauthorized' };
+      }
+
+      const parseResult = updateSettingsSchema.safeParse(body);
+      if (!parseResult.success) {
+        res.status(400);
+        return {
+          success: false,
+          error: 'Validation failed',
+          details: parseResult.error.flatten().fieldErrors,
+        };
+      }
+
+      const user = await authService.updateSettings(userId, parseResult.data);
+      return { success: true, data: user };
+    } catch (error) {
+      console.error('Update settings error:', error);
+      res.status(500);
+      return { success: false, error: 'Failed to update settings' };
+    }
+  }
+
+  @UseGuards(MobileAuthGuard, UserPermissionGuard)
+  @MobileAuth()
+  @Post('change-password')
+  async changePassword(@Req() req: Request, @Body() body: unknown, @Res({ passthrough: true }) res: Response) {
+    try {
+      const userId = (req as any).userId;
+      if (!userId) {
+        res.status(401);
+        return { success: false, error: 'Unauthorized' };
+      }
+
+      const parseResult = changePasswordSchema.safeParse(body);
+      if (!parseResult.success) {
+        res.status(400);
+        return {
+          success: false,
+          error: 'Validation failed',
+          details: parseResult.error.flatten().fieldErrors,
+        };
+      }
+
+      await authService.changePassword(userId, parseResult.data);
+      return { success: true, message: 'Password updated successfully' };
+    } catch (error) {
+      console.error('Change password error:', error);
+      res.status(500);
+      return { success: false, error: 'Failed to change password' };
+    }
+  }
+
+  @UseGuards(MobileAuthGuard, UserPermissionGuard)
+  @MobileAuth()
   @Delete('account')
   async deleteAccount(@Req() req: Request, @Res({ passthrough: true }) res: Response) {
     try {
-      const userId = getUserIdFromRequest(req);
+      const userId = (req as any).userId;
       if (!userId) {
         res.status(401);
         return { success: false, error: 'Unauthorized' };

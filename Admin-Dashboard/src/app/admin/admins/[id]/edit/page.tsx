@@ -2,14 +2,20 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter, useParams } from 'next/navigation';
-import { Input, Select } from '@/components/ui';
+import { Input } from '@/components/ui';
 
 interface Admin {
   id: string;
   name: string;
   email: string;
-  role: string;
+  roleId: string | null;
+  role?: { id: string; name: string } | null;
   isActive: boolean;
+}
+
+interface RoleOption {
+  id: string;
+  name: string;
 }
 
 export default function EditAdminPage() {
@@ -18,13 +24,29 @@ export default function EditAdminPage() {
   const adminId = params.id;
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [roles, setRoles] = useState<RoleOption[]>([]);
   const [formData, setFormData] = useState({
     name: '',
     email: '',
-    role: 'admin',
+    roleId: '',
     password: '',
   });
 
+  // Fetch roles
+  useEffect(() => {
+    const fetchRoles = async () => {
+      try {
+        const res = await fetch('/api/admin/permissions/roles');
+        const data = await res.json();
+        if (data.success) setRoles(data.data);
+      } catch (err) {
+        console.error('Error fetching roles:', err);
+      }
+    };
+    fetchRoles();
+  }, []);
+
+  // Fetch admin
   useEffect(() => {
     const fetchAdmin = async () => {
       try {
@@ -35,7 +57,7 @@ export default function EditAdminPage() {
           setFormData({
             name: admin.name || '',
             email: admin.email || '',
-            role: admin.role || 'admin',
+            roleId: admin.roleId || '',
             password: '',
           });
         } else {
@@ -49,9 +71,7 @@ export default function EditAdminPage() {
       }
     };
 
-    if (adminId) {
-      fetchAdmin();
-    }
+    if (adminId) fetchAdmin();
   }, [adminId, router]);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -65,7 +85,7 @@ export default function EditAdminPage() {
         body: JSON.stringify({
           name: formData.name,
           email: formData.email,
-          role: formData.role,
+          roleId: formData.roleId || null,
         }),
       });
 
@@ -83,7 +103,6 @@ export default function EditAdminPage() {
             return;
           }
         }
-
         router.push('/admin/admins');
       } else {
         alert('Error: ' + data.error);
@@ -150,14 +169,27 @@ export default function EditAdminPage() {
 
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">Role</label>
-          <Select
-            value={formData.role}
-            onChange={(e) => setFormData((prev) => ({ ...prev, role: e.target.value }))}
-            options={[
-              { value: 'admin', label: 'Admin' },
-              { value: 'super_admin', label: 'Super Admin' },
-            ]}
-          />
+          <select
+            value={formData.roleId}
+            onChange={(e) => setFormData((prev) => ({ ...prev, roleId: e.target.value }))}
+            className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm bg-gray-50/50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white transition-all"
+          >
+            <option value="">— No Role —</option>
+            {roles.map((role) => (
+              <option key={role.id} value={role.id}>
+                {role.name}
+              </option>
+            ))}
+          </select>
+          {formData.roleId && (
+            <button
+              type="button"
+              onClick={() => setFormData((prev) => ({ ...prev, roleId: '' }))}
+              className="mt-1.5 text-xs text-red-500 hover:text-red-700 underline"
+            >
+              Remove role
+            </button>
+          )}
         </div>
 
         <div>

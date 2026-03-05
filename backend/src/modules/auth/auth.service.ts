@@ -67,7 +67,7 @@ async function verifyGoogleToken(idToken: string): Promise<GoogleTokenPayload | 
       idToken,
       audience: GOOGLE_CLIENT_ID,
     });
-    
+
     const payload = ticket.getPayload();
     if (!payload) return null;
 
@@ -122,15 +122,24 @@ function toUserPublic(user: {
   };
 }
 
-function generateTokens(userId: string, email: string): AuthTokens {
+function generateTokens(user: { id: string; email: string; isPro: boolean; isActive: boolean; subscriptionExpiry: Date | null }): AuthTokens {
+  const payload = {
+    sub: user.id,
+    userId: user.id,
+    email: user.email,
+    type: user.isPro && (user.subscriptionExpiry === null || user.subscriptionExpiry > new Date()) ? 'premium' : 'regular',
+    isActive: user.isActive,
+    subscriptionExpiry: user.subscriptionExpiry ? user.subscriptionExpiry.toISOString() : null,
+  };
+
   const accessToken = jwt.sign(
-    { userId, email, type: 'access' } as JwtPayload,
+    { ...payload, tokenType: 'access' },
     JWT_SECRET,
     { expiresIn: ACCESS_TOKEN_EXPIRY }
   );
 
   const refreshToken = jwt.sign(
-    { userId, email, type: 'refresh' } as JwtPayload,
+    { ...payload, tokenType: 'refresh' },
     JWT_REFRESH_SECRET,
     { expiresIn: REFRESH_TOKEN_EXPIRY }
   );
@@ -144,8 +153,8 @@ function generateTokens(userId: string, email: string): AuthTokens {
 
 function verifyAccessToken(token: string): JwtPayload | null {
   try {
-    const payload = jwt.verify(token, JWT_SECRET) as JwtPayload;
-    if (payload.type !== 'access') return null;
+    const payload = jwt.verify(token, JWT_SECRET) as any;
+    if (payload.tokenType !== 'access' && payload.type !== 'access') return null;
     return payload;
   } catch {
     return null;
@@ -154,8 +163,8 @@ function verifyAccessToken(token: string): JwtPayload | null {
 
 function verifyRefreshToken(token: string): JwtPayload | null {
   try {
-    const payload = jwt.verify(token, JWT_REFRESH_SECRET) as JwtPayload;
-    if (payload.type !== 'refresh') return null;
+    const payload = jwt.verify(token, JWT_REFRESH_SECRET) as any;
+    if (payload.tokenType !== 'refresh' && payload.type !== 'refresh') return null;
     return payload;
   } catch {
     return null;
@@ -196,7 +205,7 @@ export const authService = {
     });
 
     // Generate tokens
-    const tokens = generateTokens(user.id, user.email);
+    const tokens = generateTokens(user);
 
     // Store refresh token
     await prisma.refreshToken.create({
@@ -240,7 +249,7 @@ export const authService = {
     }
 
     // Generate tokens
-    const tokens = generateTokens(user.id, user.email);
+    const tokens = generateTokens(user);
 
     // Store refresh token
     await prisma.refreshToken.create({
@@ -308,8 +317,8 @@ export const authService = {
       if (!user.googleId) {
         user = await prisma.user.update({
           where: { id: user.id },
-          data: { 
-            googleId, 
+          data: {
+            googleId,
             emailVerified: true,
             avatarUrl: avatarUrl || user.avatarUrl,
           },
@@ -334,7 +343,7 @@ export const authService = {
     }
 
     // Generate tokens
-    const tokens = generateTokens(user.id, user.email);
+    const tokens = generateTokens(user);
 
     // Store refresh token
     await prisma.refreshToken.create({
@@ -373,13 +382,12 @@ export const authService = {
     if (!storedToken || storedToken.expiresAt < new Date()) {
       throw new Error('Refresh token expired or invalid');
     }
-
     if (!storedToken.user.isActive) {
       throw new Error('Account is deactivated');
     }
 
     // Generate new tokens
-    const tokens = generateTokens(storedToken.userId, storedToken.user.email);
+    const tokens = generateTokens(storedToken.user);
 
     // Delete old refresh token and create new one
     await prisma.refreshToken.delete({ where: { id: storedToken.id } });
@@ -400,7 +408,7 @@ export const authService = {
    */
   async logout(refreshToken: string): Promise<void> {
     const prisma = await getPrisma();
-    
+
     await prisma.refreshToken.deleteMany({
       where: { token: refreshToken },
     });
@@ -411,7 +419,7 @@ export const authService = {
    */
   async logoutAll(userId: string): Promise<void> {
     const prisma = await getPrisma();
-    
+
     await prisma.refreshToken.deleteMany({
       where: { userId },
     });
@@ -422,7 +430,7 @@ export const authService = {
    */
   async getProfile(userId: string): Promise<UserPublic | null> {
     const prisma = await getPrisma();
-    
+
     const user = await prisma.user.findUnique({
       where: { id: userId, deletedAt: null },
     });
@@ -436,7 +444,7 @@ export const authService = {
    */
   async updateProfile(userId: string, data: UpdateProfileInput): Promise<UserPublic> {
     const prisma = await getPrisma();
-    
+
     const user = await prisma.user.update({
       where: { id: userId },
       data: {
@@ -453,7 +461,7 @@ export const authService = {
    */
   async updateSettings(userId: string, data: UpdateSettingsInput): Promise<UserPublic> {
     const prisma = await getPrisma();
-    
+
     const user = await prisma.user.update({
       where: { id: userId },
       data: {
@@ -471,7 +479,7 @@ export const authService = {
    */
   async changePassword(userId: string, data: ChangePasswordInput): Promise<void> {
     const prisma = await getPrisma();
-    
+
     const user = await prisma.user.findUnique({
       where: { id: userId },
     });
@@ -503,7 +511,7 @@ export const authService = {
    */
   async forgotPassword(email: string): Promise<void> {
     const prisma = await getPrisma();
-    
+
     const user = await prisma.user.findUnique({
       where: { email: email.toLowerCase(), deletedAt: null },
     });
@@ -540,7 +548,7 @@ export const authService = {
    */
   async resetPassword(token: string, newPassword: string): Promise<void> {
     const prisma = await getPrisma();
-    
+
     const user = await prisma.user.findFirst({
       where: {
         resetToken: token,
@@ -570,11 +578,18 @@ export const authService = {
   },
 
   /**
+   * Verify access token and get full payload
+   */
+  verifyTokenFull(token: string): JwtPayload | null {
+    return verifyAccessToken(token);
+  },
+
+  /**
    * Verify access token and get user ID
    */
   verifyToken(token: string): string | null {
     const payload = verifyAccessToken(token);
-    return payload?.userId || null;
+    return payload?.sub || payload?.userId || null;
   },
 
   /**
@@ -582,7 +597,7 @@ export const authService = {
    */
   async updateStats(userId: string, workouts: number, minutes: number): Promise<void> {
     const prisma = await getPrisma();
-    
+
     await prisma.user.update({
       where: { id: userId },
       data: {
@@ -610,7 +625,7 @@ export const authService = {
    */
   async deleteAccount(userId: string): Promise<void> {
     const prisma = await getPrisma();
-    
+
     // Delete all refresh tokens
     await prisma.refreshToken.deleteMany({ where: { userId } });
 
@@ -650,23 +665,23 @@ export interface MobileTokenResult {
 export async function verifyMobileToken(request: Request): Promise<MobileTokenResult> {
   try {
     const authHeader = request.headers.authorization;
-    
+
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
       return { success: false, error: 'Missing or invalid Authorization header' };
     }
-    
+
     const token = authHeader.replace('Bearer ', '');
     const userId = authService.verifyToken(token);
-    
+
     if (!userId) {
       return { success: false, error: 'Invalid or expired token' };
     }
-    
+
     return { success: true, userId };
   } catch (error) {
-    return { 
-      success: false, 
-      error: error instanceof Error ? error.message : 'Token verification failed' 
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Token verification failed'
     };
   }
 }

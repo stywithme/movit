@@ -1,11 +1,15 @@
-import { Body, Controller, Delete, Get, Param, Post, Put, Query, Res } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, Post, Put, Query, Res, UseGuards } from '@nestjs/common';
 import type { Response } from 'express';
 import { posePositionService } from './pose-positions.service';
 import type { CreatePosePositionInput, UpdatePosePositionInput } from './pose-positions.types';
+import { CaslGuard } from '@/lib/casl/casl.guard';
+import { CheckPermission } from '@/lib/casl/check-permission.decorator';
 
+@UseGuards(CaslGuard)
 @Controller('pose-positions')
 export class PosePositionsController {
   @Get()
+  @CheckPermission('read', 'PosePosition')
   async list(@Query('includeInactive') includeInactive?: string) {
     try {
       const include = includeInactive === 'true';
@@ -36,6 +40,7 @@ export class PosePositionsController {
   }
 
   @Post()
+  @CheckPermission('create', 'PosePosition')
   async create(@Body() body: CreatePosePositionInput, @Res({ passthrough: true }) res: Response) {
     try {
       if (!body?.code || !body?.name) {
@@ -79,6 +84,7 @@ export class PosePositionsController {
   }
 
   @Get(':id')
+  @CheckPermission('read', 'PosePosition')
   async getById(@Param('id') id: string, @Res({ passthrough: true }) res: Response) {
     try {
       const position = await posePositionService.getById(id);
@@ -114,6 +120,7 @@ export class PosePositionsController {
   }
 
   @Put(':id')
+  @CheckPermission('update', 'PosePosition')
   async update(
     @Param('id') id: string,
     @Body() body: UpdatePosePositionInput,
@@ -154,6 +161,7 @@ export class PosePositionsController {
   }
 
   @Delete(':id')
+  @CheckPermission('delete', 'PosePosition')
   async remove(@Param('id') id: string, @Res({ passthrough: true }) res: Response) {
     try {
       const existing = await posePositionService.getById(id);

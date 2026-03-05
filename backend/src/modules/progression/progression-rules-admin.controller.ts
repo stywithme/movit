@@ -12,19 +12,11 @@
  * All endpoints are protected by admin cookie-based auth.
  */
 
-import { Controller, Get, Post, Put, Delete, Req, Res, Param, Body } from '@nestjs/common';
+import { Controller, Get, Post, Put, Delete, Req, Res, Param, Body, UseGuards } from '@nestjs/common';
 import type { Request, Response } from 'express';
-import { getAdminIdFromRequest } from '@/lib/auth/admin';
+import { CaslGuard } from '@/lib/casl/casl.guard';
+import { CheckPermission } from '@/lib/casl/check-permission.decorator';
 import { getPrisma } from '@/lib/prisma/client';
-
-function verifyAdmin(req: Request, res: Response): boolean {
-  const adminId = getAdminIdFromRequest(req);
-  if (!adminId) {
-    res.status(401);
-    return false;
-  }
-  return true;
-}
 
 interface CreateRuleBody {
   name: string;
@@ -38,13 +30,13 @@ interface CreateRuleBody {
   isActive: boolean;
 }
 
+@UseGuards(CaslGuard)
 @Controller('admin/progression-rules')
 export class ProgressionRulesAdminController {
   @Get()
+  @CheckPermission('read', 'ProgressionRule')
   async listRules(@Req() req: Request, @Res({ passthrough: true }) res: Response) {
-    if (!verifyAdmin(req, res)) {
-      return { success: false, error: 'Unauthorized' };
-    }
+
     try {
       const prisma = await getPrisma();
 
@@ -82,14 +74,13 @@ export class ProgressionRulesAdminController {
   }
 
   @Post()
+  @CheckPermission('create', 'ProgressionRule')
   async createRule(
     @Req() req: Request,
     @Res({ passthrough: true }) res: Response,
     @Body() body: CreateRuleBody,
   ) {
-    if (!verifyAdmin(req, res)) {
-      return { success: false, error: 'Unauthorized' };
-    }
+
     try {
       const prisma = await getPrisma();
 
@@ -116,14 +107,13 @@ export class ProgressionRulesAdminController {
   }
 
   @Get(':id')
+  @CheckPermission('read', 'ProgressionRule')
   async getRule(
     @Req() req: Request,
     @Res({ passthrough: true }) res: Response,
     @Param('id') id: string,
   ) {
-    if (!verifyAdmin(req, res)) {
-      return { success: false, error: 'Unauthorized' };
-    }
+
     try {
       const prisma = await getPrisma();
 
@@ -182,15 +172,13 @@ export class ProgressionRulesAdminController {
   }
 
   @Put(':id')
+  @CheckPermission('update', 'ProgressionRule')
   async updateRule(
     @Req() req: Request,
     @Res({ passthrough: true }) res: Response,
     @Param('id') id: string,
     @Body() body: Partial<CreateRuleBody>,
   ) {
-    if (!verifyAdmin(req, res)) {
-      return { success: false, error: 'Unauthorized' };
-    }
     try {
       const prisma = await getPrisma();
 
@@ -224,14 +212,12 @@ export class ProgressionRulesAdminController {
   }
 
   @Delete(':id')
+  @CheckPermission('delete', 'ProgressionRule')
   async deleteRule(
     @Req() req: Request,
     @Res({ passthrough: true }) res: Response,
     @Param('id') id: string,
   ) {
-    if (!verifyAdmin(req, res)) {
-      return { success: false, error: 'Unauthorized' };
-    }
     try {
       const prisma = await getPrisma();
 
@@ -268,14 +254,12 @@ export class ProgressionRulesAdminController {
   }
 
   @Put(':id/toggle')
+  @CheckPermission('update', 'ProgressionRule')
   async toggleRule(
     @Req() req: Request,
     @Res({ passthrough: true }) res: Response,
     @Param('id') id: string,
   ) {
-    if (!verifyAdmin(req, res)) {
-      return { success: false, error: 'Unauthorized' };
-    }
     try {
       const prisma = await getPrisma();
 
