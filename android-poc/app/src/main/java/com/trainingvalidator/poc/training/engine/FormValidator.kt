@@ -6,10 +6,10 @@ import com.trainingvalidator.poc.training.models.*
 
 /**
  * FormValidator - STATE-BASED Form Validation
- * 
+ *
  * Validates exercise form using the unified JointState system.
  * This is the SINGLE SOURCE OF TRUTH for form quality assessment.
- * 
+ *
  * State Hierarchy (by priority):
  * 1. DANGER  → Injury risk, invalidates rep
  * 2. WARNING → Error, doesn't count rep
@@ -17,7 +17,7 @@ import com.trainingvalidator.poc.training.models.*
  * 4. NORMAL  → Good form, partial score
  * 5. PAD     → Acceptable form, minimal score
  * 6. TRANSITION → Movement zone, no scoring
- * 
+ *
  * Key Changes from Previous Version:
  * - Removed difficulty parameter (no more beginner/normal/advanced)
  * - Uses JointState instead of JointZone for quality assessment
@@ -27,43 +27,43 @@ import com.trainingvalidator.poc.training.models.*
 class FormValidator(
     private val trackedJoints: List<TrackedJoint>
 ) {
-    
+
     companion object {
         private const val TAG = "FormValidator"
-        
+
         // Hysteresis degrees for state transitions
         private const val STATE_HYSTERESIS_NORMAL_PAD = 3.0      // Between NORMAL ↔ PAD
         private const val STATE_HYSTERESIS_PAD_WARNING = 2.0     // Between PAD ↔ WARNING
         private const val STATE_HYSTERESIS_WARNING_DANGER = 2.0  // Between WARNING ↔ DANGER
-        
+
         // Minimum consecutive frames to confirm DANGER (safety smoothing)
         private const val MIN_DANGER_FRAMES = 3
     }
-    
+
     // Previous states for hysteresis (prevents flickering)
     private val previousStates = mutableMapOf<String, JointState>()
-    
+
     // Danger frame counter for each joint (safety smoothing)
     private val dangerFrameCounts = mutableMapOf<String, Int>()
-    
+
     // ==================== Reusable Collections (Performance Optimization) ====================
     // Pre-allocated to avoid allocation on every frame
-    
+
     private val reusableStateInfos = mutableMapOf<String, JointStateInfo>()
     private val reusableErrors = mutableListOf<JointError>()
-    
+
     // ==================== Configurable Thresholds ====================
-    
+
     /**
      * Boundary buffer from global settings (prevents flickering at validation boundaries)
      */
     private val boundaryBuffer: Double = SettingsManager.getBoundaryBuffer()
-    
+
     // ==================== Main Validation Methods ====================
-    
+
     /**
      * Validate all tracked joints and return state information
-     * 
+     *
      * @param currentAngles Map of joint code to current angle
      * @param currentPhase Current phase of exercise (for context)
      * @return Map of joint code to JointStateInfo (immutable copy for thread safety)
@@ -71,26 +71,22 @@ class FormValidator(
     fun getJointStateInfos(currentAngles: Map<String, Double>): Map<String, JointStateInfo> {
         // Clear and reuse internal map
         reusableStateInfos.clear()
-        
+
         for (joint in trackedJoints) {
             val currentAngle = currentAngles[joint.joint] ?: continue
-            
+
             val stateInfo = determineJointStateInfo(joint, currentAngle)
             reusableStateInfos[joint.joint] = stateInfo
         }
-        
+
         // Return immutable copy for thread safety
         return reusableStateInfos.toMap()
     }
-    
+
     /**
      * Legacy validation method - wraps state info into ValidationResult
-     * 
+     *
      * @deprecated Use getJointStateInfos() instead for new code.
-     * 
-     * @param currentAngles Map of joint code to current angle
-     * @param currentPhase Current phase of exercise
-     * @return Validation result with joint statuses and errors
      */
     @Suppress("DEPRECATION")
     @Deprecated("Use getJointStateInfos() instead. Will be removed in future version.")
@@ -98,25 +94,35 @@ class FormValidator(
         currentAngles: Map<String, Double>,
         currentPhase: Phase
     ): ValidationResult {
-        val stateInfos = getJointStateInfos(currentAngles)
+        return validateFromStateInfos(getJointStateInfos(currentAngles))
+    }
+
+    /**
+     * Build ValidationResult from pre-computed JointStateInfos.
+     * Avoids redundant getJointStateInfos() recalculation.
+     */
+    @Suppress("DEPRECATION")
+    fun validateFromStateInfos(stateInfos: Map<String, JointStateInfo>): ValidationResult {
         val jointStatuses = mutableMapOf<String, JointStatus>()
-        // OPTIMIZED: Reuse errors list
         reusableErrors.clear()
-        
+
         for ((jointCode, stateInfo) in stateInfos) {
             val joint = trackedJoints.find { it.joint == jointCode } ?: continue
-            
-            // Convert to legacy JointStatus for backward compatibility
+
             val isCorrect = stateInfo.state in listOf(
                 JointState.PERFECT, JointState.NORMAL, JointState.PAD, JointState.TRANSITION
             )
-            
-            val errorType = if (stateInfo.currentAngle > 90) ErrorType.TOO_HIGH else ErrorType.TOO_LOW
-            
-            // Get message from stateMessages (not startPoseMessage)
-            val errorMessage = joint.stateMessages?.getMessage(stateInfo.state)
+
+            val expectedRange = resolveExpectedRangeForState(stateInfo.stateRanges, stateInfo.state)
+            val errorType = resolveErrorType(
+                angle = stateInfo.currentAngle,
+                stateRanges = stateInfo.stateRanges,
+                expectedRange = expectedRange
+            )
+
+            val errorMessage = joint.stateMessages?.getMessage(stateInfo.state, stateInfo.currentZone)
                 ?: joint.getStartPoseMessage(errorType)
-            
+
             val status = JointStatus(
                 jointCode = jointCode,
                 isCorrect = isCorrect,
@@ -126,34 +132,34 @@ class FormValidator(
                         jointCode = jointCode,
                         errorType = errorType,
                         actualAngle = stateInfo.currentAngle,
-                        expectedMin = stateInfo.stateRanges?.perfect?.min ?: 0.0,
-                        expectedMax = stateInfo.stateRanges?.perfect?.max ?: 180.0,
+                        expectedMin = expectedRange.min,
+                        expectedMax = expectedRange.max,
                         message = errorMessage,
-                        state = stateInfo.state,  // Include actual state
+                        state = stateInfo.state,
                         isPrimary = stateInfo.isPrimary
                     )
                 } else null
             )
-            
+
             jointStatuses[jointCode] = status
-            
+
             if (!isCorrect && status.error != null) {
                 reusableErrors.add(status.error)
             }
         }
-        
+
         return ValidationResult(
             isCorrect = reusableErrors.isEmpty(),
             jointStatuses = jointStatuses,
-            errors = reusableErrors.toList()  // Return copy to avoid mutation issues
+            errors = reusableErrors.toList()
         )
     }
-    
+
     // ==================== State Determination ====================
-    
+
     /**
      * Determine complete JointStateInfo for a joint
-     * 
+     *
      * @param joint TrackedJoint configuration
      * @param angle Current angle in degrees
      * @return Complete JointStateInfo with all decision data
@@ -163,43 +169,56 @@ class FormValidator(
         angle: Double
     ): JointStateInfo {
         val isPrimary = joint.role == JointRole.PRIMARY
-        
+
         // Determine zone type (UP, DOWN, or TRANSITION)
         val zoneType = if (isPrimary && joint.hasStateUpDownRanges()) {
             joint.determineZoneType(angle)
         } else {
             ZoneType.UP_ZONE // SECONDARY joints use single zone
         }
-        
+
         // Get the applicable StateRanges for this zone
         val stateRanges = getApplicableStateRanges(joint, zoneType)
-        
+
         // Get UP and DOWN ranges for track rendering (each track needs its own ranges)
         val upStateRanges = if (joint.hasStateUpDownRanges()) {
             joint.getStateUpRange()
         } else if (joint.hasStateHoldRange()) {
             joint.getStateHoldRange()
         } else null
-        
+
         val downStateRanges = if (joint.hasStateUpDownRanges()) {
             joint.getStateDownRange()
         } else if (joint.hasStateHoldRange()) {
             joint.getStateHoldRange()
         } else null
-        
-        // Determine raw state from ranges
+
+        // Determine outward direction for filling undefined outer ranges
+        val outward = when (zoneType) {
+            ZoneType.UP_ZONE -> OutwardDirection.TOWARDS_HIGH
+            ZoneType.DOWN_ZONE -> OutwardDirection.TOWARDS_LOW
+            ZoneType.TRANSITION -> null
+        }
+
+        // Determine raw state from ranges (with outward fallback)
         val rawState = if (zoneType == ZoneType.TRANSITION) {
             JointState.TRANSITION
         } else {
-            stateRanges?.determineState(angle) ?: JointState.WARNING
+            stateRanges?.determineState(angle, outward) ?: JointState.WARNING
         }
-        
+
+        // Angle beyond all defined ranges → outward fallback is unambiguous
+        val isOutwardFallback = outward != null && stateRanges != null && when (outward) {
+            OutwardDirection.TOWARDS_HIGH -> angle > stateRanges.outermostMax
+            OutwardDirection.TOWARDS_LOW -> angle < stateRanges.outermostMin
+        }
+
         // Apply hysteresis and danger smoothing
-        val state = applyHysteresis(joint.joint, rawState, angle, stateRanges)
-        
+        val state = applyHysteresis(joint.joint, rawState, angle, stateRanges, isOutwardFallback)
+
         // Get messages for this state and zone
         val messages = joint.getMessagesForState(state, zoneType)
-        
+
         return JointStateInfo.create(
             jointCode = joint.joint,
             state = state,
@@ -213,7 +232,7 @@ class FormValidator(
             invertIndicator = joint.invertIndicator
         )
     }
-    
+
     /**
      * Get applicable StateRanges based on zone type
      */
@@ -225,15 +244,53 @@ class FormValidator(
             else -> null
         }
     }
-    
+
+    /**
+     * Resolve the expected range for the current state from active zone ranges.
+     * This guarantees report data uses the same configured state thresholds.
+     */
+    private fun resolveExpectedRangeForState(stateRanges: StateRanges?, state: JointState): AngleRange {
+        if (stateRanges == null) return AngleRange(0.0, 180.0)
+
+        return when (state) {
+            JointState.PERFECT -> stateRanges.perfect
+            JointState.NORMAL -> stateRanges.normal ?: stateRanges.perfect
+            JointState.PAD -> stateRanges.pad ?: stateRanges.normal ?: stateRanges.perfect
+            JointState.WARNING -> stateRanges.warning ?: stateRanges.pad ?: stateRanges.normal ?: stateRanges.perfect
+            JointState.DANGER -> stateRanges.danger ?: stateRanges.warning ?: stateRanges.pad ?: stateRanges.normal ?: stateRanges.perfect
+            JointState.TRANSITION -> AngleRange(stateRanges.effectiveMin, stateRanges.effectiveMax)
+        }
+    }
+
+    /**
+     * Determine if an error is TOO_HIGH or TOO_LOW relative to counted boundaries first,
+     * then fallback to the expected range itself for edge overlap cases.
+     */
+    private fun resolveErrorType(
+        angle: Double,
+        stateRanges: StateRanges?,
+        expectedRange: AngleRange
+    ): ErrorType {
+        stateRanges?.let { ranges ->
+            if (angle > ranges.effectiveMax) return ErrorType.TOO_HIGH
+            if (angle < ranges.effectiveMin) return ErrorType.TOO_LOW
+        }
+
+        if (angle > expectedRange.max) return ErrorType.TOO_HIGH
+        if (angle < expectedRange.min) return ErrorType.TOO_LOW
+
+        val midpoint = (expectedRange.min + expectedRange.max) / 2.0
+        return if (angle >= midpoint) ErrorType.TOO_HIGH else ErrorType.TOO_LOW
+    }
+
     /**
      * Apply hysteresis to prevent state flickering
-     * 
+     *
      * Uses degree-based hysteresis for smooth state transitions:
      * - DANGER entry: Requires MIN_DANGER_FRAMES consecutive frames (safety)
      * - DANGER exit: Must move far enough from danger zone
      * - Other transitions: Apply degree buffer based on state pair
-     * 
+     *
      * @param jointCode Joint identifier
      * @param rawState Newly determined state
      * @param angle Current angle
@@ -244,23 +301,24 @@ class FormValidator(
         jointCode: String,
         rawState: JointState,
         angle: Double,
-        stateRanges: StateRanges?
+        stateRanges: StateRanges?,
+        isOutwardFallback: Boolean = false
     ): JointState {
         val previousState = previousStates[jointCode]
-        
-        // First frame - no hysteresis needed
+
+        // First frame: don't allow immediate DANGER to avoid startup spikes.
         if (previousState == null) {
-            previousStates[jointCode] = rawState
-            dangerFrameCounts[jointCode] = if (rawState == JointState.DANGER) 1 else 0
-            return rawState
+            val initialState = if (rawState == JointState.DANGER && !isOutwardFallback) JointState.WARNING else rawState
+            previousStates[jointCode] = initialState
+            dangerFrameCounts[jointCode] = if (rawState == JointState.DANGER && !isOutwardFallback) 1 else 0
+            return initialState
         }
-        
+
         // CRITICAL: Reset danger frame count if NOT in DANGER
-        // This ensures the counter starts fresh each time user approaches DANGER
         if (rawState != JointState.DANGER) {
             dangerFrameCounts[jointCode] = 0
         }
-        
+
         // Same state - no change needed
         if (rawState == previousState) {
             if (rawState == JointState.DANGER) {
@@ -268,22 +326,30 @@ class FormValidator(
             }
             return rawState
         }
-        
+
+        // Outward fallback: angle is beyond all defined ranges.
+        // Classification is unambiguous — skip hysteresis to avoid sticking.
+        if (isOutwardFallback) {
+            previousStates[jointCode] = rawState
+            dangerFrameCounts[jointCode] = 0
+            return rawState
+        }
+
         // Get hysteresis degree for this transition
         val hysteresisDegree = getHysteresisDegree(previousState, rawState)
-        
+
         // Handle DANGER entry (requires frame count confirmation for safety)
         if (rawState == JointState.DANGER && previousState != JointState.DANGER) {
             val count = (dangerFrameCounts[jointCode] ?: 0) + 1
             dangerFrameCounts[jointCode] = count
-            
+
             if (count >= MIN_DANGER_FRAMES) {
                 previousStates[jointCode] = JointState.DANGER
                 return JointState.DANGER
             }
             return previousState
         }
-        
+
         // Handle transitions using degree-based hysteresis
         if (stateRanges != null && hysteresisDegree > 0) {
             // Check if angle has moved far enough to confirm transition
@@ -294,17 +360,17 @@ class FormValidator(
                 stateRanges = stateRanges,
                 hysteresisDegree = hysteresisDegree
             )
-            
+
             if (!transitionConfirmed) {
                 return previousState
             }
         }
-        
+
         // Transition confirmed
         previousStates[jointCode] = rawState
         return rawState
     }
-    
+
     /**
      * Get hysteresis degree for a state transition pair
      */
@@ -312,7 +378,7 @@ class FormValidator(
         return when {
             // DANGER transitions
             from == JointState.DANGER || to == JointState.DANGER -> STATE_HYSTERESIS_WARNING_DANGER
-            // WARNING transitions  
+            // WARNING transitions
             from == JointState.WARNING || to == JointState.WARNING -> STATE_HYSTERESIS_PAD_WARNING
             // PAD/NORMAL transitions
             from == JointState.PAD || to == JointState.PAD -> STATE_HYSTERESIS_NORMAL_PAD
@@ -320,10 +386,10 @@ class FormValidator(
             else -> 1.0
         }
     }
-    
+
     /**
      * Check if angle has moved far enough from boundary to confirm transition
-     * 
+     *
      * FIXED: Now applies hysteresis to ALL transitions including degradation (WARNING/TRANSITION)
      * This prevents flickering when angle is near boundaries due to camera noise.
      */
@@ -336,7 +402,7 @@ class FormValidator(
     ): Boolean {
         // Minimum margin for ALL transitions (prevents boundary flickering)
         val minMargin = 1.5  // degrees
-        
+
         // Check if angle is solidly inside the new state's range
         return when (newState) {
             JointState.PERFECT -> {
@@ -352,9 +418,16 @@ class FormValidator(
                 angle >= (range.min + hysteresisDegree) && angle <= (range.max - hysteresisDegree)
             }
             JointState.WARNING -> {
-                // For WARNING: require angle to be minMargin inside warning range
-                val range = stateRanges.warning ?: return true
-                angle >= (range.min + minMargin) && angle <= (range.max - minMargin)
+                val range = stateRanges.warning
+                if (range != null) {
+                    angle >= (range.min + minMargin) && angle <= (range.max - minMargin)
+                } else {
+                    // No explicit WARNING range: require minimum distance from counted boundary
+                    val outerBound = stateRanges.pad ?: stateRanges.normal ?: stateRanges.perfect
+                    val distFromMax = if (angle > outerBound.max) angle - outerBound.max else 0.0
+                    val distFromMin = if (angle < outerBound.min) outerBound.min - angle else 0.0
+                    maxOf(distFromMax, distFromMin) >= minMargin
+                }
             }
             JointState.TRANSITION -> {
                 // For TRANSITION: require minMargin inside transition zone
@@ -364,27 +437,27 @@ class FormValidator(
             else -> true
         }
     }
-    
+
     // ==================== Query Methods ====================
-    
+
     /**
      * Check if user is in valid start position (all primary joints in UP zone with counted state)
-     * 
+     *
      * For REP exercises: Checks if in UP_ZONE with counted state
      * For HOLD exercises: Checks if in hold range with counted state
      */
     fun isInStartPosition(currentAngles: Map<String, Double>): Boolean {
         for (joint in trackedJoints) {
             if (joint.role != JointRole.PRIMARY) continue
-            
+
             val currentAngle = currentAngles[joint.joint] ?: return false
-            
+
             when {
                 joint.hasStateUpDownRanges() -> {
                     // REP exercise: check UP zone
                     val zoneType = joint.determineZoneType(currentAngle)
                     if (zoneType != ZoneType.UP_ZONE) return false
-                    
+
                     val upRange = joint.getStateUpRange()
                     if (!upRange.isInCountedState(currentAngle)) return false
                 }
@@ -401,7 +474,7 @@ class FormValidator(
         }
         return true
     }
-    
+
     /**
      * Check if user is in valid startPose (pre-training check)
      * Uses startPose which is independent of state ranges
@@ -409,7 +482,7 @@ class FormValidator(
     fun isInStartPose(currentAngles: Map<String, Double>): Boolean {
         for (joint in trackedJoints) {
             if (joint.role != JointRole.PRIMARY) continue
-            
+
             val currentAngle = currentAngles[joint.joint] ?: return false
             if (!joint.isInStartPose(currentAngle)) {
                 return false
@@ -417,30 +490,30 @@ class FormValidator(
         }
         return true
     }
-    
+
     /**
      * Get feedback for getting into start position
-     * 
+     *
      * For REP exercises: Checks UP range perfect zone
      * For HOLD exercises: Checks hold range perfect zone
-     * 
+     *
      * Uses stateMessages.warning for feedback (falls back to generic message)
      */
     fun getStartPositionFeedback(currentAngles: Map<String, Double>): List<JointError> {
         val errors = mutableListOf<JointError>()
-        
+
         for (joint in trackedJoints) {
             if (joint.role != JointRole.PRIMARY) continue
-            
+
             val currentAngle = currentAngles[joint.joint] ?: continue
-            
+
             // Get the perfect range based on exercise type
             val perfectRange = when {
                 joint.hasStateUpDownRanges() -> joint.getStateUpRange().perfect
                 joint.hasStateHoldRange() -> joint.getStateHoldRange().perfect
                 else -> continue
             }
-            
+
             if (currentAngle > perfectRange.max + boundaryBuffer) {
                 errors.add(JointError(
                     jointCode = joint.joint,
@@ -465,23 +538,23 @@ class FormValidator(
                 ))
             }
         }
-        
+
         return errors
     }
-    
+
     /**
      * Get feedback for getting into startPose (pre-training)
-     * 
+     *
      * Uses stateMessages.warning for feedback (falls back to generic message)
      */
     fun getStartPoseFeedback(currentAngles: Map<String, Double>): List<JointError> {
         val errors = mutableListOf<JointError>()
-        
+
         for (joint in trackedJoints) {
             if (joint.role != JointRole.PRIMARY) continue
-            
+
             val currentAngle = currentAngles[joint.joint] ?: continue
-            
+
             if (currentAngle > joint.startPose.max) {
                 errors.add(JointError(
                     jointCode = joint.joint,
@@ -506,10 +579,10 @@ class FormValidator(
                 ))
             }
         }
-        
+
         return errors
     }
-    
+
     /**
      * Get worst state across all joints
      * Used for rep scoring
@@ -518,63 +591,87 @@ class FormValidator(
         val qualityStates = stateInfos.values
             .map { it.state }
             .filter { it != JointState.TRANSITION }
-        
+
         return JointState.getWorst(qualityStates)
     }
-    
+
     /**
      * Check if any joint is in DANGER state
      */
     fun hasDangerState(stateInfos: Map<String, JointStateInfo>): Boolean {
         return stateInfos.values.any { it.state == JointState.DANGER }
     }
-    
+
     /**
      * Legacy method - Get visual info for all tracked joints
-     * Wraps getJointStateInfos for backward compatibility with overlay code
-     * 
      * @deprecated Use getJointStateInfos() instead.
      */
     @Suppress("DEPRECATION")
     @Deprecated("Use getJointStateInfos() instead. Will be removed in future version.")
     fun getJointArrowInfos(currentAngles: Map<String, Double>): Map<String, JointArrowInfo> {
-        val stateInfos = getJointStateInfos(currentAngles)
+        return buildJointArrowInfos(getJointStateInfos(currentAngles))
+    }
+
+    /**
+     * Build JointArrowInfos from pre-computed JointStateInfos.
+     * Avoids redundant getJointStateInfos() recalculation.
+     */
+    @Suppress("DEPRECATION")
+    fun buildJointArrowInfos(stateInfos: Map<String, JointStateInfo>): Map<String, JointArrowInfo> {
         val arrowInfos = mutableMapOf<String, JointArrowInfo>()
-        
+
         for ((jointCode, stateInfo) in stateInfos) {
             val joint = trackedJoints.find { it.joint == jointCode } ?: continue
-            
-            // Convert JointState to legacy JointZone
+
             val zone = when (stateInfo.currentZone) {
                 ZoneType.UP_ZONE -> when (stateInfo.state) {
                     JointState.DANGER, JointState.WARNING -> {
-                        if (stateInfo.currentAngle > 90) JointZone.TOO_HIGH else JointZone.TOO_LOW
+                        val expectedRange = resolveExpectedRangeForState(stateInfo.stateRanges, stateInfo.state)
+                        when (
+                            resolveErrorType(
+                                angle = stateInfo.currentAngle,
+                                stateRanges = stateInfo.stateRanges,
+                                expectedRange = expectedRange
+                            )
+                        ) {
+                            ErrorType.TOO_HIGH -> JointZone.TOO_HIGH
+                            ErrorType.TOO_LOW -> JointZone.TOO_LOW
+                        }
                     }
                     else -> JointZone.UP_ZONE
                 }
                 ZoneType.DOWN_ZONE -> when (stateInfo.state) {
                     JointState.DANGER, JointState.WARNING -> {
-                        if (stateInfo.currentAngle < 90) JointZone.TOO_LOW else JointZone.TOO_HIGH
+                        val expectedRange = resolveExpectedRangeForState(stateInfo.stateRanges, stateInfo.state)
+                        when (
+                            resolveErrorType(
+                                angle = stateInfo.currentAngle,
+                                stateRanges = stateInfo.stateRanges,
+                                expectedRange = expectedRange
+                            )
+                        ) {
+                            ErrorType.TOO_HIGH -> JointZone.TOO_HIGH
+                            ErrorType.TOO_LOW -> JointZone.TOO_LOW
+                        }
                     }
                     else -> JointZone.DOWN_ZONE
                 }
                 ZoneType.TRANSITION -> JointZone.TRANSITION
             }
-            
+
             val isError = stateInfo.state == JointState.DANGER || stateInfo.state == JointState.WARNING
             val isWarning = stateInfo.state == JointState.PAD
-            
-            // Get range bounds for legacy compatibility
+
             val upRange = if (joint.hasStateUpDownRanges()) {
                 joint.getStateUpRange()
             } else if (joint.hasStateHoldRange()) {
                 joint.getStateHoldRange()
             } else null
-            
+
             val downRange = if (joint.hasStateUpDownRanges()) {
                 joint.getStateDownRange()
             } else upRange
-            
+
             arrowInfos[jointCode] = JointArrowInfo(
                 jointCode = jointCode,
                 zone = zone,
@@ -588,10 +685,10 @@ class FormValidator(
                 downRangeMax = downRange?.perfect?.max ?: 180.0
             )
         }
-        
+
         return arrowInfos
     }
-    
+
     /**
      * Reset state (call when training starts/restarts)
      */
@@ -606,7 +703,7 @@ class FormValidator(
 
 /**
  * ValidationResult - Result of form validation
- * 
+ *
  * @deprecated Use getJointStateInfos() for new code.
  */
 @Deprecated("Use getJointStateInfos() method instead. Will be removed in future version.")
@@ -618,7 +715,7 @@ data class ValidationResult(
 
 /**
  * JointStatus - Status of a single joint
- * 
+ *
  * @deprecated Use JointStateInfo for new code.
  */
 @Deprecated("Use JointStateInfo instead. Will be removed in future version.")
@@ -644,7 +741,7 @@ data class JointStatus(
 
 /**
  * Joint color enum for UI
- * 
+ *
  * @deprecated Use StateConfig.getColor(JointState) instead.
  */
 @Deprecated("Use StateConfig.getColor(JointState) instead. Will be removed in future version.")
@@ -657,7 +754,7 @@ enum class JointColor {
 
 /**
  * JointZone - Legacy enum for backward compatibility
- * 
+ *
  * @deprecated Use JointState from JointState.kt for new code.
  * This is kept for overlay compatibility during migration.
  */
@@ -672,7 +769,7 @@ enum class JointZone {
 
 /**
  * JointArrowInfo - Legacy data class for backward compatibility
- * 
+ *
  * @deprecated Use JointStateInfo from JointState.kt for new code.
  * This is kept for overlay compatibility during migration.
  */

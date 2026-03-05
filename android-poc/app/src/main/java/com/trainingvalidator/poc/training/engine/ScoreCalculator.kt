@@ -77,8 +77,8 @@ object ScoreCalculator {
         if (jointStates.isEmpty()) {
             return RepScoreResult(
                 score = 0f,
-                worstState = JointState.PERFECT,
-                isCounted = true,
+                worstState = JointState.WARNING,
+                isCounted = false,
                 isInvalidated = false,
                 dangerJoints = emptyList(),
                 breakdown = emptyMap()
@@ -128,12 +128,20 @@ object ScoreCalculator {
             )
         }
         
-        // Calculate base score
-        val baseScore = if (totalWeight > 0) {
-            weightedSum / totalWeight
-        } else {
-            0f
+        // All joints may be TRANSITION in edge frames; do not classify that as correct rep.
+        if (totalWeight <= 0f) {
+            return RepScoreResult(
+                score = 0f,
+                worstState = JointState.WARNING,
+                isCounted = false,
+                isInvalidated = false,
+                dangerJoints = emptyList(),
+                breakdown = breakdown
+            )
         }
+
+        // Calculate base score
+        val baseScore = weightedSum / totalWeight
         
         // Apply DANGER penalty
         val dangerPenalty = dangerJoints.size * DANGER_PENALTY_PER_JOINT
@@ -293,3 +301,4 @@ data class HoldScoreResult(
 }
 
 // NOTE: OverallQualityResult has been removed - use OverallQualityScore from PostTrainingReport.kt instead
+

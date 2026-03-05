@@ -100,7 +100,7 @@ data class PostTrainingReport(
     /**
      * Check if there are any DANGER alerts
      */
-    fun hasDangerAlerts(): Boolean = dangerAlerts.isNotEmpty()
+    fun hasDangerAlerts(): Boolean = summary.invalidatedReps > 0 || dangerAlerts.isNotEmpty()
     
     /**
      * Check if session should be celebrated (many perfect, no danger)
@@ -136,7 +136,7 @@ data class PostTrainingReport(
  * STATE-BASED METRICS:
  * - countedReps: Reps in PERFECT + NORMAL + PAD states
  * - invalidatedReps: Reps that reached DANGER state
- * - averageScore: Average score of counted reps (0-100)
+ * - averageScore: Average score of all completed reps (0-100)
  * - stateBreakdown: Distribution of reps across states
  */
 data class PerformanceSummary(
@@ -148,7 +148,7 @@ data class PerformanceSummary(
     // State-based metrics
     val countedReps: Int,           // PERFECT + NORMAL + PAD
     val invalidatedReps: Int,       // DANGER reps
-    val averageScore: Float,        // 0-100 average of counted reps
+    val averageScore: Float,        // 0-100 average of all completed reps
     val countedRatio: Float,        // countedReps / totalReps
     
     // State breakdown for visual display
@@ -160,7 +160,7 @@ data class PerformanceSummary(
     // Weight & Load metrics (optional - for weighted exercises)
     val weightKg: Float? = null,
     val weightUnit: String = "kg",
-    val totalVolume: Float? = null,     // countedReps × weightKg
+    val totalVolume: Float? = null,     // totalReps � weightKg (actual workload)
     val est1RM: Float? = null,          // Estimated 1 Rep Max
     
     // ═══════════════════════════════════════════════════════════════
@@ -219,6 +219,10 @@ data class PerformanceSummary(
     val accuracy: Float get() = countedRatio * 100f
     val correctReps: Int get() = countedReps
     val incorrectReps: Int get() = totalReps - countedReps
+    val uncountedReps: Int get() = (totalReps - countedReps - invalidatedReps).coerceAtLeast(0)
+    val invalidatedRatio: Float get() = if (totalReps > 0) invalidatedReps.toFloat() / totalReps else 0f
+    val uncountedRatio: Float get() = if (totalReps > 0) uncountedReps.toFloat() / totalReps else 0f
+    
     
     fun getFormattedDuration(): String {
         val seconds = (durationMs / 1000) % 60

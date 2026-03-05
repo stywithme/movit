@@ -33,7 +33,36 @@ export interface StoredRepDetail {
   score: number;        // 0-100 form quality
   worstState: number;   // 0=PERFECT … 4=DANGER
   isCounted: boolean;
+  isInvalidated?: boolean;
   durationMs: number;
+  positionErrorCount?: number;
+  positionWarningCount?: number;
+  positionTipCount?: number;
+  phaseTimings?: Record<string, number>;
+}
+
+export interface StateBreakdown {
+  perfect: number;
+  normal: number;
+  pad: number;
+  warning: number;
+  danger: number;
+}
+
+export interface CountingSummary {
+  totalReps: number;
+  countedReps: number;
+  invalidatedReps: number;
+  uncountedReps: number;
+  incorrectReps: number;
+  countedRatio: number;
+  accuracy: number;
+  invalidatedRatio: number;
+  uncountedRatio: number;
+  stateBreakdown: StateBreakdown;
+  positionErrorReps: number;
+  positionWarningReps: number;
+  positionTipReps: number;
 }
 
 export interface StoredSetMetrics {
@@ -47,6 +76,18 @@ export interface StoredSetMetrics {
   formScore: number;    // average rep quality 0-100
   weightKg?: number | null;
   repDetails?: StoredRepDetail[];
+  totalReps?: number;
+  countedReps?: number;
+  invalidatedReps?: number;
+  uncountedReps?: number;
+  incorrectReps?: number;
+  countedRatio?: number;
+  invalidatedRatio?: number;
+  uncountedRatio?: number;
+  stateBreakdown?: Partial<StateBreakdown>;
+  positionErrorReps?: number;
+  positionWarningReps?: number;
+  positionTipReps?: number;
 }
 
 export interface StoredExerciseReport {
@@ -58,6 +99,17 @@ export interface StoredExerciseReport {
   averageAccuracy: number;
   averageFormScore: number;
   setMetrics?: StoredSetMetrics[];
+  countedReps?: number;
+  invalidatedReps?: number;
+  uncountedReps?: number;
+  incorrectReps?: number;
+  countedRatio?: number;
+  invalidatedRatio?: number;
+  uncountedRatio?: number;
+  stateBreakdown?: Partial<StateBreakdown>;
+  positionErrorReps?: number;
+  positionWarningReps?: number;
+  positionTipReps?: number;
 }
 
 export interface StoredSessionReport {
@@ -69,6 +121,17 @@ export interface StoredSessionReport {
   averageAccuracy: number;
   averageFormScore: number;
   exerciseReports?: StoredExerciseReport[];
+  countedReps?: number;
+  invalidatedReps?: number;
+  uncountedReps?: number;
+  incorrectReps?: number;
+  countedRatio?: number;
+  invalidatedRatio?: number;
+  uncountedRatio?: number;
+  stateBreakdown?: Partial<StateBreakdown>;
+  positionErrorReps?: number;
+  positionWarningReps?: number;
+  positionTipReps?: number;
 }
 
 // ============================================
@@ -92,6 +155,11 @@ export interface RepMetricsOutput {
   worstState: number;
   isCounted: boolean;
   durationMs: number;
+  isInvalidated: boolean;
+  isIncorrect: boolean;
+  positionErrorCount: number;
+  positionWarningCount: number;
+  positionTipCount: number;
 }
 
 // ── Set-level metrics ──
@@ -109,6 +177,17 @@ export interface SetMetricsOutput {
   fatigueIndex: number | null;  // rep # where form dropped below 80% of first rep
   formConsistency: number;      // 100 - stddev of rep scores (higher = more consistent)
   repDetails?: RepMetricsOutput[];
+  countedReps?: number;
+  invalidatedReps?: number;
+  uncountedReps?: number;
+  incorrectReps?: number;
+  countedRatio?: number;
+  invalidatedRatio?: number;
+  uncountedRatio?: number;
+  stateBreakdown?: StateBreakdown;
+  positionErrorReps?: number;
+  positionWarningReps?: number;
+  positionTipReps?: number;
 }
 
 // ── Exercise-level metrics ──
@@ -127,6 +206,17 @@ export interface ExerciseMetricsOutput {
   dropOffRate: number;          // formScore(set1) - formScore(lastSet)
   formRating: FormRating;
   sets?: SetMetricsOutput[];
+  countedReps?: number;
+  invalidatedReps?: number;
+  uncountedReps?: number;
+  incorrectReps?: number;
+  countedRatio?: number;
+  invalidatedRatio?: number;
+  uncountedRatio?: number;
+  stateBreakdown?: StateBreakdown;
+  positionErrorReps?: number;
+  positionWarningReps?: number;
+  positionTipReps?: number;
 }
 
 // ── Session-level metrics ──
@@ -147,6 +237,17 @@ export interface SessionMetricsOutput {
   strongestExercise: string | null;
   weakestExercise: string | null;
   exercises?: ExerciseMetricsOutput[];
+  countedReps?: number;
+  invalidatedReps?: number;
+  uncountedReps?: number;
+  incorrectReps?: number;
+  countedRatio?: number;
+  invalidatedRatio?: number;
+  uncountedRatio?: number;
+  stateBreakdown?: StateBreakdown;
+  positionErrorReps?: number;
+  positionWarningReps?: number;
+  positionTipReps?: number;
 }
 
 // ── Day-level metrics ──
@@ -162,6 +263,17 @@ export interface DayMetricsOutput {
   dayRating: FormRating;
   isComplete: boolean;
   sessions?: SessionMetricsOutput[];
+  countedReps?: number;
+  invalidatedReps?: number;
+  uncountedReps?: number;
+  incorrectReps?: number;
+  countedRatio?: number;
+  invalidatedRatio?: number;
+  uncountedRatio?: number;
+  stateBreakdown?: StateBreakdown;
+  positionErrorReps?: number;
+  positionWarningReps?: number;
+  positionTipReps?: number;
 }
 
 // ── Week-level metrics ──
@@ -182,6 +294,17 @@ export interface WeekMetricsOutput {
     attendance: number;
   } | null;
   days?: DayMetricsOutput[];
+  countedReps?: number;
+  invalidatedReps?: number;
+  uncountedReps?: number;
+  incorrectReps?: number;
+  countedRatio?: number;
+  invalidatedRatio?: number;
+  uncountedRatio?: number;
+  stateBreakdown?: StateBreakdown;
+  positionErrorReps?: number;
+  positionWarningReps?: number;
+  positionTipReps?: number;
 }
 
 // ── Program-level metrics ──
@@ -202,6 +325,17 @@ export interface ProgramMetricsOutput {
   weeklyFormScores: number[];   // for trend chart
   weeks?: WeekMetricsOutput[];
   exercises?: ExerciseMetricsOutput[];
+  countedReps?: number;
+  invalidatedReps?: number;
+  uncountedReps?: number;
+  incorrectReps?: number;
+  countedRatio?: number;
+  invalidatedRatio?: number;
+  uncountedRatio?: number;
+  stateBreakdown?: StateBreakdown;
+  positionErrorReps?: number;
+  positionWarningReps?: number;
+  positionTipReps?: number;
 }
 
 // ── Comparison data ──

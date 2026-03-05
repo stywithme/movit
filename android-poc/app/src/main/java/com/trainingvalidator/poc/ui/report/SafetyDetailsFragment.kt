@@ -26,7 +26,7 @@ import com.trainingvalidator.poc.ui.report.ReportUiHelper as H
  *
  * Adapts for:
  *   - No position checks: hides Alignment row
- *   - No danger alerts: shows "Safe session" message
+ *   - No captured danger alerts: shows summary fallback instead of false safe state
  *   - Hold exercises: emphasises stability over alignment
  */
 class SafetyDetailsFragment : Fragment() {
@@ -121,9 +121,13 @@ class SafetyDetailsFragment : Fragment() {
         }
 
         // ── Danger Alerts ────────────────────────────────────────
+        val dangerCount = summary.invalidatedReps.coerceAtLeast(report.dangerAlerts.size)
         if (report.dangerAlerts.isNotEmpty()) {
             col.addView(H.divider(ctx))
             col.addView(buildDangerSection(ctx, report.dangerAlerts))
+        } else if (dangerCount > 0) {
+            col.addView(H.divider(ctx))
+            col.addView(buildDangerCountOnlySection(ctx, dangerCount))
         } else {
             col.addView(H.divider(ctx))
             col.addView(buildSafeMessage(ctx))
@@ -220,6 +224,28 @@ class SafetyDetailsFragment : Fragment() {
         return container
     }
 
+    private fun buildDangerCountOnlySection(ctx: android.content.Context, dangerCount: Int): LinearLayout {
+        val card = H.glassCard(ctx, H.colorRed(requireContext()))
+        card.addView(TextView(ctx).apply {
+            text = if (isArabic) "! Safety alerts detected" else "! Safety alerts detected"
+            textSize = 16f
+            setTextColor(H.colorRed(requireContext()))
+            setTypeface(typeface, android.graphics.Typeface.BOLD)
+        })
+        card.addView(TextView(ctx).apply {
+            text = if (isArabic) "$dangerCount reps reached an unsafe position" else "$dangerCount reps reached an unsafe position"
+            textSize = 13f
+            setTextColor(H.textWhite(requireContext()))
+            setPadding(0, H.dp(ctx, 6), 0, 0)
+        })
+        card.addView(TextView(ctx).apply {
+            text = if (isArabic) "Detailed frame capture is unavailable for this alert." else "Detailed frame capture is unavailable for this alert."
+            textSize = 12f
+            setTextColor(H.textMuted(requireContext()))
+            setPadding(0, H.dp(ctx, 4), 0, 0)
+        })
+        return card
+    }
     private fun buildDangerCard(ctx: android.content.Context, alert: DangerAlert): LinearLayout {
         val card = H.glassCard(ctx, H.colorRed(requireContext()))
 

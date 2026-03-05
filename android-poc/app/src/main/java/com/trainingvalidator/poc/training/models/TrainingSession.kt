@@ -11,9 +11,9 @@ import com.trainingvalidator.poc.training.report.PerformanceRating
  * RepResult - Result of a single repetition
  * 
  * STATE-BASED SCORING:
- * - score: 0-100 based on worst state (PERFECT=100, NORMAL=60, PAD=20, WARNING/DANGER=0)
+ * - score: 0-100 weighted quality score from joints + position checks
  * - worstState: The worst JointState reached during the rep
- * - isCounted: Whether this rep counts toward the total
+ * - isCounted: Whether this rep is quality-counted (PERFECT/NORMAL/PAD)
  * - isInvalidated: Whether this rep was invalidated by DANGER state
  * 
  * @param errors Angle-based errors from FormValidator
@@ -23,7 +23,7 @@ import com.trainingvalidator.poc.training.report.PerformanceRating
  */
 data class RepResult(
     val repNumber: Int,
-    val score: Float,                      // 0-100 based on worst state
+    val score: Float,                      // 0-100 weighted quality score
     val worstState: JointState,            // Worst state reached during rep
     val isCounted: Boolean,                // Whether this rep counts
     val isInvalidated: Boolean = false,    // Whether DANGER was reached
@@ -100,7 +100,7 @@ enum class ErrorType {
  * SessionSummary - Final summary of training session
  * 
  * STATE-BASED METRICS:
- * - averageScore: Average score of counted reps (0-100)
+ * - averageScore: Average score of all completed reps (0-100)
  * - countedRatio: Ratio of counted reps to total reps
  * - stateBreakdown: Count of reps per worst state
  */
@@ -148,6 +148,23 @@ data class SessionSummary(
      * Legacy compatibility - incorrectReps maps to totalReps - countedReps
      */
     val incorrectReps: Int get() = totalReps - countedReps
+    
+    /**
+     * Non-invalidated reps that were completed but not quality-counted.
+     */
+    val uncountedReps: Int get() = (totalReps - countedReps - invalidatedReps).coerceAtLeast(0)
+    
+    /**
+     * Ratio of invalidated (DANGER) reps to all completed reps.
+     */
+    val invalidatedRatio: Float
+        get() = if (totalReps > 0) invalidatedReps.toFloat() / totalReps else 0f
+    
+    /**
+     * Ratio of uncounted (WARNING/quality-failed) reps to all completed reps.
+     */
+    val uncountedRatio: Float
+        get() = if (totalReps > 0) uncountedReps.toFloat() / totalReps else 0f
 }
 
 // NOTE: PerformanceRating enum has been moved to PostTrainingReport.kt

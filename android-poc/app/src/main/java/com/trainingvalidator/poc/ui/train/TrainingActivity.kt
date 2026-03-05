@@ -1050,7 +1050,7 @@ class TrainingActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetection
             repsCompleted = reps,
             repsTarget = targetReps,
             durationMs = durationMs,
-            accuracy = if (targetReps > 0) (reps.toFloat() / targetReps * 100f) else accuracy,
+            accuracy = accuracy,
             formScore = formScore,
             weightKg = weight,
             repDetails = repDetails
@@ -2967,3 +2967,4 @@ class TrainingActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetection
         poseLandmarkerHelper?.closeVideoMode()
     }
 }
+

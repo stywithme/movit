@@ -10,7 +10,7 @@ import java.util.UUID
 
 /**
  * ReportGenerator - Generates PostTrainingReport from training session data
- * 
+ *
  * STATE-BASED REPORT GENERATION:
  * - Uses JointState (PERFECT/NORMAL/PAD/WARNING/DANGER) for assessment
  * - Generates DANGER alerts with visual frames
@@ -18,19 +18,19 @@ import java.util.UUID
  * - Uses stateMessages from exercise JSON for error descriptions
  * - Uses feedbackMessages.tips for improvement suggestions
  * - Uses feedbackMessages.motivational for encouragement
- * 
+ *
  * SINGLE SOURCE OF TRUTH:
  * - Uses ScoreCalculator for all score calculations
  * - Uses MetricsCalculator for fatigue/consistency metrics
  */
 object ReportGenerator {
-    
+
     private const val TAG = "ReportGenerator"
     private const val MAX_BEST_REPS = 3
     private const val MAX_PERFECT_MOMENTS = 3
     private const val MAX_DANGER_ALERTS = 2
     private const val MAX_TIPS = 3
-    
+
     /**
      * Generate a complete post-training report
      */
@@ -46,30 +46,30 @@ object ReportGenerator {
         sessionMetrics: SessionMetrics? = null
     ): PostTrainingReport {
         Log.d(TAG, "Generating state-based report for ${summary.exerciseName}, ${summary.totalReps} reps")
-        
+
         // Handle 0 reps case - log for debugging
         if (summary.totalReps == 0) {
             Log.w(TAG, "Session completed with 0 reps - user may not have completed full range of motion")
         }
-        
+
         // 1. Generate performance summary with state breakdown
         val performanceSummary = generateStateSummary(summary, durationMs, exerciseConfig, sessionMetrics)
-        
+
         // 2. Generate DANGER alerts (CRITICAL - shown prominently)
         val dangerAlerts = generateDangerAlerts(summary.repDetails, exerciseConfig, frameCaptures)
-        
+
         // 3. Generate perfect moments (for celebration)
         val perfectMoments = generatePerfectMoments(summary.repDetails, exerciseConfig, frameCaptures)
-        
+
         // 4. Find best reps by score
         val bestReps = findBestRepsByScore(summary.repDetails, frameCaptures)
-        
+
         // 5. Find worst rep
         val worstRep = findWorstRep(summary.repDetails, frameCaptures)
-        
+
         // 6. Get best rep frame for comparison
         val bestRepFrame = frameCaptures.find { it.captureType == CaptureType.BEST_REP }
-        
+
         // 7. Generate state-based error analysis
         val errorAnalysis = generateStateBasedErrorAnalysis(
             repDetails = summary.repDetails,
@@ -77,7 +77,7 @@ object ReportGenerator {
             frameCaptures = frameCaptures,
             bestRepFrame = bestRepFrame
         )
-        
+
         // 8. Generate state-based timeline
         val timeline = generateStateTimeline(
             repDetails = summary.repDetails,
@@ -86,23 +86,23 @@ object ReportGenerator {
             worstRepNumber = worstRep?.repNumber,
             frameCaptures = frameCaptures
         )
-        
+
         // 9. Calculate consistency metrics
         val consistency = calculateConsistency(summary.repDetails)
-        
+
         // 10. Generate session quality
         val sessionQuality = generateSessionQuality(visibilityStats, cameraWarningCount)
-        
+
         // 11. Generate tips from exercise JSON (pass totalReps for 0-reps handling)
         val tips = generateExerciseBasedTips(errorAnalysis, exerciseConfig, dangerAlerts, summary.totalReps)
-        
+
         // 12. Generate hold summary if applicable
         val holdSummary = holdData?.let { generateHoldSummary(it, frameCaptures) }
-        
+
         // 13. Create exercise config snapshot for report metrics filtering
         Log.d(TAG, "Exercise reportMetrics: ${exerciseConfig.reportMetrics}")
         Log.d(TAG, "  - excluded: ${exerciseConfig.reportMetrics?.excluded}")
-        
+
         val configSnapshot = ExerciseConfigSnapshot.from(
             countingMethod = exerciseConfig.countingMethod,
             isBilateral = exerciseConfig.isBilateralExercise(),
@@ -110,10 +110,10 @@ object ReportGenerator {
             hasPositionChecks = exerciseConfig.hasPositionChecks,
             metricsConfig = exerciseConfig.reportMetrics
         )
-        
+
         Log.d(TAG, "ConfigSnapshot metricsConfig: ${configSnapshot.metricsConfig}")
         Log.d(TAG, "  - excluded: ${configSnapshot.metricsConfig.excluded}")
-        
+
         // 14. Calculate Overall Quality Score
         // Uses fatigueIndex from performanceSummary (Single Source of Truth)
         val overallQuality = calculateOverallQuality(
@@ -126,7 +126,7 @@ object ReportGenerator {
             fatigueIndex = performanceSummary.fatigueIndex,
             performanceSummary = performanceSummary
         )
-        
+
         return PostTrainingReport(
             id = UUID.randomUUID().toString(),
             sessionId = sessionId,
@@ -148,7 +148,7 @@ object ReportGenerator {
             exerciseConfig = configSnapshot
         )
     }
-    
+
     /**
      * Generate from TrainingEngine directly
      */
@@ -169,8 +169,8 @@ object ReportGenerator {
         } else baseSummary
 
         val visibilityStats = engine.getVisibilityStats()
-        val cameraWarnings = if (engine.hasPositionChecks()) 1 else 0
-        
+        val cameraWarnings = engine.getCameraWarningCount()
+
         val holdData = if (engine.isHoldExercise) {
             HoldData(
                 targetMs = engine.getTargetDurationMs(),
@@ -180,7 +180,7 @@ object ReportGenerator {
                 jointErrorMap = engine.holdJointErrorMap.value ?: emptyMap()
             )
         } else null
-        
+
         return generate(
             sessionId = UUID.randomUUID().toString(),
             summary = summary,
@@ -193,9 +193,9 @@ object ReportGenerator {
             sessionMetrics = sessionMetrics
         )
     }
-    
+
     // ==================== State-Based Summary ====================
-    
+
     private fun generateStateSummary(
         summary: SessionSummary,
         durationMs: Long,
@@ -204,79 +204,79 @@ object ReportGenerator {
     ): PerformanceSummary {
         // Build state breakdown
         val stateBreakdown = StateBreakdown.fromMap(summary.stateBreakdown)
-        
+
         // Determine if we should celebrate
         val shouldCelebrate = stateBreakdown.shouldCelebrate()
-        
+
         // Get rating based on score and counted ratio (use fromScoreAndRatio directly)
         val rating = PerformanceRating.fromScoreAndRatio(
             summary.averageScore,
             summary.countedRatio
         )
-        
+
         // Get motivational message from exercise or generate based on rating
         val motivationalMessage = selectMotivationalMessage(
             exerciseConfig = exerciseConfig,
             rating = rating,
             stateBreakdown = stateBreakdown
         )
-        
+
         // ═══════════════════════════════════════════════════════════════
         // CALCULATE METRICS ONCE (Single Source of Truth)
         // These values are stored and reused by PerformanceMetricsBuilder
         // ═══════════════════════════════════════════════════════════════
-        
+
         // Extract scores from repDetails (0-100 format)
         val scores = summary.repDetails.map { it.score }
-        
+
         val shouldComputeRom = exerciseConfig.shouldShowMetric(MetricCode.ROM)
         val shouldComputeFormConsistency = exerciseConfig.shouldShowMetric(MetricCode.FORM_CONSISTENCY)
         val shouldComputeFatigueIndex = exerciseConfig.shouldShowMetric(MetricCode.FATIGUE_INDEX)
-        
+
         // Form Consistency - using MetricsCalculator (Single Source of Truth)
         val formConsistency = if (shouldComputeFormConsistency && scores.size >= 4) {
             MetricsCalculator.calculateFormConsistencyFromScores(scores)?.let { it / 10f }
         } else null
-        
+
         // Fatigue Index - using MetricsCalculator (Single Source of Truth)
         val fatigueIndex = if (shouldComputeFatigueIndex && scores.size >= 4) {
             MetricsCalculator.calculateFatigueIndexFromScores(scores)?.toInt()
         } else null
-        
+
         // Average ROM - prefer real ROM from MotionRecorder metrics when available
         val avgROM = if (shouldComputeRom) {
             val romFromSession = calculateAverageRomFromSession(sessionMetrics, exerciseConfig)
             romFromSession ?: if (scores.isNotEmpty()) scores.average().toFloat() else null
         } else null
-        
+
         // ═══════════════════════════════════════════════════════════════
         // KINEMATIC & V2 METRICS — Extract from SessionMetrics
         // ═══════════════════════════════════════════════════════════════
-        
+
         // Symmetry (0-1000 scale → 0-100%)
         val avgSymmetry = sessionMetrics?.avgSymmetry?.let { it / 10f }
-        
+
         // Trunk Stability (0-1000 scale → 0-100%)
         val avgStability = sessionMetrics?.avgStability?.let { it / 10f }
-        
+
         val avgTempo = sessionMetrics?.avgTempo
         val avgVelocity = sessionMetrics?.avgVelocity
         val velocityLoss = sessionMetrics?.velocityLoss?.let { it / 10f } // Convert ×10 to %
         val tempoConsistency = sessionMetrics?.tempoConsistency?.let { it / 10f } // Convert ×10 to %
         val totalTUT = sessionMetrics?.totalTUT
-        
+
         // Position Check stats — aggregate from repDetails
         val positionErrorReps = summary.repDetails.count { it.positionErrors.isNotEmpty() }
         val positionWarningReps = summary.repDetails.count { it.positionWarningCount > 0 }
         val positionTipReps = summary.repDetails.count { it.positionTipCount > 0 }
-        
+
         // ═══════════════════════════════════════════════════════════════
         // WEIGHT & LOAD (from SessionSummary)
         // ═══════════════════════════════════════════════════════════════
         val weightKg = summary.weightKg
         val weightUnit = summary.weightUnit
         val totalVolume = if (weightKg != null && weightKg > 0) {
-            weightKg * summary.countedReps
+            weightKg * summary.totalReps
         } else null
         val est1RM = if (weightKg != null && weightKg > 0 && summary.countedReps > 0) {
             MetricsCalculator.calculateEst1RM(weightKg, summary.countedReps)
@@ -339,9 +339,9 @@ object ReportGenerator {
         val target = (maxAngle - minAngle).toFloat()
         return if (target > 0f) target else null
     }
-    
+
     // ==================== DANGER Alerts ====================
-    
+
     private fun generateDangerAlerts(
         repDetails: List<RepResult>,
         exerciseConfig: ExerciseConfig,
@@ -349,45 +349,51 @@ object ReportGenerator {
     ): List<DangerAlert> {
         // Find reps with DANGER state
         val dangerReps = repDetails.filter { it.worstState == JointState.DANGER }
-        
+
         if (dangerReps.isEmpty()) {
             return emptyList()
         }
-        
+
         Log.d(TAG, "Found ${dangerReps.size} DANGER reps")
-        
+
         return dangerReps.take(MAX_DANGER_ALERTS).mapNotNull { rep ->
-            // Find the joint that caused DANGER
-            val dangerError = rep.errors.firstOrNull()
+            // Use the actual DANGER error when available (not just first error in rep).
+            val dangerError = rep.errors.firstOrNull { it.state == JointState.DANGER }
+                ?: rep.errors.maxByOrNull { it.state.priority }
             val jointCode = dangerError?.jointCode ?: return@mapNotNull null
-            
+
             // Get tracked joint config
             val trackedJoint = getTrackedJoint(exerciseConfig, jointCode)
-            
+
             // Get DANGER message from stateMessages
             val dangerMessage = trackedJoint?.stateMessages?.getMessage(JointState.DANGER)
                 ?: LocalizedText(
                     ar = "وضعية خطيرة! انتبه لسلامتك",
                     en = "Dangerous position! Watch your form"
                 )
-            
+
             // Get tip from feedbackMessages
             val tip = getRelevantTip(exerciseConfig, jointCode)
                 ?: LocalizedText(
                     ar = "تحكم في الحركة ولا تتجاوز الحدود الآمنة",
                     en = "Control the movement and stay within safe limits"
                 )
-            
-            // Get safe range
-            val safeRange = getSafeRangeForJoint(trackedJoint)
-            
+
+            // Prefer exact range captured during validation, fallback to config state range.
+            val safeRange = getRangeFromError(dangerError)
+                ?: getSafeRangeForJoint(
+                    trackedJoint = trackedJoint,
+                    state = JointState.DANGER,
+                    actualAngle = dangerError.actualAngle
+                )
+
             // Find DANGER frame
-            val dangerFrame = frameCaptures.find { 
+            val dangerFrame = frameCaptures.find {
                 it.captureType == CaptureType.DANGER_FRAME && it.repNumber == rep.repNumber
             } ?: frameCaptures.find {
                 it.captureType == CaptureType.ERROR_FRAME && it.repNumber == rep.repNumber
             }
-            
+
             DangerAlert(
                 repNumber = rep.repNumber,
                 jointCode = jointCode,
@@ -400,9 +406,8 @@ object ReportGenerator {
             )
         }
     }
-    
     // ==================== Perfect Moments ====================
-    
+
     private fun generatePerfectMoments(
         repDetails: List<RepResult>,
         exerciseConfig: ExerciseConfig,
@@ -410,28 +415,28 @@ object ReportGenerator {
     ): List<PerfectMoment> {
         // Find reps with PERFECT state
         val perfectReps = repDetails.filter { it.worstState == JointState.PERFECT }
-        
+
         if (perfectReps.isEmpty()) {
             return emptyList()
         }
-        
+
         Log.d(TAG, "Found ${perfectReps.size} PERFECT reps")
-        
+
         // Get motivational messages from exercise
         val motivationals = exerciseConfig.poseVariants.firstOrNull()
             ?.feedbackMessages?.motivational ?: emptyList()
-        
+
         return perfectReps.take(MAX_PERFECT_MOMENTS).mapIndexed { index, rep ->
             // Get frame for this rep
-            val frame = frameCaptures.find { 
-                it.repNumber == rep.repNumber && 
+            val frame = frameCaptures.find {
+                it.repNumber == rep.repNumber &&
                 (it.captureType == CaptureType.BEST_REP || it.captureType == CaptureType.PEAK_FRAME)
             }
-            
+
             // Select motivational message
             val motivational = motivationals.getOrNull(index % motivationals.size.coerceAtLeast(1))
                 ?: LocalizedText(ar = "ممتاز! أداء مثالي!", en = "Excellent! Perfect form!")
-            
+
             PerfectMoment(
                 repNumber = rep.repNumber,
                 score = rep.score,
@@ -441,9 +446,9 @@ object ReportGenerator {
             )
         }
     }
-    
+
     // ==================== Best/Worst Reps ====================
-    
+
     private fun findBestRepsByScore(
         repDetails: List<RepResult>,
         frameCaptures: List<FrameCapture>
@@ -454,20 +459,20 @@ object ReportGenerator {
             .sortedWith(compareByDescending<RepResult> { it.score }
                 .thenBy { it.positionWarningCount + it.positionErrors.size }
                 .thenBy { it.errors.size })
-        
+
         if (sortedReps.isEmpty()) {
             Log.d(TAG, "No counted reps found")
             return emptyList()
         }
-        
+
         return sortedReps.take(MAX_BEST_REPS).map { rep ->
-            val frame = frameCaptures.find { 
-                it.repNumber == rep.repNumber && 
+            val frame = frameCaptures.find {
+                it.repNumber == rep.repNumber &&
                 (it.captureType == CaptureType.BEST_REP || it.captureType == CaptureType.PEAK_FRAME)
             }
-            
+
             val displayInfo = StateDisplayConfig.getDisplayInfo(rep.worstState)
-            
+
             BestRepHighlight(
                 repNumber = rep.repNumber,
                 durationMs = calculateRepDuration(rep),
@@ -478,7 +483,7 @@ object ReportGenerator {
             )
         }
     }
-    
+
     private fun findWorstRep(
         repDetails: List<RepResult>,
         frameCaptures: List<FrameCapture>
@@ -534,12 +539,12 @@ object ReportGenerator {
             frameCapture = frame
         )
     }
-    
+
     // ==================== State-Based Error Analysis ====================
-    
+
     /**
      * Generate error analysis from ALL errors across ALL reps
-     * 
+     *
      * IMPORTANT: This now collects errors from rep.errors list, not just worst state.
      * This ensures ALL joint errors are shown (primary + secondary).
      */
@@ -555,9 +560,9 @@ object ReportGenerator {
             val error: JointError,
             val actualAngle: Double
         )
-        
+
         val errorGroups = mutableMapOf<String, MutableList<ErrorOccurrence>>()
-        
+
         repDetails.forEach { rep ->
             // Collect from EACH error in the rep (not just worst state)
             rep.errors.forEach { error ->
@@ -571,53 +576,62 @@ object ReportGenerator {
                 }
             }
         }
-        
+
         Log.d(TAG, "Found ${errorGroups.size} error groups from ${repDetails.size} reps")
-        
+
         // Get best rep for comparison
         val bestRep = repDetails.maxByOrNull { it.score }
         val bestRepAngles = bestRepFrame?.metadata?.angles ?: emptyMap()
-        
+
         return errorGroups.map { (key, occurrences) ->
             val jointCode = key.substringBefore(":")
             val stateName = key.substringAfter(":")
             val state = try { JointState.valueOf(stateName) } catch (e: Exception) { JointState.WARNING }
-            
+
             val affectedReps = occurrences.map { it.repNumber }.distinct()
-            
+
             // Get display info
             val displayInfo = StateDisplayConfig.getDisplayInfo(state)
-            
+
             // Get tracked joint for messages
             val trackedJoint = getTrackedJoint(exerciseConfig, jointCode)
-            
+
             // Get message from stateMessages - use the error's own message if available
             val stateMessage = occurrences.firstOrNull()?.error?.message
                 ?: trackedJoint?.stateMessages?.getMessage(state)
                 ?: getDefaultStateMessage(state)
-            
+
             // Get tip from feedbackMessages.tips
             val tip = getRelevantTip(exerciseConfig, jointCode)
                 ?: getDefaultTip(state)
-            
+
             // Calculate average angle from occurrences
             val avgAngle = occurrences.map { it.actualAngle }.average()
-            
-            // Get expected range
-            val expectedRange = getSafeRangeForJoint(trackedJoint)
-            
+
+            // Get expected range (prefer exact ranges captured during training).
+            val expectedRangeFromErrors = occurrences
+                .mapNotNull { getRangeFromError(it.error) }
+                .groupingBy { Pair(it.min, it.max) }
+                .eachCount()
+                .maxByOrNull { it.value }
+                ?.key
+                ?.let { AngleRange(it.first, it.second) }
+
+            val expectedRange = expectedRangeFromErrors
+                ?: getSafeRangeForJoint(trackedJoint, state, avgAngle)
+
             // Best rep angle for this joint
             val bestAngle = bestRepAngles[jointCode]
-            
+
             // Find error frame for this specific error type
-            val errorFrame = frameCaptures.find { 
+            val errorFrame = frameCaptures.find {
                 (it.captureType == CaptureType.ERROR_FRAME || it.captureType == CaptureType.DANGER_FRAME) &&
                 it.errorType?.contains(jointCode) == true
             } ?: frameCaptures.find {
                 (it.captureType == CaptureType.ERROR_FRAME || it.captureType == CaptureType.DANGER_FRAME) &&
                 it.repNumber in affectedReps
             }
-            
+
             ErrorAnalysisItem(
                 errorKey = key,
                 jointCode = jointCode,
@@ -641,9 +655,9 @@ object ReportGenerator {
                 .thenByDescending { it.count }
         )
     }
-    
+
     // ==================== State-Based Timeline ====================
-    
+
     private fun generateStateTimeline(
         repDetails: List<RepResult>,
         exerciseConfig: ExerciseConfig,
@@ -654,26 +668,26 @@ object ReportGenerator {
         return repDetails.map { rep ->
             val isBest = rep.repNumber in bestRepNumbers
             val isWorst = rep.repNumber == worstRepNumber
-            
+
             val displayInfo = StateDisplayConfig.getDisplayInfo(rep.worstState)
-            
+
             val status = RepStatus.fromState(rep.worstState, isBest, isWorst)
-            
+
             // Get state message for non-PERFECT reps
             val stateMessage = if (rep.worstState != JointState.PERFECT) {
                 val primaryJoint = rep.errors.firstOrNull()?.jointCode
                     ?: exerciseConfig.getPrimaryJoints().firstOrNull()?.joint
-                
+
                 val trackedJoint = primaryJoint?.let { getTrackedJoint(exerciseConfig, it) }
                 trackedJoint?.stateMessages?.getMessage(rep.worstState)
             } else null
-            
+
             // Get short error labels
             val errors = rep.errors.map { getShortErrorLabel(it) }
-            
+
             // Find frame for this rep
             val frame = frameCaptures.find { it.repNumber == rep.repNumber }
-            
+
             RepTimelineEntry(
                 repNumber = rep.repNumber,
                 status = status,
@@ -694,9 +708,9 @@ object ReportGenerator {
             )
         }
     }
-    
+
     // ==================== Tips from Exercise JSON ====================
-    
+
     private fun generateExerciseBasedTips(
         errorAnalysis: List<ErrorAnalysisItem>,
         exerciseConfig: ExerciseConfig,
@@ -704,11 +718,11 @@ object ReportGenerator {
         totalReps: Int = -1  // Pass -1 to skip 0-reps handling
     ): List<ImprovementTip> {
         val tips = mutableListOf<ImprovementTip>()
-        
+
         // Priority 0: Handle 0 reps case - provide guidance
         if (totalReps == 0) {
             val isHoldExercise = exerciseConfig.isHoldExercise()
-            
+
             tips.add(ImprovementTip(
                 id = "no_reps_tip",
                 category = TipCategory.GENERAL,
@@ -732,7 +746,7 @@ object ReportGenerator {
                 priority = 1,
                 severity = TipSeverity.IMPORTANT
             ))
-            
+
             tips.add(ImprovementTip(
                 id = "camera_position_tip",
                 category = TipCategory.POSITION,
@@ -745,10 +759,10 @@ object ReportGenerator {
                 priority = 2,
                 severity = TipSeverity.HELPFUL
             ))
-            
+
             return tips
         }
-        
+
         // Priority 1: DANGER fixes (CRITICAL)
         dangerAlerts.firstOrNull()?.let { danger ->
             tips.add(ImprovementTip(
@@ -762,7 +776,7 @@ object ReportGenerator {
                 relatedReps = listOf(danger.repNumber)
             ))
         }
-        
+
         // Priority 2: Most common WARNING
         errorAnalysis
             .filter { it.state == JointState.WARNING }
@@ -779,11 +793,11 @@ object ReportGenerator {
                     relatedReps = warningError.affectedReps
                 ))
             }
-        
+
         // Priority 3: Exercise tips from JSON
         val exerciseTips = exerciseConfig.poseVariants.firstOrNull()
             ?.feedbackMessages?.tips ?: emptyList()
-        
+
         exerciseTips.take(2).forEachIndexed { index, tip ->
             tips.add(ImprovementTip(
                 id = "exercise_tip_$index",
@@ -799,7 +813,7 @@ object ReportGenerator {
                 isNextFocus = index == 1
             ))
         }
-        
+
         // If no tips yet, add encouragement
         if (tips.isEmpty()) {
             tips.add(ImprovementTip(
@@ -815,32 +829,32 @@ object ReportGenerator {
                 severity = TipSeverity.HELPFUL
             ))
         }
-        
+
         return tips.take(MAX_TIPS)
     }
-    
+
     // ==================== Helper Methods ====================
-    
+
     private fun calculateConsistency(repDetails: List<RepResult>): ConsistencyMetrics? {
         if (repDetails.size < 2) return null
-        
-        val durations = repDetails.associate { 
-            it.repNumber to calculateRepDuration(it) 
+
+        val durations = repDetails.associate {
+            it.repNumber to calculateRepDuration(it)
         }
-        
+
         return ConsistencyMetrics.calculate(durations)
     }
-    
+
     private fun generateSessionQuality(
         visibilityStats: VisibilityStats?,
         cameraWarningCount: Int
     ): SessionQuality {
         val pauseCount = visibilityStats?.totalPauseCount ?: 0
         val warningCount = visibilityStats?.totalWarningCount ?: 0
-        
+
         val quality = SessionQuality.calculateQuality(pauseCount, cameraWarningCount)
         val suggestions = SessionQuality.generateSuggestions(pauseCount, cameraWarningCount)
-        
+
         return SessionQuality(
             visibilityPauseCount = pauseCount,
             totalInvisibleMs = 0L,
@@ -849,7 +863,7 @@ object ReportGenerator {
             suggestions = suggestions
         )
     }
-    
+
     private fun generateHoldSummary(
         holdData: HoldData,
         frameCaptures: List<FrameCapture>
@@ -857,7 +871,7 @@ object ReportGenerator {
         val percentage = if (holdData.targetMs > 0) {
             (holdData.achievedMs.toFloat() / holdData.targetMs.toFloat()) * 100f
         } else 0f
-        
+
         val jointBreakdown = holdData.jointErrorMap.map { (jointCode, errorCount) ->
             JointHoldQuality(
                 jointCode = jointCode,
@@ -866,9 +880,9 @@ object ReportGenerator {
                 errorCount = errorCount
             )
         }
-        
+
         val sampleFrames = frameCaptures.filter { it.captureType == CaptureType.HOLD_SAMPLE }
-        
+
         return HoldSummary(
             targetMs = holdData.targetMs,
             achievedMs = holdData.achievedMs,
@@ -879,11 +893,11 @@ object ReportGenerator {
             sampleFrames = sampleFrames
         )
     }
-    
+
     private fun calculateRepDuration(rep: RepResult): Long {
         return rep.phaseTimings.values.sum().takeIf { it > 0 } ?: 2000L
     }
-    
+
     private fun getShortErrorLabel(error: JointError): String {
         val joint = error.jointCode.substringAfterLast("_")
         return when (error.errorType) {
@@ -891,37 +905,87 @@ object ReportGenerator {
             ErrorType.TOO_LOW -> "$joint↓"
         }
     }
-    
+
     private fun getTrackedJoint(exerciseConfig: ExerciseConfig, jointCode: String): TrackedJoint? {
         return exerciseConfig.poseVariants.firstOrNull()
             ?.trackedJoints
             ?.find { it.joint == jointCode }
     }
-    
+
     private fun getRelevantTip(exerciseConfig: ExerciseConfig, jointCode: String): LocalizedText? {
         val tips = exerciseConfig.poseVariants.firstOrNull()
             ?.feedbackMessages?.tips ?: return null
-        
+
         // Try to find a tip related to this joint
         return tips.find { tip ->
             tip.en.lowercase().contains(jointCode.replace("_", " ").lowercase()) ||
             tip.en.lowercase().contains(jointCode.substringAfter("_").lowercase())
         } ?: tips.firstOrNull()
     }
-    
-    private fun getSafeRangeForJoint(trackedJoint: TrackedJoint?): AngleRange {
+
+    private fun getRangeFromError(error: JointError?): AngleRange? {
+        if (error == null) return null
+        if (!error.expectedMin.isFinite() || !error.expectedMax.isFinite()) return null
+        if (error.expectedMin > error.expectedMax) return null
+        return AngleRange(error.expectedMin, error.expectedMax)
+    }
+
+    private fun getSafeRangeForJoint(
+        trackedJoint: TrackedJoint?,
+        state: JointState,
+        actualAngle: Double? = null
+    ): AngleRange {
         if (trackedJoint == null) {
             return AngleRange(0.0, 180.0)
         }
-        
-        // Get perfect range as safe range
-        val perfectRange = trackedJoint.downRange?.perfect
-            ?: trackedJoint.upRange?.perfect
-            ?: trackedJoint.range?.perfect
-        
-        return perfectRange ?: AngleRange(0.0, 180.0)
+
+        val activeRanges = resolveActiveRangesForAngle(trackedJoint, actualAngle)
+
+        return activeRanges?.let { getRangeForState(it, state) }
+            ?: trackedJoint.range?.let { getRangeForState(it, state) }
+            ?: trackedJoint.upRange?.let { getRangeForState(it, state) }
+            ?: trackedJoint.downRange?.let { getRangeForState(it, state) }
+            ?: AngleRange(0.0, 180.0)
     }
-    
+
+    private fun resolveActiveRangesForAngle(
+        trackedJoint: TrackedJoint,
+        actualAngle: Double?
+    ): StateRanges? {
+        trackedJoint.range?.let { return it }
+        if (!trackedJoint.hasStateUpDownRanges()) return null
+
+        if (actualAngle == null) {
+            return trackedJoint.upRange ?: trackedJoint.downRange
+        }
+
+        return when (trackedJoint.determineZoneType(actualAngle)) {
+            ZoneType.UP_ZONE -> trackedJoint.upRange
+            ZoneType.DOWN_ZONE -> trackedJoint.downRange
+            ZoneType.TRANSITION -> {
+                val upRange = trackedJoint.upRange
+                val downRange = trackedJoint.downRange
+                when {
+                    upRange == null -> downRange
+                    downRange == null -> upRange
+                    kotlin.math.abs(actualAngle - upRange.effectiveMin) <= kotlin.math.abs(actualAngle - downRange.effectiveMax) -> upRange
+                    else -> downRange
+                }
+            }
+        }
+    }
+
+    private fun getRangeForState(stateRanges: StateRanges, state: JointState): AngleRange {
+        return when (state) {
+            JointState.PERFECT -> stateRanges.perfect
+            JointState.NORMAL -> stateRanges.normal ?: stateRanges.perfect
+            JointState.PAD -> stateRanges.pad ?: stateRanges.normal ?: stateRanges.perfect
+            JointState.WARNING -> stateRanges.warning ?: stateRanges.pad ?: stateRanges.normal ?: stateRanges.perfect
+            JointState.DANGER -> stateRanges.danger ?: stateRanges.warning ?: stateRanges.pad ?: stateRanges.normal ?: stateRanges.perfect
+            JointState.TRANSITION -> AngleRange(stateRanges.effectiveMin, stateRanges.effectiveMax)
+        }
+    }
+
     private fun selectMotivationalMessage(
         exerciseConfig: ExerciseConfig,
         rating: PerformanceRating,
@@ -929,25 +993,25 @@ object ReportGenerator {
     ): LocalizedText {
         val motivationals = exerciseConfig.poseVariants.firstOrNull()
             ?.feedbackMessages?.motivational ?: emptyList()
-        
+
         return when {
             // Celebrate excellent performance
             stateBreakdown.perfectRatio >= 0.8f && stateBreakdown.dangerCount == 0 -> {
-                motivationals.randomOrNull() 
+                motivationals.randomOrNull()
                     ?: LocalizedText(ar = "ممتاز! أداء مثالي!", en = "Excellent! Perfect form!")
             }
-            
+
             // Good performance
             rating == PerformanceRating.GOOD || rating == PerformanceRating.EXCELLENT -> {
                 motivationals.randomOrNull()
                     ?: LocalizedText(ar = "عمل رائع! استمر!", en = "Great job! Keep it up!")
             }
-            
+
             // Needs work but encouraging
             else -> rating.getMotivationalMessage()
         }
     }
-    
+
     private fun getDefaultStateMessage(state: JointState): LocalizedText {
         return when (state) {
             JointState.PERFECT -> LocalizedText(ar = "ممتاز!", en = "Excellent!")
@@ -958,7 +1022,7 @@ object ReportGenerator {
             JointState.TRANSITION -> LocalizedText(ar = "انتقال", en = "Moving")
         }
     }
-    
+
     private fun getDefaultTip(state: JointState): LocalizedText {
         return when (state) {
             JointState.DANGER -> LocalizedText(
@@ -975,7 +1039,7 @@ object ReportGenerator {
             )
         }
     }
-    
+
     private fun mapJointToCategory(jointCode: String): TipCategory {
         return when {
             jointCode.contains("knee") || jointCode.contains("hip") -> TipCategory.DEPTH
@@ -984,16 +1048,16 @@ object ReportGenerator {
             else -> TipCategory.STABILITY
         }
     }
-    
+
     // ═══════════════════════════════════════════════════════════════
     // OVERALL QUALITY CALCULATION
     // ═══════════════════════════════════════════════════════════════
-    
+
     /**
      * Calculate overall quality score from report components
-     * 
+     *
      * This combines Form, Safety, and Control scores into a single metric.
-     * 
+     *
      * @param fatigueIndex Pre-calculated fatigue index for Control score (Single Source of Truth)
      */
     private fun calculateOverallQuality(
@@ -1006,13 +1070,13 @@ object ReportGenerator {
         fatigueIndex: Int?,
         performanceSummary: PerformanceSummary? = null
     ): OverallQualityScore {
-        
+
         // 1. Calculate Form Score
         val formScore = calculateFormScoreForOverall(summary, timeline)
-        
+
         // 2. Calculate Safety Score
-        val safetyScore = calculateSafetyScoreForOverall(errorAnalysis, dangerAlerts, summary.totalReps)
-        
+        val safetyScore = calculateSafetyScoreForOverall(errorAnalysis, summary.invalidatedReps, summary.totalReps)
+
         // 3. Calculate Control Score (uses V2 metrics when available)
         val controlScore = calculateControlScoreForOverall(
             timeline = timeline,
@@ -1022,7 +1086,7 @@ object ReportGenerator {
             velocityLoss = performanceSummary?.velocityLoss,
             formConsistency = performanceSummary?.formConsistency
         )
-        
+
         // 4. Calculate Overall using OverallQualityScore
         return OverallQualityScore.calculate(
             formScore = formScore,
@@ -1031,10 +1095,10 @@ object ReportGenerator {
             isHoldExercise = isHoldExercise
         )
     }
-    
+
     /**
      * Calculate Form Score from summary and timeline
-     * 
+     *
      * Uses ScoreCalculator rates for consistency (Single Source of Truth).
      */
     private fun calculateFormScoreForOverall(
@@ -1046,7 +1110,7 @@ object ReportGenerator {
             val avgScore = timeline.map { it.score }.average().toFloat()
             return avgScore
         }
-        
+
         // Fallback: calculate from state breakdown using ScoreCalculator rates
         val breakdownMap = summary.stateBreakdown
         val perfectCount = breakdownMap[JointState.PERFECT] ?: 0
@@ -1054,10 +1118,10 @@ object ReportGenerator {
         val padCount = breakdownMap[JointState.PAD] ?: 0
         val warningCount = breakdownMap[JointState.WARNING] ?: 0
         val dangerCount = breakdownMap[JointState.DANGER] ?: 0
-        
+
         val total = (perfectCount + normalCount + padCount + warningCount + dangerCount).toFloat()
         if (total == 0f) return 0f
-        
+
         // Use ScoreCalculator rates (Single Source of Truth)
         return (
             perfectCount * ScoreCalculator.getScoreRate(JointState.PERFECT) +
@@ -1067,34 +1131,34 @@ object ReportGenerator {
             dangerCount * ScoreCalculator.getScoreRate(JointState.DANGER)
         ) / total
     }
-    
+
     /**
-     * Calculate Safety Score from error analysis and danger alerts
+     * Calculate Safety Score from error analysis and danger rep count
      */
     private fun calculateSafetyScoreForOverall(
         errorAnalysis: List<ErrorAnalysisItem>,
-        dangerAlerts: List<DangerAlert>,
+        dangerRepCount: Int,
         totalReps: Int
     ): Float {
         if (totalReps == 0) return 100f
-        
+
         // Count warning and danger events
         val warningEvents = errorAnalysis.filter { it.state == JointState.WARNING }.sumOf { it.count }
-        val dangerEvents = dangerAlerts.size
-        
+        val dangerEvents = dangerRepCount.coerceAtLeast(0)
+
         // Calculate penalty
         val warningPenalty = (warningEvents.toFloat() / totalReps) * 30f  // Max 30% penalty for warnings
         val dangerPenalty = (dangerEvents.toFloat() / totalReps) * 50f    // Max 50% penalty for dangers
-        
+
         return (100f - warningPenalty - dangerPenalty).coerceIn(0f, 100f)
     }
-    
+
     /**
      * Calculate Control Score from timeline, consistency, and fatigue
-     * 
+     *
      * UNIFIED LOGIC: Same calculation as PerformanceMetricsBuilder.calculateControlScore
      * to ensure consistency between OverallQuality and Control card.
-     * 
+     *
      * @param timeline Rep timeline entries
      * @param consistency Timing consistency metrics
      * @param fatigueIndex Pre-calculated fatigue index (Single Source of Truth)

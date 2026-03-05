@@ -371,6 +371,521 @@ export async function deleteSession(
 // Program Session Reports
 // ============================================
 
+type JsonRecord = Record<string, unknown>;
+
+type StateBreakdownCounts = {
+  perfect: number;
+  normal: number;
+  pad: number;
+  warning: number;
+  danger: number;
+};
+
+type CountingSnapshot = {
+  totalReps: number;
+  countedReps: number;
+  invalidatedReps: number;
+  uncountedReps: number;
+  incorrectReps: number;
+  countedRatio: number;
+  invalidatedRatio: number;
+  uncountedRatio: number;
+  stateBreakdown: StateBreakdownCounts;
+  positionErrorReps: number;
+  positionWarningReps: number;
+  positionTipReps: number;
+};
+
+function isRecord(value: unknown): value is JsonRecord {
+  return !!value && typeof value === 'object' && !Array.isArray(value);
+}
+
+function toFiniteNumber(value: unknown): number | null {
+  if (typeof value !== 'number' || !Number.isFinite(value)) return null;
+  return value;
+}
+
+function toNonNegativeInt(value: unknown): number | null {
+  const num = toFiniteNumber(value);
+  if (num == null) return null;
+  return Math.max(0, Math.round(num));
+}
+
+function normalizePercent(value: unknown): number | null {
+  const num = toFiniteNumber(value);
+  if (num == null) return null;
+  const normalized = num >= 0 && num <= 1 ? num * 100 : num;
+  return Math.max(0, Math.min(100, normalized));
+}
+
+function ratioPercent(numerator: number, denominator: number): number {
+  if (denominator <= 0) return 0;
+  return Math.max(0, Math.min(100, (numerator / denominator) * 100));
+}
+
+function round1(value: number): number {
+  return Math.round(value * 10) / 10;
+}
+
+function emptyStateBreakdown(): StateBreakdownCounts {
+  return { perfect: 0, normal: 0, pad: 0, warning: 0, danger: 0 };
+}
+
+function mergeStateBreakdown(a: StateBreakdownCounts, b: StateBreakdownCounts): StateBreakdownCounts {
+  return {
+    perfect: a.perfect + b.perfect,
+    normal: a.normal + b.normal,
+    pad: a.pad + b.pad,
+    warning: a.warning + b.warning,
+    danger: a.danger + b.danger,
+  };
+}
+
+function normalizeStateKey(raw: unknown): keyof StateBreakdownCounts {
+  const state = toNonNegativeInt(raw) ?? 0;
+  if (state <= 0) return 'perfect';
+  if (state === 1) return 'normal';
+  if (state === 2) return 'pad';
+  if (state === 3) return 'warning';
+  return 'danger';
+}
+
+function normalizePositionCount(value: unknown): number {
+  if (Array.isArray(value)) return value.length;
+  return toNonNegativeInt(value) ?? 0;
+}
+
+function getRepPositionCount(
+  rep: JsonRecord,
+  explicitKey: string,
+  arrayKey: string,
+): number {
+  const explicit = normalizePositionCount(rep[explicitKey]);
+  if (explicit > 0) return explicit;
+  return normalizePositionCount(rep[arrayKey]);
+}
+
+function getRepIsInvalidated(rep: JsonRecord): boolean {
+  if (typeof rep.isInvalidated === 'boolean') return rep.isInvalidated;
+  return (toNonNegativeInt(rep.worstState) ?? 0) >= 4;
+}
+
+function normalizeSnapshot(raw: {
+  totalReps: number;
+  countedReps: number;
+  invalidatedReps: number;
+  uncountedReps: number;
+  incorrectReps: number;
+  countedRatio?: number | null;
+  invalidatedRatio?: number | null;
+  uncountedRatio?: number | null;
+  stateBreakdown?: StateBreakdownCounts;
+  positionErrorReps?: number;
+  positionWarningReps?: number;
+  positionTipReps?: number;
+}): CountingSnapshot {
+  const totalReps = Math.max(0, Math.round(raw.totalReps));
+  let countedReps = Math.min(totalReps, Math.max(0, Math.round(raw.countedReps)));
+  let incorrectReps = Math.min(totalReps, Math.max(0, Math.round(raw.incorrectReps)));
+  let invalidatedReps = Math.min(totalReps, Math.max(0, Math.round(raw.invalidatedReps)));
+  if (invalidatedReps > incorrectReps) invalidatedReps = incorrectReps;
+  let uncountedReps = Math.min(totalReps, Math.max(0, Math.round(raw.uncountedReps)));
+  if (uncountedReps + invalidatedReps > incorrectReps) {
+    uncountedReps = Math.max(0, incorrectReps - invalidatedReps);
+  }
+
+  if (countedReps + incorrectReps > totalReps) {
+    incorrectReps = Math.max(0, totalReps - countedReps);
+    if (invalidatedReps > incorrectReps) invalidatedReps = incorrectReps;
+    if (uncountedReps > incorrectReps - invalidatedReps) {
+      uncountedReps = Math.max(0, incorrectReps - invalidatedReps);
+    }
+  }
+
+  const countedRatio =
+    normalizePercent(raw.countedRatio) ?? ratioPercent(countedReps, totalReps);
+  const invalidatedRatio =
+    normalizePercent(raw.invalidatedRatio) ?? ratioPercent(invalidatedReps, totalReps);
+  const uncountedRatio =
+    normalizePercent(raw.uncountedRatio) ?? ratioPercent(uncountedReps, totalReps);
+
+  return {
+    totalReps,
+    countedReps,
+    invalidatedReps,
+    uncountedReps,
+    incorrectReps,
+    countedRatio,
+    invalidatedRatio,
+    uncountedRatio,
+    stateBreakdown: raw.stateBreakdown ?? emptyStateBreakdown(),
+    positionErrorReps: Math.max(0, Math.round(raw.positionErrorReps ?? 0)),
+    positionWarningReps: Math.max(0, Math.round(raw.positionWarningReps ?? 0)),
+    positionTipReps: Math.max(0, Math.round(raw.positionTipReps ?? 0)),
+  };
+}
+
+function parseStateBreakdown(source: unknown): StateBreakdownCounts {
+  if (!isRecord(source)) return emptyStateBreakdown();
+  return {
+    perfect: toNonNegativeInt(source.perfect) ?? 0,
+    normal: toNonNegativeInt(source.normal) ?? 0,
+    pad: toNonNegativeInt(source.pad) ?? 0,
+    warning: toNonNegativeInt(source.warning) ?? 0,
+    danger: toNonNegativeInt(source.danger) ?? 0,
+  };
+}
+
+function snapshotFromRepDetails(repDetails: JsonRecord[]): CountingSnapshot {
+  let totalReps = 0;
+  let countedReps = 0;
+  let invalidatedReps = 0;
+  let positionErrorReps = 0;
+  let positionWarningReps = 0;
+  let positionTipReps = 0;
+  const stateBreakdown = emptyStateBreakdown();
+
+  for (const rep of repDetails) {
+    totalReps += 1;
+    if (rep.isCounted === true) countedReps += 1;
+
+    if (getRepIsInvalidated(rep)) {
+      invalidatedReps += 1;
+      rep.isInvalidated = true;
+    }
+
+    const stateKey = normalizeStateKey(rep.worstState);
+    stateBreakdown[stateKey] += 1;
+
+    const positionErrorCount = getRepPositionCount(rep, 'positionErrorCount', 'positionErrors');
+    const positionWarningCount = getRepPositionCount(rep, 'positionWarningCount', 'positionWarnings');
+    const positionTipCount = getRepPositionCount(rep, 'positionTipCount', 'errors');
+
+    rep.positionErrorCount = positionErrorCount;
+    rep.positionWarningCount = positionWarningCount;
+    rep.positionTipCount = positionTipCount;
+
+    if (positionErrorCount > 0) positionErrorReps += 1;
+    if (positionWarningCount > 0) positionWarningReps += 1;
+    if (positionTipCount > 0) positionTipReps += 1;
+  }
+
+  return normalizeSnapshot({
+    totalReps,
+    countedReps,
+    invalidatedReps,
+    incorrectReps: Math.max(0, totalReps - countedReps),
+    uncountedReps: Math.max(0, totalReps - countedReps - invalidatedReps),
+    stateBreakdown,
+    positionErrorReps,
+    positionWarningReps,
+    positionTipReps,
+  });
+}
+
+function snapshotFromFields(
+  source: JsonRecord,
+  fallback?: Partial<CountingSnapshot>,
+): CountingSnapshot {
+  const totalReps =
+    toNonNegativeInt(source.totalReps) ??
+    toNonNegativeInt(source.repsCompleted) ??
+    fallback?.totalReps ??
+    0;
+
+  const countedReps =
+    toNonNegativeInt(source.countedReps) ?? fallback?.countedReps ?? 0;
+  const incorrectReps =
+    toNonNegativeInt(source.incorrectReps) ?? Math.max(0, totalReps - countedReps);
+  const invalidatedReps =
+    toNonNegativeInt(source.invalidatedReps) ?? fallback?.invalidatedReps ?? 0;
+  const uncountedReps =
+    toNonNegativeInt(source.uncountedReps) ?? Math.max(0, incorrectReps - invalidatedReps);
+
+  return normalizeSnapshot({
+    totalReps,
+    countedReps,
+    invalidatedReps,
+    incorrectReps,
+    uncountedReps,
+    countedRatio: normalizePercent(source.countedRatio) ?? normalizePercent(source.accuracy),
+    invalidatedRatio: normalizePercent(source.invalidatedRatio),
+    uncountedRatio: normalizePercent(source.uncountedRatio),
+    stateBreakdown: parseStateBreakdown(source.stateBreakdown),
+    positionErrorReps:
+      toNonNegativeInt(source.positionErrorReps) ?? fallback?.positionErrorReps ?? 0,
+    positionWarningReps:
+      toNonNegativeInt(source.positionWarningReps) ?? fallback?.positionWarningReps ?? 0,
+    positionTipReps:
+      toNonNegativeInt(source.positionTipReps) ?? fallback?.positionTipReps ?? 0,
+  });
+}
+
+function aggregateSnapshots(snapshots: CountingSnapshot[]): CountingSnapshot {
+  if (snapshots.length === 0) {
+    return normalizeSnapshot({
+      totalReps: 0,
+      countedReps: 0,
+      invalidatedReps: 0,
+      uncountedReps: 0,
+      incorrectReps: 0,
+      stateBreakdown: emptyStateBreakdown(),
+    });
+  }
+
+  const total = snapshots.reduce((sum, s) => sum + s.totalReps, 0);
+  const counted = snapshots.reduce((sum, s) => sum + s.countedReps, 0);
+  const invalidated = snapshots.reduce((sum, s) => sum + s.invalidatedReps, 0);
+  const uncounted = snapshots.reduce((sum, s) => sum + s.uncountedReps, 0);
+  const incorrect = snapshots.reduce((sum, s) => sum + s.incorrectReps, 0);
+  const positionErrorReps = snapshots.reduce((sum, s) => sum + s.positionErrorReps, 0);
+  const positionWarningReps = snapshots.reduce((sum, s) => sum + s.positionWarningReps, 0);
+  const positionTipReps = snapshots.reduce((sum, s) => sum + s.positionTipReps, 0);
+  const stateBreakdown = snapshots.reduce(
+    (acc, s) => mergeStateBreakdown(acc, s.stateBreakdown),
+    emptyStateBreakdown(),
+  );
+
+  return normalizeSnapshot({
+    totalReps: total,
+    countedReps: counted,
+    invalidatedReps: invalidated,
+    uncountedReps: uncounted,
+    incorrectReps: incorrect,
+    stateBreakdown,
+    positionErrorReps,
+    positionWarningReps,
+    positionTipReps,
+  });
+}
+
+function normalizeSetReport(set: JsonRecord): { set: JsonRecord; snapshot: CountingSnapshot; formScore: number } {
+  const repDetails = Array.isArray(set.repDetails)
+    ? set.repDetails.filter(isRecord).map((rep) => ({ ...rep }))
+    : [];
+
+  const fromReps = snapshotFromRepDetails(repDetails);
+  const fromFields = snapshotFromFields(
+    {
+      ...set,
+      totalReps: toNonNegativeInt(set.totalReps) ?? toNonNegativeInt(set.repsCompleted),
+      accuracy: normalizePercent(set.accuracy),
+    },
+    fromReps,
+  );
+
+  const snapshot = normalizeSnapshot({
+    ...fromFields,
+    stateBreakdown: repDetails.length > 0 ? fromReps.stateBreakdown : fromFields.stateBreakdown,
+    positionErrorReps: repDetails.length > 0 ? fromReps.positionErrorReps : fromFields.positionErrorReps,
+    positionWarningReps: repDetails.length > 0 ? fromReps.positionWarningReps : fromFields.positionWarningReps,
+    positionTipReps: repDetails.length > 0 ? fromReps.positionTipReps : fromFields.positionTipReps,
+  });
+
+  const normalizedSet: JsonRecord = {
+    ...set,
+    repDetails,
+    totalReps: snapshot.totalReps,
+    repsCompleted: snapshot.totalReps,
+    countedReps: snapshot.countedReps,
+    invalidatedReps: snapshot.invalidatedReps,
+    uncountedReps: snapshot.uncountedReps,
+    incorrectReps: snapshot.incorrectReps,
+    countedRatio: round1(snapshot.countedRatio),
+    accuracy: round1(snapshot.countedRatio),
+    invalidatedRatio: round1(snapshot.invalidatedRatio),
+    uncountedRatio: round1(snapshot.uncountedRatio),
+    stateBreakdown: snapshot.stateBreakdown,
+    positionErrorReps: snapshot.positionErrorReps,
+    positionWarningReps: snapshot.positionWarningReps,
+    positionTipReps: snapshot.positionTipReps,
+  };
+
+  const formScore = toFiniteNumber(set.formScore) ?? 0;
+  return { set: normalizedSet, snapshot, formScore };
+}
+
+function normalizeExerciseReport(exercise: JsonRecord): {
+  exercise: JsonRecord;
+  snapshot: CountingSnapshot;
+  averageFormScore: number;
+} {
+  const rawSets = Array.isArray(exercise.setMetrics)
+    ? exercise.setMetrics.filter(isRecord).map((set) => ({ ...set }))
+    : [];
+
+  const normalizedSets = rawSets.map((set) => normalizeSetReport(set));
+  const setSnapshots = normalizedSets.map((entry) => entry.snapshot);
+  const aggregated = aggregateSnapshots(setSnapshots);
+  const fallback = snapshotFromFields(exercise, aggregated);
+  const snapshot = normalizeSnapshot({
+    ...fallback,
+    stateBreakdown: setSnapshots.length > 0 ? aggregated.stateBreakdown : fallback.stateBreakdown,
+    positionErrorReps: setSnapshots.length > 0 ? aggregated.positionErrorReps : fallback.positionErrorReps,
+    positionWarningReps: setSnapshots.length > 0 ? aggregated.positionWarningReps : fallback.positionWarningReps,
+    positionTipReps: setSnapshots.length > 0 ? aggregated.positionTipReps : fallback.positionTipReps,
+  });
+
+  const averageFormScore =
+    toFiniteNumber(exercise.averageFormScore) ??
+    (normalizedSets.length > 0
+      ? normalizedSets.reduce((sum, entry) => sum + entry.formScore, 0) / normalizedSets.length
+      : 0);
+
+  const normalizedExercise: JsonRecord = {
+    ...exercise,
+    setMetrics: normalizedSets.map((entry) => entry.set),
+    setsCompleted: toNonNegativeInt(exercise.setsCompleted) ?? normalizedSets.length,
+    totalSets: toNonNegativeInt(exercise.totalSets) ?? normalizedSets.length,
+    totalReps: snapshot.totalReps,
+    countedReps: snapshot.countedReps,
+    invalidatedReps: snapshot.invalidatedReps,
+    uncountedReps: snapshot.uncountedReps,
+    incorrectReps: snapshot.incorrectReps,
+    countedRatio: round1(snapshot.countedRatio),
+    averageAccuracy: round1(snapshot.countedRatio),
+    invalidatedRatio: round1(snapshot.invalidatedRatio),
+    uncountedRatio: round1(snapshot.uncountedRatio),
+    averageFormScore: round1(averageFormScore),
+    stateBreakdown: snapshot.stateBreakdown,
+    positionErrorReps: snapshot.positionErrorReps,
+    positionWarningReps: snapshot.positionWarningReps,
+    positionTipReps: snapshot.positionTipReps,
+  };
+
+  return {
+    exercise: normalizedExercise,
+    snapshot,
+    averageFormScore,
+  };
+}
+
+function normalizeSessionReport(report: JsonRecord): {
+  normalizedReport: JsonRecord;
+  snapshot: CountingSnapshot;
+  averageFormScore: number;
+  totalExercises: number;
+  totalSetsPlanned: number;
+  totalSetsCompleted: number;
+  totalDurationMs: number | null;
+} {
+  const rawExercises = Array.isArray(report.exerciseReports)
+    ? report.exerciseReports.filter(isRecord).map((ex) => ({ ...ex }))
+    : [];
+
+  const normalizedExercises = rawExercises.map((ex) => normalizeExerciseReport(ex));
+  const exerciseSnapshots = normalizedExercises.map((entry) => entry.snapshot);
+  const aggregated = aggregateSnapshots(exerciseSnapshots);
+  const fallback = snapshotFromFields(report, aggregated);
+  const snapshot = normalizeSnapshot({
+    ...fallback,
+    stateBreakdown: exerciseSnapshots.length > 0 ? aggregated.stateBreakdown : fallback.stateBreakdown,
+    positionErrorReps: exerciseSnapshots.length > 0 ? aggregated.positionErrorReps : fallback.positionErrorReps,
+    positionWarningReps: exerciseSnapshots.length > 0 ? aggregated.positionWarningReps : fallback.positionWarningReps,
+    positionTipReps: exerciseSnapshots.length > 0 ? aggregated.positionTipReps : fallback.positionTipReps,
+  });
+
+  const averageFormScore =
+    toFiniteNumber(report.averageFormScore) ??
+    (normalizedExercises.length > 0
+      ? normalizedExercises.reduce((sum, entry) => sum + entry.averageFormScore, 0) /
+        normalizedExercises.length
+      : 0);
+
+  const totalExercises = toNonNegativeInt(report.totalExercises) ?? normalizedExercises.length;
+  const totalSetsCompleted =
+    toNonNegativeInt(report.totalSetsCompleted) ??
+    normalizedExercises.reduce((sum, ex) => sum + (toNonNegativeInt(ex.exercise.setsCompleted) ?? 0), 0);
+  const totalSetsPlanned =
+    toNonNegativeInt(report.totalSetsPlanned) ??
+    normalizedExercises.reduce((sum, ex) => sum + (toNonNegativeInt(ex.exercise.totalSets) ?? 0), 0);
+  const totalDurationMs = toNonNegativeInt(report.totalDurationMs);
+
+  const normalizedReport: JsonRecord = {
+    ...report,
+    exerciseReports: normalizedExercises.map((entry) => entry.exercise),
+    totalExercises,
+    totalSetsCompleted,
+    totalSetsPlanned,
+    totalReps: snapshot.totalReps,
+    countedReps: snapshot.countedReps,
+    invalidatedReps: snapshot.invalidatedReps,
+    uncountedReps: snapshot.uncountedReps,
+    incorrectReps: snapshot.incorrectReps,
+    countedRatio: round1(snapshot.countedRatio),
+    averageAccuracy: round1(snapshot.countedRatio),
+    invalidatedRatio: round1(snapshot.invalidatedRatio),
+    uncountedRatio: round1(snapshot.uncountedRatio),
+    averageFormScore: round1(averageFormScore),
+    stateBreakdown: snapshot.stateBreakdown,
+    positionErrorReps: snapshot.positionErrorReps,
+    positionWarningReps: snapshot.positionWarningReps,
+    positionTipReps: snapshot.positionTipReps,
+  };
+
+  return {
+    normalizedReport,
+    snapshot,
+    averageFormScore,
+    totalExercises,
+    totalSetsPlanned,
+    totalSetsCompleted,
+    totalDurationMs,
+  };
+}
+
+function normalizeProgramSessionReportPayload(
+  payload: ProgramSessionCompletePayload,
+): {
+  report?: Prisma.InputJsonValue;
+  totalDurationMs?: number;
+  totalExercises?: number;
+  totalSets?: number;
+  completedSets?: number;
+  totalReps?: number;
+  avgAccuracy?: number;
+  avgFormScore?: number;
+} {
+  const source = isRecord(payload.report) ? payload.report : null;
+
+  let normalizedReportResult:
+    | ReturnType<typeof normalizeSessionReport>
+    | null = null;
+
+  if (source) {
+    // Report payload is expected to be plain JSON; cloning avoids mutating caller objects.
+    const cloned = JSON.parse(JSON.stringify(source)) as JsonRecord;
+    normalizedReportResult = normalizeSessionReport(cloned);
+  }
+
+  const totalDurationMs =
+    toNonNegativeInt(normalizedReportResult?.totalDurationMs) ?? toNonNegativeInt(payload.totalDurationMs) ?? undefined;
+  const totalExercises =
+    toNonNegativeInt(normalizedReportResult?.totalExercises) ?? toNonNegativeInt(payload.totalExercises) ?? undefined;
+  const totalSets =
+    toNonNegativeInt(normalizedReportResult?.totalSetsPlanned) ?? toNonNegativeInt(payload.totalSets) ?? undefined;
+  const completedSets =
+    toNonNegativeInt(normalizedReportResult?.totalSetsCompleted) ?? toNonNegativeInt(payload.completedSets) ?? undefined;
+  const totalReps =
+    toNonNegativeInt(normalizedReportResult?.snapshot.totalReps) ?? toNonNegativeInt(payload.totalReps) ?? undefined;
+  const avgAccuracy =
+    normalizePercent(normalizedReportResult?.snapshot.countedRatio) ?? normalizePercent(payload.avgAccuracy) ?? undefined;
+  const avgFormScore =
+    toFiniteNumber(normalizedReportResult?.averageFormScore) ?? toFiniteNumber(payload.avgFormScore) ?? undefined;
+
+  return {
+    report: normalizedReportResult
+      ? (normalizedReportResult.normalizedReport as Prisma.InputJsonValue)
+      : undefined,
+    totalDurationMs,
+    totalExercises,
+    totalSets,
+    completedSets,
+    totalReps,
+    avgAccuracy,
+    avgFormScore,
+  };
+}
 export async function startProgramSessionReport(
   userId: string,
   sessionId: string,
@@ -446,6 +961,7 @@ export async function completeProgramSessionReport(
   }
 
   const completedAt = payload.completedAt ? new Date(payload.completedAt) : new Date();
+  const normalizedPayload = normalizeProgramSessionReportPayload(payload);
 
   // Update the report to completed
   const updatedReport = await prisma.programSessionReport.update({
@@ -453,14 +969,14 @@ export async function completeProgramSessionReport(
     data: {
       status: 'completed',
       completedAt,
-      totalDurationMs: payload.totalDurationMs ?? report.totalDurationMs ?? undefined,
-      totalExercises: payload.totalExercises ?? report.totalExercises ?? undefined,
-      totalSets: payload.totalSets ?? report.totalSets ?? undefined,
-      completedSets: payload.completedSets ?? report.completedSets ?? undefined,
-      totalReps: payload.totalReps ?? report.totalReps ?? undefined,
-      avgAccuracy: payload.avgAccuracy ?? report.avgAccuracy ?? undefined,
-      avgFormScore: payload.avgFormScore ?? undefined,
-      report: (payload.report ?? report.report) as Prisma.InputJsonValue | undefined,
+      totalDurationMs: normalizedPayload.totalDurationMs ?? report.totalDurationMs ?? undefined,
+      totalExercises: normalizedPayload.totalExercises ?? report.totalExercises ?? undefined,
+      totalSets: normalizedPayload.totalSets ?? report.totalSets ?? undefined,
+      completedSets: normalizedPayload.completedSets ?? report.completedSets ?? undefined,
+      totalReps: normalizedPayload.totalReps ?? report.totalReps ?? undefined,
+      avgAccuracy: normalizedPayload.avgAccuracy ?? report.avgAccuracy ?? undefined,
+      avgFormScore: normalizedPayload.avgFormScore ?? report.avgFormScore ?? undefined,
+      report: normalizedPayload.report ?? (report.report as Prisma.InputJsonValue | undefined),
     },
   });
 
@@ -587,17 +1103,19 @@ export async function updateProgramSessionReport(
     throw new Error('Report not found');
   }
 
+  const normalizedPayload = normalizeProgramSessionReportPayload(payload);
+
   return prisma.programSessionReport.update({
     where: { id: report.id },
     data: {
-      totalDurationMs: payload.totalDurationMs ?? report.totalDurationMs ?? undefined,
-      totalExercises: payload.totalExercises ?? report.totalExercises ?? undefined,
-      totalSets: payload.totalSets ?? report.totalSets ?? undefined,
-      completedSets: payload.completedSets ?? report.completedSets ?? undefined,
-      totalReps: payload.totalReps ?? report.totalReps ?? undefined,
-      avgAccuracy: payload.avgAccuracy ?? report.avgAccuracy ?? undefined,
-      avgFormScore: payload.avgFormScore ?? report.avgFormScore ?? undefined,
-      report: (payload.report ?? report.report) as Prisma.InputJsonValue | undefined,
+      totalDurationMs: normalizedPayload.totalDurationMs ?? report.totalDurationMs ?? undefined,
+      totalExercises: normalizedPayload.totalExercises ?? report.totalExercises ?? undefined,
+      totalSets: normalizedPayload.totalSets ?? report.totalSets ?? undefined,
+      completedSets: normalizedPayload.completedSets ?? report.completedSets ?? undefined,
+      totalReps: normalizedPayload.totalReps ?? report.totalReps ?? undefined,
+      avgAccuracy: normalizedPayload.avgAccuracy ?? report.avgAccuracy ?? undefined,
+      avgFormScore: normalizedPayload.avgFormScore ?? report.avgFormScore ?? undefined,
+      report: normalizedPayload.report ?? (report.report as Prisma.InputJsonValue | undefined),
     },
   });
 }
@@ -873,3 +1391,6 @@ async function updateUserStats(userId: string) {
     },
   });
 }
+
+
+

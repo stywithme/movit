@@ -294,8 +294,8 @@ object MetricDisplayBuilder {
             }
         }
         
-        // Danger Count - always show if there are alerts
-        val dangerCount = report.dangerAlerts.size
+        // Danger Count - show whenever there are danger reps
+        val dangerCount = report.summary.invalidatedReps.coerceAtLeast(report.dangerAlerts.size)
         if (dangerCount > 0) {
             items.add(MetricDisplayItem(
                 code = MetricCode.ALIGNMENT, // Using alignment as proxy

@@ -93,23 +93,23 @@ class TipsExportFragment : Fragment() {
             if (critical.isNotEmpty()) {
                 col.addView(buildTipGroupHeader(ctx, "🚨",
                     if (isArabic) "أولوية قصوى" else "Critical Priority",
-                    H.RED
+                    H.colorRed(ctx)
                 ))
-                critical.forEachIndexed { i, tip -> col.addView(buildTipCard(ctx, tip, i + 1, H.RED)) }
+                critical.forEachIndexed { i, tip -> col.addView(buildTipCard(ctx, tip, i + 1, H.colorRed(ctx))) }
             }
             if (important.isNotEmpty()) {
                 col.addView(buildTipGroupHeader(ctx, "⚠️",
                     if (isArabic) "مهم" else "Important",
-                    H.ORANGE
+                    H.colorOrange(ctx)
                 ))
-                important.forEachIndexed { i, tip -> col.addView(buildTipCard(ctx, tip, i + 1, H.ORANGE)) }
+                important.forEachIndexed { i, tip -> col.addView(buildTipCard(ctx, tip, i + 1, H.colorOrange(ctx))) }
             }
             if (helpful.isNotEmpty()) {
                 col.addView(buildTipGroupHeader(ctx, "💡",
                     if (isArabic) "نصائح مفيدة" else "Helpful Tips",
-                    H.GREEN
+                    H.colorGreen(ctx)
                 ))
-                helpful.forEachIndexed { i, tip -> col.addView(buildTipCard(ctx, tip, i + 1, H.GREEN)) }
+                helpful.forEachIndexed { i, tip -> col.addView(buildTipCard(ctx, tip, i + 1, H.colorGreen(ctx))) }
             }
         }
 
@@ -131,7 +131,7 @@ class TipsExportFragment : Fragment() {
     private fun buildStrategicRecommendation(ctx: android.content.Context, report: PostTrainingReport): LinearLayout {
         val score = report.overallQuality?.score ?: report.summary.averageScore
         val isHold = report.isHoldExercise()
-        val hasDanger = report.dangerAlerts.isNotEmpty()
+        val hasDanger = report.hasDangerAlerts()
 
         val (icon, title, body) = when {
             hasDanger -> Triple("⚠️",
@@ -161,7 +161,7 @@ class TipsExportFragment : Fragment() {
             )
         }
 
-        val card = H.glassCard(ctx, H.BLUE)
+        val card = H.glassCard(ctx, H.colorBlue(ctx))
         card.addView(LinearLayout(ctx).apply {
             orientation = LinearLayout.HORIZONTAL
             gravity = Gravity.CENTER_VERTICAL
@@ -171,11 +171,11 @@ class TipsExportFragment : Fragment() {
                 layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f)
                     .apply { marginStart = H.dp(ctx, 12) }
                 addView(TextView(ctx).apply {
-                    text = title; textSize = 16f; setTextColor(H.TEXT_WHITE)
+                    text = title; textSize = 16f; setTextColor(H.textWhite(ctx))
                     setTypeface(typeface, android.graphics.Typeface.BOLD)
                 })
                 addView(TextView(ctx).apply {
-                    text = body; textSize = 13f; setTextColor(H.TEXT_MUTED)
+                    text = body; textSize = 13f; setTextColor(H.textMuted(ctx))
                     setPadding(0, H.dp(ctx, 2), 0, 0)
                 })
             })
@@ -215,14 +215,14 @@ class TipsExportFragment : Fragment() {
             ).apply { topMargin = H.dp(ctx, 8) }
             setPadding(H.dp(ctx, 14), H.dp(ctx, 14), H.dp(ctx, 14), H.dp(ctx, 14))
             background = GradientDrawable().apply {
-                setColor(H.CARD_BG); setStroke(1, accentColor)
+                setColor(H.cardBg(ctx)); setStroke(1, accentColor)
                 cornerRadius = H.dp(ctx, 12).toFloat()
             }
         }
 
         // Number badge
         card.addView(TextView(ctx).apply {
-            text = "$number"; textSize = 16f; setTextColor(H.TEXT_WHITE)
+            text = "$number"; textSize = 16f; setTextColor(H.textWhite(ctx))
             gravity = Gravity.CENTER
             layoutParams = LinearLayout.LayoutParams(H.dp(ctx, 32), H.dp(ctx, 32)).apply {
                 marginEnd = H.dp(ctx, 12)
@@ -239,12 +239,12 @@ class TipsExportFragment : Fragment() {
         }
         content.addView(TextView(ctx).apply {
             text = if (isArabic) tip.title.ar else tip.title.en
-            textSize = 14f; setTextColor(H.TEXT_WHITE)
+            textSize = 14f; setTextColor(H.textWhite(ctx))
             setTypeface(typeface, android.graphics.Typeface.BOLD)
         })
         content.addView(TextView(ctx).apply {
             text = if (isArabic) tip.description.ar else tip.description.en
-            textSize = 12f; setTextColor(H.TEXT_MUTED); maxLines = 3
+            textSize = 12f; setTextColor(H.textMuted(ctx)); maxLines = 3
             setPadding(0, H.dp(ctx, 2), 0, 0)
         })
 
@@ -286,7 +286,7 @@ class TipsExportFragment : Fragment() {
         }
         container.addView(TextView(ctx).apply {
             text = if (isArabic) "🔍 من تحليل الأخطاء" else "🔍 From Error Analysis"
-            textSize = 15f; setTextColor(H.TEXT_WHITE)
+            textSize = 15f; setTextColor(H.textWhite(ctx))
             setPadding(0, 0, 0, H.dp(ctx, 8))
         })
 
@@ -299,9 +299,9 @@ class TipsExportFragment : Fragment() {
                     LinearLayout.LayoutParams.WRAP_CONTENT
                 ).apply { topMargin = H.dp(ctx, 8) }
                 setPadding(H.dp(ctx, 14), H.dp(ctx, 12), H.dp(ctx, 14), H.dp(ctx, 12))
-                val borderColor = if (error.isDanger()) H.RED else H.ORANGE
+                val borderColor = if (error.isDanger()) H.colorRed(ctx) else H.colorOrange(ctx)
                 background = GradientDrawable().apply {
-                    setColor(H.CARD_BG); setStroke(1, borderColor)
+                    setColor(H.cardBg(ctx)); setStroke(1, borderColor)
                     cornerRadius = H.dp(ctx, 10).toFloat()
                 }
             }
@@ -316,28 +316,28 @@ class TipsExportFragment : Fragment() {
                 addView(TextView(ctx).apply {
                     val jointName = if (isArabic) error.jointName.ar else error.jointName.en
                     text = jointName
-                    textSize = 14f; setTextColor(H.TEXT_WHITE)
+                    textSize = 14f; setTextColor(H.textWhite(ctx))
                     setTypeface(typeface, android.graphics.Typeface.BOLD)
                     layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f)
                         .apply { marginStart = H.dp(ctx, 6) }
                 })
                 addView(TextView(ctx).apply {
                     text = if (isArabic) "${error.count}×" else "${error.count}×"
-                    textSize = 14f; setTextColor(H.TEXT_MUTED)
+                    textSize = 14f; setTextColor(H.textMuted(ctx))
                 })
             })
 
             // Exercise-specific message (from stateMessages)
             errorCard.addView(TextView(ctx).apply {
                 text = if (isArabic) error.message.ar else error.message.en
-                textSize = 13f; setTextColor(H.TEXT_MUTED)
+                textSize = 13f; setTextColor(H.textMuted(ctx))
                 setPadding(0, H.dp(ctx, 4), 0, 0)
             })
 
             // Exercise-specific tip (from feedbackMessages.tips)
             errorCard.addView(TextView(ctx).apply {
                 text = "💡 ${if (isArabic) error.tip.ar else error.tip.en}"
-                textSize = 12f; setTextColor(H.GREEN)
+                textSize = 12f; setTextColor(H.colorGreen(ctx))
                 setPadding(0, H.dp(ctx, 6), 0, 0)
             })
 
@@ -351,20 +351,20 @@ class TipsExportFragment : Fragment() {
     // ═══════════════════════════════════════════════════════════════
 
     private fun buildPerfectSessionMessage(ctx: android.content.Context): LinearLayout {
-        val card = H.glassCard(ctx, H.GREEN)
+        val card = H.glassCard(ctx, H.colorGreen(ctx))
         card.gravity = Gravity.CENTER
         card.addView(TextView(ctx).apply {
             text = "🎉"; textSize = 48f; gravity = Gravity.CENTER
         })
         card.addView(TextView(ctx).apply {
             text = if (isArabic) "أداء ممتاز!" else "Excellent Performance!"
-            textSize = 20f; setTextColor(H.GREEN); gravity = Gravity.CENTER
+            textSize = 20f; setTextColor(H.colorGreen(ctx)); gravity = Gravity.CENTER
             setPadding(0, H.dp(ctx, 10), 0, 0)
         })
         card.addView(TextView(ctx).apply {
             text = if (isArabic) "لا توجد ملاحظات — استمر على هذا المستوى!"
             else "No improvement notes — keep up the great work!"
-            textSize = 14f; setTextColor(H.TEXT_MUTED); gravity = Gravity.CENTER
+            textSize = 14f; setTextColor(H.textMuted(ctx)); gravity = Gravity.CENTER
         })
         return card
     }
@@ -411,8 +411,8 @@ class TipsExportFragment : Fragment() {
             }
             setPadding(H.dp(ctx, 16), H.dp(ctx, 14), H.dp(ctx, 16), H.dp(ctx, 14))
             background = GradientDrawable().apply {
-                setColor(H.CARD_BG)
-                setStroke(1, H.CARD_BORDER_DEFAULT)
+                setColor(H.cardBg(ctx))
+                setStroke(1, H.cardBorder(ctx))
                 cornerRadius = H.dp(ctx, 12).toFloat()
             }
             isClickable = true
@@ -421,7 +421,7 @@ class TipsExportFragment : Fragment() {
 
             addView(TextView(ctx).apply { text = icon; textSize = 20f })
             addView(TextView(ctx).apply {
-                text = label; textSize = 14f; setTextColor(H.TEXT_WHITE)
+                text = label; textSize = 14f; setTextColor(H.textWhite(ctx))
                 setPadding(H.dp(ctx, 8), 0, 0, 0)
             })
         }

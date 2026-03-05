@@ -244,6 +244,29 @@ class TrainingEngine(
             )
         )
     }
+
+    // ==================== Safety Guardrails ====================
+
+    private val minRepIntervalMs: Long = repCountingConfig.getMinRepInterval(
+        SettingsManager.getDefaultMinRepInterval()
+    )
+
+    private val maxRepsGuard: Int = if (isHoldExercise) {
+        1
+    } else {
+        if (targetReps > 0) maxOf(targetReps * 3, targetReps + 12) else 60
+    }
+
+    private val maxSessionDurationGuardMs: Long = if (isHoldExercise) {
+        maxOf((targetDurationMs ?: 0L) * 3L, 180_000L)
+    } else {
+        maxOf(targetReps.coerceAtLeast(1).toLong() * minRepIntervalMs * 4L, 180_000L)
+    }
+    @Volatile
+    private var cameraWarningCount: Int = 0
+
+    @Volatile
+    private var safetyStopTriggered: Boolean = false
     
     // ==================== Hold Form Quality Tracking ====================
     
@@ -470,6 +493,50 @@ class TrainingEngine(
         return now - lastDangerEventTime >= dangerEventCooldownMs
     }
     
+    private fun getActiveSessionDurationMs(now: Long = nowMs()): Long {
+        if (sessionStartTimeMs <= 0L) return 0L
+
+        val pendingPause = if (isPaused && pauseStartTimeMs > 0L) {
+            pauseClockNowMs() - pauseStartTimeMs
+        } else 0L
+
+        val elapsed = now - sessionStartTimeMs
+        return maxOf(0L, elapsed - totalPausedDurationMs - maxOf(0L, pendingPause))
+    }
+
+    private fun isRepMovementPhase(phase: Phase): Boolean {
+        return phase != Phase.IDLE && phase != Phase.START
+    }
+
+    private fun triggerSafetyStop(reason: String) {
+        if (safetyStopTriggered || _isCompleted.value) return
+
+        safetyStopTriggered = true
+        _isCompleted.value = true
+
+        Log.w(
+            TAG,
+            "Safety stop triggered: $reason, reps=${repCounter.count}, counted=${repCounter.countedCount}, duration=${getActiveSessionDurationMs()}ms"
+        )
+    }
+
+    private fun evaluateSafetyStop(now: Long = nowMs()): Boolean {
+        if (safetyStopTriggered || _isCompleted.value) return true
+
+        if (repCounter.count >= maxRepsGuard) {
+            triggerSafetyStop("max reps guard reached ($maxRepsGuard)")
+            return true
+        }
+        // NOTE: Danger state invalidates reps, but does not auto-end the session.
+        val activeDurationMs = getActiveSessionDurationMs(now)
+        if (activeDurationMs >= maxSessionDurationGuardMs) {
+            triggerSafetyStop("max session duration guard reached (${activeDurationMs}ms)")
+            return true
+        }
+
+        return false
+    }
+
     // ==================== Initialization ====================
     
     init {
@@ -497,9 +564,12 @@ class TrainingEngine(
                 score = score,
                 worstState = completedRep?.worstState
             ))
+
+            evaluateSafetyStop()
         }
         
-        repCounter.onTargetReached = {
+        repCounter.onTargetReached = onTargetReached@ {
+            if (safetyStopTriggered) return@onTargetReached
             _isCompleted.value = true
             emitEvent(FeedbackEvent.TargetReached(
                 totalReps = repCounter.count,
@@ -552,7 +622,11 @@ class TrainingEngine(
             positionValidator.clearCooldowns()
             formValidator.reset()  // Reset zone hysteresis state
             lastPositionEventTimes.clear()
-            // Camera warning throttle is now handled by MessageOrchestrator
+            lastCameraWarningEventTime = 0L
+            lastDangerEventTime = 0L
+            pendingRepCompletion = false
+            cameraWarningCount = 0
+            safetyStopTriggered = false
             
             // Reset state message throttling
             lastStateMessageTimes.clear()
@@ -561,6 +635,10 @@ class TrainingEngine(
             _currentPhase.value = Phase.IDLE
             _repCount.value = 0
             _isCompleted.value = false
+            _isDangerActive.value = false
+            _isInStartPosition.value = false
+            _currentAngles.value = emptyMap()
+            _jointStateInfos.value = emptyMap()
             
             // Reset position validation state
             _positionErrors.value = emptyList()
@@ -659,6 +737,7 @@ class TrainingEngine(
             // Clear position validation cooldowns
             positionValidator.clearCooldowns()
             lastPositionEventTimes.clear()
+            pendingRepCompletion = false
             
             // Reset visibility-related state
             _isVisibilityPaused.value = false
@@ -739,13 +818,13 @@ class TrainingEngine(
         timestampMs: Long = SystemClock.uptimeMillis()
     ) {
         // Early return outside lock for performance
-        if (!isRunning || isPaused) return
+        if (!isRunning || isPaused || _isCompleted.value) return
         
         // Synchronized block to prevent concurrent frame processing
         // Uses same lock as start/pause/resume/stop for proper coordination
         synchronized(stateLock) {
             // Double-check after acquiring lock
-            if (!isRunning || isPaused) return
+            if (!isRunning || isPaused || _isCompleted.value) return
             
             // Update current frame time for deterministic timing
             val frameTimeMs = if (timestampMs > 0L) timestampMs else SystemClock.uptimeMillis()
@@ -755,6 +834,10 @@ class TrainingEngine(
             if (sessionStartTimeMs == 0L) {
                 sessionStartTimeMs = frameTimeMs
             }
+            if (evaluateSafetyStop(frameTimeMs)) {
+                return
+            }
+            
             
             // 1. Extract tracked joint angles (raw) - MUST happen first for arrowInfos
             // For bilateral exercises, reads the OPPOSITE side's angles when flipped
@@ -801,9 +884,9 @@ class TrainingEngine(
                 states = jointStateInfos
             )
             
-            // Also get legacy validation for backward compatibility with overlay system
+            // Legacy validation from pre-computed state infos (single call — no redundant recalculation)
             @Suppress("DEPRECATION")
-            val validation = formValidator.validate(smoothedAngles, currentPhase)
+            val validation = formValidator.validateFromStateInfos(jointStateInfos)
             @Suppress("DEPRECATION")
             lastValidationResult = validation
             @Suppress("DEPRECATION")
@@ -813,15 +896,16 @@ class TrainingEngine(
             val hasDanger = formValidator.hasDangerState(jointStateInfos)
             _isDangerActive.value = hasDanger
             
-            // 6.2. Update worst state tracking for rep scoring
-            // For REP exercises: track during critical phases (BOTTOM/EXTENDED)
-            // For HOLD exercises: track during COUNT phase (user is holding)
-            val isCriticalPhase = when {
-                isHoldExercise -> currentPhase == Phase.COUNT
-                else -> currentPhase in listOf(Phase.BOTTOM, Phase.EXTENDED, Phase.COUNT)
+            // 6.2. Update state tracking for rep scoring
+            // REP exercises: track all movement phases (exclude IDLE/START)
+            // HOLD exercises: track only COUNT phase
+            val shouldTrackState = if (isHoldExercise) {
+                currentPhase == Phase.COUNT
+            } else {
+                isRepMovementPhase(currentPhase)
             }
             
-            if (isCriticalPhase) {
+            if (shouldTrackState) {
                 // Use weighted scoring with full joint state information
                 // This also updates worst state internally, no need for separate call
                 repCounter.updateJointStates(jointStateInfos)
@@ -837,10 +921,9 @@ class TrainingEngine(
                 }
             }
             
-            // 7. Update arrow infos for visual feedback (using smoothed angles)
-            // This MUST happen before visibility check so skeleton overlay always shows correct joints
+            // 7. Update arrow infos for visual feedback (from pre-computed state infos)
             @Suppress("DEPRECATION")
-            _arrowInfos.value = formValidator.getJointArrowInfos(smoothedAngles)
+            _arrowInfos.value = formValidator.buildJointArrowInfos(jointStateInfos)
             
             // 7.5. Check visibility of required joints (after arrowInfos update for UI)
             if (landmarks != null) {
@@ -953,6 +1036,7 @@ class TrainingEngine(
                 val now = nowMs()
                 if (now - lastCameraWarningEventTime >= CAMERA_WARNING_EVENT_COOLDOWN_MS) {
                     lastCameraWarningEventTime = now
+                    cameraWarningCount++
                     emitEvent(FeedbackEvent.SceneWarnings(warnings))
                 }
             }
@@ -978,6 +1062,8 @@ class TrainingEngine(
                     handleRepCompleted()
                 }
             }
+
+            evaluateSafetyStop(frameTimeMs)
         } // End synchronized(stateLock)
     }
     
@@ -994,7 +1080,17 @@ class TrainingEngine(
         val score = repCounter.getPendingScore()
         
         // Complete the rep
+        val previousCount = repCounter.count
         repCounter.completeRep()
+
+        // Clear phase timings for next cycle regardless of completion
+        stateMachine.clearTimings()
+
+        val repCompleted = repCounter.count > previousCount
+        if (!repCompleted) {
+            Log.w(TAG, "Rep completion ignored by RepCounter (likely min interval guard)")
+            return
+        }
         
         // Finalize motion recording for this rep
         motionRecorder?.finalizeRep(
@@ -1003,9 +1099,6 @@ class TrainingEngine(
             worstState = worstState,
             score = score
         )
-        
-        // Clear phase timings for next rep
-        stateMachine.clearTimings()
         
         // Bilateral: Switch side after every N reps
         if (isBilateral) {
@@ -1283,6 +1376,12 @@ class TrainingEngine(
      * Check if position validation is enabled for this exercise
      */
     fun hasPositionChecks(): Boolean = hasPositionChecksConfigured
+
+    /**
+     * Number of throttled scene-warning events emitted during this session.
+     */
+    fun getCameraWarningCount(): Int = cameraWarningCount
+
     
     /**
      * Get current position errors
@@ -1312,3 +1411,4 @@ class TrainingEngine(
      */
     fun getVisibilityStats(): VisibilityStats = visibilityMonitor.getStats()
 }
+

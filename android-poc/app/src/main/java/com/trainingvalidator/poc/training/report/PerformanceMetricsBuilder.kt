@@ -90,8 +90,7 @@ object PerformanceMetricsBuilder {
      */
     private fun buildSafetyMetrics(report: PostTrainingReport, config: ExerciseConfigSnapshot?): SafetyMetrics {
         val summary = report.summary
-        val dangerCount = report.dangerAlerts.size
-        val totalReps = summary.totalReps
+        val dangerCount = summary.invalidatedReps.coerceAtLeast(summary.stateBreakdown.dangerCount)
         
         // Calculate overall safety score with multi-factor formula
         val safetyScore = calculateSafetyScore(report)
@@ -323,7 +322,7 @@ object PerformanceMetricsBuilder {
     private fun calculateSafetyScore(report: PostTrainingReport): MetricWithStatus {
         val summary = report.summary
         val totalReps = summary.totalReps
-        val dangerCount = report.dangerAlerts.size
+        val dangerCount = summary.invalidatedReps.coerceAtLeast(summary.stateBreakdown.dangerCount)
         
         if (totalReps == 0) {
             return MetricWithStatus.fromPercentage(100f)

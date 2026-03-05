@@ -83,7 +83,7 @@ class SessionTrainingEngine(
 
     /**
      * Per-set metrics — enriched with rep-level details.
-     * Accuracy = completion rate; formScore = quality of movement.
+     * Accuracy = valid-rep ratio (counted/total); formScore = quality score average.
      */
     data class SetMetrics(
         val exerciseSlug: String,
@@ -92,7 +92,7 @@ class SessionTrainingEngine(
         val repsCompleted: Int,
         val repsTarget: Int,
         val durationMs: Long,
-        val accuracy: Float,        // Completion rate: repsCompleted / repsTarget * 100
+        val accuracy: Float,        // Form validity ratio from TrainingEngine (0-100)
         val formScore: Float,       // Average rep score (form quality, 0-100)
         val weightKg: Float?,
         val repDetails: List<RepDetail> = emptyList()
@@ -104,7 +104,7 @@ class SessionTrainingEngine(
         val setsCompleted: Int,
         val totalSets: Int,
         val totalReps: Int,
-        val averageAccuracy: Float,  // Average completion rate across sets
+        val averageAccuracy: Float,  // Average valid-rep ratio across sets
         val averageFormScore: Float,  // Average form quality across sets
         val setMetrics: List<SetMetrics>,
         val reportId: String? = null  // ID of the rich PostTrainingReport (if generated)
@@ -116,7 +116,7 @@ class SessionTrainingEngine(
         val totalSetsPlanned: Int,
         val totalReps: Int,
         val totalDurationMs: Long,
-        val averageAccuracy: Float,  // Overall completion rate
+        val averageAccuracy: Float,  // Overall valid-rep ratio
         val averageFormScore: Float,  // Overall form quality (0-100)
         val exerciseReports: List<ExerciseReport>,
         val reportIds: List<String> = emptyList()  // IDs of rich PostTrainingReports per exercise
@@ -394,3 +394,4 @@ class SessionTrainingEngine(
         )
     }
 }
+

@@ -108,34 +108,46 @@ object QuickInsightGenerator {
      */
     private fun generateDangerInsight(report: PostTrainingReport): QuickInsight {
         val dangerAlerts = report.dangerAlerts
-        val primaryAlert = dangerAlerts.first()
-        val dangerCount = dangerAlerts.size
-        
+        val primaryAlert = dangerAlerts.firstOrNull()
+        val dangerCount = report.summary.invalidatedReps.coerceAtLeast(dangerAlerts.size)
+
+        val title = primaryAlert?.let {
+            LocalizedText(
+                ar = "Safety warning: ${it.jointName.en}",
+                en = "Warning: ${it.jointName.en}"
+            )
+        } ?: LocalizedText(
+            ar = "Safety warning",
+            en = "Safety Warning"
+        )
+
+        val subtitle = when {
+            primaryAlert != null && dangerCount <= 1 -> LocalizedText(
+                ar = "In rep #${primaryAlert.repNumber}, unsafe position detected",
+                en = "In rep #${primaryAlert.repNumber}, you reached an unsafe position"
+            )
+            dangerCount > 1 -> LocalizedText(
+                ar = "Unsafe positions were detected in $dangerCount reps",
+                en = "In $dangerCount reps, you reached an unsafe position"
+            )
+            else -> LocalizedText(
+                ar = "An unsafe position was detected during training",
+                en = "An unsafe position was detected during training"
+            )
+        }
+
         return QuickInsight(
             type = InsightType.DANGER_WARNING,
-            title = LocalizedText(
-                ar = "انتبه: ${primaryAlert.jointName.ar}",
-                en = "Warning: ${primaryAlert.jointName.en}"
-            ),
-            subtitle = if (dangerCount == 1) {
-                LocalizedText(
-                    ar = "في العدة #${primaryAlert.repNumber}، وصلت لوضع غير آمن",
-                    en = "In rep #${primaryAlert.repNumber}, you reached an unsafe position"
-                )
-            } else {
-                LocalizedText(
-                    ar = "في $dangerCount عدات، وصلت لوضع غير آمن",
-                    en = "In $dangerCount reps, you reached an unsafe position"
-                )
-            },
+            title = title,
+            subtitle = subtitle,
             actionable = LocalizedText(
-                ar = "راجع الصور أدناه لتفهم المشكلة",
-                en = "Review the images below to understand the issue"
+                ar = if (dangerAlerts.isNotEmpty()) "Review the images below to understand the issue" else "Reduce intensity and focus on safe form before progressing",
+                en = if (dangerAlerts.isNotEmpty()) "Review the images below to understand the issue" else "Reduce intensity and focus on safe form before progressing"
             ),
-            icon = "⚠️"
+            icon = "!"
         )
     }
-    
+
     /**
      * Check if there's a significant area needing improvement
      */

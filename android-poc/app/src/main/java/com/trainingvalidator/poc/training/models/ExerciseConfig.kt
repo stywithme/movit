@@ -561,18 +561,15 @@ data class TrackedJoint(
      */
     fun determineState(angle: Double): JointState {
         return if (hasStateHoldRange()) {
-            // SECONDARY: Check against hold range
             getStateHoldRange().determineState(angle)
         } else if (hasStateUpDownRanges()) {
-            // PRIMARY: Check against up/down ranges
             val zoneType = determineZoneType(angle)
             when (zoneType) {
                 ZoneType.TRANSITION -> JointState.TRANSITION
-                ZoneType.UP_ZONE -> getStateUpRange().determineState(angle)
-                ZoneType.DOWN_ZONE -> getStateDownRange().determineState(angle)
+                ZoneType.UP_ZONE -> getStateUpRange().determineState(angle, OutwardDirection.TOWARDS_HIGH)
+                ZoneType.DOWN_ZONE -> getStateDownRange().determineState(angle, OutwardDirection.TOWARDS_LOW)
             }
         } else {
-            // Fallback
             JointState.WARNING
         }
     }
