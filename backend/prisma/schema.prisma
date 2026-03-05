@@ -930,7 +930,8 @@ model TrainingSession {
   // Relations
   user           User            @relation(fields: [userId], references: [id], onDelete: Cascade)
   exercise       Exercise        @relation(fields: [exerciseId], references: [id])
-  user           User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  sessionMetrics SessionMetrics?
+  repMetrics     RepMetrics[]
 
   @@index([userId])
   @@index([exerciseId])
