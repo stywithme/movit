@@ -95,6 +95,46 @@ const permissions = [
     // Upload
     { subject: 'Upload', action: 'create' },
     { subject: 'Upload', action: 'delete' },
+
+    // DoctorWorkTime
+    { subject: 'DoctorWorkTime', action: 'read' },
+    { subject: 'DoctorWorkTime', action: 'create' },
+    { subject: 'DoctorWorkTime', action: 'update' },
+    { subject: 'DoctorWorkTime', action: 'delete' },
+
+    // CloseTime
+    { subject: 'CloseTime', action: 'read' },
+    { subject: 'CloseTime', action: 'create' },
+    { subject: 'CloseTime', action: 'update' },
+    { subject: 'CloseTime', action: 'delete' },
+
+    // Booking
+    { subject: 'Booking', action: 'read' },
+    { subject: 'Booking', action: 'create' },
+    { subject: 'Booking', action: 'update' },
+    { subject: 'Booking', action: 'delete' },
+
+    // BookingReport
+    { subject: 'BookingReport', action: 'read' },
+    { subject: 'BookingReport', action: 'create' },
+    { subject: 'BookingReport', action: 'update' },
+    { subject: 'BookingReport', action: 'delete' },
+
+    // Plan
+    { subject: 'Plan', action: 'read' },
+    { subject: 'Plan', action: 'create' },
+    { subject: 'Plan', action: 'update' },
+    { subject: 'Plan', action: 'delete' },
+
+    // Subscription
+    { subject: 'Subscription', action: 'read' },
+    { subject: 'Subscription', action: 'create' },
+    { subject: 'Subscription', action: 'update' },
+    { subject: 'Subscription', action: 'delete' },
+
+    // System Settings
+    { subject: 'System', action: 'read' },
+    { subject: 'System', action: 'update' },
 ];
 
 export async function seedPermissions(prisma: PrismaClient) {

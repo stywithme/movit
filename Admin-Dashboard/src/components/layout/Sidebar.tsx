@@ -34,6 +34,10 @@ import {
   TrendingUp,
   Map,
   Key,
+  Clock,
+  CalendarX,
+  Tag,
+  CreditCard,
 } from 'lucide-react';
 
 interface NavItem {
@@ -53,7 +57,7 @@ interface NavGroup {
 export function Sidebar() {
   const pathname = usePathname();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  const [openGroups, setOpenGroups] = useState<string[]>(['Content', 'Training System', 'Analytics', 'Administration']);
+  const [openGroups, setOpenGroups] = useState<string[]>(['Content', 'Training System', 'Analytics', 'Administration', 'Booking System']);
 
   const toggleGroup = (title: string) => {
     setOpenGroups((prev) =>
@@ -108,13 +112,34 @@ export function Sidebar() {
       { title: 'Users', href: '/admin/users', icon: Users, requiredSubject: 'User' },
       { title: 'Admins', href: '/admin/admins', icon: Shield, requiredSubject: 'Admin' },
       { title: 'Roles', href: '/admin/roles', icon: Key, requiredSubject: 'Role' },
-      { title: 'Settings', href: '/admin/settings', icon: Settings },
+      { title: 'Plans', href: '/admin/plans', icon: Tag, requiredSubject: 'Plan' },
+      { title: 'Subscriptions', href: '/admin/subscriptions', icon: CreditCard, requiredSubject: 'Subscription' },
+      { title: 'Settings', href: '/admin/settings', icon: Settings, requiredSubject: 'System' },
     ],
   };
 
-  /** Filter a single nav item — visible if no requiredSubject OR user can read it */
+  const bookingGroup: NavGroup = {
+    title: 'Booking System',
+    items: [
+      { title: 'Bookings', href: '/admin/bookings', icon: CalendarDays, requiredSubject: 'Booking' },
+      { title: 'Work Times', href: '/admin/doctor-work-time', icon: Clock, requiredSubject: 'DoctorWorkTime' },
+      { title: 'Close Times', href: '/admin/close-time', icon: CalendarX, requiredSubject: 'CloseTime' },
+      { title: 'Medical Reports', href: '/admin/booking-reports', icon: BarChart3, requiredSubject: 'BookingReport' },
+    ],
+  };
+
+  /** Filter a single nav item — visible if no requiredSubject OR user can read it OR if it's booking related and user is a Doctor */
   const canSeeItem = (item: NavItem): boolean => {
+    // If no permission required, anyone can see it
     if (!item.requiredSubject) return true;
+
+    // If it's a doctor and it's a booking-related menu item, show it
+    const bookingSubjects = ['Booking', 'DoctorWorkTime', 'CloseTime', 'BookingReport'];
+    if (user?.isDoctor && bookingSubjects.includes(item.requiredSubject as string)) {
+      return true;
+    }
+
+    // Otherwise, rely on CASL permissions
     return can('read', item.requiredSubject);
   };
 
@@ -189,7 +214,7 @@ export function Sidebar() {
           </div>
 
           {/* Groups */}
-          {[contentGroup, trainingSystemGroup, analyticsGroup, adminGroup].map((group) => {
+          {[contentGroup, trainingSystemGroup, bookingGroup, analyticsGroup, adminGroup].map((group) => {
             const visibleItems = group.items.filter(canSeeItem);
             if (visibleItems.length === 0) return null;
             return (

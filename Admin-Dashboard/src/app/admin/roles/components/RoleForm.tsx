@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect, Fragment } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button, Card, Input, Checkbox, Label } from '@/components/ui';
 import { ChevronLeft, Save, Info, X, UserPlus, Search } from 'lucide-react';
@@ -18,30 +18,48 @@ interface AdminBasic {
     role?: { id: string; name: string } | null;
 }
 
-const MODULES = [
+const SUBJECT_GROUP_MAP: Record<string, { name: string; group: string }> = {
     // Content
-    { id: 'Exercise', name: 'Exercises', group: 'Content' },
-    { id: 'Workout', name: 'Workouts', group: 'Content' },
-    { id: 'Program', name: 'Programs', group: 'Content' },
-    { id: 'ProgramMap', name: 'Programs Map', group: 'Content' },
-    { id: 'Attribute', name: 'Attributes', group: 'Content' },
-    { id: 'FeedbackMessage', name: 'Feedback Messages', group: 'Content' },
-    { id: 'PosePosition', name: 'Camera Positions', group: 'Content' },
-    { id: 'Upload', name: 'Uploads / Files', group: 'Content' },
+    Exercise: { name: 'Exercises', group: 'Content' },
+    Workout: { name: 'Workouts', group: 'Content' },
+    Program: { name: 'Programs', group: 'Content' },
+    ProgramMap: { name: 'Programs Map', group: 'Content' },
+    Attribute: { name: 'Attributes', group: 'Content' },
+    FeedbackMessage: { name: 'Feedback Messages', group: 'Content' },
+    PosePosition: { name: 'Camera Positions', group: 'Content' },
+    Upload: { name: 'Uploads / Files', group: 'Content' },
     // Training System
-    { id: 'Level', name: 'Levels', group: 'Training' },
-    { id: 'AssessmentTemplate', name: 'Assessment Templates', group: 'Training' },
-    { id: 'ProgressionRule', name: 'Progression Rules', group: 'Training' },
+    Level: { name: 'Levels', group: 'Training' },
+    AssessmentTemplate: { name: 'Assessment Templates', group: 'Training' },
+    ProgressionRule: { name: 'Progression Rules', group: 'Training' },
     // Analytics
-    { id: 'Analytics', name: 'Analytics (Overview)', group: 'Analytics' },
-    { id: 'ProgramAnalytics', name: 'Analytics / Programs', group: 'Analytics' },
-    { id: 'LevelAnalytics', name: 'Analytics / Levels', group: 'Analytics' },
-    { id: 'AssessmentAnalytics', name: 'Analytics / Assessments', group: 'Analytics' },
+    Analytics: { name: 'Analytics (Overview)', group: 'Analytics' },
+    ProgramAnalytics: { name: 'Analytics / Programs', group: 'Analytics' },
+    LevelAnalytics: { name: 'Analytics / Levels', group: 'Analytics' },
+    AssessmentAnalytics: { name: 'Analytics / Assessments', group: 'Analytics' },
     // Administration
-    { id: 'User', name: 'Users', group: 'Admin' },
-    { id: 'Admin', name: 'Admins', group: 'Admin' },
-    { id: 'Role', name: 'Roles', group: 'Admin' },
-] as const;
+    User: { name: 'Users', group: 'Admin' },
+    Admin: { name: 'Admins', group: 'Admin' },
+    Role: { name: 'Roles', group: 'Admin' },
+    System: { name: 'System Settings', group: 'Admin' },
+    Config: { name: 'Configurations', group: 'Admin' },
+    // Booking System
+    Booking: { name: 'Bookings', group: 'Booking' },
+    DoctorWorkTime: { name: 'Doctor Work Times', group: 'Booking' },
+    CloseTime: { name: 'Close Times', group: 'Booking' },
+    BookingReport: { name: 'Medical Reports', group: 'Booking' },
+    // Business (Merged into Admin as seen in your screenshot)
+    Plan: { name: 'Subscription Plans', group: 'Admin' },
+    Subscription: { name: 'User Subscriptions', group: 'Admin' },
+    // Nutrition
+    Recipe: { name: 'Recipes', group: 'Nutrition' },
+    MealPlan: { name: 'Meal Plans', group: 'Nutrition' },
+    // Other
+    Reports: { name: 'General Reports', group: 'Analytics' },
+    Reassessment: { name: 'Reassessments', group: 'Training' },
+    Muscle: { name: 'Muscles Library', group: 'Content' },
+    Equipment: { name: 'Equipment Library', group: 'Content' },
+};
 
 const ACTIONS = [
     { id: 'read', name: 'VIEW', color: 'text-blue-600' },
@@ -52,11 +70,18 @@ const ACTIONS = [
     { id: 'duplicate', name: 'DUPLICATE', color: 'text-indigo-600' },
 ] as const;
 
+interface DerivedModule {
+    id: string;
+    name: string;
+    group: string;
+}
+
 export function RoleForm({ initialData, isEdit }: RoleFormProps) {
     const router = useRouter();
     const [loading, setLoading] = useState(false);
     const [fetchingPerms, setFetchingPerms] = useState(true);
     const [allPermissions, setAllPermissions] = useState<Array<{ id: string; subject: string; action: string }>>([]);
+    const [modules, setModules] = useState<DerivedModule[]>([]);
     const [formData, setFormData] = useState({
         name: initialData?.name || '',
         description: initialData?.description?.en || initialData?.description?.ar || '',
@@ -76,7 +101,25 @@ export function RoleForm({ initialData, isEdit }: RoleFormProps) {
             try {
                 const res = await fetch('/api/admin/permissions');
                 const data = await res.json();
-                if (data.success) setAllPermissions(data.data);
+                if (data.success) {
+                    setAllPermissions(data.data);
+
+                    // Derive modules from unique subjects
+                    const subjects = Array.from(new Set((data.data as any[]).map(p => p.subject)));
+                    const derived = subjects.map(s => ({
+                        id: s,
+                        name: SUBJECT_GROUP_MAP[s]?.name || s,
+                        group: SUBJECT_GROUP_MAP[s]?.group || 'Other'
+                    }));
+
+                    // Sort by group then name to keep UI consistent
+                    derived.sort((a, b) => {
+                        if (a.group !== b.group) return a.group.localeCompare(b.group);
+                        return a.name.localeCompare(b.name);
+                    });
+
+                    setModules(derived);
+                }
             } catch (error) {
                 console.error('Error fetching global permissions', error);
             } finally {
@@ -304,52 +347,40 @@ export function RoleForm({ initialData, isEdit }: RoleFormProps) {
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y divide-gray-100">
-                                    {MODULES.map((module, idx) => {
-                                        // Group separator rows
-                                        const prevGroup = idx > 0 ? MODULES[idx - 1].group : null;
-                                        const showGroupHeader = module.group !== prevGroup;
+                                    {modules.map((module) => {
                                         return (
-                                            <>
-                                                {showGroupHeader && (
-                                                    <tr key={`group-${module.group}`} className="bg-gray-100/60">
-                                                        <td colSpan={ACTIONS.length + 2} className="px-5 py-1.5 text-[10px] font-black text-gray-400 uppercase tracking-widest">
-                                                            {module.group === 'Training' ? 'Training System' : module.group === 'Admin' ? 'Administration' : module.group}
+                                            <tr key={module.id} className="hover:bg-gray-50/30 transition-colors group">
+                                                <td className="px-4 py-3 text-center">
+                                                    <div className="flex justify-center">
+                                                        <Checkbox
+                                                            checked={isAllInModuleChecked(module.id)}
+                                                            onCheckedChange={(checked) => toggleAllInModule(module.id, !!checked)}
+                                                            className="border-gray-300 data-[state=checked]:bg-blue-600 data-[state=checked]:border-blue-600"
+                                                        />
+                                                    </div>
+                                                </td>
+                                                <td className="px-4 py-3 font-semibold text-gray-700 group-hover:text-blue-600 transition-colors text-xs leading-tight">
+                                                    {module.name}
+                                                </td>
+                                                {ACTIONS.map((action) => {
+                                                    const isAvailable = allPermissions.some(p => p.subject === module.id && p.action === action.id);
+                                                    return (
+                                                        <td key={action.id} className="px-2 py-3">
+                                                            <div className="flex justify-center">
+                                                                {isAvailable ? (
+                                                                    <Checkbox
+                                                                        checked={permissions[module.id]?.[action.id] || false}
+                                                                        onCheckedChange={() => togglePermission(module.id, action.id)}
+                                                                        className="border-gray-200 data-[state=checked]:bg-blue-600 data-[state=checked]:border-blue-600"
+                                                                    />
+                                                                ) : (
+                                                                    <span className="text-gray-200 font-bold select-none text-base">×</span>
+                                                                )}
+                                                            </div>
                                                         </td>
-                                                    </tr>
-                                                )}
-                                                <tr key={module.id} className="hover:bg-gray-50/30 transition-colors group">
-                                                    <td className="px-4 py-3 text-center">
-                                                        <div className="flex justify-center">
-                                                            <Checkbox
-                                                                checked={isAllInModuleChecked(module.id)}
-                                                                onCheckedChange={(checked) => toggleAllInModule(module.id, !!checked)}
-                                                                className="border-gray-300 data-[state=checked]:bg-blue-600 data-[state=checked]:border-blue-600"
-                                                            />
-                                                        </div>
-                                                    </td>
-                                                    <td className="px-4 py-3 font-semibold text-gray-700 group-hover:text-blue-600 transition-colors text-xs leading-tight">
-                                                        {module.name}
-                                                    </td>
-                                                    {ACTIONS.map((action) => {
-                                                        const isAvailable = allPermissions.some(p => p.subject === module.id && p.action === action.id);
-                                                        return (
-                                                            <td key={action.id} className="px-2 py-3">
-                                                                <div className="flex justify-center">
-                                                                    {isAvailable ? (
-                                                                        <Checkbox
-                                                                            checked={permissions[module.id]?.[action.id] || false}
-                                                                            onCheckedChange={() => togglePermission(module.id, action.id)}
-                                                                            className="border-gray-200 data-[state=checked]:bg-blue-600 data-[state=checked]:border-blue-600"
-                                                                        />
-                                                                    ) : (
-                                                                        <span className="text-gray-200 font-bold select-none text-base">×</span>
-                                                                    )}
-                                                                </div>
-                                                            </td>
-                                                        );
-                                                    })}
-                                                </tr>
-                                            </>
+                                                    );
+                                                })}
+                                            </tr>
                                         );
                                     })}
                                 </tbody>
@@ -443,7 +474,7 @@ export function RoleForm({ initialData, isEdit }: RoleFormProps) {
                         </div>
                     </Card>
                 </div>
-            </div>
-        </form>
+            </div >
+        </form >
     );
 }

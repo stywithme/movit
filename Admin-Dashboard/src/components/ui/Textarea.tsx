@@ -13,10 +13,10 @@ const Textarea = React.forwardRef<HTMLTextAreaElement, TextareaProps>(
         <textarea
           className={cn(
             'w-full px-4 py-3 rounded-lg border-2 transition-colors resize-y min-h-[100px]',
-            'text-gray-900 font-medium placeholder:text-gray-400 placeholder:font-normal',
+            'text-black font-medium placeholder:text-gray-400 placeholder:font-normal',
             'focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500',
             'disabled:bg-gray-100 disabled:cursor-not-allowed disabled:opacity-60 disabled:text-gray-500',
-            error ? 'border-red-300 bg-red-50 text-gray-900' : 'border-gray-200 bg-white',
+            error ? 'border-red-300 bg-red-50 text-black' : 'border-gray-300 bg-gray-50/50',
             className
           )}
           ref={ref}

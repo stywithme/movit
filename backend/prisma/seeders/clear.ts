@@ -16,6 +16,10 @@ export async function clearDatabase(prisma: PrismaClient) {
   };
 
   const steps: Array<{ name: string; action: () => Promise<unknown> }> = [
+    { name: 'booking_reports', action: () => prisma.bookingReport.deleteMany() },
+    { name: 'bookings', action: () => prisma.booking.deleteMany() },
+    { name: 'doctor_work_times', action: () => prisma.doctorWorkTime.deleteMany() },
+    { name: 'close_times', action: () => prisma.closeTime.deleteMany() },
     { name: 'assessment_template_exercises', action: () => prisma.assessmentTemplateExercise.deleteMany() },
     { name: 'assessment_templates', action: () => prisma.assessmentTemplate.deleteMany() },
     { name: 'progression_history', action: () => prisma.progressionHistory.deleteMany() },
@@ -54,6 +58,7 @@ export async function clearDatabase(prisma: PrismaClient) {
     { name: 'attributes', action: () => prisma.attribute.deleteMany() },
     { name: 'users', action: () => prisma.user.deleteMany() },
     { name: 'admins', action: () => prisma.admin.deleteMany() },
+    { name: 'system', action: () => prisma.system.deleteMany() },
   ];
 
   for (const step of steps) {

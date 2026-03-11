@@ -153,3 +153,172 @@
 | GET | `/pose-positions/:id` | Get pose position details |
 | PUT | `/pose-positions/:id` | Update pose position |
 | DELETE | `/pose-positions/:id` | Delete a pose position |
+
+---
+
+## 🩺 Doctor Work Times (`/admin/doctor-work-time`)
+
+| Method | Endpoint | Description |
+| :--- | :--- | :--- |
+| GET | `/admin/doctor-work-time` | List all work times |
+| GET | `/admin/doctor-work-time/mine` | List doctor's own work times (Doctor only) |
+| GET | `/admin/doctor-work-time/:adminId` | List work times for specific doctor |
+| POST | `/admin/doctor-work-time` | Create a work time |
+| PUT | `/admin/doctor-work-time/:id` | Update a work time |
+| DELETE | `/admin/doctor-work-time/:id` | Delete a work time |
+
+---
+
+## 🏖️ Close Times (`/admin/close-time`)
+
+| Method | Endpoint | Description |
+| :--- | :--- | :--- |
+| GET | `/admin/close-time` | List all close times |
+| POST | `/admin/close-time` | Create a close time (adminId null = global) |
+| PUT | `/admin/close-time/:id` | Update a close time |
+| DELETE | `/admin/close-time/:id` | Delete a close time |
+
+---
+
+## 🗓️ Bookings Admin/Doctor (`/admin/bookings`)
+
+| Method | Endpoint | Description |
+| :--- | :--- | :--- |
+| GET | `/admin/bookings` | List all bookings |
+| GET | `/admin/bookings/mine` | List doctor's own bookings (Doctor only) |
+| GET | `/admin/bookings/:id` | Get booking details |
+| POST | `/admin/bookings` | Create a booking |
+| POST | `/admin/bookings/follow-up` | Create a follow-up booking (Doctor only) |
+| PUT | `/admin/bookings/:id` | Update a booking |
+| PUT | `/admin/bookings/:id/status` | Update booking status (Doctor only) |
+| PUT | `/admin/bookings/:id/notes` | Update booking notes (Doctor only) |
+| DELETE | `/admin/bookings/:id` | Soft delete a booking |
+
+---
+
+## 📱 User Bookings (`/bookings`)
+
+| Method | Endpoint | Description |
+| :--- | :--- | :--- |
+| GET | `/bookings/available-doctors` | Get doctors with available slots today |
+| GET | `/bookings/available-slots/:adminId` | Get available slots for a specific doctor |
+| GET | `/bookings/my` | Get user's current and upcoming bookings |
+| GET | `/bookings/history` | Get user's past/cancelled bookings |
+| POST | `/bookings` | Create a new booking |
+| PUT | `/bookings/:id/reschedule` | Reschedule a booking |
+| PUT | `/bookings/:id/cancel` | Cancel a booking |
+
+---
+
+## 📝 Booking Reports (`/admin/booking-reports`)
+
+| Method | Endpoint | Description |
+| :--- | :--- | :--- |
+| GET | `/admin/booking-reports` | List all booking reports |
+| GET | `/admin/booking-reports/mine` | List doctor's own booking reports (Doctor only) |
+| GET | `/admin/booking-reports/:id` | Get a booking report by ID |
+| POST | `/admin/booking-reports` | Create a booking report |
+| PUT | `/admin/booking-reports/:id` | Update a booking report |
+| DELETE | `/admin/booking-reports/:id` | Delete a booking report |
+
+Admin Dashboard:
+
+GET /admin/doctor-work-time / GET /admin/doctor-work-time/mine
+GET /admin/close-time / POST /admin/close-time
+GET /admin/bookings / POST /admin/bookings
+PUT /admin/bookings/:id/status (Doctor) / PUT /admin/bookings/:id/notes (Doctor)
+POST /admin/bookings/follow-up (Doctor)
+GET /admin/booking-reports / POST /admin/booking-reports
+Mobile App:
+
+GET /bookings/available-doctors?date=
+GET /bookings/available-slots/:adminId?date=
+GET /bookings/my / GET /bookings/history
+POST /bookings / PUT /bookings/:id/reschedule / PUT /bookings/:id/cancel
+GET /bookings/:id/report
+
+---
+
+## 💎 Plans (`/admin/plans`)
+
+| Method | Endpoint | Description |
+| :--- | :--- | :--- |
+| GET | `/admin/plans` | List all plans |
+| POST | `/admin/plans` | Create a new plan |
+| GET | `/admin/plans/:id` | Get plan details |
+| PATCH | `/admin/plans/:id` | Update plan |
+| DELETE | `/admin/plans/:id` | Delete plan |
+
+---
+
+## 💳 Subscriptions (`/admin/subscriptions`)
+
+| Method | Endpoint | Description |
+| :--- | :--- | :--- |
+| GET | `/admin/subscriptions` | List all subscriptions |
+| POST | `/admin/subscriptions` | Create a new subscription |
+| GET | `/admin/subscriptions/:id` | Get subscription details |
+| PATCH | `/admin/subscriptions/:id` | Update subscription |
+| DELETE | `/admin/subscriptions/:id` | Delete subscription |
+
+---
+
+## 📱 Mobile Plans (`/mobile/plans`)
+
+| Method | Endpoint | Description |
+| :--- | :--- | :--- |
+| GET | `/mobile/plans` | List all active plans for mobile users |
+
+---
+
+## 💳 Mobile Subscriptions (`/mobile/subscriptions`)
+
+| Method | Endpoint | Description |
+| :--- | :--- | :--- |
+| GET | `/mobile/subscriptions/mine` | View user's own subscriptions |
+| POST | `/mobile/subscriptions` | Subscribe to a plan (requires planId, amountPaid) |
+
+---
+
+## 📅 Active Plan & Programs (`/mobile/plan`)
+
+| Method | Endpoint | Description |
+| :--- | :--- | :--- |
+| GET | `/mobile/plan` | Get current user's active plan/programs |
+| GET | `/mobile/plan/today` | Get today's targeted training session |
+| POST | `/mobile/plan/enroll` | Enroll in a new program (requires programId) |
+| POST | `/mobile/plan/complete` | Complete the active program and advance |
+
+---
+
+## 📉 Training Sessions (`/mobile/sessions`)
+
+| Method | Endpoint | Description |
+| :--- | :--- | :--- |
+| GET | `/mobile/sessions` | List session history with metrics |
+| GET | `/mobile/sessions/stats` | Get home stats (streak, total reps, average score) |
+| POST | `/mobile/sessions` | Upload raw session metrics |
+| POST | `/mobile/sessions/:sessionId/start` | Mark a scheduled session as started |
+| POST | `/mobile/sessions/:sessionId/complete` | Mark session as completed with final metrics |
+
+---
+
+## 🔍 Body Scan & Assessments (`/assessment`)
+
+| Method | Endpoint | Description |
+| :--- | :--- | :--- |
+| GET | `/assessment/latest` | Get latest body scan/assessment result |
+| GET | `/assessment/history` | List all past assessment results |
+| GET | `/assessment/progress` | Get comparison data with previous assessment |
+| POST | `/assessment` | Save a new body scan result |
+| GET | `/mobile/assessment-templates/resolve` | Get the right assessment template for the user |
+
+---
+
+## 🔄 Reassessment Schedules (`/mobile/reassessment`)
+
+| Method | Endpoint | Description |
+| :--- | :--- | :--- |
+| GET | `/mobile/reassessment/upcoming` | List scheduled future reassessments |
+| GET | `/mobile/reassessment/history` | List past reassessment events |
+| POST | `/mobile/reassessment/request` | Manually request/schedule a new reassessment |

@@ -34,9 +34,17 @@ export class AdminAuthController {
         email: admin.email,
         roleId: admin.roleId,
         isSuperAdmin: admin.isSuperAdmin,
+        isDoctor: admin.isDoctor,
       });
       setAdminAuthCookie(res, token);
-      return { success: true, data: admin };
+
+      return {
+        success: true,
+        data: {
+          ...admin,
+          token
+        }
+      };
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Login failed';
       if (message === 'Invalid email or password' || message === 'Account is deactivated') {

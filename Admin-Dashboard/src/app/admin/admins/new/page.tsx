@@ -18,6 +18,7 @@ export default function NewAdminPage() {
     email: '',
     password: '',
     roleId: '',
+    isDoctor: false,
   });
 
   useEffect(() => {
@@ -46,6 +47,7 @@ export default function NewAdminPage() {
           email: formData.email,
           password: formData.password,
           roleId: formData.roleId || null,
+          isDoctor: formData.isDoctor,
         }),
       });
 
@@ -134,6 +136,19 @@ export default function NewAdminPage() {
               </option>
             ))}
           </select>
+        </div>
+
+        <div className="flex items-center gap-2">
+          <input
+            type="checkbox"
+            id="isDoctor"
+            checked={formData.isDoctor}
+            onChange={(e) => setFormData((prev) => ({ ...prev, isDoctor: e.target.checked }))}
+            className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 focus:ring-2"
+          />
+          <label htmlFor="isDoctor" className="text-sm font-medium text-gray-700">
+            Is Doctor
+          </label>
         </div>
 
         <div className="flex justify-end pt-4 border-t border-gray-200">

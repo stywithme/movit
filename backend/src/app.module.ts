@@ -30,6 +30,13 @@ import { AssessmentTemplatesModule } from './modules/assessment-templates';
 import { CaslModule } from './lib/casl/casl.module';
 import { PermissionsModule } from './modules/permissions/permissions.module';
 import { GuardsModule } from './lib/guards/guards.module';
+import { DoctorWorkTimeModule } from './modules/doctor-work-time/doctor-work-time.module';
+import { CloseTimeModule } from './modules/close-time/close-time.module';
+import { BookingModule } from './modules/booking/booking.module';
+import { BookingReportModule } from './modules/booking-report/booking-report.module';
+import { SystemModule } from './modules/system/system.module';
+import { PlanModule } from './modules/plan/plan.module';
+import { SubscriptionModule } from './modules/subscription/subscription.module';
 
 @Module({
   imports: [
@@ -70,6 +77,13 @@ import { GuardsModule } from './lib/guards/guards.module';
     CaslModule,
     PermissionsModule,
     GuardsModule,
+    DoctorWorkTimeModule,
+    CloseTimeModule,
+    BookingModule,
+    BookingReportModule,
+    SystemModule,
+    PlanModule,
+    SubscriptionModule,
   ],
 })
 export class AppModule { }

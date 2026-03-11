@@ -37,6 +37,7 @@ export interface AdminPublic {
   name: string;
   roleId: string | null;
   isSuperAdmin: boolean;
+  isDoctor: boolean;
   isActive: boolean;
   createdAt: Date;
   permissions: { action: string; subject: string }[];

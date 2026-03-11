@@ -18,6 +18,7 @@ export interface AdminJwtPayload {
   email: string;
   roleId: string | null;
   isSuperAdmin: boolean;
+  isDoctor: boolean;
   type: 'admin';
   iat?: number;
   exp?: number;
@@ -42,6 +43,12 @@ export function getAdminIdFromRequest(request: Request): string | null {
   if (!token) return null;
   const payload = verifyAdminToken(token);
   return payload?.adminId || null;
+}
+
+export function getAdminFromRequest(request: Request): AdminJwtPayload | null {
+  const token = request.cookies?.[ADMIN_COOKIE_NAME];
+  if (!token) return null;
+  return verifyAdminToken(token);
 }
 
 export function setAdminAuthCookie(response: Response, token: string) {
