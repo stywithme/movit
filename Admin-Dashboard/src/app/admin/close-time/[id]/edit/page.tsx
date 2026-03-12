@@ -2,14 +2,26 @@
 
 import { useEffect, useState, use } from 'react';
 import { useRouter } from 'next/navigation';
+import { useAuthStore } from '@/lib/auth/auth-store';
 import { CloseTimeForm } from '../../components/CloseTimeForm';
 
 export default function EditCloseTimePage({ params }: { params: Promise<{ id: string }> }) {
+    const { user, initialized } = useAuthStore();
     const router = useRouter();
     const resolvedParams = use(params);
     const [data, setData] = useState<any>(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
+
+    useEffect(() => {
+        if (initialized && user?.isDoctor) {
+            router.replace('/admin/close-time');
+        }
+    }, [user, initialized, router]);
+
+    if (!initialized || user?.isDoctor) {
+        return null;
+    }
 
     useEffect(() => {
         const fetchCloseTime = async () => {

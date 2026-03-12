@@ -3,6 +3,7 @@
 import { Suspense, useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Input } from '@/components/ui';
+import { useAuthStore } from '@/lib/auth/auth-store';
 
 function AdminLoginInner() {
   const router = useRouter();
@@ -35,6 +36,8 @@ function AdminLoginInner() {
     checkProfile();
   }, [router, redirectTo]);
 
+  const { setUser } = useAuthStore();
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
@@ -49,6 +52,16 @@ function AdminLoginInner() {
 
       const data = await res.json();
       if (data.success) {
+        // Fetch profile immediately to update the store
+        const profileRes = await fetch('/api/admin/auth/profile', {
+          credentials: 'include',
+        });
+        if (profileRes.ok) {
+          const profileData = await profileRes.json();
+          if (profileData.success) {
+            setUser(profileData.data);
+          }
+        }
         router.replace(redirectTo);
       } else {
         alert('Error: ' + data.error);
@@ -71,7 +84,7 @@ function AdminLoginInner() {
 
   return (
     <div className="max-w-md mx-auto space-y-6">
-      <div>
+      <div className="text-center">
         <h1 className="text-2xl font-bold text-gray-900">Admin Login</h1>
         <p className="text-gray-600 mt-1">Access the dashboard</p>
       </div>

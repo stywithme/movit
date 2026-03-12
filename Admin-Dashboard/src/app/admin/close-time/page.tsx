@@ -77,7 +77,7 @@ export default function CloseTimePage() {
                     <h1 className="text-2xl font-bold text-gray-900">Close Times</h1>
                     <p className="text-gray-600 mt-1">Manage vacations and clinic closures</p>
                 </div>
-                {can('create', 'CloseTime') && (
+                {can('create', 'CloseTime') && !user.isDoctor && (
                     <Link
                         href="/admin/close-time/new"
                         className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center gap-2"
@@ -94,7 +94,7 @@ export default function CloseTimePage() {
                 {closeTimes.length === 0 ? (
                     <div className="p-8 text-center text-gray-500">
                         <p>No close times found.</p>
-                        {can('create', 'CloseTime') && (
+                        {can('create', 'CloseTime') && !user.isDoctor && (
                             <Link href="/admin/close-time/new" className="text-blue-600 hover:underline mt-2 inline-block">
                                 Create a closure period
                             </Link>
@@ -146,7 +146,7 @@ export default function CloseTimePage() {
                                         </td>
                                         <td className="px-6 py-4 text-right">
                                             <div className="flex justify-end gap-3">
-                                                {can('update', 'CloseTime') && (
+                                                {can('update', 'CloseTime') && !user.isDoctor && (
                                                     <Link
                                                         href={`/admin/close-time/${ct.id}/edit`}
                                                         className="text-blue-600 hover:text-blue-800 text-sm"
@@ -154,7 +154,7 @@ export default function CloseTimePage() {
                                                         Edit
                                                     </Link>
                                                 )}
-                                                {can('delete', 'CloseTime') && (
+                                                {can('delete', 'CloseTime') && !user.isDoctor && (
                                                     <button
                                                         onClick={() => handleDelete(ct.id)}
                                                         className="text-red-600 hover:text-red-800 text-sm"

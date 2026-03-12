@@ -68,6 +68,8 @@ export function Sidebar() {
   const { user } = useAuthStore();
   const { can, isSuperAdmin } = usePermissions();
 
+  if (!user) return null;
+
   const mainNav: NavItem[] = [
     { title: 'Dashboard', href: '/admin', icon: LayoutDashboard },
     { title: 'Activity', href: '/admin/activity', icon: Activity, badge: 10 },

@@ -2,9 +2,11 @@
 
 import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import { useAuthStore } from '@/lib/auth/auth-store';
 
 export default function AdminLogoutPage() {
   const router = useRouter();
+  const { logout } = useAuthStore();
 
   useEffect(() => {
     const doLogout = async () => {
@@ -13,12 +15,13 @@ export default function AdminLogoutPage() {
       } catch (error) {
         console.error('Error logging out:', error);
       } finally {
+        logout();
         router.replace('/admin/login');
       }
     };
 
     doLogout();
-  }, [router]);
+  }, [router, logout]);
 
   return (
     <div className="flex items-center justify-center min-h-[300px]">

@@ -8,7 +8,7 @@ import { CheckPermission } from '@/lib/casl/check-permission.decorator';
 @Controller('attributes')
 export class AttributesController {
   @Get()
-  @CheckPermission('read', 'Config')
+  @CheckPermission('read', 'Attribute')
   async list() {
     try {
       const prisma = await getPrisma();
@@ -30,7 +30,7 @@ export class AttributesController {
   }
 
   @Get('lookup')
-  @CheckPermission('read', 'Config')
+  @CheckPermission('read', 'Attribute')
   async lookup() {
     try {
       const prisma = await getPrisma();
@@ -87,7 +87,7 @@ export class AttributesController {
   }
 
   @Get(':code/values')
-  @CheckPermission('read', 'Config')
+  @CheckPermission('read', 'Attribute')
   async getValues(@Param('code') code: string, @Res({ passthrough: true }) res: Response) {
     try {
       const prisma = await getPrisma();
@@ -125,7 +125,7 @@ export class AttributesController {
   }
 
   @Post(':code/values')
-  @CheckPermission('update', 'Config')
+  @CheckPermission('update', 'Attribute')
   async createValue(
     @Param('code') code: string,
     @Body() body: any,

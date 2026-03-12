@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { Input } from '@/components/ui';
+import { useAuthStore } from '@/lib/auth/auth-store';
 
 interface AdminProfile {
   id: string;
@@ -13,6 +14,7 @@ interface AdminProfile {
 }
 
 export default function AdminProfilePage() {
+  const { setUser } = useAuthStore();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [profile, setProfile] = useState<AdminProfile | null>(null);
@@ -55,6 +57,7 @@ export default function AdminProfilePage() {
       const data = await res.json();
       if (data.success) {
         setProfile(data.data);
+        setUser(data.data); // Update the global auth store
         alert('Profile updated successfully');
       } else {
         alert('Error: ' + data.error);
