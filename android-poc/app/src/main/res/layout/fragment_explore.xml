@@ -11,34 +11,51 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="vertical"
-        android:paddingBottom="80dp">
+        android:paddingBottom="96dp">
 
-        <!-- Top Bar with User Avatar -->
         <androidx.constraintlayout.widget.ConstraintLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:paddingHorizontal="20dp"
+            android:paddingHorizontal="@dimen/screen_padding_horizontal"
             android:paddingTop="32dp"
-            android:paddingBottom="16dp">
+            android:paddingBottom="12dp">
 
-            <TextView
-                android:id="@+id/tvExploreTitle"
+            <LinearLayout
+                android:id="@+id/layoutTitleGroup"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
-                android:text="@string/explore_discover_title"
-                android:textAppearance="@style/TextAppearance.WayToFix.Headline2"
+                android:layout_marginEnd="16dp"
+                android:orientation="vertical"
                 app:layout_constraintBottom_toBottomOf="parent"
+                app:layout_constraintEnd_toStartOf="@+id/ivAvatar"
                 app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintTop_toTopOf="parent" />
+                app:layout_constraintTop_toTopOf="parent">
+
+                <TextView
+                    android:id="@+id/tvExploreTitle"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="@string/nav_explore"
+                    android:textAppearance="@style/TextAppearance.WayToFix.Headline2" />
+
+                <TextView
+                    android:id="@+id/tvExploreSubtitle"
+                    style="@style/TextAppearance.WayToFix.Body2"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="4dp"
+                    android:text="@string/explore_mobile_subtitle"
+                    android:textColor="@color/text_secondary" />
+            </LinearLayout>
 
             <com.google.android.material.imageview.ShapeableImageView
                 android:id="@+id/ivAvatar"
                 android:layout_width="48dp"
                 android:layout_height="48dp"
                 android:background="@drawable/bg_avatar_circle"
+                android:contentDescription="@string/cd_avatar"
                 android:padding="2dp"
                 android:scaleType="centerCrop"
-                android:contentDescription="@string/cd_avatar"
                 app:layout_constraintBottom_toBottomOf="parent"
                 app:layout_constraintEnd_toEndOf="parent"
                 app:layout_constraintTop_toTopOf="parent"
@@ -47,143 +64,411 @@
 
         </androidx.constraintlayout.widget.ConstraintLayout>
 
-        <!-- Search Bar -->
         <com.google.android.material.textfield.TextInputLayout
+            android:id="@+id/tilSearch"
             style="@style/Widget.WayToFix.TextInputLayout"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginHorizontal="20dp"
-            android:layout_marginBottom="24dp"
+            android:layout_marginHorizontal="@dimen/screen_padding_horizontal"
+            android:layout_marginTop="8dp"
             app:hintEnabled="false"
             app:startIconDrawable="@drawable/ic_search"
-            app:startIconTint="@color/text_hint">
+            app:startIconTint="@color/text_tertiary">
 
             <com.google.android.material.textfield.TextInputEditText
                 android:id="@+id/etSearch"
+                style="@style/Widget.WayToFix.TextInputEditText"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:hint="@string/search_exercise"
+                android:hint="@string/explore_search_hint"
                 android:imeOptions="actionSearch"
                 android:inputType="text"
-                android:paddingVertical="16dp"
-                android:textAppearance="@style/TextAppearance.WayToFix.Body1" />
+                android:paddingVertical="16dp" />
 
         </com.google.android.material.textfield.TextInputLayout>
 
-        <!-- Hero Section (Featured Content) -->
-        <FrameLayout
-            android:id="@+id/layoutHeroContainer"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:visibility="gone">
-            <include layout="@layout/item_explore_hero_card" android:id="@+id/layoutHero" />
-        </FrameLayout>
-
-        <!-- Categories / Quick Filters (Optional, can be static for now) -->
         <HorizontalScrollView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
+            android:layout_marginTop="16dp"
             android:clipToPadding="false"
-            android:paddingHorizontal="20dp"
-            android:layout_marginBottom="24dp"
+            android:paddingHorizontal="@dimen/screen_padding_horizontal"
             android:scrollbars="none">
-            <LinearLayout
+
+            <com.google.android.material.chip.ChipGroup
+                android:id="@+id/chipGroupPrimaryFilter"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:orientation="horizontal">
-                
-                <TextView
+                app:selectionRequired="true"
+                app:singleSelection="true">
+
+                <com.google.android.material.chip.Chip
+                    android:id="@+id/chipFilterAll"
+                    style="@style/Widget.WayToFix.Chip.Filter"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="@string/explore_filter_all"
-                    android:textColor="@color/white"
-                    android:background="@drawable/glass_pill_background"
-                    android:backgroundTint="@color/primary"
-                    android:paddingHorizontal="16dp"
-                    android:paddingVertical="8dp"
-                    android:textStyle="bold"
-                    android:layout_marginEnd="8dp"/>
-                    
-                <TextView
+                    android:checked="true"
+                    android:text="@string/all" />
+
+                <com.google.android.material.chip.Chip
+                    android:id="@+id/chipFilterWorkouts"
+                    style="@style/Widget.WayToFix.Chip.Filter"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="@string/programs"
-                    android:textColor="@color/text_primary"
-                    android:background="@drawable/glass_pill_background"
-                    android:paddingHorizontal="16dp"
-                    android:paddingVertical="8dp"
-                    android:layout_marginEnd="8dp"/>
-                    
-                <TextView
+                    android:text="@string/workouts" />
+
+                <com.google.android.material.chip.Chip
+                    android:id="@+id/chipFilterExercises"
+                    style="@style/Widget.WayToFix.Chip.Filter"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="@string/workouts"
-                    android:textColor="@color/text_primary"
-                    android:background="@drawable/glass_pill_background"
-                    android:paddingHorizontal="16dp"
-                    android:paddingVertical="8dp"
-                    android:layout_marginEnd="8dp"/>
-                    
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="@string/exercises"
-                    android:textColor="@color/text_primary"
-                    android:background="@drawable/glass_pill_background"
-                    android:paddingHorizontal="16dp"
-                    android:paddingVertical="8dp" />
-            </LinearLayout>
+                    android:text="@string/exercises" />
+            </com.google.android.material.chip.ChipGroup>
+
         </HorizontalScrollView>
 
-        <!-- Placeholder Sections for Explore (Will populate with Recycler Views) -->
-        
-        <!-- Programs -->
-        <include layout="@layout/include_explore_section_header" android:id="@+id/headerPrograms" />
-        <androidx.recyclerview.widget.RecyclerView
-            android:id="@+id/rvPrograms"
+        <com.google.android.material.card.MaterialCardView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:clipToPadding="false"
-            android:paddingHorizontal="20dp"
-            android:orientation="horizontal"
-            android:nestedScrollingEnabled="false"
-            app:layoutManager="androidx.recyclerview.widget.LinearLayoutManager" />
-            
-        <!-- Workouts -->
-        <include layout="@layout/include_explore_section_header" android:id="@+id/headerWorkouts" />
-        <androidx.recyclerview.widget.RecyclerView
-            android:id="@+id/rvWorkouts"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:clipToPadding="false"
-            android:paddingHorizontal="20dp"
-            android:orientation="horizontal"
-            android:nestedScrollingEnabled="false"
-            app:layoutManager="androidx.recyclerview.widget.LinearLayoutManager" />
-            
-        <!-- Levels -->
-        <include layout="@layout/include_explore_section_header" android:id="@+id/headerLevels" />
-        <androidx.recyclerview.widget.RecyclerView
-            android:id="@+id/rvLevels"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:clipToPadding="false"
-            android:paddingHorizontal="20dp"
-            android:orientation="horizontal"
-            android:nestedScrollingEnabled="false"
-            app:layoutManager="androidx.recyclerview.widget.LinearLayoutManager" />
+            android:layout_marginHorizontal="@dimen/screen_padding_horizontal"
+            android:layout_marginTop="20dp"
+            app:cardBackgroundColor="@color/surface"
+            app:cardCornerRadius="@dimen/radius_lg"
+            app:cardElevation="0dp"
+            app:strokeColor="@color/surface_border"
+            app:strokeWidth="1dp">
 
-        <!-- Exercises -->
-        <include layout="@layout/include_explore_section_header" android:id="@+id/headerExercises" />
-        <androidx.recyclerview.widget.RecyclerView
-            android:id="@+id/rvExercises"
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:padding="20dp">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:background="@drawable/bg_chip_accent"
+                    android:paddingHorizontal="10dp"
+                    android:paddingVertical="6dp"
+                    android:text="@string/explore_overview_badge"
+                    android:textColor="@color/on_primary"
+                    android:textSize="11sp"
+                    android:textStyle="bold" />
+
+                <TextView
+                    android:id="@+id/tvOverviewTitle"
+                    style="@style/TextAppearance.WayToFix.Headline1"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="16dp"
+                    android:text="@string/explore_mobile_title" />
+
+                <TextView
+                    android:id="@+id/tvOverviewSubtitle"
+                    style="@style/TextAppearance.WayToFix.Body2"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="8dp"
+                    android:text="@string/explore_mobile_subtitle"
+                    android:textColor="@color/text_secondary" />
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="20dp"
+                    android:orientation="horizontal">
+
+                    <LinearLayout
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_marginEnd="8dp"
+                        android:layout_weight="1"
+                        android:background="@drawable/bg_stat_card_dark"
+                        android:gravity="center_vertical"
+                        android:orientation="horizontal"
+                        android:padding="16dp">
+
+                        <FrameLayout
+                            android:layout_width="44dp"
+                            android:layout_height="44dp"
+                            android:background="@drawable/bg_circle_surface">
+
+                            <ImageView
+                                android:layout_width="22dp"
+                                android:layout_height="22dp"
+                                android:layout_gravity="center"
+                                android:contentDescription="@string/workouts"
+                                android:src="@drawable/ic_workout"
+                                app:tint="@color/primary" />
+                        </FrameLayout>
+
+                        <LinearLayout
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_marginStart="12dp"
+                            android:layout_weight="1"
+                            android:orientation="vertical">
+
+                            <TextView
+                                android:id="@+id/tvWorkoutsCount"
+                                style="@style/TextAppearance.WayToFix.Headline2"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                tools:text="18" />
+
+                            <TextView
+                                style="@style/TextAppearance.WayToFix.Caption"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:layout_marginTop="2dp"
+                                android:text="@string/workouts"
+                                android:textColor="@color/text_secondary" />
+                        </LinearLayout>
+                    </LinearLayout>
+
+                    <LinearLayout
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="8dp"
+                        android:layout_weight="1"
+                        android:background="@drawable/bg_stat_card_dark"
+                        android:gravity="center_vertical"
+                        android:orientation="horizontal"
+                        android:padding="16dp">
+
+                        <FrameLayout
+                            android:layout_width="44dp"
+                            android:layout_height="44dp"
+                            android:background="@drawable/bg_circle_surface">
+
+                            <ImageView
+                                android:layout_width="22dp"
+                                android:layout_height="22dp"
+                                android:layout_gravity="center"
+                                android:contentDescription="@string/exercises"
+                                android:src="@drawable/ic_exercise"
+                                app:tint="@color/primary" />
+                        </FrameLayout>
+
+                        <LinearLayout
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_marginStart="12dp"
+                            android:layout_weight="1"
+                            android:orientation="vertical">
+
+                            <TextView
+                                android:id="@+id/tvExercisesCount"
+                                style="@style/TextAppearance.WayToFix.Headline2"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                tools:text="42" />
+
+                            <TextView
+                                style="@style/TextAppearance.WayToFix.Caption"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:layout_marginTop="2dp"
+                                android:text="@string/exercises"
+                                android:textColor="@color/text_secondary" />
+                        </LinearLayout>
+                    </LinearLayout>
+
+                </LinearLayout>
+            </LinearLayout>
+
+        </com.google.android.material.card.MaterialCardView>
+
+        <TextView
+            android:id="@+id/tvResultsSummary"
+            style="@style/TextAppearance.WayToFix.Caption"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:clipToPadding="false"
-            android:paddingHorizontal="20dp"
-            android:orientation="horizontal"
-            android:nestedScrollingEnabled="false"
-            app:layoutManager="androidx.recyclerview.widget.LinearLayoutManager" />
+            android:layout_marginHorizontal="@dimen/screen_padding_horizontal"
+            android:layout_marginTop="16dp"
+            android:textColor="@color/text_secondary"
+            tools:text="18 workouts • 42 exercises" />
+
+        <LinearLayout
+            android:id="@+id/sectionWorkoutsContainer"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical">
+
+            <include
+                android:id="@+id/headerWorkouts"
+                layout="@layout/include_explore_section_header" />
+
+            <HorizontalScrollView
+                android:id="@+id/scrollWorkoutFilters"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:clipToPadding="false"
+                android:paddingHorizontal="@dimen/screen_padding_horizontal"
+                android:scrollbars="none">
+
+                <com.google.android.material.chip.ChipGroup
+                    android:id="@+id/chipGroupWorkoutFilters"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    app:selectionRequired="true"
+                    app:singleSelection="true">
+
+                    <com.google.android.material.chip.Chip
+                        android:id="@+id/chipWorkoutAll"
+                        style="@style/Widget.WayToFix.Chip.Filter"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:checked="true"
+                        android:text="@string/all" />
+
+                    <com.google.android.material.chip.Chip
+                        android:id="@+id/chipWorkoutBeginner"
+                        style="@style/Widget.WayToFix.Chip.Filter"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="@string/explore_workout_filter_beginner" />
+
+                    <com.google.android.material.chip.Chip
+                        android:id="@+id/chipWorkoutIntermediate"
+                        style="@style/Widget.WayToFix.Chip.Filter"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="@string/explore_workout_filter_intermediate" />
+
+                    <com.google.android.material.chip.Chip
+                        android:id="@+id/chipWorkoutAdvanced"
+                        style="@style/Widget.WayToFix.Chip.Filter"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="@string/explore_workout_filter_advanced" />
+
+                    <com.google.android.material.chip.Chip
+                        android:id="@+id/chipWorkoutShort"
+                        style="@style/Widget.WayToFix.Chip.Filter"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="@string/explore_workout_filter_short" />
+                </com.google.android.material.chip.ChipGroup>
+
+            </HorizontalScrollView>
+
+            <androidx.recyclerview.widget.RecyclerView
+                android:id="@+id/rvWorkouts"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="12dp"
+                android:clipToPadding="false"
+                android:nestedScrollingEnabled="false"
+                android:paddingHorizontal="@dimen/screen_padding_horizontal"
+                tools:itemCount="4"
+                tools:listitem="@layout/item_explore_workout_compact" />
+
+            <TextView
+                android:id="@+id/tvWorkoutsEmpty"
+                style="@style/TextAppearance.WayToFix.Body2"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginHorizontal="@dimen/screen_padding_horizontal"
+                android:layout_marginTop="16dp"
+                android:text="@string/explore_section_empty_workouts"
+                android:textColor="@color/text_secondary"
+                android:visibility="gone" />
+        </LinearLayout>
+
+        <LinearLayout
+            android:id="@+id/sectionExercisesContainer"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical">
+
+            <include
+                android:id="@+id/headerExercises"
+                layout="@layout/include_explore_section_header" />
+
+            <HorizontalScrollView
+                android:id="@+id/scrollExerciseFilters"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:clipToPadding="false"
+                android:paddingHorizontal="@dimen/screen_padding_horizontal"
+                android:scrollbars="none">
+
+                <com.google.android.material.chip.ChipGroup
+                    android:id="@+id/chipGroupExerciseFilters"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    app:selectionRequired="true"
+                    app:singleSelection="true" />
+
+            </HorizontalScrollView>
+
+            <androidx.recyclerview.widget.RecyclerView
+                android:id="@+id/rvExercises"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="12dp"
+                android:clipToPadding="false"
+                android:nestedScrollingEnabled="false"
+                android:paddingHorizontal="@dimen/screen_padding_horizontal"
+                tools:itemCount="4"
+                tools:listitem="@layout/item_explore_exercise_compact" />
+
+            <TextView
+                android:id="@+id/tvExercisesEmpty"
+                style="@style/TextAppearance.WayToFix.Body2"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginHorizontal="@dimen/screen_padding_horizontal"
+                android:layout_marginTop="16dp"
+                android:text="@string/explore_section_empty_exercises"
+                android:textColor="@color/text_secondary"
+                android:visibility="gone" />
+        </LinearLayout>
+
+        <LinearLayout
+            android:id="@+id/layoutEmpty"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginHorizontal="@dimen/screen_padding_horizontal"
+            android:layout_marginTop="32dp"
+            android:gravity="center"
+            android:orientation="vertical"
+            android:paddingVertical="24dp"
+            android:visibility="gone">
+
+            <FrameLayout
+                android:layout_width="64dp"
+                android:layout_height="64dp"
+                android:background="@drawable/bg_circle_surface">
+
+                <ImageView
+                    android:layout_width="28dp"
+                    android:layout_height="28dp"
+                    android:layout_gravity="center"
+                    android:contentDescription="@string/explore_empty_title"
+                    android:src="@drawable/ic_search"
+                    app:tint="@color/text_secondary" />
+            </FrameLayout>
+
+            <TextView
+                android:id="@+id/tvEmptyTitle"
+                style="@style/TextAppearance.WayToFix.Headline3"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="16dp"
+                android:text="@string/explore_empty_title" />
+
+            <TextView
+                android:id="@+id/tvEmptySubtitle"
+                style="@style/TextAppearance.WayToFix.Body2"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:gravity="center"
+                android:text="@string/explore_empty_subtitle"
+                android:textColor="@color/text_secondary" />
+        </LinearLayout>
 
     </LinearLayout>
 

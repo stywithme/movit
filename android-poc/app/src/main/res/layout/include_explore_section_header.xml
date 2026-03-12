@@ -11,12 +11,27 @@
         android:id="@+id/tvSectionTitle"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
+        android:text="Section Title"
         android:textAppearance="@style/TextAppearance.WayToFix.Headline3"
         app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintEnd_toStartOf="@+id/tvViewAll"
+        app:layout_constraintEnd_toStartOf="@+id/tvSectionCount"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent"
-        android:text="Section Title" />
+        app:layout_constraintTop_toTopOf="parent" />
+
+    <TextView
+        android:id="@+id/tvSectionCount"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="10dp"
+        android:background="@drawable/bg_stat_card_dark"
+        android:paddingHorizontal="10dp"
+        android:paddingVertical="4dp"
+        android:text="0"
+        android:textAppearance="@style/TextAppearance.WayToFix.Caption"
+        android:textColor="@color/primary"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toStartOf="@+id/tvViewAll"
+        app:layout_constraintTop_toTopOf="parent" />
 
     <TextView
         android:id="@+id/tvViewAll"

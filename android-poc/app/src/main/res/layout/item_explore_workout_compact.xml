@@ -1,13 +1,12 @@
 <?xml version="1.0" encoding="utf-8"?>
-<com.google.android.material.card.MaterialCardView
-    xmlns:android="http://schemas.android.com/apk/res/android"
+<com.google.android.material.card.MaterialCardView xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
-    android:layout_width="200dp"
+    android:layout_width="224dp"
     android:layout_height="wrap_content"
     android:layout_marginEnd="12dp"
     app:cardBackgroundColor="@color/surface"
-    app:cardCornerRadius="12dp"
+    app:cardCornerRadius="@dimen/radius_base"
     app:cardElevation="0dp"
     app:strokeColor="@color/surface_border"
     app:strokeWidth="1dp">
@@ -15,47 +14,65 @@
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:orientation="vertical">
-
-        <FrameLayout
-            android:layout_width="match_parent"
-            android:layout_height="100dp"
-            android:background="@color/surface_variant">
-            <!-- Icon centered -->
-            <ImageView
-                android:layout_width="32dp"
-                android:layout_height="32dp"
-                android:layout_gravity="center"
-                android:src="@drawable/ic_workout"
-                app:tint="@color/text_secondary" />
-        </FrameLayout>
+        android:minHeight="172dp"
+        android:orientation="vertical"
+        android:padding="16dp">
 
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:orientation="vertical"
-            android:padding="12dp">
-            
-            <TextView
-                android:id="@+id/tvWorkoutName"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                style="@style/TextAppearance.WayToFix.Headline3"
-                android:textColor="@color/text_primary"
-                android:maxLines="1"
-                android:ellipsize="end"
-                tools:text="Core Crusher" />
+            android:gravity="center_vertical"
+            android:orientation="horizontal">
+
+            <FrameLayout
+                android:layout_width="44dp"
+                android:layout_height="44dp"
+                android:background="@drawable/bg_circle_surface">
+
+                <ImageView
+                    android:layout_width="22dp"
+                    android:layout_height="22dp"
+                    android:layout_gravity="center"
+                    android:contentDescription="@string/workouts"
+                    android:src="@drawable/ic_workout"
+                    app:tint="@color/primary" />
+            </FrameLayout>
 
             <TextView
-                android:id="@+id/tvWorkoutMeta"
-                android:layout_width="match_parent"
+                android:id="@+id/tvWorkoutType"
+                android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="4dp"
-                android:textColor="@color/text_secondary"
-                android:textSize="12sp"
-                android:maxLines="1"
-                android:ellipsize="end"
-                tools:text="20 min • Abs" />
+                android:layout_marginStart="12dp"
+                android:background="@drawable/bg_chip_accent"
+                android:paddingHorizontal="10dp"
+                android:paddingVertical="6dp"
+                android:textColor="@color/on_primary"
+                android:textSize="11sp"
+                android:textStyle="bold"
+                tools:text="Beginner" />
         </LinearLayout>
+
+        <TextView
+            android:id="@+id/tvWorkoutName"
+            style="@style/TextAppearance.WayToFix.Headline3"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="18dp"
+            android:ellipsize="end"
+            android:maxLines="2"
+            android:textColor="@color/text_primary"
+            tools:text="Core Crusher Express" />
+
+        <TextView
+            android:id="@+id/tvWorkoutMeta"
+            style="@style/TextAppearance.WayToFix.Body2"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:ellipsize="end"
+            android:maxLines="2"
+            android:textColor="@color/text_secondary"
+            tools:text="6 exercises · ~20 min" />
     </LinearLayout>
+
 </com.google.android.material.card.MaterialCardView>

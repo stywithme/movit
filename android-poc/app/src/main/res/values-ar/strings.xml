@@ -787,6 +787,21 @@
     <string name="section_top_programs">أفضل البرامج</string>
     <string name="section_quick_workouts">تمارين سريعة</string>
     <string name="section_exercise_library">مكتبة التمارين</string>
+    <string name="explore_mobile_title">مكتبة التدريب</string>
+    <string name="explore_mobile_subtitle">ابحث في التمارين المجمعة والتمارين، ثم صفِّ النتائج بفلاتر ذكية.</string>
+    <string name="explore_search_hint">ابحث عن تمرين مجمع أو تمرين…</string>
+    <string name="explore_overview_badge">مكتبة موحدة</string>
+    <string name="explore_results_summary_format">%1$d تمارين مجمعة • %2$d تمارين</string>
+    <string name="explore_workout_filter_beginner">مبتدئ</string>
+    <string name="explore_workout_filter_intermediate">متوسط</string>
+    <string name="explore_workout_filter_advanced">متقدم</string>
+    <string name="explore_workout_filter_short">أقل من 20 دقيقة</string>
+    <string name="explore_exercise_meta_format">%1$d مجموعات عضلية</string>
+    <string name="explore_exercise_meta_fallback">جاهز للتدريب</string>
+    <string name="explore_section_empty_workouts">لا توجد تمارين مجمعة بهذه الفلاتر.</string>
+    <string name="explore_section_empty_exercises">لا توجد تمارين بهذه الفلاتر.</string>
+    <string name="explore_empty_title">لا توجد نتائج</string>
+    <string name="explore_empty_subtitle">جرّب كلمة بحث مختلفة أو امسح بعض الفلاتر.</string>
 
     <!-- List Screen Headers -->
     <string name="program_list_title">برامج التدريب</string>
