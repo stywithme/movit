@@ -28,6 +28,7 @@ import androidx.lifecycle.lifecycleScope
 import com.trainingvalidator.poc.training.analytics.SessionUpload
 import com.trainingvalidator.poc.R
 import com.trainingvalidator.poc.analysis.AngleCalculator
+import com.trainingvalidator.poc.analysis.ElbowAngleEstimator
 import com.trainingvalidator.poc.analysis.JointAngles
 import com.trainingvalidator.poc.analysis.LandmarkSmoother
 import com.trainingvalidator.poc.analysis.SmoothedLandmark
@@ -158,6 +159,7 @@ class TrainingActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetection
     private var cameraManager: CameraManager? = null
     private var poseLandmarkerHelper: PoseLandmarkerHelper? = null
     private lateinit var landmarkSmoother: LandmarkSmoother
+    private val elbowAngleEstimator = ElbowAngleEstimator()
     
     // Video Mode Controller
     private var videoModeController: VideoModeController? = null
@@ -2666,8 +2668,12 @@ class TrainingActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetection
                         visibilityThreshold = 0.5f
                     )
                 }
-                
-                val angles = if (result.isFrontCamera) rawAngles.mirrored() else rawAngles
+
+                val correctedAngles = if (worldLandmarks != null) {
+                    elbowAngleEstimator.correct(rawAngles, worldLandmarks, smoothedLandmarks, result.timestampMs)
+                } else rawAngles
+
+                val angles = if (result.isFrontCamera) correctedAngles.mirrored() else correctedAngles
                 
                 // === Minimal work on Main Thread: supervisor signal + UI update ===
                 withContext(Dispatchers.Main) {

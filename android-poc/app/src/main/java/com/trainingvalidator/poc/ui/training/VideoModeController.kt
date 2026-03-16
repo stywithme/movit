@@ -6,6 +6,7 @@ import android.net.Uri
 import android.util.Log
 import android.view.TextureView
 import com.trainingvalidator.poc.analysis.AngleCalculator
+import com.trainingvalidator.poc.analysis.ElbowAngleEstimator
 import com.trainingvalidator.poc.analysis.JointAngles
 import com.trainingvalidator.poc.analysis.LandmarkSmoother
 import com.trainingvalidator.poc.analysis.SmoothedLandmark
@@ -80,6 +81,7 @@ class VideoModeController(
     private var videoManager: VideoManager? = null
     private var poseLandmarkerHelper: PoseLandmarkerHelper? = null
     private var landmarkSmoother: LandmarkSmoother? = null
+    private val elbowAngleEstimator = ElbowAngleEstimator()
     private var analysisResultStorage: AnalysisResultStorage? = null
     
     private var listener: VideoModeListener? = null
@@ -238,9 +240,12 @@ class VideoModeController(
                             visibilityThreshold = 0.5f
                         )
                     }
-                    
-                    // Video mode doesn't use front camera mirroring
-                    val angles = if (poseResult.isFrontCamera) rawAngles.mirrored() else rawAngles
+
+                    val correctedAngles = if (worldLandmarks != null) {
+                        elbowAngleEstimator.correct(rawAngles, worldLandmarks, smoothedLandmarks, timestampMs)
+                    } else rawAngles
+
+                    val angles = if (poseResult.isFrontCamera) correctedAngles.mirrored() else correctedAngles
                     
                     withContext(Dispatchers.Main) {
                         listener?.onFrameProcessed(

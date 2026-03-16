@@ -1,6 +1,8 @@
 package com.trainingvalidator.poc.ui.debug
 
 import android.Manifest
+import android.content.ClipData
+import android.content.ClipboardManager
 import android.content.pm.PackageManager
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
@@ -25,9 +27,12 @@ import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.WindowInsetsControllerCompat
 import androidx.exifinterface.media.ExifInterface
+import com.google.mediapipe.tasks.components.containers.Landmark
+import com.google.mediapipe.tasks.components.containers.NormalizedLandmark
 import com.google.android.material.tabs.TabLayout
 import com.trainingvalidator.poc.R
 import com.trainingvalidator.poc.analysis.AngleCalculator
+import com.trainingvalidator.poc.analysis.ElbowAngleEstimator
 import com.trainingvalidator.poc.analysis.JointAngles
 import com.trainingvalidator.poc.analysis.LandmarkSmoother
 import com.trainingvalidator.poc.analysis.SmoothedLandmark
@@ -64,8 +69,9 @@ class DebugActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetectionLis
     companion object {
         private const val TAG = "DebugActivity"
         private const val TAB_JOINTS = 0
-        private const val TAB_POSITION = 1
-        private const val TAB_CAMERA = 2
+        private const val TAB_ANGLE_DIAGNOSTICS = 1
+        private const val TAB_POSITION = 2
+        private const val TAB_CAMERA = 3
     }
 
     enum class InputMode { CAMERA, VIDEO, IMAGE }
@@ -74,6 +80,7 @@ class DebugActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetectionLis
     private var cameraManager: CameraManager? = null
     private var poseLandmarkerHelper: PoseLandmarkerHelper? = null
     private lateinit var landmarkSmoother: LandmarkSmoother
+    private val elbowAngleEstimator = ElbowAngleEstimator()
 
     private val mainScope = CoroutineScope(Dispatchers.Main + SupervisorJob())
 
@@ -112,6 +119,60 @@ class DebugActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetectionLis
 
     // Latest landmarks for debug panel
     private var latestLandmarks: List<SmoothedLandmark>? = null
+
+    private data class AngleDebugPoint(
+        val index: Int,
+        val name: String,
+        val x: Float,
+        val y: Float,
+        val z: Float,
+        val visibility: Float,
+        val presence: Float
+    )
+
+    private data class AngleSegmentMetrics(
+        val dx: Double,
+        val dy: Double,
+        val dz: Double,
+        val length2D: Double,
+        val length3D: Double
+    ) {
+        val depthShare: Double
+            get() = if (length3D > 0.0) kotlin.math.abs(dz) / length3D else 0.0
+
+        val planarRatio: Double
+            get() = if (length3D > 0.0) length2D / length3D else 0.0
+    }
+
+    private data class AngleDebugFrame(
+        val pointA: AngleDebugPoint,
+        val pointB: AngleDebugPoint,
+        val pointC: AngleDebugPoint,
+        val xyAngle: Double?,
+        val xzAngle: Double?,
+        val yzAngle: Double?,
+        val xyzAngle: Double?,
+        val segmentBA: AngleSegmentMetrics,
+        val segmentBC: AngleSegmentMetrics
+    ) {
+        val minVisibility: Float
+            get() = minOf(pointA.visibility, pointB.visibility, pointC.visibility)
+
+        val minPresence: Float
+            get() = minOf(pointA.presence, pointB.presence, pointC.presence)
+    }
+
+    private data class AngleDiagnosticsData(
+        val displayJointCode: String,
+        val sourceJointCode: String,
+        val effectiveIndices: List<Int>,
+        val displayedAngle: Double?,
+        val pipelineSourceLabel: String,
+        val normalizedRaw: AngleDebugFrame?,
+        val normalizedSmoothed: AngleDebugFrame?,
+        val worldRaw: AngleDebugFrame?,
+        val worldSmoothed: AngleDebugFrame?
+    )
 
     private val jointCodes = JointLandmarkMapping.trackedJointCodes.toList().sorted()
     private val landmarkNames = listOf(
@@ -219,6 +280,10 @@ class DebugActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetectionLis
             showSettingsDialog()
         }
 
+        binding.btnCopyDebugInfo.setOnClickListener {
+            copyCurrentDebugInfo()
+        }
+
         setupVideoControls()
     }
 
@@ -281,7 +346,7 @@ class DebugActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetectionLis
             tabLayout.getTabAt(currentTab)?.select()
             
             fun updateConfigVisibility(tab: Int) {
-                jointConfig.visibility = if (tab == TAB_JOINTS) View.VISIBLE else View.GONE
+                jointConfig.visibility = if (tab == TAB_JOINTS || tab == TAB_ANGLE_DIAGNOSTICS) View.VISIBLE else View.GONE
                 posConfig.visibility = if (tab == TAB_POSITION) View.VISIBLE else View.GONE
                 camConfig.visibility = if (tab == TAB_CAMERA) View.VISIBLE else View.GONE
             }
@@ -379,6 +444,10 @@ class DebugActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetectionLis
         when (currentTab) {
             TAB_JOINTS -> {
                 updateInfoPanelVisibility()
+            }
+            TAB_ANGLE_DIAGNOSTICS -> {
+                updateInfoPanelVisibility()
+                binding.tvStatus.visibility = View.VISIBLE
             }
             TAB_POSITION -> {
                 updateInfoPanelVisibility()
@@ -753,26 +822,26 @@ class DebugActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetectionLis
             AngleCalculator.calculateAllAnglesSmoothed(smoothedLandmarks, visibilityThreshold = 0.5f)
         }
 
-        val angles = if (result.isFrontCamera) rawAngles.mirrored() else rawAngles
+        val correctedAngles = if (worldLandmarks != null) {
+            elbowAngleEstimator.correct(rawAngles, worldLandmarks, smoothedLandmarks, result.timestampMs)
+        } else rawAngles
+
+        val angles = if (result.isFrontCamera) correctedAngles.mirrored() else correctedAngles
         latestLandmarks = smoothedLandmarks
 
         when (currentTab) {
             TAB_JOINTS -> {
-                val angleLandmarks = JointLandmarkMapping.getLandmarksForAngle(selectedJointCode)
-                if (angleLandmarks.size == 3) {
-                    binding.skeletonOverlay.updateDebugJoint(
-                        jointCode = selectedJointCode,
-                        angle = angles.getAngle(selectedJointCode),
-                        endpointA = angleLandmarks[0],
-                        endpointC = angleLandmarks[2],
-                        vertexIdx = angleLandmarks[1],
-                        smoothedLandmarks = smoothedLandmarks,
-                        imageW = result.imageWidth,
-                        imageH = result.imageHeight,
-                        useFrontCamera = result.isFrontCamera
-                    )
-                }
+                updateSelectedJointOverlay(angles, smoothedLandmarks, result.imageWidth, result.imageHeight, result.isFrontCamera)
                 updateJointAngleDisplay(angles)
+            }
+            TAB_ANGLE_DIAGNOSTICS -> {
+                updateSelectedJointOverlay(angles, smoothedLandmarks, result.imageWidth, result.imageHeight, result.isFrontCamera)
+                updateAngleDiagnosticsDisplay(
+                    poseResult = result,
+                    angles = angles,
+                    smoothedLandmarks = smoothedLandmarks,
+                    smoothedWorldLandmarks = worldLandmarks
+                )
             }
             TAB_POSITION -> {
                 val primaryIdx = JointLandmarkMapping.jointToLandmark(selectedPrimaryLandmark) ?: -1
@@ -802,6 +871,12 @@ class DebugActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetectionLis
         clearOverlay()
         binding.tvLiveValue.text = "--"
         binding.tvLiveValue.setTextColor(Color.WHITE)
+        if (currentTab == TAB_ANGLE_DIAGNOSTICS) {
+            binding.tvStatus.text = "NO POSE"
+            binding.tvStatus.setTextColor(Color.GRAY)
+            binding.tvStatus.visibility = View.VISIBLE
+            binding.tvDebugInfo.text = "No pose detected"
+        }
         if (currentTab == TAB_POSITION) {
             binding.tvStatus.text = "NO POSE"
             binding.tvStatus.setTextColor(Color.GRAY)
@@ -847,6 +922,505 @@ class DebugActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetectionLis
             binding.tvLiveValue.text = "N/A"
             binding.tvLiveValue.setTextColor(Color.GRAY)
         }
+    }
+
+    private fun updateSelectedJointOverlay(
+        angles: JointAngles,
+        smoothedLandmarks: List<SmoothedLandmark>,
+        imageW: Int,
+        imageH: Int,
+        isFrontCamera: Boolean
+    ) {
+        val angleLandmarks = JointLandmarkMapping.getLandmarksForAngle(selectedJointCode)
+        if (angleLandmarks.size != 3) return
+
+        binding.skeletonOverlay.updateDebugJoint(
+            jointCode = selectedJointCode,
+            angle = angles.getAngle(selectedJointCode),
+            endpointA = angleLandmarks[0],
+            endpointC = angleLandmarks[2],
+            vertexIdx = angleLandmarks[1],
+            smoothedLandmarks = smoothedLandmarks,
+            imageW = imageW,
+            imageH = imageH,
+            useFrontCamera = isFrontCamera
+        )
+    }
+
+    private fun updateAngleDiagnosticsDisplay(
+        poseResult: PoseResult,
+        angles: JointAngles,
+        smoothedLandmarks: List<SmoothedLandmark>,
+        smoothedWorldLandmarks: List<SmoothedLandmark>?
+    ) {
+        val diagnostics = buildAngleDiagnosticsData(
+            poseResult = poseResult,
+            angles = angles,
+            smoothedLandmarks = smoothedLandmarks,
+            smoothedWorldLandmarks = smoothedWorldLandmarks
+        )
+
+        if (diagnostics == null) {
+            binding.tvLiveValue.text = "N/A"
+            binding.tvLiveValue.setTextColor(Color.GRAY)
+            binding.tvStatus.visibility = View.VISIBLE
+            binding.tvStatus.text = "Angle mapping unavailable"
+            binding.tvStatus.setTextColor(Color.GRAY)
+            binding.tvDebugInfo.text = "Selected joint does not have a 3-point angle mapping."
+            return
+        }
+
+        val displayedAngle = diagnostics.displayedAngle
+        if (displayedAngle != null) {
+            binding.tvLiveValue.text = "%.1f°".format(displayedAngle)
+            binding.tvLiveValue.setTextColor(Color.WHITE)
+        } else {
+            binding.tvLiveValue.text = "N/A"
+            binding.tvLiveValue.setTextColor(Color.GRAY)
+        }
+
+        binding.tvStatus.visibility = View.VISIBLE
+        binding.tvStatus.text = buildAngleDiagnosticsSummary(diagnostics)
+        binding.tvStatus.setTextColor(Color.WHITE)
+
+        if (inferenceFrameCount % 2 == 0 || currentInputMode == InputMode.IMAGE) {
+            binding.tvDebugInfo.text = buildAngleDiagnosticsPanelText(diagnostics)
+        }
+    }
+
+    private fun buildAngleDiagnosticsData(
+        poseResult: PoseResult,
+        angles: JointAngles,
+        smoothedLandmarks: List<SmoothedLandmark>,
+        smoothedWorldLandmarks: List<SmoothedLandmark>?
+    ): AngleDiagnosticsData? {
+        val mappedIndices = JointLandmarkMapping.getLandmarksForAngle(selectedJointCode)
+        if (mappedIndices.size != 3) return null
+
+        val effectiveIndices = if (poseResult.isFrontCamera) {
+            mappedIndices.map { BodyLandmarks.getMirroredIndex(it) }
+        } else {
+            mappedIndices
+        }
+
+        val sourceJointCode = if (poseResult.isFrontCamera) {
+            getMirroredJointCode(selectedJointCode)
+        } else {
+            selectedJointCode
+        }
+
+        val normalizedRaw = buildAngleDebugFrame(effectiveIndices) { index ->
+            poseResult.landmarks.getOrNull(index)?.toAngleDebugPoint(index)
+        }
+        val normalizedSmoothed = buildAngleDebugFrame(effectiveIndices) { index ->
+            smoothedLandmarks.getOrNull(index)?.toAngleDebugPoint(index)
+        }
+        val worldRaw = poseResult.worldLandmarks?.let { rawWorldLandmarks ->
+            buildAngleDebugFrame(effectiveIndices) { index ->
+                rawWorldLandmarks.getOrNull(index)?.toAngleDebugPoint(index)
+            }
+        }
+        val worldSmoothed = smoothedWorldLandmarks?.let { smoothedWorld ->
+            buildAngleDebugFrame(effectiveIndices) { index ->
+                smoothedWorld.getOrNull(index)?.toAngleDebugPoint(index)
+            }
+        }
+
+        return AngleDiagnosticsData(
+            displayJointCode = selectedJointCode,
+            sourceJointCode = sourceJointCode,
+            effectiveIndices = effectiveIndices,
+            displayedAngle = angles.getAngle(selectedJointCode),
+            pipelineSourceLabel = if (worldSmoothed != null) "World XYZ" else "Screen XY fallback",
+            normalizedRaw = normalizedRaw,
+            normalizedSmoothed = normalizedSmoothed,
+            worldRaw = worldRaw,
+            worldSmoothed = worldSmoothed
+        )
+    }
+
+    private fun buildAngleDebugFrame(
+        indices: List<Int>,
+        pointProvider: (Int) -> AngleDebugPoint?
+    ): AngleDebugFrame? {
+        if (indices.size != 3) return null
+
+        val pointA = pointProvider(indices[0]) ?: return null
+        val pointB = pointProvider(indices[1]) ?: return null
+        val pointC = pointProvider(indices[2]) ?: return null
+
+        return AngleDebugFrame(
+            pointA = pointA,
+            pointB = pointB,
+            pointC = pointC,
+            xyAngle = calculateAngle2D(pointA.x, pointA.y, pointB.x, pointB.y, pointC.x, pointC.y),
+            xzAngle = calculateAngle2D(pointA.x, pointA.z, pointB.x, pointB.z, pointC.x, pointC.z),
+            yzAngle = calculateAngle2D(pointA.y, pointA.z, pointB.y, pointB.z, pointC.y, pointC.z),
+            xyzAngle = calculateAngle3D(pointA, pointB, pointC),
+            segmentBA = calculateSegmentMetrics(pointB, pointA),
+            segmentBC = calculateSegmentMetrics(pointB, pointC)
+        )
+    }
+
+    private fun buildAngleDiagnosticsSummary(data: AngleDiagnosticsData): String {
+        val normalizedAngle = data.normalizedSmoothed?.xyAngle
+        val worldAngle = data.worldSmoothed?.xyzAngle
+
+        return when {
+            normalizedAngle != null && worldAngle != null -> {
+                "2D ${formatAngleShort(normalizedAngle)} | 3D ${formatAngleShort(worldAngle)} | Delta ${formatAngleDelta(worldAngle, normalizedAngle)}"
+            }
+            normalizedAngle != null -> {
+                "2D ${formatAngleShort(normalizedAngle)} | no world landmarks"
+            }
+            else -> {
+                "Angle data unavailable"
+            }
+        }
+    }
+
+    private fun buildAngleDiagnosticsPanelText(data: AngleDiagnosticsData): String {
+        val sb = StringBuilder()
+        val visibilityReference = data.worldSmoothed ?: data.normalizedSmoothed
+
+        sb.appendLine("=== ANGLE DIAGNOSTICS ===")
+        sb.appendLine()
+        sb.appendLine("Display joint: ${data.displayJointCode}")
+        if (data.displayJointCode == data.sourceJointCode) {
+            sb.appendLine("Source joint:  ${data.sourceJointCode}")
+        } else {
+            sb.appendLine("Source joint:  ${data.sourceJointCode} (front camera correction)")
+        }
+        sb.appendLine(
+            "Landmarks:     A=${formatPointRef(data.effectiveIndices[0])} | " +
+                "B=${formatPointRef(data.effectiveIndices[1])} | " +
+                "C=${formatPointRef(data.effectiveIndices[2])}"
+        )
+        sb.appendLine()
+
+        sb.appendLine("--- SUMMARY ---")
+        sb.appendLine("Pipeline:      ${data.pipelineSourceLabel}")
+        sb.appendLine("Displayed:     ${formatAngleLong(data.displayedAngle)}")
+        sb.appendLine("Gate @0.50:    ${formatVisibilityGate(visibilityReference)}")
+        sb.appendLine("Norm XY raw:   ${formatAngleLong(data.normalizedRaw?.xyAngle)}")
+        sb.appendLine("Norm XY smth:  ${formatAngleLong(data.normalizedSmoothed?.xyAngle)}")
+        sb.appendLine("World XY raw:  ${formatAngleLong(data.worldRaw?.xyAngle)}")
+        sb.appendLine("World XY smth: ${formatAngleLong(data.worldSmoothed?.xyAngle)}")
+        sb.appendLine("World XYZ raw: ${formatAngleLong(data.worldRaw?.xyzAngle)}")
+        sb.appendLine("World XYZ smth:${formatAngleLong(data.worldSmoothed?.xyzAngle)}")
+        sb.appendLine("3D - 2D:       ${formatAngleDelta(data.worldSmoothed?.xyzAngle, data.normalizedSmoothed?.xyAngle)}")
+        sb.appendLine("3D - world XY: ${formatAngleDelta(data.worldSmoothed?.xyzAngle, data.worldSmoothed?.xyAngle)}")
+        sb.appendLine("Norm drift:    ${formatAngleDelta(data.normalizedSmoothed?.xyAngle, data.normalizedRaw?.xyAngle)}")
+        sb.appendLine("World drift:   ${formatAngleDelta(data.worldSmoothed?.xyzAngle, data.worldRaw?.xyzAngle)}")
+
+        data.worldSmoothed?.let { worldFrame ->
+            sb.appendLine()
+            sb.appendLine("--- WORLD PROJECTIONS ---")
+            sb.appendLine("XY:            ${formatAngleLong(worldFrame.xyAngle)}")
+            sb.appendLine("XZ:            ${formatAngleLong(worldFrame.xzAngle)}")
+            sb.appendLine("YZ:            ${formatAngleLong(worldFrame.yzAngle)}")
+        }
+
+        data.normalizedSmoothed?.let { normalizedFrame ->
+            sb.appendLine()
+            sb.appendLine("--- SCREEN SEGMENTS (SMOOTHED) ---")
+            appendSegmentMetrics(
+                sb,
+                "B->A ${normalizedFrame.pointB.name} -> ${normalizedFrame.pointA.name}",
+                normalizedFrame.segmentBA,
+                includeDepth = false
+            )
+            appendSegmentMetrics(
+                sb,
+                "B->C ${normalizedFrame.pointB.name} -> ${normalizedFrame.pointC.name}",
+                normalizedFrame.segmentBC,
+                includeDepth = false
+            )
+        }
+
+        data.worldSmoothed?.let { worldFrame ->
+            sb.appendLine()
+            sb.appendLine("--- WORLD SEGMENTS (SMOOTHED) ---")
+            appendSegmentMetrics(
+                sb,
+                "B->A ${worldFrame.pointB.name} -> ${worldFrame.pointA.name}",
+                worldFrame.segmentBA,
+                includeDepth = true
+            )
+            appendSegmentMetrics(
+                sb,
+                "B->C ${worldFrame.pointB.name} -> ${worldFrame.pointC.name}",
+                worldFrame.segmentBC,
+                includeDepth = true
+            )
+        }
+
+        sb.appendLine()
+        sb.appendLine("--- RAW -> SMOOTHED SHIFT ---")
+        appendShiftSummary(
+            sb,
+            "Norm XY",
+            data.normalizedRaw,
+            data.normalizedSmoothed,
+            includeDepth = false
+        )
+        appendShiftSummary(
+            sb,
+            "World XYZ",
+            data.worldRaw,
+            data.worldSmoothed,
+            includeDepth = true
+        )
+
+        appendPointSection(sb, "NORM RAW", data.normalizedRaw)
+        appendPointSection(sb, "NORM SMOOTHED", data.normalizedSmoothed)
+        appendPointSection(sb, "WORLD RAW", data.worldRaw)
+        appendPointSection(sb, "WORLD SMOOTHED", data.worldSmoothed)
+
+        appendElbowPipelineDiagnostics(sb, data.sourceJointCode)
+
+        return sb.toString()
+    }
+
+    private fun appendElbowPipelineDiagnostics(sb: StringBuilder, jointCode: String) {
+        val side = when (jointCode) {
+            "left_elbow" -> 0
+            "right_elbow" -> 1
+            else -> return
+        }
+        val diag = elbowAngleEstimator.lastDiagnostics.getOrNull(side) ?: return
+
+        sb.appendLine()
+        sb.appendLine("--- ELBOW PIPELINE ---")
+        sb.appendLine("Facing ratio:  %.3f (1=front 0=side)".format(diag.facingRatio))
+        sb.appendLine("Body-Plane:    ${formatAngleLong(diag.bodyPlaneAngle)}  conf=%.2f".format(diag.bodyPlaneConfidence))
+        sb.appendLine("Seg-Constr:    ${formatAngleLong(diag.constrainedAngle)}  conf=%.2f".format(diag.constrainedConfidence))
+        sb.appendLine("Fused:         ${formatAngleLong(diag.fusedAngle)}  conf=%.2f".format(diag.fusedConfidence))
+        sb.appendLine("Holding:       ${if (diag.isHolding) "YES" else "no"}")
+        sb.appendLine("Calibration:   %.0f%%".format(diag.calibrationProgress * 100))
+    }
+
+    private fun appendSegmentMetrics(
+        sb: StringBuilder,
+        label: String,
+        metrics: AngleSegmentMetrics,
+        includeDepth: Boolean
+    ) {
+        sb.appendLine(label)
+        if (includeDepth) {
+            sb.appendLine(
+                "  dx=${formatScalar(metrics.dx)} dy=${formatScalar(metrics.dy)} dz=${formatScalar(metrics.dz)}"
+            )
+            sb.appendLine(
+                "  lenXY=${formatScalar(metrics.length2D)} lenXYZ=${formatScalar(metrics.length3D)}"
+            )
+            sb.appendLine(
+                "  |dz|/XYZ=${formatRatio(metrics.depthShare)}  XY/XYZ=${formatRatio(metrics.planarRatio)}"
+            )
+        } else {
+            sb.appendLine(
+                "  dx=${formatScalar(metrics.dx)} dy=${formatScalar(metrics.dy)}"
+            )
+            sb.appendLine("  lenXY=${formatScalar(metrics.length2D)}")
+        }
+    }
+
+    private fun appendShiftSummary(
+        sb: StringBuilder,
+        label: String,
+        rawFrame: AngleDebugFrame?,
+        smoothedFrame: AngleDebugFrame?,
+        includeDepth: Boolean
+    ) {
+        if (rawFrame == null || smoothedFrame == null) {
+            sb.appendLine("$label:        N/A")
+            return
+        }
+
+        val shiftA = calculatePointShift(rawFrame.pointA, smoothedFrame.pointA, includeDepth)
+        val shiftB = calculatePointShift(rawFrame.pointB, smoothedFrame.pointB, includeDepth)
+        val shiftC = calculatePointShift(rawFrame.pointC, smoothedFrame.pointC, includeDepth)
+        sb.appendLine(
+            "$label:        A=${formatScalar(shiftA)} B=${formatScalar(shiftB)} C=${formatScalar(shiftC)}"
+        )
+    }
+
+    private fun appendPointSection(
+        sb: StringBuilder,
+        label: String,
+        frame: AngleDebugFrame?
+    ) {
+        sb.appendLine()
+        sb.appendLine("--- $label ---")
+        if (frame == null) {
+            sb.appendLine("Unavailable")
+            return
+        }
+
+        appendPointInfo(sb, "A", frame.pointA)
+        appendPointInfo(sb, "B", frame.pointB)
+        appendPointInfo(sb, "C", frame.pointC)
+        sb.appendLine("Min vis: ${formatRatio(frame.minVisibility.toDouble())}  Min pres: ${formatRatio(frame.minPresence.toDouble())}")
+    }
+
+    private fun appendPointInfo(
+        sb: StringBuilder,
+        label: String,
+        point: AngleDebugPoint
+    ) {
+        sb.appendLine("$label[${point.index}] ${point.name}")
+        sb.appendLine(
+            "  x=${formatScalar(point.x.toDouble())} y=${formatScalar(point.y.toDouble())} z=${formatScalar(point.z.toDouble())}"
+        )
+        sb.appendLine(
+            "  vis=${formatRatio(point.visibility.toDouble())} pres=${formatRatio(point.presence.toDouble())}"
+        )
+    }
+
+    private fun calculatePointShift(
+        rawPoint: AngleDebugPoint,
+        smoothedPoint: AngleDebugPoint,
+        includeDepth: Boolean
+    ): Double {
+        val dx = (smoothedPoint.x - rawPoint.x).toDouble()
+        val dy = (smoothedPoint.y - rawPoint.y).toDouble()
+        val dz = (smoothedPoint.z - rawPoint.z).toDouble()
+        return if (includeDepth) {
+            kotlin.math.sqrt(dx * dx + dy * dy + dz * dz)
+        } else {
+            kotlin.math.sqrt(dx * dx + dy * dy)
+        }
+    }
+
+    private fun calculateSegmentMetrics(
+        from: AngleDebugPoint,
+        to: AngleDebugPoint
+    ): AngleSegmentMetrics {
+        val dx = (to.x - from.x).toDouble()
+        val dy = (to.y - from.y).toDouble()
+        val dz = (to.z - from.z).toDouble()
+        val length2D = kotlin.math.sqrt(dx * dx + dy * dy)
+        val length3D = kotlin.math.sqrt(dx * dx + dy * dy + dz * dz)
+        return AngleSegmentMetrics(
+            dx = dx,
+            dy = dy,
+            dz = dz,
+            length2D = length2D,
+            length3D = length3D
+        )
+    }
+
+    private fun calculateAngle2D(
+        ax: Float,
+        ay: Float,
+        bx: Float,
+        by: Float,
+        cx: Float,
+        cy: Float
+    ): Double? {
+        val baX = (ax - bx).toDouble()
+        val baY = (ay - by).toDouble()
+        val bcX = (cx - bx).toDouble()
+        val bcY = (cy - by).toDouble()
+        val magBA = kotlin.math.sqrt(baX * baX + baY * baY)
+        val magBC = kotlin.math.sqrt(bcX * bcX + bcY * bcY)
+        if (magBA == 0.0 || magBC == 0.0) return null
+
+        var angle = Math.toDegrees(
+            kotlin.math.atan2(baY, baX) - kotlin.math.atan2(bcY, bcX)
+        )
+        angle = kotlin.math.abs(angle)
+        if (angle > 180.0) angle = 360.0 - angle
+        return angle
+    }
+
+    private fun calculateAngle3D(
+        pointA: AngleDebugPoint,
+        pointB: AngleDebugPoint,
+        pointC: AngleDebugPoint
+    ): Double? {
+        val baX = (pointA.x - pointB.x).toDouble()
+        val baY = (pointA.y - pointB.y).toDouble()
+        val baZ = (pointA.z - pointB.z).toDouble()
+        val bcX = (pointC.x - pointB.x).toDouble()
+        val bcY = (pointC.y - pointB.y).toDouble()
+        val bcZ = (pointC.z - pointB.z).toDouble()
+
+        val magBA = kotlin.math.sqrt(baX * baX + baY * baY + baZ * baZ)
+        val magBC = kotlin.math.sqrt(bcX * bcX + bcY * bcY + bcZ * bcZ)
+        if (magBA == 0.0 || magBC == 0.0) return null
+
+        val dot = baX * bcX + baY * bcY + baZ * bcZ
+        val cosAngle = (dot / (magBA * magBC)).coerceIn(-1.0, 1.0)
+        return Math.toDegrees(kotlin.math.acos(cosAngle))
+    }
+
+    private fun NormalizedLandmark.toAngleDebugPoint(index: Int): AngleDebugPoint {
+        return AngleDebugPoint(
+            index = index,
+            name = BodyLandmarks.getName(index),
+            x = x(),
+            y = y(),
+            z = z(),
+            visibility = visibility().orElse(0f),
+            presence = presence().orElse(0f)
+        )
+    }
+
+    private fun Landmark.toAngleDebugPoint(index: Int): AngleDebugPoint {
+        return AngleDebugPoint(
+            index = index,
+            name = BodyLandmarks.getName(index),
+            x = x(),
+            y = y(),
+            z = z(),
+            visibility = visibility().orElse(0f),
+            presence = presence().orElse(0f)
+        )
+    }
+
+    private fun SmoothedLandmark.toAngleDebugPoint(index: Int): AngleDebugPoint {
+        return AngleDebugPoint(
+            index = index,
+            name = BodyLandmarks.getName(index),
+            x = x,
+            y = y,
+            z = z,
+            visibility = visibility,
+            presence = presence
+        )
+    }
+
+    private fun getMirroredJointCode(jointCode: String): String {
+        return when {
+            jointCode == "neck_left" -> "neck_right"
+            jointCode == "neck_right" -> "neck_left"
+            jointCode.startsWith("left_") -> "right_${jointCode.removePrefix("left_")}"
+            jointCode.startsWith("right_") -> "left_${jointCode.removePrefix("right_")}"
+            else -> jointCode
+        }
+    }
+
+    private fun formatAngleShort(value: Double): String = "%.1f°".format(value)
+
+    private fun formatAngleLong(value: Double?): String =
+        value?.let { "%.1f°".format(it) } ?: "N/A"
+
+    private fun formatAngleDelta(primary: Double?, secondary: Double?): String {
+        if (primary == null || secondary == null) return "N/A"
+        return "%+.1f°".format(primary - secondary)
+    }
+
+    private fun formatScalar(value: Double): String = "%.4f".format(value)
+
+    private fun formatRatio(value: Double): String = "%.3f".format(value)
+
+    private fun formatPointRef(index: Int): String = "$index ${BodyLandmarks.getName(index)}"
+
+    private fun formatVisibilityGate(frame: AngleDebugFrame?): String {
+        val minVisibility = frame?.minVisibility ?: return "N/A"
+        val gateStatus = if (minVisibility >= 0.5f) "PASS" else "FAIL"
+        return "$gateStatus (min vis ${formatRatio(minVisibility.toDouble())})"
     }
 
     private fun updatePositionCheckDisplay(landmarks: List<SmoothedLandmark>, isFrontCamera: Boolean) {
@@ -1181,5 +1755,48 @@ class DebugActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetectionLis
         val minutes = totalSeconds / 60
         val seconds = totalSeconds % 60
         return "%d:%02d".format(minutes, seconds)
+    }
+
+    private fun copyCurrentDebugInfo() {
+        val exportText = buildDebugExportText()
+        if (exportText.isBlank()) {
+            Toast.makeText(this, "No debug info to copy", Toast.LENGTH_SHORT).show()
+            return
+        }
+
+        val clipboard = getSystemService(CLIPBOARD_SERVICE) as ClipboardManager
+        clipboard.setPrimaryClip(ClipData.newPlainText("debug-info", exportText))
+        Toast.makeText(this, "Debug info copied", Toast.LENGTH_SHORT).show()
+    }
+
+    private fun buildDebugExportText(): String {
+        val sections = mutableListOf<String>()
+
+        val modeLabel = when (currentTab) {
+            TAB_JOINTS -> "Joints"
+            TAB_ANGLE_DIAGNOSTICS -> "Angle Lab"
+            TAB_POSITION -> "Positions"
+            TAB_CAMERA -> "Scene"
+            else -> "Unknown"
+        }
+        sections.add("Mode: $modeLabel")
+
+        val liveValue = binding.tvLiveValue.text?.toString()?.trim().orEmpty()
+        if (liveValue.isNotEmpty() && liveValue != "--") {
+            sections.add("Live Value: $liveValue")
+        }
+
+        val status = binding.tvStatus.text?.toString()?.trim().orEmpty()
+        if (status.isNotEmpty()) {
+            sections.add("Status: $status")
+        }
+
+        val panelText = binding.tvDebugInfo.text?.toString()?.trim().orEmpty()
+        if (panelText.isNotEmpty()) {
+            sections.add("")
+            sections.add(panelText)
+        }
+
+        return sections.joinToString("\n").trim()
     }
 }

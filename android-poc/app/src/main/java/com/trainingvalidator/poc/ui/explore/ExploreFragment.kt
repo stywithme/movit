@@ -7,12 +7,14 @@ import android.view.ContextThemeWrapper
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.widget.ImageView
 import android.widget.TextView
 import androidx.core.widget.addTextChangedListener
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
+import coil.load
 import com.google.android.material.chip.Chip
 import com.trainingvalidator.poc.R
 import com.trainingvalidator.poc.databinding.FragmentExploreBinding
@@ -20,12 +22,10 @@ import com.trainingvalidator.poc.storage.ExerciseRepository
 import com.trainingvalidator.poc.storage.WorkoutRepository
 import com.trainingvalidator.poc.training.models.ExerciseConfig
 import com.trainingvalidator.poc.training.models.WorkoutConfig
-import com.trainingvalidator.poc.ui.exercises.ExerciseListActivity
 import com.trainingvalidator.poc.ui.profile.ProfileActivity
 import com.trainingvalidator.poc.ui.train.PreWorkoutActivity
 import com.trainingvalidator.poc.ui.utils.currentLanguage
 import com.trainingvalidator.poc.ui.workouts.WorkoutDetailActivity
-import com.trainingvalidator.poc.ui.workouts.WorkoutListActivity
 import kotlinx.coroutines.launch
 
 /**
@@ -58,6 +58,7 @@ class ExploreFragment : Fragment() {
     private val exerciseItems = mutableListOf<ExerciseConfig>()
     private val filteredWorkoutItems = mutableListOf<WorkoutConfig>()
     private val filteredExerciseItems = mutableListOf<ExerciseConfig>()
+    private val exerciseBySlug = mutableMapOf<String, ExerciseConfig>()
 
     private val exerciseRepository by lazy { ExerciseRepository.getInstance(requireContext()) }
     private val workoutRepository by lazy { WorkoutRepository.getInstance(requireContext()) }
@@ -110,11 +111,11 @@ class ExploreFragment : Fragment() {
         }
 
         binding.headerWorkouts.tvViewAll.setOnClickListener {
-            startActivity(Intent(requireContext(), WorkoutListActivity::class.java))
+            focusSection(ContentFilter.WORKOUTS)
         }
 
         binding.headerExercises.tvViewAll.setOnClickListener {
-            startActivity(Intent(requireContext(), ExerciseListActivity::class.java))
+            focusSection(ContentFilter.EXERCISES)
         }
 
         binding.etSearch.addTextChangedListener {
@@ -198,6 +199,8 @@ class ExploreFragment : Fragment() {
 
         exerciseItems.clear()
         exerciseItems.addAll(exercises.sortedBy { localizedExerciseName(it, language) })
+        exerciseBySlug.clear()
+        exerciseItems.forEach { exerciseBySlug[it.fileName] = it }
 
         if (currentExerciseCategory != null &&
             exerciseItems.none { it.category.code.equals(currentExerciseCategory, ignoreCase = true) }
@@ -214,6 +217,33 @@ class ExploreFragment : Fragment() {
 
         populateExerciseFilterChips()
         applyFilters()
+    }
+
+    private fun focusSection(contentFilter: ContentFilter) {
+        when (contentFilter) {
+            ContentFilter.WORKOUTS -> {
+                binding.chipFilterWorkouts.isChecked = true
+                binding.chipWorkoutAll.isChecked = true
+                binding.root.post {
+                    binding.root.smoothScrollTo(0, binding.sectionWorkoutsContainer.top)
+                }
+            }
+
+            ContentFilter.EXERCISES -> {
+                binding.chipFilterExercises.isChecked = true
+                (binding.chipGroupExerciseFilters.getChildAt(0) as? Chip)?.isChecked = true
+                binding.root.post {
+                    binding.root.smoothScrollTo(0, binding.sectionExercisesContainer.top)
+                }
+            }
+
+            ContentFilter.ALL -> {
+                binding.chipFilterAll.isChecked = true
+                binding.root.post {
+                    binding.root.smoothScrollTo(0, 0)
+                }
+            }
+        }
     }
 
     private fun populateExerciseFilterChips() {
@@ -416,6 +446,74 @@ class ExploreFragment : Fragment() {
         return normalized.replaceFirstChar { if (it.isLowerCase()) it.titlecase() else it.toString() }
     }
 
+    private fun buildWorkoutTags(workout: WorkoutConfig, language: String): String {
+        val resolvedTags = workout.tags
+            .map(::humanizeCode)
+            .filter { it.isNotBlank() }
+            .distinct()
+            .toMutableList()
+
+        if (resolvedTags.isEmpty()) {
+            resolvedTags += workout.exercises
+                .mapNotNull { exerciseBySlug[it.exercise] }
+                .map { categoryLabel(it, language) }
+                .filter { it.isNotBlank() }
+                .distinct()
+                .take(3)
+        }
+
+        if (resolvedTags.isEmpty()) {
+            if (resolvedWorkoutDurationMinutes(workout) <= 20) {
+                resolvedTags += getString(R.string.explore_workout_filter_short)
+            }
+            resolvedTags += formatDifficulty(workout.difficulty)
+        }
+
+        return resolvedTags.distinct().take(3).joinToString(" • ")
+    }
+
+    private fun buildExerciseTags(exercise: ExerciseConfig, language: String): String {
+        val resolvedTags = exercise.tags
+            .map(::humanizeCode)
+            .filter { it.isNotBlank() }
+            .distinct()
+            .toMutableList()
+
+        if (resolvedTags.isEmpty()) {
+            resolvedTags += exercise.muscles
+                .map(::humanizeCode)
+                .filter { it.isNotBlank() }
+                .distinct()
+                .take(3)
+        }
+
+        if (resolvedTags.isEmpty()) {
+            resolvedTags += categoryLabel(exercise, language)
+        }
+
+        return resolvedTags.distinct().take(3).joinToString(" • ")
+    }
+
+    private fun bindRemoteImage(
+        imageView: ImageView,
+        fallbackView: View,
+        imageUrl: String?,
+        placeholderRes: Int
+    ) {
+        if (imageUrl.isNullOrBlank()) {
+            imageView.setImageResource(placeholderRes)
+            fallbackView.visibility = View.VISIBLE
+            return
+        }
+
+        fallbackView.visibility = View.GONE
+        imageView.load(imageUrl) {
+            placeholder(placeholderRes)
+            error(placeholderRes)
+            crossfade(true)
+        }
+    }
+
     private fun humanizeCode(code: String): String {
         return code
             .replace('_', ' ')
@@ -445,8 +543,11 @@ class ExploreFragment : Fragment() {
     ) : RecyclerView.Adapter<ExploreWorkoutAdapter.ViewHolder>() {
 
         inner class ViewHolder(view: View) : RecyclerView.ViewHolder(view) {
+            val ivImage: ImageView = view.findViewById(R.id.ivWorkoutImage)
+            val ivFallback: ImageView = view.findViewById(R.id.ivWorkoutFallbackIcon)
             val tvType: TextView = view.findViewById(R.id.tvWorkoutType)
             val tvName: TextView = view.findViewById(R.id.tvWorkoutName)
+            val tvTags: TextView = view.findViewById(R.id.tvWorkoutTags)
             val tvMeta: TextView = view.findViewById(R.id.tvWorkoutMeta)
         }
 
@@ -459,8 +560,15 @@ class ExploreFragment : Fragment() {
         override fun onBindViewHolder(holder: ViewHolder, position: Int) {
             val workout = items[position]
             val language = requireContext().currentLanguage
+            bindRemoteImage(
+                imageView = holder.ivImage,
+                fallbackView = holder.ivFallback,
+                imageUrl = workout.coverImageUrl,
+                placeholderRes = R.drawable.gradient_report_hero
+            )
             holder.tvType.text = formatDifficulty(workout.difficulty)
             holder.tvName.text = localizedWorkoutName(workout, language)
+            holder.tvTags.text = buildWorkoutTags(workout, language)
             holder.tvMeta.text = getString(
                 R.string.ds_exercises_meta_format,
                 workout.getTotalExerciseCount(),
@@ -478,8 +586,11 @@ class ExploreFragment : Fragment() {
     ) : RecyclerView.Adapter<ExploreExerciseAdapter.ViewHolder>() {
 
         inner class ViewHolder(view: View) : RecyclerView.ViewHolder(view) {
+            val ivImage: ImageView = view.findViewById(R.id.ivExerciseImage)
+            val ivFallback: ImageView = view.findViewById(R.id.ivExerciseFallbackIcon)
             val tvCategory: TextView = view.findViewById(R.id.tvExerciseCategory)
             val tvName: TextView = view.findViewById(R.id.tvExerciseName)
+            val tvTags: TextView = view.findViewById(R.id.tvExerciseTags)
             val tvMeta: TextView = view.findViewById(R.id.tvExerciseMeta)
         }
 
@@ -494,8 +605,15 @@ class ExploreFragment : Fragment() {
             val language = requireContext().currentLanguage
             val muscleCount = exercise.muscles.distinct().size
 
+            bindRemoteImage(
+                imageView = holder.ivImage,
+                fallbackView = holder.ivFallback,
+                imageUrl = exercise.imageUrl,
+                placeholderRes = R.drawable.gradient_report_hero
+            )
             holder.tvCategory.text = categoryLabel(exercise, language)
             holder.tvName.text = localizedExerciseName(exercise, language)
+            holder.tvTags.text = buildExerciseTags(exercise, language)
             holder.tvMeta.text = if (muscleCount > 0) {
                 getString(R.string.explore_exercise_meta_format, muscleCount)
             } else {

@@ -16,6 +16,7 @@ import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.WindowInsetsControllerCompat
 import android.graphics.Color
 import com.trainingvalidator.poc.analysis.AngleCalculator
+import com.trainingvalidator.poc.analysis.ElbowAngleEstimator
 import com.trainingvalidator.poc.analysis.LandmarkSmoother
 import com.trainingvalidator.poc.camera.CameraManager
 import com.trainingvalidator.poc.databinding.ActivityMainBinding
@@ -56,6 +57,7 @@ class MainActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetectionList
     // Landmark smoothing - uses One Euro Filter for responsive, jitter-free tracking
     // Must be initialized AFTER SettingsManager in onCreate()
     private lateinit var landmarkSmoother: LandmarkSmoother
+    private val elbowAngleEstimator = ElbowAngleEstimator()
     
     // State
     private var useFrontCamera = true
@@ -303,10 +305,12 @@ class MainActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetectionList
                     visibilityThreshold = 0.5f
                 )
             }
-            
-            // Apply front camera correction: swap LEFT/RIGHT angles
-            // because the image was mirrored before pose detection
-            val angles = if (result.isFrontCamera) rawAngles.mirrored() else rawAngles
+
+            val correctedAngles = if (worldLandmarks != null) {
+                elbowAngleEstimator.correct(rawAngles, worldLandmarks, smoothedLandmarks, result.timestampMs)
+            } else rawAngles
+
+            val angles = if (result.isFrontCamera) correctedAngles.mirrored() else correctedAngles
             
             // Update skeleton overlay
             binding.skeletonOverlay.updateSkeleton(

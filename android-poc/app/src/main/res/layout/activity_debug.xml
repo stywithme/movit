@@ -159,15 +159,50 @@
         app:layout_constraintTop_toBottomOf="@id/tvStatus"
         app:layout_constraintBottom_toTopOf="@id/videoControls">
 
-        <TextView
-            android:id="@+id/tvDebugInfo"
+        <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text=""
-            android:textColor="@android:color/white"
-            android:textSize="10sp"
-            android:fontFamily="monospace"
-            android:lineSpacingExtra="2dp" />
+            android:orientation="vertical">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:gravity="center_vertical"
+                android:layout_marginBottom="6dp">
+
+                <TextView
+                    android:id="@+id/tvDebugPanelTitle"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="Debug Info"
+                    android:textColor="@android:color/white"
+                    android:textSize="11sp"
+                    android:textStyle="bold"
+                    android:fontFamily="monospace" />
+
+                <ImageButton
+                    android:id="@+id/btnCopyDebugInfo"
+                    android:layout_width="28dp"
+                    android:layout_height="28dp"
+                    android:src="@drawable/ic_copy"
+                    android:background="?attr/selectableItemBackgroundBorderless"
+                    android:contentDescription="Copy debug info"
+                    android:padding="4dp"
+                    app:tint="@android:color/white" />
+            </LinearLayout>
+
+            <TextView
+                android:id="@+id/tvDebugInfo"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text=""
+                android:textColor="@android:color/white"
+                android:textSize="10sp"
+                android:fontFamily="monospace"
+                android:lineSpacingExtra="2dp" />
+        </LinearLayout>
 
     </ScrollView>
 
