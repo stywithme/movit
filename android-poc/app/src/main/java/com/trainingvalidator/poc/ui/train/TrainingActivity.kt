@@ -1275,6 +1275,7 @@ class TrainingActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetection
                 if (::landmarkSmoother.isInitialized) {
                     landmarkSmoother.reset()
                 }
+                elbowAngleEstimator.reset()
                 // Keep overlay mirroring in sync with the active camera
                 binding.skeletonOverlay.updateFrontCameraState(useFrontCamera)
                 tvCurrentCamera.text = if (useFrontCamera) getString(R.string.front_camera) else getString(R.string.back_camera)
@@ -1695,6 +1696,7 @@ class TrainingActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetection
                 if (::landmarkSmoother.isInitialized) {
                     landmarkSmoother.reset()
                 }
+                elbowAngleEstimator.reset()
 
                 binding.skeletonOverlay.clearSetupMode()
                 switchBottomBarToFormMode()

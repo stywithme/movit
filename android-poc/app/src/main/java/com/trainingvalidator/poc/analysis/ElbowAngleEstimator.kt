@@ -5,16 +5,21 @@ import kotlin.math.abs
 import kotlin.math.sqrt
 
 /**
- * Elbow-only angle corrector — zero calibration, stateless beyond EMA smoothers.
+ * Elbow-only angle corrector — confidence-based, stateless beyond EMA smoothers.
  *
- * Uses the "depth-imbalance" between upper-arm and forearm to decide
- * the correction DIRECTION:
+ * Core principle: maxDzShare (the larger depth-ratio of the two arm segments)
+ * is treated as a CONFIDENCE indicator, not a correction-direction selector.
  *
- *  • forearm dzShare ≤ upper-arm dzShare  →  2D overestimates  →  correct DOWN
- *  • forearm dzShare >  upper-arm dzShare  →  2D under-estimates  →  blend TOWARD 3D
+ * Strategy (evaluated top to bottom, first match wins):
  *
- * Additionally, near-straight arms (>150°) receive a gentle boost toward 180°
- * to compensate for MediaPipe's tendency to never report fully straight joints.
+ *  1. Straight arm (2D > 150°)      → boost toward 180°
+ *  2. 3D ≤ 2D + gate               → depth resolved correctly → trust 3D
+ *  3. 3D inflated, low depth        → foreshortening negligible → trust 2D
+ *  4. 3D inflated, moderate depth   → mild downward correction from 2D
+ *  5. 3D inflated, high depth       → both unreliable → hold last stable
+ *
+ * All downward corrections are gated by sideStrength (0 frontal → 1 side)
+ * because foreshortening is minimal when facing the camera.
  */
 class ElbowAngleEstimator {
 
@@ -22,24 +27,38 @@ class ElbowAngleEstimator {
         private const val LEFT = 0
         private const val RIGHT = 1
 
-        private const val DZ_SMOOTH_ALPHA = 0.08f
-        private const val CORRECTION_SCALE = 0.80f
-        private const val MAX_CORRECTION = 0.35f
-        private const val BLEND_DIVISOR = 0.40f
-        private const val MAX_BLEND = 0.50f
-        private const val OUTPUT_SMOOTH = 0.30
-        private const val HOLD_TIMEOUT_MS = 400L
-        private const val MAX_ELBOW_ANGLE = 180.0
-        private const val INFLATION_GATE = 5.0
+        // --- Smoothing ---
+        private const val DZ_SMOOTH_ALPHA = 0.18f
+        private const val OUTPUT_SMOOTH = 0.25
+
+        // --- Straight arm ---
         private const val STRAIGHT_ARM_GATE = 150.0
         private const val STRAIGHT_ARM_BOOST = 0.50
+
+        // --- Depth confidence thresholds ---
+        private const val LOW_DEPTH = 0.15f
+        private const val MID_DEPTH = 0.40f
+        private const val HIGH_DEPTH = 0.60f
+
+        // --- Correction ---
+        private const val INFLATION_GATE = 12.0
+        private const val CORRECTION_SCALE = 0.55f
+        private const val MAX_CORRECTION = 0.25f
+
+        // --- Side-view gating ---
+        private const val SIDE_GATE_HIGH = 0.85f
+        private const val SIDE_GATE_LOW = 0.40f
+
+        // --- Hold ---
+        private const val HOLD_TIMEOUT_MS = 500L
+        private const val MAX_ELBOW_ANGLE = 180.0
     }
 
-    private val smUaDz    = floatArrayOf(0f, 0f)
-    private val smFaDz    = floatArrayOf(0f, 0f)
+    private val smUaDz = floatArrayOf(0f, 0f)
+    private val smFaDz = floatArrayOf(0f, 0f)
     private val smoothOut = doubleArrayOf(Double.NaN, Double.NaN)
 
-    private val lastStable   = doubleArrayOf(Double.NaN, Double.NaN)
+    private val lastStable = doubleArrayOf(Double.NaN, Double.NaN)
     private val lastStableTs = longArrayOf(0L, 0L)
 
     var lastDiagnostics: Array<ElbowDiagnostics?> = arrayOf(null, null)
@@ -76,6 +95,17 @@ class ElbowAngleEstimator {
         return angles.copy(leftElbow = left, rightElbow = right)
     }
 
+    fun reset() {
+        for (i in 0..1) {
+            smUaDz[i] = 0f
+            smFaDz[i] = 0f
+            smoothOut[i] = Double.NaN
+            lastStable[i] = Double.NaN
+            lastStableTs[i] = 0L
+            lastDiagnostics[i] = null
+        }
+    }
+
     // ========================== internals ==========================
 
     private fun computeFacingRatio(w: List<SmoothedLandmark>): Float {
@@ -84,6 +114,11 @@ class ElbowAngleEstimator {
         val xy  = dist2D(ls.x, ls.y, rs.x, rs.y)
         val xyz = dist3D(ls.x, ls.y, ls.z, rs.x, rs.y, rs.z)
         return if (xyz > 0.01f) (xy / xyz).coerceIn(0f, 1f) else 0.5f
+    }
+
+    private fun computeSideStrength(facingRatio: Float): Float {
+        return ((SIDE_GATE_HIGH - facingRatio) / (SIDE_GATE_HIGH - SIDE_GATE_LOW))
+            .coerceIn(0f, 1f)
     }
 
     private fun estimateSide(
@@ -111,61 +146,101 @@ class ElbowAngleEstimator {
         val uaDz = smUaDz[side]
         val faDz = smFaDz[side]
         val maxDz = maxOf(uaDz, faDz)
-        val dzImbalance = faDz - uaDz
 
-        // ---- decide correction strategy ----
+        val sideStrength = computeSideStrength(facingRatio)
+
+        // ---- confidence-based correction ----
         val output: Double
         val corrPct: Float
-        val rawMax = maxOf(ang2D, ang3D)
+        var isLowConfidence = false
+        val strategy: String
 
         when {
-            // 1) Near-straight arm → boost toward 180°
-            rawMax > STRAIGHT_ARM_GATE -> {
-                output = rawMax + (180.0 - rawMax) * STRAIGHT_ARM_BOOST
+            // 1) Straight arm — use ang2D ONLY to prevent false positive from inflated ang3D
+            ang2D > STRAIGHT_ARM_GATE -> {
+                output = ang2D + (180.0 - ang2D) * STRAIGHT_ARM_BOOST
                 corrPct = 0f
+                strategy = "STRAIGHT"
             }
-            // 2) Z is NOT inflating → raw 3D is fine
+
+            // 2) 3D is not inflated beyond 2D → 3D resolved depth correctly
             ang3D <= ang2D + INFLATION_GATE -> {
                 output = ang3D
                 corrPct = 0f
+                strategy = "TRUST_3D"
             }
-            // 3) Z inflates AND upper arm has more/equal depth → 2D overestimates → reduce
-            //    BUT only from side views. When facing the camera, 2D is accurate
-            //    and reducing it makes things worse.
-            dzImbalance <= 0f -> {
-                val sideStrength = ((0.90f - facingRatio) / 0.45f).coerceIn(0f, 1f)
-                val bent = (1.0 - ang2D / 180.0).coerceIn(0.0, 1.0).toFloat()
-                corrPct = (maxDz * CORRECTION_SCALE * bent * sideStrength).coerceAtMost(MAX_CORRECTION)
+
+            // 3-5) 3D is inflated — use depth confidence to decide
+            maxDz < LOW_DEPTH -> {
+                output = ang2D
+                corrPct = 0f
+                strategy = "TRUST_2D"
+            }
+
+            maxDz < MID_DEPTH -> {
+                val depthFactor = (maxDz - LOW_DEPTH) / (MID_DEPTH - LOW_DEPTH)
+                corrPct = (depthFactor * CORRECTION_SCALE * sideStrength)
+                    .coerceAtMost(MAX_CORRECTION * 0.5f)
                 output = ang2D * (1.0 - corrPct)
+                strategy = "MILD_DOWN"
             }
-            // 4) Z inflates AND forearm has more depth → 2D under-estimates → blend toward 3D
+
             else -> {
-                val t = (dzImbalance / BLEND_DIVISOR).coerceIn(0f, MAX_BLEND)
-                output = ang2D + (ang3D - ang2D) * t
-                corrPct = -t
+                val depthFactor = ((maxDz - MID_DEPTH) / (1.0f - MID_DEPTH))
+                    .coerceIn(0f, 1f)
+                corrPct = ((0.5f + depthFactor * 0.5f) * CORRECTION_SCALE * sideStrength)
+                    .coerceAtMost(MAX_CORRECTION)
+                output = ang2D * (1.0 - corrPct)
+                isLowConfidence = maxDz > HIGH_DEPTH
+                strategy = if (isLowConfidence) "LOW_CONF" else "DEEP_DOWN"
             }
         }
 
         val clamped = output.coerceIn(0.0, MAX_ELBOW_ANGLE)
 
+        // Hold last stable during low-confidence periods
+        if (isLowConfidence && !lastStable[side].isNaN() &&
+            ts - lastStableTs[side] < HOLD_TIMEOUT_MS
+        ) {
+            smoothOut[side] = lastStable[side]
+
+            lastDiagnostics[side] = ElbowDiagnostics(
+                facingRatio   = facingRatio,
+                screenAngle   = ang2D,
+                worldAngle    = ang3D,
+                maxDzShare    = maxDz,
+                dzImbalance   = faDz - uaDz,
+                correctionPct = corrPct,
+                outputAngle   = lastStable[side],
+                isHolding     = true,
+                uaDzShare     = uaDz,
+                faDzShare     = faDz,
+                strategy      = "HOLD"
+            )
+            return lastStable[side]
+        }
+
         val smoothed = if (smoothOut[side].isNaN()) clamped
         else smoothOut[side] + OUTPUT_SMOOTH * (clamped - smoothOut[side])
         smoothOut[side] = smoothed
 
-        lastStable[side] = smoothed
-        lastStableTs[side] = ts
+        if (!isLowConfidence) {
+            lastStable[side] = smoothed
+            lastStableTs[side] = ts
+        }
 
         lastDiagnostics[side] = ElbowDiagnostics(
-            facingRatio  = facingRatio,
-            screenAngle  = ang2D,
-            worldAngle   = ang3D,
-            maxDzShare   = maxDz,
-            dzImbalance  = dzImbalance,
+            facingRatio   = facingRatio,
+            screenAngle   = ang2D,
+            worldAngle    = ang3D,
+            maxDzShare    = maxDz,
+            dzImbalance   = faDz - uaDz,
             correctionPct = corrPct,
-            outputAngle  = smoothed,
-            isHolding    = false,
-            uaDzShare    = uaDz,
-            faDzShare    = faDz
+            outputAngle   = smoothed,
+            isHolding     = false,
+            uaDzShare     = uaDz,
+            faDzShare     = faDz,
+            strategy      = strategy
         )
         return smoothed
     }
@@ -213,5 +288,6 @@ data class ElbowDiagnostics(
     val outputAngle: Double?,
     val isHolding: Boolean,
     val uaDzShare: Float,
-    val faDzShare: Float
+    val faDzShare: Float,
+    val strategy: String = ""
 )

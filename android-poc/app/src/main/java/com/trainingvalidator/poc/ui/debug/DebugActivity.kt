@@ -269,6 +269,7 @@ class DebugActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetectionLis
             useFrontCamera = !useFrontCamera
             cameraManager?.switchCamera(useFrontCamera)
             landmarkSmoother.reset()
+            elbowAngleEstimator.reset()
             sceneDetector.reset()
         }
 
@@ -527,6 +528,7 @@ class DebugActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetectionLis
 
         clearOverlay()
         landmarkSmoother.reset()
+        elbowAngleEstimator.reset()
         sceneDetector.reset()
         resetFpsCounters()
 
@@ -632,6 +634,7 @@ class DebugActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetectionLis
         videoManager = null
         clearOverlay()
         landmarkSmoother.reset()
+        elbowAngleEstimator.reset()
         sceneDetector.reset()
         poseLandmarkerHelper?.resetForVideo()
 
@@ -643,6 +646,7 @@ class DebugActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetectionLis
             onProgressChanged = { currentMs, durationMs -> onVideoProgressChanged(currentMs, durationMs) },
             onSeekPerformed = {
                 landmarkSmoother.reset()
+                elbowAngleEstimator.reset()
                 sceneDetector.reset()
                 poseLandmarkerHelper?.resetForVideo()
             },
@@ -706,6 +710,7 @@ class DebugActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetectionLis
     private fun loadImage(uri: Uri) {
         clearOverlay()
         landmarkSmoother.reset()
+        elbowAngleEstimator.reset()
         sceneDetector.reset()
 
         mainScope.launch(Dispatchers.IO) {
@@ -1190,19 +1195,14 @@ class DebugActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetectionLis
         }
         val diag = elbowAngleEstimator.lastDiagnostics.getOrNull(side) ?: return
 
-        val direction = when {
-            diag.correctionPct > 0.001f -> "DOWN"
-            diag.correctionPct < -0.001f -> "BLEND↑"
-            else -> "none"
-        }
-
         sb.appendLine()
         sb.appendLine("--- ELBOW PIPELINE ---")
+        sb.appendLine("Strategy:      ${diag.strategy}")
         sb.appendLine("Facing ratio:  %.3f (1=front 0=side)".format(diag.facingRatio))
         sb.appendLine("Screen 2D:     ${formatAngleLong(diag.screenAngle)}")
         sb.appendLine("World 3D:      ${formatAngleLong(diag.worldAngle)}")
-        sb.appendLine("dzShare:       UA=%.3f  FA=%.3f  imbal=%+.3f".format(diag.uaDzShare, diag.faDzShare, diag.dzImbalance))
-        sb.appendLine("Correction:    $direction  %.0f%%".format(kotlin.math.abs(diag.correctionPct) * 100))
+        sb.appendLine("dzShare:       UA=%.3f  FA=%.3f  max=%.3f".format(diag.uaDzShare, diag.faDzShare, diag.maxDzShare))
+        sb.appendLine("Correction:    %.0f%%".format(kotlin.math.abs(diag.correctionPct) * 100))
         sb.appendLine("Output:        ${formatAngleLong(diag.outputAngle)}")
         sb.appendLine("Holding:       ${if (diag.isHolding) "YES" else "no"}")
     }

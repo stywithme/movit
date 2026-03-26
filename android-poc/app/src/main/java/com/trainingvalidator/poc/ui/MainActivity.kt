@@ -152,7 +152,8 @@ class MainActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetectionList
         binding.btnSwitchCamera.setOnClickListener {
             useFrontCamera = !useFrontCamera
             cameraManager?.switchCamera(useFrontCamera)
-            landmarkSmoother.reset() // Reset smoother when switching cameras
+            landmarkSmoother.reset()
+            elbowAngleEstimator.reset()
         }
         
         // Toggle angles button
@@ -201,7 +202,8 @@ class MainActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetectionList
         updateStatus("Switching to ${modelType.displayName}...")
         binding.skeletonOverlay.clear()
         landmarkSmoother.reset()
-        
+        elbowAngleEstimator.reset()
+
         mainScope.launch(Dispatchers.IO) {
             poseLandmarkerHelper?.close()
             poseLandmarkerHelper?.initialize(modelType = modelType, useGpu = true)
