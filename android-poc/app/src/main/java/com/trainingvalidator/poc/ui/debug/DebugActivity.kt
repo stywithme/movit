@@ -1190,14 +1190,21 @@ class DebugActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetectionLis
         }
         val diag = elbowAngleEstimator.lastDiagnostics.getOrNull(side) ?: return
 
+        val direction = when {
+            diag.correctionPct > 0.001f -> "DOWN"
+            diag.correctionPct < -0.001f -> "BLEND↑"
+            else -> "none"
+        }
+
         sb.appendLine()
         sb.appendLine("--- ELBOW PIPELINE ---")
         sb.appendLine("Facing ratio:  %.3f (1=front 0=side)".format(diag.facingRatio))
-        sb.appendLine("Body-Plane:    ${formatAngleLong(diag.bodyPlaneAngle)}  conf=%.2f".format(diag.bodyPlaneConfidence))
-        sb.appendLine("Seg-Constr:    ${formatAngleLong(diag.constrainedAngle)}  conf=%.2f".format(diag.constrainedConfidence))
-        sb.appendLine("Fused:         ${formatAngleLong(diag.fusedAngle)}  conf=%.2f".format(diag.fusedConfidence))
+        sb.appendLine("Screen 2D:     ${formatAngleLong(diag.screenAngle)}")
+        sb.appendLine("World 3D:      ${formatAngleLong(diag.worldAngle)}")
+        sb.appendLine("dzShare:       UA=%.3f  FA=%.3f  imbal=%+.3f".format(diag.uaDzShare, diag.faDzShare, diag.dzImbalance))
+        sb.appendLine("Correction:    $direction  %.0f%%".format(kotlin.math.abs(diag.correctionPct) * 100))
+        sb.appendLine("Output:        ${formatAngleLong(diag.outputAngle)}")
         sb.appendLine("Holding:       ${if (diag.isHolding) "YES" else "no"}")
-        sb.appendLine("Calibration:   %.0f%%".format(diag.calibrationProgress * 100))
     }
 
     private fun appendSegmentMetrics(
