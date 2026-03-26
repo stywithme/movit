@@ -47,6 +47,7 @@ import com.trainingvalidator.poc.training.config.SettingsManager
 import com.trainingvalidator.poc.training.engine.CameraPositionDetector
 import com.trainingvalidator.poc.training.engine.Phase
 import com.trainingvalidator.poc.training.engine.BodyPosture
+import com.trainingvalidator.poc.training.engine.BodyPostureDetector
 import com.trainingvalidator.poc.training.engine.ExpectedDirection
 import com.trainingvalidator.poc.training.engine.PoseSceneDetector
 import com.trainingvalidator.poc.training.engine.PoseSceneExpectation
@@ -55,6 +56,8 @@ import com.trainingvalidator.poc.training.engine.VisibleRegion
 import com.trainingvalidator.poc.training.engine.PositionError
 import com.trainingvalidator.poc.training.engine.PositionValidationResult
 import com.trainingvalidator.poc.training.engine.PositionValidator
+import com.trainingvalidator.poc.training.engine.PostureMlpClassifier
+import com.trainingvalidator.poc.training.engine.PostureMlpFeatureExtractor
 import com.trainingvalidator.poc.training.models.*
 import com.trainingvalidator.poc.video.VideoManager
 import kotlinx.coroutines.CoroutineScope
@@ -72,6 +75,7 @@ class DebugActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetectionLis
         private const val TAB_ANGLE_DIAGNOSTICS = 1
         private const val TAB_POSITION = 2
         private const val TAB_CAMERA = 3
+        private const val TAB_POSTURE_MLP = 4
     }
 
     enum class InputMode { CAMERA, VIDEO, IMAGE }
@@ -350,6 +354,7 @@ class DebugActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetectionLis
                 jointConfig.visibility = if (tab == TAB_JOINTS || tab == TAB_ANGLE_DIAGNOSTICS) View.VISIBLE else View.GONE
                 posConfig.visibility = if (tab == TAB_POSITION) View.VISIBLE else View.GONE
                 camConfig.visibility = if (tab == TAB_CAMERA) View.VISIBLE else View.GONE
+                // TAB_POSTURE_MLP has no config panel — info panel shows everything
             }
             updateConfigVisibility(currentTab)
 
@@ -459,6 +464,10 @@ class DebugActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetectionLis
                 updateInfoPanelVisibility()
                 binding.tvLiveValue.visibility = View.GONE
             }
+            TAB_POSTURE_MLP -> {
+                updateInfoPanelVisibility()
+                binding.tvStatus.visibility = View.VISIBLE
+            }
         }
 
         if (currentInputMode == InputMode.IMAGE) {
@@ -472,6 +481,7 @@ class DebugActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetectionLis
             return
         }
         binding.debugInfoPanel.visibility = if (currentTab == TAB_JOINTS) View.GONE else View.VISIBLE
+        if (currentTab == TAB_POSTURE_MLP) binding.debugInfoPanel.visibility = View.VISIBLE
     }
 
     private fun setupSpinner(spinner: android.widget.Spinner, items: List<String>, onSelected: (Int) -> Unit) {
@@ -869,6 +879,9 @@ class DebugActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetectionLis
             TAB_CAMERA -> {
                 updateCameraDetectionDisplay(smoothedLandmarks, result.imageWidth, result.imageHeight, result.isFrontCamera)
             }
+            TAB_POSTURE_MLP -> {
+                updatePostureMlpDisplay(smoothedLandmarks)
+            }
         }
     }
 
@@ -889,6 +902,11 @@ class DebugActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetectionLis
         }
         if (currentTab == TAB_CAMERA) {
             binding.tvDebugInfo.text = "No pose detected"
+        }
+        if (currentTab == TAB_POSTURE_MLP) {
+            binding.tvStatus.text = "NO POSE"
+            binding.tvStatus.setTextColor(Color.GRAY)
+            binding.tvDebugInfo.text = "No pose detected — MLP needs landmarks"
         }
     }
 
@@ -1683,6 +1701,175 @@ class DebugActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetectionLis
         binding.tvDebugInfo.text = sb.toString()
     }
 
+    // ==================== Posture MLP Debug ====================
+
+    private val mlpClassLabels = arrayOf("Standing", "Sitting", "Lying")
+
+    private val mlpFeatureNames = arrayOf(
+        "spine_angle", "torso_len", "cos_torso_thigh",
+        "knee_ang_L", "knee_ang_R",
+        "shoulder_w", "hip_w",
+        "knee_drop", "ankle_drop", "nose_off",
+        "sh_v_sep", "hip_v_sep",
+        "vis_knee", "vis_hip", "vis_sh",
+        "z_torso"
+    )
+
+    private var mlpRetryRequested = false
+
+    /** Rolling window of total MLP stack latency (µs) for Debug MLP tab. */
+    private val mlpLatencyMicrosRing = ArrayDeque<Long>(32)
+    private val mlpLatencyRingMax = 30
+
+    private fun recordMlpLatencyMicros(totalMicros: Long): Double {
+        mlpLatencyMicrosRing.addLast(totalMicros)
+        while (mlpLatencyMicrosRing.size > mlpLatencyRingMax) {
+            mlpLatencyMicrosRing.removeFirst()
+        }
+        return mlpLatencyMicrosRing.sumOf { it } / mlpLatencyMicrosRing.size.toDouble()
+    }
+
+    private fun updatePostureMlpDisplay(landmarks: List<SmoothedLandmark>) {
+        if (mlpRetryRequested) {
+            mlpRetryRequested = false
+            PostureMlpClassifier.reload(this)
+        }
+        val classifier = PostureMlpClassifier.getOrNull(this)
+        val ruleResult = BodyPostureDetector.detect(landmarks)
+
+        if (classifier == null) {
+            val rawFeatures = PostureMlpFeatureExtractor.computeFeatures(landmarks)
+            binding.tvLiveValue.text = "NO MODEL"
+            binding.tvLiveValue.setTextColor(Color.parseColor("#FF9800"))
+            binding.tvStatus.text = "Model not loaded — tap Live Value to retry"
+            binding.tvStatus.setTextColor(Color.parseColor("#FF9800"))
+            binding.tvStatus.visibility = View.VISIBLE
+            binding.tvLiveValue.setOnClickListener {
+                mlpRetryRequested = true
+                Toast.makeText(this, "Retrying model load…", Toast.LENGTH_SHORT).show()
+            }
+
+            val sb = StringBuilder()
+            sb.appendLine("=== POSTURE MLP ===")
+            sb.appendLine()
+            sb.appendLine("Model:  NOT LOADED")
+            val err = PostureMlpClassifier.lastError
+            if (err != null) {
+                sb.appendLine("Error:  $err")
+            } else {
+                sb.appendLine("Place posture_mlp.tflite & posture_mlp_norm.json")
+                sb.appendLine("in app/src/main/assets/")
+            }
+            sb.appendLine()
+            sb.appendLine("--- RULE-BASED FALLBACK ---")
+            sb.appendLine("Posture:    ${ruleResult.posture}")
+            sb.appendLine("Confidence: %.2f".format(ruleResult.confidence))
+            sb.appendLine("Body axis:  %.1f°".format(ruleResult.bodyAxisAngleDeg))
+            if (rawFeatures != null) {
+                sb.appendLine()
+                sb.appendLine("--- RAW FEATURES (16-D) ---")
+                appendFeatureTable(sb, rawFeatures)
+            }
+            binding.tvDebugInfo.text = sb.toString()
+            return
+        }
+
+        binding.tvLiveValue.setOnClickListener(null)
+
+        val timed = classifier.predictFromLandmarksTimed(landmarks)
+        if (timed == null) {
+            binding.tvLiveValue.text = "--"
+            binding.tvLiveValue.setTextColor(Color.GRAY)
+            binding.tvStatus.text = "Features unavailable (torso too short?)"
+            binding.tvStatus.setTextColor(Color.GRAY)
+            binding.tvStatus.visibility = View.VISIBLE
+            binding.tvDebugInfo.text = "Cannot compute feature vector."
+            return
+        }
+
+        val prediction = timed.prediction
+        val timings = timed.timings
+        val rawFeatures = timed.rawFeatures
+        val avgMicros = recordMlpLatencyMicros(timings.totalMicros)
+        val lastMs = timings.totalMicros / 1000.0
+        val avgMs = avgMicros / 1000.0
+        val infPerSec = if (lastMs > 1e-6) (1000.0 / lastMs).toInt() else 0
+
+        val label = mlpClassLabels.getOrElse(prediction.classIndex) { "?" }
+        val conf = prediction.confidence
+        val confColor = when {
+            conf >= 0.8f -> Color.GREEN
+            conf >= 0.5f -> Color.YELLOW
+            else -> Color.RED
+        }
+
+        binding.tvLiveValue.text = "$label (${prediction.classIndex})"
+        binding.tvLiveValue.setTextColor(confColor)
+
+        val ruleCoarse = when (ruleResult.posture) {
+            BodyPosture.STANDING -> "Standing"
+            BodyPosture.SITTING -> "Sitting"
+            BodyPosture.LYING_PRONE, BodyPosture.LYING_SUPINE, BodyPosture.LYING_SIDE -> "Lying"
+            else -> "Unknown"
+        }
+        val agree = (ruleCoarse == label)
+        val matchSymbol = if (agree) "AGREE" else "DISAGREE"
+        val matchColor = if (agree) Color.GREEN else Color.parseColor("#FF9800")
+
+        binding.tvStatus.text =
+            "MLP=$label (%.0f%%) | Rule=$ruleCoarse | $matchSymbol | %.3fms (~%d/s)".format(
+                conf * 100f,
+                lastMs,
+                infPerSec,
+            )
+        binding.tvStatus.setTextColor(matchColor)
+        binding.tvStatus.visibility = View.VISIBLE
+
+        if (inferenceFrameCount % 2 == 0 || currentInputMode == InputMode.IMAGE) {
+            val sb = StringBuilder()
+            sb.appendLine("=== POSTURE MLP ===")
+            sb.appendLine()
+            sb.appendLine("--- LATENCY ---")
+            sb.appendLine("Total (last):   %.3f ms".format(lastMs))
+            sb.appendLine("Rolling avg:    %.3f ms  (last %d frames)".format(avgMs, mlpLatencyMicrosRing.size))
+            sb.appendLine("Features:       %.3f ms  (PostureMlpFeatureExtractor)".format(timings.featuresMicros / 1000.0))
+            sb.appendLine("Classifier:     %.3f ms  (norm + TFLite Interpreter.run)".format(timings.classifierMicros / 1000.0))
+            sb.appendLine("Equiv. rate:    ~%d inf/s (from last total)".format(infPerSec))
+            sb.appendLine()
+            sb.appendLine("--- PREDICTION ---")
+            sb.appendLine("Class:       $label (${prediction.classIndex})")
+            sb.appendLine("Confidence:  %.1f%%".format(conf * 100f))
+            sb.appendLine()
+            sb.appendLine("Probabilities:")
+            for (i in prediction.probabilities.indices) {
+                val pLabel = mlpClassLabels.getOrElse(i) { "?" }
+                val pct = prediction.probabilities[i] * 100f
+                val bar = "█".repeat((pct / 5f).toInt().coerceAtMost(20))
+                sb.appendLine("  [$i] %-9s %5.1f%%  %s".format(pLabel, pct, bar))
+            }
+            sb.appendLine()
+
+            sb.appendLine("--- RULE-BASED COMPARISON ---")
+            sb.appendLine("Rule posture:  ${ruleResult.posture}")
+            sb.appendLine("Rule conf:     %.2f".format(ruleResult.confidence))
+            sb.appendLine("Body axis:     %.1f°".format(ruleResult.bodyAxisAngleDeg))
+            sb.appendLine("Agreement:     $matchSymbol")
+            sb.appendLine()
+
+            sb.appendLine("--- RAW FEATURES (16-D) ---")
+            appendFeatureTable(sb, rawFeatures)
+
+            binding.tvDebugInfo.text = sb.toString()
+        }
+    }
+
+    private fun appendFeatureTable(sb: StringBuilder, features: FloatArray) {
+        for (i in features.indices) {
+            val name = mlpFeatureNames.getOrElse(i) { "f$i" }
+            sb.appendLine("  [%2d] %-16s %8.4f".format(i, name, features[i]))
+        }
+    }
+
     // ==================== Position Validator ====================
 
     private fun rebuildPositionValidator() {
@@ -1784,6 +1971,7 @@ class DebugActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetectionLis
             TAB_ANGLE_DIAGNOSTICS -> "Angle Lab"
             TAB_POSITION -> "Positions"
             TAB_CAMERA -> "Scene"
+            TAB_POSTURE_MLP -> "Posture MLP"
             else -> "Unknown"
         }
         sections.add("Mode: $modeLabel")

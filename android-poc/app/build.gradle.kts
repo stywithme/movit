@@ -48,6 +48,10 @@ android {
         targetCompatibility = JavaVersion.VERSION_17
     }
 
+    androidResources {
+        noCompress += listOf("tflite", "task")
+    }
+
     buildFeatures {
         viewBinding = true
         buildConfig = true
@@ -85,6 +89,9 @@ dependencies {
 
     // MediaPipe Pose Landmarker — Jan 2026
     implementation("com.google.mediapipe:tasks-vision:0.10.32")
+
+    // Posture MLP (optional assets: posture_mlp.tflite + posture_mlp_norm.json)
+    implementation("org.tensorflow:tensorflow-lite:2.16.1")
 
     // Coroutines
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.10.2")

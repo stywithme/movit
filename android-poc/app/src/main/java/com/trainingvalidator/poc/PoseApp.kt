@@ -1,6 +1,7 @@
 package com.trainingvalidator.poc
 
 import android.app.Application
+import com.trainingvalidator.poc.training.engine.PostureMlpClassifier
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -31,5 +32,7 @@ class PoseApp : Application() {
     override fun onCreate() {
         super.onCreate()
         _instance = this
+        // Warm-load TFLite posture MLP if assets are present (avoids first-frame jank).
+        PostureMlpClassifier.getOrNull(this)
     }
 }

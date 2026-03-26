@@ -1,5 +1,6 @@
 package com.trainingvalidator.poc.training.engine
 
+import com.trainingvalidator.poc.PoseApp
 import com.trainingvalidator.poc.analysis.SmoothedLandmark
 
 /**
@@ -20,6 +21,11 @@ class PoseSceneDetector(
     private val windowSize: Int = 7,
     private val requiredMajority: Int = 5
 ) {
+
+    companion object {
+        /** Below this softmax max-probability, fall back to [BodyPostureDetector]. */
+        private const val MIN_MLP_CONFIDENCE = 0.45f
+    }
     private val cameraDetector = StableCameraDetector(windowSize, requiredMajority)
 
     private val postureWindow = ArrayDeque<BodyPosture>(windowSize)
@@ -34,7 +40,7 @@ class PoseSceneDetector(
     fun detect(landmarks: List<SmoothedLandmark>, isFrontCamera: Boolean = false): PoseSceneResult {
         val camResult = cameraDetector.detect(landmarks, isFrontCamera)
 
-        val rawPosture = BodyPostureDetector.detect(landmarks)
+        val rawPosture = resolveCoarsePosture(landmarks)
         lastRawPosture = rawPosture
         stablePosture = pushAndResolve(postureWindow, rawPosture.posture, stablePosture)
 
@@ -88,6 +94,35 @@ class PoseSceneDetector(
         stableRegion = VisibleRegion.UNKNOWN
         lastRawPosture = null
         lastRawRegion = null
+    }
+
+    /**
+     * Uses [PostureMlpClassifier] when `posture_mlp.tflite` + `posture_mlp_norm.json` exist in assets;
+     * otherwise [BodyPostureDetector]. Lying class (2) is refined with geometric sub-types when possible.
+     */
+    private fun resolveCoarsePosture(landmarks: List<SmoothedLandmark>): BodyPostureDetector.PostureResult {
+        val mlp = runCatching { PostureMlpClassifier.getOrNull(PoseApp.instance) }.getOrNull()
+            ?: return BodyPostureDetector.detect(landmarks)
+        val pred = mlp.predictFromLandmarks(landmarks)
+            ?: return BodyPostureDetector.detect(landmarks)
+        if (pred.confidence < MIN_MLP_CONFIDENCE) {
+            return BodyPostureDetector.detect(landmarks)
+        }
+        val angleDeg = PostureMlpFeatureExtractor.computeBodyAxisAngleDeg(landmarks)
+        val posture = when (pred.classIndex) {
+            0 -> BodyPosture.STANDING
+            1 -> BodyPosture.SITTING
+            else -> refineLyingSubtype(landmarks)
+        }
+        return BodyPostureDetector.PostureResult(posture, pred.confidence, angleDeg)
+    }
+
+    private fun refineLyingSubtype(landmarks: List<SmoothedLandmark>): BodyPosture {
+        val geo = BodyPostureDetector.detect(landmarks)
+        return when (geo.posture) {
+            BodyPosture.LYING_PRONE, BodyPosture.LYING_SUPINE, BodyPosture.LYING_SIDE -> geo.posture
+            else -> BodyPosture.LYING_SUPINE
+        }
     }
 }
 
