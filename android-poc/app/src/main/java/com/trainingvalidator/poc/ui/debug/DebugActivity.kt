@@ -33,6 +33,7 @@ import com.google.android.material.tabs.TabLayout
 import com.trainingvalidator.poc.R
 import com.trainingvalidator.poc.analysis.AngleCalculator
 import com.trainingvalidator.poc.analysis.ElbowAngleEstimator
+import com.trainingvalidator.poc.analysis.ElbowDiagnostics
 import com.trainingvalidator.poc.analysis.JointAngles
 import com.trainingvalidator.poc.analysis.LandmarkSmoother
 import com.trainingvalidator.poc.analysis.SmoothedLandmark
@@ -56,6 +57,10 @@ import com.trainingvalidator.poc.training.engine.VisibleRegion
 import com.trainingvalidator.poc.training.engine.PositionError
 import com.trainingvalidator.poc.training.engine.PositionValidationResult
 import com.trainingvalidator.poc.training.engine.PositionValidator
+import com.trainingvalidator.poc.training.engine.ElbowCorrectionMlpClassifier
+import com.trainingvalidator.poc.training.engine.ElbowFit3dV2Classifier
+import com.trainingvalidator.poc.training.engine.ElbowFit3dV2FeatureExtractor
+import com.trainingvalidator.poc.training.engine.ElbowMlpFeatureExtractor
 import com.trainingvalidator.poc.training.engine.PostureMlpClassifier
 import com.trainingvalidator.poc.training.engine.PostureMlpFeatureExtractor
 import com.trainingvalidator.poc.training.models.*
@@ -71,7 +76,7 @@ class DebugActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetectionLis
 
     companion object {
         private const val TAG = "DebugActivity"
-        private const val TAB_JOINTS = 0
+        private const val TAB_ELBOWS = 0
         private const val TAB_ANGLE_DIAGNOSTICS = 1
         private const val TAB_POSITION = 2
         private const val TAB_CAMERA = 3
@@ -89,7 +94,7 @@ class DebugActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetectionLis
     private val mainScope = CoroutineScope(Dispatchers.Main + SupervisorJob())
 
     private var useFrontCamera = true
-    private var currentTab = TAB_JOINTS
+    private var currentTab = TAB_ELBOWS
     private var currentInputMode = InputMode.CAMERA
 
     // Joint angle mode
@@ -123,6 +128,15 @@ class DebugActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetectionLis
 
     // Latest landmarks for debug panel
     private var latestLandmarks: List<SmoothedLandmark>? = null
+
+    // Elbow MLP debug
+    private var elbowMlpRetryRequested = false
+    private val elbowMlpLatencyRing = ArrayDeque<Long>(32)
+    private val elbowMlpLatencyRingMax = 30
+
+    // FIT3D v2 MLP debug
+    private val fit3dLatencyRing = ArrayDeque<Long>(32)
+    private val fit3dLatencyRingMax = 30
 
     private data class AngleDebugPoint(
         val index: Int,
@@ -351,16 +365,15 @@ class DebugActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetectionLis
             tabLayout.getTabAt(currentTab)?.select()
             
             fun updateConfigVisibility(tab: Int) {
-                jointConfig.visibility = if (tab == TAB_JOINTS || tab == TAB_ANGLE_DIAGNOSTICS) View.VISIBLE else View.GONE
+                jointConfig.visibility = if (tab == TAB_ANGLE_DIAGNOSTICS) View.VISIBLE else View.GONE
                 posConfig.visibility = if (tab == TAB_POSITION) View.VISIBLE else View.GONE
                 camConfig.visibility = if (tab == TAB_CAMERA) View.VISIBLE else View.GONE
-                // TAB_POSTURE_MLP has no config panel — info panel shows everything
             }
             updateConfigVisibility(currentTab)
 
             tabLayout.addOnTabSelectedListener(object : TabLayout.OnTabSelectedListener {
                 override fun onTabSelected(tab: TabLayout.Tab?) {
-                    val pos = tab?.position ?: TAB_JOINTS
+                    val pos = tab?.position ?: TAB_ELBOWS
                     updateConfigVisibility(pos)
                     handleTabChange(pos)
                 }
@@ -448,8 +461,9 @@ class DebugActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetectionLis
         binding.tvLiveValue.visibility = View.VISIBLE
 
         when (currentTab) {
-            TAB_JOINTS -> {
+            TAB_ELBOWS -> {
                 updateInfoPanelVisibility()
+                binding.tvStatus.visibility = View.VISIBLE
             }
             TAB_ANGLE_DIAGNOSTICS -> {
                 updateInfoPanelVisibility()
@@ -480,8 +494,7 @@ class DebugActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetectionLis
             binding.debugInfoPanel.visibility = View.GONE
             return
         }
-        binding.debugInfoPanel.visibility = if (currentTab == TAB_JOINTS) View.GONE else View.VISIBLE
-        if (currentTab == TAB_POSTURE_MLP) binding.debugInfoPanel.visibility = View.VISIBLE
+        binding.debugInfoPanel.visibility = View.VISIBLE
     }
 
     private fun setupSpinner(spinner: android.widget.Spinner, items: List<String>, onSelected: (Int) -> Unit) {
@@ -845,9 +858,15 @@ class DebugActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetectionLis
         latestLandmarks = smoothedLandmarks
 
         when (currentTab) {
-            TAB_JOINTS -> {
-                updateSelectedJointOverlay(angles, smoothedLandmarks, result.imageWidth, result.imageHeight, result.isFrontCamera)
-                updateJointAngleDisplay(angles)
+            TAB_ELBOWS -> {
+                updateElbowDebugDisplay(
+                    angles = angles,
+                    smoothedLandmarks = smoothedLandmarks,
+                    worldLandmarks = worldLandmarks,
+                    imageW = result.imageWidth,
+                    imageH = result.imageHeight,
+                    isFrontCamera = result.isFrontCamera
+                )
             }
             TAB_ANGLE_DIAGNOSTICS -> {
                 updateSelectedJointOverlay(angles, smoothedLandmarks, result.imageWidth, result.imageHeight, result.isFrontCamera)
@@ -889,6 +908,12 @@ class DebugActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetectionLis
         clearOverlay()
         binding.tvLiveValue.text = "--"
         binding.tvLiveValue.setTextColor(Color.WHITE)
+        if (currentTab == TAB_ELBOWS) {
+            binding.tvStatus.text = "NO POSE"
+            binding.tvStatus.setTextColor(Color.GRAY)
+            binding.tvStatus.visibility = View.VISIBLE
+            binding.tvDebugInfo.text = "No pose detected"
+        }
         if (currentTab == TAB_ANGLE_DIAGNOSTICS) {
             binding.tvStatus.text = "NO POSE"
             binding.tvStatus.setTextColor(Color.GRAY)
@@ -906,7 +931,7 @@ class DebugActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetectionLis
         if (currentTab == TAB_POSTURE_MLP) {
             binding.tvStatus.text = "NO POSE"
             binding.tvStatus.setTextColor(Color.GRAY)
-            binding.tvDebugInfo.text = "No pose detected — MLP needs landmarks"
+            binding.tvDebugInfo.text = "No pose detected - MLP needs landmarks"
         }
     }
 
@@ -968,6 +993,218 @@ class DebugActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetectionLis
             imageH = imageH,
             useFrontCamera = isFrontCamera
         )
+    }
+
+    // ==================== Elbow Debug Display ====================
+
+    private fun updateElbowDebugDisplay(
+        angles: JointAngles,
+        smoothedLandmarks: List<SmoothedLandmark>,
+        worldLandmarks: List<SmoothedLandmark>?,
+        imageW: Int,
+        imageH: Int,
+        isFrontCamera: Boolean
+    ) {
+        // Legacy MLP (26 features)
+        if (elbowMlpRetryRequested) {
+            elbowMlpRetryRequested = false
+            ElbowCorrectionMlpClassifier.reload(this)
+            ElbowFit3dV2Classifier.reload(this)
+        }
+        val legacyMlp = ElbowCorrectionMlpClassifier.getOrNull(this)
+        var legacyResult: ElbowCorrectionMlpClassifier.TimedElbowResult? = null
+
+        if (legacyMlp != null && worldLandmarks != null) {
+            legacyResult = legacyMlp.predictBothElbows(smoothedLandmarks, worldLandmarks)
+            elbowMlpLatencyRing.addLast(legacyResult.latencyMicros)
+            while (elbowMlpLatencyRing.size > elbowMlpLatencyRingMax) elbowMlpLatencyRing.removeFirst()
+        }
+
+        // FIT3D v2 MLP (38 features, residual mode)
+        val fit3dMlp = ElbowFit3dV2Classifier.getOrNull(this)
+        var fit3dResult: ElbowFit3dV2Classifier.TimedElbowResult? = null
+
+        if (fit3dMlp != null && worldLandmarks != null) {
+            fit3dResult = fit3dMlp.predictBothElbows(smoothedLandmarks, worldLandmarks)
+            fit3dLatencyRing.addLast(fit3dResult.latencyMicros)
+            while (fit3dLatencyRing.size > fit3dLatencyRingMax) fit3dLatencyRing.removeFirst()
+        }
+
+        // Mirror for front camera
+        val legacyScreenLeft = if (isFrontCamera) legacyResult?.rightAngle else legacyResult?.leftAngle
+        val legacyScreenRight = if (isFrontCamera) legacyResult?.leftAngle else legacyResult?.rightAngle
+        val fit3dScreenLeft = if (isFrontCamera) fit3dResult?.rightAngle else fit3dResult?.leftAngle
+        val fit3dScreenRight = if (isFrontCamera) fit3dResult?.leftAngle else fit3dResult?.rightAngle
+        val fit3dFeatLeft = if (isFrontCamera) fit3dResult?.rightFeatures else fit3dResult?.leftFeatures
+        val fit3dFeatRight = if (isFrontCamera) fit3dResult?.leftFeatures else fit3dResult?.rightFeatures
+
+        val diagScreenLeft = elbowAngleEstimator.lastDiagnostics.getOrNull(if (isFrontCamera) 1 else 0)
+        val diagScreenRight = elbowAngleEstimator.lastDiagnostics.getOrNull(if (isFrontCamera) 0 else 1)
+
+        // Live value: FIT3D v2 → Legacy MLP → Heuristic
+        val displayLeft: Double?
+        val displayRight: Double?
+        val sourceLabel: String
+
+        if (fit3dResult != null && (fit3dScreenLeft != null || fit3dScreenRight != null)) {
+            displayLeft = fit3dScreenLeft?.toDouble()
+            displayRight = fit3dScreenRight?.toDouble()
+            sourceLabel = "FIT3D"
+        } else if (legacyResult != null && (legacyScreenLeft != null || legacyScreenRight != null)) {
+            displayLeft = legacyScreenLeft?.toDouble()
+            displayRight = legacyScreenRight?.toDouble()
+            sourceLabel = "MLP"
+        } else {
+            displayLeft = angles.leftElbow
+            displayRight = angles.rightElbow
+            sourceLabel = "Heuristic"
+        }
+
+        val leftStr = displayLeft?.let { "%.1f".format(it) } ?: "--"
+        val rightStr = displayRight?.let { "%.1f".format(it) } ?: "--"
+        binding.tvLiveValue.text = "L:${leftStr}° | R:${rightStr}°"
+        binding.tvLiveValue.setTextColor(Color.WHITE)
+
+        val overlayShIdx = if (isFrontCamera) BodyLandmarks.RIGHT_SHOULDER else BodyLandmarks.LEFT_SHOULDER
+        val overlayElIdx = if (isFrontCamera) BodyLandmarks.RIGHT_ELBOW else BodyLandmarks.LEFT_ELBOW
+        val overlayWrIdx = if (isFrontCamera) BodyLandmarks.RIGHT_WRIST else BodyLandmarks.LEFT_WRIST
+
+        binding.skeletonOverlay.updateDebugJoint(
+            jointCode = if (isFrontCamera) "right_elbow" else "left_elbow",
+            angle = displayLeft,
+            endpointA = overlayShIdx,
+            endpointC = overlayWrIdx,
+            vertexIdx = overlayElIdx,
+            smoothedLandmarks = smoothedLandmarks,
+            imageW = imageW,
+            imageH = imageH,
+            useFrontCamera = isFrontCamera
+        )
+
+        // Status bar
+        val heuL = angles.leftElbow?.let { "%.0f".format(it) } ?: "-"
+        val heuR = angles.rightElbow?.let { "%.0f".format(it) } ?: "-"
+        val statusParts = mutableListOf("[$sourceLabel]")
+        statusParts.add("Heur L:$heuL R:$heuR")
+        if (diagScreenLeft != null) statusParts.add("L:${diagScreenLeft.strategy}")
+        if (diagScreenRight != null) statusParts.add("R:${diagScreenRight.strategy}")
+        binding.tvStatus.text = statusParts.joinToString(" | ")
+        binding.tvStatus.setTextColor(Color.WHITE)
+        binding.tvStatus.visibility = View.VISIBLE
+
+        if (inferenceFrameCount % 2 == 0 || currentInputMode == InputMode.IMAGE) {
+            binding.tvDebugInfo.text = buildElbowDebugPanel(
+                angles, legacyMlp, legacyResult,
+                legacyScreenLeft, legacyScreenRight,
+                fit3dMlp, fit3dResult,
+                fit3dScreenLeft, fit3dScreenRight,
+                fit3dFeatLeft, fit3dFeatRight,
+                diagScreenLeft, diagScreenRight,
+            )
+        }
+    }
+
+    private fun buildElbowDebugPanel(
+        angles: JointAngles,
+        legacyMlp: ElbowCorrectionMlpClassifier?,
+        legacyResult: ElbowCorrectionMlpClassifier.TimedElbowResult?,
+        legacyScreenLeft: Float?,
+        legacyScreenRight: Float?,
+        fit3dMlp: ElbowFit3dV2Classifier?,
+        fit3dResult: ElbowFit3dV2Classifier.TimedElbowResult?,
+        fit3dScreenLeft: Float?,
+        fit3dScreenRight: Float?,
+        fit3dFeatLeft: FloatArray?,
+        fit3dFeatRight: FloatArray?,
+        diagScreenLeft: ElbowDiagnostics?,
+        diagScreenRight: ElbowDiagnostics?,
+    ): String {
+        val sb = StringBuilder()
+        sb.appendLine("=== ELBOW DEBUG ===")
+        sb.appendLine()
+
+        // --- Comparison table per side ---
+        for ((label, idx) in arrayOf("LEFT" to 0, "RIGHT" to 1)) {
+            val heuristic = if (idx == 0) angles.leftElbow else angles.rightElbow
+            val diag = if (idx == 0) diagScreenLeft else diagScreenRight
+            val legacy = if (idx == 0) legacyScreenLeft else legacyScreenRight
+            val fit3d = if (idx == 0) fit3dScreenLeft else fit3dScreenRight
+
+            sb.appendLine("--- $label ELBOW ---")
+            sb.appendLine("  FIT3D v2:    ${fit3d?.let { "%.1f°".format(it) } ?: "N/A"}")
+            sb.appendLine("  Legacy MLP:  ${legacy?.let { "%.1f°".format(it) } ?: "N/A"}")
+            sb.appendLine("  Heuristic:   ${formatAngleLong(heuristic)}")
+
+            if (diag != null) {
+                sb.appendLine("  Screen 2D:   ${formatAngleLong(diag.screenAngle)}")
+                sb.appendLine("  World 3D:    ${formatAngleLong(diag.worldAngle)}")
+                sb.appendLine("  Strategy:    ${diag.strategy}")
+                sb.appendLine("  dzShare:     UA=%.3f FA=%.3f".format(diag.uaDzShare, diag.faDzShare))
+                sb.appendLine("  Facing:      %.3f".format(diag.facingRatio))
+            }
+
+            if (fit3d != null && legacy != null) {
+                sb.appendLine("  FIT3D-Legacy: %+.1f°".format(fit3d - legacy))
+            }
+            if (fit3d != null && heuristic != null) {
+                sb.appendLine("  FIT3D-Heur:   %+.1f°".format(fit3d - heuristic))
+            }
+            sb.appendLine()
+        }
+
+        // --- FIT3D v2 Status ---
+        sb.appendLine("--- FIT3D v2 STATUS ---")
+        if (fit3dMlp == null) {
+            sb.appendLine("Model:  NOT LOADED")
+            val err = ElbowFit3dV2Classifier.lastError
+            if (err != null) sb.appendLine("Error:  $err")
+            sb.appendLine("Tap Live Value to retry")
+            binding.tvLiveValue.setOnClickListener {
+                elbowMlpRetryRequested = true
+                Toast.makeText(this, "Retrying model load...", Toast.LENGTH_SHORT).show()
+            }
+        } else {
+            binding.tvLiveValue.setOnClickListener(null)
+            sb.appendLine("Model:  LOADED (38-D, residual)")
+            if (fit3dResult != null) {
+                val lastMs = fit3dResult.latencyMicros / 1000.0
+                val avgMicros = if (fit3dLatencyRing.isNotEmpty())
+                    fit3dLatencyRing.sumOf { it } / fit3dLatencyRing.size.toDouble() else 0.0
+                sb.appendLine("Latency: %.3f ms (avg %.3f ms)".format(lastMs, avgMicros / 1000.0))
+            }
+        }
+        sb.appendLine()
+
+        // --- Legacy MLP Status ---
+        sb.appendLine("--- Legacy MLP STATUS ---")
+        if (legacyMlp == null) {
+            sb.appendLine("Model:  NOT LOADED")
+            val err = ElbowCorrectionMlpClassifier.lastError
+            if (err != null) sb.appendLine("Error:  $err")
+        } else {
+            sb.appendLine("Model:  LOADED (26-D, sigmoid)")
+            if (legacyResult != null) {
+                val lastMs = legacyResult.latencyMicros / 1000.0
+                val avgMicros = if (elbowMlpLatencyRing.isNotEmpty())
+                    elbowMlpLatencyRing.sumOf { it } / elbowMlpLatencyRing.size.toDouble() else 0.0
+                sb.appendLine("Latency: %.3f ms (avg %.3f ms)".format(lastMs, avgMicros / 1000.0))
+            }
+        }
+        sb.appendLine()
+
+        // --- FIT3D Feature Table ---
+        for ((sideName, feats) in arrayOf("LEFT" to fit3dFeatLeft, "RIGHT" to fit3dFeatRight)) {
+            if (feats != null) {
+                sb.appendLine("--- $sideName FEATURES (38-D) ---")
+                for (i in feats.indices) {
+                    val name = ElbowFit3dV2FeatureExtractor.FEATURE_NAMES.getOrElse(i) { "f$i" }
+                    sb.appendLine("  [%2d] %-20s %8.4f".format(i, name, feats[i]))
+                }
+                sb.appendLine()
+            }
+        }
+
+        return sb.toString()
     }
 
     private fun updateAngleDiagnosticsDisplay(
@@ -1967,7 +2204,7 @@ class DebugActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetectionLis
         val sections = mutableListOf<String>()
 
         val modeLabel = when (currentTab) {
-            TAB_JOINTS -> "Joints"
+            TAB_ELBOWS -> "Elbows"
             TAB_ANGLE_DIAGNOSTICS -> "Angle Lab"
             TAB_POSITION -> "Positions"
             TAB_CAMERA -> "Scene"
