@@ -5,17 +5,15 @@ import android.content.Intent
 import android.graphics.Color
 import android.graphics.Typeface
 import android.os.Bundle
-import android.text.SpannableStringBuilder
-import android.text.style.ForegroundColorSpan
 import android.util.TypedValue
 import android.view.Gravity
-import android.view.View
 import android.widget.*
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
+import com.trainingvalidator.poc.R
 import com.trainingvalidator.poc.assessment.models.ParqQuestion
 import com.trainingvalidator.poc.assessment.models.ParqQuestions
-import com.trainingvalidator.poc.training.models.LocalizedText
+import com.trainingvalidator.poc.ui.utils.currentLanguage
 
 /**
  * PreScreeningActivity - PAR-Q+ physical activity readiness questionnaire.
@@ -28,8 +26,8 @@ class PreScreeningActivity : AppCompatActivity() {
     private val questions = ParqQuestions.getQuestions().toMutableList()
     private val switchMap = mutableMapOf<String, Switch>()
     private lateinit var continueButton: Button
-    
-    private val language: String get() = "en" // TODO: Get from user preferences
+
+    private val language: String get() = currentLanguage
     
     @Suppress("DEPRECATION")
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -46,19 +44,15 @@ class PreScreeningActivity : AppCompatActivity() {
             setPadding(dp(24), dp(48), dp(24), dp(32))
         }
         
-        // Header
         content.addView(TextView(this).apply {
-            text = if (language == "ar") "فحص ما قبل الاختبار" else "Pre-Assessment Screening"
+            text = getString(R.string.screening_title)
             setTextColor(Color.WHITE)
             textSize = 24f
             setTypeface(null, Typeface.BOLD)
         })
-        
+
         content.addView(TextView(this).apply {
-            text = if (language == "ar") 
-                "للتأكد من سلامتك، يرجى الإجابة على الأسئلة التالية."
-            else 
-                "To ensure your safety, please answer the following questions."
+            text = getString(R.string.screening_subtitle)
             setTextColor(Color.parseColor("#B0B0B0"))
             textSize = 14f
             setPadding(0, dp(8), 0, dp(24))
@@ -74,7 +68,7 @@ class PreScreeningActivity : AppCompatActivity() {
         
         // Continue button
         continueButton = Button(this).apply {
-            text = if (language == "ar") "ابدأ الاختبار" else "Start Assessment"
+            text = getString(R.string.screening_start)
             setTextColor(Color.WHITE)
             setBackgroundColor(Color.parseColor("#4CAF50"))
             textSize = 16f
@@ -93,7 +87,7 @@ class PreScreeningActivity : AppCompatActivity() {
         
         // Back button
         content.addView(TextView(this).apply {
-            text = if (language == "ar") "رجوع" else "Go Back"
+            text = getString(R.string.go_back)
             setTextColor(Color.parseColor("#B0B0B0"))
             textSize = 14f
             gravity = Gravity.CENTER
@@ -118,10 +112,7 @@ class PreScreeningActivity : AppCompatActivity() {
             layoutParams = lp
             
             addView(TextView(context).apply {
-                text = if (language == "ar") 
-                    "⚕️ تنبيه: هذا ليس فحص طبي. هو أداة wellness لتقييم الحركة فقط."
-                else 
-                    "⚕️ Note: This is not a medical exam. It's a wellness tool for movement assessment only."
+                text = getString(R.string.screening_disclaimer)
                 setTextColor(Color.parseColor("#B3C5FF"))
                 textSize = 12f
             })
@@ -166,10 +157,10 @@ class PreScreeningActivity : AppCompatActivity() {
         val hasFlags = ParqQuestions.hasFlags(questions)
         if (hasFlags) {
             continueButton.setBackgroundColor(Color.parseColor("#FF9800"))
-            continueButton.text = if (language == "ar") "متابعة مع تحذير" else "Continue with Warning"
+            continueButton.text = getString(R.string.screening_continue_warning)
         } else {
             continueButton.setBackgroundColor(Color.parseColor("#4CAF50"))
-            continueButton.text = if (language == "ar") "ابدأ الاختبار" else "Start Assessment"
+            continueButton.text = getString(R.string.screening_start)
         }
     }
     
@@ -178,17 +169,12 @@ class PreScreeningActivity : AppCompatActivity() {
         
         if (hasFlags) {
             AlertDialog.Builder(this)
-                .setTitle(if (language == "ar") "تحذير" else "Warning")
-                .setMessage(
-                    if (language == "ar") 
-                        "بناءً على إجاباتك، ننصحك باستشارة طبيبك قبل البدء في أي نشاط بدني. هل تريد المتابعة على مسؤوليتك؟"
-                    else 
-                        "Based on your answers, we recommend consulting your doctor before starting physical activity. Do you wish to continue at your own responsibility?"
-                )
-                .setPositiveButton(if (language == "ar") "متابعة" else "Continue") { _, _ ->
+                .setTitle(getString(R.string.screening_warning_title))
+                .setMessage(getString(R.string.screening_warning_message))
+                .setPositiveButton(getString(R.string.screening_continue)) { _, _ ->
                     launchAssessment()
                 }
-                .setNegativeButton(if (language == "ar") "رجوع" else "Go Back", null)
+                .setNegativeButton(getString(R.string.go_back), null)
                 .show()
         } else {
             launchAssessment()

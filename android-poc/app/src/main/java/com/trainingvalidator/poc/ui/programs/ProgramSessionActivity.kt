@@ -718,6 +718,7 @@ class ProgramSessionActivity : AppCompatActivity() {
                 putExtra(ProgramSessionReportActivity.EXTRA_COMPLETED_SETS, completedSets)
                 putExtra(ProgramSessionReportActivity.EXTRA_DURATION_MS, durationMs)
                 putExtra(ProgramSessionReportActivity.EXTRA_AVG_ACCURACY, avgAccuracy)
+                putExtra(ProgramSessionReportActivity.EXTRA_SESSION_ID, sessionId)
                 if (!reportJson.isNullOrBlank()) {
                     putExtra(ProgramSessionReportActivity.EXTRA_SESSION_REPORT_JSON, reportJson)
                 }

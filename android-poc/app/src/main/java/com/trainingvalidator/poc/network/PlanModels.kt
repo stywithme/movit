@@ -133,7 +133,7 @@ data class ProgressionEntryData(
     val id: String,
     val ruleName: String,
     val exerciseName: Map<String, String>? = null,
-    val exerciseSlug: String? = null,
+    val exerciseId: String? = null,
     val field: String,
     val previousValue: Double,
     val newValue: Double,

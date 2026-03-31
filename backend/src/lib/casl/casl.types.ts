@@ -23,6 +23,7 @@ export type Subject =
     | 'AssessmentAnalytics'
     | 'Reassessment'
     | 'ProgressionRule'
+    | 'ExerciseProgressionProfile'
     | 'Config'
     | 'System'
     | 'Reports'

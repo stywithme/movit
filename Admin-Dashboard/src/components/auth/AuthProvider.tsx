@@ -19,6 +19,7 @@ const PROTECTED_ROUTES: { pattern: RegExp; subject: Subject }[] = [
     { pattern: /^\/admin\/levels/, subject: 'Level' },
     { pattern: /^\/admin\/assessment-templates/, subject: 'AssessmentTemplate' },
     { pattern: /^\/admin\/progression-rules/, subject: 'ProgressionRule' },
+    { pattern: /^\/admin\/exercise-progression/, subject: 'ExerciseProgressionProfile' },
     { pattern: /^\/admin\/analytics\/programs/, subject: 'ProgramAnalytics' },
     { pattern: /^\/admin\/analytics\/levels/, subject: 'LevelAnalytics' },
     { pattern: /^\/admin\/analytics\/assessments/, subject: 'AssessmentAnalytics' },

@@ -158,9 +158,46 @@
     <string name="progression_sheet_title">Training Adjusted</string>
     <string name="progression_sheet_subtitle">Based on your performance, we\'ve updated your next session:</string>
     <string name="progression_sheet_got_it">Got it!</string>
+    <string name="progression_sheet_view_details">View Details</string>
     <string name="progression_field_weight">Weight</string>
     <string name="progression_field_reps">Reps</string>
     <string name="progression_field_sets">Sets</string>
+    <string name="progression_field_reassessment">Reassessment</string>
+
+    <!-- Progression Report Page -->
+    <string name="progression_page_title">Your Progress</string>
+    <string name="progression_level_up">Level Up!</string>
+    <string name="progression_great_performance">Great performance — your training has been upgraded!</string>
+    <string name="progression_deload_title">Training Adjusted</string>
+    <string name="progression_deload_message">We\'ve adjusted your load to help you build a stronger foundation.</string>
+    <string name="progression_what_changed">What Changed</string>
+    <string name="progression_why">Why This Happened</string>
+    <string name="progression_why_form_score">Your form score averaged %1$d%% over the last %2$d sessions</string>
+    <string name="progression_why_completion">Your completion rate was %1$d%%</string>
+    <string name="progression_why_rom">Your range of motion averaged %1$d%%</string>
+    <string name="progression_what_next">What\'s Next</string>
+    <string name="progression_next_weight_tip">Maintain a form score of 75%+ for 2 more sessions to increase weight again</string>
+    <string name="progression_next_reps_tip">Keep form at 80%+ for a full week with 95%+ ROM to increase reps</string>
+    <string name="progression_next_deload_tip">Focus on maintaining proper form — your load will increase once your score improves</string>
+    <string name="progression_no_changes_title">Keep Going!</string>
+    <string name="progression_no_changes_message">No adjustments yet — keep training consistently and your progress will come!</string>
+    <string name="progression_no_changes_goal">Your next goal: maintain form score above 75%% for 2 sessions</string>
+    <string name="progression_loading">Checking progress…</string>
+    <string name="progression_change_increase">%1$s increased from %2$s to %3$s</string>
+    <string name="progression_change_decrease">%1$s adjusted from %2$s to %3$s</string>
+    <string name="progression_for_exercise">for %1$s</string>
+
+    <!-- Progression in Plan Overview -->
+    <string name="progression_summary_title">Progress Summary</string>
+    <string name="progression_summary_increases">%1$d increase(s)</string>
+    <string name="progression_summary_adjustments">%1$d adjustment(s)</string>
+    <string name="progression_summary_this_month">this month</string>
+    <string name="progression_grouped_by_exercise">By Exercise</string>
+
+    <!-- Progression Home Card -->
+    <string name="progression_home_title">Training Updated</string>
+    <string name="progression_home_subtitle">Your training plan was adjusted based on your performance</string>
+    <string name="progression_home_view">View Changes</string>
 
     <!-- Quick Start -->
     <string name="quick_start_title">Quick Start</string>
@@ -931,5 +968,59 @@
     <string name="plan_overview_title">My Training Plan</string>
     <string name="plan_upcoming_reassessment">Upcoming Reassessment</string>
     <string name="plan_recent_adjustments">Recent Adjustments</string>
+
+    <!-- Assessment / Body Scan -->
+    <string name="screening_title">Pre-Assessment Screening</string>
+    <string name="screening_subtitle">To ensure your safety, please answer the following questions.</string>
+    <string name="screening_disclaimer">⚕️ Note: This is not a medical exam. It\'s a wellness tool for movement assessment only.</string>
+    <string name="screening_start">Start Assessment</string>
+    <string name="screening_continue_warning">Continue with Warning</string>
+    <string name="screening_warning_title">Warning</string>
+    <string name="screening_warning_message">Based on your answers, we recommend consulting your doctor before starting physical activity. Do you wish to continue at your own responsibility?</string>
+    <string name="screening_continue">Continue</string>
+    <string name="go_back">Go Back</string>
+    <string name="assessment_movement_count">Movement %1$d of %2$d</string>
+    <string name="assessment_ready">Ready</string>
+    <string name="assessment_skip_pain">I feel pain in this movement — Skip</string>
+    <string name="assessment_analyzing">Analyzing your movement…</string>
+    <string name="assessment_no_exercises">No exercises were completed</string>
+    <string name="assessment_pain_message">You reported pain in %1$d movement(s).\nPlease consult a specialist before taking the assessment.</string>
+    <string name="assessment_retry">Please try the assessment again.</string>
+    <string name="assessment_domains_title">Assessment Domains</string>
+    <string name="assessment_body_map_title">Body Map</string>
+    <string name="assessment_observations_title">Movement Observations</string>
+    <string name="assessment_safety_title">Safety Restrictions</string>
+    <string name="assessment_recommendations_title">Recommendations</string>
+    <string name="assessment_disclaimer">⚕️ This is a movement assessment, not a medical diagnosis. Consult a specialist for any pain or health concerns.</string>
+    <string name="assessment_find_program">Find Your Program</string>
+    <string name="assessment_share">Share Results</string>
+    <string name="assessment_go_home">Go to Home</string>
+    <string name="assessment_body_score">Body Score</string>
+    <string name="assessment_motivational_note">Motivational indicator — training decisions use domain scores below</string>
+    <string name="assessment_no_region_data">No region data available</string>
+    <string name="assessment_possible_causes">Possible causes:</string>
+    <string name="assessment_blocked">Blocked: %1$s</string>
+    <string name="assessment_alternatives">Alternatives: %1$s</string>
+    <string name="assessment_recommended_for_you">Recommended for You</string>
+    <string name="assessment_start_program">Start This Program</string>
+    <string name="assessment_program_info">%1$d weeks • %2$s • %3$s</string>
+    <string name="domain_mobility">Mobility</string>
+    <string name="domain_control">Control</string>
+    <string name="domain_symmetry">Symmetry</string>
+    <string name="domain_safety">Safety</string>
+    <string name="share_not_available">Share feature coming soon</string>
+
+    <string name="recent_activity">Recent Activity</string>
+    <string name="home_loading">Loading your data…</string>
+    <string name="recent_session_item">%1$s · %2$s</string>
+    <string name="no_recent_sessions">No recent sessions yet</string>
+    <string name="recent_session_score">Score: %1$d%%</string>
+    <string name="time_just_now">Just now</string>
+    <string name="time_minutes_ago">%1$d min ago</string>
+    <string name="time_hours_ago">%1$d hr ago</string>
+    <string name="time_days_ago">%1$d days ago</string>
+    <string name="time_weeks_ago">%1$d weeks ago</string>
+    <string name="time_months_ago">%1$d months ago</string>
+    <string name="time_years_ago">%1$d years ago</string>
 
 </resources>

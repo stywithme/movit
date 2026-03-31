@@ -2,6 +2,7 @@ package com.trainingvalidator.poc.storage
 
 import android.content.Context
 import android.util.Log
+import com.trainingvalidator.poc.assessment.engine.AssessmentTemplateManager
 
 /**
  * UserDataCleaner — Central cache invalidation on logout / user switch
@@ -12,13 +13,14 @@ import android.util.Log
  * Call [clearAll] from the logout flow BEFORE navigating to SignInActivity.
  *
  * What is cleared (user-specific):
- *   - HomeRepository cache      (home_cache)
- *   - ExploreRepository cache   (explore_cache)
- *   - DayCustomizationStore     (day_customization_store)
- *   - UserProgramStore          (user_program_store)
- *   - ProgramSessionReportStore (program_session_report_store)
- *   - HomeRepository singleton  (in-memory)
- *   - ExploreRepository singleton (in-memory)
+ *   - HomeRepository cache            (home_cache)
+ *   - ExploreRepository cache         (explore_cache)
+ *   - DayCustomizationStore           (day_customization_store)
+ *   - UserProgramStore                (user_program_store)
+ *   - ProgramSessionReportStore       (program_session_report_store)
+ *   - AssessmentTemplateManager cache (assessment_template_cache)
+ *   - HomeRepository singleton        (in-memory)
+ *   - ExploreRepository singleton     (in-memory)
  *
  * What is NOT cleared:
  *   - AuthManager (app_prefs) — managed separately by the caller
@@ -29,17 +31,13 @@ object UserDataCleaner {
 
     private const val TAG = "UserDataCleaner"
 
-    /** SharedPrefs names — kept in sync with each store's companion constant */
     private const val PREFS_HOME = "home_cache"
     private const val PREFS_EXPLORE = "explore_cache"
     private const val PREFS_DAY_CUSTOMIZATION = "day_customization_store"
     private const val PREFS_USER_PROGRAM = "user_program_store"
     private const val PREFS_SESSION_REPORT_LEGACY = "program_session_report_store"
+    private const val PREFS_ASSESSMENT_TEMPLATE = "assessment_template_cache"
 
-    /**
-     * Clears all user-specific caches synchronously.
-     * Safe to call from any thread.
-     */
     fun clearAll(context: Context) {
         val appContext = context.applicationContext
         Log.i(TAG, "Clearing all user caches...")
@@ -49,10 +47,11 @@ object UserDataCleaner {
         clearPrefs(appContext, PREFS_DAY_CUSTOMIZATION)
         clearPrefs(appContext, PREFS_USER_PROGRAM)
         clearPrefs(appContext, PREFS_SESSION_REPORT_LEGACY)
+        clearPrefs(appContext, PREFS_ASSESSMENT_TEMPLATE)
 
-        // Reset in-memory singletons so stale data is not served from memory
         HomeRepository.resetInstance()
         ExploreRepository.resetInstance()
+        AssessmentTemplateManager.resetCache()
 
         Log.i(TAG, "All user caches cleared.")
     }

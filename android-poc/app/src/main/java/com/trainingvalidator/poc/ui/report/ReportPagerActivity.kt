@@ -48,10 +48,12 @@ class ReportPagerActivity : AppCompatActivity() {
 
         const val EXTRA_REPORT_ID = "report_id"
         const val EXTRA_LOAD_LATEST = "load_latest"
+        const val EXTRA_SESSION_ID = "progression_session_id"
 
-        fun createIntent(context: Context, reportId: String): Intent {
+        fun createIntent(context: Context, reportId: String, sessionId: String? = null): Intent {
             return Intent(context, ReportPagerActivity::class.java).apply {
                 putExtra(EXTRA_REPORT_ID, reportId)
+                if (sessionId != null) putExtra(EXTRA_SESSION_ID, sessionId)
             }
         }
 
@@ -144,7 +146,8 @@ class ReportPagerActivity : AppCompatActivity() {
     // ─── Pager setup ────────────────────────────────────────────
 
     private fun setupPager(report: PostTrainingReport) {
-        pagerAdapter = RepPagerAdapter(this, report, isArabic)
+        val sessionId = intent.getStringExtra(EXTRA_SESSION_ID)
+        pagerAdapter = RepPagerAdapter(this, report, isArabic, sessionId)
 
         binding.viewPager.apply {
             adapter = pagerAdapter

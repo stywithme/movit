@@ -8,7 +8,7 @@ import com.trainingvalidator.poc.training.report.PostTrainingReport
 /**
  * RepPagerAdapter — V2 Report Pager
  *
- * Navigates 7 screens per exercise (no individual-rep pages):
+ * Navigates 8 screens per exercise (no individual-rep pages):
  *
  *  0  Hero             — Overall score + reps + duration + QuickInsight + Share
  *  1  Overview         — Reps Journey chart + Form / Safety / Control cards
@@ -16,18 +16,20 @@ import com.trainingvalidator.poc.training.report.PostTrainingReport
  *  3  Form Details     — ROM, Symmetry, Form Consistency
  *  4  Safety Details   — Alignment, Stability, DangerAlerts
  *  5  Control+Fatigue  — Tempo, TUT, VL%, Fatigue analysis, Load
- *  6  Tips & Export    — Exercise-message tips + PDF / Share
+ *  6  Progression      — Training changes based on performance + next goals
+ *  7  Tips & Export    — Exercise-message tips + PDF / Share
  *
  * Pages are dynamically included/excluded based on data availability:
  *  - Overview  → hidden when < 2 reps (nothing to chart)
  *  - Best/Worst → hidden when no best reps or 0 reps
- *  - Form/Safety/Control detail screens → always shown (adapt internally)
+ *  - Form/Safety/Control/Progression detail screens → always shown (adapt internally)
  *  - Tips → always shown
  */
 class RepPagerAdapter(
     activity: FragmentActivity,
     private val report: PostTrainingReport,
-    private val isArabic: Boolean
+    private val isArabic: Boolean,
+    private val sessionId: String? = null
 ) : FragmentStateAdapter(activity) {
 
     companion object {
@@ -37,7 +39,8 @@ class RepPagerAdapter(
         const val TYPE_FORM_DETAILS = 3
         const val TYPE_SAFETY_DETAILS = 4
         const val TYPE_CONTROL_DETAILS = 5
-        const val TYPE_TIPS = 6
+        const val TYPE_PROGRESSION = 6
+        const val TYPE_TIPS = 7
     }
 
     private val repCount = report.repTimeline.size
@@ -61,6 +64,9 @@ class RepPagerAdapter(
         add(TYPE_FORM_DETAILS)
         add(TYPE_SAFETY_DETAILS)
         add(TYPE_CONTROL_DETAILS)
+
+        // Progression — always shown; adapts internally based on API data
+        add(TYPE_PROGRESSION)
 
         // Tips — always shown
         add(TYPE_TIPS)
@@ -94,6 +100,10 @@ class RepPagerAdapter(
                 it.setData(report, isArabic)
             }
 
+            TYPE_PROGRESSION -> ProgressionFragment.newInstance().also {
+                it.setData(report, isArabic, sessionId)
+            }
+
             TYPE_TIPS -> TipsExportFragment.newInstance().also {
                 it.setData(report, isArabic)
             }
@@ -113,6 +123,7 @@ class RepPagerAdapter(
             TYPE_FORM_DETAILS -> if (isArabic) "تفاصيل الشكل" else "Form Details"
             TYPE_SAFETY_DETAILS -> if (isArabic) "تفاصيل الأمان" else "Safety Details"
             TYPE_CONTROL_DETAILS -> if (isArabic) "التحكم والتعب" else "Control & Fatigue"
+            TYPE_PROGRESSION -> if (isArabic) "تقدّمك" else "Your Progress"
             TYPE_TIPS -> if (isArabic) "النصائح" else "Tips"
             else -> ""
         }

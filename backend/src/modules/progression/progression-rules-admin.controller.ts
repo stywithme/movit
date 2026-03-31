@@ -22,7 +22,7 @@ interface CreateRuleBody {
   name: string;
   scope: string;
   programId?: string;
-  exerciseSlug?: string;
+  exerciseId?: string;
   trigger: string;
   conditions: unknown;
   action: unknown;
@@ -54,7 +54,7 @@ export class ProgressionRulesAdminController {
         scope: rule.scope,
         programId: rule.programId,
         programName: rule.program?.name ?? null,
-        exerciseSlug: rule.exerciseSlug,
+        exerciseId: rule.exerciseId,
         trigger: rule.trigger,
         conditions: rule.conditions,
         action: rule.action,
@@ -89,7 +89,7 @@ export class ProgressionRulesAdminController {
           name: body.name,
           scope: body.scope,
           programId: body.programId ?? null,
-          exerciseSlug: body.exerciseSlug ?? null,
+          exerciseId: body.exerciseId ?? null,
           trigger: body.trigger,
           conditions: body.conditions as any,
           action: body.action as any,
@@ -145,7 +145,7 @@ export class ProgressionRulesAdminController {
         scope: rule.scope,
         programId: rule.programId,
         programName: rule.program?.name ?? null,
-        exerciseSlug: rule.exerciseSlug,
+        exerciseId: rule.exerciseId,
         trigger: rule.trigger,
         conditions: rule.conditions,
         action: rule.action,
@@ -194,7 +194,7 @@ export class ProgressionRulesAdminController {
           ...(body.name !== undefined && { name: body.name }),
           ...(body.scope !== undefined && { scope: body.scope }),
           ...(body.programId !== undefined && { programId: body.programId ?? null }),
-          ...(body.exerciseSlug !== undefined && { exerciseSlug: body.exerciseSlug ?? null }),
+          ...(body.exerciseId !== undefined && { exerciseId: body.exerciseId ?? null }),
           ...(body.trigger !== undefined && { trigger: body.trigger }),
           ...(body.conditions !== undefined && { conditions: body.conditions as any }),
           ...(body.action !== undefined && { action: body.action as any }),

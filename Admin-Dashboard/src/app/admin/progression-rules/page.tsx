@@ -35,7 +35,7 @@ interface ProgressionRule {
   name: string;
   scope: 'global' | 'program' | 'exercise';
   programId: string | null;
-  exerciseSlug: string | null;
+  exerciseId: string | null;
   trigger: string;
   conditions: Condition[];
   action: RuleAction;
@@ -125,7 +125,7 @@ export default function ProgressionRulesPage() {
   const [formName, setFormName] = useState('');
   const [formScope, setFormScope] = useState<'global' | 'program' | 'exercise'>('global');
   const [formProgramId, setFormProgramId] = useState('');
-  const [formExerciseSlug, setFormExerciseSlug] = useState('');
+  const [formExerciseId, setFormExerciseId] = useState('');
   const [formTrigger, setFormTrigger] = useState('session_complete');
   const [formPriority, setFormPriority] = useState(50);
   const [formIsActive, setFormIsActive] = useState(true);
@@ -181,7 +181,7 @@ export default function ProgressionRulesPage() {
     setFormName('');
     setFormScope('global');
     setFormProgramId('');
-    setFormExerciseSlug('');
+    setFormExerciseId('');
     setFormTrigger('session_complete');
     setFormPriority(50);
     setFormIsActive(true);
@@ -200,7 +200,7 @@ export default function ProgressionRulesPage() {
     setFormName(rule.name);
     setFormScope(rule.scope);
     setFormProgramId(rule.programId || '');
-    setFormExerciseSlug(rule.exerciseSlug || '');
+    setFormExerciseId(rule.exerciseId || '');
     setFormTrigger(rule.trigger);
     setFormPriority(rule.priority);
     setFormIsActive(rule.isActive);
@@ -237,7 +237,7 @@ export default function ProgressionRulesPage() {
     name: formName,
     scope: formScope,
     programId: formScope === 'program' ? formProgramId || null : null,
-    exerciseSlug: formScope === 'exercise' ? formExerciseSlug || null : null,
+    exerciseId: formScope === 'exercise' ? formExerciseId || null : null,
     trigger: formTrigger,
     priority: formPriority,
     isActive: formIsActive,
@@ -374,8 +374,8 @@ export default function ProgressionRulesPage() {
                     <p className="text-xs text-gray-500 mt-0.5">
                       {rule.scope === 'program' && rule.programId
                         ? `Program: ${programs.find((p) => p.id === rule.programId)?.name.en || rule.programId}`
-                        : rule.scope === 'exercise' && rule.exerciseSlug
-                          ? `Exercise: ${rule.exerciseSlug}`
+                        : rule.scope === 'exercise' && rule.exerciseId
+                          ? `Exercise: ${rule.exerciseId}`
                           : ''}
                     </p>
                   </td>
@@ -481,10 +481,10 @@ export default function ProgressionRulesPage() {
 
                 {formScope === 'exercise' && (
                   <div>
-                    <Label>Exercise Slug</Label>
+                    <Label>Exercise ID</Label>
                     <Input
-                      value={formExerciseSlug}
-                      onChange={(e) => setFormExerciseSlug(e.target.value)}
+                      value={formExerciseId}
+                      onChange={(e) => setFormExerciseId(e.target.value)}
                       placeholder="e.g. bicep-curl"
                     />
                   </div>

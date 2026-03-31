@@ -69,10 +69,11 @@ object AssessmentTemplateManager {
         return null
     }
 
-    /**
-     * Get cached template (sync, non-blocking).
-     */
     fun getCachedTemplate(): AssessmentTemplateData? = cachedTemplate
+
+    fun resetCache() {
+        cachedTemplate = null
+    }
 
     /**
      * Get domain weights from template or defaults.

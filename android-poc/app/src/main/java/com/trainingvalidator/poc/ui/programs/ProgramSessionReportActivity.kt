@@ -1,16 +1,24 @@
 package com.trainingvalidator.poc.ui.programs
 
+import android.graphics.Typeface
+import android.graphics.drawable.GradientDrawable
 import android.os.Bundle
 import android.util.Log
+import android.view.Gravity
 import android.view.LayoutInflater
+import android.widget.LinearLayout
 import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.content.ContextCompat
 import androidx.lifecycle.lifecycleScope
 import com.google.android.material.bottomsheet.BottomSheetDialog
+import com.trainingvalidator.poc.R
 import com.trainingvalidator.poc.databinding.ActivityProgramSessionReportBinding
 import com.trainingvalidator.poc.network.ApiClient
+import com.trainingvalidator.poc.network.ProgressionEntryData
 import com.trainingvalidator.poc.network.ProgressionMarkSeenRequest
 import com.trainingvalidator.poc.storage.AuthManager
+import com.trainingvalidator.poc.ui.utils.currentLanguage
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -28,6 +36,7 @@ class ProgramSessionReportActivity : AppCompatActivity() {
         const val EXTRA_AVG_ACCURACY = "avg_accuracy"
         const val EXTRA_SESSION_REPORT_JSON = "session_report_json"
         const val EXTRA_REPORT_IDS = "report_ids"
+        const val EXTRA_SESSION_ID = "session_id"
     }
 
     private lateinit var binding: ActivityProgramSessionReportBinding
@@ -268,68 +277,202 @@ class ProgramSessionReportActivity : AppCompatActivity() {
         }
     }
 
+    private val isArabic by lazy { currentLanguage == "ar" }
+
     /**
-     * Fetches unseen progression changes from the server and shows a notification
-     * bottom sheet if there are any. Marks them as seen after display.
+     * Fetches session-specific progression changes and shows a notification bottom sheet.
+     * Does NOT mark them as seen — that is handled by HomeFragment when the user
+     * acknowledges the notification card.
      */
     private fun checkProgressionNotifications() {
         val authHeader = AuthManager.getAuthHeader(this) ?: return
+        val sessionId = intent.getStringExtra(EXTRA_SESSION_ID)
 
         lifecycleScope.launch {
             try {
                 val response = withContext(Dispatchers.IO) {
-                    ApiClient.mobileSyncApi.getRecentProgression(authHeader)
+                    if (sessionId != null) {
+                        ApiClient.mobileSyncApi.getSessionProgression(authHeader, sessionId)
+                    } else {
+                        ApiClient.mobileSyncApi.getRecentProgression(authHeader)
+                    }
                 }
 
                 if (!response.isSuccessful) return@launch
                 val changes = response.body()?.data ?: return@launch
                 if (changes.isEmpty()) return@launch
 
-                showProgressionSheet(changes.map { it.id to formatProgressionChange(it.field, it.previousValue, it.newValue) })
-
-                // Mark as seen
-                withContext(Dispatchers.IO) {
-                    runCatching {
-                        ApiClient.mobileSyncApi.markProgressionSeen(
-                            authHeader,
-                            ProgressionMarkSeenRequest(changes.map { it.id })
-                        )
-                    }
-                }
+                showProgressionSheet(changes)
             } catch (e: Exception) {
                 Log.w("ProgressionNotif", "Failed to check progression changes", e)
             }
         }
     }
 
-    private fun formatProgressionChange(field: String, from: Double, to: Double): String {
-        val label = when (field) {
-            "weightKg" -> getString(com.trainingvalidator.poc.R.string.progression_field_weight)
-            "targetReps" -> getString(com.trainingvalidator.poc.R.string.progression_field_reps)
-            "sets" -> getString(com.trainingvalidator.poc.R.string.progression_field_sets)
-            else -> field
-        }
-        val arrow = if (to > from) "↑" else "↓"
-        return "$label: $from → $to $arrow"
-    }
-
-    private fun showProgressionSheet(changes: List<Pair<String, String>>) {
+    private fun showProgressionSheet(changes: List<ProgressionEntryData>) {
         val dialog = BottomSheetDialog(this)
-        val view = LayoutInflater.from(this).inflate(
-            com.trainingvalidator.poc.R.layout.bottom_sheet_progression_notification, null
-        )
+        val view = LayoutInflater.from(this).inflate(R.layout.bottom_sheet_progression_notification, null)
         dialog.setContentView(view)
 
-        val tvTitle = view.findViewById<TextView>(com.trainingvalidator.poc.R.id.tvProgressionTitle)
-        val tvChanges = view.findViewById<TextView>(com.trainingvalidator.poc.R.id.tvProgressionChanges)
-        val btnGotIt = view.findViewById<com.google.android.material.button.MaterialButton>(
-            com.trainingvalidator.poc.R.id.btnProgressionGotIt
-        )
+        val hasIncrease = changes.any { it.newValue > it.previousValue }
 
-        tvTitle.text = getString(com.trainingvalidator.poc.R.string.progression_sheet_title)
-        tvChanges.text = changes.joinToString("\n") { it.second }
+        val tvIcon = view.findViewById<TextView>(R.id.tvProgressionIcon)
+        val tvTitle = view.findViewById<TextView>(R.id.tvProgressionTitle)
+        val changesContainer = view.findViewById<LinearLayout>(R.id.llProgressionChanges)
+        val btnGotIt = view.findViewById<com.google.android.material.button.MaterialButton>(R.id.btnProgressionGotIt)
+
+        tvIcon.text = if (hasIncrease) "\uD83C\uDF1F" else "\uD83D\uDD27"
+        tvTitle.text = if (hasIncrease) getString(R.string.progression_level_up) else getString(R.string.progression_deload_title)
+
+        for (change in changes) {
+            changesContainer.addView(buildProgressionChangeCard(change))
+        }
+
         btnGotIt.setOnClickListener { dialog.dismiss() }
-
         dialog.show()
+    }
+
+    private fun buildProgressionChangeCard(change: ProgressionEntryData): LinearLayout {
+        val isIncrease = change.newValue > change.previousValue
+        val accentColor = if (isIncrease) ContextCompat.getColor(this, R.color.success)
+            else ContextCompat.getColor(this, R.color.warning)
+        val dp = { v: Int -> (v * resources.displayMetrics.density).toInt() }
+
+        return LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            layoutParams = LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT
+            ).apply { bottomMargin = dp(8) }
+            background = GradientDrawable().apply {
+                setColor(ContextCompat.getColor(context, R.color.surface_variant))
+                cornerRadius = dp(12).toFloat()
+            }
+            setPadding(dp(14), dp(12), dp(14), dp(12))
+
+            // Top row: arrow + field change text
+            val topRow = LinearLayout(context).apply {
+                orientation = LinearLayout.HORIZONTAL
+                gravity = Gravity.CENTER_VERTICAL
+            }
+
+            topRow.addView(TextView(context).apply {
+                text = if (isIncrease) "\u2191" else "\u2193"
+                setTextColor(accentColor)
+                textSize = 24f
+                setTypeface(typeface, Typeface.BOLD)
+                layoutParams = LinearLayout.LayoutParams(
+                    LinearLayout.LayoutParams.WRAP_CONTENT,
+                    LinearLayout.LayoutParams.WRAP_CONTENT
+                ).apply { marginEnd = dp(10) }
+            })
+
+            val textCol = LinearLayout(context).apply {
+                orientation = LinearLayout.VERTICAL
+                layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f)
+            }
+
+            val fieldLabel = when (change.field) {
+                "weightKg" -> getString(R.string.progression_field_weight)
+                "targetReps" -> getString(R.string.progression_field_reps)
+                "sets" -> getString(R.string.progression_field_sets)
+                "reassessment" -> getString(R.string.progression_field_reassessment)
+                else -> change.field
+            }
+
+            val formattedFrom = formatFieldValue(change.field, change.previousValue)
+            val formattedTo = formatFieldValue(change.field, change.newValue)
+            val changeStr = if (isIncrease) {
+                getString(R.string.progression_change_increase, fieldLabel, formattedFrom, formattedTo)
+            } else {
+                getString(R.string.progression_change_decrease, fieldLabel, formattedFrom, formattedTo)
+            }
+
+            textCol.addView(TextView(context).apply {
+                text = changeStr
+                setTextColor(ContextCompat.getColor(context, R.color.text_primary))
+                textSize = 14f
+                setTypeface(typeface, Typeface.BOLD)
+            })
+
+            val exName = change.exerciseName?.let { if (isArabic) it["ar"] else it["en"] }
+            if (!exName.isNullOrBlank()) {
+                textCol.addView(TextView(context).apply {
+                    text = getString(R.string.progression_for_exercise, exName)
+                    setTextColor(ContextCompat.getColor(context, R.color.text_secondary))
+                    textSize = 12f
+                })
+            }
+
+            topRow.addView(textCol)
+            addView(topRow)
+
+            // Visual progress bar
+            val maxVal = maxOf(change.previousValue, change.newValue).toFloat()
+            if (maxVal > 0f) {
+                addView(android.view.View(context).apply {
+                    layoutParams = LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, dp(1)).apply {
+                        topMargin = dp(8); bottomMargin = dp(6)
+                    }
+                    setBackgroundColor(ContextCompat.getColor(context, R.color.divider))
+                })
+
+                addView(buildBarRow(if (isArabic) "قبل" else "Before", change.previousValue.toFloat(), maxVal,
+                    ContextCompat.getColor(this@ProgramSessionReportActivity, R.color.text_secondary)))
+                addView(buildBarRow(if (isArabic) "بعد" else "After", change.newValue.toFloat(), maxVal, accentColor))
+            }
+        }
+    }
+
+    private fun buildBarRow(label: String, value: Float, max: Float, color: Int): LinearLayout {
+        val dp = { v: Int -> (v * resources.displayMetrics.density).toInt() }
+        return LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL
+            gravity = Gravity.CENTER_VERTICAL
+            layoutParams = LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT
+            ).apply { topMargin = dp(3) }
+
+            addView(TextView(context).apply {
+                text = label; textSize = 11f
+                setTextColor(ContextCompat.getColor(context, R.color.text_secondary))
+                layoutParams = LinearLayout.LayoutParams(dp(36), LinearLayout.LayoutParams.WRAP_CONTENT)
+            })
+
+            val fraction = if (max > 0) (value / max).coerceIn(0f, 1f) else 0f
+            val barBg = LinearLayout(context).apply {
+                layoutParams = LinearLayout.LayoutParams(0, dp(6), 1f)
+                background = GradientDrawable().apply {
+                    setColor(ContextCompat.getColor(context, R.color.surface_variant))
+                    cornerRadius = dp(3).toFloat()
+                }
+                weightSum = 1f
+            }
+            barBg.addView(android.view.View(context).apply {
+                layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.MATCH_PARENT).apply { weight = fraction }
+                background = GradientDrawable().apply { setColor(color); cornerRadius = dp(3).toFloat() }
+            })
+            barBg.addView(android.view.View(context).apply {
+                layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.MATCH_PARENT).apply { weight = 1f - fraction }
+            })
+            addView(barBg)
+
+            addView(TextView(context).apply {
+                text = String.format("%.1f", value); textSize = 11f
+                setTextColor(color); setTypeface(typeface, Typeface.BOLD)
+                layoutParams = LinearLayout.LayoutParams(
+                    LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.WRAP_CONTENT
+                ).apply { marginStart = dp(6) }
+            })
+        }
+    }
+
+    private fun formatFieldValue(field: String, value: Double): String {
+        return when (field) {
+            "weightKg" -> "${String.format("%.1f", value)}kg"
+            "targetReps", "sets" -> "${value.toInt()}"
+            else -> String.format("%.1f", value)
+        }
     }
 }

@@ -1,30 +1,23 @@
 /**
  * Progression Engine — Evaluates performance data and adjusts training parameters.
  *
- * Starts with 3 rules (architecture plan Section 7):
- *   1. Weight increase: avgFormScore >= 75 for last 2 sessions, completionRate >= 90% → +2.5kg
- *   2. Rep increase: avgFormScore >= 80 for full week, avgROM >= 95% → +2 reps
- *   3. Deload safety: avgFormScore < 60 for last 2 sessions → -2.5kg + notification
+ * Uses ExerciseProgressionProfile (archetype-based) for bounds/gates,
+ * and ProgressionRule for runtime decisions.
  *
- * The engine always works with Float 0-100 values (Metrics Contract Section 5.4).
+ * Quality Gate: form/stability/symmetry must pass threshold BEFORE any quantity change.
+ * Bounds: weight/reps/duration never exceed profile-defined min/max.
  */
 
 import { getPrisma } from '@/lib/prisma/client';
 import { intX10ToFloat } from '@/lib/metrics';
+import type { ProgressionCondition } from './archetype-defaults';
 
 // ── Types ──
 
-interface ProgressionCondition {
-  metric: string;  // avgFormScore | completionRate | avgROM | totalVolume | symmetryScore
-  operator: string; // >= | <= | > | < | ==
-  value: number;
-  window: string;  // last_session | last_2_sessions | last_week | all_program
-}
-
 interface ProgressionAction {
-  type: string;    // increase_weight | decrease_weight | increase_reps | decrease_reps | increase_sets | change_difficulty | suggest_reassessment
+  type: string;
   amount: number | null;
-  notification: Record<string, string> | null; // { ar: "...", en: "..." }
+  notification: Record<string, string> | null;
 }
 
 export interface ProgressionChange {
@@ -35,6 +28,19 @@ export interface ProgressionChange {
   newValue: number;
   reason: string;
   notification: Record<string, string> | null;
+}
+
+export interface EvaluateOptions {
+  scope: 'global_and_program' | 'exercise';
+  exerciseId?: string;
+  programId: string;
+}
+
+interface ProfileBounds {
+  repRange?: { min: number; max: number } | null;
+  weightBounds?: { min: number; max: number; step: number } | null;
+  durationBounds?: { min: number; max: number; step: number } | null;
+  qualityGate?: { metric: string; threshold: number } | null;
 }
 
 // ── Metric Resolution ──
@@ -48,7 +54,6 @@ async function resolveMetric(
 ): Promise<number | null> {
   const prisma = await getPrisma();
 
-  // Build date filter for 'last_week' window (actual 7-day window)
   const dateFilter = window === 'last_week'
     ? { gte: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000) }
     : undefined;
@@ -56,11 +61,12 @@ async function resolveMetric(
   if (metric === 'avgFormScore' || metric === 'avgROM' || metric === 'avgSymmetry' || metric === 'avgStability') {
     const take = window === 'last_session' ? 1
       : window === 'last_2_sessions' ? 2
-      : undefined; // 'last_week' uses date filter, 'all_program' gets all
+      : undefined;
 
     const sessions = await prisma.trainingSession.findMany({
       where: {
         userId,
+        context: 'program',
         ...(exerciseId ? { exerciseId } : {}),
         ...(dateFilter ? { timestamp: dateFilter } : {}),
       },
@@ -113,9 +119,7 @@ async function resolveMetric(
     if (reports.length === 0) return null;
 
     const rates = reports.map((r) => {
-      // Prefer avgAccuracy if available (already a percentage)
       if (r.avgAccuracy != null && r.avgAccuracy > 0) return r.avgAccuracy;
-      // Fall back to sets completion rate: completedSets / totalSets * 100
       const totalSets = r.totalSets ?? 0;
       if (totalSets === 0) return 100;
       const completedSets = r.completedSets ?? 0;
@@ -142,32 +146,44 @@ function evaluateCondition(metricValue: number | null, operator: string, thresho
   }
 }
 
+// ── Bounds Enforcement ──
+
+function clampToBounds(field: string, value: number, bounds: ProfileBounds): number {
+  if (field === 'weightKg' && bounds.weightBounds) {
+    return Math.min(bounds.weightBounds.max, Math.max(bounds.weightBounds.min, value));
+  }
+  if (field === 'targetReps' && bounds.repRange) {
+    return Math.min(bounds.repRange.max, Math.max(bounds.repRange.min, value));
+  }
+  if (field === 'targetDuration' && bounds.durationBounds) {
+    return Math.min(bounds.durationBounds.max, Math.max(bounds.durationBounds.min, value));
+  }
+  return Math.max(0, value);
+}
+
 // ── Service ──
 
 export const progressionService = {
-  /**
-   * Evaluate all applicable progression rules after a session is completed.
-   * Returns list of changes that were applied.
-   */
   async evaluateAfterSession(
     userId: string,
     sessionId: string,
-    exerciseId?: string,
-    programId?: string,
+    options: EvaluateOptions,
   ): Promise<ProgressionChange[]> {
     const prisma = await getPrisma();
     const changes: ProgressionChange[] = [];
+    const { scope, exerciseId, programId } = options;
 
-    // Load applicable rules (priority: global → program → exercise)
-    const scopeFilters: Record<string, unknown>[] = [
-      { scope: 'global' },
-    ];
-    if (programId) {
+    // Build scope filter to avoid duplicate rule evaluation
+    const scopeFilters: Record<string, unknown>[] = [];
+
+    if (scope === 'global_and_program') {
+      scopeFilters.push({ scope: 'global' });
       scopeFilters.push({ scope: 'program', programId });
+    } else if (scope === 'exercise' && exerciseId) {
+      scopeFilters.push({ scope: 'exercise', exerciseId });
     }
-    if (exerciseId) {
-      scopeFilters.push({ scope: 'exercise', exerciseSlug: exerciseId });
-    }
+
+    if (scopeFilters.length === 0) return changes;
 
     const rules = await prisma.progressionRule.findMany({
       where: {
@@ -178,13 +194,65 @@ export const progressionService = {
       orderBy: { priority: 'desc' },
     });
 
+    // Load profile for exercise-scoped evaluation (for bounds/gates)
+    let profileBounds: ProfileBounds = {};
+    if (exerciseId) {
+      const profile = await prisma.exerciseProgressionProfile.findUnique({
+        where: { exerciseId },
+      });
+      if (profile) {
+        profileBounds = {
+          repRange: profile.repRange as ProfileBounds['repRange'],
+          weightBounds: profile.weightBounds as ProfileBounds['weightBounds'],
+          durationBounds: profile.durationBounds as ProfileBounds['durationBounds'],
+          qualityGate: profile.qualityGate as ProfileBounds['qualityGate'],
+        };
+      }
+    }
+
+    // Quality gate check: if profile defines a gate, verify it before any promotion
+    if (profileBounds.qualityGate) {
+      const gateValue = await resolveMetric(
+        userId, exerciseId, programId,
+        profileBounds.qualityGate.metric, 'last_2_sessions',
+      );
+      if (gateValue !== null && gateValue < profileBounds.qualityGate.threshold) {
+        // Quality gate not passed — skip promotion rules, only allow regression
+        const regressionRules = rules.filter((r) => {
+          const action = r.action as unknown as ProgressionAction;
+          return action?.type?.startsWith('decrease') || action?.type === 'suggest_reassessment';
+        });
+
+        for (const rule of regressionRules) {
+          const conditions = Array.isArray(rule.conditions) ? rule.conditions as unknown as ProgressionCondition[] : [];
+          const action = rule.action as unknown as ProgressionAction;
+          if (!action || conditions.length === 0) continue;
+
+          let allMet = true;
+          for (const cond of conditions) {
+            const value = await resolveMetric(userId, exerciseId, programId, cond.metric, cond.window);
+            if (!evaluateCondition(value, cond.operator, cond.value)) {
+              allMet = false;
+              break;
+            }
+          }
+
+          if (allMet) {
+            const change = await this.executeAction(userId, rule.id, rule.name, sessionId, action, exerciseId, programId, profileBounds);
+            if (change) changes.push(change);
+          }
+        }
+
+        return changes;
+      }
+    }
+
     for (const rule of rules) {
       const conditions = Array.isArray(rule.conditions) ? rule.conditions as unknown as ProgressionCondition[] : [];
       const action = rule.action as unknown as ProgressionAction;
 
       if (!action || conditions.length === 0) continue;
 
-      // Evaluate all conditions
       let allMet = true;
       for (const cond of conditions) {
         const value = await resolveMetric(userId, exerciseId, programId, cond.metric, cond.window);
@@ -196,8 +264,7 @@ export const progressionService = {
 
       if (!allMet) continue;
 
-      // Execute action
-      const change = await this.executeAction(userId, rule.id, rule.name, sessionId, action, exerciseId, programId);
+      const change = await this.executeAction(userId, rule.id, rule.name, sessionId, action, exerciseId, programId, profileBounds);
       if (change) {
         changes.push(change);
       }
@@ -206,9 +273,6 @@ export const progressionService = {
     return changes;
   },
 
-  /**
-   * Execute a progression action and log the change.
-   */
   async executeAction(
     userId: string,
     ruleId: string,
@@ -217,11 +281,11 @@ export const progressionService = {
     action: ProgressionAction,
     exerciseId?: string,
     programId?: string,
+    bounds?: ProfileBounds,
   ): Promise<ProgressionChange | null> {
     const prisma = await getPrisma();
     const amount = action.amount ?? 0;
 
-    // Handle suggest_reassessment (doesn't need a session item)
     if (action.type === 'suggest_reassessment') {
       await prisma.reassessmentSchedule.create({
         data: {
@@ -246,9 +310,6 @@ export const progressionService = {
 
     if (!programId) return null;
 
-    // Find the next session item to adjust.
-    // For exercise-specific rules: find that exact exercise.
-    // For global/program rules: find next uncompleted session's first exercise item.
     const nextItem = exerciseId
       ? await prisma.programSessionItem.findFirst({
           where: {
@@ -281,7 +342,8 @@ export const progressionService = {
       case 'increase_weight':
         field = 'weightKg';
         previousValue = nextItem.weightKg ?? 0;
-        newValue = previousValue + amount;
+        newValue = clampToBounds(field, previousValue + amount, bounds ?? {});
+        if (newValue === previousValue) return null;
         await prisma.programSessionItem.update({
           where: { id: nextItem.id },
           data: { weightKg: newValue, isPersonalized: true },
@@ -291,7 +353,8 @@ export const progressionService = {
       case 'decrease_weight':
         field = 'weightKg';
         previousValue = nextItem.weightKg ?? 0;
-        newValue = Math.max(0, previousValue - amount);
+        newValue = clampToBounds(field, previousValue - amount, bounds ?? {});
+        if (newValue === previousValue) return null;
         await prisma.programSessionItem.update({
           where: { id: nextItem.id },
           data: { weightKg: newValue, isPersonalized: true },
@@ -301,7 +364,8 @@ export const progressionService = {
       case 'increase_reps':
         field = 'targetReps';
         previousValue = nextItem.targetReps ?? 0;
-        newValue = previousValue + amount;
+        newValue = clampToBounds(field, previousValue + amount, bounds ?? {});
+        if (newValue === previousValue) return null;
         await prisma.programSessionItem.update({
           where: { id: nextItem.id },
           data: { targetReps: Math.round(newValue), isPersonalized: true },
@@ -311,10 +375,33 @@ export const progressionService = {
       case 'decrease_reps':
         field = 'targetReps';
         previousValue = nextItem.targetReps ?? 0;
-        newValue = Math.max(1, previousValue - amount);
+        newValue = clampToBounds(field, previousValue - amount, bounds ?? {});
+        if (newValue === previousValue) return null;
         await prisma.programSessionItem.update({
           where: { id: nextItem.id },
           data: { targetReps: Math.round(newValue), isPersonalized: true },
+        });
+        break;
+
+      case 'increase_duration':
+        field = 'targetDuration';
+        previousValue = nextItem.targetDuration ?? 0;
+        newValue = clampToBounds(field, previousValue + amount, bounds ?? {});
+        if (newValue === previousValue) return null;
+        await prisma.programSessionItem.update({
+          where: { id: nextItem.id },
+          data: { targetDuration: Math.round(newValue), isPersonalized: true },
+        });
+        break;
+
+      case 'decrease_duration':
+        field = 'targetDuration';
+        previousValue = nextItem.targetDuration ?? 0;
+        newValue = clampToBounds(field, previousValue - amount, bounds ?? {});
+        if (newValue === previousValue) return null;
+        await prisma.programSessionItem.update({
+          where: { id: nextItem.id },
+          data: { targetDuration: Math.round(newValue), isPersonalized: true },
         });
         break;
 
@@ -332,35 +419,18 @@ export const progressionService = {
         return null;
     }
 
-    // Log the change
     const reason = `Rule "${ruleName}": ${field} ${previousValue} → ${newValue}`;
 
     await prisma.progressionHistory.create({
-      data: {
-        userId,
-        ruleId,
-        sessionId,
-        field,
-        previousValue,
-        newValue,
-        reason,
-      },
+      data: { userId, ruleId, sessionId, field, previousValue, newValue, reason },
     });
 
     return {
-      ruleId,
-      ruleName,
-      field,
-      previousValue,
-      newValue,
-      reason,
+      ruleId, ruleName, field, previousValue, newValue, reason,
       notification: action.notification ?? null,
     };
   },
 
-  /**
-   * Get progression history for a user.
-   */
   async getHistory(userId: string, limit = 20): Promise<unknown[]> {
     const prisma = await getPrisma();
 
@@ -383,45 +453,40 @@ export const progressionService = {
     }));
   },
 
-  /**
-   * Get unseen progression changes for mobile notifications.
-   * Returns changes the user hasn't acknowledged yet.
-   */
   async getRecent(userId: string): Promise<unknown[]> {
     const prisma = await getPrisma();
 
     const entries = await prisma.progressionHistory.findMany({
       where: { userId, seen: false },
       include: {
-        rule: { select: { name: true, exerciseSlug: true } },
+        rule: { select: { name: true, exerciseId: true } },
       },
       orderBy: { appliedAt: 'desc' },
       take: 10,
     });
 
-    // Resolve exercise names for rules scoped to a specific exercise
-    const exerciseSlugs = [
-      ...new Set(entries.map((e) => e.rule.exerciseSlug).filter(Boolean) as string[]),
+    const exerciseIds = [
+      ...new Set(entries.map((e) => e.rule.exerciseId).filter(Boolean) as string[]),
     ];
     const exerciseMap = new Map<string, Record<string, string>>();
 
-    if (exerciseSlugs.length > 0) {
+    if (exerciseIds.length > 0) {
       const exercises = await prisma.exercise.findMany({
-        where: { slug: { in: exerciseSlugs } },
-        select: { slug: true, name: true },
+        where: { id: { in: exerciseIds } },
+        select: { id: true, name: true, slug: true },
       });
       for (const ex of exercises) {
-        exerciseMap.set(ex.slug, ex.name as Record<string, string>);
+        exerciseMap.set(ex.id, ex.name as Record<string, string>);
       }
     }
 
     return entries.map((e) => {
-      const slug = e.rule.exerciseSlug ?? null;
+      const exId = e.rule.exerciseId ?? null;
       return {
         id: e.id,
         ruleName: e.rule.name,
-        exerciseName: slug ? (exerciseMap.get(slug) ?? null) : null,
-        exerciseSlug: slug,
+        exerciseName: exId ? (exerciseMap.get(exId) ?? null) : null,
+        exerciseId: exId,
         field: e.field,
         previousValue: e.previousValue,
         newValue: e.newValue,
@@ -433,8 +498,52 @@ export const progressionService = {
   },
 
   /**
-   * Mark progression changes as seen (acknowledged by the user).
+   * Session-specific progression data — independent of seen status.
+   * Always returns changes for this session regardless of whether they've been seen.
    */
+  async getBySession(userId: string, sessionId: string): Promise<unknown[]> {
+    const prisma = await getPrisma();
+
+    const entries = await prisma.progressionHistory.findMany({
+      where: { userId, sessionId },
+      include: {
+        rule: { select: { name: true, exerciseId: true } },
+      },
+      orderBy: { appliedAt: 'desc' },
+    });
+
+    const exerciseIds = [
+      ...new Set(entries.map((e) => e.rule.exerciseId).filter(Boolean) as string[]),
+    ];
+    const exerciseMap = new Map<string, Record<string, string>>();
+
+    if (exerciseIds.length > 0) {
+      const exercises = await prisma.exercise.findMany({
+        where: { id: { in: exerciseIds } },
+        select: { id: true, name: true, slug: true },
+      });
+      for (const ex of exercises) {
+        exerciseMap.set(ex.id, ex.name as Record<string, string>);
+      }
+    }
+
+    return entries.map((e) => {
+      const exId = e.rule.exerciseId ?? null;
+      return {
+        id: e.id,
+        ruleName: e.rule.name,
+        exerciseName: exId ? (exerciseMap.get(exId) ?? null) : null,
+        exerciseId: exId,
+        field: e.field,
+        previousValue: e.previousValue,
+        newValue: e.newValue,
+        reason: e.reason,
+        appliedAt: e.appliedAt.toISOString(),
+        seen: e.seen,
+      };
+    });
+  },
+
   async markSeen(userId: string, ids: string[]): Promise<number> {
     const prisma = await getPrisma();
 

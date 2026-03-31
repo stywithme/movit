@@ -25,6 +25,7 @@ const PROTECTED_ROUTE_PREFIXES: Record<string, string> = {
   '/admin/levels': 'Level',
   '/admin/assessment-templates': 'AssessmentTemplate',
   '/admin/progression-rules': 'ProgressionRule',
+  '/admin/exercise-progression': 'ExerciseProgressionProfile',
   '/admin/analytics/programs': 'ProgramAnalytics',
   '/admin/analytics/levels': 'LevelAnalytics',
   '/admin/analytics/assessments': 'AssessmentAnalytics',

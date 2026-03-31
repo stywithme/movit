@@ -11,6 +11,7 @@ import androidx.core.view.WindowCompat
 import androidx.lifecycle.lifecycleScope
 import com.trainingvalidator.poc.R
 import com.trainingvalidator.poc.databinding.ActivitySplashBinding
+import com.trainingvalidator.poc.storage.AuthManager
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
@@ -95,25 +96,22 @@ class SplashActivity : AppCompatActivity() {
 
     private fun navigateAfterDelay() {
         lifecycleScope.launch {
-            delay(2500) // Show splash for 2.5 seconds
-            
-            // Check if first launch or logged in
+            delay(2500)
+
             val prefs = getSharedPreferences("app_prefs", MODE_PRIVATE)
             val isFirstLaunch = prefs.getBoolean("is_first_launch", true)
-            val isLoggedIn = prefs.getBoolean("is_logged_in", false)
-            
+            val isLoggedIn = AuthManager.isLoggedIn(this@SplashActivity)
+            val isTokenExpired = AuthManager.isTokenExpired(this@SplashActivity)
+
             val nextActivity = when {
                 isFirstLaunch -> OnboardingActivity::class.java
-                !isLoggedIn -> SignInActivity::class.java
-                else -> {
-                    // Navigate to main app with bottom navigation
-                    com.trainingvalidator.poc.ui.main.MainContainerActivity::class.java
-                }
+                !isLoggedIn || isTokenExpired -> SignInActivity::class.java
+                else -> com.trainingvalidator.poc.ui.main.MainContainerActivity::class.java
             }
-            
+
             startActivity(Intent(this@SplashActivity, nextActivity))
             finish()
-            
+
             @Suppress("DEPRECATION")
             overridePendingTransition(android.R.anim.fade_in, android.R.anim.fade_out)
         }

@@ -7,7 +7,7 @@
  *   POST /mobile/progression/mark-seen — Acknowledge changes
  */
 
-import { Body, Controller, Get, Post, Req, Res } from '@nestjs/common';
+import { Body, Controller, Get, Param, Post, Req, Res } from '@nestjs/common';
 import type { Request, Response } from 'express';
 import { verifyMobileToken } from '@/modules/auth/auth.service';
 import { progressionService } from './progression.service';
@@ -51,6 +51,32 @@ export class ProgressionController {
       console.error('[Progression] Recent error:', error);
       res.status(500);
       return { success: false, error: 'Failed to fetch recent changes' };
+    }
+  }
+
+  /**
+   * Returns progression changes triggered by a specific program session.
+   * Used by mobile to show progression context inside a session/exercise report.
+   */
+  @Get('session/:sessionId')
+  async getBySession(
+    @Req() req: Request,
+    @Res({ passthrough: true }) res: Response,
+    @Param('sessionId') sessionId: string,
+  ) {
+    try {
+      const authResult = await verifyMobileToken(req);
+      if (!authResult.success || !authResult.userId) {
+        res.status(401);
+        return { success: false, error: authResult.error || 'Unauthorized' };
+      }
+
+      const changes = await progressionService.getBySession(authResult.userId, sessionId);
+      return { success: true, data: changes };
+    } catch (error) {
+      console.error('[Progression] Session changes error:', error);
+      res.status(500);
+      return { success: false, error: 'Failed to fetch session progression' };
     }
   }
 

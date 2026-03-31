@@ -13,14 +13,15 @@ import android.widget.*
 import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.lifecycleScope
 import com.google.gson.Gson
+import com.trainingvalidator.poc.R
 import com.trainingvalidator.poc.assessment.AssessmentUploadService
 import com.trainingvalidator.poc.assessment.models.*
 import com.trainingvalidator.poc.network.ApiClient
 import com.trainingvalidator.poc.network.RecommendedProgramData
 import com.trainingvalidator.poc.storage.AuthManager
-import com.trainingvalidator.poc.training.models.LocalizedText
 import com.trainingvalidator.poc.ui.programs.ProgramListActivity
 import com.trainingvalidator.poc.ui.main.MainContainerActivity
+import com.trainingvalidator.poc.ui.utils.currentLanguage
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -39,7 +40,7 @@ import kotlinx.coroutines.withContext
 class AssessmentResultActivity : AppCompatActivity() {
     
     private var result: BodyScanResult? = null
-    private val language: String get() = "en"
+    private val language: String get() = currentLanguage
     
     @Suppress("DEPRECATION")
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -85,17 +86,13 @@ class AssessmentResultActivity : AppCompatActivity() {
         // ═══════════════════════════════════════════
         // SECTION 2: Domain Scores
         // ═══════════════════════════════════════════
-        content.addView(createSectionTitle(
-            if (language == "ar") "أبعاد التقييم" else "Assessment Domains"
-        ))
+        content.addView(createSectionTitle(getString(R.string.assessment_domains_title)))
         content.addView(createDomainScoresSection(res))
         
         // ═══════════════════════════════════════════
         // SECTION 3: Body Map
         // ═══════════════════════════════════════════
-        content.addView(createSectionTitle(
-            if (language == "ar") "خريطة الجسم" else "Body Map"
-        ))
+        content.addView(createSectionTitle(getString(R.string.assessment_body_map_title)))
         content.addView(createBodyMapSection(res))
         
         // ═══════════════════════════════════════════
@@ -103,9 +100,7 @@ class AssessmentResultActivity : AppCompatActivity() {
         // ═══════════════════════════════════════════
         val hypotheses = res?.hypotheses ?: emptyList()
         if (hypotheses.isNotEmpty()) {
-            content.addView(createSectionTitle(
-                if (language == "ar") "ملاحظات حركية" else "Movement Observations"
-            ))
+            content.addView(createSectionTitle(getString(R.string.assessment_observations_title)))
             for (card in hypotheses) {
                 content.addView(createHypothesisCard(card))
             }
@@ -116,9 +111,7 @@ class AssessmentResultActivity : AppCompatActivity() {
         // ═══════════════════════════════════════════
         val gates = res?.safetyGates ?: emptyList()
         if (gates.isNotEmpty()) {
-            content.addView(createSectionTitle(
-                if (language == "ar") "قيود السلامة" else "Safety Restrictions"
-            ))
+            content.addView(createSectionTitle(getString(R.string.assessment_safety_title)))
             for (gate in gates) {
                 content.addView(createSafetyGateCard(gate))
             }
@@ -129,9 +122,7 @@ class AssessmentResultActivity : AppCompatActivity() {
         // ═══════════════════════════════════════════
         val recs = res?.recommendations ?: emptyList()
         if (recs.isNotEmpty()) {
-            content.addView(createSectionTitle(
-                if (language == "ar") "التوصيات" else "Recommendations"
-            ))
+            content.addView(createSectionTitle(getString(R.string.assessment_recommendations_title)))
             for (rec in recs.take(5)) {
                 content.addView(createRecommendationCard(rec))
             }
@@ -191,15 +182,13 @@ class AssessmentResultActivity : AppCompatActivity() {
             lp.bottomMargin = dp(16)
             layoutParams = lp
 
-            // Title
             addView(TextView(context).apply {
-                text = if (language == "ar") "البرنامج المقترح لك" else "Recommended for You"
+                text = getString(R.string.assessment_recommended_for_you)
                 setTextColor(Color.parseColor("#4CAF50"))
                 textSize = 16f
                 setTypeface(null, Typeface.BOLD)
             })
 
-            // Reason
             addView(TextView(context).apply {
                 text = reason
                 setTextColor(Color.parseColor("#81C784"))
@@ -207,8 +196,7 @@ class AssessmentResultActivity : AppCompatActivity() {
                 setPadding(0, dp(4), 0, dp(12))
             })
 
-            // Program name
-            val name = program.name["en"] ?: program.name.values.firstOrNull() ?: program.slug
+            val name = program.name[language] ?: program.name["en"] ?: program.slug
             addView(TextView(context).apply {
                 text = name
                 setTextColor(Color.WHITE)
@@ -216,17 +204,15 @@ class AssessmentResultActivity : AppCompatActivity() {
                 setTypeface(null, Typeface.BOLD)
             })
 
-            // Program info row
             addView(TextView(context).apply {
-                text = "${program.durationWeeks} weeks • ${program.difficulty} • ${program.type}"
+                text = getString(R.string.assessment_program_info, program.durationWeeks, program.difficulty, program.type)
                 setTextColor(Color.parseColor("#B0B0B0"))
                 textSize = 13f
                 setPadding(0, dp(4), 0, dp(16))
             })
 
-            // Enroll button
             addView(Button(context).apply {
-                text = if (language == "ar") "ابدأ هذا البرنامج" else "Start This Program"
+                text = getString(R.string.assessment_start_program)
                 setTextColor(Color.WHITE)
                 setBackgroundColor(Color.parseColor("#4CAF50"))
                 textSize = 16f
@@ -290,7 +276,7 @@ class AssessmentResultActivity : AppCompatActivity() {
             })
             
             addView(TextView(context).apply {
-                text = "Body Score"
+                text = getString(R.string.assessment_body_score)
                 setTextColor(Color.parseColor("#A5D6A7"))
                 textSize = 14f
                 gravity = Gravity.CENTER
@@ -307,10 +293,7 @@ class AssessmentResultActivity : AppCompatActivity() {
             
             // Disclaimer under score
             addView(TextView(context).apply {
-                text = if (language == "ar") 
-                    "هذا مؤشر تحفيزي — القرارات التدريبية تُبنى على الأبعاد أدناه"
-                else 
-                    "Motivational indicator — training decisions use domain scores below"
+                text = getString(R.string.assessment_motivational_note)
                 setTextColor(Color.parseColor("#81C784"))
                 textSize = 11f
                 gravity = Gravity.CENTER
@@ -331,16 +314,16 @@ class AssessmentResultActivity : AppCompatActivity() {
             lp.bottomMargin = dp(16)
             layoutParams = lp
             
-            addView(createDomainRow("Mobility", "المرونة", scores.mobility, 0xFF4CAF50.toInt()))
-            addView(createDomainRow("Control", "التحكم", scores.control, 0xFF2196F3.toInt()))
+            addView(createDomainRow(getString(R.string.domain_mobility), scores.mobility, 0xFF4CAF50.toInt()))
+            addView(createDomainRow(getString(R.string.domain_control), scores.control, 0xFF2196F3.toInt()))
             if (scores.symmetry != null) {
-                addView(createDomainRow("Symmetry", "التماثل", scores.symmetry, 0xFF9C27B0.toInt()))
+                addView(createDomainRow(getString(R.string.domain_symmetry), scores.symmetry, 0xFF9C27B0.toInt()))
             }
-            addView(createDomainRow("Safety", "السلامة", scores.safety, 0xFFFF9800.toInt()))
+            addView(createDomainRow(getString(R.string.domain_safety), scores.safety, 0xFFFF9800.toInt()))
         }
     }
     
-    private fun createDomainRow(nameEn: String, nameAr: String, score: Float, color: Int): LinearLayout {
+    private fun createDomainRow(name: String, score: Float, color: Int): LinearLayout {
         return LinearLayout(this).apply {
             orientation = LinearLayout.HORIZONTAL
             setBackgroundColor(Color.parseColor("#1E1E1E"))
@@ -361,9 +344,8 @@ class AssessmentResultActivity : AppCompatActivity() {
                 }
             })
             
-            // Name
             addView(TextView(context).apply {
-                text = if (language == "ar") nameAr else nameEn
+                text = name
                 setTextColor(Color.WHITE)
                 textSize = 15f
                 layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f)
@@ -395,7 +377,7 @@ class AssessmentResultActivity : AppCompatActivity() {
             
             if (regions.isEmpty()) {
                 addView(TextView(context).apply {
-                    text = "No region data available"
+                    text = getString(R.string.assessment_no_region_data)
                     setTextColor(Color.parseColor("#757575"))
                     textSize = 14f
                     gravity = Gravity.CENTER
@@ -485,7 +467,7 @@ class AssessmentResultActivity : AppCompatActivity() {
             
             // Possible causes
             addView(TextView(context).apply {
-                text = if (language == "ar") "الأسباب المحتملة:" else "Possible causes:"
+                text = getString(R.string.assessment_possible_causes)
                 setTextColor(Color.parseColor("#B0B0B0"))
                 textSize = 12f
                 setPadding(0, dp(8), 0, dp(4))
@@ -540,7 +522,7 @@ class AssessmentResultActivity : AppCompatActivity() {
             
             if (gate.blockedExerciseTypes.isNotEmpty()) {
                 addView(TextView(context).apply {
-                    text = "Blocked: ${gate.blockedExerciseTypes.take(3).joinToString(", ")}"
+                    text = getString(R.string.assessment_blocked, gate.blockedExerciseTypes.take(3).joinToString(", "))
                     setTextColor(Color.parseColor("#BCAAA4"))
                     textSize = 12f
                     setPadding(0, dp(4), 0, 0)
@@ -549,7 +531,7 @@ class AssessmentResultActivity : AppCompatActivity() {
             
             if (gate.allowedAlternatives.isNotEmpty()) {
                 addView(TextView(context).apply {
-                    text = "Alternatives: ${gate.allowedAlternatives.take(3).joinToString(", ")}"
+                    text = getString(R.string.assessment_alternatives, gate.allowedAlternatives.take(3).joinToString(", "))
                     setTextColor(Color.parseColor("#A5D6A7"))
                     textSize = 12f
                     setPadding(0, dp(4), 0, 0)
@@ -608,10 +590,7 @@ class AssessmentResultActivity : AppCompatActivity() {
     
     private fun createDisclaimer(): TextView {
         return TextView(this).apply {
-            text = if (language == "ar") 
-                "⚕️ هذا تقييم حركي وليس تشخيص طبي. استشر متخصص لأي ألم أو مشاكل صحية."
-            else 
-                "⚕️ This is a movement assessment, not a medical diagnosis. Consult a specialist for any pain or health concerns."
+            text = getString(R.string.assessment_disclaimer)
             setTextColor(Color.parseColor("#757575"))
             textSize = 11f
             gravity = Gravity.CENTER
@@ -623,9 +602,8 @@ class AssessmentResultActivity : AppCompatActivity() {
         return LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
 
-            // Primary CTA: Navigate to programs to find a suitable program
             addView(Button(context).apply {
-                text = if (language == "ar") "ابدأ برنامجك" else "Find Your Program"
+                text = getString(R.string.assessment_find_program)
                 setTextColor(Color.WHITE)
                 setBackgroundColor(Color.parseColor("#4CAF50"))
                 textSize = 16f
@@ -634,15 +612,11 @@ class AssessmentResultActivity : AppCompatActivity() {
                     LinearLayout.LayoutParams.MATCH_PARENT,
                     LinearLayout.LayoutParams.WRAP_CONTENT
                 ).apply { bottomMargin = dp(8) }
-
-                setOnClickListener {
-                    navigateToPrograms()
-                }
+                setOnClickListener { navigateToPrograms() }
             })
 
-            // Secondary: Share results
             addView(Button(context).apply {
-                text = if (language == "ar") "شارك نتيجتك" else "Share Results"
+                text = getString(R.string.assessment_share)
                 setTextColor(Color.WHITE)
                 setBackgroundColor(Color.parseColor("#1976D2"))
                 textSize = 15f
@@ -651,11 +625,13 @@ class AssessmentResultActivity : AppCompatActivity() {
                     LinearLayout.LayoutParams.MATCH_PARENT,
                     LinearLayout.LayoutParams.WRAP_CONTENT
                 ).apply { bottomMargin = dp(8) }
+                setOnClickListener {
+                    Toast.makeText(context, getString(R.string.share_not_available), Toast.LENGTH_SHORT).show()
+                }
             })
-            
-            // Go to Home
+
             addView(TextView(context).apply {
-                text = if (language == "ar") "الصفحة الرئيسية" else "Go to Home"
+                text = getString(R.string.assessment_go_home)
                 setTextColor(Color.parseColor("#B0B0B0"))
                 textSize = 14f
                 gravity = Gravity.CENTER

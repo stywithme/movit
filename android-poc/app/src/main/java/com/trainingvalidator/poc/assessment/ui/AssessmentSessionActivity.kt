@@ -15,6 +15,7 @@ import androidx.activity.result.ActivityResultLauncher
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.lifecycleScope
+import com.trainingvalidator.poc.R
 import com.trainingvalidator.poc.assessment.AssessmentUploadService
 import com.trainingvalidator.poc.assessment.engine.AdaptiveBatteryManager
 import com.trainingvalidator.poc.assessment.engine.AssessmentEngine
@@ -22,6 +23,7 @@ import com.trainingvalidator.poc.assessment.engine.AssessmentTemplateManager
 import com.trainingvalidator.poc.assessment.models.AssessmentType
 import com.trainingvalidator.poc.assessment.models.BodyScanResult
 import com.trainingvalidator.poc.assessment.models.PainFlag
+import com.trainingvalidator.poc.storage.AuthManager
 import com.trainingvalidator.poc.storage.ReportStorage
 import com.trainingvalidator.poc.training.report.PostTrainingReport
 import com.trainingvalidator.poc.ui.train.TrainingActivity
@@ -88,6 +90,8 @@ class AssessmentSessionActivity : AppCompatActivity() {
     // Activity result launcher for TrainingActivity
     private lateinit var exerciseLauncher: ActivityResultLauncher<Intent>
 
+    private var templateLoaded = false
+
     @Suppress("DEPRECATION")
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -102,12 +106,6 @@ class AssessmentSessionActivity : AppCompatActivity() {
         reportStorage = ReportStorage(this)
         startTimeMs = System.currentTimeMillis()
 
-        // Try to load assessment template from server
-        lifecycleScope.launch {
-            loadTemplate()
-        }
-
-        // Register the activity result launcher before any UI setup
         exerciseLauncher = registerForActivityResult(
             ActivityResultContracts.StartActivityForResult()
         ) { result ->
@@ -115,7 +113,19 @@ class AssessmentSessionActivity : AppCompatActivity() {
         }
 
         setupUI()
-        showExerciseIntro(currentExerciseIndex)
+        showLoadingState()
+
+        lifecycleScope.launch {
+            loadTemplate()
+            templateLoaded = true
+            showExerciseIntro(currentExerciseIndex)
+        }
+    }
+
+    private fun showLoadingState() {
+        statusText.text = getString(R.string.loading_level)
+        exerciseCountText.text = ""
+        progressBar.progress = 0
     }
 
     private fun setupUI() {
@@ -166,7 +176,7 @@ class AssessmentSessionActivity : AppCompatActivity() {
         val exerciseSlug = allExercises[index]
         val totalExercises = allExercises.size
 
-        exerciseCountText.text = "Movement ${index + 1} of $totalExercises"
+        exerciseCountText.text = getString(R.string.assessment_movement_count, index + 1, totalExercises)
         progressBar.progress = ((index.toFloat() / totalExercises) * 100).toInt()
 
         val exerciseName = getExerciseDisplayName(exerciseSlug)
@@ -186,9 +196,8 @@ class AssessmentSessionActivity : AppCompatActivity() {
             setPadding(0, dp(16), 0, dp(32))
         })
 
-        // Ready button
         rootLayout.addView(Button(this).apply {
-            text = "Ready"
+            text = getString(R.string.assessment_ready)
             setTextColor(Color.WHITE)
             setBackgroundColor(Color.parseColor("#4CAF50"))
             textSize = 16f
@@ -203,9 +212,8 @@ class AssessmentSessionActivity : AppCompatActivity() {
             setOnClickListener { launchExercise(exerciseSlug) }
         })
 
-        // Pain / Skip button
         rootLayout.addView(TextView(this).apply {
-            text = "I feel pain in this movement \u2014 Skip"
+            text = getString(R.string.assessment_skip_pain)
             setTextColor(Color.parseColor("#FF5252"))
             textSize = 13f
             gravity = Gravity.CENTER
@@ -284,7 +292,7 @@ class AssessmentSessionActivity : AppCompatActivity() {
     }
 
     private fun processResults() {
-        statusText.text = "Analyzing your movement..."
+        statusText.text = getString(R.string.assessment_analyzing)
         exerciseCountText.text = ""
         progressBar.progress = 100
 
@@ -294,13 +302,13 @@ class AssessmentSessionActivity : AppCompatActivity() {
         }
 
         if (completedReports.isEmpty()) {
-            statusText.text = "No exercises were completed"
+            statusText.text = getString(R.string.assessment_no_exercises)
 
             rootLayout.addView(TextView(this).apply {
                 text = if (painFlags.isNotEmpty()) {
-                    "You reported pain in ${painFlags.size} movement(s).\nPlease consult a specialist before taking the assessment."
+                    getString(R.string.assessment_pain_message, painFlags.size)
                 } else {
-                    "Please try the assessment again."
+                    getString(R.string.assessment_retry)
                 }
                 setTextColor(Color.parseColor("#B0B0B0"))
                 textSize = 14f
@@ -309,7 +317,7 @@ class AssessmentSessionActivity : AppCompatActivity() {
             })
 
             rootLayout.addView(Button(this).apply {
-                text = "Go Back"
+                text = getString(R.string.go_back)
                 setTextColor(Color.WHITE)
                 setBackgroundColor(Color.parseColor("#333333"))
                 setOnClickListener { finish() }
@@ -381,30 +389,23 @@ class AssessmentSessionActivity : AppCompatActivity() {
     }
 
     private fun getUserId(): String {
-        val prefs = getSharedPreferences("app_prefs", Context.MODE_PRIVATE)
-        return prefs.getString("user_id", "unknown") ?: "unknown"
+        return getSharedPreferences("app_prefs", Context.MODE_PRIVATE)
+            .getString("user_id", "unknown") ?: "unknown"
     }
 
     private suspend fun loadTemplate() {
         try {
-            val prefs = getSharedPreferences("app_prefs", Context.MODE_PRIVATE)
-            val token = prefs.getString("auth_token", null) ?: return
-            
+            val token = AuthManager.getAccessToken(this) ?: return
             val template = AssessmentTemplateManager.resolve(this, token)
             if (template != null) {
                 val coreSlugs = template.exercises
                     .filter { it.entryType == "core" }
                     .sortedBy { it.sortOrder }
                     .map { it.exerciseSlug }
-                
+
                 if (coreSlugs.isNotEmpty()) {
                     coreExercises = coreSlugs.toMutableList()
                     Log.d(TAG, "Loaded ${coreSlugs.size} core exercises from template")
-                    
-                    // Restart exercise display if still on first exercise
-                    if (currentExerciseIndex == 0 && completedReports.isEmpty()) {
-                        runOnUiThread { showExerciseIntro(0) }
-                    }
                 }
             }
         } catch (e: Exception) {

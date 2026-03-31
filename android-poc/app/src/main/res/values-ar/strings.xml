@@ -159,9 +159,46 @@
     <string name="progression_sheet_title">تم تعديل التدريب</string>
     <string name="progression_sheet_subtitle">بناءً على أدائك، قمنا بتحديث جلستك القادمة:</string>
     <string name="progression_sheet_got_it">فهمت!</string>
+    <string name="progression_sheet_view_details">عرض التفاصيل</string>
     <string name="progression_field_weight">الوزن</string>
     <string name="progression_field_reps">التكرارات</string>
     <string name="progression_field_sets">المجموعات</string>
+    <string name="progression_field_reassessment">إعادة تقييم</string>
+
+    <!-- Progression Report Page -->
+    <string name="progression_page_title">تقدّمك</string>
+    <string name="progression_level_up">ارتقيت!</string>
+    <string name="progression_great_performance">أداء ممتاز — تم رفع مستوى تدريبك!</string>
+    <string name="progression_deload_title">تعديل التدريب</string>
+    <string name="progression_deload_message">تم تخفيف الحمل لمساعدتك على بناء أساس أقوى.</string>
+    <string name="progression_what_changed">ما الذي تغيّر</string>
+    <string name="progression_why">لماذا حدث هذا</string>
+    <string name="progression_why_form_score">متوسط جودة الأداء %1$d%% في آخر %2$d جلسات</string>
+    <string name="progression_why_completion">نسبة الإكمال كانت %1$d%%</string>
+    <string name="progression_why_rom">متوسط نطاق الحركة %1$d%%</string>
+    <string name="progression_what_next">ما القادم</string>
+    <string name="progression_next_weight_tip">حافظ على جودة أداء 75%+ لجلستين إضافيتين لزيادة الوزن مجدداً</string>
+    <string name="progression_next_reps_tip">حافظ على جودة 80%+ لأسبوع كامل مع نطاق حركة 95%+ لزيادة التكرارات</string>
+    <string name="progression_next_deload_tip">ركّز على الحفاظ على الشكل الصحيح — سيتم زيادة الحمل عند تحسن أدائك</string>
+    <string name="progression_no_changes_title">استمر!</string>
+    <string name="progression_no_changes_message">لم يتم إجراء تعديلات بعد — استمر بالتدريب بانتظام وسيأتي التقدّم!</string>
+    <string name="progression_no_changes_goal">هدفك القادم: حافظ على جودة أداء أعلى من 75%% لجلستين</string>
+    <string name="progression_loading">جاري التحقق من التقدّم…</string>
+    <string name="progression_change_increase">تم زيادة %1$s من %2$s إلى %3$s</string>
+    <string name="progression_change_decrease">تم تعديل %1$s من %2$s إلى %3$s</string>
+    <string name="progression_for_exercise">لتمرين %1$s</string>
+
+    <!-- Progression in Plan Overview -->
+    <string name="progression_summary_title">ملخص التقدّم</string>
+    <string name="progression_summary_increases">%1$d زيادة</string>
+    <string name="progression_summary_adjustments">%1$d تعديل</string>
+    <string name="progression_summary_this_month">هذا الشهر</string>
+    <string name="progression_grouped_by_exercise">حسب التمرين</string>
+
+    <!-- Progression Home Card -->
+    <string name="progression_home_title">تم تحديث التدريب</string>
+    <string name="progression_home_subtitle">تم تعديل خطة تدريبك بناءً على أدائك</string>
+    <string name="progression_home_view">عرض التغييرات</string>
 
     <!-- Quick Start -->
     <string name="quick_start_title">ابدأ الآن</string>
@@ -897,4 +934,58 @@
     <string name="plan_overview_title">خطة تدريبي</string>
     <string name="plan_upcoming_reassessment">إعادة التقييم القادمة</string>
     <string name="plan_recent_adjustments">التعديلات الأخيرة</string>
+
+    <!-- Assessment / Body Scan -->
+    <string name="screening_title">فحص ما قبل الاختبار</string>
+    <string name="screening_subtitle">للتأكد من سلامتك، يرجى الإجابة على الأسئلة التالية.</string>
+    <string name="screening_disclaimer">⚕️ تنبيه: هذا ليس فحص طبي. هو أداة wellness لتقييم الحركة فقط.</string>
+    <string name="screening_start">ابدأ الاختبار</string>
+    <string name="screening_continue_warning">متابعة مع تحذير</string>
+    <string name="screening_warning_title">تحذير</string>
+    <string name="screening_warning_message">بناءً على إجاباتك، ننصحك باستشارة طبيبك قبل البدء في أي نشاط بدني. هل تريد المتابعة على مسؤوليتك؟</string>
+    <string name="screening_continue">متابعة</string>
+    <string name="go_back">رجوع</string>
+    <string name="assessment_movement_count">الحركة %1$d من %2$d</string>
+    <string name="assessment_ready">جاهز</string>
+    <string name="assessment_skip_pain">أشعر بألم في هذه الحركة — تخطي</string>
+    <string name="assessment_analyzing">جاري تحليل حركتك…</string>
+    <string name="assessment_no_exercises">لم يتم إكمال أي تمرين</string>
+    <string name="assessment_pain_message">أبلغت عن ألم في %1$d حركة/حركات.\nيرجى استشارة متخصص قبل إجراء الاختبار.</string>
+    <string name="assessment_retry">يرجى المحاولة مرة أخرى.</string>
+    <string name="assessment_domains_title">أبعاد التقييم</string>
+    <string name="assessment_body_map_title">خريطة الجسم</string>
+    <string name="assessment_observations_title">ملاحظات حركية</string>
+    <string name="assessment_safety_title">قيود السلامة</string>
+    <string name="assessment_recommendations_title">التوصيات</string>
+    <string name="assessment_disclaimer">⚕️ هذا تقييم حركي وليس تشخيص طبي. استشر متخصص لأي ألم أو مشاكل صحية.</string>
+    <string name="assessment_find_program">ابدأ برنامجك</string>
+    <string name="assessment_share">شارك نتيجتك</string>
+    <string name="assessment_go_home">الصفحة الرئيسية</string>
+    <string name="assessment_body_score">نتيجة الجسم</string>
+    <string name="assessment_motivational_note">مؤشر تحفيزي — القرارات التدريبية تُبنى على الأبعاد أدناه</string>
+    <string name="assessment_no_region_data">لا توجد بيانات منطقة متاحة</string>
+    <string name="assessment_possible_causes">الأسباب المحتملة:</string>
+    <string name="assessment_blocked">محظور: %1$s</string>
+    <string name="assessment_alternatives">بدائل: %1$s</string>
+    <string name="assessment_recommended_for_you">البرنامج المقترح لك</string>
+    <string name="assessment_start_program">ابدأ هذا البرنامج</string>
+    <string name="assessment_program_info">%1$d أسابيع • %2$s • %3$s</string>
+    <string name="domain_mobility">المرونة</string>
+    <string name="domain_control">التحكم</string>
+    <string name="domain_symmetry">التماثل</string>
+    <string name="domain_safety">السلامة</string>
+    <string name="share_not_available">ميزة المشاركة قريباً</string>
+
+    <string name="recent_activity">النشاط الأخير</string>
+    <string name="home_loading">جاري تحميل بياناتك…</string>
+    <string name="recent_session_item">%1$s · %2$s</string>
+    <string name="no_recent_sessions">لا توجد جلسات حديثة</string>
+    <string name="recent_session_score">النتيجة: %1$d%%</string>
+    <string name="time_just_now">الآن</string>
+    <string name="time_minutes_ago">منذ %1$d د</string>
+    <string name="time_hours_ago">منذ %1$d س</string>
+    <string name="time_days_ago">منذ %1$d أيام</string>
+    <string name="time_weeks_ago">منذ %1$d أسابيع</string>
+    <string name="time_months_ago">منذ %1$d أشهر</string>
+    <string name="time_years_ago">منذ %1$d سنوات</string>
 </resources>

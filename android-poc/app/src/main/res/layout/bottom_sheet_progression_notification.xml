@@ -1,62 +1,57 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout
     xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:orientation="vertical"
-    android:padding="@dimen/spacing_xl"
+    android:paddingHorizontal="@dimen/spacing_xl"
+    android:paddingTop="@dimen/spacing_xl"
+    android:paddingBottom="@dimen/spacing_lg"
     android:background="@color/surface">
 
-    <!-- Icon + Title -->
-    <LinearLayout
+    <!-- Celebration badge -->
+    <TextView
+        android:id="@+id/tvProgressionIcon"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:orientation="horizontal"
-        android:gravity="center_vertical"
-        android:layout_marginBottom="@dimen/spacing_base">
+        android:gravity="center"
+        android:textSize="48sp"
+        android:layout_marginBottom="@dimen/spacing_base"
+        tools:text="\uD83C\uDF1F" />
 
-        <ImageView
-            android:layout_width="32dp"
-            android:layout_height="32dp"
-            android:src="@drawable/ic_trending_up"
-            app:tint="@color/primary"
-            android:layout_marginEnd="@dimen/spacing_sm"
-            android:contentDescription="@null"
-            xmlns:app="http://schemas.android.com/apk/res-auto" />
-
-        <TextView
-            android:id="@+id/tvProgressionTitle"
-            style="@style/TextAppearance.WayToFix.Headline3"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:textColor="@color/text_primary"
-            tools:text="Training Plan Adjusted" />
-
-    </LinearLayout>
-
+    <!-- Title -->
     <TextView
+        android:id="@+id/tvProgressionTitle"
+        style="@style/TextAppearance.WayToFix.Headline3"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:gravity="center"
+        android:textColor="@color/text_primary"
+        android:layout_marginBottom="@dimen/spacing_xs"
+        tools:text="Level Up!" />
+
+    <!-- Subtitle -->
+    <TextView
+        android:id="@+id/tvProgressionSubtitle"
         style="@style/TextAppearance.WayToFix.Caption"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
+        android:gravity="center"
         android:text="@string/progression_sheet_subtitle"
         android:textColor="@color/text_secondary"
         android:layout_marginBottom="@dimen/spacing_lg" />
 
-    <!-- Changes list -->
-    <TextView
-        android:id="@+id/tvProgressionChanges"
-        style="@style/TextAppearance.WayToFix.Body2"
+    <!-- Changes container (cards built programmatically) -->
+    <LinearLayout
+        android:id="@+id/llProgressionChanges"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:textColor="@color/text_primary"
-        android:lineSpacingExtra="6dp"
-        android:background="@color/surface_variant"
-        android:padding="@dimen/spacing_base"
-        android:layout_marginBottom="@dimen/spacing_xl"
-        tools:text="Weight: 10.0 → 12.5 ↑&#10;Reps: 12.0 → 14.0 ↑" />
+        android:orientation="vertical"
+        android:layout_marginBottom="@dimen/spacing_lg" />
 
+    <!-- Got It button -->
     <com.google.android.material.button.MaterialButton
         android:id="@+id/btnProgressionGotIt"
         style="@style/Widget.WayToFix.Button.Primary"

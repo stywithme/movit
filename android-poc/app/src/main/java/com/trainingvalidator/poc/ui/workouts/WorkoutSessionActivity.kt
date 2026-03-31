@@ -144,7 +144,7 @@ class WorkoutSessionActivity : AppCompatActivity() {
                 targetReps = exercise.targetReps,
                 targetDuration = exercise.targetDurationSec,
                 restBetweenSetsMs = exercise.restBetweenSetsMs,
-                weightKg = exercise.weightKg?.toFloat(),
+                weightKg = exercise.weightKg,
                 sortOrder = index
             )
         }

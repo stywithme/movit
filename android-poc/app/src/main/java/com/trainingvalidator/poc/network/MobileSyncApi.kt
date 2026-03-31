@@ -201,6 +201,15 @@ interface MobileSyncApi {
     ): Response<ProgressionHistoryResponse>
 
     /**
+     * Get progression changes triggered by a specific program session.
+     */
+    @GET("api/mobile/progression/session/{sessionId}")
+    suspend fun getSessionProgression(
+        @Header("Authorization") authorization: String,
+        @Path("sessionId") sessionId: String
+    ): Response<ProgressionHistoryResponse>
+
+    /**
      * Mark progression changes as seen/acknowledged.
      */
     @POST("api/mobile/progression/mark-seen")
