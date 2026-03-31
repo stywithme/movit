@@ -1,0 +1,6 @@
+# Train/export posture MLP (Standing/Sitting/Lying) for android-poc
+# Python 3.10+ recommended
+mediapipe>=0.10.14,<0.11
+tensorflow-cpu>=2.15.0,<2.19
+numpy>=1.24.0
+Pillow>=10.0.0
