@@ -203,7 +203,6 @@
     <string name="video_permission_required">مطلوب إذن للوصول إلى الفيديوهات</string>
     <string name="video_permission_rationale">نحتاج إذن الوصول إلى الفيديو لتحليل مقاطع التمرين</string>
     <string name="counting_method_up_down">أعلى وأسفل (مثل القرفصاء)</string>
-    <string name="counting_method_push_pull">دفع وسحب (مثل تمارين الضغط)</string>
     <string name="counting_method_hold">ثبات (مثل البلانك)</string>
     
     <!-- Home -->

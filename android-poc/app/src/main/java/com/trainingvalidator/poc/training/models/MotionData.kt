@@ -31,8 +31,8 @@ object PhaseCode {
     fun fromPhase(phase: Phase): Byte = when (phase) {
         Phase.IDLE, Phase.START -> IDLE
         Phase.DOWN -> ECCENTRIC
-        Phase.BOTTOM, Phase.EXTENDED, Phase.COUNT -> ISOMETRIC
-        Phase.UP, Phase.PUSH, Phase.PULL -> CONCENTRIC
+        Phase.BOTTOM, Phase.COUNT -> ISOMETRIC
+        Phase.UP -> CONCENTRIC
     }
     
     fun toDisplayName(code: Byte): String = when (code) {

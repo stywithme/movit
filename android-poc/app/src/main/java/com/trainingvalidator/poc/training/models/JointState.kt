@@ -879,7 +879,7 @@ object AngleColorResolver {
  * }
  * ```
  *
- * 2. ZONE-SPECIFIC MESSAGES (for Up&Down/Push&Pull exercises):
+ * 2. ZONE-SPECIFIC MESSAGES (for Up&Down exercises):
  * ```json
  * "stateMessages": {
  *   "perfect": {
@@ -990,7 +990,7 @@ sealed class StateMessageValue {
     }
 
     /**
-     * Zone-specific messages (Up&Down/Push&Pull exercises)
+     * Zone-specific messages (Up&Down exercises)
      * Both up and down are optional
      */
     data class ZoneSpecific(

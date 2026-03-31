@@ -154,7 +154,6 @@ class ExerciseDetailActivity : AppCompatActivity() {
         // Counting method
         binding.tvCountingMethod.text = when (exercise.countingMethod) {
             CountingMethod.UP_DOWN -> getString(R.string.counting_method_up_down)
-            CountingMethod.PUSH_PULL -> getString(R.string.counting_method_push_pull)
             CountingMethod.HOLD -> getString(R.string.counting_method_hold)
         }
         

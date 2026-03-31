@@ -180,7 +180,6 @@ class PhaseStateMachine(
         // Determine next phase based on counting method
         val nextPhase = when (countingMethod) {
             CountingMethod.UP_DOWN -> updateUpDown(angle)
-            CountingMethod.PUSH_PULL -> updatePushPull(angle)
             CountingMethod.HOLD -> updateHold(angle)
         }
         
@@ -310,50 +309,6 @@ class PhaseStateMachine(
         }
     }
     
-    /**
-     * Update for PUSH_PULL counting method (Push-up, Bench Press)
-     * 
-     * Flow: IDLE → START → PUSH → EXTENDED → PULL → START (+1 rep)
-     */
-    private fun updatePushPull(angle: Double): Phase {
-        return when (currentPhase) {
-            Phase.IDLE -> {
-                if (isInUpRange(angle)) Phase.START else Phase.IDLE
-            }
-            
-            Phase.START -> {
-                if (hasLeftUpRange(angle)) {
-                    repCountedThisCycle = false
-                    Phase.PUSH
-                } else Phase.START
-            }
-            
-            Phase.PUSH -> {
-                when {
-                    hasEnteredDownRange(angle) -> Phase.EXTENDED
-                    isInUpRange(angle) -> Phase.START
-                    else -> Phase.PUSH
-                }
-            }
-            
-            Phase.EXTENDED -> {
-                if (hasLeftDownRange(angle)) Phase.PULL else Phase.EXTENDED
-            }
-            
-            Phase.PULL -> {
-                when {
-                    hasEnteredUpRange(angle) -> {
-                        Log.d(TAG, "★ Requesting REP completion (PUSH_PULL)")
-                        Phase.START
-                    }
-                    isInDownRange(angle) -> Phase.EXTENDED
-                    else -> Phase.PULL
-                }
-            }
-            
-            else -> currentPhase
-        }
-    }
     
     /**
      * Update for HOLD counting method (Plank, Wall Sit)
@@ -409,8 +364,7 @@ class PhaseStateMachine(
         
         // Check if this is a rep completion transition
         val isRepCompletionTransition = 
-            (currentPhase == Phase.UP && nextPhase == Phase.START) ||
-            (currentPhase == Phase.PULL && nextPhase == Phase.START)
+            (currentPhase == Phase.UP && nextPhase == Phase.START)
         
         // Update phases
         previousPhase = currentPhase
@@ -481,8 +435,7 @@ class PhaseStateMachine(
      * Check if a rep was just completed
      */
     fun wasRepJustCompleted(): Boolean {
-        return (previousPhase == Phase.UP && currentPhase == Phase.START) ||
-               (previousPhase == Phase.PULL && currentPhase == Phase.START)
+        return (previousPhase == Phase.UP && currentPhase == Phase.START)
     }
     
     /**
@@ -511,11 +464,6 @@ enum class Phase {
     DOWN,       // Moving towards target (going down)
     BOTTOM,     // At target position (bottom)
     UP,         // Returning to start (going up)
-    
-    // PUSH_PULL specific
-    PUSH,       // Pushing motion (going towards target)
-    EXTENDED,   // At extended/target position
-    PULL,       // Pulling motion (returning)
     
     // HOLD specific
     COUNT       // In hold zone (timer running)

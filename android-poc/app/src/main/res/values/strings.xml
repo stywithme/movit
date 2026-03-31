@@ -203,7 +203,6 @@
     <string name="video_permission_required">Permission required to access videos</string>
     <string name="video_permission_rationale">Video access permission is needed to analyze exercise videos</string>
     <string name="counting_method_up_down">Up &amp; Down (like Squat)</string>
-    <string name="counting_method_push_pull">Push &amp; Pull (like Push-up)</string>
     <string name="counting_method_hold">Hold (like Plank)</string>
     
     <!-- Home -->
