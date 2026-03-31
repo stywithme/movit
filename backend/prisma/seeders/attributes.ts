@@ -146,16 +146,10 @@ export async function seedAttributes(prisma: PrismaClient) {
       sortOrder: 1,
     },
     {
-      code: 'push_pull',
-      name: { ar: 'دفع وسحب', en: 'Push & Pull' },
-      description: { ar: 'يعد التكرارات عند الدفع والسحب (مثل تمارين الضغط)', en: 'Counts reps on push and pull movement (like push-ups)' },
-      sortOrder: 2,
-    },
-    {
       code: 'hold',
       name: { ar: 'ثبات', en: 'Hold' },
       description: { ar: 'تمارين الثبات - يحسب الوقت بدلاً من التكرارات (مثل البلانك)', en: 'Isometric exercises - counts time instead of reps (like plank)' },
-      sortOrder: 3,
+      sortOrder: 2,
     },
   ];
 

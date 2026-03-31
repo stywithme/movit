@@ -1460,7 +1460,7 @@ class TrainingActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetection
                 
                 // Capture peak frame when entering BOTTOM or EXTENDED phase
                 if (phase != lastCapturedPhase) {
-                    if (phase == Phase.BOTTOM || phase == Phase.EXTENDED) {
+                    if (phase == Phase.BOTTOM) {
                         capturePeakFrame(phase)
                     }
                     lastCapturedPhase = phase
@@ -2956,9 +2956,6 @@ class TrainingActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetection
             Phase.DOWN -> "Going Down"
             Phase.BOTTOM -> "Hold"
             Phase.UP -> "Going Up"
-            Phase.PUSH -> "Push"
-            Phase.EXTENDED -> "Extended"
-            Phase.PULL -> "Pull"
             Phase.COUNT -> if (isHoldExercise) "Holding..." else "Counting"
         }
     }

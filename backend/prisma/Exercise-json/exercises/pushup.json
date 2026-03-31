@@ -18,7 +18,7 @@
       "en": "Chest"
     }
   },
-  "countingMethod": "push_pull",
+  "countingMethod": "up_down",
   "muscles": ["chest", "shoulders", "triceps", "core"],
   "equipment": ["bodyweight"],
   "tags": ["compound", "upper-body", "no-equipment"],

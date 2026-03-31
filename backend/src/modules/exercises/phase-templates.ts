@@ -20,9 +20,8 @@ export type PhaseTemplate = {
  * Phase templates for each counting method
  * 
  * ALIGNED WITH ANDROID CONTRACT:
- * 1. up_down - Eccentric (down) and Concentric (up) phases (Squat, Lunge, etc.)
- * 2. push_pull - Push and Pull phases (Push-up, Pull-up, etc.)
- * 3. hold - Isometric exercises (Plank, Wall Sit, etc.)
+ * 1. up_down - Eccentric (down) and Concentric (up) phases (Squat, Push-up, etc.)
+ * 2. hold - Isometric exercises (Plank, Wall Sit, etc.)
  */
 export const phaseTemplates: Record<CountingMethodCode, PhaseTemplate[]> = {
   up_down: [
@@ -30,13 +29,6 @@ export const phaseTemplates: Record<CountingMethodCode, PhaseTemplate[]> = {
     { code: 'down', name: { ar: 'النزول', en: 'Going Down' }, sortOrder: 2 },
     { code: 'bottom', name: { ar: 'أسفل نقطة', en: 'Bottom Position' }, sortOrder: 3 },
     { code: 'up', name: { ar: 'الصعود', en: 'Going Up' }, sortOrder: 4 },
-  ],
-  
-  push_pull: [
-    { code: 'start', name: { ar: 'وضعية البداية', en: 'Starting Position' }, sortOrder: 1 },
-    { code: 'push', name: { ar: 'الدفع', en: 'Push' }, sortOrder: 2 },
-    { code: 'extended', name: { ar: 'الامتداد', en: 'Extended Position' }, sortOrder: 3 },
-    { code: 'pull', name: { ar: 'السحب', en: 'Pull' }, sortOrder: 4 },
   ],
   
   hold: [
@@ -66,10 +58,6 @@ export const countingMethodDescriptions: Record<CountingMethodCode, LocalizedTex
   up_down: {
     ar: 'أعلى وأسفل - يعد التكرارات عند النزول والصعود (مثل السكوات)',
     en: 'Up & Down - counts reps on down and up movement (like squat)',
-  },
-  push_pull: {
-    ar: 'دفع وسحب - يعد التكرارات عند الدفع والسحب (مثل تمارين الضغط)',
-    en: 'Push & Pull - counts reps on push and pull movement (like push-ups)',
   },
   hold: {
     ar: 'ثبات - تمارين الثبات تحسب الوقت بدلاً من التكرارات (مثل البلانك)',

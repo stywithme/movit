@@ -34,7 +34,7 @@ export interface LocalizedText {
 /**
  * Counting method types (as expected by Android)
  */
-export type CountingMethod = 'up_down' | 'push_pull' | 'hold';
+export type CountingMethod = 'up_down' | 'hold';
 
 /**
  * Pose position codes (sent to mobile — mobile auto-detects all 3 axes)
@@ -94,9 +94,6 @@ export type PhaseName =
   | 'down'
   | 'bottom'
   | 'up'
-  | 'push'
-  | 'extended'
-  | 'pull'
   | 'hold'
   | 'count';
 
@@ -135,7 +132,7 @@ export interface StateRanges {
 }
 
 /**
- * Zone-based message (for up_down and push_pull exercises)
+ * Zone-based message (for up_down exercises)
  * Allows different messages for up and down positions
  */
 export interface ZoneBasedMessage {
@@ -149,7 +146,7 @@ export interface ZoneBasedMessage {
  * 1. Simple format (for hold exercises): Single message per state
  *    { perfect: { ar: "...", en: "..." } }
  * 
- * 2. Zone format (for up_down/push_pull): Different messages per zone
+ * 2. Zone format (for up_down): Different messages per zone
  *    { perfect: { up: { ar: "...", en: "..." }, down: { ar: "...", en: "..." } } }
  * 
  * All messages are optional - can have just up, just down, both, or none
@@ -198,7 +195,7 @@ interface BaseTrackedJoint {
 }
 
 /**
- * Primary tracked joint for Up/Down and Push/Pull - has upRange and downRange
+ * Primary tracked joint for Up/Down exercises - has upRange and downRange
  */
 export interface UpDownPrimaryTrackedJoint extends BaseTrackedJoint {
   role: 'primary';
@@ -457,8 +454,6 @@ export function getPhasesForCountingMethod(method: CountingMethod): PhaseName[] 
   switch (method) {
     case 'up_down':
       return ['start', 'down', 'bottom', 'up'];
-    case 'push_pull':
-      return ['start', 'push', 'extended', 'pull'];
     case 'hold':
       return ['hold'];
     default:

@@ -48,7 +48,7 @@ export type FeedbackType = 'motivational' | 'tip';
 /**
  * Counting method codes (ALIGNED WITH ANDROID CONTRACT)
  */
-export type CountingMethodCode = 'up_down' | 'push_pull' | 'hold';
+export type CountingMethodCode = 'up_down' | 'hold';
 
 /**
  * Pose position codes (single source of truth — mobile auto-detects axes)
@@ -103,9 +103,6 @@ export type PhaseName =
   | 'down'
   | 'bottom'
   | 'up'
-  | 'push'
-  | 'extended'
-  | 'pull'
   | 'hold'
   | 'count';
 

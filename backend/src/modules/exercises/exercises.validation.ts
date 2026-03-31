@@ -101,7 +101,7 @@ export const StateRangesSchema = z.object({
 });
 
 /**
- * Zone-based message (for up_down and push_pull)
+ * Zone-based message (for up_down)
  */
 export const ZoneBasedMessageSchema = z.object({
   up: LocalizedTextSchema.optional(),
@@ -153,7 +153,7 @@ export type BasicInfoData = z.infer<typeof BasicInfoSchema>;
 
 export const CountingMethodSchema = z.object({
   countingMethodId: z.string().uuid('Please select a counting method'),
-  countingMethodCode: z.enum(['up_down', 'push_pull', 'hold']),
+  countingMethodCode: z.enum(['up_down', 'hold']),
 });
 
 export type CountingMethodData = z.infer<typeof CountingMethodSchema>;
@@ -174,7 +174,7 @@ export type PosePositionData = z.infer<typeof PosePositionSchema>;
 // ============================================
 
 /**
- * Primary joint for Up/Down and Push/Pull - has upRange and downRange
+ * Primary joint for Up/Down exercises - has upRange and downRange
  */
 export const UpDownPrimaryTrackedJointSchema = z.object({
   joint: z.string().min(1, 'Joint is required'),
@@ -220,7 +220,7 @@ export const PrimaryTrackedJointSchema = z.object({
   joint: z.string().min(1, 'Joint is required'),
   role: z.literal('primary'),
   startPose: AngleRangeSchema,
-  // For Up/Down and Push/Pull
+  // For Up/Down
   upRange: StateRangesSchema.optional(),
   downRange: StateRangesSchema.optional(),
   // For Hold
@@ -335,7 +335,7 @@ export const PositionCheckSchema = z.object({
   condition: PositionCheckConditionSchema,
   activePhases: z.array(z.enum([
     'idle', 'start', 'down', 'bottom', 'up',
-    'push', 'extended', 'pull', 'hold', 'count',
+    'hold', 'count',
   ])).min(1, 'Select at least one active phase'),
   errorMessage: LocalizedTextSchema,
   severity: z.enum(['error', 'warning', 'tip']).default('warning'),

@@ -326,10 +326,7 @@ enum class MetricCode {
  */
 enum class CountingMethod {
     @SerializedName("up_down")
-    UP_DOWN,        // Squat, Bicep Curl - up position then down
-    
-    @SerializedName("push_pull")
-    PUSH_PULL,      // Push-up, Bench Press - extended then bent
+    UP_DOWN,        // Squat, Bicep Curl, Push-up, etc. - rep-based exercises
     
     @SerializedName("hold")
     HOLD            // Plank, Wall Sit - hold position for time
@@ -764,7 +761,7 @@ data class MessageAssignment(
 /**
  * Rep counting configuration
  * 
- * For UP_DOWN/PUSH_PULL methods:
+ * For UP_DOWN method:
  * @param reps Target number of repetitions
  * @param minRepIntervalMs Minimum time between reps (prevents double counting)
  * @param maxRepIntervalMs Maximum time for a single rep before timeout

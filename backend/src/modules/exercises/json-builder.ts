@@ -358,7 +358,7 @@ function parseTrackedJoints(config: unknown): TrackedJoint[] {
           range: joint.range as StateRanges,
         } as PrimaryTrackedJoint;
       }
-      // Rep exercises (up_down, push_pull): primary has upRange/downRange
+      // Rep exercises (up_down): primary has upRange/downRange
       return {
         ...baseJoint,
         role: 'primary' as const,

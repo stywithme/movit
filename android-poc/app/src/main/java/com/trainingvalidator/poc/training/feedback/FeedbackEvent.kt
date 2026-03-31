@@ -273,7 +273,7 @@ sealed class FeedbackEvent {
      * DANGER is handled separately via DangerDetected.
      * 
      * The zone field indicates whether the joint is in UP or DOWN position,
-     * allowing for zone-specific messages in Up&Down/Push&Pull exercises.
+     * allowing for zone-specific messages in Up&Down exercises.
      */
     data class JointStateMessage(
         val jointCode: String,
