@@ -12,7 +12,7 @@ import java.util.UUID
  * 
  * Captures frames at key moments:
  * - DANGER frames (CRITICAL - highest priority) 🚨
- * - Peak of each rep (BOTTOM/EXTENDED phase)
+ * - Peak of each rep (BOTTOM phase)
  * - Best reps (marked after completion) ⭐
  * - When errors are detected (WARNING state)
  * - Hold exercise samples
@@ -128,7 +128,7 @@ class FrameCaptureManager(
     }
     
     /**
-     * Capture peak frame (when entering BOTTOM/EXTENDED phase)
+     * Capture peak frame (when entering BOTTOM phase)
      * 
      * @param bitmap The bitmap to capture (will be copied)
      * @param repNumber Current rep in progress (engine.getCurrentRep() + 1)
