@@ -1458,7 +1458,7 @@ class TrainingActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetection
                     getPhaseDisplayName(phase, viewModel.isHoldExercise())
                 )
                 
-                // Capture peak frame when entering BOTTOM or EXTENDED phase
+                // Capture peak frame when entering BOTTOM phase
                 if (phase != lastCapturedPhase) {
                     if (phase == Phase.BOTTOM) {
                         capturePeakFrame(phase)
@@ -2166,7 +2166,7 @@ class TrainingActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetection
     // ==================== Frame Capture ====================
     
     /**
-     * Capture peak frame when reaching BOTTOM/EXTENDED phase
+     * Capture peak frame when reaching BOTTOM phase
      */
     private fun capturePeakFrame(phase: Phase) {
         // Only capture during active training
