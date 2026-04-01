@@ -84,22 +84,11 @@ class AudioFeedbackPlayer(
      * Initialize TTS for fallback
      */
     fun initialize() {
-        tts = TextToSpeech(context) { status ->
+        tts = TextToSpeech(context, { status ->
             if (status == TextToSpeech.SUCCESS) {
-                val locale = if (language == "ar") {
-                    Locale.forLanguageTag("ar")
-                } else {
-                    Locale.US
-                }
-                
-                val result = tts?.setLanguage(locale)
-                isTtsReady = result != TextToSpeech.LANG_MISSING_DATA &&
-                             result != TextToSpeech.LANG_NOT_SUPPORTED
-                
+                isTtsReady = configureTtsVoice(language)
+
                 if (isTtsReady) {
-                    Log.d(TAG, "TTS initialized with language: $locale")
-                    tts?.setSpeechRate(0.95f)
-                    
                     tts?.setOnUtteranceProgressListener(object : UtteranceProgressListener() {
                         override fun onStart(utteranceId: String?) {}
                         override fun onDone(utteranceId: String?) {
@@ -119,11 +108,30 @@ class AudioFeedbackPlayer(
                             }
                         }
                     })
-                } else {
-                    Log.w(TAG, "TTS language not supported: $locale")
                 }
             }
+        }, TtsVoiceSelector.getPreferredEngine())
+    }
+
+    private fun configureTtsVoice(lang: String): Boolean {
+        val engine = tts ?: return false
+
+        val voiceApplied = TtsVoiceSelector.applyBestVoice(engine, lang)
+        val locale = if (lang == "ar") Locale.forLanguageTag("ar") else Locale.US
+
+        if (!voiceApplied) {
+            val result = engine.setLanguage(locale)
+            if (result == TextToSpeech.LANG_MISSING_DATA ||
+                result == TextToSpeech.LANG_NOT_SUPPORTED) {
+                Log.w(TAG, "TTS language not supported: $locale")
+                return false
+            }
         }
+
+        engine.setSpeechRate(0.95f)
+        engine.setPitch(0.95f)
+        Log.d(TAG, "TTS fallback initialized for $lang (voice selected: $voiceApplied)")
+        return true
     }
     
     fun setPlaybackListener(listener: PlaybackListener?) {
@@ -371,18 +379,8 @@ class AudioFeedbackPlayer(
      */
     fun setLanguage(newLanguage: String) {
         if (newLanguage == language) return
-        
-        // Update language for audio file selection
         language = newLanguage
-        
-        // Update TTS locale
-        val locale = if (newLanguage == "ar") {
-            Locale.forLanguageTag("ar")
-        } else {
-            Locale.US
-        }
-        tts?.setLanguage(locale)
-        
+        configureTtsVoice(newLanguage)
         Log.d(TAG, "Language changed to: $newLanguage")
     }
 }

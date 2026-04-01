@@ -164,27 +164,32 @@ class FeedbackManager(
      * Initialize TTS engine (legacy mode)
      */
     fun initialize() {
-        tts = TextToSpeech(context) { status ->
+        tts = TextToSpeech(context, { status ->
             if (status == TextToSpeech.SUCCESS) {
-                val locale = if (config.language == "ar") {
-                    Locale.forLanguageTag("ar")
-                } else {
-                    Locale.US
-                }
-                
-                val result = tts?.setLanguage(locale)
-                isTtsReady = result != TextToSpeech.LANG_MISSING_DATA && 
-                             result != TextToSpeech.LANG_NOT_SUPPORTED
-                
-                if (isTtsReady) {
-                    Log.d(TAG, "TTS initialized with language: $locale")
-                    // Set speech rate for clarity
-                    tts?.setSpeechRate(0.95f)
-                } else {
-                    Log.w(TAG, "TTS language not supported: $locale")
-                }
+                isTtsReady = configureTtsVoice(tts, config.language)
+            }
+        }, TtsVoiceSelector.getPreferredEngine())
+    }
+
+    private fun configureTtsVoice(engine: TextToSpeech?, language: String): Boolean {
+        if (engine == null) return false
+
+        val voiceApplied = TtsVoiceSelector.applyBestVoice(engine, language)
+        val locale = if (language == "ar") Locale.forLanguageTag("ar") else Locale.US
+
+        if (!voiceApplied) {
+            val result = engine.setLanguage(locale)
+            if (result == TextToSpeech.LANG_MISSING_DATA ||
+                result == TextToSpeech.LANG_NOT_SUPPORTED) {
+                Log.w(TAG, "TTS language not supported: $locale")
+                return false
             }
         }
+
+        engine.setSpeechRate(0.95f)
+        engine.setPitch(0.95f)
+        Log.d(TAG, "TTS initialized for $language (voice selected: $voiceApplied)")
+        return true
     }
     
     /**
@@ -1056,8 +1061,7 @@ class FeedbackManager(
     }
     
     fun setLanguage(language: String) {
-        val locale = if (language == "ar") Locale.forLanguageTag("ar") else Locale.US
-        tts?.setLanguage(locale)
+        tts?.let { configureTtsVoice(it, language) }
         audioPlayer?.setLanguage(language)
     }
     
