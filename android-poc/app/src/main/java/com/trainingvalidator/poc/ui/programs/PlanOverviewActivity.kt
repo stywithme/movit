@@ -4,7 +4,6 @@ import android.content.Context
 import android.content.Intent
 import android.graphics.Color
 import android.graphics.Typeface
-import android.graphics.drawable.GradientDrawable
 import android.os.Bundle
 import android.util.Log
 import android.util.TypedValue
@@ -19,7 +18,6 @@ import androidx.lifecycle.repeatOnLifecycle
 import com.trainingvalidator.poc.R
 import com.trainingvalidator.poc.assessment.ui.PreScreeningActivity
 import com.trainingvalidator.poc.network.*
-import com.trainingvalidator.poc.ui.utils.currentLanguage
 import kotlinx.coroutines.launch
 
 /**
@@ -106,30 +104,8 @@ class PlanOverviewActivity : AppCompatActivity() {
 
         if (data.progression.isNotEmpty()) {
             container.addView(createSectionLabel(getString(R.string.plan_recent_adjustments)))
-            container.addView(createProgressionSummaryCard(data.progression))
-
-            val isArabic = currentLanguage == "ar"
-            val grouped = data.progression.groupBy { it.exerciseId ?: "__global__" }
-            if (grouped.size > 1) {
-                container.addView(createSectionLabel(getString(R.string.progression_grouped_by_exercise)))
-            }
-            for ((key, entries) in grouped) {
-                val exName = entries.firstOrNull()?.exerciseName?.let {
-                    if (isArabic) it["ar"] else it["en"]
-                } ?: if (key == "__global__") (if (isArabic) "عام" else "Global") else key
-
-                if (grouped.size > 1) {
-                    container.addView(TextView(this).apply {
-                        text = exName
-                        setTextColor(Color.parseColor("#B0B0B0"))
-                        textSize = 14f
-                        setTypeface(null, Typeface.BOLD)
-                        setPadding(0, dp(12), 0, dp(4))
-                    })
-                }
-                for (entry in entries.take(3)) {
-                    container.addView(createProgressionCard(entry))
-                }
+            for (entry in data.progression.take(5)) {
+                container.addView(createProgressionCard(entry))
             }
         }
     }
@@ -317,152 +293,46 @@ class PlanOverviewActivity : AppCompatActivity() {
         }
     }
 
-    private fun createProgressionSummaryCard(entries: List<ProgressionEntryData>): LinearLayout {
-        val increases = entries.count { it.newValue > it.previousValue }
-        val decreases = entries.count { it.newValue < it.previousValue }
+    private fun createProgressionCard(entry: ProgressionEntryData): LinearLayout {
+        val isIncrease = entry.newValue > entry.previousValue
 
         return LinearLayout(this).apply {
             orientation = LinearLayout.HORIZONTAL
-            background = GradientDrawable().apply {
-                setColor(Color.parseColor("#1A2A1A"))
-                setStroke(1, Color.parseColor("#2E7D32"))
-                cornerRadius = dp(12).toFloat()
-            }
-            setPadding(dp(16), dp(14), dp(16), dp(14))
-            gravity = Gravity.CENTER_VERTICAL
-            layoutParams = LinearLayout.LayoutParams(
-                LinearLayout.LayoutParams.MATCH_PARENT,
-                LinearLayout.LayoutParams.WRAP_CONTENT
-            ).apply { bottomMargin = dp(12) }
-
-            addView(TextView(context).apply {
-                text = "\uD83D\uDCC8"
-                textSize = 28f
-                setPadding(0, 0, dp(14), 0)
-            })
-
-            val textCol = LinearLayout(context).apply {
-                orientation = LinearLayout.VERTICAL
-                layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f)
-            }
-
-            textCol.addView(TextView(context).apply {
-                text = getString(R.string.progression_summary_title)
-                setTextColor(Color.WHITE)
-                textSize = 16f
-                setTypeface(null, Typeface.BOLD)
-            })
-
-            val parts = mutableListOf<String>()
-            if (increases > 0) parts.add(getString(R.string.progression_summary_increases, increases))
-            if (decreases > 0) parts.add(getString(R.string.progression_summary_adjustments, decreases))
-
-            textCol.addView(TextView(context).apply {
-                text = parts.joinToString(" · ")
-                setTextColor(Color.parseColor("#81C784"))
-                textSize = 13f
-            })
-
-            addView(textCol)
-        }
-    }
-
-    private fun createProgressionCard(entry: ProgressionEntryData): LinearLayout {
-        val isIncrease = entry.newValue > entry.previousValue
-        val accentColor = if (isIncrease) "#4CAF50" else "#FF9800"
-
-        return LinearLayout(this).apply {
-            orientation = LinearLayout.VERTICAL
-            background = GradientDrawable().apply {
-                setColor(Color.parseColor("#1E1E1E"))
-                cornerRadius = dp(10).toFloat()
-            }
+            setBackgroundColor(Color.parseColor("#1E1E1E"))
             setPadding(dp(14), dp(12), dp(14), dp(12))
+            gravity = Gravity.CENTER_VERTICAL
             layoutParams = LinearLayout.LayoutParams(
                 LinearLayout.LayoutParams.MATCH_PARENT,
                 LinearLayout.LayoutParams.WRAP_CONTENT
             ).apply { bottomMargin = dp(6) }
 
-            // Top row: arrow + field change
-            val topRow = LinearLayout(context).apply {
-                orientation = LinearLayout.HORIZONTAL
-                gravity = Gravity.CENTER_VERTICAL
-            }
-
-            topRow.addView(TextView(context).apply {
-                text = if (isIncrease) "\u2191" else "\u2193"
-                setTextColor(Color.parseColor(accentColor))
-                textSize = 22f
-                setTypeface(null, Typeface.BOLD)
-                setPadding(0, 0, dp(10), 0)
+            // Arrow icon
+            addView(TextView(context).apply {
+                text = if (isIncrease) "↑" else "↓"
+                setTextColor(if (isIncrease) Color.parseColor("#4CAF50") else Color.parseColor("#FF9800"))
+                textSize = 20f
+                setPadding(0, 0, dp(12), 0)
             })
 
+            // Content
             val textCol = LinearLayout(context).apply {
                 orientation = LinearLayout.VERTICAL
                 layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f)
             }
 
-            val fieldLabel = when (entry.field) {
-                "weightKg" -> getString(R.string.progression_field_weight)
-                "targetReps" -> getString(R.string.progression_field_reps)
-                "sets" -> getString(R.string.progression_field_sets)
-                "reassessment" -> getString(R.string.progression_field_reassessment)
-                else -> entry.field
-            }
-
-            val fromStr = formatFieldVal(entry.field, entry.previousValue)
-            val toStr = formatFieldVal(entry.field, entry.newValue)
-
             textCol.addView(TextView(context).apply {
-                text = "$fieldLabel: $fromStr → $toStr"
+                text = entry.reason
                 setTextColor(Color.WHITE)
                 textSize = 14f
-                setTypeface(null, Typeface.BOLD)
             })
-
             textCol.addView(TextView(context).apply {
-                text = entry.ruleName
+                val axisLabel = entry.axis?.replaceFirstChar { it.uppercase() } ?: entry.field
+                text = "$axisLabel: ${entry.previousValue.toInt()} → ${entry.newValue.toInt()}"
                 setTextColor(Color.parseColor("#B0B0B0"))
                 textSize = 12f
             })
 
-            topRow.addView(textCol)
-            addView(topRow)
-
-            // Progress bar
-            val maxVal = maxOf(entry.previousValue, entry.newValue).toFloat()
-            if (maxVal > 0f) {
-                val fraction = (entry.newValue / maxVal).toFloat().coerceIn(0f, 1f)
-                val bar = LinearLayout(context).apply {
-                    layoutParams = LinearLayout.LayoutParams(
-                        LinearLayout.LayoutParams.MATCH_PARENT, dp(4)
-                    ).apply { topMargin = dp(8) }
-                    background = GradientDrawable().apply {
-                        setColor(Color.parseColor("#2A2A2A"))
-                        cornerRadius = dp(2).toFloat()
-                    }
-                    weightSum = 1f
-                }
-                bar.addView(View(context).apply {
-                    layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.MATCH_PARENT).apply { weight = fraction }
-                    background = GradientDrawable().apply {
-                        setColor(Color.parseColor(accentColor))
-                        cornerRadius = dp(2).toFloat()
-                    }
-                })
-                bar.addView(View(context).apply {
-                    layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.MATCH_PARENT).apply { weight = 1f - fraction }
-                })
-                addView(bar)
-            }
-        }
-    }
-
-    private fun formatFieldVal(field: String, value: Double): String {
-        return when (field) {
-            "weightKg" -> "${String.format("%.1f", value)}kg"
-            "targetReps", "sets" -> "${value.toInt()}"
-            else -> String.format("%.1f", value)
+            addView(textCol)
         }
     }
 

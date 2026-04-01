@@ -66,7 +66,7 @@ export default function ExerciseProgressionPage() {
   const handleSetArchetype = async (exerciseId: string, archetype: string) => {
     try {
       const res = await fetch(`/api/admin/exercise-progression/${exerciseId}/archetype`, {
-        method: 'POST',
+        method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ archetype }),
       });
