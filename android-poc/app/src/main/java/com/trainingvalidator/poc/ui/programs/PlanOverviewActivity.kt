@@ -321,12 +321,13 @@ class PlanOverviewActivity : AppCompatActivity() {
             }
 
             textCol.addView(TextView(context).apply {
-                text = entry.ruleName
+                text = entry.reason
                 setTextColor(Color.WHITE)
                 textSize = 14f
             })
             textCol.addView(TextView(context).apply {
-                text = "${entry.field}: ${entry.previousValue} → ${entry.newValue}"
+                val axisLabel = entry.axis?.replaceFirstChar { it.uppercase() } ?: entry.field
+                text = "$axisLabel: ${entry.previousValue.toInt()} → ${entry.newValue.toInt()}"
                 setTextColor(Color.parseColor("#B0B0B0"))
                 textSize = 12f
             })

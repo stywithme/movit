@@ -307,10 +307,13 @@ class ProgramSessionReportActivity : AppCompatActivity() {
             "weightKg" -> getString(com.trainingvalidator.poc.R.string.progression_field_weight)
             "targetReps" -> getString(com.trainingvalidator.poc.R.string.progression_field_reps)
             "sets" -> getString(com.trainingvalidator.poc.R.string.progression_field_sets)
+            "targetDuration" -> "Duration"
+            "difficultyCode" -> "Difficulty"
+            "none", "successStreak" -> return field
             else -> field
         }
         val arrow = if (to > from) "↑" else "↓"
-        return "$label: $from → $to $arrow"
+        return "$label: ${from.toInt()} → ${to.toInt()} $arrow"
     }
 
     private fun showProgressionSheet(changes: List<Pair<String, String>>) {
