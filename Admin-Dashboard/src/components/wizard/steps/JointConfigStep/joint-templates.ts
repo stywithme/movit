@@ -524,24 +524,6 @@ export const JOINT_RECOMMENDATIONS: Record<CountingMethodCode, Record<string, Jo
       secondary: ['spine'],
     },
   },
-  push_pull: {
-    chest: {
-      primary: ['left_elbow', 'right_elbow'],
-      secondary: ['left_shoulder', 'right_shoulder', 'spine'],
-    },
-    back: {
-      primary: ['left_elbow', 'right_elbow'],
-      secondary: ['left_shoulder', 'right_shoulder'],
-    },
-    shoulders: {
-      primary: ['left_shoulder', 'right_shoulder'],
-      secondary: ['left_elbow', 'right_elbow'],
-    },
-    default: {
-      primary: ['left_elbow', 'right_elbow'],
-      secondary: ['spine'],
-    },
-  },
   hold: {
     abs: {
       primary: ['left_hip', 'right_hip'],
@@ -592,7 +574,7 @@ export function buildTrackedJoint(
   // Build state messages based on exercise type
   const stateMessages = useZoneMessages
     ? {
-      // Zone-based messages for up_down and push_pull primary joints
+      // Zone-based messages for up_down primary joints
       perfect: {
         up: { ar: 'ممتاز!', en: 'Perfect!' },
         down: { ar: 'ممتاز!', en: 'Perfect!' },

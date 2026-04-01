@@ -39,12 +39,7 @@ const METHOD_DETAILS: Record<CountingMethodCode, {
   up_down: {
     icon: '🔄',
     flow: 'START → DOWN → UP → START',
-    examples: 'Squat, Lunge, Bicep Curl',
-  },
-  push_pull: {
-    icon: '🔃',
-    flow: 'START → PUSH → PULL → START',
-    examples: 'Push-up, Pull-up, Bench Press',
+    examples: 'Squat, Lunge, Bicep Curl, Push-up',
   },
   hold: {
     icon: '⏱️',

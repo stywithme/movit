@@ -48,7 +48,7 @@ export type FeedbackType = 'motivational' | 'tip';
 /**
  * Counting method codes (ALIGNED WITH ANDROID CONTRACT)
  */
-export type CountingMethodCode = 'up_down' | 'push_pull' | 'hold';
+export type CountingMethodCode = 'up_down' | 'hold';
 
 /**
  * Camera position codes (internal - more specific)
