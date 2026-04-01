@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { LocalizedText } from '@/lib/types/localized';
 import { Input, Select, Label, Button, Card, Textarea } from '@/components/ui';
+import { FileUpload } from '@/components/forms/FileUpload';
 
 interface Exercise {
   id: string;
@@ -250,13 +251,23 @@ export default function NewWorkoutPage() {
           <h2 className="text-lg font-semibold mb-4">Workout Template Configuration</h2>
           
           <div className="grid grid-cols-2 gap-4">
-            <div>
-              <Label>Cover Image URL</Label>
-              <Input
+            <div className="space-y-3">
+              <FileUpload
+                label="Workout Cover"
                 value={coverImageUrl}
-                onChange={(e) => setCoverImageUrl(e.target.value)}
-                placeholder="https://..."
+                onChange={(imageUrl) => setCoverImageUrl(imageUrl)}
+                uploadType="workout-image"
+                accept="image/*"
+                helperText="Upload JPG, PNG, WEBP, or GIF cover image"
               />
+              <div>
+                <Label>Cover Image URL</Label>
+                <Input
+                  value={coverImageUrl}
+                  onChange={(e) => setCoverImageUrl(e.target.value)}
+                  placeholder="https://..."
+                />
+              </div>
             </div>
             <div>
               <Label>Difficulty</Label>

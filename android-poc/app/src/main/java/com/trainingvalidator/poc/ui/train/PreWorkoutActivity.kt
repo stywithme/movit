@@ -3,16 +3,17 @@ package com.trainingvalidator.poc.ui.train
 import android.Manifest
 import android.content.Intent
 import android.content.pm.PackageManager
+import android.graphics.drawable.Animatable
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import android.provider.MediaStore
 import android.util.Log
+import android.view.ContextThemeWrapper
 import android.view.View
 import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
-import androidx.appcompat.app.AppCompatDelegate
 import androidx.core.content.ContextCompat
 import coil.load
 import com.trainingvalidator.poc.ui.utils.currentLanguage
@@ -20,14 +21,15 @@ import com.trainingvalidator.poc.R
 import com.trainingvalidator.poc.databinding.ActivityPreWorkoutBinding
 import com.trainingvalidator.poc.training.models.ExerciseConfig
 import com.trainingvalidator.poc.ui.utils.LocalizationHelper
+import com.google.android.material.chip.Chip
 
 /**
  * PreWorkoutActivity - Exercise detail screen before starting workout
  * 
  * Shows:
- * - Exercise preview image/video
- * - Exercise name and metadata (muscles, equipment)
- * - Form checklist with steps to follow
+ * - Exercise preview image (static or animated)
+ * - Exercise name, equipment, and target muscles
+ * - Instructions and description
  * - Camera position selection (if multiple variants)
  * - Action buttons (Analyze Video / Start Camera)
  */
@@ -120,24 +122,16 @@ class PreWorkoutActivity : AppCompatActivity() {
 
         // Exercise info
         binding.tvExerciseName.text = exercise.name.get(language).ifBlank { exercise.name.en }
-        
-        // Localized muscles
-        binding.tvMuscles.text = LocalizationHelper.getMusclesDisplayText(this, exercise.muscles)
-        
+
         // Localized equipment
         binding.tvEquipment.text = LocalizationHelper.getEquipmentDisplayText(this, exercise.equipment)
 
-        // Exercise image
-        exercise.imageUrl?.let { url ->
-            binding.ivExercisePreview.load(url) {
-                placeholder(R.drawable.gradient_report_hero)
-                error(R.drawable.gradient_report_hero)
-                crossfade(true)
-            }
-        }
+        setupPreviewImage()
+        setupTargetMuscles()
 
         // Instructions
         setupInstructions()
+        setupDescription()
 
         // Setup camera position variants
         setupCameraPositions()
@@ -156,19 +150,87 @@ class PreWorkoutActivity : AppCompatActivity() {
         val exercise = exerciseConfig ?: return
         val language = currentLanguage
 
-        // Get instructions text
         val instructionsText = exercise.instructions?.let { instr ->
             instr.get(language).ifBlank { instr.en }
         } ?: ""
-        
-        // Set instructions or show default message
+
         binding.tvInstructions.text = if (instructionsText.isNotBlank()) {
             instructionsText
         } else {
-            // Default instructions based on exercise description
-            exercise.description?.let { desc ->
-                desc.get(language).ifBlank { desc.en }
-            } ?: getString(R.string.no_instructions_available)
+            getString(R.string.no_instructions_available)
+        }
+    }
+
+    private fun setupDescription() {
+        val exercise = exerciseConfig ?: return
+        val language = currentLanguage
+        val descriptionText = exercise.description?.let { desc ->
+            desc.get(language).ifBlank { desc.en }
+        }.orEmpty()
+
+        if (descriptionText.isBlank()) {
+            binding.descriptionSection.visibility = View.GONE
+            return
+        }
+
+        binding.descriptionSection.visibility = View.VISIBLE
+        binding.tvDescription.text = descriptionText
+    }
+
+    private fun setupTargetMuscles() {
+        val exercise = exerciseConfig ?: return
+        val localizedMuscles = exercise.muscles
+            .map { LocalizationHelper.getMuscleDisplayName(this, it) }
+            .distinct()
+
+        binding.chipGroupTargetMuscles.removeAllViews()
+
+        if (localizedMuscles.isEmpty()) {
+            binding.targetMusclesSection.visibility = View.GONE
+            return
+        }
+
+        binding.targetMusclesSection.visibility = View.VISIBLE
+        localizedMuscles.forEach { muscleName ->
+            val chipContext = ContextThemeWrapper(this, R.style.Widget_WayToFix_Chip_Filter)
+            val chip = Chip(chipContext, null).apply {
+                text = muscleName
+                isCheckable = false
+                isClickable = false
+            }
+            binding.chipGroupTargetMuscles.addView(chip)
+        }
+    }
+
+    private fun setupPreviewImage() {
+        val imageUrl = exerciseConfig?.imageUrl
+        binding.badgeLoopingPreview.visibility = View.GONE
+
+        if (imageUrl.isNullOrBlank()) {
+            binding.ivExercisePreview.setImageDrawable(null)
+            binding.ivExerciseFallbackIcon.visibility = View.VISIBLE
+            return
+        }
+
+        binding.ivExercisePreview.load(imageUrl) {
+            placeholder(R.drawable.gradient_report_hero)
+            error(R.drawable.gradient_report_hero)
+            crossfade(true)
+            listener(
+                onStart = { _ ->
+                    binding.ivExerciseFallbackIcon.visibility = View.GONE
+                    binding.badgeLoopingPreview.visibility = View.GONE
+                },
+                onError = { _, _ ->
+                    binding.ivExerciseFallbackIcon.visibility = View.VISIBLE
+                    binding.badgeLoopingPreview.visibility = View.GONE
+                },
+                onSuccess = { _, result ->
+                    binding.ivExerciseFallbackIcon.visibility = View.GONE
+                    binding.badgeLoopingPreview.visibility =
+                        if (result.drawable is Animatable) View.VISIBLE else View.GONE
+                }
+            )
         }
     }
 

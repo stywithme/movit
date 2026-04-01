@@ -5,7 +5,11 @@ export { getGcsBucket } from './gcs';
 const DEFAULT_MAX_IMAGE_BYTES = 10 * 1024 * 1024;
 const DEFAULT_MAX_AUDIO_BYTES = 30 * 1024 * 1024;
 
-export type UploadCategory = 'camera-position-image' | 'exercise-image' | 'exercise-audio';
+export type UploadCategory =
+  | 'camera-position-image'
+  | 'exercise-image'
+  | 'workout-image'
+  | 'exercise-audio';
 
 const CATEGORY_CONFIG: Record<UploadCategory, { folder: string; maxBytes: number; allowedMime: string[] }> = {
   'camera-position-image': {
@@ -16,7 +20,12 @@ const CATEGORY_CONFIG: Record<UploadCategory, { folder: string; maxBytes: number
   'exercise-image': {
     folder: 'exercises/images',
     maxBytes: DEFAULT_MAX_IMAGE_BYTES,
-    allowedMime: ['image/jpeg', 'image/png', 'image/webp'],
+    allowedMime: ['image/jpeg', 'image/png', 'image/webp', 'image/gif'],
+  },
+  'workout-image': {
+    folder: 'workouts/images',
+    maxBytes: DEFAULT_MAX_IMAGE_BYTES,
+    allowedMime: ['image/jpeg', 'image/png', 'image/webp', 'image/gif'],
   },
   'exercise-audio': {
     folder: 'exercises/audio',

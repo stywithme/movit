@@ -29,6 +29,7 @@ function resolveCategory(value?: string): UploadCategory | null {
   if (
     value === 'camera-position-image' ||
     value === 'exercise-image' ||
+    value === 'workout-image' ||
     value === 'exercise-audio'
   ) {
     return value;
