@@ -1,7 +1,9 @@
 package com.trainingvalidator.poc.ui.workouts
 
+import android.graphics.drawable.Animatable
 import android.os.Bundle
 import android.util.Log
+import android.view.ContextThemeWrapper
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -9,9 +11,10 @@ import android.widget.ImageView
 import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
-import androidx.appcompat.app.AppCompatDelegate
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
+import coil.load
+import com.google.android.material.chip.Chip
 import com.trainingvalidator.poc.ui.utils.currentLanguage
 import com.trainingvalidator.poc.R
 import com.trainingvalidator.poc.databinding.ActivityWorkoutDetailBinding
@@ -23,8 +26,8 @@ import com.trainingvalidator.poc.training.models.*
  * WorkoutDetailActivity - Shows workout overview with timeline before starting
  *
  * Displays:
- * - Workout hero header (name, difficulty, description)
- * - Stats row (exercises count, duration, total sets)
+ * - Workout hero header (cover image, name, difficulty, quick summary)
+ * - Basic info sections (stats, tags, description)
  * - Timeline of exercises with rest periods between them
  * - Start button
  *
@@ -80,24 +83,35 @@ class WorkoutDetailActivity : AppCompatActivity() {
     private fun setupUI() {
         val config = workoutConfig ?: return
         val language = currentLanguage
+        val totalSets = config.exercises.sumOf { it.sets }
 
         // Toolbar
         binding.toolbar.setNavigationOnClickListener { finish() }
 
-        // Workout name & description
+        // Workout identity
         binding.tvWorkoutName.text = config.name.get(language).ifBlank { config.name.en }
-        binding.tvWorkoutDescription.text = config.description?.let { desc ->
-            desc.get(language).ifBlank { desc.en }
-        } ?: ""
+        binding.tvWorkoutDescription.text = getString(
+            R.string.workout_customize_summary_format,
+            config.exercises.size,
+            totalSets,
+            resolvedDurationMinutes(config)
+        )
 
         // Difficulty badge
         binding.tvWorkoutTypeBadge.text = formatDifficulty(config.difficulty)
 
+        // Media & supporting info
+        setupPreviewImage()
+        setupTags()
+        setupDescription()
+
         // Stats
         binding.tvStatExercises.text = config.exercises.size.toString()
-        val durationMinutes = (config.getEstimatedDurationMs() / 60000).toInt()
-        binding.tvStatDuration.text = getString(R.string.duration_minutes_format, durationMinutes)
-        binding.tvStatRounds.text = config.exercises.sumOf { it.sets }.toString()
+        binding.tvStatDuration.text = getString(
+            R.string.duration_minutes_format,
+            resolvedDurationMinutes(config)
+        )
+        binding.tvStatRounds.text = totalSets.toString()
 
         // Execution mode info
         setupExecutionModeInfo()
@@ -117,6 +131,110 @@ class WorkoutDetailActivity : AppCompatActivity() {
             val intent = WorkoutCustomizeActivity.createIntent(this, config)
             startActivity(intent)
         }
+    }
+
+    private fun setupPreviewImage() {
+        val imageUrl = workoutConfig?.coverImageUrl
+        binding.badgeLoopingPreview.visibility = View.GONE
+
+        if (imageUrl.isNullOrBlank()) {
+            binding.ivWorkoutPreview.setImageDrawable(null)
+            binding.ivWorkoutFallbackIcon.visibility = View.VISIBLE
+            return
+        }
+
+        binding.ivWorkoutPreview.load(imageUrl) {
+            placeholder(R.drawable.gradient_report_hero)
+            error(R.drawable.gradient_report_hero)
+            crossfade(true)
+            listener(
+                onStart = { _ ->
+                    binding.ivWorkoutFallbackIcon.visibility = View.GONE
+                    binding.badgeLoopingPreview.visibility = View.GONE
+                },
+                onError = { _, _ ->
+                    binding.ivWorkoutFallbackIcon.visibility = View.VISIBLE
+                    binding.badgeLoopingPreview.visibility = View.GONE
+                },
+                onSuccess = { _, result ->
+                    binding.ivWorkoutFallbackIcon.visibility = View.GONE
+                    binding.badgeLoopingPreview.visibility =
+                        if (result.drawable is Animatable) View.VISIBLE else View.GONE
+                }
+            )
+        }
+    }
+
+    private fun setupTags() {
+        val tags = resolveWorkoutTags()
+        binding.chipGroupWorkoutTags.removeAllViews()
+
+        if (tags.isEmpty()) {
+            binding.tagsSection.visibility = View.GONE
+            return
+        }
+
+        binding.tagsSection.visibility = View.VISIBLE
+        tags.forEach { label ->
+            val chipContext = ContextThemeWrapper(this, R.style.Widget_WayToFix_Chip_Filter)
+            val chip = Chip(chipContext, null).apply {
+                text = label
+                isCheckable = false
+                isClickable = false
+            }
+            binding.chipGroupWorkoutTags.addView(chip)
+        }
+    }
+
+    private fun resolveWorkoutTags(): List<String> {
+        val config = workoutConfig ?: return emptyList()
+        val language = currentLanguage
+        val exerciseRepo = ExerciseRepository.getInstance(this)
+        val resolvedTags = config.tags
+            .map(::humanizeCode)
+            .filter { it.isNotBlank() }
+            .distinct()
+            .toMutableList()
+
+        if (resolvedTags.isEmpty()) {
+            resolvedTags += config.exercises
+                .mapNotNull { exerciseRepo.getExercise(it.exercise) }
+                .map { exercise ->
+                    exercise.category.name.get(language)
+                        .ifBlank { exercise.category.name.en }
+                        .ifBlank { humanizeCode(exercise.category.code) }
+                }
+                .filter { it.isNotBlank() }
+                .distinct()
+                .take(3)
+        }
+
+        if (resolvedTags.isEmpty()) {
+            resolvedTags += formatDifficulty(config.difficulty)
+        }
+
+        return resolvedTags.distinct().take(4)
+    }
+
+    private fun setupDescription() {
+        val config = workoutConfig ?: return
+        val language = currentLanguage
+        val descriptionText = config.description?.let { desc ->
+            desc.get(language).ifBlank { desc.en }
+        }.orEmpty()
+
+        if (descriptionText.isBlank()) {
+            binding.descriptionSection.visibility = View.GONE
+            return
+        }
+
+        binding.descriptionSection.visibility = View.VISIBLE
+        binding.tvWorkoutDescriptionValue.text = descriptionText
+    }
+
+    private fun resolvedDurationMinutes(config: WorkoutConfig): Int {
+        val minutes = config.estimatedDurationMin ?: (config.getEstimatedDurationMs() / 60000L).toInt()
+        return minutes.coerceAtLeast(1)
     }
 
     private fun setupExecutionModeInfo() {
@@ -212,6 +330,14 @@ class WorkoutDetailActivity : AppCompatActivity() {
         if (difficulty.isBlank()) return getString(R.string.workout_detail_default_difficulty)
         val normalized = difficulty.replace('_', ' ').lowercase()
         return normalized.replaceFirstChar { if (it.isLowerCase()) it.titlecase() else it.toString() }
+    }
+
+    private fun humanizeCode(code: String): String {
+        return code
+            .replace('_', ' ')
+            .replace('-', ' ')
+            .trim()
+            .replaceFirstChar { if (it.isLowerCase()) it.titlecase() else it.toString() }
     }
 
     // ==================== Timeline Data Models ====================

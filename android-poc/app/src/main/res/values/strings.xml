@@ -382,7 +382,10 @@
     <string name="no_equipment">No Equipment</string>
     <string name="camera_position">Camera Position</string>
     <string name="exercise_instructions">Instructions</string>
+    <string name="exercise_description">Description</string>
     <string name="target_muscles">Target Muscles</string>
+    <string name="workout_description">Description</string>
+    <string name="workout_tags">Workout Tags</string>
     <string name="no_instructions_available">No instructions available for this exercise.</string>
     <string name="duration_minutes_format">%d min</string>
     <string name="workout_type_circuit">CIRCUIT</string>

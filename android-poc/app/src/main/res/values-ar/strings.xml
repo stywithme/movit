@@ -502,7 +502,10 @@
     <string name="no_equipment">بدون معدات</string>
     <string name="camera_position">موقع الكاميرا</string>
     <string name="exercise_instructions">التعليمات</string>
+    <string name="exercise_description">الوصف</string>
     <string name="target_muscles">العضلات المستهدفة</string>
+    <string name="workout_description">الوصف</string>
+    <string name="workout_tags">تصنيفات التمرين</string>
     <string name="no_instructions_available">لا توجد تعليمات متاحة لهذا التمرين.</string>
     <string name="duration_minutes_format">%d دقيقة</string>
     <string name="workout_type_circuit">دائرة</string>

@@ -38,32 +38,41 @@
                 app:cardBackgroundColor="@color/surface"
                 app:cardCornerRadius="@dimen/radius_lg"
                 app:cardElevation="0dp"
-                app:strokeWidth="0dp">
+                app:strokeColor="@color/surface_border"
+                app:strokeWidth="@dimen/border_thin">
 
                 <FrameLayout
                     android:layout_width="match_parent"
-                    android:layout_height="220dp">
+                    android:layout_height="240dp"
+                    android:background="@color/surface_variant">
 
                     <ImageView
                         android:id="@+id/ivExercisePreview"
                         android:layout_width="match_parent"
                         android:layout_height="match_parent"
-                        android:scaleType="centerCrop"
+                        android:adjustViewBounds="true"
                         android:contentDescription="@string/cd_exercise"
+                        android:padding="@dimen/spacing_sm"
+                        android:scaleType="fitCenter"
                         tools:background="@color/surface_variant"/>
 
-                    <!-- Gradient Overlay -->
-                    <View
-                        android:layout_width="match_parent"
-                        android:layout_height="match_parent"
-                        android:background="@drawable/gradient_bottom"/>
+                    <ImageView
+                        android:id="@+id/ivExerciseFallbackIcon"
+                        android:layout_width="40dp"
+                        android:layout_height="40dp"
+                        android:layout_gravity="center"
+                        android:contentDescription="@string/cd_exercise"
+                        android:src="@drawable/ic_exercise"
+                        android:visibility="gone"
+                        app:tint="@color/primary"/>
 
                     <!-- Looping Preview Badge -->
                     <LinearLayout
                         android:id="@+id/badgeLoopingPreview"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:layout_gravity="center"
+                        android:layout_gravity="top|end"
+                        android:layout_margin="@dimen/spacing_base"
                         android:background="@drawable/glass_pill_background"
                         android:paddingHorizontal="@dimen/spacing_md"
                         android:paddingVertical="@dimen/spacing_xs"
@@ -101,40 +110,11 @@
                 android:textColor="@color/text_primary"
                 tools:text="القرفصاء"/>
 
-            <!-- Muscles & Equipment Row -->
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="@dimen/spacing_sm"
-                android:orientation="horizontal"
-                android:gravity="center_vertical">
-
-                <!-- Muscles -->
-                <ImageView
-                    android:layout_width="18dp"
-                    android:layout_height="18dp"
-                    android:src="@drawable/ic_muscle"
-                    app:tint="@color/primary"/>
-
-                <TextView
-                    android:id="@+id/tvMuscles"
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    android:layout_marginStart="@dimen/spacing_xs"
-                    android:textColor="@color/text_secondary"
-                    android:textSize="14sp"
-                    android:ellipsize="end"
-                    android:maxLines="2"
-                    tools:text="عضلات الفخذ الأمامية &amp; عضلات المؤخرة"/>
-
-            </LinearLayout>
-
             <!-- Equipment Row -->
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="@dimen/spacing_xs"
+                android:layout_marginTop="@dimen/spacing_sm"
                 android:orientation="horizontal"
                 android:gravity="center_vertical">
 
@@ -152,6 +132,32 @@
                     android:textColor="@color/text_secondary"
                     android:textSize="14sp"
                     tools:text="بدون معدات"/>
+
+            </LinearLayout>
+
+            <!-- Target Muscles -->
+            <LinearLayout
+                android:id="@+id/targetMusclesSection"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="@dimen/spacing_xl"
+                android:orientation="vertical">
+
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="@string/target_muscles"
+                    android:textAppearance="@style/TextAppearance.WayToFix.Headline3"
+                    android:textColor="@color/text_primary"/>
+
+                <com.google.android.material.chip.ChipGroup
+                    android:id="@+id/chipGroupTargetMuscles"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="@dimen/spacing_sm"
+                    app:chipSpacingHorizontal="@dimen/spacing_sm"
+                    app:chipSpacingVertical="@dimen/spacing_sm"
+                    app:singleLine="false"/>
 
             </LinearLayout>
 
@@ -183,6 +189,44 @@
                     tools:text="قف بشكل مستقيم، ثم انزل ببطء حتى تصل ركبتيك لزاوية 90 درجة"/>
 
             </androidx.cardview.widget.CardView>
+
+            <!-- Description Section -->
+            <LinearLayout
+                android:id="@+id/descriptionSection"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="@dimen/spacing_lg"
+                android:orientation="vertical"
+                android:visibility="gone">
+
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="@string/exercise_description"
+                    android:textAppearance="@style/TextAppearance.WayToFix.Headline3"
+                    android:textColor="@color/text_primary"/>
+
+                <androidx.cardview.widget.CardView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="@dimen/spacing_sm"
+                    app:cardBackgroundColor="@color/surface"
+                    app:cardCornerRadius="@dimen/radius_base"
+                    app:cardElevation="0dp">
+
+                    <TextView
+                        android:id="@+id/tvDescription"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:lineSpacingExtra="4dp"
+                        android:padding="@dimen/spacing_base"
+                        android:textColor="@color/text_secondary"
+                        android:textSize="15sp"
+                        tools:text="Keep your core engaged and move with steady control through the full range."/>
+
+                </androidx.cardview.widget.CardView>
+
+            </LinearLayout>
 
             <!-- Camera Position Section -->
             <LinearLayout

@@ -102,6 +102,7 @@ dependencies {
 
     // Image Loading — Coil 2.x (View-based; Coil 3.x is Compose-only)
     implementation("io.coil-kt:coil:2.7.0")
+    implementation("io.coil-kt:coil-gif:2.7.0")
 
     // Networking — Retrofit 3 + OkHttp 4 (stable)
     val retrofitVersion = "3.0.0"

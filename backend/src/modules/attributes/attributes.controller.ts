@@ -1,25 +1,25 @@
-import { Body, Controller, Get, Param, Post, Res, UseGuards } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, Post, Put, Query, Res, UseGuards } from '@nestjs/common';
 import type { Response } from 'express';
 import { getPrisma } from '@/lib/prisma/client';
 import { CaslGuard } from '@/lib/casl/casl.guard';
 import { CheckPermission } from '@/lib/casl/check-permission.decorator';
+import { attributesService } from './attributes.service';
+import type {
+  CreateAttributeInput,
+  CreateAttributeValueInput,
+  UpdateAttributeInput,
+  UpdateAttributeValueInput,
+} from './attributes.types';
 
 @UseGuards(CaslGuard)
 @Controller('attributes')
 export class AttributesController {
   @Get()
   @CheckPermission('read', 'Attribute')
-  async list() {
+  async list(@Query('includeInactive') includeInactive?: string) {
     try {
-      const prisma = await getPrisma();
-      const attributes = await prisma.attribute.findMany({
-        orderBy: { sortOrder: 'asc' },
-        include: {
-          values: {
-            where: { isActive: true },
-            orderBy: { sortOrder: 'asc' },
-          },
-        },
+      const attributes = await attributesService.list({
+        includeInactive: includeInactive === 'true',
       });
 
       return { success: true, data: attributes };
@@ -33,15 +33,8 @@ export class AttributesController {
   @CheckPermission('read', 'Attribute')
   async lookup() {
     try {
+      const attributes = await attributesService.list();
       const prisma = await getPrisma();
-      const attributes = await prisma.attribute.findMany({
-        include: {
-          values: {
-            where: { isActive: true },
-            orderBy: { sortOrder: 'asc' },
-          },
-        },
-      });
 
       const posePositions = await prisma.posePosition.findMany({
         where: { isActive: true },
@@ -86,19 +79,47 @@ export class AttributesController {
     }
   }
 
+  @Post()
+  @CheckPermission('create', 'Attribute')
+  async create(
+    @Body() body: CreateAttributeInput,
+    @Res({ passthrough: true }) res: Response
+  ) {
+    try {
+      if (!body?.code || !body?.name) {
+        res.status(400);
+        return { success: false, error: 'Code and name are required' };
+      }
+
+      const existing = await attributesService.getAttributeByCode(body.code, {
+        includeInactive: true,
+      });
+
+      if (existing) {
+        res.status(409);
+        return { success: false, error: 'Attribute code already exists' };
+      }
+
+      const attribute = await attributesService.createAttribute(body);
+      res.status(201);
+      return { success: true, data: attribute };
+    } catch (error) {
+      console.error('Error creating attribute:', error);
+      res.status(500);
+      return { success: false, error: 'Failed to create attribute' };
+    }
+  }
+
   @Get(':code/values')
   @CheckPermission('read', 'Attribute')
-  async getValues(@Param('code') code: string, @Res({ passthrough: true }) res: Response) {
+  async getValues(
+    @Param('code') code: string,
+    @Res({ passthrough: true }) res: Response,
+    @Query('includeInactive') includeInactive?: string
+  ) {
     try {
-      const prisma = await getPrisma();
-      const attribute = await prisma.attribute.findUnique({
-        where: { code },
-        include: {
-          values: {
-            where: { isActive: true },
-            orderBy: { sortOrder: 'asc' },
-          },
-        },
+      const attribute = await attributesService.getAttributeByCode(code, {
+        includeInactive: includeInactive === 'true',
       });
 
       if (!attribute) {
@@ -128,56 +149,202 @@ export class AttributesController {
   @CheckPermission('update', 'Attribute')
   async createValue(
     @Param('code') code: string,
-    @Body() body: any,
+    @Body() body: CreateAttributeValueInput,
     @Res({ passthrough: true }) res: Response
   ) {
     try {
-      const prisma = await getPrisma();
-      const attribute = await prisma.attribute.findUnique({ where: { code } });
-
-      if (!attribute) {
-        res.status(404);
-        return { success: false, error: 'Attribute not found' };
-      }
-
       if (!body?.code || !body?.name) {
         res.status(400);
         return { success: false, error: 'Code and name are required' };
       }
 
-      const existingValue = await prisma.attributeValue.findUnique({
-        where: { code: body.code },
-      });
+      const existingValue = await attributesService.getAttributeValueByCode(body.code);
 
       if (existingValue) {
         res.status(409);
         return { success: false, error: 'Value code already exists' };
       }
 
-      const maxSortOrder = await prisma.attributeValue.aggregate({
-        where: { attributeId: attribute.id },
-        _max: { sortOrder: true },
-      });
-
-      const newValue = await prisma.attributeValue.create({
-        data: {
-          attributeId: attribute.id,
-          code: body.code,
-          name: body.name,
-          description: body.description || null,
-          icon: body.icon || null,
-          color: body.color || null,
-          sortOrder: (maxSortOrder._max.sortOrder || 0) + 1,
-          isActive: body.isActive ?? true,
-        },
-      });
+      const newValue = await attributesService.createValue(code, body);
 
       res.status(201);
       return { success: true, data: newValue };
     } catch (error) {
       console.error('Error creating attribute value:', error);
-      res.status(500);
-      return { success: false, error: 'Failed to create attribute value' };
+      const message = getErrorMessage(error);
+      if (message === 'Attribute not found') {
+        res.status(404);
+      } else {
+        res.status(500);
+      }
+      return { success: false, error: message === 'Attribute not found' ? message : 'Failed to create attribute value' };
     }
   }
+
+  @Get(':id')
+  @CheckPermission('read', 'Attribute')
+  async getById(
+    @Param('id') id: string,
+    @Res({ passthrough: true }) res: Response,
+    @Query('includeInactive') includeInactive?: string
+  ) {
+    try {
+      const attribute = await attributesService.getAttributeById(id, {
+        includeInactive: includeInactive === 'true',
+      });
+
+      if (!attribute) {
+        res.status(404);
+        return { success: false, error: 'Attribute not found' };
+      }
+
+      return { success: true, data: attribute };
+    } catch (error) {
+      console.error('Error fetching attribute:', error);
+      res.status(500);
+      return { success: false, error: 'Failed to fetch attribute' };
+    }
+  }
+
+  @Put('values/:id')
+  @CheckPermission('update', 'Attribute')
+  async updateValue(
+    @Param('id') id: string,
+    @Body() body: UpdateAttributeValueInput,
+    @Res({ passthrough: true }) res: Response
+  ) {
+    try {
+      if (body?.code) {
+        const existing = await attributesService.getAttributeValueByCode(body.code);
+        if (existing && existing.id !== id) {
+          res.status(409);
+          return { success: false, error: 'Value code already exists' };
+        }
+      }
+
+      const value = await attributesService.updateValue(id, body);
+      return { success: true, data: value };
+    } catch (error) {
+      console.error('Error updating attribute value:', error);
+      const message = getErrorMessage(error);
+      if (message === 'Attribute value not found') {
+        res.status(404);
+      } else {
+        res.status(500);
+      }
+      return { success: false, error: message === 'Attribute value not found' ? message : 'Failed to update attribute value' };
+    }
+  }
+
+  @Put(':id')
+  @CheckPermission('update', 'Attribute')
+  async update(
+    @Param('id') id: string,
+    @Body() body: UpdateAttributeInput,
+    @Res({ passthrough: true }) res: Response
+  ) {
+    try {
+      if (body?.code) {
+        const existing = await attributesService.getAttributeByCode(body.code, {
+          includeInactive: true,
+        });
+
+        if (existing && existing.id !== id) {
+          res.status(409);
+          return { success: false, error: 'Attribute code already exists' };
+        }
+      }
+
+      const attribute = await attributesService.updateAttribute(id, body);
+      return { success: true, data: attribute };
+    } catch (error) {
+      console.error('Error updating attribute:', error);
+      const message = getErrorMessage(error);
+      if (message === 'Attribute not found') {
+        res.status(404);
+      } else if (message === 'Cannot modify system attribute') {
+        res.status(400);
+      } else {
+        res.status(500);
+      }
+      return { success: false, error: isKnownAttributeError(message) ? message : 'Failed to update attribute' };
+    }
+  }
+
+  @Delete('values/:id')
+  @CheckPermission('delete', 'Attribute')
+  async deleteValue(@Param('id') id: string, @Res({ passthrough: true }) res: Response) {
+    try {
+      await attributesService.deleteValue(id);
+      return { success: true, data: { deleted: true } };
+    } catch (error) {
+      console.error('Error deleting attribute value:', error);
+      const message = getErrorMessage(error);
+      if (message === 'Attribute value not found') {
+        res.status(404);
+      } else if (isPrismaForeignKeyError(error)) {
+        res.status(400);
+      } else {
+        res.status(500);
+      }
+      return {
+        success: false,
+        error: message === 'Attribute value not found'
+          ? message
+          : isPrismaForeignKeyError(error)
+            ? 'Cannot delete attribute value because it is in use'
+            : 'Failed to delete attribute value',
+      };
+    }
+  }
+
+  @Delete(':id')
+  @CheckPermission('delete', 'Attribute')
+  async remove(@Param('id') id: string, @Res({ passthrough: true }) res: Response) {
+    try {
+      await attributesService.deleteAttribute(id);
+      return { success: true, data: { deleted: true } };
+    } catch (error) {
+      console.error('Error deleting attribute:', error);
+      const message = getErrorMessage(error);
+      if (message === 'Attribute not found') {
+        res.status(404);
+      } else if (
+        message === 'Cannot delete system attribute' ||
+        isPrismaForeignKeyError(error)
+      ) {
+        res.status(400);
+      } else {
+        res.status(500);
+      }
+      return {
+        success: false,
+        error: message === 'Attribute not found'
+          ? message
+          : message === 'Cannot delete system attribute'
+            ? message
+            : isPrismaForeignKeyError(error)
+              ? 'Cannot delete attribute because some values are still in use'
+              : 'Failed to delete attribute',
+      };
+    }
+  }
+}
+
+function getErrorMessage(error: unknown) {
+  if (error instanceof Error) {
+    return error.message;
+  }
+  return 'Unknown error';
+}
+
+function isKnownAttributeError(message: string) {
+  return [
+    'Attribute not found',
+    'Cannot modify system attribute',
+  ].includes(message);
+}
+
+function isPrismaForeignKeyError(error: unknown) {
+  return typeof error === 'object' && error !== null && 'code' in error && error.code === 'P2003';
 }

@@ -1,6 +1,11 @@
 package com.trainingvalidator.poc
 
 import android.app.Application
+import android.os.Build
+import coil.ImageLoader
+import coil.ImageLoaderFactory
+import coil.decode.GifDecoder
+import coil.decode.ImageDecoderDecoder
 import com.trainingvalidator.poc.network.ApiClient
 import com.trainingvalidator.poc.training.engine.PostureMlpClassifier
 import kotlinx.coroutines.CoroutineScope
@@ -14,7 +19,7 @@ import kotlinx.coroutines.SupervisorJob
  * not to any individual Activity. Use it for fire-and-forget background operations
  * (e.g. uploading session data) that must survive Activity destruction.
  */
-class PoseApp : Application() {
+class PoseApp : Application(), ImageLoaderFactory {
 
     /**
      * Process-wide coroutine scope.
@@ -28,6 +33,19 @@ class PoseApp : Application() {
 
         /** Safe accessor — always valid after [onCreate] */
         val instance: PoseApp get() = _instance
+    }
+
+    override fun newImageLoader(): ImageLoader {
+        return ImageLoader.Builder(this)
+            .crossfade(true)
+            .components {
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+                    add(ImageDecoderDecoder.Factory())
+                } else {
+                    add(GifDecoder.Factory())
+                }
+            }
+            .build()
     }
 
     override fun onCreate() {
