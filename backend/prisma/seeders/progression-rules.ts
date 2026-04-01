@@ -1,11 +1,11 @@
 import type { PrismaClient, ExerciseArchetype } from '@prisma/client';
-import { ARCHETYPE_DEFAULTS } from '../../src/modules/progression/archetype-defaults';
+import { ARCHETYPE_DEFAULTS, buildDefaultProfile } from '../../src/modules/progression/archetype-defaults';
 
 /**
- * Seed the 3 initial progression rules + assign archetypes + generate profiles.
+ * Seed legacy progression rules (now deactivated).
  */
 export async function seedProgressionRules(prisma: PrismaClient) {
-  console.log('📈 Seeding progression rules...');
+  console.log('📈 Seeding progression rules (legacy)...');
 
   const rules = [
     {
@@ -25,7 +25,7 @@ export async function seedProgressionRules(prisma: PrismaClient) {
         },
       },
       priority: 10,
-      isActive: true,
+      isActive: false,
     },
     {
       name: 'Rep Increase (Weekly)',
@@ -44,7 +44,7 @@ export async function seedProgressionRules(prisma: PrismaClient) {
         },
       },
       priority: 5,
-      isActive: true,
+      isActive: false,
     },
     {
       name: 'Deload Safety',
@@ -62,7 +62,7 @@ export async function seedProgressionRules(prisma: PrismaClient) {
         },
       },
       priority: 20,
-      isActive: true,
+      isActive: false,
     },
   ];
 
@@ -70,95 +70,173 @@ export async function seedProgressionRules(prisma: PrismaClient) {
     const existing = await prisma.progressionRule.findFirst({
       where: { name: rule.name },
     });
-
     if (!existing) {
       await prisma.progressionRule.create({ data: rule });
     }
   }
 
-  console.log(`  ✅ Seeded ${rules.length} progression rules`);
-
-  // Assign archetypes to published exercises that don't have one yet
-  await assignArchetypes(prisma);
-  await generateDefaultProfiles(prisma);
-}
-
-async function assignArchetypes(prisma: PrismaClient) {
-  console.log('📊 Assigning archetypes to exercises...');
-
-  const exercises = await prisma.exercise.findMany({
-    where: { archetype: null, status: 'published', deletedAt: null },
-    select: {
-      id: true,
-      supportsWeight: true,
-      countingMethod: { select: { code: true } },
-    },
+  await prisma.progressionRule.updateMany({
+    where: { isActive: true },
+    data: { isActive: false },
   });
 
-  let updated = 0;
-  for (const ex of exercises) {
-    let archetype: ExerciseArchetype;
+  console.log(`  ✅ Seeded ${rules.length} progression rules (deactivated)`);
+}
 
-    if (ex.supportsWeight) {
+/**
+ * Classify exercises into archetypes and generate progression profiles.
+ */
+export async function assignArchetypesAndGenerateProfiles(prisma: PrismaClient) {
+  console.log('📈 Assigning archetypes and generating progression profiles...');
+
+  const exercises = await prisma.exercise.findMany({
+    where: { status: 'published', deletedAt: null, archetype: null },
+    include: { countingMethod: { select: { code: true } } },
+  });
+
+  let assigned = 0;
+  let profilesCreated = 0;
+
+  for (const exercise of exercises) {
+    let archetype: ExerciseArchetype;
+    const countingCode = exercise.countingMethod?.code || '';
+
+    if (exercise.supportsWeight) {
       archetype = 'weighted_strength';
-    } else if (ex.countingMethod?.code === 'hold' || ex.countingMethod?.code === 'duration') {
+    } else if (countingCode.includes('hold') || countingCode.includes('duration') || countingCode.includes('time')) {
       archetype = 'isometric_hold';
-    } else if (ex.countingMethod?.code === 'reps' || ex.countingMethod?.code === 'rep') {
-      archetype = 'bodyweight_dynamic';
+    } else if (countingCode.includes('rom') || countingCode.includes('mobility') || countingCode.includes('stretch')) {
+      archetype = 'mobility_rom';
     } else {
-      archetype = 'motor_control';
+      archetype = 'bodyweight_dynamic';
     }
 
     await prisma.exercise.update({
-      where: { id: ex.id },
+      where: { id: exercise.id },
       data: { archetype },
     });
-    updated++;
+    assigned++;
+
+    const defaults = buildDefaultProfile(archetype);
+    if (defaults) {
+      const existing = await prisma.exerciseProgressionProfile.findUnique({
+        where: { exerciseId: exercise.id },
+      });
+
+      if (!existing) {
+        const toJson = (v: unknown) => v != null ? JSON.parse(JSON.stringify(v)) : undefined;
+        await prisma.exerciseProgressionProfile.create({
+          data: {
+            exerciseId: exercise.id,
+            archetype,
+            allowedAxes: defaults.allowedAxes,
+            priorityOrder: defaults.priorityOrder,
+            repAxis: toJson(defaults.repAxis),
+            loadAxis: toJson(defaults.loadAxis),
+            durationAxis: toJson(defaults.durationAxis),
+            setAxis: toJson(defaults.setAxis),
+            difficultyLadder: defaults.difficultyLadder ?? undefined,
+            qualityGate: toJson(defaults.qualityGate),
+            promotionPolicy: toJson(defaults.promotionPolicy),
+            regressionPolicy: toJson(defaults.regressionPolicy),
+            isAutoGenerated: true,
+          },
+        });
+        profilesCreated++;
+      }
+    }
   }
 
-  console.log(`  ✅ Assigned archetypes to ${updated} exercises`);
+  console.log(`  ✅ Assigned archetypes to ${assigned} exercises`);
+  console.log(`  ✅ Created ${profilesCreated} progression profiles`);
 }
 
-async function generateDefaultProfiles(prisma: PrismaClient) {
-  console.log('📋 Generating default progression profiles...');
+/**
+ * Backfill progression state for users with active programs.
+ */
+export async function backfillProgressionState(prisma: PrismaClient) {
+  console.log('📈 Backfilling progression state for active programs...');
 
-  const exercises = await prisma.exercise.findMany({
-    where: {
-      archetype: { not: null },
-      status: 'published',
-      deletedAt: null,
-      progressionProfile: null,
+  const activePrograms = await prisma.userProgram.findMany({
+    where: { isActive: true, programId: { not: null } },
+    include: {
+      program: {
+        include: {
+          weeks: {
+            include: {
+              days: {
+                include: {
+                  sessions: {
+                    include: {
+                      items: {
+                        where: { exerciseId: { not: null } },
+                        select: {
+                          exerciseId: true,
+                          targetReps: true,
+                          weightKg: true,
+                          targetDuration: true,
+                          sets: true,
+                          difficultyCode: true,
+                        },
+                      },
+                    },
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
     },
-    select: { id: true, archetype: true },
   });
 
   let created = 0;
-  for (const ex of exercises) {
-    if (!ex.archetype) continue;
-    const defaults = ARCHETYPE_DEFAULTS[ex.archetype];
-    if (!defaults) continue;
 
-    const existing = await prisma.exerciseProgressionProfile.findUnique({
-      where: { exerciseId: ex.id },
-    });
-    if (existing) continue;
+  for (const up of activePrograms) {
+    const exerciseItems = new Map<string, any>();
 
-    await prisma.exerciseProgressionProfile.create({
-      data: {
-        exerciseId: ex.id,
-        archetype: ex.archetype,
-        repRange: defaults.repRange ?? undefined,
-        weightBounds: defaults.weightBounds ?? undefined,
-        durationBounds: defaults.durationBounds ?? undefined,
-        qualityGate: defaults.qualityGate,
-        promotionRule: defaults.promotionRule as any,
-        regressionRule: defaults.regressionRule as any,
-        difficultyLadder: defaults.difficultyLadder ?? undefined,
-        isAutoGenerated: true,
-      },
-    });
-    created++;
+    for (const week of up.program?.weeks ?? []) {
+      for (const day of week.days) {
+        for (const session of day.sessions) {
+          for (const item of session.items) {
+            if (item.exerciseId && !exerciseItems.has(item.exerciseId)) {
+              exerciseItems.set(item.exerciseId, item);
+            }
+          }
+        }
+      }
+    }
+
+    for (const [exerciseId, item] of exerciseItems) {
+      const profile = await prisma.exerciseProgressionProfile.findUnique({
+        where: { exerciseId },
+      });
+      if (!profile) continue;
+
+      const existing = await prisma.userProgramExerciseProgressionState.findUnique({
+        where: { userProgramId_exerciseId: { userProgramId: up.id, exerciseId } },
+      });
+      if (existing) continue;
+
+      const priorityOrder = profile.priorityOrder as string[];
+
+      await prisma.userProgramExerciseProgressionState.create({
+        data: {
+          userProgramId: up.id,
+          exerciseId,
+          currentAxis: priorityOrder[0] || 'reps',
+          currentWeightKg: item.weightKg ?? null,
+          currentTargetReps: item.targetReps ?? null,
+          currentTargetDuration: item.targetDuration ?? null,
+          currentTargetSets: item.sets ?? null,
+          currentDifficultyCode: item.difficultyCode ?? null,
+          successStreak: 0,
+          regressionStreak: 0,
+        },
+      });
+      created++;
+    }
   }
 
-  console.log(`  ✅ Generated ${created} default progression profiles`);
+  console.log(`  ✅ Created ${created} progression states for active programs`);
 }

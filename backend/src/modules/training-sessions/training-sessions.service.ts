@@ -1067,41 +1067,40 @@ export async function completeProgramSessionReport(
     console.warn('[Sessions] Failed to update program progress:', progressError);
   }
 
-  // ── Progression Engine — evaluate rules after session completion ──
-  // Only run progression for program sessions
-  if (report.programId) {
-    try {
-      const programId = report.programId;
-      const allChanges: Awaited<ReturnType<typeof progressionService.evaluateAfterSession>> = [];
-
-      // 1) Global + program-scoped rules (once, no exerciseId)
-      const globalChanges = await progressionService.evaluateAfterSession(
-        userId, sessionId, { scope: 'global_and_program', programId },
-      );
-      allChanges.push(...globalChanges);
-
-      // 2) Exercise-specific rules (per distinct exercise in this session)
-      const sessionItems = await prisma.programSessionItem.findMany({
-        where: { session: { id: sessionId }, type: 'exercise' },
-        select: { exerciseId: true },
-        distinct: ['exerciseId'],
+  // ── Progression Engine V2 — profile-first evaluation ──
+  try {
+    if (report.programId) {
+      const userProgram = await prisma.userProgram.findFirst({
+        where: { userId, programId: report.programId, isActive: true },
       });
-      const exerciseIds = sessionItems.map((i) => i.exerciseId).filter(Boolean) as string[];
 
-      for (const exId of exerciseIds) {
-        const exChanges = await progressionService.evaluateAfterSession(
-          userId, sessionId, { scope: 'exercise', exerciseId: exId, programId },
-        );
-        allChanges.push(...exChanges);
-      }
+      if (userProgram) {
+        const sessionItems = await prisma.programSessionItem.findMany({
+          where: { sessionId, exerciseId: { not: null } },
+          select: { exerciseId: true },
+        });
+        const exerciseIds = [...new Set(
+          sessionItems.map((i) => i.exerciseId).filter((id): id is string => id !== null),
+        )];
 
-      if (allChanges.length > 0) {
-        console.log(`[Progression] ${allChanges.length} change(s) applied for user ${userId}:`,
-          allChanges.map((c) => `${c.field}: ${c.previousValue} → ${c.newValue}`).join(', '));
+        if (exerciseIds.length > 0) {
+          const changes = await progressionService.evaluateAfterSession(
+            userId,
+            sessionId,
+            exerciseIds,
+            userProgram.id,
+          );
+          if (changes.length > 0) {
+            console.log(
+              `[Progression] ${changes.length} change(s) applied for user ${userId}:`,
+              changes.map((c) => `${c.field}: ${c.previousValue} → ${c.newValue} (${c.axis})`).join(', '),
+            );
+          }
+        }
       }
-    } catch (progressionError) {
-      console.warn('[Sessions] Progression engine error (non-fatal):', progressionError);
     }
+  } catch (progressionError) {
+    console.warn('[Sessions] Progression engine error (non-fatal):', progressionError);
   }
 
   return updatedReport;

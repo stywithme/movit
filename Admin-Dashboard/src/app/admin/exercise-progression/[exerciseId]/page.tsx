@@ -122,7 +122,7 @@ export default function ExerciseProgressionDetailPage() {
   const fetchProfile = useCallback(async () => {
     setLoading(true);
     try {
-      const res = await fetch(`/api/admin/exercise-progression-profiles/${exerciseId}`);
+      const res = await fetch(`/api/admin/exercise-progression/${exerciseId}`);
       const data = await res.json();
       if (data.success && data.data) {
         const p = data.data as Profile;
@@ -167,7 +167,7 @@ export default function ExerciseProgressionDetailPage() {
     if (!newArchetype) return;
     setSaving(true);
     try {
-      const res = await fetch(`/api/admin/exercise-progression-profiles/${exerciseId}/archetype`, {
+      const res = await fetch(`/api/admin/exercise-progression/${exerciseId}/archetype`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ archetype: newArchetype }),
@@ -189,7 +189,7 @@ export default function ExerciseProgressionDetailPage() {
     if (!confirm('This will reset the profile to default values for this archetype. Continue?')) return;
     setSaving(true);
     try {
-      const res = await fetch(`/api/admin/exercise-progression-profiles/${exerciseId}/generate`, {
+      const res = await fetch(`/api/admin/exercise-progression/${exerciseId}/generate`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ archetype }),
@@ -218,7 +218,7 @@ export default function ExerciseProgressionDetailPage() {
       if (showDurationBounds) payload.durationBounds = durationBounds;
       if (showDifficultyLadder && difficultyLadder.length > 0) payload.difficultyLadder = difficultyLadder;
 
-      const res = await fetch(`/api/admin/exercise-progression-profiles/${exerciseId}`, {
+      const res = await fetch(`/api/admin/exercise-progression/${exerciseId}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),

@@ -4,6 +4,10 @@ import { ProgressionRulesAdminController } from './progression-rules-admin.contr
 import { ExerciseProgressionProfileController } from './exercise-progression-profile.controller';
 
 @Module({
-  controllers: [ProgressionController, ProgressionRulesAdminController, ExerciseProgressionProfileController],
+  controllers: [
+    ProgressionController,
+    ProgressionRulesAdminController,
+    ExerciseProgressionProfileController,
+  ],
 })
 export class ProgressionModule {}

@@ -1,155 +1,170 @@
-import { Controller, Get, Put, Post, Req, Res, Param, Body, Query, UseGuards } from '@nestjs/common';
+import { Controller, Get, Post, Put, Req, Res, Param, Body, Query, UseGuards } from '@nestjs/common';
 import type { Request, Response } from 'express';
-import type { ExerciseArchetype } from '@prisma/client';
 import { CaslGuard } from '@/lib/casl/casl.guard';
 import { CheckPermission } from '@/lib/casl/check-permission.decorator';
 import { exerciseProgressionProfileService } from './exercise-progression-profile.service';
 
-const VALID_ARCHETYPES = [
-  'weighted_strength',
-  'bodyweight_dynamic',
-  'isometric_hold',
-  'mobility_rom',
-  'motor_control',
-] as const;
-
 @UseGuards(CaslGuard)
-@Controller('admin/exercise-progression-profiles')
+@Controller('admin/exercise-progression')
 export class ExerciseProgressionProfileController {
+  @Get('archetypes')
+  @CheckPermission('read', 'ProgressionRule')
+  async getArchetypes(@Res({ passthrough: true }) res: Response) {
+    try {
+      const archetypes = exerciseProgressionProfileService.getAvailableArchetypes();
+      return { success: true, data: archetypes };
+    } catch (error) {
+      console.error('[ExerciseProgression] Archetypes error:', error);
+      res.status(500);
+      return { success: false, error: 'Failed to fetch archetypes' };
+    }
+  }
 
-  @Get()
-  @CheckPermission('read', 'ExerciseProgressionProfile')
-  async list(
-    @Req() req: Request,
+  @Get('exercises')
+  @CheckPermission('read', 'ProgressionRule')
+  async listExercises(
     @Res({ passthrough: true }) res: Response,
-    @Query('view') view?: string,
+    @Query('search') search?: string,
   ) {
     try {
-      if (view === 'exercises') {
-        const data = await exerciseProgressionProfileService.listExercisesWithProfileStatus();
-        return { success: true, data };
-      }
-
-      const data = await exerciseProgressionProfileService.listProfiles();
+      const data = await exerciseProgressionProfileService.listExercisesWithProfileStatus(search);
       return { success: true, data };
     } catch (error) {
-      console.error('[ProfileAdmin] List Error:', error);
+      console.error('[ExerciseProgression] List error:', error);
+      res.status(500);
+      return { success: false, error: 'Failed to fetch exercises' };
+    }
+  }
+
+  @Get('profiles')
+  @CheckPermission('read', 'ProgressionRule')
+  async listProfiles(
+    @Res({ passthrough: true }) res: Response,
+    @Query('archetype') archetype?: string,
+  ) {
+    try {
+      const data = await exerciseProgressionProfileService.listProfiles(
+        archetype ? { archetype } : undefined,
+      );
+      return { success: true, data };
+    } catch (error) {
+      console.error('[ExerciseProgression] List profiles error:', error);
       res.status(500);
       return { success: false, error: 'Failed to fetch profiles' };
     }
   }
 
   @Get(':exerciseId')
-  @CheckPermission('read', 'ExerciseProgressionProfile')
+  @CheckPermission('read', 'ProgressionRule')
   async getProfile(
-    @Req() req: Request,
-    @Res({ passthrough: true }) res: Response,
     @Param('exerciseId') exerciseId: string,
+    @Res({ passthrough: true }) res: Response,
   ) {
     try {
       const profile = await exerciseProgressionProfileService.getProfile(exerciseId);
-      return { success: true, data: profile };
+      if (!profile) {
+        return { success: true, data: null };
+      }
+
+      const validation = await exerciseProgressionProfileService.validateProfile(exerciseId);
+      return { success: true, data: { ...profile, validation } };
     } catch (error) {
-      console.error('[ProfileAdmin] Get Error:', error);
+      console.error('[ExerciseProgression] Get error:', error);
       res.status(500);
       return { success: false, error: 'Failed to fetch profile' };
     }
   }
 
-  @Put(':exerciseId')
-  @CheckPermission('update', 'ExerciseProgressionProfile')
-  async updateProfile(
-    @Req() req: Request,
-    @Res({ passthrough: true }) res: Response,
+  @Post(':exerciseId/generate')
+  @CheckPermission('update', 'ProgressionRule')
+  async generateProfile(
     @Param('exerciseId') exerciseId: string,
-    @Body() body: {
-      repRange?: unknown;
-      weightBounds?: unknown;
-      durationBounds?: unknown;
-      qualityGate?: unknown;
-      promotionRule?: unknown;
-      regressionRule?: unknown;
-      difficultyLadder?: unknown;
-    },
+    @Body() body: { archetype: string },
+    @Res({ passthrough: true }) res: Response,
+  ) {
+    try {
+      const profile = await exerciseProgressionProfileService.generateDefaultProfile(
+        exerciseId,
+        body.archetype,
+      );
+      return { success: true, data: profile };
+    } catch (error: any) {
+      console.error('[ExerciseProgression] Generate error:', error);
+      res.status(400);
+      return { success: false, error: error.message || 'Failed to generate profile' };
+    }
+  }
+
+  @Put(':exerciseId')
+  @CheckPermission('update', 'ProgressionRule')
+  async updateProfile(
+    @Param('exerciseId') exerciseId: string,
+    @Body() body: Record<string, unknown>,
+    @Res({ passthrough: true }) res: Response,
   ) {
     try {
       const profile = await exerciseProgressionProfileService.updateProfile(exerciseId, body);
-      return { success: true, data: profile };
+      const validation = await exerciseProgressionProfileService.validateProfile(exerciseId);
+      return { success: true, data: { ...profile, validation } };
     } catch (error: any) {
-      console.error('[ProfileAdmin] Update Error:', error);
-      res.status(error.message?.includes('No profile') ? 404 : 500);
+      console.error('[ExerciseProgression] Update error:', error);
+      res.status(400);
       return { success: false, error: error.message || 'Failed to update profile' };
     }
   }
 
-  @Post(':exerciseId/generate')
-  @CheckPermission('create', 'ExerciseProgressionProfile')
-  async generateProfile(
-    @Req() req: Request,
-    @Res({ passthrough: true }) res: Response,
-    @Param('exerciseId') exerciseId: string,
-    @Body() body: { archetype?: string },
-  ) {
-    try {
-      const archetype = body.archetype as ExerciseArchetype;
-      if (!archetype || !VALID_ARCHETYPES.includes(archetype as any)) {
-        res.status(400);
-        return { success: false, error: `Invalid archetype. Valid: ${VALID_ARCHETYPES.join(', ')}` };
-      }
-
-      const profile = await exerciseProgressionProfileService.generateDefaultProfile(exerciseId, archetype);
-      return { success: true, data: profile };
-    } catch (error) {
-      console.error('[ProfileAdmin] Generate Error:', error);
-      res.status(500);
-      return { success: false, error: 'Failed to generate profile' };
-    }
-  }
-
   @Put(':exerciseId/archetype')
-  @CheckPermission('update', 'ExerciseProgressionProfile')
+  @CheckPermission('update', 'ProgressionRule')
   async setArchetype(
-    @Req() req: Request,
-    @Res({ passthrough: true }) res: Response,
     @Param('exerciseId') exerciseId: string,
     @Body() body: { archetype: string },
+    @Res({ passthrough: true }) res: Response,
   ) {
     try {
-      const archetype = body.archetype as ExerciseArchetype;
-      if (!archetype || !VALID_ARCHETYPES.includes(archetype as any)) {
-        res.status(400);
-        return { success: false, error: `Invalid archetype. Valid: ${VALID_ARCHETYPES.join(', ')}` };
-      }
-
-      const profile = await exerciseProgressionProfileService.setArchetype(exerciseId, archetype);
+      const profile = await exerciseProgressionProfileService.setArchetype(
+        exerciseId,
+        body.archetype,
+      );
       return { success: true, data: profile };
-    } catch (error) {
-      console.error('[ProfileAdmin] SetArchetype Error:', error);
-      res.status(500);
-      return { success: false, error: 'Failed to set archetype' };
+    } catch (error: any) {
+      console.error('[ExerciseProgression] Set archetype error:', error);
+      res.status(400);
+      return { success: false, error: error.message || 'Failed to set archetype' };
     }
   }
 
   @Post('bulk-generate')
-  @CheckPermission('create', 'ExerciseProgressionProfile')
+  @CheckPermission('update', 'ProgressionRule')
   async bulkGenerate(
-    @Req() req: Request,
+    @Body() body: { exerciseIds: string[]; archetype: string },
     @Res({ passthrough: true }) res: Response,
-    @Body() body: { archetype?: string },
   ) {
     try {
-      const archetype = body.archetype as ExerciseArchetype | undefined;
-      if (archetype && !VALID_ARCHETYPES.includes(archetype as any)) {
-        res.status(400);
-        return { success: false, error: `Invalid archetype. Valid: ${VALID_ARCHETYPES.join(', ')}` };
-      }
+      const profiles = await exerciseProgressionProfileService.bulkGenerateProfiles(
+        body.exerciseIds,
+        body.archetype,
+      );
+      return { success: true, data: { count: profiles.length } };
+    } catch (error: any) {
+      console.error('[ExerciseProgression] Bulk generate error:', error);
+      res.status(400);
+      return { success: false, error: error.message || 'Failed to bulk generate profiles' };
+    }
+  }
 
-      const result = await exerciseProgressionProfileService.bulkGenerateProfiles(archetype);
-      return { success: true, data: result };
+  @Get(':exerciseId/validate')
+  @CheckPermission('read', 'ProgressionRule')
+  async validateProfile(
+    @Param('exerciseId') exerciseId: string,
+    @Res({ passthrough: true }) res: Response,
+  ) {
+    try {
+      const validation = await exerciseProgressionProfileService.validateProfile(exerciseId);
+      return { success: true, data: validation };
     } catch (error) {
-      console.error('[ProfileAdmin] BulkGenerate Error:', error);
+      console.error('[ExerciseProgression] Validate error:', error);
       res.status(500);
-      return { success: false, error: 'Failed to bulk generate profiles' };
+      return { success: false, error: 'Failed to validate profile' };
     }
   }
 }

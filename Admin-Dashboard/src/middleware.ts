@@ -24,6 +24,7 @@ const PROTECTED_ROUTE_PREFIXES: Record<string, string> = {
   '/admin/camera-positions': 'PosePosition',
   '/admin/levels': 'Level',
   '/admin/assessment-templates': 'AssessmentTemplate',
+  '/admin/exercise-progression': 'ProgressionRule',
   '/admin/progression-rules': 'ProgressionRule',
   '/admin/exercise-progression': 'ExerciseProgressionProfile',
   '/admin/analytics/programs': 'ProgramAnalytics',

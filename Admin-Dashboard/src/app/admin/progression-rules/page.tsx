@@ -319,10 +319,20 @@ export default function ProgressionRulesPage() {
       {/* Header */}
       <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Progression Rules</h1>
-          <p className="text-gray-600 mt-1">Manage automatic progression rules for training plans</p>
+          <h1 className="text-2xl font-bold text-gray-900">Progression Rules (Archive)</h1>
+          <p className="text-gray-600 mt-1">Legacy rules — read-only archive. Progression logic is now managed from Exercise Progression.</p>
         </div>
-        <Button onClick={openCreateDialog}>New Rule</Button>
+        <a href="/admin/exercise-progression" className="text-blue-600 hover:underline text-sm font-medium">
+          Go to Exercise Progression &rarr;
+        </a>
+      </div>
+
+      {/* Archive Notice */}
+      <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
+        <p className="text-sm text-amber-800 font-medium">
+          This page is now a read-only archive. The progression engine no longer reads from these rules.
+          All progression logic is managed through Exercise Progression Profiles.
+        </p>
       </div>
 
       {/* Rules Table */}
@@ -362,7 +372,7 @@ export default function ProgressionRulesPage() {
                   Executions
                 </th>
                 <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">
-                  Actions
+                  Status
                 </th>
               </tr>
             </thead>
@@ -389,12 +399,11 @@ export default function ProgressionRulesPage() {
                   </td>
                   <td className="px-6 py-4 text-sm text-gray-600">{rule.priority}</td>
                   <td className="px-6 py-4">
-                    <button
-                      onClick={() => handleToggle(rule)}
-                      className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium transition-colors ${
+                    <span
+                      className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium ${
                         rule.isActive
-                          ? 'bg-green-100 text-green-700 hover:bg-green-200'
-                          : 'bg-gray-100 text-gray-500 hover:bg-gray-200'
+                          ? 'bg-green-100 text-green-700'
+                          : 'bg-gray-100 text-gray-500'
                       }`}
                     >
                       <span
@@ -403,32 +412,13 @@ export default function ProgressionRulesPage() {
                         }`}
                       />
                       {rule.isActive ? 'Active' : 'Inactive'}
-                    </button>
+                    </span>
                   </td>
                   <td className="px-6 py-4 text-sm text-gray-600">
                     {rule._count?.history ?? 0}
                   </td>
                   <td className="px-6 py-4 text-right">
-                    <div className="flex justify-end gap-2">
-                      <button
-                        onClick={() => openEditDialog(rule)}
-                        className="text-blue-600 hover:text-blue-800 text-sm"
-                      >
-                        Edit
-                      </button>
-                      <button
-                        onClick={() => handleToggle(rule)}
-                        className="text-yellow-600 hover:text-yellow-800 text-sm"
-                      >
-                        {rule.isActive ? 'Deactivate' : 'Activate'}
-                      </button>
-                      <button
-                        onClick={() => handleDelete(rule)}
-                        className="text-red-600 hover:text-red-800 text-sm"
-                      >
-                        Delete
-                      </button>
-                    </div>
+                    <span className="text-xs text-gray-400">Read-only</span>
                   </td>
                 </tr>
               ))}
