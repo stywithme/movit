@@ -30,6 +30,9 @@ object TtsVoiceSelector {
      * Apply the best available voice to [tts] for [language] ("ar" or "en").
      * Call **after** TTS init succeeds.
      *
+     * Guarantee: always calls setLanguage() or setVoice() — TTS will produce
+     * sound even on devices with no ideal voice.
+     *
      * @return true if a voice was explicitly set; false if we fell back to setLanguage().
      */
     fun applyBestVoice(tts: TextToSpeech, language: String): Boolean {
@@ -37,25 +40,33 @@ object TtsVoiceSelector {
         val allVoices: Set<Voice>? = try { tts.voices } catch (_: Exception) { null }
 
         if (allVoices.isNullOrEmpty()) {
-            Log.w(TAG, "No voices available from engine; falling back to setLanguage()")
+            Log.w(TAG, "No voices enumerable; falling back to setLanguage()")
             tts.setLanguage(targetLocales.first())
             return false
         }
 
-        val candidates = allVoices.filter { voice ->
+        // 1st: offline voices matching language
+        val offlineCandidates = allVoices.filter { voice ->
             !voice.isNetworkConnectionRequired &&
             targetLocales.any { it.language == voice.locale.language }
         }
-
-        if (candidates.isEmpty()) {
-            Log.w(TAG, "No offline voices for $language; trying online voices")
-            val onlineCandidates = allVoices.filter { voice ->
-                targetLocales.any { it.language == voice.locale.language }
-            }
-            return pickAndApply(tts, onlineCandidates, language, targetLocales)
+        if (offlineCandidates.isNotEmpty()) {
+            return pickAndApply(tts, offlineCandidates, language, targetLocales)
         }
 
-        return pickAndApply(tts, candidates, language, targetLocales)
+        // 2nd: any voice matching language (including online)
+        val allLangCandidates = allVoices.filter { voice ->
+            targetLocales.any { it.language == voice.locale.language }
+        }
+        if (allLangCandidates.isNotEmpty()) {
+            Log.w(TAG, "No offline voices for $language; using online voice")
+            return pickAndApply(tts, allLangCandidates, language, targetLocales)
+        }
+
+        // 3rd: no matching voices at all — setLanguage() lets the engine decide
+        Log.w(TAG, "No $language voices found; setLanguage() fallback")
+        tts.setLanguage(targetLocales.first())
+        return false
     }
 
     private fun pickAndApply(
