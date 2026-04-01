@@ -84,12 +84,20 @@ class AudioFeedbackPlayer(
      * Initialize TTS for fallback
      */
     fun initialize() {
-        tts = TextToSpeech(context, { status ->
-            if (status == TextToSpeech.SUCCESS) {
-                isTtsReady = configureTtsVoice(language)
+        initTtsWithEngine(TtsVoiceSelector.getPreferredEngine())
+    }
 
-                if (isTtsReady) {
-                    tts?.setOnUtteranceProgressListener(object : UtteranceProgressListener() {
+    private fun initTtsWithEngine(engine: String?) {
+        val listener = TextToSpeech.OnInitListener { status ->
+            if (status == TextToSpeech.SUCCESS) {
+                tts?.let {
+                    TtsVoiceSelector.applyBestVoice(it, language)
+                    it.setSpeechRate(0.95f)
+                    it.setPitch(0.95f)
+                    isTtsReady = true
+                    Log.d(TAG, "TTS fallback ready (engine=${engine ?: "default"})")
+
+                    it.setOnUtteranceProgressListener(object : UtteranceProgressListener() {
                         override fun onStart(utteranceId: String?) {}
                         override fun onDone(utteranceId: String?) {
                             android.os.Handler(android.os.Looper.getMainLooper()).post {
@@ -109,29 +117,19 @@ class AudioFeedbackPlayer(
                         }
                     })
                 }
-            }
-        }, TtsVoiceSelector.getPreferredEngine())
-    }
-
-    private fun configureTtsVoice(lang: String): Boolean {
-        val engine = tts ?: return false
-
-        val voiceApplied = TtsVoiceSelector.applyBestVoice(engine, lang)
-        val locale = if (lang == "ar") Locale.forLanguageTag("ar") else Locale.US
-
-        if (!voiceApplied) {
-            val result = engine.setLanguage(locale)
-            if (result == TextToSpeech.LANG_MISSING_DATA ||
-                result == TextToSpeech.LANG_NOT_SUPPORTED) {
-                Log.w(TAG, "TTS language not supported: $locale")
-                return false
+            } else if (engine != null) {
+                Log.w(TAG, "Preferred engine '$engine' failed, trying default")
+                initTtsWithEngine(null)
+            } else {
+                Log.e(TAG, "TTS init failed completely")
             }
         }
 
-        engine.setSpeechRate(0.95f)
-        engine.setPitch(0.95f)
-        Log.d(TAG, "TTS fallback initialized for $lang (voice selected: $voiceApplied)")
-        return true
+        tts = if (engine != null) {
+            TextToSpeech(context, listener, engine)
+        } else {
+            TextToSpeech(context, listener)
+        }
     }
     
     fun setPlaybackListener(listener: PlaybackListener?) {
@@ -380,7 +378,7 @@ class AudioFeedbackPlayer(
     fun setLanguage(newLanguage: String) {
         if (newLanguage == language) return
         language = newLanguage
-        configureTtsVoice(newLanguage)
+        tts?.let { TtsVoiceSelector.applyBestVoice(it, newLanguage) }
         Log.d(TAG, "Language changed to: $newLanguage")
     }
 }
