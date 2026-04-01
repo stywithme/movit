@@ -2,8 +2,7 @@ import type { PrismaClient, ExerciseArchetype } from '@prisma/client';
 import { ARCHETYPE_DEFAULTS, buildDefaultProfile } from '../../src/modules/progression/archetype-defaults';
 
 /**
- * Seed the 3 initial progression rules (Section 7 of architecture plan).
- * These are now legacy — the engine uses ExerciseProgressionProfile instead.
+ * Seed legacy progression rules (now deactivated).
  */
 export async function seedProgressionRules(prisma: PrismaClient) {
   console.log('📈 Seeding progression rules (legacy)...');
@@ -26,7 +25,7 @@ export async function seedProgressionRules(prisma: PrismaClient) {
         },
       },
       priority: 10,
-      isActive: true,
+      isActive: false,
     },
     {
       name: 'Rep Increase (Weekly)',
@@ -45,7 +44,7 @@ export async function seedProgressionRules(prisma: PrismaClient) {
         },
       },
       priority: 5,
-      isActive: true,
+      isActive: false,
     },
     {
       name: 'Deload Safety',
@@ -63,7 +62,7 @@ export async function seedProgressionRules(prisma: PrismaClient) {
         },
       },
       priority: 20,
-      isActive: true,
+      isActive: false,
     },
   ];
 
@@ -71,40 +70,28 @@ export async function seedProgressionRules(prisma: PrismaClient) {
     const existing = await prisma.progressionRule.findFirst({
       where: { name: rule.name },
     });
-
     if (!existing) {
       await prisma.progressionRule.create({ data: rule });
     }
   }
 
-  console.log(`  ✅ Seeded ${rules.length} progression rules`);
-
-  // Deactivate legacy rules since engine no longer reads them
   await prisma.progressionRule.updateMany({
     where: { isActive: true },
     data: { isActive: false },
   });
-  console.log('  ✅ Legacy rules deactivated');
+
+  console.log(`  ✅ Seeded ${rules.length} progression rules (deactivated)`);
 }
 
 /**
- * Classify exercises into archetypes based on their counting method and properties.
+ * Classify exercises into archetypes and generate progression profiles.
  */
-const COUNTING_METHOD_TO_ARCHETYPE: Record<string, ExerciseArchetype> = {
-  'rep_based': 'weighted_strength',
-  'duration_based': 'isometric_hold',
-  'hold_based': 'isometric_hold',
-  'rom_based': 'mobility_rom',
-};
-
 export async function assignArchetypesAndGenerateProfiles(prisma: PrismaClient) {
   console.log('📈 Assigning archetypes and generating progression profiles...');
 
   const exercises = await prisma.exercise.findMany({
     where: { status: 'published', deletedAt: null, archetype: null },
-    include: {
-      countingMethod: { select: { code: true } },
-    },
+    include: { countingMethod: { select: { code: true } } },
   });
 
   let assigned = 0;

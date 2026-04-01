@@ -113,7 +113,7 @@ export class ExerciseProgressionProfileController {
     }
   }
 
-  @Post(':exerciseId/archetype')
+  @Put(':exerciseId/archetype')
   @CheckPermission('update', 'ProgressionRule')
   async setArchetype(
     @Param('exerciseId') exerciseId: string,

@@ -138,10 +138,6 @@ function evaluateEligibility(
 // ── Service ──
 
 export const progressionService = {
-  /**
-   * Main entry point: evaluate progression after a program session completes.
-   * Called once per session with a list of exerciseIds performed.
-   */
   async evaluateAfterSession(
     userId: string,
     sessionId: string,
@@ -493,11 +489,6 @@ export const progressionService = {
       },
     });
 
-    const exercise = await prisma.exercise.findUnique({
-      where: { id: exerciseId },
-      select: { name: true },
-    });
-
     return {
       field,
       previousValue,
@@ -534,7 +525,7 @@ export const progressionService = {
     let previousValue = 0;
     let newValue = 0;
     let reason = '';
-    let appliedAxis = state.currentAxis;
+    const appliedAxis = state.currentAxis;
 
     const currentAxis = state.currentAxis;
 
@@ -643,9 +634,6 @@ export const progressionService = {
     };
   },
 
-  /**
-   * Materialize current state values into the next ProgramSessionItem for this exercise.
-   */
   async materializeToNextItem(userProgramId: string, exerciseId: string) {
     const prisma = await getPrisma();
 
@@ -686,9 +674,6 @@ export const progressionService = {
     }
   },
 
-  /**
-   * Get progression history for a user (mobile).
-   */
   async getHistory(userId: string, limit = 20): Promise<unknown[]> {
     const prisma = await getPrisma();
 
@@ -711,9 +696,6 @@ export const progressionService = {
     }));
   },
 
-  /**
-   * Get unseen progression changes for mobile notifications.
-   */
   async getRecent(userId: string): Promise<unknown[]> {
     const prisma = await getPrisma();
 
@@ -740,9 +722,6 @@ export const progressionService = {
     }));
   },
 
-  /**
-   * Get progression changes for a specific session.
-   */
   async getBySession(userId: string, sessionId: string): Promise<unknown[]> {
     const prisma = await getPrisma();
 
@@ -764,9 +743,6 @@ export const progressionService = {
     }));
   },
 
-  /**
-   * Mark progression changes as seen.
-   */
   async markSeen(userId: string, ids: string[]): Promise<number> {
     const prisma = await getPrisma();
 

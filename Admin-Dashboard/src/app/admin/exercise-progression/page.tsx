@@ -2,7 +2,23 @@
 
 import { useEffect, useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
-import { Input, Select, Button, Badge } from '@/components/ui';
+import { Button, Badge, Input } from '@/components/ui';
+
+const ARCHETYPE_LABELS: Record<string, string> = {
+  weighted_strength: 'Weighted Strength',
+  bodyweight_dynamic: 'Bodyweight Dynamic',
+  isometric_hold: 'Isometric Hold',
+  mobility_rom: 'Mobility / ROM',
+  motor_control: 'Motor Control',
+};
+
+const ARCHETYPE_COLORS: Record<string, 'primary' | 'purple' | 'teal' | 'default'> = {
+  weighted_strength: 'primary',
+  bodyweight_dynamic: 'purple',
+  isometric_hold: 'teal',
+  mobility_rom: 'default',
+  motor_control: 'default',
+};
 
 interface ExerciseWithProfile {
   id: string;
@@ -18,32 +34,9 @@ interface ExerciseWithProfile {
   } | null;
 }
 
-interface ArchetypeInfo {
-  code: string;
-  allowedAxes: string[];
-  priorityOrder: string[];
-}
-
-const ARCHETYPE_LABELS: Record<string, string> = {
-  weighted_strength: 'Weighted Strength',
-  bodyweight_dynamic: 'Bodyweight Dynamic',
-  isometric_hold: 'Isometric Hold',
-  mobility_rom: 'Mobility / ROM',
-  motor_control: 'Motor Control',
-};
-
-const ARCHETYPE_BADGE: Record<string, 'primary' | 'purple' | 'teal' | 'default'> = {
-  weighted_strength: 'primary',
-  bodyweight_dynamic: 'purple',
-  isometric_hold: 'teal',
-  mobility_rom: 'default',
-  motor_control: 'default',
-};
-
 export default function ExerciseProgressionPage() {
   const router = useRouter();
   const [exercises, setExercises] = useState<ExerciseWithProfile[]>([]);
-  const [archetypes, setArchetypes] = useState<ArchetypeInfo[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [filterArchetype, setFilterArchetype] = useState('');
@@ -55,14 +48,10 @@ export default function ExerciseProgressionPage() {
   const fetchData = useCallback(async () => {
     setLoading(true);
     try {
-      const [exRes, archRes] = await Promise.all([
-        fetch(`/api/admin/exercise-progression/exercises${search ? `?search=${encodeURIComponent(search)}` : ''}`),
-        fetch('/api/admin/exercise-progression/archetypes'),
-      ]);
-      const exData = await exRes.json();
-      const archData = await archRes.json();
-      if (exData.success) setExercises(exData.data);
-      if (archData.success) setArchetypes(archData.data);
+      const url = `/api/admin/exercise-progression/exercises${search ? `?search=${encodeURIComponent(search)}` : ''}`;
+      const res = await fetch(url);
+      const data = await res.json();
+      if (data.success) setExercises(data.data);
     } catch (error) {
       console.error('Error fetching data:', error);
     } finally {
@@ -122,6 +111,13 @@ export default function ExerciseProgressionPage() {
     });
   };
 
+  const filtered = exercises.filter((ex) => {
+    if (filterArchetype && ex.profile?.archetype !== filterArchetype) return false;
+    if (filterStatus === 'has_profile' && !ex.hasProfile) return false;
+    if (filterStatus === 'no_profile' && ex.hasProfile) return false;
+    return true;
+  });
+
   const toggleSelectAll = () => {
     if (selectedIds.size === filtered.length) {
       setSelectedIds(new Set());
@@ -129,13 +125,6 @@ export default function ExerciseProgressionPage() {
       setSelectedIds(new Set(filtered.map((e) => e.id)));
     }
   };
-
-  const filtered = exercises.filter((ex) => {
-    if (filterArchetype && ex.archetype !== filterArchetype && ex.profile?.archetype !== filterArchetype) return false;
-    if (filterStatus === 'has_profile' && !ex.hasProfile) return false;
-    if (filterStatus === 'no_profile' && ex.hasProfile) return false;
-    return true;
-  });
 
   const stats = {
     total: exercises.length,
@@ -182,26 +171,28 @@ export default function ExerciseProgressionPage() {
           </div>
           <div className="w-48">
             <label className="block text-sm font-medium text-gray-700 mb-1">Archetype</label>
-            <Select
+            <select
               value={filterArchetype}
               onChange={(e) => setFilterArchetype(e.target.value)}
-              options={[
-                { value: '', label: 'All Archetypes' },
-                ...Object.entries(ARCHETYPE_LABELS).map(([k, v]) => ({ value: k, label: v })),
-              ]}
-            />
+              className="w-full border rounded-lg px-3 py-2 text-sm"
+            >
+              <option value="">All Archetypes</option>
+              {Object.entries(ARCHETYPE_LABELS).map(([k, v]) => (
+                <option key={k} value={k}>{v}</option>
+              ))}
+            </select>
           </div>
           <div className="w-48">
             <label className="block text-sm font-medium text-gray-700 mb-1">Profile Status</label>
-            <Select
+            <select
               value={filterStatus}
               onChange={(e) => setFilterStatus(e.target.value)}
-              options={[
-                { value: '', label: 'All' },
-                { value: 'has_profile', label: 'Has Profile' },
-                { value: 'no_profile', label: 'Missing Profile' },
-              ]}
-            />
+              className="w-full border rounded-lg px-3 py-2 text-sm"
+            >
+              <option value="">All</option>
+              <option value="has_profile">Has Profile</option>
+              <option value="no_profile">Missing Profile</option>
+            </select>
           </div>
         </div>
       </div>
@@ -212,21 +203,22 @@ export default function ExerciseProgressionPage() {
           <span className="text-sm font-medium text-blue-800">
             {selectedIds.size} exercise(s) selected
           </span>
-          <Select
+          <select
             value={bulkArchetype}
             onChange={(e) => setBulkArchetype(e.target.value)}
-            options={[
-              { value: '', label: 'Select Archetype...' },
-              ...Object.entries(ARCHETYPE_LABELS).map(([k, v]) => ({ value: k, label: v })),
-            ]}
-          />
+            className="border rounded-lg px-3 py-1.5 text-sm"
+          >
+            <option value="">Select Archetype...</option>
+            {Object.entries(ARCHETYPE_LABELS).map(([k, v]) => (
+              <option key={k} value={k}>{v}</option>
+            ))}
+          </select>
           <Button
             onClick={handleBulkGenerate}
             disabled={!bulkArchetype || saving}
-            loading={saving}
             size="sm"
           >
-            Generate Profiles
+            {saving ? 'Generating...' : 'Generate Profiles'}
           </Button>
         </div>
       )}
@@ -268,13 +260,13 @@ export default function ExerciseProgressionPage() {
                     />
                   </td>
                   <td className="px-4 py-3">
-                    <p className="font-medium text-gray-900">{ex.name.en}</p>
+                    <p className="font-medium text-gray-900">{(ex.name as any)?.en || ex.slug}</p>
                     <p className="text-xs text-gray-500">{ex.slug}</p>
                   </td>
                   <td className="px-4 py-3">
-                    {ex.hasProfile ? (
-                      <Badge variant={ARCHETYPE_BADGE[ex.profile!.archetype] || 'default'}>
-                        {ARCHETYPE_LABELS[ex.profile!.archetype] || ex.profile!.archetype}
+                    {ex.hasProfile && ex.profile ? (
+                      <Badge variant={ARCHETYPE_COLORS[ex.profile.archetype] || 'default'}>
+                        {ARCHETYPE_LABELS[ex.profile.archetype] || ex.profile.archetype}
                       </Badge>
                     ) : ex.archetype ? (
                       <span className="text-xs text-gray-400">{ARCHETYPE_LABELS[ex.archetype] || ex.archetype}</span>
@@ -295,8 +287,8 @@ export default function ExerciseProgressionPage() {
                   </td>
                   <td className="px-4 py-3">
                     {ex.hasProfile ? (
-                      <Badge variant={ex.profile!.isAutoGenerated ? 'default' : 'primary'}>
-                        {ex.profile!.isAutoGenerated ? 'Auto' : 'Custom'}
+                      <Badge variant={ex.profile?.isAutoGenerated ? 'default' : 'primary'}>
+                        {ex.profile?.isAutoGenerated ? 'Auto' : 'Custom'}
                       </Badge>
                     ) : (
                       <span className="text-xs text-orange-500 font-medium">Missing</span>
