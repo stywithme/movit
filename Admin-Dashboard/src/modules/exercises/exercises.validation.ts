@@ -101,7 +101,7 @@ export const StateRangesSchema = z.object({
 });
 
 /**
- * Zone-based message (for up_down and push_pull)
+ * Zone-based message (for up_down)
  */
 export const ZoneBasedMessageSchema = z.object({
   up: LocalizedTextSchema.optional(),
@@ -153,7 +153,7 @@ export type BasicInfoData = z.infer<typeof BasicInfoSchema>;
 
 export const CountingMethodSchema = z.object({
   countingMethodId: z.string().uuid('Please select a counting method'),
-  countingMethodCode: z.enum(['up_down', 'push_pull', 'hold']),
+  countingMethodCode: z.enum(['up_down', 'hold']),
 });
 
 export type CountingMethodData = z.infer<typeof CountingMethodSchema>;

@@ -42,7 +42,7 @@ export interface LocalizedTextWithAudio {
 }
 
 /**
- * Zone-based message (for up_down and push_pull exercises)
+ * Zone-based message (for up_down exercises)
  */
 export interface ZoneBasedMessage {
   up?: LocalizedTextWithAudio;
@@ -52,7 +52,7 @@ export interface ZoneBasedMessage {
 /**
  * State message value - can be simple or zone-based
  * Simple (for hold): { ar: "...", en: "...", audioAr?: "...", audioEn?: "..." }
- * Zone (for up_down/push_pull): { up: {...}, down: {...} }
+ * Zone (for up_down): { up: {...}, down: {...} }
  */
 export type StateMessageValue = LocalizedTextWithAudio | ZoneBasedMessage;
 
@@ -345,7 +345,7 @@ export interface ReportMetricsConfig {
  * Get auto-included metrics based on exercise type
  */
 export function getAutoIncludedMetrics(options: {
-  countingMethod: 'up_down' | 'push_pull' | 'hold';
+  countingMethod: 'up_down' | 'hold';
   isBilateral: boolean;
   supportsWeight: boolean;
   hasPositionChecks?: boolean;
@@ -376,7 +376,7 @@ export function getAutoIncludedMetrics(options: {
  * This should be merged with user-excluded metrics when saving to DB.
  */
 export function getAutoExcludedMetrics(options: {
-  countingMethod: 'up_down' | 'push_pull' | 'hold';
+  countingMethod: 'up_down' | 'hold';
   isBilateral: boolean;
   supportsWeight: boolean;
   hasPositionChecks: boolean;
@@ -428,7 +428,7 @@ export function mergeExcludedMetrics(
  * Get default primary metrics for display
  */
 export function getDefaultPrimaryMetrics(options: {
-  countingMethod: 'up_down' | 'push_pull' | 'hold';
+  countingMethod: 'up_down' | 'hold';
   isBilateral: boolean;
   supportsWeight: boolean;
 }): MetricCode[] {
@@ -716,7 +716,7 @@ export function createDefaultStateMessages(
   const sideAr = isLeft ? 'اليسرى' : 'اليمنى';
 
   if (useZoneMessages) {
-    // Zone-based messages for up_down and push_pull exercises
+    // Zone-based messages for up_down exercises
     return {
       perfect: {
         up: { ar: 'ممتاز! وضع مثالي', en: 'Perfect! Great form' },

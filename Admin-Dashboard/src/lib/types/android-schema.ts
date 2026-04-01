@@ -34,7 +34,7 @@ export interface LocalizedText {
 /**
  * Counting method types (as expected by Android)
  */
-export type CountingMethod = 'up_down' | 'push_pull' | 'hold';
+export type CountingMethod = 'up_down' | 'hold';
 
 /**
  * Pose position codes (single code; mobile derives direction/posture/region)
@@ -135,7 +135,7 @@ export interface StateRanges {
 }
 
 /**
- * Zone-based message (for up_down and push_pull exercises)
+ * Zone-based message (for up_down exercises)
  * Allows different messages for up and down positions
  */
 export interface ZoneBasedMessage {
@@ -149,7 +149,7 @@ export interface ZoneBasedMessage {
  * 1. Simple format (for hold exercises): Single message per state
  *    { perfect: { ar: "...", en: "..." } }
  * 
- * 2. Zone format (for up_down/push_pull): Different messages per zone
+ * 2. Zone format (for up_down): Different messages per zone
  *    { perfect: { up: { ar: "...", en: "..." }, down: { ar: "...", en: "..." } } }
  * 
  * All messages are optional - can have just up, just down, both, or none
@@ -452,8 +452,6 @@ export function getPhasesForCountingMethod(method: CountingMethod): PhaseName[] 
   switch (method) {
     case 'up_down':
       return ['start', 'down', 'bottom', 'up'];
-    case 'push_pull':
-      return ['start', 'push', 'extended', 'pull'];
     case 'hold':
       return ['hold'];
     default:
