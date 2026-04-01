@@ -7,7 +7,7 @@
  *   POST /mobile/progression/mark-seen — Acknowledge changes
  */
 
-import { Body, Controller, Get, Post, Req, Res } from '@nestjs/common';
+import { Body, Controller, Get, Post, Param, Req, Res } from '@nestjs/common';
 import type { Request, Response } from 'express';
 import { verifyMobileToken } from '@/modules/auth/auth.service';
 import { progressionService } from './progression.service';
@@ -54,10 +54,28 @@ export class ProgressionController {
     }
   }
 
-  /**
-   * Marks progression changes as seen (user has acknowledged the notification).
-   * Body: { ids: string[] }
-   */
+  @Get('session/:sessionId')
+  async getBySession(
+    @Param('sessionId') sessionId: string,
+    @Req() req: Request,
+    @Res({ passthrough: true }) res: Response,
+  ) {
+    try {
+      const authResult = await verifyMobileToken(req);
+      if (!authResult.success || !authResult.userId) {
+        res.status(401);
+        return { success: false, error: authResult.error || 'Unauthorized' };
+      }
+
+      const changes = await progressionService.getBySession(authResult.userId, sessionId);
+      return { success: true, data: changes };
+    } catch (error) {
+      console.error('[Progression] Session progression error:', error);
+      res.status(500);
+      return { success: false, error: 'Failed to fetch session progression' };
+    }
+  }
+
   @Post('mark-seen')
   async markSeen(
     @Req() req: Request,

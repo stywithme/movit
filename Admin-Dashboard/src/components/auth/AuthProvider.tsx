@@ -18,6 +18,7 @@ const PROTECTED_ROUTES: { pattern: RegExp; subject: Subject }[] = [
     { pattern: /^\/admin\/camera-positions/, subject: 'PosePosition' },
     { pattern: /^\/admin\/levels/, subject: 'Level' },
     { pattern: /^\/admin\/assessment-templates/, subject: 'AssessmentTemplate' },
+    { pattern: /^\/admin\/exercise-progression/, subject: 'ProgressionRule' },
     { pattern: /^\/admin\/progression-rules/, subject: 'ProgressionRule' },
     { pattern: /^\/admin\/analytics\/programs/, subject: 'ProgramAnalytics' },
     { pattern: /^\/admin\/analytics\/levels/, subject: 'LevelAnalytics' },

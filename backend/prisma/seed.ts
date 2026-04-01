@@ -10,7 +10,7 @@ import { seedUsers } from './seeders/users';
 import { seedUserPrograms } from './seeders/user-programs';
 import { seedAdmins } from './seeders/admins';
 import { seedLevels } from './seeders/levels';
-import { seedProgressionRules } from './seeders/progression-rules';
+import { seedProgressionRules, assignArchetypesAndGenerateProfiles, backfillProgressionState } from './seeders/progression-rules';
 import { seedAssessmentTemplates } from './seeders/assessment-templates';
 import { seedPermissions } from './seeders/permissions';
 import { seedSystemConfig } from './seeders/system';
@@ -52,6 +52,8 @@ async function main() {
   await seedAdmins(prisma);
   await seedLevels(prisma);
   await seedProgressionRules(prisma);
+  await assignArchetypesAndGenerateProfiles(prisma);
+  await backfillProgressionState(prisma);
   await seedAssessmentTemplates(prisma);
 
   console.log('🎉 Seeding completed!');
