@@ -225,7 +225,9 @@
             android:text="@string/switch_text"
             style="@style/Widget.WayToFix.Button.Secondary"
             app:icon="@drawable/ic_switch_camera"
-            app:iconGravity="textStart" />
+            app:iconGravity="textStart"
+            app:iconSize="24dp"
+            app:iconTint="@color/text_primary" />
 
     </LinearLayout>
 

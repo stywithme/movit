@@ -668,11 +668,15 @@ class SkeletonOverlayView @JvmOverloads constructor(
         guidances: List<JointGuidance>,
         smoothedLandmarks: List<SmoothedLandmark>?,
         imageW: Int = imageWidth,
-        imageH: Int = imageHeight
+        imageH: Int = imageHeight,
+        useFrontCamera: Boolean? = null
     ) {
         // Never override training mode — setup overlay is only for SETUP_POSE state
         if (isTrainingMode) return
 
+        if (useFrontCamera != null) {
+            isFrontCamera = useFrontCamera
+        }
         isSetupMode = true
         setupJointGuidances = guidances
         landmarks = smoothedLandmarks
