@@ -198,6 +198,7 @@
     <string name="progression_home_title">Training Updated</string>
     <string name="progression_home_subtitle">Your training plan was adjusted based on your performance</string>
     <string name="progression_home_view">View Changes</string>
+    <string name="progression_next_reps_tip">Next session target: %1$d reps (previous: %2$d)</string>
 
     <!-- Quick Start -->
     <string name="quick_start_title">Quick Start</string>
