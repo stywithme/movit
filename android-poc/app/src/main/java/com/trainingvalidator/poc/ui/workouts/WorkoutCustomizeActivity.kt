@@ -89,8 +89,9 @@ class WorkoutCustomizeActivity : AppCompatActivity() {
             ItemTouchHelper.UP or ItemTouchHelper.DOWN, 0
         ) {
             override fun onMove(rv: RecyclerView, from: RecyclerView.ViewHolder, to: RecyclerView.ViewHolder): Boolean {
-                val fromPos = from.adapterPosition
-                val toPos = to.adapterPosition
+                val fromPos = from.bindingAdapterPosition
+                val toPos = to.bindingAdapterPosition
+                if (fromPos == RecyclerView.NO_POSITION || toPos == RecyclerView.NO_POSITION) return false
                 Collections.swap(exercises, fromPos, toPos)
                 adapter.notifyItemMoved(fromPos, toPos)
                 return true
@@ -179,8 +180,10 @@ class WorkoutCustomizeActivity : AppCompatActivity() {
                     min = 1,
                     max = 10
                 ) { newValue ->
-                    exercises[holder.adapterPosition] = exercise.copy(sets = newValue)
-                    notifyItemChanged(holder.adapterPosition)
+                    val pos = holder.bindingAdapterPosition
+                    if (pos == RecyclerView.NO_POSITION) return@showEditDialog
+                    exercises[pos] = exercise.copy(sets = newValue)
+                    notifyItemChanged(pos)
                     updateSummary()
                 }
             }
@@ -193,8 +196,10 @@ class WorkoutCustomizeActivity : AppCompatActivity() {
                     min = 1,
                     max = 100
                 ) { newValue ->
-                    exercises[holder.adapterPosition] = exercise.copy(targetReps = newValue)
-                    notifyItemChanged(holder.adapterPosition)
+                    val pos = holder.bindingAdapterPosition
+                    if (pos == RecyclerView.NO_POSITION) return@showEditDialog
+                    exercises[pos] = exercise.copy(targetReps = newValue)
+                    notifyItemChanged(pos)
                     updateSummary()
                 }
             }
@@ -207,15 +212,18 @@ class WorkoutCustomizeActivity : AppCompatActivity() {
                     min = 0,
                     max = 300
                 ) { newValue ->
-                    exercises[holder.adapterPosition] = exercise.copy(restAfterExerciseMs = newValue * 1000L)
-                    notifyItemChanged(holder.adapterPosition)
+                    val pos = holder.bindingAdapterPosition
+                    if (pos == RecyclerView.NO_POSITION) return@showEditDialog
+                    exercises[pos] = exercise.copy(restAfterExerciseMs = newValue * 1000L)
+                    notifyItemChanged(pos)
                     updateSummary()
                 }
             }
 
             // Remove exercise
             holder.binding.btnRemove.setOnClickListener {
-                val pos = holder.adapterPosition
+                val pos = holder.bindingAdapterPosition
+                if (pos == RecyclerView.NO_POSITION) return@setOnClickListener
                 exercises.removeAt(pos)
                 notifyItemRemoved(pos)
                 notifyItemRangeChanged(pos, exercises.size)

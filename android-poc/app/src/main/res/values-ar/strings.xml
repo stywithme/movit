@@ -162,6 +162,7 @@
     <string name="progression_field_weight">الوزن</string>
     <string name="progression_field_reps">التكرارات</string>
     <string name="progression_field_sets">المجموعات</string>
+    <string name="progression_next_reps_tip">هدف الجلسة القادمة: %1$d تكرار (السابق: %2$d)</string>
 
     <!-- Quick Start -->
     <string name="quick_start_title">ابدأ الآن</string>

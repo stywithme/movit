@@ -49,7 +49,7 @@ class BestWorstComparisonFragment : Fragment() {
                 ViewGroup.LayoutParams.MATCH_PARENT,
                 ViewGroup.LayoutParams.MATCH_PARENT
             )
-            setBackgroundColor(H.BG_DARK)
+            setBackgroundColor(H.bgDark(requireContext()))
         }
     }
 
@@ -128,7 +128,7 @@ class BestWorstComparisonFragment : Fragment() {
         frame: FrameCapture?
     ): LinearLayout {
         val ctx = requireContext()
-        val accent = if (isBest) H.GREEN else H.ORANGE
+        val accent = if (isBest) H.colorGreen(ctx) else H.colorOrange(ctx)
         val bgColor = if (isBest) 0x0D4CAF50 else 0x0DFF9800  // very subtle tint
 
         return LinearLayout(ctx).apply {
@@ -217,7 +217,7 @@ class BestWorstComparisonFragment : Fragment() {
                 addView(TextView(ctx).apply {
                     text = if (isArabic) "العدة #$repNumber" else "Rep #$repNumber"
                     textSize = 13f
-                    setTextColor(H.TEXT_MUTED)
+                    setTextColor(H.textMuted(ctx))
                     setPadding(0, H.dp(ctx, 4), 0, 0)
                 })
             }
@@ -236,7 +236,7 @@ class BestWorstComparisonFragment : Fragment() {
                 addView(TextView(ctx).apply {
                     text = "⏱ $duration"
                     textSize = 14f
-                    setTextColor(H.TEXT_MUTED)
+                    setTextColor(H.textMuted(ctx))
                     setPadding(0, H.dp(ctx, 4), 0, 0)
                 })
             }
@@ -245,7 +245,7 @@ class BestWorstComparisonFragment : Fragment() {
             addView(TextView(ctx).apply {
                 text = message
                 textSize = 13f
-                setTextColor(H.TEXT_WHITE)
+                setTextColor(H.textWhite(ctx))
                 maxLines = 2
                 setPadding(0, H.dp(ctx, 6), 0, 0)
             })
@@ -274,7 +274,7 @@ class BestWorstComparisonFragment : Fragment() {
             addView(TextView(ctx).apply {
                 text = if (isArabic) "جميع العدات كانت رائعة!" else "All reps were great!"
                 textSize = 18f
-                setTextColor(H.GREEN)
+                setTextColor(H.colorGreen(ctx))
                 gravity = Gravity.CENTER
                 setPadding(0, H.dp(ctx, 8), 0, 0)
             })
@@ -282,7 +282,7 @@ class BestWorstComparisonFragment : Fragment() {
                 text = if (isArabic) "لم يُلاحظ فرق كبير بين العدات"
                 else "No significant difference between reps"
                 textSize = 13f
-                setTextColor(H.TEXT_MUTED)
+                setTextColor(H.textMuted(ctx))
                 gravity = Gravity.CENTER
             })
         }
