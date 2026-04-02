@@ -44,6 +44,7 @@ class CameraManager(
     private var imageAnalysis: ImageAnalysis? = null
     private val cameraExecutor: ExecutorService = Executors.newSingleThreadExecutor()
 
+    private var currentFacing: Boolean = true
     private var frameAnalyzer: ((ImageProxy) -> Unit)? = null
 
     /** Diagnostic info populated after binding. */
@@ -58,6 +59,7 @@ class CameraManager(
         useFrontCamera: Boolean = true,
         onFrameAvailable: (ImageProxy) -> Unit
     ) {
+        this.currentFacing = useFrontCamera
         this.frameAnalyzer = onFrameAvailable
 
         val cameraProviderFuture = ProcessCameraProvider.getInstance(context)
@@ -171,6 +173,7 @@ class CameraManager(
      * Switch between front and back camera
      */
     fun switchCamera(useFrontCamera: Boolean) {
+        currentFacing = useFrontCamera
         frameAnalyzer?.let {
             cameraProvider?.unbindAll()
             bindCameraUseCases(useFrontCamera)
@@ -189,11 +192,5 @@ class CameraManager(
     /**
      * Get current camera facing
      */
-    fun isFrontCamera(): Boolean {
-        return try {
-            cameraProvider?.hasCamera(CameraSelector.DEFAULT_FRONT_CAMERA) == true
-        } catch (e: Exception) {
-            true
-        }
-    }
+    fun isFrontCamera(): Boolean = currentFacing
 }

@@ -167,6 +167,8 @@ class TrainingActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetection
     // State
     private var useFrontCamera = true
     private var isVideoMode = false
+    private var currentIndicatorType: String = "line"
+    private var currentModelType: String = "full"
     private var videoUri: Uri? = null
     private var lastRepCount = 0
     private var currentSessionSetRunId: Long = 0L
@@ -314,6 +316,7 @@ class TrainingActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetection
     private fun initializeSettings() {
         try {
             SettingsManager.initialize(this)
+            currentModelType = SettingsManager.getModelType()
             landmarkSmoother = LandmarkSmoother.createFromSettings()
             
             val smoothingInfo = if (SettingsManager.useLegacySmoothing()) {
@@ -381,6 +384,8 @@ class TrainingActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetection
         // Indicator type
         val indicatorType = intent.getStringExtra(EXTRA_INDICATOR_TYPE) 
             ?: com.trainingvalidator.poc.training.config.SettingsManager.getIndicatorType()
+        currentIndicatorType = indicatorType
+        SettingsManager.setIndicatorType(indicatorType)
         binding.skeletonOverlay.setIndicatorType(indicatorType)
 
         // Assessment mode flag
@@ -1180,10 +1185,11 @@ class TrainingActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetection
             .setView(dialogView)
             .create()
         
-        // Get current settings
-        var selectedIndicator = SettingsManager.getIndicatorType()
+        // Read from actual runtime state, not from SharedPreferences,
+        // so the dialog always reflects what is currently active.
+        var selectedIndicator = currentIndicatorType
         var voiceFeedbackEnabled = SettingsManager.isVoiceFeedbackEnabled()
-        var selectedModel = SettingsManager.getModelType()
+        var selectedModel = currentModelType
         
         // Setup indicator buttons
         val btnLine = dialogView.findViewById<com.google.android.material.button.MaterialButton>(R.id.btnIndicatorLine)
@@ -1284,7 +1290,13 @@ class TrainingActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetection
         
         // Apply button
         dialogView.findViewById<com.google.android.material.button.MaterialButton>(R.id.btnApplySettings).setOnClickListener {
-            // Save settings
+            val modelChanged = selectedModel != currentModelType
+
+            // Sync local state
+            currentIndicatorType = selectedIndicator
+            currentModelType = selectedModel
+
+            // Persist to SharedPreferences
             SettingsManager.setIndicatorType(selectedIndicator)
             SettingsManager.setVoiceFeedbackEnabled(voiceFeedbackEnabled)
             SettingsManager.setModelType(selectedModel)
@@ -1294,6 +1306,11 @@ class TrainingActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetection
             
             // Update feedback manager
             viewModel.feedbackManager?.setVoiceEnabled(voiceFeedbackEnabled)
+
+            // Reinitialize pose detector when model type changes
+            if (modelChanged) {
+                reinitializePoseDetector()
+            }
             
             dialog.dismiss()
             
@@ -1821,6 +1838,7 @@ class TrainingActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetection
         binding.setupPosePanel.visibility = View.VISIBLE
         binding.countdownPanel.visibility = View.GONE
         binding.skeletonOverlay.clearSetupMode()
+        binding.skeletonOverlay.updateFrontCameraState(useFrontCamera)
         binding.jointGuidanceContainer.removeAllViews()
         binding.tvPhaseInstruction.visibility = View.GONE
         binding.tvPhaseStep.visibility = View.GONE
@@ -1896,7 +1914,8 @@ class TrainingActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetection
                     guidances = result.joints,
                     smoothedLandmarks = landmarks,
                     imageW = imageSize.first,
-                    imageH = imageSize.second
+                    imageH = imageSize.second,
+                    useFrontCamera = useFrontCamera
                 )
             }
 
@@ -2608,12 +2627,27 @@ class TrainingActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetection
             listener = this
         )
         
+        val modelType = if (currentModelType == "heavy") ModelType.HEAVY else ModelType.FULL
         lifecycleScope.launch(Dispatchers.IO) {
-            poseLandmarkerHelper?.initialize(modelType = ModelType.FULL, useGpu = true)
+            poseLandmarkerHelper?.initialize(modelType = modelType, useGpu = true)
             
             launch(Dispatchers.Main) {
                 if (poseLandmarkerHelper?.isReady() == true) {
                     Log.d(TAG, "Pose detection ready")
+                }
+            }
+        }
+    }
+
+    private fun reinitializePoseDetector() {
+        val modelType = if (currentModelType == "heavy") ModelType.HEAVY else ModelType.FULL
+        lifecycleScope.launch(Dispatchers.IO) {
+            poseLandmarkerHelper?.close()
+            poseLandmarkerHelper?.initialize(modelType = modelType, useGpu = true)
+
+            launch(Dispatchers.Main) {
+                if (poseLandmarkerHelper?.isReady() == true) {
+                    Log.d(TAG, "Pose detector reinitialized with model: $currentModelType")
                 }
             }
         }
@@ -2629,6 +2663,7 @@ class TrainingActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetection
         cameraManager?.startCamera(useFrontCamera = useFrontCamera) { imageProxy ->
             poseLandmarkerHelper?.detectPose(imageProxy, useFrontCamera)
         }
+        binding.skeletonOverlay.updateFrontCameraState(useFrontCamera)
     }
 
     // ==================== PoseDetectionListener ====================

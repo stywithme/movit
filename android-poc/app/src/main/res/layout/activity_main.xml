@@ -131,6 +131,7 @@
             android:insetBottom="0dp"
             app:icon="@drawable/ic_switch_camera"
             app:iconSize="28dp"
+            app:iconTint="@android:color/white"
             app:iconGravity="textStart"
             app:iconPadding="0dp"
             app:cornerRadius="30dp"
