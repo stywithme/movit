@@ -252,10 +252,10 @@ class ProgressionFragment : Fragment() {
         })
 
         // Exercise name if available
-        val exName = change.exerciseName?.let { if (isArabic) it["ar"] else it["en"] }
-        if (!exName.isNullOrBlank()) {
+        val axisLabel = change.axis?.replaceFirstChar { it.uppercase() }
+        if (!axisLabel.isNullOrBlank()) {
             textCol.addView(TextView(ctx).apply {
-                text = getString(R.string.progression_for_exercise, exName)
+                text = axisLabel
                 textSize = 13f
                 setTextColor(H.textMuted(ctx))
             })

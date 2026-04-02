@@ -619,13 +619,8 @@ class HomeFragment : Fragment() {
             }
             val from = formatFieldVal(change.field, change.previousValue)
             val to = formatFieldVal(change.field, change.newValue)
-            val exName = change.exerciseName?.let { if (isArabic) it["ar"] else it["en"] }
-
             row.addView(TextView(ctx).apply {
-                text = buildString {
-                    append("$fieldLabel: $from → $to")
-                    if (!exName.isNullOrBlank()) append(" ($exName)")
-                }
+                text = "$fieldLabel: $from → $to"
                 setTextColor(ContextCompat.getColor(ctx, R.color.text_primary))
                 textSize = 13f
                 layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f)

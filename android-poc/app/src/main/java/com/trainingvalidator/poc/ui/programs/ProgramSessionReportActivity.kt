@@ -26,6 +26,7 @@ class ProgramSessionReportActivity : AppCompatActivity() {
         const val EXTRA_COMPLETED_SETS = "completed_sets"
         const val EXTRA_DURATION_MS = "duration_ms"
         const val EXTRA_AVG_ACCURACY = "avg_accuracy"
+        const val EXTRA_SESSION_ID = "session_id"
         const val EXTRA_SESSION_REPORT_JSON = "session_report_json"
         const val EXTRA_REPORT_IDS = "report_ids"
     }
@@ -324,13 +325,21 @@ class ProgramSessionReportActivity : AppCompatActivity() {
         dialog.setContentView(view)
 
         val tvTitle = view.findViewById<TextView>(com.trainingvalidator.poc.R.id.tvProgressionTitle)
-        val tvChanges = view.findViewById<TextView>(com.trainingvalidator.poc.R.id.tvProgressionChanges)
+        val llChanges = view.findViewById<android.widget.LinearLayout>(com.trainingvalidator.poc.R.id.llProgressionChanges)
         val btnGotIt = view.findViewById<com.google.android.material.button.MaterialButton>(
             com.trainingvalidator.poc.R.id.btnProgressionGotIt
         )
 
         tvTitle.text = getString(com.trainingvalidator.poc.R.string.progression_sheet_title)
-        tvChanges.text = changes.joinToString("\n") { it.second }
+        llChanges.removeAllViews()
+        for ((_, text) in changes) {
+            llChanges.addView(TextView(this).apply {
+                this.text = text
+                setTextColor(resources.getColor(com.trainingvalidator.poc.R.color.text_primary, theme))
+                textSize = 15f
+                setPadding(0, 8, 0, 8)
+            })
+        }
         btnGotIt.setOnClickListener { dialog.dismiss() }
 
         dialog.show()
