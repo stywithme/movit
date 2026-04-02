@@ -199,7 +199,7 @@
     <string name="progression_home_title">تم تحديث التدريب</string>
     <string name="progression_home_subtitle">تم تعديل خطة تدريبك بناءً على أدائك</string>
     <string name="progression_home_view">عرض التغييرات</string>
-    <string name="progression_next_reps_tip">هدف الجلسة القادمة: %1$d تكرار (السابق: %2$d)</string>
+    <string name="progression_home_next_reps_tip">هدف الجلسة القادمة: %1$d تكرار (السابق: %2$d)</string>
 
     <!-- Quick Start -->
     <string name="quick_start_title">ابدأ الآن</string>
