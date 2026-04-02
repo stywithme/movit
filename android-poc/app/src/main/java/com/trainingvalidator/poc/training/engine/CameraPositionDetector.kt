@@ -237,10 +237,46 @@ object CameraPositionDetector {
             val conf = if (metrics.combinedRatio < Z_CONFIRMS_SIDE) baseConf
                        else (baseConf * 0.90f).coerceAtLeast(0.5f)
 
-            if (metrics.sideZDiff < 0)
-                DetectedCameraPosition.SIDE_VIEW_LEFT to conf
+            // Determine L/R using visibility (reliable) then Z-depth (noisy),
+            // with dead zones to prevent flickering on ambiguous frames.
+            val side = classifySideDirection(metrics, previousPosition)
+            side to conf
+        }
+    }
+
+    /**
+     * Determine SIDE_VIEW_LEFT vs SIDE_VIEW_RIGHT using a multi-signal
+     * approach with dead zones:
+     *   1. Visibility diff (most reliable for side views — the visible side
+     *      has much higher landmark visibility than the occluded side)
+     *   2. Z-depth diff (secondary, only trusted above CLOSER_SIDE_Z_MIN)
+     *   3. Hold previous position when both signals are ambiguous
+     */
+    private fun classifySideDirection(
+        metrics: DetectionMetrics,
+        previousPosition: DetectedCameraPosition?
+    ): DetectedCameraPosition {
+        // 1) Visibility: the side facing the camera has higher visibility
+        if (abs(metrics.visibilityDiff) >= CLOSER_SIDE_VIS_MIN) {
+            return if (metrics.visibilityDiff > 0)
+                DetectedCameraPosition.SIDE_VIEW_LEFT
             else
-                DetectedCameraPosition.SIDE_VIEW_RIGHT to conf
+                DetectedCameraPosition.SIDE_VIEW_RIGHT
+        }
+
+        // 2) Z-depth with dead zone
+        if (abs(metrics.sideZDiff) >= CLOSER_SIDE_Z_MIN) {
+            return if (metrics.sideZDiff < 0)
+                DetectedCameraPosition.SIDE_VIEW_LEFT
+            else
+                DetectedCameraPosition.SIDE_VIEW_RIGHT
+        }
+
+        // 3) Ambiguous — hold previous side to prevent flickering
+        return when (previousPosition) {
+            DetectedCameraPosition.SIDE_VIEW_LEFT -> DetectedCameraPosition.SIDE_VIEW_LEFT
+            DetectedCameraPosition.SIDE_VIEW_RIGHT -> DetectedCameraPosition.SIDE_VIEW_RIGHT
+            else -> DetectedCameraPosition.SIDE_VIEW_RIGHT
         }
     }
 
