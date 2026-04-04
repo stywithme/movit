@@ -206,12 +206,12 @@ class TrainingEngine(
      */
     private val visibilityMonitor: VisibilityMonitor = VisibilityMonitor(
         requiredJoints = poseVariant.trackedJoints
-            .filter { it.role == JointRole.PRIMARY }
+            .filter { it.role == JointRole.PRIMARY || it.role == JointRole.SECONDARY }
             .map { it.joint },
-        minVisibility = 0.3f,       // Lowered from 0.5f - more tolerant
-        graceDurationMs = 1000,     // 1s - ignore brief glitches (was 0.5s)
-        warningDurationMs = 2000,   // 2s - show warning (was 1.5s)
-        pauseAfterMs = 4000,        // 4s - pause training (was 3s)
+        minVisibility = 0.3f,
+        graceDurationMs = 1000,
+        warningDurationMs = 2000,
+        pauseAfterMs = 4000,
         timeProvider = { nowMs() }
     )
     
@@ -851,6 +851,16 @@ class TrainingEngine(
             val rawTrackedAngles = jointTracker.extractTrackedAngles(angles, isBilateralFlipped)
             
             if (rawTrackedAngles.isEmpty()) {
+                if (landmarks != null) {
+                    val visResult = visibilityMonitor.checkVisibility(
+                        landmarks = landmarks,
+                        currentRepCount = repCounter.count,
+                        currentPhase = stateMachine.currentPhase,
+                        isFrontCamera = isFrontCamera
+                    )
+                    _visibilityState.value = visibilityMonitor.state.value
+                    handleVisibilityResult(visResult)
+                }
                 return
             }
             
@@ -940,52 +950,8 @@ class TrainingEngine(
                     currentPhase = stateMachine.currentPhase,
                     isFrontCamera = isFrontCamera
                 )
-                
-                // Update visibility state
                 _visibilityState.value = visibilityMonitor.state.value
-                
-                // Handle visibility result
-                when (visibilityResult) {
-                    is VisibilityCheckResult.PauseTraining -> {
-                        // Pause training due to visibility - but arrowInfos already updated
-                        _isVisibilityPaused.value = true
-                        emitEvent(FeedbackEvent.VisibilityPaused(
-                            savedRepCount = visibilityResult.savedRepCount,
-                            savedPhase = visibilityResult.savedPhase,
-                            message = visibilityResult.message
-                        ))
-                        return  // Don't process rep counting while paused
-                    }
-                    
-                    is VisibilityCheckResult.ShowWarning -> {
-                        // Show warning but continue processing
-                        emitEvent(FeedbackEvent.VisibilityWarning(
-                            message = visibilityResult.message,
-                            remainingBeforePauseMs = visibilityResult.remainingBeforePause,
-                            invisibleJoints = visibilityResult.invisibleJoints
-                        ))
-                        // Continue processing below...
-                    }
-                    
-                    is VisibilityCheckResult.StartResumeCountdown -> {
-                        // Joints visible again after pause - trigger resume countdown
-                        emitEvent(FeedbackEvent.VisibilityResumeCountdown(
-                            resumeFromRep = visibilityResult.resumeFromRep,
-                            resumeFromPhase = visibilityResult.resumeFromPhase
-                        ))
-                        return  // Don't process frame during countdown
-                    }
-                    
-                    is VisibilityCheckResult.ContinueCountdown -> {
-                        // In resume countdown, don't process frame
-                        return
-                    }
-                    
-                    is VisibilityCheckResult.ContinueTraining -> {
-                        // Normal flow - continue processing
-                        _isVisibilityPaused.value = false
-                    }
-                }
+                if (handleVisibilityResult(visibilityResult)) return
             }
             
             // 8. Position validation (if landmarks provided)
@@ -1000,9 +966,11 @@ class TrainingEngine(
             }
 
             // Update position-related state flows
+            // Scene warnings are suppressed when all joints are visible
+            val allJointsVisible = visibilityMonitor.state.value == VisibilityState.VISIBLE
             if (positionValidation != null) {
                 _positionErrors.value = positionValidation.errors + positionValidation.warnings + positionValidation.tips
-                _sceneWarnings.value = positionValidation.sceneWarnings
+                _sceneWarnings.value = if (allJointsVisible) emptyList() else positionValidation.sceneWarnings
             } else {
                 _positionErrors.value = emptyList()
                 _sceneWarnings.value = emptyList()
@@ -1045,12 +1013,18 @@ class TrainingEngine(
                 }
             }
             
-            positionValidation?.sceneWarnings?.takeIf { it.isNotEmpty() }?.let { warnings ->
-                val now = nowMs()
-                if (now - lastCameraWarningEventTime >= CAMERA_WARNING_EVENT_COOLDOWN_MS) {
-                    lastCameraWarningEventTime = now
-                    cameraWarningCount++
-                    emitEvent(FeedbackEvent.SceneWarnings(warnings))
+            // Scene warnings only fire when joints are missing (visibility issue).
+            // When all PRIMARY + SECONDARY joints are visible, camera position is validated
+            // implicitly — no need to nag the user about camera angle.
+            val visibilityOk = visibilityMonitor.state.value == VisibilityState.VISIBLE
+            if (!visibilityOk) {
+                positionValidation?.sceneWarnings?.takeIf { it.isNotEmpty() }?.let { warnings ->
+                    val now = nowMs()
+                    if (now - lastCameraWarningEventTime >= CAMERA_WARNING_EVENT_COOLDOWN_MS) {
+                        lastCameraWarningEventTime = now
+                        cameraWarningCount++
+                        emitEvent(FeedbackEvent.SceneWarnings(warnings))
+                    }
                 }
             }
             
@@ -1276,6 +1250,44 @@ class TrainingEngine(
             
             lastEmittedStates[jointCode] = state
             lastStateMessageTimes[jointCode] = now
+        }
+    }
+
+    /**
+     * Handle visibility check result: emit events and return true if frame processing
+     * should stop (pause / countdown), false to continue.
+     */
+    private fun handleVisibilityResult(result: VisibilityCheckResult): Boolean {
+        return when (result) {
+            is VisibilityCheckResult.PauseTraining -> {
+                _isVisibilityPaused.value = true
+                emitEvent(FeedbackEvent.VisibilityPaused(
+                    savedRepCount = result.savedRepCount,
+                    savedPhase = result.savedPhase,
+                    message = result.message
+                ))
+                true
+            }
+            is VisibilityCheckResult.ShowWarning -> {
+                emitEvent(FeedbackEvent.VisibilityWarning(
+                    message = result.message,
+                    remainingBeforePauseMs = result.remainingBeforePause,
+                    invisibleJoints = result.invisibleJoints
+                ))
+                false
+            }
+            is VisibilityCheckResult.StartResumeCountdown -> {
+                emitEvent(FeedbackEvent.VisibilityResumeCountdown(
+                    resumeFromRep = result.resumeFromRep,
+                    resumeFromPhase = result.resumeFromPhase
+                ))
+                true
+            }
+            is VisibilityCheckResult.ContinueCountdown -> true
+            is VisibilityCheckResult.ContinueTraining -> {
+                _isVisibilityPaused.value = false
+                false
+            }
         }
     }
 
