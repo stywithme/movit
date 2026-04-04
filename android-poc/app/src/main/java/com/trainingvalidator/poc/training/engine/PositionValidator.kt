@@ -44,6 +44,9 @@ class PositionValidator(
     
     private var cachedSceneResult: PoseSceneResult? = null
     private var cachedCameraResult: CameraPositionDetector.CameraDetectionResult? = null
+
+    private var lockedSceneResult: PoseSceneResult? = null
+    private var lockedCameraResult: CameraPositionDetector.CameraDetectionResult? = null
     
     /**
      * Validate all position checks for current phase
@@ -62,16 +65,20 @@ class PositionValidator(
             return PositionValidationResult.empty()
         }
         
-        // 1. Full 3-axis scene detection (direction + posture + region)
-        val scene = sceneDetector.detect(landmarks, isFrontCamera)
-        cachedSceneResult = scene
-        cachedCameraResult = CameraPositionDetector.CameraDetectionResult(
-            scene.direction, scene.directionConfidence, scene.facing, scene.closerSide, scene.depthInfo
+        // 1. Live scene detection (always runs — feeds rolling window & warnings)
+        val liveScene = sceneDetector.detect(landmarks, isFrontCamera)
+
+        // 2. For axis selection in position checks, prefer locked scene (stable)
+        val effectiveScene = lockedSceneResult ?: liveScene
+        cachedSceneResult = effectiveScene
+        cachedCameraResult = lockedCameraResult ?: CameraPositionDetector.CameraDetectionResult(
+            liveScene.direction, liveScene.directionConfidence,
+            liveScene.facing, liveScene.closerSide, liveScene.depthInfo
         )
         val cameraResult = cachedCameraResult ?: return PositionValidationResult.empty()
-        
-        // 2. Per-axis scene matching
-        val sceneWarnings = checkSceneAxes(scene)
+
+        // 3. Scene warnings always compare LIVE detection against expectation
+        val sceneWarnings = checkSceneAxes(liveScene)
         
         // 3. Facing is always auto-detected
         val effectiveFacing = scene.facing
@@ -633,6 +640,25 @@ class PositionValidator(
     /**
      * Clear cooldowns and reset scene detector (call when session resets)
      */
+    fun lockScene() {
+        cachedSceneResult?.let { scene ->
+            lockedSceneResult = scene
+            lockedCameraResult = CameraPositionDetector.CameraDetectionResult(
+                scene.direction, scene.directionConfidence,
+                scene.facing, scene.closerSide, scene.depthInfo
+            )
+            Log.d(TAG, "Scene locked: dir=${scene.direction}, posture=${scene.posture}, facing=${scene.facing}")
+        }
+    }
+
+    fun unlockScene() {
+        lockedSceneResult = null
+        lockedCameraResult = null
+        Log.d(TAG, "Scene unlocked — will re-lock on next valid frame")
+    }
+
+    val isSceneLocked: Boolean get() = lockedSceneResult != null
+
     fun clearCooldowns() {
         errorFrameCounts.clear()
         sceneDetector.reset()
