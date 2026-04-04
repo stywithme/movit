@@ -164,7 +164,6 @@ export type CountingMethodData = z.infer<typeof CountingMethodSchema>;
 
 export const PosePositionSchema = z.object({
   posePositionIds: z.array(z.string().uuid()).min(1, 'Select at least one pose position'),
-  referenceImages: z.record(z.string(), z.string().url().optional().or(z.literal(''))).optional(),
 });
 
 export type PosePositionData = z.infer<typeof PosePositionSchema>;

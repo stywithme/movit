@@ -164,17 +164,6 @@ export default function EditExercisePage() {
             a.attributeValue?.attribute?.code === 'tag')
           .map((a: { attributeValueId: string }) => a.attributeValueId) || [];
         
-        // Load into wizard state
-        const referenceImages = (exercise.poseVariants || []).reduce(
-          (acc: Record<string, string>, pv: { posePositionId?: string; cameraPositionId?: string; referenceImageUrl?: string | null }) => {
-            const key = pv.posePositionId || pv.cameraPositionId;
-            if (pv.referenceImageUrl) {
-              if (key) acc[key] = pv.referenceImageUrl;
-            }
-            return acc;
-          },
-          {}
-        );
         loadExercise({
           exerciseId: exercise.id,
           exerciseStatus: exercise.status,
@@ -192,7 +181,6 @@ export default function EditExercisePage() {
           },
           cameraPosition: {
             cameraPositionIds: exercise.poseVariants?.map((pv: { posePositionId?: string; cameraPositionId?: string }) => pv.posePositionId || pv.cameraPositionId).filter(Boolean) || [],
-            referenceImages,
           },
           jointConfig: {
             trackedJoints,
@@ -378,7 +366,6 @@ export default function EditExercisePage() {
         return {
           name: store.basicInfo.name,
           posePositionId,
-          referenceImageUrl: store.cameraPosition.referenceImages?.[posePositionId] || undefined,
           trackedJointsConfig: mappedJoints.length > 0 ? mappedJoints : trackedJointsConfig,
           positionChecks,
           messageAssignments: feedbackAssignments.length > 0 ? feedbackAssignments : undefined,
