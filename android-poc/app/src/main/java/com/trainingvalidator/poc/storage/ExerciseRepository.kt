@@ -119,7 +119,14 @@ class ExerciseRepository private constructor(private val context: Context) {
             
             // Attempt sync from backend
             if (autoSync) {
-                val result = syncManager.syncIfNeeded()
+                var result = syncManager.syncIfNeeded()
+
+                // Auto-reconcile stale cache
+                if (result is SyncManager.SyncResult.NeedsFullRefresh) {
+                    Log.d(TAG, "Cache drift detected — performing full refresh")
+                    result = syncManager.fullRefresh()
+                }
+
                 _lastSyncResult.value = result
                 
                 // Reload if sync was successful
@@ -300,7 +307,13 @@ class ExerciseRepository private constructor(private val context: Context) {
      * Downloads any new audio files in the background.
      */
     suspend fun checkForUpdates(): SyncManager.SyncResult = withContext(Dispatchers.IO) {
-        val result = syncManager.syncIfNeeded(forceCheck = true)
+        var result = syncManager.syncIfNeeded(forceCheck = true)
+
+        if (result is SyncManager.SyncResult.NeedsFullRefresh) {
+            Log.d(TAG, "Cache drift detected — performing full refresh")
+            result = syncManager.fullRefresh()
+        }
+
         _lastSyncResult.value = result
         
         if (result is SyncManager.SyncResult.Success) {

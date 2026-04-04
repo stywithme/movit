@@ -98,6 +98,11 @@ class SyncManager(
          * Sync skipped (too soon after last sync)
          */
         object Skipped : SyncResult()
+
+        /**
+         * Local cache is stale — caller should trigger fullRefresh()
+         */
+        object NeedsFullRefresh : SyncResult()
         
         /**
          * Sync failed with error
@@ -356,6 +361,22 @@ class SyncManager(
         val hasProgramChanges = programs.isNotEmpty() || deletedProgramIds.isNotEmpty()
         
         if (!hasExerciseChanges && !hasWorkoutChanges && !hasProgramChanges) {
+            // Reconcile: if server total differs from local cache, stale entries exist
+            val localCount = exerciseCache.getExerciseCount()
+            val serverTotal = meta?.totalExercises ?: localCount
+            if (localCount > serverTotal) {
+                Log.w(TAG, "Cache drift detected: local=$localCount server=$serverTotal — triggering full refresh")
+                // Still update timestamp
+                if (meta != null) {
+                    exerciseCache.saveMetadata(
+                        timestamp = response.timestamp,
+                        exerciseCount = meta.totalExercises,
+                        serverVersion = meta.serverVersion
+                    )
+                }
+                return SyncResult.NeedsFullRefresh
+            }
+
             Log.d(TAG, "No content changes since last sync (user data still synced)")
             
             // Still update timestamp

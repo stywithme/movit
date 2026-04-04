@@ -2206,11 +2206,13 @@ class TrainingActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetection
     private fun loadSetupReferenceImage() {
         val variant = currentPoseVariant()
         if (variant == null) {
+            Log.d(TAG, "SetupRefImage: no variant loaded — showing fallback")
             binding.ivSetupRefImage.setImageDrawable(null)
             binding.setupRefFallbackContainer.visibility = View.VISIBLE
             return
         }
         val imageUrl = variant.positionImageUrl
+        Log.d(TAG, "SetupRefImage: url=${imageUrl ?: "(null)"}")
 
         if (!imageUrl.isNullOrBlank()) {
             ImageLoader(this).enqueue(
@@ -2218,10 +2220,12 @@ class TrainingActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetection
                     .data(imageUrl)
                     .target(
                         onSuccess = { result ->
+                            Log.d(TAG, "SetupRefImage: loaded successfully")
                             binding.ivSetupRefImage.setImageDrawable(result)
                             binding.setupRefFallbackContainer.visibility = View.GONE
                         },
                         onError = {
+                            Log.w(TAG, "SetupRefImage: failed to load image from $imageUrl")
                             binding.ivSetupRefImage.setImageDrawable(null)
                             binding.setupRefFallbackContainer.visibility = View.VISIBLE
                         }
