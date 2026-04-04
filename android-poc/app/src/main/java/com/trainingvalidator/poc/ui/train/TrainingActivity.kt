@@ -79,6 +79,7 @@ import com.trainingvalidator.poc.ui.report.ReportPagerActivity
 import com.trainingvalidator.poc.ui.utils.currentLanguage
 import com.trainingvalidator.poc.video.VideoManager
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -1558,38 +1559,67 @@ class TrainingActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetection
         }
         
         stateInfosObserverJob = lifecycleScope.launch {
-            // Observe state infos for visual feedback (Line indicator, colors)
-            engine.jointStateInfos.collectLatest { stateInfos ->
-                binding.skeletonOverlay.setStateInfos(stateInfos)
-                
-                // Check for error states (DANGER or WARNING)
-                val hasErrors = stateInfos.any { 
-                    it.value.state == JointState.DANGER || it.value.state == JointState.WARNING 
-                }
-                if (hasErrors) {
-                    binding.vignetteOverlay.showError()
-                } else {
-                    binding.vignetteOverlay.clear()
-                }
-                
-                // Update form status based on worst state
-                val worstState = stateInfos.values.maxByOrNull { info ->
-                    when (info.state) {
-                        JointState.DANGER -> 5
-                        JointState.WARNING -> 4
-                        JointState.PAD -> 3
-                        JointState.NORMAL -> 2
-                        JointState.PERFECT -> 1
-                        JointState.TRANSITION -> 0
+            // Observe state infos for visual feedback
+            launch {
+                engine.jointStateInfos.collectLatest { stateInfos ->
+                    binding.skeletonOverlay.setStateInfos(stateInfos)
+
+                    val hasErrors = stateInfos.any {
+                        it.value.state == JointState.DANGER || it.value.state == JointState.WARNING
                     }
-                }?.state ?: JointState.PERFECT
-                updateFormStatus(worstState)
-                
-                // Trigger low-priority random messages during quiet time
-                val positionErrors = engine.positionErrors.value
-                viewModel.feedbackManager?.checkAndDeliverRandomMessage(
-                    hasActiveErrors = hasErrors || positionErrors.isNotEmpty()
-                )
+                    if (hasErrors) {
+                        binding.vignetteOverlay.showError()
+                    } else if (!engine.isVisibilityPaused.value) {
+                        binding.vignetteOverlay.clear()
+                    }
+
+                    val worstState = stateInfos.values.maxByOrNull { info ->
+                        when (info.state) {
+                            JointState.DANGER -> 5
+                            JointState.WARNING -> 4
+                            JointState.PAD -> 3
+                            JointState.NORMAL -> 2
+                            JointState.PERFECT -> 1
+                            JointState.TRANSITION -> 0
+                        }
+                    }?.state ?: JointState.PERFECT
+                    updateFormStatus(worstState)
+
+                    val positionErrors = engine.positionErrors.value
+                    viewModel.feedbackManager?.checkAndDeliverRandomMessage(
+                        hasActiveErrors = hasErrors || positionErrors.isNotEmpty()
+                    )
+                }
+            }
+
+            // Observe visibility pause/resume (auto-resume, no manual button needed)
+            launch {
+                engine.isVisibilityPaused.collect { paused ->
+                    if (paused) {
+                        binding.glassmorphicMessage.showMessage(
+                            "Return to frame to continue",
+                            GlassmorphicMessageView.TYPE_ERROR,
+                            durationMs = -1
+                        )
+                        binding.vignetteOverlay.showError()
+                    } else {
+                        binding.glassmorphicMessage.clearAll()
+                        binding.vignetteOverlay.clear()
+                    }
+                }
+            }
+
+            // Observe auto-resume countdown (3-2-1)
+            launch {
+                engine.visibilityResumeCountdown.collect { seconds ->
+                    if (seconds != null && seconds > 0) {
+                        binding.glassmorphicMessage.showMessage(
+                            "Resuming in $seconds...",
+                            GlassmorphicMessageView.TYPE_INFO,
+                            durationMs = 900
+                        )
+                    }
+                }
             }
         }
     }

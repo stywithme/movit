@@ -416,7 +416,7 @@ class TrainingViewModel(
             }
             
             is SupervisorAction.ResumeFromVisibilityPause -> {
-                trainingEngine?.resumeFromVisibilityPause()
+                // Visibility resume now handled internally by TrainingEngine
             }
             
             is SupervisorAction.ResetEngine -> {
@@ -747,14 +747,9 @@ class TrainingViewModel(
                     feedbackManager?.emit(event)
                     _feedbackEvents.emit(event)
                     
-                    // Forward visibility events to supervisor
+                    // Forward completion events to supervisor
+                    // (Visibility is now handled entirely inside TrainingEngine)
                     when (event) {
-                        is FeedbackEvent.VisibilityPaused -> {
-                            supervisor.processSignal(SupervisorSignal.VisibilityPaused)
-                        }
-                        is FeedbackEvent.VisibilityResumeCountdown -> {
-                            supervisor.processSignal(SupervisorSignal.VisibilityRestored)
-                        }
                         is FeedbackEvent.TargetReached -> {
                             supervisor.processSignal(SupervisorSignal.TargetReached)
                         }
