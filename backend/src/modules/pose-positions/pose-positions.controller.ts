@@ -6,7 +6,8 @@ import { CaslGuard } from '@/lib/casl/casl.guard';
 import { CheckPermission } from '@/lib/casl/check-permission.decorator';
 
 @UseGuards(CaslGuard)
-@Controller('pose-positions')
+/** Alias `camera-positions` matches Admin Dashboard URLs; primary path remains `pose-positions`. */
+@Controller(['pose-positions', 'camera-positions'])
 export class PosePositionsController {
   @Get()
   @CheckPermission('read', 'PosePosition')

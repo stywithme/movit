@@ -80,10 +80,10 @@ class PositionValidator(
         // 3. Scene warnings always compare LIVE detection against expectation
         val sceneWarnings = checkSceneAxes(liveScene)
         
-        // 3. Facing is always auto-detected
-        val effectiveFacing = scene.facing
+        // 4. Facing for position checks follows effective scene (locked when set)
+        val effectiveFacing = effectiveScene.facing
         
-        // 4. Run position checks
+        // 5. Run position checks
         val errors = mutableListOf<PositionError>()
         val warnings = mutableListOf<PositionError>()
         val tips = mutableListOf<PositionError>()
