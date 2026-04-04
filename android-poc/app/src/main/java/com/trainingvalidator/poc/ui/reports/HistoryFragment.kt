@@ -38,9 +38,17 @@ class HistoryFragment : Fragment() {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
+        setupSwipeRefresh()
         setupTabs()
         observeLoadingState()
         viewModel.loadMetrics()
+    }
+
+    private fun setupSwipeRefresh() {
+        binding.swipeRefresh.setColorSchemeResources(R.color.primary)
+        binding.swipeRefresh.setOnRefreshListener {
+            viewModel.loadMetrics()
+        }
     }
 
     override fun onDestroyView() {
@@ -65,9 +73,9 @@ class HistoryFragment : Fragment() {
         viewLifecycleOwner.lifecycleScope.launch {
             repeatOnLifecycle(Lifecycle.State.STARTED) {
                 viewModel.uiState.collect { state ->
-                    // Child fragments observe the same ViewModel directly.
-                    // HistoryFragment only needs to show/hide a global loading indicator if required.
-                    // Currently no top-level loading UI needed — tabs handle their own empty states.
+                    if (_binding != null && state !is ReportsHubUiState.Loading) {
+                        binding.swipeRefresh.isRefreshing = false
+                    }
                 }
             }
         }

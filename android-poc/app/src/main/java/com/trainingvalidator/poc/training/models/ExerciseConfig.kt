@@ -344,6 +344,8 @@ data class PoseVariant(
     val posePosition: String? = null,
     /** @deprecated Legacy field — kept for backward compat with old JSON. */
     val cameraPosition: String? = null,
+    /** Reference image URL from backend showing the expected camera position. */
+    val positionImageUrl: String? = null,
     val expectedPostures: List<String>? = null,
     val expectedDirections: List<String>? = null,
     val expectedRegions: List<String>? = null,

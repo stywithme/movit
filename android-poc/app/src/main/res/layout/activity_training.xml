@@ -306,6 +306,178 @@
 
     </LinearLayout>
 
+    <!-- ==================== SETUP INDICATOR BAR (Scene Check + Visibility) ==================== -->
+
+    <LinearLayout
+        android:id="@+id/setupIndicatorBar"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center_vertical"
+        android:paddingHorizontal="@dimen/spacing_md"
+        android:paddingVertical="@dimen/spacing_sm"
+        android:layout_marginBottom="@dimen/spacing_2xl"
+        android:layout_marginStart="@dimen/spacing_base"
+        android:layout_marginEnd="@dimen/spacing_base"
+        android:background="@drawable/glass_deck_background"
+        android:elevation="8dp"
+        android:visibility="gone"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent">
+
+        <FrameLayout
+            android:layout_width="112dp"
+            android:layout_height="112dp"
+            android:background="@drawable/bg_stat_card_dark">
+
+            <ImageView
+                android:id="@+id/ivSetupRefImage"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:scaleType="centerCrop"
+                android:contentDescription="Reference position" />
+
+            <LinearLayout
+                android:id="@+id/setupRefFallbackContainer"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:orientation="vertical"
+                android:gravity="center"
+                android:padding="@dimen/spacing_sm"
+                android:background="#33000000">
+
+                <ImageView
+                    android:id="@+id/ivSetupRefFallbackIcon"
+                    android:layout_width="28dp"
+                    android:layout_height="28dp"
+                    android:src="@drawable/ic_person_placeholder"
+                    android:contentDescription="Reference fallback"
+                    app:tint="@color/primary" />
+
+                <TextView
+                    android:id="@+id/tvSetupRefTitle"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="6dp"
+                    android:textColor="@color/text_primary"
+                    android:textSize="11sp"
+                    android:textStyle="bold"
+                    tools:text="Standing" />
+
+                <TextView
+                    android:id="@+id/tvSetupRefSubtitle"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="2dp"
+                    android:textColor="@color/text_secondary"
+                    android:textSize="10sp"
+                    tools:text="Side view" />
+
+            </LinearLayout>
+
+        </FrameLayout>
+
+        <View
+            android:layout_width="1dp"
+            android:layout_height="72dp"
+            android:layout_marginHorizontal="@dimen/spacing_sm"
+            android:background="#33FFFFFF" />
+
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:orientation="vertical"
+            android:paddingStart="4dp">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:gravity="center_vertical">
+
+                <ImageView
+                    android:id="@+id/ivAxisRegion"
+                    android:layout_width="28dp"
+                    android:layout_height="28dp"
+                    android:background="@drawable/circle_background"
+                    android:padding="5dp"
+                    android:src="@drawable/ic_viewfinder"
+                    android:contentDescription="Body framing"
+                    app:tint="#66FFFFFF" />
+
+                <TextView
+                    android:id="@+id/tvAxisRegionExpected"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="10dp"
+                    android:textColor="@color/text_primary"
+                    android:textSize="13sp"
+                    tools:text="Show full body" />
+
+            </LinearLayout>
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="10dp"
+                android:orientation="horizontal"
+                android:gravity="center_vertical">
+
+                <ImageView
+                    android:id="@+id/ivAxisPosture"
+                    android:layout_width="28dp"
+                    android:layout_height="28dp"
+                    android:background="@drawable/circle_background"
+                    android:padding="5dp"
+                    android:src="@drawable/ic_person_placeholder"
+                    android:contentDescription="Body posture"
+                    app:tint="#66FFFFFF" />
+
+                <TextView
+                    android:id="@+id/tvAxisPostureExpected"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="10dp"
+                    android:textColor="@color/text_primary"
+                    android:textSize="13sp"
+                    tools:text="Stand upright" />
+
+            </LinearLayout>
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="10dp"
+                android:orientation="horizontal"
+                android:gravity="center_vertical">
+
+                <ImageView
+                    android:id="@+id/ivAxisDirection"
+                    android:layout_width="28dp"
+                    android:layout_height="28dp"
+                    android:background="@drawable/circle_background"
+                    android:padding="5dp"
+                    android:src="@drawable/ic_eye"
+                    android:contentDescription="Camera angle"
+                    app:tint="#66FFFFFF" />
+
+                <TextView
+                    android:id="@+id/tvAxisDirectionExpected"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="10dp"
+                    android:textColor="@color/text_primary"
+                    android:textSize="13sp"
+                    tools:text="Face camera from side" />
+
+            </LinearLayout>
+
+        </LinearLayout>
+
+    </LinearLayout>
+
     <!-- ==================== COUNTDOWN OVERLAY ==================== -->
     
     <FrameLayout

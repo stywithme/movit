@@ -219,24 +219,22 @@ data class OverlayOpacitySettings(
  * @param windowSize       Total frames in the rolling window (default 12)
  * @param requiredValid    Frames that must be valid within the window (default 9)
  * @param closeThresholdDegrees  Distance (°) from range where joint is YELLOW vs RED
- * @param voiceCooldownMs  Minimum ms between voice guidance messages
+ * @param voiceCooldownMs  Base minimum ms between voice guidance messages (same-message uses 2x)
  * @param cameraTipEnabled Whether to show camera-position tip in the VIEW card
  * @param cameraCheckWindowSize  Rolling window size for camera detection (default 12)
  * @param cameraCheckRequired    Frames agreeing on camera position (default 9)
  * @param countdownToleranceMs  Duration (ms) of invalid pose silently ignored during countdown
- * @param countdownFreezeMs    Duration (ms) after which countdown freezes with a warning
  * @param countdownCancelMs    Duration (ms) after which countdown is cancelled entirely
  */
 data class SetupValidationSettings(
     val windowSize: Int = 12,
     val requiredValid: Int = 9,
     val closeThresholdDegrees: Double = 15.0,
-    val voiceCooldownMs: Long = 2500L,
+    val voiceCooldownMs: Long = 5000L,
     val cameraTipEnabled: Boolean = true,
     val cameraCheckWindowSize: Int = 12,
     val cameraCheckRequired: Int = 9,
     val countdownToleranceMs: Long = 150L,
-    val countdownFreezeMs: Long = 500L,
     val countdownCancelMs: Long = 1200L
 )
 

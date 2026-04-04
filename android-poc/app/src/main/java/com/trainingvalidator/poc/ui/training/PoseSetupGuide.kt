@@ -108,24 +108,41 @@ class PoseSetupGuide(
         val scene = validLandmarks?.let { sceneDetector.detect(it, isFrontCamera) }
         val axisMatch = if (scene != null) expectation.matchesScene(scene) else null
 
-        // ── Determine current phase (first failing axis in priority order) ─
-        // When scene detection is unavailable, keep user in REGION (not ANGLES).
+        // ── Compute ALL 3 axis statuses (UI shows them simultaneously) ────
+        val regionStatus: AxisStatus
+        val postureStatus: AxisStatus
+        val directionStatus: AxisStatus
         val phase: SetupPhase
         val phaseMessage: LocalizedText?
 
         if (axisMatch == null) {
+            regionStatus = AxisStatus.FAILED
+            postureStatus = AxisStatus.PENDING
+            directionStatus = AxisStatus.PENDING
             phase = SetupPhase.REGION
             phaseMessage = buildRegionTip(expectation.regions)
         } else if (!axisMatch.regionMatch) {
+            regionStatus = AxisStatus.FAILED
+            postureStatus = AxisStatus.PENDING
+            directionStatus = AxisStatus.PENDING
             phase = SetupPhase.REGION
             phaseMessage = buildRegionTip(expectation.regions)
         } else if (!axisMatch.postureMatch) {
+            regionStatus = AxisStatus.PASSED
+            postureStatus = AxisStatus.FAILED
+            directionStatus = AxisStatus.PENDING
             phase = SetupPhase.POSTURE
             phaseMessage = buildPostureTip(expectation.postures)
         } else if (!axisMatch.directionMatch) {
+            regionStatus = AxisStatus.PASSED
+            postureStatus = AxisStatus.PASSED
+            directionStatus = AxisStatus.FAILED
             phase = SetupPhase.DIRECTION
             phaseMessage = buildDirectionTip(expectation.directions)
         } else {
+            regionStatus = AxisStatus.PASSED
+            postureStatus = AxisStatus.PASSED
+            directionStatus = AxisStatus.PASSED
             phase = SetupPhase.ANGLES
             phaseMessage = null
         }
@@ -143,7 +160,9 @@ class PoseSetupGuide(
             emptyList()
         }
 
-        // Rolling window: PRIMARY joints are required; visible secondary joints must be valid.
+        // Visibility-only confirmation: all PRIMARY joints must be visible
+        // (angle computable = all 3 landmarks have sufficient visibility).
+        // No angle-range validation — just presence in the frame.
         val guidanceByJoint = jointGuidances.associateBy { it.jointCode }
         val requiredJointCodes = variant.trackedJoints
             .filter { it.role == JointRole.PRIMARY }
@@ -153,18 +172,9 @@ class PoseSetupGuide(
         val requiredJointsPresent = phase == SetupPhase.ANGLES &&
                 requiredJointCodes.all { guidanceByJoint.containsKey(it) }
 
-        val requiredJointsValid = requiredJointsPresent &&
-                requiredJointCodes.all { guidanceByJoint[it]?.level == GuidanceLevel.GREEN }
+        jointWindow.add(requiredJointsPresent)
 
-        val visibleSecondaryGuidances = variant.trackedJoints
-            .filter { it.role != JointRole.PRIMARY }
-            .mapNotNull { guidanceByJoint[it.joint] }
-
-        val secondaryJointsValid = visibleSecondaryGuidances.all { it.level == GuidanceLevel.GREEN }
-
-        jointWindow.add(requiredJointsValid && secondaryJointsValid)
-
-        // ── Camera guidance (for bottom bar VIEW card, backwards-compatible) ─
+        // ── Camera guidance (backwards-compatible) ───────────────────────
         val cameraGuidance = if (scene != null && SettingsManager.settings.setupValidation.cameraTipEnabled) {
             buildSceneGuidance(scene, expectation)
         } else null
@@ -189,12 +199,15 @@ class PoseSetupGuide(
             .maxByOrNull { it.distance }
 
         if (progress.isConfirmed) {
-            Log.d(TAG, "Pose confirmed via rolling window")
+            Log.d(TAG, "Pose confirmed via rolling window (visibility-only)")
         }
 
         return SetupResult(
             phase = phase,
             phaseMessage = phaseMessage,
+            regionStatus = regionStatus,
+            postureStatus = postureStatus,
+            directionStatus = directionStatus,
             joints = jointGuidances,
             camera = cameraGuidance,
             progress = progress,
@@ -457,15 +470,17 @@ class PoseSetupGuide(
 
     /**
      * Returns whether enough cooldown has passed to speak joint voice guidance.
+     * Two-tier cooldown: base cooldown for new messages, 2x for repeated same joint.
      */
     fun shouldSpeakGuidance(worstJoint: JointGuidance?): Boolean {
         if (worstJoint == null) return false
-        val cooldownMs = SettingsManager.settings.setupValidation.voiceCooldownMs
-            .takeIf { it > 0L } ?: 2500L
+        val baseCooldown = SettingsManager.settings.setupValidation.voiceCooldownMs
+            .takeIf { it > 0L } ?: 5000L
         val now = System.currentTimeMillis()
         val sameJoint = worstJoint.jointCode == lastVoiceJointCode
-        val cooldownOk = (now - lastVoiceTimeMs) >= cooldownMs
-        return !sameJoint || cooldownOk
+        if (!sameJoint) return true
+        val effectiveCooldown = baseCooldown * 2
+        return (now - lastVoiceTimeMs) >= effectiveCooldown
     }
 
     /** Mark that voice guidance was spoken for [joint]. */
@@ -476,16 +491,17 @@ class PoseSetupGuide(
 
     /**
      * Returns whether the scene-phase voice should speak.
-     * Speaks immediately on phase change, then respects cooldown.
+     * Speaks immediately on phase change, then uses 2x cooldown for same phase repeat.
      */
     fun shouldSpeakPhaseGuidance(phase: SetupPhase): Boolean {
         if (phase == SetupPhase.ANGLES) return false
-        val cooldownMs = SettingsManager.settings.setupValidation.voiceCooldownMs
-            .takeIf { it > 0L } ?: 2500L
+        val baseCooldown = SettingsManager.settings.setupValidation.voiceCooldownMs
+            .takeIf { it > 0L } ?: 5000L
         val now = System.currentTimeMillis()
         val samePhase = phase == lastVoicePhase
-        val cooldownOk = (now - lastVoicePhaseTimeMs) >= cooldownMs
-        return !samePhase || cooldownOk
+        if (!samePhase) return true
+        val effectiveCooldown = baseCooldown * 2
+        return (now - lastVoicePhaseTimeMs) >= effectiveCooldown
     }
 
     fun onPhaseGuidanceSpoken(phase: SetupPhase) {
@@ -548,12 +564,22 @@ enum class SetupPhase {
     ANGLES
 }
 
+/** Status of a single scene axis (region, posture, or direction). */
+enum class AxisStatus {
+    PENDING,   // not yet evaluated (blocked by earlier axis)
+    FAILED,    // evaluated but not matching
+    PASSED     // matching
+}
+
 /**
  * Full result of one setup validation pass.
  */
 data class SetupResult(
     val phase: SetupPhase,
     val phaseMessage: LocalizedText?,
+    val regionStatus: AxisStatus,
+    val postureStatus: AxisStatus,
+    val directionStatus: AxisStatus,
     val joints: List<JointGuidance>,
     val camera: CameraGuidance?,
     val progress: SetupProgress,
@@ -564,6 +590,9 @@ data class SetupResult(
         fun empty() = SetupResult(
             phase = SetupPhase.REGION,
             phaseMessage = null,
+            regionStatus = AxisStatus.PENDING,
+            postureStatus = AxisStatus.PENDING,
+            directionStatus = AxisStatus.PENDING,
             joints = emptyList(),
             camera = null,
             progress = SetupProgress(0, false),

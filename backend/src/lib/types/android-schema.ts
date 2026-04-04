@@ -321,6 +321,7 @@ export interface MessageAssignment {
 export interface PoseVariantConfig {
   name: LocalizedText;
   posePosition: PosePosition;
+  positionImageUrl?: string;
   expectedPostures: string[];
   expectedDirections: string[];
   expectedRegions: string[];
