@@ -320,15 +320,6 @@ class SessionSupervisor {
                 Log.d(TAG, "Manual pause requested")
             }
             
-            is SupervisorSignal.VisibilityPaused -> {
-                pauseReason = PauseReason.VISIBILITY
-                transitionTo(SessionState.AUTO_PAUSED)
-                emit(SupervisorAction.PauseEngine)
-                emit(SupervisorAction.ShowAutoPaused(PauseReason.VISIBILITY))
-                if (isVideoMode) emit(SupervisorAction.PauseVideo)
-                Log.d(TAG, "Visibility pause triggered")
-            }
-            
             is SupervisorSignal.TargetReached -> {
                 transitionTo(SessionState.COMPLETED)
                 emit(SupervisorAction.StopEngine)
@@ -364,13 +355,6 @@ class SessionSupervisor {
     
     private fun handleAutoPaused(signal: SupervisorSignal) {
         when (signal) {
-            is SupervisorSignal.VisibilityRestored -> {
-                // Go to RESUME_SETUP to validate pose before resume countdown
-                transitionTo(SessionState.RESUME_SETUP)
-                emit(SupervisorAction.ShowSetupPose)
-                Log.d(TAG, "Visibility restored - validating pose for resume")
-            }
-            
             is SupervisorSignal.PoseFrame -> {
                 // Pose detected after NoPose pause - start resume flow
                 if (pauseReason == PauseReason.NO_POSE) {
