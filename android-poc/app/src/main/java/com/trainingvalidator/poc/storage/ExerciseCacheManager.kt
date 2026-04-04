@@ -142,6 +142,11 @@ class ExerciseCacheManager(private val context: Context) {
         if (!isLoaded) loadCache()
         return exerciseCache.isNotEmpty()
     }
+
+    fun getExerciseCount(): Int {
+        if (!isLoaded) loadCache()
+        return exerciseCache.size
+    }
     
     /**
      * Get all cached exercises
