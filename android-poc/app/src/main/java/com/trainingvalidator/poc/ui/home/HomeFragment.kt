@@ -89,30 +89,6 @@ class HomeFragment : Fragment() {
         loadData()
     }
 
-    private fun setupSwipeRefresh() {
-        binding.swipeRefresh.setColorSchemeResources(R.color.primary)
-        binding.swipeRefresh.setOnRefreshListener {
-            refreshContent()
-        }
-    }
-
-    private fun refreshContent() {
-        setupGreeting()
-        loadUserName()
-        viewLifecycleOwner.lifecycleScope.launch {
-            try {
-                homeRepository.syncFromServer()?.let {
-                    if (_binding != null) renderData(it)
-                }
-            } catch (e: Exception) {
-                Log.w(TAG, "Pull-to-refresh failed", e)
-                homeRepository.getCachedData()?.let { renderData(it) }
-            } finally {
-                if (_binding != null) binding.swipeRefresh.isRefreshing = false
-            }
-        }
-    }
-
     override fun onResume() {
         super.onResume()
         if (_binding == null) return
