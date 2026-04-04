@@ -172,6 +172,9 @@ class TrainingEngine(
     // Camera warning event throttle (UI overlay uses StateFlow, but FeedbackEvent is throttled)
     private var lastCameraWarningEventTime = 0L
     private val CAMERA_WARNING_EVENT_COOLDOWN_MS = 2000L  // Only emit event every 2s
+
+    // Scene lock: freeze axis selection after first valid detection to avoid mid-training noise
+    private var sceneLocked = false
     
     // ==================== Position Validator ====================
     
@@ -627,6 +630,8 @@ class TrainingEngine(
             pendingRepCompletion = false
             cameraWarningCount = 0
             safetyStopTriggered = false
+            sceneLocked = false
+            positionValidator.unlockScene()
             
             // Reset state message throttling
             lastStateMessageTimes.clear()
@@ -734,8 +739,10 @@ class TrainingEngine(
             // Reset form validator state
             formValidator.reset()
             
-            // Clear position validation cooldowns
+            // Clear position validation cooldowns & unlock scene for re-detection
             positionValidator.clearCooldowns()
+            positionValidator.unlockScene()
+            sceneLocked = false
             lastPositionEventTimes.clear()
             pendingRepCompletion = false
             
@@ -986,6 +993,12 @@ class TrainingEngine(
                 positionValidator.validate(landmarks, currentPhase, isBilateralFlipped, isFrontCamera)
             } else null
             
+            // Lock scene on first valid detection for stable axis selection
+            if (!sceneLocked && positionValidation != null) {
+                positionValidator.lockScene()
+                sceneLocked = true
+            }
+
             // Update position-related state flows
             if (positionValidation != null) {
                 _positionErrors.value = positionValidation.errors + positionValidation.warnings + positionValidation.tips

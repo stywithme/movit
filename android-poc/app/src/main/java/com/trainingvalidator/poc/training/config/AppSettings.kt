@@ -223,9 +223,9 @@ data class OverlayOpacitySettings(
  * @param cameraTipEnabled Whether to show camera-position tip in the VIEW card
  * @param cameraCheckWindowSize  Rolling window size for camera detection (default 12)
  * @param cameraCheckRequired    Frames agreeing on camera position (default 9)
- * @param countdownToleranceFrames  Invalid frames during countdown that are silently ignored
- * @param countdownFreezeFrames     Invalid frames that freeze (pause) the countdown
- * @param countdownCancelFrames     Invalid frames that cancel the countdown entirely
+ * @param countdownToleranceMs  Duration (ms) of invalid pose silently ignored during countdown
+ * @param countdownFreezeMs    Duration (ms) after which countdown freezes with a warning
+ * @param countdownCancelMs    Duration (ms) after which countdown is cancelled entirely
  */
 data class SetupValidationSettings(
     val windowSize: Int = 12,
@@ -235,9 +235,9 @@ data class SetupValidationSettings(
     val cameraTipEnabled: Boolean = true,
     val cameraCheckWindowSize: Int = 12,
     val cameraCheckRequired: Int = 9,
-    val countdownToleranceFrames: Int = 2,
-    val countdownFreezeFrames: Int = 4,
-    val countdownCancelFrames: Int = 6
+    val countdownToleranceMs: Long = 150L,
+    val countdownFreezeMs: Long = 500L,
+    val countdownCancelMs: Long = 1200L
 )
 
 /**
