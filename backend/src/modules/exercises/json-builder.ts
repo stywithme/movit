@@ -89,6 +89,7 @@ interface DbPoseVariant {
   id: string;
   name: Record<string, string>;
   description?: Record<string, string> | null;
+  referenceImageUrl?: string | null;
   trackedJointsConfig?: unknown;
   posePosition: {
     code: string;
@@ -304,6 +305,10 @@ function buildPoseVariantConfig(
       ? applyStateMessageAssignments(trackedJoints, dbVariant.messageAssignments)
       : trackedJoints,
   };
+
+  if (dbVariant.referenceImageUrl) {
+    config.positionImageUrl = dbVariant.referenceImageUrl;
+  }
 
   if (positionChecks.length > 0) {
     config.positionChecks = positionChecks;

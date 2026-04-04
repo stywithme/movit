@@ -78,10 +78,38 @@ class ExploreFragment : Fragment() {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
+        setupSwipeRefresh()
         setupStaticContent()
         setupLists()
         setupListeners()
         loadLibrary()
+    }
+
+    private fun setupSwipeRefresh() {
+        binding.swipeRefresh.setColorSchemeResources(R.color.primary)
+        binding.swipeRefresh.setOnRefreshListener {
+            refreshContent()
+        }
+    }
+
+    private fun refreshContent() {
+        viewLifecycleOwner.lifecycleScope.launch {
+            try {
+                exerciseRepository.initialize(autoSync = false)
+                workoutRepository.initialize()
+                exerciseRepository.checkForUpdates()
+                if (_binding != null) {
+                    renderLibraryData(
+                        workouts = workoutRepository.getAllWorkouts(),
+                        exercises = exerciseRepository.getAllExercises()
+                    )
+                }
+            } catch (e: Exception) {
+                Log.e(TAG, "Pull-to-refresh failed", e)
+            } finally {
+                if (_binding != null) binding.swipeRefresh.isRefreshing = false
+            }
+        }
     }
 
     private fun setupStaticContent() {
@@ -224,23 +252,23 @@ class ExploreFragment : Fragment() {
             ContentFilter.WORKOUTS -> {
                 binding.chipFilterWorkouts.isChecked = true
                 binding.chipWorkoutAll.isChecked = true
-                binding.root.post {
-                    binding.root.smoothScrollTo(0, binding.sectionWorkoutsContainer.top)
+                binding.scrollView.post {
+                    binding.scrollView.smoothScrollTo(0, binding.sectionWorkoutsContainer.top)
                 }
             }
 
             ContentFilter.EXERCISES -> {
                 binding.chipFilterExercises.isChecked = true
                 (binding.chipGroupExerciseFilters.getChildAt(0) as? Chip)?.isChecked = true
-                binding.root.post {
-                    binding.root.smoothScrollTo(0, binding.sectionExercisesContainer.top)
+                binding.scrollView.post {
+                    binding.scrollView.smoothScrollTo(0, binding.sectionExercisesContainer.top)
                 }
             }
 
             ContentFilter.ALL -> {
                 binding.chipFilterAll.isChecked = true
-                binding.root.post {
-                    binding.root.smoothScrollTo(0, 0)
+                binding.scrollView.post {
+                    binding.scrollView.smoothScrollTo(0, 0)
                 }
             }
         }

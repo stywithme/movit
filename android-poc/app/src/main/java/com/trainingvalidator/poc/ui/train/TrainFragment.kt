@@ -83,8 +83,44 @@ class TrainFragment : Fragment() {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
+        setupSwipeRefresh()
         isFirstLoad = true
         loadPage()
+    }
+
+    private fun setupSwipeRefresh() {
+        binding.swipeRefresh.setColorSchemeResources(R.color.primary)
+        binding.swipeRefresh.setOnRefreshListener {
+            refreshContent()
+        }
+    }
+
+    private fun refreshContent() {
+        viewLifecycleOwner.lifecycleScope.launch {
+            try {
+                programRepo = ProgramRepository.getInstance(requireContext())
+                exerciseRepo = ExerciseRepository.getInstance(requireContext())
+                reportStore = ProgramSessionReportStore(requireContext())
+                customizationStore = DayCustomizationStore(requireContext())
+                reportRepo = ReportRepository.getInstance(requireContext())
+
+                withContext(Dispatchers.IO) {
+                    programRepo.initialize()
+                    exerciseRepo.initialize(autoSync = false)
+                    exerciseRepo.checkForUpdates()
+                    programRepo.reloadFromCache()
+                }
+
+                if (_binding != null) {
+                    renderCurrentState()
+                    fetchUnifiedMetrics()
+                }
+            } catch (e: Exception) {
+                Log.w(TAG, "Pull-to-refresh failed", e)
+            } finally {
+                if (_binding != null) binding.swipeRefresh.isRefreshing = false
+            }
+        }
     }
 
     override fun onResume() {
