@@ -164,7 +164,6 @@ export type CountingMethodData = z.infer<typeof CountingMethodSchema>;
 
 export const CameraPositionSchema = z.object({
   cameraPositionIds: z.array(z.string().uuid()).min(1, 'Select at least one camera position'),
-  referenceImages: z.record(z.string(), z.string().url().optional().or(z.literal(''))).optional(),
 });
 
 export type CameraPositionData = z.infer<typeof CameraPositionSchema>;

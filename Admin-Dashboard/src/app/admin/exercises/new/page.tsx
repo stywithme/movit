@@ -243,7 +243,6 @@ export default function NewExercisePage() {
         return {
           name: store.basicInfo.name,
           posePositionId,
-          referenceImageUrl: store.cameraPosition.referenceImages?.[posePositionId] || undefined,
           trackedJointsConfig: mappedJoints.length > 0 ? mappedJoints : trackedJointsConfig,
           positionChecks,
           messageAssignments: feedbackAssignments.length > 0 ? feedbackAssignments : undefined,

@@ -34,7 +34,6 @@ interface PoseVariantInput {
   name: LocalizedText;
   description?: LocalizedText;
   posePositionId: string;
-  referenceImageUrl?: string;
   trackedJointsConfig?: TrackedJoint[];
   positionChecks?: PositionCheckInput[];
   messageAssignments?: FeedbackMessageAssignmentInput[];
@@ -298,7 +297,6 @@ export const exerciseService = {
         posePositionId: pv.posePositionId,
         name: pv.name as object,
         description: (pv.description as object) || undefined,
-        referenceImageUrl: pv.referenceImageUrl || undefined,
         trackedJointsConfig: (pv.trackedJointsConfig as object) || undefined,
         sortOrder: pv.sortOrder ?? sortOrder + 1,
       },

@@ -160,7 +160,6 @@ const initialState: WizardState = {
   },
   cameraPosition: {
     cameraPositionIds: [],
-    referenceImages: {},
   },
   jointConfig: {
     trackedJoints: [],

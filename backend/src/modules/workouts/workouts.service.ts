@@ -492,7 +492,6 @@ export const workoutService = {
             name: pv.name as Record<string, string>,
             sortOrder: pv.sortOrder,
             trackedJointsConfig: pv.trackedJointsConfig,
-            referenceImageUrl: pv.referenceImageUrl,
             posePosition: pv.posePosition,
             difficultyLevels: pv.difficultyLevels.map((dl) => ({
               id: dl.id,

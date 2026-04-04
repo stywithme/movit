@@ -7,20 +7,12 @@ import LocalizedInput from '@/components/forms/LocalizedInput';
 import { FileUpload } from '@/components/forms';
 import { Input } from '@/components/ui';
 
-interface Joint {
-  id: string;
-  code: string;
-  name: LocalizedText;
-}
-
 interface CameraPosition {
   id: string;
   code: string;
   name: LocalizedText;
-  description: LocalizedText | null;
   imageUrl: string | null;
   isActive: boolean;
-  joints: Joint[];
 }
 
 export default function EditCameraPositionPage() {
@@ -32,38 +24,15 @@ export default function EditCameraPositionPage() {
   const [saving, setSaving] = useState(false);
   const [cameraPosition, setCameraPosition] = useState<CameraPosition | null>(null);
 
-  // Available joints from API
-  const [availableJoints, setAvailableJoints] = useState<Joint[]>([]);
-
-  // Form data
   const [formData, setFormData] = useState({
     name: { ar: '', en: '' },
-    description: { ar: '', en: '' },
     imageUrl: '',
-    jointIds: [] as string[],
+    isActive: true,
   });
 
-  // Load data
   useEffect(() => {
     const loadData = async () => {
       try {
-        // Load joints
-        const jointsRes = await fetch('/api/attributes/joint/values');
-        const jointsData = await jointsRes.json();
-        console.log('Joints API response:', jointsData); // Debug log
-        if (jointsData.success) {
-          // Parse JSON fields if needed
-          const joints = (jointsData.data.values || []).map((joint: any) => ({
-            ...joint,
-            name: typeof joint.name === 'string' ? JSON.parse(joint.name) : joint.name,
-          }));
-          console.log('Parsed joints:', joints); // Debug log
-          setAvailableJoints(joints);
-        } else {
-          console.error('Failed to load joints:', jointsData.error);
-        }
-
-        // Load camera position
         const cpRes = await fetch(`/api/camera-positions/${cameraPositionId}`);
         const cpData = await cpRes.json();
         if (cpData.success) {
@@ -71,9 +40,8 @@ export default function EditCameraPositionPage() {
           setCameraPosition(cp);
           setFormData({
             name: cp.name || { ar: '', en: '' },
-            description: cp.description || { ar: '', en: '' },
             imageUrl: cp.imageUrl || '',
-            jointIds: cp.joints.map((j: Joint) => j.id),
+            isActive: cp.isActive,
           });
         } else {
           alert('Camera position not found');
@@ -92,15 +60,6 @@ export default function EditCameraPositionPage() {
       loadData();
     }
   }, [cameraPositionId, router]);
-
-  const handleJointToggle = (jointId: string) => {
-    setFormData((prev) => ({
-      ...prev,
-      jointIds: prev.jointIds.includes(jointId)
-        ? prev.jointIds.filter((id) => id !== jointId)
-        : [...prev.jointIds, jointId],
-    }));
-  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -128,7 +87,7 @@ export default function EditCameraPositionPage() {
     }
   };
 
-  const canSubmit = formData.name.en && formData.jointIds.length > 0;
+  const canSubmit = formData.name.en.trim().length > 0;
 
   if (loading) {
     return (
@@ -163,7 +122,6 @@ export default function EditCameraPositionPage() {
       </div>
 
       <form onSubmit={handleSubmit} className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 space-y-6">
-        {/* Name */}
         <LocalizedInput
           label="Name"
           value={formData.name}
@@ -171,15 +129,6 @@ export default function EditCameraPositionPage() {
           required
         />
 
-        {/* Description */}
-        <LocalizedInput
-          label="Description"
-          value={formData.description}
-          onChange={(description) => setFormData({ ...formData, description })}
-          multiline
-        />
-
-        {/* Image */}
         <div className="space-y-3">
           <FileUpload
             label="Reference Image"
@@ -187,7 +136,7 @@ export default function EditCameraPositionPage() {
             onChange={(imageUrl) => setFormData({ ...formData, imageUrl })}
             uploadType="camera-position-image"
             accept="image/*"
-            helperText="Upload a camera position reference image"
+            helperText="This image is shared across all exercises that use this position"
           />
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Reference Image URL</label>
@@ -199,60 +148,21 @@ export default function EditCameraPositionPage() {
           </div>
         </div>
 
-        {/* Joints Selection */}
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">
-            Required Joints <span className="text-red-500">*</span>
+          <label className="flex items-center gap-3 cursor-pointer">
+            <input
+              type="checkbox"
+              checked={formData.isActive}
+              onChange={(e) => setFormData({ ...formData, isActive: e.target.checked })}
+              className="h-4 w-4 text-blue-600 rounded border-gray-300 focus:ring-blue-500"
+            />
+            <span className="font-medium text-gray-900">Active</span>
           </label>
-          <p className="text-sm text-gray-500 mb-3">
-            Select the joints that must be visible from this camera position to start tracking.
+          <p className="text-sm text-gray-500 mt-1 ml-7">
+            Inactive positions will not appear when creating exercises
           </p>
-          {availableJoints.length === 0 ? (
-            <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
-              <p className="text-sm text-yellow-800">
-                No joints available. Please make sure joints are seeded in the database.
-              </p>
-              <p className="text-xs text-yellow-600 mt-1">
-                Run: <code className="bg-yellow-100 px-1 rounded">npm run db:seed</code> or <code className="bg-yellow-100 px-1 rounded">npm run prisma:seed</code>
-              </p>
-            </div>
-          ) : (
-            <>
-              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
-                {availableJoints.map((joint) => (
-                  <label
-                    key={joint.id}
-                    className={`flex items-start gap-2 p-3 rounded-lg border cursor-pointer transition-colors ${
-                      formData.jointIds.includes(joint.id)
-                        ? 'border-blue-500 bg-blue-50'
-                        : 'border-gray-200 hover:border-gray-300'
-                    }`}
-                  >
-                    <input
-                      type="checkbox"
-                      checked={formData.jointIds.includes(joint.id)}
-                      onChange={() => handleJointToggle(joint.id)}
-                      className="h-4 w-4 text-blue-600 rounded border-gray-300 focus:ring-blue-500 mt-0.5 flex-shrink-0"
-                    />
-                    <div className="flex flex-col min-w-0">
-                      <span className="font-medium text-gray-900 text-sm leading-tight">
-                        {joint.name?.en || 'N/A'}
-                      </span>
-                      <span className="text-gray-500 text-xs mt-0.5 leading-tight">
-                        {joint.name?.ar || ''}
-                      </span>
-                    </div>
-                  </label>
-                ))}
-              </div>
-              {formData.jointIds.length === 0 && (
-                <p className="mt-2 text-sm text-red-500">Please select at least one joint</p>
-              )}
-            </>
-          )}
         </div>
 
-        {/* Submit Button */}
         <div className="flex justify-end pt-4 border-t border-gray-200">
           <button
             type="submit"
@@ -266,5 +176,3 @@ export default function EditCameraPositionPage() {
     </div>
   );
 }
-
-

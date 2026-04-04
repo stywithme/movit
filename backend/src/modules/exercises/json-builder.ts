@@ -89,10 +89,10 @@ interface DbPoseVariant {
   id: string;
   name: Record<string, string>;
   description?: Record<string, string> | null;
-  referenceImageUrl?: string | null;
   trackedJointsConfig?: unknown;
   posePosition: {
     code: string;
+    imageUrl?: string | null;
     postures: unknown;
     directions: unknown;
     regions: unknown;
@@ -306,8 +306,8 @@ function buildPoseVariantConfig(
       : trackedJoints,
   };
 
-  if (dbVariant.referenceImageUrl) {
-    config.positionImageUrl = dbVariant.referenceImageUrl;
+  if (dbVariant.posePosition.imageUrl) {
+    config.positionImageUrl = dbVariant.posePosition.imageUrl;
   }
 
   if (positionChecks.length > 0) {
@@ -842,6 +842,7 @@ export const exerciseFullInclude = {
       posePosition: {
         select: {
           code: true,
+          imageUrl: true,
           postures: true,
           directions: true,
           regions: true,

@@ -211,6 +211,9 @@ class TrainFragment : Fragment() {
                     is com.trainingvalidator.poc.storage.SyncManager.SyncResult.Skipped -> {
                         Log.d(TAG, "Sync skipped ? another sync may have updated cache")
                     }
+                    is com.trainingvalidator.poc.storage.SyncManager.SyncResult.NeedsFullRefresh -> {
+                        Log.d(TAG, "Sync requested full refresh")
+                    }
                     is com.trainingvalidator.poc.storage.SyncManager.SyncResult.Error -> {
                         Log.w(TAG, "Sync error: ${result.message}")
                     }

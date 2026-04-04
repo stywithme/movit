@@ -162,7 +162,6 @@ model PoseVariant {
   posePositionId      String
   name                Json
   description         Json?
-  referenceImageUrl   String?
   trackedJointsConfig Json?
   sortOrder           Int                         @default(0)
   createdAt           DateTime                    @default(now())
