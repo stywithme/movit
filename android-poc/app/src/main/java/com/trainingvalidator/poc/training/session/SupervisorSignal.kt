@@ -9,7 +9,7 @@ import com.trainingvalidator.poc.analysis.SmoothedLandmark
  * These signals come from:
  * - UI (user actions: pause, resume, stop)
  * - Pose Detection (frames with/without pose)
- * - PoseValidator (confirmation of valid start pose)
+ * - PoseSetupGuide (confirmation of valid start pose)
  * - TrainingEngine (target reached, visibility events)
  * - CountdownController (countdown finished)
  * - Video playback (ended, seeked)
@@ -52,10 +52,10 @@ sealed class SupervisorSignal {
     
     // ==================== Pose Validation ====================
     
-    /** PoseValidator confirmed valid start pose (10 consecutive valid frames) */
+    /** PoseSetupGuide confirmed valid start pose (rolling-window validation) */
     object PoseConfirmed : SupervisorSignal()
     
-    /** PoseValidator detected invalid pose during countdown */
+    /** PoseSetupGuide detected invalid pose during countdown */
     object PoseInvalid : SupervisorSignal()
     
     // ==================== Engine Events ====================

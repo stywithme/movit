@@ -55,7 +55,6 @@ import com.trainingvalidator.poc.ui.training.CountdownController
 import com.trainingvalidator.poc.ui.training.Direction
 import com.trainingvalidator.poc.ui.training.GuidanceLevel
 import com.trainingvalidator.poc.ui.training.JointGuidance
-import com.trainingvalidator.poc.ui.training.PoseValidator
 import com.trainingvalidator.poc.ui.training.SetupPhase
 import com.trainingvalidator.poc.ui.training.AxisStatus
 import com.trainingvalidator.poc.ui.training.SetupResult
@@ -93,7 +92,7 @@ import coil.request.ImageRequest
  * 
  * Now uses:
  * - SessionSupervisor via TrainingViewModel for state management (Single Source of Truth)
- * - PoseValidator for pose validation
+ * - PoseSetupGuide for rolling-window pose validation
  * - CountdownController for countdown logic
  * - VideoModeController for video mode
  * 
@@ -205,6 +204,9 @@ class TrainingActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetection
     // Tracks pose presence transitions to avoid leaving stale form feedback visible when pose is lost.
     // This is intentionally Activity-local (UI concern) and does not affect session state machine behavior.
     private var wasPoseDetectedLastFrame: Boolean = false
+
+    // Prevents spamming TTS for NoPose/AutoPause (speak once, not every frame)
+    private var noPoseTtsSpoken: Boolean = false
     
     // Frame processing guard - drops frames if previous is still processing
     // to prevent Main Thread queue buildup and skeleton lag
@@ -1596,14 +1598,16 @@ class TrainingActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetection
             launch {
                 engine.isVisibilityPaused.collect { paused ->
                     if (paused) {
-                        binding.glassmorphicMessage.showMessage(
-                            "Return to frame to continue",
-                            GlassmorphicMessageView.TYPE_ERROR,
-                            durationMs = -1
-                        )
                         binding.vignetteOverlay.showError()
+                        if (isVideoMode) {
+                            binding.glassmorphicMessage.showMessage(
+                                "Return to frame to continue",
+                                GlassmorphicMessageView.TYPE_ERROR,
+                                durationMs = -1
+                            )
+                        }
                     } else {
-                        binding.glassmorphicMessage.clearAll()
+                        if (isVideoMode) binding.glassmorphicMessage.clearAll()
                         binding.vignetteOverlay.clear()
                     }
                 }
@@ -1613,11 +1617,13 @@ class TrainingActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetection
             launch {
                 engine.visibilityResumeCountdown.collect { seconds ->
                     if (seconds != null && seconds > 0) {
-                        binding.glassmorphicMessage.showMessage(
-                            "Resuming in $seconds...",
-                            GlassmorphicMessageView.TYPE_INFO,
-                            durationMs = 900
-                        )
+                        if (isVideoMode) {
+                            binding.glassmorphicMessage.showMessage(
+                                "Resuming in $seconds...",
+                                GlassmorphicMessageView.TYPE_INFO,
+                                durationMs = 900
+                            )
+                        }
                     }
                 }
             }
@@ -1665,10 +1671,6 @@ class TrainingActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetection
                 // Handled directly by CountdownController listener callbacks above
             }
 
-            is TrainingUIEvent.PoseValidationUpdate -> {
-                // Legacy no-op: SetupGuidanceUpdate handles everything now
-            }
-            
             is TrainingUIEvent.TrainingStarted -> {
                 binding.skeletonOverlay.clearSetupMode()
                 val trackedIndices = viewModel.getTrackedLandmarkIndices()
@@ -1856,16 +1858,20 @@ class TrainingActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetection
             PauseReason.NO_POSE -> "No pose detected for too long"
             PauseReason.MANUAL -> "Training paused"
         }
-        
-        binding.glassmorphicMessage.showMessage(
-            message,
-            if (reason == PauseReason.MANUAL) GlassmorphicMessageView.TYPE_INFO 
-            else GlassmorphicMessageView.TYPE_ERROR,
-            durationMs = -1
-        )
-        
+
         if (reason != PauseReason.MANUAL) {
             binding.vignetteOverlay.showError()
+        }
+
+        if (!isVideoMode && reason != PauseReason.MANUAL) {
+            viewModel.feedbackManager?.speak(message, FeedbackManager.SpeakPriority.HIGH)
+        } else {
+            binding.glassmorphicMessage.showMessage(
+                message,
+                if (reason == PauseReason.MANUAL) GlassmorphicMessageView.TYPE_INFO
+                else GlassmorphicMessageView.TYPE_ERROR,
+                durationMs = -1
+            )
         }
         
         Log.d(TAG, "Auto-paused: $reason")
@@ -1878,16 +1884,25 @@ class TrainingActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetection
             return
         }
 
-        val remainingSeconds = ((4000 - elapsedMs) / 1000).toInt().coerceAtLeast(0)
-        val message = "⚠️ No pose detected! Return in ${remainingSeconds}s..."
-        
-        binding.glassmorphicMessage.showMessage(
-            message,
-            GlassmorphicMessageView.TYPE_WARNING,
-            durationMs = 500 // Short duration as it updates frequently
-        )
-        
         binding.vignetteOverlay.showWarning()
+
+        if (!isVideoMode) {
+            if (!noPoseTtsSpoken) {
+                noPoseTtsSpoken = true
+                viewModel.feedbackManager?.speak(
+                    "Return to the camera",
+                    FeedbackManager.SpeakPriority.HIGH
+                )
+            }
+        } else {
+            val remainingSeconds = ((4000 - elapsedMs) / 1000).toInt().coerceAtLeast(0)
+            val message = "No pose detected! Return in ${remainingSeconds}s..."
+            binding.glassmorphicMessage.showMessage(
+                message,
+                GlassmorphicMessageView.TYPE_WARNING,
+                durationMs = 500
+            )
+        }
     }
     
     // ──────────────────────────────────────────────────────────────────────
@@ -2412,12 +2427,14 @@ class TrainingActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetection
             }
             
             is FeedbackEvent.VisibilityWarning -> {
-                binding.glassmorphicMessage.showMessage(
-                    event.message.en,
-                    GlassmorphicMessageView.TYPE_WARNING,
-                    durationMs = 1000
-                )
                 binding.vignetteOverlay.showWarning()
+                if (isVideoMode) {
+                    binding.glassmorphicMessage.showMessage(
+                        event.message.en,
+                        GlassmorphicMessageView.TYPE_WARNING,
+                        durationMs = 1000
+                    )
+                }
             }
             
             else -> {}
@@ -2958,6 +2975,7 @@ class TrainingActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetection
                 withContext(Dispatchers.Main) {
                     updateFps()
                     wasPoseDetectedLastFrame = true
+                    noPoseTtsSpoken = false
                     
                     // Forward pose frame to supervisor via ViewModel
                     viewModel.onPoseFrame(

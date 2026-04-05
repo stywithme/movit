@@ -16,7 +16,7 @@ enum class SessionState {
     /** No exercise loaded - initial state */
     IDLE,
     
-    /** Waiting for user to get into valid start position (PoseValidator) */
+    /** Waiting for user to get into valid start position (PoseSetupGuide) */
     SETUP_POSE,
     
     /** Countdown before training starts (3-2-1-GO) */
