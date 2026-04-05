@@ -711,26 +711,31 @@ class TrainingEngine(
     }
     
     /**
-     * Resume training
-     * Thread safety: Uses synchronized block to coordinate with processFrame
+     * Resume training after any external pause (manual or auto-pause).
+     *
+     * Clears stale internal VisibilityMonitor state so the engine doesn't
+     * start a redundant 3-2-1 countdown when the Supervisor has already
+     * run its own RESUME_SETUP → RESUME_COUNTDOWN flow.
+     *
+     * Thread safety: Uses synchronized block to coordinate with processFrame.
      */
     fun resume() {
         synchronized(stateLock) {
             settlePauseDurationLocked()
             isPaused = false
+
+            if (_isVisibilityPaused.value || _isCountingSuspended.value) {
+                _isCountingSuspended.value = false
+                _isVisibilityPaused.value = false
+                visibilityResumeStartMs = 0L
+                _visibilityResumeCountdown.value = null
+                _visibilityState.value = VisibilityState.VISIBLE
+                visibilityMonitor.onResumeCountdownComplete()
+                Log.d(TAG, "Cleared stale visibility state on resume")
+            }
         }
         emitEvent(FeedbackEvent.TrainingResumed())
         Log.d(TAG, "Training resumed")
-    }
-    
-    /**
-     * Resume from visibility pause — kept as public API for backward compatibility.
-     * Now delegates to the internal auto-resume.
-     */
-    fun resumeFromVisibilityPause() {
-        synchronized(stateLock) {
-            performVisibilityResume()
-        }
     }
     
     /**
@@ -1086,26 +1091,21 @@ class TrainingEngine(
             }
             
             timer.onCompleted = { totalMs, gracePeriodsUsed ->
-                _isCompleted.value = true
-                
-                // Manually complete the rep to ensure scoring
+                // Finalize scoring FIRST — completeRep may trigger onTargetReached
+                // which sets _isCompleted via the existing callback chain.
                 repCounter.completeRep()
-                
-                // Get the final result from repCounter (Single Source of Truth)
+
                 val finalResult = repCounter.getLastRepResult()
                 val score = finalResult?.score ?: 0f
-                
-                // Form quality is now essentially the score / 100
-                // Score is 0-100, so divide by 100 to get 0.0-1.0 range for legacy compatibility
                 val formQuality = score / 100f
-                
+
                 _holdFormQuality.value = formQuality
-                // Error count is no longer tracked separately in TrainingEngine
-                // But we can get it from RepResult if needed
                 _holdErrorCount.value = finalResult?.getTotalErrorCount() ?: 0
-                // Joint map is complex to reconstruct from list, but less critical for immediate feedback
-                _holdJointErrorMap.value = emptyMap() 
-                
+                _holdJointErrorMap.value = emptyMap()
+
+                // Guarantee completion flag (idempotent if onTargetReached already set it)
+                _isCompleted.value = true
+
                 emitEvent(FeedbackEvent.HoldCompleted(
                     totalMs = totalMs,
                     targetMs = targetDurationMs ?: 0L,

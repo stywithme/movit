@@ -61,14 +61,6 @@ class TrainingViewModel(
     
     val supervisor = SessionSupervisor()
     
-    // ==================== State Managers (Legacy - kept for compatibility) ====================
-    
-    @Deprecated("Use supervisor.state instead")
-    val stateManager = TrainingStateManager()
-    
-    @Deprecated("Use poseSetupGuide instead")
-    val poseValidator = PoseValidator()
-
     /** New rolling-window guided pose validation for SETUP_POSE. */
     val poseSetupGuide = PoseSetupGuide(
         language = com.trainingvalidator.poc.training.config.SettingsManager.settings.feedback.language
@@ -416,7 +408,7 @@ class TrainingViewModel(
             }
             
             is SupervisorAction.ResumeFromVisibilityPause -> {
-                // Visibility resume now handled internally by TrainingEngine
+                trainingEngine?.resume()
             }
             
             is SupervisorAction.ResetEngine -> {
@@ -604,11 +596,6 @@ class TrainingViewModel(
         return trainingEngine?.stop()
     }
     
-    @Deprecated("Use supervisor flow instead")
-    fun resumeFromVisibilityPause() {
-        trainingEngine?.resumeFromVisibilityPause()
-    }
-    
     // ==================== Legacy Frame Processing (Deprecated) ====================
     
     @Deprecated("Use onPoseFrame() instead")
@@ -740,21 +727,11 @@ class TrainingViewModel(
                 }
             }
             
-            // Observe feedback events and forward to supervisor
+            // Observe feedback events (audio/haptic/UI only — no supervisor signals here)
             launch {
                 engine.events.collect { event ->
-                    // Forward to FeedbackManager for audio/haptic
                     feedbackManager?.emit(event)
                     _feedbackEvents.emit(event)
-                    
-                    // Forward completion events to supervisor
-                    // (Visibility is now handled entirely inside TrainingEngine)
-                    when (event) {
-                        is FeedbackEvent.TargetReached -> {
-                            supervisor.processSignal(SupervisorSignal.TargetReached)
-                        }
-                        else -> {}
-                    }
                 }
             }
         }
@@ -913,10 +890,6 @@ sealed class TrainingUIEvent {
     /** Countdown was unfrozen (user returned to position) */
     object CountdownUnfrozen : TrainingUIEvent()
     
-    /** Pose validation update (legacy - kept for backward compatibility) */
-    @Deprecated("Use SetupGuidanceUpdate instead")
-    data class PoseValidationUpdate(val result: PoseValidator.ValidationResult) : TrainingUIEvent()
-
     /** Setup guidance update from PoseSetupGuide (new rolling-window system) */
     data class SetupGuidanceUpdate(val result: SetupResult) : TrainingUIEvent()
     
@@ -937,15 +910,4 @@ sealed class TrainingUIEvent {
     
     /** Resume video playback (video mode) */
     object ResumeVideoPlayback : TrainingUIEvent()
-    
-    // ==================== Legacy Events (for backward compatibility) ====================
-    
-    @Deprecated("Use AutoPaused instead")
-    data class VisibilityPaused(val event: FeedbackEvent.VisibilityPaused) : TrainingUIEvent()
-    
-    @Deprecated("Use ShowSetupPose instead")
-    data class VisibilityResumeStartPose(val event: FeedbackEvent.VisibilityResumeCountdown) : TrainingUIEvent()
-    
-    @Deprecated("Use StartCountdown instead")
-    object StartVisibilityResumeCountdown : TrainingUIEvent()
 }
