@@ -51,7 +51,7 @@
             "operator": "approximately_equal",
             "threshold": 0.08
           },
-          "activePhases": ["start"],
+          "activePhases": ["top"],
           "errorMessage": {
             "ar": "تذبذب كبير في الجذع",
             "en": "Excessive trunk sway"

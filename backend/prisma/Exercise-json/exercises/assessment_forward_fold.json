@@ -46,7 +46,7 @@
             "operator": "approximately_equal",
             "threshold": 0.08
           },
-          "activePhases": ["start"],
+          "activePhases": ["top"],
           "errorMessage": {
             "ar": "ثني الركبة أثناء الانحناء",
             "en": "Knee bending during fold"

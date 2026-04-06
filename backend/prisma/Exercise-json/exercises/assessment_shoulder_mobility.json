@@ -52,7 +52,7 @@
             "operator": "approximately_equal",
             "threshold": 0.1
           },
-          "activePhases": ["up", "start"],
+          "activePhases": ["up", "top"],
           "errorMessage": {
             "ar": "تقوّس الظهر أثناء رفع الذراع",
             "en": "Back arching during arm raise"

@@ -836,7 +836,8 @@ class TrainingEngine(
             val rawTrackedAngles = jointTracker.extractTrackedAngles(angles, isBilateralFlipped)
 
             // ── 2. Visibility check (ALWAYS runs — never blocked by pause) ──
-            var cachedPositionValidation: PositionValidationResult? = null
+            var skipCounting = false
+            var allJointsVisible = false
             if (landmarks != null) {
                 val visibilityResult = visibilityMonitor.checkVisibility(
                     landmarks = landmarks,
@@ -845,35 +846,30 @@ class TrainingEngine(
                     isFrontCamera = isFrontCamera
                 )
                 _visibilityState.value = visibilityMonitor.state.value
-                val skipCounting = handleVisibilityResult(visibilityResult)
+                skipCounting = handleVisibilityResult(visibilityResult)
+                allJointsVisible = visibilityMonitor.state.value == VisibilityState.VISIBLE
+            }
 
-                // Position validation + scene warnings (always, for UI overlay)
-                val allJointsVisible = visibilityMonitor.state.value == VisibilityState.VISIBLE
-                cachedPositionValidation = positionValidator.validate(
-                    landmarks, stateMachine.currentPhase, isBilateralFlipped, isFrontCamera
-                )
-                if (!sceneLocked) {
-                    positionValidator.lockScene()
-                    sceneLocked = true
-                }
-                _positionErrors.value = cachedPositionValidation.errors +
-                        cachedPositionValidation.warnings + cachedPositionValidation.tips
-                _sceneWarnings.value = if (allJointsVisible) emptyList()
-                    else cachedPositionValidation.sceneWarnings
-
-                if (!allJointsVisible) {
-                    cachedPositionValidation.sceneWarnings.takeIf { it.isNotEmpty() }?.let { warnings ->
-                        val now = nowMs()
-                        if (now - lastCameraWarningEventTime >= CAMERA_WARNING_EVENT_COOLDOWN_MS) {
-                            lastCameraWarningEventTime = now
-                            cameraWarningCount++
-                            emitEvent(FeedbackEvent.SceneWarnings(warnings))
+            // ── 2.1 Early exit: validate positions for UI overlay then return ──
+            if (skipCounting || rawTrackedAngles.isEmpty()) {
+                if (landmarks != null) {
+                    val pv = positionValidator.validate(
+                        landmarks, stateMachine.currentPhase, isBilateralFlipped, isFrontCamera
+                    )
+                    if (!sceneLocked) { positionValidator.lockScene(); sceneLocked = true }
+                    _positionErrors.value = pv.errors + pv.warnings + pv.tips
+                    _sceneWarnings.value = if (allJointsVisible) emptyList() else pv.sceneWarnings
+                    if (!allJointsVisible) {
+                        pv.sceneWarnings.takeIf { it.isNotEmpty() }?.let { warnings ->
+                            val now = nowMs()
+                            if (now - lastCameraWarningEventTime >= CAMERA_WARNING_EVENT_COOLDOWN_MS) {
+                                lastCameraWarningEventTime = now
+                                cameraWarningCount++
+                                emitEvent(FeedbackEvent.SceneWarnings(warnings))
+                            }
                         }
                     }
                 }
-
-                if (skipCounting || rawTrackedAngles.isEmpty()) return
-            } else if (rawTrackedAngles.isEmpty()) {
                 return
             }
 
@@ -889,9 +885,32 @@ class TrainingEngine(
             val inStartPos = formValidator.isInStartPosition(smoothedAngles)
             _isInStartPosition.value = inStartPos
 
-            // ── 5. Phase machine ──
+            // ── 5. Phase machine (BEFORE position validation for correct phase) ──
             val currentPhase = stateMachine.update(primaryAngles)
             _currentPhase.value = currentPhase
+
+            // ── 5.1 Position validation (uses UPDATED phase) ──
+            var cachedPositionValidation: PositionValidationResult? = null
+            if (landmarks != null) {
+                cachedPositionValidation = positionValidator.validate(
+                    landmarks, currentPhase, isBilateralFlipped, isFrontCamera
+                )
+                if (!sceneLocked) { positionValidator.lockScene(); sceneLocked = true }
+                _positionErrors.value = cachedPositionValidation.errors +
+                        cachedPositionValidation.warnings + cachedPositionValidation.tips
+                _sceneWarnings.value = if (allJointsVisible) emptyList()
+                    else cachedPositionValidation.sceneWarnings
+                if (!allJointsVisible) {
+                    cachedPositionValidation.sceneWarnings.takeIf { it.isNotEmpty() }?.let { warnings ->
+                        val now = nowMs()
+                        if (now - lastCameraWarningEventTime >= CAMERA_WARNING_EVENT_COOLDOWN_MS) {
+                            lastCameraWarningEventTime = now
+                            cameraWarningCount++
+                            emitEvent(FeedbackEvent.SceneWarnings(warnings))
+                        }
+                    }
+                }
+            }
 
             // ── 6. Form validation (state-based) ──
             val jointStateInfos = formValidator.getJointStateInfos(smoothedAngles)

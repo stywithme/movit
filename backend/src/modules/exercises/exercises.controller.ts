@@ -1,8 +1,26 @@
-import { Body, Controller, Delete, Get, Param, Post, Put, Query, Res, UseGuards } from '@nestjs/common';
+import { BadRequestException, Body, Controller, Delete, Get, Param, Post, Put, Query, Res, UseGuards } from '@nestjs/common';
 import type { Response } from 'express';
 import { exerciseService } from './exercises.service';
 import { CaslGuard } from '@/lib/casl/casl.guard';
 import { CheckPermission } from '@/lib/casl/check-permission.decorator';
+import { PositionCheckSchema } from './exercises.validation';
+import { z } from 'zod';
+
+const PoseVariantPositionChecksSchema = z.object({
+  poseVariants: z.array(z.object({
+    positionChecks: z.array(PositionCheckSchema).optional(),
+  }).passthrough()).optional(),
+}).passthrough();
+
+function validatePositionChecks(body: unknown) {
+  const result = PoseVariantPositionChecksSchema.safeParse(body);
+  if (!result.success) {
+    throw new BadRequestException({
+      message: 'Position checks validation failed',
+      errors: result.error.flatten().fieldErrors,
+    });
+  }
+}
 
 @UseGuards(CaslGuard)
 @Controller('exercises')
@@ -50,10 +68,13 @@ export class ExercisesController {
         return { success: false, error: 'Name must have at least English or Arabic value' };
       }
 
+      validatePositionChecks(body);
+
       const exercise = await exerciseService.create(body);
       res.status(201);
       return { success: true, data: exercise };
     } catch (error) {
+      if (error instanceof BadRequestException) throw error;
       console.error('Error creating exercise:', error);
       res.status(500);
       return { success: false, error: 'Failed to create exercise' };
@@ -93,9 +114,12 @@ export class ExercisesController {
   @CheckPermission('update', 'Exercise')
   async update(@Param('id') id: string, @Body() body: any, @Res({ passthrough: true }) res: Response) {
     try {
+      validatePositionChecks(body);
+
       const exercise = await exerciseService.update(id, body);
       return { success: true, data: exercise };
     } catch (error) {
+      if (error instanceof BadRequestException) throw error;
       console.error('Error updating exercise:', error);
       res.status(500);
       return { success: false, error: 'Failed to update exercise' };
