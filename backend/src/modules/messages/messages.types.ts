@@ -60,3 +60,11 @@ export interface BulkGenerateAudioResult {
   failed: BulkGenerateAudioResultItem[];
   stoppedDueToLimit: boolean;
 }
+
+/** Paginated list response (GET /messages?page=&limit=) */
+export interface MessagesListPagination {
+  page: number;
+  limit: number;
+  total: number;
+  totalPages: number;
+}
