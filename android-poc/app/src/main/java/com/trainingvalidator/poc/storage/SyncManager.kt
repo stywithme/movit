@@ -66,6 +66,15 @@ class SyncManager(
     private var lastAudioManifest: com.trainingvalidator.poc.network.AudioManifest? = null
     private var lastAudioBaseUrl: String? = null
     private val userProgramStore = UserProgramStore(context)
+
+    init {
+        val (url, man) = audioCache.getPersistedManifestState()
+        if (url != null && man != null && man.files.isNotEmpty()) {
+            lastAudioBaseUrl = url
+            lastAudioManifest = man
+            Log.d(TAG, "Restored audio manifest from disk: ${man.files.size} files")
+        }
+    }
     
     // ==================== Result Types ====================
     
@@ -466,6 +475,7 @@ class SyncManager(
             // Use the effective base URL from ApiConfig (handles emulator vs physical device)
             // The server's baseUrl may be incorrect for physical devices
             lastAudioBaseUrl = com.trainingvalidator.poc.network.ApiConfig.getEffectiveBaseUrl().trimEnd('/')
+            audioCache.persistAudioManifest(lastAudioBaseUrl!!, audioManifest)
             Log.d(TAG, "Audio manifest stored: ${audioManifest.files.size} files pending download (baseUrl: $lastAudioBaseUrl)")
         }
         

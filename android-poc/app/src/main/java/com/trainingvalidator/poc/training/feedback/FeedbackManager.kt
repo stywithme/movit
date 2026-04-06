@@ -701,9 +701,6 @@ class FeedbackManager(
         LOW      // Skip if busy (tips, info)
     }
     
-    // Track if TTS is currently speaking (for LOW priority decisions)
-    private var isSpeaking = false
-    
     /**
      * Speak text using TTS or cached audio (Camera mode only)
      * @param text The text to speak
@@ -728,9 +725,10 @@ class FeedbackManager(
         
         val now = System.currentTimeMillis()
         
-        // For LOW priority, skip if something is currently speaking
-        if (priority == SpeakPriority.LOW && isSpeaking) {
-            Log.d(TAG, "Skipping low-priority speech (busy): $text")
+        // Keep legacy LOW-priority behavior aligned with AudioFeedbackPlayer:
+        // tips/info should be skipped instead of queued when TTS is busy.
+        if (priority == SpeakPriority.LOW && tts?.isSpeaking == true) {
+            Log.d(TAG, "Skipping low-priority speech (legacy TTS busy): $text")
             return
         }
         
@@ -746,7 +744,6 @@ class FeedbackManager(
             SpeakPriority.NORMAL, SpeakPriority.LOW -> TextToSpeech.QUEUE_ADD  // Wait
         }
         
-        isSpeaking = true
         tts?.speak(text, queueMode, null, "feedback_${now}")
         Log.d(TAG, "Speaking ($priority): $text")
     }
@@ -795,7 +792,6 @@ class FeedbackManager(
         }
         
         if (!isTtsReady) return
-        isSpeaking = true
         tts?.speak(number.toString(), TextToSpeech.QUEUE_FLUSH, null, "countdown_$number")
     }
     
@@ -813,7 +809,6 @@ class FeedbackManager(
         
         if (!isTtsReady) return
         val goText = if (config.language == "ar") "ابدأ!" else "Go!"
-        isSpeaking = true
         tts?.speak(goText, TextToSpeech.QUEUE_FLUSH, null, "go")
     }
     
@@ -824,18 +819,10 @@ class FeedbackManager(
      */
     fun speakSetupGuidance(joint: com.trainingvalidator.poc.ui.training.JointGuidance) {
         if (!isTtsEnabled) return
-        val text = joint.message.get(config.language)
-        if (text.isBlank()) return
-
-        if (useAudioPlayer && audioPlayer != null) {
-            audioPlayer?.play(text, null, AudioFeedbackPlayer.Priority.HIGH)
-            return
-        }
-
-        if (!isTtsReady) return
-        isSpeaking = true
-        tts?.speak(text, TextToSpeech.QUEUE_FLUSH, null, "setup_${joint.jointCode}")
-        Log.d(TAG, "Setup guidance: $text")
+        val localizedText = joint.message
+        if (localizedText.get(config.language).isBlank()) return
+        speakLocalized(localizedText, SpeakPriority.HIGH)
+        Log.d(TAG, "Setup guidance: ${localizedText.get(config.language)}")
     }
 
     /**
@@ -844,18 +831,9 @@ class FeedbackManager(
      */
     fun speakSetupPhaseGuidance(message: com.trainingvalidator.poc.training.models.LocalizedText) {
         if (!isTtsEnabled) return
-        val text = message.get(config.language)
-        if (text.isBlank()) return
-
-        if (useAudioPlayer && audioPlayer != null) {
-            audioPlayer?.play(text, null, AudioFeedbackPlayer.Priority.HIGH)
-            return
-        }
-
-        if (!isTtsReady) return
-        isSpeaking = true
-        tts?.speak(text, TextToSpeech.QUEUE_FLUSH, null, "setup_phase")
-        Log.d(TAG, "Phase guidance: $text")
+        if (message.get(config.language).isBlank()) return
+        speakLocalized(message, SpeakPriority.HIGH)
+        Log.d(TAG, "Phase guidance: ${message.get(config.language)}")
     }
 
     /**
@@ -870,7 +848,6 @@ class FeedbackManager(
             return
         }
         if (!isTtsReady) return
-        isSpeaking = true
         tts?.speak(text, TextToSpeech.QUEUE_FLUSH, null, "pose_confirmed")
     }
 
@@ -1003,7 +980,7 @@ class FeedbackManager(
         if (isVideoMode) {
             emitVisualMessage(messageText, messageType)
         } else {
-            speak(messageText, SpeakPriority.LOW)
+            speakLocalized(message, SpeakPriority.LOW)
             if (isHapticEnabled) {
                 vibrateLight()
             }

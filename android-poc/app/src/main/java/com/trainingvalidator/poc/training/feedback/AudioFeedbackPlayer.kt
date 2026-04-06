@@ -10,6 +10,7 @@ import com.trainingvalidator.poc.training.models.LocalizedText
 import java.io.File
 import java.util.*
 import java.util.concurrent.ConcurrentLinkedQueue
+import kotlin.jvm.Synchronized
 
 /**
  * AudioFeedbackPlayer
@@ -158,6 +159,7 @@ class AudioFeedbackPlayer(
      * @param audioUrl Optional cached audio URL
      * @param priority Playback priority
      */
+    @Synchronized
     fun play(text: String, audioUrl: String? = null, priority: Priority = Priority.NORMAL) {
         if (text.isBlank()) return
         
@@ -168,15 +170,17 @@ class AudioFeedbackPlayer(
             return
         }
         
-        // For LOW priority, skip if busy
-        if (priority == Priority.LOW && (isMediaPlayerPlaying || playbackQueue.isNotEmpty())) {
+        // LOW priority should be dropped whenever the player is already
+        // preparing, speaking, playing, or has queued work waiting.
+        val isBusy = isProcessingQueue || isMediaPlayerPlaying || isTtsSpeaking || playbackQueue.isNotEmpty()
+        if (priority == Priority.LOW && isBusy) {
             Log.d(TAG, "Skipping low priority (busy): $text")
             return
         }
         
         val item = PlaybackItem(text, audioUrl, priority)
         
-        // HIGH priority interrupts current playback
+        // HIGH priority interrupts current playback (resets queue state)
         if (priority == Priority.HIGH) {
             stopCurrentPlayback()
             playbackQueue.clear()
@@ -203,6 +207,7 @@ class AudioFeedbackPlayer(
     
     // ==================== Queue Processing ====================
     
+    @Synchronized
     private fun processQueue() {
         if (isProcessingQueue || playbackQueue.isEmpty()) return
         if (isMediaPlayerPlaying) return
@@ -223,18 +228,20 @@ class AudioFeedbackPlayer(
         val audioUrl = item.audioUrl
         
         if (audioUrl != null) {
-            Log.d(TAG, "Audio URL available: $audioUrl")
             val audioFile = audioCache.getAudioPathFromUrl(audioUrl)
             
             if (audioFile != null && audioFile.exists()) {
-                Log.d(TAG, "Using cached audio: ${audioFile.absolutePath}")
+                Log.d(TAG, "AUDIO_DECISION: CACHED file=${audioFile.name}")
                 playCachedAudio(audioFile, item.text)
                 return
             } else {
-                Log.w(TAG, "Audio file not in cache, falling back to TTS. URL: $audioUrl")
+                Log.w(
+                    TAG,
+                    "AUDIO_DECISION: CACHE_MISS url=$audioUrl exists=${audioFile?.exists()}"
+                )
             }
         } else {
-            Log.d(TAG, "No audio URL, using TTS for: ${item.text.take(30)}...")
+            Log.d(TAG, "AUDIO_DECISION: NO_URL text=${item.text.take(30)}...")
         }
         
         // Fall back to TTS
@@ -312,6 +319,7 @@ class AudioFeedbackPlayer(
         ttsTimeoutRunnable = null
     }
     
+    @Synchronized
     private fun onPlaybackComplete() {
         isMediaPlayerPlaying = false
         isProcessingQueue = false
@@ -324,15 +332,20 @@ class AudioFeedbackPlayer(
     /**
      * Stop current playback
      */
+    @Synchronized
     fun stopCurrentPlayback() {
+        cancelTtsTimeout()
         releaseMediaPlayer()
         tts?.stop()
         isMediaPlayerPlaying = false
+        isTtsSpeaking = false
+        isProcessingQueue = false
     }
     
     /**
      * Stop all playback and clear queue
      */
+    @Synchronized
     fun stopAll() {
         stopCurrentPlayback()
         playbackQueue.clear()
