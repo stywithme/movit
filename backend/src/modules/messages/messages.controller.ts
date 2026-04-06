@@ -1,20 +1,31 @@
 import { Body, Controller, Delete, Get, Param, Post, Put, Query, Res, UseGuards } from '@nestjs/common';
 import type { Response } from 'express';
 import { messagesService } from './messages.service';
-import type { CreateMessageInput, UpdateMessageInput } from './messages.types';
+import type { BulkGenerateAudioInput, CreateMessageInput, UpdateMessageInput } from './messages.types';
 import { CaslGuard } from '@/lib/casl/casl.guard';
 import { CheckPermission } from '@/lib/casl/check-permission.decorator';
+
+const AUDIO_MISSING_QUERY = ['any', 'ar', 'en', 'complete'] as const;
 
 @UseGuards(CaslGuard)
 @Controller('messages')
 export class MessagesController {
   @Get()
   @CheckPermission('read', 'FeedbackMessage')
-  async list(@Query('includeInactive') includeInactive?: string, @Query('category') category?: string) {
+  async list(
+    @Query('includeInactive') includeInactive?: string,
+    @Query('category') category?: string,
+    @Query('audioMissing') audioMissing?: string
+  ) {
     try {
+      const audioFilter =
+        audioMissing && (AUDIO_MISSING_QUERY as readonly string[]).includes(audioMissing)
+          ? (audioMissing as (typeof AUDIO_MISSING_QUERY)[number])
+          : undefined;
       const messages = await messagesService.list({
         includeInactive: includeInactive === 'true',
         category: category || undefined,
+        audioMissing: audioFilter,
       });
       return { success: true, data: messages };
     } catch (error) {
@@ -50,6 +61,19 @@ export class MessagesController {
       console.error('Error creating message:', error);
       res.status(500);
       return { success: false, error: 'Failed to create message' };
+    }
+  }
+
+  @Post('bulk-audio')
+  @CheckPermission('update', 'FeedbackMessage')
+  async bulkGenerateAudio(@Body() body: BulkGenerateAudioInput, @Res({ passthrough: true }) res: Response) {
+    try {
+      const result = await messagesService.bulkGenerateMissingAudio(body ?? {});
+      return { success: true, data: result };
+    } catch (error) {
+      console.error('Error bulk-generating message audio:', error);
+      res.status(500);
+      return { success: false, error: 'Failed to generate audio for messages' };
     }
   }
 
