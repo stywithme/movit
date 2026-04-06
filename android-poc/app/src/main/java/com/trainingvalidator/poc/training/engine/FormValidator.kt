@@ -75,18 +75,42 @@ class FormValidator(
         currentAngles: Map<String, Double>,
         currentPhase: Phase = Phase.IDLE
     ): Map<String, JointStateInfo> {
-        // Clear and reuse internal map
         reusableStateInfos.clear()
 
         for (joint in trackedJoints) {
             val currentAngle = currentAngles[joint.joint] ?: continue
 
+            if (!isJointActiveInPhase(joint, currentPhase)) {
+                clearJointCaches(joint.joint)
+                continue
+            }
+
             val stateInfo = determineJointStateInfo(joint, currentAngle, currentPhase)
             reusableStateInfos[joint.joint] = stateInfo
         }
 
-        // Return immutable copy for thread safety
         return reusableStateInfos.toMap()
+    }
+
+    /**
+     * Determine if a joint should be evaluated in the current phase.
+     * Secondary joints with phaseRanges are ONLY active in phases that have a defined range.
+     */
+    private fun isJointActiveInPhase(joint: TrackedJoint, phase: Phase): Boolean {
+        if (joint.role != JointRole.SECONDARY || joint.phaseRanges == null) return true
+        val phaseName = mapPhaseToName(phase) ?: return false
+        return joint.getPhaseRange(phaseName) != null
+    }
+
+    /**
+     * Clear cached hysteresis / danger-frame state for a joint.
+     * Must be called when a joint transitions from active to inactive
+     * so stale state doesn't carry over to the next active phase.
+     */
+    private fun clearJointCaches(jointCode: String) {
+        previousStates.remove(jointCode)
+        dangerFrameCounts.remove(jointCode)
+        previousPhases.remove(jointCode)
     }
 
     /**
@@ -177,7 +201,9 @@ class FormValidator(
     ): JointStateInfo {
         val isPrimary = joint.role == JointRole.PRIMARY
 
-        // Reset hysteresis on phase change for secondary joints with phaseRanges
+        // Track phase changes for secondary joints with phaseRanges.
+        // Caches are cleared on deactivation in clearJointCaches(); here we
+        // only need to reset on active-to-active phase transitions.
         if (!isPrimary && joint.phaseRanges != null) {
             val lastPhase = previousPhases[joint.joint]
             if (lastPhase != null && lastPhase != currentPhase) {
@@ -252,21 +278,21 @@ class FormValidator(
     }
 
     /**
-     * Get applicable StateRanges based on zone type
+     * Get applicable StateRanges based on zone type.
+     *
+     * For secondary joints with phaseRanges: returns ONLY the phase-specific range.
+     * The caller (getJointStateInfos) already guarantees we only reach here when
+     * isJointActiveInPhase() returned true, so getPhaseRange() will not be null.
      */
     private fun getApplicableStateRanges(
         joint: TrackedJoint,
         zoneType: ZoneType,
         currentPhase: Phase
     ): StateRanges? {
-        // Phase-specific ranges for secondary joints (UP_DOWN exercises)
         if (joint.role == JointRole.SECONDARY && joint.phaseRanges != null) {
-            val phaseName = mapPhaseToName(currentPhase)
-            if (phaseName != null) {
-                joint.getPhaseRange(phaseName)?.let { return it }
-            }
+            val phaseName = mapPhaseToName(currentPhase) ?: return null
+            return joint.getPhaseRange(phaseName)
         }
-        // Default fallback
         return when {
             joint.hasStateHoldRange() -> joint.getStateHoldRange()
             zoneType == ZoneType.UP_ZONE && joint.hasStateUpDownRanges() -> joint.getStateUpRange()

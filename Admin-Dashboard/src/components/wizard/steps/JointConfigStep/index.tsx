@@ -503,9 +503,11 @@ function SecondaryRangesEditor({
     const current = { ...(joint.phaseRanges || {}) };
     if (phase in current) {
       delete current[phase];
-      onUpdatePhaseRanges(Object.keys(current).length > 0 ? current : {});
+      onUpdatePhaseRanges(Object.keys(current).length > 0 ? current : undefined);
     } else {
-      current[phase] = { ...joint.range };
+      const existingValues = Object.values(current);
+      const seed = existingValues.length > 0 ? existingValues[0]! : joint.range;
+      current[phase] = { ...seed };
       onUpdatePhaseRanges(current);
       setActivePhaseTab(phase);
     }
@@ -517,14 +519,16 @@ function SecondaryRangesEditor({
 
   return (
     <div className="space-y-4">
-      <StateRangeEditor
-        label={phaseRangesEnabled ? "📏 Default Range (Fallback)" : "📏 Valid Range"}
-        ranges={joint.range}
-        onChange={onUpdateRange}
-        showWarningDanger={true}
-        stateMessages={stateMessages}
-        onStateMessagesChange={onStateMessagesChange}
-      />
+      {!phaseRangesEnabled && (
+        <StateRangeEditor
+          label="📏 Valid Range"
+          ranges={joint.range}
+          onChange={onUpdateRange}
+          showWarningDanger={true}
+          stateMessages={stateMessages}
+          onStateMessagesChange={onStateMessagesChange}
+        />
+      )}
 
       {/* Per-Phase Toggle */}
       <div className="flex items-center justify-between p-4 bg-indigo-50 border border-indigo-200 rounded-lg">
@@ -604,8 +608,8 @@ function SecondaryRangesEditor({
           )}
 
           {selectedPhases.length === 0 && (
-            <p className="text-sm text-gray-400 italic text-center py-2">
-              Select phases above to define custom ranges
+            <p className="text-sm text-amber-600 font-medium text-center py-2">
+              Select at least one phase to define custom ranges
             </p>
           )}
         </div>

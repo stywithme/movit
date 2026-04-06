@@ -449,9 +449,12 @@ data class TrackedJoint(
     // Default false: Upper limb moves down (like squat: thigh moves down)
     val invertIndicator: Boolean = false,
     
-    // Per-phase ranges for SECONDARY joints in UP_DOWN exercises
-    // Keys are phase names: "top", "down", "bottom", "up"
-    // When present, FormValidator uses the phase-specific range instead of the default `range`
+    // Per-phase ranges for SECONDARY joints in UP_DOWN exercises.
+    // Keys are phase names: "top", "down", "bottom", "up".
+    // When present, the joint is ONLY evaluated in phases that have a defined range.
+    // Phases without a range entry are skipped entirely (no fallback to `range`).
+    // The `range` field above is retained as a base template but is NOT used at runtime
+    // when phaseRanges is set.
     val phaseRanges: Map<String, StateRanges>? = null
 ) {
     // ==================== State-Based Methods ====================

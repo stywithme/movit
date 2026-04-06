@@ -256,8 +256,10 @@ export const PrimaryTrackedJointSchema = z.object({
 });
 
 /**
- * Secondary joint - has single range with StateRanges
- * Optionally supports per-phase ranges for UP_DOWN exercises
+ * Secondary joint - has single range with StateRanges.
+ * `range` is always present (base template used by the UI for seeding new phases).
+ * When `phaseRanges` is set, the mobile runtime uses ONLY the phase-specific
+ * ranges and ignores `range`; phases without an entry are skipped entirely.
  */
 export const SecondaryTrackedJointSchema = z.object({
   joint: z.string().min(1, 'Joint is required'),
@@ -271,6 +273,14 @@ export const SecondaryTrackedJointSchema = z.object({
   stateMessages: StateMessagesSchema,
   pairedWith: z.string().optional(),
   invertIndicator: z.boolean().optional(),
+}).superRefine((data, ctx) => {
+  if (data.phaseRanges && Object.keys(data.phaseRanges).length === 0) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: 'phaseRanges must contain at least one phase when enabled',
+      path: ['phaseRanges'],
+    });
+  }
 });
 
 /**

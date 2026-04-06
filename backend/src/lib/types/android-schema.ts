@@ -215,8 +215,10 @@ export interface HoldPrimaryTrackedJoint extends BaseTrackedJoint {
 export type PrimaryTrackedJoint = UpDownPrimaryTrackedJoint | HoldPrimaryTrackedJoint;
 
 /**
- * Secondary tracked joint - has single range for form checking
- * Optionally supports per-phase ranges for UP_DOWN exercises
+ * Secondary tracked joint - has single range for form checking.
+ * `range` is always present as a base template for the admin UI.
+ * When `phaseRanges` is set, the mobile runtime uses ONLY phase-specific
+ * ranges; phases without an entry are skipped entirely (no fallback to `range`).
  */
 export interface SecondaryTrackedJoint extends BaseTrackedJoint {
   role: 'secondary';
@@ -624,8 +626,12 @@ export function validateSecondaryJoint(joint: TrackedJoint): string[] {
   }
 
   if (secondary.phaseRanges) {
+    const entries = Object.entries(secondary.phaseRanges);
+    if (entries.length === 0) {
+      errors.push(`Secondary joint ${secondary.joint} has empty phaseRanges (must contain at least one phase or be omitted)`);
+    }
     const validPhases = ['top', 'down', 'bottom', 'up'];
-    for (const [phase, ranges] of Object.entries(secondary.phaseRanges)) {
+    for (const [phase, ranges] of entries) {
       if (!validPhases.includes(phase)) {
         errors.push(`Secondary joint ${secondary.joint} has invalid phase '${phase}'`);
       } else if (ranges) {
