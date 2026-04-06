@@ -46,7 +46,7 @@
             "operator": "approximately_equal",
             "threshold": 0.10
           },
-          "activePhases": ["idle", "start", "count"],
+          "activePhases": ["all", "top"],
           "errorMessage": {
             "ar": "اجعل اليدين في مستوى واحد",
             "en": "Keep wrists level"
@@ -66,7 +66,7 @@
             "operator": "should_not_exceed", 
             "threshold": -0.05
           },
-          "activePhases": ["idle", "start", "count"],
+          "activePhases": ["all", "top"],
           "errorMessage": {
             "ar": "ارفع يديك أعلى من مستوى الأنف",
             "en": "Raise hands above nose level"
@@ -86,7 +86,7 @@
             "operator": "approximately_equal",
             "threshold": 0.15
           },
-          "activePhases": ["idle", "start", "count"],
+          "activePhases": ["all", "top"],
           "errorMessage": {
             "ar": "حاول محاذاة الكوع مع الكتف رأسياً",
             "en": "Align elbow under shoulder"
@@ -106,7 +106,7 @@
             "operator": "approximately_equal",
             "threshold": 0.10
           },
-          "activePhases": ["idle", "start", "count"],
+          "activePhases": ["all", "top"],
           "errorMessage": {
             "ar": "اجعل الكوعين في مستوى واحد",
             "en": "Keep both elbows at the same level"

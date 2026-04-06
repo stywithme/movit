@@ -98,13 +98,11 @@ export type Severity = 'error' | 'warning' | 'tip';
  * Phase names (matching Android engine)
  */
 export type PhaseName =
-  | 'idle'
-  | 'start'
+  | 'all'
+  | 'top'
   | 'down'
   | 'bottom'
-  | 'up'
-  | 'hold'
-  | 'count';
+  | 'up';
 
 /**
  * Joint state names (new state-based system)

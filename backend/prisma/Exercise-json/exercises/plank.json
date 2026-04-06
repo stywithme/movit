@@ -46,7 +46,7 @@
             "operator": "approximately_equal",
             "threshold": 0.08
           },
-          "activePhases": ["count", "hold"],
+          "activePhases": ["all"],
           "errorMessage": {
             "ar": "حافظ على استقامة جسمك من الكتف للورك",
             "en": "Keep your body aligned from shoulder to hip"
@@ -66,7 +66,7 @@
             "operator": "approximately_equal",
             "threshold": 0.10
           },
-          "activePhases": ["count", "hold"],
+          "activePhases": ["all"],
           "errorMessage": {
             "ar": "لا تدع وسطك ينحني - شد عضلات البطن",
             "en": "Don't let your hips sag - engage your core"
@@ -86,7 +86,7 @@
             "operator": "should_not_exceed",
             "threshold": 0.08
           },
-          "activePhases": ["count", "hold"],
+          "activePhases": ["all"],
           "errorMessage": {
             "ar": "لا ترفع مؤخرتك للأعلى - حافظ على خط مستقيم",
             "en": "Don't pike your hips up - maintain a straight line"

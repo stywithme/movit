@@ -251,10 +251,17 @@ class PositionValidator(
     }
     
     /**
-     * Check if a position check is active in current phase
+     * Check if a position check is active in current phase.
+     * Maps Phase enum to API phase names: START->"top", others use lowercase enum name.
+     * "all" in activePhases means active in every non-IDLE phase.
      */
     private fun isActiveInPhase(check: PositionCheck, phase: Phase): Boolean {
-        val phaseName = phase.name.lowercase()
+        if (phase == Phase.IDLE) return false
+        if (check.activePhases.any { it.lowercase() == "all" }) return true
+        val phaseName = when (phase) {
+            Phase.START -> "top"
+            else -> phase.name.lowercase()
+        }
         return check.activePhases.any { it.lowercase() == phaseName }
     }
     

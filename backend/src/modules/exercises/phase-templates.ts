@@ -25,14 +25,14 @@ export type PhaseTemplate = {
  */
 export const phaseTemplates: Record<CountingMethodCode, PhaseTemplate[]> = {
   up_down: [
-    { code: 'start', name: { ar: 'وضعية البداية', en: 'Starting Position' }, sortOrder: 1 },
+    { code: 'top', name: { ar: 'أعلى نقطة', en: 'Top Position' }, sortOrder: 1 },
     { code: 'down', name: { ar: 'النزول', en: 'Going Down' }, sortOrder: 2 },
     { code: 'bottom', name: { ar: 'أسفل نقطة', en: 'Bottom Position' }, sortOrder: 3 },
     { code: 'up', name: { ar: 'الصعود', en: 'Going Up' }, sortOrder: 4 },
   ],
   
   hold: [
-    { code: 'hold', name: { ar: 'الثبات', en: 'Hold' }, sortOrder: 1 },
+    { code: 'all', name: { ar: 'جميع المراحل', en: 'All Phases' }, sortOrder: 1 },
   ],
 };
 

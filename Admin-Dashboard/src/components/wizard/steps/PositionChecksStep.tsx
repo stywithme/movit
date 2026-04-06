@@ -34,7 +34,7 @@ const TEMPLATES: Array<{
         type: 'forward_comparison',
         landmarks: { primary: 'left_knee', secondary: 'left_foot_index' },
         condition: { operator: 'should_not_exceed', threshold: 0.05 },
-        activePhases: ['down', 'bottom'],
+        activePhases: ['down', 'bottom'] as PhaseName[],
         errorMessage: { ar: 'لا تدع ركبتك تتجاوز أصابع قدميك', en: 'Don\'t let your knee go past your toes', audioAr: undefined, audioEn: undefined },
         severity: 'warning',
         cooldownMs: 2000,
@@ -49,7 +49,7 @@ const TEMPLATES: Array<{
         type: 'vertical_alignment',
         landmarks: { primary: 'left_shoulder', secondary: 'left_hip' },
         condition: { operator: 'approximately_equal', threshold: 0.08 },
-        activePhases: ['start', 'down', 'bottom', 'up'],
+        activePhases: ['all'] as PhaseName[],
         errorMessage: { ar: 'حافظ على استقامة ظهرك', en: 'Keep your back straight', audioAr: undefined, audioEn: undefined },
         severity: 'warning',
         cooldownMs: 2000,
@@ -64,7 +64,7 @@ const TEMPLATES: Array<{
         type: 'forward_comparison',
         landmarks: { primary: 'left_hip', secondary: 'left_knee' },
         condition: { operator: 'should_exceed', threshold: 0.03 },
-        activePhases: ['down', 'bottom'],
+        activePhases: ['down', 'bottom'] as PhaseName[],
         errorMessage: { ar: 'ادفع وركك للخلف', en: 'Push your hips back', audioAr: undefined, audioEn: undefined },
         severity: 'tip',
         cooldownMs: 3000,
@@ -106,7 +106,7 @@ const OPERATORS: Array<{ value: ConditionOperator; label: string; description: s
   { value: 'less_than_ratio', label: 'Less Than Ratio', description: 'Distance ratio must be less than threshold (for Distance Ratio type)' },
 ];
 
-const PHASE_OPTIONS: PhaseName[] = ['start', 'down', 'bottom', 'up', 'push', 'extended', 'pull', 'hold'];
+const PHASE_OPTIONS: PhaseName[] = ['all', 'top', 'down', 'bottom', 'up'];
 
 const AVAILABLE_LANDMARKS = [
   'left_knee', 'right_knee', 'left_hip', 'right_hip',
@@ -124,9 +124,10 @@ interface PositionCheckCardProps {
   index: number;
   onUpdate: (index: number, check: PositionCheckData) => void;
   onRemove: (index: number) => void;
+  isHoldExercise?: boolean;
 }
 
-function PositionCheckCard({ check, index, onUpdate, onRemove }: PositionCheckCardProps) {
+function PositionCheckCard({ check, index, onUpdate, onRemove, isHoldExercise }: PositionCheckCardProps) {
   const [expanded, setExpanded] = useState(false);
   const [messagePickerOpen, setMessagePickerOpen] = useState(false);
 
@@ -313,33 +314,42 @@ function PositionCheckCard({ check, index, onUpdate, onRemove }: PositionCheckCa
             )}
           </div>
 
-          {/* Active Phases */}
-          <div>
-            <Label>Active Phases</Label>
-            <div className="flex flex-wrap gap-2 mt-2">
-              {PHASE_OPTIONS.map((phase) => {
-                const isActive = check.activePhases.includes(phase);
-                return (
-                  <button
-                    key={phase}
-                    type="button"
-                    onClick={() => {
-                      const newPhases = isActive
-                        ? check.activePhases.filter(p => p !== phase)
-                        : [...check.activePhases, phase];
-                      updateField('activePhases', newPhases);
-                    }}
-                    className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${isActive
-                      ? 'bg-blue-500 text-white'
-                      : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                      }`}
-                  >
-                    {phase}
-                  </button>
-                );
-              })}
+          {/* Active Phases (hidden for hold exercises - always "all") */}
+          {isHoldExercise ? (
+            <div>
+              <Label>Active Phases</Label>
+              <p className="text-sm text-gray-500 mt-1">
+                Hold exercises apply checks in all phases automatically.
+              </p>
             </div>
-          </div>
+          ) : (
+            <div>
+              <Label>Active Phases</Label>
+              <div className="flex flex-wrap gap-2 mt-2">
+                {PHASE_OPTIONS.map((phase) => {
+                  const isActive = check.activePhases.includes(phase);
+                  return (
+                    <button
+                      key={phase}
+                      type="button"
+                      onClick={() => {
+                        const newPhases = isActive
+                          ? check.activePhases.filter(p => p !== phase)
+                          : [...check.activePhases, phase];
+                        updateField('activePhases', newPhases);
+                      }}
+                      className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${isActive
+                        ? 'bg-blue-500 text-white'
+                        : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                        }`}
+                    >
+                      {phase}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          )}
 
           {/* Error Messages */}
           <div className="space-y-2">
@@ -523,10 +533,11 @@ function isMirroredCheck(checkId: string): boolean {
 // ============================================
 
 export function PositionChecksStep() {
-  const { positionChecks, setPositionChecks, bilateralConfig } = useWizardStore();
+  const { positionChecks, setPositionChecks, bilateralConfig, countingMethod } = useWizardStore();
 
   const allChecks = positionChecks.positionChecks || [];
   const isBilateralEnabled = Boolean(bilateralConfig.enabled);
+  const isHoldExercise = countingMethod.countingMethodCode === 'hold';
 
   // Separate source checks from auto-mirrored checks
   const sourceChecks = allChecks.filter((c) => !isMirroredCheck(c.checkId));
@@ -556,6 +567,7 @@ export function PositionChecksStep() {
     const check: PositionCheckData = {
       ...template.data,
       checkId: `${template.id}_${Date.now()}`,
+      activePhases: isHoldExercise ? ['all'] : template.data.activePhases,
     };
     rebuildChecks([...sourceChecks, check]);
   };
@@ -566,7 +578,7 @@ export function PositionChecksStep() {
       type: 'vertical_alignment',
       landmarks: { primary: 'left_shoulder', secondary: 'left_hip' },
       condition: { operator: 'approximately_equal', threshold: 0.1 },
-      activePhases: ['down', 'bottom'],
+      activePhases: isHoldExercise ? ['all'] : ['down', 'bottom'],
       errorMessage: { ar: 'تحقق من وضعك', en: 'Check your position', audioAr: undefined, audioEn: undefined },
       severity: 'warning',
       cooldownMs: 2000,
@@ -679,6 +691,7 @@ export function PositionChecksStep() {
                 index={index}
                 onUpdate={handleUpdateCheck}
                 onRemove={handleRemoveCheck}
+                isHoldExercise={isHoldExercise}
               />
             ))}
           </div>

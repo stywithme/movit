@@ -7,6 +7,11 @@
 
 import { getPrisma } from '@/lib/prisma/client';
 import { DEFAULT_REST_TIMES } from './workouts.types';
+
+const PHASE_MIGRATION: Record<string, string> = { start: 'top', hold: 'all', count: 'all', idle: 'all' };
+function migrateActivePhases(phases: string[]): string[] {
+  return [...new Set(phases.map(p => PHASE_MIGRATION[p] || p))];
+}
 import type {
   CreateWorkoutInput,
   UpdateWorkoutInput,
@@ -506,7 +511,7 @@ export const workoutService = {
               type: pc.type,
               landmarks: pc.landmarks,
               condition: pc.condition,
-              activePhases: pc.activePhases,
+              activePhases: migrateActivePhases(pc.activePhases as string[]),
               errorMessage: pc.errorMessage as Record<string, string>,
               severity: pc.severity,
               cooldownMs: pc.cooldownMs,

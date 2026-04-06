@@ -456,18 +456,125 @@ export const exerciseService = {
       }
     }
 
-    // Update pose variants if provided
+    // Update pose variants if provided (transactional upsert)
     if (data.poseVariants !== undefined) {
-      // Delete existing pose variants (cascades to nested data)
-      await prisma.poseVariant.deleteMany({
-        where: { exerciseId: id },
-      });
+      await prisma.$transaction(async (tx) => {
+        const existingVariants = await tx.poseVariant.findMany({
+          where: { exerciseId: id },
+          include: { positionChecks: true, messageAssignments: true },
+        });
 
-      // Create new pose variants
-      for (let pvIndex = 0; pvIndex < data.poseVariants.length; pvIndex++) {
-        const pv = data.poseVariants[pvIndex];
-        await this.createPoseVariant(prisma, id, pv, pvIndex);
-      }
+        const incomingPositionIds = data.poseVariants!.map(pv => pv.posePositionId);
+
+        // Remove variants not in incoming data
+        const variantsToDelete = existingVariants.filter(
+          v => !incomingPositionIds.includes(v.posePositionId)
+        );
+        if (variantsToDelete.length > 0) {
+          await tx.poseVariant.deleteMany({
+            where: { id: { in: variantsToDelete.map(v => v.id) } },
+          });
+        }
+
+        for (let pvIndex = 0; pvIndex < data.poseVariants!.length; pvIndex++) {
+          const pv = data.poseVariants![pvIndex];
+          const existing = existingVariants.find(v => v.posePositionId === pv.posePositionId);
+
+          if (existing) {
+            // Update variant in-place (preserves ID)
+            await tx.poseVariant.update({
+              where: { id: existing.id },
+              data: {
+                name: pv.name as object,
+                description: (pv.description as object) || undefined,
+                trackedJointsConfig: (pv.trackedJointsConfig as object) || undefined,
+                sortOrder: pv.sortOrder ?? pvIndex + 1,
+              },
+            });
+
+            // Upsert position checks
+            const incomingCheckIds = (pv.positionChecks || []).map(pc => pc.checkId);
+            await tx.positionCheck.deleteMany({
+              where: { poseVariantId: existing.id, checkId: { notIn: incomingCheckIds } },
+            });
+
+            for (const [idx, pc] of (pv.positionChecks || []).entries()) {
+              await tx.positionCheck.upsert({
+                where: { poseVariantId_checkId: { poseVariantId: existing.id, checkId: pc.checkId } },
+                create: {
+                  poseVariantId: existing.id,
+                  checkId: pc.checkId,
+                  type: pc.type,
+                  landmarks: pc.landmarks as object,
+                  condition: pc.condition as object,
+                  activePhases: pc.activePhases,
+                  errorMessage: {
+                    ar: pc.errorMessage.ar,
+                    en: pc.errorMessage.en,
+                    audioAr: pc.errorMessage.audioAr || undefined,
+                    audioEn: pc.errorMessage.audioEn || undefined,
+                  },
+                  severity: pc.severity || 'warning',
+                  cooldownMs: pc.cooldownMs ?? 2000,
+                  minErrorFrames: pc.minErrorFrames ?? 3,
+                  sortOrder: pc.sortOrder ?? idx + 1,
+                },
+                update: {
+                  type: pc.type,
+                  landmarks: pc.landmarks as object,
+                  condition: pc.condition as object,
+                  activePhases: pc.activePhases,
+                  errorMessage: {
+                    ar: pc.errorMessage.ar,
+                    en: pc.errorMessage.en,
+                    audioAr: pc.errorMessage.audioAr || undefined,
+                    audioEn: pc.errorMessage.audioEn || undefined,
+                  },
+                  severity: pc.severity || 'warning',
+                  cooldownMs: pc.cooldownMs ?? 2000,
+                  minErrorFrames: pc.minErrorFrames ?? 3,
+                  sortOrder: pc.sortOrder ?? idx + 1,
+                },
+              });
+            }
+
+            // Rebuild message assignments for this variant
+            await tx.feedbackMessageAssignment.deleteMany({
+              where: { poseVariantId: existing.id },
+            });
+            const assignmentsToCreate = [...(pv.messageAssignments || [])];
+            if (pv.positionChecks) {
+              pv.positionChecks.forEach((pc, pcIdx) => {
+                if (pc.messageId) {
+                  assignmentsToCreate.push({
+                    messageId: pc.messageId,
+                    target: 'position',
+                    checkId: pc.checkId,
+                    sortOrder: (pc.sortOrder ?? pcIdx + 1) + 100,
+                  });
+                }
+              });
+            }
+            if (assignmentsToCreate.length > 0) {
+              await tx.feedbackMessageAssignment.createMany({
+                data: assignmentsToCreate.map((a, aIdx) => ({
+                  poseVariantId: existing.id,
+                  messageId: a.messageId,
+                  target: a.target,
+                  context: a.context || null,
+                  jointCode: a.jointCode || null,
+                  zone: a.zone || null,
+                  checkId: a.checkId || null,
+                  sortOrder: a.sortOrder ?? aIdx + 1,
+                })),
+              });
+            }
+          } else {
+            // New variant - create from scratch
+            await this.createPoseVariant(tx, id, pv, pvIndex);
+          }
+        }
+      });
     }
 
     return this.getById(id);

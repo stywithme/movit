@@ -46,7 +46,7 @@
             "operator": "approximately_equal",
             "threshold": 0.08
           },
-          "activePhases": ["count", "hold"],
+          "activePhases": ["all"],
           "errorMessage": {
             "ar": "ارفع حوضك - لا تدعه يهبط",
             "en": "Raise hips - don't let them drop"
@@ -138,7 +138,7 @@
             "operator": "approximately_equal",
             "threshold": 0.08
           },
-          "activePhases": ["count", "hold"],
+          "activePhases": ["all"],
           "errorMessage": {
             "ar": "ارفع حوضك - لا تدعه يهبط",
             "en": "Raise hips - don't let them drop"

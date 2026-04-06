@@ -126,13 +126,14 @@ export default function EditExercisePage() {
           {}
         );
         
-        // Map position checks
+        // Map position checks (migrate legacy phase names)
+        const PHASE_MIGRATION: Record<string, string> = { start: 'top', hold: 'all', count: 'all', idle: 'all' };
         const positionChecks = (firstVariant?.positionChecks || []).map((pc: Record<string, unknown>) => ({
           checkId: pc.checkId as string,
           type: pc.type as string,
           landmarks: pc.landmarks as { primary: string; secondary: string; tertiary?: string; quaternary?: string },
           condition: pc.condition as { operator: string; threshold: number },
-          activePhases: pc.activePhases as string[],
+          activePhases: [...new Set((pc.activePhases as string[]).map(p => PHASE_MIGRATION[p] || p))],
           errorMessage: pc.errorMessage as { ar: string; en: string },
           severity: pc.severity as string || 'warning',
           cooldownMs: (pc.cooldownMs as number) || 2000,

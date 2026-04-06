@@ -333,8 +333,7 @@ export const PositionCheckSchema = z.object({
   landmarks: PositionCheckLandmarksSchema,
   condition: PositionCheckConditionSchema,
   activePhases: z.array(z.enum([
-    'idle', 'start', 'down', 'bottom', 'up',
-    'hold', 'count',
+    'all', 'top', 'down', 'bottom', 'up',
   ])).min(1, 'Select at least one active phase'),
   errorMessage: LocalizedTextSchema,
   severity: z.enum(['error', 'warning', 'tip']).default('warning'),

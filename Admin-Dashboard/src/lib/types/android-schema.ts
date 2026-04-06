@@ -89,16 +89,11 @@ export type MessageAssignmentTarget = 'joint_state' | 'feedback' | 'position';
  * Phase names (used in activePhases)
  */
 export type PhaseName =
-  | 'idle'
-  | 'start'
+  | 'all'
+  | 'top'
   | 'down'
   | 'bottom'
-  | 'up'
-  | 'push'
-  | 'extended'
-  | 'pull'
-  | 'hold'
-  | 'count';
+  | 'up';
 
 /**
  * Joint state types (new state-based system)
@@ -451,11 +446,11 @@ export interface ReportMetricsConfig {
 export function getPhasesForCountingMethod(method: CountingMethod): PhaseName[] {
   switch (method) {
     case 'up_down':
-      return ['start', 'down', 'bottom', 'up'];
+      return ['top', 'down', 'bottom', 'up'];
     case 'hold':
-      return ['hold'];
+      return ['all'];
     default:
-      return ['start', 'down', 'bottom', 'up'];
+      return ['top', 'down', 'bottom', 'up'];
   }
 }
 

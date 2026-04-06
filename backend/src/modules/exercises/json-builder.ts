@@ -39,6 +39,22 @@ import type {
 } from '@/lib/types/android-schema';
 
 // ============================================
+// PHASE NAME MIGRATION (backward compatibility)
+// ============================================
+
+const PHASE_MIGRATION: Record<string, PhaseName> = {
+  start: 'top',
+  hold: 'all',
+  count: 'all',
+  idle: 'all',
+};
+
+function migratePhaseNames(phases: string[]): PhaseName[] {
+  const migrated = phases.map(p => PHASE_MIGRATION[p] || p) as PhaseName[];
+  return [...new Set(migrated)];
+}
+
+// ============================================
 // DATABASE TYPES (from Prisma include)
 // ============================================
 
@@ -404,7 +420,7 @@ function buildPositionCheck(
       operator: condition.operator as PositionCheck['condition']['operator'],
       threshold: threshold ?? 0.05,
     },
-    activePhases: dbCheck.activePhases as PhaseName[],
+    activePhases: migratePhaseNames(dbCheck.activePhases as string[]),
     // Position check errorMessage is inline (not from message library),
     // so it must ALWAYS be included regardless of includeMessages flag
     errorMessage: toLocalizedText(dbCheck.errorMessage),
