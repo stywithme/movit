@@ -451,6 +451,170 @@ function StateRangeEditor({ label, ranges, onChange, showWarningDanger = true, s
 }
 
 // ============================================
+// SECONDARY PER-PHASE RANGES EDITOR
+// ============================================
+
+const SECONDARY_PHASE_OPTIONS = [
+  { value: 'top' as const, label: 'Top' },
+  { value: 'down' as const, label: 'Down' },
+  { value: 'bottom' as const, label: 'Bottom' },
+  { value: 'up' as const, label: 'Up' },
+];
+
+type PhaseKey = 'top' | 'down' | 'bottom' | 'up';
+
+interface SecondaryRangesEditorProps {
+  joint: SecondaryTrackedJointData;
+  isHold: boolean;
+  onUpdateRange: (range: StateRangesData) => void;
+  onUpdatePhaseRanges: (phaseRanges: Partial<Record<PhaseKey, StateRangesData>> | undefined) => void;
+  stateMessages?: TrackedJointData['stateMessages'];
+  onStateMessagesChange?: (messages: TrackedJointData['stateMessages']) => void;
+}
+
+function SecondaryRangesEditor({
+  joint,
+  isHold,
+  onUpdateRange,
+  onUpdatePhaseRanges,
+  stateMessages,
+  onStateMessagesChange,
+}: SecondaryRangesEditorProps) {
+  const phaseRangesEnabled = !!joint.phaseRanges;
+  const selectedPhases = Object.keys(joint.phaseRanges || {}) as PhaseKey[];
+  const [activePhaseTab, setActivePhaseTab] = useState<PhaseKey>('top');
+
+  const effectiveTab = selectedPhases.includes(activePhaseTab) ? activePhaseTab : selectedPhases[0];
+
+  if (isHold) {
+    return (
+      <StateRangeEditor
+        label="📏 Valid Range"
+        ranges={joint.range}
+        onChange={onUpdateRange}
+        showWarningDanger={true}
+        stateMessages={stateMessages}
+        onStateMessagesChange={onStateMessagesChange}
+      />
+    );
+  }
+
+  const togglePhase = (phase: PhaseKey) => {
+    const current = { ...(joint.phaseRanges || {}) };
+    if (phase in current) {
+      delete current[phase];
+      onUpdatePhaseRanges(Object.keys(current).length > 0 ? current : {});
+    } else {
+      current[phase] = { ...joint.range };
+      onUpdatePhaseRanges(current);
+      setActivePhaseTab(phase);
+    }
+  };
+
+  const updatePhaseRange = (phase: PhaseKey, range: StateRangesData) => {
+    onUpdatePhaseRanges({ ...(joint.phaseRanges || {}), [phase]: range });
+  };
+
+  return (
+    <div className="space-y-4">
+      <StateRangeEditor
+        label={phaseRangesEnabled ? "📏 Default Range (Fallback)" : "📏 Valid Range"}
+        ranges={joint.range}
+        onChange={onUpdateRange}
+        showWarningDanger={true}
+        stateMessages={stateMessages}
+        onStateMessagesChange={onStateMessagesChange}
+      />
+
+      {/* Per-Phase Toggle */}
+      <div className="flex items-center justify-between p-4 bg-indigo-50 border border-indigo-200 rounded-lg">
+        <div>
+          <p className="font-medium text-gray-800">Per-Phase Ranges</p>
+          <p className="text-sm text-gray-500">Define different angle ranges for specific exercise phases</p>
+        </div>
+        <button
+          type="button"
+          onClick={() => onUpdatePhaseRanges(phaseRangesEnabled ? undefined : {})}
+          className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+            phaseRangesEnabled ? 'bg-indigo-500' : 'bg-gray-200'
+          }`}
+        >
+          <span
+            className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+              phaseRangesEnabled ? 'translate-x-6' : 'translate-x-1'
+            }`}
+          />
+        </button>
+      </div>
+
+      {phaseRangesEnabled && (
+        <div className="space-y-3">
+          {/* Phase Checkboxes */}
+          <div className="flex flex-wrap gap-2">
+            {SECONDARY_PHASE_OPTIONS.map((phase) => {
+              const isSelected = selectedPhases.includes(phase.value);
+              return (
+                <button
+                  key={phase.value}
+                  type="button"
+                  onClick={() => togglePhase(phase.value)}
+                  className={`px-4 py-2 text-sm rounded-lg border-2 transition-all ${
+                    isSelected
+                      ? 'bg-indigo-100 border-indigo-400 text-indigo-700 font-medium'
+                      : 'bg-white border-gray-200 text-gray-500 hover:border-gray-300'
+                  }`}
+                >
+                  {isSelected ? '✓ ' : ''}{phase.label}
+                </button>
+              );
+            })}
+          </div>
+
+          {/* Phase Tabs + Editor */}
+          {selectedPhases.length > 0 && (
+            <div className="border border-indigo-200 rounded-lg overflow-hidden">
+              <div className="flex border-b border-indigo-200 bg-indigo-50/50">
+                {selectedPhases.map((phase) => (
+                  <button
+                    key={phase}
+                    type="button"
+                    onClick={() => setActivePhaseTab(phase)}
+                    className={`px-4 py-2.5 text-sm font-medium border-b-2 transition-colors ${
+                      effectiveTab === phase
+                        ? 'border-indigo-500 text-indigo-600 bg-white'
+                        : 'border-transparent text-gray-500 hover:text-gray-700'
+                    }`}
+                  >
+                    {SECONDARY_PHASE_OPTIONS.find(p => p.value === phase)?.label}
+                  </button>
+                ))}
+              </div>
+
+              {effectiveTab && joint.phaseRanges?.[effectiveTab] && (
+                <div className="p-4">
+                  <StateRangeEditor
+                    label={`Phase: ${SECONDARY_PHASE_OPTIONS.find(p => p.value === effectiveTab)?.label}`}
+                    ranges={joint.phaseRanges[effectiveTab]!}
+                    onChange={(range) => updatePhaseRange(effectiveTab, range)}
+                    showWarningDanger={true}
+                  />
+                </div>
+              )}
+            </div>
+          )}
+
+          {selectedPhases.length === 0 && (
+            <p className="text-sm text-gray-400 italic text-center py-2">
+              Select phases above to define custom ranges
+            </p>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ============================================
 // JOINT TAB CONTENT
 // ============================================
 
@@ -634,11 +798,19 @@ function JointTabContent({ joint, onUpdate, onRemove, onCopyToMirror, isHold, ha
           onStateMessagesChange={(messages) => onUpdate({ ...joint, stateMessages: messages })}
         />
       ) : (
-        <StateRangeEditor
-          label="📏 Valid Range"
-          ranges={(joint as SecondaryTrackedJointData).range}
-          onChange={(range) => onUpdate({ ...joint, range } as SecondaryTrackedJointData)}
-          showWarningDanger={true}
+        <SecondaryRangesEditor
+          joint={joint as SecondaryTrackedJointData}
+          isHold={isHold}
+          onUpdateRange={(range) => onUpdate({ ...joint, range } as SecondaryTrackedJointData)}
+          onUpdatePhaseRanges={(phaseRanges) => {
+            if (phaseRanges === undefined) {
+              const updated = { ...joint } as Record<string, unknown>;
+              delete updated.phaseRanges;
+              onUpdate(updated as SecondaryTrackedJointData);
+            } else {
+              onUpdate({ ...joint, phaseRanges } as SecondaryTrackedJointData);
+            }
+          }}
           stateMessages={joint.stateMessages}
           onStateMessagesChange={(messages) => onUpdate({ ...joint, stateMessages: messages })}
         />
@@ -848,11 +1020,21 @@ function BilateralTabContent({ leftJoint, rightJoint, bilateralCode, onUpdateBot
           onStateMessagesChange={(messages) => onUpdateBoth((j) => ({ ...j, stateMessages: messages }))}
         />
       ) : (
-        <StateRangeEditor
-          label="📏 Valid Range"
-          ranges={(joint as SecondaryTrackedJointData).range}
-          onChange={updateRange}
-          showWarningDanger={true}
+        <SecondaryRangesEditor
+          joint={joint as SecondaryTrackedJointData}
+          isHold={isHold}
+          onUpdateRange={updateRange}
+          onUpdatePhaseRanges={(phaseRanges) => {
+            if (phaseRanges === undefined) {
+              onUpdateBoth((j) => {
+                const updated = { ...j } as Record<string, unknown>;
+                delete updated.phaseRanges;
+                return updated as SecondaryTrackedJointData;
+              });
+            } else {
+              onUpdateBoth((j) => ({ ...j, phaseRanges } as SecondaryTrackedJointData));
+            }
+          }}
           stateMessages={joint.stateMessages}
           onStateMessagesChange={(messages) => onUpdateBoth((j) => ({ ...j, stateMessages: messages }))}
         />

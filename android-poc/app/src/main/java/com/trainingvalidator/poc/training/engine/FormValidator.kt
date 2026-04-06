@@ -46,6 +46,9 @@ class FormValidator(
     // Danger frame counter for each joint (safety smoothing)
     private val dangerFrameCounts = mutableMapOf<String, Int>()
 
+    // Last phase per joint for phase-change detection (secondary joints with phaseRanges)
+    private val previousPhases = mutableMapOf<String, Phase>()
+
     // ==================== Reusable Collections (Performance Optimization) ====================
     // Pre-allocated to avoid allocation on every frame
 
@@ -68,14 +71,17 @@ class FormValidator(
      * @param currentPhase Current phase of exercise (for context)
      * @return Map of joint code to JointStateInfo (immutable copy for thread safety)
      */
-    fun getJointStateInfos(currentAngles: Map<String, Double>): Map<String, JointStateInfo> {
+    fun getJointStateInfos(
+        currentAngles: Map<String, Double>,
+        currentPhase: Phase = Phase.IDLE
+    ): Map<String, JointStateInfo> {
         // Clear and reuse internal map
         reusableStateInfos.clear()
 
         for (joint in trackedJoints) {
             val currentAngle = currentAngles[joint.joint] ?: continue
 
-            val stateInfo = determineJointStateInfo(joint, currentAngle)
+            val stateInfo = determineJointStateInfo(joint, currentAngle, currentPhase)
             reusableStateInfos[joint.joint] = stateInfo
         }
 
@@ -94,7 +100,7 @@ class FormValidator(
         currentAngles: Map<String, Double>,
         currentPhase: Phase
     ): ValidationResult {
-        return validateFromStateInfos(getJointStateInfos(currentAngles))
+        return validateFromStateInfos(getJointStateInfos(currentAngles, currentPhase))
     }
 
     /**
@@ -166,9 +172,20 @@ class FormValidator(
      */
     private fun determineJointStateInfo(
         joint: TrackedJoint,
-        angle: Double
+        angle: Double,
+        currentPhase: Phase = Phase.IDLE
     ): JointStateInfo {
         val isPrimary = joint.role == JointRole.PRIMARY
+
+        // Reset hysteresis on phase change for secondary joints with phaseRanges
+        if (!isPrimary && joint.phaseRanges != null) {
+            val lastPhase = previousPhases[joint.joint]
+            if (lastPhase != null && lastPhase != currentPhase) {
+                previousStates.remove(joint.joint)
+                dangerFrameCounts.remove(joint.joint)
+            }
+            previousPhases[joint.joint] = currentPhase
+        }
 
         // Determine zone type (UP, DOWN, or TRANSITION)
         val zoneType = if (isPrimary && joint.hasStateUpDownRanges()) {
@@ -178,20 +195,21 @@ class FormValidator(
         }
 
         // Get the applicable StateRanges for this zone
-        val stateRanges = getApplicableStateRanges(joint, zoneType)
+        val stateRanges = getApplicableStateRanges(joint, zoneType, currentPhase)
 
         // Get UP and DOWN ranges for track rendering (each track needs its own ranges)
+        // For secondary joints: use stateRanges (which may be phase-specific) for visual consistency
         val upStateRanges = if (joint.hasStateUpDownRanges()) {
             joint.getStateUpRange()
-        } else if (joint.hasStateHoldRange()) {
-            joint.getStateHoldRange()
-        } else null
+        } else {
+            stateRanges ?: if (joint.hasStateHoldRange()) joint.getStateHoldRange() else null
+        }
 
         val downStateRanges = if (joint.hasStateUpDownRanges()) {
             joint.getStateDownRange()
-        } else if (joint.hasStateHoldRange()) {
-            joint.getStateHoldRange()
-        } else null
+        } else {
+            stateRanges ?: if (joint.hasStateHoldRange()) joint.getStateHoldRange() else null
+        }
 
         // Determine outward direction for filling undefined outer ranges
         val outward = when (zoneType) {
@@ -236,12 +254,35 @@ class FormValidator(
     /**
      * Get applicable StateRanges based on zone type
      */
-    private fun getApplicableStateRanges(joint: TrackedJoint, zoneType: ZoneType): StateRanges? {
+    private fun getApplicableStateRanges(
+        joint: TrackedJoint,
+        zoneType: ZoneType,
+        currentPhase: Phase
+    ): StateRanges? {
+        // Phase-specific ranges for secondary joints (UP_DOWN exercises)
+        if (joint.role == JointRole.SECONDARY && joint.phaseRanges != null) {
+            val phaseName = mapPhaseToName(currentPhase)
+            if (phaseName != null) {
+                joint.getPhaseRange(phaseName)?.let { return it }
+            }
+        }
+        // Default fallback
         return when {
             joint.hasStateHoldRange() -> joint.getStateHoldRange()
             zoneType == ZoneType.UP_ZONE && joint.hasStateUpDownRanges() -> joint.getStateUpRange()
             zoneType == ZoneType.DOWN_ZONE && joint.hasStateUpDownRanges() -> joint.getStateDownRange()
             else -> null
+        }
+    }
+
+    private fun mapPhaseToName(phase: Phase): String? {
+        return when (phase) {
+            Phase.START -> "top"
+            Phase.DOWN -> "down"
+            Phase.BOTTOM -> "bottom"
+            Phase.UP -> "up"
+            Phase.COUNT -> "all"
+            Phase.IDLE -> null
         }
     }
 
@@ -695,6 +736,7 @@ class FormValidator(
     fun reset() {
         previousStates.clear()
         dangerFrameCounts.clear()
+        previousPhases.clear()
         reusableStateInfos.clear()
         reusableErrors.clear()
         Log.d(TAG, "FormValidator state reset")

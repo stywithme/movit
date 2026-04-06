@@ -216,10 +216,12 @@ export type PrimaryTrackedJoint = UpDownPrimaryTrackedJoint | HoldPrimaryTracked
 
 /**
  * Secondary tracked joint - has single range for form checking
+ * Optionally supports per-phase ranges for UP_DOWN exercises
  */
 export interface SecondaryTrackedJoint extends BaseTrackedJoint {
   role: 'secondary';
   range: StateRanges;
+  phaseRanges?: Partial<Record<'top' | 'down' | 'bottom' | 'up', StateRanges>>;
 }
 
 /**
@@ -619,6 +621,17 @@ export function validateSecondaryJoint(joint: TrackedJoint): string[] {
     errors.push(`Secondary joint ${secondary.joint} is missing range`);
   } else {
     errors.push(...validateStateRanges(secondary.range, `${secondary.joint}.range`));
+  }
+
+  if (secondary.phaseRanges) {
+    const validPhases = ['top', 'down', 'bottom', 'up'];
+    for (const [phase, ranges] of Object.entries(secondary.phaseRanges)) {
+      if (!validPhases.includes(phase)) {
+        errors.push(`Secondary joint ${secondary.joint} has invalid phase '${phase}'`);
+      } else if (ranges) {
+        errors.push(...validateStateRanges(ranges, `${secondary.joint}.phaseRanges.${phase}`));
+      }
+    }
   }
 
   return errors;

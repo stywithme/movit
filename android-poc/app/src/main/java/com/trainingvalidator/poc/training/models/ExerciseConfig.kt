@@ -447,7 +447,12 @@ data class TrackedJoint(
     // When true: Swaps upRange/downRange for visual indicator display
     // Use when the LOWER limb moves UP (like bicep curl: forearm moves up towards shoulder)
     // Default false: Upper limb moves down (like squat: thigh moves down)
-    val invertIndicator: Boolean = false
+    val invertIndicator: Boolean = false,
+    
+    // Per-phase ranges for SECONDARY joints in UP_DOWN exercises
+    // Keys are phase names: "top", "down", "bottom", "up"
+    // When present, FormValidator uses the phase-specific range instead of the default `range`
+    val phaseRanges: Map<String, StateRanges>? = null
 ) {
     // ==================== State-Based Methods ====================
     
@@ -484,6 +489,13 @@ data class TrackedJoint(
      * Check if this joint has state-based hold range (SECONDARY)
      */
     fun hasStateHoldRange(): Boolean = range != null
+    
+    /**
+     * Get phase-specific StateRanges for a secondary joint.
+     * @param phaseName Phase name string ("top", "down", "bottom", "up")
+     * @return Phase-specific StateRanges, or null if not defined
+     */
+    fun getPhaseRange(phaseName: String): StateRanges? = phaseRanges?.get(phaseName)
     
     /**
      * Calculate TRANSITION zone boundaries

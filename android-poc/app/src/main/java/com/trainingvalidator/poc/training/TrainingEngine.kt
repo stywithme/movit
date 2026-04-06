@@ -913,7 +913,7 @@ class TrainingEngine(
             }
 
             // ── 6. Form validation (state-based) ──
-            val jointStateInfos = formValidator.getJointStateInfos(smoothedAngles)
+            val jointStateInfos = formValidator.getJointStateInfos(smoothedAngles, currentPhase)
             _jointStateInfos.value = jointStateInfos
             emitStateMessages(jointStateInfos)
 

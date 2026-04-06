@@ -257,12 +257,17 @@ export const PrimaryTrackedJointSchema = z.object({
 
 /**
  * Secondary joint - has single range with StateRanges
+ * Optionally supports per-phase ranges for UP_DOWN exercises
  */
 export const SecondaryTrackedJointSchema = z.object({
   joint: z.string().min(1, 'Joint is required'),
   role: z.literal('secondary'),
   startPose: AngleRangeSchema,
   range: StateRangesSchema,
+  phaseRanges: z.record(
+    z.enum(['top', 'down', 'bottom', 'up']),
+    StateRangesSchema
+  ).optional(),
   stateMessages: StateMessagesSchema,
   pairedWith: z.string().optional(),
   invertIndicator: z.boolean().optional(),
