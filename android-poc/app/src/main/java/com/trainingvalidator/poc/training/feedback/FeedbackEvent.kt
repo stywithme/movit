@@ -19,16 +19,6 @@ sealed class FeedbackEvent {
     abstract val priority: FeedbackPriority
     
     /**
-     * Phase changed event
-     */
-    data class PhaseChanged(
-        val previousPhase: Phase,
-        val newPhase: Phase,
-        override val timestamp: Long = System.currentTimeMillis(),
-        override val priority: FeedbackPriority = FeedbackPriority.LOW
-    ) : FeedbackEvent()
-    
-    /**
      * Rep completed event
      * 
      * STATE-BASED SCORING:
@@ -56,16 +46,6 @@ sealed class FeedbackEvent {
     ) : FeedbackEvent()
     
     /**
-     * Start position feedback
-     */
-    data class StartPositionGuide(
-        val message: LocalizedText,
-        val isInPosition: Boolean,
-        override val timestamp: Long = System.currentTimeMillis(),
-        override val priority: FeedbackPriority = FeedbackPriority.MEDIUM
-    ) : FeedbackEvent()
-    
-    /**
      * Target reached event
      */
     data class TargetReached(
@@ -74,42 +54,6 @@ sealed class FeedbackEvent {
         val accuracy: Float,
         override val timestamp: Long = System.currentTimeMillis(),
         override val priority: FeedbackPriority = FeedbackPriority.HIGH
-    ) : FeedbackEvent()
-    
-    /**
-     * Motivational message
-     */
-    data class MotivationalMessage(
-        val message: LocalizedText,
-        override val timestamp: Long = System.currentTimeMillis(),
-        override val priority: FeedbackPriority = FeedbackPriority.LOW
-    ) : FeedbackEvent()
-    
-    /**
-     * Training started
-     */
-    data class TrainingStarted(
-        val exerciseName: LocalizedText,
-        val targetReps: Int,
-        override val timestamp: Long = System.currentTimeMillis(),
-        override val priority: FeedbackPriority = FeedbackPriority.MEDIUM
-    ) : FeedbackEvent()
-    
-    /**
-     * Training paused
-     */
-    data class TrainingPaused(
-        val currentRep: Int,
-        override val timestamp: Long = System.currentTimeMillis(),
-        override val priority: FeedbackPriority = FeedbackPriority.MEDIUM
-    ) : FeedbackEvent()
-    
-    /**
-     * Training resumed
-     */
-    data class TrainingResumed(
-        override val timestamp: Long = System.currentTimeMillis(),
-        override val priority: FeedbackPriority = FeedbackPriority.LOW
     ) : FeedbackEvent()
     
     // ==================== HOLD-specific Events ====================
@@ -230,16 +174,6 @@ sealed class FeedbackEvent {
     ) : FeedbackEvent()
     
     /**
-     * Visibility resume countdown - joints visible again, starting countdown
-     */
-    data class VisibilityResumeCountdown(
-        val resumeFromRep: Int,
-        val resumeFromPhase: Phase,
-        override val timestamp: Long = System.currentTimeMillis(),
-        override val priority: FeedbackPriority = FeedbackPriority.HIGH
-    ) : FeedbackEvent()
-    
-    /**
      * Visibility resumed - countdown finished, training resumed
      */
     data class VisibilityResumed(
@@ -251,26 +185,10 @@ sealed class FeedbackEvent {
     // ==================== STATE-BASED Events ====================
     
     /**
-     * DANGER state detected - user is in injury risk zone
-     * 
-     * This is a HIGH priority event that should:
-     * - Trigger strong haptic feedback
-     * - Show prominent visual warning
-     * - Play alert sound
-     * - The current rep will be INVALIDATED
-     */
-    data class DangerDetected(
-        val joints: List<String>,
-        val message: LocalizedText? = null,
-        override val timestamp: Long = System.currentTimeMillis(),
-        override val priority: FeedbackPriority = FeedbackPriority.HIGH
-    ) : FeedbackEvent()
-
-    /**
      * Joint state message - state-based feedback (warning/pad/normal/perfect)
      * 
      * This is emitted when a joint enters or stays in a state that has a message.
-     * DANGER is handled separately via DangerDetected.
+     * DANGER state is excluded (handled via _isDangerActive StateFlow + JointErrorDetected).
      * 
      * The zone field indicates whether the joint is in UP or DOWN position,
      * allowing for zone-specific messages in Up&Down exercises.

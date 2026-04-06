@@ -218,7 +218,6 @@ class FeedbackManager(
             is FeedbackEvent.JointErrorDetected -> handleJointError(event)
             is FeedbackEvent.RepCompleted -> handleRepCompleted(event)
             is FeedbackEvent.TargetReached -> handleTargetReached(event)
-            is FeedbackEvent.MotivationalMessage -> handleMotivation(event)
             is FeedbackEvent.JointStateMessage -> handleJointStateMessage(event)
             
             // Hold events
@@ -238,8 +237,6 @@ class FeedbackManager(
             is FeedbackEvent.VisibilityWarning -> handleVisibilityWarning(event)
             is FeedbackEvent.VisibilityPaused -> handleVisibilityPaused(event)
             is FeedbackEvent.VisibilityResumed -> handleVisibilityResumed(event)
-            
-            else -> {}
         }
     }
     
@@ -470,21 +467,6 @@ class FeedbackManager(
     }
     
     // ==================== Motivation ====================
-    
-    private suspend fun handleMotivation(event: FeedbackEvent.MotivationalMessage) {
-        val localizedText = event.message
-        val displayText = localizedText.get(config.language)
-        
-        // Use MessageOrchestrator for smart delivery
-        val decision = messageOrchestrator.decide(
-            messageKey = "motivation:${displayText.hashCode()}",
-            category = MessageOrchestrator.Category.MOTIVATION,
-            messageText = displayText
-        )
-        
-        // Deliver with LocalizedText for audio support
-        deliverLocalizedMessage(localizedText, displayText, decision, MessageType.MOTIVATION)
-    }
     
     private suspend fun triggerStreakMotivation(streak: Int) {
         // Build LocalizedText for streak messages (no audio URLs for these)

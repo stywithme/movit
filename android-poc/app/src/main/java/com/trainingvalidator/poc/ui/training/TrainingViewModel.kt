@@ -94,9 +94,6 @@ class TrainingViewModel(
     private val _holdState = MutableStateFlow<HoldState?>(null)
     val holdState: StateFlow<HoldState?> = _holdState.asStateFlow()
     
-    private val _isCompleted = MutableStateFlow(false)
-    val isCompleted: StateFlow<Boolean> = _isCompleted.asStateFlow()
-    
     // Weight for weighted exercises (kg)
     private var _weightKg: Float? = null
     private var _weightUnit: String = "kg"
@@ -546,7 +543,6 @@ class TrainingViewModel(
             }
             
             is SupervisorAction.ShowCompleted -> {
-                _isCompleted.value = true
                 viewModelScope.launch {
                     _events.emit(TrainingUIEvent.ExerciseCompleted)
                 }
