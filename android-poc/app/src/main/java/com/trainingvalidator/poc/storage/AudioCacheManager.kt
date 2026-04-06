@@ -85,7 +85,7 @@ class AudioCacheManager(private val context: Context) {
             if (!manifestFile.exists()) return
             val json = manifestFile.readText()
             val wrapper = gson.fromJson(json, PersistedAudioManifestJson::class.java)
-            if (wrapper.baseUrl.isNullOrBlank() || wrapper.files == null) return
+            if (wrapper.baseUrl.isBlank() || wrapper.files.isEmpty()) return
             persistedEffectiveBaseUrl = wrapper.baseUrl
             persistedAudioManifest = AudioManifest(wrapper.baseUrl, wrapper.files)
             Log.d(TAG, "Loaded persisted audio manifest: ${wrapper.files.size} entries (baseUrl set)")

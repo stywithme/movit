@@ -246,13 +246,11 @@ class PreWorkoutActivity : AppCompatActivity() {
 
         binding.cameraPositionSection.visibility = View.VISIBLE
 
+        val exerciseTitle = exercise.name.get(language).ifBlank { exercise.name.en }
         exercise.poseVariants.forEachIndexed { index, variant ->
-            // Get localized variant name, fallback to camera position code
-            val variantName = variant.name.get(language).ifBlank { variant.name.en }
-            val posCode = variant.posePosition ?: variant.cameraPosition ?: ""
-            val buttonText = variantName.ifBlank { 
-                LocalizationHelper.getCameraPositionDisplayName(this, posCode)
-            }
+            val buttonText = LocalizationHelper.getPoseVariantButtonLabel(
+                this, exerciseTitle, variant, language
+            )
             when (index) {
                 0 -> {
                     binding.btnVariant1.text = buttonText

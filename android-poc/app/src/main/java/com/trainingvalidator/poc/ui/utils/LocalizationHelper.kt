@@ -2,6 +2,7 @@ package com.trainingvalidator.poc.ui.utils
 
 import android.content.Context
 import com.trainingvalidator.poc.R
+import com.trainingvalidator.poc.training.models.PoseVariant
 
 /**
  * Helper object for translating muscle, equipment, and camera position codes
@@ -73,10 +74,18 @@ object LocalizationHelper {
      */
     fun getCameraPositionDisplayName(context: Context, positionCode: String): String {
         val resId = when (positionCode.lowercase()) {
-            "side_view", "side", "sideview" -> R.string.camera_side_view
-            "front_view", "front", "frontview" -> R.string.camera_front_view
-            "back_view", "back", "backview", "rear" -> R.string.camera_back_view
-            "angle_45", "45_angle", "diagonal" -> R.string.camera_angle_45
+            "side_view", "side", "sideview",
+            "standing_side", "standing_side_left", "standing_side_right" -> R.string.camera_side_view
+            "front_view", "front", "frontview",
+            "standing_front" -> R.string.camera_front_view
+            "back_view", "back", "backview", "rear",
+            "standing_back" -> R.string.camera_back_view
+            "angle_45", "45_angle", "diagonal",
+            "standing_diagonal" -> R.string.camera_angle_45
+            "prone_side" -> R.string.pose_position_prone_side
+            "prone_front" -> R.string.pose_position_prone_front
+            "standing_front_upper", "standing_back_upper", "standing_side_upper" -> R.string.pose_position_upper_body
+            "standing_front_lower", "standing_back_lower", "standing_side_lower" -> R.string.pose_position_lower_body
             else -> null
         }
         
@@ -86,6 +95,35 @@ object LocalizationHelper {
             // Fallback: capitalize the code
             positionCode.replace("_", " ").split(" ")
                 .joinToString(" ") { it.replaceFirstChar { c -> c.uppercase() } }
+        }
+    }
+
+    /**
+     * Label for pose variant / camera position selector buttons.
+     * When [PoseVariant.name] duplicates the exercise title (common in API JSON),
+     * shows the localized pose position name instead so options are distinguishable.
+     */
+    fun getPoseVariantButtonLabel(
+        context: Context,
+        exerciseTitle: String,
+        variant: PoseVariant,
+        language: String
+    ): String {
+        val variantLabel = variant.name.get(language).ifBlank { variant.name.en }.trim()
+        val posCode = (variant.posePosition ?: variant.cameraPosition ?: "").trim()
+        val positionDisplay = if (posCode.isNotEmpty()) {
+            getCameraPositionDisplayName(context, posCode)
+        } else {
+            ""
+        }
+        val title = exerciseTitle.trim()
+        val duplicatesExercise = variantLabel.isEmpty() ||
+            variantLabel.equals(title, ignoreCase = true)
+        return when {
+            positionDisplay.isNotEmpty() && duplicatesExercise -> positionDisplay
+            positionDisplay.isNotEmpty() -> "$variantLabel\n$positionDisplay"
+            variantLabel.isNotEmpty() -> variantLabel
+            else -> posCode.ifEmpty { "—" }
         }
     }
 
