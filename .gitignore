@@ -36,6 +36,7 @@ Pods/
 .env
 .env*.local
 .env.production
+.env.server
 
 # IDE
 .vscode/

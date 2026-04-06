@@ -48,7 +48,14 @@ function createWavBuffer(pcmData: Buffer, sampleRate = 24000, channels = 1, bits
 interface TTSOptions {
   text: string;
   language: SupportedLanguage;
-  voiceName?: string; // Override default voice
+  voiceName?: string;
+  model?: string;
+  languageCode?: string;
+  sharedStylePrompt?: string;
+  stylePrompt?: string;
+  systemInstruction?: string;
+  temperature?: number;
+  seed?: number;
 }
 
 interface TTSResult {
@@ -61,36 +68,69 @@ interface TTSResult {
  * Generate speech from text and save to file
  */
 export async function generateSpeech(options: TTSOptions): Promise<TTSResult> {
-  const { text, language, voiceName } = options;
+  const {
+    text,
+    language,
+    voiceName,
+    model,
+    languageCode,
+    sharedStylePrompt,
+    stylePrompt,
+    systemInstruction,
+    temperature,
+    seed,
+  } = options;
 
   if (!text.trim()) {
     return { success: false, error: 'Text is empty' };
   }
 
-  // Select voice based on language or use override
   const voice = voiceName || geminiConfig.voices[language];
+  const selectedModel = model || geminiConfig.ttsModel;
+  const langInstruction =
+    language === 'ar'
+      ? 'Read this Arabic fitness guidance with clear pronunciation and natural coaching delivery.'
+      : 'Read this English fitness guidance with clear pronunciation and an encouraging coaching delivery.';
 
-  // Build speech prompt with language-specific instructions
-  const langInstruction = language === 'ar' 
-    ? 'Speak this text in Arabic with clear pronunciation suitable for fitness coaching:'
-    : 'Speak this text in English with clear, encouraging tone suitable for fitness coaching:';
-
-  const prompt = `${langInstruction}\n${text}`;
+  const promptParts = [langInstruction];
+  if (sharedStylePrompt?.trim()) {
+    promptParts.push(`Shared style instructions: ${sharedStylePrompt.trim()}`);
+  }
+  if (stylePrompt?.trim()) {
+    promptParts.push(`Language-specific style instructions: ${stylePrompt.trim()}`);
+  }
+  promptParts.push('Speak the following text exactly as written without adding, removing, or translating words.');
+  promptParts.push(text.trim());
+  const prompt = promptParts.join('\n\n');
 
   try {
-    console.log('[TTS] Generating speech for:', { language, voice, textLength: text.length });
-    console.log('[TTS] Using model:', geminiConfig.ttsModel);
-    
+    console.log('[TTS] Generating speech for:', {
+      language,
+      voice,
+      model: selectedModel,
+      languageCode: languageCode || '(default)',
+      textLength: text.length,
+      hasSharedStylePrompt: !!sharedStylePrompt?.trim(),
+      hasLanguageStylePrompt: !!stylePrompt?.trim(),
+      hasSystemInstruction: !!systemInstruction?.trim(),
+      temperature,
+      seed,
+    });
+
     const response = await geminiClient.models.generateContent({
-      model: geminiConfig.ttsModel,
+      model: selectedModel,
       contents: [{ parts: [{ text: prompt }] }],
+      ...(systemInstruction?.trim() ? { systemInstruction: systemInstruction.trim() } : {}),
       config: {
         responseModalities: ['AUDIO'],
         speechConfig: {
+          ...(languageCode?.trim() ? { languageCode: languageCode.trim() } : {}),
           voiceConfig: {
             prebuiltVoiceConfig: { voiceName: voice },
           },
         },
+        ...(typeof temperature === 'number' ? { temperature } : {}),
+        ...(typeof seed === 'number' ? { seed } : {}),
       },
     });
 

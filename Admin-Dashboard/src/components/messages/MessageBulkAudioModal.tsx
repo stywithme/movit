@@ -1,264 +1,796 @@
 'use client';
 
-/**
- * Bulk TTS — sends small batches (BATCH_SIZE per request) to avoid proxy/browser timeouts,
- * then aggregates results and shows live progress.
- */
-
-import { useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import {
+  Button,
+  Checkbox,
   Dialog,
+  DialogBody,
   DialogContent,
+  DialogDescription,
+  DialogFooter,
   DialogHeader,
   DialogTitle,
-  DialogDescription,
-  DialogBody,
-  DialogFooter,
-  Button,
   Input,
   Label,
+  Select,
+  Textarea,
 } from '@/components/ui';
 
 const BATCH_SIZE = 5;
+const LOCAL_STORAGE_KEY = 'pose.messages.bulk-audio-settings.v1';
+
+const MODE_OPTIONS = [
+  { value: 'missing_only', label: 'Only missing audio' },
+  { value: 'regenerate_selected', label: 'All selected messages (replace existing audio)' },
+];
+
+const LANGUAGE_TARGET_OPTIONS = [
+  { value: 'both', label: 'Arabic + English' },
+  { value: 'ar', label: 'Arabic only' },
+  { value: 'en', label: 'English only' },
+];
+
+const MODEL_OPTIONS = [
+  { value: '', label: 'Server default model' },
+  { value: 'gemini-2.5-flash-preview-tts', label: 'Gemini 2.5 Flash Preview TTS' },
+  { value: 'gemini-2.5-flash-lite-preview-tts', label: 'Gemini 2.5 Flash Lite Preview TTS' },
+  { value: 'gemini-2.5-pro-preview-tts', label: 'Gemini 2.5 Pro Preview TTS' },
+];
 
 interface FailedItem {
+  slotKey: string;
   messageId: string;
   code: string;
   language: 'ar' | 'en';
   error: string;
 }
 
-interface BatchResult {
+interface PreviewResult {
+  matchedMessages: number;
+  eligibleMessages: number;
   plannedGenerations: number;
+  missingAudioSlots: number;
+  existingAudioSlots: number;
+  byLanguage: Record<'ar' | 'en', number>;
+}
+
+interface BatchResult extends PreviewResult {
   completedGenerations: number;
   skippedAlreadyPresent: number;
   failed: FailedItem[];
   stoppedDueToLimit: boolean;
+  remainingGenerations: number;
+  completedSlots: string[];
 }
 
 interface ProgressState {
   totalGenerated: number;
   totalFailed: number;
   batchesDone: number;
-  currentBatchPlanned: number;
   failed: FailedItem[];
-  done: boolean;
   remaining: boolean;
+  done: boolean;
+  plannedTotal: number;
+}
+
+interface MessageBulkAudioCurrentFilters {
+  category: string;
+  status: string;
+  search: string;
+  audioMissing: string;
+}
+
+interface BulkAudioSettings {
+  useCurrentFilters: boolean;
+  mode: 'missing_only' | 'regenerate_selected';
+  languageTarget: 'both' | 'ar' | 'en';
+  model: string;
+  voiceNameAr: string;
+  voiceNameEn: string;
+  languageCodeAr: string;
+  languageCodeEn: string;
+  sharedStylePrompt: string;
+  stylePromptAr: string;
+  stylePromptEn: string;
+  systemInstruction: string;
+  temperature: string;
+  seed: string;
+  delayMsBetweenCalls: string;
+  maxGenerations: string;
 }
 
 interface MessageBulkAudioModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  categoryFilter: string;
+  currentFilters: MessageBulkAudioCurrentFilters;
   onCompleted: () => void;
+}
+
+const DEFAULT_SETTINGS: BulkAudioSettings = {
+  useCurrentFilters: true,
+  mode: 'missing_only',
+  languageTarget: 'both',
+  model: '',
+  voiceNameAr: '',
+  voiceNameEn: '',
+  languageCodeAr: '',
+  languageCodeEn: '',
+  sharedStylePrompt: '',
+  stylePromptAr: '',
+  stylePromptEn: '',
+  systemInstruction: '',
+  temperature: '',
+  seed: '',
+  delayMsBetweenCalls: '350',
+  maxGenerations: '50',
+};
+
+function toLanguages(target: BulkAudioSettings['languageTarget']): ('ar' | 'en')[] {
+  if (target === 'ar') return ['ar'];
+  if (target === 'en') return ['en'];
+  return ['ar', 'en'];
+}
+
+function parsePositiveInt(value: string, fallback: number, min: number, max: number): number {
+  const parsed = Number.parseInt(value, 10);
+  if (!Number.isFinite(parsed)) return fallback;
+  return Math.min(max, Math.max(min, parsed));
+}
+
+function parseOptionalInt(value: string): number | undefined {
+  const trimmed = value.trim();
+  if (!trimmed) return undefined;
+  const parsed = Number.parseInt(trimmed, 10);
+  return Number.isFinite(parsed) ? parsed : undefined;
+}
+
+function parseOptionalFloat(value: string): number | undefined {
+  const trimmed = value.trim();
+  if (!trimmed) return undefined;
+  const parsed = Number.parseFloat(trimmed);
+  return Number.isFinite(parsed) ? parsed : undefined;
+}
+
+function buildFilterSummary(filters: MessageBulkAudioCurrentFilters): string {
+  const parts: string[] = [];
+  if (filters.category) parts.push(`category: ${filters.category}`);
+  if (filters.status) parts.push(`status: ${filters.status}`);
+  if (filters.audioMissing) parts.push(`audio: ${filters.audioMissing}`);
+  if (filters.search.trim()) parts.push(`search: "${filters.search.trim()}"`);
+  return parts.length > 0 ? parts.join(' | ') : 'No page filters are currently active.';
+}
+
+function mergeStoredSettings(value: unknown): BulkAudioSettings {
+  if (!value || typeof value !== 'object') return DEFAULT_SETTINGS;
+  const raw = value as Partial<BulkAudioSettings>;
+  return {
+    ...DEFAULT_SETTINGS,
+    ...raw,
+  };
 }
 
 export function MessageBulkAudioModal({
   open,
   onOpenChange,
-  categoryFilter,
+  currentFilters,
   onCompleted,
 }: MessageBulkAudioModalProps) {
-  const [maxGenerations, setMaxGenerations] = useState(50);
+  const [settings, setSettings] = useState<BulkAudioSettings>(DEFAULT_SETTINGS);
+  const [settingsReady, setSettingsReady] = useState(false);
+  const [showAdvanced, setShowAdvanced] = useState(false);
+  const [preview, setPreview] = useState<PreviewResult | null>(null);
+  const [previewLoading, setPreviewLoading] = useState(false);
+  const [previewError, setPreviewError] = useState<string | null>(null);
   const [running, setRunning] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [progress, setProgress] = useState<ProgressState | null>(null);
   const cancelledRef = useRef(false);
+  const completedSlotsRef = useRef<string[]>([]);
+  const previewRequestRef = useRef(0);
 
-  const reset = () => {
+  const filterSummary = useMemo(() => buildFilterSummary(currentFilters), [currentFilters]);
+
+  useEffect(() => {
+    try {
+      const stored = window.localStorage.getItem(LOCAL_STORAGE_KEY);
+      if (stored) {
+        setSettings(mergeStoredSettings(JSON.parse(stored)));
+      }
+    } catch (err) {
+      console.error('Failed to load bulk audio settings:', err);
+    } finally {
+      setSettingsReady(true);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (!settingsReady) return;
+    try {
+      window.localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(settings));
+    } catch (err) {
+      console.error('Failed to save bulk audio settings:', err);
+    }
+  }, [settings, settingsReady]);
+
+  const updateSettings = (patch: Partial<BulkAudioSettings>) => {
+    setSettings((prev) => ({ ...prev, ...patch }));
+  };
+
+  const buildRequestPayload = (includeBatchFields: boolean) => {
+    const payload: Record<string, unknown> = {
+      includeInactive: true,
+      languages: toLanguages(settings.languageTarget),
+      mode: settings.mode,
+    };
+
+    if (settings.useCurrentFilters) {
+      if (currentFilters.category) payload.category = currentFilters.category;
+      if (currentFilters.status === 'active' || currentFilters.status === 'inactive') {
+        payload.status = currentFilters.status;
+      }
+      if (currentFilters.search.trim()) payload.search = currentFilters.search.trim();
+      if (currentFilters.audioMissing) payload.audioMissing = currentFilters.audioMissing;
+    }
+
+    if (settings.model.trim()) payload.model = settings.model.trim();
+    if (settings.voiceNameAr.trim()) payload.voiceNameAr = settings.voiceNameAr.trim();
+    if (settings.voiceNameEn.trim()) payload.voiceNameEn = settings.voiceNameEn.trim();
+    if (settings.languageCodeAr.trim()) payload.languageCodeAr = settings.languageCodeAr.trim();
+    if (settings.languageCodeEn.trim()) payload.languageCodeEn = settings.languageCodeEn.trim();
+    if (settings.sharedStylePrompt.trim()) payload.sharedStylePrompt = settings.sharedStylePrompt.trim();
+    if (settings.stylePromptAr.trim()) payload.stylePromptAr = settings.stylePromptAr.trim();
+    if (settings.stylePromptEn.trim()) payload.stylePromptEn = settings.stylePromptEn.trim();
+    if (settings.systemInstruction.trim()) payload.systemInstruction = settings.systemInstruction.trim();
+
+    const temperature = parseOptionalFloat(settings.temperature);
+    if (temperature !== undefined) payload.temperature = temperature;
+
+    const seed = parseOptionalInt(settings.seed);
+    if (seed !== undefined) payload.seed = seed;
+
+    if (includeBatchFields) {
+      payload.maxGenerations = parsePositiveInt(settings.maxGenerations, 50, 1, 200);
+      payload.delayMsBetweenCalls = parsePositiveInt(settings.delayMsBetweenCalls, 350, 0, 5000);
+    }
+
+    if (completedSlotsRef.current.length > 0) {
+      payload.excludeSlots = completedSlotsRef.current;
+    }
+
+    return payload;
+  };
+
+  useEffect(() => {
+    if (!settingsReady || running) return;
+    if (completedSlotsRef.current.length === 0) return;
+    completedSlotsRef.current = [];
     setProgress(null);
     setError(null);
+  }, [
+    settingsReady,
+    running,
+    settings,
+    currentFilters.category,
+    currentFilters.status,
+    currentFilters.search,
+    currentFilters.audioMissing,
+  ]);
+
+  useEffect(() => {
+    if (!open || !settingsReady || running) return;
+
+    const timeout = window.setTimeout(async () => {
+      const requestId = previewRequestRef.current + 1;
+      previewRequestRef.current = requestId;
+      setPreviewLoading(true);
+      setPreviewError(null);
+
+      try {
+        const res = await fetch('/api/messages/bulk-audio/preview', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(buildRequestPayload(false)),
+        });
+        const data = await res.json();
+
+        if (previewRequestRef.current !== requestId) return;
+
+        if (!res.ok || !data.success || !data.data) {
+          setPreview(null);
+          setPreviewError(data.error || `Preview failed (${res.status})`);
+          return;
+        }
+
+        setPreview(data.data as PreviewResult);
+      } catch (err) {
+        if (previewRequestRef.current !== requestId) return;
+        console.error(err);
+        setPreview(null);
+        setPreviewError('Preview request failed');
+      } finally {
+        if (previewRequestRef.current === requestId) {
+          setPreviewLoading(false);
+        }
+      }
+    }, 300);
+
+    return () => window.clearTimeout(timeout);
+  }, [
+    open,
+    settingsReady,
+    settings,
+    currentFilters.category,
+    currentFilters.status,
+    currentFilters.search,
+    currentFilters.audioMissing,
+    running,
+  ]);
+
+  const resetTransientState = () => {
+    setPreviewError(null);
+    setError(null);
+    setProgress(null);
+    completedSlotsRef.current = [];
+    cancelledRef.current = false;
   };
 
   const run = async () => {
+    const continuingPreviousRun = !!progress?.done && completedSlotsRef.current.length > 0;
     cancelledRef.current = false;
+    if (!continuingPreviousRun) {
+      completedSlotsRef.current = [];
+    }
     setRunning(true);
     setError(null);
     setProgress(null);
 
-    const total = Math.min(200, Math.max(1, maxGenerations));
+    const requestedTotal = parsePositiveInt(settings.maxGenerations, 50, 1, 200);
+    const previewTotal = preview?.plannedGenerations ?? requestedTotal;
+    const plannedTotal = Math.min(requestedTotal, previewTotal);
     let generated = 0;
     let batchesDone = 0;
+    let remaining = plannedTotal > 0;
     const allFailed: FailedItem[] = [];
-    let remaining = true;
 
     try {
-      while (generated < total && remaining && !cancelledRef.current) {
-        const batchMax = Math.min(BATCH_SIZE, total - generated);
+      while (generated < requestedTotal && remaining && !cancelledRef.current) {
+        const batchMax = Math.min(BATCH_SIZE, requestedTotal - generated);
+        const payload = {
+          ...buildRequestPayload(true),
+          maxGenerations: batchMax,
+        };
 
         const res = await fetch('/api/messages/bulk-audio', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            includeInactive: true,
-            ...(categoryFilter ? { category: categoryFilter } : {}),
-            maxGenerations: batchMax,
-            languages: ['ar', 'en'],
-          }),
+          body: JSON.stringify(payload),
         });
 
-        if (!res.ok) {
-          setError(`Server responded ${res.status}`);
-          break;
-        }
-
         const data = await res.json();
-        if (!data.success || !data.data) {
-          setError(data.error || 'Batch failed');
+        if (!res.ok || !data.success || !data.data) {
+          setError(data.error || `Batch failed (${res.status})`);
           break;
         }
 
         const batch = data.data as BatchResult;
         generated += batch.completedGenerations;
+        completedSlotsRef.current = [...completedSlotsRef.current, ...batch.completedSlots];
         allFailed.push(...batch.failed);
         batchesDone++;
 
-        remaining = batch.plannedGenerations > batch.completedGenerations + batch.failed.length;
-        if (batch.completedGenerations === 0 && batch.failed.length === 0) {
-          remaining = false;
-        }
-
+        remaining = batch.remainingGenerations > 0 && batch.completedGenerations > 0;
         setProgress({
           totalGenerated: generated,
           totalFailed: allFailed.length,
           batchesDone,
-          currentBatchPlanned: batch.plannedGenerations,
           failed: allFailed,
-          done: false,
           remaining,
+          done: false,
+          plannedTotal: Math.max(plannedTotal, generated),
         });
+
+        if (batch.completedGenerations === 0) {
+          break;
+        }
       }
 
       setProgress((prev) =>
-        prev ? { ...prev, done: true, remaining } : null
+        prev
+          ? {
+              ...prev,
+              done: true,
+              remaining: prev.remaining,
+            }
+          : {
+              totalGenerated: generated,
+              totalFailed: allFailed.length,
+              batchesDone,
+              failed: allFailed,
+              remaining: false,
+              done: true,
+              plannedTotal: Math.max(plannedTotal, generated),
+            }
       );
       onCompleted();
-    } catch (e) {
-      console.error(e);
+    } catch (err) {
+      console.error(err);
       if (generated > 0) {
         setProgress((prev) =>
-          prev ? { ...prev, done: true } : null
+          prev
+            ? { ...prev, done: true }
+            : {
+                totalGenerated: generated,
+                totalFailed: allFailed.length,
+                batchesDone,
+                failed: allFailed,
+                remaining: true,
+                done: true,
+                plannedTotal: Math.max(plannedTotal, generated),
+              }
         );
         setError(`Connection interrupted after generating ${generated} files. You can run again to continue.`);
         onCompleted();
       } else {
-        setError('Request failed — check that the backend is running.');
+        setError('Request failed. Check that the backend is reachable and your TTS settings are valid.');
       }
     } finally {
       setRunning(false);
     }
   };
 
-  const handleCancel = () => {
+  const handleStop = () => {
     cancelledRef.current = true;
   };
 
-  const isIdle = !running && !progress;
-  const isDone = progress?.done;
+  const canStart = !running && !previewLoading && !!preview && preview.plannedGenerations > 0;
+  const isDone = !!progress?.done;
+  const canRunAgain = isDone && (progress?.remaining || progress?.totalFailed);
 
   return (
     <Dialog
       open={open}
       onOpenChange={(next) => {
         if (running) return;
-        if (!next) reset();
+        if (!next) resetTransientState();
         onOpenChange(next);
       }}
     >
       <DialogContent size="lg">
         <DialogHeader>
-          <DialogTitle>Generate missing audio (AI)</DialogTitle>
+          <DialogTitle>Bulk audio generation (AI)</DialogTitle>
           <DialogDescription>
-            Sends small batches to Gemini TTS so each request finishes quickly. Progress updates after every{' '}
-            {BATCH_SIZE} files.
+            Configure Gemini TTS, preview what will be affected, then run generation in small batches of {BATCH_SIZE}{' '}
+            files to avoid long request timeouts.
           </DialogDescription>
         </DialogHeader>
 
         <DialogBody>
-          <div className="space-y-4">
+          <div className="space-y-5">
             {error && (
               <div className="p-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-700">{error}</div>
             )}
 
-            {isIdle && (
-              <div className="space-y-2">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <Label>Generation mode</Label>
+                <Select
+                  value={settings.mode}
+                  onChange={(e) => updateSettings({ mode: e.target.value as BulkAudioSettings['mode'] })}
+                  options={MODE_OPTIONS}
+                  disabled={running}
+                />
+              </div>
+
+              <div>
+                <Label>Languages</Label>
+                <Select
+                  value={settings.languageTarget}
+                  onChange={(e) =>
+                    updateSettings({ languageTarget: e.target.value as BulkAudioSettings['languageTarget'] })
+                  }
+                  options={LANGUAGE_TARGET_OPTIONS}
+                  disabled={running}
+                />
+              </div>
+            </div>
+
+            <div className="rounded-lg border border-gray-200 bg-gray-50 p-4 space-y-3">
+              <label className="flex items-center gap-3 text-sm text-gray-700">
+                <Checkbox
+                  checked={settings.useCurrentFilters}
+                  onCheckedChange={(checked) => updateSettings({ useCurrentFilters: !!checked })}
+                  disabled={running}
+                />
+                Use current page filters
+              </label>
+              <p className="text-xs text-gray-500">{filterSummary}</p>
+              {settings.mode === 'regenerate_selected' && (
+                <p className="text-xs text-amber-700">
+                  Existing audio URLs for the selected languages will be replaced after successful regeneration.
+                </p>
+              )}
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <Label>AI model</Label>
+                <Select
+                  value={settings.model}
+                  onChange={(e) => updateSettings({ model: e.target.value })}
+                  options={MODEL_OPTIONS}
+                  disabled={running}
+                />
+              </div>
+
+              <div>
                 <Label htmlFor="bulk-max-gen">Max audio files this run</Label>
                 <Input
                   id="bulk-max-gen"
                   type="number"
                   min={1}
                   max={200}
-                  value={maxGenerations}
-                  onChange={(e) => setMaxGenerations(Number(e.target.value) || 50)}
+                  value={settings.maxGenerations}
+                  onChange={(e) => updateSettings({ maxGenerations: e.target.value })}
+                  disabled={running}
+                  helperText={`The UI sends batches of ${BATCH_SIZE}; this is the total cap for the full run.`}
                 />
-                <p className="text-xs text-gray-500">
-                  {categoryFilter
-                    ? `Only "${categoryFilter}" messages will be processed.`
-                    : 'All categories will be processed.'}{' '}
-                  Inactive messages are included.
-                </p>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <Label htmlFor="bulk-voice-ar">Arabic voice</Label>
+                <Input
+                  id="bulk-voice-ar"
+                  value={settings.voiceNameAr}
+                  onChange={(e) => updateSettings({ voiceNameAr: e.target.value })}
+                  placeholder="Server default or e.g. Fenrir / Kore"
+                  disabled={running}
+                />
+              </div>
+              <div>
+                <Label htmlFor="bulk-voice-en">English voice</Label>
+                <Input
+                  id="bulk-voice-en"
+                  value={settings.voiceNameEn}
+                  onChange={(e) => updateSettings({ voiceNameEn: e.target.value })}
+                  placeholder="Server default or e.g. Fenrir / Kore"
+                  disabled={running}
+                />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <Label htmlFor="bulk-lang-ar">Arabic language code</Label>
+                <Input
+                  id="bulk-lang-ar"
+                  value={settings.languageCodeAr}
+                  onChange={(e) => updateSettings({ languageCodeAr: e.target.value })}
+                  placeholder="Optional, e.g. ar-EG"
+                  disabled={running}
+                />
+              </div>
+              <div>
+                <Label htmlFor="bulk-lang-en">English language code</Label>
+                <Input
+                  id="bulk-lang-en"
+                  value={settings.languageCodeEn}
+                  onChange={(e) => updateSettings({ languageCodeEn: e.target.value })}
+                  placeholder="Optional, e.g. en-US"
+                  disabled={running}
+                />
+              </div>
+            </div>
+
+            <div>
+              <Label htmlFor="bulk-shared-style">Shared style instructions</Label>
+              <Textarea
+                id="bulk-shared-style"
+                value={settings.sharedStylePrompt}
+                onChange={(e) => updateSettings({ sharedStylePrompt: e.target.value })}
+                placeholder="Optional. Example: Speak slowly, warmly, and clearly like a supportive rehab coach."
+                rows={3}
+                disabled={running}
+              />
+            </div>
+
+            <div className="border-t border-gray-200 pt-4">
+              <button
+                type="button"
+                onClick={() => setShowAdvanced((prev) => !prev)}
+                className="text-sm font-medium text-blue-600 hover:text-blue-700"
+                disabled={running}
+              >
+                {showAdvanced ? 'Hide advanced settings' : 'Show advanced settings'}
+              </button>
+            </div>
+
+            {showAdvanced && (
+              <div className="space-y-4 rounded-lg border border-gray-200 p-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <Label htmlFor="bulk-style-ar">Arabic style override</Label>
+                    <Textarea
+                      id="bulk-style-ar"
+                      value={settings.stylePromptAr}
+                      onChange={(e) => updateSettings({ stylePromptAr: e.target.value })}
+                      placeholder="Optional. Example: Use gentle pacing with precise Arabic pronunciation."
+                      rows={3}
+                      disabled={running}
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="bulk-style-en">English style override</Label>
+                    <Textarea
+                      id="bulk-style-en"
+                      value={settings.stylePromptEn}
+                      onChange={(e) => updateSettings({ stylePromptEn: e.target.value })}
+                      placeholder="Optional. Example: Sound upbeat, concise, and confident."
+                      rows={3}
+                      disabled={running}
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <Label htmlFor="bulk-system-instruction">System instruction</Label>
+                  <Textarea
+                    id="bulk-system-instruction"
+                    value={settings.systemInstruction}
+                    onChange={(e) => updateSettings({ systemInstruction: e.target.value })}
+                    placeholder="Advanced. Use only if you need tighter model steering."
+                    rows={3}
+                    disabled={running}
+                  />
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div>
+                    <Label htmlFor="bulk-temperature">Temperature</Label>
+                    <Input
+                      id="bulk-temperature"
+                      type="number"
+                      step="0.1"
+                      min={0}
+                      max={2}
+                      value={settings.temperature}
+                      onChange={(e) => updateSettings({ temperature: e.target.value })}
+                      placeholder="Optional"
+                      disabled={running}
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="bulk-seed">Seed</Label>
+                    <Input
+                      id="bulk-seed"
+                      type="number"
+                      step="1"
+                      value={settings.seed}
+                      onChange={(e) => updateSettings({ seed: e.target.value })}
+                      placeholder="Optional"
+                      disabled={running}
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="bulk-delay">Delay between calls (ms)</Label>
+                    <Input
+                      id="bulk-delay"
+                      type="number"
+                      min={0}
+                      max={5000}
+                      value={settings.delayMsBetweenCalls}
+                      onChange={(e) => updateSettings({ delayMsBetweenCalls: e.target.value })}
+                      disabled={running}
+                    />
+                  </div>
+                </div>
               </div>
             )}
 
+            <div className="rounded-lg border border-gray-200 p-4 space-y-3">
+              <div className="flex items-center justify-between">
+                <h3 className="text-sm font-semibold text-gray-900">Preview</h3>
+                {previewLoading && <span className="text-xs text-gray-500">Calculating...</span>}
+              </div>
+
+              {previewError && (
+                <div className="p-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-700">{previewError}</div>
+              )}
+
+              {preview && !previewError && (
+                <div className="space-y-3">
+                  <div className="grid grid-cols-2 md:grid-cols-3 gap-3 text-sm">
+                    <div className="rounded border border-gray-200 bg-gray-50 p-3">
+                      <div className="text-xs text-gray-500">Matched messages</div>
+                      <div className="font-semibold">{preview.matchedMessages}</div>
+                    </div>
+                    <div className="rounded border border-gray-200 bg-gray-50 p-3">
+                      <div className="text-xs text-gray-500">Eligible messages</div>
+                      <div className="font-semibold">{preview.eligibleMessages}</div>
+                    </div>
+                    <div className="rounded border border-gray-200 bg-gray-50 p-3">
+                      <div className="text-xs text-gray-500">Audio files to generate</div>
+                      <div className="font-semibold">{preview.plannedGenerations}</div>
+                    </div>
+                    <div className="rounded border border-gray-200 bg-gray-50 p-3">
+                      <div className="text-xs text-gray-500">Arabic slots</div>
+                      <div className="font-semibold">{preview.byLanguage.ar}</div>
+                    </div>
+                    <div className="rounded border border-gray-200 bg-gray-50 p-3">
+                      <div className="text-xs text-gray-500">English slots</div>
+                      <div className="font-semibold">{preview.byLanguage.en}</div>
+                    </div>
+                    <div className="rounded border border-gray-200 bg-gray-50 p-3">
+                      <div className="text-xs text-gray-500">
+                        {settings.mode === 'regenerate_selected' ? 'Will replace existing audio' : 'Missing audio slots'}
+                      </div>
+                      <div className="font-semibold">
+                        {settings.mode === 'regenerate_selected' ? preview.existingAudioSlots : preview.missingAudioSlots}
+                      </div>
+                    </div>
+                  </div>
+
+                  {preview.plannedGenerations === 0 && (
+                    <p className="text-sm text-amber-700 bg-amber-50 border border-amber-100 rounded p-3">
+                      No eligible audio slots match the current settings.
+                    </p>
+                  )}
+                </div>
+              )}
+            </div>
+
             {progress && (
-              <div className="space-y-3 text-sm">
-                {/* Progress bar */}
+              <div className="rounded-lg border border-gray-200 p-4 space-y-3 text-sm">
                 <div>
                   <div className="flex justify-between text-xs text-gray-600 mb-1">
                     <span>
                       Generated: {progress.totalGenerated}
                       {progress.totalFailed > 0 && (
-                        <span className="text-red-600 ml-2">Failed: {progress.totalFailed}</span>
+                        <span className="ml-2 text-red-600">Failed: {progress.totalFailed}</span>
                       )}
                     </span>
-                    <span>
-                      {running ? `Batch ${progress.batchesDone + 1}…` : isDone ? 'Done' : 'Paused'}
-                    </span>
+                    <span>{running ? `Batch ${progress.batchesDone + 1}...` : progress.done ? 'Done' : 'Paused'}</span>
                   </div>
                   <div className="w-full bg-gray-200 rounded-full h-2.5 overflow-hidden">
                     <div
-                      className={`h-full rounded-full transition-all duration-500 ${isDone ? 'bg-green-500' : 'bg-blue-500'}`}
+                      className={`h-full rounded-full transition-all duration-500 ${
+                        progress.done ? 'bg-green-500' : 'bg-blue-500'
+                      }`}
                       style={{
-                        width: `${Math.min(100, (progress.totalGenerated / maxGenerations) * 100)}%`,
+                        width: `${Math.min(100, (progress.totalGenerated / Math.max(progress.plannedTotal, 1)) * 100)}%`,
                       }}
                     />
                   </div>
                 </div>
 
-                {/* Summary when done */}
-                {isDone && (
-                  <>
-                    <div className="grid grid-cols-2 gap-2">
-                      <div className="p-2 bg-gray-50 rounded border border-gray-100">
-                        <div className="text-xs text-gray-500">Total generated</div>
-                        <div className="font-semibold text-green-700">{progress.totalGenerated}</div>
-                      </div>
-                      <div className="p-2 bg-gray-50 rounded border border-gray-100">
-                        <div className="text-xs text-gray-500">Batches</div>
-                        <div className="font-semibold">{progress.batchesDone}</div>
-                      </div>
+                {progress.done && (
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="rounded border border-gray-200 bg-gray-50 p-3">
+                      <div className="text-xs text-gray-500">Generated this run</div>
+                      <div className="font-semibold text-green-700">{progress.totalGenerated}</div>
                     </div>
-                    {progress.remaining && (
-                      <p className="text-amber-700 bg-amber-50 border border-amber-100 rounded p-2">
-                        More messages still need audio. Run again to continue.
-                      </p>
-                    )}
-                    {!progress.remaining && progress.totalGenerated > 0 && (
-                      <p className="text-green-700 bg-green-50 border border-green-100 rounded p-2">
-                        All messages with text now have audio.
-                      </p>
-                    )}
-                  </>
+                    <div className="rounded border border-gray-200 bg-gray-50 p-3">
+                      <div className="text-xs text-gray-500">Batches</div>
+                      <div className="font-semibold">{progress.batchesDone}</div>
+                    </div>
+                  </div>
                 )}
 
-                {/* Failed list */}
+                {progress.done && progress.remaining && (
+                  <p className="text-amber-700 bg-amber-50 border border-amber-100 rounded p-3">
+                    More eligible slots remain. You can continue with another run.
+                  </p>
+                )}
+
                 {progress.failed.length > 0 && (
                   <div>
                     <div className="font-medium text-red-700 mb-1">Failed ({progress.failed.length})</div>
                     <div className="max-h-40 overflow-y-auto border border-gray-200 rounded p-2 text-xs font-mono space-y-1">
-                      {progress.failed.map((f, i) => (
-                        <div key={`${f.messageId}-${f.language}-${i}`}>
-                          {f.code} [{f.language}]: {f.error}
+                      {progress.failed.map((item, index) => (
+                        <div key={`${item.slotKey}-${index}`}>
+                          {item.code} [{item.language}]: {item.error}
                         </div>
                       ))}
                     </div>
@@ -271,16 +803,26 @@ export function MessageBulkAudioModal({
 
         <DialogFooter>
           {running ? (
-            <Button variant="ghost" onClick={handleCancel}>
+            <Button variant="ghost" onClick={handleStop}>
               Stop after current batch
             </Button>
           ) : (
             <>
-              <Button variant="ghost" onClick={() => onOpenChange(false)}>
+              <Button
+                variant="ghost"
+                onClick={() => {
+                  resetTransientState();
+                  onOpenChange(false);
+                }}
+              >
                 {isDone ? 'Close' : 'Cancel'}
               </Button>
-              {!isDone && (
-                <Button onClick={run}>Start</Button>
+              {canRunAgain ? (
+                <Button onClick={run}>Run again</Button>
+              ) : (
+                <Button onClick={run} disabled={!canStart}>
+                  Start
+                </Button>
               )}
             </>
           )}
