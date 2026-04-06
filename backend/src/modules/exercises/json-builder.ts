@@ -387,8 +387,10 @@ function parseTrackedJoints(config: unknown): TrackedJoint[] {
         downRange: joint.downRange as StateRanges,
       } as PrimaryTrackedJoint;
     } else {
-      const phaseRanges = joint.phaseRanges
-        ? { phaseRanges: joint.phaseRanges as SecondaryTrackedJoint['phaseRanges'] }
+      const rawPhaseRanges = joint.phaseRanges as Record<string, unknown> | null;
+      const hasPhaseRanges = rawPhaseRanges && Object.keys(rawPhaseRanges).length > 0;
+      const phaseRanges = hasPhaseRanges
+        ? { phaseRanges: rawPhaseRanges as SecondaryTrackedJoint['phaseRanges'] }
         : {};
       return {
         ...baseJoint,

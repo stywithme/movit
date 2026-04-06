@@ -3,9 +3,10 @@ name: git-push-workflow
 description: >-
   Manages the Git push workflow for the POSE monorepo. Merges Base branch into
   MO and HA, resolves conflicts, pushes all main repo branches, then pushes
-  Admin-Dashboard and backend nested repos from HA branch to their main branch.
-  Use when pushing to GitHub, merging branches, syncing repos, or when the user
-  says push, upload, deploy, or رفع.
+  Admin-Dashboard and backend nested repos from HA branch to their main branch,
+  then checks out Base again for continued work. Use when pushing to GitHub,
+  merging branches, syncing repos, or when the user says push, upload, deploy,
+  or رفع.
 ---
 
 # Git Push Workflow
@@ -84,6 +85,14 @@ git push origin main
 cd ..
 ```
 
+### Step 5 — Return to Base
+
+After sub-repo pushes complete, switch the main repo back to `Base` so daily work continues on the shared branch:
+
+```bash
+git checkout Base
+```
+
 ## Conflict Resolution Strategy
 
 When merging `Base` into `MO` or `HA`:
@@ -100,6 +109,7 @@ When merging `Base` into `MO` or `HA`:
 ## Important Rules
 
 - Sub-repos are pushed **only from HA branch**, never from MO
+- After the workflow finishes, the main repo must be on **`Base`** (Step 5)
 - Always verify the current branch before every operation
 - `android-poc` has no separate repo — it's tracked by the main POSE repo only
 - Write descriptive commit messages reflecting the actual changes, not generic ones
