@@ -387,10 +387,14 @@ function parseTrackedJoints(config: unknown): TrackedJoint[] {
         downRange: joint.downRange as StateRanges,
       } as PrimaryTrackedJoint;
     } else {
+      const phaseRanges = joint.phaseRanges
+        ? { phaseRanges: joint.phaseRanges as SecondaryTrackedJoint['phaseRanges'] }
+        : {};
       return {
         ...baseJoint,
         role: 'secondary' as const,
         range: joint.range as StateRanges,
+        ...phaseRanges,
       } as SecondaryTrackedJoint;
     }
   });

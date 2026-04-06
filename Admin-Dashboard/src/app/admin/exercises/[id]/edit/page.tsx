@@ -276,6 +276,7 @@ export default function EditExercisePage() {
           role: 'secondary',
           startPose: joint.startPose,
           range: joint.range,
+          ...(joint.phaseRanges && Object.keys(joint.phaseRanges).length > 0 && { phaseRanges: joint.phaseRanges }),
           stateMessages: joint.stateMessages,
           pairedWith: joint.pairedWith,
         };
@@ -360,6 +361,7 @@ export default function EditExercisePage() {
             role: 'secondary',
             startPose: joint.startPose,
             range: joint.range,
+            ...(joint.phaseRanges && Object.keys(joint.phaseRanges).length > 0 && { phaseRanges: joint.phaseRanges }),
             stateMessages: joint.stateMessages,
             pairedWith: joint.pairedWith,
           };

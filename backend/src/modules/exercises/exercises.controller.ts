@@ -3,20 +3,24 @@ import type { Response } from 'express';
 import { exerciseService } from './exercises.service';
 import { CaslGuard } from '@/lib/casl/casl.guard';
 import { CheckPermission } from '@/lib/casl/check-permission.decorator';
-import { PositionCheckSchema } from './exercises.validation';
+import { PositionCheckSchema, TrackedJointSchema } from './exercises.validation';
 import { z } from 'zod';
 
-const PoseVariantPositionChecksSchema = z.object({
-  poseVariants: z.array(z.object({
-    positionChecks: z.array(PositionCheckSchema).optional(),
-  }).passthrough()).optional(),
+const PoseVariantSchema = z.object({
+  trackedJointsConfig: z.array(TrackedJointSchema).optional(),
+  positionChecks: z.array(PositionCheckSchema).optional(),
 }).passthrough();
 
-function validatePositionChecks(body: unknown) {
-  const result = PoseVariantPositionChecksSchema.safeParse(body);
+const ExercisePayloadSchema = z.object({
+  trackedJointsConfig: z.array(TrackedJointSchema).optional(),
+  poseVariants: z.array(PoseVariantSchema).optional(),
+}).passthrough();
+
+function validateExercisePayload(body: unknown) {
+  const result = ExercisePayloadSchema.safeParse(body);
   if (!result.success) {
     throw new BadRequestException({
-      message: 'Position checks validation failed',
+      message: 'Exercise payload validation failed',
       errors: result.error.flatten().fieldErrors,
     });
   }
@@ -68,7 +72,7 @@ export class ExercisesController {
         return { success: false, error: 'Name must have at least English or Arabic value' };
       }
 
-      validatePositionChecks(body);
+      validateExercisePayload(body);
 
       const exercise = await exerciseService.create(body);
       res.status(201);
@@ -114,7 +118,7 @@ export class ExercisesController {
   @CheckPermission('update', 'Exercise')
   async update(@Param('id') id: string, @Body() body: any, @Res({ passthrough: true }) res: Response) {
     try {
-      validatePositionChecks(body);
+      validateExercisePayload(body);
 
       const exercise = await exerciseService.update(id, body);
       return { success: true, data: exercise };
