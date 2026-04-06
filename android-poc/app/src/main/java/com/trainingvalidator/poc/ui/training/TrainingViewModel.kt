@@ -274,6 +274,8 @@ class TrainingViewModel(
             try {
                 val repository = ExerciseRepository.getInstance(context)
                 val audioCache = repository.getAudioCache()
+                // Refresh in-memory file list if background sync finished after last scan
+                audioCache.rescanCache()
                 feedbackManager?.initializeWithAudioCache(audioCache)
                 Log.d(TAG, "Feedback initialized with audio cache support")
             } catch (e: Exception) {

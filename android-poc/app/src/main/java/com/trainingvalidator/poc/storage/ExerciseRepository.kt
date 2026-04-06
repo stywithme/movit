@@ -147,18 +147,11 @@ class ExerciseRepository private constructor(private val context: Context) {
                     isInitialized = true
                 }
                 
-                // Start background audio download (non-blocking)
-                if (syncManager.hasPendingAudioDownloads()) {
-                    @OptIn(DelicateCoroutinesApi::class)
-                    kotlinx.coroutines.GlobalScope.launch(Dispatchers.IO) {
-                        try {
-                            val downloaded = syncManager.downloadPendingAudio()
-                            Log.d(TAG, "Background audio download completed: $downloaded files")
-                        } catch (e: Exception) {
-                            Log.w(TAG, "Background audio download failed", e)
-                        }
-                    }
-                }
+                // Start background audio download (non-blocking); includes resume from persisted manifest
+                launchPendingAudioDownload("after sync")
+            } else if (audioCache.getPendingDownloadCount() > 0) {
+                // Resume from persisted manifest when autoSync is off (e.g. Explore) but files missing
+                launchPendingAudioDownload("persisted manifest (no autoSync)")
             }
             
             // If cache was empty and sync didn't work, try one more sync
@@ -363,6 +356,19 @@ class ExerciseRepository private constructor(private val context: Context) {
     fun getAudioCache(): AudioCacheManager = audioCache
     
     // ==================== Private Methods ====================
+    
+    @OptIn(DelicateCoroutinesApi::class)
+    private fun launchPendingAudioDownload(reason: String) {
+        if (!syncManager.hasPendingAudioDownloads() && audioCache.getPendingDownloadCount() <= 0) return
+        kotlinx.coroutines.GlobalScope.launch(Dispatchers.IO) {
+            try {
+                val downloaded = syncManager.downloadPendingAudio()
+                Log.d(TAG, "Background audio download ($reason): $downloaded files")
+            } catch (e: Exception) {
+                Log.w(TAG, "Background audio download failed ($reason)", e)
+            }
+        }
+    }
     
     /**
      * Load exercises from cache into memory

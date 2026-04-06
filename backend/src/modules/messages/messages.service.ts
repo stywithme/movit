@@ -46,6 +46,27 @@ function delay(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
+/** Bump exercise.updatedAt so incremental mobile sync picks up new library audio. */
+async function touchExercisesForMessageIds(
+  prisma: Awaited<ReturnType<typeof getPrisma>>,
+  messageIds: Iterable<string>
+): Promise<void> {
+  const ids = [...new Set(messageIds)];
+  if (ids.length === 0) return;
+  await prisma.exercise.updateMany({
+    where: {
+      poseVariants: {
+        some: {
+          messageAssignments: {
+            some: { messageId: { in: ids } },
+          },
+        },
+      },
+    },
+    data: { updatedAt: new Date() },
+  });
+}
+
 export const messagesService = {
   async list(options?: {
     includeInactive?: boolean;
@@ -103,6 +124,7 @@ export const messagesService = {
     const failed: BulkGenerateAudioResult['failed'] = [];
     let completedGenerations = 0;
     let skippedAlreadyPresent = 0;
+    const touchedMessageIds = new Set<string>();
 
     outer: for (const msg of messages) {
       let content = parseMessageContent(msg.content);
@@ -118,6 +140,7 @@ export const messagesService = {
                 updatedAt: new Date(),
               },
             });
+            touchedMessageIds.add(msg.id);
           }
           break outer;
         }
@@ -159,7 +182,12 @@ export const messagesService = {
             updatedAt: new Date(),
           },
         });
+        touchedMessageIds.add(msg.id);
       }
+    }
+
+    if (touchedMessageIds.size > 0) {
+      await touchExercisesForMessageIds(prisma, touchedMessageIds);
     }
 
     return {
@@ -214,10 +242,16 @@ export const messagesService = {
     if (data.isSystem !== undefined) updateData.isSystem = data.isSystem;
     if (data.isActive !== undefined) updateData.isActive = data.isActive;
 
-    return prisma.feedbackMessageTemplate.update({
+    const row = await prisma.feedbackMessageTemplate.update({
       where: { id },
       data: updateData,
     });
+
+    if (data.content !== undefined) {
+      await touchExercisesForMessageIds(prisma, [id]);
+    }
+
+    return row;
   },
 
   async delete(id: string) {

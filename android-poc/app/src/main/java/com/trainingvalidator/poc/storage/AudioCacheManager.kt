@@ -2,8 +2,10 @@ package com.trainingvalidator.poc.storage
 
 import android.content.Context
 import android.util.Log
+import com.google.gson.Gson
 import com.trainingvalidator.poc.network.ApiClient
 import com.trainingvalidator.poc.network.AudioFileInfo
+import com.trainingvalidator.poc.network.AudioManifest
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import okhttp3.Request
@@ -30,20 +32,29 @@ class AudioCacheManager(private val context: Context) {
     companion object {
         private const val TAG = "AudioCacheManager"
         private const val CACHE_DIR = "audio_cache"
+        private const val MANIFEST_FILE_NAME = "manifest.json"
         private const val MAX_CACHE_SIZE_MB = 100  // Max cache size in MB
     }
     
     private val cacheDir: File = File(context.filesDir, CACHE_DIR)
     private val arDir: File = File(cacheDir, "ar")
     private val enDir: File = File(cacheDir, "en")
+    private val manifestFile: File = File(cacheDir, MANIFEST_FILE_NAME)
+    
+    private val gson = Gson()
     
     // Track download status
     private val downloadedFiles: MutableSet<String> = mutableSetOf()
     private val pendingDownloads: MutableSet<String> = mutableSetOf()
     
+    /** Last known manifest from disk or sync (for resume after process death). */
+    private var persistedAudioManifest: AudioManifest? = null
+    private var persistedEffectiveBaseUrl: String? = null
+    
     init {
         ensureDirectoriesExist()
         scanExistingFiles()
+        loadPersistedManifestFromDisk()
     }
     
     // ==================== Initialization ====================
@@ -68,6 +79,61 @@ class AudioCacheManager(private val context: Context) {
         
         Log.d(TAG, "Found ${downloadedFiles.size} cached audio files (ar: ${arDir.listFiles()?.size ?: 0}, en: ${enDir.listFiles()?.size ?: 0})")
     }
+    
+    private fun loadPersistedManifestFromDisk() {
+        try {
+            if (!manifestFile.exists()) return
+            val json = manifestFile.readText()
+            val wrapper = gson.fromJson(json, PersistedAudioManifestJson::class.java)
+            if (wrapper.baseUrl.isNullOrBlank() || wrapper.files == null) return
+            persistedEffectiveBaseUrl = wrapper.baseUrl
+            persistedAudioManifest = AudioManifest(wrapper.baseUrl, wrapper.files)
+            Log.d(TAG, "Loaded persisted audio manifest: ${wrapper.files.size} entries (baseUrl set)")
+        } catch (e: Exception) {
+            Log.w(TAG, "Failed to load persisted audio manifest", e)
+        }
+    }
+    
+    /**
+     * Persist manifest for download resume across app restarts.
+     * [effectiveBaseUrl] should match the URL used for downloads (e.g. ApiConfig effective base).
+     */
+    fun persistAudioManifest(effectiveBaseUrl: String, manifest: AudioManifest) {
+        persistedEffectiveBaseUrl = effectiveBaseUrl.trimEnd('/')
+        persistedAudioManifest = AudioManifest(effectiveBaseUrl.trimEnd('/'), manifest.files)
+        try {
+            val json = gson.toJson(
+                PersistedAudioManifestJson(
+                    baseUrl = persistedEffectiveBaseUrl!!,
+                    files = manifest.files
+                )
+            )
+            manifestFile.writeText(json)
+            Log.d(TAG, "Saved audio manifest to disk (${manifest.files.size} files)")
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed to persist audio manifest", e)
+        }
+    }
+    
+    /**
+     * Effective base URL + manifest last persisted or loaded (for SyncManager restore).
+     */
+    fun getPersistedManifestState(): Pair<String?, AudioManifest?> {
+        return persistedEffectiveBaseUrl to persistedAudioManifest
+    }
+    
+    /**
+     * Files listed in the persisted/synced manifest that are not yet on disk.
+     */
+    fun getPendingDownloadCount(): Int {
+        val m = persistedAudioManifest ?: return 0
+        return m.files.count { !hasAudio(it.filename) }
+    }
+    
+    private data class PersistedAudioManifestJson(
+        val baseUrl: String,
+        val files: List<AudioFileInfo>
+    )
     
     /**
      * Rescan cached files (call after downloads complete)
@@ -274,6 +340,13 @@ class AudioCacheManager(private val context: Context) {
             dir.listFiles()?.forEach { it.delete() }
         }
         downloadedFiles.clear()
+        persistedAudioManifest = null
+        persistedEffectiveBaseUrl = null
+        try {
+            if (manifestFile.exists()) manifestFile.delete()
+        } catch (e: Exception) {
+            Log.w(TAG, "Failed to delete manifest file", e)
+        }
         Log.d(TAG, "Cleared audio cache")
     }
     

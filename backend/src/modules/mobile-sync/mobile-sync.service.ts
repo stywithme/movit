@@ -38,6 +38,50 @@ function toSyncLocalizedText(value: Record<string, unknown> | null | undefined) 
   return { ar, en };
 }
 
+/** Collect audioAr/audioEn from a LocalizedText-like object (inline JSON). */
+async function addUrlsFromLocalizedLike(
+  value: unknown,
+  addUrl: (url: string) => Promise<void>
+): Promise<void> {
+  if (!value || typeof value !== 'object') return;
+  const o = value as Record<string, unknown>;
+  if (typeof o.audioAr === 'string') await addUrl(o.audioAr);
+  if (typeof o.audioEn === 'string') await addUrl(o.audioEn);
+}
+
+/** Walk stateMessages (simple or zone up/down) for audio URLs. */
+async function scanStateMessagesForAudio(
+  stateMessages: unknown,
+  addUrl: (url: string) => Promise<void>
+): Promise<void> {
+  if (!stateMessages || typeof stateMessages !== 'object') return;
+  const sm = stateMessages as Record<string, unknown>;
+  const keys = ['perfect', 'normal', 'pad', 'warning', 'danger'] as const;
+  for (const k of keys) {
+    const val = sm[k];
+    if (!val || typeof val !== 'object') continue;
+    const obj = val as Record<string, unknown>;
+    if ('up' in obj || 'down' in obj) {
+      await addUrlsFromLocalizedLike(obj.up, addUrl);
+      await addUrlsFromLocalizedLike(obj.down, addUrl);
+    } else {
+      await addUrlsFromLocalizedLike(obj, addUrl);
+    }
+  }
+}
+
+async function scanTrackedJointsForAudio(
+  trackedJoints: unknown,
+  addUrl: (url: string) => Promise<void>
+): Promise<void> {
+  if (!Array.isArray(trackedJoints)) return;
+  for (const j of trackedJoints) {
+    if (!j || typeof j !== 'object') continue;
+    const joint = j as Record<string, unknown>;
+    await scanStateMessagesForAudio(joint.stateMessages, addUrl);
+  }
+}
+
 export const mobileSyncService = {
   async getExplore(
     params: ExploreRequestParams = {}
@@ -434,8 +478,8 @@ export const mobileSyncService = {
       ];
     }
 
-    // Build audio manifest from message library
-    const audioManifest = await this.buildAudioManifest(messageLibrary, baseUrl);
+    // Build audio manifest from message library + inline exercise audio URLs
+    const audioManifest = await this.buildAudioManifest(messageLibrary, exercisesWithMeta, baseUrl);
     
     let userPrograms: UserProgramExport[] | undefined;
     let sessionReports: SessionReportExport[] | undefined;
@@ -554,40 +598,46 @@ export const mobileSyncService = {
   },
   
   /**
-   * Build audio manifest from message library
-   * Extracts all audio URLs from messages and validates they exist
+   * Build audio manifest from message library and inline exercise content
+   * (positionChecks.errorMessage, trackedJoints.stateMessages).
    */
   async buildAudioManifest(
     messageLibrary: MessageTemplate[],
+    exercises: ExerciseConfigWithMeta[],
     baseUrl: string
   ): Promise<AudioManifest> {
     const audioFiles: AudioFileInfo[] = [];
     const seenUrls = new Set<string>();
-    
-    // Extract audio URLs from message templates
+
+    const addUrl = async (url: string) => {
+      if (!url || seenUrls.has(url)) return;
+      seenUrls.add(url);
+      const filename = path.basename(url);
+      const language = filename.includes('_ar_') ? 'ar' : 'en';
+      const fileSize = await this.getAudioFileSize(url);
+      audioFiles.push({
+        filename,
+        url,
+        size: fileSize,
+        language: language as 'ar' | 'en',
+      });
+    };
+
     for (const message of messageLibrary) {
       const { audioAr, audioEn } = message.content;
-      const audioUrls = [audioAr, audioEn].filter((url): url is string => !!url);
-      
-      for (const url of audioUrls) {
-        if (seenUrls.has(url)) continue;
-        seenUrls.add(url);
-        
-        const filename = path.basename(url);
-        const language = filename.includes('_ar_') ? 'ar' : 'en';
-        
-        // Get file size if available
-        const fileSize = await this.getAudioFileSize(url);
-        
-        audioFiles.push({
-          filename,
-          url,
-          size: fileSize,
-          language: language as 'ar' | 'en',
-        });
+      if (audioAr) await addUrl(audioAr);
+      if (audioEn) await addUrl(audioEn);
+    }
+
+    for (const exercise of exercises) {
+      for (const variant of exercise.poseVariants || []) {
+        for (const pc of variant.positionChecks || []) {
+          await addUrlsFromLocalizedLike(pc.errorMessage, addUrl);
+        }
+        await scanTrackedJointsForAudio(variant.trackedJoints, addUrl);
       }
     }
-    
+
     return {
       baseUrl,
       files: audioFiles,
