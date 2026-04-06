@@ -1,23 +1,59 @@
-import { generateSpeech } from '@/lib/gemini';
+import type { FeedbackMessageTemplate } from '@prisma/client';
+import { deleteAudioFile, generateSpeech } from '@/lib/gemini';
 import type { LocalizedTextWithAudio } from '@/lib/types/localized';
 import { getPrisma } from '@/lib/prisma/client';
 import type {
   AudioMissingFilter,
   BulkGenerateAudioInput,
+  BulkGenerateAudioLanguage,
+  BulkGenerateAudioMode,
+  BulkGenerateAudioPreview,
   BulkGenerateAudioResult,
   CreateMessageInput,
   MessageCategory,
+  MessageStatusFilter,
   UpdateMessageInput,
 } from './messages.types';
 
+/**
+ * Normalize library `content` JSON. Audio may be stored as camelCase (editor) or legacy snake_case.
+ * Only non-empty trimmed strings count as "has audio" for skip logic.
+ */
 function parseMessageContent(raw: unknown): LocalizedTextWithAudio {
-  const c = raw as Record<string, string | undefined>;
-  return {
-    ar: c?.ar ?? '',
-    en: c?.en ?? '',
-    audioAr: c.audioAr,
-    audioEn: c.audioEn,
+  if (raw === null || typeof raw !== 'object' || Array.isArray(raw)) {
+    return { ar: '', en: '' };
+  }
+  const c = raw as Record<string, unknown>;
+  const text = (v: unknown) => (typeof v === 'string' ? v : '');
+  const audioUrl = (camel: string, snake: string): string | undefined => {
+    const v = c[camel] ?? c[snake];
+    if (typeof v === 'string' && v.trim()) return v.trim();
+    return undefined;
   };
+  return {
+    ar: text(c.ar),
+    en: text(c.en),
+    audioAr: audioUrl('audioAr', 'audio_ar'),
+    audioEn: audioUrl('audioEn', 'audio_en'),
+  };
+}
+
+function getTextForLanguage(content: LocalizedTextWithAudio, lang: BulkGenerateAudioLanguage): string {
+  return lang === 'ar' ? content.ar ?? '' : content.en ?? '';
+}
+
+function getAudioForLanguage(content: LocalizedTextWithAudio, lang: BulkGenerateAudioLanguage): string | undefined {
+  return lang === 'ar' ? content.audioAr : content.audioEn;
+}
+
+function setAudioForLanguage(
+  content: LocalizedTextWithAudio,
+  lang: BulkGenerateAudioLanguage,
+  audioUrl: string
+): LocalizedTextWithAudio {
+  return lang === 'ar'
+    ? { ...content, audioAr: audioUrl }
+    : { ...content, audioEn: audioUrl };
 }
 
 function matchesAudioMissingFilter(content: LocalizedTextWithAudio, filter: AudioMissingFilter): boolean {
@@ -49,7 +85,7 @@ function delay(ms: number): Promise<void> {
 function buildListWhere(options: {
   includeInactive?: boolean;
   category?: string;
-  status?: 'active' | 'inactive';
+  status?: MessageStatusFilter;
 }): Record<string, unknown> {
   const where: Record<string, unknown> = {};
   if (!options.includeInactive) {
@@ -78,6 +114,188 @@ function filterMessagesBySearch<
       (c.ar || '').toLowerCase().includes(q)
     );
   });
+}
+
+function buildBulkSlotKey(messageId: string, language: BulkGenerateAudioLanguage): string {
+  return `${messageId}:${language}`;
+}
+
+function normalizeOptionalString(value?: string): string | undefined {
+  const trimmed = value?.trim();
+  return trimmed ? trimmed : undefined;
+}
+
+interface NormalizedBulkGenerateAudioInput {
+  includeInactive?: boolean;
+  category?: MessageCategory;
+  status?: MessageStatusFilter;
+  search?: string;
+  audioMissing?: AudioMissingFilter;
+  languages: BulkGenerateAudioLanguage[];
+  mode: BulkGenerateAudioMode;
+  maxGenerations: number;
+  delayMsBetweenCalls: number;
+  excludeSlots: Set<string>;
+  model?: string;
+  voiceNameAr?: string;
+  voiceNameEn?: string;
+  languageCodeAr?: string;
+  languageCodeEn?: string;
+  sharedStylePrompt?: string;
+  stylePromptAr?: string;
+  stylePromptEn?: string;
+  systemInstruction?: string;
+  temperature?: number;
+  seed?: number;
+}
+
+interface BulkCandidateSlot {
+  key: string;
+  messageId: string;
+  code: string;
+  language: BulkGenerateAudioLanguage;
+  text: string;
+  existingAudio?: string;
+}
+
+interface BulkCandidateSummary {
+  matchedMessages: number;
+  eligibleMessages: number;
+  plannedGenerations: number;
+  missingAudioSlots: number;
+  existingAudioSlots: number;
+  byLanguage: Record<BulkGenerateAudioLanguage, number>;
+  skippedAlreadyPresent: number;
+  slots: BulkCandidateSlot[];
+}
+
+function normalizeBulkGenerateAudioInput(input?: BulkGenerateAudioInput): NormalizedBulkGenerateAudioInput {
+  const rawLanguages = (input?.languages ?? []).filter(
+    (lang): lang is BulkGenerateAudioLanguage => lang === 'ar' || lang === 'en'
+  );
+  const languages: BulkGenerateAudioLanguage[] =
+    rawLanguages.length > 0 ? Array.from(new Set(rawLanguages)) : ['ar', 'en'];
+  const rawTemperature = input?.temperature;
+  const rawSeed = input?.seed;
+
+  return {
+    includeInactive: input?.includeInactive,
+    category: input?.category,
+    status: input?.status,
+    search: normalizeOptionalString(input?.search),
+    audioMissing: input?.audioMissing,
+    languages,
+    mode: input?.mode === 'regenerate_selected' ? 'regenerate_selected' : 'missing_only',
+    maxGenerations: Math.min(200, Math.max(1, Math.trunc(input?.maxGenerations ?? 50))),
+    delayMsBetweenCalls: Math.min(5000, Math.max(0, Math.trunc(input?.delayMsBetweenCalls ?? 350))),
+    excludeSlots: new Set((input?.excludeSlots ?? []).filter((slot) => typeof slot === 'string' && slot.trim())),
+    model: normalizeOptionalString(input?.model),
+    voiceNameAr: normalizeOptionalString(input?.voiceNameAr),
+    voiceNameEn: normalizeOptionalString(input?.voiceNameEn),
+    languageCodeAr: normalizeOptionalString(input?.languageCodeAr),
+    languageCodeEn: normalizeOptionalString(input?.languageCodeEn),
+    sharedStylePrompt: normalizeOptionalString(input?.sharedStylePrompt),
+    stylePromptAr: normalizeOptionalString(input?.stylePromptAr),
+    stylePromptEn: normalizeOptionalString(input?.stylePromptEn),
+    systemInstruction: normalizeOptionalString(input?.systemInstruction),
+    temperature:
+      typeof rawTemperature === 'number' && Number.isFinite(rawTemperature)
+        ? Math.min(2, Math.max(0, rawTemperature))
+        : undefined,
+    seed:
+      typeof rawSeed === 'number' && Number.isFinite(rawSeed)
+        ? Math.trunc(rawSeed)
+        : undefined,
+  };
+}
+
+async function listBulkScopeMessages(
+  prisma: Awaited<ReturnType<typeof getPrisma>>,
+  input: NormalizedBulkGenerateAudioInput
+): Promise<FeedbackMessageTemplate[]> {
+  const where = buildListWhere({
+    includeInactive: input.includeInactive,
+    category: input.category,
+    status: input.status,
+  });
+
+  let rows = await prisma.feedbackMessageTemplate.findMany({
+    where,
+    orderBy: { code: 'asc' },
+  });
+
+  if (input.audioMissing) {
+    rows = rows.filter((row) => matchesAudioMissingFilter(parseMessageContent(row.content), input.audioMissing!));
+  }
+  if (input.search) {
+    rows = filterMessagesBySearch(rows, input.search);
+  }
+
+  return rows;
+}
+
+function collectBulkCandidates(
+  messages: FeedbackMessageTemplate[],
+  input: NormalizedBulkGenerateAudioInput
+): BulkCandidateSummary {
+  const byLanguage: Record<BulkGenerateAudioLanguage, number> = { ar: 0, en: 0 };
+  const eligibleMessageIds = new Set<string>();
+  const slots: BulkCandidateSlot[] = [];
+  let skippedAlreadyPresent = 0;
+  let missingAudioSlots = 0;
+  let existingAudioSlots = 0;
+
+  for (const message of messages) {
+    const content = parseMessageContent(message.content);
+    let messageHasEligibleSlot = false;
+
+    for (const language of input.languages) {
+      const text = getTextForLanguage(content, language).trim();
+      if (!text) continue;
+
+      const key = buildBulkSlotKey(message.id, language);
+      if (input.excludeSlots.has(key)) continue;
+
+      const existingAudio = getAudioForLanguage(content, language);
+      if (input.mode === 'missing_only' && existingAudio) {
+        skippedAlreadyPresent++;
+        continue;
+      }
+
+      slots.push({
+        key,
+        messageId: message.id,
+        code: message.code,
+        language,
+        text,
+        existingAudio,
+      });
+
+      if (existingAudio) {
+        existingAudioSlots++;
+      } else {
+        missingAudioSlots++;
+      }
+
+      byLanguage[language]++;
+      messageHasEligibleSlot = true;
+    }
+
+    if (messageHasEligibleSlot) {
+      eligibleMessageIds.add(message.id);
+    }
+  }
+
+  return {
+    matchedMessages: messages.length,
+    eligibleMessages: eligibleMessageIds.size,
+    plannedGenerations: slots.length,
+    missingAudioSlots,
+    existingAudioSlots,
+    byLanguage,
+    skippedAlreadyPresent,
+    slots,
+  };
 }
 
 /** Bump exercise.updatedAt so incremental mobile sync picks up new library audio. */
@@ -177,98 +395,114 @@ export const messagesService = {
     return { items, total, page, limit, totalPages };
   },
 
-  async bulkGenerateMissingAudio(input: BulkGenerateAudioInput): Promise<BulkGenerateAudioResult> {
+  async previewBulkAudio(input?: BulkGenerateAudioInput): Promise<BulkGenerateAudioPreview> {
     const prisma = await getPrisma();
-    const langs: ('ar' | 'en')[] =
-      input.languages && input.languages.length > 0 ? input.languages : ['ar', 'en'];
-    const maxGen = input.maxGenerations ?? 50;
-    const delayMs = input.delayMsBetweenCalls ?? 350;
+    const normalized = normalizeBulkGenerateAudioInput(input);
+    const messages = await listBulkScopeMessages(prisma, normalized);
+    const summary = collectBulkCandidates(messages, normalized);
 
-    const where: Record<string, unknown> = {};
-    if (input.includeInactive === false) {
-      where.isActive = true;
-    }
-    if (input.category) {
-      where.category = input.category as MessageCategory;
-    }
+    return {
+      matchedMessages: summary.matchedMessages,
+      eligibleMessages: summary.eligibleMessages,
+      plannedGenerations: summary.plannedGenerations,
+      missingAudioSlots: summary.missingAudioSlots,
+      existingAudioSlots: summary.existingAudioSlots,
+      byLanguage: summary.byLanguage,
+    };
+  },
 
-    const messages = await prisma.feedbackMessageTemplate.findMany({
-      where,
-      orderBy: { code: 'asc' },
-    });
-
-    let plannedGenerations = 0;
-    for (const msg of messages) {
-      const content = parseMessageContent(msg.content);
-      for (const lang of langs) {
-        const text = (lang === 'ar' ? content.ar : content.en)?.trim();
-        const hasAudio = lang === 'ar' ? !!content.audioAr : !!content.audioEn;
-        if (text && !hasAudio) plannedGenerations++;
-      }
-    }
+  async bulkGenerateAudio(input?: BulkGenerateAudioInput): Promise<BulkGenerateAudioResult> {
+    const prisma = await getPrisma();
+    const normalized = normalizeBulkGenerateAudioInput(input);
+    const messages = await listBulkScopeMessages(prisma, normalized);
+    const summary = collectBulkCandidates(messages, normalized);
+    const eligibleSlotKeys = new Set(summary.slots.map((slot) => slot.key));
 
     const failed: BulkGenerateAudioResult['failed'] = [];
     let completedGenerations = 0;
-    let skippedAlreadyPresent = 0;
+    const completedSlots: string[] = [];
     const touchedMessageIds = new Set<string>();
 
-    outer: for (const msg of messages) {
-      let content = parseMessageContent(msg.content);
-      let changed = false;
+    const persistMessageContent = async (
+      messageId: string,
+      content: LocalizedTextWithAudio,
+      replacedAudioPaths: string[]
+    ) => {
+      await prisma.feedbackMessageTemplate.update({
+        where: { id: messageId },
+        data: {
+          content: content as object,
+          updatedAt: new Date(),
+        },
+      });
+      touchedMessageIds.add(messageId);
 
-      for (const lang of langs) {
-        if (completedGenerations >= maxGen) {
+      for (const audioPath of [...new Set(replacedAudioPaths.filter(Boolean))]) {
+        const deleted = await deleteAudioFile(audioPath);
+        if (!deleted) {
+          console.warn('[TTS] Failed to delete replaced audio:', audioPath);
+        }
+      }
+    };
+
+    outer: for (const message of messages) {
+      let content = parseMessageContent(message.content);
+      let changed = false;
+      const replacedAudioPaths: string[] = [];
+
+      for (const language of normalized.languages) {
+        if (completedGenerations >= normalized.maxGenerations) {
           if (changed) {
-            await prisma.feedbackMessageTemplate.update({
-              where: { id: msg.id },
-              data: {
-                content: content as object,
-                updatedAt: new Date(),
-              },
-            });
-            touchedMessageIds.add(msg.id);
+            await persistMessageContent(message.id, content, replacedAudioPaths);
           }
           break outer;
         }
 
-        const text = (lang === 'ar' ? content.ar : content.en)?.trim();
-        const hasAudio = lang === 'ar' ? !!content.audioAr : !!content.audioEn;
-        if (!text || hasAudio) {
-          if (text && hasAudio) skippedAlreadyPresent++;
+        const slotKey = buildBulkSlotKey(message.id, language);
+        if (!eligibleSlotKeys.has(slotKey)) {
           continue;
         }
 
-        const result = await generateSpeech({ text, language: lang });
+        const text = getTextForLanguage(content, language).trim();
+        const previousAudio = getAudioForLanguage(content, language);
+        const result = await generateSpeech({
+          text,
+          language,
+          model: normalized.model,
+          voiceName: language === 'ar' ? normalized.voiceNameAr : normalized.voiceNameEn,
+          languageCode: language === 'ar' ? normalized.languageCodeAr : normalized.languageCodeEn,
+          sharedStylePrompt: normalized.sharedStylePrompt,
+          stylePrompt: language === 'ar' ? normalized.stylePromptAr : normalized.stylePromptEn,
+          systemInstruction: normalized.systemInstruction,
+          temperature: normalized.temperature,
+          seed: normalized.seed,
+        });
+
         if (!result.success || !result.audioPath) {
           failed.push({
-            messageId: msg.id,
-            code: msg.code,
-            language: lang,
+            slotKey,
+            messageId: message.id,
+            code: message.code,
+            language,
             error: result.error || 'TTS failed',
           });
-          await delay(delayMs);
+          await delay(normalized.delayMsBetweenCalls);
           continue;
         }
 
-        if (lang === 'ar') {
-          content = { ...content, audioAr: result.audioPath };
-        } else {
-          content = { ...content, audioEn: result.audioPath };
+        if (previousAudio && previousAudio !== result.audioPath) {
+          replacedAudioPaths.push(previousAudio);
         }
+
+        content = setAudioForLanguage(content, language, result.audioPath);
         changed = true;
         completedGenerations++;
-        await delay(delayMs);
+        completedSlots.push(slotKey);
+        await delay(normalized.delayMsBetweenCalls);
       }
 
       if (changed) {
-        await prisma.feedbackMessageTemplate.update({
-          where: { id: msg.id },
-          data: {
-            content: content as object,
-            updatedAt: new Date(),
-          },
-        });
-        touchedMessageIds.add(msg.id);
+        await persistMessageContent(message.id, content, replacedAudioPaths);
       }
     }
 
@@ -276,12 +510,20 @@ export const messagesService = {
       await touchExercisesForMessageIds(prisma, touchedMessageIds);
     }
 
+    const remainingGenerations = Math.max(0, summary.plannedGenerations - completedSlots.length);
+
     return {
-      plannedGenerations,
+      matchedMessages: summary.matchedMessages,
+      eligibleMessages: summary.eligibleMessages,
+      plannedGenerations: summary.plannedGenerations,
+      missingAudioSlots: summary.missingAudioSlots,
+      existingAudioSlots: summary.existingAudioSlots,
       completedGenerations,
-      skippedAlreadyPresent,
+      skippedAlreadyPresent: summary.skippedAlreadyPresent,
       failed,
-      stoppedDueToLimit: completedGenerations >= maxGen && plannedGenerations > completedGenerations,
+      stoppedDueToLimit: completedGenerations >= normalized.maxGenerations && remainingGenerations > 0,
+      remainingGenerations,
+      completedSlots,
     };
   },
 

@@ -368,7 +368,12 @@ export default function MessagesListPage() {
       <MessageBulkAudioModal
         open={bulkAudioOpen}
         onOpenChange={setBulkAudioOpen}
-        categoryFilter={categoryFilter}
+        currentFilters={{
+          category: categoryFilter,
+          status: statusFilter,
+          search: debouncedSearch,
+          audioMissing: audioFilter,
+        }}
         onCompleted={() => fetchMessages(pagination?.page || 1)}
       />
     </div>

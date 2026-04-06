@@ -101,12 +101,25 @@ export class MessagesController {
   @CheckPermission('update', 'FeedbackMessage')
   async bulkGenerateAudio(@Body() body: BulkGenerateAudioInput, @Res({ passthrough: true }) res: Response) {
     try {
-      const result = await messagesService.bulkGenerateMissingAudio(body ?? {});
+      const result = await messagesService.bulkGenerateAudio(body ?? {});
       return { success: true, data: result };
     } catch (error) {
       console.error('Error bulk-generating message audio:', error);
       res.status(500);
       return { success: false, error: 'Failed to generate audio for messages' };
+    }
+  }
+
+  @Post('bulk-audio/preview')
+  @CheckPermission('read', 'FeedbackMessage')
+  async previewBulkAudio(@Body() body: BulkGenerateAudioInput, @Res({ passthrough: true }) res: Response) {
+    try {
+      const result = await messagesService.previewBulkAudio(body ?? {});
+      return { success: true, data: result };
+    } catch (error) {
+      console.error('Error previewing message audio generation:', error);
+      res.status(500);
+      return { success: false, error: 'Failed to preview message audio generation' };
     }
   }
 
