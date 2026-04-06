@@ -470,10 +470,6 @@ class TrainingEngine(
     /**
      * Throttling for DANGER events to prevent spamming
      */
-    @Volatile
-    private var lastDangerEventTime: Long = 0L
-    private val dangerEventCooldownMs: Long = 2000L  // 2 seconds between DANGER events
-
     /**
      * State message throttling per joint
      * Tracks last emitted state and timestamp to avoid spamming
@@ -503,11 +499,6 @@ class TrainingEngine(
     /**
      * Check if we should emit a DANGER event (throttling)
      */
-    private fun shouldEmitDangerEvent(): Boolean {
-        val now = nowMs()
-        return now - lastDangerEventTime >= dangerEventCooldownMs
-    }
-    
     private fun getActiveSessionDurationMs(now: Long = nowMs()): Long {
         if (sessionStartTimeMs <= 0L) return 0L
 
@@ -558,7 +549,6 @@ class TrainingEngine(
         // Setup callbacks
         stateMachine.onPhaseChanged = { previous, current ->
             _currentPhase.value = current
-            emitEvent(FeedbackEvent.PhaseChanged(previous, current))
         }
         
         stateMachine.onRepCompleted = {
@@ -638,7 +628,6 @@ class TrainingEngine(
             formValidator.reset()  // Reset zone hysteresis state
             lastPositionEventTimes.clear()
             lastCameraWarningEventTime = 0L
-            lastDangerEventTime = 0L
             pendingRepCompletion = false
             cameraWarningCount = 0
             safetyStopTriggered = false
@@ -684,11 +673,6 @@ class TrainingEngine(
             motionRecorder?.start(0L)
         }
         
-        emitEvent(FeedbackEvent.TrainingStarted(
-            exerciseName = exerciseConfig.name,
-            targetReps = targetReps
-        ))
-        
         Log.d(TAG, "Training started (${if (isHoldExercise) "HOLD" else "REPS"} mode)")
         if (hasPositionChecksConfigured) {
             Log.d(TAG, "Position checks enabled: ${configuredPositionChecks.size} checks")
@@ -706,7 +690,6 @@ class TrainingEngine(
                 pauseStartTimeMs = pauseClockNowMs()
             }
         }
-        emitEvent(FeedbackEvent.TrainingPaused(repCounter.count))
         Log.d(TAG, "Training paused at rep ${repCounter.count}")
     }
     
@@ -734,7 +717,6 @@ class TrainingEngine(
                 Log.d(TAG, "Cleared stale visibility state on resume")
             }
         }
-        emitEvent(FeedbackEvent.TrainingResumed())
         Log.d(TAG, "Training resumed")
     }
     
@@ -942,14 +924,6 @@ class TrainingEngine(
 
             if (shouldTrackState) {
                 repCounter.updateJointStates(jointStateInfos)
-                if (hasDanger && shouldEmitDangerEvent()) {
-                    val dangerJoints = jointStateInfos.filter { it.value.state == JointState.DANGER }
-                    emitEvent(FeedbackEvent.DangerDetected(
-                        joints = dangerJoints.keys.toList(),
-                        message = dangerJoints.values.firstOrNull()?.messages?.firstOrNull()
-                    ))
-                    lastDangerEventTime = nowMs()
-                }
             }
 
             // ── 7. Arrow infos for skeleton overlay ──
@@ -1242,10 +1216,6 @@ class TrainingEngine(
             is VisibilityCheckResult.StartResumeCountdown -> {
                 visibilityResumeStartMs = nowMs()
                 _visibilityResumeCountdown.value = 3
-                emitEvent(FeedbackEvent.VisibilityResumeCountdown(
-                    resumeFromRep = result.resumeFromRep,
-                    resumeFromPhase = result.resumeFromPhase
-                ))
                 true
             }
 

@@ -29,7 +29,11 @@ class RepCounter(
     private val timeProvider: () -> Long = { System.currentTimeMillis() }
 ) {
     /**
-     * Minimum time between reps (safety backup) - from exercise config or global default
+     * Minimum time between reps.
+     *
+     * For rep-based exercises, cooldown is enforced upstream by PhaseStateMachine
+     * before a rep completion is requested. This value remains here only as a
+     * safety guard for hold exercises, which call completeRep() directly.
      */
     private val minRepIntervalMs: Long = repCountingConfig?.getMinRepInterval(
         SettingsManager.getDefaultMinRepInterval()
@@ -42,7 +46,10 @@ class RepCounter(
     }
 
     /**
-     * Timestamp of last rep completion (backup safety check)
+     * Timestamp of last completed rep.
+     *
+     * Used to prevent duplicate hold completions. Rep-based cooldown is handled
+     * by PhaseStateMachine.
      */
     private var lastRepTime: Long = 0L
 
@@ -312,8 +319,10 @@ class RepCounter(
         val now = timeProvider()
         val timeSinceLastRep = now - lastRepTime
 
-        // Safety check: prevent counting if too fast
-        if (lastRepTime > 0 && timeSinceLastRep < minRepIntervalMs) {
+        // Hold exercises complete directly from HoldTimer, so keep a local
+        // cooldown guard here. Rep-based exercises are already gated by
+        // PhaseStateMachine before this method is reached.
+        if (isHoldExercise && lastRepTime > 0 && timeSinceLastRep < minRepIntervalMs) {
             Log.w(TAG, "Rep completion rejected - too fast (${timeSinceLastRep}ms < ${minRepIntervalMs}ms)")
             return
         }

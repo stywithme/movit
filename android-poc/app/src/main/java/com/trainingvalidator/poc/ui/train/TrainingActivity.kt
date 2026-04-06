@@ -1704,10 +1704,6 @@ class TrainingActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetection
                 videoModeController?.play()
                 updatePlayPauseIcon(isPlaying = true)
             }
-
-            else -> {
-                // Intentionally no-op: future events should not crash UI.
-            }
         }
     }
 
