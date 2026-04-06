@@ -15,13 +15,46 @@ export class MessagesController {
   async list(
     @Query('includeInactive') includeInactive?: string,
     @Query('category') category?: string,
-    @Query('audioMissing') audioMissing?: string
+    @Query('audioMissing') audioMissing?: string,
+    @Query('page') pageStr?: string,
+    @Query('limit') limitStr?: string,
+    @Query('status') statusQuery?: string,
+    @Query('search') search?: string
   ) {
     try {
       const audioFilter =
         audioMissing && (AUDIO_MISSING_QUERY as readonly string[]).includes(audioMissing)
           ? (audioMissing as (typeof AUDIO_MISSING_QUERY)[number])
           : undefined;
+
+      const usePagination = pageStr !== undefined && pageStr !== '';
+      if (usePagination) {
+        const page = Math.max(1, parseInt(pageStr, 10) || 1);
+        const limit = Math.min(100, Math.max(1, parseInt(limitStr || '20', 10) || 20));
+        const status =
+          statusQuery === 'active' || statusQuery === 'inactive' ? statusQuery : undefined;
+
+        const result = await messagesService.listPaged({
+          page,
+          limit,
+          includeInactive: includeInactive === 'true',
+          category: category || undefined,
+          audioMissing: audioFilter,
+          status,
+          search: search?.trim() || undefined,
+        });
+        return {
+          success: true,
+          data: result.items,
+          pagination: {
+            page: result.page,
+            limit: result.limit,
+            total: result.total,
+            totalPages: result.totalPages,
+          },
+        };
+      }
+
       const messages = await messagesService.list({
         includeInactive: includeInactive === 'true',
         category: category || undefined,

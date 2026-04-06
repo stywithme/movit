@@ -46,6 +46,40 @@ function delay(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
+function buildListWhere(options: {
+  includeInactive?: boolean;
+  category?: string;
+  status?: 'active' | 'inactive';
+}): Record<string, unknown> {
+  const where: Record<string, unknown> = {};
+  if (!options.includeInactive) {
+    where.isActive = true;
+  } else {
+    if (options.status === 'active') where.isActive = true;
+    else if (options.status === 'inactive') where.isActive = false;
+  }
+  if (options.category) {
+    where.category = options.category;
+  }
+  return where;
+}
+
+function filterMessagesBySearch<
+  T extends { code: string; tags: string[]; content: unknown },
+>(rows: T[], search: string): T[] {
+  const q = search.trim().toLowerCase();
+  if (!q) return rows;
+  return rows.filter((m) => {
+    const c = parseMessageContent(m.content);
+    return (
+      m.code.toLowerCase().includes(q) ||
+      m.tags.some((t) => t.toLowerCase().includes(q)) ||
+      (c.en || '').toLowerCase().includes(q) ||
+      (c.ar || '').toLowerCase().includes(q)
+    );
+  });
+}
+
 /** Bump exercise.updatedAt so incremental mobile sync picks up new library audio. */
 async function touchExercisesForMessageIds(
   prisma: Awaited<ReturnType<typeof getPrisma>>,
@@ -74,13 +108,11 @@ export const messagesService = {
     audioMissing?: AudioMissingFilter;
   }) {
     const prisma = await getPrisma();
-    const where: Record<string, unknown> = {};
-    if (!options?.includeInactive) {
-      where.isActive = true;
-    }
-    if (options?.category) {
-      where.category = options.category;
-    }
+    const where = buildListWhere({
+      includeInactive: options?.includeInactive,
+      category: options?.category,
+      status: undefined,
+    });
     let rows = await prisma.feedbackMessageTemplate.findMany({
       where,
       orderBy: { createdAt: 'desc' },
@@ -89,6 +121,60 @@ export const messagesService = {
       rows = rows.filter((row) => matchesAudioMissingFilter(parseMessageContent(row.content), options.audioMissing!));
     }
     return rows;
+  },
+
+  async listPaged(options: {
+    page: number;
+    limit: number;
+    includeInactive?: boolean;
+    category?: string;
+    audioMissing?: AudioMissingFilter;
+    status?: 'active' | 'inactive';
+    search?: string;
+  }) {
+    const prisma = await getPrisma();
+    const limit = Math.min(100, Math.max(1, options.limit));
+    let page = Math.max(1, options.page);
+
+    const where = buildListWhere({
+      includeInactive: options.includeInactive,
+      category: options.category,
+      status: options.status,
+    });
+
+    const needsMemoryFilter = !!(options.audioMissing || options.search?.trim());
+
+    if (!needsMemoryFilter) {
+      const total = await prisma.feedbackMessageTemplate.count({ where });
+      const totalPages = Math.max(1, Math.ceil(total / limit) || 1);
+      page = Math.min(page, totalPages);
+      const skip = (page - 1) * limit;
+      const items = await prisma.feedbackMessageTemplate.findMany({
+        where,
+        orderBy: { createdAt: 'desc' },
+        skip,
+        take: limit,
+      });
+      return { items, total, page, limit, totalPages };
+    }
+
+    let rows = await prisma.feedbackMessageTemplate.findMany({
+      where,
+      orderBy: { createdAt: 'desc' },
+    });
+    if (options.audioMissing) {
+      rows = rows.filter((row) => matchesAudioMissingFilter(parseMessageContent(row.content), options.audioMissing!));
+    }
+    if (options.search?.trim()) {
+      rows = filterMessagesBySearch(rows, options.search);
+    }
+
+    const total = rows.length;
+    const totalPages = Math.max(1, Math.ceil(total / limit) || 1);
+    page = Math.min(page, totalPages);
+    const skip = (page - 1) * limit;
+    const items = rows.slice(skip, skip + limit);
+    return { items, total, page, limit, totalPages };
   },
 
   async bulkGenerateMissingAudio(input: BulkGenerateAudioInput): Promise<BulkGenerateAudioResult> {

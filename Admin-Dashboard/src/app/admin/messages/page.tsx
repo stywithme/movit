@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { Input, Select } from '@/components/ui';
 import { MessageFormModal, MessageBulkAudioModal, type MessageFormData } from '@/components/messages';
 import type { LocalizedTextWithAudio } from '@/lib/types/localized';
@@ -16,6 +16,13 @@ interface MessageTemplate {
   isActive: boolean;
   createdAt: string;
   updatedAt: string;
+}
+
+interface Pagination {
+  page: number;
+  limit: number;
+  total: number;
+  totalPages: number;
 }
 
 const CATEGORY_OPTIONS = [
@@ -41,6 +48,8 @@ const AUDIO_FILTER_OPTIONS = [
   { value: 'complete', label: 'Fully voiced (where text exists)' },
 ];
 
+const PAGE_SIZE = 20;
+
 function AudioStatusCell({ content }: { content: LocalizedTextWithAudio }) {
   const enText = !!content.en?.trim();
   const arText = !!content.ar?.trim();
@@ -60,60 +69,59 @@ function AudioStatusCell({ content }: { content: LocalizedTextWithAudio }) {
 
 export default function MessagesListPage() {
   const [messages, setMessages] = useState<MessageTemplate[]>([]);
+  const [pagination, setPagination] = useState<Pagination | null>(null);
   const [loading, setLoading] = useState(true);
   const [categoryFilter, setCategoryFilter] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
+  const [debouncedSearch, setDebouncedSearch] = useState('');
   const [audioFilter, setAudioFilter] = useState('');
 
-  // Modal state
   const [formModalOpen, setFormModalOpen] = useState(false);
   const [editingMessage, setEditingMessage] = useState<MessageFormData | null>(null);
   const [bulkAudioOpen, setBulkAudioOpen] = useState(false);
 
-  const fetchMessages = async () => {
-    setLoading(true);
-    try {
-      const params = new URLSearchParams({ includeInactive: 'true' });
-      if (audioFilter) params.set('audioMissing', audioFilter);
-      const res = await fetch(`/api/messages?${params.toString()}`);
-      const data = await res.json();
-      if (data.success) {
-        setMessages(data.data);
+  useEffect(() => {
+    const t = window.setTimeout(() => setDebouncedSearch(searchQuery), 400);
+    return () => window.clearTimeout(t);
+  }, [searchQuery]);
+
+  const fetchMessages = useCallback(
+    async (page = 1) => {
+      setLoading(true);
+      try {
+        const params = new URLSearchParams({
+          includeInactive: 'true',
+          page: page.toString(),
+          limit: PAGE_SIZE.toString(),
+        });
+        if (categoryFilter) params.set('category', categoryFilter);
+        if (statusFilter) params.set('status', statusFilter);
+        if (audioFilter) params.set('audioMissing', audioFilter);
+        if (debouncedSearch.trim()) params.set('search', debouncedSearch.trim());
+
+        const res = await fetch(`/api/messages?${params.toString()}`);
+        const data = await res.json();
+        if (data.success) {
+          setMessages(data.data);
+          if (data.pagination) {
+            setPagination(data.pagination);
+          } else {
+            setPagination(null);
+          }
+        }
+      } catch (error) {
+        console.error('Error fetching messages:', error);
+      } finally {
+        setLoading(false);
       }
-    } catch (error) {
-      console.error('Error fetching messages:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
+    },
+    [categoryFilter, statusFilter, audioFilter, debouncedSearch]
+  );
 
   useEffect(() => {
-    fetchMessages();
-  }, [audioFilter]);
-
-  const filteredMessages = useMemo(() => {
-    return messages.filter((message) => {
-      if (categoryFilter && message.category !== categoryFilter) return false;
-      if (statusFilter) {
-        const isActive = statusFilter === 'active';
-        if (message.isActive !== isActive) return false;
-      }
-      if (searchQuery) {
-        const query = searchQuery.toLowerCase();
-        const contentMatch = `${message.content.en} ${message.content.ar}`.toLowerCase();
-        const tagsMatch = message.tags.join(' ').toLowerCase();
-        if (
-          !message.code.toLowerCase().includes(query) &&
-          !contentMatch.includes(query) &&
-          !tagsMatch.includes(query)
-        ) {
-          return false;
-        }
-      }
-      return true;
-    });
-  }, [messages, categoryFilter, statusFilter, searchQuery]);
+    fetchMessages(1);
+  }, [fetchMessages]);
 
   const handleCreate = () => {
     setEditingMessage(null);
@@ -135,7 +143,7 @@ export default function MessagesListPage() {
   };
 
   const handleSaved = () => {
-    fetchMessages();
+    fetchMessages(pagination?.page || 1);
   };
 
   const handleToggleActive = async (id: string, currentStatus: boolean) => {
@@ -145,7 +153,7 @@ export default function MessagesListPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ isActive: !currentStatus }),
       });
-      if (res.ok) fetchMessages();
+      if (res.ok) fetchMessages(pagination?.page || 1);
     } catch (error) {
       console.error('Error toggling status:', error);
     }
@@ -155,7 +163,7 @@ export default function MessagesListPage() {
     if (!confirm('Are you sure you want to delete this message?')) return;
     try {
       const res = await fetch(`/api/messages/${id}`, { method: 'DELETE' });
-      if (res.ok) fetchMessages();
+      if (res.ok) fetchMessages(pagination?.page || 1);
     } catch (error) {
       console.error('Error deleting message:', error);
     }
@@ -241,7 +249,7 @@ export default function MessagesListPage() {
       <div className="bg-white rounded-lg shadow-sm border border-gray-200">
         {loading ? (
           <div className="p-6 text-center text-gray-500">Loading messages...</div>
-        ) : filteredMessages.length === 0 ? (
+        ) : messages.length === 0 ? (
           <div className="p-6 text-center text-gray-500">No messages found.</div>
         ) : (
           <div className="overflow-x-auto">
@@ -261,7 +269,7 @@ export default function MessagesListPage() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-200">
-                {filteredMessages.map((message) => (
+                {messages.map((message) => (
                   <tr key={message.id} className="hover:bg-gray-50">
                     <td className="px-4 py-3 text-sm font-mono text-gray-700">{message.code}</td>
                     <td className="px-4 py-3 text-sm text-gray-900">{message.category}</td>
@@ -319,9 +327,37 @@ export default function MessagesListPage() {
             </table>
           </div>
         )}
+
+        {pagination && pagination.total > 0 && (
+          <div className="px-6 py-4 border-t border-gray-200 flex flex-wrap justify-between items-center gap-3">
+            <p className="text-sm text-gray-600">
+              Showing {(pagination.page - 1) * pagination.limit + 1} to{' '}
+              {Math.min(pagination.page * pagination.limit, pagination.total)} of {pagination.total}
+            </p>
+            {pagination.totalPages > 1 && (
+              <div className="flex gap-2">
+                <button
+                  type="button"
+                  onClick={() => fetchMessages(pagination.page - 1)}
+                  disabled={pagination.page === 1 || loading}
+                  className="px-3 py-1 border rounded text-sm disabled:opacity-50"
+                >
+                  Previous
+                </button>
+                <button
+                  type="button"
+                  onClick={() => fetchMessages(pagination.page + 1)}
+                  disabled={pagination.page === pagination.totalPages || loading}
+                  className="px-3 py-1 border rounded text-sm disabled:opacity-50"
+                >
+                  Next
+                </button>
+              </div>
+            )}
+          </div>
+        )}
       </div>
 
-      {/* Create/Edit Modal */}
       <MessageFormModal
         open={formModalOpen}
         onOpenChange={setFormModalOpen}
@@ -333,7 +369,7 @@ export default function MessagesListPage() {
         open={bulkAudioOpen}
         onOpenChange={setBulkAudioOpen}
         categoryFilter={categoryFilter}
-        onCompleted={fetchMessages}
+        onCompleted={() => fetchMessages(pagination?.page || 1)}
       />
     </div>
   );
