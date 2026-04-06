@@ -16,6 +16,7 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.app.AppCompatDelegate
 import androidx.core.content.ContextCompat
+import com.trainingvalidator.poc.ui.utils.LocalizationHelper
 import com.trainingvalidator.poc.ui.utils.currentLanguage
 import com.trainingvalidator.poc.R
 import com.trainingvalidator.poc.databinding.ActivityExerciseDetailBinding
@@ -270,6 +271,8 @@ class ExerciseDetailActivity : AppCompatActivity() {
 
     private fun setupPoseVariants() {
         val exercise = exerciseConfig ?: return
+        val language = currentLanguage
+        val exerciseTitle = exercise.name.get(language).ifBlank { exercise.name.en }
         
         if (exercise.poseVariants.size <= 1) {
             binding.variantSelector.visibility = View.GONE
@@ -278,10 +281,11 @@ class ExerciseDetailActivity : AppCompatActivity() {
         
         binding.variantSelector.visibility = View.VISIBLE
         
-        // Show variant buttons
+        // Show variant buttons (pose position names — avoid duplicating exercise title)
         exercise.poseVariants.forEachIndexed { index, variant ->
-            val posLabel = variant.posePosition ?: variant.cameraPosition ?: ""
-            val text = "${variant.name.en}\n($posLabel)"
+            val text = LocalizationHelper.getPoseVariantButtonLabel(
+                this, exerciseTitle, variant, language
+            )
             when (index) {
                 0 -> {
                     binding.btnVariant1.text = text
