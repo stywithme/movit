@@ -19,9 +19,16 @@ const ExercisePayloadSchema = z.object({
 function validateExercisePayload(body: unknown) {
   const result = ExercisePayloadSchema.safeParse(body);
   if (!result.success) {
+    const issues = result.error.issues.map((issue) => ({
+      path: issue.path.join('.'),
+      message: issue.message,
+      code: issue.code,
+    }));
+    console.error('[ExerciseValidation] Payload rejected:', JSON.stringify(issues, null, 2));
     throw new BadRequestException({
       message: 'Exercise payload validation failed',
       errors: result.error.flatten().fieldErrors,
+      details: issues,
     });
   }
 }
@@ -118,6 +125,24 @@ export class ExercisesController {
   @CheckPermission('update', 'Exercise')
   async update(@Param('id') id: string, @Body() body: any, @Res({ passthrough: true }) res: Response) {
     try {
+      if (body?.poseVariants) {
+        const pvSummary = body.poseVariants.map((pv: any, i: number) => ({
+          index: i,
+          type: typeof pv,
+          isNull: pv === null,
+          hasTrackedJoints: !!pv?.trackedJointsConfig,
+          jointCount: pv?.trackedJointsConfig?.length ?? 0,
+          jointSummary: pv?.trackedJointsConfig?.map((j: any, ji: number) => ({
+            ji,
+            type: typeof j,
+            role: j?.role,
+            hasStartPose: j?.startPose !== undefined,
+            hasRange: j?.range !== undefined,
+            hasUpRange: j?.upRange !== undefined,
+          })),
+        }));
+        console.log('[ExerciseUpdate] poseVariants summary:', JSON.stringify(pvSummary, null, 2));
+      }
       validateExercisePayload(body);
 
       const exercise = await exerciseService.update(id, body);
