@@ -31,6 +31,7 @@ import {
   ReviewStep,
 } from '@/components/wizard/steps';
 import type { TrackedJointData, PositionCheckData } from '@/modules/exercises/exercises.validation';
+import { normalizeCameraPositionIds } from '@/lib/utils';
 
 const TOTAL_STEPS = 7;
 
@@ -204,7 +205,7 @@ export default function NewExercisePage() {
       equipment: store.extras.equipment,
       tags: store.extras.tags,
       repCountingConfig,
-      poseVariants: store.cameraPosition.cameraPositionIds?.map((posePositionId, index) => {
+      poseVariants: normalizeCameraPositionIds(store.cameraPosition.cameraPositionIds).map((posePositionId, index) => {
         // All joints go into a single poseVariant (bilateral mirroring handled at runtime)
         const jointsForVariant = allJoints;
         const mappedJoints = jointsForVariant.map((joint: TrackedJointData) => {
