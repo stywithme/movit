@@ -33,7 +33,7 @@ import com.trainingvalidator.poc.training.models.ProgramWeek
 import com.trainingvalidator.poc.ui.programs.ProgramDetailActivity
 import com.trainingvalidator.poc.ui.programs.ProgramListActivity
 import com.trainingvalidator.poc.ui.programs.ProgramSessionActivity
-import com.trainingvalidator.poc.ui.programs.ProgramSessionReportActivity
+import com.trainingvalidator.poc.ui.report.SessionReportActivity
 import com.trainingvalidator.poc.ui.programs.WeeklyReportActivity
 import android.graphics.Color
 import android.util.Log
@@ -875,19 +875,16 @@ class TrainFragment : Fragment() {
     private fun openSessionReport(
         report: ProgramSessionReportStore.ProgramSessionLocalReport, totalItems: Int
     ) {
-        startActivity(Intent(requireContext(), ProgramSessionReportActivity::class.java).apply {
-            putExtra(ProgramSessionReportActivity.EXTRA_TOTAL_ITEMS, totalItems)
-            putExtra(ProgramSessionReportActivity.EXTRA_TOTAL_SETS, report.totalSetsPlanned)
-            putExtra(ProgramSessionReportActivity.EXTRA_COMPLETED_SETS, report.totalSetsCompleted)
-            putExtra(ProgramSessionReportActivity.EXTRA_DURATION_MS, report.totalDurationMs)
-            putExtra(ProgramSessionReportActivity.EXTRA_AVG_ACCURACY, report.averageAccuracy)
-            report.report?.let {
-                putExtra(
-                    ProgramSessionReportActivity.EXTRA_SESSION_REPORT_JSON,
-                    com.google.gson.Gson().toJson(it)
-                )
-            }
-        })
+        val reportIds = report.report?.reportIds ?: emptyList()
+        val sessionJson = report.report?.let { com.google.gson.Gson().toJson(it) }
+
+        startActivity(
+            com.trainingvalidator.poc.ui.report.SessionReportActivity.createSessionIntent(
+                context = requireContext(),
+                reportIds = reportIds,
+                sessionReportJson = sessionJson
+            )
+        )
     }
 
     private fun openProgramDetail(program: ProgramConfig) {

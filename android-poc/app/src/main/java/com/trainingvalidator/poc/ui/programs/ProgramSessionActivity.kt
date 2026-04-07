@@ -710,21 +710,12 @@ class ProgramSessionActivity : AppCompatActivity() {
             renderAllSessions()
             updateBottomBar()
 
-            // Navigate to session report after EACH session (rich per-exercise reports)
-            val session = sessions.firstOrNull { it.id == sessionId }
-            val reportIntent = Intent(this, ProgramSessionReportActivity::class.java).apply {
-                putExtra(ProgramSessionReportActivity.EXTRA_TOTAL_ITEMS, session?.items?.size ?: 0)
-                putExtra(ProgramSessionReportActivity.EXTRA_TOTAL_SETS, totalSets)
-                putExtra(ProgramSessionReportActivity.EXTRA_COMPLETED_SETS, completedSets)
-                putExtra(ProgramSessionReportActivity.EXTRA_DURATION_MS, durationMs)
-                putExtra(ProgramSessionReportActivity.EXTRA_AVG_ACCURACY, avgAccuracy)
-                if (!reportJson.isNullOrBlank()) {
-                    putExtra(ProgramSessionReportActivity.EXTRA_SESSION_REPORT_JSON, reportJson)
-                }
-                if (!reportIds.isNullOrEmpty()) {
-                    putStringArrayListExtra(ProgramSessionReportActivity.EXTRA_REPORT_IDS, reportIds)
-                }
-            }
+            // Navigate to unified session report
+            val reportIntent = com.trainingvalidator.poc.ui.report.SessionReportActivity.createSessionIntent(
+                context = this,
+                reportIds = reportIds ?: emptyList(),
+                sessionReportJson = reportJson
+            )
             startActivity(reportIntent)
         }
     }

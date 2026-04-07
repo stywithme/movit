@@ -126,12 +126,7 @@
             android:screenOrientation="portrait"
             android:theme="@style/Theme.WayToFix" />
         
-        <!-- Post-Workout Report Screen (New Design) -->
-        <activity
-            android:name=".ui.train.PostWorkoutActivity"
-            android:exported="false"
-            android:screenOrientation="portrait"
-            android:theme="@style/Theme.WayToFix" />
+        <!-- (Removed: PostWorkoutActivity — dead code) -->
         
         <!-- Training Activity -->
         <activity
@@ -217,12 +212,7 @@
             android:screenOrientation="portrait"
             android:theme="@style/Theme.WayToFix" />
 
-        <!-- Program Session Report Activity -->
-        <activity
-            android:name=".ui.programs.ProgramSessionReportActivity"
-            android:exported="false"
-            android:screenOrientation="portrait"
-            android:theme="@style/Theme.WayToFix" />
+        <!-- (Removed: ProgramSessionReportActivity — replaced by SessionReportActivity) -->
 
         <!-- Weekly Report Activity -->
         <activity
@@ -238,9 +228,9 @@
             android:screenOrientation="portrait"
             android:theme="@style/Theme.WayToFix" />
 
-        <!-- Post-Training Report Pager Activity (Full-screen swipeable) -->
+        <!-- Unified Session Report Activity (replaces ReportPagerActivity + ProgramSessionReportActivity) -->
         <activity
-            android:name=".ui.report.ReportPagerActivity"
+            android:name=".ui.report.SessionReportActivity"
             android:exported="false"
             android:screenOrientation="portrait"
             android:theme="@style/Theme.WayToFix" />

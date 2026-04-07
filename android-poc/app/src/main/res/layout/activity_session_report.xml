@@ -7,13 +7,13 @@
     android:background="@color/background"
     android:fitsSystemWindows="false">
 
-    <!-- ViewPager for horizontal swiping -->
+    <!-- Main content ViewPager2: horizontal for single-exercise, vertical for multi -->
     <androidx.viewpager2.widget.ViewPager2
         android:id="@+id/viewPager"
         android:layout_width="match_parent"
         android:layout_height="match_parent" />
 
-    <!-- Top Bar (Back + Share) -->
+    <!-- Top Bar -->
     <LinearLayout
         android:id="@+id/topBar"
         android:layout_width="match_parent"
@@ -24,7 +24,6 @@
         android:paddingTop="40dp"
         android:paddingBottom="8dp">
 
-        <!-- Back Button -->
         <ImageButton
             android:id="@+id/btnBack"
             android:layout_width="48dp"
@@ -34,7 +33,6 @@
             android:contentDescription="@string/back"
             app:tint="@color/text_primary" />
 
-        <!-- Title -->
         <TextView
             android:id="@+id/tvTitle"
             android:layout_width="0dp"
@@ -46,7 +44,6 @@
             android:textStyle="bold"
             android:gravity="center" />
 
-        <!-- Share Button (hidden — moved to Hero screen) -->
         <ImageButton
             android:id="@+id/btnShare"
             android:layout_width="48dp"
@@ -59,6 +56,21 @@
 
     </LinearLayout>
 
+    <!-- Exercise position indicator for multi-exercise mode -->
+    <TextView
+        android:id="@+id/tvExerciseIndicator"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="bottom|center_horizontal"
+        android:layout_marginBottom="16dp"
+        android:background="@drawable/bg_glass_pill"
+        android:paddingHorizontal="16dp"
+        android:paddingVertical="6dp"
+        android:textColor="@color/text_primary"
+        android:textSize="13sp"
+        android:visibility="gone"
+        tools:text="Swipe up for next exercise"
+        tools:visibility="visible" />
 
     <!-- Loading Overlay -->
     <FrameLayout

@@ -745,6 +745,9 @@
     <string name="session_report_strongest">Strongest: %s</string>
     <string name="session_report_weakest">Needs work: %s</string>
     <string name="session_report_improved_format">Improved %+.1f%% since last session</string>
+    <string name="session_report_swipe_hint">Swipe up for detailed exercise reports</string>
+    <string name="session_report_exercise_indicator">Exercise %1$d of %2$d</string>
+    <string name="session_report_session_summary">Session Summary</string>
 
     <!-- Program Complete -->
     <string name="pg_complete_title">🏆 You Did It!</string>

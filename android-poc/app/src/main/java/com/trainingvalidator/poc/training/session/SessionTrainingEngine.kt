@@ -104,10 +104,11 @@ class SessionTrainingEngine(
         val setsCompleted: Int,
         val totalSets: Int,
         val totalReps: Int,
-        val averageAccuracy: Float,  // Average valid-rep ratio across sets
-        val averageFormScore: Float,  // Average form quality across sets
+        val averageAccuracy: Float,
+        val averageFormScore: Float,
         val setMetrics: List<SetMetrics>,
-        val reportId: String? = null  // ID of the rich PostTrainingReport (if generated)
+        val reportId: String? = null,   // PostTrainingReport ID (local rich report)
+        val sessionId: String? = null   // SessionUpload ID (backend TrainingSession)
     )
 
     data class SessionReport(
@@ -116,10 +117,11 @@ class SessionTrainingEngine(
         val totalSetsPlanned: Int,
         val totalReps: Int,
         val totalDurationMs: Long,
-        val averageAccuracy: Float,  // Overall valid-rep ratio
-        val averageFormScore: Float,  // Overall form quality (0-100)
+        val averageAccuracy: Float,
+        val averageFormScore: Float,
         val exerciseReports: List<ExerciseReport>,
-        val reportIds: List<String> = emptyList()  // IDs of rich PostTrainingReports per exercise
+        val reportIds: List<String> = emptyList(),   // PostTrainingReport IDs (for report UI)
+        val sessionIds: List<String> = emptyList()   // SessionUpload IDs (for backend linking)
     )
 
     /**
@@ -168,8 +170,11 @@ class SessionTrainingEngine(
     /** Exercise names resolved externally (slug → localized name). */
     private val exerciseNames = mutableMapOf<String, String>()
 
-    /** Rich report IDs per exercise (slug → reportId). */
-    private val exerciseReportIds = mutableMapOf<String, String>()
+    /** Rich report IDs per exercise (exerciseIndex → PostTrainingReport.id). */
+    private val exerciseReportIds = mutableMapOf<Int, String>()
+
+    /** Backend session IDs per exercise (exerciseIndex → SessionUpload.id). */
+    private val exerciseSessionIds = mutableMapOf<Int, String>()
 
     /** Listener for exercise completion events. */
     var onExerciseCompletedListener: OnExerciseCompletedListener? = null
@@ -206,8 +211,13 @@ class SessionTrainingEngine(
     }
 
     /** Associate a rich PostTrainingReport ID with a completed exercise. */
-    fun setExerciseReportId(slug: String, reportId: String) {
-        exerciseReportIds[slug] = reportId
+    fun setExerciseReportId(exerciseIndex: Int, reportId: String) {
+        exerciseReportIds[exerciseIndex] = reportId
+    }
+
+    /** Associate a backend SessionUpload ID with a completed exercise. */
+    fun setExerciseSessionId(exerciseIndex: Int, sessionId: String) {
+        exerciseSessionIds[exerciseIndex] = sessionId
     }
 
     /** Total exercise count (not including rest items). */
@@ -308,6 +318,9 @@ class SessionTrainingEngine(
         showPreExercise()
     }
 
+    /** Re-build the session report with the latest data (including any report IDs set after initial build). */
+    fun getCurrentReport(): SessionReport = buildReport()
+
     // ==================== Private ====================
 
     private fun showPreExercise() {
@@ -357,10 +370,9 @@ class SessionTrainingEngine(
     private fun buildReport(): SessionReport {
         val totalDuration = System.currentTimeMillis() - sessionStartTimeMs
 
-        val grouped = allSetMetrics.groupBy { it.exerciseSlug }
-        val exerciseReports = exerciseItems.map { indexed ->
-            val slug = indexed.item.exerciseSlug ?: return@map null
-            val sets = grouped[slug] ?: emptyList()
+        val exerciseReports = exerciseItems.mapIndexed { idx, indexed ->
+            val slug = indexed.item.exerciseSlug ?: return@mapIndexed null
+            val sets = allSetMetrics.filter { it.exerciseIndex == idx }
             val totalSetsForExercise = indexed.item.sets?.coerceAtLeast(1) ?: 1
             ExerciseReport(
                 exerciseSlug = slug,
@@ -373,7 +385,8 @@ class SessionTrainingEngine(
                 averageFormScore = if (sets.isNotEmpty())
                     sets.map { it.formScore }.average().toFloat() else 0f,
                 setMetrics = sets,
-                reportId = exerciseReportIds[slug]
+                reportId = exerciseReportIds[idx],
+                sessionId = exerciseSessionIds[idx]
             )
         }.filterNotNull()
 
@@ -390,7 +403,8 @@ class SessionTrainingEngine(
             averageFormScore = if (allFormScores.isNotEmpty())
                 allFormScores.average().toFloat() else 0f,
             exerciseReports = exerciseReports,
-            reportIds = exerciseReportIds.values.toList()
+            reportIds = exerciseReports.mapNotNull { it.reportId },
+            sessionIds = exerciseReports.mapNotNull { it.sessionId }
         )
     }
 }

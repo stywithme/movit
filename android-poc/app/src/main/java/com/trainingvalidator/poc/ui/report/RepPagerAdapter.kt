@@ -24,11 +24,20 @@ import com.trainingvalidator.poc.training.report.PostTrainingReport
  *  - Form/Safety/Control detail screens → always shown (adapt internally)
  *  - Tips → always shown
  */
-class RepPagerAdapter(
-    activity: FragmentActivity,
-    private val report: PostTrainingReport,
+class RepPagerAdapter : FragmentStateAdapter {
+
+    private val report: PostTrainingReport
     private val isArabic: Boolean
-) : FragmentStateAdapter(activity) {
+
+    constructor(activity: FragmentActivity, report: PostTrainingReport, isArabic: Boolean) : super(activity) {
+        this.report = report
+        this.isArabic = isArabic
+    }
+
+    constructor(fragment: Fragment, report: PostTrainingReport, isArabic: Boolean) : super(fragment) {
+        this.report = report
+        this.isArabic = isArabic
+    }
 
     companion object {
         const val TYPE_HERO = 0
