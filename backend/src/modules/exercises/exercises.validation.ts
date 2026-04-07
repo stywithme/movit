@@ -266,10 +266,12 @@ export const SecondaryTrackedJointSchema = z.object({
   role: z.literal('secondary'),
   startPose: AngleRangeSchema,
   range: StateRangesSchema,
-  phaseRanges: z.record(
-    z.enum(['top', 'down', 'bottom', 'up']),
-    StateRangesSchema
-  ).optional(),
+  phaseRanges: z.object({
+    top: StateRangesSchema,
+    down: StateRangesSchema,
+    bottom: StateRangesSchema,
+    up: StateRangesSchema,
+  }).partial().optional(),
   stateMessages: StateMessagesSchema,
   pairedWith: z.string().optional(),
   invertIndicator: z.boolean().optional(),
