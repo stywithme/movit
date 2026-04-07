@@ -19,6 +19,12 @@ import type { Request } from 'express';
 export class UserBookingController {
     constructor(private readonly service: BookingService) { }
 
+    /** GET /bookings/rules — limits for mobile booking UI (max advance days, min hours, duration). */
+    @Get('rules')
+    async getBookingRules() {
+        return { success: true, data: await this.service.getBookingRules() };
+    }
+
     /** GET /bookings/available-doctors?date=YYYY-MM-DD */
     @Get('available-doctors')
     async getAvailableDoctors(@Query('date') date: string) {
