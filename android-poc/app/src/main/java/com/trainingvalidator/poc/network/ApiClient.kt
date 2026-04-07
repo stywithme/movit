@@ -178,6 +178,13 @@ object ApiClient {
     val authApi: AuthApi by lazy {
         retrofit.create(AuthApi::class.java)
     }
+
+    /**
+     * User booking API (sessions, rules)
+     */
+    val bookingApi: BookingApi by lazy {
+        retrofit.create(BookingApi::class.java)
+    }
     
     /**
      * Get OkHttpClient for direct downloads

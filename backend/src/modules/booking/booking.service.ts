@@ -197,13 +197,17 @@ export class BookingService {
             throw new BadRequestException(`Booking must be at least ${minHours} hour(s) in advance`);
         }
 
-        // 3. Max advance days
+        // 3. Max advance days — inclusive calendar days (UTC): last allowed day is today + maxDays
         if (!isFollowUp) {
             const maxDaysCfg = await prisma.system.findUnique({ where: { key: 'max_advance_booking_days' } });
-            const maxDays = parseInt(maxDaysCfg?.value ?? '30', 10);
-            const maxDate = new Date();
-            maxDate.setDate(maxDate.getDate() + maxDays);
-            if (startAt > maxDate) throw new BadRequestException(`Cannot book more than ${maxDays} days in advance`);
+            const maxDays = Math.max(0, parseInt(maxDaysCfg?.value ?? '30', 10) || 30);
+            const startDay = Date.UTC(startAt.getUTCFullYear(), startAt.getUTCMonth(), startAt.getUTCDate());
+            const now = new Date();
+            const todayDay = Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate());
+            const lastAllowedDay = todayDay + maxDays * 86400000;
+            if (startDay > lastAllowedDay) {
+                throw new BadRequestException(`Cannot book more than ${maxDays} days in advance`);
+            }
         }
 
         // 4. Duration match
@@ -247,6 +251,25 @@ export class BookingService {
             },
         });
         if (conflict) throw new ConflictException('This slot is already booked');
+    }
+
+    /** Public rules for mobile date pickers (must stay in sync with validateBooking). */
+    async getBookingRules() {
+        const prisma = await getPrisma();
+        const keys = [
+            'allow_booking',
+            'max_advance_booking_days',
+            'min_booking_hours',
+            'booking_duration',
+        ] as const;
+        const rows = await prisma.system.findMany({ where: { key: { in: [...keys] } } });
+        const map = Object.fromEntries(rows.map((r) => [r.key, r.value])) as Record<string, string>;
+        return {
+            allowBooking: map['allow_booking'] === 'true',
+            maxAdvanceBookingDays: Math.max(0, parseInt(map['max_advance_booking_days'] ?? '30', 10) || 30),
+            minBookingHours: Math.max(0, parseInt(map['min_booking_hours'] ?? '2', 10) || 2),
+            bookingDurationMinutes: Math.max(1, parseInt(map['booking_duration'] ?? '30', 10) || 30),
+        };
     }
 
     // ──────────────────────────────────────────────────────────────────────────
