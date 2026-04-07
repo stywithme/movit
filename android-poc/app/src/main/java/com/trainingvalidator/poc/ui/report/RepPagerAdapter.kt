@@ -54,33 +54,31 @@ class RepPagerAdapter : FragmentStateAdapter {
         const val TYPE_TIPS = 7
     }
 
-    private val repCount = report.repTimeline.size
-    private val isHold = report.exerciseConfig?.isHoldExercise() == true
+    // Property initializers run before secondary constructor body — report is not set yet.
+    // Use lazy so we read report after construction completes.
+    private val repCount by lazy { report.repTimeline.size }
+    private val isHold by lazy { report.exerciseConfig?.isHoldExercise() == true }
 
-    // Build the dynamic page list based on available data
-    private val pageList: List<Int> = buildList {
-        add(TYPE_HERO)
+    private val pageList: List<Int> by lazy {
+        buildList {
+            add(TYPE_HERO)
 
-        // Overview: need ≥ 2 reps for a meaningful chart (or hold exercise for timeline)
-        if (repCount >= 2 || isHold) {
-            add(TYPE_OVERVIEW)
+            if (repCount >= 2 || isHold) {
+                add(TYPE_OVERVIEW)
+            }
+
+            if (!isHold && report.bestReps.isNotEmpty() && repCount >= 2) {
+                add(TYPE_BEST_WORST)
+            }
+
+            add(TYPE_FORM_DETAILS)
+            add(TYPE_SAFETY_DETAILS)
+            add(TYPE_CONTROL_DETAILS)
+
+            add(TYPE_PROGRESSION)
+
+            add(TYPE_TIPS)
         }
-
-        // Best vs Worst: need at least one best rep AND it's not a hold exercise
-        if (!isHold && report.bestReps.isNotEmpty() && repCount >= 2) {
-            add(TYPE_BEST_WORST)
-        }
-
-        // Detail screens — always present; each adapts internally
-        add(TYPE_FORM_DETAILS)
-        add(TYPE_SAFETY_DETAILS)
-        add(TYPE_CONTROL_DETAILS)
-
-        // Progression — always shown; adapts internally based on API data
-        add(TYPE_PROGRESSION)
-
-        // Tips — always shown
-        add(TYPE_TIPS)
     }
 
     override fun getItemCount(): Int = pageList.size
