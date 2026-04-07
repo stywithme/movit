@@ -4,7 +4,6 @@ import android.content.Context
 import android.content.Intent
 import android.os.Bundle
 import android.util.Log
-import android.view.View
 import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
@@ -16,23 +15,25 @@ import com.trainingvalidator.poc.network.ApiClient
 import com.trainingvalidator.poc.storage.AuthManager
 import com.trainingvalidator.poc.training.models.ProgramSessionItem
 import com.trainingvalidator.poc.training.models.WorkoutConfig
-import com.trainingvalidator.poc.ui.programs.ProgramSessionReportActivity
+import com.trainingvalidator.poc.training.session.SessionTrainingEngine
+import com.trainingvalidator.poc.ui.report.SessionReportActivity
 import com.trainingvalidator.poc.ui.train.TrainingActivity
 import com.trainingvalidator.poc.ui.utils.currentLanguage
 import kotlinx.coroutines.launch
 import java.util.UUID
 
 /**
- * WorkoutSessionActivity — Explore Mode Training Sequencer
+ * WorkoutSessionActivity — Explore Mode Training Orchestrator
  *
- * Drives a multi-exercise workout session in Explore mode (free training).
- * Accepts a [WorkoutConfig] and sequences exercises through [TrainingActivity].
+ * Thin orchestrator for multi-exercise workout sessions (Explore / Quick Start).
+ * Builds a unified ProgramSessionItem list from [WorkoutConfig] and launches
+ * a single [TrainingActivity] in session mode with ALL exercises at once.
  *
- * After all exercises are complete, uploads results to the explore endpoint
- * and shows a [ProgramSessionReportActivity] summary.
+ * [SessionTrainingEngine] inside [TrainingActivity] handles the full exercise
+ * sequencing, rest timers, set tracking, and per-exercise report generation.
  *
- * This activity is intentionally stateless between exercises — all session
- * data is collected from TrainingActivity results and uploaded at the end.
+ * On completion, uploads results to the explore endpoint and navigates
+ * to the session report screen.
  */
 class WorkoutSessionActivity : AppCompatActivity() {
 
@@ -66,33 +67,17 @@ class WorkoutSessionActivity : AppCompatActivity() {
     /** Client-generated group ID linking all sessions in this workout block */
     private val groupId: String = UUID.randomUUID().toString()
 
-    /**
-     * Maps session report IDs → exerciseSlug.
-     * Populated in [handleExerciseResult] as each exercise completes.
-     * Using a list of pairs preserves insertion order and handles multiple IDs per exercise.
-     */
-    private val sessionIdToExercise = mutableListOf<Pair<String, String>>()
-
-    /** Aggregated metrics for the final report */
-    private var totalDurationMs: Long = 0L
-    private var totalReps: Int = 0
-    private var totalSets: Int = 0
-    private var completedSets: Int = 0
-    private var totalFormScoreSum: Float = 0f
-    private var sessionCount: Int = 0
-
-    /** Current exercise index being trained */
-    private var currentExerciseIndex: Int = 0
-
-    /** Built session items for each exercise (converted from WorkoutConfig) */
-    private var sessionItems: List<ProgramSessionItem> = emptyList()
-
     private val gson = Gson()
+
+    /** Session report returned from TrainingActivity */
+    private var sessionReportJson: String? = null
+    private var sessionReportIds: List<String> = emptyList()    // PostTrainingReport IDs (for report UI)
+    private var sessionSessionIds: List<String> = emptyList()   // SessionUpload IDs (for backend linking)
 
     private val trainingLauncher = registerForActivityResult(
         ActivityResultContracts.StartActivityForResult()
     ) { result ->
-        handleExerciseResult(result.resultCode, result.data)
+        handleSessionResult(result.resultCode, result.data)
     }
 
     // ── Lifecycle ──────────────────────────────────────────────────────────────
@@ -122,8 +107,7 @@ class WorkoutSessionActivity : AppCompatActivity() {
         }
 
         setupUI()
-        buildSessionItems()
-        startNextExercise()
+        launchTrainingSession()
     }
 
     // ── Setup ──────────────────────────────────────────────────────────────────
@@ -131,47 +115,25 @@ class WorkoutSessionActivity : AppCompatActivity() {
     private fun setupUI() {
         val language = currentLanguage
         binding.tvWorkoutTitle.text = workoutConfig.name.get(language).ifBlank { workoutConfig.name.en }
-        binding.btnBack.setOnClickListener { showExitConfirmation() }
-        updateProgress()
+        binding.btnBack.setOnClickListener { finish() }
     }
 
-    private fun buildSessionItems() {
-        sessionItems = workoutConfig.exercises.mapIndexed { index, exercise ->
-            ProgramSessionItem(
-                type = "exercise",
-                exerciseSlug = exercise.exercise,
-                sets = exercise.sets,
-                targetReps = exercise.targetReps,
-                targetDuration = exercise.targetDurationSec,
-                restBetweenSetsMs = exercise.restBetweenSetsMs,
-                weightKg = exercise.weightKg,
-                sortOrder = index
-            )
-        }
-    }
-
-    private fun updateProgress() {
-        val total = sessionItems.size
-        val current = currentExerciseIndex + 1
-        binding.tvProgress.text = getString(R.string.workout_session_progress_format, current, total)
-        binding.progressBar.max = total
-        binding.progressBar.progress = currentExerciseIndex
-    }
-
-    // ── Training Sequencer ─────────────────────────────────────────────────────
-
-    private fun startNextExercise() {
-        if (currentExerciseIndex >= sessionItems.size) {
-            onAllExercisesComplete()
+    /**
+     * Builds session items from [WorkoutConfig] and launches a single
+     * [TrainingActivity] in session mode with all exercises.
+     *
+     * Interleaves "rest" items between exercises using [WorkoutExercise.restAfterExerciseMs],
+     * matching the pattern used by ProgramSessionActivity.
+     */
+    private fun launchTrainingSession() {
+        val items = buildSessionItems()
+        if (items.isEmpty()) {
+            Toast.makeText(this, getString(R.string.error_no_exercises), Toast.LENGTH_SHORT).show()
+            finish()
             return
         }
 
-        val item = sessionItems[currentExerciseIndex]
-        updateProgress()
-
-        // Pass single exercise as a one-item session
-        val singleItemList = listOf(item)
-        val itemsJson = gson.toJson(singleItemList)
+        val itemsJson = gson.toJson(items)
 
         val intent = Intent(this, TrainingActivity::class.java).apply {
             putExtra(TrainingActivity.EXTRA_IS_SESSION_MODE, true)
@@ -182,81 +144,97 @@ class WorkoutSessionActivity : AppCompatActivity() {
         trainingLauncher.launch(intent)
     }
 
-    private fun handleExerciseResult(resultCode: Int, data: android.content.Intent?) {
-        if (resultCode == RESULT_OK && data != null) {
-            val completedSetsCount = data.getIntExtra(TrainingActivity.RESULT_SESSION_SETS_COMPLETED, 0)
-            val plannedSets = data.getIntExtra(TrainingActivity.RESULT_SESSION_SETS_PLANNED, 0)
-            val durationMs = data.getLongExtra(TrainingActivity.RESULT_DURATION_MS, 0L)
-            val reps = data.getIntExtra(TrainingActivity.RESULT_SESSION_TOTAL_REPS, 0)
-            val formScore = data.getFloatExtra(TrainingActivity.RESULT_SESSION_AVG_FORM_SCORE, 0f)
-            val reportIds = data.getStringArrayListExtra(TrainingActivity.RESULT_SESSION_REPORT_IDS)
+    /**
+     * Converts [WorkoutConfig.exercises] into a flat list of [ProgramSessionItem]s,
+     * interleaving "rest" items between exercises (not after the last one).
+     */
+    private fun buildSessionItems(): List<ProgramSessionItem> {
+        val items = mutableListOf<ProgramSessionItem>()
+        var sortIndex = 0
 
-            // Aggregate metrics
-            totalDurationMs += durationMs
-            totalReps += reps
-            totalSets += plannedSets
-            this.completedSets += completedSetsCount
-            if (formScore > 0f) {
-                totalFormScoreSum += formScore
-                sessionCount++
+        workoutConfig.exercises.forEachIndexed { index, exercise ->
+            items.add(
+                ProgramSessionItem(
+                    type = "exercise",
+                    exerciseSlug = exercise.exercise,
+                    sets = exercise.sets,
+                    targetReps = exercise.targetReps,
+                    targetDuration = exercise.targetDurationSec,
+                    restBetweenSetsMs = exercise.restBetweenSetsMs,
+                    weightKg = exercise.weightKg,
+                    weightPerSet = exercise.weightPerSet,
+                    notes = exercise.notes,
+                    variantIndex = exercise.variantIndex,
+                    sortOrder = sortIndex++
+                )
+            )
+
+            val isLastExercise = index == workoutConfig.exercises.size - 1
+            if (!isLastExercise && exercise.restAfterExerciseMs > 0) {
+                items.add(
+                    ProgramSessionItem(
+                        type = "rest",
+                        restDurationMs = exercise.restAfterExerciseMs,
+                        sortOrder = sortIndex++
+                    )
+                )
             }
-
-            // Map each report ID to the exercise slug for accurate upload payload
-            val exerciseSlug = sessionItems.getOrNull(currentExerciseIndex)?.exerciseSlug ?: ""
-            if (!reportIds.isNullOrEmpty()) {
-                reportIds.forEach { id -> sessionIdToExercise.add(id to exerciseSlug) }
-            }
-
-            currentExerciseIndex++
-
-            if (currentExerciseIndex < sessionItems.size) {
-                startNextExercise()
-            } else {
-                onAllExercisesComplete()
-            }
-        } else {
-            // User exited mid-session — still show report with partial data
-            Log.d(TAG, "Exercise cancelled at index $currentExerciseIndex")
-            onAllExercisesComplete()
         }
+        return items
     }
 
-    private fun onAllExercisesComplete() {
-        // Fire-and-forget upload using applicationScope so it survives finish()
-        uploadExploreSession()
+    // ── Result Handling ────────────────────────────────────────────────────────
 
-        // Navigate to session report immediately — don't wait for upload
-        val allIds = sessionIdToExercise.map { it.first }
-        val reportIntent = Intent(this, ProgramSessionReportActivity::class.java).apply {
-            putExtra(ProgramSessionReportActivity.EXTRA_TOTAL_ITEMS, sessionItems.size)
-            putExtra(ProgramSessionReportActivity.EXTRA_TOTAL_SETS, totalSets)
-            putExtra(ProgramSessionReportActivity.EXTRA_COMPLETED_SETS, completedSets)
-            putExtra(ProgramSessionReportActivity.EXTRA_DURATION_MS, totalDurationMs)
-            putExtra(
-                ProgramSessionReportActivity.EXTRA_AVG_ACCURACY,
-                if (totalSets > 0) (completedSets.toFloat() / totalSets) * 100f else 0f
-            )
-            if (allIds.isNotEmpty()) {
-                putStringArrayListExtra(ProgramSessionReportActivity.EXTRA_REPORT_IDS, ArrayList(allIds))
-            }
+    private fun handleSessionResult(resultCode: Int, data: Intent?) {
+        if (resultCode == RESULT_OK && data != null) {
+            sessionReportJson = data.getStringExtra(TrainingActivity.RESULT_SESSION_REPORT_JSON)
+            sessionReportIds = data.getStringArrayListExtra(TrainingActivity.RESULT_SESSION_REPORT_IDS) ?: emptyList()
+            sessionSessionIds = data.getStringArrayListExtra(TrainingActivity.RESULT_SESSION_SESSION_IDS) ?: emptyList()
+
+            Log.d(TAG, "Session complete: ${sessionReportIds.size} report IDs, " +
+                    "${sessionSessionIds.size} session IDs, groupId=$groupId")
+        } else {
+            Log.d(TAG, "Session cancelled or failed")
         }
-        startActivity(reportIntent)
+
+        onSessionComplete()
+    }
+
+    private fun onSessionComplete() {
+        uploadExploreSession()
+        navigateToReport()
         finish()
+    }
+
+    private fun navigateToReport() {
+        if (sessionReportIds.isEmpty() && sessionReportJson.isNullOrBlank()) {
+            Log.w(TAG, "No report data available — skipping report screen")
+            return
+        }
+
+        val reportIntent = SessionReportActivity.createSessionIntent(
+            context = this,
+            reportIds = sessionReportIds,
+            sessionReportJson = sessionReportJson
+        )
+        startActivity(reportIntent)
     }
 
     // ── Backend Upload ─────────────────────────────────────────────────────────
 
     /**
      * Uploads the explore session using [PoseApp.applicationScope] so the coroutine
-     * is NOT cancelled when this Activity calls finish().
+     * survives this Activity's finish().
      *
-     * Progression notifications are intentionally NOT marked as seen here.
-     * [ProgramSessionReportActivity] handles showing and acknowledging them.
+     * Individual exercise sessions are already synced by TrainingActivity.
+     * This endpoint links them under a shared [groupId].
      */
     private fun uploadExploreSession() {
-        if (sessionIdToExercise.isEmpty()) return
+        if (sessionSessionIds.isEmpty()) return
         val authHeader = AuthManager.getAuthHeader(this) ?: return
-        val payload = buildExplorePayload()
+
+        val exerciseSlugs = extractExerciseSlugsFromReport()
+        val payload = buildExplorePayload(exerciseSlugs)
 
         PoseApp.instance.applicationScope.launch {
             try {
@@ -268,41 +246,36 @@ class WorkoutSessionActivity : AppCompatActivity() {
         }
     }
 
+    private fun extractExerciseSlugsFromReport(): List<String> {
+        val json = sessionReportJson ?: return emptyList()
+        return try {
+            val type = object : com.google.gson.reflect.TypeToken<SessionTrainingEngine.SessionReport>() {}.type
+            val report = gson.fromJson<SessionTrainingEngine.SessionReport>(json, type)
+            report.exerciseReports.map { it.exerciseSlug }
+        } catch (e: Exception) {
+            Log.w(TAG, "Failed to parse session report for exercise slugs", e)
+            workoutConfig.exercises.map { it.exercise }
+        }
+    }
+
     /**
-     * Builds the explore upload payload.
-     * Each session ID is correctly mapped to its source exercise slug
-     * using [sessionIdToExercise] which was populated during result collection.
+     * Builds the explore upload payload linking individual sessions under [groupId].
      */
-    private fun buildExplorePayload(): Map<String, Any?> {
+    private fun buildExplorePayload(exerciseSlugs: List<String>): Map<String, Any?> {
         return mapOf(
             "groupId" to groupId,
             "workoutId" to workoutId,
             "isCustomized" to false,
             "context" to sessionContext,
-            "sessions" to sessionIdToExercise.map { (id, exerciseSlug) ->
+            "sessions" to sessionSessionIds.mapIndexed { index, id ->
                 mapOf(
                     "id" to id,
                     "groupId" to groupId,
                     "workoutId" to workoutId,
                     "context" to sessionContext,
-                    "exerciseId" to exerciseSlug
+                    "exerciseId" to (exerciseSlugs.getOrNull(index) ?: "")
                 )
             }
         )
-    }
-
-    // ── Exit Confirmation ──────────────────────────────────────────────────────
-
-    private fun showExitConfirmation() {
-        if (currentExerciseIndex == 0) {
-            finish()
-            return
-        }
-        androidx.appcompat.app.AlertDialog.Builder(this)
-            .setTitle(getString(R.string.exit_workout_title))
-            .setMessage(getString(R.string.exit_workout_message))
-            .setPositiveButton(getString(R.string.exit_confirm)) { _, _ -> onAllExercisesComplete() }
-            .setNegativeButton(getString(R.string.back)) { dialog, _ -> dialog.dismiss() }
-            .show()
     }
 }

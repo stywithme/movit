@@ -47,5 +47,6 @@ data class ProgramSessionItem(
     val weightPerSet: List<Float>? = null,
     val notes: LocalizedText? = null,
     val restDurationMs: Long? = null,
+    val variantIndex: Int? = null,
     val sortOrder: Int = 0
 )

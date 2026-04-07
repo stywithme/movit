@@ -103,7 +103,8 @@ class ReportPageFragment : Fragment() {
         // Share button
         binding.tvShareLabel.text = if (isArabic) "مشاركة" else "Share"
         binding.btnShareHero.setOnClickListener {
-            (activity as? ReportPagerActivity)?.shareReport()
+            (activity as? SessionReportActivity)?.shareReport()
+                ?: (activity as? ReportPagerActivity)?.shareReport()
         }
 
         // Swipe hint

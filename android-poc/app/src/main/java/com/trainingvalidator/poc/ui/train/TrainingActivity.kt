@@ -74,7 +74,7 @@ import com.trainingvalidator.poc.storage.AnalyticsStorage
 import com.trainingvalidator.poc.storage.AuthManager
 import com.trainingvalidator.poc.network.SessionSyncService
 import com.trainingvalidator.poc.network.ApiConfig
-import com.trainingvalidator.poc.ui.report.ReportPagerActivity
+import com.trainingvalidator.poc.ui.report.SessionReportActivity
 import com.trainingvalidator.poc.ui.utils.currentLanguage
 import com.trainingvalidator.poc.video.VideoManager
 import kotlinx.coroutines.Dispatchers
@@ -140,6 +140,7 @@ class TrainingActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetection
         const val RESULT_SESSION_AVG_FORM_SCORE = "session_avg_form_score"
         const val RESULT_SESSION_REPORT_JSON = "session_report_json"
         const val RESULT_SESSION_REPORT_IDS = "session_report_ids"
+        const val RESULT_SESSION_SESSION_IDS = "session_session_ids"
         
         // Training modes
         const val MODE_CAMERA = "camera"
@@ -197,6 +198,7 @@ class TrainingActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetection
     private var sessionRestTimer: android.os.CountDownTimer? = null
     private var sessionRestRemainingMs: Long = 0L
     private var sessionSetStartTimeMs: Long = 0L
+    private val pendingReportJobs = mutableListOf<kotlinx.coroutines.Job>()
     private val sessionExerciseConfigMap = mutableMapOf<String, com.trainingvalidator.poc.training.models.ExerciseConfig>()
 
     // Alternating variant info removed - bilateral side management is now handled by TrainingEngine
@@ -777,7 +779,7 @@ class TrainingActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetection
         val targetReps = item.targetReps?.takeIf { it > 0 }
         val targetDurationMs = item.targetDuration?.takeIf { it > 0 }?.let { it * 1000L }
         val weight = engine.getCurrentSetWeight()
-        val poseVariantIndex = 0  // Bilateral uses single poseVariant, side switching handled by TrainingEngine
+        val poseVariantIndex = item.variantIndex ?: 0
 
         // Load exercise into ViewModel (triggers supervisor → SETUP_POSE → COUNTDOWN → TRAINING)
         if (!viewModel.loadExercise(
@@ -1089,27 +1091,42 @@ class TrainingActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetection
 
     /**
      * Finish session mode and return result to calling activity.
+     * Awaits any pending report generation jobs to ensure all report IDs
+     * are available, then re-builds the report for the final result.
      */
     private fun finishSessionWithResult(
-        report: com.trainingvalidator.poc.training.session.SessionTrainingEngine.SessionReport
+        @Suppress("UNUSED_PARAMETER") initialReport: com.trainingvalidator.poc.training.session.SessionTrainingEngine.SessionReport
     ) {
-        val reportJson = com.google.gson.Gson().toJson(report)
-        val resultIntent = android.content.Intent().apply {
-            putExtra(RESULT_IS_COMPLETED, true)
-            putExtra(RESULT_DURATION_MS, report.totalDurationMs)
-            putExtra(RESULT_SESSION_SETS_COMPLETED, report.totalSetsCompleted)
-            putExtra(RESULT_SESSION_SETS_PLANNED, report.totalSetsPlanned)
-            putExtra(RESULT_SESSION_TOTAL_REPS, report.totalReps)
-            putExtra(RESULT_SESSION_AVG_ACCURACY, report.averageAccuracy)
-            putExtra(RESULT_SESSION_AVG_FORM_SCORE, report.averageFormScore)
-            putExtra(RESULT_SESSION_REPORT_JSON, reportJson)
-            putStringArrayListExtra(
-                RESULT_SESSION_REPORT_IDS,
-                ArrayList(report.reportIds)
-            )
+        lifecycleScope.launch {
+            val jobs = synchronized(pendingReportJobs) { pendingReportJobs.toList() }
+            if (jobs.isNotEmpty()) {
+                Log.d(TAG, "Waiting for ${jobs.size} pending report job(s) to complete...")
+                jobs.forEach { it.join() }
+            }
+
+            val report = sessionTrainingEngine?.getCurrentReport() ?: initialReport
+            val reportJson = com.google.gson.Gson().toJson(report)
+            val resultIntent = android.content.Intent().apply {
+                putExtra(RESULT_IS_COMPLETED, true)
+                putExtra(RESULT_DURATION_MS, report.totalDurationMs)
+                putExtra(RESULT_SESSION_SETS_COMPLETED, report.totalSetsCompleted)
+                putExtra(RESULT_SESSION_SETS_PLANNED, report.totalSetsPlanned)
+                putExtra(RESULT_SESSION_TOTAL_REPS, report.totalReps)
+                putExtra(RESULT_SESSION_AVG_ACCURACY, report.averageAccuracy)
+                putExtra(RESULT_SESSION_AVG_FORM_SCORE, report.averageFormScore)
+                putExtra(RESULT_SESSION_REPORT_JSON, reportJson)
+                putStringArrayListExtra(
+                    RESULT_SESSION_REPORT_IDS,
+                    ArrayList(report.reportIds)
+                )
+                putStringArrayListExtra(
+                    RESULT_SESSION_SESSION_IDS,
+                    ArrayList(report.sessionIds)
+                )
+            }
+            setResult(RESULT_OK, resultIntent)
+            finish()
         }
-        setResult(RESULT_OK, resultIntent)
-        finish()
     }
 
     // ==================== OnExerciseCompletedListener ====================
@@ -1139,11 +1156,19 @@ class TrainingActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetection
         Log.d(TAG, "onExerciseCompleted: Generating rich report for $exerciseSlug " +
                 "(${sets.size} sets, ${frameCaptures.size} frames)")
 
-        // Generate report in background to avoid blocking the main thread
-        lifecycleScope.launch(Dispatchers.IO) {
+        val job = lifecycleScope.launch(Dispatchers.IO) {
             try {
                 val sessionUpload = viewModel.finalizeAndGetSessionUpload()
                 val sessionMetrics = sessionUpload?.sessionMetrics
+
+                if (sessionUpload != null) {
+                    sessionTrainingEngine?.setExerciseSessionId(exerciseIndex, sessionUpload.id)
+                    try {
+                        syncSessionToBackendStandalone(sessionUpload.id, sessionUpload)
+                    } catch (e: Exception) {
+                        Log.w(TAG, "Per-exercise sync failed for $exerciseSlug, will retry later", e)
+                    }
+                }
 
                 val report = ReportGenerator.generateFromEngine(
                     engine = engine,
@@ -1160,12 +1185,14 @@ class TrainingActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetection
                         "id=${report.id}, saved=$saved")
 
                 if (saved) {
-                    sessionTrainingEngine?.setExerciseReportId(exerciseSlug, report.id)
+                    sessionTrainingEngine?.setExerciseReportId(exerciseIndex, report.id)
                 }
             } catch (e: Exception) {
                 Log.e(TAG, "onExerciseCompleted: Failed to generate report for $exerciseSlug", e)
             }
         }
+        synchronized(pendingReportJobs) { pendingReportJobs.add(job) }
+        job.invokeOnCompletion { synchronized(pendingReportJobs) { pendingReportJobs.remove(job) } }
 
         // Reset frame capture manager for the next exercise
         resetFrameCaptureManagerForNextExercise()
@@ -2349,7 +2376,7 @@ class TrainingActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetection
         binding.skeletonOverlay.setTrainingMode(false)
         binding.vignetteOverlay.clear()
         
-        // Hide the completed panel - we'll navigate to ReportPagerActivity instead
+        // Hide the completed panel - we'll navigate to SessionReportActivity instead
         binding.completedPanel.visibility = View.GONE
         
         // Log capture stats
@@ -2623,15 +2650,14 @@ class TrainingActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetection
                     }
 
                     if (saved) {
-                        Log.d(TAG, "Navigating to ReportPagerActivity with id: ${report.id}")
+                        Log.d(TAG, "Navigating to SessionReportActivity with id: ${report.id}")
                         
                         try {
-                            // Use new full-screen pager report activity
-                            val intent = ReportPagerActivity.createIntent(this@TrainingActivity, report.id)
+                            val intent = SessionReportActivity.createIntent(this@TrainingActivity, report.id)
                             startActivity(intent)
                             finish()
                         } catch (e: Exception) {
-                            Log.e(TAG, "Failed to start ReportPagerActivity: ${e.message}", e)
+                            Log.e(TAG, "Failed to start SessionReportActivity: ${e.message}", e)
                             showFallbackSummary()
                         }
                     } else {

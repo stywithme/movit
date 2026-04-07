@@ -162,25 +162,47 @@ export async function saveExploreSession(
 ): Promise<ExploreSessionResponse> {
   const savedSessions: { id: string; exerciseId: string; totalReps: number }[] = [];
 
-  // Save each exercise session without triggering a stats update per session.
-  // A single stats update is issued after all sessions are persisted.
   for (const sessionPayload of payload.sessions) {
-    const enriched: SessionUploadPayload = {
-      ...sessionPayload,
-      context: payload.context,
-      groupId: payload.groupId,
-      workoutId: payload.workoutId,
-    };
-
-    const saved = await saveSession(userId, enriched, /* skipStatsUpdate */ true);
-    savedSessions.push({
-      id: saved.id,
-      exerciseId: saved.exerciseId,
-      totalReps: saved.totalReps,
+    // Individual exercise sessions are synced separately via POST /mobile/sessions
+    // (with full metrics). Here we only link them under the shared group/workout.
+    // If the session already exists, update only the linking fields to avoid
+    // destroying the metrics that were saved by the individual sync.
+    const existing = await prisma.trainingSession.findFirst({
+      where: { id: sessionPayload.id, userId },
+      select: { id: true, exerciseId: true, totalReps: true },
     });
+
+    if (existing) {
+      await prisma.trainingSession.update({
+        where: { id: existing.id },
+        data: {
+          context: payload.context,
+          groupId: payload.groupId,
+          workoutId: payload.workoutId ?? null,
+        },
+      });
+      savedSessions.push({
+        id: existing.id,
+        exerciseId: existing.exerciseId,
+        totalReps: existing.totalReps,
+      });
+    } else {
+      // Fallback: individual sync hasn't arrived yet — full save with metrics
+      const enriched: SessionUploadPayload = {
+        ...sessionPayload,
+        context: payload.context,
+        groupId: payload.groupId,
+        workoutId: payload.workoutId,
+      };
+      const saved = await saveSession(userId, enriched, /* skipStatsUpdate */ true);
+      savedSessions.push({
+        id: saved.id,
+        exerciseId: saved.exerciseId,
+        totalReps: saved.totalReps,
+      });
+    }
   }
 
-  // Single stats update after the full workout is saved
   if (savedSessions.length > 0) {
     await updateUserStats(userId);
   }

@@ -710,7 +710,6 @@ class ProgramSessionActivity : AppCompatActivity() {
             renderAllSessions()
             updateBottomBar()
 
-            // Navigate to session report after EACH session (rich per-exercise reports)
             val session = sessions.firstOrNull { it.id == sessionId }
             val reportIntent = Intent(this, ProgramSessionReportActivity::class.java).apply {
                 putExtra(ProgramSessionReportActivity.EXTRA_TOTAL_ITEMS, session?.items?.size ?: 0)
