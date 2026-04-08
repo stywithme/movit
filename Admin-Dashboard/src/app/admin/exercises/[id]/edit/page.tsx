@@ -10,7 +10,7 @@
 
 import { useEffect, useState, useCallback } from 'react';
 import { useRouter, useParams } from 'next/navigation';
-import { useWizardStore } from '@/components/wizard/WizardContext';
+import { useWizardStore, type WizardStore } from '@/components/wizard/WizardContext';
 import type { LocalizedText } from '@/lib/types/localized';
 import { WizardStepper } from '@/components/wizard/WizardStepper';
 import { AutoSaveIndicator } from '@/components/wizard/AutoSaveIndicator';
@@ -24,6 +24,7 @@ import {
   ReviewStep,
 } from '@/components/wizard/steps';
 import type { TrackedJointData, PositionCheckData } from '@/modules/exercises/exercises.validation';
+import { canPublish } from '@/modules/exercises/exercises.validation';
 import { normalizeCameraPositionIds } from '@/lib/utils';
 
 const TOTAL_STEPS = 7;
@@ -72,6 +73,18 @@ export default function EditExercisePage() {
     setExerciseId,
     exerciseStatus,
   } = useWizardStore();
+
+  const canPublishNow = useWizardStore((s: WizardStore) =>
+    canPublish({
+      basicInfo: s.basicInfo,
+      countingMethod: s.countingMethod,
+      cameraPosition: s.cameraPosition,
+      jointConfig: s.jointConfig,
+      positionChecks: s.positionChecks,
+      repConfig: s.repConfig,
+      extras: s.extras,
+    }).valid
+  );
   
   const [lookupData, setLookupData] = useState<LookupData | null>(null);
   const [loading, setLoading] = useState(true);
@@ -391,13 +404,13 @@ export default function EditExercisePage() {
         optional: store.reportMetrics.optional,
         excluded: store.reportMetrics.excluded,
       },
-      // Bilateral configuration (optional)
+      // Bilateral: send null when disabled so PUT updates isBilateral (JSON omits undefined keys)
       bilateralConfig: store.bilateralConfig.enabled
         ? {
             switchEvery: store.bilateralConfig.switchEvery,
             startSide: store.bilateralConfig.startSide,
           }
-        : undefined,
+        : null,
     };
   }, []);
   
@@ -596,16 +609,21 @@ export default function EditExercisePage() {
                 onClick={handleSave}
                 className="px-4 py-2 text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200"
               >
-                Save
+                {exerciseStatus === 'draft' ? 'Save Draft' : 'Save'}
               </button>
-              {currentStep === TOTAL_STEPS && (
-                <button
-                  onClick={handlePublish}
-                  className="px-4 py-2 text-white bg-green-600 rounded-lg hover:bg-green-700"
-                >
-                  Publish
-                </button>
-              )}
+              <button
+                type="button"
+                onClick={handlePublish}
+                disabled={!canPublishNow}
+                title={!canPublishNow ? 'Complete all required steps to publish' : undefined}
+                className={`px-4 py-2 rounded-lg text-white ${
+                  canPublishNow
+                    ? 'bg-green-600 hover:bg-green-700'
+                    : 'bg-gray-300 cursor-not-allowed'
+                }`}
+              >
+                Publish
+              </button>
             </div>
           </div>
         </div>

@@ -263,13 +263,13 @@ export default function NewExercisePage() {
         optional: store.reportMetrics.optional,
         excluded: store.reportMetrics.excluded,
       },
-      // Bilateral configuration (optional)
+      // Bilateral: send null when disabled so API persists isBilateral: false (JSON omits undefined keys)
       bilateralConfig: store.bilateralConfig.enabled
         ? {
           switchEvery: store.bilateralConfig.switchEvery,
           startSide: store.bilateralConfig.startSide,
         }
-        : undefined,
+        : null,
     };
   }, []);
 
