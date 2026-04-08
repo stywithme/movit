@@ -64,13 +64,6 @@ export function AutoSaveIndicator() {
           </>
         )}
       </div>
-      
-      {/* Draft Badge */}
-      {exerciseId && (
-        <span className="px-2 py-0.5 text-xs bg-amber-100 text-amber-700 rounded-full">
-          Draft
-        </span>
-      )}
     </div>
   );
 }
