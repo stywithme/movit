@@ -1,4 +1,5 @@
 import { NestFactory } from '@nestjs/core';
+import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import cookieParser from 'cookie-parser';
 import os from 'os';
 import { AppModule } from './app.module';
@@ -26,9 +27,26 @@ async function bootstrap() {
     origin: process.env.ADMIN_APP_ORIGIN?.split(',') || true,
     credentials: true,
   });
+
+  const swaggerConfig = new DocumentBuilder()
+    .setTitle('POSE API')
+    .setDescription('POSE Backend REST API')
+    .setVersion('1.0')
+    .addBearerAuth(
+      { type: 'http', scheme: 'bearer', bearerFormat: 'JWT', in: 'header' },
+      'JWT',
+    )
+    .build();
+  const document = SwaggerModule.createDocument(app, swaggerConfig);
+  SwaggerModule.setup('docs', app, document, {
+    swaggerOptions: { persistAuthorization: true },
+  });
+
   const port = process.env.PORT ?? 3000;
   await app.listen(port, '0.0.0.0');
   const lanIp = getLanIp();
+  const baseUrl = `http://${lanIp ?? 'localhost'}:${port}`;
+  console.log(`[Swagger] ${baseUrl}/api/docs`);
   if (lanIp) {
     console.log(`[LAN] http://${lanIp}:${port}/api`);
   } else {
