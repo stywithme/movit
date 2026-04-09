@@ -3,14 +3,15 @@ package com.trainingvalidator.poc.storage
 import android.content.Context
 import android.util.Log
 import com.google.gson.Gson
-import com.trainingvalidator.poc.network.ApiClient
 import com.trainingvalidator.poc.network.AudioFileInfo
 import com.trainingvalidator.poc.network.AudioManifest
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import okhttp3.OkHttpClient
 import okhttp3.Request
 import java.io.File
 import java.io.FileOutputStream
+import java.util.concurrent.TimeUnit
 
 /**
  * AudioCacheManager
@@ -42,6 +43,18 @@ class AudioCacheManager(private val context: Context) {
     private val manifestFile: File = File(cacheDir, MANIFEST_FILE_NAME)
     
     private val gson = Gson()
+
+    /**
+     * Dedicated OkHttpClient for downloading audio from external URLs (GCS).
+     * Does NOT include API auth headers or Content-Type overrides that the main
+     * ApiClient attaches — those headers can cause 401/403 from GCS.
+     */
+    private val downloadClient: OkHttpClient by lazy {
+        OkHttpClient.Builder()
+            .connectTimeout(30, TimeUnit.SECONDS)
+            .readTimeout(60, TimeUnit.SECONDS)
+            .build()
+    }
     
     // Track download status
     private val downloadedFiles: MutableSet<String> = mutableSetOf()
@@ -283,34 +296,34 @@ class AudioCacheManager(private val context: Context) {
         pendingDownloads.add(filename)
         
         try {
-            // Build full URL
             val url = if (audioFile.url.startsWith("http")) {
                 audioFile.url
             } else {
                 baseUrl.trimEnd('/') + audioFile.url
             }
             
-            // Download using OkHttp
             val request = Request.Builder()
                 .url(url)
                 .build()
             
-            val response = ApiClient.getOkHttpClient().newCall(request).execute()
+            // Use dedicated download client (no API auth headers) for
+            // external URLs; fall back to it for relative paths too.
+            val response = downloadClient.newCall(request).execute()
             
-            // Use response.use to ensure proper cleanup
             response.use { resp ->
                 if (!resp.isSuccessful) {
-                    Log.w(TAG, "Failed to download $filename: ${resp.code}")
+                    Log.e(TAG, "DOWNLOAD_FAIL: $filename code=${resp.code} url=$url")
                     return@withContext false
                 }
                 
-                val body = resp.body ?: return@withContext false
+                val body = resp.body ?: run {
+                    Log.e(TAG, "DOWNLOAD_FAIL: $filename empty body url=$url")
+                    return@withContext false
+                }
                 
-                // Determine target directory
                 val dir = if (audioFile.language == "ar") arDir else enDir
                 val file = File(dir, filename)
                 
-                // Write to file
                 FileOutputStream(file).use { output ->
                     body.byteStream().use { input ->
                         input.copyTo(output)
@@ -318,16 +331,34 @@ class AudioCacheManager(private val context: Context) {
                 }
                 
                 downloadedFiles.add(filename)
-                Log.d(TAG, "Downloaded: $filename (${file.length()} bytes)")
+                Log.d(TAG, "DOWNLOAD_OK: $filename (${file.length()} bytes)")
                 
                 true
             }
         } catch (e: Exception) {
-            Log.e(TAG, "Error downloading $filename", e)
+            Log.e(TAG, "DOWNLOAD_ERROR: $filename ${e.javaClass.simpleName}: ${e.message}")
             false
         } finally {
             pendingDownloads.remove(filename)
         }
+    }
+    
+    /**
+     * Log a diagnostic summary of the audio cache state.
+     * Call before training to help debug TTS-fallback issues.
+     */
+    fun logDiagnosticSummary() {
+        val stats = getCacheStats()
+        val pending = getPendingDownloadCount()
+        Log.i(TAG, "──── AUDIO CACHE DIAGNOSTIC ────")
+        Log.i(TAG, "Cached files: ${stats.totalFiles} (ar=${stats.arabicFiles}, en=${stats.englishFiles}, size=${stats.getFormattedSize()})")
+        Log.i(TAG, "Pending downloads: $pending")
+        Log.i(TAG, "Manifest persisted: ${persistedAudioManifest != null} (${persistedAudioManifest?.files?.size ?: 0} entries)")
+        Log.i(TAG, "In-memory downloadedFiles set: ${downloadedFiles.size}")
+        if (stats.totalFiles == 0 && pending > 0) {
+            Log.w(TAG, "⚠ No audio cached yet but $pending files in manifest — downloads may have failed!")
+        }
+        Log.i(TAG, "────────────────────────────────")
     }
     
     // ==================== Cleanup Operations ====================

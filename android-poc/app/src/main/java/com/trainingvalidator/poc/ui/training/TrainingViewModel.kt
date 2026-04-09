@@ -274,8 +274,8 @@ class TrainingViewModel(
             try {
                 val repository = ExerciseRepository.getInstance(context)
                 val audioCache = repository.getAudioCache()
-                // Refresh in-memory file list if background sync finished after last scan
                 audioCache.rescanCache()
+                audioCache.logDiagnosticSummary()
                 feedbackManager?.initializeWithAudioCache(audioCache)
                 Log.d(TAG, "Feedback initialized with audio cache support")
             } catch (e: Exception) {
@@ -288,6 +288,9 @@ class TrainingViewModel(
         
         // Configure random messages if engine already exists
         updateRandomMessagesFromEngine()
+        
+        // Diagnostic: log audio URL availability in the current exercise
+        logExerciseAudioDiagnostic()
     }
     
     // ==================== Supervisor Signal Methods ====================
@@ -742,6 +745,55 @@ class TrainingViewModel(
     private fun updateRandomMessagesFromEngine() {
         val engine = trainingEngine ?: return
         feedbackManager?.setRandomMessages(engine.feedbackMessages)
+    }
+    
+    /**
+     * Log a diagnostic breakdown of audio URL availability for the loaded exercise.
+     * Helps pinpoint whether TTS fallback is caused by missing URLs vs missing cache files.
+     */
+    private fun logExerciseAudioDiagnostic() {
+        val config = _exerciseConfig.value ?: return
+        val lang = feedbackManager?.config?.language ?: "en"
+        val variant = config.poseVariants.getOrNull(_poseVariantIndex.value) ?: return
+
+        var withAudio = 0
+        var withoutAudio = 0
+
+        fun checkText(lt: com.trainingvalidator.poc.training.models.LocalizedText) {
+            if (lt.hasAudio(lang)) withAudio++ else withoutAudio++
+        }
+
+        // State messages
+        for (joint in variant.trackedJoints ?: emptyList()) {
+            val sm = joint.stateMessages ?: continue
+            for (state in listOf(
+                com.trainingvalidator.poc.training.models.JointState.PERFECT,
+                com.trainingvalidator.poc.training.models.JointState.NORMAL,
+                com.trainingvalidator.poc.training.models.JointState.PAD,
+                com.trainingvalidator.poc.training.models.JointState.WARNING,
+                com.trainingvalidator.poc.training.models.JointState.DANGER
+            )) {
+                sm.getMessage(state)?.let { checkText(it) }
+            }
+        }
+
+        // Position checks
+        for (pc in variant.positionChecks ?: emptyList()) {
+            checkText(pc.errorMessage)
+        }
+
+        // Feedback messages
+        val fm = variant.feedbackMessages
+        fm?.motivational?.forEach { checkText(it) }
+        fm?.tips?.forEach { checkText(it) }
+
+        Log.i(TAG, "──── EXERCISE AUDIO DIAGNOSTIC ($lang) ────")
+        Log.i(TAG, "Messages with audio URL: $withAudio")
+        Log.i(TAG, "Messages WITHOUT audio URL: $withoutAudio")
+        if (withAudio == 0 && (withAudio + withoutAudio) > 0) {
+            Log.w(TAG, "⚠ ZERO messages have audio URLs — ALL will fall back to TTS!")
+        }
+        Log.i(TAG, "──────────────────────────────────────────")
     }
     
     // ==================== Helpers ====================
