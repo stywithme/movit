@@ -26,12 +26,18 @@ export function buildExercisePayload() {
         ? { ...base, range: joint.range }
         : { ...base, upRange: joint.upRange, downRange: joint.downRange };
     }
+    const hasPhaseRanges = joint.phaseRanges && Object.keys(joint.phaseRanges).length > 0;
+    const hasPhaseMsgs =
+      'phaseStateMessages' in joint &&
+      joint.phaseStateMessages &&
+      Object.keys(joint.phaseStateMessages).length > 0;
     return {
       joint: joint.joint,
       role: 'secondary' as const,
       startPose: joint.startPose,
       range: joint.range,
-      ...(joint.phaseRanges && Object.keys(joint.phaseRanges).length > 0 && { phaseRanges: joint.phaseRanges }),
+      ...(hasPhaseRanges && { phaseRanges: joint.phaseRanges }),
+      ...(hasPhaseMsgs && { phaseStateMessages: joint.phaseStateMessages }),
       stateMessages: joint.stateMessages,
       pairedWith: joint.pairedWith,
     };

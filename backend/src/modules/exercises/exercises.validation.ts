@@ -272,6 +272,13 @@ export const SecondaryTrackedJointSchema = z.object({
     bottom: StateRangesSchema,
     up: StateRangesSchema,
   }).partial().optional(),
+  /** Per-phase state messages (when phaseRanges is used); falls back to stateMessages for missing phases */
+  phaseStateMessages: z.object({
+    top: StateMessagesSchema,
+    down: StateMessagesSchema,
+    bottom: StateMessagesSchema,
+    up: StateMessagesSchema,
+  }).partial().optional(),
   stateMessages: StateMessagesSchema,
   pairedWith: z.string().optional(),
   invertIndicator: z.boolean().optional(),

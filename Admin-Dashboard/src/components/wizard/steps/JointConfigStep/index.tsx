@@ -467,7 +467,8 @@ interface SecondaryRangesEditorProps {
   joint: SecondaryTrackedJointData;
   isHold: boolean;
   onUpdateRange: (range: StateRangesData) => void;
-  onUpdatePhaseRanges: (phaseRanges: Partial<Record<PhaseKey, StateRangesData>> | undefined) => void;
+  /** Merge partial into secondary joint (phaseRanges, phaseStateMessages, etc.) */
+  onPatchSecondary: (patch: Partial<SecondaryTrackedJointData>) => void;
   stateMessages?: TrackedJointData['stateMessages'];
   onStateMessagesChange?: (messages: TrackedJointData['stateMessages']) => void;
 }
@@ -476,7 +477,7 @@ function SecondaryRangesEditor({
   joint,
   isHold,
   onUpdateRange,
-  onUpdatePhaseRanges,
+  onPatchSecondary,
   stateMessages,
   onStateMessagesChange,
 }: SecondaryRangesEditorProps) {
@@ -500,21 +501,31 @@ function SecondaryRangesEditor({
   }
 
   const togglePhase = (phase: PhaseKey) => {
-    const current = { ...(joint.phaseRanges || {}) };
-    if (phase in current) {
-      delete current[phase];
-      onUpdatePhaseRanges(Object.keys(current).length > 0 ? current : undefined);
+    const currentRanges = { ...(joint.phaseRanges || {}) };
+    const currentMsgs = { ...(joint.phaseStateMessages || {}) };
+    if (phase in currentRanges) {
+      delete currentRanges[phase];
+      delete currentMsgs[phase];
+      onPatchSecondary({
+        phaseRanges: Object.keys(currentRanges).length > 0 ? currentRanges : undefined,
+        phaseStateMessages: Object.keys(currentMsgs).length > 0 ? currentMsgs : undefined,
+      });
     } else {
-      const existingValues = Object.values(current);
+      const existingValues = Object.values(currentRanges);
       const seed = existingValues.length > 0 ? existingValues[0]! : joint.range;
-      current[phase] = { ...seed };
-      onUpdatePhaseRanges(current);
+      currentRanges[phase] = { ...seed };
+      const patch: Partial<SecondaryTrackedJointData> = { phaseRanges: currentRanges };
+      if (joint.stateMessages) {
+        currentMsgs[phase] = { ...joint.stateMessages };
+        patch.phaseStateMessages = currentMsgs;
+      }
+      onPatchSecondary(patch);
       setActivePhaseTab(phase);
     }
   };
 
   const updatePhaseRange = (phase: PhaseKey, range: StateRangesData) => {
-    onUpdatePhaseRanges({ ...(joint.phaseRanges || {}), [phase]: range });
+    onPatchSecondary({ phaseRanges: { ...(joint.phaseRanges || {}), [phase]: range } });
   };
 
   return (
@@ -538,7 +549,13 @@ function SecondaryRangesEditor({
         </div>
         <button
           type="button"
-          onClick={() => onUpdatePhaseRanges(phaseRangesEnabled ? undefined : {})}
+          onClick={() => {
+            if (phaseRangesEnabled) {
+              onPatchSecondary({ phaseRanges: undefined, phaseStateMessages: undefined });
+            } else {
+              onPatchSecondary({ phaseRanges: {} });
+            }
+          }}
           className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
             phaseRangesEnabled ? 'bg-indigo-500' : 'bg-gray-200'
           }`}
@@ -601,6 +618,15 @@ function SecondaryRangesEditor({
                     ranges={joint.phaseRanges[effectiveTab]!}
                     onChange={(range) => updatePhaseRange(effectiveTab, range)}
                     showWarningDanger={true}
+                    stateMessages={joint.phaseStateMessages?.[effectiveTab] ?? stateMessages}
+                    onStateMessagesChange={(messages) => {
+                      onPatchSecondary({
+                        phaseStateMessages: {
+                          ...(joint.phaseStateMessages || {}),
+                          [effectiveTab]: messages,
+                        },
+                      });
+                    }}
                   />
                 </div>
               )}
@@ -806,15 +832,7 @@ function JointTabContent({ joint, onUpdate, onRemove, onCopyToMirror, isHold, ha
           joint={joint as SecondaryTrackedJointData}
           isHold={isHold}
           onUpdateRange={(range) => onUpdate({ ...joint, range } as SecondaryTrackedJointData)}
-          onUpdatePhaseRanges={(phaseRanges) => {
-            if (phaseRanges === undefined) {
-              const updated = { ...joint } as Record<string, unknown>;
-              delete updated.phaseRanges;
-              onUpdate(updated as SecondaryTrackedJointData);
-            } else {
-              onUpdate({ ...joint, phaseRanges } as SecondaryTrackedJointData);
-            }
-          }}
+          onPatchSecondary={(patch) => onUpdate({ ...joint, ...patch } as SecondaryTrackedJointData)}
           stateMessages={joint.stateMessages}
           onStateMessagesChange={(messages) => onUpdate({ ...joint, stateMessages: messages })}
         />
@@ -1028,17 +1046,7 @@ function BilateralTabContent({ leftJoint, rightJoint, bilateralCode, onUpdateBot
           joint={joint as SecondaryTrackedJointData}
           isHold={isHold}
           onUpdateRange={updateRange}
-          onUpdatePhaseRanges={(phaseRanges) => {
-            if (phaseRanges === undefined) {
-              onUpdateBoth((j) => {
-                const updated = { ...j } as Record<string, unknown>;
-                delete updated.phaseRanges;
-                return updated as SecondaryTrackedJointData;
-              });
-            } else {
-              onUpdateBoth((j) => ({ ...j, phaseRanges } as SecondaryTrackedJointData));
-            }
-          }}
+          onPatchSecondary={(patch) => onUpdateBoth((j) => ({ ...j, ...patch } as SecondaryTrackedJointData))}
           stateMessages={joint.stateMessages}
           onStateMessagesChange={(messages) => onUpdateBoth((j) => ({ ...j, stateMessages: messages }))}
         />
