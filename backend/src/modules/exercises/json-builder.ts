@@ -192,9 +192,10 @@ export function buildExerciseConfig(
     buildPoseVariantConfig(pv, { includeMessages, includeAssignments })
   );
 
-  // Bilateral: from explicit DB setting OR auto-detected paired joints
+  // hasPairedJoints: for metrics (e.g. symmetry) — any paired joints qualify
+  // config.isBilateral: alternating sides — only when user enables Bilateral Exercise in dashboard
   const hasPairedJoints = detectBilateral(poseVariants);
-  const isBilateral = hasPairedJoints || !!dbExercise.isBilateral;
+  const isBilateralForMetrics = hasPairedJoints || !!dbExercise.isBilateral;
 
   const config: ExerciseConfig = {
     name: toLocalizedText(dbExercise.name),
@@ -250,7 +251,7 @@ export function buildExerciseConfig(
   // Always merge user-excluded with auto-excluded (disabled) metrics
   const autoExcluded = getAutoExcludedMetricCodes({
     countingMethod,
-    isBilateral,
+    isBilateral: isBilateralForMetrics,
     supportsWeight: !!dbExercise.supportsWeight,
     hasPositionChecks,
   });
@@ -261,19 +262,16 @@ export function buildExerciseConfig(
     // Generate default based on exercise type
     config.reportMetrics = generateDefaultMetrics(
       countingMethod,
-      isBilateral,
+      isBilateralForMetrics,
       !!dbExercise.supportsWeight,
       hasPositionChecks
     );
   }
 
-  // Include bilateral flag
-  if (isBilateral) {
-    config.isBilateral = true;
-  }
-
-  // Include bilateral config (from explicit DB setting only)
+  // Include bilateral flag — only when user explicitly enabled bilateral (alternating) mode
+  // pairedWith joints alone should NOT trigger alternating; they run simultaneously
   if (dbExercise.isBilateral) {
+    config.isBilateral = true;
     const bilateralConfig = parseBilateralConfig(dbExercise.bilateralConfig);
     if (bilateralConfig) {
       config.bilateralConfig = bilateralConfig;

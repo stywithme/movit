@@ -400,6 +400,14 @@ class SyncManager(
             return SyncResult.NoChanges
         }
         
+        // Diagnostic: summarize audio URL availability in message library
+        val withAudio = messageLibrary.count { it.content.audioAr != null || it.content.audioEn != null }
+        val total = messageLibrary.size
+        Log.i(TAG, "SYNC_AUDIO: messageLibrary=$total, withAudioUrl=$withAudio, withoutAudioUrl=${total - withAudio}")
+        if (total > 0 && withAudio == 0) {
+            Log.w(TAG, "⚠ SYNC_AUDIO: NONE of the $total messages have audio URLs — mobile will always use TTS!")
+        }
+        
         // Resolve messages from library before saving
         val resolvedExercises = resolveExerciseMessages(exercises, messageLibrary)
         

@@ -594,7 +594,12 @@ export const mobileSyncService = {
       }
     }
     
-    return Array.from(library.values());
+    const entries = Array.from(library.values());
+    const withAudio = entries.filter(m => m.content.audioAr || m.content.audioEn).length;
+    console.log(
+      `[MobileSync] messageLibrary: total=${entries.length}, withAudio=${withAudio}, withoutAudio=${entries.length - withAudio}`
+    );
+    return entries;
   },
   
   /**
