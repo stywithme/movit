@@ -187,7 +187,7 @@ class SyncManager(
             if (result is SyncResult.NoChanges || result is SyncResult.Success) {
                 val needsMessageRefresh = checkMessageStatsMismatch(body.meta?.messageLibraryStats)
                 if (needsMessageRefresh) {
-                    Log.w(TAG, "Message library mismatch detected — triggering full refresh")
+                    Log.w("AUDIO_TRACE", "[AUTO_REFRESH] Triggering full refresh due to message stats mismatch")
                     isSyncing = false
                     result = fullRefresh()
                 }
@@ -564,8 +564,14 @@ class SyncManager(
         val cachedAudio = syncPrefs.getInt(KEY_CACHED_MSG_AUDIO, -1)
         val cachedAssignments = syncPrefs.getInt(KEY_CACHED_MSG_ASSIGNMENTS, -1)
         
-        // First sync — no cached counts yet, nothing to compare
-        if (cachedMessages == -1) return false
+        // Never synced message stats before — if server has messages, we need a full sync
+        if (cachedMessages == -1) {
+            val serverHasMessages = serverStats.totalMessages > 0 || serverStats.totalAssignments > 0
+            if (serverHasMessages) {
+                Log.w("AUDIO_TRACE", "[MISMATCH] First run with new sync — server has msgs=${serverStats.totalMessages} assigns=${serverStats.totalAssignments} → forcing full sync")
+            }
+            return serverHasMessages
+        }
         
         val mismatch = cachedMessages != serverStats.totalMessages
                 || cachedAudio != serverStats.totalWithAudio
