@@ -149,6 +149,7 @@ class AudioFeedbackPlayer(
         val text = localizedText.get(language)
         val audioUrl = localizedText.getAudioUrl(language)
         
+        Log.d("AUDIO_TRACE", "[PLAYER] lang=$language url=${audioUrl?.takeLast(30) ?: "NULL"} text=${text.take(25)}")
         play(text, audioUrl, priority)
     }
     
