@@ -224,6 +224,8 @@ export interface SecondaryTrackedJoint extends BaseTrackedJoint {
   role: 'secondary';
   range: StateRanges;
   phaseRanges?: Partial<Record<'top' | 'down' | 'bottom' | 'up', StateRanges>>;
+  /** Optional per-phase feedback messages; phases without an entry use top-level stateMessages */
+  phaseStateMessages?: Partial<Record<'top' | 'down' | 'bottom' | 'up', StateMessages>>;
 }
 
 /**
@@ -636,6 +638,15 @@ export function validateSecondaryJoint(joint: TrackedJoint): string[] {
         errors.push(`Secondary joint ${secondary.joint} has invalid phase '${phase}'`);
       } else if (ranges) {
         errors.push(...validateStateRanges(ranges, `${secondary.joint}.phaseRanges.${phase}`));
+      }
+    }
+  }
+
+  if (secondary.phaseStateMessages) {
+    const validPhases = ['top', 'down', 'bottom', 'up'];
+    for (const phase of Object.keys(secondary.phaseStateMessages)) {
+      if (!validPhases.includes(phase)) {
+        errors.push(`Secondary joint ${secondary.joint} has invalid phaseStateMessages key '${phase}'`);
       }
     }
   }

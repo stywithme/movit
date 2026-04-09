@@ -455,7 +455,12 @@ data class TrackedJoint(
     // Phases without a range entry are skipped entirely (no fallback to `range`).
     // The `range` field above is retained as a base template but is NOT used at runtime
     // when phaseRanges is set.
-    val phaseRanges: Map<String, StateRanges>? = null
+    val phaseRanges: Map<String, StateRanges>? = null,
+    /**
+     * Optional per-phase state messages (keys: top, down, bottom, up).
+     * When set for a phase, used instead of [stateMessages] for feedback in that phase.
+     */
+    val phaseStateMessages: Map<String, StateMessages>? = null
 ) {
     // ==================== State-Based Methods ====================
     
@@ -499,6 +504,18 @@ data class TrackedJoint(
      * @return Phase-specific StateRanges, or null if not defined
      */
     fun getPhaseRange(phaseName: String): StateRanges? = phaseRanges?.get(phaseName)
+
+    /**
+     * Effective [StateMessages] for the current exercise phase (secondary + phaseRanges).
+     * Per-phase messages override joint-level [stateMessages] when present.
+     */
+    fun resolveStateMessagesForPhase(phaseName: String?): StateMessages? {
+        if (phaseName != null && role == JointRole.SECONDARY && phaseRanges != null) {
+            val perPhase = phaseStateMessages?.get(phaseName)
+            if (perPhase != null) return perPhase
+        }
+        return stateMessages
+    }
     
     /**
      * Calculate TRANSITION zone boundaries
@@ -595,16 +612,18 @@ data class TrackedJoint(
      * @param zone The current ZoneType (UP_ZONE, DOWN_ZONE, TRANSITION)
      * @return List containing the message (0 or 1 element)
      */
-    fun getMessagesForState(state: JointState, zone: ZoneType): List<LocalizedText> {
-        return stateMessages?.getMessages(state, zone) ?: emptyList()
+    fun getMessagesForState(state: JointState, zone: ZoneType, phaseName: String? = null): List<LocalizedText> {
+        val sm = resolveStateMessagesForPhase(phaseName)
+        return sm?.getMessages(state, zone) ?: emptyList()
     }
     
     /**
      * Legacy: Get messages for a specific state (without zone)
      * Prefers UP zone, falls back to DOWN
      */
-    fun getMessagesForState(state: JointState): List<LocalizedText> {
-        return stateMessages?.getMessages(state) ?: emptyList()
+    fun getMessagesForState(state: JointState, phaseName: String? = null): List<LocalizedText> {
+        val sm = resolveStateMessagesForPhase(phaseName)
+        return sm?.getMessages(state) ?: emptyList()
     }
     
     /**

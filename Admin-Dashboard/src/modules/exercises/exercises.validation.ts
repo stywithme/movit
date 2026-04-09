@@ -272,6 +272,12 @@ export const SecondaryTrackedJointSchema = z.object({
     bottom: StateRangesSchema,
     up: StateRangesSchema,
   }).partial().optional(),
+  phaseStateMessages: z.object({
+    top: StateMessagesSchema,
+    down: StateMessagesSchema,
+    bottom: StateMessagesSchema,
+    up: StateMessagesSchema,
+  }).partial().optional(),
   stateMessages: StateMessagesSchema,
   pairedWith: z.string().optional(),
   invertIndicator: z.boolean().optional(),
