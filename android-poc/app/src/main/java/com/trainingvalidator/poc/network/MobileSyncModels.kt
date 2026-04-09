@@ -163,7 +163,17 @@ data class SyncMeta(
     val serverVersion: String,
     val exercisesInResponse: Int,
     val workoutsInResponse: Int = 0,
-    val programsInResponse: Int = 0
+    val programsInResponse: Int = 0,
+    val messageLibraryStats: MessageLibraryStats? = null
+)
+
+/**
+ * Global message stats from server — used to detect stale caches
+ */
+data class MessageLibraryStats(
+    val totalMessages: Int = 0,
+    val totalWithAudio: Int = 0,
+    val totalAssignments: Int = 0
 )
 
 /**

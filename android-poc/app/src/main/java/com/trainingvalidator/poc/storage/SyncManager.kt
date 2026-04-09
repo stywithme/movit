@@ -57,6 +57,11 @@ class SyncManager(
         
         // Minimum time between auto syncs (5 minutes)
         private const val MIN_SYNC_INTERVAL_MS = 5 * 60 * 1000L
+        
+        private const val PREFS_NAME = "sync_manager_prefs"
+        private const val KEY_CACHED_MSG_COUNT = "cached_message_count"
+        private const val KEY_CACHED_MSG_AUDIO = "cached_message_audio_count"
+        private const val KEY_CACHED_MSG_ASSIGNMENTS = "cached_message_assignments"
     }
     
     private var lastSyncAttempt: Long = 0
@@ -66,6 +71,7 @@ class SyncManager(
     private var lastAudioManifest: com.trainingvalidator.poc.network.AudioManifest? = null
     private var lastAudioBaseUrl: String? = null
     private val userProgramStore = UserProgramStore(context)
+    private val syncPrefs = context.getSharedPreferences(PREFS_NAME, android.content.Context.MODE_PRIVATE)
 
     init {
         val (url, man) = audioCache.getPersistedManifestState()
@@ -175,7 +181,17 @@ class SyncManager(
                 return@withContext SyncResult.Error(body?.error ?: "Unknown error")
             }
             
-            val result = processSyncResponse(body, isFullSync = body.meta?.isFullSync ?: false)
+            var result = processSyncResponse(body, isFullSync = body.meta?.isFullSync ?: false)
+
+            // Check message library stats mismatch — trigger full sync if stale
+            if (result is SyncResult.NoChanges || result is SyncResult.Success) {
+                val needsMessageRefresh = checkMessageStatsMismatch(body.meta?.messageLibraryStats)
+                if (needsMessageRefresh) {
+                    Log.w(TAG, "Message library mismatch detected — triggering full refresh")
+                    isSyncing = false
+                    result = fullRefresh()
+                }
+            }
 
             // After successful sync, flush any pending session reports (offline queue)
             if (result is SyncResult.Success || result is SyncResult.NoChanges) {
@@ -388,7 +404,7 @@ class SyncManager(
 
             Log.d(TAG, "No content changes since last sync (user data still synced)")
             
-            // Still update timestamp
+            // Still update timestamp and message stats
             if (meta != null) {
                 exerciseCache.saveMetadata(
                     timestamp = response.timestamp,
@@ -487,6 +503,9 @@ class SyncManager(
             Log.d(TAG, "Audio manifest stored: ${audioManifest.files.size} files pending download (baseUrl: $lastAudioBaseUrl)")
         }
         
+        // Persist message stats so future incremental syncs can detect drift
+        saveMessageStats(meta?.messageLibraryStats)
+        
         Log.d(TAG, "Sync complete: ${exercises.size} exercises updated, ${deletedExerciseIds.size} deleted, " +
                    "$workoutsUpdatedCount workouts updated, $workoutsDeletedCount deleted, " +
                    "$programsUpdatedCount programs updated, $programsDeletedCount deleted")
@@ -501,6 +520,46 @@ class SyncManager(
             audioFilesDownloaded = 0, // Audio download is now separate
             isFullSync = isFullSync
         )
+    }
+
+    /**
+     * Compare server-reported message stats with locally cached counts.
+     * Returns true if a full sync is needed.
+     */
+    private fun checkMessageStatsMismatch(
+        serverStats: com.trainingvalidator.poc.network.MessageLibraryStats?
+    ): Boolean {
+        if (serverStats == null) return false
+        
+        val cachedMessages = syncPrefs.getInt(KEY_CACHED_MSG_COUNT, -1)
+        val cachedAudio = syncPrefs.getInt(KEY_CACHED_MSG_AUDIO, -1)
+        val cachedAssignments = syncPrefs.getInt(KEY_CACHED_MSG_ASSIGNMENTS, -1)
+        
+        // First sync — no cached counts yet, nothing to compare
+        if (cachedMessages == -1) return false
+        
+        val mismatch = cachedMessages != serverStats.totalMessages
+                || cachedAudio != serverStats.totalWithAudio
+                || cachedAssignments != serverStats.totalAssignments
+        
+        if (mismatch) {
+            Log.w(TAG, "Message stats mismatch: " +
+                "cached(msgs=$cachedMessages, audio=$cachedAudio, assigns=$cachedAssignments) vs " +
+                "server(msgs=${serverStats.totalMessages}, audio=${serverStats.totalWithAudio}, assigns=${serverStats.totalAssignments})")
+        }
+        return mismatch
+    }
+    
+    /**
+     * Persist server message stats for future comparison.
+     */
+    private fun saveMessageStats(stats: com.trainingvalidator.poc.network.MessageLibraryStats?) {
+        if (stats == null) return
+        syncPrefs.edit()
+            .putInt(KEY_CACHED_MSG_COUNT, stats.totalMessages)
+            .putInt(KEY_CACHED_MSG_AUDIO, stats.totalWithAudio)
+            .putInt(KEY_CACHED_MSG_ASSIGNMENTS, stats.totalAssignments)
+            .apply()
     }
 
     /**

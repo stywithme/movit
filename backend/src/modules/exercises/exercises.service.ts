@@ -356,6 +356,8 @@ export const exerciseService = {
           sortOrder: assignment.sortOrder ?? idx + 1,
         })),
       });
+
+      await this.touchExercise(prisma, exerciseId);
     }
 
     return poseVariant;
@@ -574,6 +576,12 @@ export const exerciseService = {
             await this.createPoseVariant(tx, id, pv, pvIndex);
           }
         }
+
+        // Touch exercise so incremental sync picks up assignment changes
+        await tx.exercise.update({
+          where: { id },
+          data: { updatedBy: updatedBy ?? undefined },
+        });
       });
     }
 
@@ -745,5 +753,19 @@ export const exerciseService = {
         config: exercise.reportMetrics as any,
       },
     };
+  },
+
+  /**
+   * Bump exercise.updatedAt so incremental sync picks up child changes
+   * (e.g. new message assignments, position checks).
+   */
+  async touchExercise(
+    prisma: Awaited<ReturnType<typeof getPrisma>>,
+    exerciseId: string
+  ) {
+    await prisma.exercise.update({
+      where: { id: exerciseId },
+      data: {},
+    });
   },
 };

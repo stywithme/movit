@@ -359,8 +359,12 @@ export const mobileSyncService = {
       ];
     }
     
-    // Build message library (deduplicated)
+    // Build message library (deduplicated) from exercises in this sync batch
     const messageLibrary = this.buildMessageLibrary(exercises as Parameters<typeof this.buildMessageLibrary>[0]);
+
+    // Always compute global message stats (across ALL published exercises)
+    // so mobile can detect stale caches even during incremental syncs
+    const messageLibraryStats = await this.getGlobalMessageStats(prisma);
 
     // Transform exercises to mobile format with metadata (message assignments only)
     const exercisesWithMeta: ExerciseConfigWithMeta[] = exercises.map(exercise => {
@@ -551,6 +555,7 @@ export const mobileSyncService = {
         exercisesInResponse: exercisesWithMeta.length,
         workoutsInResponse: workoutsExport.length,
         programsInResponse: filteredPrograms.length,
+        messageLibraryStats,
       },
     };
     
@@ -602,6 +607,51 @@ export const mobileSyncService = {
     return entries;
   },
   
+  /**
+   * Get global message stats across ALL published exercises.
+   * Used by mobile to detect stale message caches.
+   */
+  async getGlobalMessageStats(
+    prisma: Awaited<ReturnType<typeof getPrisma>>
+  ): Promise<{ totalMessages: number; totalWithAudio: number; totalAssignments: number }> {
+    const totalAssignments = await prisma.feedbackMessageAssignment.count({
+      where: {
+        poseVariant: {
+          exercise: { status: 'published', deletedAt: null },
+        },
+      },
+    });
+
+    const distinctMessages = await prisma.feedbackMessageAssignment.findMany({
+      where: {
+        poseVariant: {
+          exercise: { status: 'published', deletedAt: null },
+        },
+      },
+      select: { messageId: true },
+      distinct: ['messageId'],
+    });
+
+    const messageIds = distinctMessages.map(m => m.messageId);
+    let totalWithAudio = 0;
+    if (messageIds.length > 0) {
+      const messages = await prisma.feedbackMessageTemplate.findMany({
+        where: { id: { in: messageIds } },
+        select: { content: true },
+      });
+      totalWithAudio = messages.filter(m => {
+        const c = m.content as Record<string, unknown> | null;
+        return c && (typeof c.audioAr === 'string' || typeof c.audioEn === 'string');
+      }).length;
+    }
+
+    return {
+      totalMessages: messageIds.length,
+      totalWithAudio,
+      totalAssignments,
+    };
+  },
+
   /**
    * Build audio manifest from message library and inline exercise content
    * (positionChecks.errorMessage, trackedJoints.stateMessages).
