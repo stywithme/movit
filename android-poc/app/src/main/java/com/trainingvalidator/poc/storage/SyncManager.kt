@@ -324,6 +324,8 @@ class SyncManager(
         val exercises = data.exercises ?: emptyList()
         val messageLibrary = data.messageLibrary ?: emptyList()
         val deletedExerciseIds = data.deletedExerciseIds ?: emptyList()
+        val msgStats = meta?.messageLibraryStats
+        Log.i("AUDIO_TRACE", "[SYNC] isFullSync=$isFullSync exercises=${exercises.size} msgLib=${messageLibrary.size} audioManifest=${data.audioManifest?.files?.size ?: 0} serverMsgStats=(msgs=${msgStats?.totalMessages}, audio=${msgStats?.totalWithAudio}, assigns=${msgStats?.totalAssignments})")
         val workouts = data.workouts ?: emptyList()
         val deletedWorkoutIds = data.deletedWorkoutIds ?: emptyList()
         val programs = data.programs ?: emptyList()
@@ -386,6 +388,7 @@ class SyncManager(
         val hasProgramChanges = programs.isNotEmpty() || deletedProgramIds.isNotEmpty()
         
         if (!hasExerciseChanges && !hasWorkoutChanges && !hasProgramChanges) {
+            Log.d("AUDIO_TRACE", "[SYNC] No content changes → messageLibrary NOT applied (exercises=${ exercises.size}, msgs=${messageLibrary.size})")
             // Reconcile: if server total differs from local cache, stale entries exist
             val localCount = exerciseCache.getExerciseCount()
             val serverTotal = meta?.totalExercises ?: localCount
@@ -426,6 +429,32 @@ class SyncManager(
         
         // Resolve messages from library before saving
         val resolvedExercises = resolveExerciseMessages(exercises, messageLibrary)
+        
+        // Diagnostic: verify audio URLs survived resolution
+        for (ex in resolvedExercises) {
+            for (v in (ex.poseVariants ?: emptyList())) {
+                var stateAudio = 0
+                for (j in (v.trackedJoints ?: emptyList())) {
+                    val sm = j.stateMessages ?: continue
+                    for (sv in listOfNotNull(sm.perfect, sm.normal, sm.warning, sm.danger)) {
+                        when (sv) {
+                            is com.trainingvalidator.poc.training.models.StateMessageValue.Single ->
+                                if (sv.message.audioAr != null || sv.message.audioEn != null) stateAudio++
+                            is com.trainingvalidator.poc.training.models.StateMessageValue.ZoneSpecific -> {
+                                if (sv.up?.audioAr != null || sv.up?.audioEn != null) stateAudio++
+                                if (sv.down?.audioAr != null || sv.down?.audioEn != null) stateAudio++
+                            }
+                        }
+                    }
+                }
+                val posAudio = (v.positionChecks ?: emptyList()).count { pc ->
+                    pc.errorMessage?.audioAr != null || pc.errorMessage?.audioEn != null
+                }
+                val fbAudio = listOfNotNull(v.feedbackMessages?.motivational, v.feedbackMessages?.tips)
+                    .sumOf { list -> list.count { it.audioAr != null || it.audioEn != null } }
+                Log.i("AUDIO_TRACE", "[POST_RESOLVE] ${ex.slug}: stateAudio=$stateAudio posAudio=$posAudio fbAudio=$fbAudio")
+            }
+        }
         
         // Save exercises
         if (hasExerciseChanges) {
@@ -571,11 +600,18 @@ class SyncManager(
         messageLibrary: List<MessageTemplate>
     ): List<ExerciseConfigWithMeta> {
         val messageMap = messageLibrary.associateBy { it.id }
+        val withAudio = messageLibrary.count { it.content.audioAr != null || it.content.audioEn != null }
+        Log.i("AUDIO_TRACE", "[RESOLVE] messageLibrary=${messageLibrary.size}, withAudio=$withAudio, exercises=${exercises.size}")
+        messageLibrary.take(3).forEach { t ->
+            Log.d("AUDIO_TRACE", "[RESOLVE] sample msg=${t.code} audioAr=${t.content.audioAr?.takeLast(30)} audioEn=${t.content.audioEn?.takeLast(30)}")
+        }
         
         return exercises.map { exercise ->
             @Suppress("UNNECESSARY_SAFE_CALL", "USELESS_ELVIS")
             val variants = exercise.poseVariants ?: emptyList()
             if (variants.isEmpty()) return@map exercise
+            val totalAssignments = variants.sumOf { (it.messageAssignments ?: emptyList()).size }
+            Log.d("AUDIO_TRACE", "[RESOLVE] exercise=${exercise.slug} variants=${variants.size} assignments=$totalAssignments")
             val resolvedVariants = variants.map { variant ->
                 resolvePoseVariantMessages(variant, messageMap)
             }

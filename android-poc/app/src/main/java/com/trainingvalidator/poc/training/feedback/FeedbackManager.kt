@@ -380,6 +380,7 @@ class FeedbackManager(
                         MessageType.TIP -> SpeakPriority.LOW         // Skip if busy
                         MessageType.INFO -> SpeakPriority.NORMAL     // Waits in queue
                     }
+                    Log.d("AUDIO_TRACE", "[DELIVER] type=$messageType audioAr=${localizedText.audioAr?.takeLast(25)} audioEn=${localizedText.audioEn?.takeLast(25)} text=${displayText.take(25)}")
                     // Use speakLocalized to leverage cached audio if available
                     speakLocalized(localizedText, speechPriority)
                     if (isHapticEnabled) {
@@ -713,6 +714,7 @@ class FeedbackManager(
     fun speak(text: String, priority: SpeakPriority = SpeakPriority.HIGH) {
         if (!isTtsEnabled) return
         
+        Log.d("AUDIO_TRACE", "[SPEAK_RAW] text=${text.take(30)} (no audioUrl → always TTS)")
         // Use AudioFeedbackPlayer if available
         if (useAudioPlayer && audioPlayer != null) {
             val audioPriority = when (priority) {
