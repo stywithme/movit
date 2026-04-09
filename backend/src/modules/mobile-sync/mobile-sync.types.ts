@@ -257,6 +257,16 @@ export interface SyncMeta {
    * Number of programs in this response
    */
   programsInResponse: number;
+
+  /**
+   * Global message library stats (across ALL published exercises).
+   * Mobile uses this to detect stale message caches.
+   */
+  messageLibraryStats: {
+    totalMessages: number;
+    totalWithAudio: number;
+    totalAssignments: number;
+  };
 }
 
 // ============================================
