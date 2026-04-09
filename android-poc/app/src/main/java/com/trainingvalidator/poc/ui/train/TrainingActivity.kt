@@ -1177,7 +1177,8 @@ class TrainingActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetection
                     frameCaptures = frameCaptures,
                     sessionMetrics = sessionMetrics,
                     weightKg = viewModel.getWeightKg(),
-                    weightUnit = viewModel.getWeightUnit()
+                    weightUnit = viewModel.getWeightUnit(),
+                    allSets = sets
                 )
 
                 val saved = reportStorage?.save(report) ?: false

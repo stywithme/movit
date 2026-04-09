@@ -53,6 +53,7 @@ class PerformanceOverviewFragment : Fragment() {
     private var tvTitle: TextView? = null
     private var tvSubtitle: TextView? = null
     private var insightCard: LinearLayout? = null
+    private var setsContainer: LinearLayout? = null
     private var cardsContainer: LinearLayout? = null
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
@@ -93,6 +94,17 @@ class PerformanceOverviewFragment : Fragment() {
             )
         }
         col.addView(chart)
+
+        // Sets breakdown container (only shown when exercise has multiple sets)
+        setsContainer = LinearLayout(ctx).apply {
+            orientation = LinearLayout.VERTICAL
+            layoutParams = LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT,
+                ViewGroup.LayoutParams.WRAP_CONTENT
+            ).apply { topMargin = H.dp(ctx, 16) }
+            isVisible = false
+        }
+        col.addView(setsContainer)
 
         // Score cards container
         cardsContainer = LinearLayout(ctx).apply {
@@ -135,14 +147,23 @@ class PerformanceOverviewFragment : Fragment() {
         val metrics = report.performanceMetrics ?: PerformanceMetricsBuilder.build(report)
 
         // Title
+        val hasMultipleSets = (report.setSummaries ?: emptyList()).size > 1
         tvTitle?.text = if (isArabic) "📊 رحلة العدات" else "📊 Reps Journey"
-        tvSubtitle?.text = if (isArabic) "أداؤك عبر كل العدات" else "Your performance across all reps"
+        tvSubtitle?.text = when {
+            hasMultipleSets && isArabic -> "أداؤك عبر كل السيتات والعدات"
+            hasMultipleSets -> "Your performance across all sets & reps"
+            isArabic -> "أداؤك عبر كل العدات"
+            else -> "Your performance across all reps"
+        }
 
         // QuickInsight
         bindInsight(report)
 
         // Chart data
         chart?.setData(report.repTimeline, metrics.controlCard.fatigueIndex)
+
+        // Sets breakdown
+        bindSets(report, ctx)
 
         // Score cards
         cardsContainer?.removeAllViews()
@@ -227,6 +248,163 @@ class PerformanceOverviewFragment : Fragment() {
         }
         card.addView(textCol)
         card.isVisible = true
+    }
+
+    // ═══════════════════════════════════════════════════════════════
+    //  Sets breakdown
+    // ═══════════════════════════════════════════════════════════════
+
+    private fun bindSets(report: PostTrainingReport, ctx: android.content.Context) {
+        val container = setsContainer ?: return
+        container.removeAllViews()
+
+        val summaries = report.setSummaries ?: emptyList()
+        if (summaries.size < 2) {
+            container.isVisible = false
+            return
+        }
+
+        container.isVisible = true
+
+        // Section title
+        container.addView(H.sectionTitle(ctx,
+            "📋",
+            if (isArabic) "أداء كل Set" else "Sets Breakdown"
+        ))
+
+        summaries.forEach { set ->
+            container.addView(buildSetCard(ctx, set))
+        }
+    }
+
+    private fun buildSetCard(ctx: android.content.Context, set: SetSummary): LinearLayout {
+        val accentColor = H.colorFromScore(ctx, set.averageScore)
+        val stateColor = when (set.dominantState) {
+            com.trainingvalidator.poc.training.models.JointState.PERFECT -> H.colorGreen(ctx)
+            com.trainingvalidator.poc.training.models.JointState.DANGER -> H.colorRed(ctx)
+            com.trainingvalidator.poc.training.models.JointState.WARNING -> H.colorOrange(ctx)
+            else -> accentColor
+        }
+
+        val card = LinearLayout(ctx).apply {
+            orientation = LinearLayout.VERTICAL
+            layoutParams = LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT,
+                ViewGroup.LayoutParams.WRAP_CONTENT
+            ).apply { topMargin = H.dp(ctx, 8) }
+            setPadding(H.dp(ctx, 14), H.dp(ctx, 12), H.dp(ctx, 14), H.dp(ctx, 12))
+            background = GradientDrawable().apply {
+                setColor(0x0DFFFFFF)
+                cornerRadius = H.dp(ctx, 12).toFloat()
+                setStroke(1, stateColor and 0x40FFFFFF)
+            }
+        }
+
+        // Row 1: Set # + reps count + score
+        val topRow = LinearLayout(ctx).apply {
+            orientation = LinearLayout.HORIZONTAL
+            gravity = Gravity.CENTER_VERTICAL
+        }
+        topRow.addView(TextView(ctx).apply {
+            text = if (isArabic) "Set ${set.setNumber}" else "Set ${set.setNumber}"
+            textSize = 14f
+            setTextColor(0xFFFFFFFF.toInt())
+            setTypeface(typeface, Typeface.BOLD)
+            layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f)
+        })
+        topRow.addView(TextView(ctx).apply {
+            text = "${set.repsCompleted}/${set.repsTarget}"
+            textSize = 13f
+            setTextColor(H.textMuted(ctx))
+            layoutParams = LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.WRAP_CONTENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT
+            ).apply { marginEnd = H.dp(ctx, 12) }
+        })
+        topRow.addView(TextView(ctx).apply {
+            text = set.getFormattedScore()
+            textSize = 14f
+            setTextColor(accentColor)
+            setTypeface(typeface, Typeface.BOLD)
+        })
+        card.addView(topRow)
+
+        // Row 2: Progress bar
+        val barHeight = H.dp(ctx, 6)
+        val barContainer = android.widget.FrameLayout(ctx).apply {
+            layoutParams = LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT, barHeight
+            ).apply { topMargin = H.dp(ctx, 8) }
+        }
+        val bgBar = View(ctx).apply {
+            layoutParams = android.widget.FrameLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT, barHeight
+            )
+            background = GradientDrawable().apply {
+                setColor(0x1AFFFFFF)
+                cornerRadius = barHeight / 2f
+            }
+        }
+        barContainer.addView(bgBar)
+        barContainer.post {
+            val fillWidth = (barContainer.width * (set.averageScore / 100f).coerceIn(0f, 1f)).toInt()
+            val fillBar = View(ctx).apply {
+                layoutParams = android.widget.FrameLayout.LayoutParams(fillWidth, barHeight)
+                background = GradientDrawable().apply {
+                    setColor(accentColor)
+                    cornerRadius = barHeight / 2f
+                }
+            }
+            barContainer.addView(fillBar)
+        }
+        card.addView(barContainer)
+
+        // Row 3: Duration + weight + primary issue (if any)
+        val bottomRow = LinearLayout(ctx).apply {
+            orientation = LinearLayout.HORIZONTAL
+            gravity = Gravity.CENTER_VERTICAL
+            layoutParams = LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT,
+                ViewGroup.LayoutParams.WRAP_CONTENT
+            ).apply { topMargin = H.dp(ctx, 6) }
+        }
+        bottomRow.addView(TextView(ctx).apply {
+            text = "⏱ ${set.getFormattedDuration()}"
+            textSize = 11f
+            setTextColor(H.textMuted(ctx))
+            layoutParams = LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.WRAP_CONTENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT
+            ).apply { marginEnd = H.dp(ctx, 12) }
+        })
+        set.weightKg?.let { w ->
+            if (w > 0) {
+                bottomRow.addView(TextView(ctx).apply {
+                    text = "🏋 ${"%.1f".format(w)} kg"
+                    textSize = 11f
+                    setTextColor(H.textMuted(ctx))
+                    layoutParams = LinearLayout.LayoutParams(
+                        LinearLayout.LayoutParams.WRAP_CONTENT,
+                        LinearLayout.LayoutParams.WRAP_CONTENT
+                    ).apply { marginEnd = H.dp(ctx, 12) }
+                })
+            }
+        }
+        set.primaryIssue?.let { issue ->
+            val txt = if (isArabic) issue.ar else issue.en
+            if (txt.isNotBlank()) {
+                bottomRow.addView(TextView(ctx).apply {
+                    text = "⚠ $txt"
+                    textSize = 11f
+                    setTextColor(stateColor)
+                    maxLines = 1
+                    layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f)
+                })
+            }
+        }
+        card.addView(bottomRow)
+
+        return card
     }
 
     // ═══════════════════════════════════════════════════════════════
