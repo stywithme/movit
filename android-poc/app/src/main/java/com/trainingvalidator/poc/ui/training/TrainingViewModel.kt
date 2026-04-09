@@ -764,7 +764,7 @@ class TrainingViewModel(
         }
 
         // State messages
-        for (joint in variant.trackedJoints ?: emptyList()) {
+        for (joint in variant.trackedJoints) {
             val sm = joint.stateMessages ?: continue
             for (state in listOf(
                 com.trainingvalidator.poc.training.models.JointState.PERFECT,
@@ -778,14 +778,14 @@ class TrainingViewModel(
         }
 
         // Position checks
-        for (pc in variant.positionChecks ?: emptyList()) {
+        for (pc in variant.positionChecks) {
             checkText(pc.errorMessage)
         }
 
         // Feedback messages
         val fm = variant.feedbackMessages
-        fm?.motivational?.forEach { checkText(it) }
-        fm?.tips?.forEach { checkText(it) }
+        fm.motivational.forEach { checkText(it) }
+        fm.tips.forEach { checkText(it) }
 
         Log.i(TAG, "──── EXERCISE AUDIO DIAGNOSTIC ($lang) ────")
         Log.i(TAG, "Messages with audio URL: $withAudio")
