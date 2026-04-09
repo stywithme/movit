@@ -89,6 +89,18 @@ class RepsJourneyChart @JvmOverloads constructor(
     private val paddingV = 36f * density
     private val barSpacing = 4f * density
     private val cornerRadius = 6f * density
+    private val setSeparatorPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+        color = 0x33FFFFFF
+        strokeWidth = 1f * density
+        style = Paint.Style.STROKE
+        pathEffect = DashPathEffect(floatArrayOf(4f * density, 3f * density), 0f)
+    }
+    private val setLabelPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+        color = 0x88FFFFFF.toInt()
+        textSize = 8f * density
+        textAlign = Paint.Align.CENTER
+        typeface = Typeface.create(Typeface.DEFAULT, Typeface.BOLD)
+    }
 
     fun setData(timeline: List<RepTimelineEntry>, fatigue: Int? = null) {
         this.repData = timeline
@@ -186,6 +198,21 @@ class RepsJourneyChart @JvmOverloads constructor(
             if (barCount <= 15 || index % 2 == 0) {
                 val labelY = bottom + textPaint.textSize + 4f * density
                 canvas.drawText("${rep.repNumber}", barCenterX, labelY, textPaint)
+            }
+        }
+
+        // Set separators (dashed vertical lines between sets)
+        val hasMultipleSets = repData.any { it.setNumber > 1 }
+        if (hasMultipleSets) {
+            for (i in 0 until repData.size - 1) {
+                if (repData[i].setNumber != repData[i + 1].setNumber) {
+                    val x = paddingH + (i + 1) * (barWidth + barSpacing) - barSpacing / 2
+                    canvas.drawLine(x, paddingV * 0.6f, x, paddingV + chartHeight, setSeparatorPaint)
+                    canvas.drawText(
+                        "S${repData[i + 1].setNumber}",
+                        x, paddingV * 0.45f, setLabelPaint
+                    )
+                }
             }
         }
 

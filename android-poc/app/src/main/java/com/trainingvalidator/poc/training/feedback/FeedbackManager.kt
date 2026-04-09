@@ -93,6 +93,10 @@ class FeedbackManager(
         extraBufferCapacity = 5
     )
     val visualMessages: SharedFlow<VisualMessage> = _visualMessages
+
+    /** Active feedback locale (e.g. "en", "ar") for diagnostics and UI alignment with TTS/audio. */
+    val feedbackLanguage: String
+        get() = config.language
     
     // Text-to-speech (legacy, used as fallback)
     private var tts: TextToSpeech? = null

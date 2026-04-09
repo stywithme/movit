@@ -150,7 +150,11 @@ object ReportGenerator {
     }
 
     /**
-     * Generate from TrainingEngine directly
+     * Generate from TrainingEngine directly.
+     * @param allSets When provided (multi-set session), the timeline is built from
+     *               all sets' rep details with proper setNumber tagging, and
+     *               SetSummary entries are generated. When null, falls back to
+     *               engine.stop() single-set behavior.
      */
     fun generateFromEngine(
         engine: TrainingEngine,
@@ -159,11 +163,11 @@ object ReportGenerator {
         frameCaptures: List<FrameCapture> = emptyList(),
         sessionMetrics: SessionMetrics? = null,
         weightKg: Float? = null,
-        weightUnit: String = "kg"
+        weightUnit: String = "kg",
+        allSets: List<com.trainingvalidator.poc.training.session.SessionTrainingEngine.SetMetrics>? = null
     ): PostTrainingReport {
         val baseSummary = engine.stop()
 
-        // Attach weight data if provided (TrainingEngine doesn't track weight)
         val summary = if (weightKg != null && weightKg > 0) {
             baseSummary.copy(weightKg = weightKg, weightUnit = weightUnit)
         } else baseSummary
@@ -181,7 +185,7 @@ object ReportGenerator {
             )
         } else null
 
-        return generate(
+        val report = generate(
             sessionId = UUID.randomUUID().toString(),
             summary = summary,
             exerciseConfig = exerciseConfig,
@@ -191,6 +195,130 @@ object ReportGenerator {
             frameCaptures = frameCaptures,
             holdData = holdData,
             sessionMetrics = sessionMetrics
+        )
+
+        if (allSets == null || allSets.size <= 1) return report
+
+        return enrichWithSetData(report, allSets)
+    }
+
+    /**
+     * Enrich a generated report with multi-set data.
+     * 
+     * Because TrainingEngine is reset between sets, [report.repTimeline] only contains
+     * the last set's reps. We rebuild the full timeline from the session engine's
+     * [SetMetrics.repDetails] (which stores per-rep data for every set) and
+     * assign global repNumbers + setNumber tags.
+     */
+    private fun enrichWithSetData(
+        report: PostTrainingReport,
+        allSets: List<com.trainingvalidator.poc.training.session.SessionTrainingEngine.SetMetrics>
+    ): PostTrainingReport {
+        // Rebuild the full timeline from all sets' rep details
+        val fullTimeline = mutableListOf<RepTimelineEntry>()
+        var globalRepNumber = 0
+
+        for (set in allSets) {
+            for (rep in set.repDetails) {
+                globalRepNumber++
+                val worstState = JointState.entries.getOrElse(rep.worstState) { JointState.NORMAL }
+                val displayInfo = StateDisplayConfig.getDisplayInfo(worstState)
+                val status = RepStatus.fromState(worstState, isBest = false, isWorst = false)
+
+                fullTimeline.add(RepTimelineEntry(
+                    repNumber = globalRepNumber,
+                    status = status,
+                    durationMs = rep.durationMs,
+                    errors = emptyList(),
+                    isBestRep = false,
+                    isWorstRep = false,
+                    frameCapture = null,
+                    worstState = worstState,
+                    stateDisplayName = displayInfo.toLocalizedText(),
+                    stateIcon = displayInfo.icon,
+                    score = rep.score,
+                    isCounted = rep.isCounted,
+                    isInvalidated = worstState == JointState.DANGER,
+                    setNumber = set.setNumber
+                ))
+            }
+        }
+
+        // Mark best/worst reps globally
+        if (fullTimeline.isNotEmpty()) {
+            val bestIdx = fullTimeline.indices.maxByOrNull { fullTimeline[it].score } ?: 0
+            val worstIdx = fullTimeline.indices.minByOrNull { fullTimeline[it].score } ?: 0
+            if (bestIdx != worstIdx) {
+                fullTimeline[bestIdx] = fullTimeline[bestIdx].copy(isBestRep = true)
+                fullTimeline[worstIdx] = fullTimeline[worstIdx].copy(isWorstRep = true)
+            }
+        }
+
+        // Transfer error labels and frame captures from the original report's timeline
+        // where rep numbers match (the last set's reps are in the original timeline)
+        val lastSetStartRep = globalRepNumber - (allSets.lastOrNull()?.repDetails?.size ?: 0) + 1
+        val originalByLocal = report.repTimeline.associateBy { it.repNumber }
+        for (i in fullTimeline.indices) {
+            val entry = fullTimeline[i]
+            if (entry.setNumber == allSets.last().setNumber) {
+                val localRepNum = entry.repNumber - lastSetStartRep + 1
+                val original = originalByLocal[localRepNum]
+                if (original != null) {
+                    fullTimeline[i] = entry.copy(
+                        errors = original.errors,
+                        frameCapture = original.frameCapture,
+                        stateMessage = original.stateMessage,
+                        positionWarningCount = original.positionWarningCount,
+                        positionErrorCount = original.positionErrorCount
+                    )
+                }
+            }
+        }
+
+        val setSummaries = allSets.map { set ->
+            val dominantState = when {
+                set.repDetails.any { it.worstState == 4 } -> JointState.DANGER
+                set.repDetails.any { it.worstState == 3 } -> JointState.WARNING
+                set.repDetails.all { it.worstState == 0 } -> JointState.PERFECT
+                else -> JointState.NORMAL
+            }
+
+            SetSummary(
+                setNumber = set.setNumber,
+                repsCompleted = set.repsCompleted,
+                repsTarget = set.repsTarget,
+                averageScore = set.formScore,
+                durationMs = set.durationMs,
+                countedReps = set.repDetails.count { it.isCounted },
+                invalidatedReps = set.repDetails.count { it.worstState == 4 },
+                weightKg = set.weightKg,
+                dominantState = dominantState
+            )
+        }
+
+        // Update the summary to reflect aggregated multi-set totals
+        val totalReps = allSets.sumOf { it.repsCompleted }
+        val totalCounted = allSets.sumOf { s -> s.repDetails.count { it.isCounted } }
+        val totalInvalidated = allSets.sumOf { s -> s.repDetails.count { it.worstState == 4 } }
+        val avgScore = if (totalReps > 0) {
+            allSets.flatMap { it.repDetails }.map { it.score }.average().toFloat()
+        } else report.summary.averageScore
+        val totalDuration = allSets.sumOf { it.durationMs }
+        val countedRatio = if (totalReps > 0) totalCounted.toFloat() / totalReps else 0f
+
+        val updatedSummary = report.summary.copy(
+            totalReps = totalReps,
+            countedReps = totalCounted,
+            invalidatedReps = totalInvalidated,
+            averageScore = avgScore,
+            countedRatio = countedRatio,
+            durationMs = totalDuration
+        )
+
+        return report.copy(
+            repTimeline = fullTimeline,
+            setSummaries = setSummaries,
+            summary = updatedSummary
         )
     }
 

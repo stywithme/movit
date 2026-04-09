@@ -753,7 +753,7 @@ class TrainingViewModel(
      */
     private fun logExerciseAudioDiagnostic() {
         val config = _exerciseConfig.value ?: return
-        val lang = feedbackManager?.config?.language ?: "en"
+        val lang = feedbackManager?.feedbackLanguage ?: "en"
         val variant = config.poseVariants.getOrNull(_poseVariantIndex.value) ?: return
 
         var withAudio = 0

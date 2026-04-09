@@ -143,6 +143,7 @@ class SessionSummaryFragment : Fragment() {
             val tvAccuracy: TextView = view.findViewById(R.id.tvReportExerciseAccuracy)
             val tvQuality: TextView = view.findViewById(R.id.tvReportExerciseQuality)
             val tvWeights: TextView = view.findViewById(R.id.tvReportExerciseWeights)
+            val layoutSetsBreakdown: android.widget.LinearLayout = view.findViewById(R.id.layoutSetsBreakdown)
         }
 
         override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): VH {
@@ -172,6 +173,105 @@ class SessionSummaryFragment : Fragment() {
                 getString(R.string.session_report_weights_empty)
             } else {
                 getString(R.string.session_report_weights_format, weights)
+            }
+
+            bindSetsBreakdown(holder.layoutSetsBreakdown, item.setMetrics)
+        }
+
+        private fun bindSetsBreakdown(
+            container: android.widget.LinearLayout,
+            sets: List<SessionTrainingEngine.SetMetrics>
+        ) {
+            container.removeAllViews()
+            if (sets.size < 2) {
+                container.visibility = View.GONE
+                return
+            }
+            container.visibility = View.VISIBLE
+
+            val ctx = container.context
+            val dp4 = (4 * ctx.resources.displayMetrics.density).toInt()
+            val dp6 = (6 * ctx.resources.displayMetrics.density).toInt()
+            val dp8 = (8 * ctx.resources.displayMetrics.density).toInt()
+
+            // Divider
+            container.addView(View(ctx).apply {
+                layoutParams = android.widget.LinearLayout.LayoutParams(
+                    ViewGroup.LayoutParams.MATCH_PARENT, 1
+                ).apply { topMargin = dp4; bottomMargin = dp4 }
+                setBackgroundColor(0x1AFFFFFF)
+            })
+
+            sets.forEach { set ->
+                val row = android.widget.LinearLayout(ctx).apply {
+                    orientation = android.widget.LinearLayout.HORIZONTAL
+                    gravity = android.view.Gravity.CENTER_VERTICAL
+                    setPadding(0, dp4, 0, dp4)
+                }
+
+                // Set label
+                row.addView(TextView(ctx).apply {
+                    text = "S${set.setNumber}"
+                    textSize = 11f
+                    setTextColor(0xAAFFFFFF.toInt())
+                    setTypeface(typeface, android.graphics.Typeface.BOLD)
+                    layoutParams = android.widget.LinearLayout.LayoutParams(
+                        (28 * ctx.resources.displayMetrics.density).toInt(),
+                        ViewGroup.LayoutParams.WRAP_CONTENT
+                    )
+                })
+
+                // Reps count
+                row.addView(TextView(ctx).apply {
+                    text = "${set.repsCompleted}/${set.repsTarget} reps"
+                    textSize = 11f
+                    setTextColor(0x99FFFFFF.toInt())
+                    layoutParams = android.widget.LinearLayout.LayoutParams(
+                        0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f
+                    )
+                })
+
+                // Mini score bar
+                val barHeight = dp6
+                val barWidth = (60 * ctx.resources.displayMetrics.density).toInt()
+                val barFrame = android.widget.FrameLayout(ctx).apply {
+                    layoutParams = android.widget.LinearLayout.LayoutParams(barWidth, barHeight).apply {
+                        marginEnd = dp8
+                    }
+                }
+                barFrame.addView(View(ctx).apply {
+                    layoutParams = android.widget.FrameLayout.LayoutParams(barWidth, barHeight)
+                    background = android.graphics.drawable.GradientDrawable().apply {
+                        setColor(0x1AFFFFFF)
+                        cornerRadius = barHeight / 2f
+                    }
+                })
+                val fillW = (barWidth * (set.formScore / 100f).coerceIn(0f, 1f)).toInt()
+                val fillColor = when {
+                    set.formScore >= 80 -> 0xFF4CAF50.toInt()
+                    set.formScore >= 60 -> 0xFFFFA726.toInt()
+                    else -> 0xFFEF5350.toInt()
+                }
+                barFrame.addView(View(ctx).apply {
+                    layoutParams = android.widget.FrameLayout.LayoutParams(fillW, barHeight)
+                    background = android.graphics.drawable.GradientDrawable().apply {
+                        setColor(fillColor)
+                        cornerRadius = barHeight / 2f
+                    }
+                })
+                row.addView(barFrame)
+
+                // Score label
+                row.addView(TextView(ctx).apply {
+                    text = "${set.formScore.toInt()}%"
+                    textSize = 11f
+                    setTextColor(fillColor)
+                    setTypeface(typeface, android.graphics.Typeface.BOLD)
+                    minWidth = (32 * ctx.resources.displayMetrics.density).toInt()
+                    gravity = android.view.Gravity.END
+                })
+
+                container.addView(row)
             }
         }
 

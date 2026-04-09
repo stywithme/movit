@@ -61,6 +61,16 @@
             android:textColor="@color/text_secondary"
             android:textSize="12sp"
             tools:text="Weights: 8kg, 10kg, 12kg" />
+
+        <!-- Per-set mini breakdown (only visible when exercise has >1 set) -->
+        <LinearLayout
+            android:id="@+id/layoutSetsBreakdown"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:layout_marginTop="@dimen/spacing_sm"
+            android:visibility="gone"
+            tools:visibility="visible" />
     </LinearLayout>
 
 </com.google.android.material.card.MaterialCardView>
