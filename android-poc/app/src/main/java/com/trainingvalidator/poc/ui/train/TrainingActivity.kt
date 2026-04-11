@@ -41,6 +41,7 @@ import com.trainingvalidator.poc.pose.PoseResult
 import com.trainingvalidator.poc.training.config.SettingsManager
 import com.trainingvalidator.poc.training.feedback.FeedbackEvent
 import com.trainingvalidator.poc.training.feedback.FeedbackManager
+import com.trainingvalidator.poc.training.feedback.SystemMessageRegistry
 import com.trainingvalidator.poc.training.engine.BodyPosture
 import com.trainingvalidator.poc.training.engine.ExpectedDirection
 import com.trainingvalidator.poc.training.session.PauseReason
@@ -1378,7 +1379,9 @@ class TrainingActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetection
                 // Notify supervisor IMMEDIATELY - animation runs in parallel
                 viewModel.onCountdownFinished()
                 viewModel.feedbackManager?.speakGo()
-                AnimationUtils.animateGoText(binding.tvCountdown) { /* cosmetic only */ }
+                val goOverlay = SystemMessageRegistry.get("training_go_overlay", "انطلق!", "GO!")
+                    .get(viewModel.poseSetupGuide.language)
+                AnimationUtils.animateGoText(binding.tvCountdown, goOverlay) { /* cosmetic only */ }
             }
 
             override fun onCancelled() {
@@ -1877,18 +1880,32 @@ class TrainingActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetection
     }
     
     private fun handleAutoPaused(reason: PauseReason) {
-        val message = when (reason) {
-            PauseReason.VISIBILITY -> "Required joints not visible"
-            PauseReason.NO_POSE -> "No pose detected for too long"
-            PauseReason.MANUAL -> "Training paused"
+        val lang = viewModel.poseSetupGuide.language
+        val lt = when (reason) {
+            PauseReason.VISIBILITY -> SystemMessageRegistry.get(
+                "training_pause_visibility_joints",
+                "المفاصل المطلوبة غير مرئية",
+                "Required joints not visible"
+            )
+            PauseReason.NO_POSE -> SystemMessageRegistry.get(
+                "training_pause_no_pose_long",
+                "لم يتم اكتشاف وضعية لفترة طويلة",
+                "No pose detected for too long"
+            )
+            PauseReason.MANUAL -> SystemMessageRegistry.get(
+                "training_pause_manual",
+                "تم إيقاف التمرين مؤقتاً",
+                "Training paused"
+            )
         }
+        val message = lt.get(lang)
 
         if (reason != PauseReason.MANUAL) {
             binding.vignetteOverlay.showError()
         }
 
         if (!isVideoMode && reason != PauseReason.MANUAL) {
-            viewModel.feedbackManager?.speak(message, FeedbackManager.SpeakPriority.HIGH)
+            viewModel.feedbackManager?.speakLocalized(lt, FeedbackManager.SpeakPriority.HIGH)
         } else {
             binding.glassmorphicMessage.showMessage(
                 message,
@@ -1913,14 +1930,27 @@ class TrainingActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetection
         if (!isVideoMode) {
             if (!noPoseTtsSpoken) {
                 noPoseTtsSpoken = true
-                viewModel.feedbackManager?.speak(
-                    "Return to the camera",
+                val lt = SystemMessageRegistry.get(
+                    "training_no_pose_return_camera",
+                    "عد إلى الكاميرا",
+                    "Return to the camera"
+                )
+                viewModel.feedbackManager?.speakLocalized(
+                    lt,
                     FeedbackManager.SpeakPriority.HIGH
                 )
             }
         } else {
             val remainingSeconds = ((4000 - elapsedMs) / 1000).toInt().coerceAtLeast(0)
-            val message = "No pose detected! Return in ${remainingSeconds}s..."
+            val base = SystemMessageRegistry.get(
+                "training_no_pose_countdown_warning",
+                "لم يتم اكتشاف وضعية! العودة خلال {seconds}ث...",
+                "No pose detected! Return in {seconds}s..."
+            )
+            val message = SystemMessageRegistry.substitute(
+                base,
+                mapOf("seconds" to remainingSeconds.toString())
+            ).get(viewModel.poseSetupGuide.language)
             binding.glassmorphicMessage.showMessage(
                 message,
                 GlassmorphicMessageView.TYPE_WARNING,
@@ -1972,7 +2002,11 @@ class TrainingActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetection
         val message = when {
             result.phase != SetupPhase.ANGLES -> result.phaseMessage?.get(lang)
             result.worstJoint != null -> result.worstJoint.message.get(lang)
-            else -> "Return to the start pose"
+            else -> SystemMessageRegistry.get(
+                "training_setup_return_start_pose",
+                "عد إلى وضعية البداية",
+                "Return to the start pose"
+            ).get(lang)
         } ?: return
 
         binding.glassmorphicMessage.showMessage(

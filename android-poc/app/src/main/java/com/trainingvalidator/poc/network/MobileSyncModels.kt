@@ -33,6 +33,8 @@ data class MobileSyncResponse(
 data class SyncData(
     val exercises: List<ExerciseConfigWithMeta>,
     val messageLibrary: List<MessageTemplate> = emptyList(),
+    /** Fixed-key system messages (training TTS/UI); looked up by code */
+    val systemMessages: List<SystemMessageTemplate> = emptyList(),
     val deletedExerciseIds: List<String>,
     val workouts: List<WorkoutConfigWithMeta> = emptyList(),
     val deletedWorkoutIds: List<String> = emptyList(),
@@ -269,4 +271,13 @@ data class MessageTemplate(
     val category: String,
     val context: String? = null,
     val content: LocalizedText
+)
+
+/**
+ * System message from sync (editable text/audio on server; immutable code).
+ */
+data class SystemMessageTemplate(
+    val code: String,
+    val content: LocalizedText,
+    val updatedAt: String = ""
 )

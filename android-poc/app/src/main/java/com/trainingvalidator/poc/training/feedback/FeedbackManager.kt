@@ -456,17 +456,18 @@ class FeedbackManager(
     // ==================== Target Reached ====================
     
     private suspend fun handleTargetReached(event: FeedbackEvent.TargetReached) {
-        val message = if (config.language == "ar") {
-            "أحسنت! اكتملت ${event.totalReps} تكرار"
-        } else {
-            "Great job! ${event.totalReps} reps completed"
-        }
+        val base = SystemMessageRegistry.get(
+            "training_target_reached",
+            "أحسنت! اكتملت {n} تكرار",
+            "Great job! {n} reps completed"
+        )
+        val lt = SystemMessageRegistry.substitute(base, mapOf("n" to event.totalReps.toString()))
+        val message = lt.get(config.language)
         
         if (isVideoMode) {
             emitVisualMessage(message, MessageType.MOTIVATION, 4000L)
         } else {
-            // HIGH priority - target completion is important announcement
-            speak(message, SpeakPriority.HIGH)
+            speakLocalized(lt, SpeakPriority.HIGH)
             if (isHapticEnabled) vibrateComplete()
         }
     }
@@ -474,14 +475,21 @@ class FeedbackManager(
     // ==================== Motivation ====================
     
     private suspend fun triggerStreakMotivation(streak: Int) {
-        // Build LocalizedText for streak messages (no audio URLs for these)
         val localizedText = when {
-            streak >= STREAK_THRESHOLD_LARGE -> 
-                LocalizedText(ar = "ممتاز! استمر!", en = "Excellent! Keep going!")
-            streak >= STREAK_THRESHOLD_MEDIUM -> 
-                LocalizedText(ar = "أداء رائع!", en = "Great form!")
-            else -> 
-                LocalizedText(ar = "جيد!", en = "Good!")
+            streak >= STREAK_THRESHOLD_LARGE ->
+                SystemMessageRegistry.get(
+                    "training_streak_excellent",
+                    "ممتاز! استمر!",
+                    "Excellent! Keep going!"
+                )
+            streak >= STREAK_THRESHOLD_MEDIUM ->
+                SystemMessageRegistry.get(
+                    "training_streak_great",
+                    "أداء رائع!",
+                    "Great form!"
+                )
+            else ->
+                SystemMessageRegistry.get("training_streak_good", "جيد!", "Good!")
         }
         val displayText = localizedText.get(config.language)
         
@@ -506,48 +514,55 @@ class FeedbackManager(
     }
     
     private suspend fun handleHoldGraceStarted(event: FeedbackEvent.HoldGraceStarted) {
-        val message = if (config.language == "ar") "ابق ثابتاً!" else "Stay in position!"
+        val lt = SystemMessageRegistry.get("training_hold_stay", "ابق ثابتاً!", "Stay in position!")
+        val message = lt.get(config.language)
         
         if (isVideoMode) {
             emitVisualMessage(message, MessageType.WARNING)
         } else {
             // HIGH priority - warning should interrupt other messages
-            speak(message, SpeakPriority.HIGH)
+            speakLocalized(lt, SpeakPriority.HIGH)
             if (isHapticEnabled) vibrateWarning()
         }
     }
     
     private fun handleHoldResumed(event: FeedbackEvent.HoldResumed) {
         if (!isVideoMode) {
-            val message = if (config.language == "ar") "أحسنت، استمر" else "Good, keep holding"
+            val lt = SystemMessageRegistry.get("training_hold_resumed", "أحسنت، استمر", "Good, keep holding")
             // NORMAL priority - encouragement shouldn't interrupt warnings
-            speak(message, SpeakPriority.NORMAL)
+            speakLocalized(lt, SpeakPriority.NORMAL)
             if (isHapticEnabled) vibrateSuccess()
         }
     }
     
     private suspend fun handleHoldCompleted(event: FeedbackEvent.HoldCompleted) {
         val seconds = event.totalMs / 1000
-        val message = if (config.language == "ar") {
-            "أحسنت! ثبات $seconds ثانية"
-        } else {
-            "Great job! Held for $seconds seconds"
-        }
+        val base = SystemMessageRegistry.get(
+            "training_hold_completed",
+            "أحسنت! ثبات {n} ثانية",
+            "Great job! Held for {n} seconds"
+        )
+        val doneLt = SystemMessageRegistry.substitute(base, mapOf("n" to seconds.toString()))
+        val message = doneLt.get(config.language)
         
         if (isVideoMode) {
             emitVisualMessage(message, MessageType.MOTIVATION, 4000L)
         } else {
             // HIGH priority - completion is important announcement
-            speak(message, SpeakPriority.HIGH)
+            speakLocalized(doneLt, SpeakPriority.HIGH)
             if (isHapticEnabled) vibrateComplete()
         }
     }
     
     private fun handleHoldFailed(event: FeedbackEvent.HoldFailed) {
         if (!isVideoMode) {
-            val message = if (config.language == "ar") "فقدت الوضعية. حاول مجدداً" else "Position lost. Try again"
+            val lt = SystemMessageRegistry.get(
+                "training_hold_failed",
+                "فقدت الوضعية. حاول مجدداً",
+                "Position lost. Try again"
+            )
             // HIGH priority - failure is important feedback
-            speak(message, SpeakPriority.HIGH)
+            speakLocalized(lt, SpeakPriority.HIGH)
             if (isHapticEnabled) vibrateError()
         }
     }
@@ -798,7 +813,18 @@ class FeedbackManager(
         }
         
         if (!isTtsReady) return
-        tts?.speak(number.toString(), TextToSpeech.QUEUE_FLUSH, null, "countdown_$number")
+        val key = when (number) {
+            1 -> "training_countdown_1"
+            2 -> "training_countdown_2"
+            3 -> "training_countdown_3"
+            else -> null
+        }
+        val text = if (key != null) {
+            SystemMessageRegistry.get(key, number.toString(), number.toString()).get(config.language)
+        } else {
+            number.toString()
+        }
+        tts?.speak(text, TextToSpeech.QUEUE_FLUSH, null, "countdown_$number")
     }
     
     /**
@@ -814,8 +840,8 @@ class FeedbackManager(
         }
         
         if (!isTtsReady) return
-        val goText = if (config.language == "ar") "ابدأ!" else "Go!"
-        tts?.speak(goText, TextToSpeech.QUEUE_FLUSH, null, "go")
+        val goLt = SystemMessageRegistry.get("training_countdown_go", "ابدأ!", "Go!")
+        tts?.speak(goLt.get(config.language), TextToSpeech.QUEUE_FLUSH, null, "go")
     }
     
     // ==================== Setup Pose Guidance ====================
@@ -848,13 +874,12 @@ class FeedbackManager(
      */
     fun speakPoseConfirmed() {
         if (!isTtsEnabled) return
-        val text = if (config.language == "ar") "ممتاز، استعد!" else "Great, get ready!"
+        val lt = SystemMessageRegistry.get("training_pose_confirmed", "ممتاز، استعد!", "Great, get ready!")
         if (useAudioPlayer && audioPlayer != null) {
-            audioPlayer?.play(text, null, AudioFeedbackPlayer.Priority.HIGH)
+            audioPlayer?.play(lt, AudioFeedbackPlayer.Priority.HIGH)
             return
         }
-        if (!isTtsReady) return
-        tts?.speak(text, TextToSpeech.QUEUE_FLUSH, null, "pose_confirmed")
+        speakLocalized(lt, SpeakPriority.HIGH)
     }
 
     // ==================== Haptic (Vibration) ====================

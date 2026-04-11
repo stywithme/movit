@@ -4,6 +4,7 @@ import android.util.Log
 import com.trainingvalidator.poc.analysis.SmoothedLandmark
 import com.trainingvalidator.poc.pose.BodyLandmarks
 import com.trainingvalidator.poc.pose.JointLandmarkMapping
+import com.trainingvalidator.poc.training.feedback.SystemMessageRegistry
 import com.trainingvalidator.poc.training.models.LocalizedText
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -239,20 +240,28 @@ class VisibilityMonitor(
     private fun createWarningMessage(invisibleJoints: List<String>): LocalizedText {
         val jointNamesEn = invisibleJoints.joinToString(", ") { formatJointName(it, "en") }
         val jointNamesAr = invisibleJoints.joinToString("، ") { formatJointName(it, "ar") }
-        
+        val t = SystemMessageRegistry.get(
+            "visibility_joints_not_visible",
+            "⚠️ {joints} غير مرئية",
+            "⚠️ {joints} not visible"
+        )
         return LocalizedText(
-            ar = "⚠️ $jointNamesAr غير مرئية",
-            en = "⚠️ $jointNamesEn not visible"
+            ar = t.ar.replace("{joints}", jointNamesAr),
+            en = t.en.replace("{joints}", jointNamesEn),
+            audioAr = t.audioAr,
+            audioEn = t.audioEn
         )
     }
     
     /**
      * Create pause message
      */
+    @Suppress("UNUSED_PARAMETER")
     private fun createPauseMessage(invisibleJoints: List<String>): LocalizedText {
-        return LocalizedText(
-            ar = "⏸️ تأكد من ظهور جسمك بالكامل في الإطار",
-            en = "⏸️ Make sure your full body is visible in frame"
+        return SystemMessageRegistry.get(
+            "visibility_pause_full_body",
+            "⏸️ تأكد من ظهور جسمك بالكامل في الإطار",
+            "⏸️ Make sure your full body is visible in frame"
         )
     }
     
@@ -260,6 +269,7 @@ class VisibilityMonitor(
      * Format joint name for display
      */
     private fun formatJointName(joint: String, language: String): String {
+        val key = "visibility_joint_${joint}"
         val nameMap = mapOf(
             "left_elbow" to Pair("الكوع الأيسر", "Left Elbow"),
             "right_elbow" to Pair("الكوع الأيمن", "Right Elbow"),
@@ -274,9 +284,9 @@ class VisibilityMonitor(
             "left_ankle" to Pair("الكاحل الأيسر", "Left Ankle"),
             "right_ankle" to Pair("الكاحل الأيمن", "Right Ankle")
         )
-        
         val names = nameMap[joint] ?: Pair(joint, joint)
-        return if (language == "ar") names.first else names.second
+        val lt = SystemMessageRegistry.get(key, names.first, names.second)
+        return lt.get(language)
     }
     
     /**

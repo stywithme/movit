@@ -6,6 +6,7 @@ import coil.ImageLoader
 import coil.ImageLoaderFactory
 import coil.decode.GifDecoder
 import coil.decode.ImageDecoderDecoder
+import com.trainingvalidator.poc.storage.SystemMessageStore
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -49,5 +50,6 @@ class PoseApp : Application(), ImageLoaderFactory {
     override fun onCreate() {
         super.onCreate()
         _instance = this
+        SystemMessageStore(this).loadIntoRegistry()
     }
 }

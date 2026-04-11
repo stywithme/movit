@@ -382,6 +382,18 @@ class SyncManager(
             }
         }
 
+        // System messages + audio manifest (independent of exercise/workout delta)
+        val systemMessages = data.systemMessages ?: emptyList()
+        if (systemMessages.isNotEmpty()) {
+            SystemMessageStore(context).save(systemMessages)
+        }
+        if (audioManifest.files.isNotEmpty()) {
+            lastAudioManifest = audioManifest
+            lastAudioBaseUrl = com.trainingvalidator.poc.network.ApiConfig.getEffectiveBaseUrl().trimEnd('/')
+            audioCache.persistAudioManifest(lastAudioBaseUrl!!, audioManifest)
+            Log.d(TAG, "Audio manifest stored: ${audioManifest.files.size} files (baseUrl: $lastAudioBaseUrl)")
+        }
+
         // Check if there are content changes (exercises, workouts, programs)
         val hasExerciseChanges = exercises.isNotEmpty() || deletedExerciseIds.isNotEmpty()
         val hasWorkoutChanges = workouts.isNotEmpty() || deletedWorkoutIds.isNotEmpty()
@@ -520,16 +532,6 @@ class SyncManager(
                 exerciseCount = meta.totalExercises,
                 serverVersion = meta.serverVersion
             )
-        }
-        
-        // Store audio manifest for background downloads (don't block sync)
-        if (audioManifest.files.isNotEmpty()) {
-            lastAudioManifest = audioManifest
-            // Use the effective base URL from ApiConfig (handles emulator vs physical device)
-            // The server's baseUrl may be incorrect for physical devices
-            lastAudioBaseUrl = com.trainingvalidator.poc.network.ApiConfig.getEffectiveBaseUrl().trimEnd('/')
-            audioCache.persistAudioManifest(lastAudioBaseUrl!!, audioManifest)
-            Log.d(TAG, "Audio manifest stored: ${audioManifest.files.size} files pending download (baseUrl: $lastAudioBaseUrl)")
         }
         
         // Persist message stats so future incremental syncs can detect drift

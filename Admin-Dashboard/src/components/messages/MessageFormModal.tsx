@@ -39,6 +39,8 @@ export interface MessageFormData {
   code: string;
   category: string;
   context: string | null;
+  /** Read-only for seeded system messages */
+  description?: string | null;
   content: LocalizedTextWithAudio;
   tags: string[];
   isSystem: boolean;
@@ -94,6 +96,7 @@ export function MessageFormModal({
   const [audio, setAudio] = useState<{ ar?: string; en?: string }>({});
   const [isSystem, setIsSystem] = useState(false);
   const [isActive, setIsActive] = useState(true);
+  const [description, setDescription] = useState<string | null>(null);
 
   // Track previous open state to only reset on open transition
   const prevOpenRef = useRef(false);
@@ -110,6 +113,7 @@ export function MessageFormModal({
         setAudio({ ar: editMessage.content.audioAr, en: editMessage.content.audioEn });
         setIsSystem(editMessage.isSystem);
         setIsActive(editMessage.isActive);
+        setDescription(editMessage.description ?? null);
       } else {
         setCode(defaults?.code || '');
         setCategory(defaults?.category || 'state');
@@ -119,6 +123,7 @@ export function MessageFormModal({
         setAudio({ ar: defaults?.content?.audioAr, en: defaults?.content?.audioEn });
         setIsSystem(defaults?.isSystem || false);
         setIsActive(defaults?.isActive ?? true);
+        setDescription(defaults?.description ?? null);
       }
       setError(null);
     }
@@ -144,19 +149,25 @@ export function MessageFormModal({
         .map((t) => t.trim())
         .filter(Boolean);
 
-      const payload = {
-        code: code.trim(),
-        category,
-        context: context || null,
-        tags,
-        isSystem,
-        isActive,
-        content: {
-          ...content,
-          audioAr: audio.ar,
-          audioEn: audio.en,
-        },
+      const contentPayload = {
+        ...content,
+        audioAr: audio.ar,
+        audioEn: audio.en,
       };
+
+      const isLockedSystem = isEditing && editMessage?.isSystem;
+
+      const payload = isLockedSystem
+        ? { content: contentPayload }
+        : {
+            code: code.trim(),
+            category,
+            context: context || null,
+            tags,
+            isSystem,
+            isActive,
+            content: contentPayload,
+          };
 
       const url = isEditing ? `/api/messages/${editMessage!.id}` : '/api/messages';
       const method = isEditing ? 'PUT' : 'POST';
@@ -174,6 +185,7 @@ export function MessageFormModal({
           code: data.data.code,
           category: data.data.category,
           context: data.data.context,
+          description: data.data.description ?? null,
           content: data.data.content,
           tags: data.data.tags,
           isSystem: data.data.isSystem,
@@ -191,7 +203,10 @@ export function MessageFormModal({
     }
   };
 
-  const canSubmit = code.trim() && (content.en || content.ar);
+  const canSubmit =
+    (isEditing && editMessage?.isSystem ? true : code.trim()) && (content.en || content.ar);
+
+  const lockSystemFields = isEditing && !!editMessage?.isSystem;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -213,6 +228,15 @@ export function MessageFormModal({
               </div>
             )}
 
+            {lockSystemFields && (
+              <div className="p-3 bg-slate-50 border border-slate-200 rounded-lg text-sm text-slate-800">
+                <p className="font-medium text-slate-900 mb-1">System message (read-only)</p>
+                <p className="text-slate-600">
+                  {description?.trim() || 'Fixed key for the mobile app; only text and audio below can be changed.'}
+                </p>
+              </div>
+            )}
+
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
                 Code <span className="text-red-500">*</span>
@@ -221,6 +245,7 @@ export function MessageFormModal({
                 value={code}
                 onChange={(e) => setCode(e.target.value)}
                 placeholder="STATE_PERFECT_001"
+                disabled={lockSystemFields}
               />
               <p className="mt-1 text-xs text-gray-500">
                 Unique identifier (e.g. STATE_PERFECT_001, MOT_GENERAL_001)
@@ -234,6 +259,7 @@ export function MessageFormModal({
                   value={category}
                   onChange={(e) => setCategory(e.target.value)}
                   options={CATEGORY_OPTIONS}
+                  disabled={lockSystemFields}
                 />
               </div>
               <div>
@@ -242,6 +268,7 @@ export function MessageFormModal({
                   value={context}
                   onChange={(e) => setContext(e.target.value)}
                   options={CONTEXT_OPTIONS}
+                  disabled={lockSystemFields}
                 />
               </div>
             </div>
@@ -265,6 +292,7 @@ export function MessageFormModal({
                 value={tagsInput}
                 onChange={(e) => setTagsInput(e.target.value)}
                 placeholder="knee, squat, form, lower-body"
+                disabled={lockSystemFields}
               />
               <p className="mt-1 text-xs text-gray-500">Comma-separated tags for filtering</p>
             </div>
@@ -282,6 +310,7 @@ export function MessageFormModal({
                 <Checkbox
                   checked={isActive}
                   onCheckedChange={(checked) => setIsActive(!!checked)}
+                  disabled={lockSystemFields}
                 />
                 Active
               </label>
