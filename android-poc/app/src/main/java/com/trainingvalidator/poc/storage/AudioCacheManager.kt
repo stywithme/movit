@@ -3,14 +3,18 @@ package com.trainingvalidator.poc.storage
 import android.content.Context
 import android.util.Log
 import com.google.gson.Gson
+import com.google.gson.GsonBuilder
+import com.google.gson.Strictness
 import com.trainingvalidator.poc.network.AudioFileInfo
 import com.trainingvalidator.poc.network.AudioManifest
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import java.io.File
 import java.io.FileOutputStream
+import java.util.Collections
 import java.util.concurrent.TimeUnit
 
 /**
@@ -42,7 +46,9 @@ class AudioCacheManager(private val context: Context) {
     private val enDir: File = File(cacheDir, "en")
     private val manifestFile: File = File(cacheDir, MANIFEST_FILE_NAME)
     
-    private val gson = Gson()
+    private val gson: Gson = GsonBuilder()
+        .setStrictness(Strictness.LENIENT)
+        .create()
 
     /**
      * Dedicated OkHttpClient for downloading audio from external URLs (GCS).
@@ -56,9 +62,11 @@ class AudioCacheManager(private val context: Context) {
             .build()
     }
     
-    // Track download status
-    private val downloadedFiles: MutableSet<String> = mutableSetOf()
-    private val pendingDownloads: MutableSet<String> = mutableSetOf()
+    // Track download status (thread-safe)
+    private val downloadedFiles: MutableSet<String> =
+        Collections.newSetFromMap(java.util.concurrent.ConcurrentHashMap())
+    private val pendingDownloads: MutableSet<String> =
+        Collections.newSetFromMap(java.util.concurrent.ConcurrentHashMap())
     
     /** Last known manifest from disk or sync (for resume after process death). */
     private var persistedAudioManifest: AudioManifest? = null
@@ -259,13 +267,13 @@ class AudioCacheManager(private val context: Context) {
         
         for ((index, audioFile) in toDownload.withIndex()) {
             try {
-                if (downloadSingleFile(audioFile, baseUrl)) {
+                if (downloadSingleFileWithRetries(audioFile, baseUrl)) {
                     downloaded++
                 }
             } catch (e: Exception) {
                 Log.e(TAG, "Failed to download ${audioFile.filename}", e)
             }
-            
+
             onProgress?.invoke(index + 1, toDownload.size)
         }
         
@@ -280,59 +288,68 @@ class AudioCacheManager(private val context: Context) {
     }
     
     /**
-     * Download a single audio file
+     * Exponential backoff retries for flaky networks (runs on [Dispatchers.IO] caller).
      */
-    private suspend fun downloadSingleFile(
+    private suspend fun downloadSingleFileWithRetries(
         audioFile: AudioFileInfo,
-        baseUrl: String
-    ): Boolean = withContext(Dispatchers.IO) {
-        val filename = audioFile.filename
-        
-        // Skip if already downloaded or currently downloading
-        if (hasAudio(filename) || pendingDownloads.contains(filename)) {
-            return@withContext false
+        baseUrl: String,
+        maxAttempts: Int = 4
+    ): Boolean {
+        var delayMs = 500L
+        repeat(maxAttempts) { attempt ->
+            if (downloadOneFileSync(audioFile, baseUrl)) return true
+            if (attempt < maxAttempts - 1) {
+                delay(delayMs)
+                delayMs = minOf(delayMs * 2, 8000L)
+            }
         }
-        
-        pendingDownloads.add(filename)
-        
+        return false
+    }
+
+    /**
+     * Single HTTP GET and write; not suspend — caller provides IO dispatcher.
+     */
+    private fun downloadOneFileSync(audioFile: AudioFileInfo, baseUrl: String): Boolean {
+        val filename = audioFile.filename
+
+        if (hasAudio(filename)) return false
+        if (!pendingDownloads.add(filename)) return false
+
         try {
-            val url = if (audioFile.url.startsWith("http")) {
+            val url = if (audioFile.url.startsWith("http", ignoreCase = true)) {
                 audioFile.url
             } else {
                 baseUrl.trimEnd('/') + audioFile.url
             }
-            
+
             val request = Request.Builder()
                 .url(url)
                 .build()
-            
-            // Use dedicated download client (no API auth headers) for
-            // external URLs; fall back to it for relative paths too.
+
             val response = downloadClient.newCall(request).execute()
-            
-            response.use { resp ->
+
+            return response.use { resp ->
                 if (!resp.isSuccessful) {
                     Log.e(TAG, "DOWNLOAD_FAIL: $filename code=${resp.code} url=$url")
-                    return@withContext false
+                    return@use false
                 }
-                
+
                 val body = resp.body ?: run {
                     Log.e(TAG, "DOWNLOAD_FAIL: $filename empty body url=$url")
-                    return@withContext false
+                    return@use false
                 }
-                
+
                 val dir = if (audioFile.language == "ar") arDir else enDir
                 val file = File(dir, filename)
-                
+
                 FileOutputStream(file).use { output ->
                     body.byteStream().use { input ->
                         input.copyTo(output)
                     }
                 }
-                
+
                 downloadedFiles.add(filename)
                 Log.d(TAG, "DOWNLOAD_OK: $filename (${file.length()} bytes)")
-                
                 true
             }
         } catch (e: Exception) {

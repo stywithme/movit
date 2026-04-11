@@ -152,6 +152,43 @@ data class ExerciseConfigWithMeta(
             fileName = slug  // Use slug as fileName for compatibility
         )
     }
+
+    companion object {
+        /**
+         * Build network meta from a cached [ExerciseConfig] (e.g. offline fallback or message re-resolve).
+         */
+        fun fromExerciseConfig(
+            id: String,
+            slug: String,
+            updatedAt: String,
+            config: ExerciseConfig
+        ): ExerciseConfigWithMeta {
+            return ExerciseConfigWithMeta(
+                id = id,
+                slug = slug,
+                updatedAt = updatedAt,
+                name = config.name,
+                description = config.description,
+                instructions = config.instructions,
+                imageUrl = config.imageUrl,
+                category = config.category,
+                countingMethod = config.countingMethod,
+                muscles = config.muscles,
+                equipment = config.equipment,
+                tags = config.tags,
+                poseVariants = config.poseVariants,
+                repCountingConfig = config.repCountingConfig,
+                supportsWeight = config.supportsWeight,
+                minWeight = config.minWeight,
+                maxWeight = config.maxWeight,
+                defaultWeight = config.defaultWeight,
+                reportMetrics = config.reportMetrics,
+                isBilateral = config.isBilateral,
+                hasPositionChecks = config.hasPositionChecks,
+                bilateralConfig = config.bilateralConfig
+            )
+        }
+    }
 }
 
 /**

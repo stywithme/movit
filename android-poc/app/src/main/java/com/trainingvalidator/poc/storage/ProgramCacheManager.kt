@@ -5,9 +5,11 @@ import android.util.Log
 import com.google.gson.Gson
 import com.google.gson.GsonBuilder
 import com.google.gson.Strictness
+import com.google.gson.reflect.TypeToken
 import com.trainingvalidator.poc.network.ProgramConfigWithMeta
 import com.trainingvalidator.poc.training.models.ProgramConfig
 import java.io.File
+import java.util.concurrent.ConcurrentHashMap
 
 /**
  * ProgramCacheManager
@@ -28,11 +30,14 @@ class ProgramCacheManager(private val context: Context) {
         .setPrettyPrinting()
         .create()
 
+    private val cachedEntityType =
+        TypeToken.getParameterized(CachedEntity::class.java, ProgramConfig::class.java).type
+
     private val cacheDir: File = File(context.filesDir, CACHE_DIR)
     private val programsDir: File = File(cacheDir, PROGRAMS_DIR)
     private val metadataFile: File = File(cacheDir, METADATA_FILE)
 
-    private var programCache: MutableMap<String, CachedProgram> = mutableMapOf()
+    private val programCache: ConcurrentHashMap<String, CachedEntity<ProgramConfig>> = ConcurrentHashMap()
     private var metadata: CacheMetadata? = null
     private var isLoaded = false
 
@@ -47,22 +52,8 @@ class ProgramCacheManager(private val context: Context) {
         val lastSyncSuccessful: Boolean = true
     )
 
-    data class CachedProgram(
-        val id: String,
-        val slug: String,
-        val updatedAt: String,
-        val config: ProgramConfig
-    )
-
     private fun ensureDirectoriesExist() {
-        if (!cacheDir.exists()) {
-            cacheDir.mkdirs()
-            Log.d(TAG, "Created cache directory: ${cacheDir.absolutePath}")
-        }
-        if (!programsDir.exists()) {
-            programsDir.mkdirs()
-            Log.d(TAG, "Created programs directory: ${programsDir.absolutePath}")
-        }
+        JsonEntityCacheSupport.ensureDirs(cacheDir, programsDir, TAG)
     }
 
     fun loadCache() {
@@ -78,7 +69,8 @@ class ProgramCacheManager(private val context: Context) {
                 ?.filter { it.extension == "json" }
                 ?.forEach { file ->
                     try {
-                        val cached = gson.fromJson(file.readText(), CachedProgram::class.java)
+                        val cached: CachedEntity<ProgramConfig> =
+                            gson.fromJson(file.readText(), cachedEntityType)
                         programCache[cached.slug] = cached
                     } catch (e: Exception) {
                         Log.w(TAG, "Failed to load program: ${file.name}", e)
@@ -100,6 +92,11 @@ class ProgramCacheManager(private val context: Context) {
     fun hasPrograms(): Boolean {
         if (!isLoaded) loadCache()
         return programCache.isNotEmpty()
+    }
+
+    fun getProgramCount(): Int {
+        if (!isLoaded) loadCache()
+        return programCache.size
     }
 
     fun getAllPrograms(): List<ProgramConfig> {
@@ -151,7 +148,7 @@ class ProgramCacheManager(private val context: Context) {
 
         for (programMeta in programs) {
             try {
-                val cached = CachedProgram(
+                val cached = CachedEntity(
                     id = programMeta.id,
                     slug = programMeta.slug,
                     updatedAt = programMeta.updatedAt,

@@ -12,9 +12,12 @@ import com.trainingvalidator.poc.training.models.LocalizedText
 import com.trainingvalidator.poc.training.models.PoseVariant
 import com.trainingvalidator.poc.training.models.StateMessageValue
 import com.trainingvalidator.poc.training.models.StateMessages
+import com.trainingvalidator.poc.network.ApiConfig
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.net.UnknownHostException
+import java.util.concurrent.atomic.AtomicBoolean
+import java.util.concurrent.atomic.AtomicLong
 
 /**
  * SyncManager
@@ -64,8 +67,8 @@ class SyncManager(
         private const val KEY_CACHED_MSG_ASSIGNMENTS = "cached_message_assignments"
     }
     
-    private var lastSyncAttempt: Long = 0
-    private var isSyncing = false
+    private val lastSyncAttemptMs = AtomicLong(0L)
+    private val syncBusy = AtomicBoolean(false)
     
     // Store last audio manifest for background downloads
     private var lastAudioManifest: com.trainingvalidator.poc.network.AudioManifest? = null
@@ -140,60 +143,51 @@ class SyncManager(
      * @return SyncResult indicating outcome
      */
     suspend fun syncIfNeeded(forceCheck: Boolean = false): SyncResult = withContext(Dispatchers.IO) {
-        // Check if we should skip
         if (!forceCheck && shouldSkipSync()) {
             Log.d(TAG, "Skipping sync - too soon after last attempt")
             return@withContext SyncResult.Skipped
         }
-        
-        // Prevent concurrent syncs
-        if (isSyncing) {
+
+        if (!syncBusy.compareAndSet(false, true)) {
             Log.d(TAG, "Sync already in progress")
             return@withContext SyncResult.Skipped
         }
-        
-        isSyncing = true
-        lastSyncAttempt = System.currentTimeMillis()
-        
+
+        lastSyncAttemptMs.set(System.currentTimeMillis())
+
         try {
-            // Get last sync timestamp for incremental sync
             val lastSync = exerciseCache.getLastSyncTimestamp()
-            
+
             Log.d(TAG, "Starting incremental sync (lastSync: $lastSync)")
-            
+
             val authHeader = AuthManager.getAuthHeader(context)
             val response = ApiClient.mobileSyncApi.sync(
                 authorization = authHeader,
                 updatedAfter = lastSync,
                 forceRefresh = null
             )
-            
+
             if (!response.isSuccessful) {
-                // Allow immediate retry on network/server failure.
-                lastSyncAttempt = 0
+                lastSyncAttemptMs.set(0L)
                 return@withContext SyncResult.Error("Server error: ${response.code()}")
             }
-            
+
             val body = response.body()
             if (body == null || !body.success) {
-                // Allow immediate retry when payload is invalid.
-                lastSyncAttempt = 0
+                lastSyncAttemptMs.set(0L)
                 return@withContext SyncResult.Error(body?.error ?: "Unknown error")
             }
-            
+
             var result = processSyncResponse(body, isFullSync = body.meta?.isFullSync ?: false)
 
-            // Check message library stats mismatch — trigger full sync if stale
             if (result is SyncResult.NoChanges || result is SyncResult.Success) {
                 val needsMessageRefresh = checkMessageStatsMismatch(body.meta?.messageLibraryStats)
                 if (needsMessageRefresh) {
-                    Log.w("AUDIO_TRACE", "[AUTO_REFRESH] Triggering full refresh due to message stats mismatch")
-                    isSyncing = false
-                    result = fullRefresh()
+                    Log.w(TAG, "Triggering full refresh due to message stats mismatch")
+                    result = executeFullRefreshLocked()
                 }
             }
 
-            // After successful sync, flush any pending session reports (offline queue)
             if (result is SyncResult.Success || result is SyncResult.NoChanges) {
                 try {
                     flushPendingSessionReports()
@@ -203,17 +197,16 @@ class SyncManager(
             }
 
             return@withContext result
-            
         } catch (e: UnknownHostException) {
             Log.w(TAG, "Offline - using cached data")
-            lastSyncAttempt = 0
+            lastSyncAttemptMs.set(0L)
             return@withContext SyncResult.Offline
         } catch (e: Exception) {
             Log.e(TAG, "Sync failed", e)
-            lastSyncAttempt = 0
+            lastSyncAttemptMs.set(0L)
             return@withContext SyncResult.Error(e.message ?: "Unknown error", e)
         } finally {
-            isSyncing = false
+            syncBusy.set(false)
         }
     }
     
@@ -226,44 +219,61 @@ class SyncManager(
      * @return SyncResult indicating outcome
      */
     suspend fun fullRefresh(): SyncResult = withContext(Dispatchers.IO) {
-        if (isSyncing) {
+        if (!syncBusy.compareAndSet(false, true)) {
             Log.d(TAG, "Sync already in progress")
             return@withContext SyncResult.Skipped
         }
-        
-        isSyncing = true
-        lastSyncAttempt = System.currentTimeMillis()
-        
+
+        lastSyncAttemptMs.set(System.currentTimeMillis())
+
         try {
-            Log.d(TAG, "Starting full refresh")
-            
-            val authHeader = AuthManager.getAuthHeader(context)
-            val response = ApiClient.mobileSyncApi.sync(
-                authorization = authHeader,
-                updatedAfter = null,
-                forceRefresh = true
-            )
-            
-            if (!response.isSuccessful) {
-                return@withContext SyncResult.Error("Server error: ${response.code()}")
+            return@withContext try {
+                executeFullRefreshLocked()
+            } catch (e: UnknownHostException) {
+                Log.w(TAG, "Offline - cannot perform full refresh")
+                SyncResult.Offline
+            } catch (e: Exception) {
+                Log.e(TAG, "Full refresh failed", e)
+                SyncResult.Error(e.message ?: "Unknown error", e)
             }
-            
-            val body = response.body()
-            if (body == null || !body.success) {
-                return@withContext SyncResult.Error(body?.error ?: "Unknown error")
-            }
-            
-            return@withContext processSyncResponse(body, isFullSync = true)
-            
-        } catch (e: UnknownHostException) {
-            Log.w(TAG, "Offline - cannot perform full refresh")
-            return@withContext SyncResult.Offline
-        } catch (e: Exception) {
-            Log.e(TAG, "Full refresh failed", e)
-            return@withContext SyncResult.Error(e.message ?: "Unknown error", e)
         } finally {
-            isSyncing = false
+            syncBusy.set(false)
         }
+    }
+
+    /**
+     * Full sync while [syncBusy] is already held (e.g. message-stats reconciliation).
+     */
+    private suspend fun executeFullRefreshLocked(): SyncResult {
+        Log.d(TAG, "Starting full refresh")
+        val authHeader = AuthManager.getAuthHeader(context)
+        val response = ApiClient.mobileSyncApi.sync(
+            authorization = authHeader,
+            updatedAfter = null,
+            forceRefresh = true
+        )
+        if (!response.isSuccessful) {
+            return SyncResult.Error("Server error: ${response.code()}")
+        }
+        val body = response.body()
+        if (body == null || !body.success) {
+            return SyncResult.Error(body?.error ?: "Unknown error")
+        }
+        return processSyncResponse(body, isFullSync = true)
+    }
+
+    /**
+     * Prefer server [AudioManifest.baseUrl]; resolve relative bases against API host.
+     */
+    private fun resolveEffectiveAudioBase(manifest: com.trainingvalidator.poc.network.AudioManifest): String {
+        val raw = manifest.baseUrl.trim()
+        val api = ApiConfig.getEffectiveBaseUrl().trimEnd('/')
+        if (raw.isEmpty()) return api
+        if (raw.startsWith("http://", ignoreCase = true) || raw.startsWith("https://", ignoreCase = true)) {
+            return raw.trimEnd('/')
+        }
+        val path = raw.trim().trimEnd('/')
+        return if (path.startsWith("/")) api + path else "$api/$path"
     }
     
     /**
@@ -324,8 +334,6 @@ class SyncManager(
         val exercises = data.exercises ?: emptyList()
         val messageLibrary = data.messageLibrary ?: emptyList()
         val deletedExerciseIds = data.deletedExerciseIds ?: emptyList()
-        val msgStats = meta?.messageLibraryStats
-        Log.i("AUDIO_TRACE", "[SYNC] isFullSync=$isFullSync exercises=${exercises.size} msgLib=${messageLibrary.size} audioManifest=${data.audioManifest.files.size} serverMsgStats=(msgs=${msgStats?.totalMessages}, audio=${msgStats?.totalWithAudio}, assigns=${msgStats?.totalAssignments})")
         val workouts = data.workouts ?: emptyList()
         val deletedWorkoutIds = data.deletedWorkoutIds ?: emptyList()
         val programs = data.programs ?: emptyList()
@@ -389,7 +397,7 @@ class SyncManager(
         }
         if (audioManifest.files.isNotEmpty()) {
             lastAudioManifest = audioManifest
-            lastAudioBaseUrl = com.trainingvalidator.poc.network.ApiConfig.getEffectiveBaseUrl().trimEnd('/')
+            lastAudioBaseUrl = resolveEffectiveAudioBase(audioManifest)
             audioCache.persistAudioManifest(lastAudioBaseUrl!!, audioManifest)
             Log.d(TAG, "Audio manifest stored: ${audioManifest.files.size} files (baseUrl: $lastAudioBaseUrl)")
         }
@@ -400,13 +408,21 @@ class SyncManager(
         val hasProgramChanges = programs.isNotEmpty() || deletedProgramIds.isNotEmpty()
         
         if (!hasExerciseChanges && !hasWorkoutChanges && !hasProgramChanges) {
-            Log.d("AUDIO_TRACE", "[SYNC] No content changes → messageLibrary NOT applied (exercises=${ exercises.size}, msgs=${messageLibrary.size})")
-            // Reconcile: if server total differs from local cache, stale entries exist
-            val localCount = exerciseCache.getExerciseCount()
-            val serverTotal = meta?.totalExercises ?: localCount
-            if (localCount > serverTotal) {
-                Log.w(TAG, "Cache drift detected: local=$localCount server=$serverTotal — triggering full refresh")
-                // Still update timestamp
+            val localExercises = exerciseCache.getExerciseCount()
+            val localWorkouts = workoutCache?.getWorkoutCount() ?: 0
+            val localPrograms = programCache?.getProgramCount() ?: 0
+            val serverTotalEx = meta?.totalExercises ?: localExercises
+            val serverTotalWk = meta?.totalWorkouts ?: localWorkouts
+            val serverTotalPr = meta?.totalPrograms ?: localPrograms
+
+            if (localExercises > serverTotalEx ||
+                (workoutCache != null && localWorkouts > serverTotalWk) ||
+                (programCache != null && localPrograms > serverTotalPr)
+            ) {
+                Log.w(
+                    TAG,
+                    "Cache drift: exercises $localExercises/$serverTotalEx, workouts $localWorkouts/$serverTotalWk, programs $localPrograms/$serverTotalPr — needs full refresh"
+                )
                 if (meta != null) {
                     exerciseCache.saveMetadata(
                         timestamp = response.timestamp,
@@ -414,60 +430,64 @@ class SyncManager(
                         serverVersion = meta.serverVersion
                     )
                 }
+                saveMessageStats(meta?.messageLibraryStats)
                 return SyncResult.NeedsFullRefresh
             }
 
-            Log.d(TAG, "No content changes since last sync (user data still synced)")
-            
-            // Still update timestamp and message stats
+            var messageMergeCount = 0
+            if (messageLibrary.isNotEmpty() && exerciseCache.hasExercises()) {
+                val merged = resolveExerciseMessages(
+                    exerciseCache.getAllCachedAsExerciseMeta(),
+                    messageLibrary
+                )
+                exerciseCache.saveExercises(merged, isFullSync = false)
+                messageMergeCount = merged.size
+                Log.d(TAG, "Applied messageLibrary to $messageMergeCount cached exercises (no entity delta)")
+            }
+
             if (meta != null) {
                 exerciseCache.saveMetadata(
                     timestamp = response.timestamp,
                     exerciseCount = meta.totalExercises,
                     serverVersion = meta.serverVersion
                 )
+                workoutCache?.saveMetadata(
+                    timestamp = response.timestamp,
+                    workoutCount = meta.totalWorkouts,
+                    serverVersion = meta.serverVersion
+                )
+                programCache?.saveMetadata(
+                    timestamp = response.timestamp,
+                    programCount = meta.totalPrograms,
+                    serverVersion = meta.serverVersion
+                )
             }
-            
-            return SyncResult.NoChanges
+            saveMessageStats(meta?.messageLibraryStats)
+
+            return if (messageMergeCount > 0) {
+                SyncResult.Success(
+                    exercisesUpdated = messageMergeCount,
+                    exercisesDeleted = 0,
+                    workoutsUpdated = 0,
+                    workoutsDeleted = 0,
+                    programsUpdated = 0,
+                    programsDeleted = 0,
+                    audioFilesDownloaded = 0,
+                    isFullSync = isFullSync
+                )
+            } else {
+                SyncResult.NoChanges
+            }
         }
         
-        // Diagnostic: summarize audio URL availability in message library
         val withAudio = messageLibrary.count { it.content.audioAr != null || it.content.audioEn != null }
         val total = messageLibrary.size
-        Log.i(TAG, "SYNC_AUDIO: messageLibrary=$total, withAudioUrl=$withAudio, withoutAudioUrl=${total - withAudio}")
         if (total > 0 && withAudio == 0) {
-            Log.w(TAG, "⚠ SYNC_AUDIO: NONE of the $total messages have audio URLs — mobile will always use TTS!")
+            Log.w(TAG, "Message library has $total templates but none include audio URLs — TTS fallback may be used")
         }
-        
-        // Resolve messages from library before saving
+
         val resolvedExercises = resolveExerciseMessages(exercises, messageLibrary)
-        
-        // Diagnostic: verify audio URLs survived resolution
-        for (ex in resolvedExercises) {
-            for (v in (ex.poseVariants ?: emptyList())) {
-                var stateAudio = 0
-                for (j in (v.trackedJoints ?: emptyList())) {
-                    val sm = j.stateMessages ?: continue
-                    for (sv in listOfNotNull(sm.perfect, sm.normal, sm.warning, sm.danger)) {
-                        when (sv) {
-                            is com.trainingvalidator.poc.training.models.StateMessageValue.Single ->
-                                if (sv.message.audioAr != null || sv.message.audioEn != null) stateAudio++
-                            is com.trainingvalidator.poc.training.models.StateMessageValue.ZoneSpecific -> {
-                                if (sv.up?.audioAr != null || sv.up?.audioEn != null) stateAudio++
-                                if (sv.down?.audioAr != null || sv.down?.audioEn != null) stateAudio++
-                            }
-                        }
-                    }
-                }
-                val posAudio = (v.positionChecks ?: emptyList()).count { pc ->
-                    pc.errorMessage.audioAr != null || pc.errorMessage.audioEn != null
-                }
-                val fbAudio = listOfNotNull(v.feedbackMessages.motivational, v.feedbackMessages.tips)
-                    .sumOf { list -> list.count { it.audioAr != null || it.audioEn != null } }
-                Log.i("AUDIO_TRACE", "[POST_RESOLVE] ${ex.slug}: stateAudio=$stateAudio posAudio=$posAudio fbAudio=$fbAudio")
-            }
-        }
-        
+
         // Save exercises
         if (hasExerciseChanges) {
             exerciseCache.saveExercises(resolvedExercises, isFullSync)
@@ -570,7 +590,10 @@ class SyncManager(
         if (cachedMessages == -1) {
             val serverHasMessages = serverStats.totalMessages > 0 || serverStats.totalAssignments > 0
             if (serverHasMessages) {
-                Log.w("AUDIO_TRACE", "[MISMATCH] First run with new sync — server has msgs=${serverStats.totalMessages} assigns=${serverStats.totalAssignments} → forcing full sync")
+                Log.w(
+                    TAG,
+                    "First sync with message library on server (msgs=${serverStats.totalMessages}, assigns=${serverStats.totalAssignments}) — forcing full refresh"
+                )
             }
             return serverHasMessages
         }
@@ -608,17 +631,10 @@ class SyncManager(
         messageLibrary: List<MessageTemplate>
     ): List<ExerciseConfigWithMeta> {
         val messageMap = messageLibrary.associateBy { it.id }
-        val withAudio = messageLibrary.count { it.content.audioAr != null || it.content.audioEn != null }
-        Log.i("AUDIO_TRACE", "[RESOLVE] messageLibrary=${messageLibrary.size}, withAudio=$withAudio, exercises=${exercises.size}")
-        messageLibrary.take(3).forEach { t ->
-            Log.d("AUDIO_TRACE", "[RESOLVE] sample msg=${t.code} audioAr=${t.content.audioAr?.takeLast(30)} audioEn=${t.content.audioEn?.takeLast(30)}")
-        }
-        
+
         return exercises.map { exercise ->
             val variants = exercise.poseVariants
             if (variants.isEmpty()) return@map exercise
-            val totalAssignments = variants.sumOf { it.messageAssignments.size }
-            Log.d("AUDIO_TRACE", "[RESOLVE] exercise=${exercise.slug} variants=${variants.size} assignments=$totalAssignments")
             val resolvedVariants = variants.map { variant ->
                 resolvePoseVariantMessages(variant, messageMap)
             }
@@ -779,7 +795,9 @@ class SyncManager(
      * Check if we should skip sync due to recent attempt
      */
     private fun shouldSkipSync(): Boolean {
-        val elapsed = System.currentTimeMillis() - lastSyncAttempt
+        val last = lastSyncAttemptMs.get()
+        if (last == 0L) return false
+        val elapsed = System.currentTimeMillis() - last
         return elapsed < MIN_SYNC_INTERVAL_MS
     }
     
@@ -837,7 +855,7 @@ class SyncManager(
     /**
      * Check if sync is currently in progress
      */
-    fun isSyncInProgress(): Boolean = isSyncing
+    fun isSyncInProgress(): Boolean = syncBusy.get()
     
     /**
      * Get sync status for UI display
@@ -856,7 +874,7 @@ class SyncManager(
             programCount = programCacheStats?.programCount ?: 0,
             lastSyncTimestamp = exerciseCacheStats.lastSyncTimestamp,
             serverVersion = exerciseCacheStats.serverVersion,
-            isSyncing = isSyncing
+            isSyncing = syncBusy.get()
         )
     }
     

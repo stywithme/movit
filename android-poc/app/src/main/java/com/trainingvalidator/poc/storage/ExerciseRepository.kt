@@ -81,6 +81,10 @@ class ExerciseRepository private constructor(private val context: Context) {
     
     private val _lastSyncResult = MutableStateFlow<SyncManager.SyncResult?>(null)
     val lastSyncResult: StateFlow<SyncManager.SyncResult?> = _lastSyncResult
+
+    /** Background TTS file download progress: (completed, total) or null when idle. */
+    private val _audioDownloadProgress = MutableStateFlow<Pair<Int, Int>?>(null)
+    val audioDownloadProgress: StateFlow<Pair<Int, Int>?> = _audioDownloadProgress
     
     // In-memory cache for fast lookups
     private var exerciseMap: Map<String, ExerciseConfig> = emptyMap()
@@ -167,7 +171,16 @@ class ExerciseRepository private constructor(private val context: Context) {
             
             isInitialized = true
             
-            // Return false if no exercises available
+            if (_exercises.value.isEmpty()) {
+                val fallback = OfflineFallbackLoader.loadBundledExerciseMeta(context)
+                if (fallback.isNotEmpty()) {
+                    exerciseCache.saveExercises(fallback, isFullSync = false)
+                    loadFromCache()
+                    isInitialized = true
+                    Log.i(TAG, "Loaded ${fallback.size} bundled offline exercise(s) (cache was empty)")
+                }
+            }
+
             if (_exercises.value.isEmpty()) {
                 Log.e(TAG, "No exercises available - cache empty and backend sync failed")
                 return@withContext false
@@ -278,10 +291,14 @@ class ExerciseRepository private constructor(private val context: Context) {
                     @OptIn(DelicateCoroutinesApi::class)
                     kotlinx.coroutines.GlobalScope.launch(Dispatchers.IO) {
                         try {
-                            val downloaded = syncManager.downloadPendingAudio()
+                            val downloaded = syncManager.downloadPendingAudio { done, total ->
+                                _audioDownloadProgress.value = done to total
+                            }
                             Log.d(TAG, "Downloaded $downloaded audio files after refresh")
                         } catch (e: Exception) {
                             Log.w(TAG, "Audio download after refresh failed", e)
+                        } finally {
+                            _audioDownloadProgress.value = null
                         }
                     }
                 }
@@ -330,10 +347,14 @@ class ExerciseRepository private constructor(private val context: Context) {
             @OptIn(DelicateCoroutinesApi::class)
             kotlinx.coroutines.GlobalScope.launch(Dispatchers.IO) {
                 try {
-                    val downloaded = syncManager.downloadPendingAudio()
+                    val downloaded = syncManager.downloadPendingAudio { done, total ->
+                        _audioDownloadProgress.value = done to total
+                    }
                     Log.d(TAG, "Downloaded $downloaded audio files after update check")
                 } catch (e: Exception) {
                     Log.w(TAG, "Audio download after update check failed", e)
+                } finally {
+                    _audioDownloadProgress.value = null
                 }
             }
         }
@@ -362,10 +383,14 @@ class ExerciseRepository private constructor(private val context: Context) {
         if (!syncManager.hasPendingAudioDownloads() && audioCache.getPendingDownloadCount() <= 0) return
         kotlinx.coroutines.GlobalScope.launch(Dispatchers.IO) {
             try {
-                val downloaded = syncManager.downloadPendingAudio()
+                val downloaded = syncManager.downloadPendingAudio { done, total ->
+                    _audioDownloadProgress.value = done to total
+                }
                 Log.d(TAG, "Background audio download ($reason): $downloaded files")
             } catch (e: Exception) {
                 Log.w(TAG, "Background audio download failed ($reason)", e)
+            } finally {
+                _audioDownloadProgress.value = null
             }
         }
     }
