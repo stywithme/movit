@@ -18,3 +18,13 @@ val Context.currentLanguage: String
         }
         return locale?.language ?: "en"
     }
+
+/**
+ * Language code for training feedback (text + TTS + cached audio).
+ * Must match [currentLanguage] (Profile / app locale), not a static JSON language field,
+ * so video overlay text and audio use the same ar/en choice.
+ */
+fun Context.feedbackLanguageCode(): String {
+    val raw = currentLanguage.lowercase()
+    return if (raw.startsWith("ar")) "ar" else "en"
+}

@@ -13,6 +13,7 @@ import android.view.View
 import android.widget.*
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
+import com.trainingvalidator.poc.ui.utils.feedbackLanguageCode
 import com.trainingvalidator.poc.assessment.models.ParqQuestion
 import com.trainingvalidator.poc.assessment.models.ParqQuestions
 import com.trainingvalidator.poc.training.models.LocalizedText
@@ -29,7 +30,8 @@ class PreScreeningActivity : AppCompatActivity() {
     private val switchMap = mutableMapOf<String, Switch>()
     private lateinit var continueButton: Button
     
-    private val language: String get() = "en" // TODO: Get from user preferences
+    /** Matches Profile / app locale (same as training feedback). */
+    private val language: String get() = feedbackLanguageCode()
     
     @Suppress("DEPRECATION")
     override fun onCreate(savedInstanceState: Bundle?) {

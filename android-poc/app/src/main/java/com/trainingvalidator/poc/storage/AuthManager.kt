@@ -96,6 +96,12 @@ object AuthManager {
     fun getUserEmail(context: Context, fallback: String = ""): String =
         prefs(context).getString(KEY_USER_EMAIL, fallback) ?: fallback
 
+    /**
+     * Locale code persisted with the user profile (e.g. after login / Profile save).
+     * Splash applies this to [androidx.appcompat.app.AppCompatDelegate] so it aligns with
+     * [com.trainingvalidator.poc.ui.utils.currentLanguage]. Prefer resolving UI language from
+     * [Context] via [com.trainingvalidator.poc.ui.utils.feedbackLanguageCode] in new code.
+     */
     fun getLanguage(context: Context, fallback: String = "en"): String =
         prefs(context).getString(KEY_LANGUAGE, fallback) ?: fallback
 

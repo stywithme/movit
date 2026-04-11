@@ -810,8 +810,8 @@ data class RepCountingConfig(
     val reps: Int = 12,
     val duration: Int? = null,           // For HOLD method (seconds)
     val gracePeriodMs: Long? = null,     // For HOLD method - grace period before fail
-    val minRepIntervalMs: Long? = null,  // null = use global default
-    val maxRepIntervalMs: Long? = null   // null = use global default
+    val minRepIntervalMs: Long? = null,  // null = use default passed to getMinRepInterval(...)
+    val maxRepIntervalMs: Long? = null   // null = use default passed to getMaxRepInterval(...)
 ) {
     /**
      * Calculate minimum phase duration based on min rep interval and number of phases

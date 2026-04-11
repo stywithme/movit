@@ -105,11 +105,6 @@ object SettingsManager {
     fun getBoundaryBuffer(): Double = settings.angleDetection.boundaryBufferDegrees
     
     /**
-     * Get extreme error threshold
-     */
-    fun getExtremeErrorThreshold(): Double = settings.angleDetection.extremeErrorThresholdDegrees
-    
-    /**
      * Get smoothing window size
      */
     fun getSmoothingWindowSize(): Int = settings.movementDetection.smoothingWindowSize
@@ -118,11 +113,6 @@ object SettingsManager {
      * Get default min rep interval
      */
     fun getDefaultMinRepInterval(): Long = settings.defaults.minRepIntervalMs
-    
-    /**
-     * Get default max rep interval
-     */
-    fun getDefaultMaxRepInterval(): Long = settings.defaults.maxRepIntervalMs
     
     /**
      * Get default min phase duration
@@ -140,48 +130,6 @@ object SettingsManager {
      * Get default grace period in milliseconds for hold exercises
      */
     fun getDefaultGracePeriod(): Long = settings.holdDefaults.defaultGracePeriodMs
-    
-    // ==================== Visual Settings ====================
-    
-    /**
-     * Get visual settings object
-     */
-    fun getVisualSettings(): VisualSettings = settings.visual
-    
-    /**
-     * Whether to show arc range indicators around tracked joints
-     */
-    fun getShowArcIndicators(): Boolean = settings.visual.showArcRangeIndicators
-    
-    /**
-     * Arc indicator radius in dp
-     */
-    fun getArcIndicatorRadiusDp(): Float = settings.visual.arcIndicatorRadiusDp
-    
-    /**
-     * Arc indicator stroke width in dp
-     */
-    fun getArcIndicatorStrokeWidthDp(): Float = settings.visual.arcIndicatorStrokeWidthDp
-    
-    /**
-     * Whether to show current position indicator on arc
-     */
-    fun getArcShowCurrentIndicator(): Boolean = settings.visual.arcShowCurrentIndicator
-    
-    /**
-     * Only show arc when joint is in error/warning state
-     */
-    fun getArcShowOnlyOnError(): Boolean = settings.visual.arcShowOnlyOnError
-    
-    /**
-     * Only show arc for primary joints
-     */
-    fun getArcShowOnlyPrimary(): Boolean = settings.visual.arcShowOnlyPrimary
-    
-    /**
-     * Arc opacity (0.0 - 1.0)
-     */
-    fun getArcOpacity(): Float = settings.visual.arcOpacity
     
     // ==================== Smoothing Settings ====================
     
@@ -235,12 +183,6 @@ object SettingsManager {
     // ==================== Visibility Settings ====================
     
     /**
-     * Get visibility threshold for angle calculation
-     * Lower = more tolerant, Higher = stricter
-     */
-    fun getAngleCalculationVisibility(): Float = settings.visibility.angleCalculation
-    
-    /**
      * Get visibility threshold for skeleton overlay drawing
      */
     fun getOverlayVisibility(): Float = settings.visibility.overlay
@@ -251,21 +193,6 @@ object SettingsManager {
     fun getPoseValidationVisibility(): Float = settings.visibility.poseValidation
     
     // ==================== Pose Validation Settings ====================
-    
-    /**
-     * Get required valid frames for pose confirmation
-     */
-    fun getRequiredValidFrames(): Int = settings.poseValidation.requiredValidFrames
-    
-    /**
-     * Get minimum valid angle (angles below this are considered noise)
-     */
-    fun getMinValidAngle(): Float = settings.poseValidation.minValidAngle
-    
-    /**
-     * Get maximum valid angle (angles above this are considered impossible)
-     */
-    fun getMaxValidAngle(): Float = settings.poseValidation.maxValidAngle
     
     /**
      * Check if an angle value is within valid anatomical range
@@ -403,11 +330,6 @@ object SettingsManager {
      * Get feedback settings object
      */
     fun getFeedbackSettings(): FeedbackSettings = settings.feedback
-    
-    /**
-     * Get message language ("ar" or "en")
-     */
-    fun getFeedbackLanguage(): String = settings.feedback.language
     
     /**
      * Get state message cooldown in milliseconds
