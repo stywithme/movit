@@ -1,0 +1,39 @@
+"""
+Purchase List Item - Product/SKU that needs to be purchased
+"""
+type PurchaseListItem {
+    sku: Sku!
+    product: Product!
+    total_qty: Int!
+    current_stock: Int!
+    needed_qty: Int!
+    orders_count: Int!
+}
+
+"""
+Sort options for Purchase List
+"""
+enum PurchaseListSortField {
+    PRODUCT_NAME @enum(value: "product_name")
+    TOTAL_QTY @enum(value: "total_qty")
+}
+
+"""
+Sort direction
+"""
+enum SortDirection {
+    ASC @enum(value: "asc")
+    DESC @enum(value: "desc")
+}
+
+extend type Query {
+    purchaseList(
+        search: String
+        product_ids: [ID!]
+        product_tag_ids: [ID!]
+        product_category_ids: [ID!]
+        sort_by: PurchaseListSortField
+        sort_direction: SortDirection
+    ): [PurchaseListItem!]! @field(resolver: "Modules\\Orders\\Queries\\GetPurchaseList")
+}
+
