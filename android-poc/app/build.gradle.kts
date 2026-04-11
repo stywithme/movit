@@ -70,6 +70,9 @@ kotlin {
     }
 }
 
+/** LiteRT artifacts — keep version in one place */
+val litertVersion = "1.4.0"
+
 dependencies {
     // Core Android — March 2026
     implementation("androidx.core:core-ktx:1.17.0")
@@ -96,15 +99,26 @@ dependencies {
 
     // MediaPipe Pose Landmarker — Apr 2026 (0.10.33 ships 16KB-aligned native libs)
     implementation("com.google.mediapipe:tasks-vision:0.10.33") {
-        exclude(group = "org.tensorflow")
+        exclude(group = "org.tensorflow", module = "tensorflow-lite")
+        exclude(group = "org.tensorflow", module = "tensorflow-lite-api")
+        exclude(group = "org.tensorflow", module = "tensorflow-lite-gpu")
+        exclude(group = "org.tensorflow", module = "tensorflow-lite-gpu-api")
+        exclude(group = "com.google.ai.edge.litert", module = "litert-support-api")
     }
-    // LiteRT replaces legacy TFLite — 16KB page-size aligned
-    implementation("com.google.ai.edge.litert:litert:1.4.0")
-    implementation("com.google.ai.edge.litert:litert-api:1.4.0")
-    implementation("com.google.ai.edge.litert:litert-support:1.4.0")
-
-    // Posture MLP (optional assets: posture_mlp.tflite + posture_mlp_norm.json)
-    implementation("org.tensorflow:tensorflow-lite:2.16.1")
+    // LiteRT replaces legacy TFLite — 16KB page-size aligned.
+    // Provides org.tensorflow.lite.* (Interpreter, etc.) for MediaPipe + Posture/Elbow MLP classifiers.
+    // Do NOT add org.tensorflow:tensorflow-lite alongside — duplicate classes at merge time.
+    // litert-support-api shares manifest namespace with litert-support (AGP warns / AGP 9 can fail);
+    // exclude the API artifact when pulled transitively — implementation stays in litert-support.
+    implementation("com.google.ai.edge.litert:litert:$litertVersion") {
+        exclude(group = "com.google.ai.edge.litert", module = "litert-support-api")
+    }
+    implementation("com.google.ai.edge.litert:litert-api:$litertVersion") {
+        exclude(group = "com.google.ai.edge.litert", module = "litert-support-api")
+    }
+    implementation("com.google.ai.edge.litert:litert-support:$litertVersion") {
+        exclude(group = "com.google.ai.edge.litert", module = "litert-support-api")
+    }
 
     // Coroutines
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.10.2")
@@ -126,9 +140,6 @@ dependencies {
 
     // Charts
     implementation("com.github.PhilJay:MPAndroidChart:v3.1.0")
-
-    // SwipeRefreshLayout
-    implementation("androidx.swiperefreshlayout:swiperefreshlayout:1.1.0")
 
     // ViewPager2
     implementation("androidx.viewpager2:viewpager2:1.1.0")
