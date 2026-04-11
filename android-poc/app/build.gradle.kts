@@ -52,6 +52,12 @@ android {
         viewBinding = true
         buildConfig = true
     }
+
+    packaging {
+        jniLibs {
+            useLegacyPackaging = false
+        }
+    }
 }
 
 kotlin {
@@ -83,8 +89,14 @@ dependencies {
     implementation("androidx.camera:camera-lifecycle:$cameraxVersion")
     implementation("androidx.camera:camera-view:$cameraxVersion")
 
-    // MediaPipe Pose Landmarker — Jan 2026
-    implementation("com.google.mediapipe:tasks-vision:0.10.32")
+    // MediaPipe Pose Landmarker — Apr 2026 (0.10.33 ships 16KB-aligned native libs)
+    implementation("com.google.mediapipe:tasks-vision:0.10.33") {
+        exclude(group = "org.tensorflow")
+    }
+    // LiteRT replaces legacy TFLite — 16KB page-size aligned
+    implementation("com.google.ai.edge.litert:litert:1.4.0")
+    implementation("com.google.ai.edge.litert:litert-api:1.4.0")
+    implementation("com.google.ai.edge.litert:litert-support:1.4.0")
 
     // Coroutines
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.10.2")
