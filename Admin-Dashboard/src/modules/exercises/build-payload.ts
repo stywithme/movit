@@ -2,6 +2,46 @@ import { useWizardStore } from '@/components/wizard/WizardContext';
 import type { TrackedJointData, PositionCheckData } from './exercises.validation';
 import { normalizeCameraPositionIds } from '@/lib/utils';
 
+/** Remove dashboard-only fields from localized text before API */
+function sanitizeLocalizedForApi(
+  lt: { ar?: string; en?: string; audioAr?: string; audioEn?: string; sourceMessageCode?: string; sourceMessageId?: string } | undefined
+): { ar: string; en: string; audioAr?: string; audioEn?: string } | undefined {
+  if (!lt) return undefined;
+  return {
+    ar: lt.ar ?? '',
+    en: lt.en ?? '',
+    ...(lt.audioAr ? { audioAr: lt.audioAr } : {}),
+    ...(lt.audioEn ? { audioEn: lt.audioEn } : {}),
+  };
+}
+
+function sanitizeStateMessageValue(
+  val: unknown
+): unknown {
+  if (!val || typeof val !== 'object') return val;
+  if ('up' in val || 'down' in val) {
+    const z = val as { up?: unknown; down?: unknown };
+    return {
+      ...(z.up ? { up: sanitizeLocalizedForApi(z.up as Parameters<typeof sanitizeLocalizedForApi>[0]) } : {}),
+      ...(z.down ? { down: sanitizeLocalizedForApi(z.down as Parameters<typeof sanitizeLocalizedForApi>[0]) } : {}),
+    };
+  }
+  return sanitizeLocalizedForApi(val as Parameters<typeof sanitizeLocalizedForApi>[0]);
+}
+
+function sanitizeStateMessages(
+  sm: TrackedJointData['stateMessages']
+): TrackedJointData['stateMessages'] {
+  if (!sm) return sm;
+  const out: Record<string, unknown> = {};
+  for (const key of ['perfect', 'normal', 'pad', 'warning', 'danger'] as const) {
+    const v = sm[key];
+    if (v === undefined) continue;
+    out[key] = sanitizeStateMessageValue(v);
+  }
+  return out as TrackedJointData['stateMessages'];
+}
+
 /**
  * Build the API payload from the current wizard store state.
  * Shared between the "new" and "edit" exercise pages.
@@ -13,12 +53,18 @@ export function buildExercisePayload() {
   const allJoints = store.jointConfig.trackedJoints || [];
 
   const mapJoint = (joint: TrackedJointData) => {
+    const phaseStateMessages = joint.phaseStateMessages
+      ? Object.fromEntries(
+          Object.entries(joint.phaseStateMessages).map(([k, v]) => [k, sanitizeStateMessages(v)])
+        )
+      : undefined;
+
     if (joint.role === 'primary') {
       const base = {
         joint: joint.joint,
         role: 'primary' as const,
         startPose: joint.startPose,
-        stateMessages: joint.stateMessages,
+        stateMessages: sanitizeStateMessages(joint.stateMessages),
         pairedWith: joint.pairedWith,
         invertIndicator: joint.invertIndicator,
       };
@@ -37,8 +83,8 @@ export function buildExercisePayload() {
       startPose: joint.startPose,
       range: joint.range,
       ...(hasPhaseRanges && { phaseRanges: joint.phaseRanges }),
-      ...(hasPhaseMsgs && { phaseStateMessages: joint.phaseStateMessages }),
-      stateMessages: joint.stateMessages,
+      ...(hasPhaseMsgs && phaseStateMessages && { phaseStateMessages }),
+      stateMessages: sanitizeStateMessages(joint.stateMessages),
       pairedWith: joint.pairedWith,
     };
   };
@@ -51,7 +97,7 @@ export function buildExercisePayload() {
     landmarks: pc.landmarks,
     condition: pc.condition,
     activePhases: pc.activePhases,
-    errorMessage: pc.errorMessage,
+    errorMessage: sanitizeLocalizedForApi(pc.errorMessage as Parameters<typeof sanitizeLocalizedForApi>[0]),
     severity: pc.severity,
     cooldownMs: pc.cooldownMs,
     minErrorFrames: pc.minErrorFrames,

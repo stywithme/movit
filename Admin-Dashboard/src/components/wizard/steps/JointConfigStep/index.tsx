@@ -14,11 +14,30 @@ import { useCallback, useState, useMemo } from 'react';
 import { useWizardStore } from '../../WizardContext';
 import { buildTrackedJoint, STATE_COLORS, STATE_LABELS } from './joint-templates';
 import { SmartLocalizedInput } from '@/components/forms';
-import { Plus, ChevronDown, Trash2, Copy, MessageSquare } from 'lucide-react';
-import { MessagePickerModal, type MessageOption } from '@/components/messages';
+import { Plus, ChevronDown, Trash2, Copy, MessageSquare, X } from 'lucide-react';
+import { MessagePickerModal, MessageAudioStatus, type MessageOption } from '@/components/messages';
 import type { TrackedJointData, PrimaryTrackedJointData, SecondaryTrackedJointData, StateRangesData } from '@/modules/exercises/exercises.validation';
 import { JOINT_STATE_NAMES, COUNTED_STATES, STATE_CONFIG } from '@/lib/types/localized';
 import type { JointStateName, LocalizedText } from '@/lib/types/localized';
+
+/** Localized row saved on joint state (includes optional audio + library metadata) */
+type StateLocalizedRow = LocalizedText & {
+  audioAr?: string;
+  audioEn?: string;
+  sourceMessageCode?: string;
+  sourceMessageId?: string;
+};
+
+function messageOptionToLocalized(msg: MessageOption): StateLocalizedRow {
+  return {
+    ar: msg.content.ar || '',
+    en: msg.content.en || '',
+    ...(msg.content.audioAr ? { audioAr: msg.content.audioAr } : {}),
+    ...(msg.content.audioEn ? { audioEn: msg.content.audioEn } : {}),
+    sourceMessageCode: msg.code,
+    sourceMessageId: msg.id,
+  };
+}
 
 // ============================================
 // UI TAB STRUCTURE
@@ -224,31 +243,53 @@ function StateRangeEditor({ label, ranges, onChange, showWarningDanger = true, s
   const handleMessageSelect = (selected: MessageOption[]) => {
     if (selected.length === 0 || !onStateMessagesChange) return;
     const msg = selected[0];
+    const content = messageOptionToLocalized(msg);
     const updated = { ...(stateMessages || {}) };
 
     if (zone) {
-      // Zone-based: set message under up/down
       const existing = updated[pickerState];
       const zoneObj = (existing && typeof existing === 'object' && 'up' in existing)
-        ? { ...existing }
+        ? { ...(existing as Record<string, unknown>) }
         : { up: undefined, down: undefined };
-      (zoneObj as Record<string, unknown>)[zone] = { ar: msg.content.ar, en: msg.content.en };
+      (zoneObj as Record<string, unknown>)[zone] = content;
       (updated as Record<string, unknown>)[pickerState] = zoneObj;
     } else {
-      (updated as Record<string, unknown>)[pickerState] = { ar: msg.content.ar, en: msg.content.en };
+      (updated as Record<string, unknown>)[pickerState] = content;
     }
     onStateMessagesChange(updated);
   };
 
-  const getMessageForState = (state: JointStateName): { ar?: string; en?: string } | null => {
+  const clearMessageForState = (state: JointStateName) => {
+    if (!onStateMessagesChange) return;
+    const updated = { ...(stateMessages || {}) };
+    if (zone) {
+      const existing = updated[state];
+      if (existing && typeof existing === 'object' && 'up' in existing) {
+        const zoneObj = { ...(existing as Record<string, unknown>) };
+        delete zoneObj[zone];
+        const hasAny = zoneObj.up != null || zoneObj.down != null;
+        if (hasAny) {
+          (updated as Record<string, unknown>)[state] = zoneObj;
+        } else {
+          delete (updated as Record<string, unknown>)[state];
+        }
+      }
+    } else {
+      delete (updated as Record<string, unknown>)[state];
+    }
+    onStateMessagesChange(updated);
+  };
+
+  const getMessageForState = (state: JointStateName): StateLocalizedRow | null => {
     if (!stateMessages) return null;
     const val = stateMessages[state];
     if (!val) return null;
     if (zone && typeof val === 'object' && 'up' in val) {
-      return (val as Record<string, { ar?: string; en?: string }>)[zone] || null;
+      const row = (val as Record<string, StateLocalizedRow>)[zone];
+      return row ?? null;
     }
     if (typeof val === 'object' && 'ar' in val) {
-      return val as { ar?: string; en?: string };
+      return val as StateLocalizedRow;
     }
     return null;
   };
@@ -344,89 +385,123 @@ function StateRangeEditor({ label, ranges, onChange, showWarningDanger = true, s
           const isEnabled = isRequired || !!range;
           const colors = STATE_COLORS[state];
           const config = STATE_CONFIG[state];
+          const rowMsg = isEnabled && onStateMessagesChange ? getMessageForState(state) : null;
 
           return (
             <div
               key={state}
-              className={`flex items-center gap-3 p-2 rounded-lg transition-all ${isEnabled ? `${colors.bg} ${colors.border} border` : 'bg-gray-50 border border-dashed border-gray-300'
+              className={`rounded-lg transition-all ${isEnabled ? `${colors.bg} ${colors.border} border` : 'bg-gray-50 border border-dashed border-gray-300'
                 }`}
             >
-              {!isRequired && (
-                <button
-                  type="button"
-                  onClick={() => toggleState(state)}
-                  className={`w-5 h-5 rounded border-2 flex items-center justify-center transition-colors ${isEnabled ? `${colors.border} ${colors.bg}` : 'border-gray-300 bg-white'
-                    }`}
-                >
-                  {isEnabled && <span className="text-xs">✓</span>}
-                </button>
-              )}
+              <div className="flex items-center gap-3 p-2">
+                {!isRequired && (
+                  <button
+                    type="button"
+                    onClick={() => toggleState(state)}
+                    className={`w-5 h-5 rounded border-2 flex items-center justify-center transition-colors ${isEnabled ? `${colors.border} ${colors.bg}` : 'border-gray-300 bg-white'
+                      }`}
+                  >
+                    {isEnabled && <span className="text-xs">✓</span>}
+                  </button>
+                )}
 
-              <div className={`w-24 ${isRequired ? 'ml-8' : ''}`}>
-                <span className={`font-medium text-sm ${isEnabled ? colors.text : 'text-gray-400'}`}>
-                  {STATE_LABELS[state].en}
-                </span>
-                <div className="flex items-center gap-1 text-[10px] text-gray-500">
-                  {config.isRepCounted ? (
-                    <span className="text-green-600">✓ Counted</span>
-                  ) : (
-                    <span className="text-red-600">✗ Not counted</span>
-                  )}
-                  <span>• {config.rate}%</span>
-                </div>
-              </div>
-
-              {isEnabled && range && (
-                <div className="flex items-center gap-2 flex-1">
-                  <div className="flex items-center gap-1">
-                    <label className="text-xs text-gray-500">Min:</label>
-                    <input
-                      type="number"
-                      min={0}
-                      max={180}
-                      value={range.min}
-                      onChange={(e) => updateState(state, 'min', Number(e.target.value))}
-                      className={`w-16 px-2 py-1 text-sm font-medium text-gray-900 border rounded ${colors.border} bg-white focus:outline-none focus:ring-1 focus:ring-blue-400`}
-                    />
-                    <span className="text-xs text-gray-400">°</span>
-                  </div>
-                  <span className="text-gray-400">—</span>
-                  <div className="flex items-center gap-1">
-                    <label className="text-xs text-gray-500">Max:</label>
-                    <input
-                      type="number"
-                      min={0}
-                      max={180}
-                      value={range.max}
-                      onChange={(e) => updateState(state, 'max', Number(e.target.value))}
-                      className={`w-16 px-2 py-1 text-sm font-medium text-gray-900 border rounded ${colors.border} bg-white focus:outline-none focus:ring-1 focus:ring-blue-400`}
-                    />
-                    <span className="text-xs text-gray-400">°</span>
+                <div className={`w-24 ${isRequired ? 'ml-8' : ''}`}>
+                  <span className={`font-medium text-sm ${isEnabled ? colors.text : 'text-gray-400'}`}>
+                    {STATE_LABELS[state].en}
+                  </span>
+                  <div className="flex items-center gap-1 text-[10px] text-gray-500">
+                    {config.isRepCounted ? (
+                      <span className="text-green-600">✓ Counted</span>
+                    ) : (
+                      <span className="text-red-600">✗ Not counted</span>
+                    )}
+                    <span>• {config.rate}%</span>
                   </div>
                 </div>
-              )}
 
-              {/* Message icon (only when enabled and message support is available) */}
-              {isEnabled && onStateMessagesChange && (() => {
-                const msg = getMessageForState(state);
-                return (
+                {isEnabled && range && (
+                  <div className="flex items-center gap-2 flex-1 flex-wrap">
+                    <div className="flex items-center gap-1">
+                      <label className="text-xs text-gray-500">Min:</label>
+                      <input
+                        type="number"
+                        min={0}
+                        max={180}
+                        value={range.min}
+                        onChange={(e) => updateState(state, 'min', Number(e.target.value))}
+                        className={`w-16 px-2 py-1 text-sm font-medium text-gray-900 border rounded ${colors.border} bg-white focus:outline-none focus:ring-1 focus:ring-blue-400`}
+                      />
+                      <span className="text-xs text-gray-400">°</span>
+                    </div>
+                    <span className="text-gray-400">—</span>
+                    <div className="flex items-center gap-1">
+                      <label className="text-xs text-gray-500">Max:</label>
+                      <input
+                        type="number"
+                        min={0}
+                        max={180}
+                        value={range.max}
+                        onChange={(e) => updateState(state, 'max', Number(e.target.value))}
+                        className={`w-16 px-2 py-1 text-sm font-medium text-gray-900 border rounded ${colors.border} bg-white focus:outline-none focus:ring-1 focus:ring-blue-400`}
+                      />
+                      <span className="text-xs text-gray-400">°</span>
+                    </div>
+                  </div>
+                )}
+
+                {isEnabled && onStateMessagesChange && (
                   <button
                     type="button"
                     onClick={() => openMessagePicker(state)}
-                    className="relative group flex-shrink-0"
-                    title={msg ? `${msg.en}\n${msg.ar}` : 'Assign message from library'}
+                    className="relative group flex-shrink-0 p-1.5 rounded-md border border-transparent hover:border-blue-200 hover:bg-white/80"
+                    title={rowMsg ? `${rowMsg.en}\n${rowMsg.ar}` : 'Pick message from library (includes audio when available)'}
                   >
-                    <MessageSquare className={`h-4 w-4 transition-colors ${msg ? 'text-blue-600' : 'text-gray-400 group-hover:text-blue-500'
+                    <MessageSquare className={`h-4 w-4 transition-colors ${rowMsg ? 'text-blue-600' : 'text-gray-400 group-hover:text-blue-500'
                       }`} />
-                    {msg && (
-                      <span className="absolute -top-1 -right-1 w-2 h-2 bg-blue-500 rounded-full" />
+                    {rowMsg && (
+                      <span className="absolute -top-0.5 -right-0.5 w-2 h-2 bg-blue-500 rounded-full" />
                     )}
                   </button>
-                );
-              })()}
+                )}
 
-              {!isEnabled && (
-                <span className="text-sm text-gray-400 italic">Click to enable</span>
+                {!isEnabled && (
+                  <span className="text-sm text-gray-400 italic">Click to enable</span>
+                )}
+              </div>
+
+              {isEnabled && onStateMessagesChange && (
+                <div className="px-2 pb-2 pl-2 md:pl-[7.25rem] border-t border-white/40 mt-0.5 pt-2 space-y-1.5">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <span className="text-[10px] font-semibold uppercase tracking-wide text-gray-500">Feedback line</span>
+                    {rowMsg ? (
+                      <>
+                        <MessageAudioStatus
+                          audioAr={rowMsg.audioAr}
+                          audioEn={rowMsg.audioEn}
+                          sourceMessageCode={rowMsg.sourceMessageCode}
+                          compact
+                        />
+                        <button
+                          type="button"
+                          onClick={() => clearMessageForState(state)}
+                          className="inline-flex items-center gap-0.5 text-[11px] text-red-600 hover:text-red-800 hover:underline"
+                        >
+                          <X className="h-3 w-3" />
+                          Clear message
+                        </button>
+                      </>
+                    ) : (
+                      <span className="text-[11px] text-gray-500">No library message — app will use TTS for this state.</span>
+                    )}
+                  </div>
+                  {rowMsg && (
+                    <p className="text-[11px] text-gray-600 line-clamp-2" dir="auto">
+                      <span className="text-gray-400">EN:</span> {rowMsg.en}{' '}
+                      <span className="text-gray-400 mx-1">|</span>{' '}
+                      <span className="text-gray-400">AR:</span> {rowMsg.ar}
+                    </p>
+                  )}
+                </div>
               )}
             </div>
           );

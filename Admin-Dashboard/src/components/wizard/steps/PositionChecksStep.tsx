@@ -11,7 +11,7 @@ import { useState } from 'react';
 import { useWizardStore } from '../WizardContext';
 import { Card, CardHeader, CardTitle, CardContent, Button, Badge, Input, Label } from '@/components/ui';
 import { SmartLocalizedInput } from '@/components/forms';
-import { MessagePickerModal, type MessageOption } from '@/components/messages';
+import { MessagePickerModal, MessageAudioStatus, type MessageOption } from '@/components/messages';
 import type { PositionCheckData } from '@/modules/exercises/exercises.validation';
 import type { PhaseName, PositionCheckType, ConditionOperator, LocalizedAudio } from '@/lib/types/localized';
 import { Library, Plus } from 'lucide-react';
@@ -152,7 +152,20 @@ function PositionCheckCard({ check, index, onUpdate, onRemove, isHoldExercise }:
         en: msg.content.en || '',
         audioAr: msg.content.audioAr,
         audioEn: msg.content.audioEn,
-      }
+        sourceMessageCode: msg.code,
+        sourceMessageId: msg.id,
+      },
+    });
+  };
+
+  const unlinkLibraryMessage = () => {
+    const em = check.errorMessage;
+    updateField('messageId', undefined);
+    updateField('errorMessage', {
+      ar: em?.ar ?? '',
+      en: em?.en ?? '',
+      audioAr: em?.audioAr,
+      audioEn: em?.audioEn,
     });
   };
 
@@ -378,7 +391,7 @@ function PositionCheckCard({ check, index, onUpdate, onRemove, isHoldExercise }:
                     variant="ghost"
                     size="sm"
                     className="text-red-600 hover:text-red-700 hover:bg-red-50"
-                    onClick={() => updateField('messageId', undefined)}
+                    onClick={unlinkLibraryMessage}
                   >
                     Unlink
                   </Button>
@@ -393,6 +406,20 @@ function PositionCheckCard({ check, index, onUpdate, onRemove, isHoldExercise }:
                 </Button>
               </div>
             </div>
+
+            {(isLinked || check.errorMessage?.audioAr || check.errorMessage?.audioEn) && (
+              <MessageAudioStatus
+                audioAr={check.errorMessage?.audioAr}
+                audioEn={check.errorMessage?.audioEn}
+                sourceMessageCode={
+                  isLinked
+                    ? check.errorMessage?.sourceMessageCode?.trim() || undefined
+                    : undefined
+                }
+                compact
+                className="mt-1"
+              />
+            )}
 
             {/* Show readonly view if linked, otherwise editable input */}
             <SmartLocalizedInput
