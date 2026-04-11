@@ -147,7 +147,7 @@ class PerformanceOverviewFragment : Fragment() {
         val metrics = report.performanceMetrics ?: PerformanceMetricsBuilder.build(report)
 
         // Title
-        val hasMultipleSets = (report.setSummaries ?: emptyList()).size > 1
+        val hasMultipleSets = report.setSummaries.size > 1
         tvTitle?.text = if (isArabic) "📊 رحلة العدات" else "📊 Reps Journey"
         tvSubtitle?.text = when {
             hasMultipleSets && isArabic -> "أداؤك عبر كل السيتات والعدات"
@@ -258,7 +258,7 @@ class PerformanceOverviewFragment : Fragment() {
         val container = setsContainer ?: return
         container.removeAllViews()
 
-        val summaries = report.setSummaries ?: emptyList()
+        val summaries = report.setSummaries
         if (summaries.size < 2) {
             container.isVisible = false
             return

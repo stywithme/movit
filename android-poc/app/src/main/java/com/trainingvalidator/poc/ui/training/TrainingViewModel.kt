@@ -764,7 +764,7 @@ class TrainingViewModel(
         }
 
         // State messages
-        for (joint in variant.trackedJoints ?: emptyList()) {
+        for (joint in variant.trackedJoints) {
             val sm = joint.stateMessages ?: continue
             for (state in listOf(
                 com.trainingvalidator.poc.training.models.JointState.PERFECT,
@@ -778,19 +778,22 @@ class TrainingViewModel(
         }
 
         // Position checks
-        for (pc in variant.positionChecks ?: emptyList()) {
+        for (pc in variant.positionChecks) {
             checkText(pc.errorMessage)
         }
 
         // Feedback messages
         val fm = variant.feedbackMessages
-        fm?.motivational?.forEach { checkText(it) }
-        fm?.tips?.forEach { checkText(it) }
+        fm.motivational.forEach { checkText(it) }
+        fm.tips.forEach { checkText(it) }
 
         Log.i("AUDIO_TRACE", "──── EXERCISE AUDIO DIAGNOSTIC ($lang) ────")
-        Log.i("AUDIO_TRACE", "[LOADED] exercise=${config.name.en ?: config.name.ar} variant=${variant.name?.en ?: variant.name?.ar}")
+        Log.i(
+            "AUDIO_TRACE",
+            "[LOADED] exercise=${config.name.en.ifBlank { config.name.ar }} variant=${variant.name.en.ifBlank { variant.name.ar }}"
+        )
         Log.i("AUDIO_TRACE", "[LOADED] withAudioUrl=$withAudio, withoutAudioUrl=$withoutAudio, total=${withAudio + withoutAudio}")
-        Log.i("AUDIO_TRACE", "[LOADED] assignments=${(variant.messageAssignments ?: emptyList()).size}")
+        Log.i("AUDIO_TRACE", "[LOADED] assignments=${variant.messageAssignments.size}")
         if (withAudio == 0 && (withAudio + withoutAudio) > 0) {
             Log.w("AUDIO_TRACE", "⚠ ZERO messages have audio URLs — ALL will fall back to TTS!")
         }
