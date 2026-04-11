@@ -53,12 +53,6 @@ export function buildExercisePayload() {
   const allJoints = store.jointConfig.trackedJoints || [];
 
   const mapJoint = (joint: TrackedJointData) => {
-    const phaseStateMessages = joint.phaseStateMessages
-      ? Object.fromEntries(
-          Object.entries(joint.phaseStateMessages).map(([k, v]) => [k, sanitizeStateMessages(v)])
-        )
-      : undefined;
-
     if (joint.role === 'primary') {
       const base = {
         joint: joint.joint,
@@ -72,11 +66,17 @@ export function buildExercisePayload() {
         ? { ...base, range: joint.range }
         : { ...base, upRange: joint.upRange, downRange: joint.downRange };
     }
+
+    // Secondary joints only — `phaseStateMessages` is not on primary
+    const phaseStateMessages = joint.phaseStateMessages
+      ? Object.fromEntries(
+          Object.entries(joint.phaseStateMessages).map(([k, v]) => [k, sanitizeStateMessages(v)])
+        )
+      : undefined;
+
     const hasPhaseRanges = joint.phaseRanges && Object.keys(joint.phaseRanges).length > 0;
     const hasPhaseMsgs =
-      'phaseStateMessages' in joint &&
-      joint.phaseStateMessages &&
-      Object.keys(joint.phaseStateMessages).length > 0;
+      joint.phaseStateMessages && Object.keys(joint.phaseStateMessages).length > 0;
     return {
       joint: joint.joint,
       role: 'secondary' as const,
