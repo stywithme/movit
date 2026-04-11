@@ -38,6 +38,7 @@ import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlin.math.ceil
 
@@ -291,6 +292,20 @@ class TrainingViewModel(
         
         // Diagnostic: log audio URL availability in the current exercise
         logExerciseAudioDiagnostic()
+
+        countdownController.audioProvider = object : CountdownController.CountdownAudioProvider {
+            override suspend fun playPoseConfirmed() {
+                feedbackManager?.speakPoseConfirmedAndAwait() ?: delay(1200)
+            }
+
+            override suspend fun playCountdownNumber(secondsRemaining: Int) {
+                feedbackManager?.speakCountdownAndAwait(secondsRemaining) ?: delay(850)
+            }
+
+            override suspend fun playGo() {
+                feedbackManager?.speakGo()
+            }
+        }
     }
     
     // ==================== Supervisor Signal Methods ====================
@@ -503,10 +518,8 @@ class TrainingViewModel(
             }
 
             is SupervisorAction.StartCountdown -> {
-                // Speak confirmation once and start countdown
-                feedbackManager?.speakPoseConfirmed()
                 resetCountdownPoseIssueThrottle()
-                countdownController.start()
+                countdownController.start(viewModelScope)
                 viewModelScope.launch {
                     _events.emit(TrainingUIEvent.StartCountdown)
                 }
@@ -514,6 +527,7 @@ class TrainingViewModel(
 
             is SupervisorAction.CancelCountdown -> {
                 resetCountdownPoseIssueThrottle()
+                feedbackManager?.abortCountdownAudio()
                 countdownController.cancel()
                 poseSetupGuide.reset()
                 viewModelScope.launch {
@@ -522,6 +536,7 @@ class TrainingViewModel(
             }
 
             is SupervisorAction.FreezeCountdown -> {
+                feedbackManager?.abortCountdownAudio()
                 countdownController.freeze()
                 viewModelScope.launch {
                     _events.emit(TrainingUIEvent.CountdownFrozen)
