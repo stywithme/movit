@@ -10,6 +10,7 @@ interface MessageTemplate {
   code: string;
   category: string;
   context: string | null;
+  description?: string | null;
   content: LocalizedTextWithAudio;
   tags: string[];
   isSystem: boolean;
@@ -134,6 +135,7 @@ export default function MessagesListPage() {
       code: msg.code,
       category: msg.category,
       context: msg.context,
+      description: msg.description ?? null,
       content: msg.content,
       tags: msg.tags,
       isSystem: msg.isSystem,
@@ -146,7 +148,11 @@ export default function MessagesListPage() {
     fetchMessages(pagination?.page || 1);
   };
 
-  const handleToggleActive = async (id: string, currentStatus: boolean) => {
+  const handleToggleActive = async (id: string, currentStatus: boolean, isSystem: boolean) => {
+    if (isSystem) {
+      window.alert('System messages cannot be deactivated.');
+      return;
+    }
     try {
       const res = await fetch(`/api/messages/${id}`, {
         method: 'PUT',
@@ -159,11 +165,17 @@ export default function MessagesListPage() {
     }
   };
 
-  const handleDelete = async (id: string) => {
+  const handleDelete = async (id: string, isSystem: boolean) => {
+    if (isSystem) {
+      window.alert('System messages cannot be deleted.');
+      return;
+    }
     if (!confirm('Are you sure you want to delete this message?')) return;
     try {
       const res = await fetch(`/api/messages/${id}`, { method: 'DELETE' });
+      const data = await res.json().catch(() => ({}));
       if (res.ok) fetchMessages(pagination?.page || 1);
+      else if (data.error) window.alert(data.error);
     } catch (error) {
       console.error('Error deleting message:', error);
     }
@@ -271,7 +283,16 @@ export default function MessagesListPage() {
               <tbody className="divide-y divide-gray-200">
                 {messages.map((message) => (
                   <tr key={message.id} className="hover:bg-gray-50">
-                    <td className="px-4 py-3 text-sm font-mono text-gray-700">{message.code}</td>
+                    <td className="px-4 py-3 text-sm font-mono text-gray-700">
+                      <span className="inline-flex items-center gap-1">
+                        {message.isSystem && (
+                          <span title="System message" className="text-xs text-slate-500 font-sans">
+                            [sys]
+                          </span>
+                        )}
+                        {message.code}
+                      </span>
+                    </td>
                     <td className="px-4 py-3 text-sm text-gray-900">{message.category}</td>
                     <td className="px-4 py-3 text-sm text-gray-700">{message.context || '-'}</td>
                     <td className="px-4 py-3 text-sm text-gray-900 max-w-xs">
@@ -300,22 +321,27 @@ export default function MessagesListPage() {
                     <td className="px-4 py-3 text-right">
                       <div className="flex items-center justify-end gap-3">
                         <button
-                          onClick={() => handleToggleActive(message.id, message.isActive)}
+                          type="button"
+                          onClick={() => handleToggleActive(message.id, message.isActive, message.isSystem)}
+                          disabled={message.isSystem}
                           className={`text-sm ${
                             message.isActive ? 'text-yellow-600 hover:text-yellow-900' : 'text-green-600 hover:text-green-900'
-                          }`}
+                          } disabled:opacity-40 disabled:cursor-not-allowed`}
                         >
                           {message.isActive ? 'Deactivate' : 'Activate'}
                         </button>
                         <button
+                          type="button"
                           onClick={() => handleEdit(message)}
                           className="text-blue-600 hover:text-blue-900 text-sm"
                         >
                           Edit
                         </button>
                         <button
-                          onClick={() => handleDelete(message.id)}
-                          className="text-red-600 hover:text-red-900 text-sm"
+                          type="button"
+                          onClick={() => handleDelete(message.id, message.isSystem)}
+                          disabled={message.isSystem}
+                          className="text-red-600 hover:text-red-900 text-sm disabled:opacity-40 disabled:cursor-not-allowed"
                         >
                           Delete
                         </button>

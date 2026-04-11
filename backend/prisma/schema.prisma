@@ -227,6 +227,8 @@ model FeedbackMessageTemplate {
   code        String                      @unique
   category    String
   context     String?
+  /// Where/why this message is used (system messages; shown read-only in dashboard)
+  description String?
   content     Json
   tags        String[]
   isSystem    Boolean                     @default(false)

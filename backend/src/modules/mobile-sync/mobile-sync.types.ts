@@ -128,6 +128,11 @@ export interface SyncData {
    * Message library for feedback/state/position messages
    */
   messageLibrary: MessageTemplate[];
+
+  /**
+   * Fixed-key system messages (training UI / TTS); editable text/audio from dashboard
+   */
+  systemMessages: SystemMessageTemplate[];
   
   /**
    * IDs of exercises that were deleted since last sync
@@ -322,6 +327,13 @@ export interface MessageTemplate {
   category: string;
   context?: string | null;
   content: LocalizedText;
+}
+
+/** System message (mobile looks up by code); no id in sync payload — code is the key */
+export interface SystemMessageTemplate {
+  code: string;
+  content: LocalizedText;
+  updatedAt: string;
 }
 
 // ============================================

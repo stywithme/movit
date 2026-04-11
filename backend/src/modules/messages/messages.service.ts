@@ -1,3 +1,4 @@
+import { BadRequestException } from '@nestjs/common';
 import type { FeedbackMessageTemplate } from '@prisma/client';
 import { deleteAudioFile, generateSpeech } from '@/lib/gemini';
 import type { LocalizedTextWithAudio } from '@/lib/types/localized';
@@ -101,17 +102,19 @@ function buildListWhere(options: {
 }
 
 function filterMessagesBySearch<
-  T extends { code: string; tags: string[]; content: unknown },
+  T extends { code: string; tags: string[]; content: unknown; description?: string | null },
 >(rows: T[], search: string): T[] {
   const q = search.trim().toLowerCase();
   if (!q) return rows;
   return rows.filter((m) => {
     const c = parseMessageContent(m.content);
+    const desc = (m.description || '').toLowerCase();
     return (
       m.code.toLowerCase().includes(q) ||
       m.tags.some((t) => t.toLowerCase().includes(q)) ||
       (c.en || '').toLowerCase().includes(q) ||
-      (c.ar || '').toLowerCase().includes(q)
+      (c.ar || '').toLowerCase().includes(q) ||
+      desc.includes(q)
     );
   });
 }
@@ -548,6 +551,7 @@ export const messagesService = {
         code: data.code,
         category: data.category,
         context: data.context || null,
+        description: data.description?.trim() || null,
         content: data.content as object,
         tags: data.tags || [],
         isSystem: data.isSystem ?? false,
@@ -558,6 +562,35 @@ export const messagesService = {
 
   async update(id: string, data: UpdateMessageInput) {
     const prisma = await getPrisma();
+    const existing = await prisma.feedbackMessageTemplate.findUnique({ where: { id } });
+    if (!existing) {
+      throw new BadRequestException('Message not found');
+    }
+
+    if (existing.isSystem) {
+      if (data.code !== undefined && data.code !== existing.code) {
+        throw new BadRequestException('Cannot change code of system messages');
+      }
+      if (data.category !== undefined && data.category !== existing.category) {
+        throw new BadRequestException('Cannot change category of system messages');
+      }
+      if (
+        data.description !== undefined &&
+        data.description !== (existing.description ?? null)
+      ) {
+        throw new BadRequestException('Cannot change description of system messages');
+      }
+      if (data.context !== undefined && data.context !== existing.context) {
+        throw new BadRequestException('Cannot change context of system messages');
+      }
+      if (data.isSystem !== undefined && data.isSystem !== existing.isSystem) {
+        throw new BadRequestException('Cannot change isSystem flag');
+      }
+      if (data.isActive === false) {
+        throw new BadRequestException('Cannot deactivate system messages');
+      }
+    }
+
     const updateData: Record<string, unknown> = {
       updatedAt: new Date(),
     };
@@ -565,8 +598,9 @@ export const messagesService = {
     if (data.code !== undefined) updateData.code = data.code;
     if (data.category !== undefined) updateData.category = data.category;
     if (data.context !== undefined) updateData.context = data.context || null;
+    if (data.description !== undefined) updateData.description = data.description?.trim() || null;
     if (data.content !== undefined) updateData.content = data.content as object;
-    if (data.tags !== undefined) updateData.tags = data.tags;
+    if (data.tags !== undefined && !existing.isSystem) updateData.tags = data.tags;
     if (data.isSystem !== undefined) updateData.isSystem = data.isSystem;
     if (data.isActive !== undefined) updateData.isActive = data.isActive;
 
@@ -584,6 +618,10 @@ export const messagesService = {
 
   async delete(id: string) {
     const prisma = await getPrisma();
+    const existing = await prisma.feedbackMessageTemplate.findUnique({ where: { id } });
+    if (existing?.isSystem) {
+      throw new BadRequestException('Cannot delete system messages');
+    }
     return prisma.feedbackMessageTemplate.update({
       where: { id },
       data: { isActive: false },

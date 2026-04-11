@@ -192,18 +192,29 @@ class AudioFeedbackPlayer(
     }
     
     /**
-     * Play countdown number
+     * Play countdown number (system message keys training_countdown_1|2|3 when applicable)
      */
     fun playCountdown(number: Int) {
-        play(number.toString(), null, Priority.HIGH)
+        val key = when (number) {
+            1 -> "training_countdown_1"
+            2 -> "training_countdown_2"
+            3 -> "training_countdown_3"
+            else -> null
+        }
+        if (key != null) {
+            val lt = SystemMessageRegistry.get(key, number.toString(), number.toString())
+            play(lt, Priority.HIGH)
+        } else {
+            play(number.toString(), null, Priority.HIGH)
+        }
     }
     
     /**
-     * Play "Go!" message
+     * Play "Go!" / start signal (system key training_countdown_go)
      */
     fun playGo() {
-        val goText = if (language == "ar") "ابدأ!" else "Go!"
-        play(goText, null, Priority.HIGH)
+        val lt = SystemMessageRegistry.get("training_countdown_go", "ابدأ!", "Go!")
+        play(lt, Priority.HIGH)
     }
     
     // ==================== Queue Processing ====================

@@ -17,6 +17,8 @@ export interface CreateMessageInput {
   code: string;
   category: MessageCategory;
   context?: MessageContext;
+  /** Admin-facing: where/why this message is used (system messages; immutable after seed) */
+  description?: string | null;
   content: LocalizedTextWithAudio;
   tags?: string[];
   isSystem?: boolean;
@@ -27,6 +29,7 @@ export interface UpdateMessageInput {
   code?: string;
   category?: MessageCategory;
   context?: MessageContext | null;
+  description?: string | null;
   content?: LocalizedTextWithAudio;
   tags?: string[];
   isSystem?: boolean;

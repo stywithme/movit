@@ -14,6 +14,7 @@ import { seedProgressionRules, assignArchetypesAndGenerateProfiles, backfillProg
 import { seedAssessmentTemplates } from './seeders/assessment-templates';
 import { seedPermissions } from './seeders/permissions';
 import { seedSystemConfig } from './seeders/system';
+import { seedSystemMessages } from './seeders/system-messages';
 
 if (!process.env.DATABASE_URL) {
   throw new Error('DATABASE_URL is not set in environment variables');
@@ -48,6 +49,7 @@ async function main() {
   }
 
   await seedSystemConfig(prisma);
+  await seedSystemMessages(prisma);
   await seedPermissions(prisma);
   await seedAdmins(prisma);
   await seedLevels(prisma);

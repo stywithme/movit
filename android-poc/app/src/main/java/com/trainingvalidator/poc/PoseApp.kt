@@ -7,6 +7,7 @@ import coil.ImageLoaderFactory
 import coil.decode.GifDecoder
 import coil.decode.ImageDecoderDecoder
 import com.trainingvalidator.poc.network.ApiClient
+import com.trainingvalidator.poc.storage.SystemMessageStore
 import com.trainingvalidator.poc.training.engine.PostureMlpClassifier
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -53,5 +54,6 @@ class PoseApp : Application(), ImageLoaderFactory {
         _instance = this
         ApiClient.init(this)
         PostureMlpClassifier.getOrNull(this)
+        SystemMessageStore(this).loadIntoRegistry()
     }
 }

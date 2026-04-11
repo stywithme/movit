@@ -21,6 +21,7 @@ import type {
   AudioManifest,
   AudioFileInfo,
   MessageTemplate,
+  SystemMessageTemplate,
   UserProgramExport,
   SessionReportExport,
   ExploreData,
@@ -36,6 +37,25 @@ function toSyncLocalizedText(value: Record<string, unknown> | null | undefined) 
   const ar = typeof value?.ar === 'string' ? value.ar : '';
   const en = typeof value?.en === 'string' ? value.en : '';
   return { ar, en };
+}
+
+function toLocalizedTextWithAudioFromDb(value: unknown) {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) {
+    return { ar: '', en: '' };
+  }
+  const v = value as Record<string, unknown>;
+  const ar = typeof v.ar === 'string' ? v.ar : '';
+  const en = typeof v.en === 'string' ? v.en : '';
+  const audioAr = typeof v.audioAr === 'string' ? v.audioAr : undefined;
+  const audioEn = typeof v.audioEn === 'string' ? v.audioEn : undefined;
+  const legacyAr = typeof v.audio_ar === 'string' ? v.audio_ar : undefined;
+  const legacyEn = typeof v.audio_en === 'string' ? v.audio_en : undefined;
+  return {
+    ar,
+    en,
+    ...(audioAr || legacyAr ? { audioAr: audioAr || legacyAr } : {}),
+    ...(audioEn || legacyEn ? { audioEn: audioEn || legacyEn } : {}),
+  };
 }
 
 /** Collect audioAr/audioEn from a LocalizedText-like object (inline JSON). */
@@ -362,6 +382,16 @@ export const mobileSyncService = {
     // Build message library (deduplicated) from exercises in this sync batch
     const messageLibrary = this.buildMessageLibrary(exercises as Parameters<typeof this.buildMessageLibrary>[0]);
 
+    const systemMessageRows = await prisma.feedbackMessageTemplate.findMany({
+      where: { isSystem: true, isActive: true, category: 'system' },
+      orderBy: { code: 'asc' },
+    });
+    const systemMessages: SystemMessageTemplate[] = systemMessageRows.map((m) => ({
+      code: m.code,
+      content: toLocalizedTextWithAudioFromDb(m.content),
+      updatedAt: m.updatedAt.toISOString(),
+    }));
+
     // Always compute global message stats (across ALL published exercises)
     // so mobile can detect stale caches even during incremental syncs
     const messageLibraryStats = await this.getGlobalMessageStats(prisma);
@@ -482,8 +512,13 @@ export const mobileSyncService = {
       ];
     }
 
-    // Build audio manifest from message library + inline exercise audio URLs
-    const audioManifest = await this.buildAudioManifest(messageLibrary, exercisesWithMeta, baseUrl);
+    // Build audio manifest from message library + system messages + inline exercise audio URLs
+    const audioManifest = await this.buildAudioManifest(
+      messageLibrary,
+      systemMessages,
+      exercisesWithMeta,
+      baseUrl
+    );
     
     let userPrograms: UserProgramExport[] | undefined;
     let sessionReports: SessionReportExport[] | undefined;
@@ -537,6 +572,7 @@ export const mobileSyncService = {
       data: {
         exercises: exercisesWithMeta,
         messageLibrary,
+        systemMessages,
         deletedExerciseIds,
         workouts: workoutsExport,
         deletedWorkoutIds,
@@ -658,6 +694,7 @@ export const mobileSyncService = {
    */
   async buildAudioManifest(
     messageLibrary: MessageTemplate[],
+    systemMessages: SystemMessageTemplate[],
     exercises: ExerciseConfigWithMeta[],
     baseUrl: string
   ): Promise<AudioManifest> {
@@ -680,6 +717,12 @@ export const mobileSyncService = {
 
     for (const message of messageLibrary) {
       const { audioAr, audioEn } = message.content;
+      if (audioAr) await addUrl(audioAr);
+      if (audioEn) await addUrl(audioEn);
+    }
+
+    for (const sm of systemMessages) {
+      const { audioAr, audioEn } = sm.content;
       if (audioAr) await addUrl(audioAr);
       if (audioEn) await addUrl(audioEn);
     }

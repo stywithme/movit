@@ -141,12 +141,13 @@ object AnimationUtils {
     
     /**
      * "Go!" animation with scale up and bounce
+     * @param goLabel Localized overlay text (e.g. from system message training_go_overlay)
      */
-    fun animateGoText(textView: TextView, onComplete: () -> Unit = {}) {
+    fun animateGoText(textView: TextView, goLabel: String = "GO!", onComplete: () -> Unit = {}) {
         textView.scaleX = 0.5f
         textView.scaleY = 0.5f
         textView.alpha = 0f
-        textView.text = "GO!"
+        textView.text = goLabel
         
         textView.animate()
             .scaleX(1.3f)
