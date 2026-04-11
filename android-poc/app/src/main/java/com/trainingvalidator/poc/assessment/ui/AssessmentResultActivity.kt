@@ -21,7 +21,7 @@ import com.trainingvalidator.poc.network.RecommendedProgramData
 import com.trainingvalidator.poc.storage.AuthManager
 import com.trainingvalidator.poc.ui.programs.ProgramListActivity
 import com.trainingvalidator.poc.ui.main.MainContainerActivity
-import com.trainingvalidator.poc.ui.utils.currentLanguage
+import com.trainingvalidator.poc.ui.utils.feedbackLanguageCode
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -40,7 +40,8 @@ import kotlinx.coroutines.withContext
 class AssessmentResultActivity : AppCompatActivity() {
     
     private var result: BodyScanResult? = null
-    private val language: String get() = currentLanguage
+    /** Matches Profile / app locale (same as training feedback). */
+    private val language: String get() = feedbackLanguageCode()
     
     @Suppress("DEPRECATION")
     override fun onCreate(savedInstanceState: Bundle?) {

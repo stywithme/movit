@@ -12,6 +12,7 @@ import com.trainingvalidator.poc.assessment.engine.ReferenceNormsProvider
 import com.trainingvalidator.poc.assessment.models.BodyScanResult
 import com.trainingvalidator.poc.assessment.models.DomainScores
 import com.trainingvalidator.poc.training.models.LocalizedText
+import com.trainingvalidator.poc.ui.utils.feedbackLanguageCode
 
 /**
  * ProgressComparisonView - Shows comparison between current and previous assessments.
@@ -21,7 +22,7 @@ import com.trainingvalidator.poc.training.models.LocalizedText
  */
 class ProgressComparisonView(context: Context) : LinearLayout(context) {
 
-    private val language: String get() = "en"
+    private val language: String get() = context.feedbackLanguageCode()
 
     init {
         orientation = VERTICAL
@@ -51,7 +52,7 @@ class ProgressComparisonView(context: Context) : LinearLayout(context) {
 
         // Body Score comparison
         addView(createComparisonRow(
-            label = "Body Score",
+            label = if (language == "ar") "درجة الجسم" else "Body Score",
             currentValue = current.bodyScore,
             previousValue = previous.bodyScore,
             mdcThreshold = 5f

@@ -13,7 +13,6 @@ data class AppSettings(
     val movementDetection: MovementDetectionSettings = MovementDetectionSettings(),
     val defaults: DefaultTimingSettings = DefaultTimingSettings(),
     val holdDefaults: HoldDefaults = HoldDefaults(),
-    val visual: VisualSettings = VisualSettings(),
     val smoothing: SmoothingSettings = SmoothingSettings(),
     val visibility: VisibilitySettings = VisibilitySettings(),
     val poseValidation: PoseValidationSettings = PoseValidationSettings(),
@@ -24,15 +23,9 @@ data class AppSettings(
 )
 
 /**
- * Feedback settings - Controls audio/text message system
- * 
- * @param language Message language: "ar" for Arabic, "en" for English
- * @param stateMessageCooldownMs Minimum time between same-state messages
- * @param randomMessageIdleMs Idle time before triggering random motivational messages
- * @param randomMessageCooldownMs Minimum time between random messages
+ * Feedback settings — message timing for training (not UI language; use Profile / [Context] locale).
  */
 data class FeedbackSettings(
-    val language: String = "ar",
     val stateMessageCooldownMs: Long = 2000,
     val randomMessageIdleMs: Long = 5000,
     val randomMessageCooldownMs: Long = 10000
@@ -59,38 +52,32 @@ data class RangeIndicatorSettings(
 
 /**
  * Angle detection settings - Used by FormValidator and PhaseStateMachine
- * 
+ *
  * @param hysteresisDegrees Buffer to prevent flickering when transitioning between zones
  * @param boundaryBufferDegrees Buffer around range boundaries for validation tolerance
- * @param extremeErrorThresholdDegrees How far outside range before flagging extreme error
  */
 data class AngleDetectionSettings(
     val hysteresisDegrees: Double = 5.0,
-    val boundaryBufferDegrees: Double = 3.0,
-    val extremeErrorThresholdDegrees: Double = 10.0
+    val boundaryBufferDegrees: Double = 3.0
 )
 
 /**
  * Movement detection settings - Used by PhaseStateMachine for smoothing
- * 
+ *
  * @param smoothingWindowSize Number of frames to average for angle smoothing
- * @param angleChangeThresholdDegrees Minimum angle change to consider as movement
  */
 data class MovementDetectionSettings(
-    val smoothingWindowSize: Int = 3,
-    val angleChangeThresholdDegrees: Double = 2.0
+    val smoothingWindowSize: Int = 3
 )
 
 /**
  * Default timing settings - Fallback values when not specified per-exercise
- * 
+ *
  * @param minRepIntervalMs Minimum time between reps (prevents double counting)
- * @param maxRepIntervalMs Maximum time for a rep before considered timeout
  * @param minPhaseDurationMs Minimum time in a phase before transitioning
  */
 data class DefaultTimingSettings(
     val minRepIntervalMs: Long = 400,
-    val maxRepIntervalMs: Long = 5000,
     val minPhaseDurationMs: Long = 100
 )
 
@@ -103,30 +90,6 @@ data class DefaultTimingSettings(
 data class HoldDefaults(
     val defaultDurationSeconds: Int = 30,
     val defaultGracePeriodMs: Long = 3000
-)
-
-/**
- * Visual settings - Controls visual feedback elements
- * 
- * Arc Range Indicator settings control the gradient arc displayed around
- * tracked joints showing valid angle ranges.
- * 
- * @param showArcRangeIndicators Whether to show arc indicators around joints
- * @param arcIndicatorRadiusDp Arc radius in dp
- * @param arcIndicatorStrokeWidthDp Arc stroke width in dp
- * @param arcShowCurrentIndicator Whether to show current position indicator on arc
- * @param arcShowOnlyOnError Only show arc when joint is in error/warning state
- * @param arcShowOnlyPrimary Only show arc for primary joints (used for rep counting)
- * @param arcOpacity Arc opacity (0.0 - 1.0)
- */
-data class VisualSettings(
-    val showArcRangeIndicators: Boolean = true,
-    val arcIndicatorRadiusDp: Float = 45f,
-    val arcIndicatorStrokeWidthDp: Float = 6f,
-    val arcShowCurrentIndicator: Boolean = true,
-    val arcShowOnlyOnError: Boolean = false,
-    val arcShowOnlyPrimary: Boolean = true,
-    val arcOpacity: Float = 0.9f
 )
 
 /**
@@ -162,31 +125,18 @@ data class SmoothingSettings(
  * Higher threshold = more strict (requires higher confidence)
  * Lower threshold = more tolerant (accepts lower confidence)
  * 
- * @param angleCalculation Threshold for calculating angles (used in AngleCalculator)
- *                         Lower allows angle calculation with less confident landmarks
  * @param overlay Threshold for drawing skeleton overlay
- *                Higher prevents drawing unreliable landmarks
  * @param poseValidation Threshold for validating startPose before training
- *                       Ensures joints are clearly visible before starting
  */
 data class VisibilitySettings(
-    val angleCalculation: Float = 0.3f,
     val overlay: Float = 0.5f,
     val poseValidation: Float = 0.3f
 )
 
 /**
- * Pose validation settings - Controls startPose validation before training begins
- * 
- * @param requiredValidFrames Number of consecutive valid frames needed to confirm pose
- *                            Higher = more stable (prevents accidental starts)
- * @param minValidAngle Minimum angle considered anatomically valid (degrees)
- *                      Angles below this are rejected as impossible/noise
- * @param maxValidAngle Maximum angle considered anatomically valid (degrees)
- *                      Angles above this are rejected as impossible/noise
+ * Pose validation — anatomical angle bounds for [SettingsManager.isAngleValid].
  */
 data class PoseValidationSettings(
-    val requiredValidFrames: Int = 10,
     val minValidAngle: Float = 5f,
     val maxValidAngle: Float = 175f
 )

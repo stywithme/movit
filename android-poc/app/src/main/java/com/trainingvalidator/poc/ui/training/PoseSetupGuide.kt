@@ -24,7 +24,8 @@ import com.trainingvalidator.poc.training.models.TrackedJoint
  * Voice and UI guidance focus on exactly the current blocking phase.
  */
 class PoseSetupGuide(
-    val language: String = "ar"
+    /** Synced with app locale in [com.trainingvalidator.poc.ui.training.TrainingViewModel.initializeFeedback]. */
+    var language: String = "en"
 ) {
 
     companion object {

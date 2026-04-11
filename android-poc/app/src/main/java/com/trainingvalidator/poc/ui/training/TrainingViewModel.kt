@@ -16,6 +16,7 @@ import com.trainingvalidator.poc.training.models.SessionSummary
 import com.trainingvalidator.poc.training.engine.HoldState
 import com.trainingvalidator.poc.training.engine.Phase
 import com.trainingvalidator.poc.training.config.SettingsManager
+import com.trainingvalidator.poc.ui.utils.feedbackLanguageCode
 import com.trainingvalidator.poc.training.feedback.FeedbackConfig
 import com.trainingvalidator.poc.training.feedback.FeedbackEvent
 import com.trainingvalidator.poc.training.feedback.FeedbackManager
@@ -62,9 +63,7 @@ class TrainingViewModel(
     val supervisor = SessionSupervisor()
     
     /** New rolling-window guided pose validation for SETUP_POSE. */
-    val poseSetupGuide = PoseSetupGuide(
-        language = com.trainingvalidator.poc.training.config.SettingsManager.settings.feedback.language
-    )
+    val poseSetupGuide = PoseSetupGuide()
     val countdownController = CountdownController()
     
     // ==================== Training Configuration ====================
@@ -255,8 +254,9 @@ class TrainingViewModel(
         _isVideoMode.value = isVideoMode
         supervisor.isVideoMode = isVideoMode
         
-        // Get language from app settings
-        val language = SettingsManager.getFeedbackLanguage()
+        // Align with app UI language (Profile / AppCompatDelegate), not app_settings.json alone
+        val language = context.feedbackLanguageCode()
+        poseSetupGuide.language = language
         
         feedbackManager = FeedbackManager(
             context = context,

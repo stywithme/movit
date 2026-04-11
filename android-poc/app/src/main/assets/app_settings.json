@@ -1,13 +1,10 @@
 {
-  "_info": "إعدادات التطبيق العامة - يمكن تعديلها لتغيير سلوك النظام",
+  "_info": "إعدادات التطبيق العامة — سلوك المحرك والقياس (ليست تفضيلات مستخدم)",
   "version": "2.0.0",
-  "_version_note": "v2.0.0 - State-based quality system (PERFECT/NORMAL/PAD/WARNING/DANGER)",
-  
+  "_version_note": "v2.0.0 - إزالة حقول غير مستخدمة (stateSystem، لغة feedback، عتبات ميتة، إلخ)",
+
   "feedback": {
-    "_comment": "إعدادات نظام الرسائل والتعليقات الصوتية/النصية",
-    "language": "ar",
-    "_language_comment": "لغة الرسائل: 'ar' للعربية أو 'en' للإنجليزية",
-    "_language_options": ["ar", "en"],
+    "_comment": "توقيت رسائل التدريب (نص/صوت) — لغة الواجهة من الملف الشخصي وليس من هنا",
     "stateMessageCooldownMs": 2000,
     "_stateMessageCooldownMs_comment": "الحد الأدنى للوقت بين رسائل نفس الحالة (بالميلي ثانية)",
     "randomMessageIdleMs": 5000,
@@ -15,179 +12,145 @@
     "randomMessageCooldownMs": 10000,
     "_randomMessageCooldownMs_comment": "الحد الأدنى للوقت بين الرسائل العشوائية (بالميلي ثانية)"
   },
-  
-  "stateSystem": {
-    "_comment": "إعدادات نظام الحالات الجديد (PERFECT/NORMAL/PAD/WARNING/DANGER)",
-    "stateHysteresisDegrees": 3.0,
-    "_stateHysteresisDegrees_comment": "عازل للانتقال بين الحالات - يمنع الوميض",
-    "transitionZoneBuffer": 5.0,
-    "_transitionZoneBuffer_comment": "مسافة آمنة إضافية بين upRange و downRange"
-  },
 
   "angleDetection": {
-    "_comment": "إعدادات اكتشاف الزوايا - تستخدم في FormValidator و PhaseStateMachine",
+    "_comment": "إعدادات اكتشاف الزوايا — FormValidator و PhaseStateMachine",
     "hysteresisDegrees": 5.0,
     "_hysteresisDegrees_comment": "عازل لمنع الوميض عند الانتقال بين المناطق (بالدرجات)",
     "boundaryBufferDegrees": 3.0,
-    "_boundaryBufferDegrees_comment": "عازل حول حدود النطاق لتسامح التحقق (بالدرجات)",
-    "extremeErrorThresholdDegrees": 10.0,
-    "_extremeErrorThresholdDegrees_comment": "المسافة خارج النطاق قبل الإشارة إلى خطأ شديد (بالدرجات)"
+    "_boundaryBufferDegrees_comment": "عازل حول حدود النطاق لتسامح التحقق (بالدرجات)"
   },
-  
+
   "movementDetection": {
-    "_comment": "إعدادات اكتشاف الحركة - تستخدم في PhaseStateMachine للتسوية",
+    "_comment": "تسوية الزوايا في PhaseStateMachine",
     "smoothingWindowSize": 3,
-    "_smoothingWindowSize_comment": "عدد الإطارات للمتوسط لتسوية الزاوية",
-    "angleChangeThresholdDegrees": 2.0,
-    "_angleChangeThresholdDegrees_comment": "الحد الأدنى لتغيير الزاوية لاعتبارها حركة (بالدرجات)"
+    "_smoothingWindowSize_comment": "عدد الإطارات للمتوسط لتسوية الزاوية"
   },
-  
+
   "defaults": {
-    "_comment": "إعدادات التوقيت الافتراضية - قيم احتياطية عند عدم تحديدها لكل تمرين",
+    "_comment": "توقيت افتراضي عند عدم تحديده لكل تمرين",
     "minRepIntervalMs": 400,
-    "_minRepIntervalMs_comment": "الحد الأدنى للوقت بين التكرارات (بالميلي ثانية) - يمنع العد المزدوج",
-    "maxRepIntervalMs": 5000,
-    "_maxRepIntervalMs_comment": "الحد الأقصى لوقت التكرار قبل اعتباره انتهى (بالميلي ثانية)",
+    "_minRepIntervalMs_comment": "الحد الأدنى للوقت بين التكرارات (يمنع العد المزدوج)",
     "minPhaseDurationMs": 100,
     "_minPhaseDurationMs_comment": "الحد الأدنى للوقت في مرحلة قبل الانتقال (بالميلي ثانية)"
   },
-  
+
   "holdDefaults": {
-    "_comment": "إعدادات تمرين الثبات (HOLD) - تستخدم لطريقة العد HOLD",
+    "_comment": "طريقة العد HOLD",
     "defaultDurationSeconds": 30,
     "_defaultDurationSeconds_comment": "المدة الافتراضية المستهدفة لتمرين الثبات (بالثواني)",
     "defaultGracePeriodMs": 3000,
-    "_defaultGracePeriodMs_comment": "فترة السماح الافتراضية عند مغادرة المستخدم لموضع الثبات (بالميلي ثانية)"
+    "_defaultGracePeriodMs_comment": "فترة السماح عند مغادرة موضع الثبات (بالميلي ثانية)"
   },
-  
+
   "smoothing": {
-    "_comment": "إعدادات تسوية المعالم - تحكم في سلاسة تتبع الهيكل العظمي",
-    "_preset_info": "القيم: 'responsive' (سريع), 'balanced' (متوازن), 'smooth' (سلس), 'custom' (مخصص)",
+    "_comment": "تسوية معالم MediaPipe (One Euro / Legacy EMA)",
+    "_preset_info": "القيم: responsive | balanced | smooth | custom",
     "preset": "custom",
     "minCutoff": 3.0,
-    "_minCutoff_comment": "السلاسة الأساسية. أقل = أكثر سلاسة لكن تأخير أكثر. النطاق: 0.5-3.0",
+    "_minCutoff_comment": "السلاسة الأساسية — أقل = أكثر سلاسة لكن تأخير أكثر (0.5–3.0)",
     "beta": 0.05,
-    "_beta_comment": "تكيف السرعة. أعلى = أكثر استجابة للحركات السريعة. النطاق: 0.0-0.5",
+    "_beta_comment": "تكيف السرعة — أعلى = أكثر استجابة (0.0–0.5)",
     "useLegacyEMA": false,
-    "_useLegacyEMA_comment": "استخدام EMA البسيط بدلاً من One Euro Filter (للمقارنة فقط)",
+    "_useLegacyEMA_comment": "EMA بدلاً من One Euro (للمقارنة)",
     "legacyAlpha": 1.0,
-    "_legacyAlpha_comment": "قيمة EMA alpha إذا كان useLegacyEMA = true"
+    "_legacyAlpha_comment": "قيمة alpha عند useLegacyEMA = true"
   },
-  
+
   "visibility": {
-    "_comment": "عتبات الرؤية - تحكم في متى تعتبر المعالم/المفاصل 'مرئية'",
-    "_info": "MediaPipe يعيد درجة رؤية (0-1) لكل معلم. عتبة أعلى = أكثر صرامة",
-    "angleCalculation": 0.6,
-    "_angleCalculation_comment": "عتبة لحساب الزوايا (تُستخدم في AngleCalculator) - أقل يسمح بحساب الزاوية بمعالم أقل ثقة",
+    "_comment": "عتبات رؤية المعالم (0–1) — ليس تفضيل مستخدم",
     "overlay": 0.5,
-    "_overlay_comment": "عتبة لرسم overlay الهيكل العظمي - أعلى يمنع رسم المعالم غير الموثوقة",
+    "_overlay_comment": "عتبة رسم overlay الهيكل",
     "poseValidation": 0.6,
-    "_poseValidation_comment": "عتبة للتحقق من startPose قبل التدريب - يضمن وضوح المفاصل قبل البدء"
+    "_poseValidation_comment": "عتبة وضوح المفاصل قبل التدريب (startPose)"
   },
-  
+
   "poseValidation": {
-    "_comment": "إعدادات التحقق من الوضعية - تحكم في التحقق من startPose قبل بدء التدريب",
-    "requiredValidFrames": 10,
-    "_requiredValidFrames_comment": "عدد الإطارات الصالحة المتتالية المطلوبة لتأكيد الوضعية - أعلى = أكثر استقراراً",
+    "_comment": "نطاق زاوية تشريحي — يُستخدم مع isAngleValid في إرشاد الإعداد",
     "minValidAngle": 15.0,
-    "_minValidAngle_comment": "الحد الأدنى للزاوية التي تعتبر صحيحة تشريحياً (بالدرجات) - الزوايا الأقل مرفوضة كضوضاء",
+    "_minValidAngle_comment": "أقل زاوية تُعتبر صالحة (بالدرجات)",
     "maxValidAngle": 175.0,
-    "_maxValidAngle_comment": "الحد الأقصى للزاوية التي تعتبر صحيحة تشريحياً (بالدرجات) - الزوايا الأكبر مرفوضة كغير ممكنة"
+    "_maxValidAngle_comment": "أقصى زاوية تُعتبر صالحة (بالدرجات)"
   },
 
   "setupValidation": {
-    "_comment": "إعدادات مرحلة الإعداد قبل التدريب (SETUP_POSE) - نظام النافذة المتحركة",
+    "_comment": "مرحلة SETUP_POSE قبل التدريب",
     "windowSize": 12,
-    "_windowSize_comment": "عدد الفريمات في النافذة المتحركة للتأكيد",
+    "_windowSize_comment": "عدد الفريمات في النافذة المتحركة",
     "requiredValid": 9,
-    "_requiredValid_comment": "عدد الفريمات الصحيحة المطلوبة من النافذة (9 من 12 = 75٪)",
+    "_requiredValid_comment": "عدد الفريمات الصحيحة المطلوبة من النافذة",
     "closeThresholdDegrees": 15.0,
-    "_closeThresholdDegrees_comment": "عتبة 'قريب' - خارج النطاق بأقل من هذا = أصفر (YELLOW)، أكثر = أحمر (RED)",
+    "_closeThresholdDegrees_comment": "خارج النطاق بأقل من هذا = أصفر، أكثر = أحمر",
     "voiceCooldownMs": 5000,
-    "_voiceCooldownMs_comment": "الحد الأدنى بين رسائل الإرشاد الصوتي (بالميلي ثانية) - الرسالة المتكررة تستخدم ضعف المدة",
+    "_voiceCooldownMs_comment": "الحد الأدنى بين رسائل الإرشاد الصوتي (مللي ثانية)",
     "cameraTipEnabled": true,
-    "_cameraTipEnabled_comment": "تفعيل إرشاد وضع الكاميرا - يظهر في كارت VIEW",
+    "_cameraTipEnabled_comment": "إرشاد وضع الكاميرا في كارت VIEW",
     "cameraCheckWindowSize": 12,
-    "_cameraCheckWindowSize_comment": "عدد الفريمات لفحص وضع الكاميرا",
+    "_cameraCheckWindowSize_comment": "نافذة فحص وضع الكاميرا",
     "cameraCheckRequired": 9,
-    "_cameraCheckRequired_comment": "عدد الفريمات المتفقة لتأكيد وضع الكاميرا",
+    "_cameraCheckRequired_comment": "فريمات متفقة لتأكيد وضع الكاميرا",
     "countdownToleranceMs": 150,
-    "_countdownToleranceMs_comment": "مدة (مللي ثانية) السماح بتجاهل وضعية غير صحيحة أثناء العد التنازلي",
+    "_countdownToleranceMs_comment": "تجاهل وضعية غير صحيحة أثناء العد التنازلي",
     "countdownCancelMs": 1200,
-    "_countdownCancelMs_comment": "مدة (مللي ثانية) قبل إلغاء العد التنازلي والرجوع للإعداد"
+    "_countdownCancelMs_comment": "قبل إلغاء العد والرجوع للإعداد"
   },
-  
+
   "overlayOpacity": {
-    "_comment": "إعدادات شفافية overlay الهيكل العظمي - تحكم في وضوح أجزاء الهيكل",
-    "_design_principle": "تصميم بسيط: المفاصل غير المتتبعة يجب أن تكون خفيفة (شفافية منخفضة) بينما المفاصل المتتبعة أكثر وضوحاً",
+    "_comment": "شفافية أجزاء الهيكل — إعداد عرض/محرك، ليس تفضيل مستخدم نهائي",
+    "_design_principle": "غير المتتبع خفيف؛ المتتبع أوضح؛ الخطأ الأوضح",
     "nonTracked": 0.1,
-    "_nonTracked_comment": "الشفافية للمفاصل غير المتتبعة (0.0-1.0) - أقل يجعلها أقل تشتيتاً",
+    "_nonTracked_comment": "شفافية المفاصل غير المتتبعة (0–1)",
     "trackedCorrect": 0.30,
-    "_trackedCorrect_comment": "الشفافية للمفاصل المتتبعة في الوضع الصحيح (0.0-1.0) - معتدلة للتركيز على مؤشر الخط",
+    "_trackedCorrect_comment": "المتتبعة في الوضع الصحيح",
     "trackedError": 0.65,
-    "_trackedError_comment": "الشفافية للمفاصل المتتبعة في وضع الخطأ (0.0-1.0) - أعلى لجذب الانتباه للمشكلة"
+    "_trackedError_comment": "المتتبعة في وضع الخطأ"
   },
-  
+
   "rangeIndicator": {
-    "_comment": "إعدادات نوع مؤشر النطاق - اختيار بين Arc و Line",
+    "_comment": "القيمة الافتراضية من الملف؛ المستخدم يغيّر من شاشة التدريب (SharedPreferences)",
     "type": "arc",
-    "_type_comment": "نوع المؤشر: 'line' (خط على الذراع) أو 'arc' (قوس حول المفصل)",
+    "_type_comment": "line | arc",
     "_type_options": ["line", "arc"]
   },
-  
+
   "lineIndicator": {
-    "_comment": "إعدادات مؤشر الخط - نظام الإرشاد البصري",
-    "_description": "خط ثابت ملوّن (Track) + مؤشر متحرك (Indicator)",
-    
+    "_comment": "مؤشر الخط — Track + Indicator",
     "centerAngle": 90.0,
-    "_centerAngle_comment": "الزاوية المركزية حيث طول الخط = 0 (عادة 90°) - نقطة المنتصف المثالية",
-    
+    "_centerAngle_comment": "الزاوية المركزية حيث طول الخط = 0",
     "smoothingFactor": 0.12,
-    "_smoothingFactor_comment": "سلاسة حركة المؤشر (0.1 = سلس جداً, 0.5 = سريع الاستجابة) - يمنع الحركة العنيفة",
-    
+    "_smoothingFactor_comment": "سلاسة حركة المؤشر",
     "snapToZeroThreshold": 0.04,
-    "_snapToZeroThreshold_comment": "عتبة الاختفاء - أقل من هذه النسبة، يختفي الخط لمنع الوميض (0.0-1.0)",
-    
+    "_snapToZeroThreshold_comment": "عتبة اختفاء المؤشر لمنع الوميض",
     "track": {
-      "_comment": "إعدادات الخط الثابت (Track) - يظهر دائماً على الجانبين (UP و DOWN)",
+      "_comment": "الخط الثابت",
       "alpha": 130,
-      "_alpha_comment": "شفافية الخط الثابت (0-255) - أعلى = أكثر وضوحاً. القيمة الحالية: 130 (واضح)",
+      "_alpha_comment": "شفافية المسار (0–255)",
       "widthRatio": 0.7,
-      "_widthRatio_comment": "عرض الخط الثابت نسبة للمؤشر المتحرك (0.0-1.0) - مثال: 0.7 = 70% من عرض المؤشر"
+      "_widthRatio_comment": "عرض المسار نسبة للمؤشر"
     },
-    
     "indicator": {
-      "_comment": "إعدادات المؤشر المتحرك (Indicator) - يظهر على الجانب الحالي فقط",
+      "_comment": "المؤشر المتحرك",
       "widthMultiplier": 1.3,
-      "_widthMultiplier_comment": "مضاعف عرض المؤشر المتحرك نسبة لعرض الخط الأساسي - مثال: 1.3 = أوسع بـ 30%"
+      "_widthMultiplier_comment": "مضاعف عرض المؤشر"
     },
-    
     "lengthRatio": {
-      "_comment": "نسب الطول القصوى للخطوط على كل جانب",
+      "_comment": "أقصى طول للخط UP/DOWN",
       "upper": 0.50,
-      "_upper_comment": "الحد الأقصى لطول الخط في اتجاه UP (0.0-1.0) - مثال: 0.50 = 50% من المسافة بين المفاصل",
+      "_upper_comment": "اتجاه UP (0–1)",
       "lower": 0.75,
-      "_lower_comment": "الحد الأقصى لطول الخط في اتجاه DOWN (0.0-1.0) - مثال: 0.75 = 75% من المسافة (أطول للحركة لأسفل)"
+      "_lower_comment": "اتجاه DOWN (0–1)"
     },
-    
     "strokeWidth": {
-      "_comment": "عرض الخط بالـ dp حسب الحالة",
+      "_comment": "عرض الخط (dp)",
       "normal": 8.0,
-      "_normal_comment": "عرض الخط في الحالة العادية (dp)",
       "warning": 10.0,
-      "_warning_comment": "عرض الخط في حالة التحذير (dp) - أوسع لجذب الانتباه",
-      "error": 12.0,
-      "_error_comment": "عرض الخط في حالة الخطأ (dp) - الأوسع لإظهار المشكلة"
+      "error": 12.0
     },
-    
     "jointRadius": {
-      "_comment": "نصف قطر دائرة النهاية بالـ dp حسب الحالة",
+      "_comment": "نصف قطر طرف الخط (dp)",
       "normal": 12.0,
-      "_normal_comment": "نصف قطر الدائرة في الحالة العادية (dp)",
       "warning": 16.0,
-      "_warning_comment": "نصف قطر الدائرة في حالة التحذير (dp)",
-      "error": 18.0,
-      "_error_comment": "نصف قطر الدائرة في حالة الخطأ (dp) - الأكبر لإظهار المشكلة"
+      "error": 18.0
     }
   }
 }
