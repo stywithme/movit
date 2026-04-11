@@ -56,6 +56,12 @@ android {
         viewBinding = true
         buildConfig = true
     }
+
+    packaging {
+        jniLibs {
+            useLegacyPackaging = false
+        }
+    }
 }
 
 kotlin {
@@ -88,8 +94,14 @@ dependencies {
     implementation("androidx.camera:camera-lifecycle:$cameraxVersion")
     implementation("androidx.camera:camera-view:$cameraxVersion")
 
-    // MediaPipe Pose Landmarker — Jan 2026
-    implementation("com.google.mediapipe:tasks-vision:0.10.32")
+    // MediaPipe Pose Landmarker — Apr 2026 (0.10.33 ships 16KB-aligned native libs)
+    implementation("com.google.mediapipe:tasks-vision:0.10.33") {
+        exclude(group = "org.tensorflow")
+    }
+    // LiteRT replaces legacy TFLite — 16KB page-size aligned
+    implementation("com.google.ai.edge.litert:litert:1.4.0")
+    implementation("com.google.ai.edge.litert:litert-api:1.4.0")
+    implementation("com.google.ai.edge.litert:litert-support:1.4.0")
 
     // Posture MLP (optional assets: posture_mlp.tflite + posture_mlp_norm.json)
     implementation("org.tensorflow:tensorflow-lite:2.16.1")
