@@ -176,8 +176,8 @@
     <string name="progression_why_completion">Your completion rate was %1$d%%</string>
     <string name="progression_why_rom">Your range of motion averaged %1$d%%</string>
     <string name="progression_what_next">What\'s Next</string>
-    <string name="progression_next_weight_tip">Maintain a form score of 75%+ for 2 more sessions to increase weight again</string>
-    <string name="progression_next_reps_tip">Keep form at 80%+ for a full week with 95%+ ROM to increase reps</string>
+    <string name="progression_next_weight_tip">Maintain a form score of 75%%+ for 2 more sessions to increase weight again</string>
+    <string name="progression_next_reps_tip">Keep form at 80%%+ for a full week with 95%%+ ROM to increase reps</string>
     <string name="progression_next_deload_tip">Focus on maintaining proper form — your load will increase once your score improves</string>
     <string name="progression_no_changes_title">Keep Going!</string>
     <string name="progression_no_changes_message">No adjustments yet — keep training consistently and your progress will come!</string>

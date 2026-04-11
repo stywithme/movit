@@ -177,8 +177,8 @@
     <string name="progression_why_completion">نسبة الإكمال كانت %1$d%%</string>
     <string name="progression_why_rom">متوسط نطاق الحركة %1$d%%</string>
     <string name="progression_what_next">ما القادم</string>
-    <string name="progression_next_weight_tip">حافظ على جودة أداء 75%+ لجلستين إضافيتين لزيادة الوزن مجدداً</string>
-    <string name="progression_next_reps_tip">حافظ على جودة 80%+ لأسبوع كامل مع نطاق حركة 95%+ لزيادة التكرارات</string>
+    <string name="progression_next_weight_tip">حافظ على جودة أداء 75%%+ لجلستين إضافيتين لزيادة الوزن مجدداً</string>
+    <string name="progression_next_reps_tip">حافظ على جودة 80%%+ لأسبوع كامل مع نطاق حركة 95%%+ لزيادة التكرارات</string>
     <string name="progression_next_deload_tip">ركّز على الحفاظ على الشكل الصحيح — سيتم زيادة الحمل عند تحسن أدائك</string>
     <string name="progression_no_changes_title">استمر!</string>
     <string name="progression_no_changes_message">لم يتم إجراء تعديلات بعد — استمر بالتدريب بانتظام وسيأتي التقدّم!</string>
