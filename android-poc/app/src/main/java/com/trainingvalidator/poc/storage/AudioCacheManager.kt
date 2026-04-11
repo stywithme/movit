@@ -354,7 +354,7 @@ class AudioCacheManager(private val context: Context) {
             }
         } catch (e: Exception) {
             Log.e(TAG, "DOWNLOAD_ERROR: $filename ${e.javaClass.simpleName}: ${e.message}")
-            false
+            return false
         } finally {
             pendingDownloads.remove(filename)
         }
