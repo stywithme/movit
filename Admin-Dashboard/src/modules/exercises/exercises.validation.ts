@@ -20,6 +20,10 @@ export const LocalizedTextSchema = z.object({
   en: z.string().min(1, 'English text is required'),
   audioAr: z.string().optional(),
   audioEn: z.string().optional(),
+  /** Dashboard-only: library message code (stripped before API save) */
+  sourceMessageCode: z.string().optional(),
+  /** Dashboard-only: library message id (stripped before API save) */
+  sourceMessageId: z.string().uuid().optional(),
 });
 
 export const LocalizedTextOptionalSchema = z.object({
@@ -27,6 +31,8 @@ export const LocalizedTextOptionalSchema = z.object({
   en: z.string(),
   audioAr: z.string().optional(),
   audioEn: z.string().optional(),
+  sourceMessageCode: z.string().optional(),
+  sourceMessageId: z.string().uuid().optional(),
 }).optional();
 
 /**
@@ -416,6 +422,8 @@ export const FeedbackAssignmentSchema = z.object({
   messageId: z.string().min(1, 'Message is required'),
   context: z.enum(['motivational', 'tip']),
   message: LocalizedTextSchema.optional(), // UI preview only
+  /** Library code for display (optional) */
+  messageCode: z.string().optional(),
 });
 
 export const ExtrasSchema = z.object({

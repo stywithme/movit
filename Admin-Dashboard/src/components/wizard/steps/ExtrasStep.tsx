@@ -8,7 +8,13 @@
 import { useState } from 'react';
 import { useWizardStore } from '../WizardContext';
 import { Card, CardHeader, CardTitle, CardContent, Button, Badge, Label, Input } from '@/components/ui';
-import { MessagePickerModal, MessageFormModal, type MessageOption, type MessageFormData } from '@/components/messages';
+import {
+  MessagePickerModal,
+  MessageFormModal,
+  MessageAudioStatus,
+  type MessageOption,
+  type MessageFormData,
+} from '@/components/messages';
 import { Plus, X, Dumbbell, BarChart3, Check, Library } from 'lucide-react';
 import type { FeedbackAssignmentData } from '@/modules/exercises/exercises.validation';
 import { METRIC_DEFINITIONS, type MetricCode } from '@/modules/exercises/exercises.types';
@@ -483,32 +489,33 @@ function FeedbackMessagesSection({
     setCreateOpen(true);
   };
 
+  const libraryMessagePayload = (msg: MessageOption) => ({
+    messageId: msg.id,
+    messageCode: msg.code,
+    message: {
+      ar: msg.content.ar || '',
+      en: msg.content.en || '',
+      audioAr: msg.content.audioAr,
+      audioEn: msg.content.audioEn,
+      sourceMessageCode: msg.code,
+      sourceMessageId: msg.id,
+    },
+  });
+
   const handlePickerSelect = (messages: MessageOption[]) => {
     if (messages.length === 0) return;
     if (replaceIndex !== null) {
       const msg = messages[0];
       updateFeedbackAssignment(replaceIndex, {
-        messageId: msg.id,
         context: pickerType,
-        message: {
-          ar: msg.content.ar || '',
-          en: msg.content.en || '',
-          audioAr: msg.content.audioAr,
-          audioEn: msg.content.audioEn,
-        },
+        ...libraryMessagePayload(msg),
       });
       return;
     }
     for (const msg of messages) {
       addFeedbackAssignment({
-        messageId: msg.id,
         context: pickerType,
-        message: {
-          ar: msg.content.ar || '',
-          en: msg.content.en || '',
-          audioAr: msg.content.audioAr,
-          audioEn: msg.content.audioEn,
-        },
+        ...libraryMessagePayload(msg),
       });
     }
   };
@@ -517,12 +524,15 @@ function FeedbackMessagesSection({
     if (!message.id) return;
     addFeedbackAssignment({
       messageId: message.id,
+      messageCode: message.code,
       context: createType,
       message: {
         ar: message.content?.ar || '',
         en: message.content?.en || '',
         audioAr: message.content?.audioAr,
         audioEn: message.content?.audioEn,
+        sourceMessageCode: message.code,
+        sourceMessageId: message.id,
       },
     });
   };
@@ -574,13 +584,28 @@ function FeedbackMessagesSection({
                 {typeAssignments.map((assignment, idx) => {
                   const globalIndex = feedbackAssignments.indexOf(assignment);
                   const message = assignment.message;
+                  const code =
+                    assignment.messageCode?.trim() ||
+                    message?.sourceMessageCode?.trim() ||
+                    null;
                   return (
-                    <div key={idx} className="flex gap-2 items-start">
-                      <div className="flex-1">
-                        <div className="text-sm text-gray-900 truncate">{message?.en || '—'}</div>
-                        <div className="text-sm text-gray-600 truncate" dir="rtl">{message?.ar || '—'}</div>
+                    <div
+                      key={`${assignment.messageId}-${idx}`}
+                      className="rounded-lg border border-gray-100 bg-gray-50/80 p-3 flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between"
+                    >
+                      <div className="flex-1 min-w-0 space-y-2">
+                        <MessageAudioStatus
+                          audioAr={message?.audioAr}
+                          audioEn={message?.audioEn}
+                          sourceMessageCode={code}
+                          compact
+                        />
+                        <div className="text-sm text-gray-900 line-clamp-2">{message?.en || '—'}</div>
+                        <div className="text-sm text-gray-600 line-clamp-2" dir="rtl">
+                          {message?.ar || '—'}
+                        </div>
                       </div>
-                      <div className="flex items-center gap-2">
+                      <div className="flex shrink-0 items-center gap-2 sm:flex-col sm:items-end">
                         <Button
                           variant="ghost"
                           size="sm"
@@ -593,6 +618,7 @@ function FeedbackMessagesSection({
                           size="icon"
                           onClick={() => removeFeedbackAssignment(globalIndex)}
                           className="text-red-500 hover:text-red-700"
+                          aria-label="Remove message"
                         >
                           <X className="h-4 w-4" />
                         </Button>
