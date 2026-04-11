@@ -92,11 +92,21 @@ dependencies {
     // MediaPipe Pose Landmarker — Apr 2026 (0.10.33 ships 16KB-aligned native libs)
     implementation("com.google.mediapipe:tasks-vision:0.10.33") {
         exclude(group = "org.tensorflow")
+        exclude(group = "com.google.ai.edge.litert", module = "litert-support-api")
     }
-    // LiteRT replaces legacy TFLite — 16KB page-size aligned
-    implementation("com.google.ai.edge.litert:litert:1.4.0")
-    implementation("com.google.ai.edge.litert:litert-api:1.4.0")
-    implementation("com.google.ai.edge.litert:litert-support:1.4.0")
+    // LiteRT replaces legacy TFLite — 16KB page-size aligned.
+    // litert-support-api shares manifest namespace with litert-support (AGP warns / AGP 9 fails);
+    // exclude the API artifact when pulled transitively.
+    val litertVersion = "1.4.0"
+    implementation("com.google.ai.edge.litert:litert:$litertVersion") {
+        exclude(group = "com.google.ai.edge.litert", module = "litert-support-api")
+    }
+    implementation("com.google.ai.edge.litert:litert-api:$litertVersion") {
+        exclude(group = "com.google.ai.edge.litert", module = "litert-support-api")
+    }
+    implementation("com.google.ai.edge.litert:litert-support:$litertVersion") {
+        exclude(group = "com.google.ai.edge.litert", module = "litert-support-api")
+    }
 
     // Coroutines
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.10.2")
