@@ -11,6 +11,9 @@ import java.io.File
 import java.util.*
 import java.util.concurrent.ConcurrentLinkedQueue
 import kotlin.jvm.Synchronized
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.withTimeout
 
 /**
  * AudioFeedbackPlayer
@@ -38,6 +41,8 @@ class AudioFeedbackPlayer(
         private const val TAG = "AudioFeedbackPlayer"
         private const val MIN_PLAY_INTERVAL_MS = 1000L
         private const val TTS_SAFETY_TIMEOUT_MS = 6000L
+        /** Safety cap for [playAndAwait] / countdown sequential awaits */
+        private const val AWAIT_PLAYBACK_TIMEOUT_MS = 8000L
     }
     
     /**
@@ -76,8 +81,13 @@ class AudioFeedbackPlayer(
     private data class PlaybackItem(
         val text: String,
         val audioUrl: String?,
-        val priority: Priority
+        val priority: Priority,
+        /** Completed when this clip finishes (sequential countdown) */
+        val awaitDone: CompletableDeferred<Unit>? = null
     )
+
+    /** Await handle for the clip currently in [playItem] */
+    private var activeAwait: CompletableDeferred<Unit>? = null
     
     // ==================== Initialization ====================
     
@@ -152,7 +162,46 @@ class AudioFeedbackPlayer(
         Log.d("AUDIO_TRACE", "[PLAYER] lang=$language url=${audioUrl?.takeLast(30) ?: "NULL"} text=${text.take(25)}")
         play(text, audioUrl, priority)
     }
-    
+
+    /**
+     * Play one clip and suspend until it finishes (cached audio or TTS).
+     * Used by countdown sequencing so the next cue never cuts off the previous.
+     */
+    suspend fun playAndAwait(localizedText: LocalizedText, priority: Priority = Priority.NORMAL) {
+        val text = localizedText.get(language)
+        val audioUrl = localizedText.getAudioUrl(language)
+        if (text.isBlank()) return
+        val done = CompletableDeferred<Unit>()
+        enqueuePlayback(PlaybackItem(text, audioUrl, priority, done))
+        withTimeout(AWAIT_PLAYBACK_TIMEOUT_MS) { done.await() }
+    }
+
+    suspend fun playPoseConfirmedAndAwait() {
+        val lt = SystemMessageRegistry.get(
+            "training_pose_confirmed",
+            "ممتاز، استعد!",
+            "Great, get ready!"
+        )
+        playAndAwait(lt, Priority.HIGH)
+    }
+
+    suspend fun playCountdownAndAwait(number: Int) {
+        val key = when (number) {
+            1 -> "training_countdown_1"
+            2 -> "training_countdown_2"
+            3 -> "training_countdown_3"
+            else -> null
+        }
+        if (key != null) {
+            val lt = SystemMessageRegistry.get(key, number.toString(), number.toString())
+            playAndAwait(lt, Priority.NORMAL)
+        } else {
+            val done = CompletableDeferred<Unit>()
+            enqueuePlayback(PlaybackItem(number.toString(), null, Priority.NORMAL, done))
+            withTimeout(AWAIT_PLAYBACK_TIMEOUT_MS) { done.await() }
+        }
+    }
+
     /**
      * Play audio with explicit text and URL
      * 
@@ -162,31 +211,37 @@ class AudioFeedbackPlayer(
      */
     @Synchronized
     fun play(text: String, audioUrl: String? = null, priority: Priority = Priority.NORMAL) {
-        if (text.isBlank()) return
-        
-        // Check cooldown for non-high priority
+        enqueuePlayback(PlaybackItem(text, audioUrl, priority, null))
+    }
+
+    @Synchronized
+    private fun enqueuePlayback(item: PlaybackItem) {
+        if (item.text.isBlank()) {
+            item.awaitDone?.complete(Unit)
+            return
+        }
+
         val now = System.currentTimeMillis()
-        if (priority != Priority.HIGH && now - lastPlayTime < MIN_PLAY_INTERVAL_MS) {
-            Log.d(TAG, "Skipping playback (cooldown): $text")
+        // Await/sequential clips bypass cooldown so spacing is controlled by the caller
+        if (item.awaitDone == null && item.priority != Priority.HIGH && now - lastPlayTime < MIN_PLAY_INTERVAL_MS) {
+            Log.d(TAG, "Skipping playback (cooldown): ${item.text}")
             return
         }
-        
-        // LOW priority should be dropped whenever the player is already
-        // preparing, speaking, playing, or has queued work waiting.
+
         val isBusy = isProcessingQueue || isMediaPlayerPlaying || isTtsSpeaking || playbackQueue.isNotEmpty()
-        if (priority == Priority.LOW && isBusy) {
-            Log.d(TAG, "Skipping low priority (busy): $text")
+        if (item.priority == Priority.LOW && isBusy) {
+            Log.d(TAG, "Skipping low priority (busy): ${item.text}")
+            item.awaitDone?.complete(Unit)
             return
         }
-        
-        val item = PlaybackItem(text, audioUrl, priority)
-        
-        // HIGH priority interrupts current playback (resets queue state)
-        if (priority == Priority.HIGH) {
+
+        if (item.priority == Priority.HIGH) {
             stopCurrentPlayback()
+            val cancel = CancellationException("interrupted by HIGH priority")
+            playbackQueue.forEach { it.awaitDone?.completeExceptionally(cancel) }
             playbackQueue.clear()
         }
-        
+
         playbackQueue.offer(item)
         processQueue()
     }
@@ -236,6 +291,7 @@ class AudioFeedbackPlayer(
     }
     
     private fun playItem(item: PlaybackItem) {
+        activeAwait = item.awaitDone
         // Try cached audio first
         val audioUrl = item.audioUrl
         
@@ -333,6 +389,8 @@ class AudioFeedbackPlayer(
     
     @Synchronized
     private fun onPlaybackComplete() {
+        activeAwait?.complete(Unit)
+        activeAwait = null
         isMediaPlayerPlaying = false
         isProcessingQueue = false
         playbackListener?.onPlaybackCompleted()
@@ -346,6 +404,8 @@ class AudioFeedbackPlayer(
      */
     @Synchronized
     fun stopCurrentPlayback() {
+        activeAwait?.completeExceptionally(CancellationException("playback stopped"))
+        activeAwait = null
         cancelTtsTimeout()
         releaseMediaPlayer()
         tts?.stop()
@@ -360,6 +420,9 @@ class AudioFeedbackPlayer(
     @Synchronized
     fun stopAll() {
         stopCurrentPlayback()
+        // Complete pending awaits in the queue so callers don't hang
+        val cancel = CancellationException("stopAll")
+        playbackQueue.forEach { it.awaitDone?.completeExceptionally(cancel) }
         playbackQueue.clear()
         isProcessingQueue = false
     }

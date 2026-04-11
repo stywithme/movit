@@ -16,6 +16,7 @@ import com.trainingvalidator.poc.training.models.FeedbackMessages
 import com.trainingvalidator.poc.training.models.JointError
 import com.trainingvalidator.poc.training.models.JointState
 import com.trainingvalidator.poc.training.models.LocalizedText
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.SharedFlow
 import java.util.*
@@ -60,6 +61,9 @@ class FeedbackManager(
         // NOTE: These are now configurable via SettingsManager
         private const val MIN_IDLE_TIME_FOR_RANDOM_MS_DEFAULT = 5000L
         private const val RANDOM_MESSAGE_COOLDOWN_MS_DEFAULT = 10000L
+        /** When TTS is off (e.g. video mode), approximate pacing for countdown sequencing */
+        private const val NO_AUDIO_POSE_MS = 1200L
+        private const val NO_AUDIO_COUNTDOWN_MS = 850L
     }
     
     // Smart message orchestrator (prevents spam, manages delivery)
@@ -880,6 +884,44 @@ class FeedbackManager(
             return
         }
         speakLocalized(lt, SpeakPriority.HIGH)
+    }
+
+    /**
+     * Await end of pose-confirmed audio (or pacing delay when voice is off).
+     * Used by [com.trainingvalidator.poc.ui.training.CountdownController] so countdown does not overlap cues.
+     */
+    suspend fun speakPoseConfirmedAndAwait() {
+        if (!isTtsEnabled) {
+            delay(NO_AUDIO_POSE_MS)
+            return
+        }
+        if (useAudioPlayer && audioPlayer != null) {
+            audioPlayer!!.playPoseConfirmedAndAwait()
+            return
+        }
+        speakPoseConfirmed()
+        delay(NO_AUDIO_POSE_MS)
+    }
+
+    /**
+     * Await end of countdown digit audio (sequential; no overlap with next cue).
+     */
+    suspend fun speakCountdownAndAwait(number: Int) {
+        if (!isTtsEnabled) {
+            delay(NO_AUDIO_COUNTDOWN_MS)
+            return
+        }
+        if (useAudioPlayer && audioPlayer != null) {
+            audioPlayer!!.playCountdownAndAwait(number)
+            return
+        }
+        speakCountdown(number)
+        delay(NO_AUDIO_COUNTDOWN_MS)
+    }
+
+    /** Stops countdown / feedback audio when countdown is frozen (cancels pending await). */
+    fun abortCountdownAudio() {
+        audioPlayer?.stopAll()
     }
 
     // ==================== Haptic (Vibration) ====================

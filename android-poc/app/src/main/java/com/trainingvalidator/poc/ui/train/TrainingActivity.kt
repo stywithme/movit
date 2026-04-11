@@ -1372,13 +1372,11 @@ class TrainingActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetection
         viewModel.countdownController.setListener(object : CountdownController.CountdownListener {
             override fun onTick(secondsRemaining: Int) {
                 AnimationUtils.animateCountdown(binding.tvCountdown, secondsRemaining.toString())
-                viewModel.feedbackManager?.speakCountdown(secondsRemaining)
             }
 
             override fun onFinish() {
                 // Notify supervisor IMMEDIATELY - animation runs in parallel
                 viewModel.onCountdownFinished()
-                viewModel.feedbackManager?.speakGo()
                 val goOverlay = SystemMessageRegistry.get("training_go_overlay", "انطلق!", "GO!")
                     .get(viewModel.poseSetupGuide.language)
                 AnimationUtils.animateGoText(binding.tvCountdown, goOverlay) { /* cosmetic only */ }
