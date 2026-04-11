@@ -788,9 +788,12 @@ class TrainingViewModel(
         fm.tips.forEach { checkText(it) }
 
         Log.i("AUDIO_TRACE", "──── EXERCISE AUDIO DIAGNOSTIC ($lang) ────")
-        Log.i("AUDIO_TRACE", "[LOADED] exercise=${config.name.en ?: config.name.ar} variant=${variant.name?.en ?: variant.name?.ar}")
+        Log.i(
+            "AUDIO_TRACE",
+            "[LOADED] exercise=${config.name.en.ifBlank { config.name.ar }} variant=${variant.name.en.ifBlank { variant.name.ar }}"
+        )
         Log.i("AUDIO_TRACE", "[LOADED] withAudioUrl=$withAudio, withoutAudioUrl=$withoutAudio, total=${withAudio + withoutAudio}")
-        Log.i("AUDIO_TRACE", "[LOADED] assignments=${(variant.messageAssignments ?: emptyList()).size}")
+        Log.i("AUDIO_TRACE", "[LOADED] assignments=${variant.messageAssignments.size}")
         if (withAudio == 0 && (withAudio + withoutAudio) > 0) {
             Log.w("AUDIO_TRACE", "⚠ ZERO messages have audio URLs — ALL will fall back to TTS!")
         }

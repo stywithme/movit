@@ -325,7 +325,7 @@ class SyncManager(
         val messageLibrary = data.messageLibrary ?: emptyList()
         val deletedExerciseIds = data.deletedExerciseIds ?: emptyList()
         val msgStats = meta?.messageLibraryStats
-        Log.i("AUDIO_TRACE", "[SYNC] isFullSync=$isFullSync exercises=${exercises.size} msgLib=${messageLibrary.size} audioManifest=${data.audioManifest?.files?.size ?: 0} serverMsgStats=(msgs=${msgStats?.totalMessages}, audio=${msgStats?.totalWithAudio}, assigns=${msgStats?.totalAssignments})")
+        Log.i("AUDIO_TRACE", "[SYNC] isFullSync=$isFullSync exercises=${exercises.size} msgLib=${messageLibrary.size} audioManifest=${data.audioManifest.files.size} serverMsgStats=(msgs=${msgStats?.totalMessages}, audio=${msgStats?.totalWithAudio}, assigns=${msgStats?.totalAssignments})")
         val workouts = data.workouts ?: emptyList()
         val deletedWorkoutIds = data.deletedWorkoutIds ?: emptyList()
         val programs = data.programs ?: emptyList()
@@ -448,9 +448,9 @@ class SyncManager(
                     }
                 }
                 val posAudio = (v.positionChecks ?: emptyList()).count { pc ->
-                    pc.errorMessage?.audioAr != null || pc.errorMessage?.audioEn != null
+                    pc.errorMessage.audioAr != null || pc.errorMessage.audioEn != null
                 }
-                val fbAudio = listOfNotNull(v.feedbackMessages?.motivational, v.feedbackMessages?.tips)
+                val fbAudio = listOfNotNull(v.feedbackMessages.motivational, v.feedbackMessages.tips)
                     .sumOf { list -> list.count { it.audioAr != null || it.audioEn != null } }
                 Log.i("AUDIO_TRACE", "[POST_RESOLVE] ${ex.slug}: stateAudio=$stateAudio posAudio=$posAudio fbAudio=$fbAudio")
             }
@@ -613,10 +613,9 @@ class SyncManager(
         }
         
         return exercises.map { exercise ->
-            @Suppress("UNNECESSARY_SAFE_CALL", "USELESS_ELVIS")
-            val variants = exercise.poseVariants ?: emptyList()
+            val variants = exercise.poseVariants
             if (variants.isEmpty()) return@map exercise
-            val totalAssignments = variants.sumOf { (it.messageAssignments ?: emptyList()).size }
+            val totalAssignments = variants.sumOf { it.messageAssignments.size }
             Log.d("AUDIO_TRACE", "[RESOLVE] exercise=${exercise.slug} variants=${variants.size} assignments=$totalAssignments")
             val resolvedVariants = variants.map { variant ->
                 resolvePoseVariantMessages(variant, messageMap)
@@ -625,22 +624,20 @@ class SyncManager(
         }
     }
 
-    @Suppress("UNNECESSARY_SAFE_CALL", "USELESS_ELVIS")
     private fun resolvePoseVariantMessages(
         variant: PoseVariant,
         messageMap: Map<String, MessageTemplate>
     ): PoseVariant {
-        val assignments = (variant.messageAssignments ?: emptyList())
+        val assignments = variant.messageAssignments
             .sortedBy { it.sortOrder }
 
         // Always sanitize Gson-null fields, even when there are no assignments
         if (assignments.isEmpty()) return variant.sanitizeGsonDefaults()
 
-        val motivational = (variant.feedbackMessages?.motivational ?: emptyList()).toMutableList()
-        val tips = (variant.feedbackMessages?.tips ?: emptyList()).toMutableList()
+        val motivational = variant.feedbackMessages.motivational.toMutableList()
+        val tips = variant.feedbackMessages.tips.toMutableList()
 
-        @Suppress("UNNECESSARY_SAFE_CALL", "USELESS_ELVIS")
-        val trackedJoints = variant.trackedJoints ?: emptyList()
+        val trackedJoints = variant.trackedJoints
         val jointMessageMap: MutableMap<String, StateMessages?> =
             trackedJoints.associate { it.joint to it.stateMessages }.toMutableMap()
         val positionMessageMap = mutableMapOf<String, LocalizedText>()
@@ -684,8 +681,7 @@ class SyncManager(
             }
         }
 
-        @Suppress("UNNECESSARY_SAFE_CALL", "USELESS_ELVIS")
-        val positionChecks = variant.positionChecks ?: emptyList()
+        val positionChecks = variant.positionChecks
         val updatedPositionChecks = positionChecks.map { check ->
             val message = positionMessageMap[check.id]
             if (message != null) {
@@ -698,7 +694,7 @@ class SyncManager(
         val updatedFeedback = if (motivational.isNotEmpty() || tips.isNotEmpty()) {
             FeedbackMessages(motivational = motivational, tips = tips)
         } else {
-            variant.feedbackMessages ?: FeedbackMessages()
+            variant.feedbackMessages
         }
 
         return variant.copy(
