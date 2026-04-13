@@ -646,16 +646,16 @@ class SyncManager(
         variant: PoseVariant,
         messageMap: Map<String, MessageTemplate>
     ): PoseVariant {
-        val assignments = variant.messageAssignments
-            .sortedBy { it.sortOrder }
+        // Gson can set list fields to null when JSON has explicit null, bypassing Kotlin defaults
+        val v = variant.sanitizeGsonDefaults()
+        val assignments = v.messageAssignments.sortedBy { it.sortOrder }
 
-        // Always sanitize Gson-null fields, even when there are no assignments
-        if (assignments.isEmpty()) return variant.sanitizeGsonDefaults()
+        if (assignments.isEmpty()) return v
 
-        val motivational = variant.feedbackMessages.motivational.toMutableList()
-        val tips = variant.feedbackMessages.tips.toMutableList()
+        val motivational = v.feedbackMessages.motivational.toMutableList()
+        val tips = v.feedbackMessages.tips.toMutableList()
 
-        val trackedJoints = variant.trackedJoints
+        val trackedJoints = v.trackedJoints
         val jointMessageMap: MutableMap<String, StateMessages?> =
             trackedJoints.associate { it.joint to it.stateMessages }.toMutableMap()
         val positionMessageMap = mutableMapOf<String, LocalizedText>()
@@ -699,7 +699,7 @@ class SyncManager(
             }
         }
 
-        val positionChecks = variant.positionChecks
+        val positionChecks = v.positionChecks
         val updatedPositionChecks = positionChecks.map { check ->
             val message = positionMessageMap[check.id]
             if (message != null) {
@@ -712,10 +712,10 @@ class SyncManager(
         val updatedFeedback = if (motivational.isNotEmpty() || tips.isNotEmpty()) {
             FeedbackMessages(motivational = motivational, tips = tips)
         } else {
-            variant.feedbackMessages
+            v.feedbackMessages
         }
 
-        return variant.copy(
+        return v.copy(
             trackedJoints = updatedTrackedJoints,
             positionChecks = updatedPositionChecks,
             feedbackMessages = updatedFeedback

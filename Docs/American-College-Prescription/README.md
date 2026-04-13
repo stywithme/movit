@@ -28,6 +28,7 @@
 | [08-Supplemental-Digital-Content.md](08-Supplemental-Digital-Content.md) | **فهرس الملحقات الرقمية (D323)** — Appendices 1–27 من موقع المجلة |
 | [09-POSE-Integration-Roadmap.md](09-POSE-Integration-Roadmap.md) | **خارطة ربط النتائج بمشروع POSE** — مقترحات تفعيل/إضافة/تبسيط بأولويات |
 | [10-Progression-Prescription-Deep-Dive.md](10-Progression-Prescription-Deep-Dive.md) | **التقدم والتوصيف بعمق** — كل العوامل المؤثرة وأفضل الطرق للوصول للأهداف |
+| [11-Final-Progression-Spec.md](11-Final-Progression-Spec.md) | **المواصفات النهائية** — خطة تنفيذ واضحة خطوة بخطوة |
 
 ## ملاحظة عن «دخول المصادر»
 
