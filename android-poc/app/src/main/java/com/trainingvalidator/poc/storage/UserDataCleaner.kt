@@ -17,6 +17,7 @@ import android.util.Log
  *   - DayCustomizationStore     (day_customization_store)
  *   - UserProgramStore          (user_program_store)
  *   - ProgramSessionReportStore (program_session_report_store)
+ *   - UserExercisePreferenceStore (user_exercise_preferences)
  *   - HomeRepository singleton  (in-memory)
  *   - ExploreRepository singleton (in-memory)
  *
@@ -35,6 +36,7 @@ object UserDataCleaner {
     private const val PREFS_DAY_CUSTOMIZATION = "day_customization_store"
     private const val PREFS_USER_PROGRAM = "user_program_store"
     private const val PREFS_SESSION_REPORT_LEGACY = "program_session_report_store"
+    private const val PREFS_USER_EXERCISE_PREFS = UserExercisePreferenceStore.PREFS_NAME
 
     /**
      * Clears all user-specific caches synchronously.
@@ -49,6 +51,7 @@ object UserDataCleaner {
         clearPrefs(appContext, PREFS_DAY_CUSTOMIZATION)
         clearPrefs(appContext, PREFS_USER_PROGRAM)
         clearPrefs(appContext, PREFS_SESSION_REPORT_LEGACY)
+        clearPrefs(appContext, PREFS_USER_EXERCISE_PREFS)
 
         // Reset in-memory singletons so stale data is not served from memory
         HomeRepository.resetInstance()

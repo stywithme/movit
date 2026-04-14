@@ -11,6 +11,7 @@ import { buildExerciseConfig, exerciseFullInclude } from '@/modules/exercises/js
 import { programService } from '@/modules/programs/programs.service';
 import { workoutService } from '@/modules/workouts/workouts.service';
 import type { WorkoutExport } from '@/modules/workouts/workouts.types';
+import { listUserExercisePreferences } from '@/modules/user-exercise-preferences/user-exercise-preferences.service';
 import type {
   SyncRequestParams,
   ExploreRequestParams,
@@ -522,7 +523,10 @@ export const mobileSyncService = {
     
     let userPrograms: UserProgramExport[] | undefined;
     let sessionReports: SessionReportExport[] | undefined;
+    let userExercisePreferences: Awaited<ReturnType<typeof listUserExercisePreferences>> | undefined;
     if (userId) {
+      userExercisePreferences = await listUserExercisePreferences(userId);
+
       const userProgramRows = await prisma.userProgram.findMany({
         where: { userId },
         orderBy: { updatedAt: 'desc' },
@@ -579,6 +583,7 @@ export const mobileSyncService = {
         programs: filteredPrograms,
         deletedProgramIds,
         userPrograms,
+        userExercisePreferences,
         sessionReports,
         audioManifest,
       },

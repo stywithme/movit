@@ -41,8 +41,35 @@ data class SyncData(
     val programs: List<ProgramConfigWithMeta> = emptyList(),
     val deletedProgramIds: List<String> = emptyList(),
     val userPrograms: List<UserProgramExport> = emptyList(),
+    /** Per-user targets for standalone training; null when not authenticated */
+    val userExercisePreferences: List<UserExercisePreferenceSync>? = null,
     val sessionReports: List<SessionReportExport> = emptyList(),
     val audioManifest: AudioManifest
+)
+
+/**
+ * User-specific reps / hold duration / weight overrides (backend + sync).
+ */
+data class UserExercisePreferenceSync(
+    val exerciseId: String,
+    val exerciseSlug: String,
+    val customReps: Int? = null,
+    val customDurationSec: Int? = null,
+    val customWeightKg: Double? = null,
+    val updatedAt: String
+)
+
+/** Request body for PUT /api/mobile/exercise-preferences/:exerciseId */
+data class UserExercisePreferenceUpsertRequest(
+    val customReps: Int? = null,
+    val customDurationSec: Int? = null,
+    val customWeightKg: Float? = null
+)
+
+data class ExercisePreferenceApiResponse(
+    val success: Boolean,
+    val data: UserExercisePreferenceSync? = null,
+    val error: String? = null
 )
 
 /**

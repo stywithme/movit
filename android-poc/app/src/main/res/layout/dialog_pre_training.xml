@@ -1,0 +1,152 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:fillViewport="true">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:background="@color/surface"
+        android:padding="@dimen/spacing_xl">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:layout_marginBottom="@dimen/spacing_lg">
+
+            <ImageView
+                android:layout_width="24dp"
+                android:layout_height="24dp"
+                android:src="@drawable/ic_equipment"
+                app:tint="@color/primary" />
+
+            <TextView
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:layout_marginStart="@dimen/spacing_md"
+                android:text="@string/pre_training_title"
+                android:textColor="@color/text_primary"
+                android:textSize="20sp"
+                android:textStyle="bold" />
+        </LinearLayout>
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="@string/pre_training_desc"
+            android:textColor="@color/text_secondary"
+            android:textSize="13sp"
+            android:layout_marginBottom="@dimen/spacing_md" />
+
+        <!-- Reps (Up & Down) -->
+        <LinearLayout
+            android:id="@+id/sectionReps"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:visibility="gone">
+
+            <com.google.android.material.textfield.TextInputLayout
+                android:id="@+id/inputRepsLayout"
+                style="@style/Widget.WayToFix.TextInputLayout"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:hint="@string/pre_training_reps_hint">
+
+                <com.google.android.material.textfield.TextInputEditText
+                    android:id="@+id/inputReps"
+                    style="@style/Widget.WayToFix.TextInputEditText"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:inputType="number" />
+            </com.google.android.material.textfield.TextInputLayout>
+        </LinearLayout>
+
+        <!-- Hold duration -->
+        <LinearLayout
+            android:id="@+id/sectionDuration"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:visibility="gone"
+            android:layout_marginTop="@dimen/spacing_md">
+
+            <com.google.android.material.textfield.TextInputLayout
+                android:id="@+id/inputDurationLayout"
+                style="@style/Widget.WayToFix.TextInputLayout"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:hint="@string/pre_training_duration_hint">
+
+                <com.google.android.material.textfield.TextInputEditText
+                    android:id="@+id/inputDuration"
+                    style="@style/Widget.WayToFix.TextInputEditText"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:inputType="number" />
+            </com.google.android.material.textfield.TextInputLayout>
+        </LinearLayout>
+
+        <!-- Weight -->
+        <LinearLayout
+            android:id="@+id/sectionWeight"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:visibility="gone"
+            android:layout_marginTop="@dimen/spacing_md">
+
+            <com.google.android.material.textfield.TextInputLayout
+                android:id="@+id/inputWeightLayout"
+                style="@style/Widget.WayToFix.TextInputLayout"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:hint="@string/weight_input_hint">
+
+                <com.google.android.material.textfield.TextInputEditText
+                    android:id="@+id/inputWeight"
+                    style="@style/Widget.WayToFix.TextInputEditText"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:inputType="numberDecimal" />
+            </com.google.android.material.textfield.TextInputLayout>
+
+            <TextView
+                android:id="@+id/tvWeightRange"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:textColor="@color/text_hint"
+                android:textSize="12sp"
+                android:layout_marginTop="@dimen/spacing_sm"
+                android:visibility="gone" />
+        </LinearLayout>
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:layout_marginTop="@dimen/spacing_lg">
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnPreTrainingStart"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="@string/weight_start"
+                style="@style/Widget.WayToFix.Button.Primary" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnPreTrainingReset"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="@dimen/spacing_sm"
+                android:text="@string/pre_training_reset_defaults"
+                style="@style/Widget.WayToFix.Button.Secondary" />
+        </LinearLayout>
+    </LinearLayout>
+</ScrollView>

@@ -548,6 +548,15 @@
     <string name="weight_max_error">Weight must be at most %1$.1f kg</string>
     <string name="weight_start">Start</string>
     <string name="weight_clear">No Weight</string>
+    <string name="pre_training_title">Training setup</string>
+    <string name="pre_training_desc">Adjust reps, duration, or weight before starting. Values are saved for your account.</string>
+    <string name="pre_training_reps_hint">Target reps</string>
+    <string name="pre_training_duration_hint">Hold duration (seconds)</string>
+    <string name="pre_training_reset_defaults">Reset to default</string>
+    <string name="exercise_target_reps_default">Target: %1$d reps (default)</string>
+    <string name="exercise_target_reps_custom">Target: %1$d reps (custom)</string>
+    <string name="exercise_target_duration_default">Target: %1$d seconds (default)</string>
+    <string name="exercise_target_duration_custom">Target: %1$d seconds (custom)</string>
     <string name="train_again">Train Again</string>
     <string name="weeks_count_format">%1$d weeks</string>
     <string name="sessions_count_format">%1$d sessions</string>

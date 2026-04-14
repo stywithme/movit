@@ -914,6 +914,41 @@ class TrainingViewModel(
 
         trainingEngine?.motionRecorder = motionRecorder
     }
+
+    /**
+     * Recreate [TrainingEngine] and [MotionRecorder] with new target/weight overrides
+     * (e.g. after pre-training dialog). Call only before training has started.
+     */
+    fun rebuildTrainingEngineWithOverrides(
+        targetRepsOverride: Int?,
+        targetDurationMsOverride: Long?,
+        weightKg: Float?,
+        weightUnit: String = "kg"
+    ) {
+        val config = _exerciseConfig.value ?: return
+        val poseVariantIndex = _poseVariantIndex.value
+        engineObserverJob?.cancel()
+        trainingEngine?.stop()
+        _weightKg = weightKg
+        _weightUnit = weightUnit
+        trainingEngine = TrainingEngine(
+            exerciseConfig = config,
+            poseVariantIndex = poseVariantIndex,
+            targetRepsOverride = targetRepsOverride,
+            targetDurationMsOverride = targetDurationMsOverride
+        )
+        val exerciseId = config.fileName.ifEmpty { config.name.en }
+        val trackedJoints = config.getTrackedJoints(poseVariantIndex).map { it.joint }
+        motionRecorder = MotionRecorder(
+            trackedJoints = trackedJoints,
+            exerciseId = exerciseId,
+            defaultWeightKg = weightKg,
+            weightUnit = weightUnit
+        )
+        trainingEngine?.motionRecorder = motionRecorder
+        updateRandomMessagesFromEngine()
+        Log.d(TAG, "Rebuilt engine: reps=$targetRepsOverride durationMs=$targetDurationMsOverride weight=$weightKg")
+    }
     
     // ==================== Lifecycle ====================
     
