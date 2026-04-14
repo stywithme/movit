@@ -1173,8 +1173,9 @@ class TrainingEngine(
         for ((jointCode, info) in stateInfos) {
             val state = info.state
             
-            // Skip transition and danger (danger handled by DangerDetected)
-            if (state == JointState.TRANSITION || state == JointState.DANGER) continue
+            // Skip transition, danger, and warning — all three produce JointErrors
+            // and are delivered via JointErrorDetected (with phase-aware messages).
+            if (state == JointState.TRANSITION || state == JointState.DANGER || state == JointState.WARNING) continue
             
             val message = info.messages.firstOrNull() ?: continue
             val lastState = lastEmittedStates[jointCode]

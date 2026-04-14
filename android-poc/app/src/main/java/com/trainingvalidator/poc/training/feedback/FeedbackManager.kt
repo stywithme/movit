@@ -251,21 +251,23 @@ class FeedbackManager(
     // ==================== Joint Error Handling ====================
     
     private suspend fun handleJointError(event: FeedbackEvent.JointErrorDetected) {
+        val isWarning = event.error.state == JointState.WARNING
         val messageKey = "joint:${event.error.jointCode}:${event.error.errorType}"
         val localizedText = event.error.message
         val displayText = localizedText.get(config.language)
         
-        // Use MessageOrchestrator for smart delivery
+        val category = if (isWarning) MessageOrchestrator.Category.WARNING
+                        else MessageOrchestrator.Category.ERROR
+        val messageType = if (isWarning) MessageType.WARNING else MessageType.ERROR
+        
         val decision = messageOrchestrator.decide(
             messageKey = messageKey,
-            category = MessageOrchestrator.Category.ERROR,
+            category = category,
             messageText = displayText
         )
         
-        // Deliver based on decision (with LocalizedText for audio support)
-        deliverLocalizedMessage(localizedText, displayText, decision, MessageType.ERROR)
+        deliverLocalizedMessage(localizedText, displayText, decision, messageType)
         
-        // Reset streak on error (only if message was delivered)
         if (decision.channel != MessageOrchestrator.DeliveryChannel.SILENT) {
             correctRepStreak = 0
         }
