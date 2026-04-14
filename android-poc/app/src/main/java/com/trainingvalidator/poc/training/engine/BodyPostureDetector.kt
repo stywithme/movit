@@ -13,10 +13,10 @@ import kotlin.math.sqrt
  * Uses the angle of the body's main axis (shoulders → hips) relative to the image
  * horizontal for the primary standing/lying split.
  *
- * **Sitting** is detected within the "upright" zone by measuring the angle between
- * the torso vector and the thigh vector (hip → knee). When thighs are roughly
- * perpendicular to the torso (person seated), the dot-product drops below a
- * threshold.
+ * **Sitting** is detected within the "upright" zone using a vote of up to three
+ * signals: (1) torso vs thigh angle, (2) thigh vs shin bend at the knee, (3) hip–knee
+ * vertical proximity vs torso length. At least two must agree; if knees are not
+ * visible enough, the torso–thigh signal alone is used (legacy behavior).
  *
  * **Lying sub-classification**:
  *   • Y-stacking of paired landmarks → candidate side-lying
@@ -44,6 +44,12 @@ object BodyPostureDetector {
     private const val SITTING_COS_THRESHOLD = 0.5f
     private const val SITTING_MIN_SEGMENT = 0.03f
     private const val SITTING_MIN_VISIBILITY = 0.3f
+
+    // Thigh vs shin (hip→knee vs knee→ankle): straight leg → cos ≈ 1; bent knee → lower.
+    private const val SITTING_KNEE_BEND_COS_MAX = 0.65f
+
+    // Sitting: hips closer to knees vertically (in image) vs standing — ratio |hipY−kneeY|/torso.
+    private const val SITTING_HIP_KNEE_VERTICAL_RATIO = 0.42f
 
     // Y-stacking: when lying on side, BOTH shoulder-pair AND hip-pair must
     // independently show vertical stacking above this threshold.
@@ -121,8 +127,11 @@ object BodyPostureDetector {
     }
 
     /**
-     * Detect sitting by comparing the torso vector (shoulder→hip) with the thigh
-     * vector (hip→knee). When seated, thighs diverge from the torso by > 60°.
+     * Detect sitting using multi-signal voting:
+     * 1) Torso vs mid-thigh: seated → thighs not aligned with torso (cos < threshold).
+     * 2) Thigh vs shin at each knee: bent knee → cos below [SITTING_KNEE_BEND_COS_MAX].
+     * 3) Hip–knee vertical separation vs torso length: seated → hips nearer knees than typical standing.
+     * Requires at least 2 of 3 when auxiliary signals are available; otherwise torso–thigh only.
      */
     private fun checkSitting(
         landmarks: List<SmoothedLandmark>,
@@ -148,9 +157,50 @@ object BodyPostureDetector {
         val thighLength = sqrt(thighDx * thighDx + thighDy * thighDy)
         if (thighLength < SITTING_MIN_SEGMENT) return false
 
-        val dot = torsoDx * thighDx + torsoDy * thighDy
-        val cosAngle = dot / (torsoLength * thighLength)
-        return cosAngle < SITTING_COS_THRESHOLD
+        val dotTorsoThigh = torsoDx * thighDx + torsoDy * thighDy
+        val cosTorsoThigh = dotTorsoThigh / (torsoLength * thighLength)
+        val signalTorsoThigh = cosTorsoThigh < SITTING_COS_THRESHOLD
+
+        val lHip = landmarks[BodyLandmarks.LEFT_HIP]
+        val rHip = landmarks[BodyLandmarks.RIGHT_HIP]
+        val lAnkle = landmarks[BodyLandmarks.LEFT_ANKLE]
+        val rAnkle = landmarks[BodyLandmarks.RIGHT_ANKLE]
+
+        val anklesWeak =
+            lAnkle.visibility < SITTING_MIN_VISIBILITY && rAnkle.visibility < SITTING_MIN_VISIBILITY
+        if (anklesWeak) {
+            return signalTorsoThigh
+        }
+
+        val kneeBendOk = legKneeBendSitting(lHip, lKnee, lAnkle) ||
+            legKneeBendSitting(rHip, rKnee, rAnkle)
+
+        val verticalSep = abs(hipCy - kneeCy) / torsoLength.coerceAtLeast(SITTING_MIN_SEGMENT)
+        val signalHipKneeVertical = verticalSep < SITTING_HIP_KNEE_VERTICAL_RATIO
+
+        val votes = listOf(signalTorsoThigh, kneeBendOk, signalHipKneeVertical).count { it }
+        return votes >= 2
+    }
+
+    /** Thigh (hip→knee) vs shin (knee→ankle): bent knee suitable for sitting. */
+    private fun legKneeBendSitting(
+        hip: SmoothedLandmark,
+        knee: SmoothedLandmark,
+        ankle: SmoothedLandmark
+    ): Boolean {
+        if (knee.visibility < SITTING_MIN_VISIBILITY) return false
+        if (hip.visibility < SITTING_MIN_VISIBILITY || ankle.visibility < SITTING_MIN_VISIBILITY) {
+            return false
+        }
+        val tx = knee.x - hip.x
+        val ty = knee.y - hip.y
+        val sx = ankle.x - knee.x
+        val sy = ankle.y - knee.y
+        val tLen = sqrt(tx * tx + ty * ty)
+        val sLen = sqrt(sx * sx + sy * sy)
+        if (tLen < SITTING_MIN_SEGMENT || sLen < SITTING_MIN_SEGMENT) return false
+        val cosThighShin = (tx * sx + ty * sy) / (tLen * sLen)
+        return cosThighShin < SITTING_KNEE_BEND_COS_MAX
     }
 
     /**

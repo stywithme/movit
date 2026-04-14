@@ -58,6 +58,8 @@ export type PosePositionCode =
   | 'standing_side_left' | 'standing_side_right' | 'standing_diagonal'
   | 'standing_front_upper' | 'standing_back_upper' | 'standing_side_upper'
   | 'standing_front_lower' | 'standing_back_lower' | 'standing_side_lower'
+  | 'sitting_front' | 'sitting_side'
+  | 'sitting_front_upper' | 'sitting_side_upper'
   | 'prone_side' | 'prone_front'
   | 'supine_side' | 'supine_front'
   | 'side_lying';

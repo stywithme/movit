@@ -81,6 +81,65 @@ const POSITIONS: PosePositionSeed[] = [
     ],
   },
 
+  // ── Sitting, Full Body ──────────────────────────────────────────────────
+  {
+    code: 'sitting_front',
+    name: { ar: 'أمامي - جالس', en: 'Sitting Front' },
+    description: { ar: 'جالس، الجسم بالكامل من الأمام', en: 'Sitting, full body from front' },
+    postures: ['sitting'],
+    directions: ['front'],
+    regions: ['full_body'],
+    jointCodes: [
+      'left_knee',
+      'right_knee',
+      'left_hip',
+      'right_hip',
+      'left_shoulder',
+      'right_shoulder',
+      'left_elbow',
+      'right_elbow',
+      'spine',
+    ],
+  },
+  {
+    code: 'sitting_side',
+    name: { ar: 'جانبي - جالس', en: 'Sitting Side' },
+    description: { ar: 'جالس، الجسم بالكامل من الجانب', en: 'Sitting, full body from side' },
+    postures: ['sitting'],
+    directions: ['side'],
+    regions: ['full_body'],
+    jointCodes: [
+      'left_knee',
+      'right_knee',
+      'left_hip',
+      'right_hip',
+      'left_shoulder',
+      'right_shoulder',
+      'left_elbow',
+      'right_elbow',
+      'spine',
+    ],
+  },
+  // ── Sitting, Upper Body ───────────────────────────────────────────────
+  {
+    code: 'sitting_front_upper',
+    name: { ar: 'أمامي علوي - جالس', en: 'Sitting Front Upper' },
+    description: { ar: 'جالس، الجزء العلوي من الأمام', en: 'Sitting, upper body from front' },
+    postures: ['sitting'],
+    directions: ['front'],
+    regions: ['upper_body'],
+    jointCodes: ['left_shoulder', 'right_shoulder', 'left_elbow', 'right_elbow', 'spine'],
+  },
+  {
+    code: 'sitting_side_upper',
+    name: { ar: 'جانبي علوي - جالس', en: 'Sitting Side Upper' },
+    description: { ar: 'جالس، الجزء العلوي من الجانب', en: 'Sitting, upper body from side' },
+    postures: ['sitting'],
+    directions: ['side'],
+    regions: ['upper_body'],
+    jointCodes: ['left_shoulder', 'right_shoulder', 'left_elbow', 'right_elbow', 'spine'],
+  },
+
   // ── Standing, Upper Body ───────────────────────────────────────────────
   {
     code: 'standing_front_upper',

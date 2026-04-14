@@ -454,6 +454,8 @@
     <string name="camera_angle_45">45° Angle</string>
     <string name="pose_position_prone_side">Prone — Side</string>
     <string name="pose_position_prone_front">Prone — Front</string>
+    <string name="pose_position_sitting_front">Sitting — Front</string>
+    <string name="pose_position_sitting_side">Sitting — Side</string>
     <string name="pose_position_upper_body">Upper body in frame</string>
     <string name="pose_position_lower_body">Lower body in frame</string>
     
