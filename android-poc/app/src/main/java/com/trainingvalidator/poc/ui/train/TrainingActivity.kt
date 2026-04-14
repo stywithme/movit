@@ -452,6 +452,10 @@ class TrainingActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetection
         }
         val weightUnit = intent.getStringExtra(EXTRA_WEIGHT_UNIT) ?: "kg"
         
+        // Set video mode on supervisor before loading exercise
+        // (onExerciseLoaded needs to know mode to decide SETUP_POSE vs IDLE)
+        viewModel.supervisor.isVideoMode = isVideoMode
+        
         // Load exercise via ViewModel
         if (!viewModel.loadExercise(
                 exerciseName,
@@ -508,9 +512,11 @@ class TrainingActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetection
         binding.tvFormStatus.text = getString(R.string.good)
         binding.tvFormStatus.setTextColor(ContextCompat.getColor(this, R.color.primary))
         
-        // Initial state
-        updateUIForSessionState(SessionState.SETUP_POSE)
-        showSetupPoseUI()
+        // Initial state (camera mode only - video mode sets its own UI in setupVideoMode)
+        if (!isVideoMode) {
+            updateUIForSessionState(SessionState.SETUP_POSE)
+            showSetupPoseUI()
+        }
     }
 
     /**
@@ -2603,8 +2609,22 @@ class TrainingActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetection
     
     private fun handlePlayPauseClick() {
         if (isVideoMode) {
-            videoModeController?.togglePlayback()?.let { isPlaying ->
-                updatePlayPauseIcon(isPlaying)
+            val currentState = viewModel.supervisor.state.value
+            val isPlaying = videoModeController?.isPlaying() ?: false
+            
+            if (isPlaying) {
+                videoModeController?.pause()
+                updatePlayPauseIcon(isPlaying = false)
+                if (currentState == SessionState.TRAINING) {
+                    viewModel.requestPause()
+                }
+            } else {
+                videoModeController?.play()
+                updatePlayPauseIcon(isPlaying = true)
+                when (currentState) {
+                    SessionState.PAUSED, SessionState.AUTO_PAUSED -> viewModel.requestResume()
+                    else -> {}
+                }
             }
         } else {
             val currentState = viewModel.supervisor.state.value
@@ -3372,7 +3392,11 @@ class TrainingActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetection
         binding.btnSwitchCamera.visibility = View.GONE
         binding.videoControlsPanel.visibility = View.VISIBLE
         binding.setupPosePanel.visibility = View.GONE
+        binding.setupIndicatorBar.visibility = View.GONE
+        binding.countdownPanel.visibility = View.GONE
+        binding.bottomStatsBar.visibility = View.VISIBLE
         binding.btnSaveResults.visibility = View.VISIBLE
+        updatePlayPauseIcon(isPlaying = false)
         
         videoModeController = VideoModeController(this, lifecycleScope)
         videoModeController?.setListener(createVideoModeListener())

@@ -104,13 +104,18 @@ class SessionSupervisor {
     }
     
     /**
-     * Notify that exercise was loaded - transitions from IDLE to SETUP_POSE
+     * Notify that exercise was loaded - transitions from IDLE to SETUP_POSE (camera)
+     * or stays in IDLE (video mode, waiting for user to press play)
      */
     fun onExerciseLoaded() {
         if (_state.value == SessionState.IDLE) {
-            transitionTo(SessionState.SETUP_POSE)
-            emit(SupervisorAction.ShowSetupPose)
-            Log.d(TAG, "Exercise loaded - showing setup pose")
+            if (isVideoMode) {
+                Log.d(TAG, "Exercise loaded (video mode) - waiting for play")
+            } else {
+                transitionTo(SessionState.SETUP_POSE)
+                emit(SupervisorAction.ShowSetupPose)
+                Log.d(TAG, "Exercise loaded - showing setup pose")
+            }
         }
     }
     
@@ -341,12 +346,17 @@ class SessionSupervisor {
     private fun handlePaused(signal: SupervisorSignal) {
         when (signal) {
             is SupervisorSignal.ResumeRequested -> {
-                // Manual pause → require countdown before resume
-                isResumeCountdown = true  // Mark as resume countdown
-                transitionTo(SessionState.COUNTDOWN)
-                emit(SupervisorAction.StartCountdown)
-                if (isVideoMode) emit(SupervisorAction.ResumeVideo)
-                Log.d(TAG, "Resume requested - starting countdown")
+                if (isVideoMode) {
+                    transitionTo(SessionState.TRAINING)
+                    emit(SupervisorAction.ResumeEngine)
+                    emit(SupervisorAction.ResumeVideo)
+                    Log.d(TAG, "Video mode - resuming directly from manual pause")
+                } else {
+                    isResumeCountdown = true
+                    transitionTo(SessionState.COUNTDOWN)
+                    emit(SupervisorAction.StartCountdown)
+                    Log.d(TAG, "Resume requested - starting countdown")
+                }
             }
             
             else -> {}
@@ -356,21 +366,30 @@ class SessionSupervisor {
     private fun handleAutoPaused(signal: SupervisorSignal) {
         when (signal) {
             is SupervisorSignal.PoseFrame -> {
-                // Pose detected after NoPose pause - start resume flow
                 if (pauseReason == PauseReason.NO_POSE) {
-                    transitionTo(SessionState.RESUME_SETUP)
-                    emit(SupervisorAction.ShowSetupPose)
-                    Log.d(TAG, "Pose detected after NoPose - validating for resume")
+                    if (isVideoMode) {
+                        transitionTo(SessionState.TRAINING)
+                        emit(SupervisorAction.ResumeFromVisibilityPause)
+                        Log.d(TAG, "Video mode - resuming directly after NoPose")
+                    } else {
+                        transitionTo(SessionState.RESUME_SETUP)
+                        emit(SupervisorAction.ShowSetupPose)
+                        Log.d(TAG, "Pose detected after NoPose - validating for resume")
+                    }
                 }
             }
             
             is SupervisorSignal.ResumeRequested -> {
-                // User manually trying to resume from auto-pause
-                // Go to RESUME_SETUP first
-                transitionTo(SessionState.RESUME_SETUP)
-                emit(SupervisorAction.ShowSetupPose)
-                if (isVideoMode) emit(SupervisorAction.ResumeVideo)
-                Log.d(TAG, "Manual resume from auto-pause - showing setup")
+                if (isVideoMode) {
+                    transitionTo(SessionState.TRAINING)
+                    emit(SupervisorAction.ResumeFromVisibilityPause)
+                    emit(SupervisorAction.ResumeVideo)
+                    Log.d(TAG, "Video mode - resuming directly from auto-pause")
+                } else {
+                    transitionTo(SessionState.RESUME_SETUP)
+                    emit(SupervisorAction.ShowSetupPose)
+                    Log.d(TAG, "Manual resume from auto-pause - showing setup")
+                }
             }
             
             else -> {}
