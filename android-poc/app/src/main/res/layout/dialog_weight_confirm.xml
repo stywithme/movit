@@ -45,7 +45,11 @@
         style="@style/Widget.WayToFix.TextInputLayout"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:hint="@string/weight_input_hint">
+                app:boxBackgroundColor="@color/surface_elevated"
+                app:endIconDrawable="@drawable/ic_edit"
+                app:endIconMode="custom"
+                app:endIconTint="@color/text_secondary"
+                android:hint="@string/weight_input_hint">
 
         <com.google.android.material.textfield.TextInputEditText
             android:id="@+id/inputWeight"
