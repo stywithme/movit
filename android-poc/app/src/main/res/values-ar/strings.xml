@@ -514,6 +514,8 @@
     <string name="camera_angle_45">زاوية 45°</string>
     <string name="pose_position_prone_side">وضع استلقاء — جانبي</string>
     <string name="pose_position_prone_front">وضع استلقاء — أمامي</string>
+    <string name="pose_position_sitting_front">جلوس — أمامي</string>
+    <string name="pose_position_sitting_side">جلوس — جانبي</string>
     <string name="pose_position_upper_body">الجزء العلوي من الجسم في الإطار</string>
     <string name="pose_position_lower_body">الجزء السفلي من الجسم في الإطار</string>
     

@@ -84,6 +84,9 @@ object LocalizationHelper {
             "standing_diagonal" -> R.string.camera_angle_45
             "prone_side" -> R.string.pose_position_prone_side
             "prone_front" -> R.string.pose_position_prone_front
+            "sitting_front" -> R.string.pose_position_sitting_front
+            "sitting_side" -> R.string.pose_position_sitting_side
+            "sitting_front_upper", "sitting_side_upper",
             "standing_front_upper", "standing_back_upper", "standing_side_upper" -> R.string.pose_position_upper_body
             "standing_front_lower", "standing_back_lower", "standing_side_lower" -> R.string.pose_position_lower_body
             else -> null

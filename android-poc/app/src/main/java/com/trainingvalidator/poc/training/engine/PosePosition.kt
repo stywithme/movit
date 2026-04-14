@@ -137,7 +137,7 @@ data class PoseSceneExpectation(
 // ── Legacy PosePosition enum (kept for backward compatibility) ──────────
 
 /**
- * All 17 pose positions that can be configured in the backend.
+ * All pose position codes that can be configured in the backend (standing, sitting, lying).
  * @deprecated Use [PoseSceneExpectation] for matching. This enum is kept only
  * for [fromCode]/[fromLegacy] fallback when the backend doesn't send the
  * 3-axis arrays.
@@ -183,6 +183,18 @@ enum class PosePosition(
 
     @SerializedName("standing_side_lower")
     STANDING_SIDE_LOWER("standing_side_lower", BodyPosture.STANDING, ExpectedDirection.SIDE_ANY, VisibleRegion.LOWER_BODY),
+
+    @SerializedName("sitting_front")
+    SITTING_FRONT("sitting_front", BodyPosture.SITTING, ExpectedDirection.FRONT, VisibleRegion.FULL_BODY),
+
+    @SerializedName("sitting_side")
+    SITTING_SIDE("sitting_side", BodyPosture.SITTING, ExpectedDirection.SIDE_ANY, VisibleRegion.FULL_BODY),
+
+    @SerializedName("sitting_front_upper")
+    SITTING_FRONT_UPPER("sitting_front_upper", BodyPosture.SITTING, ExpectedDirection.FRONT, VisibleRegion.UPPER_BODY),
+
+    @SerializedName("sitting_side_upper")
+    SITTING_SIDE_UPPER("sitting_side_upper", BodyPosture.SITTING, ExpectedDirection.SIDE_ANY, VisibleRegion.UPPER_BODY),
 
     @SerializedName("prone_side")
     PRONE_SIDE("prone_side", BodyPosture.LYING_PRONE, ExpectedDirection.SIDE_ANY, VisibleRegion.FULL_BODY),
