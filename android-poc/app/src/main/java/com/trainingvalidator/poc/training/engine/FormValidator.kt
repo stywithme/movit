@@ -150,7 +150,8 @@ class FormValidator(
                 expectedRange = expectedRange
             )
 
-            val errorMessage = joint.stateMessages?.getMessage(stateInfo.state, stateInfo.currentZone)
+            val errorMessage = stateInfo.messages.firstOrNull()
+                ?: joint.stateMessages?.getMessage(stateInfo.state, stateInfo.currentZone)
                 ?: joint.getStartPoseMessage(errorType)
 
             val status = JointStatus(
