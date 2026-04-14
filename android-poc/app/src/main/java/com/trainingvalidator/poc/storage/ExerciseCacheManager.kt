@@ -137,6 +137,12 @@ class ExerciseCacheManager(private val context: Context) {
         return exerciseCache[slug]?.config
     }
 
+    /** Server UUID for API calls (e.g. exercise preferences). */
+    fun getServerIdForSlug(slug: String): String? {
+        if (!isLoaded) loadCache()
+        return exerciseCache[slug]?.id
+    }
+
     fun getExerciseById(id: String): ExerciseConfig? {
         if (!isLoaded) loadCache()
         return exerciseCache.values.find { it.id == id }?.config

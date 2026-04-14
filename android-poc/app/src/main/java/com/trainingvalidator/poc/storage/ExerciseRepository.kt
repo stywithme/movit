@@ -224,6 +224,13 @@ class ExerciseRepository private constructor(private val context: Context) {
     fun getExerciseById(id: String): ExerciseConfig? {
         return exerciseCache.getExerciseById(id)
     }
+
+    /**
+     * Server exercise UUID for API routes (e.g. user exercise preferences).
+     */
+    fun getExerciseServerId(slug: String): String? {
+        return exerciseCache.getServerIdForSlug(slug)
+    }
     
     /**
      * Get list of available exercise names (slugs)

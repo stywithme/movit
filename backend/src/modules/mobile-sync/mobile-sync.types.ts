@@ -165,6 +165,11 @@ export interface SyncData {
   userPrograms?: UserProgramExport[];
 
   /**
+   * Per-user exercise targets (reps, hold duration, weight) for standalone training
+   */
+  userExercisePreferences?: UserExercisePreferenceExport[];
+
+  /**
    * Completed session reports for the user (backend → mobile sync).
    * Ensures reports survive app reinstall and are consistent across devices.
    */
@@ -183,6 +188,16 @@ export interface UserProgramExport {
   startDate: string;
   isActive: boolean;
   customizations?: Record<string, unknown> | null;
+  updatedAt: string;
+}
+
+/** User overrides for a single exercise (mobile standalone training) */
+export interface UserExercisePreferenceExport {
+  exerciseId: string;
+  exerciseSlug: string;
+  customReps?: number;
+  customDurationSec?: number;
+  customWeightKg?: number;
   updatedAt: string;
 }
 

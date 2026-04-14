@@ -7,6 +7,7 @@ import com.trainingvalidator.poc.network.ExerciseConfigWithMeta
 import com.trainingvalidator.poc.network.MessageTemplate
 import com.trainingvalidator.poc.network.MobileSyncResponse
 import com.trainingvalidator.poc.storage.AuthManager
+import com.trainingvalidator.poc.storage.UserExercisePreferenceStore
 import com.trainingvalidator.poc.training.models.FeedbackMessages
 import com.trainingvalidator.poc.training.models.LocalizedText
 import com.trainingvalidator.poc.training.models.PoseVariant
@@ -356,6 +357,12 @@ class SyncManager(
                     customizationStore.hydrateFromBackend(pid, up.customizations)
                 }
             }
+        }
+
+        // User exercise preferences (reps / duration / weight for standalone training)
+        val userExercisePreferences = data.userExercisePreferences
+        if (userExercisePreferences != null) {
+            UserExercisePreferenceStore(context).hydrateFromSync(userExercisePreferences)
         }
 
         // Sync session reports from backend → local store

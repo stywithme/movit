@@ -15,6 +15,7 @@ import android.util.Log
 import android.view.View
 import android.view.WindowManager
 import android.widget.ImageView
+import android.widget.LinearLayout
 import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
@@ -73,6 +74,10 @@ import com.trainingvalidator.poc.storage.ReportStorage
 import com.trainingvalidator.poc.storage.ExerciseRepository
 import com.trainingvalidator.poc.storage.AnalyticsStorage
 import com.trainingvalidator.poc.storage.AuthManager
+import com.trainingvalidator.poc.storage.UserExercisePreferenceStore
+import com.trainingvalidator.poc.network.ApiClient
+import com.trainingvalidator.poc.network.UserExercisePreferenceUpsertRequest
+import com.trainingvalidator.poc.training.models.CountingMethod
 import com.trainingvalidator.poc.network.SessionSyncService
 import com.trainingvalidator.poc.network.ApiConfig
 import com.trainingvalidator.poc.ui.report.SessionReportActivity
@@ -188,7 +193,10 @@ class TrainingActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetection
     private var currentSessionSetRunId: Long = 0L
     private var lastCompletedSessionSetRunId: Long = -1L
     private var isWeightDialogVisible = false
+    /** Session mode: weight-only dialog between sets */
     private var hasShownWeightDialog = false
+    /** Single-exercise mode: full pre-training dialog */
+    private var hasShownPreTrainingDialog = false
 
     // Assessment mode (suppresses report page, returns report ID)
     private var isAssessmentMode = false
@@ -422,17 +430,25 @@ class TrainingActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetection
         val difficultyStr = intent.getStringExtra(EXTRA_DIFFICULTY) ?: DEFAULT_DIFFICULTY
         val poseVariantIndex = intent.getIntExtra(EXTRA_POSE_VARIANT, 0)
         
-        // Target overrides
-        val targetRepsOverride = intent.getIntExtra(EXTRA_TARGET_REPS_OVERRIDE, -1)
-            .takeIf { it > 0 }
-        val targetDurationOverride = intent.getIntExtra(EXTRA_TARGET_DURATION_OVERRIDE, -1)
-            .takeIf { it > 0 }?.let { it * 1000L }
+        val prefStore = UserExercisePreferenceStore(this)
+        val storedPref = prefStore.get(exerciseName)
 
-        // Weight overrides (optional)
-        val weightKg = if (intent.hasExtra(EXTRA_WEIGHT_KG)) {
-            intent.getFloatExtra(EXTRA_WEIGHT_KG, 0f)
-        } else {
-            null
+        // Target overrides — intent wins, then saved user preference
+        var targetRepsOverride = intent.getIntExtra(EXTRA_TARGET_REPS_OVERRIDE, -1).takeIf { it > 0 }
+        if (targetRepsOverride == null) {
+            targetRepsOverride = storedPref?.customReps?.takeIf { it > 0 }
+        }
+
+        var targetDurationOverride = intent.getIntExtra(EXTRA_TARGET_DURATION_OVERRIDE, -1)
+            .takeIf { it > 0 }?.let { it * 1000L }
+        if (targetDurationOverride == null) {
+            targetDurationOverride = storedPref?.customDurationSec?.takeIf { it > 0 }?.let { it * 1000L }
+        }
+
+        val weightKg = when {
+            intent.hasExtra(EXTRA_WEIGHT_KG) -> intent.getFloatExtra(EXTRA_WEIGHT_KG, 0f)
+            storedPref?.customWeightKg != null -> storedPref.customWeightKg
+            else -> null
         }
         val weightUnit = intent.getStringExtra(EXTRA_WEIGHT_UNIT) ?: "kg"
         
@@ -456,7 +472,9 @@ class TrainingActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetection
             return
         }
         
-        maybeShowWeightDialog()
+        if (!isAssessmentMode) {
+            maybeShowPreTrainingDialog()
+        }
 
         // Initialize feedback
         viewModel.initializeFeedback(this, isVideoMode)
@@ -495,7 +513,10 @@ class TrainingActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetection
         showSetupPoseUI()
     }
 
-    private fun maybeShowWeightDialog() {
+    /**
+     * Session mode only: confirm weight before set (legacy dialog).
+     */
+    private fun maybeShowSessionWeightDialog() {
         val config = viewModel.exerciseConfig.value ?: return
         if (!config.supportsWeight || hasShownWeightDialog) return
 
@@ -564,6 +585,236 @@ class TrainingActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetection
         }
 
         dialog.show()
+    }
+
+    /**
+     * Single-exercise mode: reps / hold duration / weight before training starts.
+     */
+    private fun maybeShowPreTrainingDialog() {
+        if (hasShownPreTrainingDialog) return
+        val config = viewModel.exerciseConfig.value ?: return
+        hasShownPreTrainingDialog = true
+        isWeightDialogVisible = true
+
+        val slug = config.fileName.ifEmpty { viewModel.exerciseName.value }
+        val store = UserExercisePreferenceStore(this)
+        val saved = store.get(slug)
+
+        val dialogView = layoutInflater.inflate(R.layout.dialog_pre_training, null)
+        val dialog = android.app.AlertDialog.Builder(this, R.style.Theme_WayToFix_Dialog)
+            .setView(dialogView)
+            .setCancelable(false)
+            .create()
+
+        val sectionReps = dialogView.findViewById<LinearLayout>(R.id.sectionReps)
+        val sectionDuration = dialogView.findViewById<LinearLayout>(R.id.sectionDuration)
+        val sectionWeight = dialogView.findViewById<LinearLayout>(R.id.sectionWeight)
+        val inputRepsLayout =
+            dialogView.findViewById<com.google.android.material.textfield.TextInputLayout>(R.id.inputRepsLayout)
+        val inputReps =
+            dialogView.findViewById<com.google.android.material.textfield.TextInputEditText>(R.id.inputReps)
+        val inputDurationLayout =
+            dialogView.findViewById<com.google.android.material.textfield.TextInputLayout>(R.id.inputDurationLayout)
+        val inputDuration =
+            dialogView.findViewById<com.google.android.material.textfield.TextInputEditText>(R.id.inputDuration)
+        val inputWeightLayout =
+            dialogView.findViewById<com.google.android.material.textfield.TextInputLayout>(R.id.inputWeightLayout)
+        val inputWeight =
+            dialogView.findViewById<com.google.android.material.textfield.TextInputEditText>(R.id.inputWeight)
+        val tvWeightRange = dialogView.findViewById<TextView>(R.id.tvWeightRange)
+        val btnStart = dialogView.findViewById<com.google.android.material.button.MaterialButton>(R.id.btnPreTrainingStart)
+        val btnReset = dialogView.findViewById<com.google.android.material.button.MaterialButton>(R.id.btnPreTrainingReset)
+
+        when (config.countingMethod) {
+            CountingMethod.HOLD -> {
+                sectionDuration.visibility = View.VISIBLE
+                sectionReps.visibility = View.GONE
+            }
+            else -> {
+                sectionReps.visibility = View.VISIBLE
+                sectionDuration.visibility = View.GONE
+            }
+        }
+        sectionWeight.visibility = if (config.supportsWeight) View.VISIBLE else View.GONE
+
+        val defaultReps = config.repCountingConfig.reps
+        val defaultDurationSec = config.repCountingConfig.duration
+            ?: SettingsManager.getDefaultHoldDuration()
+
+        val initialReps = saved?.customReps ?: defaultReps
+        val initialDurationSec = saved?.customDurationSec ?: defaultDurationSec
+        val initialWeight = saved?.customWeightKg ?: viewModel.getWeightKg() ?: config.defaultWeight
+
+        inputReps.setText(initialReps.toString())
+        inputDuration.setText(initialDurationSec.toString())
+        inputWeight.setText(initialWeight?.toString().orEmpty())
+
+        if (config.supportsWeight) {
+            val minW = config.minWeight
+            val maxW = config.maxWeight
+            val rangeText = when {
+                minW != null && maxW != null ->
+                    getString(R.string.weight_min_max_format, minW, maxW)
+                minW != null ->
+                    getString(R.string.weight_min_only_format, minW)
+                maxW != null ->
+                    getString(R.string.weight_max_only_format, maxW)
+                else -> ""
+            }
+            tvWeightRange.text = rangeText
+            tvWeightRange.visibility = if (rangeText.isNotEmpty()) View.VISIBLE else View.GONE
+        }
+
+        fun applyAndDismiss(reps: Int?, durationSec: Int?, weight: Float?) {
+            val repsOverride = if (config.countingMethod != CountingMethod.HOLD) reps else null
+            val durationMs = if (config.countingMethod == CountingMethod.HOLD) {
+                durationSec?.takeIf { it > 0 }?.times(1000L)
+            } else {
+                null
+            }
+
+            val stored = UserExercisePreferenceStore.Stored(
+                customReps = repsOverride,
+                customDurationSec = if (config.countingMethod == CountingMethod.HOLD) {
+                    durationSec?.takeIf { it > 0 }
+                } else {
+                    null
+                },
+                customWeightKg = if (config.supportsWeight) weight else null,
+                updatedAt = null
+            )
+            val hasAny = stored.customReps != null || stored.customDurationSec != null || stored.customWeightKg != null
+            if (hasAny) {
+                store.save(slug, stored)
+            } else {
+                store.remove(slug)
+            }
+
+            viewModel.rebuildTrainingEngineWithOverrides(
+                targetRepsOverride = repsOverride,
+                targetDurationMsOverride = durationMs,
+                weightKg = if (config.supportsWeight) weight else null,
+                weightUnit = "kg"
+            )
+            pushUserExercisePreferenceToBackend(slug, stored, clearOnServer = !hasAny)
+            isWeightDialogVisible = false
+            dialog.dismiss()
+        }
+
+        btnStart.setOnClickListener {
+            inputRepsLayout.error = null
+            inputDurationLayout.error = null
+            inputWeightLayout.error = null
+
+            val repsParsed = inputReps.text?.toString()?.trim()?.toIntOrNull()
+            val durParsed = inputDuration.text?.toString()?.trim()?.toIntOrNull()
+            val weightParsed = inputWeight.text?.toString()?.trim().orEmpty().toFloatOrNull()
+
+            if (config.countingMethod != CountingMethod.HOLD) {
+                val tr = repsParsed ?: defaultReps
+                if (tr <= 0) {
+                    inputRepsLayout.error = "Invalid reps"
+                    return@setOnClickListener
+                }
+            } else {
+                val td = durParsed ?: defaultDurationSec
+                if (td <= 0) {
+                    inputDurationLayout.error = "Invalid duration"
+                    return@setOnClickListener
+                }
+            }
+
+            if (config.supportsWeight && weightParsed != null) {
+                val minW = config.minWeight
+                val maxW = config.maxWeight
+                if (minW != null && weightParsed < minW) {
+                    inputWeightLayout.error = getString(R.string.weight_min_error, minW)
+                    return@setOnClickListener
+                }
+                if (maxW != null && weightParsed > maxW) {
+                    inputWeightLayout.error = getString(R.string.weight_max_error, maxW)
+                    return@setOnClickListener
+                }
+            }
+
+            val finalReps = if (config.countingMethod != CountingMethod.HOLD) {
+                (repsParsed ?: defaultReps).coerceAtLeast(1)
+            } else {
+                null
+            }
+            val finalDur = if (config.countingMethod == CountingMethod.HOLD) {
+                (durParsed ?: defaultDurationSec).coerceAtLeast(1)
+            } else {
+                null
+            }
+            val finalWeight = if (config.supportsWeight) weightParsed else null
+
+            applyAndDismiss(finalReps, finalDur, finalWeight)
+        }
+
+        btnReset.setOnClickListener {
+            store.remove(slug)
+            viewModel.rebuildTrainingEngineWithOverrides(
+                targetRepsOverride = null,
+                targetDurationMsOverride = null,
+                weightKg = if (config.supportsWeight) config.defaultWeight else null,
+                weightUnit = "kg"
+            )
+            pushUserExercisePreferenceDelete(slug)
+            inputReps.setText(config.repCountingConfig.reps.toString())
+            inputDuration.setText(
+                (config.repCountingConfig.duration ?: SettingsManager.getDefaultHoldDuration()).toString()
+            )
+            inputWeight.setText(config.defaultWeight?.toString().orEmpty())
+        }
+
+        dialog.setOnDismissListener {
+            isWeightDialogVisible = false
+        }
+
+        dialog.show()
+    }
+
+    private fun pushUserExercisePreferenceToBackend(
+        slug: String,
+        stored: UserExercisePreferenceStore.Stored,
+        clearOnServer: Boolean
+    ) {
+        lifecycleScope.launch(Dispatchers.IO) {
+            try {
+                val auth = AuthManager.getAuthHeader(this@TrainingActivity) ?: return@launch
+                val exerciseId = ExerciseRepository.getInstance(applicationContext).getExerciseServerId(slug)
+                    ?: return@launch
+                if (clearOnServer) {
+                    ApiClient.mobileSyncApi.deleteExercisePreference(exerciseId, auth)
+                } else {
+                    ApiClient.mobileSyncApi.upsertExercisePreference(
+                        exerciseId,
+                        auth,
+                        UserExercisePreferenceUpsertRequest(
+                            customReps = stored.customReps,
+                            customDurationSec = stored.customDurationSec,
+                            customWeightKg = stored.customWeightKg
+                        )
+                    )
+                }
+            } catch (e: Exception) {
+                Log.w(TAG, "pushUserExercisePreferenceToBackend failed", e)
+            }
+        }
+    }
+
+    private fun pushUserExercisePreferenceDelete(slug: String) {
+        lifecycleScope.launch(Dispatchers.IO) {
+            try {
+                val auth = AuthManager.getAuthHeader(this@TrainingActivity) ?: return@launch
+                val exerciseId = ExerciseRepository.getInstance(applicationContext).getExerciseServerId(slug)
+                    ?: return@launch
+                ApiClient.mobileSyncApi.deleteExercisePreference(exerciseId, auth)
+            } catch (e: Exception) {
+                Log.w(TAG, "pushUserExercisePreferenceDelete failed", e)
+            }
+        }
     }
     
     // ==================== Session Mode ====================
@@ -816,8 +1067,8 @@ class TrainingActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetection
         // Record set start time for duration tracking
         sessionSetStartTimeMs = System.currentTimeMillis()
 
-        // Show weight dialog if applicable
-        maybeShowWeightDialog()
+        // Show weight dialog if applicable (session mode)
+        maybeShowSessionWeightDialog()
 
         // Initialize feedback if not yet done
         if (viewModel.feedbackManager == null) {

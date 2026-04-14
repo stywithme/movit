@@ -15,12 +15,13 @@ import com.trainingvalidator.poc.assessment.engine.AssessmentTemplateManager
  * What is cleared (user-specific):
  *   - HomeRepository cache            (home_cache)
  *   - ExploreRepository cache         (explore_cache)
- *   - DayCustomizationStore           (day_customization_store)
- *   - UserProgramStore                (user_program_store)
- *   - ProgramSessionReportStore       (program_session_report_store)
+ *   - DayCustomizationStore         (day_customization_store)
+ *   - UserProgramStore              (user_program_store)
+ *   - ProgramSessionReportStore     (program_session_report_store)
+ *   - UserExercisePreferenceStore   (user_exercise_preferences)
  *   - AssessmentTemplateManager cache (assessment_template_cache)
- *   - HomeRepository singleton        (in-memory)
- *   - ExploreRepository singleton     (in-memory)
+ *   - HomeRepository singleton      (in-memory)
+ *   - ExploreRepository singleton   (in-memory)
  *
  * What is NOT cleared:
  *   - AuthManager (app_prefs) — managed separately by the caller
@@ -37,6 +38,7 @@ object UserDataCleaner {
     private const val PREFS_USER_PROGRAM = "user_program_store"
     private const val PREFS_SESSION_REPORT_LEGACY = "program_session_report_store"
     private const val PREFS_ASSESSMENT_TEMPLATE = "assessment_template_cache"
+    private const val PREFS_USER_EXERCISE_PREFS = UserExercisePreferenceStore.PREFS_NAME
 
     fun clearAll(context: Context) {
         val appContext = context.applicationContext
@@ -47,6 +49,7 @@ object UserDataCleaner {
         clearPrefs(appContext, PREFS_DAY_CUSTOMIZATION)
         clearPrefs(appContext, PREFS_USER_PROGRAM)
         clearPrefs(appContext, PREFS_SESSION_REPORT_LEGACY)
+        clearPrefs(appContext, PREFS_USER_EXERCISE_PREFS)
         clearPrefs(appContext, PREFS_ASSESSMENT_TEMPLATE)
 
         HomeRepository.resetInstance()

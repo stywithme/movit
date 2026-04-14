@@ -6,6 +6,7 @@ import retrofit2.http.GET
 import retrofit2.http.Header
 import retrofit2.http.POST
 import retrofit2.http.PUT
+import retrofit2.http.DELETE
 import retrofit2.http.Path
 import retrofit2.http.Query
 import retrofit2.http.Streaming
@@ -315,5 +316,20 @@ interface MobileSyncApi {
         @Path("id") userProgramId: String,
         @Header("Authorization") authorization: String,
         @Body payload: Map<String, @JvmSuppressWildcards Any>
+    ): Response<ResponseBody>
+
+    // ─── User exercise preferences (standalone targets) ─────────────────
+
+    @PUT("api/mobile/exercise-preferences/{exerciseId}")
+    suspend fun upsertExercisePreference(
+        @Path("exerciseId") exerciseId: String,
+        @Header("Authorization") authorization: String,
+        @Body body: UserExercisePreferenceUpsertRequest
+    ): Response<ExercisePreferenceApiResponse>
+
+    @DELETE("api/mobile/exercise-preferences/{exerciseId}")
+    suspend fun deleteExercisePreference(
+        @Path("exerciseId") exerciseId: String,
+        @Header("Authorization") authorization: String
     ): Response<ResponseBody>
 }

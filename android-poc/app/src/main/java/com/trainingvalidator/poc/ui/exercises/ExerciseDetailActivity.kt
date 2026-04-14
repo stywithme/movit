@@ -22,6 +22,7 @@ import com.trainingvalidator.poc.R
 import com.trainingvalidator.poc.databinding.ActivityExerciseDetailBinding
 import com.trainingvalidator.poc.training.models.CountingMethod
 import com.trainingvalidator.poc.training.models.ExerciseConfig
+import com.trainingvalidator.poc.storage.UserExercisePreferenceStore
 import com.trainingvalidator.poc.ui.train.TrainingActivity
 
 /**
@@ -255,16 +256,29 @@ class ExerciseDetailActivity : AppCompatActivity() {
         // Replace difficulty label with unified evaluation message (UI text in English)
         binding.tvTolerance.text = "Unified evaluation (no difficulty selection)"
 
-        // Target display now comes from exerciseConfig.repCountingConfig
+        // Target display: user preference overrides defaults when present
         val exercise = exerciseConfig ?: return
+        val slug = exercise.fileName
+        val pref = UserExercisePreferenceStore(this).get(slug)
+
         binding.tvTargetReps.text = when (exercise.countingMethod) {
             CountingMethod.HOLD -> {
-                val duration = exercise.repCountingConfig.duration ?: 30
-                "Target: ${duration} seconds"
+                val defaultSec = exercise.repCountingConfig.duration ?: 30
+                val effective = pref?.customDurationSec ?: defaultSec
+                if (pref?.customDurationSec != null) {
+                    getString(R.string.exercise_target_duration_custom, effective)
+                } else {
+                    getString(R.string.exercise_target_duration_default, effective)
+                }
             }
             else -> {
-                val reps = exercise.repCountingConfig.reps
-                "Target: $reps reps"
+                val defaultReps = exercise.repCountingConfig.reps
+                val effective = pref?.customReps ?: defaultReps
+                if (pref?.customReps != null) {
+                    getString(R.string.exercise_target_reps_custom, effective)
+                } else {
+                    getString(R.string.exercise_target_reps_default, effective)
+                }
             }
         }
     }

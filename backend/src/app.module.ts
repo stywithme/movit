@@ -37,6 +37,7 @@ import { BookingReportModule } from './modules/booking-report/booking-report.mod
 import { SystemModule } from './modules/system/system.module';
 import { PlanModule } from './modules/plan/plan.module';
 import { SubscriptionModule } from './modules/subscription/subscription.module';
+import { UserExercisePreferencesModule } from './modules/user-exercise-preferences/user-exercise-preferences.module';
 
 @Module({
   imports: [
@@ -84,6 +85,7 @@ import { SubscriptionModule } from './modules/subscription/subscription.module';
     SystemModule,
     PlanModule,
     SubscriptionModule,
+    UserExercisePreferencesModule,
   ],
 })
 export class AppModule { }
