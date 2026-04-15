@@ -5,7 +5,8 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:id="@+id/swipeRefresh"
     android:layout_width="match_parent"
-    android:layout_height="match_parent">
+    android:layout_height="match_parent"
+    android:fitsSystemWindows="true">
 
     <androidx.core.widget.NestedScrollView
         android:id="@+id/scrollView"
@@ -18,19 +19,33 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="vertical"
-        android:paddingTop="@dimen/spacing_3xl"
         android:paddingBottom="96dp">
 
         <LinearLayout
             style="@style/Widget.WayToFix.Header.MainTab">
 
-            <TextView
+            <LinearLayout
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
-                android:text="@string/nav_explore"
-                android:textAppearance="@style/TextAppearance.WayToFix.Headline2"
-                android:textColor="@color/text_primary" />
+                android:orientation="vertical">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="@string/nav_explore"
+                    android:textAppearance="@style/TextAppearance.WayToFix.Headline2"
+                    android:textColor="@color/text_primary" />
+
+                <TextView
+                    style="@style/TextAppearance.WayToFix.Body2"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="@dimen/spacing_xs"
+                    android:text="@string/main_tab_header_explore_subtitle"
+                    android:textColor="@color/text_secondary" />
+
+            </LinearLayout>
 
             <com.google.android.material.imageview.ShapeableImageView
                 android:id="@+id/ivAvatar"

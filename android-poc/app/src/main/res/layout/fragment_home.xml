@@ -23,8 +23,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:orientation="vertical"
-                android:paddingTop="@dimen/spacing_3xl"
-            android:paddingBottom="100dp">
+                android:paddingBottom="100dp">
 
             <!-- Header -->
             <LinearLayout
@@ -49,6 +48,7 @@
                         style="@style/TextAppearance.WayToFix.Headline2"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
+                        android:layout_marginTop="@dimen/spacing_xs"
                         android:textColor="@color/text_primary"
                         tools:text="Mahmoud" />
 

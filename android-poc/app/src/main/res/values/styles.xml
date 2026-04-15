@@ -111,14 +111,19 @@
         <item name="android:orientation">horizontal</item>
         <item name="android:paddingStart">@dimen/screen_padding_horizontal</item>
         <item name="android:paddingEnd">@dimen/screen_padding_horizontal</item>
-        <item name="android:paddingBottom">@dimen/spacing_lg</item>
+        <!-- Same top/bottom padding for all main-tab headers (title + optional subtitle + avatar) -->
+        <item name="android:paddingTop">@dimen/spacing_3xl</item>
+        <item name="android:paddingBottom">@dimen/spacing_3xl</item>
     </style>
 
+    <!-- Ring matches legacy @drawable/bg_avatar_circle; stroke draws on top of the circular shape. -->
     <style name="Widget.WayToFix.Avatar">
-        <item name="android:background">@drawable/bg_avatar_circle</item>
-        <item name="android:padding">2dp</item>
-        <item name="android:scaleType">centerCrop</item>
         <item name="shapeAppearanceOverlay">@style/ShapeAppearanceOverlay.WayToFix.Circle</item>
+        <item name="android:backgroundTint">@color/surface</item>
+        <item name="strokeWidth">3dp</item>
+        <item name="strokeColor">@color/surface_border</item>
+        <item name="contentPadding">2dp</item>
+        <item name="android:scaleType">centerCrop</item>
     </style>
 
     <style name="Widget.WayToFix.Avatar.Small">

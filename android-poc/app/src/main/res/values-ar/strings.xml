@@ -728,6 +728,9 @@
 
     <!-- Reports Hub -->
     <string name="reports_title">التقارير</string>
+    <string name="main_tab_header_explore_subtitle">تمارين وبرامج في مكان واحد.</string>
+    <string name="main_tab_header_reports_subtitle">شاهد أداءك واتجاهاتك وإنجازاتك.</string>
+    <string name="main_tab_header_train_subtitle">برنامجك الحالي وجلسات الأسبوع.</string>
     <string name="reports_tab_overview">نظرة عامة</string>
     <string name="reports_tab_exercises">التمارين</string>
     <string name="reports_tab_trends">الاتجاهات</string>
