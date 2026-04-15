@@ -14,6 +14,7 @@ fun ImageView.bindUserAvatar(avatarUrl: String?) {
     val url = avatarUrl?.trim().takeUnless { it.isNullOrEmpty() }
     ImageViewCompat.setImageTintList(this, null)
     if (url == null) {
+        scaleType = ImageView.ScaleType.CENTER_INSIDE
         setImageResource(R.drawable.ic_person)
         ImageViewCompat.setImageTintList(
             this,
@@ -21,15 +22,18 @@ fun ImageView.bindUserAvatar(avatarUrl: String?) {
         )
         return
     }
+    scaleType = ImageView.ScaleType.CENTER_CROP
     load(url) {
         placeholder(R.drawable.ic_person)
         error(R.drawable.ic_person)
         crossfade(true)
         listener(
             onSuccess = { _, _ ->
+                this@bindUserAvatar.scaleType = ImageView.ScaleType.CENTER_CROP
                 ImageViewCompat.setImageTintList(this@bindUserAvatar, null)
             },
             onError = { _, _ ->
+                this@bindUserAvatar.scaleType = ImageView.ScaleType.CENTER_INSIDE
                 setImageResource(R.drawable.ic_person)
                 ImageViewCompat.setImageTintList(
                     this@bindUserAvatar,

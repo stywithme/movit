@@ -24,17 +24,12 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="vertical"
-            android:paddingTop="@dimen/spacing_xl"
+            android:paddingTop="@dimen/spacing_3xl"
             android:paddingBottom="100dp">
 
             <!-- Main tab header: title + profile avatar -->
             <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:gravity="center_vertical"
-                android:orientation="horizontal"
-                android:paddingHorizontal="@dimen/screen_padding_horizontal"
-                android:paddingBottom="@dimen/spacing_base">
+                style="@style/Widget.WayToFix.Header.MainTab">
 
                 <TextView
                     style="@style/TextAppearance.WayToFix.Headline2"
@@ -46,13 +41,9 @@
 
                 <com.google.android.material.imageview.ShapeableImageView
                     android:id="@+id/ivAvatar"
-                    android:layout_width="48dp"
-                    android:layout_height="48dp"
-                    android:background="@drawable/bg_avatar_circle"
+                    style="@style/Widget.WayToFix.Avatar.Small"
                     android:contentDescription="@string/cd_avatar"
-                    android:padding="2dp"
-                    android:scaleType="centerCrop"
-                    app:srcCompat="@drawable/ic_person" />
+                    android:src="@drawable/ic_person" />
             </LinearLayout>
 
             <!-- STATE 1: No Active Program — Browse Programs -->

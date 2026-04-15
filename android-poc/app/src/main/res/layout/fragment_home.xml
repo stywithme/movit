@@ -28,11 +28,7 @@
 
             <!-- Header -->
             <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:gravity="center_vertical"
-                android:paddingHorizontal="@dimen/screen_padding_horizontal"
-                android:paddingBottom="@dimen/spacing_lg">
+                style="@style/Widget.WayToFix.Header.MainTab">
 
                 <LinearLayout
                     android:layout_width="0dp"
@@ -58,14 +54,10 @@
 
                 </LinearLayout>
 
-                <ImageView
+                <com.google.android.material.imageview.ShapeableImageView
                     android:id="@+id/ivAvatar"
-                    android:layout_width="48dp"
-                    android:layout_height="48dp"
-                    android:background="@drawable/bg_avatar_circle"
+                    style="@style/Widget.WayToFix.Avatar.Small"
                     android:contentDescription="@string/cd_profile"
-                    android:padding="2dp"
-                    android:scaleType="centerCrop"
                     android:src="@drawable/ic_person" />
 
             </LinearLayout>
