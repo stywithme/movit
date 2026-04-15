@@ -7,20 +7,34 @@
     android:layout_height="match_parent"
     android:background="@color/background"
     android:fitsSystemWindows="true"
-    android:paddingTop="@dimen/spacing_3xl"
     android:orientation="vertical">
 
-    <!-- Header: screen title + profile avatar -->
+    <!-- Header: screen title + short subtitle + profile avatar -->
     <LinearLayout
         style="@style/Widget.WayToFix.Header.MainTab">
 
-        <TextView
-            style="@style/TextAppearance.WayToFix.Headline2"
+        <LinearLayout
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
-            android:text="@string/reports_title"
-            android:textColor="@color/text_primary" />
+            android:orientation="vertical">
+
+            <TextView
+                style="@style/TextAppearance.WayToFix.Headline2"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/reports_title"
+                android:textColor="@color/text_primary" />
+
+            <TextView
+                style="@style/TextAppearance.WayToFix.Body2"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="@dimen/spacing_xs"
+                android:text="@string/main_tab_header_reports_subtitle"
+                android:textColor="@color/text_secondary" />
+
+        </LinearLayout>
 
         <com.google.android.material.imageview.ShapeableImageView
             android:id="@+id/ivAvatar"

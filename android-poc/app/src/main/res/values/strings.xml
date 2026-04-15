@@ -712,6 +712,10 @@
 
     <!-- Reports Hub -->
     <string name="reports_title">Reports</string>
+    <!-- Main tab headers: one-line subtitle under the screen title (same pattern on Explore / Train / Reports) -->
+    <string name="main_tab_header_explore_subtitle">Workouts and exercises in one place.</string>
+    <string name="main_tab_header_reports_subtitle">See your form, trends, and milestones.</string>
+    <string name="main_tab_header_train_subtitle">Your active program and weekly sessions.</string>
     <string name="reports_tab_overview">Overview</string>
     <string name="reports_tab_exercises">Exercises</string>
     <string name="reports_tab_trends">Trends</string>
