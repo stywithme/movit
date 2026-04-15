@@ -353,7 +353,7 @@ export function MessagePickerModal({
                         {/* Expand toggle */}
                         <button
                           type="button"
-                          className="text-xs text-gray-400 hover:text-gray-600 mt-1"
+                          className="text-xs text-gray-600 hover:text-gray-800 mt-1"
                           onClick={(e) => {
                             e.stopPropagation();
                             setExpandedId(isExpanded ? null : msg.id);

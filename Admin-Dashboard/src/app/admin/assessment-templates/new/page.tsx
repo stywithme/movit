@@ -517,7 +517,7 @@ export default function NewAssessmentTemplatePage() {
                       type="button"
                       onClick={() => moveExercise(index, 'up')}
                       disabled={index === 0}
-                      className="p-1 text-gray-400 hover:text-gray-600 disabled:opacity-30 rounded"
+                      className="p-1 text-gray-600 hover:text-gray-800 disabled:opacity-30 rounded"
                     >
                       <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" />
@@ -527,7 +527,7 @@ export default function NewAssessmentTemplatePage() {
                       type="button"
                       onClick={() => moveExercise(index, 'down')}
                       disabled={index === exercises.length - 1}
-                      className="p-1 text-gray-400 hover:text-gray-600 disabled:opacity-30 rounded"
+                      className="p-1 text-gray-600 hover:text-gray-800 disabled:opacity-30 rounded"
                     >
                       <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />

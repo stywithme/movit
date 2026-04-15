@@ -231,14 +231,14 @@ export default function AdminsPage() {
               <button
                 onClick={() => fetchAdmins(pagination.page - 1)}
                 disabled={pagination.page === 1}
-                className="px-3 py-1 border rounded text-sm disabled:opacity-50"
+                className="px-3 py-1.5 border border-gray-300 bg-white text-gray-800 rounded text-sm hover:bg-gray-50 disabled:bg-gray-100 disabled:text-gray-400 disabled:border-gray-200 disabled:cursor-not-allowed"
               >
                 Previous
               </button>
               <button
                 onClick={() => fetchAdmins(pagination.page + 1)}
                 disabled={pagination.page === pagination.totalPages}
-                className="px-3 py-1 border rounded text-sm disabled:opacity-50"
+                className="px-3 py-1.5 border border-gray-300 bg-white text-gray-800 rounded text-sm hover:bg-gray-50 disabled:bg-gray-100 disabled:text-gray-400 disabled:border-gray-200 disabled:cursor-not-allowed"
               >
                 Next
               </button>

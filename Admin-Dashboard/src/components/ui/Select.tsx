@@ -22,27 +22,27 @@ const Select = React.forwardRef<HTMLSelectElement, SelectProps>(
         <select
           className={cn(
             'w-full px-4 py-3 pr-10 rounded-lg border-2 transition-colors appearance-none',
-            'text-black font-medium bg-white',
+            'text-gray-900 font-medium bg-white',
             'focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500',
-            'disabled:bg-gray-100 disabled:cursor-not-allowed disabled:opacity-60 disabled:text-gray-500',
-            error ? 'border-red-300 bg-red-50 text-black' : 'border-gray-300 bg-gray-50/50',
+            'disabled:bg-gray-100 disabled:cursor-not-allowed disabled:opacity-70 disabled:text-gray-600',
+            error ? 'border-red-300 bg-red-50 text-gray-900' : 'border-gray-300 bg-white',
             className
           )}
           ref={ref}
           {...props}
         >
           {placeholder && (
-            <option value="" disabled>
+            <option value="" disabled className="text-gray-600 bg-white">
               {placeholder}
             </option>
           )}
           {Array.isArray(options) && options.map((option) => (
-            <option key={option.value} value={option.value} disabled={option.disabled}>
+            <option key={option.value} value={option.value} disabled={option.disabled} className="text-gray-900 bg-white">
               {option.label}
             </option>
           ))}
         </select>
-        <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 pointer-events-none" />
+        <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-600 pointer-events-none" />
         {helperText && (
           <p className={cn(
             'mt-1.5 text-sm',
