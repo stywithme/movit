@@ -59,14 +59,10 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content">
 
-                <ImageView
+                <com.google.android.material.imageview.ShapeableImageView
                     android:id="@+id/ivAvatar"
-                    android:layout_width="100dp"
-                    android:layout_height="100dp"
-                    android:background="@drawable/bg_avatar_circle"
+                    style="@style/Widget.WayToFix.Avatar.Large"
                     android:contentDescription="@string/cd_avatar"
-                    android:padding="2dp"
-                    android:scaleType="centerCrop"
                     android:src="@drawable/ic_person" />
 
                 <ImageView

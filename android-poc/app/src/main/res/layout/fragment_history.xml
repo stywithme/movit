@@ -7,16 +7,12 @@
     android:layout_height="match_parent"
     android:background="@color/background"
     android:fitsSystemWindows="true"
+    android:paddingTop="@dimen/spacing_3xl"
     android:orientation="vertical">
 
     <!-- Header: screen title + profile avatar -->
     <LinearLayout
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginHorizontal="@dimen/screen_padding_horizontal"
-        android:layout_marginTop="@dimen/spacing_3xl"
-        android:gravity="center_vertical"
-        android:orientation="horizontal">
+        style="@style/Widget.WayToFix.Header.MainTab">
 
         <TextView
             style="@style/TextAppearance.WayToFix.Headline2"
@@ -28,13 +24,9 @@
 
         <com.google.android.material.imageview.ShapeableImageView
             android:id="@+id/ivAvatar"
-            android:layout_width="48dp"
-            android:layout_height="48dp"
-            android:background="@drawable/bg_avatar_circle"
+            style="@style/Widget.WayToFix.Avatar.Small"
             android:contentDescription="@string/cd_avatar"
-            android:padding="2dp"
-            android:scaleType="centerCrop"
-            app:srcCompat="@drawable/ic_person" />
+            android:src="@drawable/ic_person" />
     </LinearLayout>
 
     <!-- Tabs: Overview | Exercises | Trends | Records -->

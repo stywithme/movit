@@ -84,4 +84,50 @@
         <item name="chipEndPadding">@dimen/spacing_md</item>
         <item name="checkedIconVisible">false</item>
     </style>
+
+    <!-- ═══════════════════════════════════════════════════ -->
+    <!-- HEADERS & AVATARS -->
+    <!-- Dot-separated style names imply a parent chain: each segment must exist. -->
+    <!-- e.g. ShapeAppearanceOverlay.WayToFix.Circle needs ShapeAppearanceOverlay.WayToFix and ShapeAppearanceOverlay. -->
+    <!-- e.g. Widget.WayToFix.Header needs Widget.WayToFix (Widget exists in the framework). -->
+    <!-- ═══════════════════════════════════════════════════ -->
+    <style name="ShapeAppearanceOverlay" />
+    <style name="ShapeAppearanceOverlay.WayToFix" />
+
+    <style name="ShapeAppearanceOverlay.WayToFix.Circle">
+        <item name="cornerFamily">rounded</item>
+        <item name="cornerSize">50%</item>
+    </style>
+
+    <style name="Widget.WayToFix" parent="" />
+
+    <style name="Widget.WayToFix.Header">
+        <item name="android:layout_width">match_parent</item>
+        <item name="android:layout_height">wrap_content</item>
+    </style>
+
+    <style name="Widget.WayToFix.Header.MainTab">
+        <item name="android:gravity">center_vertical</item>
+        <item name="android:orientation">horizontal</item>
+        <item name="android:paddingStart">@dimen/screen_padding_horizontal</item>
+        <item name="android:paddingEnd">@dimen/screen_padding_horizontal</item>
+        <item name="android:paddingBottom">@dimen/spacing_lg</item>
+    </style>
+
+    <style name="Widget.WayToFix.Avatar">
+        <item name="android:background">@drawable/bg_avatar_circle</item>
+        <item name="android:padding">2dp</item>
+        <item name="android:scaleType">centerCrop</item>
+        <item name="shapeAppearanceOverlay">@style/ShapeAppearanceOverlay.WayToFix.Circle</item>
+    </style>
+
+    <style name="Widget.WayToFix.Avatar.Small">
+        <item name="android:layout_width">48dp</item>
+        <item name="android:layout_height">48dp</item>
+    </style>
+
+    <style name="Widget.WayToFix.Avatar.Large">
+        <item name="android:layout_width">100dp</item>
+        <item name="android:layout_height">100dp</item>
+    </style>
 </resources>

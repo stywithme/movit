@@ -18,57 +18,27 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="vertical"
+        android:paddingTop="@dimen/spacing_3xl"
         android:paddingBottom="96dp">
 
-        <androidx.constraintlayout.widget.ConstraintLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:paddingHorizontal="@dimen/screen_padding_horizontal"
-            android:paddingTop="32dp"
-            android:paddingBottom="12dp">
+        <LinearLayout
+            style="@style/Widget.WayToFix.Header.MainTab">
 
-            <LinearLayout
-                android:id="@+id/layoutTitleGroup"
+            <TextView
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
-                android:layout_marginEnd="16dp"
-                android:orientation="vertical"
-                app:layout_constraintBottom_toBottomOf="parent"
-                app:layout_constraintEnd_toStartOf="@+id/ivAvatar"
-                app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintTop_toTopOf="parent">
-
-                <TextView
-                    android:id="@+id/tvExploreTitle"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="@string/nav_explore"
-                    android:textAppearance="@style/TextAppearance.WayToFix.Headline2" />
-
-                <TextView
-                    android:id="@+id/tvExploreSubtitle"
-                    style="@style/TextAppearance.WayToFix.Body2"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="4dp"
-                    android:text="@string/explore_mobile_subtitle"
-                    android:textColor="@color/text_secondary" />
-            </LinearLayout>
+                android:layout_weight="1"
+                android:text="@string/nav_explore"
+                android:textAppearance="@style/TextAppearance.WayToFix.Headline2"
+                android:textColor="@color/text_primary" />
 
             <com.google.android.material.imageview.ShapeableImageView
                 android:id="@+id/ivAvatar"
-                android:layout_width="48dp"
-                android:layout_height="48dp"
-                android:background="@drawable/bg_avatar_circle"
+                style="@style/Widget.WayToFix.Avatar.Small"
                 android:contentDescription="@string/cd_avatar"
-                android:padding="2dp"
-                android:scaleType="centerCrop"
-                app:layout_constraintBottom_toBottomOf="parent"
-                app:layout_constraintEnd_toEndOf="parent"
-                app:layout_constraintTop_toTopOf="parent"
-                app:srcCompat="@drawable/ic_person" />
+                android:src="@drawable/ic_person" />
 
-        </androidx.constraintlayout.widget.ConstraintLayout>
+        </LinearLayout>
 
         <com.google.android.material.textfield.TextInputLayout
             android:id="@+id/tilSearch"
