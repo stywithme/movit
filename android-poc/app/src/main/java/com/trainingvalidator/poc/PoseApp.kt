@@ -1,7 +1,12 @@
 package com.trainingvalidator.poc
 
+import android.app.Activity
 import android.app.Application
 import android.os.Build
+import android.os.Bundle
+import androidx.core.view.WindowCompat
+import androidx.core.view.WindowInsetsCompat
+import androidx.core.view.WindowInsetsControllerCompat
 import coil.ImageLoader
 import coil.ImageLoaderFactory
 import coil.decode.GifDecoder
@@ -9,6 +14,7 @@ import coil.decode.ImageDecoderDecoder
 import com.trainingvalidator.poc.network.ApiClient
 import com.trainingvalidator.poc.storage.SystemMessageStore
 import com.trainingvalidator.poc.training.engine.PostureMlpClassifier
+import com.trainingvalidator.poc.ui.main.MainContainerActivity
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -55,5 +61,31 @@ class PoseApp : Application(), ImageLoaderFactory {
         ApiClient.init(this)
         PostureMlpClassifier.getOrNull(this)
         SystemMessageStore(this).loadIntoRegistry()
+        registerImmersiveMode()
+    }
+
+    /**
+     * Applies immersive fullscreen to every Activity except [MainContainerActivity]
+     * (which has its own BottomNavigationView and needs visible system bars).
+     * System bars auto-hide and reappear transiently on swipe.
+     */
+    private fun registerImmersiveMode() {
+        registerActivityLifecycleCallbacks(object : ActivityLifecycleCallbacks {
+            override fun onActivityCreated(activity: Activity, savedInstanceState: Bundle?) {
+                if (activity is MainContainerActivity) return
+                WindowCompat.setDecorFitsSystemWindows(activity.window, false)
+                WindowInsetsControllerCompat(activity.window, activity.window.decorView).apply {
+                    hide(WindowInsetsCompat.Type.systemBars())
+                    systemBarsBehavior =
+                        WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
+                }
+            }
+            override fun onActivityStarted(activity: Activity) {}
+            override fun onActivityResumed(activity: Activity) {}
+            override fun onActivityPaused(activity: Activity) {}
+            override fun onActivityStopped(activity: Activity) {}
+            override fun onActivitySaveInstanceState(activity: Activity, outState: Bundle) {}
+            override fun onActivityDestroyed(activity: Activity) {}
+        })
     }
 }
