@@ -310,9 +310,9 @@
                 android:divider="@drawable/divider_horizontal"
                 android:showDividers="middle">
 
-                <!-- General -->
+                <!-- Exercise Settings -->
                 <LinearLayout
-                    android:id="@+id/itemGeneral"
+                    android:id="@+id/itemExerciseSettings"
                     android:layout_width="match_parent"
                     android:layout_height="56dp"
                     android:gravity="center_vertical"
@@ -322,7 +322,7 @@
                     <ImageView
                         android:layout_width="24dp"
                         android:layout_height="24dp"
-                        android:src="@drawable/ic_settings"
+                        android:src="@drawable/ic_muscle"
                         app:tint="@color/text_secondary" />
 
                     <TextView
@@ -331,7 +331,7 @@
                         android:layout_height="wrap_content"
                         android:layout_weight="1"
                         android:layout_marginStart="@dimen/spacing_md"
-                        android:text="@string/general"
+                        android:text="@string/exercise_settings"
                         android:textColor="@color/text_primary" />
 
                     <ImageView

@@ -190,7 +190,6 @@
     
     <!-- Common Messages -->
     <string name="coming_soon">قريبًا</string>
-    <string name="general_settings_coming_soon">الإعدادات العامة - قريبًا</string>
     <string name="notifications_settings_coming_soon">إعدادات الإشعارات - قريبًا</string>
     <string name="change_avatar_coming_soon">تغيير الصورة - قريبًا</string>
     <string name="google_sign_in_coming_soon">تسجيل Google - قريبًا</string>
@@ -427,6 +426,7 @@
     <string name="minutes_trained">دقائق التدريب</string>
     <string name="settings">الإعدادات</string>
     <string name="general">عام</string>
+    <string name="exercise_settings">إعدادات التمرين</string>
     <string name="voice_feedback">التعليق الصوتي</string>
     <string name="voice_feedback_desc">تصحيح الأداء في الوقت الفعلي</string>
     <string name="notifications">الإشعارات</string>
