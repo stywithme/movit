@@ -65,7 +65,7 @@ export default function LevelAnalyticsPage() {
         <div className="flex items-center gap-4">
           <Link
             href="/admin/analytics"
-            className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
+            className="p-2 text-gray-600 hover:text-gray-800 hover:bg-gray-100 rounded-lg transition-colors"
           >
             <ArrowLeft className="h-5 w-5" />
           </Link>

@@ -86,21 +86,21 @@ export function SearchableSelect({
           aria-label={ariaLabel}
           className={cn(
             'w-full flex items-center justify-between gap-2 px-4 py-3 rounded-lg border-2 transition-colors text-left',
-            'text-black font-medium',
+            'text-gray-900 font-medium',
             'focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500',
-            'disabled:bg-gray-100 disabled:cursor-not-allowed disabled:opacity-60',
-            'border-gray-300 bg-gray-50/50',
+            'disabled:bg-gray-100 disabled:cursor-not-allowed disabled:opacity-70 disabled:text-gray-600',
+            'border-gray-300 bg-white',
             className
           )}
         >
-          <span className="truncate">{selectedLabel}</span>
-          <ChevronDown className="h-4 w-4 shrink-0 text-gray-500" />
+          <span className={cn('truncate', value ? 'text-gray-900' : 'text-gray-600')}>{selectedLabel}</span>
+          <ChevronDown className="h-4 w-4 shrink-0 text-gray-600" />
         </button>
       </Popover.Trigger>
       <Popover.Portal>
         <Popover.Content
           className={cn(
-            'z-[100] w-[var(--radix-popover-trigger-width)] rounded-lg border-2 border-gray-200 bg-white p-2 shadow-lg',
+            'z-[100] w-[var(--radix-popover-trigger-width)] rounded-lg border-2 border-gray-200 bg-white p-2 shadow-xl',
             'data-[state=open]:animate-in data-[state=closed]:animate-out'
           )}
           sideOffset={4}
@@ -117,10 +117,10 @@ export function SearchableSelect({
           <div
             ref={listRef}
             role="listbox"
-            className="max-h-56 overflow-y-auto rounded-md border border-gray-100"
+            className="max-h-56 overflow-y-auto rounded-md border border-gray-200 bg-white"
           >
             {filtered.length === 0 ? (
-              <div className="px-3 py-2 text-sm text-gray-500">No matches</div>
+              <div className="px-3 py-2 text-sm text-gray-600">No matches</div>
             ) : (
               filtered.map((opt) => (
                 <button
@@ -131,10 +131,10 @@ export function SearchableSelect({
                   disabled={opt.disabled}
                   onClick={() => !opt.disabled && handleSelect(opt.value)}
                   className={cn(
-                    'w-full text-left px-3 py-2 text-sm transition-colors',
+                    'w-full bg-white text-left px-3 py-2 text-sm text-gray-900 transition-colors',
                     'hover:bg-blue-50 focus:bg-blue-50 focus:outline-none',
-                    value === opt.value && 'bg-blue-100 font-medium',
-                    opt.disabled && 'opacity-50 cursor-not-allowed'
+                    value === opt.value && 'bg-blue-100 text-blue-950 font-medium',
+                    opt.disabled && 'cursor-not-allowed text-gray-400'
                   )}
                 >
                   {opt.label}

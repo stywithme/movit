@@ -56,7 +56,7 @@ function Tooltip({
           {children || (
             <button
               type="button"
-              className="inline-flex items-center justify-center w-5 h-5 rounded-full text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="inline-flex items-center justify-center w-5 h-5 rounded-full text-gray-600 hover:text-gray-800 hover:bg-gray-100 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500"
             >
               <HelpCircle className="w-4 h-4" />
             </button>

@@ -424,14 +424,14 @@ export default function ExerciseProgressionDetailPage() {
                       <button
                         onClick={() => movePriority(idx, -1)}
                         disabled={idx === 0}
-                        className="text-gray-400 hover:text-gray-600 disabled:opacity-30 text-xs"
+                        className="text-gray-600 hover:text-gray-800 disabled:opacity-30 text-xs"
                       >
                         ▲
                       </button>
                       <button
                         onClick={() => movePriority(idx, 1)}
                         disabled={idx === priorityOrder.length - 1}
-                        className="text-gray-400 hover:text-gray-600 disabled:opacity-30 text-xs"
+                        className="text-gray-600 hover:text-gray-800 disabled:opacity-30 text-xs"
                       >
                         ▼
                       </button>
