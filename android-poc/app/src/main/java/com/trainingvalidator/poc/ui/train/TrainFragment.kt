@@ -17,6 +17,7 @@ import androidx.recyclerview.widget.RecyclerView
 import com.google.android.material.bottomsheet.BottomSheetDialog
 import com.google.android.material.button.MaterialButton
 import com.google.android.material.card.MaterialCardView
+import com.trainingvalidator.poc.ui.utils.bindUserAvatar
 import com.trainingvalidator.poc.ui.utils.currentLanguage
 import com.trainingvalidator.poc.R
 import com.trainingvalidator.poc.databinding.FragmentTrainBinding
@@ -30,6 +31,8 @@ import com.trainingvalidator.poc.training.models.ProgramConfig
 import com.trainingvalidator.poc.training.models.ProgramDay
 import com.trainingvalidator.poc.training.models.ProgramSession
 import com.trainingvalidator.poc.training.models.ProgramWeek
+import com.trainingvalidator.poc.storage.AuthManager
+import com.trainingvalidator.poc.ui.profile.ProfileActivity
 import com.trainingvalidator.poc.ui.programs.ProgramDetailActivity
 import com.trainingvalidator.poc.ui.programs.ProgramListActivity
 import com.trainingvalidator.poc.ui.programs.ProgramSessionActivity
@@ -84,8 +87,16 @@ class TrainFragment : Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         setupSwipeRefresh()
+        setupHeaderAvatar()
         isFirstLoad = true
         loadPage()
+    }
+
+    private fun setupHeaderAvatar() {
+        binding.ivAvatar.setOnClickListener {
+            startActivity(Intent(requireContext(), ProfileActivity::class.java))
+        }
+        binding.ivAvatar.bindUserAvatar(AuthManager.getAvatarUrl(requireContext()))
     }
 
     private fun setupSwipeRefresh() {
@@ -126,6 +137,8 @@ class TrainFragment : Fragment() {
     override fun onResume() {
         super.onResume()
         if (_binding == null) return
+
+        binding.ivAvatar.bindUserAvatar(AuthManager.getAvatarUrl(requireContext()))
 
         if (isFirstLoad) {
             isFirstLoad = false

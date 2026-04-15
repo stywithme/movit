@@ -45,17 +45,6 @@
                     android:src="@drawable/ic_filter"
                     app:tint="@color/text_secondary" />
 
-                <ImageView
-                    android:id="@+id/ivAvatar"
-                    android:layout_width="40dp"
-                    android:layout_height="40dp"
-                    android:layout_marginStart="@dimen/spacing_sm"
-                    android:background="@drawable/bg_avatar_circle"
-                    android:padding="2dp"
-                    android:src="@drawable/ic_person"
-                    app:tint="@color/text_secondary"
-                    android:contentDescription="@string/cd_profile" />
-
             </LinearLayout>
 
             <!-- Search Bar -->

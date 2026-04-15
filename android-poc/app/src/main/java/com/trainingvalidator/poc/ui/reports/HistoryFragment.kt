@@ -1,5 +1,6 @@
 package com.trainingvalidator.poc.ui.reports
 
+import android.content.Intent
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
@@ -13,6 +14,9 @@ import androidx.viewpager2.adapter.FragmentStateAdapter
 import com.google.android.material.tabs.TabLayoutMediator
 import com.trainingvalidator.poc.R
 import com.trainingvalidator.poc.databinding.FragmentHistoryBinding
+import com.trainingvalidator.poc.storage.AuthManager
+import com.trainingvalidator.poc.ui.profile.ProfileActivity
+import com.trainingvalidator.poc.ui.utils.bindUserAvatar
 import kotlinx.coroutines.launch
 
 /**
@@ -38,10 +42,27 @@ class HistoryFragment : Fragment() {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
+        setupHeaderAvatar()
         setupSwipeRefresh()
         setupTabs()
         observeLoadingState()
         viewModel.loadMetrics()
+    }
+
+    override fun onResume() {
+        super.onResume()
+        if (_binding != null) bindHeaderAvatar()
+    }
+
+    private fun setupHeaderAvatar() {
+        binding.ivAvatar.setOnClickListener {
+            startActivity(Intent(requireContext(), ProfileActivity::class.java))
+        }
+        bindHeaderAvatar()
+    }
+
+    private fun bindHeaderAvatar() {
+        binding.ivAvatar.bindUserAvatar(AuthManager.getAvatarUrl(requireContext()))
     }
 
     private fun setupSwipeRefresh() {

@@ -63,10 +63,10 @@
                     android:layout_width="48dp"
                     android:layout_height="48dp"
                     android:background="@drawable/bg_avatar_circle"
+                    android:contentDescription="@string/cd_profile"
                     android:padding="2dp"
-                    android:src="@drawable/ic_person"
-                    app:tint="@color/text_secondary"
-                    android:contentDescription="@string/cd_profile" />
+                    android:scaleType="centerCrop"
+                    android:src="@drawable/ic_person" />
 
             </LinearLayout>
 

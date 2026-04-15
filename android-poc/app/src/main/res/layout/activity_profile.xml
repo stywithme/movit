@@ -64,11 +64,10 @@
                     android:layout_width="100dp"
                     android:layout_height="100dp"
                     android:background="@drawable/bg_avatar_circle"
+                    android:contentDescription="@string/cd_avatar"
                     android:padding="2dp"
                     android:scaleType="centerCrop"
-                    android:src="@drawable/ic_person"
-                    app:tint="@color/text_secondary"
-                android:contentDescription="@string/cd_avatar" />
+                    android:src="@drawable/ic_person" />
 
                 <ImageView
                     android:id="@+id/btnEditAvatar"

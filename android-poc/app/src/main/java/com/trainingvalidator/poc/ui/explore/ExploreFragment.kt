@@ -18,12 +18,14 @@ import coil.load
 import com.google.android.material.chip.Chip
 import com.trainingvalidator.poc.R
 import com.trainingvalidator.poc.databinding.FragmentExploreBinding
+import com.trainingvalidator.poc.storage.AuthManager
 import com.trainingvalidator.poc.storage.ExerciseRepository
 import com.trainingvalidator.poc.storage.WorkoutRepository
 import com.trainingvalidator.poc.training.models.ExerciseConfig
 import com.trainingvalidator.poc.training.models.WorkoutConfig
 import com.trainingvalidator.poc.ui.profile.ProfileActivity
 import com.trainingvalidator.poc.ui.train.PreWorkoutActivity
+import com.trainingvalidator.poc.ui.utils.bindUserAvatar
 import com.trainingvalidator.poc.ui.utils.currentLanguage
 import com.trainingvalidator.poc.ui.workouts.WorkoutDetailActivity
 import kotlinx.coroutines.launch
@@ -82,7 +84,17 @@ class ExploreFragment : Fragment() {
         setupStaticContent()
         setupLists()
         setupListeners()
+        bindHeaderAvatar()
         loadLibrary()
+    }
+
+    override fun onResume() {
+        super.onResume()
+        if (_binding != null) bindHeaderAvatar()
+    }
+
+    private fun bindHeaderAvatar() {
+        binding.ivAvatar.bindUserAvatar(AuthManager.getAvatarUrl(requireContext()))
     }
 
     private fun setupSwipeRefresh() {
