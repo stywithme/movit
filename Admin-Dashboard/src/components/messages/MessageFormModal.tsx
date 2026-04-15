@@ -32,6 +32,7 @@ import {
   Checkbox,
 } from '@/components/ui';
 import { SmartLocalizedInput } from '@/components/forms/SmartLocalizedInput';
+import { useTtsDefaults } from '@/hooks/useTtsDefaults';
 import type { LocalizedTextWithAudio } from '@/lib/types/localized';
 
 export interface MessageFormData {
@@ -84,6 +85,7 @@ export function MessageFormModal({
   defaults,
 }: MessageFormModalProps) {
   const isEditing = !!editMessage?.id;
+  const { defaults: ttsUserDefaults } = useTtsDefaults();
 
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -284,6 +286,7 @@ export function MessageFormModal({
               required
               enableTranslation
               enableTTS
+              ttsUserDefaults={ttsUserDefaults}
             />
 
             <div>

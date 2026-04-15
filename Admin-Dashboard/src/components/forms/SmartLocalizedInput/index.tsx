@@ -21,6 +21,7 @@ import { TranslateButton } from './TranslateButton';
 import { AudioControls } from './AudioControls';
 import { useTranslation, useTextToSpeech } from './hooks';
 import type { SmartLocalizedInputProps, SupportedLanguage } from './types';
+import { buildTtsGeneratePayloadFromDefaults } from '@/lib/utils/tts';
 
 export function SmartLocalizedInput({
   label,
@@ -34,6 +35,7 @@ export function SmartLocalizedInput({
   className = '',
   enableTranslation = true,
   enableTTS = true,
+  ttsUserDefaults,
   audioValue: externalAudioValue,
   onAudioChange: externalOnAudioChange,
   translationContext,
@@ -102,7 +104,8 @@ export function SmartLocalizedInput({
     if (!text?.trim()) return;
 
     const existingUrl = lang === 'ar' ? audioValue?.ar : audioValue?.en;
-    const audioUrl = await generateSpeech(text, lang, existingUrl);
+    const ttsPayload = ttsUserDefaults ? buildTtsGeneratePayloadFromDefaults(lang, ttsUserDefaults) : undefined;
+    const audioUrl = await generateSpeech(text, lang, existingUrl, ttsPayload);
 
     console.log('[SmartInput] Generated audio URL:', audioUrl);
 
@@ -117,7 +120,7 @@ export function SmartLocalizedInput({
       // Auto-play the generated audio
       play(audioUrl);
     }
-  }, [value, audioValue, generateSpeech, onAudioChange, play, readOnly]);
+  }, [value, audioValue, generateSpeech, onAudioChange, play, readOnly, ttsUserDefaults]);
 
   // Handle audio playback
   const handlePlay = useCallback((lang: SupportedLanguage) => {

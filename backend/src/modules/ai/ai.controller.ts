@@ -1,15 +1,35 @@
-import { Body, Controller, Delete, Post, Res, UseGuards } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Post, Res, UseGuards } from '@nestjs/common';
 import type { Response } from 'express';
 import { CaslGuard } from '@/lib/casl/casl.guard';
 import { CheckPermission } from '@/lib/casl/check-permission.decorator';
-import { translateText } from '@/lib/gemini';
-import { deleteAudioFile, generateSpeech } from '@/lib/gemini';
+import {
+  translateText,
+  deleteAudioFile,
+  generateSpeech,
+  geminiConfig,
+  TTS_VOICES,
+  TTS_MODELS,
+  TTS_LANGUAGE_CODES,
+} from '@/lib/gemini';
 
 interface TranslateRequestBody {
   text: string;
   from: 'ar' | 'en';
   to: 'ar' | 'en';
   context?: string;
+}
+
+interface TtsRequestBody {
+  text?: string;
+  language?: 'ar' | 'en';
+  voiceName?: string;
+  model?: string;
+  languageCode?: string;
+  sharedStylePrompt?: string;
+  stylePrompt?: string;
+  systemInstruction?: string;
+  temperature?: number;
+  seed?: number;
 }
 
 @UseGuards(CaslGuard)
@@ -49,12 +69,33 @@ export class AiController {
     }
   }
 
+  @Get('tts/config')
+  @CheckPermission('read', 'FeedbackMessage')
+  async ttsConfig(@Res({ passthrough: true }) res: Response) {
+    try {
+      return {
+        success: true,
+        data: {
+          voices: [...TTS_VOICES],
+          models: [...TTS_MODELS],
+          languageCodes: [...TTS_LANGUAGE_CODES],
+          defaults: {
+            ttsModel: geminiConfig.ttsModel,
+            voiceAr: geminiConfig.voices.ar,
+            voiceEn: geminiConfig.voices.en,
+          },
+        },
+      };
+    } catch (error) {
+      console.error('TTS config error:', error);
+      res.status(500);
+      return { success: false, error: 'Failed to load TTS configuration' };
+    }
+  }
+
   @Post('tts')
   @CheckPermission('update', 'Exercise')
-  async tts(
-    @Body() body: { text?: string; language?: 'ar' | 'en'; voiceName?: string },
-    @Res({ passthrough: true }) res: Response
-  ) {
+  async tts(@Body() body: TtsRequestBody, @Res({ passthrough: true }) res: Response) {
     try {
       if (!body?.text || !body?.language) {
         res.status(400);
@@ -70,6 +111,13 @@ export class AiController {
         text: body.text,
         language: body.language,
         voiceName: body.voiceName,
+        model: body.model,
+        languageCode: body.languageCode,
+        sharedStylePrompt: body.sharedStylePrompt,
+        stylePrompt: body.stylePrompt,
+        systemInstruction: body.systemInstruction,
+        temperature: body.temperature,
+        seed: body.seed,
       });
       if (!result.success) {
         res.status(500);

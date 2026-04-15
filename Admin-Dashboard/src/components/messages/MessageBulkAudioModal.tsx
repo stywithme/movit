@@ -13,9 +13,13 @@ import {
   DialogTitle,
   Input,
   Label,
+  SearchableSelect,
   Select,
   Textarea,
 } from '@/components/ui';
+import { useTtsConfig } from '@/hooks/useTtsConfig';
+import { readTtsDefaultsFromStorage } from '@/hooks/useTtsDefaults';
+import type { TtsUserDefaults } from '@/lib/types/tts';
 
 const BATCH_SIZE = 5;
 const LOCAL_STORAGE_KEY = 'pose.messages.bulk-audio-settings.v1';
@@ -29,13 +33,6 @@ const LANGUAGE_TARGET_OPTIONS = [
   { value: 'both', label: 'Arabic + English' },
   { value: 'ar', label: 'Arabic only' },
   { value: 'en', label: 'English only' },
-];
-
-const MODEL_OPTIONS = [
-  { value: '', label: 'Server default model' },
-  { value: 'gemini-2.5-flash-preview-tts', label: 'Gemini 2.5 Flash Preview TTS' },
-  { value: 'gemini-2.5-flash-lite-preview-tts', label: 'Gemini 2.5 Flash Lite Preview TTS' },
-  { value: 'gemini-2.5-pro-preview-tts', label: 'Gemini 2.5 Pro Preview TTS' },
 ];
 
 interface FailedItem {
@@ -170,6 +167,27 @@ function mergeStoredSettings(value: unknown): BulkAudioSettings {
   };
 }
 
+/** Fill empty bulk fields from gear-icon TTS defaults (localStorage). */
+function mergeBulkFillEmptyFromTtsDefaults(bulk: BulkAudioSettings, tts: TtsUserDefaults): BulkAudioSettings {
+  const empty = (s: string) => !s.trim();
+  return {
+    ...bulk,
+    model: empty(bulk.model) && tts.model.trim() ? tts.model : bulk.model,
+    voiceNameAr: empty(bulk.voiceNameAr) && tts.voiceNameAr.trim() ? tts.voiceNameAr : bulk.voiceNameAr,
+    voiceNameEn: empty(bulk.voiceNameEn) && tts.voiceNameEn.trim() ? tts.voiceNameEn : bulk.voiceNameEn,
+    languageCodeAr: empty(bulk.languageCodeAr) && tts.languageCodeAr.trim() ? tts.languageCodeAr : bulk.languageCodeAr,
+    languageCodeEn: empty(bulk.languageCodeEn) && tts.languageCodeEn.trim() ? tts.languageCodeEn : bulk.languageCodeEn,
+    sharedStylePrompt:
+      empty(bulk.sharedStylePrompt) && tts.sharedStylePrompt.trim() ? tts.sharedStylePrompt : bulk.sharedStylePrompt,
+    stylePromptAr: empty(bulk.stylePromptAr) && tts.stylePromptAr.trim() ? tts.stylePromptAr : bulk.stylePromptAr,
+    stylePromptEn: empty(bulk.stylePromptEn) && tts.stylePromptEn.trim() ? tts.stylePromptEn : bulk.stylePromptEn,
+    systemInstruction:
+      empty(bulk.systemInstruction) && tts.systemInstruction.trim() ? tts.systemInstruction : bulk.systemInstruction,
+    temperature: empty(bulk.temperature) && tts.temperature.trim() ? tts.temperature : bulk.temperature,
+    seed: empty(bulk.seed) && tts.seed.trim() ? tts.seed : bulk.seed,
+  };
+}
+
 export function MessageBulkAudioModal({
   open,
   onOpenChange,
@@ -191,6 +209,26 @@ export function MessageBulkAudioModal({
 
   const filterSummary = useMemo(() => buildFilterSummary(currentFilters), [currentFilters]);
 
+  const { data: ttsConfig, loading: ttsConfigLoading, error: ttsConfigError } = useTtsConfig();
+
+  const modelSearchOptions = useMemo(() => {
+    return (ttsConfig?.models ?? []).map((m) => ({ value: m.id, label: m.label }));
+  }, [ttsConfig?.models]);
+
+  const voiceSearchOptions = useMemo(() => {
+    return (ttsConfig?.voices ?? []).map((v) => ({
+      value: v.name,
+      label: `${v.name} — ${v.style}`,
+    }));
+  }, [ttsConfig?.voices]);
+
+  const languageSearchOptions = useMemo(() => {
+    return (ttsConfig?.languageCodes ?? []).map((l) => ({
+      value: l.code,
+      label: `${l.label} (${l.code})`,
+    }));
+  }, [ttsConfig?.languageCodes]);
+
   useEffect(() => {
     try {
       const stored = window.localStorage.getItem(LOCAL_STORAGE_KEY);
@@ -203,6 +241,12 @@ export function MessageBulkAudioModal({
       setSettingsReady(true);
     }
   }, []);
+
+  useEffect(() => {
+    if (!open || !settingsReady) return;
+    const tts = readTtsDefaultsFromStorage();
+    setSettings((prev) => mergeBulkFillEmptyFromTtsDefaults(prev, tts));
+  }, [open, settingsReady]);
 
   useEffect(() => {
     if (!settingsReady) return;
@@ -471,6 +515,12 @@ export function MessageBulkAudioModal({
               <div className="p-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-700">{error}</div>
             )}
 
+            {ttsConfigError && (
+              <div className="p-3 bg-amber-50 border border-amber-200 rounded-lg text-sm text-amber-800">
+                TTS catalog: {ttsConfigError}. Voice/model lists may be empty until the backend is reachable.
+              </div>
+            )}
+
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <Label>Generation mode</Label>
@@ -515,11 +565,15 @@ export function MessageBulkAudioModal({
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <Label>AI model</Label>
-                <Select
+                <SearchableSelect
+                  options={modelSearchOptions}
                   value={settings.model}
-                  onChange={(e) => updateSettings({ model: e.target.value })}
-                  options={MODEL_OPTIONS}
-                  disabled={running}
+                  onChange={(v) => updateSettings({ model: v })}
+                  placeholder="Server default model"
+                  searchPlaceholder="Search models…"
+                  disabled={running || ttsConfigLoading}
+                  allowEmpty
+                  emptyLabel="Server default model"
                 />
               </div>
 
@@ -540,46 +594,66 @@ export function MessageBulkAudioModal({
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <Label htmlFor="bulk-voice-ar">Arabic voice</Label>
-                <Input
-                  id="bulk-voice-ar"
+                <Label>Arabic voice</Label>
+                <SearchableSelect
+                  options={voiceSearchOptions}
                   value={settings.voiceNameAr}
-                  onChange={(e) => updateSettings({ voiceNameAr: e.target.value })}
-                  placeholder="Server default or e.g. Fenrir / Kore"
-                  disabled={running}
+                  onChange={(v) => updateSettings({ voiceNameAr: v })}
+                  placeholder={
+                    ttsConfig?.defaults.voiceAr
+                      ? `Server default (${ttsConfig.defaults.voiceAr})`
+                      : 'Server default'
+                  }
+                  searchPlaceholder="Search voices…"
+                  disabled={running || ttsConfigLoading}
+                  allowEmpty
+                  emptyLabel="Server default"
                 />
               </div>
               <div>
-                <Label htmlFor="bulk-voice-en">English voice</Label>
-                <Input
-                  id="bulk-voice-en"
+                <Label>English voice</Label>
+                <SearchableSelect
+                  options={voiceSearchOptions}
                   value={settings.voiceNameEn}
-                  onChange={(e) => updateSettings({ voiceNameEn: e.target.value })}
-                  placeholder="Server default or e.g. Fenrir / Kore"
-                  disabled={running}
+                  onChange={(v) => updateSettings({ voiceNameEn: v })}
+                  placeholder={
+                    ttsConfig?.defaults.voiceEn
+                      ? `Server default (${ttsConfig.defaults.voiceEn})`
+                      : 'Server default'
+                  }
+                  searchPlaceholder="Search voices…"
+                  disabled={running || ttsConfigLoading}
+                  allowEmpty
+                  emptyLabel="Server default"
                 />
               </div>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <Label htmlFor="bulk-lang-ar">Arabic language code</Label>
-                <Input
-                  id="bulk-lang-ar"
+                <Label>Arabic language code</Label>
+                <SearchableSelect
+                  options={languageSearchOptions}
                   value={settings.languageCodeAr}
-                  onChange={(e) => updateSettings({ languageCodeAr: e.target.value })}
-                  placeholder="Optional, e.g. ar-EG"
-                  disabled={running}
+                  onChange={(v) => updateSettings({ languageCodeAr: v })}
+                  placeholder="Optional"
+                  searchPlaceholder="Search codes…"
+                  disabled={running || ttsConfigLoading}
+                  allowEmpty
+                  emptyLabel="None"
                 />
               </div>
               <div>
-                <Label htmlFor="bulk-lang-en">English language code</Label>
-                <Input
-                  id="bulk-lang-en"
+                <Label>English language code</Label>
+                <SearchableSelect
+                  options={languageSearchOptions}
                   value={settings.languageCodeEn}
-                  onChange={(e) => updateSettings({ languageCodeEn: e.target.value })}
-                  placeholder="Optional, e.g. en-US"
-                  disabled={running}
+                  onChange={(v) => updateSettings({ languageCodeEn: v })}
+                  placeholder="Optional"
+                  searchPlaceholder="Search codes…"
+                  disabled={running || ttsConfigLoading}
+                  allowEmpty
+                  emptyLabel="None"
                 />
               </div>
             </div>
