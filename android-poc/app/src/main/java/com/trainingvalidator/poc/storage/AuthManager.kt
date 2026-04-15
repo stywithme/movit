@@ -96,6 +96,19 @@ object AuthManager {
     fun getUserEmail(context: Context, fallback: String = ""): String =
         prefs(context).getString(KEY_USER_EMAIL, fallback) ?: fallback
 
+    fun getAvatarUrl(context: Context): String? =
+        prefs(context).getString(KEY_AVATAR_URL, null)?.takeIf { it.isNotBlank() }
+
+    fun updateAvatarUrl(context: Context, url: String?) {
+        val editor = prefs(context).edit()
+        if (url.isNullOrBlank()) {
+            editor.remove(KEY_AVATAR_URL)
+        } else {
+            editor.putString(KEY_AVATAR_URL, url)
+        }
+        editor.apply()
+    }
+
     /**
      * Locale code persisted with the user profile (e.g. after login / Profile save).
      * Splash applies this to [androidx.appcompat.app.AppCompatDelegate] so it aligns with

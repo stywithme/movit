@@ -21,6 +21,7 @@ import com.trainingvalidator.poc.ui.main.MainContainerActivity
 import com.trainingvalidator.poc.ui.programs.PlanOverviewActivity
 import com.trainingvalidator.poc.ui.programs.ProgramDetailActivity
 import com.trainingvalidator.poc.ui.programs.ProgramSessionActivity
+import com.trainingvalidator.poc.ui.utils.bindUserAvatar
 import com.trainingvalidator.poc.ui.utils.currentLanguage
 import java.util.Calendar
 import kotlinx.coroutines.launch
@@ -129,6 +130,7 @@ class HomeFragment : Fragment() {
     private fun loadUserName() {
         val name = AuthManager.getUserName(requireContext(), "Athlete")
         binding.tvUserName.text = name.split(" ").firstOrNull() ?: name
+        binding.ivAvatar.bindUserAvatar(AuthManager.getAvatarUrl(requireContext()))
     }
 
     private fun loadData() {
@@ -157,6 +159,14 @@ class HomeFragment : Fragment() {
     private fun renderUserHeader(data: HomeData) {
         val user = data.user
         val levelProfile = data.levelProfile // legacy fallback
+
+        val avatarUrl = user?.avatarUrl?.takeIf { !it.isNullOrBlank() }
+            ?: AuthManager.getAvatarUrl(requireContext())
+        binding.ivAvatar.bindUserAvatar(avatarUrl)
+
+        if (user != null && !user.avatarUrl.isNullOrBlank()) {
+            AuthManager.updateAvatarUrl(requireContext(), user.avatarUrl)
+        }
 
         if (user != null) {
             if (user.level != null && user.bodyScore != null) {

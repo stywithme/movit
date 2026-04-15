@@ -66,8 +66,7 @@
                 app:layout_constraintBottom_toBottomOf="parent"
                 app:layout_constraintEnd_toEndOf="parent"
                 app:layout_constraintTop_toTopOf="parent"
-                app:srcCompat="@drawable/ic_person"
-                app:tint="@color/text_secondary" />
+                app:srcCompat="@drawable/ic_person" />
 
         </androidx.constraintlayout.widget.ConstraintLayout>
 

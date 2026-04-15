@@ -9,6 +9,7 @@ import androidx.appcompat.app.AppCompatDelegate
 import androidx.core.os.LocaleListCompat
 import androidx.core.view.WindowCompat
 import androidx.lifecycle.lifecycleScope
+import com.trainingvalidator.poc.ui.utils.bindUserAvatar
 import com.trainingvalidator.poc.ui.utils.currentLanguage
 import com.trainingvalidator.poc.R
 import com.trainingvalidator.poc.databinding.ActivityProfileBinding
@@ -52,6 +53,11 @@ class ProfileActivity : AppCompatActivity() {
         fetchProfile()
     }
 
+    override fun onResume() {
+        super.onResume()
+        binding.ivAvatar.bindUserAvatar(AuthManager.getAvatarUrl(this))
+    }
+
     private fun loadUserData() {
         val name = AuthManager.getUserName(this, "Mahmoud Hassan")
         val email = AuthManager.getUserEmail(this, "alustadh.manager@gmail.com")
@@ -62,6 +68,8 @@ class ProfileActivity : AppCompatActivity() {
         binding.switchVoice.isChecked = AuthManager.getVoiceFeedbackEnabled(this, true)
         binding.tvWorkoutsCount.text = AuthManager.getTotalWorkouts(this).toString()
         binding.tvMinutesCount.text = AuthManager.getTotalMinutes(this).toString()
+
+        binding.ivAvatar.bindUserAvatar(AuthManager.getAvatarUrl(this))
     }
 
     private fun setupListeners() {

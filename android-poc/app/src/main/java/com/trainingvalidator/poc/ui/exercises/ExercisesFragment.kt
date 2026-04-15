@@ -125,11 +125,6 @@ class ExercisesFragment : Fragment() {
         binding.btnStartProgram.setOnClickListener {
             startActivity(Intent(requireContext(), ProgramListActivity::class.java))
         }
-
-        // Avatar -> Profile
-        binding.ivAvatar.setOnClickListener {
-            startActivity(Intent(requireContext(), com.trainingvalidator.poc.ui.profile.ProfileActivity::class.java))
-        }
     }
 
     private fun initializeRepository() {
