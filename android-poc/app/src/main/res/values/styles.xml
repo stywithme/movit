@@ -66,8 +66,8 @@
     <!-- SWITCHES -->
     <!-- ═══════════════════════════════════════════════════ -->
     <style name="Widget.WayToFix.Switch" parent="Widget.MaterialComponents.CompoundButton.Switch">
-        <item name="thumbTint">@color/primary</item>
-        <item name="trackTint">@color/surface_border</item>
+        <item name="thumbTint">@color/switch_thumb_tint</item>
+        <item name="trackTint">@color/switch_track_tint</item>
     </style>
     
     <!-- ═══════════════════════════════════════════════════ -->

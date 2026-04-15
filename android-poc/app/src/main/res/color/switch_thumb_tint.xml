@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<selector xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- ON: brand accent -->
+    <item android:color="@color/primary" android:state_checked="true" />
+    <!-- OFF: neutral — not green -->
+    <item android:color="@color/text_hint" />
+</selector>

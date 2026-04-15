@@ -381,11 +381,10 @@
 
                     <com.google.android.material.switchmaterial.SwitchMaterial
                         android:id="@+id/switchVoice"
+                        style="@style/Widget.WayToFix.Switch"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:checked="true"
-                        app:thumbTint="@color/primary"
-                        app:trackTint="@color/surface_border" />
+                        android:checked="true" />
 
                 </LinearLayout>
 
