@@ -9,6 +9,7 @@
 
 import { useState, useCallback, useRef, useEffect } from 'react';
 import type { SupportedLanguage, TTSResponse } from '../types';
+import type { TtsGeneratePayload } from '@/lib/types/tts';
 
 interface AudioPlayerState {
   isPlaying: boolean;
@@ -24,7 +25,12 @@ interface UseTextToSpeechReturn {
   error: string | null;
   
   // Actions
-  generateSpeech: (text: string, language: SupportedLanguage, existingUrl?: string) => Promise<string | null>;
+  generateSpeech: (
+    text: string,
+    language: SupportedLanguage,
+    existingUrl?: string,
+    ttsOptions?: TtsGeneratePayload
+  ) => Promise<string | null>;
   play: (audioUrl: string) => void;
   pause: () => void;
   stop: () => void;
@@ -54,7 +60,8 @@ export function useTextToSpeech(): UseTextToSpeechReturn {
   const generateSpeech = useCallback(async (
     text: string, 
     language: SupportedLanguage,
-    existingUrl?: string
+    existingUrl?: string,
+    ttsOptions?: TtsGeneratePayload
   ): Promise<string | null> => {
     if (!text.trim()) {
       setError('No text to generate speech from');
@@ -74,10 +81,22 @@ export function useTextToSpeech(): UseTextToSpeechReturn {
         });
       }
 
+      const body: Record<string, unknown> = { text, language };
+      if (ttsOptions) {
+        if (ttsOptions.model) body.model = ttsOptions.model;
+        if (ttsOptions.voiceName) body.voiceName = ttsOptions.voiceName;
+        if (ttsOptions.languageCode) body.languageCode = ttsOptions.languageCode;
+        if (ttsOptions.sharedStylePrompt) body.sharedStylePrompt = ttsOptions.sharedStylePrompt;
+        if (ttsOptions.stylePrompt) body.stylePrompt = ttsOptions.stylePrompt;
+        if (ttsOptions.systemInstruction) body.systemInstruction = ttsOptions.systemInstruction;
+        if (typeof ttsOptions.temperature === 'number') body.temperature = ttsOptions.temperature;
+        if (typeof ttsOptions.seed === 'number') body.seed = ttsOptions.seed;
+      }
+
       const response = await fetch('/api/ai/tts', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ text, language }),
+        body: JSON.stringify(body),
       });
 
       const data: TTSResponse = await response.json();

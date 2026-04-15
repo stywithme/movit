@@ -2,7 +2,13 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import { Input, Select } from '@/components/ui';
-import { MessageFormModal, MessageBulkAudioModal, type MessageFormData } from '@/components/messages';
+import {
+  MessageFormModal,
+  MessageBulkAudioModal,
+  TtsDefaultsModal,
+  type MessageFormData,
+} from '@/components/messages';
+import { Settings } from 'lucide-react';
 import type { LocalizedTextWithAudio } from '@/lib/types/localized';
 
 interface MessageTemplate {
@@ -81,6 +87,7 @@ export default function MessagesListPage() {
   const [formModalOpen, setFormModalOpen] = useState(false);
   const [editingMessage, setEditingMessage] = useState<MessageFormData | null>(null);
   const [bulkAudioOpen, setBulkAudioOpen] = useState(false);
+  const [ttsDefaultsOpen, setTtsDefaultsOpen] = useState(false);
 
   useEffect(() => {
     const t = window.setTimeout(() => setDebouncedSearch(searchQuery), 400);
@@ -189,6 +196,15 @@ export default function MessagesListPage() {
           <p className="text-gray-600 mt-1">Manage reusable feedback messages</p>
         </div>
         <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={() => setTtsDefaultsOpen(true)}
+            className="p-2.5 bg-white border border-gray-300 text-gray-800 rounded-lg hover:bg-gray-50 transition-colors"
+            title="Default TTS settings"
+            aria-label="Default TTS settings"
+          >
+            <Settings className="w-5 h-5" />
+          </button>
           <button
             type="button"
             onClick={() => setBulkAudioOpen(true)}
@@ -402,6 +418,8 @@ export default function MessagesListPage() {
         }}
         onCompleted={() => fetchMessages(pagination?.page || 1)}
       />
+
+      <TtsDefaultsModal open={ttsDefaultsOpen} onOpenChange={setTtsDefaultsOpen} />
     </div>
   );
 }

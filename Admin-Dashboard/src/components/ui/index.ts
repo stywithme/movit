@@ -8,6 +8,7 @@
 export { Input } from './Input';
 export { Textarea } from './Textarea';
 export { Select } from './Select';
+export { SearchableSelect, type SearchableSelectOption } from './SearchableSelect';
 export { Button } from './Button';
 export { Tooltip } from './Tooltip';
 export { Badge } from './Badge';

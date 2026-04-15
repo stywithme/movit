@@ -4,6 +4,7 @@
  */
 
 import type { LocalizedText } from '@/lib/types/localized';
+import type { TtsUserDefaults } from '@/lib/types/tts';
 
 export type SupportedLanguage = 'ar' | 'en';
 
@@ -61,6 +62,8 @@ export interface SmartLocalizedInputProps {
   // AI Features
   enableTranslation?: boolean;
   enableTTS?: boolean;
+  /** When set, TTS requests include model/voice/style from these saved defaults */
+  ttsUserDefaults?: TtsUserDefaults;
 
   // Audio
   audioValue?: { ar?: string; en?: string };
