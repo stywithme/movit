@@ -3,6 +3,7 @@ package com.trainingvalidator.poc.training.engine
 import android.util.Log
 import com.trainingvalidator.poc.analysis.SmoothedLandmark
 import com.trainingvalidator.poc.pose.JointLandmarkMapping
+import com.trainingvalidator.poc.training.feedback.MobileMessageResolver
 import com.trainingvalidator.poc.training.models.*
 import kotlin.math.abs
 import kotlin.math.sqrt
@@ -151,7 +152,7 @@ class PositionValidator(
                 axis = "posture",
                 expected = sceneExpectation.postures.map { it.name.lowercase() },
                 detected = scene.posture.name.lowercase(),
-                message = buildPostureWarning(sceneExpectation.postures)
+                message = MobileMessageResolver.resolvePostureAxisWarning(sceneExpectation.postures)
             ))
         }
 
@@ -160,7 +161,7 @@ class PositionValidator(
                 axis = "direction",
                 expected = sceneExpectation.directions.map { it.code },
                 detected = CameraPositionDetector.toJsonCameraPosition(scene.direction),
-                message = buildDirectionWarning(sceneExpectation.directions)
+                message = MobileMessageResolver.resolveDirectionAxisWarning(sceneExpectation.directions)
             ))
         }
 
@@ -169,85 +170,11 @@ class PositionValidator(
                 axis = "region",
                 expected = sceneExpectation.regions.map { it.name.lowercase() },
                 detected = scene.region.name.lowercase(),
-                message = buildRegionWarning(sceneExpectation.regions)
+                message = MobileMessageResolver.resolveRegionAxisWarning(sceneExpectation.regions)
             ))
         }
 
         return warnings
-    }
-
-    private fun buildPostureWarning(expected: List<BodyPosture>): LocalizedText {
-        val arParts = expected.mapNotNull { postureNameAr(it) }
-        val enParts = expected.mapNotNull { postureNameEn(it) }
-        return LocalizedText(
-            ar = arParts.joinToString(" أو "),
-            en = enParts.joinToString(" or ")
-        )
-    }
-
-    private fun buildDirectionWarning(expected: List<ExpectedDirection>): LocalizedText {
-        val arParts = expected.mapNotNull { directionNameAr(it) }
-        val enParts = expected.mapNotNull { directionNameEn(it) }
-        return LocalizedText(
-            ar = "صوّر من ${arParts.joinToString(" أو ")}",
-            en = "Film from ${enParts.joinToString(" or ")}"
-        )
-    }
-
-    private fun buildRegionWarning(expected: List<VisibleRegion>): LocalizedText {
-        val arParts = expected.mapNotNull { regionNameAr(it) }
-        val enParts = expected.mapNotNull { regionNameEn(it) }
-        return LocalizedText(
-            ar = "أظهر ${arParts.joinToString(" أو ")}",
-            en = "Show ${enParts.joinToString(" or ")}"
-        )
-    }
-
-    private fun postureNameAr(p: BodyPosture) = when (p) {
-        BodyPosture.STANDING -> "قف مستقيماً"
-        BodyPosture.LYING_PRONE -> "استلقِ على وجهك"
-        BodyPosture.LYING_SUPINE -> "استلقِ على ظهرك"
-        BodyPosture.LYING_SIDE -> "استلقِ على جنبك"
-        BodyPosture.SITTING -> "اجلس"
-        BodyPosture.UNKNOWN -> null
-    }
-    private fun postureNameEn(p: BodyPosture) = when (p) {
-        BodyPosture.STANDING -> "Stand upright"
-        BodyPosture.LYING_PRONE -> "Lie face down"
-        BodyPosture.LYING_SUPINE -> "Lie face up"
-        BodyPosture.LYING_SIDE -> "Lie on your side"
-        BodyPosture.SITTING -> "Sit down"
-        BodyPosture.UNKNOWN -> null
-    }
-    private fun directionNameAr(d: ExpectedDirection) = when (d) {
-        ExpectedDirection.FRONT -> "الأمام"
-        ExpectedDirection.BACK -> "الخلف"
-        ExpectedDirection.SIDE_ANY -> "الجانب"
-        ExpectedDirection.SIDE_LEFT -> "الجانب الأيسر"
-        ExpectedDirection.SIDE_RIGHT -> "الجانب الأيمن"
-        ExpectedDirection.DIAGONAL -> "بزاوية مائلة"
-        ExpectedDirection.ANY -> null
-    }
-    private fun directionNameEn(d: ExpectedDirection) = when (d) {
-        ExpectedDirection.FRONT -> "the front"
-        ExpectedDirection.BACK -> "the back"
-        ExpectedDirection.SIDE_ANY -> "the side"
-        ExpectedDirection.SIDE_LEFT -> "the left side"
-        ExpectedDirection.SIDE_RIGHT -> "the right side"
-        ExpectedDirection.DIAGONAL -> "an angle"
-        ExpectedDirection.ANY -> null
-    }
-    private fun regionNameAr(r: VisibleRegion) = when (r) {
-        VisibleRegion.FULL_BODY -> "الجسم بالكامل"
-        VisibleRegion.UPPER_BODY -> "الجزء العلوي"
-        VisibleRegion.LOWER_BODY -> "الجزء السفلي"
-        VisibleRegion.UNKNOWN -> null
-    }
-    private fun regionNameEn(r: VisibleRegion) = when (r) {
-        VisibleRegion.FULL_BODY -> "your full body"
-        VisibleRegion.UPPER_BODY -> "your upper body"
-        VisibleRegion.LOWER_BODY -> "your lower body"
-        VisibleRegion.UNKNOWN -> null
     }
     
     /**

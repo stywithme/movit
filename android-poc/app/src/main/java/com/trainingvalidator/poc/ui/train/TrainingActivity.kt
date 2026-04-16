@@ -2294,10 +2294,7 @@ class TrainingActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetection
             // Transition: scene check passed → switch to visibility check overlay
             binding.skeletonOverlay.setSceneCheckMode(false)
 
-            val transitionMsg = com.trainingvalidator.poc.training.models.LocalizedText(
-                en = "Position correct – checking visibility",
-                ar = "الوضع صحيح – جاري التحقق من الرؤية"
-            )
+            val transitionMsg = com.trainingvalidator.poc.training.feedback.MobileMessageResolver.resolveSetupSceneToVisibility()
             viewModel.feedbackManager?.speakSetupPhaseGuidance(transitionMsg)
         }
 
