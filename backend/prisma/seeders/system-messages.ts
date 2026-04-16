@@ -1,4 +1,5 @@
 import type { PrismaClient } from '@prisma/client';
+import { buildCatalogSystemMessages } from './system-messages-catalog';
 import { normalizeMessageContent } from './utils';
 
 type SysMsg = {
@@ -12,7 +13,7 @@ type SysMsg = {
  * Fixed-code system messages for mobile training UI / TTS (synced via mobile sync).
  * Keys and descriptions are immutable in the dashboard; text and audio are editable.
  */
-const SYSTEM_MESSAGES: SysMsg[] = [
+const CORE_SYSTEM_MESSAGES: SysMsg[] = [
   {
     code: 'training_countdown_3',
     description: 'Spoken digit for countdown step 3 before exercise start',
@@ -143,6 +144,9 @@ const SYSTEM_MESSAGES: SysMsg[] = [
   { code: 'visibility_joint_left_ankle', description: 'Joint label: left ankle', content: { ar: 'الكاحل الأيسر', en: 'Left Ankle' } },
   { code: 'visibility_joint_right_ankle', description: 'Joint label: right ankle', content: { ar: 'الكاحل الأيمن', en: 'Right Ankle' } },
 ];
+
+/** Core training/visibility strings + generated catalog (setup directions/postures/regions/joints, numerals 4–30). */
+const SYSTEM_MESSAGES: SysMsg[] = [...CORE_SYSTEM_MESSAGES, ...buildCatalogSystemMessages()];
 
 export async function seedSystemMessages(prisma: PrismaClient): Promise<void> {
   for (const m of SYSTEM_MESSAGES) {

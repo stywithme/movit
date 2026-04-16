@@ -453,7 +453,7 @@ class FeedbackManager(
             
             // Announce rep count every N reps (NORMAL priority - shouldn't interrupt errors)
             if (event.repNumber - lastAnnouncedRep >= REP_AUDIO_INTERVAL) {
-                speak("${event.repNumber}", SpeakPriority.NORMAL)
+                speakLocalized(MobileMessageResolver.resolveTrainingNumeral(event.repNumber), SpeakPriority.NORMAL)
                 lastAnnouncedRep = event.repNumber
             }
         }
@@ -819,17 +819,8 @@ class FeedbackManager(
         }
         
         if (!isTtsReady) return
-        val key = when (number) {
-            1 -> "training_countdown_1"
-            2 -> "training_countdown_2"
-            3 -> "training_countdown_3"
-            else -> null
-        }
-        val text = if (key != null) {
-            SystemMessageRegistry.get(key, number.toString(), number.toString()).get(config.language)
-        } else {
-            number.toString()
-        }
+        val lt = MobileMessageResolver.resolveTrainingNumeral(number)
+        val text = lt.get(config.language)
         tts?.speak(text, TextToSpeech.QUEUE_FLUSH, null, "countdown_$number")
     }
     

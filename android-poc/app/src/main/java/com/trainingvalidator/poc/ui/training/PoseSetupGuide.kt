@@ -5,6 +5,7 @@ import com.trainingvalidator.poc.analysis.JointAngles
 import com.trainingvalidator.poc.analysis.SmoothedLandmark
 import com.trainingvalidator.poc.training.config.SettingsManager
 import com.trainingvalidator.poc.training.engine.*
+import com.trainingvalidator.poc.training.feedback.MobileMessageResolver
 import com.trainingvalidator.poc.training.models.ExerciseConfig
 import com.trainingvalidator.poc.training.models.JointRole
 import com.trainingvalidator.poc.training.models.LocalizedText
@@ -121,25 +122,25 @@ class PoseSetupGuide(
             postureStatus = AxisStatus.PENDING
             directionStatus = AxisStatus.PENDING
             phase = SetupPhase.REGION
-            phaseMessage = buildRegionTip(expectation.regions)
+            phaseMessage = MobileMessageResolver.resolveRegionPhaseTip(expectation.regions)
         } else if (!axisMatch.regionMatch) {
             regionStatus = AxisStatus.FAILED
             postureStatus = AxisStatus.PENDING
             directionStatus = AxisStatus.PENDING
             phase = SetupPhase.REGION
-            phaseMessage = buildRegionTip(expectation.regions)
+            phaseMessage = MobileMessageResolver.resolveRegionPhaseTip(expectation.regions)
         } else if (!axisMatch.postureMatch) {
             regionStatus = AxisStatus.PASSED
             postureStatus = AxisStatus.FAILED
             directionStatus = AxisStatus.PENDING
             phase = SetupPhase.POSTURE
-            phaseMessage = buildPostureTip(expectation.postures)
+            phaseMessage = MobileMessageResolver.resolvePosturePhaseTip(expectation.postures)
         } else if (!axisMatch.directionMatch) {
             regionStatus = AxisStatus.PASSED
             postureStatus = AxisStatus.PASSED
             directionStatus = AxisStatus.FAILED
             phase = SetupPhase.DIRECTION
-            phaseMessage = buildDirectionTip(expectation.directions)
+            phaseMessage = MobileMessageResolver.resolveDirectionPhaseTip(expectation.directions)
         } else {
             regionStatus = AxisStatus.PASSED
             postureStatus = AxisStatus.PASSED
@@ -254,7 +255,7 @@ class PoseSetupGuide(
             else -> null
         }
 
-        val message = buildGuidanceMessage(joint.joint, direction, level)
+        val message = MobileMessageResolver.resolveJointGuidance(joint.joint, direction, level, language)
 
         return JointGuidance(
             jointCode = joint.joint,
@@ -278,13 +279,13 @@ class PoseSetupGuide(
         val tips = mutableListOf<LocalizedText>()
 
         if (!match.directionMatch) {
-            tips.add(buildDirectionTip(expectation.directions))
+            tips.add(MobileMessageResolver.resolveDirectionPhaseTip(expectation.directions))
         }
         if (!match.postureMatch) {
-            tips.add(buildPostureTip(expectation.postures))
+            tips.add(MobileMessageResolver.resolvePosturePhaseTip(expectation.postures))
         }
         if (!match.regionMatch) {
-            tips.add(buildRegionTip(expectation.regions))
+            tips.add(MobileMessageResolver.resolveRegionPhaseTip(expectation.regions))
         }
 
         val combinedTip = if (tips.isNotEmpty()) {
@@ -300,169 +301,6 @@ class PoseSetupGuide(
             expectedPosition = expectation.directionLabel(),
             tip = combinedTip
         )
-    }
-
-    private fun buildDirectionTip(dirs: List<ExpectedDirection>): LocalizedText {
-        val arParts = dirs.mapNotNull { dirAr(it) }
-        val enParts = dirs.mapNotNull { dirEn(it) }
-        return LocalizedText(
-            ar = "صوّر من ${arParts.joinToString(" أو ")} ↻",
-            en = "Film from ${enParts.joinToString(" or ")} ↻"
-        )
-    }
-
-    private fun buildPostureTip(postures: List<BodyPosture>): LocalizedText {
-        val arParts = postures.mapNotNull { posAr(it) }
-        val enParts = postures.mapNotNull { posEn(it) }
-        return LocalizedText(
-            ar = arParts.joinToString(" أو "),
-            en = enParts.joinToString(" or ")
-        )
-    }
-
-    private fun buildRegionTip(regions: List<VisibleRegion>): LocalizedText {
-        val arParts = regions.mapNotNull { regAr(it) }
-        val enParts = regions.mapNotNull { regEn(it) }
-        return LocalizedText(
-            ar = "أظهر ${arParts.joinToString(" أو ")}",
-            en = "Show ${enParts.joinToString(" or ")}"
-        )
-    }
-
-    private fun dirAr(d: ExpectedDirection) = when (d) {
-        ExpectedDirection.FRONT -> "الأمام"
-        ExpectedDirection.BACK -> "الخلف"
-        ExpectedDirection.SIDE_ANY -> "الجانب"
-        ExpectedDirection.SIDE_LEFT -> "الجانب الأيسر"
-        ExpectedDirection.SIDE_RIGHT -> "الجانب الأيمن"
-        ExpectedDirection.DIAGONAL -> "بزاوية مائلة"
-        ExpectedDirection.ANY -> null
-    }
-    private fun dirEn(d: ExpectedDirection) = when (d) {
-        ExpectedDirection.FRONT -> "the front"
-        ExpectedDirection.BACK -> "the back"
-        ExpectedDirection.SIDE_ANY -> "the side"
-        ExpectedDirection.SIDE_LEFT -> "the left side"
-        ExpectedDirection.SIDE_RIGHT -> "the right side"
-        ExpectedDirection.DIAGONAL -> "an angle"
-        ExpectedDirection.ANY -> null
-    }
-    private fun posAr(p: BodyPosture) = when (p) {
-        BodyPosture.STANDING -> "قف مستقيماً"
-        BodyPosture.LYING_PRONE -> "استلقِ على وجهك"
-        BodyPosture.LYING_SUPINE -> "استلقِ على ظهرك"
-        BodyPosture.LYING_SIDE -> "استلقِ على جنبك"
-        BodyPosture.SITTING -> "اجلس"
-        BodyPosture.UNKNOWN -> null
-    }
-    private fun posEn(p: BodyPosture) = when (p) {
-        BodyPosture.STANDING -> "Stand upright"
-        BodyPosture.LYING_PRONE -> "Lie face down"
-        BodyPosture.LYING_SUPINE -> "Lie face up"
-        BodyPosture.LYING_SIDE -> "Lie on your side"
-        BodyPosture.SITTING -> "Sit down"
-        BodyPosture.UNKNOWN -> null
-    }
-    private fun regAr(r: VisibleRegion) = when (r) {
-        VisibleRegion.FULL_BODY -> "الجسم بالكامل"
-        VisibleRegion.UPPER_BODY -> "الجزء العلوي"
-        VisibleRegion.LOWER_BODY -> "الجزء السفلي"
-        VisibleRegion.UNKNOWN -> null
-    }
-    private fun regEn(r: VisibleRegion) = when (r) {
-        VisibleRegion.FULL_BODY -> "your full body"
-        VisibleRegion.UPPER_BODY -> "your upper body"
-        VisibleRegion.LOWER_BODY -> "your lower body"
-        VisibleRegion.UNKNOWN -> null
-    }
-
-    /**
-     * Build directional guidance message for a joint.
-     * Falls back to generic raise/lower when no specific mapping exists.
-     */
-    private fun buildGuidanceMessage(
-        jointCode: String,
-        direction: Direction?,
-        level: GuidanceLevel
-    ): LocalizedText {
-        if (level == GuidanceLevel.GREEN || direction == null) {
-            return LocalizedText(ar = "✓ ممتاز", en = "✓ Good")
-        }
-
-        val isRaise = direction == Direction.RAISE
-        // Normalise to left_* for lookup; swap if right_*
-        val base = jointCode.removePrefix("right_").removePrefix("left_")
-        val side = when {
-            jointCode.startsWith("left_") -> if (language == "ar") "الأيسر" else "left"
-            jointCode.startsWith("right_") -> if (language == "ar") "الأيمن" else "right"
-            else -> ""
-        }
-
-        return when (base) {
-            "elbow" -> if (isRaise) LocalizedText(
-                ar = "ارفع الكوع $side أكثر",
-                en = "Raise your $side elbow more"
-            ) else LocalizedText(
-                ar = "اخفض الكوع $side أكثر",
-                en = "Lower your $side elbow more"
-            )
-            "shoulder" -> if (isRaise) LocalizedText(
-                ar = "ارفع الكتف $side",
-                en = "Raise your $side shoulder"
-            ) else LocalizedText(
-                ar = "اخفض الكتف $side",
-                en = "Lower your $side shoulder"
-            )
-            "knee" -> if (isRaise) LocalizedText(
-                ar = "افرد الركبة $side أكثر",
-                en = "Straighten your $side knee more"
-            ) else LocalizedText(
-                ar = "اثني الركبة $side أكثر",
-                en = "Bend your $side knee more"
-            )
-            "hip" -> if (isRaise) LocalizedText(
-                ar = "افرد الورك $side",
-                en = "Extend your $side hip"
-            ) else LocalizedText(
-                ar = "اثني الورك $side أكثر",
-                en = "Bend your $side hip more"
-            )
-            "ankle" -> if (isRaise) LocalizedText(
-                ar = "ارفع الكاحل $side",
-                en = "Raise your $side ankle"
-            ) else LocalizedText(
-                ar = "اخفض الكاحل $side",
-                en = "Lower your $side ankle"
-            )
-            "wrist" -> if (isRaise) LocalizedText(
-                ar = "ارفع المعصم $side",
-                en = "Raise your $side wrist"
-            ) else LocalizedText(
-                ar = "اخفض المعصم $side",
-                en = "Lower your $side wrist"
-            )
-            "spine" -> if (isRaise) LocalizedText(
-                ar = "افرد ظهرك أكثر",
-                en = "Straighten your back more"
-            ) else LocalizedText(
-                ar = "انحني للأمام أكثر",
-                en = "Bend forward more"
-            )
-            "neck" -> if (isRaise) LocalizedText(
-                ar = "ارفع رأسك",
-                en = "Lift your head"
-            ) else LocalizedText(
-                ar = "اخفض رأسك",
-                en = "Lower your head"
-            )
-            else -> if (isRaise) LocalizedText(
-                ar = "ارفع أكثر",
-                en = "Raise more"
-            ) else LocalizedText(
-                ar = "اخفض أكثر",
-                en = "Lower more"
-            )
-        }
     }
 
     // ──────────────────────────────────────────────────────────────────────

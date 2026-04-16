@@ -186,20 +186,8 @@ class AudioFeedbackPlayer(
     }
 
     suspend fun playCountdownAndAwait(number: Int) {
-        val key = when (number) {
-            1 -> "training_countdown_1"
-            2 -> "training_countdown_2"
-            3 -> "training_countdown_3"
-            else -> null
-        }
-        if (key != null) {
-            val lt = SystemMessageRegistry.get(key, number.toString(), number.toString())
-            playAndAwait(lt, Priority.NORMAL)
-        } else {
-            val done = CompletableDeferred<Unit>()
-            enqueuePlayback(PlaybackItem(number.toString(), null, Priority.NORMAL, done))
-            withTimeout(AWAIT_PLAYBACK_TIMEOUT_MS) { done.await() }
-        }
+        val lt = MobileMessageResolver.resolveTrainingNumeral(number)
+        playAndAwait(lt, Priority.NORMAL)
     }
 
     /**
@@ -247,21 +235,11 @@ class AudioFeedbackPlayer(
     }
     
     /**
-     * Play countdown number (system message keys training_countdown_1|2|3 when applicable)
+     * Play countdown number (system keys training_countdown_1 … training_countdown_30; fallback raw numeral)
      */
     fun playCountdown(number: Int) {
-        val key = when (number) {
-            1 -> "training_countdown_1"
-            2 -> "training_countdown_2"
-            3 -> "training_countdown_3"
-            else -> null
-        }
-        if (key != null) {
-            val lt = SystemMessageRegistry.get(key, number.toString(), number.toString())
-            play(lt, Priority.HIGH)
-        } else {
-            play(number.toString(), null, Priority.HIGH)
-        }
+        val lt = MobileMessageResolver.resolveTrainingNumeral(number)
+        play(lt, Priority.HIGH)
     }
     
     /**
