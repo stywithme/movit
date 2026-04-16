@@ -78,6 +78,7 @@ export default function MessagesListPage() {
   const [messages, setMessages] = useState<MessageTemplate[]>([]);
   const [pagination, setPagination] = useState<Pagination | null>(null);
   const [loading, setLoading] = useState(true);
+  const [pageError, setPageError] = useState<string | null>(null);
   const [categoryFilter, setCategoryFilter] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
@@ -97,6 +98,7 @@ export default function MessagesListPage() {
   const fetchMessages = useCallback(
     async (page = 1) => {
       setLoading(true);
+      setPageError(null);
       try {
         const params = new URLSearchParams({
           includeInactive: 'true',
@@ -109,17 +111,27 @@ export default function MessagesListPage() {
         if (debouncedSearch.trim()) params.set('search', debouncedSearch.trim());
 
         const res = await fetch(`/api/messages?${params.toString()}`);
-        const data = await res.json();
-        if (data.success) {
+        const data = await res.json().catch(() => ({
+          success: false,
+          error: `Failed to load messages (${res.status})`,
+        }));
+        if (res.ok && data.success) {
           setMessages(data.data);
           if (data.pagination) {
             setPagination(data.pagination);
           } else {
             setPagination(null);
           }
+        } else {
+          setMessages([]);
+          setPagination(null);
+          setPageError(data.error || 'Failed to load messages');
         }
       } catch (error) {
         console.error('Error fetching messages:', error);
+        setMessages([]);
+        setPagination(null);
+        setPageError('Failed to load messages');
       } finally {
         setLoading(false);
       }
@@ -166,9 +178,15 @@ export default function MessagesListPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ isActive: !currentStatus }),
       });
-      if (res.ok) fetchMessages(pagination?.page || 1);
+      const data = await res.json().catch(() => ({}));
+      if (res.ok && data.success) {
+        fetchMessages(pagination?.page || 1);
+      } else {
+        window.alert(data.error || 'Failed to update message status');
+      }
     } catch (error) {
       console.error('Error toggling status:', error);
+      window.alert('Failed to update message status');
     }
   };
 
@@ -177,14 +195,15 @@ export default function MessagesListPage() {
       window.alert('System messages cannot be deleted.');
       return;
     }
-    if (!confirm('Are you sure you want to delete this message?')) return;
+    if (!confirm('Delete this message permanently? If it is used in exercises, you should deactivate it instead.')) return;
     try {
       const res = await fetch(`/api/messages/${id}`, { method: 'DELETE' });
       const data = await res.json().catch(() => ({}));
-      if (res.ok) fetchMessages(pagination?.page || 1);
+      if (res.ok && data.success) fetchMessages(pagination?.page || 1);
       else if (data.error) window.alert(data.error);
     } catch (error) {
       console.error('Error deleting message:', error);
+      window.alert('Failed to delete message');
     }
   };
 
@@ -231,6 +250,12 @@ export default function MessagesListPage() {
           </button>
         </div>
       </div>
+
+      {pageError && (
+        <div className="p-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-700">
+          {pageError}
+        </div>
+      )}
 
       <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-200">
         <div className="flex flex-wrap gap-4 items-end">

@@ -20,6 +20,16 @@ export interface TtsLanguageCodeEntry {
   label: string;
 }
 
+export const DEFAULT_TTS_MODEL = 'gemini-2.5-flash-preview-tts';
+
+/**
+ * Backward-compatible aliases for model IDs that were used in older UI builds
+ * or copied from outdated blog posts / experiments.
+ */
+export const LEGACY_TTS_MODEL_ALIASES: Readonly<Record<string, string>> = {
+  'gemini-3.1-flash-preview-tts': 'gemini-3.1-flash-tts-preview',
+};
+
 /**
  * Prebuilt Gemini TTS voices (30). Pass `name` as `voiceName` / `prebuiltVoiceConfig.voiceName`.
  */
@@ -63,8 +73,20 @@ export const TTS_MODELS: readonly TtsModelEntry[] = [
   { id: 'gemini-2.5-flash-preview-tts', label: 'Gemini 2.5 Flash Preview TTS' },
   { id: 'gemini-2.5-flash-lite-preview-tts', label: 'Gemini 2.5 Flash Lite Preview TTS' },
   { id: 'gemini-2.5-pro-preview-tts', label: 'Gemini 2.5 Pro Preview TTS' },
-  { id: 'gemini-3.1-flash-preview-tts', label: 'Gemini 3.1 Flash Preview TTS' },
+  { id: 'gemini-3.1-flash-tts-preview', label: 'Gemini 3.1 Flash TTS Preview' },
 ] as const;
+
+export function normalizeTtsModelId(model?: string | null): string | undefined {
+  const trimmed = model?.trim();
+  if (!trimmed) return undefined;
+  return LEGACY_TTS_MODEL_ALIASES[trimmed] ?? trimmed;
+}
+
+export function isSupportedTtsModel(model?: string | null): boolean {
+  const normalized = normalizeTtsModelId(model);
+  if (!normalized) return false;
+  return TTS_MODELS.some((entry) => entry.id === normalized);
+}
 
 /**
  * Common BCP-47 codes for Arabic / English TTS (optional `languageCode` in API).

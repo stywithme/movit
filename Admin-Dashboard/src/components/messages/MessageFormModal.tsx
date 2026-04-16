@@ -137,7 +137,7 @@ export function MessageFormModal({
       setError('Code is required');
       return;
     }
-    if (!content.en && !content.ar) {
+    if (!content.en?.trim() && !content.ar?.trim()) {
       setError('At least one language is required');
       return;
     }
@@ -152,7 +152,8 @@ export function MessageFormModal({
         .filter(Boolean);
 
       const contentPayload = {
-        ...content,
+        ar: content.ar.trim(),
+        en: content.en.trim(),
         audioAr: audio.ar,
         audioEn: audio.en,
       };
@@ -180,8 +181,11 @@ export function MessageFormModal({
         body: JSON.stringify(payload),
       });
 
-      const data = await res.json();
-      if (data.success) {
+      const data = await res.json().catch(() => ({
+        success: false,
+        error: `Failed to save message (${res.status})`,
+      }));
+      if (res.ok && data.success) {
         onSaved?.({
           id: data.data.id,
           code: data.data.code,
@@ -206,7 +210,7 @@ export function MessageFormModal({
   };
 
   const canSubmit =
-    (isEditing && editMessage?.isSystem ? true : code.trim()) && (content.en || content.ar);
+    (isEditing && editMessage?.isSystem ? true : code.trim()) && (content.en?.trim() || content.ar?.trim());
 
   const lockSystemFields = isEditing && !!editMessage?.isSystem;
 
@@ -287,6 +291,7 @@ export function MessageFormModal({
               enableTranslation
               enableTTS
               ttsUserDefaults={ttsUserDefaults}
+              aiRouteBase="/api/messages/ai"
             />
 
             <div>

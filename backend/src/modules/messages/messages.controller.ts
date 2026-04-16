@@ -1,11 +1,65 @@
-import { Body, Controller, Delete, Get, Param, Post, Put, Query, Res, UseGuards } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Delete,
+  Get,
+  HttpException,
+  Param,
+  Post,
+  Put,
+  Query,
+  Res,
+  UseGuards,
+} from '@nestjs/common';
 import type { Response } from 'express';
 import { messagesService } from './messages.service';
 import type { BulkGenerateAudioInput, CreateMessageInput, UpdateMessageInput } from './messages.types';
 import { CaslGuard } from '@/lib/casl/casl.guard';
 import { CheckPermission } from '@/lib/casl/check-permission.decorator';
+import { deleteAudioFile, generateSpeech, translateText } from '@/lib/gemini';
 
 const AUDIO_MISSING_QUERY = ['any', 'ar', 'en', 'complete'] as const;
+
+interface TranslateRequestBody {
+  text?: string;
+  from?: 'ar' | 'en';
+  to?: 'ar' | 'en';
+  context?: string;
+}
+
+interface TtsRequestBody {
+  text?: string;
+  language?: 'ar' | 'en';
+  voiceName?: string;
+  model?: string;
+  languageCode?: string;
+  sharedStylePrompt?: string;
+  stylePrompt?: string;
+  systemInstruction?: string;
+  temperature?: number;
+  seed?: number;
+}
+
+function getErrorStatus(error: unknown): number {
+  return error instanceof HttpException ? error.getStatus() : 500;
+}
+
+function getErrorMessage(error: unknown, fallback: string): string {
+  if (error instanceof HttpException) {
+    const response = error.getResponse();
+    if (typeof response === 'string') return response;
+    if (response && typeof response === 'object' && 'message' in response) {
+      const message = (response as { message?: string | string[] }).message;
+      if (Array.isArray(message)) return message[0] || fallback;
+      if (typeof message === 'string') return message;
+    }
+    return error.message || fallback;
+  }
+  if (error instanceof Error && error.message) {
+    return error.message;
+  }
+  return fallback;
+}
 
 @UseGuards(CaslGuard)
 @Controller('messages')
@@ -71,29 +125,35 @@ export class MessagesController {
   @CheckPermission('create', 'FeedbackMessage')
   async create(@Body() body: CreateMessageInput, @Res({ passthrough: true }) res: Response) {
     try {
-      if (!body?.code || !body?.category || !body?.content) {
+      const code = body?.code?.trim();
+      if (!code || !body?.category || !body?.content) {
         res.status(400);
         return { success: false, error: 'Code, category, and content are required' };
       }
 
-      if (!body.content.en && !body.content.ar) {
+      if (!body.content.en?.trim() && !body.content.ar?.trim()) {
         res.status(400);
         return { success: false, error: 'Content must have at least English or Arabic value' };
       }
 
-      const existing = await messagesService.getByCode(body.code);
+      const existing = await messagesService.getByCode(code);
       if (existing) {
         res.status(409);
-        return { success: false, error: 'Message code already exists' };
+        return {
+          success: false,
+          error: existing.isActive
+            ? 'Message code already exists'
+            : 'Message code already exists on an inactive message. Delete it permanently or use another code.',
+        };
       }
 
-      const message = await messagesService.create(body);
+      const message = await messagesService.create({ ...body, code });
       res.status(201);
       return { success: true, data: message };
     } catch (error) {
       console.error('Error creating message:', error);
-      res.status(500);
-      return { success: false, error: 'Failed to create message' };
+      res.status(getErrorStatus(error));
+      return { success: false, error: getErrorMessage(error, 'Failed to create message') };
     }
   }
 
@@ -123,6 +183,100 @@ export class MessagesController {
     }
   }
 
+  @Post('ai/translate')
+  @CheckPermission('update', 'FeedbackMessage')
+  async translateForMessages(@Body() body: TranslateRequestBody, @Res({ passthrough: true }) res: Response) {
+    try {
+      if (!body?.text || !body?.from || !body?.to) {
+        res.status(400);
+        return { success: false, error: 'Missing required fields: text, from, to' };
+      }
+
+      if (!['ar', 'en'].includes(body.from) || !['ar', 'en'].includes(body.to)) {
+        res.status(400);
+        return { success: false, error: 'Invalid language. Supported: ar, en' };
+      }
+
+      const result = await translateText({
+        text: body.text,
+        from: body.from,
+        to: body.to,
+        context: body.context,
+      });
+
+      if (!result.success || !result.translatedText) {
+        res.status(500);
+        return { success: false, error: result.error || 'Translation failed' };
+      }
+
+      return { success: true, translatedText: result.translatedText };
+    } catch (error) {
+      console.error('Error translating message text:', error);
+      res.status(500);
+      return { success: false, error: 'Translation failed' };
+    }
+  }
+
+  @Post('ai/tts')
+  @CheckPermission('update', 'FeedbackMessage')
+  async ttsForMessages(@Body() body: TtsRequestBody, @Res({ passthrough: true }) res: Response) {
+    try {
+      if (!body?.text || !body?.language) {
+        res.status(400);
+        return { success: false, error: 'Missing required fields: text, language' };
+      }
+
+      if (!['ar', 'en'].includes(body.language)) {
+        res.status(400);
+        return { success: false, error: 'Invalid language. Supported: ar, en' };
+      }
+
+      const result = await generateSpeech({
+        text: body.text,
+        language: body.language,
+        voiceName: body.voiceName,
+        model: body.model,
+        languageCode: body.languageCode,
+        sharedStylePrompt: body.sharedStylePrompt,
+        stylePrompt: body.stylePrompt,
+        systemInstruction: body.systemInstruction,
+        temperature: body.temperature,
+        seed: body.seed,
+      });
+      if (!result.success || !result.audioPath) {
+        res.status(500);
+        return { success: false, error: result.error || 'TTS failed' };
+      }
+
+      return { success: true, audioUrl: result.audioPath };
+    } catch (error) {
+      console.error('Error generating message TTS:', error);
+      res.status(500);
+      return { success: false, error: 'TTS failed' };
+    }
+  }
+
+  @Delete('ai/tts')
+  @CheckPermission('update', 'FeedbackMessage')
+  async deleteMessageTts(@Body() body: { audioPath?: string }, @Res({ passthrough: true }) res: Response) {
+    try {
+      if (!body?.audioPath) {
+        res.status(400);
+        return { success: false, error: 'Missing audioPath' };
+      }
+
+      const deleted = await deleteAudioFile(body.audioPath);
+      return {
+        success: deleted,
+        message: deleted ? 'Audio file deleted' : 'Failed to delete audio file',
+      };
+    } catch (error) {
+      console.error('Error deleting message audio:', error);
+      res.status(500);
+      return { success: false, error: 'Failed to delete audio' };
+    }
+  }
+
   @Get(':id')
   @CheckPermission('read', 'FeedbackMessage')
   async getById(@Param('id') id: string, @Res({ passthrough: true }) res: Response) {
@@ -148,25 +302,38 @@ export class MessagesController {
     @Res({ passthrough: true }) res: Response
   ) {
     try {
-      if (body?.content && !body.content.en && !body.content.ar) {
+      if (body?.content && !body.content.en?.trim() && !body.content.ar?.trim()) {
         res.status(400);
         return { success: false, error: 'Content must have at least English or Arabic value' };
       }
 
-      if (body?.code) {
-        const existing = await messagesService.getByCode(body.code);
+      if (body?.code !== undefined) {
+        const code = body.code.trim();
+        if (!code) {
+          res.status(400);
+          return { success: false, error: 'Code cannot be empty' };
+        }
+
+        const existing = await messagesService.getByCode(code);
         if (existing && existing.id !== id) {
           res.status(409);
-          return { success: false, error: 'Message code already exists' };
+          return {
+            success: false,
+            error: existing.isActive
+              ? 'Message code already exists'
+              : 'Message code already exists on an inactive message. Delete it permanently or use another code.',
+          };
         }
+
+        body = { ...body, code };
       }
 
       const message = await messagesService.update(id, body);
       return { success: true, data: message };
     } catch (error) {
       console.error('Error updating message:', error);
-      res.status(500);
-      return { success: false, error: 'Failed to update message' };
+      res.status(getErrorStatus(error));
+      return { success: false, error: getErrorMessage(error, 'Failed to update message') };
     }
   }
 
@@ -178,8 +345,8 @@ export class MessagesController {
       return { success: true };
     } catch (error) {
       console.error('Error deleting message:', error);
-      res.status(500);
-      return { success: false, error: 'Failed to delete message' };
+      res.status(getErrorStatus(error));
+      return { success: false, error: getErrorMessage(error, 'Failed to delete message') };
     }
   }
 }

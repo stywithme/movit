@@ -1,4 +1,4 @@
-import { BadRequestException } from '@nestjs/common';
+import { BadRequestException, ConflictException, NotFoundException } from '@nestjs/common';
 import type { FeedbackMessageTemplate } from '@prisma/client';
 import { deleteAudioFile, generateSpeech } from '@/lib/gemini';
 import type { LocalizedTextWithAudio } from '@/lib/types/localized';
@@ -37,6 +37,50 @@ function parseMessageContent(raw: unknown): LocalizedTextWithAudio {
     audioAr: audioUrl('audioAr', 'audio_ar'),
     audioEn: audioUrl('audioEn', 'audio_en'),
   };
+}
+
+function trimText(value: unknown): string {
+  return typeof value === 'string' ? value.trim() : '';
+}
+
+function trimOptionalText(value: unknown): string | undefined {
+  const trimmed = trimText(value);
+  return trimmed || undefined;
+}
+
+function normalizeMessageContentInput(content: LocalizedTextWithAudio): LocalizedTextWithAudio {
+  const normalized: LocalizedTextWithAudio = {
+    ar: trimText(content?.ar),
+    en: trimText(content?.en),
+  };
+  const audioAr = trimOptionalText(content?.audioAr);
+  const audioEn = trimOptionalText(content?.audioEn);
+  if (audioAr) normalized.audioAr = audioAr;
+  if (audioEn) normalized.audioEn = audioEn;
+  return normalized;
+}
+
+function normalizeTags(tags?: string[]): string[] {
+  return Array.from(
+    new Set(
+      (tags ?? [])
+        .map((tag) => trimText(tag))
+        .filter(Boolean)
+    )
+  );
+}
+
+function collectContentAudioPaths(content: LocalizedTextWithAudio): string[] {
+  return [...new Set([content.audioAr, content.audioEn].filter((value): value is string => !!value?.trim()))];
+}
+
+async function deleteAudioPaths(paths: string[]): Promise<void> {
+  for (const audioPath of [...new Set(paths.filter(Boolean))]) {
+    const deleted = await deleteAudioFile(audioPath);
+    if (!deleted) {
+      console.warn('[TTS] Failed to delete audio file:', audioPath);
+    }
+  }
 }
 
 function getTextForLanguage(content: LocalizedTextWithAudio, lang: BulkGenerateAudioLanguage): string {
@@ -89,11 +133,12 @@ function buildListWhere(options: {
   status?: MessageStatusFilter;
 }): Record<string, unknown> {
   const where: Record<string, unknown> = {};
-  if (!options.includeInactive) {
+  if (options.status === 'active') {
     where.isActive = true;
-  } else {
-    if (options.status === 'active') where.isActive = true;
-    else if (options.status === 'inactive') where.isActive = false;
+  } else if (options.status === 'inactive') {
+    where.isActive = false;
+  } else if (!options.includeInactive) {
+    where.isActive = true;
   }
   if (options.category) {
     where.category = options.category;
@@ -539,21 +584,24 @@ export const messagesService = {
 
   async getByCode(code: string) {
     const prisma = await getPrisma();
+    const normalizedCode = code.trim();
+    if (!normalizedCode) return null;
     return prisma.feedbackMessageTemplate.findUnique({
-      where: { code },
+      where: { code: normalizedCode },
     });
   },
 
   async create(data: CreateMessageInput) {
     const prisma = await getPrisma();
+    const content = normalizeMessageContentInput(data.content);
     return prisma.feedbackMessageTemplate.create({
       data: {
-        code: data.code,
+        code: data.code.trim(),
         category: data.category,
-        context: data.context || null,
+        context: data.context?.trim() || null,
         description: data.description?.trim() || null,
-        content: data.content as object,
-        tags: data.tags || [],
+        content: content as object,
+        tags: normalizeTags(data.tags),
         isSystem: data.isSystem ?? false,
         isActive: data.isActive ?? true,
       },
@@ -564,8 +612,9 @@ export const messagesService = {
     const prisma = await getPrisma();
     const existing = await prisma.feedbackMessageTemplate.findUnique({ where: { id } });
     if (!existing) {
-      throw new BadRequestException('Message not found');
+      throw new NotFoundException('Message not found');
     }
+    const existingContent = parseMessageContent(existing.content);
 
     if (existing.isSystem) {
       if (data.code !== undefined && data.code !== existing.code) {
@@ -594,13 +643,23 @@ export const messagesService = {
     const updateData: Record<string, unknown> = {
       updatedAt: new Date(),
     };
+    const removedAudioPaths: string[] = [];
 
-    if (data.code !== undefined) updateData.code = data.code;
+    if (data.code !== undefined) updateData.code = data.code.trim();
     if (data.category !== undefined) updateData.category = data.category;
-    if (data.context !== undefined) updateData.context = data.context || null;
+    if (data.context !== undefined) updateData.context = data.context?.trim() || null;
     if (data.description !== undefined) updateData.description = data.description?.trim() || null;
-    if (data.content !== undefined) updateData.content = data.content as object;
-    if (data.tags !== undefined && !existing.isSystem) updateData.tags = data.tags;
+    if (data.content !== undefined) {
+      const nextContent = normalizeMessageContentInput(data.content);
+      if (existingContent.audioAr && existingContent.audioAr !== nextContent.audioAr) {
+        removedAudioPaths.push(existingContent.audioAr);
+      }
+      if (existingContent.audioEn && existingContent.audioEn !== nextContent.audioEn) {
+        removedAudioPaths.push(existingContent.audioEn);
+      }
+      updateData.content = nextContent as object;
+    }
+    if (data.tags !== undefined && !existing.isSystem) updateData.tags = normalizeTags(data.tags);
     if (data.isSystem !== undefined) updateData.isSystem = data.isSystem;
     if (data.isActive !== undefined) updateData.isActive = data.isActive;
 
@@ -610,6 +669,7 @@ export const messagesService = {
     });
 
     if (data.content !== undefined) {
+      await deleteAudioPaths(removedAudioPaths);
       await touchExercisesForMessageIds(prisma, [id]);
     }
 
@@ -619,12 +679,27 @@ export const messagesService = {
   async delete(id: string) {
     const prisma = await getPrisma();
     const existing = await prisma.feedbackMessageTemplate.findUnique({ where: { id } });
+    if (!existing) {
+      throw new NotFoundException('Message not found');
+    }
     if (existing?.isSystem) {
       throw new BadRequestException('Cannot delete system messages');
     }
-    return prisma.feedbackMessageTemplate.update({
-      where: { id },
-      data: { isActive: false },
+
+    const assignmentCount = await prisma.feedbackMessageAssignment.count({
+      where: { messageId: id },
     });
+    if (assignmentCount > 0) {
+      throw new ConflictException('This message is still used in exercises. Deactivate it or remove its assignments before deleting it.');
+    }
+
+    const content = parseMessageContent(existing.content);
+    const audioPaths = collectContentAudioPaths(content);
+    await prisma.feedbackMessageTemplate.delete({
+      where: { id },
+    });
+    await deleteAudioPaths(audioPaths);
+
+    return { deleted: true };
   },
 };

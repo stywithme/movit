@@ -64,6 +64,8 @@ export interface SmartLocalizedInputProps {
   enableTTS?: boolean;
   /** When set, TTS requests include model/voice/style from these saved defaults */
   ttsUserDefaults?: TtsUserDefaults;
+  /** Override AI endpoint base for this field, e.g. `/api/messages/ai` */
+  aiRouteBase?: string;
 
   // Audio
   audioValue?: { ar?: string; en?: string };

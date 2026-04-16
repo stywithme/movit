@@ -36,6 +36,7 @@ export function SmartLocalizedInput({
   enableTranslation = true,
   enableTTS = true,
   ttsUserDefaults,
+  aiRouteBase,
   audioValue: externalAudioValue,
   onAudioChange: externalOnAudioChange,
   translationContext,
@@ -56,7 +57,7 @@ export function SmartLocalizedInput({
     isTranslating,
     translate,
     error: translateError
-  } = useTranslation({ context: translationContext });
+  } = useTranslation({ context: translationContext, routeBase: aiRouteBase });
 
   // TTS hook
   const {
@@ -67,7 +68,7 @@ export function SmartLocalizedInput({
     stop,
     deleteAudio,
     error: ttsError
-  } = useTextToSpeech();
+  } = useTextToSpeech({ routeBase: aiRouteBase });
 
   // Handle text change
   const handleChange = useCallback((lang: SupportedLanguage, newValue: string) => {
@@ -107,15 +108,12 @@ export function SmartLocalizedInput({
     const ttsPayload = ttsUserDefaults ? buildTtsGeneratePayloadFromDefaults(lang, ttsUserDefaults) : undefined;
     const audioUrl = await generateSpeech(text, lang, existingUrl, ttsPayload);
 
-    console.log('[SmartInput] Generated audio URL:', audioUrl);
-
     if (audioUrl) {
       // Update audio state
       const newAudioValue = {
         ...audioValue,
         [lang]: audioUrl,
       };
-      console.log('[SmartInput] Updating audio value:', newAudioValue);
       onAudioChange(newAudioValue);
       // Auto-play the generated audio
       play(audioUrl);
@@ -124,9 +122,7 @@ export function SmartLocalizedInput({
 
   // Handle audio playback
   const handlePlay = useCallback((lang: SupportedLanguage) => {
-    console.log('[SmartInput] Play clicked, lang:', lang, 'audioValue:', audioValue);
     const url = audioValue?.[lang];
-    console.log('[SmartInput] URL to play:', url);
     if (url) play(url);
   }, [audioValue, play]);
 
@@ -135,12 +131,14 @@ export function SmartLocalizedInput({
     if (readOnly) return;
     const url = audioValue?.[lang];
     if (url) {
-      await deleteAudio(url);
-      const newAudioValue = {
-        ...audioValue,
-        [lang]: undefined,
-      };
-      onAudioChange(newAudioValue);
+      const deleted = await deleteAudio(url);
+      if (deleted) {
+        const newAudioValue = {
+          ...audioValue,
+          [lang]: undefined,
+        };
+        onAudioChange(newAudioValue);
+      }
     }
   }, [audioValue, deleteAudio, onAudioChange, readOnly]);
 

@@ -7,6 +7,7 @@
  */
 
 import { GoogleGenAI } from '@google/genai';
+import { DEFAULT_TTS_MODEL, normalizeTtsModelId } from './tts-constants';
 
 // Validate API key exists
 if (!process.env.GEMINI_API_KEY) {
@@ -28,7 +29,7 @@ export const geminiConfig = {
   textModel: process.env.GEMINI_TEXT_MODEL || 'gemini-2.0-flash',
   
   // TTS model
-  ttsModel: process.env.GEMINI_TTS_MODEL || 'gemini-2.5-flash-preview-tts',
+  ttsModel: normalizeTtsModelId(process.env.GEMINI_TTS_MODEL) || DEFAULT_TTS_MODEL,
   
   // Voice configurations
   voices: {
