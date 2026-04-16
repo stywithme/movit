@@ -20,6 +20,7 @@ import {
 import { useTtsConfig } from '@/hooks/useTtsConfig';
 import { readTtsDefaultsFromStorage } from '@/hooks/useTtsDefaults';
 import type { TtsUserDefaults } from '@/lib/types/tts';
+import { normalizeTtsModelId } from '@/lib/utils/tts';
 
 const BATCH_SIZE = 5;
 const LOCAL_STORAGE_KEY = 'pose.messages.bulk-audio-settings.v1';
@@ -164,6 +165,7 @@ function mergeStoredSettings(value: unknown): BulkAudioSettings {
   return {
     ...DEFAULT_SETTINGS,
     ...raw,
+    model: normalizeTtsModelId(raw.model),
   };
 }
 
@@ -277,7 +279,8 @@ export function MessageBulkAudioModal({
       if (currentFilters.audioMissing) payload.audioMissing = currentFilters.audioMissing;
     }
 
-    if (settings.model.trim()) payload.model = settings.model.trim();
+    const normalizedModel = normalizeTtsModelId(settings.model);
+    if (normalizedModel) payload.model = normalizedModel;
     if (settings.voiceNameAr.trim()) payload.voiceNameAr = settings.voiceNameAr.trim();
     if (settings.voiceNameEn.trim()) payload.voiceNameEn = settings.voiceNameEn.trim();
     if (settings.languageCodeAr.trim()) payload.languageCodeAr = settings.languageCodeAr.trim();

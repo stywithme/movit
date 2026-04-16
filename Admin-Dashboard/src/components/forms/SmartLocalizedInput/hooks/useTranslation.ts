@@ -12,6 +12,7 @@ import type { SupportedLanguage, TranslateResponse } from '../types';
 
 interface UseTranslationOptions {
   context?: string;
+  routeBase?: string;
 }
 
 interface UseTranslationReturn {
@@ -39,7 +40,7 @@ export function useTranslation(options: UseTranslationOptions = {}): UseTranslat
     setError(null);
 
     try {
-      const response = await fetch('/api/ai/translate', {
+      const response = await fetch(`${options.routeBase || '/api/ai'}/translate`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -52,7 +53,7 @@ export function useTranslation(options: UseTranslationOptions = {}): UseTranslat
 
       const data: TranslateResponse = await response.json();
 
-      if (!data.success || !data.translatedText) {
+      if (!response.ok || !data.success || !data.translatedText) {
         throw new Error(data.error || 'Translation failed');
       }
 
@@ -64,7 +65,7 @@ export function useTranslation(options: UseTranslationOptions = {}): UseTranslat
     } finally {
       setIsTranslating(false);
     }
-  }, [options.context]);
+  }, [options.context, options.routeBase]);
 
   const clearError = useCallback(() => {
     setError(null);

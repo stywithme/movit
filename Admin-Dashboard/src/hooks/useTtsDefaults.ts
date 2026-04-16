@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import { EMPTY_TTS_USER_DEFAULTS, type TtsUserDefaults } from '@/lib/types/tts';
+import { normalizeTtsUserDefaults } from '@/lib/utils/tts';
 
 const STORAGE_KEY = 'pose.tts.defaults.v1';
 const TTS_DEFAULTS_UPDATED_EVENT = 'pose-tts-defaults-updated';
@@ -20,7 +21,7 @@ function parseStored(raw: string | null): TtsUserDefaults {
   if (!raw) return { ...EMPTY_TTS_USER_DEFAULTS };
   try {
     const parsed = JSON.parse(raw) as Partial<TtsUserDefaults>;
-    return { ...EMPTY_TTS_USER_DEFAULTS, ...parsed };
+    return normalizeTtsUserDefaults({ ...EMPTY_TTS_USER_DEFAULTS, ...parsed });
   } catch {
     return { ...EMPTY_TTS_USER_DEFAULTS };
   }
@@ -53,7 +54,7 @@ export function useTtsDefaults() {
 
   const updateDefaults = useCallback((patch: Partial<TtsUserDefaults>) => {
     setDefaults((prev) => {
-      const next = { ...prev, ...patch };
+      const next = normalizeTtsUserDefaults({ ...prev, ...patch });
       try {
         window.localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
         window.dispatchEvent(new Event(TTS_DEFAULTS_UPDATED_EVENT));

@@ -7,6 +7,7 @@
  */
 
 import { geminiClient, geminiConfig, type SupportedLanguage } from './client';
+import { DEFAULT_TTS_MODEL, normalizeTtsModelId } from './tts-constants';
 import { uploadBufferToGcs, deleteObjectFromGcs, parseObjectNameFromUrl } from '@/lib/storage';
 
 /**
@@ -64,6 +65,13 @@ interface TTSResult {
   error?: string;
 }
 
+function isModelNotFoundError(error: unknown): boolean {
+  if (!error || typeof error !== 'object') return false;
+  const maybe = error as { status?: string; code?: number; message?: string };
+  const message = (maybe.message || '').toLowerCase();
+  return maybe.code === 404 || maybe.status === 'NOT_FOUND' || message.includes('not found for api version');
+}
+
 /**
  * Generate speech from text and save to file
  */
@@ -86,7 +94,8 @@ export async function generateSpeech(options: TTSOptions): Promise<TTSResult> {
   }
 
   const voice = voiceName || geminiConfig.voices[language];
-  const selectedModel = model || geminiConfig.ttsModel;
+  const requestedModel = normalizeTtsModelId(model);
+  const selectedModel = requestedModel || geminiConfig.ttsModel || DEFAULT_TTS_MODEL;
   const langInstruction =
     language === 'ar'
       ? 'Read this Arabic fitness guidance with clear pronunciation and natural coaching delivery.'
@@ -103,11 +112,12 @@ export async function generateSpeech(options: TTSOptions): Promise<TTSResult> {
   promptParts.push(text.trim());
   const prompt = promptParts.join('\n\n');
 
-  try {
+  const generateWithModel = async (modelId: string): Promise<TTSResult> => {
     console.log('[TTS] Generating speech for:', {
       language,
       voice,
-      model: selectedModel,
+      requestedModel: model ?? '(none)',
+      resolvedModel: modelId,
       languageCode: languageCode || '(default)',
       textLength: text.length,
       hasSharedStylePrompt: !!sharedStylePrompt?.trim(),
@@ -118,7 +128,7 @@ export async function generateSpeech(options: TTSOptions): Promise<TTSResult> {
     });
 
     const response = await geminiClient.models.generateContent({
-      model: selectedModel,
+      model: modelId,
       contents: [{ parts: [{ text: prompt }] }],
       ...(systemInstruction?.trim() ? { systemInstruction: systemInstruction.trim() } : {}),
       config: {
@@ -135,28 +145,23 @@ export async function generateSpeech(options: TTSOptions): Promise<TTSResult> {
     });
 
     console.log('[TTS] Response received:', JSON.stringify(response, null, 2).substring(0, 500));
-    
-    const audioData = response.candidates?.[0]?.content?.parts?.[0]?.inlineData?.data;
 
+    const audioData = response.candidates?.[0]?.content?.parts?.[0]?.inlineData?.data;
     if (!audioData) {
       console.error('[TTS] No audio data in response. Full response:', JSON.stringify(response, null, 2));
       return { success: false, error: 'No audio data received' };
     }
-    
-    console.log('[TTS] Audio data received, length:', audioData.length);
 
-    // Generate unique filename
     const timestamp = Date.now();
     const randomId = Math.random().toString(36).substring(2, 8);
     const filename = `tts_${language}_${timestamp}_${randomId}.wav`;
 
-    // Convert PCM data to WAV format
     const pcmBuffer = Buffer.from(audioData, 'base64');
     const wavBuffer = createWavBuffer(pcmBuffer);
-    
+
     const objectName = `exercises/audio/${filename}`;
     const uploadResult = await uploadBufferToGcs(objectName, wavBuffer, 'audio/wav');
-    
+
     console.log('[TTS] Audio file uploaded:', uploadResult.url);
     console.log('[TTS] PCM size:', pcmBuffer.length, 'bytes, WAV size:', wavBuffer.length, 'bytes');
 
@@ -164,7 +169,27 @@ export async function generateSpeech(options: TTSOptions): Promise<TTSResult> {
       success: true,
       audioPath: uploadResult.url,
     };
+  };
+
+  try {
+    return await generateWithModel(selectedModel);
   } catch (error) {
+    if (isModelNotFoundError(error) && selectedModel !== DEFAULT_TTS_MODEL) {
+      console.warn('[TTS] Requested model is unavailable, retrying with fallback:', {
+        requestedModel: selectedModel,
+        fallbackModel: DEFAULT_TTS_MODEL,
+      });
+      try {
+        return await generateWithModel(DEFAULT_TTS_MODEL);
+      } catch (fallbackError) {
+        console.error('[TTS] Fallback model also failed:', fallbackError);
+        return {
+          success: false,
+          error: fallbackError instanceof Error ? fallbackError.message : 'TTS generation failed',
+        };
+      }
+    }
+
     console.error('[TTS] Error:', error);
     return {
       success: false,

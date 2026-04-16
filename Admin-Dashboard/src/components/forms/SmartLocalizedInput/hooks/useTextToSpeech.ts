@@ -40,7 +40,12 @@ interface UseTextToSpeechReturn {
   clearError: () => void;
 }
 
-export function useTextToSpeech(): UseTextToSpeechReturn {
+interface UseTextToSpeechOptions {
+  routeBase?: string;
+}
+
+export function useTextToSpeech(options: UseTextToSpeechOptions = {}): UseTextToSpeechReturn {
+  const routeBase = options.routeBase || '/api/ai';
   const [isGenerating, setIsGenerating] = useState(false);
   const [isPlaying, setIsPlaying] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -72,15 +77,6 @@ export function useTextToSpeech(): UseTextToSpeechReturn {
     setError(null);
 
     try {
-      // Delete existing audio if regenerating
-      if (existingUrl) {
-        await fetch('/api/ai/tts', {
-          method: 'DELETE',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ audioPath: existingUrl }),
-        });
-      }
-
       const body: Record<string, unknown> = { text, language };
       if (ttsOptions) {
         if (ttsOptions.model) body.model = ttsOptions.model;
@@ -93,16 +89,32 @@ export function useTextToSpeech(): UseTextToSpeechReturn {
         if (typeof ttsOptions.seed === 'number') body.seed = ttsOptions.seed;
       }
 
-      const response = await fetch('/api/ai/tts', {
+      const response = await fetch(`${routeBase}/tts`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(body),
       });
 
-      const data: TTSResponse = await response.json();
+      const data: TTSResponse = await response.json().catch(() => ({
+        success: false,
+        error: `TTS request failed (${response.status})`,
+      }));
 
-      if (!data.success || !data.audioUrl) {
+      if (!response.ok || !data.success || !data.audioUrl) {
         throw new Error(data.error || 'TTS generation failed');
+      }
+
+      // Delete replaced audio only after new audio is safely generated.
+      if (existingUrl && existingUrl !== data.audioUrl) {
+        try {
+          await fetch(`${routeBase}/tts`, {
+            method: 'DELETE',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ audioPath: existingUrl }),
+          });
+        } catch (deleteError) {
+          console.warn('Failed to delete replaced audio:', deleteError);
+        }
       }
 
       return data.audioUrl;
@@ -113,11 +125,9 @@ export function useTextToSpeech(): UseTextToSpeechReturn {
     } finally {
       setIsGenerating(false);
     }
-  }, []);
+  }, [routeBase]);
 
   const play = useCallback((audioUrl: string) => {
-    console.log('[TTS Play] Attempting to play:', audioUrl);
-    
     // Stop any existing playback
     if (audioRef.current) {
       audioRef.current.pause();
@@ -127,18 +137,13 @@ export function useTextToSpeech(): UseTextToSpeechReturn {
     const audio = new Audio(audioUrl);
     audioRef.current = audio;
 
-    audio.onloadstart = () => console.log('[TTS Play] Loading started');
-    audio.oncanplay = () => console.log('[TTS Play] Can play');
     audio.onplay = () => {
-      console.log('[TTS Play] Playing');
       setIsPlaying(true);
     };
     audio.onpause = () => {
-      console.log('[TTS Play] Paused');
       setIsPlaying(false);
     };
     audio.onended = () => {
-      console.log('[TTS Play] Ended');
       setIsPlaying(false);
     };
     audio.onerror = (e) => {
@@ -177,18 +182,23 @@ export function useTextToSpeech(): UseTextToSpeechReturn {
 
   const deleteAudio = useCallback(async (audioUrl: string): Promise<boolean> => {
     try {
-      const response = await fetch('/api/ai/tts', {
+      const response = await fetch(`${routeBase}/tts`, {
         method: 'DELETE',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ audioPath: audioUrl }),
       });
 
-      const data = await response.json();
-      return data.success;
+      const data = await response.json().catch(() => ({ success: false }));
+      if (!response.ok || !data.success) {
+        setError(data.error || 'Failed to delete audio');
+        return false;
+      }
+      return true;
     } catch {
+      setError('Failed to delete audio');
       return false;
     }
-  }, []);
+  }, [routeBase]);
 
   const clearError = useCallback(() => {
     setError(null);

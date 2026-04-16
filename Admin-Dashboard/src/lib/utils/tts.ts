@@ -1,5 +1,9 @@
 import type { TtsGeneratePayload, TtsUserDefaults } from '@/lib/types/tts';
 
+const LEGACY_TTS_MODEL_ALIASES: Record<string, string> = {
+  'gemini-3.1-flash-preview-tts': 'gemini-3.1-flash-tts-preview',
+};
+
 function parseOptionalFloat(value: string): number | undefined {
   const trimmed = value.trim();
   if (!trimmed) return undefined;
@@ -12,6 +16,19 @@ function parseOptionalInt(value: string): number | undefined {
   if (!trimmed) return undefined;
   const parsed = Number.parseInt(trimmed, 10);
   return Number.isFinite(parsed) ? parsed : undefined;
+}
+
+export function normalizeTtsModelId(value?: string | null): string {
+  const trimmed = value?.trim() || '';
+  if (!trimmed) return '';
+  return LEGACY_TTS_MODEL_ALIASES[trimmed] ?? trimmed;
+}
+
+export function normalizeTtsUserDefaults(defaults: TtsUserDefaults): TtsUserDefaults {
+  return {
+    ...defaults,
+    model: normalizeTtsModelId(defaults.model),
+  };
 }
 
 /**
@@ -28,7 +45,8 @@ export function buildTtsGeneratePayloadFromDefaults(
   const seed = parseOptionalInt(d.seed);
 
   const payload: TtsGeneratePayload = {};
-  if (d.model.trim()) payload.model = d.model.trim();
+  const model = normalizeTtsModelId(d.model);
+  if (model) payload.model = model;
   if (voiceName.trim()) payload.voiceName = voiceName.trim();
   if (languageCode.trim()) payload.languageCode = languageCode.trim();
   if (d.sharedStylePrompt.trim()) payload.sharedStylePrompt = d.sharedStylePrompt.trim();
