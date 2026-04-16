@@ -152,15 +152,22 @@ export function MessageFormModal({
     () => Object.values(ttsUserDefaults).some((value) => value.trim()),
     [ttsUserDefaults]
   );
+  const showManualSystemCode = !isEditing && isSystem;
   const displayedCode = isEditing ? code : buildAutoMessageCodePreview(category, context);
   const codeHelpText = isEditing
     ? 'Stable message identifier. It stays read-only here to keep library references predictable.'
-    : 'Preview only. The final numeric suffix is assigned automatically on save to keep codes unique.';
+    : showManualSystemCode
+      ? 'Use a stable, unique key (often UPPER_SNAKE_CASE). It must not change after clients depend on it.'
+      : 'Preview only. The final numeric suffix is assigned automatically on save to keep codes unique.';
   const categoryHint = getMessageCategoryHint(category);
 
   const handleSubmit = async () => {
     if (!content.en?.trim() && !content.ar?.trim()) {
       setError('At least one language is required');
+      return;
+    }
+    if (!isEditing && isSystem && !code.trim()) {
+      setError('System messages require a message code');
       return;
     }
 
@@ -191,7 +198,7 @@ export function MessageFormModal({
             isSystem,
             isActive,
             content: contentPayload,
-            ...(!isEditing && code.trim() ? { code: code.trim() } : {}),
+            ...(!isEditing && isSystem && code.trim() ? { code: code.trim() } : {}),
           };
 
       const url = isEditing ? `/api/messages/${editMessage!.id}` : '/api/messages';
@@ -231,7 +238,9 @@ export function MessageFormModal({
     }
   };
 
-  const canSubmit = !!(content.en?.trim() || content.ar?.trim());
+  const canSubmit =
+    !!(content.en?.trim() || content.ar?.trim()) &&
+    (isEditing || !isSystem || !!code.trim());
 
   const lockSystemFields = isEditing && !!editMessage?.isSystem;
 
@@ -287,7 +296,9 @@ export function MessageFormModal({
           <DialogDescription>
             {isEditing
               ? 'Update the library message content, audio, and metadata.'
-              : 'Create a reusable feedback message. The code is generated automatically.'}
+              : isSystem
+                ? 'Create a system message with a fixed code the app can rely on.'
+                : 'Create a reusable feedback message. The code is generated automatically.'}
           </DialogDescription>
         </DialogHeader>
 
@@ -313,10 +324,13 @@ export function MessageFormModal({
                 <div className="flex items-start gap-3">
                   <Sparkles className="w-5 h-5 text-blue-600 mt-0.5" />
                   <div>
-                    <p className="text-sm font-medium text-blue-900">Faster create flow</p>
+                    <p className="text-sm font-medium text-blue-900">
+                      {isSystem ? 'System message' : 'Faster create flow'}
+                    </p>
                     <p className="text-sm text-blue-700 mt-1">
-                      Choose the category and context, then write the message. The final code is generated
-                      automatically when you save.
+                      {isSystem
+                        ? 'Enter a fixed code that the app will use as a stable key, then add the bilingual text and audio.'
+                        : 'Choose the category and context, then write the message. The final code is generated automatically when you save.'}
                     </p>
                   </div>
                 </div>
@@ -406,18 +420,34 @@ export function MessageFormModal({
                 </div>
 
                 <div>
-                  <Label>{isEditing ? 'Message code' : 'Auto-generated code'}</Label>
-                  <div className="mt-1 rounded-xl border border-gray-200 bg-gray-50 px-4 py-3">
-                    <div className="flex items-center justify-between gap-3">
-                      <span className="font-mono text-sm text-gray-900 break-all">{displayedCode}</span>
-                      {isEditing && code.trim() && (
-                        <Button type="button" variant="ghost" size="sm" onClick={handleCopyCode} icon={<Copy className="w-4 h-4" />}>
-                          {copiedCode ? 'Copied' : 'Copy'}
-                        </Button>
-                      )}
+                  <Label>
+                    {isEditing ? 'Message code' : showManualSystemCode ? 'System message code' : 'Auto-generated code'}
+                  </Label>
+                  {showManualSystemCode ? (
+                    <>
+                      <Input
+                        className="mt-1 font-mono"
+                        value={code}
+                        onChange={(e) => setCode(e.target.value)}
+                        placeholder="e.g. APP_WELCOME_TITLE"
+                        autoComplete="off"
+                        spellCheck={false}
+                      />
+                      <p className="mt-2 text-xs text-gray-500">{codeHelpText}</p>
+                    </>
+                  ) : (
+                    <div className="mt-1 rounded-xl border border-gray-200 bg-gray-50 px-4 py-3">
+                      <div className="flex items-center justify-between gap-3">
+                        <span className="font-mono text-sm text-gray-900 break-all">{displayedCode}</span>
+                        {isEditing && code.trim() && (
+                          <Button type="button" variant="ghost" size="sm" onClick={handleCopyCode} icon={<Copy className="w-4 h-4" />}>
+                            {copiedCode ? 'Copied' : 'Copy'}
+                          </Button>
+                        )}
+                      </div>
+                      <p className="mt-2 text-xs text-gray-500">{codeHelpText}</p>
                     </div>
-                    <p className="mt-2 text-xs text-gray-500">{codeHelpText}</p>
-                  </div>
+                  )}
                 </div>
 
                 <div>

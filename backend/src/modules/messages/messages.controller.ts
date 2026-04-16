@@ -136,6 +136,11 @@ export class MessagesController {
         return { success: false, error: 'Content must have at least English or Arabic value' };
       }
 
+      if (body.isSystem && !code) {
+        res.status(400);
+        return { success: false, error: 'System messages require an explicit code' };
+      }
+
       if (code) {
         const existing = await messagesService.getByCode(code);
         if (existing) {

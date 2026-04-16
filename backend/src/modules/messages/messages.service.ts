@@ -657,7 +657,17 @@ export const messagesService = {
   async create(data: CreateMessageInput) {
     const prisma = await getPrisma();
     const content = normalizeMessageContentInput(data.content);
-    const code = data.code?.trim() || (await generateNextMessageCode(prisma, data.category, data.context));
+    const isSystem = data.isSystem ?? false;
+    let code: string;
+    if (isSystem) {
+      const explicit = data.code?.trim();
+      if (!explicit) {
+        throw new BadRequestException('System messages require an explicit code');
+      }
+      code = explicit;
+    } else {
+      code = data.code?.trim() || (await generateNextMessageCode(prisma, data.category, data.context));
+    }
     return prisma.feedbackMessageTemplate.create({
       data: {
         code,
