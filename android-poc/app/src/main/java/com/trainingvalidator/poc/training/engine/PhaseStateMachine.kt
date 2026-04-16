@@ -106,7 +106,15 @@ class PhaseStateMachine(
      */
     var onRepCompleted: (() -> Unit)? = null
     
-    // Calculated thresholds aggregated across primary joints' StateRanges
+    /** Primary joints with up/down ranges (rep counting uses these for UP_DOWN strict mode). */
+    private val upDownPrimaryJoints: List<TrackedJoint> =
+        primaryJoints.filter { it.hasStateUpDownRanges() }
+    
+    /** Primary joints with hold range only (HOLD strict mode). */
+    private val holdPrimaryJoints: List<TrackedJoint> =
+        primaryJoints.filter { it.hasStateHoldRange() }
+    
+    // Calculated thresholds aggregated across primary joints' StateRanges (debug + legacy fallback)
     private val upRangeMin: Double
     private val upRangeMax: Double
     private val downRangeMin: Double
@@ -125,11 +133,9 @@ class PhaseStateMachine(
     
     
     init {
-        // Use StateRanges to determine phase thresholds.
-        // For multi-primary exercises, aggregate thresholds across all applicable joints
-        // so boundaries remain consistent with average-angle phase updates.
-        val upDownJoints = primaryJoints.filter { it.hasStateUpDownRanges() }
-        val holdRangeJoints = primaryJoints.filter { it.hasStateHoldRange() }
+        // Aggregate thresholds for logging and legacy fallback when no per-joint ranges exist.
+        val upDownJoints = upDownPrimaryJoints
+        val holdRangeJoints = holdPrimaryJoints
 
         if (upDownJoints.isNotEmpty()) {
             upRangeMin = upDownJoints.map { it.getStateUpRange().effectiveMin }.average()
@@ -166,6 +172,11 @@ class PhaseStateMachine(
      * NOTE: Expects pre-smoothed angles from AngleSmoother (via TrainingEngine)
      * This ensures consistency with FormValidator which uses the same smoothed angles.
      * 
+     * For multi-primary UP_DOWN exercises, each joint uses its own StateRanges thresholds
+     * (strict all-must-complete). Transitions require every primary joint to satisfy the
+     * same phase predicate with joint-specific bounds (avoids averaged-threshold drift when
+     * ranges differ, e.g. elbow vs knee).
+     * 
      * @param primaryAngles Map of primary joint codes to their current (smoothed) angles
      * @return Current phase after update
      */
@@ -174,13 +185,25 @@ class PhaseStateMachine(
             return currentPhase
         }
         
-        // Calculate average angle of primary joints
-        val angle = calculateAverageAngle(primaryAngles)
-        
-        // Determine next phase based on counting method
         val nextPhase = when (countingMethod) {
-            CountingMethod.UP_DOWN -> updateUpDown(angle)
-            CountingMethod.HOLD -> updateHold(angle)
+            CountingMethod.UP_DOWN -> {
+                if (upDownPrimaryJoints.isNotEmpty()) {
+                    updateUpDownStrict(upDownPrimaryJoints, primaryAngles)
+                } else {
+                    val angleValues = primaryAngles.values
+                    if (angleValues.isEmpty()) return currentPhase
+                    updateUpDownLegacy(angleValues.min(), angleValues.max())
+                }
+            }
+            CountingMethod.HOLD -> {
+                if (holdPrimaryJoints.isNotEmpty()) {
+                    updateHoldStrict(holdPrimaryJoints, primaryAngles)
+                } else {
+                    val angleValues = primaryAngles.values
+                    if (angleValues.isEmpty()) return currentPhase
+                    updateHoldLegacy(angleValues.min(), angleValues.max())
+                }
+            }
         }
         
         // Handle phase transition
@@ -189,6 +212,167 @@ class PhaseStateMachine(
         }
         
         return currentPhase
+    }
+    
+    // --- Per-joint bounds (match init aggregation: up effectiveMin/outermostMax, down outermostMin/effectiveMax) ---
+    
+    private fun jointInUpRange(joint: TrackedJoint, angle: Double, exiting: Boolean): Boolean {
+        val up = joint.getStateUpRange()
+        val minBound = if (exiting) up.effectiveMin - hysteresis else up.effectiveMin
+        val maxBound = up.outermostMax + hysteresis
+        return angle in minBound..maxBound
+    }
+    
+    private fun jointInDownRange(joint: TrackedJoint, angle: Double, exiting: Boolean): Boolean {
+        val down = joint.getStateDownRange()
+        val minBound = down.outermostMin - hysteresis
+        val maxBound = if (exiting) down.effectiveMax + hysteresis else down.effectiveMax
+        return angle in minBound..maxBound
+    }
+    
+    private fun jointInHoldRange(joint: TrackedJoint, angle: Double, exiting: Boolean): Boolean {
+        val hold = joint.getStateHoldRange()
+        val minBound = hold.outermostMin - hysteresis
+        val maxBound = if (exiting) hold.effectiveMax + hysteresis else hold.effectiveMax
+        return angle in minBound..maxBound
+    }
+    
+    private fun jointHasLeftUpRange(joint: TrackedJoint, angle: Double): Boolean {
+        return angle < joint.getStateUpRange().effectiveMin - hysteresis
+    }
+    
+    private fun jointHasEnteredDownRange(joint: TrackedJoint, angle: Double): Boolean {
+        return angle <= joint.getStateDownRange().effectiveMax
+    }
+    
+    private fun jointHasLeftDownRange(joint: TrackedJoint, angle: Double): Boolean {
+        return angle > joint.getStateDownRange().effectiveMax + hysteresis
+    }
+    
+    private fun jointHasEnteredUpRange(joint: TrackedJoint, angle: Double): Boolean {
+        return angle >= joint.getStateUpRange().effectiveMin
+    }
+    
+    /**
+     * UP_DOWN with per-joint thresholds: every primary with up/down must satisfy the transition.
+     */
+    private fun updateUpDownStrict(joints: List<TrackedJoint>, primaryAngles: Map<String, Double>): Phase {
+        fun angleOrNull(j: TrackedJoint): Double? = primaryAngles[j.joint]
+        
+        return when (currentPhase) {
+            Phase.IDLE -> {
+                if (joints.all { j ->
+                        val a = angleOrNull(j) ?: return@all false
+                        jointInUpRange(j, a, exiting = false)
+                    }) {
+                    Log.d(TAG, "Entered UP range (strict per joint)")
+                    Phase.START
+                } else {
+                    Phase.IDLE
+                }
+            }
+            
+            Phase.START -> {
+                if (joints.all { j ->
+                        val a = angleOrNull(j) ?: return@all false
+                        jointHasLeftUpRange(j, a)
+                    }) {
+                    Log.d(TAG, "Left UP range, starting descent (strict per joint)")
+                    repCountedThisCycle = false
+                    Phase.DOWN
+                } else {
+                    Phase.START
+                }
+            }
+            
+            Phase.DOWN -> {
+                when {
+                    joints.all { j ->
+                        val a = angleOrNull(j) ?: return@all false
+                        jointHasEnteredDownRange(j, a)
+                    } -> {
+                        Log.d(TAG, "Entered DOWN range (strict per joint)")
+                        Phase.BOTTOM
+                    }
+                    joints.all { j ->
+                        val a = angleOrNull(j) ?: return@all false
+                        jointInUpRange(j, a, exiting = false)
+                    } -> {
+                        Log.d(TAG, "Returned to UP without reaching DOWN (strict per joint)")
+                        Phase.START
+                    }
+                    else -> Phase.DOWN
+                }
+            }
+            
+            Phase.BOTTOM -> {
+                if (joints.all { j ->
+                        val a = angleOrNull(j) ?: return@all false
+                        jointHasLeftDownRange(j, a)
+                    }) {
+                    Log.d(TAG, "Left DOWN range, ascending (strict per joint)")
+                    Phase.UP
+                } else {
+                    Phase.BOTTOM
+                }
+            }
+            
+            Phase.UP -> {
+                when {
+                    joints.all { j ->
+                        val a = angleOrNull(j) ?: return@all false
+                        jointHasEnteredUpRange(j, a)
+                    } -> {
+                        Log.d(TAG, "★ Requesting REP completion - Entered UP range (strict per joint)")
+                        Phase.START
+                    }
+                    joints.all { j ->
+                        val a = angleOrNull(j) ?: return@all false
+                        jointInDownRange(j, a, exiting = false)
+                    } -> {
+                        Log.d(TAG, "Returned to DOWN range (strict per joint)")
+                        Phase.BOTTOM
+                    }
+                    else -> Phase.UP
+                }
+            }
+            
+            else -> currentPhase
+        }
+    }
+    
+    /**
+     * HOLD with per-joint hold ranges: all must enter; any leaving exits COUNT.
+     */
+    private fun updateHoldStrict(joints: List<TrackedJoint>, primaryAngles: Map<String, Double>): Phase {
+        return when (currentPhase) {
+            Phase.IDLE -> {
+                if (joints.all { j ->
+                        val a = primaryAngles[j.joint] ?: return@all false
+                        jointInHoldRange(j, a, exiting = false)
+                    }) {
+                    Log.d(TAG, "Entered HOLD zone (strict per joint)")
+                    Phase.COUNT
+                } else {
+                    Phase.IDLE
+                }
+            }
+            
+            Phase.COUNT -> {
+                val anyLeft = joints.any { j ->
+                    val a = primaryAngles[j.joint] ?: return@any true
+                    !jointInHoldRange(j, a, exiting = true)
+                }
+                if (anyLeft) {
+                    Log.d(TAG, "Left HOLD zone (strict per joint)")
+                    Phase.IDLE
+                } else {
+                    Phase.COUNT
+                }
+            }
+            
+            else -> currentPhase
+        }
     }
     
     /**
@@ -238,16 +422,14 @@ class PhaseStateMachine(
     }
     
     /**
-     * Update for UP_DOWN counting method (Squat, Bicep Curl, etc.)
-     * 
-     * Flow: IDLE → START → DOWN → BOTTOM → UP → START (+1 rep)
+     * Legacy UP_DOWN path when no joint has state up/down ranges (uses aggregated thresholds + min/max).
      */
-    private fun updateUpDown(angle: Double): Phase {
+    private fun updateUpDownLegacy(minAngle: Double, maxAngle: Double): Phase {
         return when (currentPhase) {
             Phase.IDLE -> {
-                // Wait for user to get into UP position
-                if (isInUpRange(angle)) {
-                    Log.d(TAG, "Entered UP range: $angle (${upRangeMin}-${upRangeMax})")
+                // ALL joints must be in UP range → min must be high enough
+                if (isInUpRange(minAngle)) {
+                    Log.d(TAG, "Entered UP range: min=$minAngle max=$maxAngle (${upRangeMin}-${upRangeMax})")
                     Phase.START
                 } else {
                     Phase.IDLE
@@ -255,9 +437,9 @@ class PhaseStateMachine(
             }
             
             Phase.START -> {
-                // User is in start position, wait for them to leave UP range
-                if (hasLeftUpRange(angle)) {
-                    Log.d(TAG, "Left UP range, starting descent: $angle")
+                // ALL joints must have left UP range → max (last to leave) must be below threshold
+                if (hasLeftUpRange(maxAngle)) {
+                    Log.d(TAG, "Left UP range, starting descent: min=$minAngle max=$maxAngle")
                     repCountedThisCycle = false
                     Phase.DOWN
                 } else {
@@ -266,14 +448,15 @@ class PhaseStateMachine(
             }
             
             Phase.DOWN -> {
-                // User is moving down, wait for DOWN range
                 when {
-                    hasEnteredDownRange(angle) -> {
-                        Log.d(TAG, "Entered DOWN range: $angle (${downRangeMin}-${downRangeMax})")
+                    // ALL joints must have entered DOWN range → max (highest) must be low enough
+                    hasEnteredDownRange(maxAngle) -> {
+                        Log.d(TAG, "Entered DOWN range: min=$minAngle max=$maxAngle (${downRangeMin}-${downRangeMax})")
                         Phase.BOTTOM
                     }
-                    isInUpRange(angle) -> {
-                        Log.d(TAG, "Returned to UP without reaching DOWN: $angle")
+                    // ALL joints returned to UP range (incomplete rep)
+                    isInUpRange(minAngle) -> {
+                        Log.d(TAG, "Returned to UP without reaching DOWN: min=$minAngle max=$maxAngle")
                         Phase.START
                     }
                     else -> Phase.DOWN
@@ -281,9 +464,9 @@ class PhaseStateMachine(
             }
             
             Phase.BOTTOM -> {
-                // User is at bottom, wait for them to leave DOWN range
-                if (hasLeftDownRange(angle)) {
-                    Log.d(TAG, "Left DOWN range, ascending: $angle")
+                // ALL joints must have left DOWN range → min (last to leave) must be above threshold
+                if (hasLeftDownRange(minAngle)) {
+                    Log.d(TAG, "Left DOWN range, ascending: min=$minAngle max=$maxAngle")
                     Phase.UP
                 } else {
                     Phase.BOTTOM
@@ -291,14 +474,15 @@ class PhaseStateMachine(
             }
             
             Phase.UP -> {
-                // User is going up, wait for UP range
                 when {
-                    hasEnteredUpRange(angle) -> {
-                        Log.d(TAG, "★ Requesting REP completion - Entered UP range: $angle")
+                    // ALL joints must have entered UP range → min (lowest) must be high enough
+                    hasEnteredUpRange(minAngle) -> {
+                        Log.d(TAG, "★ Requesting REP completion - Entered UP range: min=$minAngle max=$maxAngle")
                         Phase.START
                     }
-                    isInDownRange(angle) -> {
-                        Log.d(TAG, "Returned to DOWN range: $angle")
+                    // ALL joints returned to DOWN range
+                    isInDownRange(maxAngle) -> {
+                        Log.d(TAG, "Returned to DOWN range: min=$minAngle max=$maxAngle")
                         Phase.BOTTOM
                     }
                     else -> Phase.UP
@@ -311,15 +495,14 @@ class PhaseStateMachine(
     
     
     /**
-     * Update for HOLD counting method (Plank, Wall Sit)
-     * 
-     * Uses downRange as the "hold zone" - timer runs when in range
+     * Legacy HOLD path when no joint has a hold range (uses aggregated thresholds + min/max).
      */
-    private fun updateHold(angle: Double): Phase {
+    private fun updateHoldLegacy(minAngle: Double, maxAngle: Double): Phase {
         return when (currentPhase) {
             Phase.IDLE -> {
-                if (isInDownRange(angle)) {
-                    Log.d(TAG, "Entered HOLD zone: $angle")
+                // ALL joints must be in hold zone → max must be below upper bound, min above lower
+                if (isInDownRange(minAngle) && isInDownRange(maxAngle)) {
+                    Log.d(TAG, "Entered HOLD zone: min=$minAngle max=$maxAngle")
                     Phase.COUNT
                 } else {
                     Phase.IDLE
@@ -327,8 +510,9 @@ class PhaseStateMachine(
             }
             
             Phase.COUNT -> {
-                if (!isInDownRange(angle, exiting = true)) {
-                    Log.d(TAG, "Left HOLD zone: $angle")
+                // Exit if ANY joint leaves the hold zone
+                if (!isInDownRange(minAngle, exiting = true) || !isInDownRange(maxAngle, exiting = true)) {
+                    Log.d(TAG, "Left HOLD zone: min=$minAngle max=$maxAngle")
                     Phase.IDLE
                 } else {
                     Phase.COUNT
@@ -396,13 +580,6 @@ class PhaseStateMachine(
         
         // Notify listener
         onPhaseChanged?.invoke(previousPhase, currentPhase)
-    }
-    
-    /**
-     * Calculate average angle from multiple joints
-     */
-    private fun calculateAverageAngle(angles: Map<String, Double>): Double {
-        return angles.values.average()
     }
     
     /**

@@ -126,9 +126,9 @@ export class MessagesController {
   async create(@Body() body: CreateMessageInput, @Res({ passthrough: true }) res: Response) {
     try {
       const code = body?.code?.trim();
-      if (!code || !body?.category || !body?.content) {
+      if (!body?.category || !body?.content) {
         res.status(400);
-        return { success: false, error: 'Code, category, and content are required' };
+        return { success: false, error: 'Category and content are required' };
       }
 
       if (!body.content.en?.trim() && !body.content.ar?.trim()) {
@@ -136,15 +136,17 @@ export class MessagesController {
         return { success: false, error: 'Content must have at least English or Arabic value' };
       }
 
-      const existing = await messagesService.getByCode(code);
-      if (existing) {
-        res.status(409);
-        return {
-          success: false,
-          error: existing.isActive
-            ? 'Message code already exists'
-            : 'Message code already exists on an inactive message. Delete it permanently or use another code.',
-        };
+      if (code) {
+        const existing = await messagesService.getByCode(code);
+        if (existing) {
+          res.status(409);
+          return {
+            success: false,
+            error: existing.isActive
+              ? 'Message code already exists'
+              : 'Message code already exists on an inactive message. Delete it permanently or use another code.',
+          };
+        }
       }
 
       const message = await messagesService.create({ ...body, code });

@@ -14,7 +14,7 @@ export type MessageContext =
   | 'error';
 
 export interface CreateMessageInput {
-  code: string;
+  code?: string;
   category: MessageCategory;
   context?: MessageContext;
   /** Admin-facing: where/why this message is used (system messages; immutable after seed) */
