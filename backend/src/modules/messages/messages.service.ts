@@ -173,6 +173,69 @@ function normalizeOptionalString(value?: string): string | undefined {
   return trimmed ? trimmed : undefined;
 }
 
+const MESSAGE_CODE_CATEGORY_PREFIX: Record<MessageCategory, string> = {
+  state: 'STATE',
+  position: 'POS',
+  motivational: 'MOT',
+  tip: 'TIP',
+  system: 'SYS',
+};
+
+function sanitizeMessageCodeToken(value?: string | null): string {
+  return (value || '')
+    .trim()
+    .replace(/[^a-zA-Z0-9]+/g, '_')
+    .replace(/_+/g, '_')
+    .replace(/^_+|_+$/g, '')
+    .toUpperCase();
+}
+
+function buildMessageCodeScope(category: MessageCategory, context?: string | null): string {
+  const categoryPrefix = MESSAGE_CODE_CATEGORY_PREFIX[category] || 'MSG';
+  const contextToken = sanitizeMessageCodeToken(context);
+
+  if (!contextToken) {
+    return `${categoryPrefix}_GENERAL`;
+  }
+
+  if (
+    (category === 'motivational' && contextToken === 'MOTIVATIONAL') ||
+    (category === 'tip' && contextToken === 'TIP') ||
+    (category === 'system' && contextToken === 'SYSTEM')
+  ) {
+    return `${categoryPrefix}_GENERAL`;
+  }
+
+  return `${categoryPrefix}_${contextToken}`;
+}
+
+async function generateNextMessageCode(
+  prisma: Awaited<ReturnType<typeof getPrisma>>,
+  category: MessageCategory,
+  context?: string | null
+): Promise<string> {
+  const scope = buildMessageCodeScope(category, context);
+  const prefix = `${scope}_`;
+  const rows = await prisma.feedbackMessageTemplate.findMany({
+    where: {
+      code: {
+        startsWith: prefix,
+      },
+    },
+    select: { code: true },
+  });
+
+  let max = 0;
+  for (const row of rows) {
+    if (!row.code.startsWith(prefix)) continue;
+    const suffix = row.code.slice(prefix.length);
+    if (!/^\d+$/.test(suffix)) continue;
+    max = Math.max(max, Number.parseInt(suffix, 10));
+  }
+
+  return `${scope}_${String(max + 1).padStart(3, '0')}`;
+}
+
 interface NormalizedBulkGenerateAudioInput {
   includeInactive?: boolean;
   category?: MessageCategory;
@@ -594,9 +657,10 @@ export const messagesService = {
   async create(data: CreateMessageInput) {
     const prisma = await getPrisma();
     const content = normalizeMessageContentInput(data.content);
+    const code = data.code?.trim() || (await generateNextMessageCode(prisma, data.category, data.context));
     return prisma.feedbackMessageTemplate.create({
       data: {
-        code: data.code.trim(),
+        code,
         category: data.category,
         context: data.context?.trim() || null,
         description: data.description?.trim() || null,
