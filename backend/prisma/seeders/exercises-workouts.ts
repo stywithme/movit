@@ -13,6 +13,18 @@ import type { EnsureMessageTemplate } from './messages';
 import { resolveExerciseBlueprintForSlug } from './exercise-manifest';
 import { seedCuratedCatalogExtensions } from './catalog-exercises';
 
+/** Stable template `code` for exercise-linked feedback (survives re-seed; merges audio from DB). */
+function stableExerciseMessageCode(slug: string, parts: (string | number)[]): string {
+  const tail = parts
+    .map((p) => String(p))
+    .join('_')
+    .replace(/[^a-zA-Z0-9_]/g, '_')
+    .replace(/_+/g, '_')
+    .replace(/^_|_$/g, '');
+  const raw = `exmsg_${slug}_${tail}`;
+  return raw.slice(0, 190);
+}
+
 export async function seedExercisesAndWorkouts(
   prisma: PrismaClient,
   ensureMessageTemplate: EnsureMessageTemplate
@@ -383,6 +395,7 @@ export async function seedExercisesAndWorkouts(
         for (const check of variant.positionChecks) {
           if (!check.errorMessage) continue;
           const messageId = await ensureMessageTemplate({
+            code: stableExerciseMessageCode(slug, ['pv', pvIndex + 1, 'pos', check.id]),
             category: 'position',
             context: 'error',
             content: check.errorMessage,
@@ -418,6 +431,7 @@ export async function seedExercisesAndWorkouts(
               const msg = zoneValue[zone];
               if (!msg || (!msg.ar && !msg.en)) continue;
               const messageId = await ensureMessageTemplate({
+                code: stableExerciseMessageCode(slug, ['pv', pvIndex + 1, 'j', jointCode, state, zone]),
                 category: 'state',
                 context: state,
                 content: msg,
@@ -436,6 +450,7 @@ export async function seedExercisesAndWorkouts(
             const msg = value as { ar?: string; en?: string; audioAr?: string; audioEn?: string };
             if (!msg || (!msg.ar && !msg.en)) continue;
             const messageId = await ensureMessageTemplate({
+              code: stableExerciseMessageCode(slug, ['pv', pvIndex + 1, 'j', jointCode, state]),
               category: 'state',
               context: state,
               content: msg,
@@ -456,8 +471,10 @@ export async function seedExercisesAndWorkouts(
       const motivational = feedbackMessages.motivational || [];
       const tips = feedbackMessages.tips || [];
 
+      let motIndex = 0;
       for (const msg of motivational) {
         const messageId = await ensureMessageTemplate({
+          code: stableExerciseMessageCode(slug, ['pv', pvIndex + 1, 'mot', motIndex++]),
           category: 'motivational',
           context: 'motivational',
           content: msg,
@@ -471,8 +488,10 @@ export async function seedExercisesAndWorkouts(
         });
       }
 
+      let tipIndex = 0;
       for (const msg of tips) {
         const messageId = await ensureMessageTemplate({
+          code: stableExerciseMessageCode(slug, ['pv', pvIndex + 1, 'tip', tipIndex++]),
           category: 'tip',
           context: 'tip',
           content: msg,

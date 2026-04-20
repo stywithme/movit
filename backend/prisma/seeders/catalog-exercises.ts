@@ -129,6 +129,9 @@ export async function seedCuratedCatalogExtensions(
     throw new Error('Counting methods up_down / hold are required');
   }
 
+  const curatedTipTemplateCode = (slug: string) =>
+    `exmsg_${slug.replace(/[^a-zA-Z0-9_]/g, '_').replace(/_+/g, '_')}_curated_tip`.slice(0, 190);
+
   const attributeValues = await prisma.attributeValue.findMany();
   const attributeValueByCode = new Map(attributeValues.map((v) => [v.code, v]));
 
@@ -246,6 +249,7 @@ export async function seedCuratedCatalogExtensions(
     });
 
     const messageId = await ensureMessageTemplate({
+      code: curatedTipTemplateCode(row.slug),
       category: 'tip',
       context: 'tip',
       content: {

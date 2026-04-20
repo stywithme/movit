@@ -17,6 +17,7 @@
     "prisma:migrate": "prisma migrate dev",
     "prisma:studio": "prisma studio",
     "prisma:seed": "tsx --env-file=.env prisma/seed.ts",
+    "prisma:seed:full": "tsx --env-file=.env prisma/seed.ts --full",
     "seed:permissions": "tsx --env-file=.env prisma/run-permissions-seed.ts",
     "seed:system-messages": "tsx --env-file=.env prisma/run-system-messages-seed.ts",
     "seed:pose-positions": "tsx --env-file=.env prisma/run-pose-positions-seed.ts",
