@@ -4,7 +4,9 @@ import android.content.Intent
 import android.os.Bundle
 import android.view.View
 import android.view.ViewGroup
+import android.widget.AutoCompleteTextView
 import android.widget.CompoundButton
+import android.widget.EditText
 import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AlertDialog
@@ -15,6 +17,8 @@ import androidx.core.os.LocaleListCompat
 import androidx.core.view.WindowCompat
 import androidx.lifecycle.lifecycleScope
 import com.google.android.material.button.MaterialButton
+import com.google.android.material.checkbox.MaterialCheckBox
+import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.trainingvalidator.poc.ui.utils.bindUserAvatar
 import com.trainingvalidator.poc.ui.utils.currentLanguage
 import com.trainingvalidator.poc.R
@@ -46,6 +50,25 @@ class ProfileActivity : AppCompatActivity() {
 
     private lateinit var binding: ActivityProfileBinding
 
+    private data class TrainingProfileState(
+        val trainingGoal: String? = null,
+        val availableDaysPerWeek: Int? = null,
+        val maxSessionMinutes: Int? = null,
+        val availableEquipment: Set<String> = emptySet(),
+        val displayMode: String = "beginner"
+    )
+
+    private var trainingProfileState = TrainingProfileState()
+    private val equipmentOptions = listOf(
+        "bodyweight",
+        "dumbbell",
+        "bands",
+        "kettlebell",
+        "barbell",
+        "machine",
+        "cable"
+    )
+
     private val voiceSwitchListener = CompoundButton.OnCheckedChangeListener { _, isChecked ->
         SettingsManager.setVoiceFeedbackEnabled(isChecked)
         AuthManager.updateSettings(this@ProfileActivity, voiceFeedback = isChecked)
@@ -69,7 +92,12 @@ class ProfileActivity : AppCompatActivity() {
         loadUserData()
         setupListeners()
         updateLanguageDisplay()
+        trainingProfileState = trainingProfileState.copy(
+            displayMode = SettingsManager.getTrainingDisplayMode()
+        )
+        renderTrainingProfileSummary()
         fetchProfile()
+        fetchTrainingProfile()
     }
 
     override fun onResume() {
@@ -101,6 +129,10 @@ class ProfileActivity : AppCompatActivity() {
 
         binding.itemExerciseSettings.setOnClickListener {
             showExerciseSettingsDialog()
+        }
+
+        binding.itemTrainingProfile.setOnClickListener {
+            showTrainingProfileDialog()
         }
 
         binding.itemNotifications.setOnClickListener {
@@ -252,6 +284,190 @@ class ProfileActivity : AppCompatActivity() {
             getString(R.string.language_arabic)
         } else {
             getString(R.string.language_english)
+        }
+    }
+
+    private fun renderTrainingProfileSummary() {
+        val parts = mutableListOf<String>()
+        trainingProfileState.trainingGoal?.let { parts.add(formatGoalCode(it)) }
+        trainingProfileState.availableDaysPerWeek?.let { parts.add("$it d/w") }
+        trainingProfileState.maxSessionMinutes?.let { parts.add("$it min") }
+        if (trainingProfileState.availableEquipment.isNotEmpty()) {
+            parts.add(
+                equipmentOptions
+                    .filter { trainingProfileState.availableEquipment.contains(it) }
+                    .joinToString(", ")
+            )
+        }
+        parts.add(
+            if (trainingProfileState.displayMode == "advanced") {
+                getString(R.string.display_mode_advanced)
+            } else {
+                getString(R.string.display_mode_beginner)
+            }
+        )
+
+        binding.tvTrainingProfileSummary.text = if (parts.isEmpty()) {
+            getString(R.string.training_profile_summary_empty)
+        } else {
+            parts.joinToString(" • ")
+        }
+    }
+
+    private fun formatGoalCode(code: String): String {
+        return code
+            .lowercase(Locale.US)
+            .split('_')
+            .joinToString(" ") { token ->
+                token.replaceFirstChar { c -> c.titlecase(Locale.US) }
+            }
+    }
+
+    private fun parseIntValue(value: Any?): Int? {
+        return when (value) {
+            is Number -> value.toInt()
+            is String -> value.toIntOrNull()
+            else -> null
+        }
+    }
+
+    private fun parseStringSet(value: Any?): Set<String> {
+        return if (value is List<*>) {
+            value.mapNotNull { it?.toString() }.toSet()
+        } else {
+            emptySet()
+        }
+    }
+
+    private fun fetchTrainingProfile() {
+        val authHeader = AuthManager.getAuthHeader(this) ?: return
+        lifecycleScope.launch {
+            try {
+                val response = withContext(Dispatchers.IO) {
+                    ApiClient.mobileSyncApi.getTrainingProfile(authHeader)
+                }
+                val body = response.body()
+                if (response.isSuccessful && body?.success == true) {
+                    val profile = body.data?.profile.orEmpty()
+                    trainingProfileState = TrainingProfileState(
+                        trainingGoal = body.data?.trainingGoal,
+                        availableDaysPerWeek = parseIntValue(profile["availableDaysPerWeek"]),
+                        maxSessionMinutes = parseIntValue(profile["maxSessionMinutes"]),
+                        availableEquipment = parseStringSet(profile["availableEquipment"]),
+                        displayMode = SettingsManager.getTrainingDisplayMode()
+                    )
+                    renderTrainingProfileSummary()
+                }
+            } catch (_: Exception) {
+                // Best-effort only
+            }
+        }
+    }
+
+    private fun showTrainingProfileDialog() {
+        val dialogView = layoutInflater.inflate(R.layout.dialog_training_profile, null)
+        val goalInput = dialogView.findViewById<AutoCompleteTextView>(R.id.inputTrainingGoal)
+        val modeInput = dialogView.findViewById<AutoCompleteTextView>(R.id.inputTrainingDisplayMode)
+        val daysInput = dialogView.findViewById<EditText>(R.id.inputAvailableDays)
+        val minutesInput = dialogView.findViewById<EditText>(R.id.inputMaxSessionMinutes)
+
+        val goalCodes = listOf("", "STRENGTH", "HYPERTROPHY", "POWER", "GENERAL_HEALTH")
+        val goalLabels = goalCodes.map { code ->
+            if (code.isBlank()) "—" else formatGoalCode(code)
+        }
+        goalInput.setAdapter(
+            android.widget.ArrayAdapter(this, android.R.layout.simple_dropdown_item_1line, goalLabels)
+        )
+
+        val modeCodes = listOf("beginner", "advanced")
+        val modeLabels = listOf(
+            getString(R.string.display_mode_beginner),
+            getString(R.string.display_mode_advanced)
+        )
+        modeInput.setAdapter(
+            android.widget.ArrayAdapter(this, android.R.layout.simple_dropdown_item_1line, modeLabels)
+        )
+
+        val selectedGoalIndex = goalCodes.indexOf(trainingProfileState.trainingGoal ?: "").coerceAtLeast(0)
+        goalInput.setText(goalLabels[selectedGoalIndex], false)
+        val selectedModeIndex = modeCodes.indexOf(trainingProfileState.displayMode).takeIf { it >= 0 } ?: 0
+        modeInput.setText(modeLabels[selectedModeIndex], false)
+        daysInput.setText(trainingProfileState.availableDaysPerWeek?.toString().orEmpty())
+        minutesInput.setText(trainingProfileState.maxSessionMinutes?.toString().orEmpty())
+
+        val equipmentChecks = mapOf(
+            "bodyweight" to dialogView.findViewById<MaterialCheckBox>(R.id.checkEquipmentBodyweight),
+            "dumbbell" to dialogView.findViewById<MaterialCheckBox>(R.id.checkEquipmentDumbbell),
+            "bands" to dialogView.findViewById<MaterialCheckBox>(R.id.checkEquipmentBands),
+            "kettlebell" to dialogView.findViewById<MaterialCheckBox>(R.id.checkEquipmentKettlebell),
+            "barbell" to dialogView.findViewById<MaterialCheckBox>(R.id.checkEquipmentBarbell),
+            "machine" to dialogView.findViewById<MaterialCheckBox>(R.id.checkEquipmentMachine),
+            "cable" to dialogView.findViewById<MaterialCheckBox>(R.id.checkEquipmentCable)
+        )
+        equipmentChecks.forEach { (code, checkbox) ->
+            checkbox.isChecked = trainingProfileState.availableEquipment.contains(code)
+        }
+
+        MaterialAlertDialogBuilder(this)
+            .setTitle(getString(R.string.training_profile))
+            .setView(dialogView)
+            .setPositiveButton(getString(R.string.save)) { _, _ ->
+                val selectedGoal = goalCodes.getOrElse(goalLabels.indexOf(goalInput.text.toString())) { "" }
+                val selectedMode = modeCodes.getOrElse(modeLabels.indexOf(modeInput.text.toString())) { "beginner" }
+                val selectedEquipment = equipmentOptions.filter { code ->
+                    equipmentChecks[code]?.isChecked == true
+                }.toSet()
+
+                trainingProfileState = TrainingProfileState(
+                    trainingGoal = selectedGoal.ifBlank { null },
+                    availableDaysPerWeek = daysInput.text.toString().toIntOrNull(),
+                    maxSessionMinutes = minutesInput.text.toString().toIntOrNull(),
+                    availableEquipment = selectedEquipment,
+                    displayMode = selectedMode
+                )
+                SettingsManager.setTrainingDisplayMode(selectedMode)
+                renderTrainingProfileSummary()
+                saveTrainingProfile()
+            }
+            .setNegativeButton(getString(R.string.cancel), null)
+            .show()
+    }
+
+    private fun saveTrainingProfile() {
+        val authHeader = AuthManager.getAuthHeader(this) ?: return
+        val payload = mutableMapOf<String, Any?>(
+            "availableEquipment" to trainingProfileState.availableEquipment.toList(),
+            "availableDaysPerWeek" to trainingProfileState.availableDaysPerWeek,
+            "maxSessionMinutes" to trainingProfileState.maxSessionMinutes
+        )
+        trainingProfileState.trainingGoal?.let { payload["trainingGoal"] = it }
+
+        lifecycleScope.launch {
+            try {
+                val response = withContext(Dispatchers.IO) {
+                    ApiClient.mobileSyncApi.putTrainingProfile(authHeader, payload)
+                }
+                val body = response.body()
+                if (response.isSuccessful && body?.success == true) {
+                    Toast.makeText(
+                        this@ProfileActivity,
+                        getString(R.string.training_profile_saved),
+                        Toast.LENGTH_SHORT
+                    ).show()
+                } else {
+                    Toast.makeText(
+                        this@ProfileActivity,
+                        body?.error ?: getString(R.string.training_profile_save_failed),
+                        Toast.LENGTH_SHORT
+                    ).show()
+                }
+            } catch (_: Exception) {
+                Toast.makeText(
+                    this@ProfileActivity,
+                    getString(R.string.training_profile_save_failed),
+                    Toast.LENGTH_SHORT
+                ).show()
+            }
         }
     }
 

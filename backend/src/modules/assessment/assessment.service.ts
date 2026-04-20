@@ -85,7 +85,11 @@ export const assessmentService = {
         const prescription = await prescriptionService.recommend(data.userId);
 
         if (prescription.recommendedProgram) {
-          await activePlanService.enrollProgram(data.userId, prescription.recommendedProgram.id);
+          await activePlanService.enrollProgram(
+            data.userId,
+            prescription.recommendedProgram.id,
+            { assignmentReason: prescription.assignmentReason },
+          );
           autoPrescription = {
             programId: prescription.recommendedProgram.id,
             programName: prescription.recommendedProgram.name,

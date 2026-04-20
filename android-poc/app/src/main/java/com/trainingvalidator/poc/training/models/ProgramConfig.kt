@@ -38,6 +38,7 @@ data class ProgramSession(
 
 data class ProgramSessionItem(
     val type: String,
+    val serverItemId: String? = null,
     val exerciseSlug: String? = null,
     val sets: Int? = null,
     val targetReps: Int? = null,
@@ -47,6 +48,7 @@ data class ProgramSessionItem(
     val weightPerSet: List<Float>? = null,
     val notes: LocalizedText? = null,
     val restDurationMs: Long? = null,
+    val suggestionSource: String? = null,
     val variantIndex: Int? = null,
     val sortOrder: Int = 0
 )

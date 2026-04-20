@@ -11,6 +11,7 @@
  */
 
 import { getPrisma } from '@/lib/prisma/client';
+import { programDomainToLegacyString } from '@/lib/program-domain';
 
 export const progressionAnalyticsService = {
   /**
@@ -91,7 +92,7 @@ export const progressionAnalyticsService = {
         id: program.id,
         name: program.name,
         slug: program.slug,
-        type: program.type,
+        type: programDomainToLegacyString(program.programDomain),
         durationWeeks: program.durationWeeks,
         totalEnrollments: enrollments,
         activeUsers,

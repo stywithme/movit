@@ -9,7 +9,32 @@
 
 import { useMemo } from 'react';
 import { useWizardStore } from '../WizardContext';
-import { Card, CardHeader, CardTitle, CardContent, Badge } from '@/components/ui';
+import { Card, CardHeader, CardTitle, CardContent, Badge, Label, Select, Input } from '@/components/ui';
+
+const MOVEMENT_PATTERN_OPTIONS = [
+  { value: '', label: '—' },
+  { value: 'SQUAT', label: 'SQUAT' },
+  { value: 'HINGE', label: 'HINGE' },
+  { value: 'LUNGE', label: 'LUNGE' },
+  { value: 'PUSH_HORIZONTAL', label: 'PUSH_HORIZONTAL' },
+  { value: 'PUSH_VERTICAL', label: 'PUSH_VERTICAL' },
+  { value: 'PULL_HORIZONTAL', label: 'PULL_HORIZONTAL' },
+  { value: 'PULL_VERTICAL', label: 'PULL_VERTICAL' },
+  { value: 'CARRY', label: 'CARRY' },
+  { value: 'ROTATION', label: 'ROTATION' },
+  { value: 'GAIT', label: 'GAIT' },
+  { value: 'JUMP_LAND', label: 'JUMP_LAND' },
+  { value: 'CORE_BRACE', label: 'CORE_BRACE' },
+  { value: 'MOBILITY_DRILL', label: 'MOBILITY_DRILL' },
+  { value: 'OTHER', label: 'OTHER' },
+];
+
+const LOAD_CAPABILITY_OPTIONS = [
+  { value: '', label: '—' },
+  { value: 'BODYWEIGHT_ONLY', label: 'BODYWEIGHT_ONLY' },
+  { value: 'EXTERNAL_LOAD_OPTIONAL', label: 'EXTERNAL_LOAD_OPTIONAL' },
+  { value: 'EXTERNAL_LOAD_REQUIRED', label: 'EXTERNAL_LOAD_REQUIRED' },
+];
 import { JsonPreview } from '@/components/JsonPreview';
 import { canPublish } from '@/modules/exercises/exercises.validation';
 import { STATE_CONFIG, JOINT_STATE_NAMES } from '@/lib/types/localized';
@@ -17,6 +42,13 @@ import type { ExerciseConfig } from '@/lib/types/android-schema';
 
 export function ReviewStep() {
   const store = useWizardStore();
+  const blueprint = store.blueprintExerciseMeta ?? {
+    movementPattern: '',
+    loadCapability: '',
+    familyKey: '',
+    familyOrder: '',
+  };
+  const setBlueprint = store.setBlueprintExerciseMeta;
   
   // Build the final JSON config
   const exerciseConfig = useMemo((): ExerciseConfig | null => {
@@ -278,6 +310,48 @@ export function ReviewStep() {
           </CardContent>
         </Card>
       </div>
+
+      {/* Blueprint: taxonomy & progression ladder */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-lg">Blueprint — Exercise library</CardTitle>
+        </CardHeader>
+        <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <Label>Movement pattern</Label>
+            <Select
+              value={blueprint.movementPattern}
+              onChange={(e) => setBlueprint({ movementPattern: e.target.value })}
+              options={MOVEMENT_PATTERN_OPTIONS}
+            />
+          </div>
+          <div>
+            <Label>Load capability</Label>
+            <Select
+              value={blueprint.loadCapability}
+              onChange={(e) => setBlueprint({ loadCapability: e.target.value })}
+              options={LOAD_CAPABILITY_OPTIONS}
+            />
+          </div>
+          <div>
+            <Label>Family key</Label>
+            <Input
+              value={blueprint.familyKey}
+              onChange={(e) => setBlueprint({ familyKey: e.target.value })}
+              placeholder="e.g. push_horizontal_bodyweight"
+            />
+          </div>
+          <div>
+            <Label>Family order</Label>
+            <Input
+              type="number"
+              value={blueprint.familyOrder}
+              onChange={(e) => setBlueprint({ familyOrder: e.target.value })}
+              placeholder="1"
+            />
+          </div>
+        </CardContent>
+      </Card>
       
       {/* State Ranges Legend */}
       <Card>

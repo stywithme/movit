@@ -10,6 +10,8 @@ import {
   tagNameMap,
 } from './utils';
 import type { EnsureMessageTemplate } from './messages';
+import { resolveExerciseBlueprintForSlug } from './exercise-manifest';
+import { seedCuratedCatalogExtensions } from './catalog-exercises';
 
 export async function seedExercisesAndWorkouts(
   prisma: PrismaClient,
@@ -195,6 +197,13 @@ export async function seedExercisesAndWorkouts(
       throw new Error(`Counting method not found for ${exerciseJson.countingMethod}`);
     }
 
+    const blueprint = resolveExerciseBlueprintForSlug(slug, {
+      countingMethodCode: countingMethodValue.code,
+      supportsWeight: exerciseJson.supportsWeight ?? false,
+      equipmentCodes: exerciseJson.equipment || [],
+      categoryCode: categoryValue.code,
+    });
+
     const exerciseRecord = await prisma.exercise.upsert({
       where: { slug },
       update: {
@@ -209,6 +218,11 @@ export async function seedExercisesAndWorkouts(
         supportsWeight: exerciseJson.supportsWeight ?? false,
         status: 'published',
         publishedAt: new Date(),
+        movementPattern: blueprint.movementPattern,
+        loadCapability: blueprint.loadCapability,
+        familyKey: blueprint.familyKey,
+        familyOrder: blueprint.familyOrder,
+        reportMetrics: blueprint.reportMetrics,
       },
       create: {
         slug,
@@ -223,6 +237,11 @@ export async function seedExercisesAndWorkouts(
         supportsWeight: exerciseJson.supportsWeight ?? false,
         status: 'published',
         publishedAt: new Date(),
+        movementPattern: blueprint.movementPattern,
+        loadCapability: blueprint.loadCapability,
+        familyKey: blueprint.familyKey,
+        familyOrder: blueprint.familyOrder,
+        reportMetrics: blueprint.reportMetrics,
       },
     });
 
@@ -476,6 +495,8 @@ export async function seedExercisesAndWorkouts(
   }
 
   console.log('✅ Exercises seeded from assets');
+
+  await seedCuratedCatalogExtensions(prisma, ensureMessageTemplate);
 
   const workoutFiles = workoutsDirExists
     ? (await fs.readdir(workoutsDir)).filter((file) => file.endsWith('.json'))

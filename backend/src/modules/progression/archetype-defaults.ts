@@ -11,6 +11,8 @@
  *  - difficultyLadder: ordered list of difficulty codes (if applicable)
  */
 
+import type { TrainingGoal } from '@prisma/client';
+
 export interface AxisConfig {
   default: number;
   floor: number;
@@ -100,8 +102,32 @@ export const ARCHETYPE_DEFAULTS: Record<string, ArchetypeDefaults> = {
   },
 };
 
+const GOAL_PRIORITY_OVERRIDES: Record<TrainingGoal, string[]> = {
+  STRENGTH: ['load', 'reps', 'sets', 'difficulty', 'duration'],
+  HYPERTROPHY: ['reps', 'sets', 'load', 'difficulty', 'duration'],
+  POWER: ['load', 'difficulty', 'reps', 'sets', 'duration'],
+  GENERAL_HEALTH: ['reps', 'duration', 'sets', 'difficulty', 'load'],
+};
+
 export function getArchetypeDefaults(archetype: string): ArchetypeDefaults | null {
   return ARCHETYPE_DEFAULTS[archetype] ?? null;
+}
+
+export function applyGoalPriorityOrder(
+  basePriorityOrder: string[],
+  allowedAxes: string[],
+  trainingGoal: TrainingGoal | null | undefined,
+): string[] {
+  const desired = GOAL_PRIORITY_OVERRIDES[trainingGoal ?? 'GENERAL_HEALTH'];
+  const seen = new Set<string>();
+
+  const merged = [...desired, ...basePriorityOrder].filter((axis) => {
+    if (!allowedAxes.includes(axis) || seen.has(axis)) return false;
+    seen.add(axis);
+    return true;
+  });
+
+  return merged.length > 0 ? merged : basePriorityOrder.filter((axis) => allowedAxes.includes(axis));
 }
 
 export function buildDefaultProfile(archetype: string) {

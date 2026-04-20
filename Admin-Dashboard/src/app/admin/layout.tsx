@@ -1,5 +1,6 @@
 import { Sidebar } from '@/components/layout/Sidebar';
 import { AuthProvider } from '@/components/auth/AuthProvider';
+import { Toaster } from 'react-hot-toast';
 
 export default function AdminLayout({
   children,
@@ -9,6 +10,7 @@ export default function AdminLayout({
   return (
     <AuthProvider>
       <div className="flex h-screen bg-gray-50 overflow-hidden">
+        <Toaster position="top-right" toastOptions={{ duration: 3000 }} />
         {/* Sidebar */}
         <Sidebar />
 

@@ -304,6 +304,55 @@
                 android:divider="@drawable/divider_horizontal"
                 android:showDividers="middle">
 
+                <!-- Training Profile -->
+                <LinearLayout
+                    android:id="@+id/itemTrainingProfile"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:minHeight="64dp"
+                    android:gravity="center_vertical"
+                    android:paddingHorizontal="@dimen/spacing_base"
+                    android:paddingVertical="@dimen/spacing_sm"
+                    android:background="?attr/selectableItemBackground">
+
+                    <ImageView
+                        android:layout_width="24dp"
+                        android:layout_height="24dp"
+                        android:src="@drawable/ic_equipment"
+                        app:tint="@color/text_secondary" />
+
+                    <LinearLayout
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:layout_marginStart="@dimen/spacing_md"
+                        android:orientation="vertical">
+
+                        <TextView
+                            style="@style/TextAppearance.WayToFix.Body1"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="@string/training_profile"
+                            android:textColor="@color/text_primary" />
+
+                        <TextView
+                            android:id="@+id/tvTrainingProfileSummary"
+                            style="@style/TextAppearance.WayToFix.Caption"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="2dp"
+                            android:text="@string/training_profile_summary_empty"
+                            android:textColor="@color/text_tertiary" />
+                    </LinearLayout>
+
+                    <ImageView
+                        android:layout_width="20dp"
+                        android:layout_height="20dp"
+                        android:src="@drawable/ic_chevron_right"
+                        app:tint="@color/text_tertiary" />
+
+                </LinearLayout>
+
                 <!-- Exercise Settings -->
                 <LinearLayout
                     android:id="@+id/itemExerciseSettings"

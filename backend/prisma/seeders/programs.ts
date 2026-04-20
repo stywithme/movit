@@ -1,108 +1,57 @@
-import type { PrismaClient } from '@prisma/client';
+import type { Prisma, PrismaClient } from '@prisma/client';
+import { PROGRAM_CATALOG } from './program-catalog';
+
+type ExerciseRow = {
+  id: string;
+  slug: string;
+  countingMethod: { code: string } | null;
+};
 
 export async function seedPrograms(prisma: PrismaClient) {
   const exercises = await prisma.exercise.findMany({
     select: {
       id: true,
       slug: true,
-      name: true,
-      countingMethod: {
-        select: {
-          code: true,
-        },
-      },
+      countingMethod: { select: { code: true } },
     },
-    orderBy: { createdAt: 'asc' },
   });
+  const bySlug = new Map(exercises.map((e) => [e.slug, e]));
 
-  if (exercises.length < 4) {
-    console.warn('⚠️ Not enough exercises to build programs. Skipping program seed.');
-    return;
-  }
+  const requireExercise = (slug: string): ExerciseRow => {
+    const row = bySlug.get(slug);
+    if (!row) {
+      throw new Error(`Program seed: missing exercise slug "${slug}"`);
+    }
+    return row;
+  };
 
-  const pick = (...indexes: number[]) => indexes.map((i) => exercises[i % exercises.length]);
-
-  const [ex1, ex2, ex3, ex4, ex5, ex6] = pick(0, 1, 2, 3, 4, 5);
-
-  const buildExerciseTarget = (
-    exercise: (typeof exercises)[number],
-    preferred: { reps?: number; duration?: number }
-  ) => {
+  const buildExerciseTarget = (exercise: ExerciseRow, preferred: { reps?: number; duration?: number }) => {
     const isHold = exercise.countingMethod?.code === 'hold';
     if (isHold) {
       return {
-        targetReps: undefined,
+        targetReps: undefined as number | undefined,
         targetDuration: preferred.duration ?? 30,
       };
     }
     return {
       targetReps: preferred.reps ?? 10,
-      targetDuration: undefined,
+      targetDuration: undefined as number | undefined,
     };
   };
 
-  const program = await prisma.program.upsert({
-    where: { slug: 'starter-4-weeks' },
-    update: {
-      name: { ar: 'برنامج البداية 4 أسابيع', en: 'Starter 4-Week Program' },
-      description: { ar: 'بناء أساس آمن للحركة خلال 4 أسابيع', en: 'Build a safe movement foundation over 4 weeks' },
-      durationWeeks: 4,
-      difficulty: 'beginner',
-      isDefault: true,
-      isPublished: true,
-      tags: ['beginner', 'foundation'],
-      // Prescription metadata
-      type: 'training',
-      targetDomain: null,
-      targetRegions: [],
-      levelRangeMin: 1,
-      levelRangeMax: 2,
-      prescriptionPriority: 50,
-      entryCriteria: {},
-      exitCriteria: { bodyScore: { min: 40 } },
-      contraindications: [],
-    },
-    create: {
-      slug: 'starter-4-weeks',
-      name: { ar: 'برنامج البداية 4 أسابيع', en: 'Starter 4-Week Program' },
-      description: { ar: 'بناء أساس آمن للحركة خلال 4 أسابيع', en: 'Build a safe movement foundation over 4 weeks' },
-      durationWeeks: 4,
-      difficulty: 'beginner',
-      isDefault: true,
-      isPublished: true,
-      tags: ['beginner', 'foundation'],
-      type: 'training',
-      targetDomain: null,
-      targetRegions: [],
-      levelRangeMin: 1,
-      levelRangeMax: 2,
-      prescriptionPriority: 50,
-      entryCriteria: {},
-      exitCriteria: { bodyScore: { min: 40 } },
-      contraindications: [],
-    },
-  });
-
-  // Clean old weeks (cascade deletes days, sessions, items)
-  await prisma.programWeek.deleteMany({
-    where: { programId: program.id },
-  });
-
-  // Helper to build a session with exercises
-  const buildSession = (
-    name: { ar: string; en: string },
-    items: any[],
-    sortOrder = 1,
-  ) => ({
-    name,
-    sortOrder,
-    items: { create: items },
-  });
-
-  // Helper to build an exercise item
   const exItem = (
-    exercise: (typeof exercises)[number],
-    opts: { sets?: number; reps?: number; duration?: number; restMs?: number; weight?: number; weightPerSet?: number[]; sortOrder: number },
+    exercise: ExerciseRow,
+    opts: {
+      sets?: number;
+      reps?: number;
+      duration?: number;
+      restMs?: number;
+      weight?: number;
+      weightPerSet?: number[];
+      sortOrder: number;
+      role?: 'WARMUP' | 'ACTIVATION' | 'MAIN' | 'ACCESSORY' | 'CORRECTIVE' | 'COOLDOWN' | 'TEST';
+      intent?: 'STANDARD' | 'POWER' | 'ECCENTRIC' | 'VELOCITY_BASED';
+    },
   ) => ({
     type: 'exercise' as const,
     exerciseId: exercise.id,
@@ -112,467 +61,205 @@ export async function seedPrograms(prisma: PrismaClient) {
     weightKg: opts.weight,
     weightPerSet: opts.weightPerSet,
     sortOrder: opts.sortOrder,
+    role: opts.role ?? 'MAIN',
+    intent: opts.intent ?? 'STANDARD',
+    isPersonalized: false,
   });
 
-  // Helper to build a rest item
   const restItem = (durationMs: number, sortOrder: number) => ({
     type: 'rest' as const,
     restDurationMs: durationMs,
     sortOrder,
   });
 
-  // Day structure type
+  const buildSession = (
+    name: { ar: string; en: string },
+    items: Record<string, unknown>[],
+    sortOrder = 1,
+    estimatedDurationMin = 35,
+    sessionCategory: 'strength' | 'mobility' | 'conditioning' | 'recovery' | 'mixed' = 'mixed',
+  ) => ({
+    name,
+    sortOrder,
+    estimatedDurationMin,
+    sessionCategory,
+    items: { create: items as Prisma.ProgramSessionItemCreateWithoutSessionInput[] },
+  });
+
   type DayDef = {
     dayNumber: number;
     isRestDay?: boolean;
-    sessions?: any[];
+    dayType?: string;
+    dayFocus?: string | null;
+    sessions?: ReturnType<typeof buildSession>[];
   };
 
+  const mapDayCreate = (day: DayDef): Prisma.ProgramDayCreateWithoutWeekInput => ({
+    dayNumber: day.dayNumber,
+    isRestDay: day.isRestDay ?? false,
+    dayType: day.isRestDay ? 'rest' : (day.dayType ?? 'training'),
+    dayFocus: day.dayFocus ?? (day.isRestDay ? null : 'general'),
+    name: day.isRestDay ? { ar: 'راحة', en: 'Rest' } : undefined,
+    sessions: day.sessions ? { create: day.sessions } : undefined,
+  });
+
   const createWeek = async (
+    programId: string,
     weekNumber: number,
     days: DayDef[],
+    weekType: 'NORMAL' | 'DELOAD' = 'NORMAL',
   ) => {
     await prisma.programWeek.create({
       data: {
-        programId: program.id,
+        programId,
         weekNumber,
         sortOrder: weekNumber,
+        weekType,
         name: { ar: `الأسبوع ${weekNumber}`, en: `Week ${weekNumber}` },
         days: {
-          create: days.map((day) => ({
-            dayNumber: day.dayNumber,
-            isRestDay: day.isRestDay ?? false,
-            name: day.isRestDay ? { ar: 'راحة', en: 'Rest' } : undefined,
-            sessions: day.sessions
-              ? { create: day.sessions }
-              : undefined,
-          })),
+          create: days.map(mapDayCreate),
         },
       },
     });
   };
 
-  // ════════════════════════════════════════════════════════
-  // WEEK 1 — Foundation (7 days: 4 training + 3 rest)
-  // Day 1=Sat, 2=Sun, 3=Mon, 4=Tue, 5=Wed, 6=Thu, 7=Fri
-  // ════════════════════════════════════════════════════════
-  await createWeek(1, [
-    {
-      dayNumber: 1, // Saturday — Upper body basics
-      sessions: [
-        buildSession({ ar: 'صباحًا', en: 'Morning' }, [
-          exItem(ex1, { sets: 3, reps: 10, duration: 30, restMs: 30000, sortOrder: 1 }),
-          restItem(60000, 2),
-          exItem(ex2, { sets: 2, reps: 10, duration: 30, restMs: 20000, sortOrder: 3 }),
-        ]),
-      ],
-    },
-    {
-      dayNumber: 2, // Sunday — Lower body
-      sessions: [
-        buildSession({ ar: 'قبل النوم', en: 'Evening' }, [
-          exItem(ex3, { sets: 3, reps: 8, duration: 30, restMs: 25000, sortOrder: 1 }),
-          restItem(45000, 2),
-          exItem(ex4, { sets: 3, reps: 12, duration: 30, restMs: 30000, sortOrder: 3 }),
-        ]),
-      ],
-    },
-    { dayNumber: 3, isRestDay: true }, // Monday — Rest
-    {
-      dayNumber: 4, // Tuesday — Full body
-      sessions: [
-        buildSession({ ar: 'صباحًا', en: 'Morning' }, [
-          exItem(ex5, { sets: 2, reps: 10, duration: 40, restMs: 20000, weight: 5, weightPerSet: [5, 7.5], sortOrder: 1 }),
-          restItem(50000, 2),
-          exItem(ex6, { sets: 3, reps: 10, duration: 30, restMs: 25000, sortOrder: 3 }),
-        ]),
-      ],
-    },
-    { dayNumber: 5, isRestDay: true }, // Wednesday — Rest
-    {
-      dayNumber: 6, // Thursday — Core & upper
-      sessions: [
-        buildSession({ ar: 'مساءً', en: 'Evening' }, [
-          exItem(ex1, { sets: 2, reps: 12, duration: 35, restMs: 25000, sortOrder: 1 }),
-          restItem(45000, 2),
-          exItem(ex3, { sets: 2, reps: 10, duration: 30, restMs: 20000, sortOrder: 3 }),
-        ]),
-      ],
-    },
-    { dayNumber: 7, isRestDay: true }, // Friday — Rest
-  ]);
+  const programIdBySlug = new Map<string, string>();
 
-  // ════════════════════════════════════════════════════════
-  // WEEK 2 — Build (7 days: 4 training + 3 rest)
-  // ════════════════════════════════════════════════════════
-  await createWeek(2, [
-    {
-      dayNumber: 1, // Saturday — Push
-      sessions: [
-        buildSession({ ar: 'صباحًا', en: 'Morning' }, [
-          exItem(ex2, { sets: 3, reps: 12, duration: 40, restMs: 30000, sortOrder: 1 }),
-          restItem(60000, 2),
-          exItem(ex4, { sets: 2, reps: 10, duration: 40, restMs: 20000, sortOrder: 3 }),
-        ]),
-      ],
-    },
-    { dayNumber: 2, isRestDay: true }, // Sunday — Rest
-    {
-      dayNumber: 3, // Monday — Core
-      sessions: [
-        buildSession({ ar: 'خلال العمل', en: 'Midday' }, [
-          exItem(ex1, { sets: 3, reps: 10, duration: 30, restMs: 25000, sortOrder: 1 }),
-          restItem(45000, 2),
-          exItem(ex3, { sets: 2, reps: 10, duration: 30, restMs: 20000, sortOrder: 3 }),
-        ]),
-      ],
-    },
-    { dayNumber: 4, isRestDay: true }, // Tuesday — Rest
-    {
-      dayNumber: 5, // Wednesday — Full body
-      sessions: [
-        buildSession({ ar: 'صباحًا', en: 'Morning' }, [
-          exItem(ex5, { sets: 3, reps: 10, duration: 35, restMs: 25000, weight: 5, sortOrder: 1 }),
-          restItem(50000, 2),
-          exItem(ex6, { sets: 3, reps: 12, duration: 35, restMs: 25000, sortOrder: 3 }),
-        ]),
-      ],
-    },
-    { dayNumber: 6, isRestDay: true }, // Thursday — Rest
-    {
-      dayNumber: 7, // Friday — Upper body
-      sessions: [
-        buildSession({ ar: 'مساءً', en: 'Evening' }, [
-          exItem(ex2, { sets: 3, reps: 10, duration: 30, restMs: 25000, sortOrder: 1 }),
-          restItem(45000, 2),
-          exItem(ex4, { sets: 2, reps: 12, duration: 35, restMs: 20000, sortOrder: 3 }),
-        ]),
-      ],
-    },
-  ]);
+  for (const def of PROGRAM_CATALOG) {
+    const prerequisiteId = def.prerequisiteProgramSlug
+      ? programIdBySlug.get(def.prerequisiteProgramSlug) ?? null
+      : null;
+    const nextId = def.nextProgramSlug ? programIdBySlug.get(def.nextProgramSlug) ?? null : null;
 
-  // ════════════════════════════════════════════════════════
-  // WEEK 3 — Intensity (7 days: 4 training + 3 rest)
-  // ════════════════════════════════════════════════════════
-  await createWeek(3, [
-    {
-      dayNumber: 1, // Saturday — Full body compound
-      sessions: [
-        buildSession({ ar: 'صباحًا', en: 'Morning' }, [
-          exItem(ex1, { sets: 3, reps: 12, duration: 35, restMs: 25000, sortOrder: 1 }),
-          restItem(45000, 2),
-          exItem(ex2, { sets: 3, reps: 12, duration: 35, restMs: 25000, sortOrder: 3 }),
-          restItem(45000, 4),
-          exItem(ex3, { sets: 2, reps: 10, duration: 30, restMs: 20000, sortOrder: 5 }),
-        ]),
-      ],
-    },
-    { dayNumber: 2, isRestDay: true }, // Sunday — Rest
-    {
-      dayNumber: 3, // Monday — Lower body focus
-      sessions: [
-        buildSession({ ar: 'صباحًا', en: 'Morning' }, [
-          exItem(ex4, { sets: 3, reps: 12, duration: 35, restMs: 30000, sortOrder: 1 }),
-          restItem(50000, 2),
-          exItem(ex5, { sets: 3, reps: 12, duration: 40, restMs: 25000, weight: 7.5, sortOrder: 3 }),
-        ]),
-      ],
-    },
-    { dayNumber: 4, isRestDay: true }, // Tuesday — Rest
-    {
-      dayNumber: 5, // Wednesday — Core & stability
-      sessions: [
-        buildSession({ ar: 'خلال العمل', en: 'Midday' }, [
-          exItem(ex6, { sets: 3, reps: 12, duration: 35, restMs: 25000, sortOrder: 1 }),
-          restItem(45000, 2),
-          exItem(ex1, { sets: 3, reps: 12, duration: 40, restMs: 25000, sortOrder: 3 }),
-        ]),
-      ],
-    },
-    {
-      dayNumber: 6, // Thursday — Upper body
-      sessions: [
-        buildSession({ ar: 'مساءً', en: 'Evening' }, [
-          exItem(ex3, { sets: 3, reps: 10, duration: 30, restMs: 25000, sortOrder: 1 }),
-          restItem(45000, 2),
-          exItem(ex4, { sets: 3, reps: 10, duration: 30, restMs: 25000, sortOrder: 3 }),
-        ]),
-      ],
-    },
-    { dayNumber: 7, isRestDay: true }, // Friday — Rest
-  ]);
-
-  // ════════════════════════════════════════════════════════
-  // WEEK 4 — Peak (7 days: 4 training + 3 rest)
-  // ════════════════════════════════════════════════════════
-  await createWeek(4, [
-    {
-      dayNumber: 1, // Saturday — Full body A
-      sessions: [
-        buildSession({ ar: 'صباحًا', en: 'Morning' }, [
-          exItem(ex1, { sets: 3, reps: 12, duration: 40, restMs: 25000, sortOrder: 1 }),
-          restItem(45000, 2),
-          exItem(ex2, { sets: 3, reps: 12, duration: 40, restMs: 25000, sortOrder: 3 }),
-        ]),
-      ],
-    },
-    {
-      dayNumber: 2, // Sunday — Full body B
-      sessions: [
-        buildSession({ ar: 'صباحًا', en: 'Morning' }, [
-          exItem(ex3, { sets: 3, reps: 12, duration: 35, restMs: 25000, sortOrder: 1 }),
-          restItem(45000, 2),
-          exItem(ex4, { sets: 3, reps: 12, duration: 35, restMs: 25000, sortOrder: 3 }),
-        ]),
-      ],
-    },
-    { dayNumber: 3, isRestDay: true }, // Monday — Rest
-    {
-      dayNumber: 4, // Tuesday — Weighted
-      sessions: [
-        buildSession({ ar: 'صباحًا', en: 'Morning' }, [
-          exItem(ex5, { sets: 3, reps: 12, duration: 40, restMs: 25000, weight: 10, weightPerSet: [7.5, 10, 10], sortOrder: 1 }),
-          restItem(50000, 2),
-          exItem(ex6, { sets: 3, reps: 12, duration: 35, restMs: 25000, sortOrder: 3 }),
-        ]),
-      ],
-    },
-    { dayNumber: 5, isRestDay: true }, // Wednesday — Rest
-    {
-      dayNumber: 6, // Thursday — Final challenge
-      sessions: [
-        buildSession({ ar: 'صباحًا', en: 'Morning' }, [
-          exItem(ex1, { sets: 3, reps: 15, duration: 45, restMs: 20000, sortOrder: 1 }),
-          restItem(40000, 2),
-          exItem(ex3, { sets: 3, reps: 12, duration: 35, restMs: 20000, sortOrder: 3 }),
-          restItem(40000, 4),
-          exItem(ex5, { sets: 3, reps: 12, duration: 40, restMs: 20000, weight: 10, sortOrder: 5 }),
-        ]),
-      ],
-    },
-    { dayNumber: 7, isRestDay: true }, // Friday — Rest
-  ]);
-
-  console.log('  ✅ Starter program seeded (4 weeks × 7 days)');
-
-  // ════════════════════════════════════════════════════════════════
-  // PROGRAM 2 — Mobility Focus (3 weeks)
-  // Targets users with low mobility scores
-  // ════════════════════════════════════════════════════════════════
-  const mobilityProgram = await prisma.program.upsert({
-    where: { slug: 'mobility-focus-3w' },
-    update: {
-      name: { ar: 'برنامج المرونة والحركة', en: 'Mobility Focus Program' },
-      description: { ar: 'تحسين المرونة ونطاق الحركة خلال 3 أسابيع', en: 'Improve flexibility and range of motion over 3 weeks' },
-      durationWeeks: 3,
-      difficulty: 'beginner',
-      isPublished: true,
-      tags: ['mobility', 'flexibility', 'correction'],
-      type: 'mobility',
-      targetDomain: 'mobility',
-      targetRegions: ['shoulder', 'hip', 'spine'],
-      levelRangeMin: 1,
-      levelRangeMax: 3,
-      prescriptionPriority: 30,
-      entryCriteria: { mobilityScore: { max: 50 } },
-      exitCriteria: { mobilityScore: { min: 65 } },
-      contraindications: [],
-    },
-    create: {
-      slug: 'mobility-focus-3w',
-      name: { ar: 'برنامج المرونة والحركة', en: 'Mobility Focus Program' },
-      description: { ar: 'تحسين المرونة ونطاق الحركة خلال 3 أسابيع', en: 'Improve flexibility and range of motion over 3 weeks' },
-      durationWeeks: 3,
-      difficulty: 'beginner',
-      isPublished: true,
-      tags: ['mobility', 'flexibility', 'correction'],
-      type: 'mobility',
-      targetDomain: 'mobility',
-      targetRegions: ['shoulder', 'hip', 'spine'],
-      levelRangeMin: 1,
-      levelRangeMax: 3,
-      prescriptionPriority: 30,
-      entryCriteria: { mobilityScore: { max: 50 } },
-      exitCriteria: { mobilityScore: { min: 65 } },
-      contraindications: [],
-    },
-  });
-
-  await prisma.programWeek.deleteMany({ where: { programId: mobilityProgram.id } });
-
-  for (let w = 1; w <= 3; w++) {
-    await createWeekForProgram(prisma, mobilityProgram.id, w, [
-      {
-        dayNumber: 1,
-        sessions: [
-          buildSession({ ar: 'جلسة مرونة', en: 'Mobility Session' }, [
-            exItem(ex1, { sets: 2, reps: 12, duration: 40, restMs: 20000, sortOrder: 1 }),
-            restItem(45000, 2),
-            exItem(ex3, { sets: 2, reps: 10, duration: 35, restMs: 20000, sortOrder: 3 }),
-          ]),
-        ],
+    const program = await prisma.program.upsert({
+      where: { slug: def.slug },
+      update: {
+        name: def.name,
+        description: def.description,
+        durationWeeks: def.durationWeeks,
+        difficulty: def.difficulty,
+        isDefault: def.isDefault ?? false,
+        isPublished: def.isPublished,
+        tags: def.tags,
+        programType: def.programType,
+        programDomain: def.programDomain,
+        trainingGoal: def.trainingGoal ?? undefined,
+        targetDomain: def.targetDomain ?? undefined,
+        targetRegions: def.targetRegions,
+        targetEquipment: def.targetEquipment,
+        levelRangeMin: def.levelRangeMin,
+        levelRangeMax: def.levelRangeMax,
+        prescriptionPriority: def.prescriptionPriority,
+        entryRecommendations: def.entryRecommendations ?? undefined,
+        exitRecommendations: def.exitRecommendations ?? undefined,
+        contraindications: def.contraindications,
+        autoAssignable: def.autoAssignable,
+        version: def.version,
+        weeklySessionTarget: def.weeklySessionTarget ?? undefined,
+        estimatedSessionMinutes: def.estimatedSessionMinutes ?? undefined,
+        coachingNotes: def.coachingNotes ?? undefined,
+        prerequisiteProgramId: prerequisiteId,
+        nextProgramId: nextId,
       },
-      { dayNumber: 2, isRestDay: true },
-      {
-        dayNumber: 3,
-        sessions: [
-          buildSession({ ar: 'تمديد وتحرك', en: 'Stretch & Move' }, [
-            exItem(ex2, { sets: 2, reps: 10, duration: 35, restMs: 20000, sortOrder: 1 }),
-            restItem(40000, 2),
-            exItem(ex4, { sets: 2, reps: 10, duration: 35, restMs: 20000, sortOrder: 3 }),
-          ]),
-        ],
+      create: {
+        slug: def.slug,
+        name: def.name,
+        description: def.description,
+        durationWeeks: def.durationWeeks,
+        difficulty: def.difficulty,
+        isDefault: def.isDefault ?? false,
+        isPublished: def.isPublished,
+        tags: def.tags,
+        programType: def.programType,
+        programDomain: def.programDomain,
+        trainingGoal: def.trainingGoal ?? undefined,
+        targetDomain: def.targetDomain ?? undefined,
+        targetRegions: def.targetRegions,
+        targetEquipment: def.targetEquipment,
+        levelRangeMin: def.levelRangeMin,
+        levelRangeMax: def.levelRangeMax,
+        prescriptionPriority: def.prescriptionPriority,
+        entryRecommendations: def.entryRecommendations ?? undefined,
+        exitRecommendations: def.exitRecommendations ?? undefined,
+        contraindications: def.contraindications,
+        autoAssignable: def.autoAssignable,
+        version: def.version,
+        weeklySessionTarget: def.weeklySessionTarget ?? undefined,
+        estimatedSessionMinutes: def.estimatedSessionMinutes ?? undefined,
+        coachingNotes: def.coachingNotes ?? undefined,
+        prerequisiteProgramId: prerequisiteId,
+        nextProgramId: nextId,
       },
-      { dayNumber: 4, isRestDay: true },
-      {
-        dayNumber: 5,
-        sessions: [
-          buildSession({ ar: 'مرونة شاملة', en: 'Full Mobility' }, [
-            exItem(ex5, { sets: 2, reps: 10, duration: 40, restMs: 20000, sortOrder: 1 }),
-            restItem(40000, 2),
-            exItem(ex6, { sets: 2, reps: 10, duration: 35, restMs: 20000, sortOrder: 3 }),
-          ]),
-        ],
-      },
-      { dayNumber: 6, isRestDay: true },
-      { dayNumber: 7, isRestDay: true },
-    ]);
+    });
+
+    programIdBySlug.set(def.slug, program.id);
+
+    await prisma.programWeek.deleteMany({ where: { programId: program.id } });
+
+    for (const w of def.weeks) {
+      const days: DayDef[] = w.days.map((d) => {
+        if (d.isRestDay || !d.sessions?.length) {
+          return {
+            dayNumber: d.dayNumber,
+            isRestDay: d.isRestDay,
+            dayType: d.dayType,
+            dayFocus: d.dayFocus,
+          };
+        }
+        const sessions = d.sessions.map((sess) => {
+          const prismaItems: Record<string, unknown>[] = [];
+          let sortOrder = 1;
+          for (const raw of sess.items) {
+            if ('restMs' in raw && !('slug' in raw)) {
+              prismaItems.push(restItem(raw.restMs, sortOrder));
+              sortOrder++;
+              continue;
+            }
+            const slot = raw as import('./program-catalog').CatalogExerciseSlot;
+            const ex = requireExercise(slot.slug);
+            prismaItems.push(
+              exItem(ex, {
+                sets: slot.sets,
+                reps: slot.reps,
+                duration: slot.duration,
+                restMs: slot.restMs,
+                weight: slot.weight,
+                weightPerSet: slot.weightPerSet,
+                sortOrder,
+                role: slot.role,
+                intent: slot.intent,
+              }),
+            );
+            sortOrder++;
+          }
+          return buildSession(
+            sess.name,
+            prismaItems,
+            sess.sortOrder ?? 1,
+            sess.estimatedDurationMin ?? 35,
+            sess.sessionCategory ?? 'mixed',
+          );
+        });
+        return {
+          dayNumber: d.dayNumber,
+          isRestDay: d.isRestDay,
+          dayType: d.dayType,
+          dayFocus: d.dayFocus,
+          sessions,
+        };
+      });
+
+      await createWeek(program.id, w.weekNumber, days, w.weekType ?? 'NORMAL');
+    }
+
+    console.log(`  ✅ Program seeded: ${def.slug}`);
   }
 
-  console.log('  ✅ Mobility Focus program seeded (3 weeks)');
-
-  // ════════════════════════════════════════════════════════════════
-  // PROGRAM 3 — Intermediate Strength (4 weeks)
-  // For users who completed the starter program
-  // ════════════════════════════════════════════════════════════════
-  const strengthProgram = await prisma.program.upsert({
-    where: { slug: 'intermediate-strength-4w' },
-    update: {
-      name: { ar: 'برنامج القوة المتوسط', en: 'Intermediate Strength Program' },
-      description: { ar: 'بناء القوة والتحكم لمستوى متقدم', en: 'Build strength and control for intermediate level' },
-      durationWeeks: 4,
-      difficulty: 'intermediate',
-      isPublished: true,
-      tags: ['strength', 'intermediate', 'progression'],
-      type: 'training',
-      targetDomain: 'strength',
-      targetRegions: [],
-      levelRangeMin: 2,
-      levelRangeMax: 4,
-      prescriptionPriority: 60,
-      entryCriteria: { bodyScore: { min: 40 } },
-      exitCriteria: { bodyScore: { min: 65 } },
-      contraindications: [],
-      prerequisiteProgramId: program.id,
-    },
-    create: {
-      slug: 'intermediate-strength-4w',
-      name: { ar: 'برنامج القوة المتوسط', en: 'Intermediate Strength Program' },
-      description: { ar: 'بناء القوة والتحكم لمستوى متقدم', en: 'Build strength and control for intermediate level' },
-      durationWeeks: 4,
-      difficulty: 'intermediate',
-      isPublished: true,
-      tags: ['strength', 'intermediate', 'progression'],
-      type: 'training',
-      targetDomain: 'strength',
-      targetRegions: [],
-      levelRangeMin: 2,
-      levelRangeMax: 4,
-      prescriptionPriority: 60,
-      entryCriteria: { bodyScore: { min: 40 } },
-      exitCriteria: { bodyScore: { min: 65 } },
-      contraindications: [],
-      prerequisiteProgramId: program.id,
-    },
-  });
-
-  // Link starter → intermediate
-  await prisma.program.update({
-    where: { id: program.id },
-    data: { nextProgramId: strengthProgram.id },
-  });
-
-  await prisma.programWeek.deleteMany({ where: { programId: strengthProgram.id } });
-
-  for (let w = 1; w <= 4; w++) {
-    const baseSets = w <= 2 ? 3 : 4;
-    const baseReps = w <= 2 ? 10 : 12;
-    const baseWeight = 5 + (w - 1) * 2.5;
-
-    await createWeekForProgram(prisma, strengthProgram.id, w, [
-      {
-        dayNumber: 1,
-        sessions: [
-          buildSession({ ar: 'قوة علوية', en: 'Upper Strength' }, [
-            exItem(ex1, { sets: baseSets, reps: baseReps, duration: 40, restMs: 45000, weight: baseWeight, sortOrder: 1 }),
-            restItem(60000, 2),
-            exItem(ex2, { sets: baseSets, reps: baseReps, duration: 40, restMs: 45000, weight: baseWeight, sortOrder: 3 }),
-          ]),
-        ],
-      },
-      {
-        dayNumber: 2,
-        sessions: [
-          buildSession({ ar: 'قوة سفلية', en: 'Lower Strength' }, [
-            exItem(ex3, { sets: baseSets, reps: baseReps, duration: 40, restMs: 45000, weight: baseWeight, sortOrder: 1 }),
-            restItem(60000, 2),
-            exItem(ex4, { sets: baseSets, reps: baseReps, duration: 40, restMs: 45000, weight: baseWeight, sortOrder: 3 }),
-          ]),
-        ],
-      },
-      { dayNumber: 3, isRestDay: true },
-      {
-        dayNumber: 4,
-        sessions: [
-          buildSession({ ar: 'قوة شاملة', en: 'Full Body Power' }, [
-            exItem(ex5, { sets: baseSets, reps: baseReps, duration: 45, restMs: 50000, weight: baseWeight + 2.5, sortOrder: 1 }),
-            restItem(60000, 2),
-            exItem(ex6, { sets: baseSets, reps: baseReps, duration: 40, restMs: 45000, weight: baseWeight, sortOrder: 3 }),
-          ]),
-        ],
-      },
-      { dayNumber: 5, isRestDay: true },
-      {
-        dayNumber: 6,
-        sessions: [
-          buildSession({ ar: 'تحدي القوة', en: 'Strength Challenge' }, [
-            exItem(ex1, { sets: baseSets + 1, reps: baseReps, duration: 45, restMs: 40000, weight: baseWeight + 2.5, sortOrder: 1 }),
-            restItem(50000, 2),
-            exItem(ex3, { sets: baseSets, reps: baseReps, duration: 40, restMs: 40000, weight: baseWeight, sortOrder: 3 }),
-          ]),
-        ],
-      },
-      { dayNumber: 7, isRestDay: true },
-    ]);
+  const starter = programIdBySlug.get('starter-4-weeks');
+  const strength = programIdBySlug.get('intermediate-strength-4w');
+  if (starter && strength) {
+    await prisma.program.update({ where: { id: starter }, data: { nextProgramId: strength } });
   }
 
-  console.log('  ✅ Intermediate Strength program seeded (4 weeks)');
-  console.log('✅ All programs seeded (3 programs)');
-}
-
-// Helper to create a week for any program
-async function createWeekForProgram(
-  prisma: any,
-  programId: string,
-  weekNumber: number,
-  days: { dayNumber: number; isRestDay?: boolean; sessions?: any[] }[],
-) {
-  await prisma.programWeek.create({
-    data: {
-      programId,
-      weekNumber,
-      sortOrder: weekNumber,
-      name: { ar: `الأسبوع ${weekNumber}`, en: `Week ${weekNumber}` },
-      days: {
-        create: days.map((day) => ({
-          dayNumber: day.dayNumber,
-          isRestDay: day.isRestDay ?? false,
-          name: day.isRestDay ? { ar: 'راحة', en: 'Rest' } : undefined,
-          sessions: day.sessions
-            ? { create: day.sessions }
-            : undefined,
-        })),
-      },
-    },
-  });
+  console.log(`✅ Programs seeded from catalog (${PROGRAM_CATALOG.length} programs)`);
 }

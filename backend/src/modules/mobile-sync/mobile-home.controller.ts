@@ -20,6 +20,11 @@ import { Controller, Get, Req, Res } from '@nestjs/common';
 import type { Request, Response } from 'express';
 import { verifyMobileToken } from '@/modules/auth/auth.service';
 import { getPrisma } from '@/lib/prisma/client';
+import {
+  countEffectiveExerciseItems,
+  effectivePlanService,
+} from '@/modules/effective-plan/effective-plan.service';
+import { resolveCurrentProgramDay } from '@/modules/active-plan/plan-position';
 
 // ── Types ──────────────────────────────────────────────────────────────────
 
@@ -207,7 +212,8 @@ async function buildHomeData(userId: string): Promise<HomeResponse> {
 
   // ── Train mode ───────────────────────────────────────────────────────────
 
-  const trainMode = buildTrainMode(
+  const trainMode = await buildTrainMode(
+    userId,
     latestAssessment,
     activePlan,
     pendingReassessment,
@@ -252,11 +258,12 @@ async function buildHomeData(userId: string): Promise<HomeResponse> {
 
 // ── TrainMode Builder ──────────────────────────────────────────────────────
 
-function buildTrainMode(
+async function buildTrainMode(
+  userId: string,
   latestAssessment: { bodyScore: number; fitnessLevel: string; completedAt: Date } | null,
   activePlan: any,
   pendingReassessment: { scheduledDate: Date; reason: string } | null,
-): TrainModeData {
+): Promise<TrainModeData> {
   const reassessmentData = pendingReassessment
     ? { scheduledDate: pendingReassessment.scheduledDate.toISOString(), reason: pendingReassessment.reason }
     : null;
@@ -279,47 +286,24 @@ function buildTrainMode(
 
   const program = activeSlot.userProgram.program;
   const progressEntries: any[] = activeSlot.userProgram.progress ?? [];
-
-  // Determine current position
-  const completedDaySentinels = progressEntries.filter(
-    (p) => p.status === 'completed' && p.sessionId === '__day__',
-  );
-
-  const allWeeks = (program.weeks as any[]).sort((a: any, b: any) => a.weekNumber - b.weekNumber);
-
-  // Find current target week/day
-  let targetWeek = 1;
-  let targetDay = 1;
-
-  if (completedDaySentinels.length > 0) {
-    const latest = completedDaySentinels.sort((a: any, b: any) => {
-      if (a.weekNumber !== b.weekNumber) return b.weekNumber - a.weekNumber;
-      return b.dayNumber - a.dayNumber;
-    })[0];
-    targetWeek = latest.weekNumber;
-    targetDay = latest.dayNumber + 1;
-    if (targetDay > 7) { targetWeek += 1; targetDay = 1; }
-  } else if (progressEntries.some((p) => p.status === 'completed')) {
-    const latestSession = progressEntries
-      .filter((p) => p.status === 'completed' && p.sessionId !== '__day__')
-      .sort((a: any, b: any) => {
-        if (a.weekNumber !== b.weekNumber) return b.weekNumber - a.weekNumber;
-        return b.dayNumber - a.dayNumber;
-      })[0];
-    if (latestSession) { targetWeek = latestSession.weekNumber; targetDay = latestSession.dayNumber; }
-  }
+  const position = resolveCurrentProgramDay(program.weeks as any[], progressEntries);
+  const targetWeek = position.targetWeekNumber;
+  const targetDay = position.targetDayNumber;
 
   // State 4: Program complete (exceeded all weeks)
-  if (targetWeek > program.durationWeeks) {
+  if (position.isProgramComplete) {
     return {
       status: 'program_complete',
       activeProgram: {
         id: program.id,
         name: program.name as Record<string, string>,
-        weekNumber: program.durationWeeks,
-        dayNumber: 7,
+        weekNumber: targetWeek,
+        dayNumber: targetDay,
         totalWeeks: program.durationWeeks,
-        weekProgress: { completed: completedDaySentinels.length, total: program.durationWeeks * 7 },
+        weekProgress: {
+          completed: position.completedDayCount,
+          total: program.durationWeeks * 7,
+        },
       },
       todaySession: null,
       dayType: 'completed',
@@ -327,8 +311,8 @@ function buildTrainMode(
     };
   }
 
-  const week = allWeeks.find((w: any) => w.weekNumber === targetWeek);
-  const day = week?.days.find((d: any) => d.dayNumber === targetDay);
+  const week = position.targetWeek as any;
+  const day = position.targetDay as any;
 
   const activeProgram = {
     id: program.id,
@@ -337,7 +321,7 @@ function buildTrainMode(
     dayNumber: targetDay,
     totalWeeks: program.durationWeeks,
     weekProgress: {
-      completed: completedDaySentinels.filter((p: any) => p.weekNumber === targetWeek).length,
+      completed: position.targetWeekCompletedDays,
       total: week?.days?.length ?? 7,
     },
   };
@@ -354,7 +338,7 @@ function buildTrainMode(
   }
 
   // State 6: Active training day — find first incomplete session
-  const sessions: any[] = day.sessions.sort((a: any, b: any) => a.sortOrder - b.sortOrder);
+  const sessions: any[] = [...day.sessions].sort((a: any, b: any) => a.sortOrder - b.sortOrder);
   const completedSessionIds = new Set(
     sessions.flatMap((s: any) => s.reports.map((r: any) => r.programSessionId))
   );
@@ -371,13 +355,29 @@ function buildTrainMode(
     };
   }
 
+  let exerciseCount = (nextSession.items as any[]).filter((it: any) => it.type === 'exercise').length;
+  try {
+    const eff = await effectivePlanService.getEffectivePlan(
+      userId,
+      activeSlot.userProgram.id,
+      targetWeek,
+      targetDay,
+    );
+    const effSess = eff?.sessions.find((s) => s.id === nextSession.id);
+    if (effSess) {
+      exerciseCount = countEffectiveExerciseItems(effSess);
+    }
+  } catch (e) {
+    console.warn('[Mobile Home] effective plan for today session:', e);
+  }
+
   return {
     status: 'active',
     activeProgram,
     todaySession: {
       sessionId: nextSession.id,
       name: nextSession.name as Record<string, string>,
-      exerciseCount: nextSession.items.length,
+      exerciseCount,
       estimatedMinutes: nextSession.estimatedDurationMin,
       sessionCategory: nextSession.sessionCategory,
       isCompleted: false,

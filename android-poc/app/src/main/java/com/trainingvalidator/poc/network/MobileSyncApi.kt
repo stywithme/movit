@@ -318,6 +318,51 @@ interface MobileSyncApi {
         @Body payload: Map<String, @JvmSuppressWildcards Any>
     ): Response<ResponseBody>
 
+    @GET("api/mobile/user-programs/{id}/effective-plan")
+    suspend fun getEffectivePlan(
+        @Path("id") userProgramId: String,
+        @Header("Authorization") authorization: String,
+        @Query("week") week: Int,
+        @Query("day") day: Int
+    ): Response<EffectivePlanApiResponse>
+
+    @GET("api/mobile/user-programs/{id}/overrides")
+    suspend fun listUserProgramOverrides(
+        @Path("id") userProgramId: String,
+        @Header("Authorization") authorization: String
+    ): Response<UserProgramOverridesApiResponse>
+
+    @POST("api/mobile/user-programs/{id}/overrides")
+    suspend fun createUserProgramOverride(
+        @Path("id") userProgramId: String,
+        @Header("Authorization") authorization: String,
+        @Body body: Map<String, @JvmSuppressWildcards Any?>
+    ): Response<UserProgramOverrideCreateApiResponse>
+
+    @DELETE("api/mobile/user-programs/{id}/overrides/{overrideId}")
+    suspend fun deleteUserProgramOverride(
+        @Path("id") userProgramId: String,
+        @Path("overrideId") overrideId: String,
+        @Header("Authorization") authorization: String
+    ): Response<ResponseBody>
+
+    @POST("api/mobile/user-programs/{id}/complete")
+    suspend fun completeUserProgram(
+        @Path("id") userProgramId: String,
+        @Header("Authorization") authorization: String
+    ): Response<ProgramCompleteApiResponse>
+
+    @GET("api/mobile/training-profile")
+    suspend fun getTrainingProfile(
+        @Header("Authorization") authorization: String
+    ): Response<TrainingProfileApiResponse>
+
+    @PUT("api/mobile/training-profile")
+    suspend fun putTrainingProfile(
+        @Header("Authorization") authorization: String,
+        @Body body: Map<String, @JvmSuppressWildcards Any?>
+    ): Response<TrainingProfileApiResponse>
+
     // ─── User exercise preferences (standalone targets) ─────────────────
 
     @PUT("api/mobile/exercise-preferences/{exerciseId}")

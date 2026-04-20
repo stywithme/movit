@@ -38,6 +38,7 @@ import { SystemModule } from './modules/system/system.module';
 import { PlanModule } from './modules/plan/plan.module';
 import { SubscriptionModule } from './modules/subscription/subscription.module';
 import { UserExercisePreferencesModule } from './modules/user-exercise-preferences/user-exercise-preferences.module';
+import { TrainingProfileModule } from './modules/training-profile/training-profile.module';
 
 @Module({
   imports: [
@@ -86,6 +87,7 @@ import { UserExercisePreferencesModule } from './modules/user-exercise-preferenc
     PlanModule,
     SubscriptionModule,
     UserExercisePreferencesModule,
+    TrainingProfileModule,
   ],
 })
 export class AppModule { }

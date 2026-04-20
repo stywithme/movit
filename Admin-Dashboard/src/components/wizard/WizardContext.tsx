@@ -47,6 +47,14 @@ export interface BilateralConfigData {
   startSide: 'left' | 'right';
 }
 
+/** Blueprint program library fields (stored on Exercise row) */
+export interface BlueprintExerciseMeta {
+  movementPattern: string;
+  loadCapability: string;
+  familyKey: string;
+  familyOrder: string;
+}
+
 // ============================================
 // TYPES
 // ============================================
@@ -80,6 +88,8 @@ export interface WizardState {
   weightConfig: WeightConfigData;
   reportMetrics: ReportMetricsData;
   bilateralConfig: BilateralConfigData;
+
+  blueprintExerciseMeta: BlueprintExerciseMeta;
 }
 
 export interface WizardActions {
@@ -105,6 +115,8 @@ export interface WizardActions {
 
   // Bilateral config
   setBilateralConfig: (data: Partial<BilateralConfigData>) => void;
+
+  setBlueprintExerciseMeta: (data: Partial<BlueprintExerciseMeta>) => void;
   
   // Joint helpers
   addTrackedJoint: (joint: TrackedJointData) => void;
@@ -197,6 +209,13 @@ const initialState: WizardState = {
     enabled: false,
     switchEvery: 1,
     startSide: 'right',
+  },
+
+  blueprintExerciseMeta: {
+    movementPattern: '',
+    loadCapability: '',
+    familyKey: '',
+    familyOrder: '',
   },
 };
 
@@ -296,6 +315,11 @@ export const useWizardStore = create<WizardStore>()(
 
       setBilateralConfig: (data) => set((state) => ({
         bilateralConfig: { ...state.bilateralConfig, ...data },
+        isDirty: true,
+      })),
+
+      setBlueprintExerciseMeta: (data) => set((state) => ({
+        blueprintExerciseMeta: { ...state.blueprintExerciseMeta, ...data },
         isDirty: true,
       })),
       
@@ -419,6 +443,7 @@ export const useWizardStore = create<WizardStore>()(
         weightConfig: state.weightConfig,
         reportMetrics: state.reportMetrics,
         bilateralConfig: state.bilateralConfig,
+        blueprintExerciseMeta: state.blueprintExerciseMeta,
       }),
     }
   )
