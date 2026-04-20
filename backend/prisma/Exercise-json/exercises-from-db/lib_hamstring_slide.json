@@ -1,0 +1,674 @@
+{
+  "slug": "lib_hamstring_slide",
+  "status": "published",
+  "movementPattern": "HINGE",
+  "loadCapability": "BODYWEIGHT_ONLY",
+  "familyKey": "hinge_pattern_family",
+  "familyOrder": 32,
+  "name": {
+    "ar": "منزلق خلفي",
+    "en": "Hamstring slide curl"
+  },
+  "category": {
+    "code": "legs",
+    "name": {
+      "ar": "تمارين الأرجل",
+      "en": "Legs"
+    }
+  },
+  "countingMethod": "up_down",
+  "muscles": [
+    "hamstrings",
+    "glutes"
+  ],
+  "equipment": [
+    "bodyweight",
+    "mat"
+  ],
+  "tags": [
+    "curated_library",
+    "corrective"
+  ],
+  "repCountingConfig": {
+    "reps": 12,
+    "minRepIntervalMs": 1500,
+    "maxRepIntervalMs": 5000
+  },
+  "poseVariants": [
+    {
+      "name": {
+        "ar": "مستلقٍ على الظهر",
+        "en": "Lying on back (side angle)"
+      },
+      "posePosition": "supine_side",
+      "expectedPostures": [
+        "lying_supine"
+      ],
+      "expectedDirections": [
+        "side"
+      ],
+      "expectedRegions": [
+        "full_body"
+      ],
+      "trackedJoints": [
+        {
+          "joint": "left_knee",
+          "role": "primary",
+          "startPose": {
+            "max": 180,
+            "min": 70
+          },
+          "stateMessages": {
+            "pad": {
+              "down": {
+                "ar": "مقبول، لكن المدى الخلفي ما زال متوسطاً",
+                "en": "Acceptable, but the curl range is still moderate"
+              }
+            },
+            "danger": {
+              "down": {
+                "ar": "توقف، الشد الخلفي حاد جداً",
+                "en": "Stop, posterior-chain strain is too sharp"
+              }
+            },
+            "normal": {
+              "up": {
+                "ar": "جيد، تحكم أكثر في العودة",
+                "en": "Good, control the return more"
+              },
+              "down": {
+                "ar": "جيد، اسحب الكعب أقرب أكثر",
+                "en": "Good, pull the heel in a bit more"
+              }
+            },
+            "perfect": {
+              "up": {
+                "ar": "ممتاز! فرد منظم للبداية",
+                "en": "Perfect! Organized reset to the long position"
+              },
+              "down": {
+                "ar": "ممتاز! ثني ركبة قوي للهمسترنج",
+                "en": "Perfect! Strong hamstring-driven knee flexion"
+              }
+            },
+            "warning": {
+              "down": {
+                "ar": "لا تفقد ارتفاع الحوض أثناء السحب",
+                "en": "Do not lose hip height during the curl"
+              }
+            }
+          },
+          "pairedWith": "right_knee",
+          "invertIndicator": true,
+          "upRange": {
+            "pad": {
+              "max": 180,
+              "min": 140
+            },
+            "normal": {
+              "max": 180,
+              "min": 150
+            },
+            "perfect": {
+              "max": 180,
+              "min": 160
+            }
+          },
+          "downRange": {
+            "pad": {
+              "max": 115,
+              "min": 50
+            },
+            "danger": {
+              "max": 40,
+              "min": 0
+            },
+            "normal": {
+              "max": 105,
+              "min": 55
+            },
+            "perfect": {
+              "max": 95,
+              "min": 60
+            },
+            "warning": {
+              "max": 50,
+              "min": 40
+            }
+          }
+        },
+        {
+          "joint": "left_hip",
+          "role": "secondary",
+          "startPose": {
+            "max": 180,
+            "min": 130
+          },
+          "stateMessages": {
+            "perfect": {
+              "ar": "حوض مرتفع وثابت",
+              "en": "Pelvis stays lifted and stable"
+            },
+            "warning": {
+              "ar": "لا تدع الحوض يهبط في الأسفل",
+              "en": "Do not let the pelvis sag down"
+            }
+          },
+          "range": {
+            "pad": {
+              "max": 180,
+              "min": 45
+            },
+            "danger": {
+              "max": 35,
+              "min": 0
+            },
+            "normal": {
+              "max": 180,
+              "min": 55
+            },
+            "perfect": {
+              "max": 180,
+              "min": 70
+            },
+            "warning": {
+              "max": 55,
+              "min": 35
+            }
+          },
+          "phaseRanges": {
+            "up": {
+              "normal": {
+                "max": 178,
+                "min": 135
+              },
+              "perfect": {
+                "max": 172,
+                "min": 145
+              }
+            },
+            "top": {
+              "normal": {
+                "max": 180,
+                "min": 155
+              },
+              "perfect": {
+                "max": 180,
+                "min": 165
+              }
+            },
+            "down": {
+              "normal": {
+                "max": 178,
+                "min": 135
+              },
+              "perfect": {
+                "max": 172,
+                "min": 145
+              }
+            },
+            "bottom": {
+              "normal": {
+                "max": 175,
+                "min": 128
+              },
+              "perfect": {
+                "max": 168,
+                "min": 138
+              }
+            }
+          },
+          "phaseStateMessages": {
+            "top": {
+              "perfect": {
+                "ar": "قفل ورك مرتفع وقوي",
+                "en": "Strong, high hip lockout"
+              },
+              "warning": {
+                "ar": "ادفع الورك أعلى دون تقوس قطني",
+                "en": "Drive the hips higher without lumbar arching"
+              }
+            },
+            "bottom": {
+              "perfect": {
+                "ar": "انثناء ورك مناسب في الانزلاق",
+                "en": "Appropriate hip flex during the slide"
+              },
+              "warning": {
+                "ar": "لا تنزل الورك للأرض في منتصف العد",
+                "en": "Do not drop the hips to the floor mid-rep"
+              }
+            }
+          }
+        }
+      ],
+      "positionChecks": [
+        {
+          "id": "ham_curl_hips_up",
+          "type": "vertical_alignment",
+          "landmarks": {
+            "primary": "left_shoulder",
+            "secondary": "left_hip"
+          },
+          "condition": {
+            "operator": "approximately_equal",
+            "threshold": 0.14
+          },
+          "activePhases": [
+            "up",
+            "down"
+          ],
+          "errorMessage": {
+            "ar": "أبقِ الحوض مرتفعاً أثناء ثني الركبة.",
+            "en": "Keep the pelvis elevated while flexing the knee."
+          },
+          "severity": "warning",
+          "cooldownMs": 2200,
+          "minErrorFrames": 4
+        }
+      ],
+      "feedbackMessages": {
+        "motivational": [
+          {
+            "ar": "أداء قوي ومنظم",
+            "en": "Strong and controlled work"
+          },
+          {
+            "ar": "حافظ على الشكل قبل السرعة",
+            "en": "Keep form before speed"
+          }
+        ],
+        "tips": [
+          {
+            "ar": "خذ نفساً تحضيرياً قبل كل عدة وازفر مع الجهد.",
+            "en": "Take a setup breath before each rep and exhale on effort."
+          },
+          {
+            "ar": "إذا فقدت التحكم الميكانيكي، قلل المدى أو الحمل.",
+            "en": "If mechanics break down, reduce range or load."
+          }
+        ]
+      },
+      "messageAssignments": [
+        {
+          "messageId": "cb68d87b-edcf-4ffb-a5ae-8e46fa0263f1",
+          "target": "position",
+          "context": "error",
+          "checkId": "ham_curl_hips_up",
+          "sortOrder": 1
+        },
+        {
+          "messageId": "3e07ed82-565d-4d5f-81a3-c95bfbd8efc2",
+          "target": "joint_state",
+          "context": "perfect",
+          "jointCode": "left_knee",
+          "zone": "up",
+          "sortOrder": 2
+        },
+        {
+          "messageId": "8baebb5a-c883-4ca4-b153-78a86dc93fd9",
+          "target": "joint_state",
+          "context": "perfect",
+          "jointCode": "left_knee",
+          "zone": "down",
+          "sortOrder": 3
+        },
+        {
+          "messageId": "1ad21715-e314-4867-b21a-9562033bb2f0",
+          "target": "joint_state",
+          "context": "normal",
+          "jointCode": "left_knee",
+          "zone": "up",
+          "sortOrder": 4
+        },
+        {
+          "messageId": "635c2378-a864-4f1f-9e5c-75dadbd7be34",
+          "target": "joint_state",
+          "context": "normal",
+          "jointCode": "left_knee",
+          "zone": "down",
+          "sortOrder": 5
+        },
+        {
+          "messageId": "16150e80-4c31-4626-b10e-ad0514fb30ae",
+          "target": "joint_state",
+          "context": "pad",
+          "jointCode": "left_knee",
+          "zone": "down",
+          "sortOrder": 6
+        },
+        {
+          "messageId": "9b1300c3-35a3-4a97-92de-be39df957247",
+          "target": "joint_state",
+          "context": "warning",
+          "jointCode": "left_knee",
+          "zone": "down",
+          "sortOrder": 7
+        },
+        {
+          "messageId": "aa73d321-f735-4b0a-be59-67f1d97cb720",
+          "target": "joint_state",
+          "context": "danger",
+          "jointCode": "left_knee",
+          "zone": "down",
+          "sortOrder": 8
+        },
+        {
+          "messageId": "7f603795-a06d-4af3-b4d9-705a460992bf",
+          "target": "joint_state",
+          "context": "perfect",
+          "jointCode": "left_hip",
+          "sortOrder": 9
+        },
+        {
+          "messageId": "bc5ff579-ba76-4c39-be31-db0e90380967",
+          "target": "joint_state",
+          "context": "warning",
+          "jointCode": "left_hip",
+          "sortOrder": 10
+        },
+        {
+          "messageId": "b5a62952-0775-4d58-8f07-228ae5b9fc6d",
+          "target": "joint_state_phase",
+          "context": "top:perfect",
+          "jointCode": "left_hip",
+          "sortOrder": 11
+        },
+        {
+          "messageId": "ae247328-ca9c-4a32-ad31-4b53aa204ba5",
+          "target": "joint_state_phase",
+          "context": "top:warning",
+          "jointCode": "left_hip",
+          "sortOrder": 12
+        },
+        {
+          "messageId": "f253ea4e-ba9d-4f6c-bcad-652d97a4d4a0",
+          "target": "joint_state_phase",
+          "context": "bottom:perfect",
+          "jointCode": "left_hip",
+          "sortOrder": 13
+        },
+        {
+          "messageId": "83ebf1ab-eeb2-47b2-92f1-60920944943d",
+          "target": "joint_state_phase",
+          "context": "bottom:warning",
+          "jointCode": "left_hip",
+          "sortOrder": 14
+        },
+        {
+          "messageId": "6e26a3c0-09e6-494d-9e7e-ef5d4b91fa33",
+          "target": "feedback",
+          "context": "motivational",
+          "sortOrder": 15
+        },
+        {
+          "messageId": "aff0c16b-4b2b-418b-ad52-20e0df6e89e6",
+          "target": "feedback",
+          "context": "motivational",
+          "sortOrder": 16
+        },
+        {
+          "messageId": "6b180c1c-5092-4d68-823b-9ae250e0fd09",
+          "target": "feedback",
+          "context": "tip",
+          "sortOrder": 17
+        },
+        {
+          "messageId": "698b1110-e2c5-4696-802a-23e8f39f87cd",
+          "target": "feedback",
+          "context": "tip",
+          "sortOrder": 18
+        }
+      ]
+    }
+  ],
+  "description": {
+    "ar": "تمرين مكتبة: منزلق خلفي.",
+    "en": "Library exercise: Hamstring slide curl."
+  },
+  "instructions": {
+    "ar": "حافظ على عمود فقري محايد وتنفس بثبات وتوقف عند أي ألم حاد.",
+    "en": "Maintain neutral spine, steady breathing, and stop if sharp pain appears."
+  },
+  "reportMetrics": {
+    "primary": [
+      "FORM_SCORE"
+    ],
+    "excluded": [
+      "HOLD_DURATION",
+      "WEIGHT",
+      "VOLUME",
+      "EST_1RM"
+    ]
+  },
+  "hasPositionChecks": true,
+  "_database": {
+    "id": "5bdcde3c-4855-4246-a80b-121dda85e177",
+    "categoryId": "a672c3d3-4449-4f74-bd8e-be73a0035e88",
+    "countingMethodId": "f4d48aef-1606-4f23-8c61-7b4a2546f990",
+    "publishedAt": "2026-04-20T17:26:25.348Z",
+    "createdAt": "2026-04-20T17:26:25.349Z",
+    "updatedAt": "2026-04-20T17:26:34.291Z",
+    "deletedAt": null,
+    "isFeatured": false,
+    "createdBy": null,
+    "updatedBy": null,
+    "repCountingConfig": null,
+    "bilateralConfig": null,
+    "isBilateral": false,
+    "supportsWeight": false,
+    "minWeight": null,
+    "maxWeight": null,
+    "defaultWeight": null,
+    "reportMetrics": {
+      "mode": "reps",
+      "version": 1,
+      "primaryKpi": "repQuality",
+      "secondaryKpis": [
+        "avgFormScore",
+        "avgRom"
+      ]
+    },
+    "media": [],
+    "poseVariants": [
+      {
+        "id": "0204dfe1-fdae-4d6e-9505-13e0641e502b",
+        "sortOrder": 1,
+        "description": null,
+        "trackedJointsConfig": [
+          {
+            "role": "primary",
+            "joint": "left_knee",
+            "upRange": {
+              "pad": {
+                "max": 180,
+                "min": 140
+              },
+              "normal": {
+                "max": 180,
+                "min": 150
+              },
+              "perfect": {
+                "max": 180,
+                "min": 160
+              }
+            },
+            "downRange": {
+              "pad": {
+                "max": 115,
+                "min": 50
+              },
+              "danger": {
+                "max": 40,
+                "min": 0
+              },
+              "normal": {
+                "max": 105,
+                "min": 55
+              },
+              "perfect": {
+                "max": 95,
+                "min": 60
+              },
+              "warning": {
+                "max": 50,
+                "min": 40
+              }
+            },
+            "startPose": {
+              "max": 180,
+              "min": 70
+            },
+            "pairedWith": "right_knee",
+            "stateMessages": {
+              "pad": {
+                "down": {
+                  "ar": "مقبول، لكن المدى الخلفي ما زال متوسطاً",
+                  "en": "Acceptable, but the curl range is still moderate"
+                }
+              },
+              "danger": {
+                "down": {
+                  "ar": "توقف، الشد الخلفي حاد جداً",
+                  "en": "Stop, posterior-chain strain is too sharp"
+                }
+              },
+              "normal": {
+                "up": {
+                  "ar": "جيد، تحكم أكثر في العودة",
+                  "en": "Good, control the return more"
+                },
+                "down": {
+                  "ar": "جيد، اسحب الكعب أقرب أكثر",
+                  "en": "Good, pull the heel in a bit more"
+                }
+              },
+              "perfect": {
+                "up": {
+                  "ar": "ممتاز! فرد منظم للبداية",
+                  "en": "Perfect! Organized reset to the long position"
+                },
+                "down": {
+                  "ar": "ممتاز! ثني ركبة قوي للهمسترنج",
+                  "en": "Perfect! Strong hamstring-driven knee flexion"
+                }
+              },
+              "warning": {
+                "down": {
+                  "ar": "لا تفقد ارتفاع الحوض أثناء السحب",
+                  "en": "Do not lose hip height during the curl"
+                }
+              }
+            },
+            "invertIndicator": true
+          },
+          {
+            "role": "secondary",
+            "joint": "left_hip",
+            "range": {
+              "pad": {
+                "max": 180,
+                "min": 45
+              },
+              "danger": {
+                "max": 35,
+                "min": 0
+              },
+              "normal": {
+                "max": 180,
+                "min": 55
+              },
+              "perfect": {
+                "max": 180,
+                "min": 70
+              },
+              "warning": {
+                "max": 55,
+                "min": 35
+              }
+            },
+            "startPose": {
+              "max": 180,
+              "min": 130
+            },
+            "phaseRanges": {
+              "up": {
+                "normal": {
+                  "max": 178,
+                  "min": 135
+                },
+                "perfect": {
+                  "max": 172,
+                  "min": 145
+                }
+              },
+              "top": {
+                "normal": {
+                  "max": 180,
+                  "min": 155
+                },
+                "perfect": {
+                  "max": 180,
+                  "min": 165
+                }
+              },
+              "down": {
+                "normal": {
+                  "max": 178,
+                  "min": 135
+                },
+                "perfect": {
+                  "max": 172,
+                  "min": 145
+                }
+              },
+              "bottom": {
+                "normal": {
+                  "max": 175,
+                  "min": 128
+                },
+                "perfect": {
+                  "max": 168,
+                  "min": 138
+                }
+              }
+            },
+            "stateMessages": {
+              "perfect": {
+                "ar": "حوض مرتفع وثابت",
+                "en": "Pelvis stays lifted and stable"
+              },
+              "warning": {
+                "ar": "لا تدع الحوض يهبط في الأسفل",
+                "en": "Do not let the pelvis sag down"
+              }
+            },
+            "phaseStateMessages": {
+              "top": {
+                "perfect": {
+                  "ar": "قفل ورك مرتفع وقوي",
+                  "en": "Strong, high hip lockout"
+                },
+                "warning": {
+                  "ar": "ادفع الورك أعلى دون تقوس قطني",
+                  "en": "Drive the hips higher without lumbar arching"
+                }
+              },
+              "bottom": {
+                "perfect": {
+                  "ar": "انثناء ورك مناسب في الانزلاق",
+                  "en": "Appropriate hip flex during the slide"
+                },
+                "warning": {
+                  "ar": "لا تنزل الورك للأرض في منتصف العد",
+                  "en": "Do not drop the hips to the floor mid-rep"
+                }
+              }
+            }
+          }
+        ]
+      }
+    ],
+    "validationWarning": null
+  }
+}

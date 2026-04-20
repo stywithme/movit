@@ -88,13 +88,13 @@
           "role": "primary",
           "startPose": {"min": 120, "max": 180},
           "upRange": {
-            "perfect": {"min": 145, "max": 175},
-            "normal": {"min": 130, "max": 180},
-            "pad": {"min": 120, "max": 180}
+            "perfect": {"min": 150, "max": 180},
+            "normal": {"min": 140, "max": 180},
+            "pad": {"min": 135, "max": 180}
           },
           "downRange": {
-            "perfect": {"min": 80, "max": 105},
-            "normal": {"min": 70, "max": 120},
+            "perfect": {"min": 80, "max": 110},
+            "normal": {"min": 70, "max": 125},
             "pad": {"min": 60, "max": 130},
             "warning": {"min": 40, "max": 60},
             "danger": {"min": 0, "max": 40}
@@ -107,12 +107,28 @@
         {
           "joint": "right_hip",
           "role": "secondary",
-          "startPose": {"min": 120, "max": 180},
+          "startPose": {"min": 100, "max": 180},
           "range": {
-            "perfect": {"min": 150, "max": 175},
-            "normal": {"min": 140, "max": 180},
-            "pad": {"min": 120, "max": 180},
-            "warning": {"min": 100, "max": 120}
+            "perfect": {"min": 120, "max": 180},
+            "normal": {"min": 100, "max": 180},
+            "pad": {"min": 85, "max": 180},
+            "warning": {"min": 70, "max": 100}
+          },
+          "phaseRanges": {
+            "top": { "perfect": { "min": 170, "max": 180 }, "normal": { "min": 162, "max": 180 } },
+            "down": { "perfect": { "min": 120, "max": 165 }, "normal": { "min": 110, "max": 172 } },
+            "bottom": { "perfect": { "min": 135, "max": 175 }, "normal": { "min": 125, "max": 180 } },
+            "up": { "perfect": { "min": 120, "max": 165 }, "normal": { "min": 110, "max": 172 } }
+          },
+          "phaseStateMessages": {
+            "top": {
+              "perfect": {"ar": "وقفة كاملة بين التكرارات", "en": "Full stand between reps"},
+              "warning": {"ar": "أنهِ الوقوف بالكامل", "en": "Finish the stand fully"}
+            },
+            "bottom": {
+              "perfect": {"ar": "ورك خلفي ممتد جيداً في القاع", "en": "Rear hip extends well at the bottom"},
+              "warning": {"ar": "افتح الورك الخلفي أكثر", "en": "Open the rear hip more"}
+            }
           },
           "stateMessages": {
             "perfect": {"ar": "ظهر مستقيم", "en": "Back straight"},

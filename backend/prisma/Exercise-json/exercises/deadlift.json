@@ -135,14 +135,32 @@
         {
           "joint": "left_knee",
           "role": "secondary",
-          "startPose": { "min": 160, "max": 180 },
+          "startPose": { "min": 115, "max": 180 },
           "range": {
-            "perfect": { "min": 170, "max": 180 },
-            "normal": { "min": 165, "max": 180 },
-            "pad": { "min": 160, "max": 180 }
+            "perfect": { "min": 135, "max": 180 },
+            "normal": { "min": 125, "max": 180 },
+            "pad": { "min": 115, "max": 180 },
+            "warning": { "min": 100, "max": 118 }
+          },
+          "phaseRanges": {
+            "top": { "perfect": { "min": 168, "max": 180 }, "normal": { "min": 160, "max": 180 } },
+            "down": { "perfect": { "min": 140, "max": 172 }, "normal": { "min": 132, "max": 178 } },
+            "bottom": { "perfect": { "min": 130, "max": 165 } },
+            "up": { "perfect": { "min": 140, "max": 172 }, "normal": { "min": 132, "max": 178 } }
+          },
+          "phaseStateMessages": {
+            "top": {
+              "perfect": { "ar": "ورك وركبة ممتدان — قفل جيد", "en": "Hip and knee extended — good lockout" },
+              "warning": { "ar": "اضغط لقفل الورك", "en": "Drive hips through to lock out" }
+            },
+            "bottom": {
+              "perfect": { "ar": "ثني ركبة مناسب في القاع", "en": "Appropriate knee bend at the bottom" },
+              "warning": { "ar": "اثنِ الركبة قليلاً إن كانت الساقان شبه مفرودتين", "en": "Add a little knee bend if legs are too straight" }
+            }
           },
           "stateMessages": {
-            "perfect": { "ar": "ممتاز - الركبة ثابتة", "en": "Great - knee is stable" }
+            "perfect": { "ar": "ممتاز - الركبة ثابتة", "en": "Great - knee is stable" },
+            "warning": { "ar": "ثني أكبر في القاع طبيعي — اقفل الركبة في الأعلى", "en": "More knee bend at bottom is OK — lock out at top" }
           }
         }
       ],

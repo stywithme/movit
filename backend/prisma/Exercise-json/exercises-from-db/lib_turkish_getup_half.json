@@ -1,0 +1,564 @@
+{
+  "slug": "lib_turkish_getup_half",
+  "status": "published",
+  "movementPattern": "OTHER",
+  "loadCapability": "EXTERNAL_LOAD_OPTIONAL",
+  "familyKey": "getup_family",
+  "familyOrder": 40,
+  "name": {
+    "ar": "نصف قومة تركية",
+    "en": "Half Turkish get-up"
+  },
+  "category": {
+    "code": "full_body",
+    "name": {
+      "ar": "تمارين الجسم كامل",
+      "en": "Full Body"
+    }
+  },
+  "countingMethod": "up_down",
+  "muscles": [
+    "front_delts",
+    "glutes",
+    "abs_muscle"
+  ],
+  "equipment": [
+    "kettlebell",
+    "mat"
+  ],
+  "tags": [
+    "curated_library",
+    "stability"
+  ],
+  "repCountingConfig": {
+    "reps": 12,
+    "minRepIntervalMs": 1500,
+    "maxRepIntervalMs": 5000
+  },
+  "poseVariants": [
+    {
+      "name": {
+        "ar": "مستلقٍ على الظهر",
+        "en": "Lying on back (side angle)"
+      },
+      "posePosition": "supine_side",
+      "expectedPostures": [
+        "lying_supine"
+      ],
+      "expectedDirections": [
+        "side"
+      ],
+      "expectedRegions": [
+        "full_body"
+      ],
+      "trackedJoints": [
+        {
+          "joint": "left_shoulder",
+          "role": "primary",
+          "startPose": {
+            "max": 180,
+            "min": 65
+          },
+          "stateMessages": {
+            "pad": {
+              "up": {
+                "ar": "مقبول، لكن الذراع ما زالت تتمايل",
+                "en": "Acceptable, but the arm is still drifting"
+              }
+            },
+            "normal": {
+              "up": {
+                "ar": "جيد، حافظ على عمودية الذراع أكثر",
+                "en": "Good, keep the arm more vertical"
+              },
+              "down": {
+                "ar": "جيد، عد ببطء وبترتيب",
+                "en": "Good, return slowly and in order"
+              }
+            },
+            "perfect": {
+              "up": {
+                "ar": "ممتاز! ذراع ثابتة فوق الكتف",
+                "en": "Perfect! Arm stacked over the shoulder"
+              },
+              "down": {
+                "ar": "ممتاز! عودة آمنة للقاعدة",
+                "en": "Perfect! Safe return to the base position"
+              }
+            },
+            "warning": {
+              "up": {
+                "ar": "لا تسرع في المراحل الانتقالية",
+                "en": "Do not rush the transitions"
+              }
+            }
+          },
+          "upRange": {
+            "pad": {
+              "max": 180,
+              "min": 140
+            },
+            "normal": {
+              "max": 180,
+              "min": 150
+            },
+            "perfect": {
+              "max": 180,
+              "min": 160
+            }
+          },
+          "downRange": {
+            "pad": {
+              "max": 126,
+              "min": 62
+            },
+            "normal": {
+              "max": 118,
+              "min": 70
+            },
+            "perfect": {
+              "max": 110,
+              "min": 78
+            },
+            "warning": {
+              "max": 62,
+              "min": 50
+            }
+          }
+        },
+        {
+          "joint": "left_hip",
+          "role": "secondary",
+          "startPose": {
+            "max": 180,
+            "min": 70
+          },
+          "stateMessages": {
+            "perfect": {
+              "ar": "ورك متحكم به في النهوض النصفي",
+              "en": "Hip stays organized through the half get-up"
+            },
+            "warning": {
+              "ar": "لا تفقد الحوض أو الجذع أثناء الانتقال",
+              "en": "Do not lose the pelvis or trunk in the transition"
+            }
+          },
+          "range": {
+            "pad": {
+              "max": 166,
+              "min": 75
+            },
+            "normal": {
+              "max": 158,
+              "min": 85
+            },
+            "perfect": {
+              "max": 150,
+              "min": 95
+            },
+            "warning": {
+              "max": 75,
+              "min": 60
+            }
+          }
+        },
+        {
+          "joint": "spine",
+          "role": "secondary",
+          "startPose": {
+            "max": 30,
+            "min": 0
+          },
+          "stateMessages": {
+            "perfect": {
+              "ar": "جذع منظم أثناء المراحل الانتقالية",
+              "en": "Trunk remains organized through the transitions"
+            },
+            "warning": {
+              "ar": "لا تلتف أو تنهَر في الظهر أثناء الصعود",
+              "en": "Avoid twisting or collapsing through the back on the ascent"
+            }
+          },
+          "range": {
+            "pad": {
+              "max": 30,
+              "min": 0
+            },
+            "normal": {
+              "max": 24,
+              "min": 0
+            },
+            "perfect": {
+              "max": 18,
+              "min": 0
+            },
+            "warning": {
+              "max": 45,
+              "min": 30
+            }
+          }
+        }
+      ],
+      "positionChecks": [
+        {
+          "id": "tgu_half_arm_stack",
+          "type": "vertical_alignment",
+          "landmarks": {
+            "primary": "left_wrist",
+            "secondary": "left_shoulder"
+          },
+          "condition": {
+            "operator": "approximately_equal",
+            "threshold": 0.1
+          },
+          "activePhases": [
+            "up",
+            "down"
+          ],
+          "errorMessage": {
+            "ar": "ابقِ الذراع الحاملة عمودية فوق الكتف أثناء النهوض النصفي.",
+            "en": "Keep the loaded arm stacked vertically over the shoulder during the half get-up."
+          },
+          "severity": "warning",
+          "cooldownMs": 2400,
+          "minErrorFrames": 4
+        }
+      ],
+      "feedbackMessages": {
+        "motivational": [
+          {
+            "ar": "أداء قوي ومنظم",
+            "en": "Strong and controlled work"
+          },
+          {
+            "ar": "حافظ على الشكل قبل السرعة",
+            "en": "Keep form before speed"
+          }
+        ],
+        "tips": [
+          {
+            "ar": "خذ نفساً تحضيرياً قبل كل عدة وازفر مع الجهد.",
+            "en": "Take a setup breath before each rep and exhale on effort."
+          },
+          {
+            "ar": "إذا فقدت التحكم الميكانيكي، قلل المدى أو الحمل.",
+            "en": "If mechanics break down, reduce range or load."
+          }
+        ]
+      },
+      "messageAssignments": [
+        {
+          "messageId": "8d2ae86a-9e1d-4548-9f16-b5e77b5e7abe",
+          "target": "position",
+          "context": "error",
+          "checkId": "tgu_half_arm_stack",
+          "sortOrder": 1
+        },
+        {
+          "messageId": "9c0f0f13-0fad-407b-b459-82962510481a",
+          "target": "joint_state",
+          "context": "perfect",
+          "jointCode": "left_shoulder",
+          "zone": "up",
+          "sortOrder": 2
+        },
+        {
+          "messageId": "025ab43e-e78e-4f86-9cbc-efcd78f016d2",
+          "target": "joint_state",
+          "context": "perfect",
+          "jointCode": "left_shoulder",
+          "zone": "down",
+          "sortOrder": 3
+        },
+        {
+          "messageId": "75879d0e-caa6-41ae-bda2-e18b5603b0d0",
+          "target": "joint_state",
+          "context": "normal",
+          "jointCode": "left_shoulder",
+          "zone": "up",
+          "sortOrder": 4
+        },
+        {
+          "messageId": "9933c796-9ead-40a3-b6d7-92aec2f0ab16",
+          "target": "joint_state",
+          "context": "normal",
+          "jointCode": "left_shoulder",
+          "zone": "down",
+          "sortOrder": 5
+        },
+        {
+          "messageId": "46bbb6ba-0b98-4df6-828e-20702f686541",
+          "target": "joint_state",
+          "context": "pad",
+          "jointCode": "left_shoulder",
+          "zone": "up",
+          "sortOrder": 6
+        },
+        {
+          "messageId": "777f4a3b-5656-4fdc-855a-a94145109104",
+          "target": "joint_state",
+          "context": "warning",
+          "jointCode": "left_shoulder",
+          "zone": "up",
+          "sortOrder": 7
+        },
+        {
+          "messageId": "fafc4f16-6e5d-48b4-b1a5-173ae6d8eb91",
+          "target": "joint_state",
+          "context": "perfect",
+          "jointCode": "left_hip",
+          "sortOrder": 8
+        },
+        {
+          "messageId": "e598621c-e557-4ede-a164-fedb7b676e9a",
+          "target": "joint_state",
+          "context": "warning",
+          "jointCode": "left_hip",
+          "sortOrder": 9
+        },
+        {
+          "messageId": "ce8a158d-2d25-4abe-a283-d0ae2472ad6d",
+          "target": "joint_state",
+          "context": "perfect",
+          "jointCode": "spine",
+          "sortOrder": 10
+        },
+        {
+          "messageId": "3acb7e97-0f52-4674-96d0-ad996f980f54",
+          "target": "joint_state",
+          "context": "warning",
+          "jointCode": "spine",
+          "sortOrder": 11
+        },
+        {
+          "messageId": "fa7d4566-4323-49af-a9a3-f2a7d8684e73",
+          "target": "feedback",
+          "context": "motivational",
+          "sortOrder": 12
+        },
+        {
+          "messageId": "dac8bbb5-bc8b-4c6a-b6a3-fde1a9ae4eeb",
+          "target": "feedback",
+          "context": "motivational",
+          "sortOrder": 13
+        },
+        {
+          "messageId": "70dd49c0-8833-4020-b651-f96119a722d3",
+          "target": "feedback",
+          "context": "tip",
+          "sortOrder": 14
+        },
+        {
+          "messageId": "50c87e72-aa95-4ff2-86ba-38a0e353a3d3",
+          "target": "feedback",
+          "context": "tip",
+          "sortOrder": 15
+        }
+      ]
+    }
+  ],
+  "description": {
+    "ar": "تمرين مكتبة: نصف قومة تركية.",
+    "en": "Library exercise: Half Turkish get-up."
+  },
+  "instructions": {
+    "ar": "حافظ على عمود فقري محايد وتنفس بثبات وتوقف عند أي ألم حاد.",
+    "en": "Maintain neutral spine, steady breathing, and stop if sharp pain appears."
+  },
+  "supportsWeight": true,
+  "reportMetrics": {
+    "primary": [
+      "FORM_SCORE"
+    ],
+    "excluded": [
+      "HOLD_DURATION",
+      "SYMMETRY"
+    ]
+  },
+  "hasPositionChecks": true,
+  "_database": {
+    "id": "799b4a80-29c1-408c-a73d-d20b28c32e0a",
+    "categoryId": "da4f0d15-a7a4-4d8e-abd2-73ee921ef7dc",
+    "countingMethodId": "f4d48aef-1606-4f23-8c61-7b4a2546f990",
+    "publishedAt": "2026-04-20T17:26:27.796Z",
+    "createdAt": "2026-04-20T17:26:27.798Z",
+    "updatedAt": "2026-04-20T17:26:34.485Z",
+    "deletedAt": null,
+    "isFeatured": false,
+    "createdBy": null,
+    "updatedBy": null,
+    "repCountingConfig": null,
+    "bilateralConfig": null,
+    "isBilateral": false,
+    "supportsWeight": true,
+    "minWeight": null,
+    "maxWeight": null,
+    "defaultWeight": null,
+    "reportMetrics": {
+      "mode": "reps",
+      "version": 1,
+      "primaryKpi": "repQuality",
+      "secondaryKpis": [
+        "avgFormScore",
+        "avgRom"
+      ]
+    },
+    "media": [],
+    "poseVariants": [
+      {
+        "id": "9c8a9263-8b01-4b7f-a5a2-846b79b0dde2",
+        "sortOrder": 1,
+        "description": null,
+        "trackedJointsConfig": [
+          {
+            "role": "primary",
+            "joint": "left_shoulder",
+            "upRange": {
+              "pad": {
+                "max": 180,
+                "min": 140
+              },
+              "normal": {
+                "max": 180,
+                "min": 150
+              },
+              "perfect": {
+                "max": 180,
+                "min": 160
+              }
+            },
+            "downRange": {
+              "pad": {
+                "max": 126,
+                "min": 62
+              },
+              "normal": {
+                "max": 118,
+                "min": 70
+              },
+              "perfect": {
+                "max": 110,
+                "min": 78
+              },
+              "warning": {
+                "max": 62,
+                "min": 50
+              }
+            },
+            "startPose": {
+              "max": 180,
+              "min": 65
+            },
+            "stateMessages": {
+              "pad": {
+                "up": {
+                  "ar": "مقبول، لكن الذراع ما زالت تتمايل",
+                  "en": "Acceptable, but the arm is still drifting"
+                }
+              },
+              "normal": {
+                "up": {
+                  "ar": "جيد، حافظ على عمودية الذراع أكثر",
+                  "en": "Good, keep the arm more vertical"
+                },
+                "down": {
+                  "ar": "جيد، عد ببطء وبترتيب",
+                  "en": "Good, return slowly and in order"
+                }
+              },
+              "perfect": {
+                "up": {
+                  "ar": "ممتاز! ذراع ثابتة فوق الكتف",
+                  "en": "Perfect! Arm stacked over the shoulder"
+                },
+                "down": {
+                  "ar": "ممتاز! عودة آمنة للقاعدة",
+                  "en": "Perfect! Safe return to the base position"
+                }
+              },
+              "warning": {
+                "up": {
+                  "ar": "لا تسرع في المراحل الانتقالية",
+                  "en": "Do not rush the transitions"
+                }
+              }
+            }
+          },
+          {
+            "role": "secondary",
+            "joint": "left_hip",
+            "range": {
+              "pad": {
+                "max": 166,
+                "min": 75
+              },
+              "normal": {
+                "max": 158,
+                "min": 85
+              },
+              "perfect": {
+                "max": 150,
+                "min": 95
+              },
+              "warning": {
+                "max": 75,
+                "min": 60
+              }
+            },
+            "startPose": {
+              "max": 180,
+              "min": 70
+            },
+            "stateMessages": {
+              "perfect": {
+                "ar": "ورك متحكم به في النهوض النصفي",
+                "en": "Hip stays organized through the half get-up"
+              },
+              "warning": {
+                "ar": "لا تفقد الحوض أو الجذع أثناء الانتقال",
+                "en": "Do not lose the pelvis or trunk in the transition"
+              }
+            }
+          },
+          {
+            "role": "secondary",
+            "joint": "spine",
+            "range": {
+              "pad": {
+                "max": 30,
+                "min": 0
+              },
+              "normal": {
+                "max": 24,
+                "min": 0
+              },
+              "perfect": {
+                "max": 18,
+                "min": 0
+              },
+              "warning": {
+                "max": 45,
+                "min": 30
+              }
+            },
+            "startPose": {
+              "max": 30,
+              "min": 0
+            },
+            "stateMessages": {
+              "perfect": {
+                "ar": "جذع منظم أثناء المراحل الانتقالية",
+                "en": "Trunk remains organized through the transitions"
+              },
+              "warning": {
+                "ar": "لا تلتف أو تنهَر في الظهر أثناء الصعود",
+                "en": "Avoid twisting or collapsing through the back on the ascent"
+              }
+            }
+          }
+        ]
+      }
+    ],
+    "validationWarning": null
+  }
+}

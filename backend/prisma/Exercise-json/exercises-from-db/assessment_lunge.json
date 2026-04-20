@@ -1,0 +1,634 @@
+{
+  "slug": "assessment_lunge",
+  "status": "published",
+  "movementPattern": "MOBILITY_DRILL",
+  "loadCapability": "BODYWEIGHT_ONLY",
+  "familyKey": "lunge_pattern_family",
+  "familyOrder": 10,
+  "name": {
+    "ar": "الطعن (تقييم)",
+    "en": "Lunge (Assessment)"
+  },
+  "category": {
+    "code": "assessment",
+    "name": {
+      "ar": "تقييم",
+      "en": "Assessment"
+    }
+  },
+  "countingMethod": "up_down",
+  "muscles": [
+    "quadriceps",
+    "glutes",
+    "hamstrings",
+    "hip_flexors",
+    "abs_muscle"
+  ],
+  "equipment": [
+    "bodyweight"
+  ],
+  "tags": [
+    "tag_assessment",
+    "unilateral",
+    "balance",
+    "bilateral"
+  ],
+  "repCountingConfig": {
+    "reps": 6,
+    "minRepIntervalMs": 2500,
+    "maxRepIntervalMs": 8000
+  },
+  "poseVariants": [
+    {
+      "name": {
+        "ar": "زاوية جانبية",
+        "en": "Side View"
+      },
+      "posePosition": "standing_side",
+      "expectedPostures": [
+        "standing"
+      ],
+      "expectedDirections": [
+        "side"
+      ],
+      "expectedRegions": [
+        "full_body"
+      ],
+      "trackedJoints": [
+        {
+          "joint": "right_knee",
+          "role": "primary",
+          "startPose": {
+            "max": 180,
+            "min": 120
+          },
+          "stateMessages": {
+            "normal": {
+              "down": {
+                "ar": "جيد",
+                "en": "Good"
+              }
+            },
+            "perfect": {
+              "up": {
+                "ar": "ممتاز",
+                "en": "Perfect"
+              },
+              "down": {
+                "ar": "عمق مثالي",
+                "en": "Great depth"
+              }
+            }
+          },
+          "upRange": {
+            "pad": {
+              "max": 180,
+              "min": 135
+            },
+            "normal": {
+              "max": 180,
+              "min": 140
+            },
+            "perfect": {
+              "max": 180,
+              "min": 150
+            }
+          },
+          "downRange": {
+            "pad": {
+              "max": 130,
+              "min": 60
+            },
+            "danger": {
+              "max": 40,
+              "min": 0
+            },
+            "normal": {
+              "max": 125,
+              "min": 70
+            },
+            "perfect": {
+              "max": 110,
+              "min": 80
+            },
+            "warning": {
+              "max": 60,
+              "min": 40
+            }
+          }
+        },
+        {
+          "joint": "right_hip",
+          "role": "secondary",
+          "startPose": {
+            "max": 180,
+            "min": 100
+          },
+          "stateMessages": {
+            "perfect": {
+              "ar": "ظهر مستقيم",
+              "en": "Back straight"
+            },
+            "warning": {
+              "ar": "حافظ على استقامة جذعك",
+              "en": "Keep your torso upright"
+            }
+          },
+          "range": {
+            "pad": {
+              "max": 180,
+              "min": 85
+            },
+            "normal": {
+              "max": 180,
+              "min": 100
+            },
+            "perfect": {
+              "max": 180,
+              "min": 120
+            },
+            "warning": {
+              "max": 100,
+              "min": 70
+            }
+          },
+          "phaseRanges": {
+            "up": {
+              "normal": {
+                "max": 172,
+                "min": 110
+              },
+              "perfect": {
+                "max": 165,
+                "min": 120
+              }
+            },
+            "top": {
+              "normal": {
+                "max": 180,
+                "min": 162
+              },
+              "perfect": {
+                "max": 180,
+                "min": 170
+              }
+            },
+            "down": {
+              "normal": {
+                "max": 172,
+                "min": 110
+              },
+              "perfect": {
+                "max": 165,
+                "min": 120
+              }
+            },
+            "bottom": {
+              "normal": {
+                "max": 180,
+                "min": 125
+              },
+              "perfect": {
+                "max": 175,
+                "min": 135
+              }
+            }
+          },
+          "phaseStateMessages": {
+            "top": {
+              "perfect": {
+                "ar": "وقفة كاملة بين التكرارات",
+                "en": "Full stand between reps"
+              },
+              "warning": {
+                "ar": "أنهِ الوقوف بالكامل",
+                "en": "Finish the stand fully"
+              }
+            },
+            "bottom": {
+              "perfect": {
+                "ar": "ورك خلفي ممتد جيداً في القاع",
+                "en": "Rear hip extends well at the bottom"
+              },
+              "warning": {
+                "ar": "افتح الورك الخلفي أكثر",
+                "en": "Open the rear hip more"
+              }
+            }
+          }
+        }
+      ],
+      "positionChecks": [
+        {
+          "id": "trunk_lean_forward",
+          "type": "vertical_alignment",
+          "landmarks": {
+            "primary": "right_shoulder",
+            "secondary": "right_hip"
+          },
+          "condition": {
+            "operator": "approximately_equal",
+            "threshold": 0.12
+          },
+          "activePhases": [
+            "down",
+            "bottom"
+          ],
+          "errorMessage": {
+            "ar": "ميل الجذع للأمام",
+            "en": "Forward trunk lean"
+          },
+          "severity": "warning",
+          "cooldownMs": 3000,
+          "minErrorFrames": 4
+        },
+        {
+          "id": "wobble_detected",
+          "type": "sideways_comparison",
+          "landmarks": {
+            "primary": "left_hip",
+            "secondary": "right_hip"
+          },
+          "condition": {
+            "operator": "approximately_equal",
+            "threshold": 0.06
+          },
+          "activePhases": [
+            "down",
+            "bottom",
+            "up"
+          ],
+          "errorMessage": {
+            "ar": "اهتزاز ملحوظ أثناء الحركة",
+            "en": "Noticeable wobble during movement"
+          },
+          "severity": "tip",
+          "cooldownMs": 4000,
+          "minErrorFrames": 5
+        }
+      ],
+      "feedbackMessages": {
+        "motivational": [
+          {
+            "ar": "توازن رائع",
+            "en": "Great balance"
+          },
+          {
+            "ar": "ممتاز",
+            "en": "Excellent"
+          }
+        ],
+        "tips": [
+          {
+            "ar": "خذ وقتك في كل خطوة",
+            "en": "Take your time with each step"
+          },
+          {
+            "ar": "انظر للأمام لتحسين التوازن",
+            "en": "Look forward to improve balance"
+          }
+        ]
+      },
+      "messageAssignments": [
+        {
+          "messageId": "739fee4a-c1b1-4b35-ad7e-0557963eb79f",
+          "target": "position",
+          "context": "error",
+          "checkId": "trunk_lean_forward",
+          "sortOrder": 1
+        },
+        {
+          "messageId": "26876a62-096e-4e60-a496-02610616c9dd",
+          "target": "position",
+          "context": "error",
+          "checkId": "wobble_detected",
+          "sortOrder": 2
+        },
+        {
+          "messageId": "23f39544-93ee-42a5-8ce1-ee8173248119",
+          "target": "joint_state",
+          "context": "perfect",
+          "jointCode": "right_knee",
+          "zone": "up",
+          "sortOrder": 3
+        },
+        {
+          "messageId": "e2dbee8d-5677-4901-9564-adf926a39b83",
+          "target": "joint_state",
+          "context": "perfect",
+          "jointCode": "right_knee",
+          "zone": "down",
+          "sortOrder": 4
+        },
+        {
+          "messageId": "330b5fbf-d183-4256-b010-e49826b70838",
+          "target": "joint_state",
+          "context": "normal",
+          "jointCode": "right_knee",
+          "zone": "down",
+          "sortOrder": 5
+        },
+        {
+          "messageId": "89a87376-b53c-4219-b4d0-e3fbfcf7c4fe",
+          "target": "joint_state",
+          "context": "perfect",
+          "jointCode": "right_hip",
+          "sortOrder": 6
+        },
+        {
+          "messageId": "257aeb35-7c0f-490f-a3e4-24364c04b063",
+          "target": "joint_state",
+          "context": "warning",
+          "jointCode": "right_hip",
+          "sortOrder": 7
+        },
+        {
+          "messageId": "db20c26f-1d6b-46ed-9210-89487c99964a",
+          "target": "joint_state_phase",
+          "context": "top:perfect",
+          "jointCode": "right_hip",
+          "sortOrder": 8
+        },
+        {
+          "messageId": "51384a1a-e100-4e07-b875-7a26aeccf228",
+          "target": "joint_state_phase",
+          "context": "top:warning",
+          "jointCode": "right_hip",
+          "sortOrder": 9
+        },
+        {
+          "messageId": "e579b8a8-8713-4cd7-b1c8-410a0d98a674",
+          "target": "joint_state_phase",
+          "context": "bottom:perfect",
+          "jointCode": "right_hip",
+          "sortOrder": 10
+        },
+        {
+          "messageId": "3a885c85-6595-42b6-9444-f92c4a283ce5",
+          "target": "joint_state_phase",
+          "context": "bottom:warning",
+          "jointCode": "right_hip",
+          "sortOrder": 11
+        },
+        {
+          "messageId": "d0b75d61-388d-46cc-a47b-d9bf601d5bb4",
+          "target": "feedback",
+          "context": "motivational",
+          "sortOrder": 12
+        },
+        {
+          "messageId": "2b935702-d6c2-4a36-94d0-21f3b0d9df3e",
+          "target": "feedback",
+          "context": "motivational",
+          "sortOrder": 13
+        },
+        {
+          "messageId": "7827b9ae-aba7-4770-8898-af379ebfca15",
+          "target": "feedback",
+          "context": "tip",
+          "sortOrder": 14
+        },
+        {
+          "messageId": "66831cd6-c807-427a-8239-c98e36fabcfe",
+          "target": "feedback",
+          "context": "tip",
+          "sortOrder": 15
+        }
+      ],
+      "cameraPosition": "side_view"
+    }
+  ],
+  "description": {
+    "ar": "حركة تقييمية لفحص تماثل الساقين والتوازن الديناميكي ومرونة الورك",
+    "en": "Assessment movement to evaluate leg symmetry, dynamic balance, and hip mobility"
+  },
+  "instructions": {
+    "ar": "قف بشكل مستقيم، اخطو للأمام واثني ركبتك ببطء ثم عد للوضع الأصلي، بدّل بين الرجلين",
+    "en": "Stand straight, step forward and slowly bend your knee, return and alternate legs"
+  },
+  "reportMetrics": {
+    "primary": [
+      "FORM_SCORE"
+    ],
+    "excluded": [
+      "HOLD_DURATION",
+      "WEIGHT",
+      "VOLUME",
+      "EST_1RM"
+    ]
+  },
+  "isBilateral": true,
+  "bilateralConfig": {
+    "switchEvery": 1,
+    "startSide": "right"
+  },
+  "hasPositionChecks": true,
+  "_database": {
+    "id": "a0db628a-a44d-449d-8182-4b6577dea2b3",
+    "categoryId": "bd9b85b7-61fb-4d2a-bfc9-17a0454d1dba",
+    "countingMethodId": "f4d48aef-1606-4f23-8c61-7b4a2546f990",
+    "publishedAt": "2026-04-20T17:26:22.193Z",
+    "createdAt": "2026-04-20T17:26:22.194Z",
+    "updatedAt": "2026-04-20T17:26:34.077Z",
+    "deletedAt": null,
+    "isFeatured": false,
+    "createdBy": null,
+    "updatedBy": null,
+    "repCountingConfig": {
+      "reps": 6,
+      "maxRepIntervalMs": 8000,
+      "minRepIntervalMs": 2500
+    },
+    "bilateralConfig": {
+      "startSide": "right",
+      "switchEvery": 1
+    },
+    "isBilateral": true,
+    "supportsWeight": false,
+    "minWeight": null,
+    "maxWeight": null,
+    "defaultWeight": null,
+    "reportMetrics": {
+      "mode": "reps",
+      "version": 1,
+      "primaryKpi": "repQuality",
+      "secondaryKpis": [
+        "avgFormScore",
+        "avgRom"
+      ]
+    },
+    "media": [],
+    "poseVariants": [
+      {
+        "id": "e9754c94-dbfe-4eb2-9c9b-214b1f1f7ab1",
+        "sortOrder": 1,
+        "description": null,
+        "trackedJointsConfig": [
+          {
+            "role": "primary",
+            "joint": "right_knee",
+            "upRange": {
+              "pad": {
+                "max": 180,
+                "min": 135
+              },
+              "normal": {
+                "max": 180,
+                "min": 140
+              },
+              "perfect": {
+                "max": 180,
+                "min": 150
+              }
+            },
+            "downRange": {
+              "pad": {
+                "max": 130,
+                "min": 60
+              },
+              "danger": {
+                "max": 40,
+                "min": 0
+              },
+              "normal": {
+                "max": 125,
+                "min": 70
+              },
+              "perfect": {
+                "max": 110,
+                "min": 80
+              },
+              "warning": {
+                "max": 60,
+                "min": 40
+              }
+            },
+            "startPose": {
+              "max": 180,
+              "min": 120
+            },
+            "stateMessages": {
+              "normal": {
+                "down": {
+                  "ar": "جيد",
+                  "en": "Good"
+                }
+              },
+              "perfect": {
+                "up": {
+                  "ar": "ممتاز",
+                  "en": "Perfect"
+                },
+                "down": {
+                  "ar": "عمق مثالي",
+                  "en": "Great depth"
+                }
+              }
+            }
+          },
+          {
+            "role": "secondary",
+            "joint": "right_hip",
+            "range": {
+              "pad": {
+                "max": 180,
+                "min": 85
+              },
+              "normal": {
+                "max": 180,
+                "min": 100
+              },
+              "perfect": {
+                "max": 180,
+                "min": 120
+              },
+              "warning": {
+                "max": 100,
+                "min": 70
+              }
+            },
+            "startPose": {
+              "max": 180,
+              "min": 100
+            },
+            "phaseRanges": {
+              "up": {
+                "normal": {
+                  "max": 172,
+                  "min": 110
+                },
+                "perfect": {
+                  "max": 165,
+                  "min": 120
+                }
+              },
+              "top": {
+                "normal": {
+                  "max": 180,
+                  "min": 162
+                },
+                "perfect": {
+                  "max": 180,
+                  "min": 170
+                }
+              },
+              "down": {
+                "normal": {
+                  "max": 172,
+                  "min": 110
+                },
+                "perfect": {
+                  "max": 165,
+                  "min": 120
+                }
+              },
+              "bottom": {
+                "normal": {
+                  "max": 180,
+                  "min": 125
+                },
+                "perfect": {
+                  "max": 175,
+                  "min": 135
+                }
+              }
+            },
+            "stateMessages": {
+              "perfect": {
+                "ar": "ظهر مستقيم",
+                "en": "Back straight"
+              },
+              "warning": {
+                "ar": "حافظ على استقامة جذعك",
+                "en": "Keep your torso upright"
+              }
+            },
+            "phaseStateMessages": {
+              "top": {
+                "perfect": {
+                  "ar": "وقفة كاملة بين التكرارات",
+                  "en": "Full stand between reps"
+                },
+                "warning": {
+                  "ar": "أنهِ الوقوف بالكامل",
+                  "en": "Finish the stand fully"
+                }
+              },
+              "bottom": {
+                "perfect": {
+                  "ar": "ورك خلفي ممتد جيداً في القاع",
+                  "en": "Rear hip extends well at the bottom"
+                },
+                "warning": {
+                  "ar": "افتح الورك الخلفي أكثر",
+                  "en": "Open the rear hip more"
+                }
+              }
+            }
+          }
+        ]
+      }
+    ],
+    "validationWarning": null
+  }
+}

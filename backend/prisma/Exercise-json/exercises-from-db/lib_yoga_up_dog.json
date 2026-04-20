@@ -1,0 +1,375 @@
+{
+  "slug": "lib_yoga_up_dog",
+  "status": "published",
+  "movementPattern": "MOBILITY_DRILL",
+  "loadCapability": "BODYWEIGHT_ONLY",
+  "familyKey": "spine_mobility_family",
+  "familyOrder": 14,
+  "name": {
+    "ar": "كلب صاعد",
+    "en": "Upward dog"
+  },
+  "category": {
+    "code": "back",
+    "name": {
+      "ar": "تمارين الظهر",
+      "en": "Back"
+    }
+  },
+  "countingMethod": "hold",
+  "muscles": [
+    "abs_muscle",
+    "chest_muscle"
+  ],
+  "equipment": [
+    "bodyweight",
+    "mat"
+  ],
+  "tags": [
+    "curated_library",
+    "mobility"
+  ],
+  "repCountingConfig": {
+    "duration": 30,
+    "gracePeriodMs": 2500
+  },
+  "poseVariants": [
+    {
+      "name": {
+        "ar": "مستلقٍ على الوجه",
+        "en": "Lying face down (side angle)"
+      },
+      "posePosition": "prone_side",
+      "expectedPostures": [
+        "lying_prone"
+      ],
+      "expectedDirections": [
+        "side"
+      ],
+      "expectedRegions": [
+        "full_body"
+      ],
+      "trackedJoints": [
+        {
+          "joint": "spine",
+          "role": "primary",
+          "startPose": {
+            "max": 80,
+            "min": 0
+          },
+          "stateMessages": {
+            "perfect": {
+              "ar": "وضعية يوغا مفتوحة وثابتة",
+              "en": "Open, stable yoga shape"
+            },
+            "warning": {
+              "ar": "لا تفرط في التمدد القطني",
+              "en": "Avoid excessive lumbar extension"
+            }
+          },
+          "range": {
+            "pad": {
+              "max": 70,
+              "min": 0
+            },
+            "normal": {
+              "max": 55,
+              "min": 0
+            },
+            "perfect": {
+              "max": 45,
+              "min": 5
+            },
+            "warning": {
+              "max": 85,
+              "min": 65
+            }
+          }
+        },
+        {
+          "joint": "left_shoulder",
+          "role": "secondary",
+          "startPose": {
+            "max": 180,
+            "min": 80
+          },
+          "stateMessages": {
+            "perfect": {
+              "ar": "كتفان طويلان ومنفتحان",
+              "en": "Shoulders long and open"
+            },
+            "warning": {
+              "ar": "لا تترك الكتفين يطفوان نحو الأذنين",
+              "en": "Do not let shoulders shrug to the ears"
+            }
+          },
+          "range": {
+            "pad": {
+              "max": 180,
+              "min": 100
+            },
+            "normal": {
+              "max": 180,
+              "min": 115
+            },
+            "perfect": {
+              "max": 180,
+              "min": 130
+            },
+            "warning": {
+              "max": 100,
+              "min": 80
+            }
+          }
+        }
+      ],
+      "positionChecks": [
+        {
+          "id": "yoga_long_breath",
+          "type": "vertical_alignment",
+          "landmarks": {
+            "primary": "left_shoulder",
+            "secondary": "left_hip"
+          },
+          "condition": {
+            "operator": "approximately_equal",
+            "threshold": 0.2
+          },
+          "activePhases": [
+            "all"
+          ],
+          "errorMessage": {
+            "ar": "تنفس بعمق وحافظ على وضع متمدد دون اندفاع.",
+            "en": "Breathe deeply and keep the shape long without forcing."
+          },
+          "severity": "tip",
+          "cooldownMs": 3500,
+          "minErrorFrames": 6
+        }
+      ],
+      "feedbackMessages": {
+        "motivational": [
+          {
+            "ar": "مدى حركة جيد وتحكم أفضل",
+            "en": "Good range and better control"
+          },
+          {
+            "ar": "تحرك بسلاسة داخل نطاق مريح",
+            "en": "Move smoothly inside a comfortable range"
+          }
+        ],
+        "tips": [
+          {
+            "ar": "ابقِ الحركة نظيفة وهادئة بدون ارتداد.",
+            "en": "Keep the motion smooth and bounce-free."
+          },
+          {
+            "ar": "أي ألم حاد يعني تقليل المدى فوراً.",
+            "en": "Any sharp pain means reduce range immediately."
+          }
+        ]
+      },
+      "messageAssignments": [
+        {
+          "messageId": "4b048a1c-2ec9-4d68-9f00-e8547f3ae310",
+          "target": "position",
+          "context": "error",
+          "checkId": "yoga_long_breath",
+          "sortOrder": 1
+        },
+        {
+          "messageId": "b8f4bd13-f39b-445c-b81d-fe4112c5d8fe",
+          "target": "joint_state",
+          "context": "perfect",
+          "jointCode": "spine",
+          "sortOrder": 2
+        },
+        {
+          "messageId": "b52d5a51-2f3a-400c-a2d0-43e234f2e2d2",
+          "target": "joint_state",
+          "context": "warning",
+          "jointCode": "spine",
+          "sortOrder": 3
+        },
+        {
+          "messageId": "89558b0d-e2f3-42c9-9389-17a46b2a9f1c",
+          "target": "joint_state",
+          "context": "perfect",
+          "jointCode": "left_shoulder",
+          "sortOrder": 4
+        },
+        {
+          "messageId": "2bb26ece-b47f-44d0-ac29-9e5132d793f3",
+          "target": "joint_state",
+          "context": "warning",
+          "jointCode": "left_shoulder",
+          "sortOrder": 5
+        },
+        {
+          "messageId": "54a7ca65-0f81-4fc7-aff8-72fc983e4acf",
+          "target": "feedback",
+          "context": "motivational",
+          "sortOrder": 6
+        },
+        {
+          "messageId": "4abcd773-e544-44b2-a9d2-28e53c18b207",
+          "target": "feedback",
+          "context": "motivational",
+          "sortOrder": 7
+        },
+        {
+          "messageId": "8b9c562d-fe52-49b2-af18-61209d497545",
+          "target": "feedback",
+          "context": "tip",
+          "sortOrder": 8
+        },
+        {
+          "messageId": "a165966d-e182-4502-ba6b-c009b1f1bf43",
+          "target": "feedback",
+          "context": "tip",
+          "sortOrder": 9
+        }
+      ]
+    }
+  ],
+  "description": {
+    "ar": "تمرين مكتبة: كلب صاعد.",
+    "en": "Library exercise: Upward dog."
+  },
+  "instructions": {
+    "ar": "حافظ على عمود فقري محايد وتنفس بثبات وتوقف عند أي ألم حاد.",
+    "en": "Maintain neutral spine, steady breathing, and stop if sharp pain appears."
+  },
+  "reportMetrics": {
+    "primary": [
+      "FORM_SCORE"
+    ],
+    "excluded": [
+      "REP_COUNT",
+      "TEMPO",
+      "TUT",
+      "ROM",
+      "FORM_CONSISTENCY",
+      "FATIGUE_INDEX",
+      "VELOCITY",
+      "VELOCITY_LOSS",
+      "TEMPO_CONSISTENCY",
+      "WEIGHT",
+      "VOLUME",
+      "EST_1RM",
+      "SYMMETRY"
+    ]
+  },
+  "hasPositionChecks": true,
+  "_database": {
+    "id": "fba74bac-9a49-4378-adec-c4518dda6d5d",
+    "categoryId": "d90cee55-225e-4127-9fdc-062a8a09522e",
+    "countingMethodId": "7ae86596-4b4b-400b-afa1-c7c0b6ba4fc9",
+    "publishedAt": "2026-04-20T17:26:26.308Z",
+    "createdAt": "2026-04-20T17:26:26.310Z",
+    "updatedAt": "2026-04-20T17:26:34.376Z",
+    "deletedAt": null,
+    "isFeatured": false,
+    "createdBy": null,
+    "updatedBy": null,
+    "repCountingConfig": null,
+    "bilateralConfig": null,
+    "isBilateral": false,
+    "supportsWeight": false,
+    "minWeight": null,
+    "maxWeight": null,
+    "defaultWeight": null,
+    "reportMetrics": {
+      "mode": "duration",
+      "version": 1,
+      "primaryKpi": "timeUnderTension",
+      "secondaryKpis": [
+        "avgFormScore",
+        "avgRom"
+      ]
+    },
+    "media": [],
+    "poseVariants": [
+      {
+        "id": "1d33585d-b24c-4f29-bf42-8ac82d9f4fb7",
+        "sortOrder": 1,
+        "description": null,
+        "trackedJointsConfig": [
+          {
+            "role": "primary",
+            "joint": "spine",
+            "range": {
+              "pad": {
+                "max": 70,
+                "min": 0
+              },
+              "normal": {
+                "max": 55,
+                "min": 0
+              },
+              "perfect": {
+                "max": 45,
+                "min": 5
+              },
+              "warning": {
+                "max": 85,
+                "min": 65
+              }
+            },
+            "startPose": {
+              "max": 80,
+              "min": 0
+            },
+            "stateMessages": {
+              "perfect": {
+                "ar": "وضعية يوغا مفتوحة وثابتة",
+                "en": "Open, stable yoga shape"
+              },
+              "warning": {
+                "ar": "لا تفرط في التمدد القطني",
+                "en": "Avoid excessive lumbar extension"
+              }
+            }
+          },
+          {
+            "role": "secondary",
+            "joint": "left_shoulder",
+            "range": {
+              "pad": {
+                "max": 180,
+                "min": 100
+              },
+              "normal": {
+                "max": 180,
+                "min": 115
+              },
+              "perfect": {
+                "max": 180,
+                "min": 130
+              },
+              "warning": {
+                "max": 100,
+                "min": 80
+              }
+            },
+            "startPose": {
+              "max": 180,
+              "min": 80
+            },
+            "stateMessages": {
+              "perfect": {
+                "ar": "كتفان طويلان ومنفتحان",
+                "en": "Shoulders long and open"
+              },
+              "warning": {
+                "ar": "لا تترك الكتفين يطفوان نحو الأذنين",
+                "en": "Do not let shoulders shrug to the ears"
+              }
+            }
+          }
+        ]
+      }
+    ],
+    "validationWarning": null
+  }
+}

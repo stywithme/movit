@@ -33,7 +33,7 @@
         "ar": "زاوية جانبية - الذراع اليمين",
         "en": "Side View - Right Arm"
       },
-      "cameraPosition": "front_view",
+      "cameraPosition": "side_view",
       "expectedFacingDirection": "facing_camera",
       "positionChecks": [
         {

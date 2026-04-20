@@ -1,0 +1,352 @@
+{
+  "slug": "lib_z_press",
+  "status": "published",
+  "movementPattern": "PUSH_VERTICAL",
+  "loadCapability": "EXTERNAL_LOAD_OPTIONAL",
+  "familyKey": "push_vertical_family",
+  "familyOrder": 46,
+  "name": {
+    "ar": "ضغط Z",
+    "en": "Z-press"
+  },
+  "category": {
+    "code": "shoulders",
+    "name": {
+      "ar": "تمارين الأكتاف",
+      "en": "Shoulders"
+    }
+  },
+  "countingMethod": "up_down",
+  "muscles": [
+    "front_delts",
+    "triceps"
+  ],
+  "equipment": [
+    "dumbbell",
+    "mat"
+  ],
+  "tags": [
+    "curated_library",
+    "strength"
+  ],
+  "repCountingConfig": {
+    "reps": 12,
+    "minRepIntervalMs": 1500,
+    "maxRepIntervalMs": 5000
+  },
+  "poseVariants": [
+    {
+      "name": {
+        "ar": "جالس - جانبي",
+        "en": "Seated side"
+      },
+      "posePosition": "sitting_side",
+      "expectedPostures": [
+        "sitting"
+      ],
+      "expectedDirections": [
+        "side"
+      ],
+      "expectedRegions": [
+        "full_body"
+      ],
+      "trackedJoints": [
+        {
+          "joint": "left_elbow",
+          "role": "primary",
+          "startPose": {
+            "max": 115,
+            "min": 70
+          },
+          "stateMessages": {
+            "normal": {
+              "up": {
+                "ar": "جيد، اضغط أكثر للأعلى",
+                "en": "Good, press higher"
+              },
+              "down": {
+                "ar": "جيد، لا تترك المرفق ينزل أكثر",
+                "en": "Good, do not let the elbow drop further"
+              }
+            },
+            "perfect": {
+              "up": {
+                "ar": "ممتاز! تمدد علوي كامل",
+                "en": "Perfect! Full overhead lockout"
+              },
+              "down": {
+                "ar": "ممتاز! استقبال نظيف عند الكتف",
+                "en": "Perfect! Clean catch at the shoulder"
+              }
+            }
+          },
+          "pairedWith": "right_elbow",
+          "upRange": {
+            "pad": {
+              "max": 180,
+              "min": 150
+            },
+            "normal": {
+              "max": 180,
+              "min": 158
+            },
+            "perfect": {
+              "max": 180,
+              "min": 165
+            }
+          },
+          "downRange": {
+            "pad": {
+              "max": 115,
+              "min": 66
+            },
+            "normal": {
+              "max": 108,
+              "min": 74
+            },
+            "perfect": {
+              "max": 100,
+              "min": 82
+            },
+            "warning": {
+              "max": 66,
+              "min": 54
+            }
+          }
+        }
+      ],
+      "positionChecks": [
+        {
+          "id": "zpress_tall_seated",
+          "type": "vertical_alignment",
+          "landmarks": {
+            "primary": "left_shoulder",
+            "secondary": "left_hip"
+          },
+          "condition": {
+            "operator": "approximately_equal",
+            "threshold": 0.1
+          },
+          "activePhases": [
+            "up",
+            "down"
+          ],
+          "errorMessage": {
+            "ar": "اجلس مرفوعاً مع جذع منظم أثناء الضغط فوق الرأس.",
+            "en": "Sit tall with an organized trunk during the overhead press."
+          },
+          "severity": "warning",
+          "cooldownMs": 2400,
+          "minErrorFrames": 4
+        }
+      ],
+      "feedbackMessages": {
+        "motivational": [
+          {
+            "ar": "أداء قوي ومنظم",
+            "en": "Strong and controlled work"
+          },
+          {
+            "ar": "حافظ على الشكل قبل السرعة",
+            "en": "Keep form before speed"
+          }
+        ],
+        "tips": [
+          {
+            "ar": "خذ نفساً تحضيرياً قبل كل عدة وازفر مع الجهد.",
+            "en": "Take a setup breath before each rep and exhale on effort."
+          },
+          {
+            "ar": "إذا فقدت التحكم الميكانيكي، قلل المدى أو الحمل.",
+            "en": "If mechanics break down, reduce range or load."
+          }
+        ]
+      },
+      "messageAssignments": [
+        {
+          "messageId": "5163792f-0853-46ab-bec1-e95cd72bb9e4",
+          "target": "position",
+          "context": "error",
+          "checkId": "zpress_tall_seated",
+          "sortOrder": 1
+        },
+        {
+          "messageId": "c75df91a-3c1b-4cb7-a0b7-197f21a368c5",
+          "target": "joint_state",
+          "context": "perfect",
+          "jointCode": "left_elbow",
+          "zone": "up",
+          "sortOrder": 2
+        },
+        {
+          "messageId": "971f5997-274a-4cc0-ad8f-beaea19273e5",
+          "target": "joint_state",
+          "context": "perfect",
+          "jointCode": "left_elbow",
+          "zone": "down",
+          "sortOrder": 3
+        },
+        {
+          "messageId": "b552622b-7232-4079-847d-bab896268612",
+          "target": "joint_state",
+          "context": "normal",
+          "jointCode": "left_elbow",
+          "zone": "up",
+          "sortOrder": 4
+        },
+        {
+          "messageId": "e9fa28bb-cb16-4115-857b-9aa318980164",
+          "target": "joint_state",
+          "context": "normal",
+          "jointCode": "left_elbow",
+          "zone": "down",
+          "sortOrder": 5
+        },
+        {
+          "messageId": "658f0017-7ba9-484e-abe8-23b8f935d410",
+          "target": "feedback",
+          "context": "motivational",
+          "sortOrder": 6
+        },
+        {
+          "messageId": "1891fb58-2ec4-4eb0-91e0-4f12fe8082fa",
+          "target": "feedback",
+          "context": "motivational",
+          "sortOrder": 7
+        },
+        {
+          "messageId": "92543892-25d5-4c48-bdae-fc77bce0f170",
+          "target": "feedback",
+          "context": "tip",
+          "sortOrder": 8
+        },
+        {
+          "messageId": "566c205d-654a-40b0-8b66-a4d1873e7f62",
+          "target": "feedback",
+          "context": "tip",
+          "sortOrder": 9
+        }
+      ]
+    }
+  ],
+  "description": {
+    "ar": "تمرين مكتبة: ضغط Z.",
+    "en": "Library exercise: Z-press."
+  },
+  "instructions": {
+    "ar": "حافظ على عمود فقري محايد وتنفس بثبات وتوقف عند أي ألم حاد.",
+    "en": "Maintain neutral spine, steady breathing, and stop if sharp pain appears."
+  },
+  "supportsWeight": true,
+  "reportMetrics": {
+    "primary": [
+      "FORM_SCORE"
+    ],
+    "excluded": [
+      "HOLD_DURATION"
+    ]
+  },
+  "hasPositionChecks": true,
+  "_database": {
+    "id": "5dffc449-5355-48e9-809d-ecca4acb101b",
+    "categoryId": "78daff70-6564-41cd-b768-462735416089",
+    "countingMethodId": "f4d48aef-1606-4f23-8c61-7b4a2546f990",
+    "publishedAt": "2026-04-20T17:26:27.552Z",
+    "createdAt": "2026-04-20T17:26:27.554Z",
+    "updatedAt": "2026-04-20T17:26:34.474Z",
+    "deletedAt": null,
+    "isFeatured": false,
+    "createdBy": null,
+    "updatedBy": null,
+    "repCountingConfig": null,
+    "bilateralConfig": null,
+    "isBilateral": false,
+    "supportsWeight": true,
+    "minWeight": null,
+    "maxWeight": null,
+    "defaultWeight": null,
+    "reportMetrics": {
+      "mode": "reps",
+      "version": 1,
+      "primaryKpi": "repQuality",
+      "secondaryKpis": [
+        "avgFormScore",
+        "avgRom"
+      ]
+    },
+    "media": [],
+    "poseVariants": [
+      {
+        "id": "0a1a0fa8-cc68-4555-9d22-1bc7793515dd",
+        "sortOrder": 1,
+        "description": null,
+        "trackedJointsConfig": [
+          {
+            "role": "primary",
+            "joint": "left_elbow",
+            "upRange": {
+              "pad": {
+                "max": 180,
+                "min": 150
+              },
+              "normal": {
+                "max": 180,
+                "min": 158
+              },
+              "perfect": {
+                "max": 180,
+                "min": 165
+              }
+            },
+            "downRange": {
+              "pad": {
+                "max": 115,
+                "min": 66
+              },
+              "normal": {
+                "max": 108,
+                "min": 74
+              },
+              "perfect": {
+                "max": 100,
+                "min": 82
+              },
+              "warning": {
+                "max": 66,
+                "min": 54
+              }
+            },
+            "startPose": {
+              "max": 115,
+              "min": 70
+            },
+            "pairedWith": "right_elbow",
+            "stateMessages": {
+              "normal": {
+                "up": {
+                  "ar": "جيد، اضغط أكثر للأعلى",
+                  "en": "Good, press higher"
+                },
+                "down": {
+                  "ar": "جيد، لا تترك المرفق ينزل أكثر",
+                  "en": "Good, do not let the elbow drop further"
+                }
+              },
+              "perfect": {
+                "up": {
+                  "ar": "ممتاز! تمدد علوي كامل",
+                  "en": "Perfect! Full overhead lockout"
+                },
+                "down": {
+                  "ar": "ممتاز! استقبال نظيف عند الكتف",
+                  "en": "Perfect! Clean catch at the shoulder"
+                }
+              }
+            }
+          }
+        ]
+      }
+    ],
+    "validationWarning": null
+  }
+}

@@ -1,0 +1,592 @@
+{
+  "slug": "wall_sit",
+  "status": "published",
+  "movementPattern": "SQUAT",
+  "loadCapability": "BODYWEIGHT_ONLY",
+  "familyKey": "squat_pattern_family",
+  "familyOrder": 25,
+  "name": {
+    "ar": "الجلوس على الحائط",
+    "en": "Wall Sit"
+  },
+  "category": {
+    "code": "legs",
+    "name": {
+      "ar": "تمارين الأرجل",
+      "en": "Legs"
+    }
+  },
+  "countingMethod": "hold",
+  "muscles": [
+    "quadriceps",
+    "glutes",
+    "hamstrings",
+    "abs_muscle"
+  ],
+  "equipment": [
+    "bodyweight"
+  ],
+  "tags": [
+    "isometric",
+    "endurance",
+    "no_equipment"
+  ],
+  "repCountingConfig": {
+    "duration": 45,
+    "gracePeriodMs": 2500
+  },
+  "poseVariants": [
+    {
+      "name": {
+        "ar": "زاوية جانبية",
+        "en": "Side View"
+      },
+      "posePosition": "standing_side",
+      "expectedPostures": [
+        "standing"
+      ],
+      "expectedDirections": [
+        "side"
+      ],
+      "expectedRegions": [
+        "full_body"
+      ],
+      "trackedJoints": [
+        {
+          "joint": "left_knee",
+          "role": "primary",
+          "startPose": {
+            "max": 110,
+            "min": 75
+          },
+          "stateMessages": {
+            "pad": {
+              "ar": "مقبول، لكن يمكنك التحسن",
+              "en": "Acceptable, but you can improve"
+            },
+            "danger": {
+              "ar": "توقف! ركبتيك منخفضة جداً",
+              "en": "Stop! Knees too low"
+            },
+            "normal": {
+              "ar": "جيد، حاول النزول أكثر قليلاً",
+              "en": "Good, try going a bit lower"
+            },
+            "perfect": {
+              "ar": "ممتاز! وضعية مثالية",
+              "en": "Perfect! Great position"
+            },
+            "warning": {
+              "ar": "انزل أكثر - ركبتيك بزاوية 90 درجة",
+              "en": "Lower down - knees at 90 degrees"
+            }
+          },
+          "pairedWith": "right_knee",
+          "range": {
+            "pad": {
+              "max": 110,
+              "min": 80
+            },
+            "danger": {
+              "max": 60,
+              "min": 0
+            },
+            "normal": {
+              "max": 100,
+              "min": 85
+            },
+            "perfect": {
+              "max": 95,
+              "min": 88
+            },
+            "warning": {
+              "max": 80,
+              "min": 60
+            }
+          }
+        },
+        {
+          "joint": "right_knee",
+          "role": "primary",
+          "startPose": {
+            "max": 110,
+            "min": 75
+          },
+          "stateMessages": {
+            "pad": {
+              "ar": "مقبول، لكن يمكنك التحسن",
+              "en": "Acceptable, but you can improve"
+            },
+            "danger": {
+              "ar": "توقف! ركبتيك منخفضة جداً",
+              "en": "Stop! Knees too low"
+            },
+            "normal": {
+              "ar": "جيد، حاول النزول أكثر قليلاً",
+              "en": "Good, try going a bit lower"
+            },
+            "perfect": {
+              "ar": "ممتاز! وضعية مثالية",
+              "en": "Perfect! Great position"
+            },
+            "warning": {
+              "ar": "انزل للوضع الصحيح",
+              "en": "Lower to the correct position"
+            }
+          },
+          "pairedWith": "left_knee",
+          "range": {
+            "pad": {
+              "max": 110,
+              "min": 80
+            },
+            "danger": {
+              "max": 60,
+              "min": 0
+            },
+            "normal": {
+              "max": 100,
+              "min": 85
+            },
+            "perfect": {
+              "max": 95,
+              "min": 88
+            },
+            "warning": {
+              "max": 80,
+              "min": 60
+            }
+          }
+        },
+        {
+          "joint": "left_hip",
+          "role": "secondary",
+          "startPose": {
+            "max": 110,
+            "min": 75
+          },
+          "stateMessages": {
+            "perfect": {
+              "ar": "ممتاز - الفخذان موازيان للأرض",
+              "en": "Great - thighs parallel to floor"
+            }
+          },
+          "range": {
+            "pad": {
+              "max": 110,
+              "min": 80
+            },
+            "normal": {
+              "max": 100,
+              "min": 85
+            },
+            "perfect": {
+              "max": 95,
+              "min": 88
+            }
+          }
+        }
+      ],
+      "positionChecks": [
+        {
+          "id": "back_against_wall",
+          "type": "vertical_alignment",
+          "landmarks": {
+            "primary": "left_shoulder",
+            "secondary": "left_hip"
+          },
+          "condition": {
+            "operator": "approximately_equal",
+            "threshold": 0.05
+          },
+          "activePhases": [
+            "all"
+          ],
+          "errorMessage": {
+            "ar": "اسند ظهرك بالكامل على الحائط",
+            "en": "Press your back fully against the wall"
+          },
+          "severity": "error",
+          "cooldownMs": 2000,
+          "minErrorFrames": 5
+        },
+        {
+          "id": "knee_over_ankle",
+          "type": "vertical_alignment",
+          "landmarks": {
+            "primary": "left_knee",
+            "secondary": "left_ankle"
+          },
+          "condition": {
+            "operator": "approximately_equal",
+            "threshold": 0.07
+          },
+          "activePhases": [
+            "all"
+          ],
+          "errorMessage": {
+            "ar": "حافظ على الركبة فوق الكاحل مباشرة",
+            "en": "Keep knee directly over ankle"
+          },
+          "severity": "warning",
+          "cooldownMs": 2000,
+          "minErrorFrames": 4
+        }
+      ],
+      "feedbackMessages": {
+        "motivational": [
+          {
+            "ar": "استمر! أنت قوي!",
+            "en": "Hold on! You're strong!"
+          },
+          {
+            "ar": "لا تستسلم!",
+            "en": "Don't give up!"
+          },
+          {
+            "ar": "ثابر! أوشكت على الانتهاء!",
+            "en": "Persist! Almost done!"
+          }
+        ],
+        "tips": [
+          {
+            "ar": "تنفس بانتظام ولا تحبس أنفاسك",
+            "en": "Breathe steadily, don't hold breath"
+          },
+          {
+            "ar": "انظر للأمام لتحسين التركيز",
+            "en": "Look forward to improve focus"
+          }
+        ]
+      },
+      "messageAssignments": [
+        {
+          "messageId": "2474ce6b-15c0-4d27-9a0d-ba1721964527",
+          "target": "position",
+          "context": "error",
+          "checkId": "back_against_wall",
+          "sortOrder": 1
+        },
+        {
+          "messageId": "2c7009c8-4cb5-464d-92b6-b08b41258e8a",
+          "target": "position",
+          "context": "error",
+          "checkId": "knee_over_ankle",
+          "sortOrder": 2
+        },
+        {
+          "messageId": "6d983e30-a5ca-4704-b440-50f0b4443161",
+          "target": "joint_state",
+          "context": "perfect",
+          "jointCode": "left_knee",
+          "sortOrder": 3
+        },
+        {
+          "messageId": "dbe0a83d-d93b-4c68-88e3-278c5d272856",
+          "target": "joint_state",
+          "context": "normal",
+          "jointCode": "left_knee",
+          "sortOrder": 4
+        },
+        {
+          "messageId": "fc029ee4-9cc0-4b29-b29d-6b4bb021c222",
+          "target": "joint_state",
+          "context": "pad",
+          "jointCode": "left_knee",
+          "sortOrder": 5
+        },
+        {
+          "messageId": "7d1ebbb2-379f-408f-8b64-3ab7af972880",
+          "target": "joint_state",
+          "context": "warning",
+          "jointCode": "left_knee",
+          "sortOrder": 6
+        },
+        {
+          "messageId": "d30b011c-a9c1-4ee3-8d9d-d338608d757a",
+          "target": "joint_state",
+          "context": "danger",
+          "jointCode": "left_knee",
+          "sortOrder": 7
+        },
+        {
+          "messageId": "0f820969-3de4-4c4a-944c-86c141816427",
+          "target": "joint_state",
+          "context": "perfect",
+          "jointCode": "right_knee",
+          "sortOrder": 8
+        },
+        {
+          "messageId": "469c766a-5a6f-4167-8a37-b465d1f28277",
+          "target": "joint_state",
+          "context": "normal",
+          "jointCode": "right_knee",
+          "sortOrder": 9
+        },
+        {
+          "messageId": "ca288bf2-5d86-4a9f-a25a-9425bff4c2cb",
+          "target": "joint_state",
+          "context": "pad",
+          "jointCode": "right_knee",
+          "sortOrder": 10
+        },
+        {
+          "messageId": "79e20583-f690-4cf4-8479-ad224919c67c",
+          "target": "joint_state",
+          "context": "warning",
+          "jointCode": "right_knee",
+          "sortOrder": 11
+        },
+        {
+          "messageId": "6fd26a16-837e-401a-8b73-3a15b41c6aff",
+          "target": "joint_state",
+          "context": "danger",
+          "jointCode": "right_knee",
+          "sortOrder": 12
+        },
+        {
+          "messageId": "961af4d1-662a-4c45-9087-83de86c00705",
+          "target": "joint_state",
+          "context": "perfect",
+          "jointCode": "left_hip",
+          "sortOrder": 13
+        },
+        {
+          "messageId": "506df04d-8bef-472e-b5fd-d23c7f80511b",
+          "target": "feedback",
+          "context": "motivational",
+          "sortOrder": 14
+        },
+        {
+          "messageId": "221545e6-feb1-4f49-9a7e-90885f2766dc",
+          "target": "feedback",
+          "context": "motivational",
+          "sortOrder": 15
+        },
+        {
+          "messageId": "5a8660e6-d697-437d-a2b7-8f3bd7bb0dc2",
+          "target": "feedback",
+          "context": "motivational",
+          "sortOrder": 16
+        },
+        {
+          "messageId": "2106955d-81f1-40fc-a616-b89293b8031a",
+          "target": "feedback",
+          "context": "tip",
+          "sortOrder": 17
+        },
+        {
+          "messageId": "06523f12-357e-437e-b2e7-93d71c0af05b",
+          "target": "feedback",
+          "context": "tip",
+          "sortOrder": 18
+        }
+      ],
+      "cameraPosition": "side_view"
+    }
+  ],
+  "description": {
+    "ar": "تمرين ثبات لتقوية عضلات الفخذ والقدرة على التحمل",
+    "en": "Isometric exercise to strengthen quadriceps and build endurance"
+  },
+  "instructions": {
+    "ar": "اسند ظهرك على الحائط وانزل حتى تصبح ركبتيك بزاوية 90 درجة كأنك جالس على كرسي غير مرئي",
+    "en": "Lean back against a wall and lower until knees are at 90 degrees like sitting on an invisible chair"
+  },
+  "reportMetrics": {
+    "primary": [
+      "FORM_SCORE"
+    ],
+    "excluded": [
+      "REP_COUNT",
+      "TEMPO",
+      "TUT",
+      "ROM",
+      "FORM_CONSISTENCY",
+      "FATIGUE_INDEX",
+      "VELOCITY",
+      "VELOCITY_LOSS",
+      "TEMPO_CONSISTENCY",
+      "WEIGHT",
+      "VOLUME",
+      "EST_1RM"
+    ]
+  },
+  "hasPositionChecks": true,
+  "_database": {
+    "id": "5688f9db-fc61-40c3-9883-43df15b1abb0",
+    "categoryId": "a672c3d3-4449-4f74-bd8e-be73a0035e88",
+    "countingMethodId": "7ae86596-4b4b-400b-afa1-c7c0b6ba4fc9",
+    "publishedAt": "2026-04-20T17:26:23.424Z",
+    "createdAt": "2026-04-20T17:26:23.426Z",
+    "updatedAt": "2026-04-20T17:26:34.167Z",
+    "deletedAt": null,
+    "isFeatured": false,
+    "createdBy": null,
+    "updatedBy": null,
+    "repCountingConfig": {
+      "duration": 45,
+      "gracePeriodMs": 2500
+    },
+    "bilateralConfig": null,
+    "isBilateral": false,
+    "supportsWeight": false,
+    "minWeight": null,
+    "maxWeight": null,
+    "defaultWeight": null,
+    "reportMetrics": {
+      "mode": "duration",
+      "version": 1,
+      "primaryKpi": "timeUnderTension",
+      "secondaryKpis": [
+        "avgFormScore",
+        "avgRom"
+      ]
+    },
+    "media": [],
+    "poseVariants": [
+      {
+        "id": "505548d4-e3e7-4925-b255-410c2623f165",
+        "sortOrder": 1,
+        "description": null,
+        "trackedJointsConfig": [
+          {
+            "role": "primary",
+            "joint": "left_knee",
+            "range": {
+              "pad": {
+                "max": 110,
+                "min": 80
+              },
+              "danger": {
+                "max": 60,
+                "min": 0
+              },
+              "normal": {
+                "max": 100,
+                "min": 85
+              },
+              "perfect": {
+                "max": 95,
+                "min": 88
+              },
+              "warning": {
+                "max": 80,
+                "min": 60
+              }
+            },
+            "startPose": {
+              "max": 110,
+              "min": 75
+            },
+            "pairedWith": "right_knee",
+            "stateMessages": {
+              "pad": {
+                "ar": "مقبول، لكن يمكنك التحسن",
+                "en": "Acceptable, but you can improve"
+              },
+              "danger": {
+                "ar": "توقف! ركبتيك منخفضة جداً",
+                "en": "Stop! Knees too low"
+              },
+              "normal": {
+                "ar": "جيد، حاول النزول أكثر قليلاً",
+                "en": "Good, try going a bit lower"
+              },
+              "perfect": {
+                "ar": "ممتاز! وضعية مثالية",
+                "en": "Perfect! Great position"
+              },
+              "warning": {
+                "ar": "انزل أكثر - ركبتيك بزاوية 90 درجة",
+                "en": "Lower down - knees at 90 degrees"
+              }
+            }
+          },
+          {
+            "role": "primary",
+            "joint": "right_knee",
+            "range": {
+              "pad": {
+                "max": 110,
+                "min": 80
+              },
+              "danger": {
+                "max": 60,
+                "min": 0
+              },
+              "normal": {
+                "max": 100,
+                "min": 85
+              },
+              "perfect": {
+                "max": 95,
+                "min": 88
+              },
+              "warning": {
+                "max": 80,
+                "min": 60
+              }
+            },
+            "startPose": {
+              "max": 110,
+              "min": 75
+            },
+            "pairedWith": "left_knee",
+            "stateMessages": {
+              "pad": {
+                "ar": "مقبول، لكن يمكنك التحسن",
+                "en": "Acceptable, but you can improve"
+              },
+              "danger": {
+                "ar": "توقف! ركبتيك منخفضة جداً",
+                "en": "Stop! Knees too low"
+              },
+              "normal": {
+                "ar": "جيد، حاول النزول أكثر قليلاً",
+                "en": "Good, try going a bit lower"
+              },
+              "perfect": {
+                "ar": "ممتاز! وضعية مثالية",
+                "en": "Perfect! Great position"
+              },
+              "warning": {
+                "ar": "انزل للوضع الصحيح",
+                "en": "Lower to the correct position"
+              }
+            }
+          },
+          {
+            "role": "secondary",
+            "joint": "left_hip",
+            "range": {
+              "pad": {
+                "max": 110,
+                "min": 80
+              },
+              "normal": {
+                "max": 100,
+                "min": 85
+              },
+              "perfect": {
+                "max": 95,
+                "min": 88
+              }
+            },
+            "startPose": {
+              "max": 110,
+              "min": 75
+            },
+            "stateMessages": {
+              "perfect": {
+                "ar": "ممتاز - الفخذان موازيان للأرض",
+                "en": "Great - thighs parallel to floor"
+              }
+            }
+          }
+        ]
+      }
+    ],
+    "validationWarning": null
+  }
+}

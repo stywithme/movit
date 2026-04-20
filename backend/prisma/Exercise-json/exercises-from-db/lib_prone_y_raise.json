@@ -1,0 +1,456 @@
+{
+  "slug": "lib_prone_y_raise",
+  "status": "published",
+  "movementPattern": "PULL_VERTICAL",
+  "loadCapability": "BODYWEIGHT_ONLY",
+  "familyKey": "pull_vertical_family",
+  "familyOrder": 20,
+  "name": {
+    "ar": "رفع Y",
+    "en": "Prone Y raise"
+  },
+  "category": {
+    "code": "back",
+    "name": {
+      "ar": "تمارين الظهر",
+      "en": "Back"
+    }
+  },
+  "countingMethod": "up_down",
+  "muscles": [
+    "rear_delts",
+    "traps"
+  ],
+  "equipment": [
+    "bodyweight",
+    "mat"
+  ],
+  "tags": [
+    "curated_library",
+    "corrective"
+  ],
+  "repCountingConfig": {
+    "reps": 12,
+    "minRepIntervalMs": 1500,
+    "maxRepIntervalMs": 5000
+  },
+  "poseVariants": [
+    {
+      "name": {
+        "ar": "مستلقٍ على الوجه",
+        "en": "Lying face down (side angle)"
+      },
+      "posePosition": "prone_side",
+      "expectedPostures": [
+        "lying_prone"
+      ],
+      "expectedDirections": [
+        "side"
+      ],
+      "expectedRegions": [
+        "full_body"
+      ],
+      "trackedJoints": [
+        {
+          "joint": "left_shoulder",
+          "role": "primary",
+          "startPose": {
+            "max": 95,
+            "min": 15
+          },
+          "stateMessages": {
+            "pad": {
+              "up": {
+                "ar": "مقبول، لكن مدى الكتف ما زال قصيراً",
+                "en": "Acceptable, but shoulder range is still short"
+              }
+            },
+            "normal": {
+              "up": {
+                "ar": "جيد، ارفع الذراع أكثر قليلاً",
+                "en": "Good, lift the arm slightly higher"
+              },
+              "down": {
+                "ar": "جيد، لا تسقط الذراع بسرعة",
+                "en": "Good, do not drop the arm quickly"
+              }
+            },
+            "perfect": {
+              "up": {
+                "ar": "ممتاز! رفع Y من الكتف الخلفي",
+                "en": "Perfect! Clean Y raise from the posterior shoulder"
+              },
+              "down": {
+                "ar": "ممتاز! رجوع متحكم به",
+                "en": "Perfect! Controlled lowering"
+              }
+            },
+            "warning": {
+              "up": {
+                "ar": "لا تعوض برفع الصدر والرقبة",
+                "en": "Do not compensate by lifting the chest and neck"
+              }
+            }
+          },
+          "upRange": {
+            "pad": {
+              "max": 135,
+              "min": 68
+            },
+            "normal": {
+              "max": 128,
+              "min": 75
+            },
+            "perfect": {
+              "max": 120,
+              "min": 82
+            }
+          },
+          "downRange": {
+            "pad": {
+              "max": 52,
+              "min": 12
+            },
+            "normal": {
+              "max": 45,
+              "min": 15
+            },
+            "perfect": {
+              "max": 38,
+              "min": 18
+            },
+            "warning": {
+              "max": 12,
+              "min": 8
+            }
+          }
+        },
+        {
+          "joint": "left_elbow",
+          "role": "secondary",
+          "startPose": {
+            "max": 180,
+            "min": 145
+          },
+          "stateMessages": {
+            "perfect": {
+              "ar": "مرفق طويل بدون قفل عدواني",
+              "en": "Long elbow without aggressive locking"
+            }
+          },
+          "range": {
+            "pad": {
+              "max": 180,
+              "min": 138
+            },
+            "normal": {
+              "max": 180,
+              "min": 145
+            },
+            "perfect": {
+              "max": 180,
+              "min": 155
+            }
+          }
+        }
+      ],
+      "positionChecks": [
+        {
+          "id": "prone_y_ribs",
+          "type": "vertical_alignment",
+          "landmarks": {
+            "primary": "left_shoulder",
+            "secondary": "left_hip"
+          },
+          "condition": {
+            "operator": "approximately_equal",
+            "threshold": 0.14
+          },
+          "activePhases": [
+            "up",
+            "down"
+          ],
+          "errorMessage": {
+            "ar": "ارفع الذراع من الكتف مع بقاء الأضلاع هادئة على المقعد/الأرض.",
+            "en": "Lift from the shoulder while keeping the ribs quiet on the bench/floor."
+          },
+          "severity": "warning",
+          "cooldownMs": 2200,
+          "minErrorFrames": 4
+        }
+      ],
+      "feedbackMessages": {
+        "motivational": [
+          {
+            "ar": "مدى حركة جيد وتحكم أفضل",
+            "en": "Good range and better control"
+          },
+          {
+            "ar": "تحرك بسلاسة داخل نطاق مريح",
+            "en": "Move smoothly inside a comfortable range"
+          }
+        ],
+        "tips": [
+          {
+            "ar": "ابقِ الحركة نظيفة وهادئة بدون ارتداد.",
+            "en": "Keep the motion smooth and bounce-free."
+          },
+          {
+            "ar": "أي ألم حاد يعني تقليل المدى فوراً.",
+            "en": "Any sharp pain means reduce range immediately."
+          }
+        ]
+      },
+      "messageAssignments": [
+        {
+          "messageId": "b3e423cb-e199-44e0-95ef-b6e80d756665",
+          "target": "position",
+          "context": "error",
+          "checkId": "prone_y_ribs",
+          "sortOrder": 1
+        },
+        {
+          "messageId": "19c309ed-ac5d-412e-804c-5a8e090e5f05",
+          "target": "joint_state",
+          "context": "perfect",
+          "jointCode": "left_shoulder",
+          "zone": "up",
+          "sortOrder": 2
+        },
+        {
+          "messageId": "a4b80f9d-d507-48d0-9363-7caf86d6c7f7",
+          "target": "joint_state",
+          "context": "perfect",
+          "jointCode": "left_shoulder",
+          "zone": "down",
+          "sortOrder": 3
+        },
+        {
+          "messageId": "eb687089-7755-4a1f-9195-8407ec6c8900",
+          "target": "joint_state",
+          "context": "normal",
+          "jointCode": "left_shoulder",
+          "zone": "up",
+          "sortOrder": 4
+        },
+        {
+          "messageId": "839f5c71-0e9f-4fcf-97c0-17b56ea13cfe",
+          "target": "joint_state",
+          "context": "normal",
+          "jointCode": "left_shoulder",
+          "zone": "down",
+          "sortOrder": 5
+        },
+        {
+          "messageId": "d82951b1-e333-458a-a67b-35a7228774f8",
+          "target": "joint_state",
+          "context": "pad",
+          "jointCode": "left_shoulder",
+          "zone": "up",
+          "sortOrder": 6
+        },
+        {
+          "messageId": "bdb4abd4-86ec-44d0-902d-11722c5105ba",
+          "target": "joint_state",
+          "context": "warning",
+          "jointCode": "left_shoulder",
+          "zone": "up",
+          "sortOrder": 7
+        },
+        {
+          "messageId": "4fd49e4e-ad83-41a6-b60d-f457470b48ed",
+          "target": "joint_state",
+          "context": "perfect",
+          "jointCode": "left_elbow",
+          "sortOrder": 8
+        },
+        {
+          "messageId": "de83fc02-235c-4928-b0ac-cc2cb6933c6f",
+          "target": "feedback",
+          "context": "motivational",
+          "sortOrder": 9
+        },
+        {
+          "messageId": "1d4bdc4e-3bef-41df-b806-570b5e26cff2",
+          "target": "feedback",
+          "context": "motivational",
+          "sortOrder": 10
+        },
+        {
+          "messageId": "0a03c015-6278-4d34-8cfd-c68fa51848a0",
+          "target": "feedback",
+          "context": "tip",
+          "sortOrder": 11
+        },
+        {
+          "messageId": "3d8a0a9a-8df0-4b68-a498-139a12394e5c",
+          "target": "feedback",
+          "context": "tip",
+          "sortOrder": 12
+        }
+      ]
+    }
+  ],
+  "description": {
+    "ar": "تمرين مكتبة: رفع Y.",
+    "en": "Library exercise: Prone Y raise."
+  },
+  "instructions": {
+    "ar": "حافظ على عمود فقري محايد وتنفس بثبات وتوقف عند أي ألم حاد.",
+    "en": "Maintain neutral spine, steady breathing, and stop if sharp pain appears."
+  },
+  "reportMetrics": {
+    "primary": [
+      "FORM_SCORE"
+    ],
+    "excluded": [
+      "HOLD_DURATION",
+      "WEIGHT",
+      "VOLUME",
+      "EST_1RM",
+      "SYMMETRY"
+    ]
+  },
+  "hasPositionChecks": true,
+  "_database": {
+    "id": "853b6d73-77f4-41ca-9560-23550d65aa07",
+    "categoryId": "d90cee55-225e-4127-9fdc-062a8a09522e",
+    "countingMethodId": "f4d48aef-1606-4f23-8c61-7b4a2546f990",
+    "publishedAt": "2026-04-20T17:26:29.240Z",
+    "createdAt": "2026-04-20T17:26:29.242Z",
+    "updatedAt": "2026-04-20T17:26:34.588Z",
+    "deletedAt": null,
+    "isFeatured": false,
+    "createdBy": null,
+    "updatedBy": null,
+    "repCountingConfig": null,
+    "bilateralConfig": null,
+    "isBilateral": false,
+    "supportsWeight": false,
+    "minWeight": null,
+    "maxWeight": null,
+    "defaultWeight": null,
+    "reportMetrics": {
+      "mode": "reps",
+      "version": 1,
+      "primaryKpi": "repQuality",
+      "secondaryKpis": [
+        "avgFormScore",
+        "avgRom"
+      ]
+    },
+    "media": [],
+    "poseVariants": [
+      {
+        "id": "b6b29d53-ade9-4170-8493-7157760592dd",
+        "sortOrder": 1,
+        "description": null,
+        "trackedJointsConfig": [
+          {
+            "role": "primary",
+            "joint": "left_shoulder",
+            "upRange": {
+              "pad": {
+                "max": 135,
+                "min": 68
+              },
+              "normal": {
+                "max": 128,
+                "min": 75
+              },
+              "perfect": {
+                "max": 120,
+                "min": 82
+              }
+            },
+            "downRange": {
+              "pad": {
+                "max": 52,
+                "min": 12
+              },
+              "normal": {
+                "max": 45,
+                "min": 15
+              },
+              "perfect": {
+                "max": 38,
+                "min": 18
+              },
+              "warning": {
+                "max": 12,
+                "min": 8
+              }
+            },
+            "startPose": {
+              "max": 95,
+              "min": 15
+            },
+            "stateMessages": {
+              "pad": {
+                "up": {
+                  "ar": "مقبول، لكن مدى الكتف ما زال قصيراً",
+                  "en": "Acceptable, but shoulder range is still short"
+                }
+              },
+              "normal": {
+                "up": {
+                  "ar": "جيد، ارفع الذراع أكثر قليلاً",
+                  "en": "Good, lift the arm slightly higher"
+                },
+                "down": {
+                  "ar": "جيد، لا تسقط الذراع بسرعة",
+                  "en": "Good, do not drop the arm quickly"
+                }
+              },
+              "perfect": {
+                "up": {
+                  "ar": "ممتاز! رفع Y من الكتف الخلفي",
+                  "en": "Perfect! Clean Y raise from the posterior shoulder"
+                },
+                "down": {
+                  "ar": "ممتاز! رجوع متحكم به",
+                  "en": "Perfect! Controlled lowering"
+                }
+              },
+              "warning": {
+                "up": {
+                  "ar": "لا تعوض برفع الصدر والرقبة",
+                  "en": "Do not compensate by lifting the chest and neck"
+                }
+              }
+            }
+          },
+          {
+            "role": "secondary",
+            "joint": "left_elbow",
+            "range": {
+              "pad": {
+                "max": 180,
+                "min": 138
+              },
+              "normal": {
+                "max": 180,
+                "min": 145
+              },
+              "perfect": {
+                "max": 180,
+                "min": 155
+              }
+            },
+            "startPose": {
+              "max": 180,
+              "min": 145
+            },
+            "stateMessages": {
+              "perfect": {
+                "ar": "مرفق طويل بدون قفل عدواني",
+                "en": "Long elbow without aggressive locking"
+              }
+            }
+          }
+        ]
+      }
+    ],
+    "validationWarning": null
+  }
+}

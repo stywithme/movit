@@ -1,0 +1,474 @@
+{
+  "slug": "lib_tibialis_raise",
+  "status": "published",
+  "movementPattern": "GAIT",
+  "loadCapability": "BODYWEIGHT_ONLY",
+  "familyKey": "ankle_plantarflexion_family",
+  "familyOrder": 17,
+  "name": {
+    "ar": "رفع قصبة",
+    "en": "Tibialis raise"
+  },
+  "category": {
+    "code": "legs",
+    "name": {
+      "ar": "تمارين الأرجل",
+      "en": "Legs"
+    }
+  },
+  "countingMethod": "up_down",
+  "muscles": [
+    "calves"
+  ],
+  "equipment": [
+    "bodyweight",
+    "mat"
+  ],
+  "tags": [
+    "curated_library",
+    "corrective"
+  ],
+  "repCountingConfig": {
+    "reps": 12,
+    "minRepIntervalMs": 1500,
+    "maxRepIntervalMs": 5000
+  },
+  "poseVariants": [
+    {
+      "name": {
+        "ar": "زاوية جانبية",
+        "en": "Side view"
+      },
+      "posePosition": "standing_side",
+      "expectedPostures": [
+        "standing"
+      ],
+      "expectedDirections": [
+        "side"
+      ],
+      "expectedRegions": [
+        "full_body"
+      ],
+      "trackedJoints": [
+        {
+          "joint": "left_ankle",
+          "role": "primary",
+          "startPose": {
+            "max": 105,
+            "min": 45
+          },
+          "stateMessages": {
+            "pad": {
+              "down": {
+                "ar": "مقبول، لكن مدى الرفع ما زال صغيراً",
+                "en": "Acceptable, but the toe-lift range is still small"
+              }
+            },
+            "normal": {
+              "up": {
+                "ar": "جيد، لا ترتد للأسفل سريعاً",
+                "en": "Good, do not drop quickly"
+              },
+              "down": {
+                "ar": "جيد، ارفع الأصابع أكثر",
+                "en": "Good, lift the toes a little higher"
+              }
+            },
+            "perfect": {
+              "up": {
+                "ar": "ممتاز! بداية محايدة متزنة",
+                "en": "Perfect! Balanced neutral start"
+              },
+              "down": {
+                "ar": "ممتاز! رفع واضح لأصابع القدم",
+                "en": "Perfect! Clear toe lift"
+              }
+            },
+            "warning": {
+              "down": {
+                "ar": "لا تعوض بثني الركبة أو الميل للخلف",
+                "en": "Do not compensate by bending the knee or rocking back"
+              }
+            }
+          },
+          "pairedWith": "right_ankle",
+          "invertIndicator": true,
+          "upRange": {
+            "pad": {
+              "max": 104,
+              "min": 78
+            },
+            "normal": {
+              "max": 100,
+              "min": 80
+            },
+            "perfect": {
+              "max": 96,
+              "min": 82
+            }
+          },
+          "downRange": {
+            "pad": {
+              "max": 75,
+              "min": 42
+            },
+            "normal": {
+              "max": 72,
+              "min": 46
+            },
+            "perfect": {
+              "max": 70,
+              "min": 50
+            },
+            "warning": {
+              "max": 42,
+              "min": 35
+            }
+          }
+        },
+        {
+          "joint": "left_knee",
+          "role": "secondary",
+          "startPose": {
+            "max": 180,
+            "min": 160
+          },
+          "stateMessages": {
+            "perfect": {
+              "ar": "ركبة هادئة ومثبتة",
+              "en": "Knee stays quiet and set"
+            },
+            "warning": {
+              "ar": "لا تثنِ الركبة لتسرق الرفع",
+              "en": "Do not bend the knee to cheat the raise"
+            }
+          },
+          "range": {
+            "normal": {
+              "max": 180,
+              "min": 160
+            },
+            "perfect": {
+              "max": 180,
+              "min": 168
+            },
+            "warning": {
+              "max": 160,
+              "min": 145
+            }
+          }
+        }
+      ],
+      "positionChecks": [
+        {
+          "id": "tibialis_body_straight",
+          "type": "vertical_alignment",
+          "landmarks": {
+            "primary": "left_shoulder",
+            "secondary": "left_hip"
+          },
+          "condition": {
+            "operator": "approximately_equal",
+            "threshold": 0.08
+          },
+          "activePhases": [
+            "up",
+            "down"
+          ],
+          "errorMessage": {
+            "ar": "ارفع الأصابع من الكاحل دون تأرجح الجسم للخلف.",
+            "en": "Lift the toes from the ankle without rocking the body backward."
+          },
+          "severity": "warning",
+          "cooldownMs": 2000,
+          "minErrorFrames": 4
+        }
+      ],
+      "feedbackMessages": {
+        "motivational": [
+          {
+            "ar": "أداء قوي ومنظم",
+            "en": "Strong and controlled work"
+          },
+          {
+            "ar": "حافظ على الشكل قبل السرعة",
+            "en": "Keep form before speed"
+          }
+        ],
+        "tips": [
+          {
+            "ar": "خذ نفساً تحضيرياً قبل كل عدة وازفر مع الجهد.",
+            "en": "Take a setup breath before each rep and exhale on effort."
+          },
+          {
+            "ar": "إذا فقدت التحكم الميكانيكي، قلل المدى أو الحمل.",
+            "en": "If mechanics break down, reduce range or load."
+          }
+        ]
+      },
+      "messageAssignments": [
+        {
+          "messageId": "0928818a-9570-4e91-ba47-8dfad6373e56",
+          "target": "position",
+          "context": "error",
+          "checkId": "tibialis_body_straight",
+          "sortOrder": 1
+        },
+        {
+          "messageId": "7ecf3c5a-b49a-4d84-b58a-c2cfb1809ce2",
+          "target": "joint_state",
+          "context": "perfect",
+          "jointCode": "left_ankle",
+          "zone": "up",
+          "sortOrder": 2
+        },
+        {
+          "messageId": "5ed3293c-80d1-4c4a-9aee-f1ef112d32a3",
+          "target": "joint_state",
+          "context": "perfect",
+          "jointCode": "left_ankle",
+          "zone": "down",
+          "sortOrder": 3
+        },
+        {
+          "messageId": "b520ea6b-9971-4cfa-9f38-1e787b7f32ae",
+          "target": "joint_state",
+          "context": "normal",
+          "jointCode": "left_ankle",
+          "zone": "up",
+          "sortOrder": 4
+        },
+        {
+          "messageId": "bf82163a-7b4e-4888-8298-299c12127518",
+          "target": "joint_state",
+          "context": "normal",
+          "jointCode": "left_ankle",
+          "zone": "down",
+          "sortOrder": 5
+        },
+        {
+          "messageId": "9996db65-1645-433a-ac1c-a6cae8a1ff5f",
+          "target": "joint_state",
+          "context": "pad",
+          "jointCode": "left_ankle",
+          "zone": "down",
+          "sortOrder": 6
+        },
+        {
+          "messageId": "d04162c4-a009-427a-b967-d76a0178f21c",
+          "target": "joint_state",
+          "context": "warning",
+          "jointCode": "left_ankle",
+          "zone": "down",
+          "sortOrder": 7
+        },
+        {
+          "messageId": "f09e01ef-b1eb-44c0-ba45-06a5ed81ea60",
+          "target": "joint_state",
+          "context": "perfect",
+          "jointCode": "left_knee",
+          "sortOrder": 8
+        },
+        {
+          "messageId": "d1df8d96-c241-4fd4-8d52-e470b22e4574",
+          "target": "joint_state",
+          "context": "warning",
+          "jointCode": "left_knee",
+          "sortOrder": 9
+        },
+        {
+          "messageId": "a8f9fec5-0cab-45b6-ae75-1375c20fda6c",
+          "target": "feedback",
+          "context": "motivational",
+          "sortOrder": 10
+        },
+        {
+          "messageId": "7095c13a-5601-42df-8019-b87508d222a6",
+          "target": "feedback",
+          "context": "motivational",
+          "sortOrder": 11
+        },
+        {
+          "messageId": "56176901-6537-42bb-9ae2-dbb61610a21b",
+          "target": "feedback",
+          "context": "tip",
+          "sortOrder": 12
+        },
+        {
+          "messageId": "f1da8d98-dbcc-437c-96b5-63305d716e39",
+          "target": "feedback",
+          "context": "tip",
+          "sortOrder": 13
+        }
+      ],
+      "cameraPosition": "side_view"
+    }
+  ],
+  "description": {
+    "ar": "تمرين مكتبة: رفع قصبة.",
+    "en": "Library exercise: Tibialis raise."
+  },
+  "instructions": {
+    "ar": "حافظ على عمود فقري محايد وتنفس بثبات وتوقف عند أي ألم حاد.",
+    "en": "Maintain neutral spine, steady breathing, and stop if sharp pain appears."
+  },
+  "reportMetrics": {
+    "primary": [
+      "FORM_SCORE"
+    ],
+    "excluded": [
+      "HOLD_DURATION",
+      "WEIGHT",
+      "VOLUME",
+      "EST_1RM"
+    ]
+  },
+  "hasPositionChecks": true,
+  "_database": {
+    "id": "74d95d42-10d9-437a-b7f1-e59eab9d881f",
+    "categoryId": "a672c3d3-4449-4f74-bd8e-be73a0035e88",
+    "countingMethodId": "f4d48aef-1606-4f23-8c61-7b4a2546f990",
+    "publishedAt": "2026-04-20T17:26:27.072Z",
+    "createdAt": "2026-04-20T17:26:27.073Z",
+    "updatedAt": "2026-04-20T17:26:34.440Z",
+    "deletedAt": null,
+    "isFeatured": false,
+    "createdBy": null,
+    "updatedBy": null,
+    "repCountingConfig": null,
+    "bilateralConfig": null,
+    "isBilateral": false,
+    "supportsWeight": false,
+    "minWeight": null,
+    "maxWeight": null,
+    "defaultWeight": null,
+    "reportMetrics": {
+      "mode": "reps",
+      "version": 1,
+      "primaryKpi": "repQuality",
+      "secondaryKpis": [
+        "avgFormScore",
+        "avgRom"
+      ]
+    },
+    "media": [],
+    "poseVariants": [
+      {
+        "id": "87416b61-1885-49e1-851b-2ebfaf07ac0a",
+        "sortOrder": 1,
+        "description": null,
+        "trackedJointsConfig": [
+          {
+            "role": "primary",
+            "joint": "left_ankle",
+            "upRange": {
+              "pad": {
+                "max": 104,
+                "min": 78
+              },
+              "normal": {
+                "max": 100,
+                "min": 80
+              },
+              "perfect": {
+                "max": 96,
+                "min": 82
+              }
+            },
+            "downRange": {
+              "pad": {
+                "max": 75,
+                "min": 42
+              },
+              "normal": {
+                "max": 72,
+                "min": 46
+              },
+              "perfect": {
+                "max": 70,
+                "min": 50
+              },
+              "warning": {
+                "max": 42,
+                "min": 35
+              }
+            },
+            "startPose": {
+              "max": 105,
+              "min": 45
+            },
+            "pairedWith": "right_ankle",
+            "stateMessages": {
+              "pad": {
+                "down": {
+                  "ar": "مقبول، لكن مدى الرفع ما زال صغيراً",
+                  "en": "Acceptable, but the toe-lift range is still small"
+                }
+              },
+              "normal": {
+                "up": {
+                  "ar": "جيد، لا ترتد للأسفل سريعاً",
+                  "en": "Good, do not drop quickly"
+                },
+                "down": {
+                  "ar": "جيد، ارفع الأصابع أكثر",
+                  "en": "Good, lift the toes a little higher"
+                }
+              },
+              "perfect": {
+                "up": {
+                  "ar": "ممتاز! بداية محايدة متزنة",
+                  "en": "Perfect! Balanced neutral start"
+                },
+                "down": {
+                  "ar": "ممتاز! رفع واضح لأصابع القدم",
+                  "en": "Perfect! Clear toe lift"
+                }
+              },
+              "warning": {
+                "down": {
+                  "ar": "لا تعوض بثني الركبة أو الميل للخلف",
+                  "en": "Do not compensate by bending the knee or rocking back"
+                }
+              }
+            },
+            "invertIndicator": true
+          },
+          {
+            "role": "secondary",
+            "joint": "left_knee",
+            "range": {
+              "normal": {
+                "max": 180,
+                "min": 160
+              },
+              "perfect": {
+                "max": 180,
+                "min": 168
+              },
+              "warning": {
+                "max": 160,
+                "min": 145
+              }
+            },
+            "startPose": {
+              "max": 180,
+              "min": 160
+            },
+            "stateMessages": {
+              "perfect": {
+                "ar": "ركبة هادئة ومثبتة",
+                "en": "Knee stays quiet and set"
+              },
+              "warning": {
+                "ar": "لا تثنِ الركبة لتسرق الرفع",
+                "en": "Do not bend the knee to cheat the raise"
+              }
+            }
+          }
+        ]
+      }
+    ],
+    "validationWarning": null
+  }
+}

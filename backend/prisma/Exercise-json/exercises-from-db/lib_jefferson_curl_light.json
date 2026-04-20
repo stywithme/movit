@@ -1,0 +1,634 @@
+{
+  "slug": "lib_jefferson_curl_light",
+  "status": "published",
+  "movementPattern": "HINGE",
+  "loadCapability": "EXTERNAL_LOAD_OPTIONAL",
+  "familyKey": "hinge_pattern_family",
+  "familyOrder": 25,
+  "name": {
+    "ar": "جيفرسون خفيف",
+    "en": "Jefferson curl (light)"
+  },
+  "category": {
+    "code": "back",
+    "name": {
+      "ar": "تمارين الظهر",
+      "en": "Back"
+    }
+  },
+  "countingMethod": "up_down",
+  "muscles": [
+    "hamstrings",
+    "lower_back"
+  ],
+  "equipment": [
+    "dumbbell",
+    "mat"
+  ],
+  "tags": [
+    "curated_library",
+    "mobility"
+  ],
+  "repCountingConfig": {
+    "reps": 12,
+    "minRepIntervalMs": 1500,
+    "maxRepIntervalMs": 5000
+  },
+  "poseVariants": [
+    {
+      "name": {
+        "ar": "زاوية جانبية",
+        "en": "Side view"
+      },
+      "posePosition": "standing_side",
+      "expectedPostures": [
+        "standing"
+      ],
+      "expectedDirections": [
+        "side"
+      ],
+      "expectedRegions": [
+        "full_body"
+      ],
+      "trackedJoints": [
+        {
+          "joint": "left_hip",
+          "role": "primary",
+          "startPose": {
+            "max": 180,
+            "min": 90
+          },
+          "stateMessages": {
+            "pad": {
+              "down": {
+                "ar": "مقبول، ما زال المدى المحافظ مناسباً",
+                "en": "Acceptable, but a conservative range is still appropriate"
+              }
+            },
+            "normal": {
+              "up": {
+                "ar": "جيد، عد ببطء أكثر",
+                "en": "Good, return a little more slowly"
+              },
+              "down": {
+                "ar": "جيد، زد المدى فقط إذا بقي الظهر منظماً",
+                "en": "Good, only increase range if the spine stays organized"
+              }
+            },
+            "perfect": {
+              "up": {
+                "ar": "ممتاز! عودة من الورك بدون اندفاع",
+                "en": "Perfect! Controlled return from the hips"
+              },
+              "down": {
+                "ar": "ممتاز! مفصل ورك نظيف ومريح",
+                "en": "Perfect! Clean, comfortable hinge"
+              }
+            },
+            "warning": {
+              "down": {
+                "ar": "لا تطارد العمق على حساب الراحة",
+                "en": "Do not chase depth at the expense of comfort"
+              }
+            }
+          },
+          "upRange": {
+            "pad": {
+              "max": 180,
+              "min": 145
+            },
+            "normal": {
+              "max": 180,
+              "min": 155
+            },
+            "perfect": {
+              "max": 180,
+              "min": 165
+            }
+          },
+          "downRange": {
+            "pad": {
+              "max": 115,
+              "min": 45
+            },
+            "normal": {
+              "max": 105,
+              "min": 52
+            },
+            "perfect": {
+              "max": 95,
+              "min": 60
+            },
+            "warning": {
+              "max": 45,
+              "min": 35
+            }
+          }
+        },
+        {
+          "joint": "spine",
+          "role": "secondary",
+          "startPose": {
+            "max": 28,
+            "min": 0
+          },
+          "stateMessages": {
+            "perfect": {
+              "ar": "الظهر منظم طوال الحركة",
+              "en": "The spine stays organized throughout"
+            },
+            "warning": {
+              "ar": "خفف المدى إذا بدأ الظهر ينهار",
+              "en": "Reduce range if the back starts collapsing"
+            }
+          },
+          "range": {
+            "pad": {
+              "max": 35,
+              "min": 0
+            },
+            "danger": {
+              "max": 85,
+              "min": 42
+            },
+            "normal": {
+              "max": 26,
+              "min": 0
+            },
+            "perfect": {
+              "max": 18,
+              "min": 0
+            },
+            "warning": {
+              "max": 45,
+              "min": 28
+            }
+          },
+          "phaseRanges": {
+            "up": {
+              "normal": {
+                "max": 24,
+                "min": 0
+              },
+              "perfect": {
+                "max": 18,
+                "min": 0
+              }
+            },
+            "top": {
+              "perfect": {
+                "max": 12,
+                "min": 0
+              }
+            },
+            "down": {
+              "normal": {
+                "max": 24,
+                "min": 0
+              },
+              "perfect": {
+                "max": 18,
+                "min": 0
+              }
+            },
+            "bottom": {
+              "normal": {
+                "max": 35,
+                "min": 5
+              },
+              "perfect": {
+                "max": 28,
+                "min": 8
+              }
+            }
+          },
+          "phaseStateMessages": {
+            "top": {
+              "perfect": {
+                "ar": "ظهر محايد في الوقفة",
+                "en": "Neutral spine at the top"
+              },
+              "warning": {
+                "ar": "لا تميل القطن للأمام في الأعلى",
+                "en": "Avoid excessive lumbar lean at the top"
+              }
+            },
+            "bottom": {
+              "perfect": {
+                "ar": "انحناء مقبول في القاع مع تحكم",
+                "en": "Acceptable flexion at bottom with control"
+              },
+              "warning": {
+                "ar": "قلل الانحناء القطني الزائد",
+                "en": "Reduce excessive lumbar flexion"
+              }
+            }
+          }
+        }
+      ],
+      "positionChecks": [
+        {
+          "id": "mobility_hinge_neutral",
+          "type": "vertical_alignment",
+          "landmarks": {
+            "primary": "left_shoulder",
+            "secondary": "left_hip"
+          },
+          "condition": {
+            "operator": "approximately_equal",
+            "threshold": 0.12
+          },
+          "activePhases": [
+            "up",
+            "down"
+          ],
+          "errorMessage": {
+            "ar": "تحرك من الورك ببطء مع بقاء العمود الفقري منظماً.",
+            "en": "Move slowly from the hips while keeping the spine organized."
+          },
+          "severity": "tip",
+          "cooldownMs": 2600,
+          "minErrorFrames": 5
+        }
+      ],
+      "feedbackMessages": {
+        "motivational": [
+          {
+            "ar": "مدى حركة جيد وتحكم أفضل",
+            "en": "Good range and better control"
+          },
+          {
+            "ar": "تحرك بسلاسة داخل نطاق مريح",
+            "en": "Move smoothly inside a comfortable range"
+          }
+        ],
+        "tips": [
+          {
+            "ar": "ابقِ الحركة نظيفة وهادئة بدون ارتداد.",
+            "en": "Keep the motion smooth and bounce-free."
+          },
+          {
+            "ar": "أي ألم حاد يعني تقليل المدى فوراً.",
+            "en": "Any sharp pain means reduce range immediately."
+          }
+        ]
+      },
+      "messageAssignments": [
+        {
+          "messageId": "a43e169f-583c-4762-9af0-80b2638bee36",
+          "target": "position",
+          "context": "error",
+          "checkId": "mobility_hinge_neutral",
+          "sortOrder": 1
+        },
+        {
+          "messageId": "75281fd0-97d6-4548-8776-56e3ea52f935",
+          "target": "joint_state",
+          "context": "perfect",
+          "jointCode": "left_hip",
+          "zone": "up",
+          "sortOrder": 2
+        },
+        {
+          "messageId": "300fb4d1-7eb7-4ecd-8b2d-2f767372b758",
+          "target": "joint_state",
+          "context": "perfect",
+          "jointCode": "left_hip",
+          "zone": "down",
+          "sortOrder": 3
+        },
+        {
+          "messageId": "4ecd34e3-8386-4b27-9d0b-9ed0874fe248",
+          "target": "joint_state",
+          "context": "normal",
+          "jointCode": "left_hip",
+          "zone": "up",
+          "sortOrder": 4
+        },
+        {
+          "messageId": "b3ef0cd0-7217-445f-8346-b869432a1aa5",
+          "target": "joint_state",
+          "context": "normal",
+          "jointCode": "left_hip",
+          "zone": "down",
+          "sortOrder": 5
+        },
+        {
+          "messageId": "05003488-ea05-4b06-801f-b147b9e68060",
+          "target": "joint_state",
+          "context": "pad",
+          "jointCode": "left_hip",
+          "zone": "down",
+          "sortOrder": 6
+        },
+        {
+          "messageId": "e1c9df3b-f991-4cb8-8c6d-36273e5d7048",
+          "target": "joint_state",
+          "context": "warning",
+          "jointCode": "left_hip",
+          "zone": "down",
+          "sortOrder": 7
+        },
+        {
+          "messageId": "79119fac-cf95-44ef-af00-b766282f7ac4",
+          "target": "joint_state",
+          "context": "perfect",
+          "jointCode": "spine",
+          "sortOrder": 8
+        },
+        {
+          "messageId": "4871ca02-687f-4229-96c8-0352e49aff98",
+          "target": "joint_state",
+          "context": "warning",
+          "jointCode": "spine",
+          "sortOrder": 9
+        },
+        {
+          "messageId": "2895e8da-3156-44be-b115-c8fc07d7d745",
+          "target": "joint_state_phase",
+          "context": "top:perfect",
+          "jointCode": "spine",
+          "sortOrder": 10
+        },
+        {
+          "messageId": "e7aaf93b-7a4e-4316-8f6c-821a362b16b1",
+          "target": "joint_state_phase",
+          "context": "top:warning",
+          "jointCode": "spine",
+          "sortOrder": 11
+        },
+        {
+          "messageId": "90c9498c-5086-486f-a4e9-ea9c2bafd3ad",
+          "target": "joint_state_phase",
+          "context": "bottom:perfect",
+          "jointCode": "spine",
+          "sortOrder": 12
+        },
+        {
+          "messageId": "25c7a27b-f8a0-4d45-b383-2fedebcded88",
+          "target": "joint_state_phase",
+          "context": "bottom:warning",
+          "jointCode": "spine",
+          "sortOrder": 13
+        },
+        {
+          "messageId": "53db8c0e-c63f-4eba-b6ce-3a041291e6d8",
+          "target": "feedback",
+          "context": "motivational",
+          "sortOrder": 14
+        },
+        {
+          "messageId": "51ab1b19-c15c-4cc1-aeda-dc1a83a225d8",
+          "target": "feedback",
+          "context": "motivational",
+          "sortOrder": 15
+        },
+        {
+          "messageId": "6738a4c1-9dff-4889-a21f-5187ec87b933",
+          "target": "feedback",
+          "context": "tip",
+          "sortOrder": 16
+        },
+        {
+          "messageId": "52a80bd4-5da1-4428-ae5d-bdb82fbf27d1",
+          "target": "feedback",
+          "context": "tip",
+          "sortOrder": 17
+        }
+      ],
+      "cameraPosition": "side_view"
+    }
+  ],
+  "description": {
+    "ar": "تمرين مكتبة: جيفرسون خفيف.",
+    "en": "Library exercise: Jefferson curl (light)."
+  },
+  "instructions": {
+    "ar": "حافظ على عمود فقري محايد وتنفس بثبات وتوقف عند أي ألم حاد.",
+    "en": "Maintain neutral spine, steady breathing, and stop if sharp pain appears."
+  },
+  "supportsWeight": true,
+  "reportMetrics": {
+    "primary": [
+      "FORM_SCORE"
+    ],
+    "excluded": [
+      "HOLD_DURATION",
+      "SYMMETRY"
+    ]
+  },
+  "hasPositionChecks": true,
+  "_database": {
+    "id": "956532ca-f105-48dd-817c-d1e7af09a6bd",
+    "categoryId": "d90cee55-225e-4127-9fdc-062a8a09522e",
+    "countingMethodId": "f4d48aef-1606-4f23-8c61-7b4a2546f990",
+    "publishedAt": "2026-04-20T17:26:27.113Z",
+    "createdAt": "2026-04-20T17:26:27.114Z",
+    "updatedAt": "2026-04-20T17:26:34.443Z",
+    "deletedAt": null,
+    "isFeatured": false,
+    "createdBy": null,
+    "updatedBy": null,
+    "repCountingConfig": null,
+    "bilateralConfig": null,
+    "isBilateral": false,
+    "supportsWeight": true,
+    "minWeight": null,
+    "maxWeight": null,
+    "defaultWeight": null,
+    "reportMetrics": {
+      "mode": "reps",
+      "version": 1,
+      "primaryKpi": "repQuality",
+      "secondaryKpis": [
+        "avgFormScore",
+        "avgRom"
+      ]
+    },
+    "media": [],
+    "poseVariants": [
+      {
+        "id": "93c8fe8d-18b8-4626-94cd-320a97cefe52",
+        "sortOrder": 1,
+        "description": null,
+        "trackedJointsConfig": [
+          {
+            "role": "primary",
+            "joint": "left_hip",
+            "upRange": {
+              "pad": {
+                "max": 180,
+                "min": 145
+              },
+              "normal": {
+                "max": 180,
+                "min": 155
+              },
+              "perfect": {
+                "max": 180,
+                "min": 165
+              }
+            },
+            "downRange": {
+              "pad": {
+                "max": 115,
+                "min": 45
+              },
+              "normal": {
+                "max": 105,
+                "min": 52
+              },
+              "perfect": {
+                "max": 95,
+                "min": 60
+              },
+              "warning": {
+                "max": 45,
+                "min": 35
+              }
+            },
+            "startPose": {
+              "max": 180,
+              "min": 90
+            },
+            "stateMessages": {
+              "pad": {
+                "down": {
+                  "ar": "مقبول، ما زال المدى المحافظ مناسباً",
+                  "en": "Acceptable, but a conservative range is still appropriate"
+                }
+              },
+              "normal": {
+                "up": {
+                  "ar": "جيد، عد ببطء أكثر",
+                  "en": "Good, return a little more slowly"
+                },
+                "down": {
+                  "ar": "جيد، زد المدى فقط إذا بقي الظهر منظماً",
+                  "en": "Good, only increase range if the spine stays organized"
+                }
+              },
+              "perfect": {
+                "up": {
+                  "ar": "ممتاز! عودة من الورك بدون اندفاع",
+                  "en": "Perfect! Controlled return from the hips"
+                },
+                "down": {
+                  "ar": "ممتاز! مفصل ورك نظيف ومريح",
+                  "en": "Perfect! Clean, comfortable hinge"
+                }
+              },
+              "warning": {
+                "down": {
+                  "ar": "لا تطارد العمق على حساب الراحة",
+                  "en": "Do not chase depth at the expense of comfort"
+                }
+              }
+            }
+          },
+          {
+            "role": "secondary",
+            "joint": "spine",
+            "range": {
+              "pad": {
+                "max": 35,
+                "min": 0
+              },
+              "danger": {
+                "max": 85,
+                "min": 42
+              },
+              "normal": {
+                "max": 26,
+                "min": 0
+              },
+              "perfect": {
+                "max": 18,
+                "min": 0
+              },
+              "warning": {
+                "max": 45,
+                "min": 28
+              }
+            },
+            "startPose": {
+              "max": 28,
+              "min": 0
+            },
+            "phaseRanges": {
+              "up": {
+                "normal": {
+                  "max": 24,
+                  "min": 0
+                },
+                "perfect": {
+                  "max": 18,
+                  "min": 0
+                }
+              },
+              "top": {
+                "perfect": {
+                  "max": 12,
+                  "min": 0
+                }
+              },
+              "down": {
+                "normal": {
+                  "max": 24,
+                  "min": 0
+                },
+                "perfect": {
+                  "max": 18,
+                  "min": 0
+                }
+              },
+              "bottom": {
+                "normal": {
+                  "max": 35,
+                  "min": 5
+                },
+                "perfect": {
+                  "max": 28,
+                  "min": 8
+                }
+              }
+            },
+            "stateMessages": {
+              "perfect": {
+                "ar": "الظهر منظم طوال الحركة",
+                "en": "The spine stays organized throughout"
+              },
+              "warning": {
+                "ar": "خفف المدى إذا بدأ الظهر ينهار",
+                "en": "Reduce range if the back starts collapsing"
+              }
+            },
+            "phaseStateMessages": {
+              "top": {
+                "perfect": {
+                  "ar": "ظهر محايد في الوقفة",
+                  "en": "Neutral spine at the top"
+                },
+                "warning": {
+                  "ar": "لا تميل القطن للأمام في الأعلى",
+                  "en": "Avoid excessive lumbar lean at the top"
+                }
+              },
+              "bottom": {
+                "perfect": {
+                  "ar": "انحناء مقبول في القاع مع تحكم",
+                  "en": "Acceptable flexion at bottom with control"
+                },
+                "warning": {
+                  "ar": "قلل الانحناء القطني الزائد",
+                  "en": "Reduce excessive lumbar flexion"
+                }
+              }
+            }
+          }
+        ]
+      }
+    ],
+    "validationWarning": null
+  }
+}

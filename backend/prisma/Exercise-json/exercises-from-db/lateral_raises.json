@@ -1,0 +1,649 @@
+{
+  "slug": "lateral_raises",
+  "status": "published",
+  "movementPattern": "PUSH_VERTICAL",
+  "loadCapability": "EXTERNAL_LOAD_OPTIONAL",
+  "familyKey": "push_vertical_family",
+  "familyOrder": 25,
+  "name": {
+    "ar": "الرفع الجانبي",
+    "en": "Lateral Raises"
+  },
+  "category": {
+    "code": "shoulders",
+    "name": {
+      "ar": "تمارين الأكتاف",
+      "en": "Shoulders"
+    }
+  },
+  "countingMethod": "up_down",
+  "muscles": [
+    "side_delts",
+    "traps"
+  ],
+  "equipment": [
+    "dumbbell",
+    "cable_machine",
+    "resistance_band"
+  ],
+  "tags": [
+    "isolation",
+    "upper_body",
+    "tag_shoulders"
+  ],
+  "repCountingConfig": {
+    "reps": 12,
+    "minRepIntervalMs": 1200,
+    "maxRepIntervalMs": 4000
+  },
+  "poseVariants": [
+    {
+      "name": {
+        "ar": "زاوية أمامية",
+        "en": "Front View"
+      },
+      "posePosition": "standing_front",
+      "expectedPostures": [
+        "standing"
+      ],
+      "expectedDirections": [
+        "front"
+      ],
+      "expectedRegions": [
+        "full_body"
+      ],
+      "trackedJoints": [
+        {
+          "joint": "left_shoulder",
+          "role": "primary",
+          "startPose": {
+            "max": 30,
+            "min": 0
+          },
+          "stateMessages": {
+            "pad": {
+              "up": {
+                "ar": "مقبول، لكن يمكنك التحسن",
+                "en": "Acceptable, but you can improve"
+              }
+            },
+            "normal": {
+              "up": {
+                "ar": "جيد، حاول الوصول لمستوى الكتف",
+                "en": "Good, try reaching shoulder level"
+              },
+              "down": {
+                "ar": "جيد، حاول إرجاع الذراع للأسفل",
+                "en": "Good, try lowering arm more"
+              }
+            },
+            "perfect": {
+              "up": {
+                "ar": "ممتاز! رفع مثالي",
+                "en": "Perfect! Great raise"
+              },
+              "down": {
+                "ar": "ممتاز! ذراعك بجانبك",
+                "en": "Perfect! Arm at side"
+              }
+            },
+            "warning": {
+              "up": {
+                "ar": "لا ترفع أعلى من مستوى الكتف",
+                "en": "Don't raise above shoulder level"
+              }
+            }
+          },
+          "pairedWith": "right_shoulder",
+          "upRange": {
+            "pad": {
+              "max": 105,
+              "min": 75
+            },
+            "normal": {
+              "max": 100,
+              "min": 80
+            },
+            "perfect": {
+              "max": 95,
+              "min": 85
+            },
+            "warning": {
+              "max": 120,
+              "min": 105
+            }
+          },
+          "downRange": {
+            "pad": {
+              "max": 30,
+              "min": 0
+            },
+            "normal": {
+              "max": 20,
+              "min": 0
+            },
+            "perfect": {
+              "max": 15,
+              "min": 0
+            }
+          }
+        },
+        {
+          "joint": "right_shoulder",
+          "role": "primary",
+          "startPose": {
+            "max": 30,
+            "min": 0
+          },
+          "stateMessages": {
+            "pad": {
+              "ar": "مقبول، لكن يمكنك التحسن",
+              "en": "Acceptable, but you can improve"
+            },
+            "normal": {
+              "ar": "جيد، حاول الوصول لمستوى الكتف",
+              "en": "Good, try reaching shoulder level"
+            },
+            "perfect": {
+              "ar": "ممتاز! رفع مثالي",
+              "en": "Perfect! Great raise"
+            },
+            "warning": {
+              "ar": "لا ترفع أكثر من اللازم",
+              "en": "Don't go too high"
+            }
+          },
+          "pairedWith": "left_shoulder",
+          "upRange": {
+            "pad": {
+              "max": 105,
+              "min": 75
+            },
+            "normal": {
+              "max": 100,
+              "min": 80
+            },
+            "perfect": {
+              "max": 95,
+              "min": 85
+            },
+            "warning": {
+              "max": 120,
+              "min": 105
+            }
+          },
+          "downRange": {
+            "pad": {
+              "max": 30,
+              "min": 0
+            },
+            "normal": {
+              "max": 20,
+              "min": 0
+            },
+            "perfect": {
+              "max": 15,
+              "min": 0
+            }
+          }
+        },
+        {
+          "joint": "left_elbow",
+          "role": "secondary",
+          "startPose": {
+            "max": 180,
+            "min": 150
+          },
+          "stateMessages": {
+            "perfect": {
+              "ar": "ممتاز - المرفق ثابت",
+              "en": "Great - elbow is stable"
+            }
+          },
+          "range": {
+            "pad": {
+              "max": 180,
+              "min": 150
+            },
+            "normal": {
+              "max": 180,
+              "min": 160
+            },
+            "perfect": {
+              "max": 180,
+              "min": 165
+            }
+          }
+        }
+      ],
+      "positionChecks": [
+        {
+          "id": "arms_symmetry",
+          "type": "horizontal_alignment",
+          "landmarks": {
+            "primary": "left_wrist",
+            "secondary": "right_wrist"
+          },
+          "condition": {
+            "operator": "approximately_equal",
+            "threshold": 0.08
+          },
+          "activePhases": [
+            "up",
+            "top"
+          ],
+          "errorMessage": {
+            "ar": "ارفع الذراعين بنفس المستوى",
+            "en": "Raise both arms to same level"
+          },
+          "severity": "warning",
+          "cooldownMs": 2000,
+          "minErrorFrames": 4
+        },
+        {
+          "id": "wrists_at_shoulder_level",
+          "type": "horizontal_alignment",
+          "landmarks": {
+            "primary": "left_wrist",
+            "secondary": "left_shoulder"
+          },
+          "condition": {
+            "operator": "approximately_equal",
+            "threshold": 0.06
+          },
+          "activePhases": [
+            "top"
+          ],
+          "errorMessage": {
+            "ar": "ارفع لمستوى الكتف تماماً",
+            "en": "Raise to shoulder level exactly"
+          },
+          "severity": "tip",
+          "cooldownMs": 2500,
+          "minErrorFrames": 5
+        }
+      ],
+      "feedbackMessages": {
+        "motivational": [
+          {
+            "ar": "كتفين رائعين!",
+            "en": "Great shoulders!"
+          },
+          {
+            "ar": "ممتاز! استمر!",
+            "en": "Excellent! Keep going!"
+          },
+          {
+            "ar": "أداء متميز!",
+            "en": "Outstanding form!"
+          }
+        ],
+        "tips": [
+          {
+            "ar": "تخيل أنك تصب الماء من إبريق",
+            "en": "Imagine pouring water from a pitcher"
+          },
+          {
+            "ar": "انزل ببطء - تحكم في الحركة السلبية",
+            "en": "Lower slowly - control the negative"
+          }
+        ]
+      },
+      "messageAssignments": [
+        {
+          "messageId": "e971b997-2435-418e-932a-e3a26d7ed592",
+          "target": "position",
+          "context": "error",
+          "checkId": "arms_symmetry",
+          "sortOrder": 1
+        },
+        {
+          "messageId": "f2f0de47-27d6-445e-b17c-3d2dc654c2f8",
+          "target": "position",
+          "context": "error",
+          "checkId": "wrists_at_shoulder_level",
+          "sortOrder": 2
+        },
+        {
+          "messageId": "3b1558a9-68ef-48dc-be1c-e2694a47c1fa",
+          "target": "joint_state",
+          "context": "perfect",
+          "jointCode": "left_shoulder",
+          "zone": "up",
+          "sortOrder": 3
+        },
+        {
+          "messageId": "c5c1b101-f7f3-4d62-899c-79b0c467875f",
+          "target": "joint_state",
+          "context": "perfect",
+          "jointCode": "left_shoulder",
+          "zone": "down",
+          "sortOrder": 4
+        },
+        {
+          "messageId": "dae3af98-7240-49b6-b0e2-546b0e003cee",
+          "target": "joint_state",
+          "context": "normal",
+          "jointCode": "left_shoulder",
+          "zone": "up",
+          "sortOrder": 5
+        },
+        {
+          "messageId": "814a3841-a440-49ab-8ac6-5de28ef106b0",
+          "target": "joint_state",
+          "context": "normal",
+          "jointCode": "left_shoulder",
+          "zone": "down",
+          "sortOrder": 6
+        },
+        {
+          "messageId": "d88d7f37-b1cc-4efe-a911-3e8b8a9055e1",
+          "target": "joint_state",
+          "context": "pad",
+          "jointCode": "left_shoulder",
+          "zone": "up",
+          "sortOrder": 7
+        },
+        {
+          "messageId": "3d17c525-227f-406f-aa7c-cc947d4cb33b",
+          "target": "joint_state",
+          "context": "warning",
+          "jointCode": "left_shoulder",
+          "zone": "up",
+          "sortOrder": 8
+        },
+        {
+          "messageId": "e545ff25-6cbd-436e-949b-fcc069086283",
+          "target": "joint_state",
+          "context": "perfect",
+          "jointCode": "right_shoulder",
+          "sortOrder": 9
+        },
+        {
+          "messageId": "0d47aa29-7242-4b05-bbb4-f83c6a8fa977",
+          "target": "joint_state",
+          "context": "normal",
+          "jointCode": "right_shoulder",
+          "sortOrder": 10
+        },
+        {
+          "messageId": "f65a3ae0-a8fe-4dad-b31e-86e84ab3f550",
+          "target": "joint_state",
+          "context": "pad",
+          "jointCode": "right_shoulder",
+          "sortOrder": 11
+        },
+        {
+          "messageId": "d1d6e750-4896-4e80-bb67-03a632487492",
+          "target": "joint_state",
+          "context": "warning",
+          "jointCode": "right_shoulder",
+          "sortOrder": 12
+        },
+        {
+          "messageId": "4a58175e-3020-4fdf-997d-ec1b7d8148bc",
+          "target": "joint_state",
+          "context": "perfect",
+          "jointCode": "left_elbow",
+          "sortOrder": 13
+        },
+        {
+          "messageId": "8606035d-65df-4872-b2e3-e632413dea81",
+          "target": "feedback",
+          "context": "motivational",
+          "sortOrder": 14
+        },
+        {
+          "messageId": "f092bade-2202-44c7-9d86-00cc407a80e7",
+          "target": "feedback",
+          "context": "motivational",
+          "sortOrder": 15
+        },
+        {
+          "messageId": "a918e319-9f71-4092-956f-7b52e577683e",
+          "target": "feedback",
+          "context": "motivational",
+          "sortOrder": 16
+        },
+        {
+          "messageId": "fd2a9c97-025a-4898-8539-70905bc40ce3",
+          "target": "feedback",
+          "context": "tip",
+          "sortOrder": 17
+        },
+        {
+          "messageId": "220c8ddd-330c-47e6-8184-26e1cc0840bf",
+          "target": "feedback",
+          "context": "tip",
+          "sortOrder": 18
+        }
+      ],
+      "cameraPosition": "front_view"
+    }
+  ],
+  "description": {
+    "ar": "تمرين عزل لتقوية عضلة الكتف الجانبية (الدالية الوسطى)",
+    "en": "Isolation exercise to strengthen side deltoid muscle"
+  },
+  "instructions": {
+    "ar": "قف بشكل مستقيم مع إمساك الأوزان بجانبك، ثم ارفع ذراعيك جانبياً حتى مستوى الكتف",
+    "en": "Stand straight holding weights at sides, raise arms laterally to shoulder level"
+  },
+  "reportMetrics": {
+    "primary": [
+      "FORM_SCORE"
+    ],
+    "excluded": [
+      "HOLD_DURATION",
+      "WEIGHT",
+      "VOLUME",
+      "EST_1RM"
+    ]
+  },
+  "hasPositionChecks": true,
+  "_database": {
+    "id": "88cd8471-2f93-4db8-919b-26c7034915be",
+    "categoryId": "78daff70-6564-41cd-b768-462735416089",
+    "countingMethodId": "f4d48aef-1606-4f23-8c61-7b4a2546f990",
+    "publishedAt": "2026-04-20T17:26:22.831Z",
+    "createdAt": "2026-04-20T17:26:22.832Z",
+    "updatedAt": "2026-04-20T17:26:34.130Z",
+    "deletedAt": null,
+    "isFeatured": false,
+    "createdBy": null,
+    "updatedBy": null,
+    "repCountingConfig": {
+      "reps": 12,
+      "maxRepIntervalMs": 4000,
+      "minRepIntervalMs": 1200
+    },
+    "bilateralConfig": null,
+    "isBilateral": false,
+    "supportsWeight": false,
+    "minWeight": null,
+    "maxWeight": null,
+    "defaultWeight": null,
+    "reportMetrics": {
+      "mode": "reps",
+      "version": 1,
+      "primaryKpi": "repQuality",
+      "secondaryKpis": [
+        "avgFormScore",
+        "avgRom"
+      ]
+    },
+    "media": [],
+    "poseVariants": [
+      {
+        "id": "9a13dad7-31c8-4ac0-8053-9fa5a7a48cff",
+        "sortOrder": 1,
+        "description": null,
+        "trackedJointsConfig": [
+          {
+            "role": "primary",
+            "joint": "left_shoulder",
+            "upRange": {
+              "pad": {
+                "max": 105,
+                "min": 75
+              },
+              "normal": {
+                "max": 100,
+                "min": 80
+              },
+              "perfect": {
+                "max": 95,
+                "min": 85
+              },
+              "warning": {
+                "max": 120,
+                "min": 105
+              }
+            },
+            "downRange": {
+              "pad": {
+                "max": 30,
+                "min": 0
+              },
+              "normal": {
+                "max": 20,
+                "min": 0
+              },
+              "perfect": {
+                "max": 15,
+                "min": 0
+              }
+            },
+            "startPose": {
+              "max": 30,
+              "min": 0
+            },
+            "pairedWith": "right_shoulder",
+            "stateMessages": {
+              "pad": {
+                "up": {
+                  "ar": "مقبول، لكن يمكنك التحسن",
+                  "en": "Acceptable, but you can improve"
+                }
+              },
+              "normal": {
+                "up": {
+                  "ar": "جيد، حاول الوصول لمستوى الكتف",
+                  "en": "Good, try reaching shoulder level"
+                },
+                "down": {
+                  "ar": "جيد، حاول إرجاع الذراع للأسفل",
+                  "en": "Good, try lowering arm more"
+                }
+              },
+              "perfect": {
+                "up": {
+                  "ar": "ممتاز! رفع مثالي",
+                  "en": "Perfect! Great raise"
+                },
+                "down": {
+                  "ar": "ممتاز! ذراعك بجانبك",
+                  "en": "Perfect! Arm at side"
+                }
+              },
+              "warning": {
+                "up": {
+                  "ar": "لا ترفع أعلى من مستوى الكتف",
+                  "en": "Don't raise above shoulder level"
+                }
+              }
+            }
+          },
+          {
+            "role": "primary",
+            "joint": "right_shoulder",
+            "upRange": {
+              "pad": {
+                "max": 105,
+                "min": 75
+              },
+              "normal": {
+                "max": 100,
+                "min": 80
+              },
+              "perfect": {
+                "max": 95,
+                "min": 85
+              },
+              "warning": {
+                "max": 120,
+                "min": 105
+              }
+            },
+            "downRange": {
+              "pad": {
+                "max": 30,
+                "min": 0
+              },
+              "normal": {
+                "max": 20,
+                "min": 0
+              },
+              "perfect": {
+                "max": 15,
+                "min": 0
+              }
+            },
+            "startPose": {
+              "max": 30,
+              "min": 0
+            },
+            "pairedWith": "left_shoulder",
+            "stateMessages": {
+              "pad": {
+                "ar": "مقبول، لكن يمكنك التحسن",
+                "en": "Acceptable, but you can improve"
+              },
+              "normal": {
+                "ar": "جيد، حاول الوصول لمستوى الكتف",
+                "en": "Good, try reaching shoulder level"
+              },
+              "perfect": {
+                "ar": "ممتاز! رفع مثالي",
+                "en": "Perfect! Great raise"
+              },
+              "warning": {
+                "ar": "لا ترفع أكثر من اللازم",
+                "en": "Don't go too high"
+              }
+            }
+          },
+          {
+            "role": "secondary",
+            "joint": "left_elbow",
+            "range": {
+              "pad": {
+                "max": 180,
+                "min": 150
+              },
+              "normal": {
+                "max": 180,
+                "min": 160
+              },
+              "perfect": {
+                "max": 180,
+                "min": 165
+              }
+            },
+            "startPose": {
+              "max": 180,
+              "min": 150
+            },
+            "stateMessages": {
+              "perfect": {
+                "ar": "ممتاز - المرفق ثابت",
+                "en": "Great - elbow is stable"
+              }
+            }
+          }
+        ]
+      }
+    ],
+    "validationWarning": null
+  }
+}

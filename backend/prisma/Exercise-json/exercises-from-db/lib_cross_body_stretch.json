@@ -1,0 +1,258 @@
+{
+  "slug": "lib_cross_body_stretch",
+  "status": "published",
+  "movementPattern": "MOBILITY_DRILL",
+  "loadCapability": "BODYWEIGHT_ONLY",
+  "familyKey": "shoulder_mobility_family",
+  "familyOrder": 23,
+  "name": {
+    "ar": "تمديد كتف عبر الجسم",
+    "en": "Cross-body shoulder stretch"
+  },
+  "category": {
+    "code": "shoulders",
+    "name": {
+      "ar": "تمارين الأكتاف",
+      "en": "Shoulders"
+    }
+  },
+  "countingMethod": "hold",
+  "muscles": [
+    "rear_delts"
+  ],
+  "equipment": [
+    "bodyweight",
+    "mat"
+  ],
+  "tags": [
+    "curated_library",
+    "mobility"
+  ],
+  "repCountingConfig": {
+    "duration": 30,
+    "gracePeriodMs": 2500
+  },
+  "poseVariants": [
+    {
+      "name": {
+        "ar": "زاوية جانبية",
+        "en": "Side view"
+      },
+      "posePosition": "standing_side",
+      "expectedPostures": [
+        "standing"
+      ],
+      "expectedDirections": [
+        "side"
+      ],
+      "expectedRegions": [
+        "full_body"
+      ],
+      "trackedJoints": [
+        {
+          "joint": "left_shoulder",
+          "role": "primary",
+          "startPose": {
+            "max": 110,
+            "min": 20
+          },
+          "stateMessages": {
+            "perfect": {
+              "ar": "تمدد كتف مريح",
+              "en": "Comfortable shoulder stretch"
+            },
+            "warning": {
+              "ar": "لا تتجاوز الألم الحاد",
+              "en": "Do not push through sharp pain"
+            }
+          },
+          "range": {
+            "pad": {
+              "max": 115,
+              "min": 20
+            },
+            "normal": {
+              "max": 105,
+              "min": 28
+            },
+            "perfect": {
+              "max": 95,
+              "min": 35
+            },
+            "warning": {
+              "max": 125,
+              "min": 110
+            }
+          }
+        }
+      ],
+      "feedbackMessages": {
+        "motivational": [
+          {
+            "ar": "مدى حركة جيد وتحكم أفضل",
+            "en": "Good range and better control"
+          },
+          {
+            "ar": "تحرك بسلاسة داخل نطاق مريح",
+            "en": "Move smoothly inside a comfortable range"
+          }
+        ],
+        "tips": [
+          {
+            "ar": "ابقِ الحركة نظيفة وهادئة بدون ارتداد.",
+            "en": "Keep the motion smooth and bounce-free."
+          },
+          {
+            "ar": "أي ألم حاد يعني تقليل المدى فوراً.",
+            "en": "Any sharp pain means reduce range immediately."
+          }
+        ]
+      },
+      "messageAssignments": [
+        {
+          "messageId": "955590a8-e3e8-4d73-8ab7-6a16257b4c3c",
+          "target": "joint_state",
+          "context": "perfect",
+          "jointCode": "left_shoulder",
+          "sortOrder": 1
+        },
+        {
+          "messageId": "080787bb-32c0-414d-872c-0ba019ae2b54",
+          "target": "joint_state",
+          "context": "warning",
+          "jointCode": "left_shoulder",
+          "sortOrder": 2
+        },
+        {
+          "messageId": "e10fd701-2e08-4f42-9c64-245fa4add9b2",
+          "target": "feedback",
+          "context": "motivational",
+          "sortOrder": 3
+        },
+        {
+          "messageId": "915baea5-5379-4dc3-ae4f-6a99067ad3a8",
+          "target": "feedback",
+          "context": "motivational",
+          "sortOrder": 4
+        },
+        {
+          "messageId": "bf7c55b0-e522-4e35-be22-e1d5b811cd92",
+          "target": "feedback",
+          "context": "tip",
+          "sortOrder": 5
+        },
+        {
+          "messageId": "29e7f272-5429-4e44-b69a-10216ff5231a",
+          "target": "feedback",
+          "context": "tip",
+          "sortOrder": 6
+        }
+      ],
+      "cameraPosition": "side_view"
+    }
+  ],
+  "description": {
+    "ar": "تمرين مكتبة: تمديد كتف عبر الجسم.",
+    "en": "Library exercise: Cross-body shoulder stretch."
+  },
+  "instructions": {
+    "ar": "حافظ على عمود فقري محايد وتنفس بثبات وتوقف عند أي ألم حاد.",
+    "en": "Maintain neutral spine, steady breathing, and stop if sharp pain appears."
+  },
+  "reportMetrics": {
+    "primary": [
+      "FORM_SCORE"
+    ],
+    "excluded": [
+      "REP_COUNT",
+      "TEMPO",
+      "TUT",
+      "ROM",
+      "FORM_CONSISTENCY",
+      "FATIGUE_INDEX",
+      "VELOCITY",
+      "VELOCITY_LOSS",
+      "TEMPO_CONSISTENCY",
+      "WEIGHT",
+      "VOLUME",
+      "EST_1RM",
+      "SYMMETRY",
+      "ALIGNMENT"
+    ]
+  },
+  "_database": {
+    "id": "fe29da99-aa3e-4c2c-a9a3-ef32e34ce07e",
+    "categoryId": "78daff70-6564-41cd-b768-462735416089",
+    "countingMethodId": "7ae86596-4b4b-400b-afa1-c7c0b6ba4fc9",
+    "publishedAt": "2026-04-20T17:26:27.188Z",
+    "createdAt": "2026-04-20T17:26:27.190Z",
+    "updatedAt": "2026-04-20T17:26:34.449Z",
+    "deletedAt": null,
+    "isFeatured": false,
+    "createdBy": null,
+    "updatedBy": null,
+    "repCountingConfig": null,
+    "bilateralConfig": null,
+    "isBilateral": false,
+    "supportsWeight": false,
+    "minWeight": null,
+    "maxWeight": null,
+    "defaultWeight": null,
+    "reportMetrics": {
+      "mode": "duration",
+      "version": 1,
+      "primaryKpi": "timeUnderTension",
+      "secondaryKpis": [
+        "avgFormScore",
+        "avgRom"
+      ]
+    },
+    "media": [],
+    "poseVariants": [
+      {
+        "id": "6b590eb3-d3c3-4fa9-a7b1-f4414a1f19d8",
+        "sortOrder": 1,
+        "description": null,
+        "trackedJointsConfig": [
+          {
+            "role": "primary",
+            "joint": "left_shoulder",
+            "range": {
+              "pad": {
+                "max": 115,
+                "min": 20
+              },
+              "normal": {
+                "max": 105,
+                "min": 28
+              },
+              "perfect": {
+                "max": 95,
+                "min": 35
+              },
+              "warning": {
+                "max": 125,
+                "min": 110
+              }
+            },
+            "startPose": {
+              "max": 110,
+              "min": 20
+            },
+            "stateMessages": {
+              "perfect": {
+                "ar": "تمدد كتف مريح",
+                "en": "Comfortable shoulder stretch"
+              },
+              "warning": {
+                "ar": "لا تتجاوز الألم الحاد",
+                "en": "Do not push through sharp pain"
+              }
+            }
+          }
+        ]
+      }
+    ],
+    "validationWarning": null
+  }
+}

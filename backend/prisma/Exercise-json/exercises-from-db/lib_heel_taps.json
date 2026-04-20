@@ -1,0 +1,478 @@
+{
+  "slug": "lib_heel_taps",
+  "status": "published",
+  "movementPattern": "CORE_BRACE",
+  "loadCapability": "BODYWEIGHT_ONLY",
+  "familyKey": "anti_extension_family",
+  "familyOrder": 16,
+  "name": {
+    "ar": "لمس كعبين",
+    "en": "Heel taps (dead bug variant)"
+  },
+  "category": {
+    "code": "abs",
+    "name": {
+      "ar": "تمارين البطن",
+      "en": "Abs"
+    }
+  },
+  "countingMethod": "up_down",
+  "muscles": [
+    "abs_muscle"
+  ],
+  "equipment": [
+    "bodyweight",
+    "mat"
+  ],
+  "tags": [
+    "curated_library",
+    "beginner_friendly"
+  ],
+  "repCountingConfig": {
+    "reps": 12,
+    "minRepIntervalMs": 1500,
+    "maxRepIntervalMs": 5000
+  },
+  "poseVariants": [
+    {
+      "name": {
+        "ar": "مستلقٍ على الظهر",
+        "en": "Lying on back (side angle)"
+      },
+      "posePosition": "supine_side",
+      "expectedPostures": [
+        "lying_supine"
+      ],
+      "expectedDirections": [
+        "side"
+      ],
+      "expectedRegions": [
+        "full_body"
+      ],
+      "trackedJoints": [
+        {
+          "joint": "left_hip",
+          "role": "primary",
+          "startPose": {
+            "max": 180,
+            "min": 85
+          },
+          "stateMessages": {
+            "pad": {
+              "down": {
+                "ar": "مقبول، لكن المدى ما زال قصيراً",
+                "en": "Acceptable, but the reach is still short"
+              }
+            },
+            "normal": {
+              "up": {
+                "ar": "جيد، أبقِ الركبة فوق الورك أكثر",
+                "en": "Good, keep the knee stacked over the hip more"
+              },
+              "down": {
+                "ar": "جيد، مد الكعب دون فقدان الجذع",
+                "en": "Good, reach the heel without losing the trunk"
+              }
+            },
+            "perfect": {
+              "up": {
+                "ar": "ممتاز! فخذ مرتفع مع ظهر ملتصق",
+                "en": "Perfect! Thigh lifts while back stays down"
+              },
+              "down": {
+                "ar": "ممتاز! كعب يقترب من الأرض بتحكم",
+                "en": "Perfect! Heel approaches the floor with control"
+              }
+            },
+            "warning": {
+              "down": {
+                "ar": "لا تدع أسفل الظهر يرتفع",
+                "en": "Do not let the low back lift off"
+              }
+            }
+          },
+          "upRange": {
+            "pad": {
+              "max": 180,
+              "min": 125
+            },
+            "normal": {
+              "max": 180,
+              "min": 130
+            },
+            "perfect": {
+              "max": 170,
+              "min": 138
+            }
+          },
+          "downRange": {
+            "pad": {
+              "max": 120,
+              "min": 75
+            },
+            "normal": {
+              "max": 115,
+              "min": 82
+            },
+            "perfect": {
+              "max": 108,
+              "min": 88
+            },
+            "warning": {
+              "max": 75,
+              "min": 62
+            }
+          }
+        },
+        {
+          "joint": "spine",
+          "role": "secondary",
+          "startPose": {
+            "max": 20,
+            "min": 0
+          },
+          "stateMessages": {
+            "perfect": {
+              "ar": "جذع محايد ومثبت",
+              "en": "Neutral, anchored trunk"
+            },
+            "warning": {
+              "ar": "خفف المدى حتى يعود الظهر للاستقرار",
+              "en": "Reduce range until the back is stable again"
+            }
+          },
+          "range": {
+            "pad": {
+              "max": 24,
+              "min": 0
+            },
+            "normal": {
+              "max": 18,
+              "min": 0
+            },
+            "perfect": {
+              "max": 12,
+              "min": 0
+            },
+            "warning": {
+              "max": 36,
+              "min": 24
+            }
+          }
+        }
+      ],
+      "positionChecks": [
+        {
+          "id": "heel_taps_low_back",
+          "type": "vertical_alignment",
+          "landmarks": {
+            "primary": "left_shoulder",
+            "secondary": "left_hip"
+          },
+          "condition": {
+            "operator": "approximately_equal",
+            "threshold": 0.16
+          },
+          "activePhases": [
+            "up",
+            "down"
+          ],
+          "errorMessage": {
+            "ar": "لا ترفع أسفل الظهر عن الأرض عند مد الكعب.",
+            "en": "Do not peel the low back off the floor as you reach the heel."
+          },
+          "severity": "warning",
+          "cooldownMs": 2200,
+          "minErrorFrames": 4
+        }
+      ],
+      "feedbackMessages": {
+        "motivational": [
+          {
+            "ar": "شد جذع ممتاز",
+            "en": "Excellent trunk tension"
+          },
+          {
+            "ar": "ثباتك يتحسن عدة بعد عدة",
+            "en": "Your stability improves rep by rep"
+          }
+        ],
+        "tips": [
+          {
+            "ar": "شد السرة برفق ولا تحبس النفس طويلاً.",
+            "en": "Brace gently and avoid long breath-holds."
+          },
+          {
+            "ar": "حرّك الأطراف دون أن ينهار الجذع.",
+            "en": "Move the limbs without letting the trunk collapse."
+          }
+        ]
+      },
+      "messageAssignments": [
+        {
+          "messageId": "5d6e1c42-13e3-4cd5-a364-638154d42ff7",
+          "target": "position",
+          "context": "error",
+          "checkId": "heel_taps_low_back",
+          "sortOrder": 1
+        },
+        {
+          "messageId": "ba6b6c5a-6940-4683-8ac0-854736e23fb1",
+          "target": "joint_state",
+          "context": "perfect",
+          "jointCode": "left_hip",
+          "zone": "up",
+          "sortOrder": 2
+        },
+        {
+          "messageId": "f1826cdd-1f7e-4391-bdfa-dec30c4cb240",
+          "target": "joint_state",
+          "context": "perfect",
+          "jointCode": "left_hip",
+          "zone": "down",
+          "sortOrder": 3
+        },
+        {
+          "messageId": "81edbf47-8b0e-438a-9f10-1f22b5e6de2e",
+          "target": "joint_state",
+          "context": "normal",
+          "jointCode": "left_hip",
+          "zone": "up",
+          "sortOrder": 4
+        },
+        {
+          "messageId": "f2d907f3-82df-49f2-a16a-965c21c0aab0",
+          "target": "joint_state",
+          "context": "normal",
+          "jointCode": "left_hip",
+          "zone": "down",
+          "sortOrder": 5
+        },
+        {
+          "messageId": "9c7e111b-8511-446b-bf40-1208037c32e6",
+          "target": "joint_state",
+          "context": "pad",
+          "jointCode": "left_hip",
+          "zone": "down",
+          "sortOrder": 6
+        },
+        {
+          "messageId": "0d73f5b2-f82d-4291-af24-e479f75f7200",
+          "target": "joint_state",
+          "context": "warning",
+          "jointCode": "left_hip",
+          "zone": "down",
+          "sortOrder": 7
+        },
+        {
+          "messageId": "6d4d1097-ebdc-40db-b431-6b3a3164a3df",
+          "target": "joint_state",
+          "context": "perfect",
+          "jointCode": "spine",
+          "sortOrder": 8
+        },
+        {
+          "messageId": "e335b1be-1dea-4d2c-9e83-2f79eecb4cce",
+          "target": "joint_state",
+          "context": "warning",
+          "jointCode": "spine",
+          "sortOrder": 9
+        },
+        {
+          "messageId": "5fbf53b1-289a-4efd-9b97-bdb63101ce78",
+          "target": "feedback",
+          "context": "motivational",
+          "sortOrder": 10
+        },
+        {
+          "messageId": "6bb2cc1e-7c7a-45a0-b45e-83507aafca3b",
+          "target": "feedback",
+          "context": "motivational",
+          "sortOrder": 11
+        },
+        {
+          "messageId": "a0bf8268-4c05-477a-a180-78e9401f153e",
+          "target": "feedback",
+          "context": "tip",
+          "sortOrder": 12
+        },
+        {
+          "messageId": "1ea7460a-cec2-4e37-976c-cde923d184dc",
+          "target": "feedback",
+          "context": "tip",
+          "sortOrder": 13
+        }
+      ]
+    }
+  ],
+  "description": {
+    "ar": "تمرين مكتبة: لمس كعبين.",
+    "en": "Library exercise: Heel taps (dead bug variant)."
+  },
+  "instructions": {
+    "ar": "حافظ على عمود فقري محايد وتنفس بثبات وتوقف عند أي ألم حاد.",
+    "en": "Maintain neutral spine, steady breathing, and stop if sharp pain appears."
+  },
+  "reportMetrics": {
+    "primary": [
+      "FORM_SCORE"
+    ],
+    "excluded": [
+      "HOLD_DURATION",
+      "WEIGHT",
+      "VOLUME",
+      "EST_1RM",
+      "SYMMETRY"
+    ]
+  },
+  "hasPositionChecks": true,
+  "_database": {
+    "id": "9c775cff-8969-45dd-ad63-857f81c10ae3",
+    "categoryId": "01b944db-50df-4f53-aa08-ec5633820277",
+    "countingMethodId": "f4d48aef-1606-4f23-8c61-7b4a2546f990",
+    "publishedAt": "2026-04-20T17:26:26.569Z",
+    "createdAt": "2026-04-20T17:26:26.571Z",
+    "updatedAt": "2026-04-20T17:26:34.402Z",
+    "deletedAt": null,
+    "isFeatured": false,
+    "createdBy": null,
+    "updatedBy": null,
+    "repCountingConfig": null,
+    "bilateralConfig": null,
+    "isBilateral": false,
+    "supportsWeight": false,
+    "minWeight": null,
+    "maxWeight": null,
+    "defaultWeight": null,
+    "reportMetrics": {
+      "mode": "reps",
+      "version": 1,
+      "primaryKpi": "repQuality",
+      "secondaryKpis": [
+        "avgFormScore",
+        "avgRom"
+      ]
+    },
+    "media": [],
+    "poseVariants": [
+      {
+        "id": "6db956b1-f947-4648-a2ee-e5832a1de5ae",
+        "sortOrder": 1,
+        "description": null,
+        "trackedJointsConfig": [
+          {
+            "role": "primary",
+            "joint": "left_hip",
+            "upRange": {
+              "pad": {
+                "max": 180,
+                "min": 125
+              },
+              "normal": {
+                "max": 180,
+                "min": 130
+              },
+              "perfect": {
+                "max": 170,
+                "min": 138
+              }
+            },
+            "downRange": {
+              "pad": {
+                "max": 120,
+                "min": 75
+              },
+              "normal": {
+                "max": 115,
+                "min": 82
+              },
+              "perfect": {
+                "max": 108,
+                "min": 88
+              },
+              "warning": {
+                "max": 75,
+                "min": 62
+              }
+            },
+            "startPose": {
+              "max": 180,
+              "min": 85
+            },
+            "stateMessages": {
+              "pad": {
+                "down": {
+                  "ar": "مقبول، لكن المدى ما زال قصيراً",
+                  "en": "Acceptable, but the reach is still short"
+                }
+              },
+              "normal": {
+                "up": {
+                  "ar": "جيد، أبقِ الركبة فوق الورك أكثر",
+                  "en": "Good, keep the knee stacked over the hip more"
+                },
+                "down": {
+                  "ar": "جيد، مد الكعب دون فقدان الجذع",
+                  "en": "Good, reach the heel without losing the trunk"
+                }
+              },
+              "perfect": {
+                "up": {
+                  "ar": "ممتاز! فخذ مرتفع مع ظهر ملتصق",
+                  "en": "Perfect! Thigh lifts while back stays down"
+                },
+                "down": {
+                  "ar": "ممتاز! كعب يقترب من الأرض بتحكم",
+                  "en": "Perfect! Heel approaches the floor with control"
+                }
+              },
+              "warning": {
+                "down": {
+                  "ar": "لا تدع أسفل الظهر يرتفع",
+                  "en": "Do not let the low back lift off"
+                }
+              }
+            }
+          },
+          {
+            "role": "secondary",
+            "joint": "spine",
+            "range": {
+              "pad": {
+                "max": 24,
+                "min": 0
+              },
+              "normal": {
+                "max": 18,
+                "min": 0
+              },
+              "perfect": {
+                "max": 12,
+                "min": 0
+              },
+              "warning": {
+                "max": 36,
+                "min": 24
+              }
+            },
+            "startPose": {
+              "max": 20,
+              "min": 0
+            },
+            "stateMessages": {
+              "perfect": {
+                "ar": "جذع محايد ومثبت",
+                "en": "Neutral, anchored trunk"
+              },
+              "warning": {
+                "ar": "خفف المدى حتى يعود الظهر للاستقرار",
+                "en": "Reduce range until the back is stable again"
+              }
+            }
+          }
+        ]
+      }
+    ],
+    "validationWarning": null
+  }
+}

@@ -1,15 +1,15 @@
 {
   "name": {
-    "ar": "ثني الذراع",
-    "en": "Bicep Curl"
+    "ar": "راحة الساعد",
+    "en": "Forearm rest"
   },
   "description": {
-    "ar": "تمرين لتقوية عضلات الذراع الأمامية",
-    "en": "Exercise to strengthen bicep muscles"
+    "ar": "وضعية راحة للساعد والرسغ بعد الجهد",
+    "en": "Rest position for forearm and wrist after effort"
   },
   "instructions": {
-    "ar": "قف بشكل مستقيم، الذراعين ممدودتين للأسفل، ثم اثني المرفق لرفع الساعد",
-    "en": "Stand straight with arms extended down, then bend elbows to curl forearms up"
+    "ar": "أرحِ الساعد على مسند بزاوية مريحة دون إجهاد",
+    "en": "Rest the forearm on a support at a comfortable angle without strain"
   },
   "category": {
     "code": "arms",
@@ -45,14 +45,15 @@
             "max": 180
           },
           "upRange": {
-            "perfect": { "min": 135, "max": 160 },
-            "normal": { "min": 140, "max": 170 },
-            "pad": { "min": 150, "max": 165 },
-            "warning": { "min": 165, "max": 180 }
+            "perfect": { "min": 168, "max": 180 },
+            "normal": { "min": 165, "max": 180 },
+            "pad": { "min": 166, "max": 180 }
           },
           "downRange": {
-            "perfect": { "min": 0, "max": 90 },
-            "normal": { "min": 0, "max": 100 }
+            "perfect": { "min": 125, "max": 158 },
+            "normal": { "min": 115, "max": 162 },
+            "pad": { "min": 105, "max": 164 },
+            "warning": { "min": 90, "max": 120 }
           },
           "stateMessages": {
             "perfect": {

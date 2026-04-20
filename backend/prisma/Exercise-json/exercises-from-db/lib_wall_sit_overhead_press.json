@@ -1,0 +1,682 @@
+{
+  "slug": "lib_wall_sit_overhead_press",
+  "status": "published",
+  "movementPattern": "PUSH_VERTICAL",
+  "loadCapability": "EXTERNAL_LOAD_OPTIONAL",
+  "familyKey": "conditioning_family",
+  "familyOrder": 31,
+  "name": {
+    "ar": "جلوس حائط وضغط",
+    "en": "Wall sit + overhead press"
+  },
+  "category": {
+    "code": "full_body",
+    "name": {
+      "ar": "تمارين الجسم كامل",
+      "en": "Full Body"
+    }
+  },
+  "countingMethod": "up_down",
+  "muscles": [
+    "quadriceps",
+    "front_delts"
+  ],
+  "equipment": [
+    "dumbbell",
+    "mat"
+  ],
+  "tags": [
+    "curated_library",
+    "conditioning"
+  ],
+  "repCountingConfig": {
+    "reps": 12,
+    "minRepIntervalMs": 1500,
+    "maxRepIntervalMs": 5000
+  },
+  "poseVariants": [
+    {
+      "name": {
+        "ar": "زاوية أمامية",
+        "en": "Front view"
+      },
+      "posePosition": "standing_front",
+      "expectedPostures": [
+        "standing"
+      ],
+      "expectedDirections": [
+        "front"
+      ],
+      "expectedRegions": [
+        "full_body"
+      ],
+      "trackedJoints": [
+        {
+          "joint": "left_elbow",
+          "role": "primary",
+          "startPose": {
+            "max": 115,
+            "min": 70
+          },
+          "stateMessages": {
+            "normal": {
+              "up": {
+                "ar": "جيد، أكمل التمدد في الأعلى",
+                "en": "Good, finish the top lockout"
+              },
+              "down": {
+                "ar": "جيد، تحكم في العودة للمستوى السفلي",
+                "en": "Good, control the return to shoulder level"
+              }
+            },
+            "perfect": {
+              "up": {
+                "ar": "ضغط علوي كامل مع ثبات ممتاز",
+                "en": "Full press with excellent lower-body stability"
+              },
+              "down": {
+                "ar": "استقبال متزن فوق الكتفين",
+                "en": "Balanced catch over the shoulders"
+              }
+            }
+          },
+          "pairedWith": "right_elbow",
+          "upRange": {
+            "pad": {
+              "max": 180,
+              "min": 145
+            },
+            "normal": {
+              "max": 180,
+              "min": 155
+            },
+            "perfect": {
+              "max": 180,
+              "min": 165
+            }
+          },
+          "downRange": {
+            "pad": {
+              "max": 118,
+              "min": 65
+            },
+            "normal": {
+              "max": 108,
+              "min": 72
+            },
+            "perfect": {
+              "max": 98,
+              "min": 80
+            },
+            "warning": {
+              "max": 65,
+              "min": 52
+            }
+          }
+        },
+        {
+          "joint": "right_elbow",
+          "role": "primary",
+          "startPose": {
+            "max": 115,
+            "min": 70
+          },
+          "stateMessages": {
+            "normal": {
+              "up": {
+                "ar": "جيد، أكمل التمدد في الأعلى",
+                "en": "Good, finish the top lockout"
+              },
+              "down": {
+                "ar": "جيد، تحكم في العودة للمستوى السفلي",
+                "en": "Good, control the return to shoulder level"
+              }
+            },
+            "perfect": {
+              "up": {
+                "ar": "ضغط علوي كامل مع ثبات ممتاز",
+                "en": "Full press with excellent lower-body stability"
+              },
+              "down": {
+                "ar": "استقبال متزن فوق الكتفين",
+                "en": "Balanced catch over the shoulders"
+              }
+            }
+          },
+          "pairedWith": "left_elbow",
+          "upRange": {
+            "pad": {
+              "max": 180,
+              "min": 145
+            },
+            "normal": {
+              "max": 180,
+              "min": 155
+            },
+            "perfect": {
+              "max": 180,
+              "min": 165
+            }
+          },
+          "downRange": {
+            "pad": {
+              "max": 118,
+              "min": 65
+            },
+            "normal": {
+              "max": 108,
+              "min": 72
+            },
+            "perfect": {
+              "max": 98,
+              "min": 80
+            },
+            "warning": {
+              "max": 65,
+              "min": 52
+            }
+          }
+        },
+        {
+          "joint": "left_knee",
+          "role": "secondary",
+          "startPose": {
+            "max": 110,
+            "min": 70
+          },
+          "stateMessages": {
+            "perfect": {
+              "ar": "زاوية جلوس حائطي جيدة",
+              "en": "Wall-sit depth is solid"
+            },
+            "warning": {
+              "ar": "لا ترتفع كثيراً أثناء الضغط",
+              "en": "Do not drift too high while pressing"
+            }
+          },
+          "range": {
+            "pad": {
+              "max": 110,
+              "min": 70
+            },
+            "normal": {
+              "max": 105,
+              "min": 75
+            },
+            "perfect": {
+              "max": 100,
+              "min": 80
+            },
+            "warning": {
+              "max": 70,
+              "min": 60
+            }
+          }
+        },
+        {
+          "joint": "spine",
+          "role": "secondary",
+          "startPose": {
+            "max": 24,
+            "min": 0
+          },
+          "stateMessages": {
+            "perfect": {
+              "ar": "ظهر محايد على الحائط",
+              "en": "Back stays neutral against the wall"
+            },
+            "warning": {
+              "ar": "لا تعوض بالظهر السفلي",
+              "en": "Do not compensate through the low back"
+            }
+          },
+          "range": {
+            "pad": {
+              "max": 26,
+              "min": 0
+            },
+            "normal": {
+              "max": 20,
+              "min": 0
+            },
+            "perfect": {
+              "max": 14,
+              "min": 0
+            },
+            "warning": {
+              "max": 40,
+              "min": 26
+            }
+          }
+        }
+      ],
+      "positionChecks": [
+        {
+          "id": "wall_sit_knee_level",
+          "type": "horizontal_alignment",
+          "landmarks": {
+            "primary": "left_knee",
+            "secondary": "right_knee"
+          },
+          "condition": {
+            "operator": "approximately_equal",
+            "threshold": 0.08
+          },
+          "activePhases": [
+            "all"
+          ],
+          "errorMessage": {
+            "ar": "اثبت على مستوى واحد في الجلوس الحائطي.",
+            "en": "Stay level through the wall-sit position."
+          },
+          "severity": "warning",
+          "cooldownMs": 2500,
+          "minErrorFrames": 5
+        }
+      ],
+      "feedbackMessages": {
+        "motivational": [
+          {
+            "ar": "أداء قوي ومنظم",
+            "en": "Strong and controlled work"
+          },
+          {
+            "ar": "حافظ على الشكل قبل السرعة",
+            "en": "Keep form before speed"
+          }
+        ],
+        "tips": [
+          {
+            "ar": "خذ نفساً تحضيرياً قبل كل عدة وازفر مع الجهد.",
+            "en": "Take a setup breath before each rep and exhale on effort."
+          },
+          {
+            "ar": "إذا فقدت التحكم الميكانيكي، قلل المدى أو الحمل.",
+            "en": "If mechanics break down, reduce range or load."
+          }
+        ]
+      },
+      "messageAssignments": [
+        {
+          "messageId": "e07f8197-d565-4c5e-adc4-cec623ea5ab1",
+          "target": "position",
+          "context": "error",
+          "checkId": "wall_sit_knee_level",
+          "sortOrder": 1
+        },
+        {
+          "messageId": "63a91541-169f-4472-b6f7-bb07cbb8f3ef",
+          "target": "joint_state",
+          "context": "perfect",
+          "jointCode": "left_elbow",
+          "zone": "up",
+          "sortOrder": 2
+        },
+        {
+          "messageId": "63ff4f12-3237-4eba-9e99-7c5a9b3a9501",
+          "target": "joint_state",
+          "context": "perfect",
+          "jointCode": "left_elbow",
+          "zone": "down",
+          "sortOrder": 3
+        },
+        {
+          "messageId": "9bfb1a53-96c1-4675-9b5f-9c97ffeb35b1",
+          "target": "joint_state",
+          "context": "normal",
+          "jointCode": "left_elbow",
+          "zone": "up",
+          "sortOrder": 4
+        },
+        {
+          "messageId": "3ff4c00c-c4ba-4d3c-a3af-085381c6588c",
+          "target": "joint_state",
+          "context": "normal",
+          "jointCode": "left_elbow",
+          "zone": "down",
+          "sortOrder": 5
+        },
+        {
+          "messageId": "a8c934b8-8168-4cb0-b203-d9624c77bb44",
+          "target": "joint_state",
+          "context": "perfect",
+          "jointCode": "right_elbow",
+          "zone": "up",
+          "sortOrder": 6
+        },
+        {
+          "messageId": "1ac3fecd-8c13-490c-b6fc-43f6c2a5edaa",
+          "target": "joint_state",
+          "context": "perfect",
+          "jointCode": "right_elbow",
+          "zone": "down",
+          "sortOrder": 7
+        },
+        {
+          "messageId": "5642544b-1c86-4efd-aaf0-84363690ee13",
+          "target": "joint_state",
+          "context": "normal",
+          "jointCode": "right_elbow",
+          "zone": "up",
+          "sortOrder": 8
+        },
+        {
+          "messageId": "34d462f9-7143-4119-81e2-326e85abbc3e",
+          "target": "joint_state",
+          "context": "normal",
+          "jointCode": "right_elbow",
+          "zone": "down",
+          "sortOrder": 9
+        },
+        {
+          "messageId": "3a6aa2ed-093e-48be-b655-5a62ce4bc975",
+          "target": "joint_state",
+          "context": "perfect",
+          "jointCode": "left_knee",
+          "sortOrder": 10
+        },
+        {
+          "messageId": "25398c2a-34db-4e9f-aed3-cd190db87e05",
+          "target": "joint_state",
+          "context": "warning",
+          "jointCode": "left_knee",
+          "sortOrder": 11
+        },
+        {
+          "messageId": "db92cf80-29fe-42e5-b5a3-2307f461e298",
+          "target": "joint_state",
+          "context": "perfect",
+          "jointCode": "spine",
+          "sortOrder": 12
+        },
+        {
+          "messageId": "5d058e5c-5836-452b-b88b-61e30141a2df",
+          "target": "joint_state",
+          "context": "warning",
+          "jointCode": "spine",
+          "sortOrder": 13
+        },
+        {
+          "messageId": "84dd05ac-4e61-43ed-8d09-81dc2199c1e3",
+          "target": "feedback",
+          "context": "motivational",
+          "sortOrder": 14
+        },
+        {
+          "messageId": "96a9f77c-0ee2-470b-bd02-eb65759873e3",
+          "target": "feedback",
+          "context": "motivational",
+          "sortOrder": 15
+        },
+        {
+          "messageId": "448e392e-53c6-4e16-bd6b-0eb71c82a771",
+          "target": "feedback",
+          "context": "tip",
+          "sortOrder": 16
+        },
+        {
+          "messageId": "1066c266-a3ba-4fab-a30c-43d3ab63d6a8",
+          "target": "feedback",
+          "context": "tip",
+          "sortOrder": 17
+        }
+      ],
+      "cameraPosition": "front_view"
+    }
+  ],
+  "description": {
+    "ar": "تمرين مكتبة: جلوس حائط وضغط.",
+    "en": "Library exercise: Wall sit + overhead press."
+  },
+  "instructions": {
+    "ar": "حافظ على عمود فقري محايد وتنفس بثبات وتوقف عند أي ألم حاد.",
+    "en": "Maintain neutral spine, steady breathing, and stop if sharp pain appears."
+  },
+  "supportsWeight": true,
+  "reportMetrics": {
+    "primary": [
+      "FORM_SCORE"
+    ],
+    "excluded": [
+      "HOLD_DURATION"
+    ]
+  },
+  "hasPositionChecks": true,
+  "_database": {
+    "id": "f774d84e-b1d2-43e3-9718-5b05d60fa931",
+    "categoryId": "da4f0d15-a7a4-4d8e-abd2-73ee921ef7dc",
+    "countingMethodId": "f4d48aef-1606-4f23-8c61-7b4a2546f990",
+    "publishedAt": "2026-04-20T17:26:26.012Z",
+    "createdAt": "2026-04-20T17:26:26.013Z",
+    "updatedAt": "2026-04-20T17:26:34.354Z",
+    "deletedAt": null,
+    "isFeatured": false,
+    "createdBy": null,
+    "updatedBy": null,
+    "repCountingConfig": null,
+    "bilateralConfig": null,
+    "isBilateral": false,
+    "supportsWeight": true,
+    "minWeight": null,
+    "maxWeight": null,
+    "defaultWeight": null,
+    "reportMetrics": {
+      "mode": "reps",
+      "version": 1,
+      "primaryKpi": "repQuality",
+      "secondaryKpis": [
+        "avgFormScore",
+        "avgRom"
+      ]
+    },
+    "media": [],
+    "poseVariants": [
+      {
+        "id": "6c5e74f5-babb-45ad-b090-c0274be8a824",
+        "sortOrder": 1,
+        "description": null,
+        "trackedJointsConfig": [
+          {
+            "role": "primary",
+            "joint": "left_elbow",
+            "upRange": {
+              "pad": {
+                "max": 180,
+                "min": 145
+              },
+              "normal": {
+                "max": 180,
+                "min": 155
+              },
+              "perfect": {
+                "max": 180,
+                "min": 165
+              }
+            },
+            "downRange": {
+              "pad": {
+                "max": 118,
+                "min": 65
+              },
+              "normal": {
+                "max": 108,
+                "min": 72
+              },
+              "perfect": {
+                "max": 98,
+                "min": 80
+              },
+              "warning": {
+                "max": 65,
+                "min": 52
+              }
+            },
+            "startPose": {
+              "max": 115,
+              "min": 70
+            },
+            "pairedWith": "right_elbow",
+            "stateMessages": {
+              "normal": {
+                "up": {
+                  "ar": "جيد، أكمل التمدد في الأعلى",
+                  "en": "Good, finish the top lockout"
+                },
+                "down": {
+                  "ar": "جيد، تحكم في العودة للمستوى السفلي",
+                  "en": "Good, control the return to shoulder level"
+                }
+              },
+              "perfect": {
+                "up": {
+                  "ar": "ضغط علوي كامل مع ثبات ممتاز",
+                  "en": "Full press with excellent lower-body stability"
+                },
+                "down": {
+                  "ar": "استقبال متزن فوق الكتفين",
+                  "en": "Balanced catch over the shoulders"
+                }
+              }
+            }
+          },
+          {
+            "role": "primary",
+            "joint": "right_elbow",
+            "upRange": {
+              "pad": {
+                "max": 180,
+                "min": 145
+              },
+              "normal": {
+                "max": 180,
+                "min": 155
+              },
+              "perfect": {
+                "max": 180,
+                "min": 165
+              }
+            },
+            "downRange": {
+              "pad": {
+                "max": 118,
+                "min": 65
+              },
+              "normal": {
+                "max": 108,
+                "min": 72
+              },
+              "perfect": {
+                "max": 98,
+                "min": 80
+              },
+              "warning": {
+                "max": 65,
+                "min": 52
+              }
+            },
+            "startPose": {
+              "max": 115,
+              "min": 70
+            },
+            "pairedWith": "left_elbow",
+            "stateMessages": {
+              "normal": {
+                "up": {
+                  "ar": "جيد، أكمل التمدد في الأعلى",
+                  "en": "Good, finish the top lockout"
+                },
+                "down": {
+                  "ar": "جيد، تحكم في العودة للمستوى السفلي",
+                  "en": "Good, control the return to shoulder level"
+                }
+              },
+              "perfect": {
+                "up": {
+                  "ar": "ضغط علوي كامل مع ثبات ممتاز",
+                  "en": "Full press with excellent lower-body stability"
+                },
+                "down": {
+                  "ar": "استقبال متزن فوق الكتفين",
+                  "en": "Balanced catch over the shoulders"
+                }
+              }
+            }
+          },
+          {
+            "role": "secondary",
+            "joint": "left_knee",
+            "range": {
+              "pad": {
+                "max": 110,
+                "min": 70
+              },
+              "normal": {
+                "max": 105,
+                "min": 75
+              },
+              "perfect": {
+                "max": 100,
+                "min": 80
+              },
+              "warning": {
+                "max": 70,
+                "min": 60
+              }
+            },
+            "startPose": {
+              "max": 110,
+              "min": 70
+            },
+            "stateMessages": {
+              "perfect": {
+                "ar": "زاوية جلوس حائطي جيدة",
+                "en": "Wall-sit depth is solid"
+              },
+              "warning": {
+                "ar": "لا ترتفع كثيراً أثناء الضغط",
+                "en": "Do not drift too high while pressing"
+              }
+            }
+          },
+          {
+            "role": "secondary",
+            "joint": "spine",
+            "range": {
+              "pad": {
+                "max": 26,
+                "min": 0
+              },
+              "normal": {
+                "max": 20,
+                "min": 0
+              },
+              "perfect": {
+                "max": 14,
+                "min": 0
+              },
+              "warning": {
+                "max": 40,
+                "min": 26
+              }
+            },
+            "startPose": {
+              "max": 24,
+              "min": 0
+            },
+            "stateMessages": {
+              "perfect": {
+                "ar": "ظهر محايد على الحائط",
+                "en": "Back stays neutral against the wall"
+              },
+              "warning": {
+                "ar": "لا تعوض بالظهر السفلي",
+                "en": "Do not compensate through the low back"
+              }
+            }
+          }
+        ]
+      }
+    ],
+    "validationWarning": null
+  }
+}

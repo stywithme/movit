@@ -1,0 +1,250 @@
+{
+  "slug": "lib_seated_neck_rotation",
+  "status": "published",
+  "movementPattern": "MOBILITY_DRILL",
+  "loadCapability": "BODYWEIGHT_ONLY",
+  "familyKey": "neck_control_family",
+  "familyOrder": 7,
+  "name": {
+    "ar": "دوران رقبة جالس",
+    "en": "Seated neck rotation"
+  },
+  "category": {
+    "code": "shoulders",
+    "name": {
+      "ar": "تمارين الأكتاف",
+      "en": "Shoulders"
+    }
+  },
+  "countingMethod": "up_down",
+  "muscles": [
+    "traps"
+  ],
+  "equipment": [
+    "bodyweight",
+    "mat"
+  ],
+  "tags": [
+    "curated_library",
+    "mobility"
+  ],
+  "repCountingConfig": {
+    "reps": 12,
+    "minRepIntervalMs": 1500,
+    "maxRepIntervalMs": 5000
+  },
+  "poseVariants": [
+    {
+      "name": {
+        "ar": "جالس - علوي",
+        "en": "Seated upper body"
+      },
+      "posePosition": "sitting_side_upper",
+      "expectedPostures": [
+        "sitting"
+      ],
+      "expectedDirections": [
+        "side"
+      ],
+      "expectedRegions": [
+        "upper_body"
+      ],
+      "trackedJoints": [
+        {
+          "joint": "spine",
+          "role": "primary",
+          "startPose": {
+            "max": 25,
+            "min": 0
+          },
+          "stateMessages": {
+            "perfect": {
+              "ar": "رقبة وجذع علوي هادئان",
+              "en": "Quiet neck and upper trunk"
+            },
+            "warning": {
+              "ar": "تجنب الاندفاع السريع",
+              "en": "Avoid snapping the head"
+            }
+          },
+          "range": {
+            "pad": {
+              "max": 24,
+              "min": 0
+            },
+            "normal": {
+              "max": 18,
+              "min": 0
+            },
+            "perfect": {
+              "max": 12,
+              "min": 0
+            },
+            "warning": {
+              "max": 32,
+              "min": 22
+            }
+          }
+        }
+      ],
+      "feedbackMessages": {
+        "motivational": [
+          {
+            "ar": "مدى حركة جيد وتحكم أفضل",
+            "en": "Good range and better control"
+          },
+          {
+            "ar": "تحرك بسلاسة داخل نطاق مريح",
+            "en": "Move smoothly inside a comfortable range"
+          }
+        ],
+        "tips": [
+          {
+            "ar": "ابقِ الحركة نظيفة وهادئة بدون ارتداد.",
+            "en": "Keep the motion smooth and bounce-free."
+          },
+          {
+            "ar": "أي ألم حاد يعني تقليل المدى فوراً.",
+            "en": "Any sharp pain means reduce range immediately."
+          }
+        ]
+      },
+      "messageAssignments": [
+        {
+          "messageId": "ef98362a-10f2-4894-9fb0-86b6176e8f4a",
+          "target": "joint_state",
+          "context": "perfect",
+          "jointCode": "spine",
+          "sortOrder": 1
+        },
+        {
+          "messageId": "a5b01b66-0346-42b2-bdb9-11730e0c0cd7",
+          "target": "joint_state",
+          "context": "warning",
+          "jointCode": "spine",
+          "sortOrder": 2
+        },
+        {
+          "messageId": "822c1564-d224-48b2-af72-22f71b63dd95",
+          "target": "feedback",
+          "context": "motivational",
+          "sortOrder": 3
+        },
+        {
+          "messageId": "04f1da88-c317-4066-aebd-fc93fc4aa8d8",
+          "target": "feedback",
+          "context": "motivational",
+          "sortOrder": 4
+        },
+        {
+          "messageId": "b4472ffd-d9e8-480b-9349-04570f0869f4",
+          "target": "feedback",
+          "context": "tip",
+          "sortOrder": 5
+        },
+        {
+          "messageId": "5149142e-efa6-434b-b9b0-4b1d6ca4ce22",
+          "target": "feedback",
+          "context": "tip",
+          "sortOrder": 6
+        }
+      ]
+    }
+  ],
+  "description": {
+    "ar": "تمرين مكتبة: دوران رقبة جالس.",
+    "en": "Library exercise: Seated neck rotation."
+  },
+  "instructions": {
+    "ar": "حافظ على عمود فقري محايد وتنفس بثبات وتوقف عند أي ألم حاد.",
+    "en": "Maintain neutral spine, steady breathing, and stop if sharp pain appears."
+  },
+  "reportMetrics": {
+    "primary": [
+      "FORM_SCORE"
+    ],
+    "excluded": [
+      "HOLD_DURATION",
+      "WEIGHT",
+      "VOLUME",
+      "EST_1RM",
+      "SYMMETRY",
+      "ALIGNMENT"
+    ]
+  },
+  "_database": {
+    "id": "d65f039f-badc-4681-b4c5-0f48e38e8b94",
+    "categoryId": "78daff70-6564-41cd-b768-462735416089",
+    "countingMethodId": "f4d48aef-1606-4f23-8c61-7b4a2546f990",
+    "publishedAt": "2026-04-20T17:26:26.335Z",
+    "createdAt": "2026-04-20T17:26:26.336Z",
+    "updatedAt": "2026-04-20T17:26:34.379Z",
+    "deletedAt": null,
+    "isFeatured": false,
+    "createdBy": null,
+    "updatedBy": null,
+    "repCountingConfig": null,
+    "bilateralConfig": null,
+    "isBilateral": false,
+    "supportsWeight": false,
+    "minWeight": null,
+    "maxWeight": null,
+    "defaultWeight": null,
+    "reportMetrics": {
+      "mode": "reps",
+      "version": 1,
+      "primaryKpi": "repQuality",
+      "secondaryKpis": [
+        "avgFormScore",
+        "avgRom"
+      ]
+    },
+    "media": [],
+    "poseVariants": [
+      {
+        "id": "cdb499cf-b6e9-4187-bcb7-1a334bb04c06",
+        "sortOrder": 1,
+        "description": null,
+        "trackedJointsConfig": [
+          {
+            "role": "primary",
+            "joint": "spine",
+            "range": {
+              "pad": {
+                "max": 24,
+                "min": 0
+              },
+              "normal": {
+                "max": 18,
+                "min": 0
+              },
+              "perfect": {
+                "max": 12,
+                "min": 0
+              },
+              "warning": {
+                "max": 32,
+                "min": 22
+              }
+            },
+            "startPose": {
+              "max": 25,
+              "min": 0
+            },
+            "stateMessages": {
+              "perfect": {
+                "ar": "رقبة وجذع علوي هادئان",
+                "en": "Quiet neck and upper trunk"
+              },
+              "warning": {
+                "ar": "تجنب الاندفاع السريع",
+                "en": "Avoid snapping the head"
+              }
+            }
+          }
+        ]
+      }
+    ],
+    "validationWarning": null
+  }
+}

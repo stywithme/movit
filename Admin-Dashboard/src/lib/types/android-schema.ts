@@ -83,7 +83,7 @@ export type Severity = 'error' | 'warning' | 'tip';
 /**
  * Message assignment targets
  */
-export type MessageAssignmentTarget = 'joint_state' | 'feedback' | 'position';
+export type MessageAssignmentTarget = 'joint_state' | 'joint_state_phase' | 'feedback' | 'position';
 
 /**
  * Phase names (used in activePhases)

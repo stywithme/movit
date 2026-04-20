@@ -1,0 +1,605 @@
+{
+  "slug": "glute_bridge",
+  "status": "published",
+  "movementPattern": "HINGE",
+  "loadCapability": "BODYWEIGHT_ONLY",
+  "familyKey": "hinge_pattern_family",
+  "familyOrder": 20,
+  "name": {
+    "ar": "جسر الحوض",
+    "en": "Glute Bridge"
+  },
+  "category": {
+    "code": "legs",
+    "name": {
+      "ar": "تمارين الأرجل",
+      "en": "Legs"
+    }
+  },
+  "countingMethod": "up_down",
+  "muscles": [
+    "glutes",
+    "hamstrings",
+    "lower_back",
+    "abs_muscle"
+  ],
+  "equipment": [
+    "bodyweight",
+    "barbell",
+    "resistance_band"
+  ],
+  "tags": [
+    "compound",
+    "lower_body",
+    "beginner_friendly",
+    "rehab"
+  ],
+  "repCountingConfig": {
+    "reps": 15,
+    "minRepIntervalMs": 1200,
+    "maxRepIntervalMs": 4000
+  },
+  "poseVariants": [
+    {
+      "name": {
+        "ar": "زاوية جانبية",
+        "en": "Side View"
+      },
+      "posePosition": "supine_side",
+      "expectedPostures": [
+        "lying_supine"
+      ],
+      "expectedDirections": [
+        "side"
+      ],
+      "expectedRegions": [
+        "full_body"
+      ],
+      "trackedJoints": [
+        {
+          "joint": "left_hip",
+          "role": "primary",
+          "startPose": {
+            "max": 110,
+            "min": 70
+          },
+          "stateMessages": {
+            "pad": {
+              "up": {
+                "ar": "مقبول، لكن يمكنك التحسن",
+                "en": "Acceptable, but you can improve"
+              }
+            },
+            "normal": {
+              "up": {
+                "ar": "جيد، حاول رفع الحوض أكثر",
+                "en": "Good, try lifting hips higher"
+              },
+              "down": {
+                "ar": "جيد، حاول النزول للأسفل",
+                "en": "Good, try lowering more"
+              }
+            },
+            "perfect": {
+              "up": {
+                "ar": "ممتاز! جسر مثالي",
+                "en": "Perfect! Great bridge"
+              },
+              "down": {
+                "ar": "ممتاز! عودة مثالية",
+                "en": "Perfect! Great return"
+              }
+            },
+            "warning": {
+              "up": {
+                "ar": "ارفع حوضك أعلى",
+                "en": "Lift hips higher"
+              }
+            }
+          },
+          "pairedWith": "right_hip",
+          "upRange": {
+            "pad": {
+              "max": 180,
+              "min": 155
+            },
+            "normal": {
+              "max": 180,
+              "min": 165
+            },
+            "perfect": {
+              "max": 180,
+              "min": 170
+            }
+          },
+          "downRange": {
+            "pad": {
+              "max": 110,
+              "min": 70
+            },
+            "normal": {
+              "max": 100,
+              "min": 75
+            },
+            "perfect": {
+              "max": 95,
+              "min": 80
+            }
+          }
+        },
+        {
+          "joint": "right_hip",
+          "role": "primary",
+          "startPose": {
+            "max": 110,
+            "min": 70
+          },
+          "stateMessages": {
+            "pad": {
+              "ar": "مقبول، لكن يمكنك التحسن",
+              "en": "Acceptable, but you can improve"
+            },
+            "normal": {
+              "ar": "جيد، حاول رفع الحوض أكثر",
+              "en": "Good, try lifting hips higher"
+            },
+            "perfect": {
+              "ar": "ممتاز! جسر مثالي",
+              "en": "Perfect! Great bridge"
+            },
+            "warning": {
+              "ar": "ارفع الحوض",
+              "en": "Raise hips"
+            }
+          },
+          "pairedWith": "left_hip",
+          "upRange": {
+            "pad": {
+              "max": 180,
+              "min": 155
+            },
+            "normal": {
+              "max": 180,
+              "min": 165
+            },
+            "perfect": {
+              "max": 180,
+              "min": 170
+            }
+          },
+          "downRange": {
+            "pad": {
+              "max": 110,
+              "min": 70
+            },
+            "normal": {
+              "max": 100,
+              "min": 75
+            },
+            "perfect": {
+              "max": 95,
+              "min": 80
+            }
+          }
+        },
+        {
+          "joint": "left_knee",
+          "role": "secondary",
+          "startPose": {
+            "max": 110,
+            "min": 80
+          },
+          "stateMessages": {
+            "perfect": {
+              "ar": "ممتاز - زاوية الركبة مثالية",
+              "en": "Great - knee angle is perfect"
+            }
+          },
+          "range": {
+            "pad": {
+              "max": 110,
+              "min": 80
+            },
+            "normal": {
+              "max": 100,
+              "min": 85
+            },
+            "perfect": {
+              "max": 95,
+              "min": 88
+            }
+          }
+        }
+      ],
+      "positionChecks": [
+        {
+          "id": "hip_height_check",
+          "type": "horizontal_alignment",
+          "landmarks": {
+            "primary": "left_hip",
+            "secondary": "left_shoulder"
+          },
+          "condition": {
+            "operator": "approximately_equal",
+            "threshold": 0.1
+          },
+          "activePhases": [
+            "top"
+          ],
+          "errorMessage": {
+            "ar": "ارفع حوضك لمستوى الكتفين",
+            "en": "Raise hips to shoulder level"
+          },
+          "severity": "warning",
+          "cooldownMs": 2000,
+          "minErrorFrames": 4
+        }
+      ],
+      "feedbackMessages": {
+        "motivational": [
+          {
+            "ar": "ممتاز! اعصر المؤخرة!",
+            "en": "Excellent! Squeeze those glutes!"
+          },
+          {
+            "ar": "رائع! استمر!",
+            "en": "Great! Keep going!"
+          },
+          {
+            "ar": "قوي!",
+            "en": "Strong!"
+          }
+        ],
+        "tips": [
+          {
+            "ar": "ثبّت لمدة ثانية في الأعلى",
+            "en": "Pause for a second at the top"
+          },
+          {
+            "ar": "شد عضلات بطنك طوال الحركة",
+            "en": "Keep core engaged throughout"
+          }
+        ]
+      },
+      "messageAssignments": [
+        {
+          "messageId": "50aca5a9-7819-41aa-997d-285d89554b0c",
+          "target": "position",
+          "context": "error",
+          "checkId": "hip_height_check",
+          "sortOrder": 1
+        },
+        {
+          "messageId": "9dab69bc-e56f-4a7d-b2f4-f087fb31e5bd",
+          "target": "joint_state",
+          "context": "perfect",
+          "jointCode": "left_hip",
+          "zone": "up",
+          "sortOrder": 2
+        },
+        {
+          "messageId": "46267213-f378-4a39-bda3-21cac811758e",
+          "target": "joint_state",
+          "context": "perfect",
+          "jointCode": "left_hip",
+          "zone": "down",
+          "sortOrder": 3
+        },
+        {
+          "messageId": "155c9038-2acd-472c-93da-95916cc6a5be",
+          "target": "joint_state",
+          "context": "normal",
+          "jointCode": "left_hip",
+          "zone": "up",
+          "sortOrder": 4
+        },
+        {
+          "messageId": "82539d50-e2d1-4a53-b563-ac80b21802e0",
+          "target": "joint_state",
+          "context": "normal",
+          "jointCode": "left_hip",
+          "zone": "down",
+          "sortOrder": 5
+        },
+        {
+          "messageId": "186293f6-0d63-481f-9d20-de5a03e82621",
+          "target": "joint_state",
+          "context": "pad",
+          "jointCode": "left_hip",
+          "zone": "up",
+          "sortOrder": 6
+        },
+        {
+          "messageId": "56db9ce4-fb24-428e-af9b-d60225db1775",
+          "target": "joint_state",
+          "context": "warning",
+          "jointCode": "left_hip",
+          "zone": "up",
+          "sortOrder": 7
+        },
+        {
+          "messageId": "effedc7d-8948-4580-b173-c04343df4c46",
+          "target": "joint_state",
+          "context": "perfect",
+          "jointCode": "right_hip",
+          "sortOrder": 8
+        },
+        {
+          "messageId": "38cc3868-b373-4705-b91a-048c57d3ab54",
+          "target": "joint_state",
+          "context": "normal",
+          "jointCode": "right_hip",
+          "sortOrder": 9
+        },
+        {
+          "messageId": "f8935e86-628d-4959-aa52-0a9472d2d307",
+          "target": "joint_state",
+          "context": "pad",
+          "jointCode": "right_hip",
+          "sortOrder": 10
+        },
+        {
+          "messageId": "cfe96f1e-c17c-4ddb-80b2-08692ff366bb",
+          "target": "joint_state",
+          "context": "warning",
+          "jointCode": "right_hip",
+          "sortOrder": 11
+        },
+        {
+          "messageId": "23212a0e-48d2-4c55-87e0-b33cb2703ca5",
+          "target": "joint_state",
+          "context": "perfect",
+          "jointCode": "left_knee",
+          "sortOrder": 12
+        },
+        {
+          "messageId": "7ffee2a9-96df-45d5-940f-295ef9c4cd40",
+          "target": "feedback",
+          "context": "motivational",
+          "sortOrder": 13
+        },
+        {
+          "messageId": "4b2a57c9-0a61-4ffd-a8cc-f3741f942b6c",
+          "target": "feedback",
+          "context": "motivational",
+          "sortOrder": 14
+        },
+        {
+          "messageId": "39589376-6289-47b8-b1df-e31aad077ba1",
+          "target": "feedback",
+          "context": "motivational",
+          "sortOrder": 15
+        },
+        {
+          "messageId": "82385f28-6ea7-485a-a433-dc2a1a37de76",
+          "target": "feedback",
+          "context": "tip",
+          "sortOrder": 16
+        },
+        {
+          "messageId": "a89bcaf5-a1f4-438c-a08e-4fe90f1f88cf",
+          "target": "feedback",
+          "context": "tip",
+          "sortOrder": 17
+        }
+      ]
+    }
+  ],
+  "description": {
+    "ar": "تمرين لتقوية عضلات المؤخرة وأسفل الظهر",
+    "en": "Exercise to strengthen glutes and lower back"
+  },
+  "instructions": {
+    "ar": "استلقِ على ظهرك مع ثني الركبتين، ثم ارفع حوضك للأعلى حتى يصبح جسمك مستقيماً من الكتفين للركبتين",
+    "en": "Lie on back with knees bent, then lift hips until body is straight from shoulders to knees"
+  },
+  "reportMetrics": {
+    "primary": [
+      "FORM_SCORE"
+    ],
+    "excluded": [
+      "HOLD_DURATION",
+      "WEIGHT",
+      "VOLUME",
+      "EST_1RM"
+    ]
+  },
+  "hasPositionChecks": true,
+  "_database": {
+    "id": "ae5c07ab-26a4-4f52-b799-a5189a2c6283",
+    "categoryId": "a672c3d3-4449-4f74-bd8e-be73a0035e88",
+    "countingMethodId": "f4d48aef-1606-4f23-8c61-7b4a2546f990",
+    "publishedAt": "2026-04-20T17:26:22.786Z",
+    "createdAt": "2026-04-20T17:26:22.787Z",
+    "updatedAt": "2026-04-20T17:26:34.126Z",
+    "deletedAt": null,
+    "isFeatured": false,
+    "createdBy": null,
+    "updatedBy": null,
+    "repCountingConfig": {
+      "reps": 15,
+      "maxRepIntervalMs": 4000,
+      "minRepIntervalMs": 1200
+    },
+    "bilateralConfig": null,
+    "isBilateral": false,
+    "supportsWeight": false,
+    "minWeight": null,
+    "maxWeight": null,
+    "defaultWeight": null,
+    "reportMetrics": {
+      "mode": "reps",
+      "version": 1,
+      "primaryKpi": "repQuality",
+      "secondaryKpis": [
+        "avgFormScore",
+        "avgRom"
+      ]
+    },
+    "media": [],
+    "poseVariants": [
+      {
+        "id": "938ea0d2-6f63-44d0-85c1-5ce942e2af0b",
+        "sortOrder": 1,
+        "description": null,
+        "trackedJointsConfig": [
+          {
+            "role": "primary",
+            "joint": "left_hip",
+            "upRange": {
+              "pad": {
+                "max": 180,
+                "min": 155
+              },
+              "normal": {
+                "max": 180,
+                "min": 165
+              },
+              "perfect": {
+                "max": 180,
+                "min": 170
+              }
+            },
+            "downRange": {
+              "pad": {
+                "max": 110,
+                "min": 70
+              },
+              "normal": {
+                "max": 100,
+                "min": 75
+              },
+              "perfect": {
+                "max": 95,
+                "min": 80
+              }
+            },
+            "startPose": {
+              "max": 110,
+              "min": 70
+            },
+            "pairedWith": "right_hip",
+            "stateMessages": {
+              "pad": {
+                "up": {
+                  "ar": "مقبول، لكن يمكنك التحسن",
+                  "en": "Acceptable, but you can improve"
+                }
+              },
+              "normal": {
+                "up": {
+                  "ar": "جيد، حاول رفع الحوض أكثر",
+                  "en": "Good, try lifting hips higher"
+                },
+                "down": {
+                  "ar": "جيد، حاول النزول للأسفل",
+                  "en": "Good, try lowering more"
+                }
+              },
+              "perfect": {
+                "up": {
+                  "ar": "ممتاز! جسر مثالي",
+                  "en": "Perfect! Great bridge"
+                },
+                "down": {
+                  "ar": "ممتاز! عودة مثالية",
+                  "en": "Perfect! Great return"
+                }
+              },
+              "warning": {
+                "up": {
+                  "ar": "ارفع حوضك أعلى",
+                  "en": "Lift hips higher"
+                }
+              }
+            }
+          },
+          {
+            "role": "primary",
+            "joint": "right_hip",
+            "upRange": {
+              "pad": {
+                "max": 180,
+                "min": 155
+              },
+              "normal": {
+                "max": 180,
+                "min": 165
+              },
+              "perfect": {
+                "max": 180,
+                "min": 170
+              }
+            },
+            "downRange": {
+              "pad": {
+                "max": 110,
+                "min": 70
+              },
+              "normal": {
+                "max": 100,
+                "min": 75
+              },
+              "perfect": {
+                "max": 95,
+                "min": 80
+              }
+            },
+            "startPose": {
+              "max": 110,
+              "min": 70
+            },
+            "pairedWith": "left_hip",
+            "stateMessages": {
+              "pad": {
+                "ar": "مقبول، لكن يمكنك التحسن",
+                "en": "Acceptable, but you can improve"
+              },
+              "normal": {
+                "ar": "جيد، حاول رفع الحوض أكثر",
+                "en": "Good, try lifting hips higher"
+              },
+              "perfect": {
+                "ar": "ممتاز! جسر مثالي",
+                "en": "Perfect! Great bridge"
+              },
+              "warning": {
+                "ar": "ارفع الحوض",
+                "en": "Raise hips"
+              }
+            }
+          },
+          {
+            "role": "secondary",
+            "joint": "left_knee",
+            "range": {
+              "pad": {
+                "max": 110,
+                "min": 80
+              },
+              "normal": {
+                "max": 100,
+                "min": 85
+              },
+              "perfect": {
+                "max": 95,
+                "min": 88
+              }
+            },
+            "startPose": {
+              "max": 110,
+              "min": 80
+            },
+            "stateMessages": {
+              "perfect": {
+                "ar": "ممتاز - زاوية الركبة مثالية",
+                "en": "Great - knee angle is perfect"
+              }
+            }
+          }
+        ]
+      }
+    ],
+    "validationWarning": null
+  }
+}

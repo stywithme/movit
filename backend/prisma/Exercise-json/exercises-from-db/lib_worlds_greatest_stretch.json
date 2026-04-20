@@ -1,0 +1,338 @@
+{
+  "slug": "lib_worlds_greatest_stretch",
+  "status": "published",
+  "movementPattern": "MOBILITY_DRILL",
+  "loadCapability": "BODYWEIGHT_ONLY",
+  "familyKey": "hip_mobility_family",
+  "familyOrder": 20,
+  "name": {
+    "ar": "أعظم تمدد",
+    "en": "World’s greatest stretch"
+  },
+  "category": {
+    "code": "full_body",
+    "name": {
+      "ar": "تمارين الجسم كامل",
+      "en": "Full Body"
+    }
+  },
+  "countingMethod": "up_down",
+  "muscles": [
+    "quadriceps",
+    "glutes"
+  ],
+  "equipment": [
+    "bodyweight",
+    "mat"
+  ],
+  "tags": [
+    "curated_library",
+    "mobility",
+    "warmup"
+  ],
+  "repCountingConfig": {
+    "reps": 12,
+    "minRepIntervalMs": 1500,
+    "maxRepIntervalMs": 5000
+  },
+  "poseVariants": [
+    {
+      "name": {
+        "ar": "مستلقٍ على الوجه",
+        "en": "Lying face down (side angle)"
+      },
+      "posePosition": "prone_side",
+      "expectedPostures": [
+        "lying_prone"
+      ],
+      "expectedDirections": [
+        "side"
+      ],
+      "expectedRegions": [
+        "full_body"
+      ],
+      "trackedJoints": [
+        {
+          "joint": "left_hip",
+          "role": "primary",
+          "startPose": {
+            "max": 180,
+            "min": 120
+          },
+          "stateMessages": {
+            "perfect": {
+              "ar": "مدى ورك ممتاز",
+              "en": "Great hip range"
+            },
+            "warning": {
+              "ar": "قلل المدى إن الركبة تضايقك",
+              "en": "Ease range if knee complains"
+            }
+          },
+          "range": {
+            "pad": {
+              "max": 180,
+              "min": 110
+            },
+            "normal": {
+              "max": 180,
+              "min": 125
+            },
+            "perfect": {
+              "max": 175,
+              "min": 140
+            },
+            "warning": {
+              "max": 110,
+              "min": 95
+            }
+          }
+        },
+        {
+          "joint": "left_knee",
+          "role": "secondary",
+          "startPose": {
+            "max": 130,
+            "min": 85
+          },
+          "stateMessages": {
+            "perfect": {
+              "ar": "ركبة مستقرة",
+              "en": "Knee steady"
+            }
+          },
+          "range": {
+            "normal": {
+              "max": 125,
+              "min": 85
+            },
+            "perfect": {
+              "max": 118,
+              "min": 92
+            }
+          }
+        }
+      ],
+      "positionChecks": [
+        {
+          "id": "hip_mob_smooth",
+          "type": "forward_comparison",
+          "landmarks": {
+            "primary": "left_hip",
+            "secondary": "left_knee"
+          },
+          "condition": {
+            "operator": "should_exceed",
+            "threshold": 0.02
+          },
+          "activePhases": [
+            "all"
+          ],
+          "errorMessage": {
+            "ar": "افتح الورك ببطء — لا تتجاوز الألم الحاد.",
+            "en": "Open the hip slowly — stay below sharp pain."
+          },
+          "severity": "tip",
+          "cooldownMs": 3200,
+          "minErrorFrames": 6
+        }
+      ],
+      "feedbackMessages": {
+        "motivational": [
+          {
+            "ar": "مدى حركة جيد وتحكم أفضل",
+            "en": "Good range and better control"
+          },
+          {
+            "ar": "تحرك بسلاسة داخل نطاق مريح",
+            "en": "Move smoothly inside a comfortable range"
+          }
+        ],
+        "tips": [
+          {
+            "ar": "ابقِ الحركة نظيفة وهادئة بدون ارتداد.",
+            "en": "Keep the motion smooth and bounce-free."
+          },
+          {
+            "ar": "أي ألم حاد يعني تقليل المدى فوراً.",
+            "en": "Any sharp pain means reduce range immediately."
+          }
+        ]
+      },
+      "messageAssignments": [
+        {
+          "messageId": "960d84eb-15fe-4fe5-b223-58ecb84846f7",
+          "target": "position",
+          "context": "error",
+          "checkId": "hip_mob_smooth",
+          "sortOrder": 1
+        },
+        {
+          "messageId": "05aebeb9-45ba-4a96-bd1d-9611208c9825",
+          "target": "joint_state",
+          "context": "perfect",
+          "jointCode": "left_hip",
+          "sortOrder": 2
+        },
+        {
+          "messageId": "1d9d9724-f2ee-4960-a47b-3df03bad5fff",
+          "target": "joint_state",
+          "context": "warning",
+          "jointCode": "left_hip",
+          "sortOrder": 3
+        },
+        {
+          "messageId": "93f21904-ff79-4e74-9d63-55c47a73246a",
+          "target": "joint_state",
+          "context": "perfect",
+          "jointCode": "left_knee",
+          "sortOrder": 4
+        },
+        {
+          "messageId": "c3d443d9-6106-4bfb-acca-1407f165b456",
+          "target": "feedback",
+          "context": "motivational",
+          "sortOrder": 5
+        },
+        {
+          "messageId": "c3a3ffeb-0453-414a-ae4c-779f615c53c6",
+          "target": "feedback",
+          "context": "motivational",
+          "sortOrder": 6
+        },
+        {
+          "messageId": "803bd740-4c5b-4b21-b987-537aa6dfb6c9",
+          "target": "feedback",
+          "context": "tip",
+          "sortOrder": 7
+        },
+        {
+          "messageId": "e18a318e-d972-49ff-ae43-e98034bf8b5b",
+          "target": "feedback",
+          "context": "tip",
+          "sortOrder": 8
+        }
+      ]
+    }
+  ],
+  "description": {
+    "ar": "تمرين مكتبة: أعظم تمدد.",
+    "en": "Library exercise: World’s greatest stretch."
+  },
+  "instructions": {
+    "ar": "حافظ على عمود فقري محايد وتنفس بثبات وتوقف عند أي ألم حاد.",
+    "en": "Maintain neutral spine, steady breathing, and stop if sharp pain appears."
+  },
+  "reportMetrics": {
+    "primary": [
+      "FORM_SCORE"
+    ],
+    "excluded": [
+      "HOLD_DURATION",
+      "WEIGHT",
+      "VOLUME",
+      "EST_1RM",
+      "SYMMETRY"
+    ]
+  },
+  "hasPositionChecks": true,
+  "_database": {
+    "id": "71bbb9d0-cbcd-42b6-8df7-1dba327c7077",
+    "categoryId": "da4f0d15-a7a4-4d8e-abd2-73ee921ef7dc",
+    "countingMethodId": "f4d48aef-1606-4f23-8c61-7b4a2546f990",
+    "publishedAt": "2026-04-20T17:26:25.231Z",
+    "createdAt": "2026-04-20T17:26:25.232Z",
+    "updatedAt": "2026-04-20T17:26:34.280Z",
+    "deletedAt": null,
+    "isFeatured": false,
+    "createdBy": null,
+    "updatedBy": null,
+    "repCountingConfig": null,
+    "bilateralConfig": null,
+    "isBilateral": false,
+    "supportsWeight": false,
+    "minWeight": null,
+    "maxWeight": null,
+    "defaultWeight": null,
+    "reportMetrics": {
+      "mode": "reps",
+      "version": 1,
+      "primaryKpi": "repQuality",
+      "secondaryKpis": [
+        "avgFormScore",
+        "avgRom"
+      ]
+    },
+    "media": [],
+    "poseVariants": [
+      {
+        "id": "4331d194-7adb-4bc5-bf21-b3b304a346d9",
+        "sortOrder": 1,
+        "description": null,
+        "trackedJointsConfig": [
+          {
+            "role": "primary",
+            "joint": "left_hip",
+            "range": {
+              "pad": {
+                "max": 180,
+                "min": 110
+              },
+              "normal": {
+                "max": 180,
+                "min": 125
+              },
+              "perfect": {
+                "max": 175,
+                "min": 140
+              },
+              "warning": {
+                "max": 110,
+                "min": 95
+              }
+            },
+            "startPose": {
+              "max": 180,
+              "min": 120
+            },
+            "stateMessages": {
+              "perfect": {
+                "ar": "مدى ورك ممتاز",
+                "en": "Great hip range"
+              },
+              "warning": {
+                "ar": "قلل المدى إن الركبة تضايقك",
+                "en": "Ease range if knee complains"
+              }
+            }
+          },
+          {
+            "role": "secondary",
+            "joint": "left_knee",
+            "range": {
+              "normal": {
+                "max": 125,
+                "min": 85
+              },
+              "perfect": {
+                "max": 118,
+                "min": 92
+              }
+            },
+            "startPose": {
+              "max": 130,
+              "min": 85
+            },
+            "stateMessages": {
+              "perfect": {
+                "ar": "ركبة مستقرة",
+                "en": "Knee steady"
+              }
+            }
+          }
+        ]
+      }
+    ],
+    "validationWarning": null
+  }
+}

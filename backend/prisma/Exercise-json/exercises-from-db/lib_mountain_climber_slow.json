@@ -1,0 +1,479 @@
+{
+  "slug": "lib_mountain_climber_slow",
+  "status": "published",
+  "movementPattern": "CORE_BRACE",
+  "loadCapability": "BODYWEIGHT_ONLY",
+  "familyKey": "anti_extension_family",
+  "familyOrder": 22,
+  "name": {
+    "ar": "متسلق جبال بطيء",
+    "en": "Slow mountain climber"
+  },
+  "category": {
+    "code": "abs",
+    "name": {
+      "ar": "تمارين البطن",
+      "en": "Abs"
+    }
+  },
+  "countingMethod": "up_down",
+  "muscles": [
+    "abs_muscle",
+    "quadriceps"
+  ],
+  "equipment": [
+    "bodyweight",
+    "mat"
+  ],
+  "tags": [
+    "curated_library",
+    "conditioning"
+  ],
+  "repCountingConfig": {
+    "reps": 12,
+    "minRepIntervalMs": 1500,
+    "maxRepIntervalMs": 5000
+  },
+  "poseVariants": [
+    {
+      "name": {
+        "ar": "مستلقٍ على الوجه",
+        "en": "Lying face down (side angle)"
+      },
+      "posePosition": "prone_side",
+      "expectedPostures": [
+        "lying_prone"
+      ],
+      "expectedDirections": [
+        "side"
+      ],
+      "expectedRegions": [
+        "full_body"
+      ],
+      "trackedJoints": [
+        {
+          "joint": "left_hip",
+          "role": "primary",
+          "startPose": {
+            "max": 180,
+            "min": 80
+          },
+          "stateMessages": {
+            "pad": {
+              "down": {
+                "ar": "مقبول، لكن المدى ما زال صغيراً",
+                "en": "Acceptable, but knee drive is still short"
+              }
+            },
+            "normal": {
+              "up": {
+                "ar": "جيد، ابقِ الورك مستوياً",
+                "en": "Good, keep the hip level"
+              },
+              "down": {
+                "ar": "جيد، اقترب أكثر بالركبة",
+                "en": "Good, draw the knee in further"
+              }
+            },
+            "perfect": {
+              "up": {
+                "ar": "ممتاز! plank ثابت بين العدات",
+                "en": "Perfect! Stable plank between reps"
+              },
+              "down": {
+                "ar": "ممتاز! ركبة قريبة من الصدر",
+                "en": "Perfect! Knee driven to the chest"
+              }
+            },
+            "warning": {
+              "down": {
+                "ar": "لا تهز الورك للأعلى مع الركبة",
+                "en": "Do not let the hip pike up with the knee"
+              }
+            }
+          },
+          "upRange": {
+            "pad": {
+              "max": 180,
+              "min": 130
+            },
+            "normal": {
+              "max": 180,
+              "min": 138
+            },
+            "perfect": {
+              "max": 180,
+              "min": 145
+            }
+          },
+          "downRange": {
+            "pad": {
+              "max": 125,
+              "min": 70
+            },
+            "normal": {
+              "max": 118,
+              "min": 75
+            },
+            "perfect": {
+              "max": 110,
+              "min": 80
+            },
+            "warning": {
+              "max": 70,
+              "min": 60
+            }
+          }
+        },
+        {
+          "joint": "spine",
+          "role": "secondary",
+          "startPose": {
+            "max": 22,
+            "min": 0
+          },
+          "stateMessages": {
+            "perfect": {
+              "ar": "جذع منظم في وضع plank",
+              "en": "Trunk organized in plank"
+            },
+            "warning": {
+              "ar": "قلل السرعة إذا فقد الظهر الحياد",
+              "en": "Slow down if spine loses neutrality"
+            }
+          },
+          "range": {
+            "pad": {
+              "max": 26,
+              "min": 0
+            },
+            "normal": {
+              "max": 20,
+              "min": 0
+            },
+            "perfect": {
+              "max": 14,
+              "min": 0
+            },
+            "warning": {
+              "max": 40,
+              "min": 26
+            }
+          }
+        }
+      ],
+      "positionChecks": [
+        {
+          "id": "mc_flat_back",
+          "type": "vertical_alignment",
+          "landmarks": {
+            "primary": "left_shoulder",
+            "secondary": "left_hip"
+          },
+          "condition": {
+            "operator": "approximately_equal",
+            "threshold": 0.14
+          },
+          "activePhases": [
+            "up",
+            "down"
+          ],
+          "errorMessage": {
+            "ar": "حافظ على ظهر مستوٍ كالـ plank — لا ترفع الورك أو يهبط.",
+            "en": "Keep a flat plank back — do not pike up or sag down."
+          },
+          "severity": "warning",
+          "cooldownMs": 2200,
+          "minErrorFrames": 4
+        }
+      ],
+      "feedbackMessages": {
+        "motivational": [
+          {
+            "ar": "شد جذع ممتاز",
+            "en": "Excellent trunk tension"
+          },
+          {
+            "ar": "ثباتك يتحسن عدة بعد عدة",
+            "en": "Your stability improves rep by rep"
+          }
+        ],
+        "tips": [
+          {
+            "ar": "شد السرة برفق ولا تحبس النفس طويلاً.",
+            "en": "Brace gently and avoid long breath-holds."
+          },
+          {
+            "ar": "حرّك الأطراف دون أن ينهار الجذع.",
+            "en": "Move the limbs without letting the trunk collapse."
+          }
+        ]
+      },
+      "messageAssignments": [
+        {
+          "messageId": "3f131238-c1b0-45f6-a8e7-0ab7a7d56bce",
+          "target": "position",
+          "context": "error",
+          "checkId": "mc_flat_back",
+          "sortOrder": 1
+        },
+        {
+          "messageId": "1e8e2510-abd3-460f-af21-6a46864833a9",
+          "target": "joint_state",
+          "context": "perfect",
+          "jointCode": "left_hip",
+          "zone": "up",
+          "sortOrder": 2
+        },
+        {
+          "messageId": "32ab33f3-d8d0-44fe-a18b-34a3c3f68086",
+          "target": "joint_state",
+          "context": "perfect",
+          "jointCode": "left_hip",
+          "zone": "down",
+          "sortOrder": 3
+        },
+        {
+          "messageId": "51198e2b-193a-4821-9cdd-5bc2d25841ed",
+          "target": "joint_state",
+          "context": "normal",
+          "jointCode": "left_hip",
+          "zone": "up",
+          "sortOrder": 4
+        },
+        {
+          "messageId": "9db16d1b-7dfe-4c1b-9536-c30831f61de2",
+          "target": "joint_state",
+          "context": "normal",
+          "jointCode": "left_hip",
+          "zone": "down",
+          "sortOrder": 5
+        },
+        {
+          "messageId": "c9a6f41f-f58a-48d3-b241-1cccea1df203",
+          "target": "joint_state",
+          "context": "pad",
+          "jointCode": "left_hip",
+          "zone": "down",
+          "sortOrder": 6
+        },
+        {
+          "messageId": "4c923ea2-b0c7-44a4-baa7-b10f9774f26a",
+          "target": "joint_state",
+          "context": "warning",
+          "jointCode": "left_hip",
+          "zone": "down",
+          "sortOrder": 7
+        },
+        {
+          "messageId": "e82f89e7-6deb-4b13-9792-7fe7deccf9ed",
+          "target": "joint_state",
+          "context": "perfect",
+          "jointCode": "spine",
+          "sortOrder": 8
+        },
+        {
+          "messageId": "d5de9a46-d6fa-4c8e-b728-8806384e59df",
+          "target": "joint_state",
+          "context": "warning",
+          "jointCode": "spine",
+          "sortOrder": 9
+        },
+        {
+          "messageId": "b44a3a94-aa3f-42fe-8369-5c3685f1e4ae",
+          "target": "feedback",
+          "context": "motivational",
+          "sortOrder": 10
+        },
+        {
+          "messageId": "6a0916b7-583e-48e2-84db-03198b8363b7",
+          "target": "feedback",
+          "context": "motivational",
+          "sortOrder": 11
+        },
+        {
+          "messageId": "98421d86-30a0-437c-9e3d-8bb4f6d25bfd",
+          "target": "feedback",
+          "context": "tip",
+          "sortOrder": 12
+        },
+        {
+          "messageId": "a524313c-d7ac-45f6-b5a5-37193c1d05da",
+          "target": "feedback",
+          "context": "tip",
+          "sortOrder": 13
+        }
+      ]
+    }
+  ],
+  "description": {
+    "ar": "تمرين مكتبة: متسلق جبال بطيء.",
+    "en": "Library exercise: Slow mountain climber."
+  },
+  "instructions": {
+    "ar": "حافظ على عمود فقري محايد وتنفس بثبات وتوقف عند أي ألم حاد.",
+    "en": "Maintain neutral spine, steady breathing, and stop if sharp pain appears."
+  },
+  "reportMetrics": {
+    "primary": [
+      "FORM_SCORE"
+    ],
+    "excluded": [
+      "HOLD_DURATION",
+      "WEIGHT",
+      "VOLUME",
+      "EST_1RM",
+      "SYMMETRY"
+    ]
+  },
+  "hasPositionChecks": true,
+  "_database": {
+    "id": "85c68ec0-d0a5-4f5c-aa46-28f4df553e1e",
+    "categoryId": "01b944db-50df-4f53-aa08-ec5633820277",
+    "countingMethodId": "f4d48aef-1606-4f23-8c61-7b4a2546f990",
+    "publishedAt": "2026-04-20T17:26:26.712Z",
+    "createdAt": "2026-04-20T17:26:26.713Z",
+    "updatedAt": "2026-04-20T17:26:34.412Z",
+    "deletedAt": null,
+    "isFeatured": false,
+    "createdBy": null,
+    "updatedBy": null,
+    "repCountingConfig": null,
+    "bilateralConfig": null,
+    "isBilateral": false,
+    "supportsWeight": false,
+    "minWeight": null,
+    "maxWeight": null,
+    "defaultWeight": null,
+    "reportMetrics": {
+      "mode": "reps",
+      "version": 1,
+      "primaryKpi": "repQuality",
+      "secondaryKpis": [
+        "avgFormScore",
+        "avgRom"
+      ]
+    },
+    "media": [],
+    "poseVariants": [
+      {
+        "id": "76b9bb4a-3809-4303-bb3c-2722b594fb05",
+        "sortOrder": 1,
+        "description": null,
+        "trackedJointsConfig": [
+          {
+            "role": "primary",
+            "joint": "left_hip",
+            "upRange": {
+              "pad": {
+                "max": 180,
+                "min": 130
+              },
+              "normal": {
+                "max": 180,
+                "min": 138
+              },
+              "perfect": {
+                "max": 180,
+                "min": 145
+              }
+            },
+            "downRange": {
+              "pad": {
+                "max": 125,
+                "min": 70
+              },
+              "normal": {
+                "max": 118,
+                "min": 75
+              },
+              "perfect": {
+                "max": 110,
+                "min": 80
+              },
+              "warning": {
+                "max": 70,
+                "min": 60
+              }
+            },
+            "startPose": {
+              "max": 180,
+              "min": 80
+            },
+            "stateMessages": {
+              "pad": {
+                "down": {
+                  "ar": "مقبول، لكن المدى ما زال صغيراً",
+                  "en": "Acceptable, but knee drive is still short"
+                }
+              },
+              "normal": {
+                "up": {
+                  "ar": "جيد، ابقِ الورك مستوياً",
+                  "en": "Good, keep the hip level"
+                },
+                "down": {
+                  "ar": "جيد، اقترب أكثر بالركبة",
+                  "en": "Good, draw the knee in further"
+                }
+              },
+              "perfect": {
+                "up": {
+                  "ar": "ممتاز! plank ثابت بين العدات",
+                  "en": "Perfect! Stable plank between reps"
+                },
+                "down": {
+                  "ar": "ممتاز! ركبة قريبة من الصدر",
+                  "en": "Perfect! Knee driven to the chest"
+                }
+              },
+              "warning": {
+                "down": {
+                  "ar": "لا تهز الورك للأعلى مع الركبة",
+                  "en": "Do not let the hip pike up with the knee"
+                }
+              }
+            }
+          },
+          {
+            "role": "secondary",
+            "joint": "spine",
+            "range": {
+              "pad": {
+                "max": 26,
+                "min": 0
+              },
+              "normal": {
+                "max": 20,
+                "min": 0
+              },
+              "perfect": {
+                "max": 14,
+                "min": 0
+              },
+              "warning": {
+                "max": 40,
+                "min": 26
+              }
+            },
+            "startPose": {
+              "max": 22,
+              "min": 0
+            },
+            "stateMessages": {
+              "perfect": {
+                "ar": "جذع منظم في وضع plank",
+                "en": "Trunk organized in plank"
+              },
+              "warning": {
+                "ar": "قلل السرعة إذا فقد الظهر الحياد",
+                "en": "Slow down if spine loses neutrality"
+              }
+            }
+          }
+        ]
+      }
+    ],
+    "validationWarning": null
+  }
+}

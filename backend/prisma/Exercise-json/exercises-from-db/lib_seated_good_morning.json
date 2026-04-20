@@ -1,0 +1,371 @@
+{
+  "slug": "lib_seated_good_morning",
+  "status": "published",
+  "movementPattern": "HINGE",
+  "loadCapability": "EXTERNAL_LOAD_OPTIONAL",
+  "familyKey": "hinge_pattern_family",
+  "familyOrder": 22,
+  "name": {
+    "ar": "صباح خير جالس",
+    "en": "Seated good morning (light)"
+  },
+  "category": {
+    "code": "back",
+    "name": {
+      "ar": "تمارين الظهر",
+      "en": "Back"
+    }
+  },
+  "countingMethod": "up_down",
+  "muscles": [
+    "hamstrings",
+    "lower_back"
+  ],
+  "equipment": [
+    "dumbbell",
+    "mat"
+  ],
+  "tags": [
+    "curated_library",
+    "mobility"
+  ],
+  "repCountingConfig": {
+    "reps": 12,
+    "minRepIntervalMs": 1500,
+    "maxRepIntervalMs": 5000
+  },
+  "poseVariants": [
+    {
+      "name": {
+        "ar": "جالس - جانبي",
+        "en": "Seated side"
+      },
+      "posePosition": "sitting_side",
+      "expectedPostures": [
+        "sitting"
+      ],
+      "expectedDirections": [
+        "side"
+      ],
+      "expectedRegions": [
+        "full_body"
+      ],
+      "trackedJoints": [
+        {
+          "joint": "spine",
+          "role": "primary",
+          "startPose": {
+            "max": 70,
+            "min": 0
+          },
+          "stateMessages": {
+            "normal": {
+              "up": {
+                "ar": "جيد، اجلس مرفوعاً قليلاً",
+                "en": "Good, sit a bit taller"
+              },
+              "down": {
+                "ar": "جيد، انحنِ من الورك أكثر",
+                "en": "Good, hinge more from the hips"
+              }
+            },
+            "perfect": {
+              "up": {
+                "ar": "ممتاز! وقفة جالسة منظمة",
+                "en": "Perfect! Seated tall position"
+              },
+              "down": {
+                "ar": "ممتاز! انحناء ورك متحكم",
+                "en": "Perfect! Controlled hip hinge"
+              }
+            },
+            "warning": {
+              "down": {
+                "ar": "لا تتجاوز نطاقك المريح",
+                "en": "Do not push past your comfortable range"
+              }
+            }
+          },
+          "upRange": {
+            "pad": {
+              "max": 30,
+              "min": 0
+            },
+            "normal": {
+              "max": 24,
+              "min": 0
+            },
+            "perfect": {
+              "max": 18,
+              "min": 0
+            }
+          },
+          "downRange": {
+            "pad": {
+              "max": 80,
+              "min": 25
+            },
+            "normal": {
+              "max": 70,
+              "min": 30
+            },
+            "perfect": {
+              "max": 60,
+              "min": 35
+            },
+            "warning": {
+              "max": 95,
+              "min": 80
+            }
+          }
+        }
+      ],
+      "positionChecks": [
+        {
+          "id": "seated_neutral_spine",
+          "type": "vertical_alignment",
+          "landmarks": {
+            "primary": "left_shoulder",
+            "secondary": "left_hip"
+          },
+          "condition": {
+            "operator": "approximately_equal",
+            "threshold": 0.12
+          },
+          "activePhases": [
+            "up",
+            "down"
+          ],
+          "errorMessage": {
+            "ar": "حافظ على ظهر محايد أثناء الانحناء من الورك.",
+            "en": "Keep a neutral spine while hinging from the hip."
+          },
+          "severity": "warning",
+          "cooldownMs": 2400,
+          "minErrorFrames": 4
+        }
+      ],
+      "feedbackMessages": {
+        "motivational": [
+          {
+            "ar": "مدى حركة جيد وتحكم أفضل",
+            "en": "Good range and better control"
+          },
+          {
+            "ar": "تحرك بسلاسة داخل نطاق مريح",
+            "en": "Move smoothly inside a comfortable range"
+          }
+        ],
+        "tips": [
+          {
+            "ar": "ابقِ الحركة نظيفة وهادئة بدون ارتداد.",
+            "en": "Keep the motion smooth and bounce-free."
+          },
+          {
+            "ar": "أي ألم حاد يعني تقليل المدى فوراً.",
+            "en": "Any sharp pain means reduce range immediately."
+          }
+        ]
+      },
+      "messageAssignments": [
+        {
+          "messageId": "27f6dd1c-6f2c-4f61-b41f-0a33319f6e14",
+          "target": "position",
+          "context": "error",
+          "checkId": "seated_neutral_spine",
+          "sortOrder": 1
+        },
+        {
+          "messageId": "50bf5522-606e-4cd9-821d-ee727d976e36",
+          "target": "joint_state",
+          "context": "perfect",
+          "jointCode": "spine",
+          "zone": "up",
+          "sortOrder": 2
+        },
+        {
+          "messageId": "989de535-a794-41f7-a756-3d4318752f50",
+          "target": "joint_state",
+          "context": "perfect",
+          "jointCode": "spine",
+          "zone": "down",
+          "sortOrder": 3
+        },
+        {
+          "messageId": "c35bccd7-c7d9-4e45-82fe-180285319e3e",
+          "target": "joint_state",
+          "context": "normal",
+          "jointCode": "spine",
+          "zone": "up",
+          "sortOrder": 4
+        },
+        {
+          "messageId": "3f092946-1276-4c27-b796-c01e3c2edfaa",
+          "target": "joint_state",
+          "context": "normal",
+          "jointCode": "spine",
+          "zone": "down",
+          "sortOrder": 5
+        },
+        {
+          "messageId": "39dc65b1-7055-4207-abc7-26d2652d7eba",
+          "target": "joint_state",
+          "context": "warning",
+          "jointCode": "spine",
+          "zone": "down",
+          "sortOrder": 6
+        },
+        {
+          "messageId": "1346961a-9340-43fc-9ade-57722eaae414",
+          "target": "feedback",
+          "context": "motivational",
+          "sortOrder": 7
+        },
+        {
+          "messageId": "4bd67ed5-7dc3-4b81-9337-3f508f38c08f",
+          "target": "feedback",
+          "context": "motivational",
+          "sortOrder": 8
+        },
+        {
+          "messageId": "6f0fa008-28b0-4ad9-b010-84d4938796ab",
+          "target": "feedback",
+          "context": "tip",
+          "sortOrder": 9
+        },
+        {
+          "messageId": "3cf86dca-ab92-4cf3-a0d7-96afaf9239cd",
+          "target": "feedback",
+          "context": "tip",
+          "sortOrder": 10
+        }
+      ]
+    }
+  ],
+  "description": {
+    "ar": "تمرين مكتبة: صباح خير جالس.",
+    "en": "Library exercise: Seated good morning (light)."
+  },
+  "instructions": {
+    "ar": "حافظ على عمود فقري محايد وتنفس بثبات وتوقف عند أي ألم حاد.",
+    "en": "Maintain neutral spine, steady breathing, and stop if sharp pain appears."
+  },
+  "supportsWeight": true,
+  "reportMetrics": {
+    "primary": [
+      "FORM_SCORE"
+    ],
+    "excluded": [
+      "HOLD_DURATION",
+      "SYMMETRY"
+    ]
+  },
+  "hasPositionChecks": true,
+  "_database": {
+    "id": "1106d75b-38f2-4986-984f-b296c8e3990c",
+    "categoryId": "d90cee55-225e-4127-9fdc-062a8a09522e",
+    "countingMethodId": "f4d48aef-1606-4f23-8c61-7b4a2546f990",
+    "publishedAt": "2026-04-20T17:26:28.316Z",
+    "createdAt": "2026-04-20T17:26:28.318Z",
+    "updatedAt": "2026-04-20T17:26:34.521Z",
+    "deletedAt": null,
+    "isFeatured": false,
+    "createdBy": null,
+    "updatedBy": null,
+    "repCountingConfig": null,
+    "bilateralConfig": null,
+    "isBilateral": false,
+    "supportsWeight": true,
+    "minWeight": null,
+    "maxWeight": null,
+    "defaultWeight": null,
+    "reportMetrics": {
+      "mode": "reps",
+      "version": 1,
+      "primaryKpi": "repQuality",
+      "secondaryKpis": [
+        "avgFormScore",
+        "avgRom"
+      ]
+    },
+    "media": [],
+    "poseVariants": [
+      {
+        "id": "a914cee5-f896-4780-8fc5-56a70ae26587",
+        "sortOrder": 1,
+        "description": null,
+        "trackedJointsConfig": [
+          {
+            "role": "primary",
+            "joint": "spine",
+            "upRange": {
+              "pad": {
+                "max": 30,
+                "min": 0
+              },
+              "normal": {
+                "max": 24,
+                "min": 0
+              },
+              "perfect": {
+                "max": 18,
+                "min": 0
+              }
+            },
+            "downRange": {
+              "pad": {
+                "max": 80,
+                "min": 25
+              },
+              "normal": {
+                "max": 70,
+                "min": 30
+              },
+              "perfect": {
+                "max": 60,
+                "min": 35
+              },
+              "warning": {
+                "max": 95,
+                "min": 80
+              }
+            },
+            "startPose": {
+              "max": 70,
+              "min": 0
+            },
+            "stateMessages": {
+              "normal": {
+                "up": {
+                  "ar": "جيد، اجلس مرفوعاً قليلاً",
+                  "en": "Good, sit a bit taller"
+                },
+                "down": {
+                  "ar": "جيد، انحنِ من الورك أكثر",
+                  "en": "Good, hinge more from the hips"
+                }
+              },
+              "perfect": {
+                "up": {
+                  "ar": "ممتاز! وقفة جالسة منظمة",
+                  "en": "Perfect! Seated tall position"
+                },
+                "down": {
+                  "ar": "ممتاز! انحناء ورك متحكم",
+                  "en": "Perfect! Controlled hip hinge"
+                }
+              },
+              "warning": {
+                "down": {
+                  "ar": "لا تتجاوز نطاقك المريح",
+                  "en": "Do not push past your comfortable range"
+                }
+              }
+            }
+          }
+        ]
+      }
+    ],
+    "validationWarning": "Exercise validation failed:\nspine: upRange min (0) must be greater than downRange max (95) for valid transition zone"
+  }
+}

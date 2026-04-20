@@ -1,0 +1,252 @@
+{
+  "slug": "lib_windmill_stretch",
+  "status": "published",
+  "movementPattern": "MOBILITY_DRILL",
+  "loadCapability": "BODYWEIGHT_ONLY",
+  "familyKey": "rotation_mobility_family",
+  "familyOrder": 17,
+  "name": {
+    "ar": "مطحنة واقفة",
+    "en": "Standing windmill (mobility)"
+  },
+  "category": {
+    "code": "full_body",
+    "name": {
+      "ar": "تمارين الجسم كامل",
+      "en": "Full Body"
+    }
+  },
+  "countingMethod": "up_down",
+  "muscles": [
+    "obliques",
+    "hamstrings"
+  ],
+  "equipment": [
+    "bodyweight",
+    "mat"
+  ],
+  "tags": [
+    "curated_library",
+    "mobility"
+  ],
+  "repCountingConfig": {
+    "reps": 12,
+    "minRepIntervalMs": 1500,
+    "maxRepIntervalMs": 5000
+  },
+  "poseVariants": [
+    {
+      "name": {
+        "ar": "زاوية أمامية",
+        "en": "Front view"
+      },
+      "posePosition": "standing_front",
+      "expectedPostures": [
+        "standing"
+      ],
+      "expectedDirections": [
+        "front"
+      ],
+      "expectedRegions": [
+        "full_body"
+      ],
+      "trackedJoints": [
+        {
+          "joint": "spine",
+          "role": "primary",
+          "startPose": {
+            "max": 30,
+            "min": 0
+          },
+          "stateMessages": {
+            "perfect": {
+              "ar": "حركة سلسة من الجذع",
+              "en": "Smooth movement from the trunk"
+            },
+            "warning": {
+              "ar": "قلل المدى إن انهار الجذع",
+              "en": "Reduce range if trunk collapses"
+            }
+          },
+          "range": {
+            "pad": {
+              "max": 35,
+              "min": 0
+            },
+            "normal": {
+              "max": 26,
+              "min": 0
+            },
+            "perfect": {
+              "max": 18,
+              "min": 0
+            },
+            "warning": {
+              "max": 50,
+              "min": 32
+            }
+          }
+        }
+      ],
+      "feedbackMessages": {
+        "motivational": [
+          {
+            "ar": "مدى حركة جيد وتحكم أفضل",
+            "en": "Good range and better control"
+          },
+          {
+            "ar": "تحرك بسلاسة داخل نطاق مريح",
+            "en": "Move smoothly inside a comfortable range"
+          }
+        ],
+        "tips": [
+          {
+            "ar": "ابقِ الحركة نظيفة وهادئة بدون ارتداد.",
+            "en": "Keep the motion smooth and bounce-free."
+          },
+          {
+            "ar": "أي ألم حاد يعني تقليل المدى فوراً.",
+            "en": "Any sharp pain means reduce range immediately."
+          }
+        ]
+      },
+      "messageAssignments": [
+        {
+          "messageId": "8a237ce3-5ddb-46be-abf2-d415a589ae48",
+          "target": "joint_state",
+          "context": "perfect",
+          "jointCode": "spine",
+          "sortOrder": 1
+        },
+        {
+          "messageId": "9dce1f19-3eb5-4bfa-ac7a-62f7026c44c2",
+          "target": "joint_state",
+          "context": "warning",
+          "jointCode": "spine",
+          "sortOrder": 2
+        },
+        {
+          "messageId": "fe4c55d0-0cad-4580-b155-b1f8c8793e7c",
+          "target": "feedback",
+          "context": "motivational",
+          "sortOrder": 3
+        },
+        {
+          "messageId": "e8c3abbd-33b6-419a-9175-2cb9ef22773c",
+          "target": "feedback",
+          "context": "motivational",
+          "sortOrder": 4
+        },
+        {
+          "messageId": "49fd53cd-34f5-46d8-afcf-57a021949c48",
+          "target": "feedback",
+          "context": "tip",
+          "sortOrder": 5
+        },
+        {
+          "messageId": "e2b15088-7f70-476a-9a0c-369c032a9d1d",
+          "target": "feedback",
+          "context": "tip",
+          "sortOrder": 6
+        }
+      ],
+      "cameraPosition": "front_view"
+    }
+  ],
+  "description": {
+    "ar": "تمرين مكتبة: مطحنة واقفة.",
+    "en": "Library exercise: Standing windmill (mobility)."
+  },
+  "instructions": {
+    "ar": "حافظ على عمود فقري محايد وتنفس بثبات وتوقف عند أي ألم حاد.",
+    "en": "Maintain neutral spine, steady breathing, and stop if sharp pain appears."
+  },
+  "reportMetrics": {
+    "primary": [
+      "FORM_SCORE"
+    ],
+    "excluded": [
+      "HOLD_DURATION",
+      "WEIGHT",
+      "VOLUME",
+      "EST_1RM",
+      "SYMMETRY",
+      "ALIGNMENT"
+    ]
+  },
+  "_database": {
+    "id": "95e1d233-c3ca-4315-967c-d728362f3b07",
+    "categoryId": "da4f0d15-a7a4-4d8e-abd2-73ee921ef7dc",
+    "countingMethodId": "f4d48aef-1606-4f23-8c61-7b4a2546f990",
+    "publishedAt": "2026-04-20T17:26:26.546Z",
+    "createdAt": "2026-04-20T17:26:26.547Z",
+    "updatedAt": "2026-04-20T17:26:34.399Z",
+    "deletedAt": null,
+    "isFeatured": false,
+    "createdBy": null,
+    "updatedBy": null,
+    "repCountingConfig": null,
+    "bilateralConfig": null,
+    "isBilateral": false,
+    "supportsWeight": false,
+    "minWeight": null,
+    "maxWeight": null,
+    "defaultWeight": null,
+    "reportMetrics": {
+      "mode": "reps",
+      "version": 1,
+      "primaryKpi": "repQuality",
+      "secondaryKpis": [
+        "avgFormScore",
+        "avgRom"
+      ]
+    },
+    "media": [],
+    "poseVariants": [
+      {
+        "id": "c540921e-e520-4dea-aebd-ddcbb648105e",
+        "sortOrder": 1,
+        "description": null,
+        "trackedJointsConfig": [
+          {
+            "role": "primary",
+            "joint": "spine",
+            "range": {
+              "pad": {
+                "max": 35,
+                "min": 0
+              },
+              "normal": {
+                "max": 26,
+                "min": 0
+              },
+              "perfect": {
+                "max": 18,
+                "min": 0
+              },
+              "warning": {
+                "max": 50,
+                "min": 32
+              }
+            },
+            "startPose": {
+              "max": 30,
+              "min": 0
+            },
+            "stateMessages": {
+              "perfect": {
+                "ar": "حركة سلسة من الجذع",
+                "en": "Smooth movement from the trunk"
+              },
+              "warning": {
+                "ar": "قلل المدى إن انهار الجذع",
+                "en": "Reduce range if trunk collapses"
+              }
+            }
+          }
+        ]
+      }
+    ],
+    "validationWarning": null
+  }
+}

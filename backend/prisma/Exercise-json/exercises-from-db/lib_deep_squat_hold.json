@@ -1,0 +1,706 @@
+{
+  "slug": "lib_deep_squat_hold",
+  "status": "published",
+  "movementPattern": "SQUAT",
+  "loadCapability": "BODYWEIGHT_ONLY",
+  "familyKey": "squat_pattern_family",
+  "familyOrder": 18,
+  "name": {
+    "ar": "جلوس عميق ثابت",
+    "en": "Deep squat hold"
+  },
+  "category": {
+    "code": "legs",
+    "name": {
+      "ar": "تمارين الأرجل",
+      "en": "Legs"
+    }
+  },
+  "countingMethod": "hold",
+  "muscles": [
+    "quadriceps",
+    "glutes"
+  ],
+  "equipment": [
+    "bodyweight",
+    "mat"
+  ],
+  "tags": [
+    "curated_library",
+    "mobility"
+  ],
+  "repCountingConfig": {
+    "duration": 30,
+    "gracePeriodMs": 2500
+  },
+  "poseVariants": [
+    {
+      "name": {
+        "ar": "زاوية جانبية",
+        "en": "Side view"
+      },
+      "posePosition": "standing_side",
+      "expectedPostures": [
+        "standing"
+      ],
+      "expectedDirections": [
+        "side"
+      ],
+      "expectedRegions": [
+        "full_body"
+      ],
+      "trackedJoints": [
+        {
+          "joint": "left_knee",
+          "role": "primary",
+          "startPose": {
+            "max": 120,
+            "min": 60
+          },
+          "stateMessages": {
+            "pad": {
+              "ar": "مقبول، عمّق الجلسة تدريجياً",
+              "en": "Acceptable, deepen gradually"
+            },
+            "danger": {
+              "ar": "عمق غير ثابت أو غير آمن",
+              "en": "Depth is unstable or unsafe"
+            },
+            "normal": {
+              "ar": "جيد، ثبت الوضع أكثر",
+              "en": "Good, settle the position more"
+            },
+            "perfect": {
+              "ar": "عمق جلوس ممتاز",
+              "en": "Excellent squat depth"
+            },
+            "warning": {
+              "ar": "لم تصل بعد لعمق جلوس حقيقي",
+              "en": "You have not reached a true deep hold yet"
+            }
+          },
+          "range": {
+            "pad": {
+              "max": 118,
+              "min": 55
+            },
+            "danger": {
+              "max": 45,
+              "min": 0
+            },
+            "normal": {
+              "max": 108,
+              "min": 62
+            },
+            "perfect": {
+              "max": 100,
+              "min": 70
+            },
+            "warning": {
+              "max": 55,
+              "min": 45
+            }
+          }
+        },
+        {
+          "joint": "left_hip",
+          "role": "primary",
+          "startPose": {
+            "max": 140,
+            "min": 55
+          },
+          "stateMessages": {
+            "pad": {
+              "ar": "مقبول، لكن ما زال العمق ناقصاً",
+              "en": "Acceptable, but depth is still limited"
+            },
+            "danger": {
+              "ar": "الوضع بعيد جداً عن deep squat hold",
+              "en": "Position is far from a true deep squat hold"
+            },
+            "normal": {
+              "ar": "جيد، اجلس بين الوركين أكثر",
+              "en": "Good, sit between the hips more"
+            },
+            "perfect": {
+              "ar": "ورك منخفض ومتمكن",
+              "en": "Hips are low and well-set"
+            },
+            "warning": {
+              "ar": "الورك مرتفع أكثر من المطلوب",
+              "en": "Hips are still too high for a deep hold"
+            }
+          },
+          "range": {
+            "pad": {
+              "max": 112,
+              "min": 45
+            },
+            "danger": {
+              "max": 35,
+              "min": 0
+            },
+            "normal": {
+              "max": 100,
+              "min": 50
+            },
+            "perfect": {
+              "max": 90,
+              "min": 55
+            },
+            "warning": {
+              "max": 45,
+              "min": 35
+            }
+          }
+        },
+        {
+          "joint": "left_ankle",
+          "role": "secondary",
+          "startPose": {
+            "max": 120,
+            "min": 70
+          },
+          "stateMessages": {
+            "perfect": {
+              "ar": "كاحل متحرك جيداً",
+              "en": "Ankle mobility looks good"
+            },
+            "warning": {
+              "ar": "كعبك قد يرتفع أو الكاحل محدود",
+              "en": "Heel lift or ankle restriction is showing"
+            }
+          },
+          "range": {
+            "pad": {
+              "max": 122,
+              "min": 65
+            },
+            "normal": {
+              "max": 116,
+              "min": 72
+            },
+            "perfect": {
+              "max": 110,
+              "min": 78
+            },
+            "warning": {
+              "max": 65,
+              "min": 55
+            }
+          }
+        },
+        {
+          "joint": "spine",
+          "role": "secondary",
+          "startPose": {
+            "max": 30,
+            "min": 0
+          },
+          "stateMessages": {
+            "danger": {
+              "ar": "توقف، الظهر يفقد الحياد بوضوح",
+              "en": "Stop, spinal neutrality is clearly lost"
+            },
+            "perfect": {
+              "ar": "ظهر محايد ومتماسك",
+              "en": "Neutral, organized spine"
+            },
+            "warning": {
+              "ar": "لا تنهَر قطنيّاً في القاع",
+              "en": "Avoid collapsing into lumbar flexion at the bottom"
+            }
+          },
+          "range": {
+            "pad": {
+              "max": 30,
+              "min": 0
+            },
+            "danger": {
+              "max": 80,
+              "min": 42
+            },
+            "normal": {
+              "max": 24,
+              "min": 0
+            },
+            "perfect": {
+              "max": 18,
+              "min": 0
+            },
+            "warning": {
+              "max": 42,
+              "min": 30
+            }
+          }
+        }
+      ],
+      "positionChecks": [
+        {
+          "id": "deep_squat_knee_track",
+          "type": "forward_comparison",
+          "landmarks": {
+            "primary": "left_knee",
+            "secondary": "left_foot_index"
+          },
+          "condition": {
+            "operator": "should_not_exceed",
+            "threshold": 0.12
+          },
+          "activePhases": [
+            "all"
+          ],
+          "errorMessage": {
+            "ar": "دع الركبة تتبع اتجاه القدم دون انهيار أو انحراف زائد.",
+            "en": "Let the knee track with the foot without collapsing or drifting excessively."
+          },
+          "severity": "warning",
+          "cooldownMs": 2200,
+          "minErrorFrames": 5
+        },
+        {
+          "id": "deep_squat_chest",
+          "type": "vertical_alignment",
+          "landmarks": {
+            "primary": "left_shoulder",
+            "secondary": "left_hip"
+          },
+          "condition": {
+            "operator": "approximately_equal",
+            "threshold": 0.18
+          },
+          "activePhases": [
+            "all"
+          ],
+          "errorMessage": {
+            "ar": "ارفع الصدر قليلاً ولا تنكمش للأمام.",
+            "en": "Keep the chest slightly proud and avoid collapsing forward."
+          },
+          "severity": "tip",
+          "cooldownMs": 3000,
+          "minErrorFrames": 6
+        }
+      ],
+      "feedbackMessages": {
+        "motivational": [
+          {
+            "ar": "مدى حركة جيد وتحكم أفضل",
+            "en": "Good range and better control"
+          },
+          {
+            "ar": "تحرك بسلاسة داخل نطاق مريح",
+            "en": "Move smoothly inside a comfortable range"
+          }
+        ],
+        "tips": [
+          {
+            "ar": "ابقِ الحركة نظيفة وهادئة بدون ارتداد.",
+            "en": "Keep the motion smooth and bounce-free."
+          },
+          {
+            "ar": "أي ألم حاد يعني تقليل المدى فوراً.",
+            "en": "Any sharp pain means reduce range immediately."
+          }
+        ]
+      },
+      "messageAssignments": [
+        {
+          "messageId": "ff64dae7-df78-41e4-a8c9-30567f940db8",
+          "target": "position",
+          "context": "error",
+          "checkId": "deep_squat_knee_track",
+          "sortOrder": 1
+        },
+        {
+          "messageId": "dc6142f3-ae08-441e-9a37-ed5aeadcb329",
+          "target": "position",
+          "context": "error",
+          "checkId": "deep_squat_chest",
+          "sortOrder": 2
+        },
+        {
+          "messageId": "063bee85-55f9-4d5e-829d-75d01d9c2c36",
+          "target": "joint_state",
+          "context": "perfect",
+          "jointCode": "left_knee",
+          "sortOrder": 3
+        },
+        {
+          "messageId": "e95de389-e28c-4ae4-abb8-e7a19b4245c6",
+          "target": "joint_state",
+          "context": "normal",
+          "jointCode": "left_knee",
+          "sortOrder": 4
+        },
+        {
+          "messageId": "d438ea0e-82e2-4b60-8519-87e5094851b3",
+          "target": "joint_state",
+          "context": "pad",
+          "jointCode": "left_knee",
+          "sortOrder": 5
+        },
+        {
+          "messageId": "64b05530-1cc6-4fb0-a4fb-b6337f22cd98",
+          "target": "joint_state",
+          "context": "warning",
+          "jointCode": "left_knee",
+          "sortOrder": 6
+        },
+        {
+          "messageId": "d0875f99-b22c-430d-bcd0-d40bd337bb17",
+          "target": "joint_state",
+          "context": "danger",
+          "jointCode": "left_knee",
+          "sortOrder": 7
+        },
+        {
+          "messageId": "f5e57816-a824-4d7c-b174-a1f75cef56dc",
+          "target": "joint_state",
+          "context": "perfect",
+          "jointCode": "left_hip",
+          "sortOrder": 8
+        },
+        {
+          "messageId": "e9e0aa43-fefa-4ab1-b863-4f14e5d16f91",
+          "target": "joint_state",
+          "context": "normal",
+          "jointCode": "left_hip",
+          "sortOrder": 9
+        },
+        {
+          "messageId": "ed29bae1-cce2-4681-859a-4ab7765f2671",
+          "target": "joint_state",
+          "context": "pad",
+          "jointCode": "left_hip",
+          "sortOrder": 10
+        },
+        {
+          "messageId": "93a16968-7dc6-4cc5-9685-5b6db83c24db",
+          "target": "joint_state",
+          "context": "warning",
+          "jointCode": "left_hip",
+          "sortOrder": 11
+        },
+        {
+          "messageId": "62558ac8-796e-4289-9918-b126084707c9",
+          "target": "joint_state",
+          "context": "danger",
+          "jointCode": "left_hip",
+          "sortOrder": 12
+        },
+        {
+          "messageId": "7793a076-39da-4f56-8ec4-b31065b93d0c",
+          "target": "joint_state",
+          "context": "perfect",
+          "jointCode": "left_ankle",
+          "sortOrder": 13
+        },
+        {
+          "messageId": "69d81008-e4a0-4b82-89b2-10845539ce9f",
+          "target": "joint_state",
+          "context": "warning",
+          "jointCode": "left_ankle",
+          "sortOrder": 14
+        },
+        {
+          "messageId": "fb779b99-4f47-48bf-b146-d42e8677e647",
+          "target": "joint_state",
+          "context": "perfect",
+          "jointCode": "spine",
+          "sortOrder": 15
+        },
+        {
+          "messageId": "b65d0eea-087e-463a-ad9b-46e7a3e832a7",
+          "target": "joint_state",
+          "context": "warning",
+          "jointCode": "spine",
+          "sortOrder": 16
+        },
+        {
+          "messageId": "93a36169-695d-4b25-bc5b-6b1bad44753f",
+          "target": "joint_state",
+          "context": "danger",
+          "jointCode": "spine",
+          "sortOrder": 17
+        },
+        {
+          "messageId": "3f3af496-9d1a-4848-97de-fefe31359bce",
+          "target": "feedback",
+          "context": "motivational",
+          "sortOrder": 18
+        },
+        {
+          "messageId": "9c835115-816b-462a-beff-22645eacffd8",
+          "target": "feedback",
+          "context": "motivational",
+          "sortOrder": 19
+        },
+        {
+          "messageId": "e232f91f-31eb-4bd5-b36d-2bf47e2b9e13",
+          "target": "feedback",
+          "context": "tip",
+          "sortOrder": 20
+        },
+        {
+          "messageId": "123c0e4e-859a-4687-9109-657f91b15d50",
+          "target": "feedback",
+          "context": "tip",
+          "sortOrder": 21
+        }
+      ],
+      "cameraPosition": "side_view"
+    }
+  ],
+  "description": {
+    "ar": "تمرين مكتبة: جلوس عميق ثابت.",
+    "en": "Library exercise: Deep squat hold."
+  },
+  "instructions": {
+    "ar": "حافظ على عمود فقري محايد وتنفس بثبات وتوقف عند أي ألم حاد.",
+    "en": "Maintain neutral spine, steady breathing, and stop if sharp pain appears."
+  },
+  "reportMetrics": {
+    "primary": [
+      "FORM_SCORE"
+    ],
+    "excluded": [
+      "REP_COUNT",
+      "TEMPO",
+      "TUT",
+      "ROM",
+      "FORM_CONSISTENCY",
+      "FATIGUE_INDEX",
+      "VELOCITY",
+      "VELOCITY_LOSS",
+      "TEMPO_CONSISTENCY",
+      "WEIGHT",
+      "VOLUME",
+      "EST_1RM",
+      "SYMMETRY"
+    ]
+  },
+  "hasPositionChecks": true,
+  "_database": {
+    "id": "c62038c2-a2cd-4cec-80e5-804de28930c9",
+    "categoryId": "a672c3d3-4449-4f74-bd8e-be73a0035e88",
+    "countingMethodId": "7ae86596-4b4b-400b-afa1-c7c0b6ba4fc9",
+    "publishedAt": "2026-04-20T17:26:29.431Z",
+    "createdAt": "2026-04-20T17:26:29.432Z",
+    "updatedAt": "2026-04-20T17:26:34.601Z",
+    "deletedAt": null,
+    "isFeatured": false,
+    "createdBy": null,
+    "updatedBy": null,
+    "repCountingConfig": null,
+    "bilateralConfig": null,
+    "isBilateral": false,
+    "supportsWeight": false,
+    "minWeight": null,
+    "maxWeight": null,
+    "defaultWeight": null,
+    "reportMetrics": {
+      "mode": "duration",
+      "version": 1,
+      "primaryKpi": "timeUnderTension",
+      "secondaryKpis": [
+        "avgFormScore",
+        "avgRom"
+      ]
+    },
+    "media": [],
+    "poseVariants": [
+      {
+        "id": "23b204f4-87be-4b9f-9e24-36d9ded7d82f",
+        "sortOrder": 1,
+        "description": null,
+        "trackedJointsConfig": [
+          {
+            "role": "primary",
+            "joint": "left_knee",
+            "range": {
+              "pad": {
+                "max": 118,
+                "min": 55
+              },
+              "danger": {
+                "max": 45,
+                "min": 0
+              },
+              "normal": {
+                "max": 108,
+                "min": 62
+              },
+              "perfect": {
+                "max": 100,
+                "min": 70
+              },
+              "warning": {
+                "max": 55,
+                "min": 45
+              }
+            },
+            "startPose": {
+              "max": 120,
+              "min": 60
+            },
+            "stateMessages": {
+              "pad": {
+                "ar": "مقبول، عمّق الجلسة تدريجياً",
+                "en": "Acceptable, deepen gradually"
+              },
+              "danger": {
+                "ar": "عمق غير ثابت أو غير آمن",
+                "en": "Depth is unstable or unsafe"
+              },
+              "normal": {
+                "ar": "جيد، ثبت الوضع أكثر",
+                "en": "Good, settle the position more"
+              },
+              "perfect": {
+                "ar": "عمق جلوس ممتاز",
+                "en": "Excellent squat depth"
+              },
+              "warning": {
+                "ar": "لم تصل بعد لعمق جلوس حقيقي",
+                "en": "You have not reached a true deep hold yet"
+              }
+            }
+          },
+          {
+            "role": "primary",
+            "joint": "left_hip",
+            "range": {
+              "pad": {
+                "max": 112,
+                "min": 45
+              },
+              "danger": {
+                "max": 35,
+                "min": 0
+              },
+              "normal": {
+                "max": 100,
+                "min": 50
+              },
+              "perfect": {
+                "max": 90,
+                "min": 55
+              },
+              "warning": {
+                "max": 45,
+                "min": 35
+              }
+            },
+            "startPose": {
+              "max": 140,
+              "min": 55
+            },
+            "stateMessages": {
+              "pad": {
+                "ar": "مقبول، لكن ما زال العمق ناقصاً",
+                "en": "Acceptable, but depth is still limited"
+              },
+              "danger": {
+                "ar": "الوضع بعيد جداً عن deep squat hold",
+                "en": "Position is far from a true deep squat hold"
+              },
+              "normal": {
+                "ar": "جيد، اجلس بين الوركين أكثر",
+                "en": "Good, sit between the hips more"
+              },
+              "perfect": {
+                "ar": "ورك منخفض ومتمكن",
+                "en": "Hips are low and well-set"
+              },
+              "warning": {
+                "ar": "الورك مرتفع أكثر من المطلوب",
+                "en": "Hips are still too high for a deep hold"
+              }
+            }
+          },
+          {
+            "role": "secondary",
+            "joint": "left_ankle",
+            "range": {
+              "pad": {
+                "max": 122,
+                "min": 65
+              },
+              "normal": {
+                "max": 116,
+                "min": 72
+              },
+              "perfect": {
+                "max": 110,
+                "min": 78
+              },
+              "warning": {
+                "max": 65,
+                "min": 55
+              }
+            },
+            "startPose": {
+              "max": 120,
+              "min": 70
+            },
+            "stateMessages": {
+              "perfect": {
+                "ar": "كاحل متحرك جيداً",
+                "en": "Ankle mobility looks good"
+              },
+              "warning": {
+                "ar": "كعبك قد يرتفع أو الكاحل محدود",
+                "en": "Heel lift or ankle restriction is showing"
+              }
+            }
+          },
+          {
+            "role": "secondary",
+            "joint": "spine",
+            "range": {
+              "pad": {
+                "max": 30,
+                "min": 0
+              },
+              "danger": {
+                "max": 80,
+                "min": 42
+              },
+              "normal": {
+                "max": 24,
+                "min": 0
+              },
+              "perfect": {
+                "max": 18,
+                "min": 0
+              },
+              "warning": {
+                "max": 42,
+                "min": 30
+              }
+            },
+            "startPose": {
+              "max": 30,
+              "min": 0
+            },
+            "stateMessages": {
+              "danger": {
+                "ar": "توقف، الظهر يفقد الحياد بوضوح",
+                "en": "Stop, spinal neutrality is clearly lost"
+              },
+              "perfect": {
+                "ar": "ظهر محايد ومتماسك",
+                "en": "Neutral, organized spine"
+              },
+              "warning": {
+                "ar": "لا تنهَر قطنيّاً في القاع",
+                "en": "Avoid collapsing into lumbar flexion at the bottom"
+              }
+            }
+          }
+        ]
+      }
+    ],
+    "validationWarning": null
+  }
+}

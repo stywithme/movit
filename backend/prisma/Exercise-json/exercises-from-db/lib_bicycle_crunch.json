@@ -1,0 +1,630 @@
+{
+  "slug": "lib_bicycle_crunch",
+  "status": "published",
+  "movementPattern": "CORE_BRACE",
+  "loadCapability": "BODYWEIGHT_ONLY",
+  "familyKey": "trunk_flexion_family",
+  "familyOrder": 24,
+  "name": {
+    "ar": "دراجة بطن",
+    "en": "Bicycle crunch"
+  },
+  "category": {
+    "code": "abs",
+    "name": {
+      "ar": "تمارين البطن",
+      "en": "Abs"
+    }
+  },
+  "countingMethod": "up_down",
+  "muscles": [
+    "obliques",
+    "abs_muscle"
+  ],
+  "equipment": [
+    "bodyweight",
+    "mat"
+  ],
+  "tags": [
+    "curated_library",
+    "conditioning"
+  ],
+  "repCountingConfig": {
+    "reps": 12,
+    "minRepIntervalMs": 1500,
+    "maxRepIntervalMs": 5000
+  },
+  "poseVariants": [
+    {
+      "name": {
+        "ar": "مستلقٍ على الظهر",
+        "en": "Lying on back (side angle)"
+      },
+      "posePosition": "supine_side",
+      "expectedPostures": [
+        "lying_supine"
+      ],
+      "expectedDirections": [
+        "side"
+      ],
+      "expectedRegions": [
+        "full_body"
+      ],
+      "trackedJoints": [
+        {
+          "joint": "left_knee",
+          "role": "primary",
+          "startPose": {
+            "max": 180,
+            "min": 40
+          },
+          "stateMessages": {
+            "pad": {
+              "down": {
+                "ar": "مقبول، لكن التنسيق ما زال متوسطاً",
+                "en": "Acceptable, but coordination is still average"
+              }
+            },
+            "normal": {
+              "up": {
+                "ar": "جيد، مد الساق أكثر",
+                "en": "Good, lengthen the leg more"
+              },
+              "down": {
+                "ar": "جيد، قرّب الركبة أكثر نحو الصدر",
+                "en": "Good, drive the knee closer to the chest"
+              }
+            },
+            "perfect": {
+              "up": {
+                "ar": "ممتاز! ساق ممتدة بوضوح",
+                "en": "Perfect! Clear long-leg extension"
+              },
+              "down": {
+                "ar": "ممتاز! ركبة مقربة بقوة مع اللف",
+                "en": "Perfect! Strong knee drive with rotation"
+              }
+            },
+            "warning": {
+              "down": {
+                "ar": "لا تسرع على حساب اللف والتحكم",
+                "en": "Do not rush at the expense of rotation and control"
+              }
+            }
+          },
+          "pairedWith": "right_knee",
+          "invertIndicator": true,
+          "upRange": {
+            "pad": {
+              "max": 180,
+              "min": 110
+            },
+            "normal": {
+              "max": 180,
+              "min": 120
+            },
+            "perfect": {
+              "max": 180,
+              "min": 130
+            }
+          },
+          "downRange": {
+            "pad": {
+              "max": 105,
+              "min": 35
+            },
+            "normal": {
+              "max": 95,
+              "min": 40
+            },
+            "perfect": {
+              "max": 85,
+              "min": 45
+            },
+            "warning": {
+              "max": 35,
+              "min": 25
+            }
+          }
+        },
+        {
+          "joint": "spine",
+          "role": "secondary",
+          "startPose": {
+            "max": 60,
+            "min": 0
+          },
+          "stateMessages": {
+            "perfect": {
+              "ar": "لف جذع جيد مع ثبات البطن",
+              "en": "Good trunk rotation with stable abs"
+            },
+            "warning": {
+              "ar": "لا ترفع الرقبة لتعويض نقص اللف",
+              "en": "Do not crane the neck to fake the rotation"
+            }
+          },
+          "range": {
+            "pad": {
+              "max": 82,
+              "min": 0
+            },
+            "danger": {
+              "max": 95,
+              "min": 80
+            },
+            "normal": {
+              "max": 78,
+              "min": 0
+            },
+            "perfect": {
+              "max": 75,
+              "min": 0
+            },
+            "warning": {
+              "max": 85,
+              "min": 60
+            }
+          },
+          "phaseRanges": {
+            "up": {
+              "normal": {
+                "max": 78,
+                "min": 38
+              },
+              "perfect": {
+                "max": 72,
+                "min": 45
+              }
+            },
+            "top": {
+              "perfect": {
+                "max": 18,
+                "min": 0
+              }
+            },
+            "down": {
+              "normal": {
+                "max": 52,
+                "min": 8
+              },
+              "perfect": {
+                "max": 45,
+                "min": 12
+              }
+            },
+            "bottom": {
+              "perfect": {
+                "max": 15,
+                "min": 0
+              }
+            }
+          },
+          "phaseStateMessages": {
+            "up": {
+              "perfect": {
+                "ar": "انقباض جذع نظيف للأعلى",
+                "en": "Clean trunk flexion at the top"
+              },
+              "warning": {
+                "ar": "لا تشد بالرقبة لتعويض البطن",
+                "en": "Do not pull with the neck to cheat the abs"
+              }
+            },
+            "bottom": {
+              "perfect": {
+                "ar": "قاع مجوف وثابت — تحكم جيد",
+                "en": "Quiet, hollow bottom — good control"
+              },
+              "warning": {
+                "ar": "لا تدع الظهر السفلي يتقوس عن الأرض",
+                "en": "Do not let the low back arch off the floor"
+              }
+            }
+          }
+        }
+      ],
+      "positionChecks": [
+        {
+          "id": "bicycle_no_yank",
+          "type": "vertical_alignment",
+          "landmarks": {
+            "primary": "left_shoulder",
+            "secondary": "left_hip"
+          },
+          "condition": {
+            "operator": "approximately_equal",
+            "threshold": 0.18
+          },
+          "activePhases": [
+            "up",
+            "down"
+          ],
+          "errorMessage": {
+            "ar": "لف الجذع بتحكم ولا تسحب الرقبة بالمرفق.",
+            "en": "Rotate the trunk under control and do not yank the neck with the elbow."
+          },
+          "severity": "warning",
+          "cooldownMs": 2200,
+          "minErrorFrames": 4
+        }
+      ],
+      "feedbackMessages": {
+        "motivational": [
+          {
+            "ar": "شد جذع ممتاز",
+            "en": "Excellent trunk tension"
+          },
+          {
+            "ar": "ثباتك يتحسن عدة بعد عدة",
+            "en": "Your stability improves rep by rep"
+          }
+        ],
+        "tips": [
+          {
+            "ar": "شد السرة برفق ولا تحبس النفس طويلاً.",
+            "en": "Brace gently and avoid long breath-holds."
+          },
+          {
+            "ar": "حرّك الأطراف دون أن ينهار الجذع.",
+            "en": "Move the limbs without letting the trunk collapse."
+          }
+        ]
+      },
+      "messageAssignments": [
+        {
+          "messageId": "2ba391c7-daa9-4ea4-9954-1c88d4908792",
+          "target": "position",
+          "context": "error",
+          "checkId": "bicycle_no_yank",
+          "sortOrder": 1
+        },
+        {
+          "messageId": "b9a2e7f8-d211-4ea5-a9e1-1bae6bb3412d",
+          "target": "joint_state",
+          "context": "perfect",
+          "jointCode": "left_knee",
+          "zone": "up",
+          "sortOrder": 2
+        },
+        {
+          "messageId": "e42abcef-68f1-4b1e-b5ac-eeca37d4a1fc",
+          "target": "joint_state",
+          "context": "perfect",
+          "jointCode": "left_knee",
+          "zone": "down",
+          "sortOrder": 3
+        },
+        {
+          "messageId": "d2c8ccc0-d879-4109-bafb-c61d8d409602",
+          "target": "joint_state",
+          "context": "normal",
+          "jointCode": "left_knee",
+          "zone": "up",
+          "sortOrder": 4
+        },
+        {
+          "messageId": "d60bdf20-0716-4423-9104-0bac3350bc73",
+          "target": "joint_state",
+          "context": "normal",
+          "jointCode": "left_knee",
+          "zone": "down",
+          "sortOrder": 5
+        },
+        {
+          "messageId": "666d9acd-8574-4a1f-a09a-4b1a9bc3f611",
+          "target": "joint_state",
+          "context": "pad",
+          "jointCode": "left_knee",
+          "zone": "down",
+          "sortOrder": 6
+        },
+        {
+          "messageId": "dca84977-a215-44bd-940a-6e74b1b20aa2",
+          "target": "joint_state",
+          "context": "warning",
+          "jointCode": "left_knee",
+          "zone": "down",
+          "sortOrder": 7
+        },
+        {
+          "messageId": "cb7d64a0-2d98-45c8-8915-b2faf416aec7",
+          "target": "joint_state",
+          "context": "perfect",
+          "jointCode": "spine",
+          "sortOrder": 8
+        },
+        {
+          "messageId": "36243ee4-98d3-4faa-bfde-42927e632053",
+          "target": "joint_state",
+          "context": "warning",
+          "jointCode": "spine",
+          "sortOrder": 9
+        },
+        {
+          "messageId": "5b0509b3-493b-4a98-9714-12338d8d1255",
+          "target": "joint_state_phase",
+          "context": "bottom:perfect",
+          "jointCode": "spine",
+          "sortOrder": 10
+        },
+        {
+          "messageId": "6281238a-c589-4c62-9432-1ad3499b2bed",
+          "target": "joint_state_phase",
+          "context": "bottom:warning",
+          "jointCode": "spine",
+          "sortOrder": 11
+        },
+        {
+          "messageId": "7335b419-ea3c-4635-8186-919a26fab3f3",
+          "target": "joint_state_phase",
+          "context": "up:perfect",
+          "jointCode": "spine",
+          "sortOrder": 12
+        },
+        {
+          "messageId": "e64589ba-ef93-4257-9704-30744a1c1740",
+          "target": "joint_state_phase",
+          "context": "up:warning",
+          "jointCode": "spine",
+          "sortOrder": 13
+        },
+        {
+          "messageId": "2ce6da82-a1dc-4e6a-83d3-cf3d616017b5",
+          "target": "feedback",
+          "context": "motivational",
+          "sortOrder": 14
+        },
+        {
+          "messageId": "99afde93-28c9-46ce-bacf-700b0d886a41",
+          "target": "feedback",
+          "context": "motivational",
+          "sortOrder": 15
+        },
+        {
+          "messageId": "12d5711b-35f1-412a-905a-9a0e81835db3",
+          "target": "feedback",
+          "context": "tip",
+          "sortOrder": 16
+        },
+        {
+          "messageId": "bff5b499-09d9-4282-bd09-0773aae441b6",
+          "target": "feedback",
+          "context": "tip",
+          "sortOrder": 17
+        }
+      ]
+    }
+  ],
+  "description": {
+    "ar": "تمرين مكتبة: دراجة بطن.",
+    "en": "Library exercise: Bicycle crunch."
+  },
+  "instructions": {
+    "ar": "حافظ على عمود فقري محايد وتنفس بثبات وتوقف عند أي ألم حاد.",
+    "en": "Maintain neutral spine, steady breathing, and stop if sharp pain appears."
+  },
+  "reportMetrics": {
+    "primary": [
+      "FORM_SCORE"
+    ],
+    "excluded": [
+      "HOLD_DURATION",
+      "WEIGHT",
+      "VOLUME",
+      "EST_1RM"
+    ]
+  },
+  "hasPositionChecks": true,
+  "_database": {
+    "id": "2d76c8ec-ba0b-4023-b975-3cb9c41b6a6c",
+    "categoryId": "01b944db-50df-4f53-aa08-ec5633820277",
+    "countingMethodId": "f4d48aef-1606-4f23-8c61-7b4a2546f990",
+    "publishedAt": "2026-04-20T17:26:26.661Z",
+    "createdAt": "2026-04-20T17:26:26.662Z",
+    "updatedAt": "2026-04-20T17:26:34.409Z",
+    "deletedAt": null,
+    "isFeatured": false,
+    "createdBy": null,
+    "updatedBy": null,
+    "repCountingConfig": null,
+    "bilateralConfig": null,
+    "isBilateral": false,
+    "supportsWeight": false,
+    "minWeight": null,
+    "maxWeight": null,
+    "defaultWeight": null,
+    "reportMetrics": {
+      "mode": "reps",
+      "version": 1,
+      "primaryKpi": "repQuality",
+      "secondaryKpis": [
+        "avgFormScore",
+        "avgRom"
+      ]
+    },
+    "media": [],
+    "poseVariants": [
+      {
+        "id": "edbe86d5-d255-4733-aca9-2f4a687977cc",
+        "sortOrder": 1,
+        "description": null,
+        "trackedJointsConfig": [
+          {
+            "role": "primary",
+            "joint": "left_knee",
+            "upRange": {
+              "pad": {
+                "max": 180,
+                "min": 110
+              },
+              "normal": {
+                "max": 180,
+                "min": 120
+              },
+              "perfect": {
+                "max": 180,
+                "min": 130
+              }
+            },
+            "downRange": {
+              "pad": {
+                "max": 105,
+                "min": 35
+              },
+              "normal": {
+                "max": 95,
+                "min": 40
+              },
+              "perfect": {
+                "max": 85,
+                "min": 45
+              },
+              "warning": {
+                "max": 35,
+                "min": 25
+              }
+            },
+            "startPose": {
+              "max": 180,
+              "min": 40
+            },
+            "pairedWith": "right_knee",
+            "stateMessages": {
+              "pad": {
+                "down": {
+                  "ar": "مقبول، لكن التنسيق ما زال متوسطاً",
+                  "en": "Acceptable, but coordination is still average"
+                }
+              },
+              "normal": {
+                "up": {
+                  "ar": "جيد، مد الساق أكثر",
+                  "en": "Good, lengthen the leg more"
+                },
+                "down": {
+                  "ar": "جيد، قرّب الركبة أكثر نحو الصدر",
+                  "en": "Good, drive the knee closer to the chest"
+                }
+              },
+              "perfect": {
+                "up": {
+                  "ar": "ممتاز! ساق ممتدة بوضوح",
+                  "en": "Perfect! Clear long-leg extension"
+                },
+                "down": {
+                  "ar": "ممتاز! ركبة مقربة بقوة مع اللف",
+                  "en": "Perfect! Strong knee drive with rotation"
+                }
+              },
+              "warning": {
+                "down": {
+                  "ar": "لا تسرع على حساب اللف والتحكم",
+                  "en": "Do not rush at the expense of rotation and control"
+                }
+              }
+            },
+            "invertIndicator": true
+          },
+          {
+            "role": "secondary",
+            "joint": "spine",
+            "range": {
+              "pad": {
+                "max": 82,
+                "min": 0
+              },
+              "danger": {
+                "max": 95,
+                "min": 80
+              },
+              "normal": {
+                "max": 78,
+                "min": 0
+              },
+              "perfect": {
+                "max": 75,
+                "min": 0
+              },
+              "warning": {
+                "max": 85,
+                "min": 60
+              }
+            },
+            "startPose": {
+              "max": 60,
+              "min": 0
+            },
+            "phaseRanges": {
+              "up": {
+                "normal": {
+                  "max": 78,
+                  "min": 38
+                },
+                "perfect": {
+                  "max": 72,
+                  "min": 45
+                }
+              },
+              "top": {
+                "perfect": {
+                  "max": 18,
+                  "min": 0
+                }
+              },
+              "down": {
+                "normal": {
+                  "max": 52,
+                  "min": 8
+                },
+                "perfect": {
+                  "max": 45,
+                  "min": 12
+                }
+              },
+              "bottom": {
+                "perfect": {
+                  "max": 15,
+                  "min": 0
+                }
+              }
+            },
+            "stateMessages": {
+              "perfect": {
+                "ar": "لف جذع جيد مع ثبات البطن",
+                "en": "Good trunk rotation with stable abs"
+              },
+              "warning": {
+                "ar": "لا ترفع الرقبة لتعويض نقص اللف",
+                "en": "Do not crane the neck to fake the rotation"
+              }
+            },
+            "phaseStateMessages": {
+              "up": {
+                "perfect": {
+                  "ar": "انقباض جذع نظيف للأعلى",
+                  "en": "Clean trunk flexion at the top"
+                },
+                "warning": {
+                  "ar": "لا تشد بالرقبة لتعويض البطن",
+                  "en": "Do not pull with the neck to cheat the abs"
+                }
+              },
+              "bottom": {
+                "perfect": {
+                  "ar": "قاع مجوف وثابت — تحكم جيد",
+                  "en": "Quiet, hollow bottom — good control"
+                },
+                "warning": {
+                  "ar": "لا تدع الظهر السفلي يتقوس عن الأرض",
+                  "en": "Do not let the low back arch off the floor"
+                }
+              }
+            }
+          }
+        ]
+      }
+    ],
+    "validationWarning": null
+  }
+}

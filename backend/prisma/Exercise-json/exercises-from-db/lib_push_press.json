@@ -1,0 +1,877 @@
+{
+  "slug": "lib_push_press",
+  "status": "published",
+  "movementPattern": "PUSH_VERTICAL",
+  "loadCapability": "EXTERNAL_LOAD_REQUIRED",
+  "familyKey": "push_vertical_family",
+  "familyOrder": 52,
+  "name": {
+    "ar": "ضغط دفع",
+    "en": "Push press"
+  },
+  "category": {
+    "code": "shoulders",
+    "name": {
+      "ar": "تمارين الأكتاف",
+      "en": "Shoulders"
+    }
+  },
+  "countingMethod": "up_down",
+  "muscles": [
+    "front_delts",
+    "triceps"
+  ],
+  "equipment": [
+    "barbell",
+    "mat"
+  ],
+  "tags": [
+    "curated_library",
+    "power"
+  ],
+  "repCountingConfig": {
+    "reps": 12,
+    "minRepIntervalMs": 1500,
+    "maxRepIntervalMs": 5000
+  },
+  "poseVariants": [
+    {
+      "name": {
+        "ar": "زاوية أمامية",
+        "en": "Front view"
+      },
+      "posePosition": "standing_front",
+      "expectedPostures": [
+        "standing"
+      ],
+      "expectedDirections": [
+        "front"
+      ],
+      "expectedRegions": [
+        "full_body"
+      ],
+      "trackedJoints": [
+        {
+          "joint": "left_elbow",
+          "role": "primary",
+          "startPose": {
+            "max": 115,
+            "min": 70
+          },
+          "stateMessages": {
+            "pad": {
+              "up": {
+                "ar": "مقبول، لكن النقل من الرجلين لليدين ما زال ضعيفاً",
+                "en": "Acceptable, but the leg-to-arm transfer is still weak"
+              }
+            },
+            "normal": {
+              "up": {
+                "ar": "جيد، أنهِ التمدد بالكامل",
+                "en": "Good, finish the lockout fully"
+              },
+              "down": {
+                "ar": "جيد، dip أقصر وأكثر عمودية",
+                "en": "Good, keep the dip shorter and more vertical"
+              }
+            },
+            "perfect": {
+              "up": {
+                "ar": "ممتاز! إنهاء علوي قوي بعد الدفع",
+                "en": "Perfect! Strong overhead finish after the drive"
+              },
+              "down": {
+                "ar": "ممتاز! استقبال قصير ونظيف",
+                "en": "Perfect! Short, clean dip position"
+              }
+            },
+            "warning": {
+              "down": {
+                "ar": "لا تحول الـ dip إلى سكوات عميق",
+                "en": "Do not turn the dip into a deep squat"
+              }
+            }
+          },
+          "pairedWith": "right_elbow",
+          "upRange": {
+            "pad": {
+              "max": 180,
+              "min": 145
+            },
+            "normal": {
+              "max": 180,
+              "min": 155
+            },
+            "perfect": {
+              "max": 180,
+              "min": 165
+            }
+          },
+          "downRange": {
+            "pad": {
+              "max": 114,
+              "min": 66
+            },
+            "normal": {
+              "max": 106,
+              "min": 74
+            },
+            "perfect": {
+              "max": 98,
+              "min": 82
+            },
+            "warning": {
+              "max": 66,
+              "min": 54
+            }
+          }
+        },
+        {
+          "joint": "left_knee",
+          "role": "secondary",
+          "startPose": {
+            "max": 180,
+            "min": 120
+          },
+          "stateMessages": {
+            "perfect": {
+              "ar": "Dip قصير وعمودي",
+              "en": "Short, vertical dip"
+            },
+            "warning": {
+              "ar": "لا تغُص بالركبة أكثر من اللازم",
+              "en": "Do not dive too deep at the knees"
+            }
+          },
+          "range": {
+            "pad": {
+              "max": 180,
+              "min": 115
+            },
+            "normal": {
+              "max": 180,
+              "min": 125
+            },
+            "perfect": {
+              "max": 180,
+              "min": 135
+            },
+            "warning": {
+              "max": 118,
+              "min": 100
+            }
+          },
+          "phaseRanges": {
+            "up": {
+              "normal": {
+                "max": 180,
+                "min": 148
+              },
+              "perfect": {
+                "max": 178,
+                "min": 155
+              }
+            },
+            "top": {
+              "normal": {
+                "max": 180,
+                "min": 158
+              },
+              "perfect": {
+                "max": 180,
+                "min": 168
+              }
+            },
+            "down": {
+              "normal": {
+                "max": 178,
+                "min": 142
+              },
+              "perfect": {
+                "max": 172,
+                "min": 150
+              }
+            },
+            "bottom": {
+              "normal": {
+                "max": 175,
+                "min": 138
+              },
+              "perfect": {
+                "max": 168,
+                "min": 145
+              }
+            }
+          },
+          "phaseStateMessages": {
+            "top": {
+              "perfect": {
+                "ar": "إنهاء قفل الركبة بعد الدفع",
+                "en": "Knees locked after the drive"
+              },
+              "warning": {
+                "ar": "لا تترك الركبة منثنية في الإنهاء",
+                "en": "Do not leave the knees bent at lockout"
+              }
+            },
+            "bottom": {
+              "perfect": {
+                "ar": "Dip قصير ومتزن",
+                "en": "Short, balanced dip"
+              },
+              "warning": {
+                "ar": "لا تحوّل الـ dip إلى سكوات عميق",
+                "en": "Do not turn the dip into a deep squat"
+              }
+            }
+          }
+        },
+        {
+          "joint": "spine",
+          "role": "secondary",
+          "startPose": {
+            "max": 22,
+            "min": 0
+          },
+          "stateMessages": {
+            "perfect": {
+              "ar": "الجذع يبقى منظماً أثناء النقل الانفجاري",
+              "en": "The trunk stays organized through the explosive transfer"
+            },
+            "warning": {
+              "ar": "لا تعوض بالظهر السفلي أثناء الدفع",
+              "en": "Do not compensate with the low back in the drive"
+            }
+          },
+          "range": {
+            "pad": {
+              "max": 35,
+              "min": 0
+            },
+            "danger": {
+              "max": 85,
+              "min": 42
+            },
+            "normal": {
+              "max": 26,
+              "min": 0
+            },
+            "perfect": {
+              "max": 18,
+              "min": 0
+            },
+            "warning": {
+              "max": 45,
+              "min": 28
+            }
+          },
+          "phaseRanges": {
+            "up": {
+              "normal": {
+                "max": 24,
+                "min": 0
+              },
+              "perfect": {
+                "max": 18,
+                "min": 0
+              }
+            },
+            "top": {
+              "perfect": {
+                "max": 12,
+                "min": 0
+              }
+            },
+            "down": {
+              "normal": {
+                "max": 24,
+                "min": 0
+              },
+              "perfect": {
+                "max": 18,
+                "min": 0
+              }
+            },
+            "bottom": {
+              "normal": {
+                "max": 35,
+                "min": 5
+              },
+              "perfect": {
+                "max": 28,
+                "min": 8
+              }
+            }
+          },
+          "phaseStateMessages": {
+            "top": {
+              "perfect": {
+                "ar": "ظهر محايد في الوقفة",
+                "en": "Neutral spine at the top"
+              },
+              "warning": {
+                "ar": "لا تميل القطن للأمام في الأعلى",
+                "en": "Avoid excessive lumbar lean at the top"
+              }
+            },
+            "bottom": {
+              "perfect": {
+                "ar": "انحناء مقبول في القاع مع تحكم",
+                "en": "Acceptable flexion at bottom with control"
+              },
+              "warning": {
+                "ar": "قلل الانحناء القطني الزائد",
+                "en": "Reduce excessive lumbar flexion"
+              }
+            }
+          }
+        }
+      ],
+      "positionChecks": [
+        {
+          "id": "push_press_sync",
+          "type": "horizontal_alignment",
+          "landmarks": {
+            "primary": "left_wrist",
+            "secondary": "right_wrist"
+          },
+          "condition": {
+            "operator": "approximately_equal",
+            "threshold": 0.09
+          },
+          "activePhases": [
+            "up",
+            "top"
+          ],
+          "errorMessage": {
+            "ar": "اضغط بذراعين متزامنتين بعد dip قصير ونظيف.",
+            "en": "Press with both arms together after a short, clean dip."
+          },
+          "severity": "warning",
+          "cooldownMs": 2200,
+          "minErrorFrames": 4
+        }
+      ],
+      "feedbackMessages": {
+        "motivational": [
+          {
+            "ar": "أداء قوي ومنظم",
+            "en": "Strong and controlled work"
+          },
+          {
+            "ar": "حافظ على الشكل قبل السرعة",
+            "en": "Keep form before speed"
+          }
+        ],
+        "tips": [
+          {
+            "ar": "خذ نفساً تحضيرياً قبل كل عدة وازفر مع الجهد.",
+            "en": "Take a setup breath before each rep and exhale on effort."
+          },
+          {
+            "ar": "إذا فقدت التحكم الميكانيكي، قلل المدى أو الحمل.",
+            "en": "If mechanics break down, reduce range or load."
+          }
+        ]
+      },
+      "messageAssignments": [
+        {
+          "messageId": "4ac91143-f747-4d07-8e43-41ea635b4ecf",
+          "target": "position",
+          "context": "error",
+          "checkId": "push_press_sync",
+          "sortOrder": 1
+        },
+        {
+          "messageId": "0da3ddc0-b6d9-48e8-a892-c809083126a6",
+          "target": "joint_state",
+          "context": "perfect",
+          "jointCode": "left_elbow",
+          "zone": "up",
+          "sortOrder": 2
+        },
+        {
+          "messageId": "a60e6665-0459-483f-a699-6efec7c768bd",
+          "target": "joint_state",
+          "context": "perfect",
+          "jointCode": "left_elbow",
+          "zone": "down",
+          "sortOrder": 3
+        },
+        {
+          "messageId": "0c321892-93d8-4021-ba56-c89e68a433c7",
+          "target": "joint_state",
+          "context": "normal",
+          "jointCode": "left_elbow",
+          "zone": "up",
+          "sortOrder": 4
+        },
+        {
+          "messageId": "547768e3-98cd-4c88-b6db-4c6bdcc4f8e1",
+          "target": "joint_state",
+          "context": "normal",
+          "jointCode": "left_elbow",
+          "zone": "down",
+          "sortOrder": 5
+        },
+        {
+          "messageId": "ac422ba0-3ea9-4d70-a8b9-901c0538c909",
+          "target": "joint_state",
+          "context": "pad",
+          "jointCode": "left_elbow",
+          "zone": "up",
+          "sortOrder": 6
+        },
+        {
+          "messageId": "eb6d2f7a-1fab-404f-bc62-5cf84a96663c",
+          "target": "joint_state",
+          "context": "warning",
+          "jointCode": "left_elbow",
+          "zone": "down",
+          "sortOrder": 7
+        },
+        {
+          "messageId": "d5a41294-44ea-4695-bc86-8ffa33466bdd",
+          "target": "joint_state",
+          "context": "perfect",
+          "jointCode": "left_knee",
+          "sortOrder": 8
+        },
+        {
+          "messageId": "82bc287a-5629-4940-871d-26bf99d5c42a",
+          "target": "joint_state",
+          "context": "warning",
+          "jointCode": "left_knee",
+          "sortOrder": 9
+        },
+        {
+          "messageId": "001899b0-2ff7-470d-bc14-34c8427e4c4c",
+          "target": "joint_state_phase",
+          "context": "top:perfect",
+          "jointCode": "left_knee",
+          "sortOrder": 10
+        },
+        {
+          "messageId": "2e5220d2-f750-406b-9519-354379c25e31",
+          "target": "joint_state_phase",
+          "context": "top:warning",
+          "jointCode": "left_knee",
+          "sortOrder": 11
+        },
+        {
+          "messageId": "332f71ea-cb16-409b-8a83-d8169c897040",
+          "target": "joint_state_phase",
+          "context": "bottom:perfect",
+          "jointCode": "left_knee",
+          "sortOrder": 12
+        },
+        {
+          "messageId": "2fa08c48-6e44-4cbb-a9ca-031222371347",
+          "target": "joint_state_phase",
+          "context": "bottom:warning",
+          "jointCode": "left_knee",
+          "sortOrder": 13
+        },
+        {
+          "messageId": "50bb22df-324e-4f64-9043-ea5d0602ef98",
+          "target": "joint_state",
+          "context": "perfect",
+          "jointCode": "spine",
+          "sortOrder": 14
+        },
+        {
+          "messageId": "4c55fd86-1fa3-42a9-8b26-84658774c809",
+          "target": "joint_state",
+          "context": "warning",
+          "jointCode": "spine",
+          "sortOrder": 15
+        },
+        {
+          "messageId": "2566f368-5251-46f4-bbb0-0137fc9959a0",
+          "target": "joint_state_phase",
+          "context": "top:perfect",
+          "jointCode": "spine",
+          "sortOrder": 16
+        },
+        {
+          "messageId": "cf177297-d0ad-45ba-b559-cc8840309410",
+          "target": "joint_state_phase",
+          "context": "top:warning",
+          "jointCode": "spine",
+          "sortOrder": 17
+        },
+        {
+          "messageId": "2f71817c-0e06-4fc9-b2aa-1b90069eca8a",
+          "target": "joint_state_phase",
+          "context": "bottom:perfect",
+          "jointCode": "spine",
+          "sortOrder": 18
+        },
+        {
+          "messageId": "0c8ef231-ae02-4dd6-9445-6fcd64f72edb",
+          "target": "joint_state_phase",
+          "context": "bottom:warning",
+          "jointCode": "spine",
+          "sortOrder": 19
+        },
+        {
+          "messageId": "3ad20a2e-efe0-43f4-b5b4-8400e509c16f",
+          "target": "feedback",
+          "context": "motivational",
+          "sortOrder": 20
+        },
+        {
+          "messageId": "7b0d8b89-2150-4f06-a530-5403e9a6791b",
+          "target": "feedback",
+          "context": "motivational",
+          "sortOrder": 21
+        },
+        {
+          "messageId": "39edaaa7-1c61-42a1-9c84-f144de8f1d00",
+          "target": "feedback",
+          "context": "tip",
+          "sortOrder": 22
+        },
+        {
+          "messageId": "a5aa4941-85c6-4a7a-91dd-f8741f3d3033",
+          "target": "feedback",
+          "context": "tip",
+          "sortOrder": 23
+        }
+      ],
+      "cameraPosition": "front_view"
+    }
+  ],
+  "description": {
+    "ar": "تمرين مكتبة: ضغط دفع.",
+    "en": "Library exercise: Push press."
+  },
+  "instructions": {
+    "ar": "حافظ على عمود فقري محايد وتنفس بثبات وتوقف عند أي ألم حاد.",
+    "en": "Maintain neutral spine, steady breathing, and stop if sharp pain appears."
+  },
+  "supportsWeight": true,
+  "reportMetrics": {
+    "primary": [
+      "FORM_SCORE"
+    ],
+    "excluded": [
+      "HOLD_DURATION"
+    ]
+  },
+  "hasPositionChecks": true,
+  "_database": {
+    "id": "e7120682-52ed-49a0-b122-a69ee2526992",
+    "categoryId": "78daff70-6564-41cd-b768-462735416089",
+    "countingMethodId": "f4d48aef-1606-4f23-8c61-7b4a2546f990",
+    "publishedAt": "2026-04-20T17:26:27.590Z",
+    "createdAt": "2026-04-20T17:26:27.593Z",
+    "updatedAt": "2026-04-20T17:26:34.477Z",
+    "deletedAt": null,
+    "isFeatured": false,
+    "createdBy": null,
+    "updatedBy": null,
+    "repCountingConfig": null,
+    "bilateralConfig": null,
+    "isBilateral": false,
+    "supportsWeight": true,
+    "minWeight": null,
+    "maxWeight": null,
+    "defaultWeight": null,
+    "reportMetrics": {
+      "mode": "reps",
+      "version": 1,
+      "primaryKpi": "repQuality",
+      "secondaryKpis": [
+        "avgFormScore",
+        "avgRom"
+      ]
+    },
+    "media": [],
+    "poseVariants": [
+      {
+        "id": "ce11c2c2-d5c5-4fca-b6d7-8823c5852f0f",
+        "sortOrder": 1,
+        "description": null,
+        "trackedJointsConfig": [
+          {
+            "role": "primary",
+            "joint": "left_elbow",
+            "upRange": {
+              "pad": {
+                "max": 180,
+                "min": 145
+              },
+              "normal": {
+                "max": 180,
+                "min": 155
+              },
+              "perfect": {
+                "max": 180,
+                "min": 165
+              }
+            },
+            "downRange": {
+              "pad": {
+                "max": 114,
+                "min": 66
+              },
+              "normal": {
+                "max": 106,
+                "min": 74
+              },
+              "perfect": {
+                "max": 98,
+                "min": 82
+              },
+              "warning": {
+                "max": 66,
+                "min": 54
+              }
+            },
+            "startPose": {
+              "max": 115,
+              "min": 70
+            },
+            "pairedWith": "right_elbow",
+            "stateMessages": {
+              "pad": {
+                "up": {
+                  "ar": "مقبول، لكن النقل من الرجلين لليدين ما زال ضعيفاً",
+                  "en": "Acceptable, but the leg-to-arm transfer is still weak"
+                }
+              },
+              "normal": {
+                "up": {
+                  "ar": "جيد، أنهِ التمدد بالكامل",
+                  "en": "Good, finish the lockout fully"
+                },
+                "down": {
+                  "ar": "جيد، dip أقصر وأكثر عمودية",
+                  "en": "Good, keep the dip shorter and more vertical"
+                }
+              },
+              "perfect": {
+                "up": {
+                  "ar": "ممتاز! إنهاء علوي قوي بعد الدفع",
+                  "en": "Perfect! Strong overhead finish after the drive"
+                },
+                "down": {
+                  "ar": "ممتاز! استقبال قصير ونظيف",
+                  "en": "Perfect! Short, clean dip position"
+                }
+              },
+              "warning": {
+                "down": {
+                  "ar": "لا تحول الـ dip إلى سكوات عميق",
+                  "en": "Do not turn the dip into a deep squat"
+                }
+              }
+            }
+          },
+          {
+            "role": "secondary",
+            "joint": "left_knee",
+            "range": {
+              "pad": {
+                "max": 180,
+                "min": 115
+              },
+              "normal": {
+                "max": 180,
+                "min": 125
+              },
+              "perfect": {
+                "max": 180,
+                "min": 135
+              },
+              "warning": {
+                "max": 118,
+                "min": 100
+              }
+            },
+            "startPose": {
+              "max": 180,
+              "min": 120
+            },
+            "phaseRanges": {
+              "up": {
+                "normal": {
+                  "max": 180,
+                  "min": 148
+                },
+                "perfect": {
+                  "max": 178,
+                  "min": 155
+                }
+              },
+              "top": {
+                "normal": {
+                  "max": 180,
+                  "min": 158
+                },
+                "perfect": {
+                  "max": 180,
+                  "min": 168
+                }
+              },
+              "down": {
+                "normal": {
+                  "max": 178,
+                  "min": 142
+                },
+                "perfect": {
+                  "max": 172,
+                  "min": 150
+                }
+              },
+              "bottom": {
+                "normal": {
+                  "max": 175,
+                  "min": 138
+                },
+                "perfect": {
+                  "max": 168,
+                  "min": 145
+                }
+              }
+            },
+            "stateMessages": {
+              "perfect": {
+                "ar": "Dip قصير وعمودي",
+                "en": "Short, vertical dip"
+              },
+              "warning": {
+                "ar": "لا تغُص بالركبة أكثر من اللازم",
+                "en": "Do not dive too deep at the knees"
+              }
+            },
+            "phaseStateMessages": {
+              "top": {
+                "perfect": {
+                  "ar": "إنهاء قفل الركبة بعد الدفع",
+                  "en": "Knees locked after the drive"
+                },
+                "warning": {
+                  "ar": "لا تترك الركبة منثنية في الإنهاء",
+                  "en": "Do not leave the knees bent at lockout"
+                }
+              },
+              "bottom": {
+                "perfect": {
+                  "ar": "Dip قصير ومتزن",
+                  "en": "Short, balanced dip"
+                },
+                "warning": {
+                  "ar": "لا تحوّل الـ dip إلى سكوات عميق",
+                  "en": "Do not turn the dip into a deep squat"
+                }
+              }
+            }
+          },
+          {
+            "role": "secondary",
+            "joint": "spine",
+            "range": {
+              "pad": {
+                "max": 35,
+                "min": 0
+              },
+              "danger": {
+                "max": 85,
+                "min": 42
+              },
+              "normal": {
+                "max": 26,
+                "min": 0
+              },
+              "perfect": {
+                "max": 18,
+                "min": 0
+              },
+              "warning": {
+                "max": 45,
+                "min": 28
+              }
+            },
+            "startPose": {
+              "max": 22,
+              "min": 0
+            },
+            "phaseRanges": {
+              "up": {
+                "normal": {
+                  "max": 24,
+                  "min": 0
+                },
+                "perfect": {
+                  "max": 18,
+                  "min": 0
+                }
+              },
+              "top": {
+                "perfect": {
+                  "max": 12,
+                  "min": 0
+                }
+              },
+              "down": {
+                "normal": {
+                  "max": 24,
+                  "min": 0
+                },
+                "perfect": {
+                  "max": 18,
+                  "min": 0
+                }
+              },
+              "bottom": {
+                "normal": {
+                  "max": 35,
+                  "min": 5
+                },
+                "perfect": {
+                  "max": 28,
+                  "min": 8
+                }
+              }
+            },
+            "stateMessages": {
+              "perfect": {
+                "ar": "الجذع يبقى منظماً أثناء النقل الانفجاري",
+                "en": "The trunk stays organized through the explosive transfer"
+              },
+              "warning": {
+                "ar": "لا تعوض بالظهر السفلي أثناء الدفع",
+                "en": "Do not compensate with the low back in the drive"
+              }
+            },
+            "phaseStateMessages": {
+              "top": {
+                "perfect": {
+                  "ar": "ظهر محايد في الوقفة",
+                  "en": "Neutral spine at the top"
+                },
+                "warning": {
+                  "ar": "لا تميل القطن للأمام في الأعلى",
+                  "en": "Avoid excessive lumbar lean at the top"
+                }
+              },
+              "bottom": {
+                "perfect": {
+                  "ar": "انحناء مقبول في القاع مع تحكم",
+                  "en": "Acceptable flexion at bottom with control"
+                },
+                "warning": {
+                  "ar": "قلل الانحناء القطني الزائد",
+                  "en": "Reduce excessive lumbar flexion"
+                }
+              }
+            }
+          }
+        ]
+      }
+    ],
+    "validationWarning": null
+  }
+}

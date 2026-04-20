@@ -33,7 +33,7 @@
         "ar": "زاوية جانبية",
         "en": "Side View"
       },
-      "cameraPosition": "side_view",
+      "cameraPosition": "prone_side",
       "trackedJoints": [
         {
           "joint": "left_elbow",
@@ -148,7 +148,7 @@
         "ar": "زاوية أمامية",
         "en": "Front View"
       },
-      "cameraPosition": "front_view",
+      "cameraPosition": "prone_front",
       "trackedJoints": [
         {
           "joint": "left_elbow",
@@ -199,6 +199,23 @@
             }
           },
           "pairedWith": "left_elbow"
+        },
+        {
+          "joint": "left_hip",
+          "role": "secondary",
+          "startPose": { "min": 160, "max": 180 },
+          "range": {
+            "perfect": { "min": 170, "max": 180 },
+            "normal": { "min": 165, "max": 180 },
+            "pad": { "min": 155, "max": 180 },
+            "warning": { "min": 140, "max": 155 },
+            "danger": { "min": 0, "max": 140 }
+          },
+          "stateMessages": {
+            "perfect": { "ar": "ممتاز - الجسم مستقيم", "en": "Great - body is straight" },
+            "warning": { "ar": "ارفع وسطك قليلاً", "en": "Raise your hips slightly" },
+            "danger": { "ar": "وسطك منخفض جداً!", "en": "Hips too low!" }
+          }
         }
       ],
       "feedbackMessages": {

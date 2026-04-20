@@ -123,8 +123,9 @@
           "role": "primary",
           "startPose": { "min": 120, "max": 180 },
           "upRange": {
-            "perfect": { "min": 140, "max": 175 },
-            "normal":  { "min": 120, "max": 180 }
+            "perfect": { "min": 150, "max": 180 },
+            "normal":  { "min": 140, "max": 180 },
+            "pad":     { "min": 135, "max": 180 }
           },
           "downRange": {
             "perfect": { "min": 70, "max": 100 },
@@ -149,8 +150,9 @@
           "role": "primary",
           "startPose": { "min": 120, "max": 180 },
           "upRange": {
-            "perfect": { "min": 140, "max": 175 },
-            "normal":  { "min": 120, "max": 180 }
+            "perfect": { "min": 150, "max": 180 },
+            "normal":  { "min": 140, "max": 180 },
+            "pad":     { "min": 135, "max": 180 }
           },
           "downRange": {
             "perfect": { "min": 70, "max": 100 },
@@ -173,12 +175,29 @@
         {
           "joint": "left_hip",
           "role": "secondary",
-          "startPose": { "min": 120, "max": 180 },
+          "startPose": { "min": 55, "max": 180 },
           "range": {
-            "perfect": { "min": 150, "max": 175 },
-            "normal":  { "min": 140, "max": 180 },
-            "pad":     { "min": 120, "max": 180 },
-            "warning": { "min": 100, "max": 120 }
+            "perfect": { "min": 70, "max": 180 },
+            "normal": { "min": 55, "max": 180 },
+            "pad": { "min": 45, "max": 180 },
+            "warning": { "min": 35, "max": 55 },
+            "danger": { "min": 0, "max": 35 }
+          },
+          "phaseRanges": {
+            "top": { "perfect": { "min": 165, "max": 180 }, "normal": { "min": 158, "max": 180 } },
+            "down": { "perfect": { "min": 95, "max": 140 }, "normal": { "min": 85, "max": 155 } },
+            "bottom": { "perfect": { "min": 70, "max": 100 }, "normal": { "min": 60, "max": 115 } },
+            "up": { "perfect": { "min": 95, "max": 140 }, "normal": { "min": 85, "max": 155 } }
+          },
+          "phaseStateMessages": {
+            "top": {
+              "perfect": { "ar": "وقفة كاملة — ورك ممتد", "en": "Full stand — hips extended" },
+              "pad": { "ar": "أكمل الوقفة قبل التكرار", "en": "Finish the stand before next rep" }
+            },
+            "bottom": {
+              "perfect": { "ar": "عمق جيد بين الوركين", "en": "Good depth between the hips" },
+              "warning": { "ar": "اجلس بين الوركين أكثر إن أمكن بأمان", "en": "Sit between the hips more if safe" }
+            }
           },
           "stateMessages": {
             "perfect": { "ar": "جذع ثابت", "en": "Trunk stable" },
@@ -198,6 +217,38 @@
           "stateMessages": {
             "perfect": { "ar": "ذراعين فوق الرأس", "en": "Arms overhead" },
             "warning": { "ar": "سقوط الذراعين", "en": "Arms dropping" }
+          }
+        },
+        {
+          "joint": "spine",
+          "role": "secondary",
+          "startPose": { "min": 0, "max": 18 },
+          "range": {
+            "perfect": { "min": 0, "max": 18 },
+            "normal": { "min": 0, "max": 26 },
+            "pad": { "min": 0, "max": 35 },
+            "warning": { "min": 28, "max": 45 },
+            "danger": { "min": 42, "max": 85 }
+          },
+          "phaseRanges": {
+            "top": { "perfect": { "min": 0, "max": 12 } },
+            "down": { "perfect": { "min": 0, "max": 18 }, "normal": { "min": 0, "max": 24 } },
+            "bottom": { "perfect": { "min": 8, "max": 28 }, "normal": { "min": 5, "max": 35 } },
+            "up": { "perfect": { "min": 0, "max": 18 }, "normal": { "min": 0, "max": 24 } }
+          },
+          "phaseStateMessages": {
+            "top": {
+              "perfect": { "ar": "ظهر محايد في الوقفة", "en": "Neutral spine at the top" },
+              "warning": { "ar": "لا تميل القطن للأمام في الأعلى", "en": "Avoid excessive lumbar lean at the top" }
+            },
+            "bottom": {
+              "perfect": { "ar": "انحناء مقبول في القاع مع تحكم", "en": "Acceptable flexion at bottom with control" },
+              "warning": { "ar": "قلل الانحناء القطني الزائد", "en": "Reduce excessive lumbar flexion" }
+            }
+          },
+          "stateMessages": {
+            "perfect": { "ar": "عمود فقري منظم", "en": "Spine organized" },
+            "warning": { "ar": "تجنب انهيار قطني زائد في القاع", "en": "Avoid excess lumbar flexion at bottom" }
           }
         }
       ],

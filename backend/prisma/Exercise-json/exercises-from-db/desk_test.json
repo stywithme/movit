@@ -1,0 +1,328 @@
+{
+  "slug": "desk_test",
+  "status": "published",
+  "movementPattern": "OTHER",
+  "loadCapability": "BODYWEIGHT_ONLY",
+  "familyKey": "posture_screen_family",
+  "familyOrder": 5,
+  "name": {
+    "ar": "اختبار اليد (مكتب)",
+    "en": "Desk Hand Test"
+  },
+  "category": {
+    "code": "test",
+    "name": {
+      "ar": "اختبار",
+      "en": "Test"
+    }
+  },
+  "countingMethod": "hold",
+  "muscles": [
+    "front_delts"
+  ],
+  "equipment": [
+    "bodyweight"
+  ],
+  "tags": [
+    "test",
+    "desk"
+  ],
+  "repCountingConfig": {
+    "duration": 20,
+    "gracePeriodMs": 2000
+  },
+  "poseVariants": [
+    {
+      "name": {
+        "ar": "أمام الكاميرا",
+        "en": "Front View"
+      },
+      "posePosition": "sitting_front_upper",
+      "expectedPostures": [
+        "sitting"
+      ],
+      "expectedDirections": [
+        "front"
+      ],
+      "expectedRegions": [
+        "upper_body"
+      ],
+      "trackedJoints": [
+        {
+          "joint": "right_elbow",
+          "role": "primary",
+          "startPose": {
+            "max": 180,
+            "min": 0
+          },
+          "stateMessages": {
+            "perfect": {
+              "ar": "ممتاز! وضعية صحيحة",
+              "en": "Perfect! Correct position"
+            }
+          },
+          "range": {
+            "pad": {
+              "max": 128,
+              "min": 55
+            },
+            "danger": {
+              "max": 45,
+              "min": 0
+            },
+            "normal": {
+              "max": 118,
+              "min": 65
+            },
+            "perfect": {
+              "max": 105,
+              "min": 75
+            },
+            "warning": {
+              "max": 65,
+              "min": 45
+            }
+          }
+        }
+      ],
+      "positionChecks": [
+        {
+          "id": "wrist_symmetry",
+          "type": "horizontal_alignment",
+          "landmarks": {
+            "primary": "left_wrist",
+            "secondary": "right_wrist"
+          },
+          "condition": {
+            "operator": "approximately_equal",
+            "threshold": 0.1
+          },
+          "activePhases": [
+            "all",
+            "top"
+          ],
+          "errorMessage": {
+            "ar": "اجعل اليدين في مستوى واحد",
+            "en": "Keep wrists level"
+          },
+          "severity": "warning",
+          "cooldownMs": 500,
+          "minErrorFrames": 2
+        },
+        {
+          "id": "hands_high_enough",
+          "type": "vertical_comparison",
+          "landmarks": {
+            "primary": "left_wrist",
+            "secondary": "nose"
+          },
+          "condition": {
+            "operator": "should_not_exceed",
+            "threshold": -0.05
+          },
+          "activePhases": [
+            "all",
+            "top"
+          ],
+          "errorMessage": {
+            "ar": "ارفع يديك أعلى من مستوى الأنف",
+            "en": "Raise hands above nose level"
+          },
+          "severity": "error",
+          "cooldownMs": 500,
+          "minErrorFrames": 2
+        },
+        {
+          "id": "elbow_alignment",
+          "type": "vertical_alignment",
+          "landmarks": {
+            "primary": "right_elbow",
+            "secondary": "right_shoulder"
+          },
+          "condition": {
+            "operator": "approximately_equal",
+            "threshold": 0.15
+          },
+          "activePhases": [
+            "all",
+            "top"
+          ],
+          "errorMessage": {
+            "ar": "حاول محاذاة الكوع مع الكتف رأسياً",
+            "en": "Align elbow under shoulder"
+          },
+          "severity": "tip",
+          "cooldownMs": 1000,
+          "minErrorFrames": 2
+        },
+        {
+          "id": "elbows_level_check",
+          "type": "horizontal_alignment",
+          "landmarks": {
+            "primary": "left_elbow",
+            "secondary": "right_elbow"
+          },
+          "condition": {
+            "operator": "approximately_equal",
+            "threshold": 0.1
+          },
+          "activePhases": [
+            "all",
+            "top"
+          ],
+          "errorMessage": {
+            "ar": "اجعل الكوعين في مستوى واحد",
+            "en": "Keep both elbows at the same level"
+          },
+          "severity": "warning",
+          "cooldownMs": 500,
+          "minErrorFrames": 2
+        }
+      ],
+      "messageAssignments": [
+        {
+          "messageId": "250f4874-7ecc-4236-94b0-954610c05bf9",
+          "target": "position",
+          "context": "error",
+          "checkId": "wrist_symmetry",
+          "sortOrder": 1
+        },
+        {
+          "messageId": "6bf069ba-4d0b-4f0c-bf52-fcc5cd00ca42",
+          "target": "position",
+          "context": "error",
+          "checkId": "hands_high_enough",
+          "sortOrder": 2
+        },
+        {
+          "messageId": "150b0c86-c880-4d0d-8929-675e53afe9de",
+          "target": "position",
+          "context": "error",
+          "checkId": "elbow_alignment",
+          "sortOrder": 3
+        },
+        {
+          "messageId": "eca6c68d-5799-44ad-a98d-eb84c0dc1fc5",
+          "target": "position",
+          "context": "error",
+          "checkId": "elbows_level_check",
+          "sortOrder": 4
+        },
+        {
+          "messageId": "0bcd2926-8f5c-4983-9e28-a00b1c9012a1",
+          "target": "joint_state",
+          "context": "perfect",
+          "jointCode": "right_elbow",
+          "sortOrder": 5
+        }
+      ]
+    }
+  ],
+  "description": {
+    "ar": "تمرين سريع لاختبار صحة الوضعية باستخدام اليدين فقط",
+    "en": "Quick hand exercise to test position validation"
+  },
+  "instructions": {
+    "ar": "ارفع يديك بجانب رأسك (شكل حرف W). حافظ على تماثل اليدين.",
+    "en": "Raise hands beside head (W shape). Keep hands symmetrical."
+  },
+  "reportMetrics": {
+    "primary": [
+      "FORM_SCORE"
+    ],
+    "excluded": [
+      "REP_COUNT",
+      "TEMPO",
+      "TUT",
+      "ROM",
+      "FORM_CONSISTENCY",
+      "FATIGUE_INDEX",
+      "VELOCITY",
+      "VELOCITY_LOSS",
+      "TEMPO_CONSISTENCY",
+      "WEIGHT",
+      "VOLUME",
+      "EST_1RM",
+      "SYMMETRY"
+    ]
+  },
+  "hasPositionChecks": true,
+  "_database": {
+    "id": "27e08c4f-6f8d-42ec-9951-c855c7ff1f27",
+    "categoryId": "a0b8e4c8-502c-4cb8-b937-a4a79f5357fe",
+    "countingMethodId": "7ae86596-4b4b-400b-afa1-c7c0b6ba4fc9",
+    "publishedAt": "2026-04-20T17:26:22.726Z",
+    "createdAt": "2026-04-20T17:26:22.727Z",
+    "updatedAt": "2026-04-20T17:26:34.117Z",
+    "deletedAt": null,
+    "isFeatured": false,
+    "createdBy": null,
+    "updatedBy": null,
+    "repCountingConfig": {
+      "duration": 20,
+      "gracePeriodMs": 2000
+    },
+    "bilateralConfig": null,
+    "isBilateral": false,
+    "supportsWeight": false,
+    "minWeight": null,
+    "maxWeight": null,
+    "defaultWeight": null,
+    "reportMetrics": {
+      "mode": "duration",
+      "version": 1,
+      "primaryKpi": "timeUnderTension",
+      "secondaryKpis": [
+        "avgFormScore",
+        "avgRom"
+      ]
+    },
+    "media": [],
+    "poseVariants": [
+      {
+        "id": "154af44f-c822-47a4-88e3-65da0532b48c",
+        "sortOrder": 1,
+        "description": null,
+        "trackedJointsConfig": [
+          {
+            "role": "primary",
+            "joint": "right_elbow",
+            "range": {
+              "pad": {
+                "max": 128,
+                "min": 55
+              },
+              "danger": {
+                "max": 45,
+                "min": 0
+              },
+              "normal": {
+                "max": 118,
+                "min": 65
+              },
+              "perfect": {
+                "max": 105,
+                "min": 75
+              },
+              "warning": {
+                "max": 65,
+                "min": 45
+              }
+            },
+            "startPose": {
+              "max": 180,
+              "min": 0
+            },
+            "stateMessages": {
+              "perfect": {
+                "ar": "ممتاز! وضعية صحيحة",
+                "en": "Perfect! Correct position"
+              }
+            }
+          }
+        ]
+      }
+    ],
+    "validationWarning": null
+  }
+}

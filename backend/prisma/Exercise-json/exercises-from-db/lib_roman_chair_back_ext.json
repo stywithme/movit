@@ -1,0 +1,470 @@
+{
+  "slug": "lib_roman_chair_back_ext",
+  "status": "published",
+  "movementPattern": "CORE_BRACE",
+  "loadCapability": "BODYWEIGHT_ONLY",
+  "familyKey": "back_extension_family",
+  "familyOrder": 22,
+  "name": {
+    "ar": "تمديد ظهر",
+    "en": "Back extension (bodyweight)"
+  },
+  "category": {
+    "code": "back",
+    "name": {
+      "ar": "تمارين الظهر",
+      "en": "Back"
+    }
+  },
+  "countingMethod": "up_down",
+  "muscles": [
+    "lower_back",
+    "glutes"
+  ],
+  "equipment": [
+    "bodyweight",
+    "bench"
+  ],
+  "tags": [
+    "curated_library",
+    "accessory"
+  ],
+  "repCountingConfig": {
+    "reps": 12,
+    "minRepIntervalMs": 1500,
+    "maxRepIntervalMs": 5000
+  },
+  "poseVariants": [
+    {
+      "name": {
+        "ar": "مستلقٍ على الوجه",
+        "en": "Lying face down (side angle)"
+      },
+      "posePosition": "prone_side",
+      "expectedPostures": [
+        "lying_prone"
+      ],
+      "expectedDirections": [
+        "side"
+      ],
+      "expectedRegions": [
+        "full_body"
+      ],
+      "trackedJoints": [
+        {
+          "joint": "spine",
+          "role": "primary",
+          "startPose": {
+            "max": 40,
+            "min": 0
+          },
+          "stateMessages": {
+            "pad": {
+              "up": {
+                "ar": "مقبول، لكن المدى ما زال ضعيفاً",
+                "en": "Acceptable, but the extension range is still limited"
+              }
+            },
+            "normal": {
+              "up": {
+                "ar": "جيد، ارفع حتى الحياد ثم توقف",
+                "en": "Good, lift to neutral and stop there"
+              },
+              "down": {
+                "ar": "جيد، انزل ببطء أكثر",
+                "en": "Good, lower more slowly"
+              }
+            },
+            "perfect": {
+              "up": {
+                "ar": "ممتاز! تمدد ظهري مضبوط",
+                "en": "Perfect! Controlled back extension"
+              },
+              "down": {
+                "ar": "ممتاز! عودة محايدة",
+                "en": "Perfect! Neutral return"
+              }
+            },
+            "warning": {
+              "up": {
+                "ar": "لا تجعل الحركة من أسفل الظهر فقط",
+                "en": "Do not make the movement low-back only"
+              }
+            }
+          },
+          "upRange": {
+            "pad": {
+              "max": 42,
+              "min": 18
+            },
+            "normal": {
+              "max": 38,
+              "min": 20
+            },
+            "perfect": {
+              "max": 34,
+              "min": 22
+            }
+          },
+          "downRange": {
+            "pad": {
+              "max": 16,
+              "min": 0
+            },
+            "normal": {
+              "max": 14,
+              "min": 0
+            },
+            "perfect": {
+              "max": 12,
+              "min": 0
+            }
+          }
+        },
+        {
+          "joint": "left_hip",
+          "role": "secondary",
+          "startPose": {
+            "max": 180,
+            "min": 145
+          },
+          "stateMessages": {
+            "perfect": {
+              "ar": "ورك ثابت على المقعد",
+              "en": "Hips stay stable on the pad/bench"
+            },
+            "warning": {
+              "ar": "لا تفقد ثبات الحوض أثناء الرفع",
+              "en": "Do not lose pelvic stability during the lift"
+            }
+          },
+          "range": {
+            "pad": {
+              "max": 180,
+              "min": 145
+            },
+            "normal": {
+              "max": 180,
+              "min": 152
+            },
+            "perfect": {
+              "max": 180,
+              "min": 160
+            },
+            "warning": {
+              "max": 145,
+              "min": 130
+            }
+          }
+        }
+      ],
+      "positionChecks": [
+        {
+          "id": "back_ext_no_hyper",
+          "type": "vertical_comparison",
+          "landmarks": {
+            "primary": "left_shoulder",
+            "secondary": "left_hip"
+          },
+          "condition": {
+            "operator": "should_not_exceed",
+            "threshold": 0.12
+          },
+          "activePhases": [
+            "up"
+          ],
+          "errorMessage": {
+            "ar": "ارفع الجذع حتى الحياد أو أعلى قليلاً فقط — لا تفرط في التمدد.",
+            "en": "Raise the trunk to neutral or slightly above only — do not hyperextend."
+          },
+          "severity": "warning",
+          "cooldownMs": 2400,
+          "minErrorFrames": 4
+        }
+      ],
+      "feedbackMessages": {
+        "motivational": [
+          {
+            "ar": "أداء قوي ومنظم",
+            "en": "Strong and controlled work"
+          },
+          {
+            "ar": "حافظ على الشكل قبل السرعة",
+            "en": "Keep form before speed"
+          }
+        ],
+        "tips": [
+          {
+            "ar": "خذ نفساً تحضيرياً قبل كل عدة وازفر مع الجهد.",
+            "en": "Take a setup breath before each rep and exhale on effort."
+          },
+          {
+            "ar": "إذا فقدت التحكم الميكانيكي، قلل المدى أو الحمل.",
+            "en": "If mechanics break down, reduce range or load."
+          }
+        ]
+      },
+      "messageAssignments": [
+        {
+          "messageId": "830a377b-4acf-4f5d-a254-82b2f20932f4",
+          "target": "position",
+          "context": "error",
+          "checkId": "back_ext_no_hyper",
+          "sortOrder": 1
+        },
+        {
+          "messageId": "47897eee-9381-4c11-8783-82301873aaae",
+          "target": "joint_state",
+          "context": "perfect",
+          "jointCode": "spine",
+          "zone": "up",
+          "sortOrder": 2
+        },
+        {
+          "messageId": "b9aa9e28-c335-4338-8a59-187b87dc3786",
+          "target": "joint_state",
+          "context": "perfect",
+          "jointCode": "spine",
+          "zone": "down",
+          "sortOrder": 3
+        },
+        {
+          "messageId": "d240d5c9-8742-439b-ae50-e1bc7890e54f",
+          "target": "joint_state",
+          "context": "normal",
+          "jointCode": "spine",
+          "zone": "up",
+          "sortOrder": 4
+        },
+        {
+          "messageId": "2c066d5c-d35e-4c82-9e72-ee1ce6fe22c0",
+          "target": "joint_state",
+          "context": "normal",
+          "jointCode": "spine",
+          "zone": "down",
+          "sortOrder": 5
+        },
+        {
+          "messageId": "d92d2c4c-464d-4f35-ae13-aa97dd569e93",
+          "target": "joint_state",
+          "context": "pad",
+          "jointCode": "spine",
+          "zone": "up",
+          "sortOrder": 6
+        },
+        {
+          "messageId": "a2e3b8c3-682a-40ec-bb5c-aeee53d0f0e3",
+          "target": "joint_state",
+          "context": "warning",
+          "jointCode": "spine",
+          "zone": "up",
+          "sortOrder": 7
+        },
+        {
+          "messageId": "e2fed0a3-267e-45e7-9605-a8204247d8d1",
+          "target": "joint_state",
+          "context": "perfect",
+          "jointCode": "left_hip",
+          "sortOrder": 8
+        },
+        {
+          "messageId": "9ec37e42-376a-4c19-bddc-dd1c8acd8e2f",
+          "target": "joint_state",
+          "context": "warning",
+          "jointCode": "left_hip",
+          "sortOrder": 9
+        },
+        {
+          "messageId": "5a80287c-a5fd-41fb-9dd7-8c2d38d707be",
+          "target": "feedback",
+          "context": "motivational",
+          "sortOrder": 10
+        },
+        {
+          "messageId": "68dedba0-111f-4405-8bd2-a106562cdce5",
+          "target": "feedback",
+          "context": "motivational",
+          "sortOrder": 11
+        },
+        {
+          "messageId": "dda19e91-9399-4621-80e5-2458bbf10dd8",
+          "target": "feedback",
+          "context": "tip",
+          "sortOrder": 12
+        },
+        {
+          "messageId": "0b08c068-ee60-4f30-90bb-a7b4c74440f3",
+          "target": "feedback",
+          "context": "tip",
+          "sortOrder": 13
+        }
+      ]
+    }
+  ],
+  "description": {
+    "ar": "تمرين مكتبة: تمديد ظهر.",
+    "en": "Library exercise: Back extension (bodyweight)."
+  },
+  "instructions": {
+    "ar": "حافظ على عمود فقري محايد وتنفس بثبات وتوقف عند أي ألم حاد.",
+    "en": "Maintain neutral spine, steady breathing, and stop if sharp pain appears."
+  },
+  "reportMetrics": {
+    "primary": [
+      "FORM_SCORE"
+    ],
+    "excluded": [
+      "HOLD_DURATION",
+      "WEIGHT",
+      "VOLUME",
+      "EST_1RM",
+      "SYMMETRY"
+    ]
+  },
+  "hasPositionChecks": true,
+  "_database": {
+    "id": "7ec7252a-8968-4c55-8faf-1a1dadaff7dd",
+    "categoryId": "d90cee55-225e-4127-9fdc-062a8a09522e",
+    "countingMethodId": "f4d48aef-1606-4f23-8c61-7b4a2546f990",
+    "publishedAt": "2026-04-20T17:26:28.692Z",
+    "createdAt": "2026-04-20T17:26:28.694Z",
+    "updatedAt": "2026-04-20T17:26:34.541Z",
+    "deletedAt": null,
+    "isFeatured": false,
+    "createdBy": null,
+    "updatedBy": null,
+    "repCountingConfig": null,
+    "bilateralConfig": null,
+    "isBilateral": false,
+    "supportsWeight": false,
+    "minWeight": null,
+    "maxWeight": null,
+    "defaultWeight": null,
+    "reportMetrics": {
+      "mode": "reps",
+      "version": 1,
+      "primaryKpi": "repQuality",
+      "secondaryKpis": [
+        "avgFormScore",
+        "avgRom"
+      ]
+    },
+    "media": [],
+    "poseVariants": [
+      {
+        "id": "96db7e94-0271-47f6-aa72-b871b341da4b",
+        "sortOrder": 1,
+        "description": null,
+        "trackedJointsConfig": [
+          {
+            "role": "primary",
+            "joint": "spine",
+            "upRange": {
+              "pad": {
+                "max": 42,
+                "min": 18
+              },
+              "normal": {
+                "max": 38,
+                "min": 20
+              },
+              "perfect": {
+                "max": 34,
+                "min": 22
+              }
+            },
+            "downRange": {
+              "pad": {
+                "max": 16,
+                "min": 0
+              },
+              "normal": {
+                "max": 14,
+                "min": 0
+              },
+              "perfect": {
+                "max": 12,
+                "min": 0
+              }
+            },
+            "startPose": {
+              "max": 40,
+              "min": 0
+            },
+            "stateMessages": {
+              "pad": {
+                "up": {
+                  "ar": "مقبول، لكن المدى ما زال ضعيفاً",
+                  "en": "Acceptable, but the extension range is still limited"
+                }
+              },
+              "normal": {
+                "up": {
+                  "ar": "جيد، ارفع حتى الحياد ثم توقف",
+                  "en": "Good, lift to neutral and stop there"
+                },
+                "down": {
+                  "ar": "جيد، انزل ببطء أكثر",
+                  "en": "Good, lower more slowly"
+                }
+              },
+              "perfect": {
+                "up": {
+                  "ar": "ممتاز! تمدد ظهري مضبوط",
+                  "en": "Perfect! Controlled back extension"
+                },
+                "down": {
+                  "ar": "ممتاز! عودة محايدة",
+                  "en": "Perfect! Neutral return"
+                }
+              },
+              "warning": {
+                "up": {
+                  "ar": "لا تجعل الحركة من أسفل الظهر فقط",
+                  "en": "Do not make the movement low-back only"
+                }
+              }
+            }
+          },
+          {
+            "role": "secondary",
+            "joint": "left_hip",
+            "range": {
+              "pad": {
+                "max": 180,
+                "min": 145
+              },
+              "normal": {
+                "max": 180,
+                "min": 152
+              },
+              "perfect": {
+                "max": 180,
+                "min": 160
+              },
+              "warning": {
+                "max": 145,
+                "min": 130
+              }
+            },
+            "startPose": {
+              "max": 180,
+              "min": 145
+            },
+            "stateMessages": {
+              "perfect": {
+                "ar": "ورك ثابت على المقعد",
+                "en": "Hips stay stable on the pad/bench"
+              },
+              "warning": {
+                "ar": "لا تفقد ثبات الحوض أثناء الرفع",
+                "en": "Do not lose pelvic stability during the lift"
+              }
+            }
+          }
+        ]
+      }
+    ],
+    "validationWarning": null
+  }
+}

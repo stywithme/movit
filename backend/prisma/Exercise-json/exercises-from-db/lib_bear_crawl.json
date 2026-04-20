@@ -1,0 +1,565 @@
+{
+  "slug": "lib_bear_crawl",
+  "status": "published",
+  "movementPattern": "GAIT",
+  "loadCapability": "BODYWEIGHT_ONLY",
+  "familyKey": "gait_family",
+  "familyOrder": 22,
+  "name": {
+    "ar": "زحف الدب",
+    "en": "Bear crawl"
+  },
+  "category": {
+    "code": "full_body",
+    "name": {
+      "ar": "تمارين الجسم كامل",
+      "en": "Full Body"
+    }
+  },
+  "countingMethod": "up_down",
+  "muscles": [
+    "front_delts",
+    "quadriceps"
+  ],
+  "equipment": [
+    "bodyweight",
+    "mat"
+  ],
+  "tags": [
+    "curated_library",
+    "conditioning"
+  ],
+  "repCountingConfig": {
+    "reps": 12,
+    "minRepIntervalMs": 1500,
+    "maxRepIntervalMs": 5000
+  },
+  "poseVariants": [
+    {
+      "name": {
+        "ar": "مستلقٍ على الوجه",
+        "en": "Lying face down (side angle)"
+      },
+      "posePosition": "prone_side",
+      "expectedPostures": [
+        "lying_prone"
+      ],
+      "expectedDirections": [
+        "side"
+      ],
+      "expectedRegions": [
+        "full_body"
+      ],
+      "trackedJoints": [
+        {
+          "joint": "left_hip",
+          "role": "primary",
+          "startPose": {
+            "max": 160,
+            "min": 70
+          },
+          "stateMessages": {
+            "pad": {
+              "down": {
+                "ar": "مقبول — قصر المدى قليلاً",
+                "en": "Acceptable — keep the range a bit shorter"
+              }
+            },
+            "normal": {
+              "up": {
+                "ar": "جيد، ابقِ الورك بمستوى الكتف",
+                "en": "Good, keep the hip in line with the shoulder"
+              },
+              "down": {
+                "ar": "جيد، ارفع الركبة نحو الصدر أكثر",
+                "en": "Good, drive the knee toward the chest more"
+              }
+            },
+            "perfect": {
+              "up": {
+                "ar": "ممتاز! خطوة ثابتة دون هبوط",
+                "en": "Perfect! Stable step without sag"
+              },
+              "down": {
+                "ar": "ممتاز! ركبة قريبة للصدر بتحكم",
+                "en": "Perfect! Knee driven to chest with control"
+              }
+            },
+            "warning": {
+              "down": {
+                "ar": "الزحف تحول إلى هبوط في الورك",
+                "en": "The crawl is turning into a hip sag"
+              }
+            }
+          },
+          "upRange": {
+            "pad": {
+              "max": 175,
+              "min": 115
+            },
+            "normal": {
+              "max": 170,
+              "min": 122
+            },
+            "perfect": {
+              "max": 160,
+              "min": 130
+            }
+          },
+          "downRange": {
+            "pad": {
+              "max": 112,
+              "min": 65
+            },
+            "normal": {
+              "max": 110,
+              "min": 72
+            },
+            "perfect": {
+              "max": 102,
+              "min": 78
+            },
+            "warning": {
+              "max": 65,
+              "min": 55
+            }
+          }
+        },
+        {
+          "joint": "left_shoulder",
+          "role": "secondary",
+          "startPose": {
+            "max": 110,
+            "min": 55
+          },
+          "stateMessages": {
+            "perfect": {
+              "ar": "كتف فوق المعصم تقريباً",
+              "en": "Shoulder stacked over the wrist"
+            },
+            "warning": {
+              "ar": "لا تدع الكتفين يزحفان للأذنين",
+              "en": "Don’t let the shoulders creep to the ears"
+            }
+          },
+          "range": {
+            "pad": {
+              "max": 112,
+              "min": 55
+            },
+            "normal": {
+              "max": 105,
+              "min": 62
+            },
+            "perfect": {
+              "max": 98,
+              "min": 70
+            },
+            "warning": {
+              "max": 55,
+              "min": 45
+            }
+          }
+        },
+        {
+          "joint": "spine",
+          "role": "secondary",
+          "startPose": {
+            "max": 22,
+            "min": 0
+          },
+          "stateMessages": {
+            "perfect": {
+              "ar": "جذع منظم في الرباعي",
+              "en": "Trunk organized in quadruped"
+            },
+            "warning": {
+              "ar": "قلل السرعة إذا فقد الظهر الحياد",
+              "en": "Slow down if spinal neutrality is lost"
+            }
+          },
+          "range": {
+            "pad": {
+              "max": 26,
+              "min": 0
+            },
+            "normal": {
+              "max": 20,
+              "min": 0
+            },
+            "perfect": {
+              "max": 14,
+              "min": 0
+            },
+            "warning": {
+              "max": 38,
+              "min": 26
+            }
+          }
+        }
+      ],
+      "positionChecks": [
+        {
+          "id": "bear_flat_back",
+          "type": "vertical_alignment",
+          "landmarks": {
+            "primary": "left_shoulder",
+            "secondary": "left_hip"
+          },
+          "condition": {
+            "operator": "approximately_equal",
+            "threshold": 0.14
+          },
+          "activePhases": [
+            "up",
+            "down"
+          ],
+          "errorMessage": {
+            "ar": "حافظ على ظهر مستوٍ — لا تهبط الورك أو ترفع القفص زائداً.",
+            "en": "Keep a flat back — don’t sag the hips or over-arch."
+          },
+          "severity": "warning",
+          "cooldownMs": 2200,
+          "minErrorFrames": 4
+        }
+      ],
+      "feedbackMessages": {
+        "motivational": [
+          {
+            "ar": "أداء قوي ومنظم",
+            "en": "Strong and controlled work"
+          },
+          {
+            "ar": "حافظ على الشكل قبل السرعة",
+            "en": "Keep form before speed"
+          }
+        ],
+        "tips": [
+          {
+            "ar": "خذ نفساً تحضيرياً قبل كل عدة وازفر مع الجهد.",
+            "en": "Take a setup breath before each rep and exhale on effort."
+          },
+          {
+            "ar": "إذا فقدت التحكم الميكانيكي، قلل المدى أو الحمل.",
+            "en": "If mechanics break down, reduce range or load."
+          }
+        ]
+      },
+      "messageAssignments": [
+        {
+          "messageId": "40531ca3-db48-4955-938f-ad29d954d344",
+          "target": "position",
+          "context": "error",
+          "checkId": "bear_flat_back",
+          "sortOrder": 1
+        },
+        {
+          "messageId": "a79e3520-6180-4766-99df-3a844414daf2",
+          "target": "joint_state",
+          "context": "perfect",
+          "jointCode": "left_hip",
+          "zone": "up",
+          "sortOrder": 2
+        },
+        {
+          "messageId": "d1973170-82bf-43d7-bfbd-30a700448dab",
+          "target": "joint_state",
+          "context": "perfect",
+          "jointCode": "left_hip",
+          "zone": "down",
+          "sortOrder": 3
+        },
+        {
+          "messageId": "fb8238a8-4c91-4f65-81ac-58e8d04b6d57",
+          "target": "joint_state",
+          "context": "normal",
+          "jointCode": "left_hip",
+          "zone": "up",
+          "sortOrder": 4
+        },
+        {
+          "messageId": "aead2de1-f434-4d97-bcdd-002b66cf7bb2",
+          "target": "joint_state",
+          "context": "normal",
+          "jointCode": "left_hip",
+          "zone": "down",
+          "sortOrder": 5
+        },
+        {
+          "messageId": "3f6f0e93-011d-4a83-ab3a-9b7df725c96b",
+          "target": "joint_state",
+          "context": "pad",
+          "jointCode": "left_hip",
+          "zone": "down",
+          "sortOrder": 6
+        },
+        {
+          "messageId": "13d2c842-8e3d-49d4-921c-4e8556978bb8",
+          "target": "joint_state",
+          "context": "warning",
+          "jointCode": "left_hip",
+          "zone": "down",
+          "sortOrder": 7
+        },
+        {
+          "messageId": "736b5ffc-cea2-4d42-86fc-70fda079588e",
+          "target": "joint_state",
+          "context": "perfect",
+          "jointCode": "left_shoulder",
+          "sortOrder": 8
+        },
+        {
+          "messageId": "c2a4b096-e653-4530-945f-06f55ca53e47",
+          "target": "joint_state",
+          "context": "warning",
+          "jointCode": "left_shoulder",
+          "sortOrder": 9
+        },
+        {
+          "messageId": "40fa5a9a-4970-42b4-9b21-d7b397f276db",
+          "target": "joint_state",
+          "context": "perfect",
+          "jointCode": "spine",
+          "sortOrder": 10
+        },
+        {
+          "messageId": "f2ff2751-2886-48c0-a00b-ea30c33dd6df",
+          "target": "joint_state",
+          "context": "warning",
+          "jointCode": "spine",
+          "sortOrder": 11
+        },
+        {
+          "messageId": "a5eb2c6f-ef2d-4463-895a-7a986d33970a",
+          "target": "feedback",
+          "context": "motivational",
+          "sortOrder": 12
+        },
+        {
+          "messageId": "835ba61c-4574-468a-90d1-389954421f1f",
+          "target": "feedback",
+          "context": "motivational",
+          "sortOrder": 13
+        },
+        {
+          "messageId": "e6837bdf-90b6-4129-952a-9ef49c0d8501",
+          "target": "feedback",
+          "context": "tip",
+          "sortOrder": 14
+        },
+        {
+          "messageId": "7e5db61b-aadc-45c2-b92e-fc030bf6ac86",
+          "target": "feedback",
+          "context": "tip",
+          "sortOrder": 15
+        }
+      ]
+    }
+  ],
+  "description": {
+    "ar": "تمرين مكتبة: زحف الدب.",
+    "en": "Library exercise: Bear crawl."
+  },
+  "instructions": {
+    "ar": "حافظ على عمود فقري محايد وتنفس بثبات وتوقف عند أي ألم حاد.",
+    "en": "Maintain neutral spine, steady breathing, and stop if sharp pain appears."
+  },
+  "reportMetrics": {
+    "primary": [
+      "FORM_SCORE"
+    ],
+    "excluded": [
+      "HOLD_DURATION",
+      "WEIGHT",
+      "VOLUME",
+      "EST_1RM",
+      "SYMMETRY"
+    ]
+  },
+  "hasPositionChecks": true,
+  "_database": {
+    "id": "0afcb318-8f6d-49b1-a084-5a62c8d888d1",
+    "categoryId": "da4f0d15-a7a4-4d8e-abd2-73ee921ef7dc",
+    "countingMethodId": "f4d48aef-1606-4f23-8c61-7b4a2546f990",
+    "publishedAt": "2026-04-20T17:26:27.704Z",
+    "createdAt": "2026-04-20T17:26:27.707Z",
+    "updatedAt": "2026-04-20T17:26:34.480Z",
+    "deletedAt": null,
+    "isFeatured": false,
+    "createdBy": null,
+    "updatedBy": null,
+    "repCountingConfig": null,
+    "bilateralConfig": null,
+    "isBilateral": false,
+    "supportsWeight": false,
+    "minWeight": null,
+    "maxWeight": null,
+    "defaultWeight": null,
+    "reportMetrics": {
+      "mode": "reps",
+      "version": 1,
+      "primaryKpi": "repQuality",
+      "secondaryKpis": [
+        "avgFormScore",
+        "avgRom"
+      ]
+    },
+    "media": [],
+    "poseVariants": [
+      {
+        "id": "af7c5e06-5cd3-4f58-abeb-799675606a94",
+        "sortOrder": 1,
+        "description": null,
+        "trackedJointsConfig": [
+          {
+            "role": "primary",
+            "joint": "left_hip",
+            "upRange": {
+              "pad": {
+                "max": 175,
+                "min": 115
+              },
+              "normal": {
+                "max": 170,
+                "min": 122
+              },
+              "perfect": {
+                "max": 160,
+                "min": 130
+              }
+            },
+            "downRange": {
+              "pad": {
+                "max": 112,
+                "min": 65
+              },
+              "normal": {
+                "max": 110,
+                "min": 72
+              },
+              "perfect": {
+                "max": 102,
+                "min": 78
+              },
+              "warning": {
+                "max": 65,
+                "min": 55
+              }
+            },
+            "startPose": {
+              "max": 160,
+              "min": 70
+            },
+            "stateMessages": {
+              "pad": {
+                "down": {
+                  "ar": "مقبول — قصر المدى قليلاً",
+                  "en": "Acceptable — keep the range a bit shorter"
+                }
+              },
+              "normal": {
+                "up": {
+                  "ar": "جيد، ابقِ الورك بمستوى الكتف",
+                  "en": "Good, keep the hip in line with the shoulder"
+                },
+                "down": {
+                  "ar": "جيد، ارفع الركبة نحو الصدر أكثر",
+                  "en": "Good, drive the knee toward the chest more"
+                }
+              },
+              "perfect": {
+                "up": {
+                  "ar": "ممتاز! خطوة ثابتة دون هبوط",
+                  "en": "Perfect! Stable step without sag"
+                },
+                "down": {
+                  "ar": "ممتاز! ركبة قريبة للصدر بتحكم",
+                  "en": "Perfect! Knee driven to chest with control"
+                }
+              },
+              "warning": {
+                "down": {
+                  "ar": "الزحف تحول إلى هبوط في الورك",
+                  "en": "The crawl is turning into a hip sag"
+                }
+              }
+            }
+          },
+          {
+            "role": "secondary",
+            "joint": "left_shoulder",
+            "range": {
+              "pad": {
+                "max": 112,
+                "min": 55
+              },
+              "normal": {
+                "max": 105,
+                "min": 62
+              },
+              "perfect": {
+                "max": 98,
+                "min": 70
+              },
+              "warning": {
+                "max": 55,
+                "min": 45
+              }
+            },
+            "startPose": {
+              "max": 110,
+              "min": 55
+            },
+            "stateMessages": {
+              "perfect": {
+                "ar": "كتف فوق المعصم تقريباً",
+                "en": "Shoulder stacked over the wrist"
+              },
+              "warning": {
+                "ar": "لا تدع الكتفين يزحفان للأذنين",
+                "en": "Don’t let the shoulders creep to the ears"
+              }
+            }
+          },
+          {
+            "role": "secondary",
+            "joint": "spine",
+            "range": {
+              "pad": {
+                "max": 26,
+                "min": 0
+              },
+              "normal": {
+                "max": 20,
+                "min": 0
+              },
+              "perfect": {
+                "max": 14,
+                "min": 0
+              },
+              "warning": {
+                "max": 38,
+                "min": 26
+              }
+            },
+            "startPose": {
+              "max": 22,
+              "min": 0
+            },
+            "stateMessages": {
+              "perfect": {
+                "ar": "جذع منظم في الرباعي",
+                "en": "Trunk organized in quadruped"
+              },
+              "warning": {
+                "ar": "قلل السرعة إذا فقد الظهر الحياد",
+                "en": "Slow down if spinal neutrality is lost"
+              }
+            }
+          }
+        ]
+      }
+    ],
+    "validationWarning": null
+  }
+}

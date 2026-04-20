@@ -1,0 +1,578 @@
+{
+  "slug": "lib_bench_hip_thrust",
+  "status": "published",
+  "movementPattern": "HINGE",
+  "loadCapability": "EXTERNAL_LOAD_OPTIONAL",
+  "familyKey": "hinge_pattern_family",
+  "familyOrder": 36,
+  "name": {
+    "ar": "دفع ورك بدعم مقعد",
+    "en": "Bench-supported hip thrust"
+  },
+  "category": {
+    "code": "legs",
+    "name": {
+      "ar": "تمارين الأرجل",
+      "en": "Legs"
+    }
+  },
+  "countingMethod": "up_down",
+  "muscles": [
+    "glutes",
+    "hamstrings"
+  ],
+  "equipment": [
+    "dumbbell",
+    "bench",
+    "mat"
+  ],
+  "tags": [
+    "curated_library",
+    "compound"
+  ],
+  "repCountingConfig": {
+    "reps": 12,
+    "minRepIntervalMs": 1500,
+    "maxRepIntervalMs": 5000
+  },
+  "poseVariants": [
+    {
+      "name": {
+        "ar": "مستلقٍ على الظهر",
+        "en": "Lying on back (side angle)"
+      },
+      "posePosition": "supine_side",
+      "expectedPostures": [
+        "lying_supine"
+      ],
+      "expectedDirections": [
+        "side"
+      ],
+      "expectedRegions": [
+        "full_body"
+      ],
+      "trackedJoints": [
+        {
+          "joint": "left_hip",
+          "role": "primary",
+          "startPose": {
+            "max": 180,
+            "min": 80
+          },
+          "stateMessages": {
+            "pad": {
+              "up": {
+                "ar": "مقبول، لكن الرفع ما زال ناقصاً",
+                "en": "Acceptable, but the lift is still short"
+              }
+            },
+            "danger": {
+              "up": {
+                "ar": "توقف، يوجد ضغط قطني غير مريح",
+                "en": "Stop, there is uncomfortable lumbar loading"
+              }
+            },
+            "normal": {
+              "up": {
+                "ar": "جيد، ادفع الورك أعلى",
+                "en": "Good, drive the hips higher"
+              },
+              "down": {
+                "ar": "جيد، انزل ببطء أكثر",
+                "en": "Good, lower more slowly"
+              }
+            },
+            "perfect": {
+              "up": {
+                "ar": "ممتاز! قفل ورك قوي",
+                "en": "Perfect! Strong hip lockout"
+              },
+              "down": {
+                "ar": "ممتاز! عودة متحكم بها",
+                "en": "Perfect! Controlled return"
+              }
+            },
+            "warning": {
+              "up": {
+                "ar": "لا تعوض من أسفل الظهر",
+                "en": "Do not compensate through the low back"
+              }
+            }
+          },
+          "pairedWith": "right_hip",
+          "upRange": {
+            "pad": {
+              "max": 180,
+              "min": 145
+            },
+            "normal": {
+              "max": 180,
+              "min": 155
+            },
+            "perfect": {
+              "max": 180,
+              "min": 165
+            }
+          },
+          "downRange": {
+            "pad": {
+              "max": 132,
+              "min": 75
+            },
+            "normal": {
+              "max": 125,
+              "min": 82
+            },
+            "perfect": {
+              "max": 118,
+              "min": 90
+            }
+          }
+        },
+        {
+          "joint": "left_knee",
+          "role": "secondary",
+          "startPose": {
+            "max": 120,
+            "min": 70
+          },
+          "stateMessages": {
+            "perfect": {
+              "ar": "زاوية الركبة ثابتة",
+              "en": "Knee angle remains stable"
+            },
+            "warning": {
+              "ar": "لا تدع القدمين يبتعدان كثيراً أو تقتربان جداً",
+              "en": "Do not let the feet drift too far or too close"
+            }
+          },
+          "range": {
+            "pad": {
+              "max": 116,
+              "min": 70
+            },
+            "normal": {
+              "max": 110,
+              "min": 75
+            },
+            "perfect": {
+              "max": 105,
+              "min": 80
+            },
+            "warning": {
+              "max": 70,
+              "min": 60
+            }
+          }
+        },
+        {
+          "joint": "spine",
+          "role": "secondary",
+          "startPose": {
+            "max": 24,
+            "min": 0
+          },
+          "stateMessages": {
+            "perfect": {
+              "ar": "ظهر منظم مع شد جذع جيد",
+              "en": "Spine stays organized with good brace"
+            },
+            "warning": {
+              "ar": "لا تحوّل الجسر إلى انحناء قطني",
+              "en": "Do not turn the bridge into a lumbar arch"
+            }
+          },
+          "range": {
+            "pad": {
+              "max": 26,
+              "min": 0
+            },
+            "normal": {
+              "max": 20,
+              "min": 0
+            },
+            "perfect": {
+              "max": 14,
+              "min": 0
+            },
+            "warning": {
+              "max": 40,
+              "min": 26
+            }
+          }
+        }
+      ],
+      "positionChecks": [
+        {
+          "id": "bridge_ribs_down",
+          "type": "vertical_alignment",
+          "landmarks": {
+            "primary": "left_shoulder",
+            "secondary": "left_hip"
+          },
+          "condition": {
+            "operator": "approximately_equal",
+            "threshold": 0.12
+          },
+          "activePhases": [
+            "up",
+            "down",
+            "top"
+          ],
+          "errorMessage": {
+            "ar": "ارفع الحوض دون تقوس قطني زائد.",
+            "en": "Lift the hips without turning the rep into a low-back arch."
+          },
+          "severity": "warning",
+          "cooldownMs": 2200,
+          "minErrorFrames": 4
+        }
+      ],
+      "feedbackMessages": {
+        "motivational": [
+          {
+            "ar": "شد جذع ممتاز",
+            "en": "Excellent trunk tension"
+          },
+          {
+            "ar": "ثباتك يتحسن عدة بعد عدة",
+            "en": "Your stability improves rep by rep"
+          }
+        ],
+        "tips": [
+          {
+            "ar": "شد السرة برفق ولا تحبس النفس طويلاً.",
+            "en": "Brace gently and avoid long breath-holds."
+          },
+          {
+            "ar": "حرّك الأطراف دون أن ينهار الجذع.",
+            "en": "Move the limbs without letting the trunk collapse."
+          }
+        ]
+      },
+      "messageAssignments": [
+        {
+          "messageId": "93e7e394-ce25-44da-9bf7-b4901552eb28",
+          "target": "position",
+          "context": "error",
+          "checkId": "bridge_ribs_down",
+          "sortOrder": 1
+        },
+        {
+          "messageId": "5ab21a98-8218-4e40-81c7-23afb2131833",
+          "target": "joint_state",
+          "context": "perfect",
+          "jointCode": "left_hip",
+          "zone": "up",
+          "sortOrder": 2
+        },
+        {
+          "messageId": "9f613d32-e6dc-4edb-bc9f-cabc9033f152",
+          "target": "joint_state",
+          "context": "perfect",
+          "jointCode": "left_hip",
+          "zone": "down",
+          "sortOrder": 3
+        },
+        {
+          "messageId": "867d56ad-5f1e-4484-b25a-b3f6a236cb1a",
+          "target": "joint_state",
+          "context": "normal",
+          "jointCode": "left_hip",
+          "zone": "up",
+          "sortOrder": 4
+        },
+        {
+          "messageId": "33969e87-d1ab-4534-9404-b482b5f4f976",
+          "target": "joint_state",
+          "context": "normal",
+          "jointCode": "left_hip",
+          "zone": "down",
+          "sortOrder": 5
+        },
+        {
+          "messageId": "02f09a21-c8a3-4ded-9477-1f185124c374",
+          "target": "joint_state",
+          "context": "pad",
+          "jointCode": "left_hip",
+          "zone": "up",
+          "sortOrder": 6
+        },
+        {
+          "messageId": "e5f6717c-3f45-473a-8996-1be5a792cb48",
+          "target": "joint_state",
+          "context": "warning",
+          "jointCode": "left_hip",
+          "zone": "up",
+          "sortOrder": 7
+        },
+        {
+          "messageId": "4a95322a-3df2-4374-bd4d-43948aefe5a9",
+          "target": "joint_state",
+          "context": "danger",
+          "jointCode": "left_hip",
+          "zone": "up",
+          "sortOrder": 8
+        },
+        {
+          "messageId": "5ae5fd65-46dc-4ba4-a9c0-66c424e3bc33",
+          "target": "joint_state",
+          "context": "perfect",
+          "jointCode": "left_knee",
+          "sortOrder": 9
+        },
+        {
+          "messageId": "5ae92290-fe09-4124-af96-94c2d6057aeb",
+          "target": "joint_state",
+          "context": "warning",
+          "jointCode": "left_knee",
+          "sortOrder": 10
+        },
+        {
+          "messageId": "9238b753-0101-44d5-8b4c-f504a6502dd2",
+          "target": "joint_state",
+          "context": "perfect",
+          "jointCode": "spine",
+          "sortOrder": 11
+        },
+        {
+          "messageId": "397eaa22-65ea-4ab1-936a-8b3942bb15e4",
+          "target": "joint_state",
+          "context": "warning",
+          "jointCode": "spine",
+          "sortOrder": 12
+        },
+        {
+          "messageId": "ab6cc4b4-3cc8-4e03-b0b9-4b01bb055221",
+          "target": "feedback",
+          "context": "motivational",
+          "sortOrder": 13
+        },
+        {
+          "messageId": "b5dc35df-9731-46f1-91e5-75b5af8a0f41",
+          "target": "feedback",
+          "context": "motivational",
+          "sortOrder": 14
+        },
+        {
+          "messageId": "48f5b59b-d828-4f8a-8b2b-27ac2edba14f",
+          "target": "feedback",
+          "context": "tip",
+          "sortOrder": 15
+        },
+        {
+          "messageId": "09dc49d4-8078-42ad-b0a1-de81d18de230",
+          "target": "feedback",
+          "context": "tip",
+          "sortOrder": 16
+        }
+      ]
+    }
+  ],
+  "description": {
+    "ar": "تمرين مكتبة: دفع ورك بدعم مقعد.",
+    "en": "Library exercise: Bench-supported hip thrust."
+  },
+  "instructions": {
+    "ar": "حافظ على عمود فقري محايد وتنفس بثبات وتوقف عند أي ألم حاد.",
+    "en": "Maintain neutral spine, steady breathing, and stop if sharp pain appears."
+  },
+  "supportsWeight": true,
+  "reportMetrics": {
+    "primary": [
+      "FORM_SCORE"
+    ],
+    "excluded": [
+      "HOLD_DURATION"
+    ]
+  },
+  "hasPositionChecks": true,
+  "_database": {
+    "id": "c28f2abb-148f-42a9-b251-6ec9a90797b1",
+    "categoryId": "a672c3d3-4449-4f74-bd8e-be73a0035e88",
+    "countingMethodId": "f4d48aef-1606-4f23-8c61-7b4a2546f990",
+    "publishedAt": "2026-04-20T17:26:25.859Z",
+    "createdAt": "2026-04-20T17:26:25.861Z",
+    "updatedAt": "2026-04-20T17:26:34.335Z",
+    "deletedAt": null,
+    "isFeatured": false,
+    "createdBy": null,
+    "updatedBy": null,
+    "repCountingConfig": null,
+    "bilateralConfig": null,
+    "isBilateral": false,
+    "supportsWeight": true,
+    "minWeight": null,
+    "maxWeight": null,
+    "defaultWeight": null,
+    "reportMetrics": {
+      "mode": "reps",
+      "version": 1,
+      "primaryKpi": "repQuality",
+      "secondaryKpis": [
+        "avgFormScore",
+        "avgRom"
+      ]
+    },
+    "media": [],
+    "poseVariants": [
+      {
+        "id": "3369739e-d736-4d2d-9c98-a6a2197aa1be",
+        "sortOrder": 1,
+        "description": null,
+        "trackedJointsConfig": [
+          {
+            "role": "primary",
+            "joint": "left_hip",
+            "upRange": {
+              "pad": {
+                "max": 180,
+                "min": 145
+              },
+              "normal": {
+                "max": 180,
+                "min": 155
+              },
+              "perfect": {
+                "max": 180,
+                "min": 165
+              }
+            },
+            "downRange": {
+              "pad": {
+                "max": 132,
+                "min": 75
+              },
+              "normal": {
+                "max": 125,
+                "min": 82
+              },
+              "perfect": {
+                "max": 118,
+                "min": 90
+              }
+            },
+            "startPose": {
+              "max": 180,
+              "min": 80
+            },
+            "pairedWith": "right_hip",
+            "stateMessages": {
+              "pad": {
+                "up": {
+                  "ar": "مقبول، لكن الرفع ما زال ناقصاً",
+                  "en": "Acceptable, but the lift is still short"
+                }
+              },
+              "danger": {
+                "up": {
+                  "ar": "توقف، يوجد ضغط قطني غير مريح",
+                  "en": "Stop, there is uncomfortable lumbar loading"
+                }
+              },
+              "normal": {
+                "up": {
+                  "ar": "جيد، ادفع الورك أعلى",
+                  "en": "Good, drive the hips higher"
+                },
+                "down": {
+                  "ar": "جيد، انزل ببطء أكثر",
+                  "en": "Good, lower more slowly"
+                }
+              },
+              "perfect": {
+                "up": {
+                  "ar": "ممتاز! قفل ورك قوي",
+                  "en": "Perfect! Strong hip lockout"
+                },
+                "down": {
+                  "ar": "ممتاز! عودة متحكم بها",
+                  "en": "Perfect! Controlled return"
+                }
+              },
+              "warning": {
+                "up": {
+                  "ar": "لا تعوض من أسفل الظهر",
+                  "en": "Do not compensate through the low back"
+                }
+              }
+            }
+          },
+          {
+            "role": "secondary",
+            "joint": "left_knee",
+            "range": {
+              "pad": {
+                "max": 116,
+                "min": 70
+              },
+              "normal": {
+                "max": 110,
+                "min": 75
+              },
+              "perfect": {
+                "max": 105,
+                "min": 80
+              },
+              "warning": {
+                "max": 70,
+                "min": 60
+              }
+            },
+            "startPose": {
+              "max": 120,
+              "min": 70
+            },
+            "stateMessages": {
+              "perfect": {
+                "ar": "زاوية الركبة ثابتة",
+                "en": "Knee angle remains stable"
+              },
+              "warning": {
+                "ar": "لا تدع القدمين يبتعدان كثيراً أو تقتربان جداً",
+                "en": "Do not let the feet drift too far or too close"
+              }
+            }
+          },
+          {
+            "role": "secondary",
+            "joint": "spine",
+            "range": {
+              "pad": {
+                "max": 26,
+                "min": 0
+              },
+              "normal": {
+                "max": 20,
+                "min": 0
+              },
+              "perfect": {
+                "max": 14,
+                "min": 0
+              },
+              "warning": {
+                "max": 40,
+                "min": 26
+              }
+            },
+            "startPose": {
+              "max": 24,
+              "min": 0
+            },
+            "stateMessages": {
+              "perfect": {
+                "ar": "ظهر منظم مع شد جذع جيد",
+                "en": "Spine stays organized with good brace"
+              },
+              "warning": {
+                "ar": "لا تحوّل الجسر إلى انحناء قطني",
+                "en": "Do not turn the bridge into a lumbar arch"
+              }
+            }
+          }
+        ]
+      }
+    ],
+    "validationWarning": null
+  }
+}

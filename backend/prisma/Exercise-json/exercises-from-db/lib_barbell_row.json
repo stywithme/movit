@@ -1,0 +1,767 @@
+{
+  "slug": "lib_barbell_row",
+  "status": "published",
+  "movementPattern": "PULL_HORIZONTAL",
+  "loadCapability": "EXTERNAL_LOAD_REQUIRED",
+  "familyKey": "pull_horizontal_family",
+  "familyOrder": 50,
+  "name": {
+    "ar": "تجديف بار منحني",
+    "en": "Bent-over barbell row"
+  },
+  "category": {
+    "code": "back",
+    "name": {
+      "ar": "تمارين الظهر",
+      "en": "Back"
+    }
+  },
+  "countingMethod": "up_down",
+  "muscles": [
+    "lats",
+    "traps"
+  ],
+  "equipment": [
+    "barbell",
+    "mat"
+  ],
+  "tags": [
+    "curated_library",
+    "compound"
+  ],
+  "repCountingConfig": {
+    "reps": 12,
+    "minRepIntervalMs": 1500,
+    "maxRepIntervalMs": 5000
+  },
+  "poseVariants": [
+    {
+      "name": {
+        "ar": "زاوية جانبية",
+        "en": "Side view"
+      },
+      "posePosition": "standing_side",
+      "expectedPostures": [
+        "standing"
+      ],
+      "expectedDirections": [
+        "side"
+      ],
+      "expectedRegions": [
+        "full_body"
+      ],
+      "trackedJoints": [
+        {
+          "joint": "left_elbow",
+          "role": "primary",
+          "startPose": {
+            "max": 180,
+            "min": 150
+          },
+          "stateMessages": {
+            "pad": {
+              "down": {
+                "ar": "مقبول — زد المدى تدريجياً",
+                "en": "Acceptable — build range slowly"
+              }
+            },
+            "normal": {
+              "up": {
+                "ar": "جيد — فرد أكثر في الأسفل",
+                "en": "Good — reach longer at bottom"
+              },
+              "down": {
+                "ar": "جيد — اقترب من الورك أكثر",
+                "en": "Good — pull closer to the hip"
+              }
+            },
+            "perfect": {
+              "up": {
+                "ar": "ممتاز! ذراع ممتدة",
+                "en": "Perfect! Arm long"
+              },
+              "down": {
+                "ar": "ممتاز! شد قوي للصف",
+                "en": "Perfect! Strong pull finish"
+              }
+            },
+            "warning": {
+              "down": {
+                "ar": "لا تدور الجذع للحصول على مدى زائف",
+                "en": "Don’t rotate the trunk for fake range"
+              }
+            }
+          },
+          "pairedWith": "right_elbow",
+          "invertIndicator": true,
+          "upRange": {
+            "pad": {
+              "max": 180,
+              "min": 148
+            },
+            "normal": {
+              "max": 180,
+              "min": 158
+            },
+            "perfect": {
+              "max": 180,
+              "min": 165
+            }
+          },
+          "downRange": {
+            "pad": {
+              "max": 78,
+              "min": 18
+            },
+            "danger": {
+              "max": 10,
+              "min": 0
+            },
+            "normal": {
+              "max": 68,
+              "min": 28
+            },
+            "perfect": {
+              "max": 58,
+              "min": 35
+            },
+            "warning": {
+              "max": 22,
+              "min": 10
+            }
+          }
+        },
+        {
+          "joint": "right_elbow",
+          "role": "primary",
+          "startPose": {
+            "max": 180,
+            "min": 150
+          },
+          "stateMessages": {
+            "pad": {
+              "down": {
+                "ar": "مقبول — زد المدى تدريجياً",
+                "en": "Acceptable — build range slowly"
+              }
+            },
+            "normal": {
+              "up": {
+                "ar": "جيد — فرد أكثر في الأسفل",
+                "en": "Good — reach longer at bottom"
+              },
+              "down": {
+                "ar": "جيد — اقترب من الورك أكثر",
+                "en": "Good — pull closer to the hip"
+              }
+            },
+            "perfect": {
+              "up": {
+                "ar": "ممتاز! ذراع ممتدة",
+                "en": "Perfect! Arm long"
+              },
+              "down": {
+                "ar": "ممتاز! شد قوي للصف",
+                "en": "Perfect! Strong pull finish"
+              }
+            },
+            "warning": {
+              "down": {
+                "ar": "لا تدور الجذع للحصول على مدى زائف",
+                "en": "Don’t rotate the trunk for fake range"
+              }
+            }
+          },
+          "pairedWith": "left_elbow",
+          "invertIndicator": true,
+          "upRange": {
+            "pad": {
+              "max": 180,
+              "min": 148
+            },
+            "normal": {
+              "max": 180,
+              "min": 158
+            },
+            "perfect": {
+              "max": 180,
+              "min": 165
+            }
+          },
+          "downRange": {
+            "pad": {
+              "max": 78,
+              "min": 18
+            },
+            "danger": {
+              "max": 10,
+              "min": 0
+            },
+            "normal": {
+              "max": 68,
+              "min": 28
+            },
+            "perfect": {
+              "max": 58,
+              "min": 35
+            },
+            "warning": {
+              "max": 22,
+              "min": 10
+            }
+          }
+        },
+        {
+          "joint": "left_shoulder",
+          "role": "secondary",
+          "startPose": {
+            "max": 55,
+            "min": 20
+          },
+          "stateMessages": {
+            "perfect": {
+              "ar": "كتف منخفض ومستقر",
+              "en": "Shoulder low and stable"
+            },
+            "warning": {
+              "ar": "تجنب رفع الكتف نحو الأذن",
+              "en": "Avoid hiking the shoulder to the ear"
+            }
+          },
+          "range": {
+            "normal": {
+              "max": 55,
+              "min": 22
+            },
+            "perfect": {
+              "max": 48,
+              "min": 28
+            },
+            "warning": {
+              "max": 70,
+              "min": 55
+            }
+          }
+        },
+        {
+          "joint": "right_shoulder",
+          "role": "secondary",
+          "startPose": {
+            "max": 55,
+            "min": 20
+          },
+          "stateMessages": {
+            "perfect": {
+              "ar": "كتف أيمن منخفض ومستقر",
+              "en": "Right shoulder low and stable"
+            },
+            "warning": {
+              "ar": "تجنب رفع الكتف نحو الأذن",
+              "en": "Avoid hiking the shoulder to the ear"
+            }
+          },
+          "range": {
+            "normal": {
+              "max": 55,
+              "min": 22
+            },
+            "perfect": {
+              "max": 48,
+              "min": 28
+            },
+            "warning": {
+              "max": 70,
+              "min": 55
+            }
+          }
+        }
+      ],
+      "positionChecks": [
+        {
+          "id": "elbow_tucked_row",
+          "type": "vertical_alignment",
+          "landmarks": {
+            "primary": "left_elbow",
+            "secondary": "left_hip"
+          },
+          "condition": {
+            "operator": "approximately_equal",
+            "threshold": 0.1
+          },
+          "activePhases": [
+            "up",
+            "down"
+          ],
+          "errorMessage": {
+            "ar": "اسحب المرفق نحو الورك — لا تفتح الذراع للجانب.",
+            "en": "Pull elbow toward the hip — avoid flaring the arm."
+          },
+          "severity": "warning",
+          "cooldownMs": 2200,
+          "minErrorFrames": 4
+        }
+      ],
+      "feedbackMessages": {
+        "motivational": [
+          {
+            "ar": "تحكّم رائع في المدى",
+            "en": "Excellent range control"
+          },
+          {
+            "ar": "استمر — الجودة أهم من العدد",
+            "en": "Keep going — quality beats reps"
+          }
+        ],
+        "tips": [
+          {
+            "ar": "كتفاك للأسفل والخلف قليلاً (تثبيت لوح الكتف).",
+            "en": "Keep shoulders down and slightly back (scapular set)."
+          },
+          {
+            "ar": "لا تفرط في تمديد الرقبة؛ نظرة أمامية قصيرة.",
+            "en": "Avoid craning the neck; keep a short forward gaze."
+          }
+        ]
+      },
+      "messageAssignments": [
+        {
+          "messageId": "edfea897-0cc2-4e64-8a60-b4dff1f061f8",
+          "target": "position",
+          "context": "error",
+          "checkId": "elbow_tucked_row",
+          "sortOrder": 1
+        },
+        {
+          "messageId": "d7f1c819-ec8d-4566-a6d6-6f74a1fb4199",
+          "target": "joint_state",
+          "context": "perfect",
+          "jointCode": "left_elbow",
+          "zone": "up",
+          "sortOrder": 2
+        },
+        {
+          "messageId": "0f0ee29a-179c-4b0d-b8d9-6d7851285470",
+          "target": "joint_state",
+          "context": "perfect",
+          "jointCode": "left_elbow",
+          "zone": "down",
+          "sortOrder": 3
+        },
+        {
+          "messageId": "54419358-92ef-4610-9ef0-b6da2e1b2ace",
+          "target": "joint_state",
+          "context": "normal",
+          "jointCode": "left_elbow",
+          "zone": "up",
+          "sortOrder": 4
+        },
+        {
+          "messageId": "cefedec1-6b2e-49df-bae2-b5ea89dfcf2f",
+          "target": "joint_state",
+          "context": "normal",
+          "jointCode": "left_elbow",
+          "zone": "down",
+          "sortOrder": 5
+        },
+        {
+          "messageId": "aff3fd22-4511-4017-825f-06efc86ed135",
+          "target": "joint_state",
+          "context": "pad",
+          "jointCode": "left_elbow",
+          "zone": "down",
+          "sortOrder": 6
+        },
+        {
+          "messageId": "2eb9c3ce-3c57-4d78-8fd8-f2b8e1164f79",
+          "target": "joint_state",
+          "context": "warning",
+          "jointCode": "left_elbow",
+          "zone": "down",
+          "sortOrder": 7
+        },
+        {
+          "messageId": "dbdd2f30-d2dd-4215-8249-bb6cfafe4f20",
+          "target": "joint_state",
+          "context": "perfect",
+          "jointCode": "right_elbow",
+          "zone": "up",
+          "sortOrder": 8
+        },
+        {
+          "messageId": "3b818b18-bf9d-4f8e-9528-c16c3edcfcd2",
+          "target": "joint_state",
+          "context": "perfect",
+          "jointCode": "right_elbow",
+          "zone": "down",
+          "sortOrder": 9
+        },
+        {
+          "messageId": "ad1622ec-c230-49c1-8383-119047f2ed49",
+          "target": "joint_state",
+          "context": "normal",
+          "jointCode": "right_elbow",
+          "zone": "up",
+          "sortOrder": 10
+        },
+        {
+          "messageId": "bef7c3dd-4cd3-4afb-8b0c-ac288780bffb",
+          "target": "joint_state",
+          "context": "normal",
+          "jointCode": "right_elbow",
+          "zone": "down",
+          "sortOrder": 11
+        },
+        {
+          "messageId": "b96fec96-37d4-4b69-8b2b-5b01098319a3",
+          "target": "joint_state",
+          "context": "pad",
+          "jointCode": "right_elbow",
+          "zone": "down",
+          "sortOrder": 12
+        },
+        {
+          "messageId": "cc8a4e94-56cc-4850-92a9-6360b9683152",
+          "target": "joint_state",
+          "context": "warning",
+          "jointCode": "right_elbow",
+          "zone": "down",
+          "sortOrder": 13
+        },
+        {
+          "messageId": "b056df7a-c09f-4f91-a920-e04ed929f3b1",
+          "target": "joint_state",
+          "context": "perfect",
+          "jointCode": "left_shoulder",
+          "sortOrder": 14
+        },
+        {
+          "messageId": "734caea2-568b-46f7-ac87-91d0eecde266",
+          "target": "joint_state",
+          "context": "warning",
+          "jointCode": "left_shoulder",
+          "sortOrder": 15
+        },
+        {
+          "messageId": "aac24d57-c66b-4b0f-9e19-9f4e31a97e5e",
+          "target": "joint_state",
+          "context": "perfect",
+          "jointCode": "right_shoulder",
+          "sortOrder": 16
+        },
+        {
+          "messageId": "2b88de10-7f69-4fe3-9d7e-3384ea71a258",
+          "target": "joint_state",
+          "context": "warning",
+          "jointCode": "right_shoulder",
+          "sortOrder": 17
+        },
+        {
+          "messageId": "b79f1494-7fe7-4ebf-b991-b303e05bfba3",
+          "target": "feedback",
+          "context": "motivational",
+          "sortOrder": 18
+        },
+        {
+          "messageId": "ab11c972-956f-441a-b67b-56899ac05e23",
+          "target": "feedback",
+          "context": "motivational",
+          "sortOrder": 19
+        },
+        {
+          "messageId": "d3b2173f-1887-40ee-b8d2-9ee00c5ff071",
+          "target": "feedback",
+          "context": "tip",
+          "sortOrder": 20
+        },
+        {
+          "messageId": "fe513e85-1c05-43b0-a0fd-4a28f68684e4",
+          "target": "feedback",
+          "context": "tip",
+          "sortOrder": 21
+        }
+      ],
+      "cameraPosition": "side_view"
+    }
+  ],
+  "description": {
+    "ar": "تمرين مكتبة: تجديف بار منحني.",
+    "en": "Library exercise: Bent-over barbell row."
+  },
+  "instructions": {
+    "ar": "حافظ على عمود فقري محايد وتنفس بثبات وتوقف عند أي ألم حاد.",
+    "en": "Maintain neutral spine, steady breathing, and stop if sharp pain appears."
+  },
+  "supportsWeight": true,
+  "reportMetrics": {
+    "primary": [
+      "FORM_SCORE"
+    ],
+    "excluded": [
+      "HOLD_DURATION"
+    ]
+  },
+  "hasPositionChecks": true,
+  "_database": {
+    "id": "61fd2224-12f3-437b-beae-9af8931f0ba6",
+    "categoryId": "d90cee55-225e-4127-9fdc-062a8a09522e",
+    "countingMethodId": "f4d48aef-1606-4f23-8c61-7b4a2546f990",
+    "publishedAt": "2026-04-20T17:26:24.587Z",
+    "createdAt": "2026-04-20T17:26:24.588Z",
+    "updatedAt": "2026-04-20T17:26:34.228Z",
+    "deletedAt": null,
+    "isFeatured": false,
+    "createdBy": null,
+    "updatedBy": null,
+    "repCountingConfig": null,
+    "bilateralConfig": null,
+    "isBilateral": false,
+    "supportsWeight": true,
+    "minWeight": null,
+    "maxWeight": null,
+    "defaultWeight": null,
+    "reportMetrics": {
+      "mode": "reps",
+      "version": 1,
+      "primaryKpi": "repQuality",
+      "secondaryKpis": [
+        "avgFormScore",
+        "avgRom"
+      ]
+    },
+    "media": [],
+    "poseVariants": [
+      {
+        "id": "01b21a17-a308-44ae-95ab-e6f1b3ab247a",
+        "sortOrder": 1,
+        "description": null,
+        "trackedJointsConfig": [
+          {
+            "role": "primary",
+            "joint": "left_elbow",
+            "upRange": {
+              "pad": {
+                "max": 180,
+                "min": 148
+              },
+              "normal": {
+                "max": 180,
+                "min": 158
+              },
+              "perfect": {
+                "max": 180,
+                "min": 165
+              }
+            },
+            "downRange": {
+              "pad": {
+                "max": 78,
+                "min": 18
+              },
+              "danger": {
+                "max": 10,
+                "min": 0
+              },
+              "normal": {
+                "max": 68,
+                "min": 28
+              },
+              "perfect": {
+                "max": 58,
+                "min": 35
+              },
+              "warning": {
+                "max": 22,
+                "min": 10
+              }
+            },
+            "startPose": {
+              "max": 180,
+              "min": 150
+            },
+            "pairedWith": "right_elbow",
+            "stateMessages": {
+              "pad": {
+                "down": {
+                  "ar": "مقبول — زد المدى تدريجياً",
+                  "en": "Acceptable — build range slowly"
+                }
+              },
+              "normal": {
+                "up": {
+                  "ar": "جيد — فرد أكثر في الأسفل",
+                  "en": "Good — reach longer at bottom"
+                },
+                "down": {
+                  "ar": "جيد — اقترب من الورك أكثر",
+                  "en": "Good — pull closer to the hip"
+                }
+              },
+              "perfect": {
+                "up": {
+                  "ar": "ممتاز! ذراع ممتدة",
+                  "en": "Perfect! Arm long"
+                },
+                "down": {
+                  "ar": "ممتاز! شد قوي للصف",
+                  "en": "Perfect! Strong pull finish"
+                }
+              },
+              "warning": {
+                "down": {
+                  "ar": "لا تدور الجذع للحصول على مدى زائف",
+                  "en": "Don’t rotate the trunk for fake range"
+                }
+              }
+            },
+            "invertIndicator": true
+          },
+          {
+            "role": "primary",
+            "joint": "right_elbow",
+            "upRange": {
+              "pad": {
+                "max": 180,
+                "min": 148
+              },
+              "normal": {
+                "max": 180,
+                "min": 158
+              },
+              "perfect": {
+                "max": 180,
+                "min": 165
+              }
+            },
+            "downRange": {
+              "pad": {
+                "max": 78,
+                "min": 18
+              },
+              "danger": {
+                "max": 10,
+                "min": 0
+              },
+              "normal": {
+                "max": 68,
+                "min": 28
+              },
+              "perfect": {
+                "max": 58,
+                "min": 35
+              },
+              "warning": {
+                "max": 22,
+                "min": 10
+              }
+            },
+            "startPose": {
+              "max": 180,
+              "min": 150
+            },
+            "pairedWith": "left_elbow",
+            "stateMessages": {
+              "pad": {
+                "down": {
+                  "ar": "مقبول — زد المدى تدريجياً",
+                  "en": "Acceptable — build range slowly"
+                }
+              },
+              "normal": {
+                "up": {
+                  "ar": "جيد — فرد أكثر في الأسفل",
+                  "en": "Good — reach longer at bottom"
+                },
+                "down": {
+                  "ar": "جيد — اقترب من الورك أكثر",
+                  "en": "Good — pull closer to the hip"
+                }
+              },
+              "perfect": {
+                "up": {
+                  "ar": "ممتاز! ذراع ممتدة",
+                  "en": "Perfect! Arm long"
+                },
+                "down": {
+                  "ar": "ممتاز! شد قوي للصف",
+                  "en": "Perfect! Strong pull finish"
+                }
+              },
+              "warning": {
+                "down": {
+                  "ar": "لا تدور الجذع للحصول على مدى زائف",
+                  "en": "Don’t rotate the trunk for fake range"
+                }
+              }
+            },
+            "invertIndicator": true
+          },
+          {
+            "role": "secondary",
+            "joint": "left_shoulder",
+            "range": {
+              "normal": {
+                "max": 55,
+                "min": 22
+              },
+              "perfect": {
+                "max": 48,
+                "min": 28
+              },
+              "warning": {
+                "max": 70,
+                "min": 55
+              }
+            },
+            "startPose": {
+              "max": 55,
+              "min": 20
+            },
+            "stateMessages": {
+              "perfect": {
+                "ar": "كتف منخفض ومستقر",
+                "en": "Shoulder low and stable"
+              },
+              "warning": {
+                "ar": "تجنب رفع الكتف نحو الأذن",
+                "en": "Avoid hiking the shoulder to the ear"
+              }
+            }
+          },
+          {
+            "role": "secondary",
+            "joint": "right_shoulder",
+            "range": {
+              "normal": {
+                "max": 55,
+                "min": 22
+              },
+              "perfect": {
+                "max": 48,
+                "min": 28
+              },
+              "warning": {
+                "max": 70,
+                "min": 55
+              }
+            },
+            "startPose": {
+              "max": 55,
+              "min": 20
+            },
+            "stateMessages": {
+              "perfect": {
+                "ar": "كتف أيمن منخفض ومستقر",
+                "en": "Right shoulder low and stable"
+              },
+              "warning": {
+                "ar": "تجنب رفع الكتف نحو الأذن",
+                "en": "Avoid hiking the shoulder to the ear"
+              }
+            }
+          }
+        ]
+      }
+    ],
+    "validationWarning": null
+  }
+}

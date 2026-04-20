@@ -1,0 +1,498 @@
+{
+  "slug": "forearm_rest",
+  "status": "published",
+  "movementPattern": "CORE_BRACE",
+  "loadCapability": "BODYWEIGHT_ONLY",
+  "familyKey": "anti_extension_family",
+  "familyOrder": 10,
+  "name": {
+    "ar": "راحة الساعد",
+    "en": "Forearm rest"
+  },
+  "category": {
+    "code": "arms",
+    "name": {
+      "ar": "تمارين الذراعين",
+      "en": "Arms"
+    }
+  },
+  "countingMethod": "up_down",
+  "muscles": [
+    "biceps",
+    "forearms"
+  ],
+  "equipment": [
+    "bodyweight",
+    "dumbbell"
+  ],
+  "tags": [],
+  "repCountingConfig": {
+    "reps": 12,
+    "minRepIntervalMs": 1200,
+    "maxRepIntervalMs": 4500
+  },
+  "poseVariants": [
+    {
+      "name": {
+        "ar": "زاوية جانبية",
+        "en": "Side View"
+      },
+      "posePosition": "standing_side",
+      "expectedPostures": [
+        "standing"
+      ],
+      "expectedDirections": [
+        "side"
+      ],
+      "expectedRegions": [
+        "full_body"
+      ],
+      "trackedJoints": [
+        {
+          "joint": "right_elbow",
+          "role": "primary",
+          "startPose": {
+            "max": 180,
+            "min": 50
+          },
+          "stateMessages": {
+            "pad": {
+              "down": {
+                "ar": "مقبول، اقترب من الكتف أكثر",
+                "en": "Acceptable, get closer to shoulder"
+              }
+            },
+            "normal": {
+              "up": {
+                "ar": "جيد، حاول فرد الذراع أكثر",
+                "en": "Good, try extending more"
+              },
+              "down": {
+                "ar": "جيد، حاول الثني أكثر",
+                "en": "Good, try curling more"
+              }
+            },
+            "perfect": {
+              "up": {
+                "ar": "ممتاز! ذراعك مفرودة",
+                "en": "Perfect! Arm extended"
+              },
+              "down": {
+                "ar": "ممتاز! ثني مثالي",
+                "en": "Perfect! Great curl"
+              }
+            },
+            "warning": {
+              "up": {
+                "ar": "افرد ذراعك أكثر",
+                "en": "Extend your arm more"
+              },
+              "down": {
+                "ar": "اثنِ المرفق أكثر",
+                "en": "Bend your elbow more"
+              }
+            }
+          },
+          "invertIndicator": true,
+          "upRange": {
+            "pad": {
+              "max": 180,
+              "min": 166
+            },
+            "normal": {
+              "max": 180,
+              "min": 165
+            },
+            "perfect": {
+              "max": 180,
+              "min": 168
+            }
+          },
+          "downRange": {
+            "pad": {
+              "max": 164,
+              "min": 105
+            },
+            "normal": {
+              "max": 162,
+              "min": 115
+            },
+            "perfect": {
+              "max": 158,
+              "min": 125
+            },
+            "warning": {
+              "max": 120,
+              "min": 90
+            }
+          }
+        },
+        {
+          "joint": "right_shoulder",
+          "role": "secondary",
+          "startPose": {
+            "max": 100,
+            "min": 0
+          },
+          "stateMessages": {
+            "perfect": {
+              "ar": "ممتاز - الذراع ثابتة",
+              "en": "Great - arm is stable"
+            },
+            "warning": {
+              "ar": "اجعل ذراعك بجانب جسمك",
+              "en": "Keep your arm close to your body"
+            }
+          },
+          "range": {
+            "pad": {
+              "max": 70,
+              "min": 0
+            },
+            "normal": {
+              "max": 60,
+              "min": 0
+            },
+            "perfect": {
+              "max": 50,
+              "min": 0
+            },
+            "warning": {
+              "max": 100,
+              "min": 70
+            }
+          }
+        }
+      ],
+      "feedbackMessages": {
+        "motivational": [
+          {
+            "ar": "ممتاز! عضلات قوية!",
+            "en": "Excellent! Strong muscles!"
+          },
+          {
+            "ar": "أداء رائع!",
+            "en": "Great performance!"
+          },
+          {
+            "ar": "استمر! أنت تتحسن!",
+            "en": "Keep it up! You're improving!"
+          }
+        ],
+        "tips": [
+          {
+            "ar": "حافظ على ثبات مرفقك بجانب جسمك",
+            "en": "Keep your elbow fixed at your side"
+          },
+          {
+            "ar": "تنفس: زفير عند الرفع، شهيق عند الإنزال",
+            "en": "Breathe: exhale lifting, inhale lowering"
+          },
+          {
+            "ar": "ركز على انقباض العضلة في أعلى الحركة",
+            "en": "Focus on squeezing at the top"
+          },
+          {
+            "ar": "لا تحرك مرفقك - فقط الساعد",
+            "en": "Don't move your elbow - only the forearm"
+          }
+        ]
+      },
+      "messageAssignments": [
+        {
+          "messageId": "d27d84cc-300d-435c-a9f8-4232eec12041",
+          "target": "joint_state",
+          "context": "perfect",
+          "jointCode": "right_elbow",
+          "zone": "up",
+          "sortOrder": 1
+        },
+        {
+          "messageId": "8efaf850-5a3e-4850-a490-b0191dbbc356",
+          "target": "joint_state",
+          "context": "perfect",
+          "jointCode": "right_elbow",
+          "zone": "down",
+          "sortOrder": 2
+        },
+        {
+          "messageId": "46d2c887-8713-4827-bb1d-302066fe689e",
+          "target": "joint_state",
+          "context": "normal",
+          "jointCode": "right_elbow",
+          "zone": "up",
+          "sortOrder": 3
+        },
+        {
+          "messageId": "8917ab1e-9a23-4ec2-a594-d589b0e45508",
+          "target": "joint_state",
+          "context": "normal",
+          "jointCode": "right_elbow",
+          "zone": "down",
+          "sortOrder": 4
+        },
+        {
+          "messageId": "871b0ee7-cd65-4865-891a-14ebbb1161c7",
+          "target": "joint_state",
+          "context": "pad",
+          "jointCode": "right_elbow",
+          "zone": "down",
+          "sortOrder": 5
+        },
+        {
+          "messageId": "69ad792b-ba1a-402b-a106-e58fb7f0c01c",
+          "target": "joint_state",
+          "context": "warning",
+          "jointCode": "right_elbow",
+          "zone": "up",
+          "sortOrder": 6
+        },
+        {
+          "messageId": "740ee627-6c5c-450f-9bbe-9c51f8f43ae2",
+          "target": "joint_state",
+          "context": "warning",
+          "jointCode": "right_elbow",
+          "zone": "down",
+          "sortOrder": 7
+        },
+        {
+          "messageId": "8d33fc33-e984-4ff2-818c-d02a6ec89d15",
+          "target": "joint_state",
+          "context": "perfect",
+          "jointCode": "right_shoulder",
+          "sortOrder": 8
+        },
+        {
+          "messageId": "37bca94d-cf5c-428e-9f20-2c3799248ee3",
+          "target": "joint_state",
+          "context": "warning",
+          "jointCode": "right_shoulder",
+          "sortOrder": 9
+        },
+        {
+          "messageId": "198effd1-7944-42a5-b8f5-3661c1163871",
+          "target": "feedback",
+          "context": "motivational",
+          "sortOrder": 10
+        },
+        {
+          "messageId": "82663919-90a6-472b-99a1-93d8819d450f",
+          "target": "feedback",
+          "context": "motivational",
+          "sortOrder": 11
+        },
+        {
+          "messageId": "ef722040-f5b6-466a-9664-84ac3ee89d79",
+          "target": "feedback",
+          "context": "motivational",
+          "sortOrder": 12
+        },
+        {
+          "messageId": "43aa0fab-d4e6-4d7c-a3eb-c5ea06c5e80c",
+          "target": "feedback",
+          "context": "tip",
+          "sortOrder": 13
+        },
+        {
+          "messageId": "064e6ebf-cb71-4570-91d3-4413f35268db",
+          "target": "feedback",
+          "context": "tip",
+          "sortOrder": 14
+        },
+        {
+          "messageId": "9ba25949-a15c-4732-b3b0-5bb698e69c03",
+          "target": "feedback",
+          "context": "tip",
+          "sortOrder": 15
+        },
+        {
+          "messageId": "a50196c2-8e88-4977-adfd-e2d54b07a805",
+          "target": "feedback",
+          "context": "tip",
+          "sortOrder": 16
+        }
+      ],
+      "cameraPosition": "side_view"
+    }
+  ],
+  "description": {
+    "ar": "وضعية راحة للساعد والرسغ بعد الجهد",
+    "en": "Rest position for forearm and wrist after effort"
+  },
+  "instructions": {
+    "ar": "أرحِ الساعد على مسند بزاوية مريحة دون إجهاد",
+    "en": "Rest the forearm on a support at a comfortable angle without strain"
+  },
+  "reportMetrics": {
+    "primary": [
+      "FORM_SCORE"
+    ],
+    "excluded": [
+      "HOLD_DURATION",
+      "WEIGHT",
+      "VOLUME",
+      "EST_1RM",
+      "SYMMETRY",
+      "ALIGNMENT"
+    ]
+  },
+  "_database": {
+    "id": "9c6ef7f9-eb40-48d2-a361-3203616ccb83",
+    "categoryId": "46ce7826-7f11-437b-b9b0-de718b5adf7d",
+    "countingMethodId": "f4d48aef-1606-4f23-8c61-7b4a2546f990",
+    "publishedAt": "2026-04-20T17:26:22.746Z",
+    "createdAt": "2026-04-20T17:26:22.747Z",
+    "updatedAt": "2026-04-20T17:26:34.122Z",
+    "deletedAt": null,
+    "isFeatured": false,
+    "createdBy": null,
+    "updatedBy": null,
+    "repCountingConfig": {
+      "reps": 12,
+      "maxRepIntervalMs": 4500,
+      "minRepIntervalMs": 1200
+    },
+    "bilateralConfig": null,
+    "isBilateral": false,
+    "supportsWeight": false,
+    "minWeight": null,
+    "maxWeight": null,
+    "defaultWeight": null,
+    "reportMetrics": {
+      "mode": "reps",
+      "version": 1,
+      "primaryKpi": "repQuality",
+      "secondaryKpis": [
+        "avgFormScore",
+        "avgRom"
+      ]
+    },
+    "media": [],
+    "poseVariants": [
+      {
+        "id": "0e5d27eb-a735-467b-982f-ca0926e9f788",
+        "sortOrder": 1,
+        "description": null,
+        "trackedJointsConfig": [
+          {
+            "role": "primary",
+            "joint": "right_elbow",
+            "upRange": {
+              "pad": {
+                "max": 180,
+                "min": 166
+              },
+              "normal": {
+                "max": 180,
+                "min": 165
+              },
+              "perfect": {
+                "max": 180,
+                "min": 168
+              }
+            },
+            "downRange": {
+              "pad": {
+                "max": 164,
+                "min": 105
+              },
+              "normal": {
+                "max": 162,
+                "min": 115
+              },
+              "perfect": {
+                "max": 158,
+                "min": 125
+              },
+              "warning": {
+                "max": 120,
+                "min": 90
+              }
+            },
+            "startPose": {
+              "max": 180,
+              "min": 50
+            },
+            "stateMessages": {
+              "pad": {
+                "down": {
+                  "ar": "مقبول، اقترب من الكتف أكثر",
+                  "en": "Acceptable, get closer to shoulder"
+                }
+              },
+              "normal": {
+                "up": {
+                  "ar": "جيد، حاول فرد الذراع أكثر",
+                  "en": "Good, try extending more"
+                },
+                "down": {
+                  "ar": "جيد، حاول الثني أكثر",
+                  "en": "Good, try curling more"
+                }
+              },
+              "perfect": {
+                "up": {
+                  "ar": "ممتاز! ذراعك مفرودة",
+                  "en": "Perfect! Arm extended"
+                },
+                "down": {
+                  "ar": "ممتاز! ثني مثالي",
+                  "en": "Perfect! Great curl"
+                }
+              },
+              "warning": {
+                "up": {
+                  "ar": "افرد ذراعك أكثر",
+                  "en": "Extend your arm more"
+                },
+                "down": {
+                  "ar": "اثنِ المرفق أكثر",
+                  "en": "Bend your elbow more"
+                }
+              }
+            },
+            "invertIndicator": true,
+            "_invertIndicator_comment": "Lower limb (forearm) moves UP towards shoulder, so invert indicator direction"
+          },
+          {
+            "role": "secondary",
+            "joint": "right_shoulder",
+            "range": {
+              "pad": {
+                "max": 70,
+                "min": 0
+              },
+              "normal": {
+                "max": 60,
+                "min": 0
+              },
+              "perfect": {
+                "max": 50,
+                "min": 0
+              },
+              "warning": {
+                "max": 100,
+                "min": 70
+              }
+            },
+            "startPose": {
+              "max": 100,
+              "min": 0
+            },
+            "stateMessages": {
+              "perfect": {
+                "ar": "ممتاز - الذراع ثابتة",
+                "en": "Great - arm is stable"
+              },
+              "warning": {
+                "ar": "اجعل ذراعك بجانب جسمك",
+                "en": "Keep your arm close to your body"
+              }
+            }
+          }
+        ]
+      }
+    ],
+    "validationWarning": null
+  }
+}

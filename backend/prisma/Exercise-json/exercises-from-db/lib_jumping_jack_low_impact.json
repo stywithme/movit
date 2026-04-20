@@ -1,0 +1,347 @@
+{
+  "slug": "lib_jumping_jack_low_impact",
+  "status": "published",
+  "movementPattern": "GAIT",
+  "loadCapability": "BODYWEIGHT_ONLY",
+  "familyKey": "conditioning_family",
+  "familyOrder": 12,
+  "name": {
+    "ar": "قفز جانبي منخفض",
+    "en": "Low-impact jack"
+  },
+  "category": {
+    "code": "full_body",
+    "name": {
+      "ar": "تمارين الجسم كامل",
+      "en": "Full Body"
+    }
+  },
+  "countingMethod": "up_down",
+  "muscles": [
+    "calves",
+    "front_delts"
+  ],
+  "equipment": [
+    "bodyweight",
+    "mat"
+  ],
+  "tags": [
+    "curated_library",
+    "conditioning",
+    "beginner_friendly"
+  ],
+  "repCountingConfig": {
+    "reps": 12,
+    "minRepIntervalMs": 1500,
+    "maxRepIntervalMs": 5000
+  },
+  "poseVariants": [
+    {
+      "name": {
+        "ar": "زاوية أمامية",
+        "en": "Front view"
+      },
+      "posePosition": "standing_front",
+      "expectedPostures": [
+        "standing"
+      ],
+      "expectedDirections": [
+        "front"
+      ],
+      "expectedRegions": [
+        "full_body"
+      ],
+      "trackedJoints": [
+        {
+          "joint": "left_shoulder",
+          "role": "primary",
+          "startPose": {
+            "max": 90,
+            "min": 0
+          },
+          "stateMessages": {
+            "normal": {
+              "up": {
+                "ar": "جيد، ارفع أعلى",
+                "en": "Good, lift a bit higher"
+              },
+              "down": {
+                "ar": "جيد، لا تتوقف نصف العدة",
+                "en": "Good, do not stop mid-rep"
+              }
+            },
+            "perfect": {
+              "up": {
+                "ar": "ممتاز! ذراعان فوق الرأس",
+                "en": "Perfect! Arms overhead"
+              },
+              "down": {
+                "ar": "ممتاز! عودة بجانب الجسم",
+                "en": "Perfect! Return beside the body"
+              }
+            }
+          },
+          "pairedWith": "right_shoulder",
+          "upRange": {
+            "pad": {
+              "max": 180,
+              "min": 100
+            },
+            "normal": {
+              "max": 180,
+              "min": 115
+            },
+            "perfect": {
+              "max": 175,
+              "min": 130
+            }
+          },
+          "downRange": {
+            "pad": {
+              "max": 50,
+              "min": 0
+            },
+            "normal": {
+              "max": 35,
+              "min": 0
+            },
+            "perfect": {
+              "max": 25,
+              "min": 0
+            }
+          }
+        }
+      ],
+      "positionChecks": [
+        {
+          "id": "jack_arms_legs_sync",
+          "type": "horizontal_alignment",
+          "landmarks": {
+            "primary": "left_wrist",
+            "secondary": "right_wrist"
+          },
+          "condition": {
+            "operator": "approximately_equal",
+            "threshold": 0.12
+          },
+          "activePhases": [
+            "up"
+          ],
+          "errorMessage": {
+            "ar": "حرك الذراعين والساقين معاً بتناسق.",
+            "en": "Move arms and legs together with rhythm."
+          },
+          "severity": "tip",
+          "cooldownMs": 2200,
+          "minErrorFrames": 4
+        }
+      ],
+      "feedbackMessages": {
+        "motivational": [
+          {
+            "ar": "أداء قوي ومنظم",
+            "en": "Strong and controlled work"
+          },
+          {
+            "ar": "حافظ على الشكل قبل السرعة",
+            "en": "Keep form before speed"
+          }
+        ],
+        "tips": [
+          {
+            "ar": "خذ نفساً تحضيرياً قبل كل عدة وازفر مع الجهد.",
+            "en": "Take a setup breath before each rep and exhale on effort."
+          },
+          {
+            "ar": "إذا فقدت التحكم الميكانيكي، قلل المدى أو الحمل.",
+            "en": "If mechanics break down, reduce range or load."
+          }
+        ]
+      },
+      "messageAssignments": [
+        {
+          "messageId": "fe0941be-dd5c-45af-97a2-a96e25111e9b",
+          "target": "position",
+          "context": "error",
+          "checkId": "jack_arms_legs_sync",
+          "sortOrder": 1
+        },
+        {
+          "messageId": "7ccb21f4-e3f7-4d46-b91e-12542350e242",
+          "target": "joint_state",
+          "context": "perfect",
+          "jointCode": "left_shoulder",
+          "zone": "up",
+          "sortOrder": 2
+        },
+        {
+          "messageId": "d1c91552-801b-44b3-b806-9505396aa42c",
+          "target": "joint_state",
+          "context": "perfect",
+          "jointCode": "left_shoulder",
+          "zone": "down",
+          "sortOrder": 3
+        },
+        {
+          "messageId": "88bda020-d20a-4914-8c9a-b0f987b5fd35",
+          "target": "joint_state",
+          "context": "normal",
+          "jointCode": "left_shoulder",
+          "zone": "up",
+          "sortOrder": 4
+        },
+        {
+          "messageId": "806c6b03-606c-4c75-98da-407e14129ae3",
+          "target": "joint_state",
+          "context": "normal",
+          "jointCode": "left_shoulder",
+          "zone": "down",
+          "sortOrder": 5
+        },
+        {
+          "messageId": "496a4e55-9c16-4dcf-a023-78ca5dec4959",
+          "target": "feedback",
+          "context": "motivational",
+          "sortOrder": 6
+        },
+        {
+          "messageId": "c590cf74-6d38-436a-b1e3-6377aeb066d1",
+          "target": "feedback",
+          "context": "motivational",
+          "sortOrder": 7
+        },
+        {
+          "messageId": "d09e6d22-7932-4a62-98cf-e4d87a389eef",
+          "target": "feedback",
+          "context": "tip",
+          "sortOrder": 8
+        },
+        {
+          "messageId": "97069846-5045-4a01-9402-29a890935c76",
+          "target": "feedback",
+          "context": "tip",
+          "sortOrder": 9
+        }
+      ],
+      "cameraPosition": "front_view"
+    }
+  ],
+  "description": {
+    "ar": "تمرين مكتبة: قفز جانبي منخفض.",
+    "en": "Library exercise: Low-impact jack."
+  },
+  "instructions": {
+    "ar": "حافظ على عمود فقري محايد وتنفس بثبات وتوقف عند أي ألم حاد.",
+    "en": "Maintain neutral spine, steady breathing, and stop if sharp pain appears."
+  },
+  "reportMetrics": {
+    "primary": [
+      "FORM_SCORE"
+    ],
+    "excluded": [
+      "HOLD_DURATION",
+      "WEIGHT",
+      "VOLUME",
+      "EST_1RM"
+    ]
+  },
+  "hasPositionChecks": true,
+  "_database": {
+    "id": "2fbe3071-627b-46a9-8348-08549e5d1e86",
+    "categoryId": "da4f0d15-a7a4-4d8e-abd2-73ee921ef7dc",
+    "countingMethodId": "f4d48aef-1606-4f23-8c61-7b4a2546f990",
+    "publishedAt": "2026-04-20T17:26:27.359Z",
+    "createdAt": "2026-04-20T17:26:27.361Z",
+    "updatedAt": "2026-04-20T17:26:34.467Z",
+    "deletedAt": null,
+    "isFeatured": false,
+    "createdBy": null,
+    "updatedBy": null,
+    "repCountingConfig": null,
+    "bilateralConfig": null,
+    "isBilateral": false,
+    "supportsWeight": false,
+    "minWeight": null,
+    "maxWeight": null,
+    "defaultWeight": null,
+    "reportMetrics": {
+      "mode": "reps",
+      "version": 1,
+      "primaryKpi": "repQuality",
+      "secondaryKpis": [
+        "avgFormScore",
+        "avgRom"
+      ]
+    },
+    "media": [],
+    "poseVariants": [
+      {
+        "id": "46252411-1a4b-4a27-9631-d66a4bb46776",
+        "sortOrder": 1,
+        "description": null,
+        "trackedJointsConfig": [
+          {
+            "role": "primary",
+            "joint": "left_shoulder",
+            "upRange": {
+              "pad": {
+                "max": 180,
+                "min": 100
+              },
+              "normal": {
+                "max": 180,
+                "min": 115
+              },
+              "perfect": {
+                "max": 175,
+                "min": 130
+              }
+            },
+            "downRange": {
+              "pad": {
+                "max": 50,
+                "min": 0
+              },
+              "normal": {
+                "max": 35,
+                "min": 0
+              },
+              "perfect": {
+                "max": 25,
+                "min": 0
+              }
+            },
+            "startPose": {
+              "max": 90,
+              "min": 0
+            },
+            "pairedWith": "right_shoulder",
+            "stateMessages": {
+              "normal": {
+                "up": {
+                  "ar": "جيد، ارفع أعلى",
+                  "en": "Good, lift a bit higher"
+                },
+                "down": {
+                  "ar": "جيد، لا تتوقف نصف العدة",
+                  "en": "Good, do not stop mid-rep"
+                }
+              },
+              "perfect": {
+                "up": {
+                  "ar": "ممتاز! ذراعان فوق الرأس",
+                  "en": "Perfect! Arms overhead"
+                },
+                "down": {
+                  "ar": "ممتاز! عودة بجانب الجسم",
+                  "en": "Perfect! Return beside the body"
+                }
+              }
+            }
+          }
+        ]
+      }
+    ],
+    "validationWarning": null
+  }
+}

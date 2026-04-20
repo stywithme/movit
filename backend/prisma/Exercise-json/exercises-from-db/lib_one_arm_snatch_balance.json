@@ -1,0 +1,478 @@
+{
+  "slug": "lib_one_arm_snatch_balance",
+  "status": "published",
+  "movementPattern": "JUMP_LAND",
+  "loadCapability": "EXTERNAL_LOAD_REQUIRED",
+  "familyKey": "power_family",
+  "familyOrder": 48,
+  "name": {
+    "ar": "سناتش كيتل أحادي",
+    "en": "Single-arm KB snatch to rack"
+  },
+  "category": {
+    "code": "full_body",
+    "name": {
+      "ar": "تمارين الجسم كامل",
+      "en": "Full Body"
+    }
+  },
+  "countingMethod": "up_down",
+  "muscles": [
+    "glutes",
+    "front_delts"
+  ],
+  "equipment": [
+    "kettlebell",
+    "mat"
+  ],
+  "tags": [
+    "curated_library",
+    "power"
+  ],
+  "repCountingConfig": {
+    "reps": 12,
+    "minRepIntervalMs": 1500,
+    "maxRepIntervalMs": 5000
+  },
+  "poseVariants": [
+    {
+      "name": {
+        "ar": "زاوية جانبية",
+        "en": "Side view"
+      },
+      "posePosition": "standing_side",
+      "expectedPostures": [
+        "standing"
+      ],
+      "expectedDirections": [
+        "side"
+      ],
+      "expectedRegions": [
+        "full_body"
+      ],
+      "trackedJoints": [
+        {
+          "joint": "left_shoulder",
+          "role": "primary",
+          "startPose": {
+            "max": 180,
+            "min": 60
+          },
+          "stateMessages": {
+            "pad": {
+              "up": {
+                "ar": "مقبول — ما زال الوزن أمام الجسم",
+                "en": "Acceptable — load still slightly forward"
+              }
+            },
+            "normal": {
+              "up": {
+                "ar": "جيد، وسّع الصدر تحت الوزن",
+                "en": "Good, open the chest under the load"
+              },
+              "down": {
+                "ar": "جيد، اثنِ الركبة والورك معاً في الاستقبال",
+                "en": "Good, flex hip and knee together in the receive"
+              }
+            },
+            "perfect": {
+              "up": {
+                "ar": "ممتاز! استقبال علوي ثابت",
+                "en": "Perfect! Stable overhead catch"
+              },
+              "down": {
+                "ar": "ممتاز! نزول متحكم من الرف",
+                "en": "Perfect! Controlled lowering from rack"
+              }
+            },
+            "warning": {
+              "up": {
+                "ar": "لا تفقد الوزن خلف الرأس",
+                "en": "Don’t lose the weight behind you"
+              }
+            }
+          },
+          "upRange": {
+            "pad": {
+              "max": 180,
+              "min": 148
+            },
+            "normal": {
+              "max": 180,
+              "min": 152
+            },
+            "perfect": {
+              "max": 180,
+              "min": 160
+            }
+          },
+          "downRange": {
+            "pad": {
+              "max": 145,
+              "min": 78
+            },
+            "normal": {
+              "max": 140,
+              "min": 88
+            },
+            "perfect": {
+              "max": 130,
+              "min": 95
+            },
+            "warning": {
+              "max": 78,
+              "min": 65
+            }
+          }
+        },
+        {
+          "joint": "left_hip",
+          "role": "secondary",
+          "startPose": {
+            "max": 180,
+            "min": 100
+          },
+          "stateMessages": {
+            "perfect": {
+              "ar": "ورك في استقبال متوازن",
+              "en": "Hip in a balanced receive"
+            },
+            "warning": {
+              "ar": "لا تطوي الورك فقط دون الركبة",
+              "en": "Don’t fold only at the hip"
+            }
+          },
+          "range": {
+            "pad": {
+              "max": 180,
+              "min": 110
+            },
+            "normal": {
+              "max": 175,
+              "min": 120
+            },
+            "perfect": {
+              "max": 165,
+              "min": 130
+            },
+            "warning": {
+              "max": 110,
+              "min": 95
+            }
+          }
+        }
+      ],
+      "positionChecks": [
+        {
+          "id": "snatch_balance_stack",
+          "type": "vertical_alignment",
+          "landmarks": {
+            "primary": "left_wrist",
+            "secondary": "left_shoulder"
+          },
+          "condition": {
+            "operator": "approximately_equal",
+            "threshold": 0.1
+          },
+          "activePhases": [
+            "up",
+            "top"
+          ],
+          "errorMessage": {
+            "ar": "أبقِ الوزن فوق الكتف في الاستقبال.",
+            "en": "Receive the load stacked over the shoulder."
+          },
+          "severity": "warning",
+          "cooldownMs": 2200,
+          "minErrorFrames": 4
+        }
+      ],
+      "feedbackMessages": {
+        "motivational": [
+          {
+            "ar": "أداء قوي ومنظم",
+            "en": "Strong and controlled work"
+          },
+          {
+            "ar": "حافظ على الشكل قبل السرعة",
+            "en": "Keep form before speed"
+          }
+        ],
+        "tips": [
+          {
+            "ar": "خذ نفساً تحضيرياً قبل كل عدة وازفر مع الجهد.",
+            "en": "Take a setup breath before each rep and exhale on effort."
+          },
+          {
+            "ar": "إذا فقدت التحكم الميكانيكي، قلل المدى أو الحمل.",
+            "en": "If mechanics break down, reduce range or load."
+          }
+        ]
+      },
+      "messageAssignments": [
+        {
+          "messageId": "1511d7f6-2ea5-4d1c-b100-862a4d31a361",
+          "target": "position",
+          "context": "error",
+          "checkId": "snatch_balance_stack",
+          "sortOrder": 1
+        },
+        {
+          "messageId": "f785529e-5cd4-412c-b538-f3290a0d2b17",
+          "target": "joint_state",
+          "context": "perfect",
+          "jointCode": "left_shoulder",
+          "zone": "up",
+          "sortOrder": 2
+        },
+        {
+          "messageId": "0c52f850-63aa-47fa-9c01-9e52739a850d",
+          "target": "joint_state",
+          "context": "perfect",
+          "jointCode": "left_shoulder",
+          "zone": "down",
+          "sortOrder": 3
+        },
+        {
+          "messageId": "2d572e4b-7f7e-497e-9d2c-d9c2706197bc",
+          "target": "joint_state",
+          "context": "normal",
+          "jointCode": "left_shoulder",
+          "zone": "up",
+          "sortOrder": 4
+        },
+        {
+          "messageId": "85eaab2a-b935-4e54-86ce-bee92f6184fb",
+          "target": "joint_state",
+          "context": "normal",
+          "jointCode": "left_shoulder",
+          "zone": "down",
+          "sortOrder": 5
+        },
+        {
+          "messageId": "8bc3293a-6c2e-49a9-9169-ba873c7e66a8",
+          "target": "joint_state",
+          "context": "pad",
+          "jointCode": "left_shoulder",
+          "zone": "up",
+          "sortOrder": 6
+        },
+        {
+          "messageId": "2a31efa7-14ee-4ae3-96ef-c13d55445785",
+          "target": "joint_state",
+          "context": "warning",
+          "jointCode": "left_shoulder",
+          "zone": "up",
+          "sortOrder": 7
+        },
+        {
+          "messageId": "d09b0f26-5db6-439c-98b9-50a52b23ae1c",
+          "target": "joint_state",
+          "context": "perfect",
+          "jointCode": "left_hip",
+          "sortOrder": 8
+        },
+        {
+          "messageId": "0b00a62e-9a4f-44b4-83ef-640476ae146e",
+          "target": "joint_state",
+          "context": "warning",
+          "jointCode": "left_hip",
+          "sortOrder": 9
+        },
+        {
+          "messageId": "25e11e20-d517-4197-87e7-e7f2ffcc93c4",
+          "target": "feedback",
+          "context": "motivational",
+          "sortOrder": 10
+        },
+        {
+          "messageId": "bd2f0acc-7459-4c3c-97d4-1865a2d6ae86",
+          "target": "feedback",
+          "context": "motivational",
+          "sortOrder": 11
+        },
+        {
+          "messageId": "cb2f838d-8141-4d21-83eb-dca4fec40a01",
+          "target": "feedback",
+          "context": "tip",
+          "sortOrder": 12
+        },
+        {
+          "messageId": "0c731810-a629-4809-8145-dfa0d041394e",
+          "target": "feedback",
+          "context": "tip",
+          "sortOrder": 13
+        }
+      ],
+      "cameraPosition": "side_view"
+    }
+  ],
+  "description": {
+    "ar": "تمرين مكتبة: سناتش كيتل أحادي.",
+    "en": "Library exercise: Single-arm KB snatch to rack."
+  },
+  "instructions": {
+    "ar": "حافظ على عمود فقري محايد وتنفس بثبات وتوقف عند أي ألم حاد.",
+    "en": "Maintain neutral spine, steady breathing, and stop if sharp pain appears."
+  },
+  "supportsWeight": true,
+  "reportMetrics": {
+    "primary": [
+      "FORM_SCORE"
+    ],
+    "excluded": [
+      "HOLD_DURATION",
+      "SYMMETRY"
+    ]
+  },
+  "hasPositionChecks": true,
+  "_database": {
+    "id": "0067492e-945a-49fd-a61a-ea97a395fdda",
+    "categoryId": "da4f0d15-a7a4-4d8e-abd2-73ee921ef7dc",
+    "countingMethodId": "f4d48aef-1606-4f23-8c61-7b4a2546f990",
+    "publishedAt": "2026-04-20T17:26:26.502Z",
+    "createdAt": "2026-04-20T17:26:26.503Z",
+    "updatedAt": "2026-04-20T17:26:34.394Z",
+    "deletedAt": null,
+    "isFeatured": false,
+    "createdBy": null,
+    "updatedBy": null,
+    "repCountingConfig": null,
+    "bilateralConfig": null,
+    "isBilateral": false,
+    "supportsWeight": true,
+    "minWeight": null,
+    "maxWeight": null,
+    "defaultWeight": null,
+    "reportMetrics": {
+      "mode": "reps",
+      "version": 1,
+      "primaryKpi": "repQuality",
+      "secondaryKpis": [
+        "avgFormScore",
+        "avgRom"
+      ]
+    },
+    "media": [],
+    "poseVariants": [
+      {
+        "id": "e17d36a4-2ded-4045-9a1b-bf740969af98",
+        "sortOrder": 1,
+        "description": null,
+        "trackedJointsConfig": [
+          {
+            "role": "primary",
+            "joint": "left_shoulder",
+            "upRange": {
+              "pad": {
+                "max": 180,
+                "min": 148
+              },
+              "normal": {
+                "max": 180,
+                "min": 152
+              },
+              "perfect": {
+                "max": 180,
+                "min": 160
+              }
+            },
+            "downRange": {
+              "pad": {
+                "max": 145,
+                "min": 78
+              },
+              "normal": {
+                "max": 140,
+                "min": 88
+              },
+              "perfect": {
+                "max": 130,
+                "min": 95
+              },
+              "warning": {
+                "max": 78,
+                "min": 65
+              }
+            },
+            "startPose": {
+              "max": 180,
+              "min": 60
+            },
+            "stateMessages": {
+              "pad": {
+                "up": {
+                  "ar": "مقبول — ما زال الوزن أمام الجسم",
+                  "en": "Acceptable — load still slightly forward"
+                }
+              },
+              "normal": {
+                "up": {
+                  "ar": "جيد، وسّع الصدر تحت الوزن",
+                  "en": "Good, open the chest under the load"
+                },
+                "down": {
+                  "ar": "جيد، اثنِ الركبة والورك معاً في الاستقبال",
+                  "en": "Good, flex hip and knee together in the receive"
+                }
+              },
+              "perfect": {
+                "up": {
+                  "ar": "ممتاز! استقبال علوي ثابت",
+                  "en": "Perfect! Stable overhead catch"
+                },
+                "down": {
+                  "ar": "ممتاز! نزول متحكم من الرف",
+                  "en": "Perfect! Controlled lowering from rack"
+                }
+              },
+              "warning": {
+                "up": {
+                  "ar": "لا تفقد الوزن خلف الرأس",
+                  "en": "Don’t lose the weight behind you"
+                }
+              }
+            }
+          },
+          {
+            "role": "secondary",
+            "joint": "left_hip",
+            "range": {
+              "pad": {
+                "max": 180,
+                "min": 110
+              },
+              "normal": {
+                "max": 175,
+                "min": 120
+              },
+              "perfect": {
+                "max": 165,
+                "min": 130
+              },
+              "warning": {
+                "max": 110,
+                "min": 95
+              }
+            },
+            "startPose": {
+              "max": 180,
+              "min": 100
+            },
+            "stateMessages": {
+              "perfect": {
+                "ar": "ورك في استقبال متوازن",
+                "en": "Hip in a balanced receive"
+              },
+              "warning": {
+                "ar": "لا تطوي الورك فقط دون الركبة",
+                "en": "Don’t fold only at the hip"
+              }
+            }
+          }
+        ]
+      }
+    ],
+    "validationWarning": null
+  }
+}

@@ -12,18 +12,7 @@ import {
 import type { EnsureMessageTemplate } from './messages';
 import { resolveExerciseBlueprintForSlug } from './exercise-manifest';
 import { seedCuratedCatalogExtensions } from './catalog-exercises';
-
-/** Stable template `code` for exercise-linked feedback (survives re-seed; merges audio from DB). */
-function stableExerciseMessageCode(slug: string, parts: (string | number)[]): string {
-  const tail = parts
-    .map((p) => String(p))
-    .join('_')
-    .replace(/[^a-zA-Z0-9_]/g, '_')
-    .replace(/_+/g, '_')
-    .replace(/^_|_$/g, '');
-  const raw = `exmsg_${slug}_${tail}`;
-  return raw.slice(0, 190);
-}
+import { applyPoseVariantsForExercise, type SeedPoseVariantJson } from './pose-variant-seed-helper';
 
 export async function seedExercisesAndWorkouts(
   prisma: PrismaClient,
@@ -99,41 +88,6 @@ export async function seedExercisesAndWorkouts(
   for (const pp of posePositions) {
     positionByCode.set(pp.code, pp.id);
   }
-  // Legacy/alias mapping for JSON files that don't use canonical posePosition codes.
-  const legacyMap: Record<string, string> = {
-    'side_view': 'standing_side',
-    'front_view': 'standing_front',
-    'back_view': 'standing_back',
-    'side_view_left': 'standing_side_left',
-    'side_view_right': 'standing_side_right',
-    'diagonal_view': 'standing_diagonal',
-    'front': 'standing_front',
-    'back': 'standing_back',
-    'side': 'standing_side',
-    'side_left': 'standing_side_left',
-    'side_right': 'standing_side_right',
-    'diagonal': 'standing_diagonal',
-  };
-
-  const resolvePosePositionCode = (variant: {
-    posePosition?: string;
-    cameraPosition?: string;
-  }): string => {
-    const raw = (variant.posePosition || variant.cameraPosition || 'standing_side').trim();
-
-    // 1) Canonical code already موجود في seed pose positions
-    if (positionByCode.has(raw)) return raw;
-
-    // 2) Normalize simple aliases (hyphen/case)
-    const normalized = raw.toLowerCase().replace(/-/g, '_');
-    if (positionByCode.has(normalized)) return normalized;
-
-    // 3) Legacy alias -> canonical code
-    const mapped = legacyMap[normalized];
-    if (mapped && positionByCode.has(mapped)) return mapped;
-
-    return normalized;
-  };
 
   const exercisesDirExists = await fs
     .stat(exercisesDir)
@@ -337,180 +291,13 @@ export async function seedExercisesAndWorkouts(
       });
     }
 
-    await prisma.poseVariant.deleteMany({
-      where: { exerciseId: exerciseRecord.id },
+    await applyPoseVariantsForExercise(prisma, {
+      exerciseId: exerciseRecord.id,
+      slug,
+      poseVariants: (exerciseJson.poseVariants || []) as SeedPoseVariantJson[],
+      positionByCode,
+      ensureMessageTemplate,
     });
-
-    for (let pvIndex = 0; pvIndex < (exerciseJson.poseVariants || []).length; pvIndex++) {
-      const variant = exerciseJson.poseVariants![pvIndex];
-      // Support both canonical posePosition and legacy/alias cameraPosition values.
-      const posCode = resolvePosePositionCode(variant);
-      const posePositionId = positionByCode.get(posCode);
-      if (!posePositionId) {
-        throw new Error(`Pose position not found for code "${posCode}" (variant: ${JSON.stringify(variant.name)})`);
-      }
-
-      const poseVariant = await prisma.poseVariant.create({
-        data: {
-          exerciseId: exerciseRecord.id,
-          posePositionId,
-          name: variant.name,
-          trackedJointsConfig: (variant.trackedJoints as object) || undefined,
-          sortOrder: pvIndex + 1,
-        },
-      });
-
-      const assignments: Array<{
-        poseVariantId: string;
-        messageId: string;
-        target: string;
-        context?: string | null;
-        jointCode?: string | null;
-        zone?: string | null;
-        checkId?: string | null;
-        sortOrder: number;
-      }> = [];
-      let assignmentOrder = 1;
-      const addAssignment = (data: Omit<(typeof assignments)[number], 'sortOrder'>) => {
-        assignments.push({ ...data, sortOrder: assignmentOrder++ });
-      };
-
-      if (variant.positionChecks && variant.positionChecks.length > 0) {
-        await prisma.positionCheck.createMany({
-          data: variant.positionChecks.map((check, index) => ({
-            poseVariantId: poseVariant.id,
-            checkId: check.id,
-            type: check.type,
-            landmarks: check.landmarks as object,
-            condition: check.condition as object,
-            activePhases: check.activePhases || [],
-            errorMessage: check.errorMessage,
-            severity: check.severity || 'warning',
-            cooldownMs: check.cooldownMs ?? 2000,
-            minErrorFrames: check.minErrorFrames ?? 3,
-            sortOrder: index + 1,
-          })),
-        });
-
-        for (const check of variant.positionChecks) {
-          if (!check.errorMessage) continue;
-          const messageId = await ensureMessageTemplate({
-            code: stableExerciseMessageCode(slug, ['pv', pvIndex + 1, 'pos', check.id]),
-            category: 'position',
-            context: 'error',
-            content: check.errorMessage,
-            tags: ['position', 'error'],
-          });
-          addAssignment({
-            poseVariantId: poseVariant.id,
-            messageId,
-            target: 'position',
-            context: 'error',
-            checkId: check.id,
-          });
-        }
-      }
-
-      const trackedJoints = Array.isArray(variant.trackedJoints)
-        ? (variant.trackedJoints as Array<Record<string, unknown>>)
-        : [];
-      for (const joint of trackedJoints) {
-        const jointData = joint as {
-          joint?: string;
-          code?: string;
-          stateMessages?: Record<string, unknown>;
-        };
-        const jointCode = jointData.joint || jointData.code;
-        if (!jointCode || !jointData.stateMessages) continue;
-        const stateMessages = jointData.stateMessages as Record<string, unknown>;
-        for (const [state, value] of Object.entries(stateMessages)) {
-          if (!value) continue;
-          if (typeof value === 'object' && ('up' in value || 'down' in value)) {
-            const zoneValue = value as Record<string, { ar?: string; en?: string; audioAr?: string; audioEn?: string } | undefined>;
-            for (const zone of ['up', 'down'] as const) {
-              const msg = zoneValue[zone];
-              if (!msg || (!msg.ar && !msg.en)) continue;
-              const messageId = await ensureMessageTemplate({
-                code: stableExerciseMessageCode(slug, ['pv', pvIndex + 1, 'j', jointCode, state, zone]),
-                category: 'state',
-                context: state,
-                content: msg,
-                tags: ['state', state],
-              });
-              addAssignment({
-                poseVariantId: poseVariant.id,
-                messageId,
-                target: 'joint_state',
-                context: state,
-                jointCode,
-                zone,
-              });
-            }
-          } else {
-            const msg = value as { ar?: string; en?: string; audioAr?: string; audioEn?: string };
-            if (!msg || (!msg.ar && !msg.en)) continue;
-            const messageId = await ensureMessageTemplate({
-              code: stableExerciseMessageCode(slug, ['pv', pvIndex + 1, 'j', jointCode, state]),
-              category: 'state',
-              context: state,
-              content: msg,
-              tags: ['state', state],
-            });
-            addAssignment({
-              poseVariantId: poseVariant.id,
-              messageId,
-              target: 'joint_state',
-              context: state,
-              jointCode,
-            });
-          }
-        }
-      }
-
-      const feedbackMessages = variant.feedbackMessages || {};
-      const motivational = feedbackMessages.motivational || [];
-      const tips = feedbackMessages.tips || [];
-
-      let motIndex = 0;
-      for (const msg of motivational) {
-        const messageId = await ensureMessageTemplate({
-          code: stableExerciseMessageCode(slug, ['pv', pvIndex + 1, 'mot', motIndex++]),
-          category: 'motivational',
-          context: 'motivational',
-          content: msg,
-          tags: ['motivational'],
-        });
-        addAssignment({
-          poseVariantId: poseVariant.id,
-          messageId,
-          target: 'feedback',
-          context: 'motivational',
-        });
-      }
-
-      let tipIndex = 0;
-      for (const msg of tips) {
-        const messageId = await ensureMessageTemplate({
-          code: stableExerciseMessageCode(slug, ['pv', pvIndex + 1, 'tip', tipIndex++]),
-          category: 'tip',
-          context: 'tip',
-          content: msg,
-          tags: ['tip'],
-        });
-        addAssignment({
-          poseVariantId: poseVariant.id,
-          messageId,
-          target: 'feedback',
-          context: 'tip',
-        });
-      }
-
-      if (assignments.length > 0) {
-        await prisma.feedbackMessageAssignment.createMany({
-          data: assignments,
-        });
-      }
-    }
   }
 
   console.log('✅ Exercises seeded from assets');

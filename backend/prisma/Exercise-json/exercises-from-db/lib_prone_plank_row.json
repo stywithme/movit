@@ -1,0 +1,487 @@
+{
+  "slug": "lib_prone_plank_row",
+  "status": "published",
+  "movementPattern": "PULL_HORIZONTAL",
+  "loadCapability": "EXTERNAL_LOAD_OPTIONAL",
+  "familyKey": "pull_horizontal_family",
+  "familyOrder": 46,
+  "name": {
+    "ar": "تجديف متقلب",
+    "en": "Renegade row"
+  },
+  "category": {
+    "code": "back",
+    "name": {
+      "ar": "تمارين الظهر",
+      "en": "Back"
+    }
+  },
+  "countingMethod": "up_down",
+  "muscles": [
+    "lats",
+    "obliques"
+  ],
+  "equipment": [
+    "dumbbell",
+    "mat"
+  ],
+  "tags": [
+    "curated_library",
+    "compound"
+  ],
+  "repCountingConfig": {
+    "reps": 12,
+    "minRepIntervalMs": 1500,
+    "maxRepIntervalMs": 5000
+  },
+  "poseVariants": [
+    {
+      "name": {
+        "ar": "مستلقٍ على الوجه",
+        "en": "Lying face down (side angle)"
+      },
+      "posePosition": "prone_side",
+      "expectedPostures": [
+        "lying_prone"
+      ],
+      "expectedDirections": [
+        "side"
+      ],
+      "expectedRegions": [
+        "full_body"
+      ],
+      "trackedJoints": [
+        {
+          "joint": "left_elbow",
+          "role": "primary",
+          "startPose": {
+            "max": 180,
+            "min": 150
+          },
+          "stateMessages": {
+            "pad": {
+              "down": {
+                "ar": "مقبول — قلل الحمل أو المدى",
+                "en": "Acceptable — reduce load or range"
+              }
+            },
+            "normal": {
+              "up": {
+                "ar": "جيد، اضبط الكتف فوق المعصم",
+                "en": "Good, set the shoulder over the wrist"
+              },
+              "down": {
+                "ar": "جيد، اسحب دون فتح القفص",
+                "en": "Good, pull without opening the chest"
+              }
+            },
+            "perfect": {
+              "up": {
+                "ar": "ممتاز! لوح مستقر مع ذراع ممتدة",
+                "en": "Perfect! Stable plank with long arm"
+              },
+              "down": {
+                "ar": "ممتاز! صف للورك بدون لف",
+                "en": "Perfect! Row to hip without twisting"
+              }
+            },
+            "warning": {
+              "down": {
+                "ar": "الجذع يلتف — شدّ البطن أكثر",
+                "en": "Trunk is rotating — brace harder"
+              }
+            }
+          },
+          "invertIndicator": true,
+          "upRange": {
+            "pad": {
+              "max": 180,
+              "min": 148
+            },
+            "normal": {
+              "max": 180,
+              "min": 158
+            },
+            "perfect": {
+              "max": 180,
+              "min": 165
+            }
+          },
+          "downRange": {
+            "pad": {
+              "max": 82,
+              "min": 22
+            },
+            "danger": {
+              "max": 12,
+              "min": 0
+            },
+            "normal": {
+              "max": 72,
+              "min": 30
+            },
+            "perfect": {
+              "max": 62,
+              "min": 38
+            },
+            "warning": {
+              "max": 22,
+              "min": 12
+            }
+          }
+        },
+        {
+          "joint": "spine",
+          "role": "secondary",
+          "startPose": {
+            "max": 20,
+            "min": 0
+          },
+          "stateMessages": {
+            "perfect": {
+              "ar": "عمود فقري محايد في اللوح",
+              "en": "Neutral spine in the plank"
+            },
+            "warning": {
+              "ar": "لا تسمح للحوض بالدوران مع الصف",
+              "en": "Don’t let the pelvis turn with the row"
+            }
+          },
+          "range": {
+            "pad": {
+              "max": 24,
+              "min": 0
+            },
+            "normal": {
+              "max": 18,
+              "min": 0
+            },
+            "perfect": {
+              "max": 12,
+              "min": 0
+            },
+            "warning": {
+              "max": 38,
+              "min": 24
+            }
+          }
+        }
+      ],
+      "positionChecks": [
+        {
+          "id": "renegade_plank_line",
+          "type": "vertical_alignment",
+          "landmarks": {
+            "primary": "left_shoulder",
+            "secondary": "left_hip"
+          },
+          "condition": {
+            "operator": "approximately_equal",
+            "threshold": 0.12
+          },
+          "activePhases": [
+            "up",
+            "down"
+          ],
+          "errorMessage": {
+            "ar": "حافظ على خط لوحي — لا تلف الجذع أثناء السحب.",
+            "en": "Keep a plank line — don’t rotate the trunk while rowing."
+          },
+          "severity": "warning",
+          "cooldownMs": 2200,
+          "minErrorFrames": 4
+        }
+      ],
+      "feedbackMessages": {
+        "motivational": [
+          {
+            "ar": "أداء قوي ومنظم",
+            "en": "Strong and controlled work"
+          },
+          {
+            "ar": "حافظ على الشكل قبل السرعة",
+            "en": "Keep form before speed"
+          }
+        ],
+        "tips": [
+          {
+            "ar": "خذ نفساً تحضيرياً قبل كل عدة وازفر مع الجهد.",
+            "en": "Take a setup breath before each rep and exhale on effort."
+          },
+          {
+            "ar": "إذا فقدت التحكم الميكانيكي، قلل المدى أو الحمل.",
+            "en": "If mechanics break down, reduce range or load."
+          }
+        ]
+      },
+      "messageAssignments": [
+        {
+          "messageId": "78ce8bfb-4c70-4444-8ee8-c21dbe9de258",
+          "target": "position",
+          "context": "error",
+          "checkId": "renegade_plank_line",
+          "sortOrder": 1
+        },
+        {
+          "messageId": "f31e93f6-8f9f-48cb-b858-e1faf9f5239d",
+          "target": "joint_state",
+          "context": "perfect",
+          "jointCode": "left_elbow",
+          "zone": "up",
+          "sortOrder": 2
+        },
+        {
+          "messageId": "004c0151-8f46-498c-b40d-fbae378ffc27",
+          "target": "joint_state",
+          "context": "perfect",
+          "jointCode": "left_elbow",
+          "zone": "down",
+          "sortOrder": 3
+        },
+        {
+          "messageId": "2e636996-1fd7-4d62-8519-7b737a9eda76",
+          "target": "joint_state",
+          "context": "normal",
+          "jointCode": "left_elbow",
+          "zone": "up",
+          "sortOrder": 4
+        },
+        {
+          "messageId": "f26cfda2-8e8c-41da-9f02-6d3b2b492c79",
+          "target": "joint_state",
+          "context": "normal",
+          "jointCode": "left_elbow",
+          "zone": "down",
+          "sortOrder": 5
+        },
+        {
+          "messageId": "f997dfb9-ac26-4d83-b67e-ff402100595f",
+          "target": "joint_state",
+          "context": "pad",
+          "jointCode": "left_elbow",
+          "zone": "down",
+          "sortOrder": 6
+        },
+        {
+          "messageId": "a65ae989-1a7d-4a41-889b-e344244560eb",
+          "target": "joint_state",
+          "context": "warning",
+          "jointCode": "left_elbow",
+          "zone": "down",
+          "sortOrder": 7
+        },
+        {
+          "messageId": "f654f656-e6fe-4682-ad52-a7e042a6cd5a",
+          "target": "joint_state",
+          "context": "perfect",
+          "jointCode": "spine",
+          "sortOrder": 8
+        },
+        {
+          "messageId": "0ec11a97-cad3-4da5-b4c2-93974f042314",
+          "target": "joint_state",
+          "context": "warning",
+          "jointCode": "spine",
+          "sortOrder": 9
+        },
+        {
+          "messageId": "a3ea2f68-3111-4bd9-9785-1243ca6748bb",
+          "target": "feedback",
+          "context": "motivational",
+          "sortOrder": 10
+        },
+        {
+          "messageId": "43cb7abd-ba4d-4e5a-8a90-c63d7015667f",
+          "target": "feedback",
+          "context": "motivational",
+          "sortOrder": 11
+        },
+        {
+          "messageId": "2412d77a-b516-49ea-8218-856e528b1447",
+          "target": "feedback",
+          "context": "tip",
+          "sortOrder": 12
+        },
+        {
+          "messageId": "f7f26bf7-65c0-4052-a31f-b72f7874684e",
+          "target": "feedback",
+          "context": "tip",
+          "sortOrder": 13
+        }
+      ]
+    }
+  ],
+  "description": {
+    "ar": "تمرين مكتبة: تجديف متقلب.",
+    "en": "Library exercise: Renegade row."
+  },
+  "instructions": {
+    "ar": "حافظ على عمود فقري محايد وتنفس بثبات وتوقف عند أي ألم حاد.",
+    "en": "Maintain neutral spine, steady breathing, and stop if sharp pain appears."
+  },
+  "supportsWeight": true,
+  "reportMetrics": {
+    "primary": [
+      "FORM_SCORE"
+    ],
+    "excluded": [
+      "HOLD_DURATION",
+      "SYMMETRY"
+    ]
+  },
+  "hasPositionChecks": true,
+  "_database": {
+    "id": "c3cda2db-a57a-49ce-bc33-d8036175ec33",
+    "categoryId": "d90cee55-225e-4127-9fdc-062a8a09522e",
+    "countingMethodId": "f4d48aef-1606-4f23-8c61-7b4a2546f990",
+    "publishedAt": "2026-04-20T17:26:25.934Z",
+    "createdAt": "2026-04-20T17:26:25.935Z",
+    "updatedAt": "2026-04-20T17:26:34.345Z",
+    "deletedAt": null,
+    "isFeatured": false,
+    "createdBy": null,
+    "updatedBy": null,
+    "repCountingConfig": null,
+    "bilateralConfig": null,
+    "isBilateral": false,
+    "supportsWeight": true,
+    "minWeight": null,
+    "maxWeight": null,
+    "defaultWeight": null,
+    "reportMetrics": {
+      "mode": "reps",
+      "version": 1,
+      "primaryKpi": "repQuality",
+      "secondaryKpis": [
+        "avgFormScore",
+        "avgRom"
+      ]
+    },
+    "media": [],
+    "poseVariants": [
+      {
+        "id": "a764ee4a-77d7-4bd8-828d-c1b50c820fe5",
+        "sortOrder": 1,
+        "description": null,
+        "trackedJointsConfig": [
+          {
+            "role": "primary",
+            "joint": "left_elbow",
+            "upRange": {
+              "pad": {
+                "max": 180,
+                "min": 148
+              },
+              "normal": {
+                "max": 180,
+                "min": 158
+              },
+              "perfect": {
+                "max": 180,
+                "min": 165
+              }
+            },
+            "downRange": {
+              "pad": {
+                "max": 82,
+                "min": 22
+              },
+              "danger": {
+                "max": 12,
+                "min": 0
+              },
+              "normal": {
+                "max": 72,
+                "min": 30
+              },
+              "perfect": {
+                "max": 62,
+                "min": 38
+              },
+              "warning": {
+                "max": 22,
+                "min": 12
+              }
+            },
+            "startPose": {
+              "max": 180,
+              "min": 150
+            },
+            "stateMessages": {
+              "pad": {
+                "down": {
+                  "ar": "مقبول — قلل الحمل أو المدى",
+                  "en": "Acceptable — reduce load or range"
+                }
+              },
+              "normal": {
+                "up": {
+                  "ar": "جيد، اضبط الكتف فوق المعصم",
+                  "en": "Good, set the shoulder over the wrist"
+                },
+                "down": {
+                  "ar": "جيد، اسحب دون فتح القفص",
+                  "en": "Good, pull without opening the chest"
+                }
+              },
+              "perfect": {
+                "up": {
+                  "ar": "ممتاز! لوح مستقر مع ذراع ممتدة",
+                  "en": "Perfect! Stable plank with long arm"
+                },
+                "down": {
+                  "ar": "ممتاز! صف للورك بدون لف",
+                  "en": "Perfect! Row to hip without twisting"
+                }
+              },
+              "warning": {
+                "down": {
+                  "ar": "الجذع يلتف — شدّ البطن أكثر",
+                  "en": "Trunk is rotating — brace harder"
+                }
+              }
+            },
+            "invertIndicator": true
+          },
+          {
+            "role": "secondary",
+            "joint": "spine",
+            "range": {
+              "pad": {
+                "max": 24,
+                "min": 0
+              },
+              "normal": {
+                "max": 18,
+                "min": 0
+              },
+              "perfect": {
+                "max": 12,
+                "min": 0
+              },
+              "warning": {
+                "max": 38,
+                "min": 24
+              }
+            },
+            "startPose": {
+              "max": 20,
+              "min": 0
+            },
+            "stateMessages": {
+              "perfect": {
+                "ar": "عمود فقري محايد في اللوح",
+                "en": "Neutral spine in the plank"
+              },
+              "warning": {
+                "ar": "لا تسمح للحوض بالدوران مع الصف",
+                "en": "Don’t let the pelvis turn with the row"
+              }
+            }
+          }
+        ]
+      }
+    ],
+    "validationWarning": null
+  }
+}

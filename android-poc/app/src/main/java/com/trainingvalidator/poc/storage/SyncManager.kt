@@ -665,6 +665,12 @@ class SyncManager(
         val trackedJoints = v.trackedJoints
         val jointMessageMap: MutableMap<String, StateMessages?> =
             trackedJoints.associate { it.joint to it.stateMessages }.toMutableMap()
+        val phaseMessageByJoint = mutableMapOf<String, MutableMap<String, StateMessages?>>()
+        trackedJoints.forEach { j ->
+            val m = mutableMapOf<String, StateMessages?>()
+            j.phaseStateMessages?.forEach { (ph, sm) -> m[ph] = sm }
+            phaseMessageByJoint[j.joint] = m
+        }
         val positionMessageMap = mutableMapOf<String, LocalizedText>()
 
         for (assignment in assignments) {
@@ -689,6 +695,19 @@ class SyncManager(
                     )
                 }
 
+                "joint_state_phase" -> {
+                    val jointCode = assignment.jointCode ?: continue
+                    val ctx = assignment.context ?: continue
+                    val idx = ctx.indexOf(':')
+                    if (idx <= 0) continue
+                    val phaseRaw = ctx.substring(0, idx)
+                    val stateKey = ctx.substring(idx + 1)
+                    val phase = normalizeSecondaryPhaseKey(phaseRaw) ?: continue
+                    val perJoint = phaseMessageByJoint.getOrPut(jointCode) { mutableMapOf() }
+                    val cur = perJoint[phase]
+                    perJoint[phase] = applyStateMessage(cur, stateKey, assignment.zone, content)
+                }
+
                 "position" -> {
                     val checkId = assignment.checkId ?: continue
                     positionMessageMap[checkId] = content
@@ -699,8 +718,20 @@ class SyncManager(
         val updatedTrackedJoints = trackedJoints.map { joint ->
             val updatedMessages = jointMessageMap[joint.joint]
             val finalMessages = updatedMessages ?: joint.stateMessages
-            if (finalMessages != joint.stateMessages) {
-                joint.copy(stateMessages = finalMessages)
+            val phaseUpdates = phaseMessageByJoint[joint.joint]
+            val finalPhase = if (!phaseUpdates.isNullOrEmpty()) {
+                val base = (joint.phaseStateMessages ?: emptyMap()).toMutableMap()
+                phaseUpdates.forEach { (ph, sm) ->
+                    if (sm != null) base[ph] = sm
+                }
+                base
+            } else {
+                joint.phaseStateMessages
+            }
+            val smChanged = finalMessages != joint.stateMessages
+            val pmChanged = finalPhase != joint.phaseStateMessages
+            if (smChanged || pmChanged) {
+                joint.copy(stateMessages = finalMessages, phaseStateMessages = finalPhase)
             } else {
                 joint
             }
@@ -727,6 +758,19 @@ class SyncManager(
             positionChecks = updatedPositionChecks,
             feedbackMessages = updatedFeedback
         )
+    }
+
+    /** Aligns with backend `json-builder` phase keys for secondary `phaseStateMessages`. */
+    private fun normalizeSecondaryPhaseKey(raw: String): String? {
+        val lower = raw.lowercase()
+        val migrated = when (lower) {
+            "start" -> "top"
+            "hold", "count", "idle" -> "all"
+            else -> raw
+        }
+        if (migrated == "all") return null
+        if (migrated in listOf("top", "down", "bottom", "up")) return migrated
+        return null
     }
 
     private fun applyStateMessage(

@@ -1,0 +1,904 @@
+{
+  "slug": "lib_split_squat",
+  "status": "published",
+  "movementPattern": "LUNGE",
+  "loadCapability": "EXTERNAL_LOAD_OPTIONAL",
+  "familyKey": "lunge_pattern_family",
+  "familyOrder": 35,
+  "name": {
+    "ar": "سكوات مقسم",
+    "en": "Split squat"
+  },
+  "category": {
+    "code": "legs",
+    "name": {
+      "ar": "تمارين الأرجل",
+      "en": "Legs"
+    }
+  },
+  "countingMethod": "up_down",
+  "muscles": [
+    "quadriceps",
+    "glutes"
+  ],
+  "equipment": [
+    "dumbbell",
+    "mat"
+  ],
+  "tags": [
+    "curated_library",
+    "unilateral",
+    "lower_body"
+  ],
+  "repCountingConfig": {
+    "reps": 12,
+    "minRepIntervalMs": 1500,
+    "maxRepIntervalMs": 5000
+  },
+  "poseVariants": [
+    {
+      "name": {
+        "ar": "زاوية جانبية",
+        "en": "Side view"
+      },
+      "posePosition": "standing_side",
+      "expectedPostures": [
+        "standing"
+      ],
+      "expectedDirections": [
+        "side"
+      ],
+      "expectedRegions": [
+        "full_body"
+      ],
+      "trackedJoints": [
+        {
+          "joint": "left_knee",
+          "role": "primary",
+          "startPose": {
+            "max": 180,
+            "min": 100
+          },
+          "stateMessages": {
+            "pad": {
+              "down": {
+                "ar": "مقبول — زد العمق تدريجياً",
+                "en": "Acceptable — build depth slowly"
+              }
+            },
+            "danger": {
+              "down": {
+                "ar": "توقف — ركبة أمامية غير مستقرة",
+                "en": "Stop — unstable front knee"
+              }
+            },
+            "normal": {
+              "up": {
+                "ar": "جيد — اضغط بالكامل للأعلى",
+                "en": "Good — drive fully to stand"
+              },
+              "down": {
+                "ar": "جيد — يمكنك النزول قليلاً أكثر إن كان آمناً",
+                "en": "Good — slightly deeper if stable"
+              }
+            },
+            "perfect": {
+              "up": {
+                "ar": "ممتاز! وقفة مستقيمة",
+                "en": "Perfect! Clean stand"
+              },
+              "down": {
+                "ar": "ممتاز! زاوية ركبة مثالية",
+                "en": "Perfect! Ideal knee angle"
+              }
+            },
+            "warning": {
+              "down": {
+                "ar": "لا تفرط في المدى إن الركبة تتعب",
+                "en": "Ease range if the knee tires"
+              }
+            }
+          },
+          "pairedWith": "right_knee",
+          "upRange": {
+            "normal": {
+              "max": 180,
+              "min": 135
+            },
+            "perfect": {
+              "max": 180,
+              "min": 150
+            }
+          },
+          "downRange": {
+            "pad": {
+              "max": 120,
+              "min": 50
+            },
+            "danger": {
+              "max": 35,
+              "min": 0
+            },
+            "normal": {
+              "max": 110,
+              "min": 60
+            },
+            "perfect": {
+              "max": 100,
+              "min": 70
+            },
+            "warning": {
+              "max": 50,
+              "min": 35
+            }
+          }
+        },
+        {
+          "joint": "right_knee",
+          "role": "primary",
+          "startPose": {
+            "max": 180,
+            "min": 100
+          },
+          "stateMessages": {
+            "pad": {
+              "down": {
+                "ar": "مقبول — زد العمق تدريجياً",
+                "en": "Acceptable — build depth slowly"
+              }
+            },
+            "danger": {
+              "down": {
+                "ar": "توقف — ركبة أمامية غير مستقرة",
+                "en": "Stop — unstable front knee"
+              }
+            },
+            "normal": {
+              "up": {
+                "ar": "جيد — اضغط بالكامل للأعلى",
+                "en": "Good — drive fully to stand"
+              },
+              "down": {
+                "ar": "جيد — يمكنك النزول قليلاً أكثر إن كان آمناً",
+                "en": "Good — slightly deeper if stable"
+              }
+            },
+            "perfect": {
+              "up": {
+                "ar": "ممتاز! وقفة مستقيمة",
+                "en": "Perfect! Clean stand"
+              },
+              "down": {
+                "ar": "ممتاز! زاوية ركبة مثالية",
+                "en": "Perfect! Ideal knee angle"
+              }
+            },
+            "warning": {
+              "down": {
+                "ar": "لا تفرط في المدى إن الركبة تتعب",
+                "en": "Ease range if the knee tires"
+              }
+            }
+          },
+          "pairedWith": "left_knee",
+          "upRange": {
+            "normal": {
+              "max": 180,
+              "min": 135
+            },
+            "perfect": {
+              "max": 180,
+              "min": 150
+            }
+          },
+          "downRange": {
+            "pad": {
+              "max": 120,
+              "min": 50
+            },
+            "danger": {
+              "max": 35,
+              "min": 0
+            },
+            "normal": {
+              "max": 110,
+              "min": 60
+            },
+            "perfect": {
+              "max": 100,
+              "min": 70
+            },
+            "warning": {
+              "max": 50,
+              "min": 35
+            }
+          }
+        },
+        {
+          "joint": "spine",
+          "role": "secondary",
+          "startPose": {
+            "max": 18,
+            "min": 0
+          },
+          "stateMessages": {
+            "perfect": {
+              "ar": "جذع ثابت ومرفوع",
+              "en": "Torso stable and tall"
+            },
+            "warning": {
+              "ar": "لا تنهَر للأمام أثناء الاندفاع",
+              "en": "Avoid collapsing forward in the lunge"
+            }
+          },
+          "range": {
+            "pad": {
+              "max": 35,
+              "min": 0
+            },
+            "danger": {
+              "max": 85,
+              "min": 42
+            },
+            "normal": {
+              "max": 26,
+              "min": 0
+            },
+            "perfect": {
+              "max": 18,
+              "min": 0
+            },
+            "warning": {
+              "max": 45,
+              "min": 28
+            }
+          },
+          "phaseRanges": {
+            "up": {
+              "normal": {
+                "max": 24,
+                "min": 0
+              },
+              "perfect": {
+                "max": 18,
+                "min": 0
+              }
+            },
+            "top": {
+              "perfect": {
+                "max": 12,
+                "min": 0
+              }
+            },
+            "down": {
+              "normal": {
+                "max": 24,
+                "min": 0
+              },
+              "perfect": {
+                "max": 18,
+                "min": 0
+              }
+            },
+            "bottom": {
+              "normal": {
+                "max": 35,
+                "min": 5
+              },
+              "perfect": {
+                "max": 28,
+                "min": 8
+              }
+            }
+          },
+          "phaseStateMessages": {
+            "top": {
+              "perfect": {
+                "ar": "ظهر محايد في الوقفة",
+                "en": "Neutral spine at the top"
+              },
+              "warning": {
+                "ar": "لا تميل القطن للأمام في الأعلى",
+                "en": "Avoid excessive lumbar lean at the top"
+              }
+            },
+            "bottom": {
+              "perfect": {
+                "ar": "انحناء مقبول في القاع مع تحكم",
+                "en": "Acceptable flexion at bottom with control"
+              },
+              "warning": {
+                "ar": "قلل الانحناء القطني الزائد",
+                "en": "Reduce excessive lumbar flexion"
+              }
+            }
+          }
+        }
+      ],
+      "positionChecks": [
+        {
+          "id": "lead_knee_tracking",
+          "type": "forward_comparison",
+          "landmarks": {
+            "primary": "left_knee",
+            "secondary": "left_ankle"
+          },
+          "condition": {
+            "operator": "should_not_exceed",
+            "threshold": 0.07
+          },
+          "activePhases": [
+            "down",
+            "bottom"
+          ],
+          "errorMessage": {
+            "ar": "ركبة الأمام لا تنهار للداخل.",
+            "en": "Keep the front knee tracking over the foot."
+          },
+          "severity": "warning",
+          "cooldownMs": 2200,
+          "minErrorFrames": 5
+        },
+        {
+          "id": "torso_upright_lunge",
+          "type": "vertical_alignment",
+          "landmarks": {
+            "primary": "left_shoulder",
+            "secondary": "left_hip"
+          },
+          "condition": {
+            "operator": "approximately_equal",
+            "threshold": 0.12
+          },
+          "activePhases": [
+            "down",
+            "up"
+          ],
+          "errorMessage": {
+            "ar": "حافظ على الجذع العمودي فوق الورك.",
+            "en": "Stay tall over the hips — avoid collapsing forward."
+          },
+          "severity": "warning",
+          "cooldownMs": 2500,
+          "minErrorFrames": 5
+        }
+      ],
+      "feedbackMessages": {
+        "motivational": [
+          {
+            "ar": "أداء ممتاز — حافظ على الإيقاع",
+            "en": "Strong work — keep the rhythm"
+          },
+          {
+            "ar": "قوي! لا تضحّي بالشكل من أجل السرعة",
+            "en": "Solid! Don’t sacrifice form for speed"
+          }
+        ],
+        "tips": [
+          {
+            "ar": "ثبّت القدمين ووزّع الوزن على كعب ووسط القدم.",
+            "en": "Root the feet; load heel and mid-foot evenly."
+          },
+          {
+            "ar": "أي ألم حاد في الركبة أو الظهر — توقف فوراً.",
+            "en": "Stop immediately if you feel sharp knee or back pain."
+          }
+        ]
+      },
+      "messageAssignments": [
+        {
+          "messageId": "74c55c0c-6cbd-41f9-850d-1d63485d44db",
+          "target": "position",
+          "context": "error",
+          "checkId": "lead_knee_tracking",
+          "sortOrder": 1
+        },
+        {
+          "messageId": "6d702e76-de47-4f7b-9547-791471c318a8",
+          "target": "position",
+          "context": "error",
+          "checkId": "torso_upright_lunge",
+          "sortOrder": 2
+        },
+        {
+          "messageId": "4efa10ef-32e2-49c9-88d0-9ade6ad7c624",
+          "target": "joint_state",
+          "context": "perfect",
+          "jointCode": "left_knee",
+          "zone": "up",
+          "sortOrder": 3
+        },
+        {
+          "messageId": "28dcf4e6-eaab-4ce1-ad43-78214f439375",
+          "target": "joint_state",
+          "context": "perfect",
+          "jointCode": "left_knee",
+          "zone": "down",
+          "sortOrder": 4
+        },
+        {
+          "messageId": "b3e1068c-f46a-4412-900d-9ce568d900da",
+          "target": "joint_state",
+          "context": "normal",
+          "jointCode": "left_knee",
+          "zone": "up",
+          "sortOrder": 5
+        },
+        {
+          "messageId": "d98ac389-58bd-4e87-9994-a2e802749cbf",
+          "target": "joint_state",
+          "context": "normal",
+          "jointCode": "left_knee",
+          "zone": "down",
+          "sortOrder": 6
+        },
+        {
+          "messageId": "1662d75c-c1e9-4c4a-a1f0-df3c560b3a91",
+          "target": "joint_state",
+          "context": "pad",
+          "jointCode": "left_knee",
+          "zone": "down",
+          "sortOrder": 7
+        },
+        {
+          "messageId": "3b1d6dc4-61e9-4748-86fa-6dc3f9e07272",
+          "target": "joint_state",
+          "context": "warning",
+          "jointCode": "left_knee",
+          "zone": "down",
+          "sortOrder": 8
+        },
+        {
+          "messageId": "637c2e56-22ca-4a27-b8fc-4afa3857a70d",
+          "target": "joint_state",
+          "context": "danger",
+          "jointCode": "left_knee",
+          "zone": "down",
+          "sortOrder": 9
+        },
+        {
+          "messageId": "be4b8c82-c72b-4615-ac90-d5949191a7a4",
+          "target": "joint_state",
+          "context": "perfect",
+          "jointCode": "right_knee",
+          "zone": "up",
+          "sortOrder": 10
+        },
+        {
+          "messageId": "ecf8a427-6151-4697-bbf2-077188bff589",
+          "target": "joint_state",
+          "context": "perfect",
+          "jointCode": "right_knee",
+          "zone": "down",
+          "sortOrder": 11
+        },
+        {
+          "messageId": "f6df32c0-dc7a-47d5-8bea-57a4f52758e6",
+          "target": "joint_state",
+          "context": "normal",
+          "jointCode": "right_knee",
+          "zone": "up",
+          "sortOrder": 12
+        },
+        {
+          "messageId": "a2f83161-5e71-450d-aa39-282aed7e674c",
+          "target": "joint_state",
+          "context": "normal",
+          "jointCode": "right_knee",
+          "zone": "down",
+          "sortOrder": 13
+        },
+        {
+          "messageId": "8016cc7d-e409-4df2-9eac-64089256ddb5",
+          "target": "joint_state",
+          "context": "pad",
+          "jointCode": "right_knee",
+          "zone": "down",
+          "sortOrder": 14
+        },
+        {
+          "messageId": "eb9c4c5a-e93a-4e64-a7c1-5fd9c3c30895",
+          "target": "joint_state",
+          "context": "warning",
+          "jointCode": "right_knee",
+          "zone": "down",
+          "sortOrder": 15
+        },
+        {
+          "messageId": "61d3fa00-2e4f-48d3-b283-70a90357f2b9",
+          "target": "joint_state",
+          "context": "danger",
+          "jointCode": "right_knee",
+          "zone": "down",
+          "sortOrder": 16
+        },
+        {
+          "messageId": "8d0a5647-70a4-456c-b274-ef3772e98c10",
+          "target": "joint_state",
+          "context": "perfect",
+          "jointCode": "spine",
+          "sortOrder": 17
+        },
+        {
+          "messageId": "0048630b-ec6f-468f-842d-2da7ac1d9586",
+          "target": "joint_state",
+          "context": "warning",
+          "jointCode": "spine",
+          "sortOrder": 18
+        },
+        {
+          "messageId": "e6fb74e3-2e6e-48c6-81f7-9a1317069692",
+          "target": "joint_state_phase",
+          "context": "top:perfect",
+          "jointCode": "spine",
+          "sortOrder": 19
+        },
+        {
+          "messageId": "b5ba4556-15b8-4774-a86e-cabe45450c8b",
+          "target": "joint_state_phase",
+          "context": "top:warning",
+          "jointCode": "spine",
+          "sortOrder": 20
+        },
+        {
+          "messageId": "1dc3e751-8532-4a01-8459-1a4fc601f5c5",
+          "target": "joint_state_phase",
+          "context": "bottom:perfect",
+          "jointCode": "spine",
+          "sortOrder": 21
+        },
+        {
+          "messageId": "6e7e0474-0fdb-4dfb-b2b5-5c16e1ce4190",
+          "target": "joint_state_phase",
+          "context": "bottom:warning",
+          "jointCode": "spine",
+          "sortOrder": 22
+        },
+        {
+          "messageId": "d319eb23-f832-4fa6-b595-e46741b0513b",
+          "target": "feedback",
+          "context": "motivational",
+          "sortOrder": 23
+        },
+        {
+          "messageId": "c56dfddd-72fd-47f0-9be5-0a5b95dcc2ab",
+          "target": "feedback",
+          "context": "motivational",
+          "sortOrder": 24
+        },
+        {
+          "messageId": "bba102c9-87dd-46cb-8c02-7cc5137daedf",
+          "target": "feedback",
+          "context": "tip",
+          "sortOrder": 25
+        },
+        {
+          "messageId": "2c95027d-5efd-4ad4-8e46-11426e0d46e1",
+          "target": "feedback",
+          "context": "tip",
+          "sortOrder": 26
+        }
+      ],
+      "cameraPosition": "side_view"
+    }
+  ],
+  "description": {
+    "ar": "تمرين مكتبة: سكوات مقسم.",
+    "en": "Library exercise: Split squat."
+  },
+  "instructions": {
+    "ar": "حافظ على عمود فقري محايد وتنفس بثبات وتوقف عند أي ألم حاد.",
+    "en": "Maintain neutral spine, steady breathing, and stop if sharp pain appears."
+  },
+  "supportsWeight": true,
+  "reportMetrics": {
+    "primary": [
+      "FORM_SCORE"
+    ],
+    "excluded": [
+      "HOLD_DURATION"
+    ]
+  },
+  "hasPositionChecks": true,
+  "_database": {
+    "id": "fc3f50d2-a66c-410b-985a-cebb2672b69c",
+    "categoryId": "a672c3d3-4449-4f74-bd8e-be73a0035e88",
+    "countingMethodId": "f4d48aef-1606-4f23-8c61-7b4a2546f990",
+    "publishedAt": "2026-04-20T17:26:23.661Z",
+    "createdAt": "2026-04-20T17:26:23.662Z",
+    "updatedAt": "2026-04-20T17:26:34.177Z",
+    "deletedAt": null,
+    "isFeatured": false,
+    "createdBy": null,
+    "updatedBy": null,
+    "repCountingConfig": null,
+    "bilateralConfig": null,
+    "isBilateral": false,
+    "supportsWeight": true,
+    "minWeight": null,
+    "maxWeight": null,
+    "defaultWeight": null,
+    "reportMetrics": {
+      "mode": "reps",
+      "version": 1,
+      "primaryKpi": "repQuality",
+      "secondaryKpis": [
+        "avgFormScore",
+        "avgRom"
+      ]
+    },
+    "media": [],
+    "poseVariants": [
+      {
+        "id": "7c17aaef-fcac-4af4-a2d7-a178b5b9cdb2",
+        "sortOrder": 1,
+        "description": null,
+        "trackedJointsConfig": [
+          {
+            "role": "primary",
+            "joint": "left_knee",
+            "upRange": {
+              "normal": {
+                "max": 180,
+                "min": 135
+              },
+              "perfect": {
+                "max": 180,
+                "min": 150
+              }
+            },
+            "downRange": {
+              "pad": {
+                "max": 120,
+                "min": 50
+              },
+              "danger": {
+                "max": 35,
+                "min": 0
+              },
+              "normal": {
+                "max": 110,
+                "min": 60
+              },
+              "perfect": {
+                "max": 100,
+                "min": 70
+              },
+              "warning": {
+                "max": 50,
+                "min": 35
+              }
+            },
+            "startPose": {
+              "max": 180,
+              "min": 100
+            },
+            "pairedWith": "right_knee",
+            "stateMessages": {
+              "pad": {
+                "down": {
+                  "ar": "مقبول — زد العمق تدريجياً",
+                  "en": "Acceptable — build depth slowly"
+                }
+              },
+              "danger": {
+                "down": {
+                  "ar": "توقف — ركبة أمامية غير مستقرة",
+                  "en": "Stop — unstable front knee"
+                }
+              },
+              "normal": {
+                "up": {
+                  "ar": "جيد — اضغط بالكامل للأعلى",
+                  "en": "Good — drive fully to stand"
+                },
+                "down": {
+                  "ar": "جيد — يمكنك النزول قليلاً أكثر إن كان آمناً",
+                  "en": "Good — slightly deeper if stable"
+                }
+              },
+              "perfect": {
+                "up": {
+                  "ar": "ممتاز! وقفة مستقيمة",
+                  "en": "Perfect! Clean stand"
+                },
+                "down": {
+                  "ar": "ممتاز! زاوية ركبة مثالية",
+                  "en": "Perfect! Ideal knee angle"
+                }
+              },
+              "warning": {
+                "down": {
+                  "ar": "لا تفرط في المدى إن الركبة تتعب",
+                  "en": "Ease range if the knee tires"
+                }
+              }
+            }
+          },
+          {
+            "role": "primary",
+            "joint": "right_knee",
+            "upRange": {
+              "normal": {
+                "max": 180,
+                "min": 135
+              },
+              "perfect": {
+                "max": 180,
+                "min": 150
+              }
+            },
+            "downRange": {
+              "pad": {
+                "max": 120,
+                "min": 50
+              },
+              "danger": {
+                "max": 35,
+                "min": 0
+              },
+              "normal": {
+                "max": 110,
+                "min": 60
+              },
+              "perfect": {
+                "max": 100,
+                "min": 70
+              },
+              "warning": {
+                "max": 50,
+                "min": 35
+              }
+            },
+            "startPose": {
+              "max": 180,
+              "min": 100
+            },
+            "pairedWith": "left_knee",
+            "stateMessages": {
+              "pad": {
+                "down": {
+                  "ar": "مقبول — زد العمق تدريجياً",
+                  "en": "Acceptable — build depth slowly"
+                }
+              },
+              "danger": {
+                "down": {
+                  "ar": "توقف — ركبة أمامية غير مستقرة",
+                  "en": "Stop — unstable front knee"
+                }
+              },
+              "normal": {
+                "up": {
+                  "ar": "جيد — اضغط بالكامل للأعلى",
+                  "en": "Good — drive fully to stand"
+                },
+                "down": {
+                  "ar": "جيد — يمكنك النزول قليلاً أكثر إن كان آمناً",
+                  "en": "Good — slightly deeper if stable"
+                }
+              },
+              "perfect": {
+                "up": {
+                  "ar": "ممتاز! وقفة مستقيمة",
+                  "en": "Perfect! Clean stand"
+                },
+                "down": {
+                  "ar": "ممتاز! زاوية ركبة مثالية",
+                  "en": "Perfect! Ideal knee angle"
+                }
+              },
+              "warning": {
+                "down": {
+                  "ar": "لا تفرط في المدى إن الركبة تتعب",
+                  "en": "Ease range if the knee tires"
+                }
+              }
+            }
+          },
+          {
+            "role": "secondary",
+            "joint": "spine",
+            "range": {
+              "pad": {
+                "max": 35,
+                "min": 0
+              },
+              "danger": {
+                "max": 85,
+                "min": 42
+              },
+              "normal": {
+                "max": 26,
+                "min": 0
+              },
+              "perfect": {
+                "max": 18,
+                "min": 0
+              },
+              "warning": {
+                "max": 45,
+                "min": 28
+              }
+            },
+            "startPose": {
+              "max": 18,
+              "min": 0
+            },
+            "phaseRanges": {
+              "up": {
+                "normal": {
+                  "max": 24,
+                  "min": 0
+                },
+                "perfect": {
+                  "max": 18,
+                  "min": 0
+                }
+              },
+              "top": {
+                "perfect": {
+                  "max": 12,
+                  "min": 0
+                }
+              },
+              "down": {
+                "normal": {
+                  "max": 24,
+                  "min": 0
+                },
+                "perfect": {
+                  "max": 18,
+                  "min": 0
+                }
+              },
+              "bottom": {
+                "normal": {
+                  "max": 35,
+                  "min": 5
+                },
+                "perfect": {
+                  "max": 28,
+                  "min": 8
+                }
+              }
+            },
+            "stateMessages": {
+              "perfect": {
+                "ar": "جذع ثابت ومرفوع",
+                "en": "Torso stable and tall"
+              },
+              "warning": {
+                "ar": "لا تنهَر للأمام أثناء الاندفاع",
+                "en": "Avoid collapsing forward in the lunge"
+              }
+            },
+            "phaseStateMessages": {
+              "top": {
+                "perfect": {
+                  "ar": "ظهر محايد في الوقفة",
+                  "en": "Neutral spine at the top"
+                },
+                "warning": {
+                  "ar": "لا تميل القطن للأمام في الأعلى",
+                  "en": "Avoid excessive lumbar lean at the top"
+                }
+              },
+              "bottom": {
+                "perfect": {
+                  "ar": "انحناء مقبول في القاع مع تحكم",
+                  "en": "Acceptable flexion at bottom with control"
+                },
+                "warning": {
+                  "ar": "قلل الانحناء القطني الزائد",
+                  "en": "Reduce excessive lumbar flexion"
+                }
+              }
+            }
+          }
+        ]
+      }
+    ],
+    "validationWarning": null
+  }
+}

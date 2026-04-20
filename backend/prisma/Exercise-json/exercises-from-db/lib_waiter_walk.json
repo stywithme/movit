@@ -1,0 +1,397 @@
+{
+  "slug": "lib_waiter_walk",
+  "status": "published",
+  "movementPattern": "CARRY",
+  "loadCapability": "EXTERNAL_LOAD_OPTIONAL",
+  "familyKey": "overhead_stability_family",
+  "familyOrder": 35,
+  "name": {
+    "ar": "مشي نادل",
+    "en": "Waiter walk"
+  },
+  "category": {
+    "code": "shoulders",
+    "name": {
+      "ar": "تمارين الأكتاف",
+      "en": "Shoulders"
+    }
+  },
+  "countingMethod": "hold",
+  "muscles": [
+    "front_delts",
+    "obliques"
+  ],
+  "equipment": [
+    "dumbbell",
+    "mat"
+  ],
+  "tags": [
+    "curated_library",
+    "stability"
+  ],
+  "repCountingConfig": {
+    "duration": 30,
+    "gracePeriodMs": 2500
+  },
+  "poseVariants": [
+    {
+      "name": {
+        "ar": "زاوية جانبية",
+        "en": "Side view"
+      },
+      "posePosition": "standing_side",
+      "expectedPostures": [
+        "standing"
+      ],
+      "expectedDirections": [
+        "side"
+      ],
+      "expectedRegions": [
+        "full_body"
+      ],
+      "trackedJoints": [
+        {
+          "joint": "left_hip",
+          "role": "primary",
+          "startPose": {
+            "max": 180,
+            "min": 160
+          },
+          "stateMessages": {
+            "danger": {
+              "ar": "توقف، الحمل يخرجك من الخط",
+              "en": "Stop, the load is pulling you out of line"
+            },
+            "perfect": {
+              "ar": "مشية ثابتة مع جذع منظم",
+              "en": "Stable gait with an organized trunk"
+            },
+            "warning": {
+              "ar": "لا تمِل تحت الحمل العلوي",
+              "en": "Do not lean under the overhead load"
+            }
+          },
+          "range": {
+            "pad": {
+              "max": 180,
+              "min": 152
+            },
+            "danger": {
+              "max": 138,
+              "min": 0
+            },
+            "normal": {
+              "max": 180,
+              "min": 162
+            },
+            "perfect": {
+              "max": 180,
+              "min": 170
+            },
+            "warning": {
+              "max": 152,
+              "min": 138
+            }
+          }
+        },
+        {
+          "joint": "left_shoulder",
+          "role": "secondary",
+          "startPose": {
+            "max": 180,
+            "min": 145
+          },
+          "stateMessages": {
+            "perfect": {
+              "ar": "كتف مكدس جيداً فوق الرأس",
+              "en": "Shoulder is stacked well overhead"
+            },
+            "warning": {
+              "ar": "لا تسمح للذراع أن تسقط للأمام",
+              "en": "Do not let the arm drift forward"
+            }
+          },
+          "range": {
+            "pad": {
+              "max": 180,
+              "min": 145
+            },
+            "normal": {
+              "max": 180,
+              "min": 152
+            },
+            "perfect": {
+              "max": 180,
+              "min": 160
+            },
+            "warning": {
+              "max": 145,
+              "min": 130
+            }
+          }
+        }
+      ],
+      "positionChecks": [
+        {
+          "id": "waiter_arm_stack",
+          "type": "vertical_alignment",
+          "landmarks": {
+            "primary": "left_wrist",
+            "secondary": "left_shoulder"
+          },
+          "condition": {
+            "operator": "approximately_equal",
+            "threshold": 0.1
+          },
+          "activePhases": [
+            "all"
+          ],
+          "errorMessage": {
+            "ar": "أبقِ الحمل فوق منتصف الكتف أثناء المشي.",
+            "en": "Keep the load stacked over the mid-shoulder while walking."
+          },
+          "severity": "warning",
+          "cooldownMs": 2400,
+          "minErrorFrames": 5
+        }
+      ],
+      "feedbackMessages": {
+        "motivational": [
+          {
+            "ar": "أداء قوي ومنظم",
+            "en": "Strong and controlled work"
+          },
+          {
+            "ar": "حافظ على الشكل قبل السرعة",
+            "en": "Keep form before speed"
+          }
+        ],
+        "tips": [
+          {
+            "ar": "خذ نفساً تحضيرياً قبل كل عدة وازفر مع الجهد.",
+            "en": "Take a setup breath before each rep and exhale on effort."
+          },
+          {
+            "ar": "إذا فقدت التحكم الميكانيكي، قلل المدى أو الحمل.",
+            "en": "If mechanics break down, reduce range or load."
+          }
+        ]
+      },
+      "messageAssignments": [
+        {
+          "messageId": "47340303-748a-4857-ba33-673c6ff772f1",
+          "target": "position",
+          "context": "error",
+          "checkId": "waiter_arm_stack",
+          "sortOrder": 1
+        },
+        {
+          "messageId": "e98addb7-3d24-4c01-afec-a08844b4a8e1",
+          "target": "joint_state",
+          "context": "perfect",
+          "jointCode": "left_hip",
+          "sortOrder": 2
+        },
+        {
+          "messageId": "45ce74c4-b65a-4fc2-b34f-b07e32ccd247",
+          "target": "joint_state",
+          "context": "warning",
+          "jointCode": "left_hip",
+          "sortOrder": 3
+        },
+        {
+          "messageId": "09a0cbef-f7d8-485f-867b-b26121b6e315",
+          "target": "joint_state",
+          "context": "danger",
+          "jointCode": "left_hip",
+          "sortOrder": 4
+        },
+        {
+          "messageId": "60940a23-c39d-4a35-b34f-24276df6cdfe",
+          "target": "joint_state",
+          "context": "perfect",
+          "jointCode": "left_shoulder",
+          "sortOrder": 5
+        },
+        {
+          "messageId": "47c066c8-2b55-4bbe-ac7e-0a86bba9a7c4",
+          "target": "joint_state",
+          "context": "warning",
+          "jointCode": "left_shoulder",
+          "sortOrder": 6
+        },
+        {
+          "messageId": "1c762ed2-5783-4043-aa47-125004fb2f08",
+          "target": "feedback",
+          "context": "motivational",
+          "sortOrder": 7
+        },
+        {
+          "messageId": "39490630-8701-458d-8693-84173db6385e",
+          "target": "feedback",
+          "context": "motivational",
+          "sortOrder": 8
+        },
+        {
+          "messageId": "fa029567-3bda-4084-a476-7f189ab51a82",
+          "target": "feedback",
+          "context": "tip",
+          "sortOrder": 9
+        },
+        {
+          "messageId": "984b1188-3e26-4506-9074-c76f60af3004",
+          "target": "feedback",
+          "context": "tip",
+          "sortOrder": 10
+        }
+      ],
+      "cameraPosition": "side_view"
+    }
+  ],
+  "description": {
+    "ar": "تمرين مكتبة: مشي نادل.",
+    "en": "Library exercise: Waiter walk."
+  },
+  "instructions": {
+    "ar": "حافظ على عمود فقري محايد وتنفس بثبات وتوقف عند أي ألم حاد.",
+    "en": "Maintain neutral spine, steady breathing, and stop if sharp pain appears."
+  },
+  "supportsWeight": true,
+  "reportMetrics": {
+    "primary": [
+      "FORM_SCORE"
+    ],
+    "excluded": [
+      "REP_COUNT",
+      "TEMPO",
+      "TUT",
+      "ROM",
+      "FORM_CONSISTENCY",
+      "FATIGUE_INDEX",
+      "VELOCITY",
+      "VELOCITY_LOSS",
+      "TEMPO_CONSISTENCY",
+      "SYMMETRY"
+    ]
+  },
+  "hasPositionChecks": true,
+  "_database": {
+    "id": "a9d6c0a6-84f2-4a33-b575-0245db1a181b",
+    "categoryId": "78daff70-6564-41cd-b768-462735416089",
+    "countingMethodId": "7ae86596-4b4b-400b-afa1-c7c0b6ba4fc9",
+    "publishedAt": "2026-04-20T17:26:25.549Z",
+    "createdAt": "2026-04-20T17:26:25.550Z",
+    "updatedAt": "2026-04-20T17:26:34.309Z",
+    "deletedAt": null,
+    "isFeatured": false,
+    "createdBy": null,
+    "updatedBy": null,
+    "repCountingConfig": null,
+    "bilateralConfig": null,
+    "isBilateral": false,
+    "supportsWeight": true,
+    "minWeight": null,
+    "maxWeight": null,
+    "defaultWeight": null,
+    "reportMetrics": {
+      "mode": "duration",
+      "version": 1,
+      "primaryKpi": "timeUnderTension",
+      "secondaryKpis": [
+        "avgFormScore",
+        "avgRom"
+      ]
+    },
+    "media": [],
+    "poseVariants": [
+      {
+        "id": "2899a033-8239-4237-9f81-1170b424fea9",
+        "sortOrder": 1,
+        "description": null,
+        "trackedJointsConfig": [
+          {
+            "role": "primary",
+            "joint": "left_hip",
+            "range": {
+              "pad": {
+                "max": 180,
+                "min": 152
+              },
+              "danger": {
+                "max": 138,
+                "min": 0
+              },
+              "normal": {
+                "max": 180,
+                "min": 162
+              },
+              "perfect": {
+                "max": 180,
+                "min": 170
+              },
+              "warning": {
+                "max": 152,
+                "min": 138
+              }
+            },
+            "startPose": {
+              "max": 180,
+              "min": 160
+            },
+            "stateMessages": {
+              "danger": {
+                "ar": "توقف، الحمل يخرجك من الخط",
+                "en": "Stop, the load is pulling you out of line"
+              },
+              "perfect": {
+                "ar": "مشية ثابتة مع جذع منظم",
+                "en": "Stable gait with an organized trunk"
+              },
+              "warning": {
+                "ar": "لا تمِل تحت الحمل العلوي",
+                "en": "Do not lean under the overhead load"
+              }
+            }
+          },
+          {
+            "role": "secondary",
+            "joint": "left_shoulder",
+            "range": {
+              "pad": {
+                "max": 180,
+                "min": 145
+              },
+              "normal": {
+                "max": 180,
+                "min": 152
+              },
+              "perfect": {
+                "max": 180,
+                "min": 160
+              },
+              "warning": {
+                "max": 145,
+                "min": 130
+              }
+            },
+            "startPose": {
+              "max": 180,
+              "min": 145
+            },
+            "stateMessages": {
+              "perfect": {
+                "ar": "كتف مكدس جيداً فوق الرأس",
+                "en": "Shoulder is stacked well overhead"
+              },
+              "warning": {
+                "ar": "لا تسمح للذراع أن تسقط للأمام",
+                "en": "Do not let the arm drift forward"
+              }
+            }
+          }
+        ]
+      }
+    ],
+    "validationWarning": null
+  }
+}

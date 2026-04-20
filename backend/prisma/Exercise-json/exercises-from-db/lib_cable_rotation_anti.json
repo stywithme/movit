@@ -1,0 +1,405 @@
+{
+  "slug": "lib_cable_rotation_anti",
+  "status": "published",
+  "movementPattern": "ROTATION",
+  "loadCapability": "EXTERNAL_LOAD_OPTIONAL",
+  "familyKey": "anti_rotation_family",
+  "familyOrder": 28,
+  "name": {
+    "ar": "ضد دوران بحبل",
+    "en": "Anti-rotation press (band)"
+  },
+  "category": {
+    "code": "abs",
+    "name": {
+      "ar": "تمارين البطن",
+      "en": "Abs"
+    }
+  },
+  "countingMethod": "hold",
+  "muscles": [
+    "obliques"
+  ],
+  "equipment": [
+    "resistance_band",
+    "mat"
+  ],
+  "tags": [
+    "curated_library",
+    "core"
+  ],
+  "repCountingConfig": {
+    "duration": 30,
+    "gracePeriodMs": 2500
+  },
+  "poseVariants": [
+    {
+      "name": {
+        "ar": "زاوية أمامية",
+        "en": "Front view"
+      },
+      "posePosition": "standing_front",
+      "expectedPostures": [
+        "standing"
+      ],
+      "expectedDirections": [
+        "front"
+      ],
+      "expectedRegions": [
+        "full_body"
+      ],
+      "trackedJoints": [
+        {
+          "joint": "spine",
+          "role": "primary",
+          "startPose": {
+            "max": 16,
+            "min": 0
+          },
+          "stateMessages": {
+            "pad": {
+              "ar": "مقبول، لكن الجذع يتحرك قليلاً",
+              "en": "Acceptable, but the trunk is drifting"
+            },
+            "danger": {
+              "ar": "توقف، الجذع لم يعد ثابتاً",
+              "en": "Stop, the trunk is no longer stable"
+            },
+            "normal": {
+              "ar": "جيد، أبقِ الأضلاع والحوض ثابتين",
+              "en": "Good, keep the ribs and pelvis quiet"
+            },
+            "perfect": {
+              "ar": "ثبات ممتاز ضد الدوران",
+              "en": "Excellent anti-rotation brace"
+            },
+            "warning": {
+              "ar": "خفف المقاومة أو قرّب اليدين",
+              "en": "Reduce resistance or bring the hands closer"
+            }
+          },
+          "range": {
+            "pad": {
+              "max": 18,
+              "min": 0
+            },
+            "danger": {
+              "max": 60,
+              "min": 30
+            },
+            "normal": {
+              "max": 14,
+              "min": 0
+            },
+            "perfect": {
+              "max": 10,
+              "min": 0
+            },
+            "warning": {
+              "max": 30,
+              "min": 18
+            }
+          }
+        },
+        {
+          "joint": "left_shoulder",
+          "role": "secondary",
+          "startPose": {
+            "max": 120,
+            "min": 70
+          },
+          "stateMessages": {
+            "perfect": {
+              "ar": "ذراعان ثابتتان أمام الصدر",
+              "en": "Arms stay stable in front of the chest"
+            }
+          },
+          "range": {
+            "pad": {
+              "max": 118,
+              "min": 70
+            },
+            "normal": {
+              "max": 112,
+              "min": 76
+            },
+            "perfect": {
+              "max": 105,
+              "min": 82
+            }
+          }
+        }
+      ],
+      "positionChecks": [
+        {
+          "id": "anti_rotation_hold_square",
+          "type": "horizontal_alignment",
+          "landmarks": {
+            "primary": "left_shoulder",
+            "secondary": "right_shoulder"
+          },
+          "condition": {
+            "operator": "approximately_equal",
+            "threshold": 0.08
+          },
+          "activePhases": [
+            "all"
+          ],
+          "errorMessage": {
+            "ar": "اثبت أمام المقاومة بدون دوران جذع.",
+            "en": "Stay square to the resistance without trunk rotation."
+          },
+          "severity": "warning",
+          "cooldownMs": 2600,
+          "minErrorFrames": 5
+        }
+      ],
+      "feedbackMessages": {
+        "motivational": [
+          {
+            "ar": "شد جذع ممتاز",
+            "en": "Excellent trunk tension"
+          },
+          {
+            "ar": "ثباتك يتحسن عدة بعد عدة",
+            "en": "Your stability improves rep by rep"
+          }
+        ],
+        "tips": [
+          {
+            "ar": "شد السرة برفق ولا تحبس النفس طويلاً.",
+            "en": "Brace gently and avoid long breath-holds."
+          },
+          {
+            "ar": "حرّك الأطراف دون أن ينهار الجذع.",
+            "en": "Move the limbs without letting the trunk collapse."
+          }
+        ]
+      },
+      "messageAssignments": [
+        {
+          "messageId": "21c0e823-7b3e-4162-b156-19d5b460720f",
+          "target": "position",
+          "context": "error",
+          "checkId": "anti_rotation_hold_square",
+          "sortOrder": 1
+        },
+        {
+          "messageId": "e55d06e8-993f-443b-bfff-9dde85d00718",
+          "target": "joint_state",
+          "context": "perfect",
+          "jointCode": "spine",
+          "sortOrder": 2
+        },
+        {
+          "messageId": "d46c3c73-eae0-45df-8b5d-f6caa69a5a4c",
+          "target": "joint_state",
+          "context": "normal",
+          "jointCode": "spine",
+          "sortOrder": 3
+        },
+        {
+          "messageId": "9ee17c77-1a75-45c6-9d93-d2ff1da3a9c6",
+          "target": "joint_state",
+          "context": "pad",
+          "jointCode": "spine",
+          "sortOrder": 4
+        },
+        {
+          "messageId": "64d509f0-681b-4468-97d3-8437b967ab30",
+          "target": "joint_state",
+          "context": "warning",
+          "jointCode": "spine",
+          "sortOrder": 5
+        },
+        {
+          "messageId": "7ab797a6-f41b-4cc1-886e-34bc8896c45f",
+          "target": "joint_state",
+          "context": "danger",
+          "jointCode": "spine",
+          "sortOrder": 6
+        },
+        {
+          "messageId": "a907fa26-0df8-433b-afa9-bc6517c51666",
+          "target": "joint_state",
+          "context": "perfect",
+          "jointCode": "left_shoulder",
+          "sortOrder": 7
+        },
+        {
+          "messageId": "1ed42d7f-d155-45c9-83dc-5c49a2d2961c",
+          "target": "feedback",
+          "context": "motivational",
+          "sortOrder": 8
+        },
+        {
+          "messageId": "fb679f5d-b9c7-4005-b88f-62b70332d593",
+          "target": "feedback",
+          "context": "motivational",
+          "sortOrder": 9
+        },
+        {
+          "messageId": "5f730025-bfca-44d6-93db-54a7d94e30be",
+          "target": "feedback",
+          "context": "tip",
+          "sortOrder": 10
+        },
+        {
+          "messageId": "ed35c7c9-66fc-4d19-acb3-249100ced115",
+          "target": "feedback",
+          "context": "tip",
+          "sortOrder": 11
+        }
+      ],
+      "cameraPosition": "front_view"
+    }
+  ],
+  "description": {
+    "ar": "تمرين مكتبة: ضد دوران بحبل.",
+    "en": "Library exercise: Anti-rotation press (band)."
+  },
+  "instructions": {
+    "ar": "حافظ على عمود فقري محايد وتنفس بثبات وتوقف عند أي ألم حاد.",
+    "en": "Maintain neutral spine, steady breathing, and stop if sharp pain appears."
+  },
+  "reportMetrics": {
+    "primary": [
+      "FORM_SCORE"
+    ],
+    "excluded": [
+      "REP_COUNT",
+      "TEMPO",
+      "TUT",
+      "ROM",
+      "FORM_CONSISTENCY",
+      "FATIGUE_INDEX",
+      "VELOCITY",
+      "VELOCITY_LOSS",
+      "TEMPO_CONSISTENCY",
+      "WEIGHT",
+      "VOLUME",
+      "EST_1RM",
+      "SYMMETRY"
+    ]
+  },
+  "hasPositionChecks": true,
+  "_database": {
+    "id": "7360c848-2fa0-4e47-ae91-7a7a8c9ac6eb",
+    "categoryId": "01b944db-50df-4f53-aa08-ec5633820277",
+    "countingMethodId": "7ae86596-4b4b-400b-afa1-c7c0b6ba4fc9",
+    "publishedAt": "2026-04-20T17:26:25.902Z",
+    "createdAt": "2026-04-20T17:26:25.903Z",
+    "updatedAt": "2026-04-20T17:26:34.340Z",
+    "deletedAt": null,
+    "isFeatured": false,
+    "createdBy": null,
+    "updatedBy": null,
+    "repCountingConfig": null,
+    "bilateralConfig": null,
+    "isBilateral": false,
+    "supportsWeight": false,
+    "minWeight": null,
+    "maxWeight": null,
+    "defaultWeight": null,
+    "reportMetrics": {
+      "mode": "duration",
+      "version": 1,
+      "primaryKpi": "timeUnderTension",
+      "secondaryKpis": [
+        "avgFormScore",
+        "avgRom"
+      ]
+    },
+    "media": [],
+    "poseVariants": [
+      {
+        "id": "a4e60bc6-e52f-4d26-b1fc-08aeda49a48c",
+        "sortOrder": 1,
+        "description": null,
+        "trackedJointsConfig": [
+          {
+            "role": "primary",
+            "joint": "spine",
+            "range": {
+              "pad": {
+                "max": 18,
+                "min": 0
+              },
+              "danger": {
+                "max": 60,
+                "min": 30
+              },
+              "normal": {
+                "max": 14,
+                "min": 0
+              },
+              "perfect": {
+                "max": 10,
+                "min": 0
+              },
+              "warning": {
+                "max": 30,
+                "min": 18
+              }
+            },
+            "startPose": {
+              "max": 16,
+              "min": 0
+            },
+            "stateMessages": {
+              "pad": {
+                "ar": "مقبول، لكن الجذع يتحرك قليلاً",
+                "en": "Acceptable, but the trunk is drifting"
+              },
+              "danger": {
+                "ar": "توقف، الجذع لم يعد ثابتاً",
+                "en": "Stop, the trunk is no longer stable"
+              },
+              "normal": {
+                "ar": "جيد، أبقِ الأضلاع والحوض ثابتين",
+                "en": "Good, keep the ribs and pelvis quiet"
+              },
+              "perfect": {
+                "ar": "ثبات ممتاز ضد الدوران",
+                "en": "Excellent anti-rotation brace"
+              },
+              "warning": {
+                "ar": "خفف المقاومة أو قرّب اليدين",
+                "en": "Reduce resistance or bring the hands closer"
+              }
+            }
+          },
+          {
+            "role": "secondary",
+            "joint": "left_shoulder",
+            "range": {
+              "pad": {
+                "max": 118,
+                "min": 70
+              },
+              "normal": {
+                "max": 112,
+                "min": 76
+              },
+              "perfect": {
+                "max": 105,
+                "min": 82
+              }
+            },
+            "startPose": {
+              "max": 120,
+              "min": 70
+            },
+            "stateMessages": {
+              "perfect": {
+                "ar": "ذراعان ثابتتان أمام الصدر",
+                "en": "Arms stay stable in front of the chest"
+              }
+            }
+          }
+        ]
+      }
+    ],
+    "validationWarning": null
+  }
+}

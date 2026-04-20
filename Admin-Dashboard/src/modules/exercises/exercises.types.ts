@@ -520,7 +520,7 @@ export interface RepCountingConfig {
 /**
  * Feedback message assignment input (library-based)
  */
-export type FeedbackMessageAssignmentTarget = 'joint_state' | 'feedback' | 'position';
+export type FeedbackMessageAssignmentTarget = 'joint_state' | 'joint_state_phase' | 'feedback' | 'position';
 
 export interface FeedbackMessageAssignmentInput {
   messageId: string;

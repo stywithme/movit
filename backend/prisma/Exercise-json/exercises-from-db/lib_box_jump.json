@@ -1,0 +1,679 @@
+{
+  "slug": "lib_box_jump",
+  "status": "published",
+  "movementPattern": "JUMP_LAND",
+  "loadCapability": "BODYWEIGHT_ONLY",
+  "familyKey": "jump_land_family",
+  "familyOrder": 30,
+  "name": {
+    "ar": "قفز صندوق منخفض",
+    "en": "Box jump (low)"
+  },
+  "category": {
+    "code": "legs",
+    "name": {
+      "ar": "تمارين الأرجل",
+      "en": "Legs"
+    }
+  },
+  "countingMethod": "up_down",
+  "muscles": [
+    "quadriceps",
+    "glutes"
+  ],
+  "equipment": [
+    "bodyweight",
+    "bench"
+  ],
+  "tags": [
+    "curated_library",
+    "power",
+    "plyometric"
+  ],
+  "repCountingConfig": {
+    "reps": 12,
+    "minRepIntervalMs": 1500,
+    "maxRepIntervalMs": 5000
+  },
+  "poseVariants": [
+    {
+      "name": {
+        "ar": "زاوية أمامية",
+        "en": "Front view"
+      },
+      "posePosition": "standing_front",
+      "expectedPostures": [
+        "standing"
+      ],
+      "expectedDirections": [
+        "front"
+      ],
+      "expectedRegions": [
+        "full_body"
+      ],
+      "trackedJoints": [
+        {
+          "joint": "left_knee",
+          "role": "primary",
+          "startPose": {
+            "max": 180,
+            "min": 140
+          },
+          "stateMessages": {
+            "pad": {
+              "down": {
+                "ar": "مقبول — قلل الارتفاع تدريجياً",
+                "en": "Acceptable — lower box height gradually"
+              }
+            },
+            "danger": {
+              "down": {
+                "ar": "توقف — خطر على الركبة",
+                "en": "Stop — knee risk"
+              }
+            },
+            "normal": {
+              "up": {
+                "ar": "جيد — اضغط أكثر في الانطلاق",
+                "en": "Good — drive harder on takeoff"
+              },
+              "down": {
+                "ar": "جيد — ثنِ الركبتين أكثر عند الهبوط",
+                "en": "Good — bend knees more on landing"
+              }
+            },
+            "perfect": {
+              "up": {
+                "ar": "ممتاز! انطلاقة قوية",
+                "en": "Perfect! Powerful takeoff"
+              },
+              "down": {
+                "ar": "ممتاز! هبوط ممتص",
+                "en": "Perfect! Soft landing"
+              }
+            },
+            "warning": {
+              "down": {
+                "ar": "هبوط صلب — خفف الارتفاع",
+                "en": "Hard landing — reduce height"
+              }
+            }
+          },
+          "pairedWith": "right_knee",
+          "upRange": {
+            "pad": {
+              "max": 180,
+              "min": 140
+            },
+            "normal": {
+              "max": 180,
+              "min": 150
+            },
+            "perfect": {
+              "max": 180,
+              "min": 160
+            }
+          },
+          "downRange": {
+            "pad": {
+              "max": 115,
+              "min": 35
+            },
+            "danger": {
+              "max": 25,
+              "min": 0
+            },
+            "normal": {
+              "max": 105,
+              "min": 45
+            },
+            "perfect": {
+              "max": 95,
+              "min": 55
+            },
+            "warning": {
+              "max": 38,
+              "min": 25
+            }
+          }
+        },
+        {
+          "joint": "right_knee",
+          "role": "primary",
+          "startPose": {
+            "max": 180,
+            "min": 140
+          },
+          "stateMessages": {
+            "pad": {
+              "down": {
+                "ar": "مقبول — قلل الارتفاع تدريجياً",
+                "en": "Acceptable — lower box height gradually"
+              }
+            },
+            "danger": {
+              "down": {
+                "ar": "توقف — خطر على الركبة",
+                "en": "Stop — knee risk"
+              }
+            },
+            "normal": {
+              "up": {
+                "ar": "جيد — اضغط أكثر في الانطلاق",
+                "en": "Good — drive harder on takeoff"
+              },
+              "down": {
+                "ar": "جيد — ثنِ الركبتين أكثر عند الهبوط",
+                "en": "Good — bend knees more on landing"
+              }
+            },
+            "perfect": {
+              "up": {
+                "ar": "ممتاز! انطلاقة قوية",
+                "en": "Perfect! Powerful takeoff"
+              },
+              "down": {
+                "ar": "ممتاز! هبوط ممتص",
+                "en": "Perfect! Soft landing"
+              }
+            },
+            "warning": {
+              "down": {
+                "ar": "هبوط صلب — خفف الارتفاع",
+                "en": "Hard landing — reduce height"
+              }
+            }
+          },
+          "pairedWith": "left_knee",
+          "upRange": {
+            "pad": {
+              "max": 180,
+              "min": 140
+            },
+            "normal": {
+              "max": 180,
+              "min": 150
+            },
+            "perfect": {
+              "max": 180,
+              "min": 160
+            }
+          },
+          "downRange": {
+            "pad": {
+              "max": 115,
+              "min": 35
+            },
+            "danger": {
+              "max": 25,
+              "min": 0
+            },
+            "normal": {
+              "max": 105,
+              "min": 45
+            },
+            "perfect": {
+              "max": 95,
+              "min": 55
+            },
+            "warning": {
+              "max": 38,
+              "min": 25
+            }
+          }
+        }
+      ],
+      "positionChecks": [
+        {
+          "id": "soft_knee_landing",
+          "type": "forward_comparison",
+          "landmarks": {
+            "primary": "left_knee",
+            "secondary": "left_ankle"
+          },
+          "condition": {
+            "operator": "should_not_exceed",
+            "threshold": 0.08
+          },
+          "activePhases": [
+            "down",
+            "bottom"
+          ],
+          "errorMessage": {
+            "ar": "اهبط بركبة تتبع القدم — لا تنهار للداخل.",
+            "en": "Land with knee tracking over the foot — no collapse inward."
+          },
+          "severity": "error",
+          "cooldownMs": 2000,
+          "minErrorFrames": 4
+        },
+        {
+          "id": "hip_flex_landing",
+          "type": "vertical_alignment",
+          "landmarks": {
+            "primary": "left_shoulder",
+            "secondary": "left_hip"
+          },
+          "condition": {
+            "operator": "approximately_equal",
+            "threshold": 0.12
+          },
+          "activePhases": [
+            "bottom"
+          ],
+          "errorMessage": {
+            "ar": "امتصاص الهبوط بالورك — لا تبقَ منتصباً بالكامل.",
+            "en": "Absorb landing with hips — don’t stay fully upright if depth is needed."
+          },
+          "severity": "tip",
+          "cooldownMs": 2800,
+          "minErrorFrames": 5
+        }
+      ],
+      "feedbackMessages": {
+        "motivational": [
+          {
+            "ar": "أداء ممتاز — حافظ على الإيقاع",
+            "en": "Strong work — keep the rhythm"
+          },
+          {
+            "ar": "قوي! لا تضحّي بالشكل من أجل السرعة",
+            "en": "Solid! Don’t sacrifice form for speed"
+          }
+        ],
+        "tips": [
+          {
+            "ar": "ثبّت القدمين ووزّع الوزن على كعب ووسط القدم.",
+            "en": "Root the feet; load heel and mid-foot evenly."
+          },
+          {
+            "ar": "أي ألم حاد في الركبة أو الظهر — توقف فوراً.",
+            "en": "Stop immediately if you feel sharp knee or back pain."
+          }
+        ]
+      },
+      "messageAssignments": [
+        {
+          "messageId": "a4bdc9ad-4428-4b1f-a989-880c10cd33ec",
+          "target": "position",
+          "context": "error",
+          "checkId": "soft_knee_landing",
+          "sortOrder": 1
+        },
+        {
+          "messageId": "fd219c38-c3a5-4bc1-a819-1689d1da997a",
+          "target": "position",
+          "context": "error",
+          "checkId": "hip_flex_landing",
+          "sortOrder": 2
+        },
+        {
+          "messageId": "9f36ea0b-68b7-483f-9ec0-e52787288e5d",
+          "target": "joint_state",
+          "context": "perfect",
+          "jointCode": "left_knee",
+          "zone": "up",
+          "sortOrder": 3
+        },
+        {
+          "messageId": "c5f78796-94d3-4fb4-b912-4ae56a205b30",
+          "target": "joint_state",
+          "context": "perfect",
+          "jointCode": "left_knee",
+          "zone": "down",
+          "sortOrder": 4
+        },
+        {
+          "messageId": "e481d99c-4ff8-4679-9f46-fe86e523a83b",
+          "target": "joint_state",
+          "context": "normal",
+          "jointCode": "left_knee",
+          "zone": "up",
+          "sortOrder": 5
+        },
+        {
+          "messageId": "a6bc97d1-0886-4d4a-98f7-da815f70cf93",
+          "target": "joint_state",
+          "context": "normal",
+          "jointCode": "left_knee",
+          "zone": "down",
+          "sortOrder": 6
+        },
+        {
+          "messageId": "60351d2e-e4ff-4ef4-8aa7-aa83d7a9929d",
+          "target": "joint_state",
+          "context": "pad",
+          "jointCode": "left_knee",
+          "zone": "down",
+          "sortOrder": 7
+        },
+        {
+          "messageId": "b0a11b24-86aa-41d1-9714-fec0f0f739a8",
+          "target": "joint_state",
+          "context": "warning",
+          "jointCode": "left_knee",
+          "zone": "down",
+          "sortOrder": 8
+        },
+        {
+          "messageId": "d052e804-6b0c-4697-a3af-742317a69597",
+          "target": "joint_state",
+          "context": "danger",
+          "jointCode": "left_knee",
+          "zone": "down",
+          "sortOrder": 9
+        },
+        {
+          "messageId": "9df216f6-02a5-48f5-9c83-978f32d37981",
+          "target": "joint_state",
+          "context": "perfect",
+          "jointCode": "right_knee",
+          "zone": "up",
+          "sortOrder": 10
+        },
+        {
+          "messageId": "97f33646-073b-48ac-b497-f4d797360b87",
+          "target": "joint_state",
+          "context": "perfect",
+          "jointCode": "right_knee",
+          "zone": "down",
+          "sortOrder": 11
+        },
+        {
+          "messageId": "50d58a94-12e3-4ca1-be8c-173ad9a7f979",
+          "target": "joint_state",
+          "context": "normal",
+          "jointCode": "right_knee",
+          "zone": "up",
+          "sortOrder": 12
+        },
+        {
+          "messageId": "869c14bb-8352-4a43-a5db-5e08181c898b",
+          "target": "joint_state",
+          "context": "normal",
+          "jointCode": "right_knee",
+          "zone": "down",
+          "sortOrder": 13
+        },
+        {
+          "messageId": "515fec34-307d-4999-8be5-450112c52732",
+          "target": "joint_state",
+          "context": "pad",
+          "jointCode": "right_knee",
+          "zone": "down",
+          "sortOrder": 14
+        },
+        {
+          "messageId": "a7e8b48c-c7c6-4f9d-bf82-3616cc8dccbc",
+          "target": "joint_state",
+          "context": "warning",
+          "jointCode": "right_knee",
+          "zone": "down",
+          "sortOrder": 15
+        },
+        {
+          "messageId": "c3baec32-65db-4642-9c7c-934ea10b3aa9",
+          "target": "joint_state",
+          "context": "danger",
+          "jointCode": "right_knee",
+          "zone": "down",
+          "sortOrder": 16
+        },
+        {
+          "messageId": "29ff3fbd-412a-4cad-8846-d7c77aa883a7",
+          "target": "feedback",
+          "context": "motivational",
+          "sortOrder": 17
+        },
+        {
+          "messageId": "1f6ca0bd-cfe2-48cf-b3cc-e0cbf02c1c79",
+          "target": "feedback",
+          "context": "motivational",
+          "sortOrder": 18
+        },
+        {
+          "messageId": "0ff3cb0e-a44b-4263-b262-7ffdbc6b5867",
+          "target": "feedback",
+          "context": "tip",
+          "sortOrder": 19
+        },
+        {
+          "messageId": "fc33ba15-cb01-4c7d-8d85-6e09f598817b",
+          "target": "feedback",
+          "context": "tip",
+          "sortOrder": 20
+        }
+      ],
+      "cameraPosition": "front_view"
+    }
+  ],
+  "description": {
+    "ar": "تمرين مكتبة: قفز صندوق منخفض.",
+    "en": "Library exercise: Box jump (low)."
+  },
+  "instructions": {
+    "ar": "حافظ على عمود فقري محايد وتنفس بثبات وتوقف عند أي ألم حاد.",
+    "en": "Maintain neutral spine, steady breathing, and stop if sharp pain appears."
+  },
+  "reportMetrics": {
+    "primary": [
+      "FORM_SCORE"
+    ],
+    "excluded": [
+      "HOLD_DURATION",
+      "WEIGHT",
+      "VOLUME",
+      "EST_1RM"
+    ]
+  },
+  "hasPositionChecks": true,
+  "_database": {
+    "id": "657b8bf2-acac-496a-aff2-030a4a2bc218",
+    "categoryId": "a672c3d3-4449-4f74-bd8e-be73a0035e88",
+    "countingMethodId": "f4d48aef-1606-4f23-8c61-7b4a2546f990",
+    "publishedAt": "2026-04-20T17:26:25.103Z",
+    "createdAt": "2026-04-20T17:26:25.104Z",
+    "updatedAt": "2026-04-20T17:26:34.271Z",
+    "deletedAt": null,
+    "isFeatured": false,
+    "createdBy": null,
+    "updatedBy": null,
+    "repCountingConfig": null,
+    "bilateralConfig": null,
+    "isBilateral": false,
+    "supportsWeight": false,
+    "minWeight": null,
+    "maxWeight": null,
+    "defaultWeight": null,
+    "reportMetrics": {
+      "mode": "reps",
+      "version": 1,
+      "primaryKpi": "repQuality",
+      "secondaryKpis": [
+        "avgFormScore",
+        "avgRom"
+      ]
+    },
+    "media": [],
+    "poseVariants": [
+      {
+        "id": "127aad0d-96a8-4c30-ba19-654f40906d78",
+        "sortOrder": 1,
+        "description": null,
+        "trackedJointsConfig": [
+          {
+            "role": "primary",
+            "joint": "left_knee",
+            "upRange": {
+              "pad": {
+                "max": 180,
+                "min": 140
+              },
+              "normal": {
+                "max": 180,
+                "min": 150
+              },
+              "perfect": {
+                "max": 180,
+                "min": 160
+              }
+            },
+            "downRange": {
+              "pad": {
+                "max": 115,
+                "min": 35
+              },
+              "danger": {
+                "max": 25,
+                "min": 0
+              },
+              "normal": {
+                "max": 105,
+                "min": 45
+              },
+              "perfect": {
+                "max": 95,
+                "min": 55
+              },
+              "warning": {
+                "max": 38,
+                "min": 25
+              }
+            },
+            "startPose": {
+              "max": 180,
+              "min": 140
+            },
+            "pairedWith": "right_knee",
+            "stateMessages": {
+              "pad": {
+                "down": {
+                  "ar": "مقبول — قلل الارتفاع تدريجياً",
+                  "en": "Acceptable — lower box height gradually"
+                }
+              },
+              "danger": {
+                "down": {
+                  "ar": "توقف — خطر على الركبة",
+                  "en": "Stop — knee risk"
+                }
+              },
+              "normal": {
+                "up": {
+                  "ar": "جيد — اضغط أكثر في الانطلاق",
+                  "en": "Good — drive harder on takeoff"
+                },
+                "down": {
+                  "ar": "جيد — ثنِ الركبتين أكثر عند الهبوط",
+                  "en": "Good — bend knees more on landing"
+                }
+              },
+              "perfect": {
+                "up": {
+                  "ar": "ممتاز! انطلاقة قوية",
+                  "en": "Perfect! Powerful takeoff"
+                },
+                "down": {
+                  "ar": "ممتاز! هبوط ممتص",
+                  "en": "Perfect! Soft landing"
+                }
+              },
+              "warning": {
+                "down": {
+                  "ar": "هبوط صلب — خفف الارتفاع",
+                  "en": "Hard landing — reduce height"
+                }
+              }
+            }
+          },
+          {
+            "role": "primary",
+            "joint": "right_knee",
+            "upRange": {
+              "pad": {
+                "max": 180,
+                "min": 140
+              },
+              "normal": {
+                "max": 180,
+                "min": 150
+              },
+              "perfect": {
+                "max": 180,
+                "min": 160
+              }
+            },
+            "downRange": {
+              "pad": {
+                "max": 115,
+                "min": 35
+              },
+              "danger": {
+                "max": 25,
+                "min": 0
+              },
+              "normal": {
+                "max": 105,
+                "min": 45
+              },
+              "perfect": {
+                "max": 95,
+                "min": 55
+              },
+              "warning": {
+                "max": 38,
+                "min": 25
+              }
+            },
+            "startPose": {
+              "max": 180,
+              "min": 140
+            },
+            "pairedWith": "left_knee",
+            "stateMessages": {
+              "pad": {
+                "down": {
+                  "ar": "مقبول — قلل الارتفاع تدريجياً",
+                  "en": "Acceptable — lower box height gradually"
+                }
+              },
+              "danger": {
+                "down": {
+                  "ar": "توقف — خطر على الركبة",
+                  "en": "Stop — knee risk"
+                }
+              },
+              "normal": {
+                "up": {
+                  "ar": "جيد — اضغط أكثر في الانطلاق",
+                  "en": "Good — drive harder on takeoff"
+                },
+                "down": {
+                  "ar": "جيد — ثنِ الركبتين أكثر عند الهبوط",
+                  "en": "Good — bend knees more on landing"
+                }
+              },
+              "perfect": {
+                "up": {
+                  "ar": "ممتاز! انطلاقة قوية",
+                  "en": "Perfect! Powerful takeoff"
+                },
+                "down": {
+                  "ar": "ممتاز! هبوط ممتص",
+                  "en": "Perfect! Soft landing"
+                }
+              },
+              "warning": {
+                "down": {
+                  "ar": "هبوط صلب — خفف الارتفاع",
+                  "en": "Hard landing — reduce height"
+                }
+              }
+            }
+          }
+        ]
+      }
+    ],
+    "validationWarning": null
+  }
+}
