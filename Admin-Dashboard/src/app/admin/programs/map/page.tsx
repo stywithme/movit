@@ -2,7 +2,9 @@
 
 import { useEffect, useState, useMemo } from 'react';
 import Link from 'next/link';
-import { Card, CardHeader, CardTitle, CardContent, Badge } from '@/components/ui';
+import { useRouter, useSearchParams } from 'next/navigation';
+import { toast } from 'react-hot-toast';
+import { Card, CardHeader, CardTitle, CardContent, Badge, Button, Input } from '@/components/ui';
 import { ArrowLeft, RefreshCw, ArrowRight } from 'lucide-react';
 import { LocalizedText } from '@/lib/types/localized';
 
@@ -18,6 +20,7 @@ interface Program {
   name: LocalizedText;
   slug: string;
   type?: string;
+  programDomain?: string;
   difficulty: 'beginner' | 'intermediate' | 'advanced';
   durationWeeks: number;
   isPublished: boolean;
@@ -35,6 +38,16 @@ const TYPE_COLORS: Record<string, { bg: string; text: string; border: string }> 
   therapeutic: { bg: 'bg-purple-50', text: 'text-purple-700', border: 'border-purple-200' },
 };
 
+function mapProgramDomainToCellType(program: Program): string {
+  if (program.programDomain) {
+    const d = program.programDomain.toLowerCase();
+    if (d === 'mobility') return 'mobility';
+    if (d === 'therapeutic') return 'therapeutic';
+    return 'training';
+  }
+  return program.type || 'training';
+}
+
 const DIFFICULTY_VARIANT: Record<string, 'default' | 'primary' | 'success' | 'warning' | 'error' | 'purple' | 'orange' | 'teal'> = {
   beginner: 'success',
   intermediate: 'warning',
@@ -42,9 +55,13 @@ const DIFFICULTY_VARIANT: Record<string, 'default' | 'primary' | 'success' | 'wa
 };
 
 export default function ProgramsMapPage() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
   const [programs, setPrograms] = useState<Program[]>([]);
   const [levels, setLevels] = useState<Level[]>([]);
   const [loading, setLoading] = useState(true);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [showPublishedOnly, setShowPublishedOnly] = useState(false);
 
   const fetchData = async () => {
     setLoading(true);
@@ -80,15 +97,35 @@ export default function ProgramsMapPage() {
     fetchData();
   }, []);
 
+  const highlightedProgramId = searchParams.get('programId');
+
+  const filteredPrograms = useMemo(() => {
+    const query = searchQuery.trim().toLowerCase();
+
+    return programs.filter((program) => {
+      if (showPublishedOnly && !program.isPublished) return false;
+      if (!query) return true;
+
+      return (
+        program.slug.toLowerCase().includes(query) ||
+        program.name.en.toLowerCase().includes(query) ||
+        program.name.ar.toLowerCase().includes(query)
+      );
+    });
+  }, [programs, searchQuery, showPublishedOnly]);
+
   const programsByCell = useMemo(() => {
     const map: Record<string, Program[]> = {};
-    programs.forEach((program) => {
-      const type = program.type || 'training';
-      const minLevel = program.levelRangeMin ?? 0;
-      const maxLevel = program.levelRangeMax ?? levels.length - 1;
+    const minOrder = levels[0]?.order ?? 1;
+    const maxOrder = levels[levels.length - 1]?.order ?? levels.length;
 
-      levels.forEach((level, idx) => {
-        if (idx >= minLevel && idx <= maxLevel) {
+    filteredPrograms.forEach((program) => {
+      const type = mapProgramDomainToCellType(program);
+      const minLevel = program.levelRangeMin ?? minOrder;
+      const maxLevel = program.levelRangeMax ?? maxOrder;
+
+      levels.forEach((level) => {
+        if (level.order >= minLevel && level.order <= maxLevel) {
           const key = `${type}-${level.id}`;
           if (!map[key]) map[key] = [];
           map[key].push(program);
@@ -96,7 +133,7 @@ export default function ProgramsMapPage() {
       });
     });
     return map;
-  }, [programs, levels]);
+  }, [filteredPrograms, levels]);
 
   const connectionsMap = useMemo(() => {
     const map = new Map<string, string>();
@@ -107,6 +144,25 @@ export default function ProgramsMapPage() {
     });
     return map;
   }, [programs]);
+
+  const createHereHref = (type: typeof PROGRAM_TYPES[number], level: Level) =>
+    `/admin/programs/new?programDomain=${type.toUpperCase()}&levelRangeMin=${level.order}&levelRangeMax=${level.order}&source=map`;
+
+  const handleDuplicateAndEdit = async (programId: string) => {
+    try {
+      const res = await fetch(`/api/programs/${programId}/duplicate`, { method: 'POST' });
+      const data = await res.json().catch(() => null);
+      if (res.ok && data?.success && data?.data?.id) {
+        toast.success('Program duplicated');
+        router.push(`/admin/programs/${data.data.id}/edit`);
+      } else {
+        toast.error(data?.error || 'Failed to duplicate program');
+      }
+    } catch (error) {
+      console.error('Error duplicating program from map:', error);
+      toast.error('Failed to duplicate program');
+    }
+  };
 
   return (
     <div className="space-y-6">
@@ -124,13 +180,25 @@ export default function ProgramsMapPage() {
             <p className="text-gray-600 mt-1">Visual overview of programs across levels and types</p>
           </div>
         </div>
-        <button
-          onClick={fetchData}
-          className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
-        >
-          <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
-          Refresh
-        </button>
+        <div className="flex items-center gap-3">
+          <Link href="/admin/programs/new?programDomain=TRAINING">
+            <Button variant="secondary">New Training</Button>
+          </Link>
+          <Link href="/admin/programs/new?programDomain=MOBILITY">
+            <Button variant="secondary">New Mobility</Button>
+          </Link>
+          <Link href="/admin/programs/new?programDomain=THERAPEUTIC">
+            <Button variant="secondary">New Therapeutic</Button>
+          </Link>
+          <Button
+            type="button"
+            variant="outline"
+            onClick={fetchData}
+            icon={<RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />}
+          >
+            Refresh
+          </Button>
+        </div>
       </div>
 
       {/* Legend */}
@@ -149,6 +217,44 @@ export default function ProgramsMapPage() {
           indicates next program in sequence
         </span>
       </div>
+
+      <Card>
+        <CardContent className="pt-6">
+          <div className="flex flex-wrap items-end gap-4">
+            <div className="min-w-[260px] flex-1">
+              <label className="mb-1 block text-sm font-medium text-gray-700">Search in map</label>
+              <Input
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder="Search by name or slug..."
+              />
+            </div>
+
+            <label className="flex items-center gap-2 rounded-lg border border-gray-200 px-3 py-2 text-sm text-gray-700">
+              <input
+                type="checkbox"
+                checked={showPublishedOnly}
+                onChange={(e) => setShowPublishedOnly(e.target.checked)}
+                className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+              />
+              Published only
+            </label>
+
+            {(searchQuery || showPublishedOnly) ? (
+              <Button
+                type="button"
+                variant="ghost"
+                onClick={() => {
+                  setSearchQuery('');
+                  setShowPublishedOnly(false);
+                }}
+              >
+                Reset
+              </Button>
+            ) : null}
+          </div>
+        </CardContent>
+      </Card>
 
       {loading ? (
         <Card className="animate-pulse">
@@ -209,29 +315,61 @@ export default function ProgramsMapPage() {
                             className="flex-1 min-w-[180px] px-2 py-2 border-r border-gray-50 last:border-r-0"
                           >
                             <div className="space-y-2">
+                              <Link
+                                href={createHereHref(type, level)}
+                                className="inline-flex items-center rounded-md border border-dashed border-gray-300 px-2 py-1 text-[11px] font-medium text-gray-600 hover:border-blue-300 hover:text-blue-700"
+                              >
+                                Create here
+                              </Link>
                               {cellPrograms.map((program) => {
                                 const hasNext = connectionsMap.has(program.id);
                                 return (
                                   <div key={program.id} className="relative">
-                                    <Link
-                                      href={`/admin/programs/${program.id}/edit`}
-                                      className={`block p-2.5 rounded-lg border ${typeColors.border} ${typeColors.bg} hover:shadow-md transition-all group`}
+                                    <div
+                                      className={`rounded-lg border ${typeColors.border} ${typeColors.bg} ${
+                                        highlightedProgramId === program.id
+                                          ? 'ring-2 ring-blue-300 border-blue-400'
+                                          : ''
+                                      }`}
                                     >
-                                      <p className="text-xs font-semibold text-gray-900 leading-snug group-hover:text-blue-600 transition-colors">
-                                        {program.name?.en || program.slug}
-                                      </p>
-                                      <div className="flex items-center gap-1.5 mt-1.5">
-                                        <Badge
-                                          variant={DIFFICULTY_VARIANT[program.difficulty] || 'default'}
-                                          size="sm"
+                                      <Link
+                                        href={`/admin/programs/${program.id}/edit`}
+                                        className="block p-2.5 hover:shadow-md transition-all group rounded-t-lg"
+                                      >
+                                        <p className="text-xs font-semibold text-gray-900 leading-snug group-hover:text-blue-600 transition-colors">
+                                          {program.name?.en || program.slug}
+                                        </p>
+                                        <div className="flex items-center gap-1.5 mt-1.5">
+                                          <Badge
+                                            variant={DIFFICULTY_VARIANT[program.difficulty] || 'default'}
+                                            size="sm"
+                                          >
+                                            {program.difficulty}
+                                          </Badge>
+                                          <span className="text-[10px] text-gray-500">
+                                            {program.durationWeeks}w
+                                          </span>
+                                          {!program.isPublished ? (
+                                            <span className="text-[10px] text-amber-700">draft</span>
+                                          ) : null}
+                                        </div>
+                                      </Link>
+                                      <div className="flex items-center justify-between border-t border-white/70 px-2.5 py-2">
+                                        <Link
+                                          href={`/admin/programs/${program.id}/edit`}
+                                          className="text-[11px] font-medium text-blue-700 hover:text-blue-800"
                                         >
-                                          {program.difficulty}
-                                        </Badge>
-                                        <span className="text-[10px] text-gray-500">
-                                          {program.durationWeeks}w
-                                        </span>
+                                          Edit
+                                        </Link>
+                                        <button
+                                          type="button"
+                                          onClick={() => handleDuplicateAndEdit(program.id)}
+                                          className="text-[11px] font-medium text-gray-600 hover:text-gray-900"
+                                        >
+                                          Duplicate &amp; Edit
+                                        </button>
                                       </div>
-                                    </Link>
+                                    </div>
                                     {hasNext && (
                                       <div className="absolute -right-3 top-1/2 -translate-y-1/2 z-10">
                                         <div className="h-5 w-5 rounded-full bg-white border-2 border-gray-300 flex items-center justify-center shadow-sm">
@@ -265,15 +403,15 @@ export default function ProgramsMapPage() {
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
           <Card>
             <CardContent className="pt-6 text-center">
-              <p className="text-sm text-gray-500">Total Programs</p>
-              <p className="text-2xl font-bold text-gray-900 mt-1">{programs.length}</p>
+              <p className="text-sm text-gray-500">Visible Programs</p>
+              <p className="text-2xl font-bold text-gray-900 mt-1">{filteredPrograms.length}</p>
             </CardContent>
           </Card>
           <Card>
             <CardContent className="pt-6 text-center">
-              <p className="text-sm text-gray-500">Published</p>
+              <p className="text-sm text-gray-500">Published Visible</p>
               <p className="text-2xl font-bold text-green-600 mt-1">
-                {programs.filter((p) => p.isPublished).length}
+                {filteredPrograms.filter((p) => p.isPublished).length}
               </p>
             </CardContent>
           </Card>

@@ -179,3 +179,102 @@ data class ReassessmentData(
     val notes: String? = null,
     val createdAt: String
 )
+
+// ── Effective plan & overrides (Blueprint) ──
+
+data class EffectivePlanApiResponse(
+    val success: Boolean,
+    val data: EffectivePlanPayload? = null,
+    val error: String? = null
+)
+
+data class EffectivePlanPayload(
+    val userProgramId: String,
+    val programId: String?,
+    val weekNumber: Int,
+    val dayNumber: Int,
+    val sessions: List<EffectivePlanSessionData>
+)
+
+data class EffectivePlanSessionData(
+    val id: String,
+    val name: Map<String, String>?,
+    val sortOrder: Int,
+    val items: List<EffectivePlanItemData>
+)
+
+data class EffectivePlanItemData(
+    val id: String,
+    val type: String,
+    val exerciseId: String? = null,
+    val sets: Int? = null,
+    val targetReps: Int? = null,
+    val targetDuration: Int? = null,
+    val restBetweenSetsMs: Int? = null,
+    val weightKg: Double? = null,
+    val weightPerSet: List<Double>? = null,
+    val notes: Map<String, String>? = null,
+    val restDurationMs: Int? = null,
+    val sortOrder: Int,
+    val role: String? = null,
+    val intent: String? = null,
+    val coachingNotes: Map<String, @JvmSuppressWildcards Any>? = null,
+    val skipped: Boolean? = null,
+    val suggestion: EffectivePlanSuggestion? = null
+)
+
+data class EffectivePlanSuggestion(
+    val suggestedWeightKg: Double? = null,
+    val suggestedReps: Int? = null,
+    val suggestedSets: Int? = null,
+    val suggestedDuration: Int? = null,
+    val source: String? = null
+)
+
+data class UserProgramOverridesApiResponse(
+    val success: Boolean,
+    val data: List<UserProgramOverrideData>? = null,
+    val error: String? = null
+)
+
+data class UserProgramOverrideData(
+    val id: String,
+    val userProgramId: String,
+    val weekNumber: Int,
+    val dayNumber: Int,
+    val sessionItemId: String,
+    val overrideType: String,
+    val reasonCode: String? = null,
+    val data: Map<String, @JvmSuppressWildcards Any>? = null,
+    val appliedBy: String? = null,
+    val createdAt: String? = null
+)
+
+data class UserProgramOverrideCreateApiResponse(
+    val success: Boolean,
+    val data: UserProgramOverrideData? = null,
+    val error: String? = null
+)
+
+data class ProgramCompleteApiResponse(
+    val success: Boolean,
+    val data: ProgramCompleteData? = null,
+    val error: String? = null
+)
+
+data class ProgramCompleteData(
+    val nextAction: String,
+    val nextProgramId: String? = null,
+    val reassessmentTemplateId: String? = null
+)
+
+data class TrainingProfileApiResponse(
+    val success: Boolean,
+    val data: TrainingProfilePayload? = null,
+    val error: String? = null
+)
+
+data class TrainingProfilePayload(
+    val trainingGoal: String? = null,
+    val profile: Map<String, @JvmSuppressWildcards Any?>? = null
+)

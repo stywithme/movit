@@ -29,21 +29,25 @@ import com.trainingvalidator.poc.ui.utils.currentLanguage
 import com.trainingvalidator.poc.R
 import com.trainingvalidator.poc.databinding.ActivityProgramSessionBinding
 import com.trainingvalidator.poc.network.ApiClient
+import com.trainingvalidator.poc.network.EffectivePlanPayload
 import com.trainingvalidator.poc.storage.AuthManager
 import com.trainingvalidator.poc.storage.DayCustomizationStore
 import com.trainingvalidator.poc.storage.ExerciseRepository
 import com.trainingvalidator.poc.storage.ProgramRepository
 import com.trainingvalidator.poc.storage.ProgramSessionReportStore
+import com.trainingvalidator.poc.training.config.SettingsManager
 import com.trainingvalidator.poc.training.models.ExerciseConfig
 import com.trainingvalidator.poc.training.models.LocalizedText
 import com.trainingvalidator.poc.training.models.ProgramConfig
 import com.trainingvalidator.poc.training.models.ProgramDay
+import com.trainingvalidator.poc.training.models.ProgramSession
 import com.trainingvalidator.poc.training.models.ProgramSessionItem
 import androidx.lifecycle.lifecycleScope
 import com.trainingvalidator.poc.ui.train.TrainingActivity
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import java.util.Locale
 
 /**
  * ProgramSessionActivity — Full Day View
@@ -56,6 +60,11 @@ import kotlinx.coroutines.withContext
  * - Offline-first persistence via DayCustomizationStore
  */
 class ProgramSessionActivity : AppCompatActivity() {
+
+    private enum class OverrideSyncKind {
+        ADJUST,
+        REPLACE
+    }
 
     companion object {
         const val EXTRA_PROGRAM_SLUG = "program_slug"
@@ -79,6 +88,7 @@ class ProgramSessionActivity : AppCompatActivity() {
     private var programId: String? = null
     private var programSlug: String? = null
     private var targetSessionId: String? = null
+    private var currentUserProgramId: String? = null
 
     /** Current list of customized sessions (the source of truth for display) */
     private var sessions = mutableListOf<DayCustomizationStore.CustomizedSession>()
@@ -163,6 +173,7 @@ class ProgramSessionActivity : AppCompatActivity() {
         lifecycleScope.launch {
             val programRepo = ProgramRepository.getInstance(this@ProgramSessionActivity)
             val exerciseRepo = ExerciseRepository.getInstance(this@ProgramSessionActivity)
+            currentUserProgramId = null
 
             withContext(Dispatchers.IO) {
                 exerciseRepo.initialize(autoSync = true)
@@ -211,13 +222,49 @@ class ProgramSessionActivity : AppCompatActivity() {
 
             day = resolvedDay
 
-            // Load effective sessions (customized or original)
-            val effectiveSessions = customizationStore.getEffectiveSessions(
+            // Load effective sessions: local customization wins; else server effective plan (progression + overrides)
+            val baseSessions = customizationStore.getEffectiveSessions(
                 programId = resolvedProgram.id,
                 weekNumber = weekNumber,
                 dayNumber = dayNumber,
                 originalSessions = resolvedDay.sessions
             )
+            var effectiveSessions = baseSessions
+
+            val activeUp = programRepo.getActiveUserProgramExport()
+            val token = AuthManager.getAccessToken(this@ProgramSessionActivity)
+            if (activeUp != null && activeUp.isActive && activeUp.programId == resolvedProgram.id) {
+                currentUserProgramId = activeUp.id
+            }
+            if (activeUp != null &&
+                activeUp.isActive &&
+                activeUp.programId == resolvedProgram.id &&
+                !customizationStore.hasCustomization(resolvedProgram.id, weekNumber, dayNumber) &&
+                !token.isNullOrBlank()
+            ) {
+                val mapped = withContext(Dispatchers.IO) {
+                    try {
+                        val resp = ApiClient.mobileSyncApi.getEffectivePlan(
+                            currentUserProgramId ?: activeUp.id,
+                            "Bearer $token",
+                            weekNumber,
+                            dayNumber
+                        )
+                        val body = resp.body()
+                        if (resp.isSuccessful && body?.success == true && body.data != null) {
+                            mapEffectivePlanToCustomizedSessions(body.data, resolvedDay.sessions, exerciseRepo)
+                        } else {
+                            null
+                        }
+                    } catch (e: Exception) {
+                        Log.w(TAG, "getEffectivePlan failed", e)
+                        null
+                    }
+                }
+                if (mapped != null) {
+                    effectiveSessions = mapped
+                }
+            }
 
             sessions.clear()
             sessions.addAll(effectiveSessions)
@@ -601,7 +648,7 @@ class ProgramSessionActivity : AppCompatActivity() {
         val sets = item.sets ?: 1
         val weight = item.weightKg
 
-        return when {
+        val base = when {
             item.targetDuration != null && weight != null && weight > 0 ->
                 getString(R.string.ds_sets_hold_weight_format, sets, item.targetDuration, weight)
             item.targetDuration != null ->
@@ -613,6 +660,13 @@ class ProgramSessionActivity : AppCompatActivity() {
             else ->
                 getString(R.string.ds_sets_only_format, sets)
         }
+
+        if (!SettingsManager.isAdvancedTrainingDisplay()) {
+            return base
+        }
+
+        val sourceLabel = formatSuggestionSource(item.suggestionSource) ?: return base
+        return "$base\n$sourceLabel"
     }
 
     private fun updateBottomBar() {
@@ -789,17 +843,28 @@ class ProgramSessionActivity : AppCompatActivity() {
     // Customization: Item Operations
     // ═══════════════════════════════════════════════════════════
 
-    private fun updateItemInSession(sessionId: String, itemIndex: Int, updatedItem: ProgramSessionItem) {
+    private fun updateItemInSession(
+        sessionId: String,
+        itemIndex: Int,
+        updatedItem: ProgramSessionItem,
+        overrideSyncKind: OverrideSyncKind = OverrideSyncKind.ADJUST
+    ) {
         val sessionIndex = sessions.indexOfFirst { it.id == sessionId }
         if (sessionIndex < 0) return
 
         val session = sessions[sessionIndex]
         val updatedItems = session.items.toMutableList()
+        var originalItem: ProgramSessionItem? = null
         if (itemIndex >= 0 && itemIndex < updatedItems.size) {
+            originalItem = updatedItems[itemIndex]
             updatedItems[itemIndex] = updatedItem
         }
         sessions[sessionIndex] = session.copy(items = updatedItems)
         persistCustomizations()
+        when (overrideSyncKind) {
+            OverrideSyncKind.REPLACE -> syncReplaceOverride(originalItem, updatedItem)
+            OverrideSyncKind.ADJUST -> syncAdjustOverride(originalItem, updatedItem)
+        }
         renderAllSessions()
     }
 
@@ -809,11 +874,13 @@ class ProgramSessionActivity : AppCompatActivity() {
 
         val session = sessions[sessionIndex]
         val updatedItems = session.items.toMutableList()
+        var removedItem: ProgramSessionItem? = null
         if (itemIndex >= 0 && itemIndex < updatedItems.size) {
-            updatedItems.removeAt(itemIndex)
+            removedItem = updatedItems.removeAt(itemIndex)
         }
         sessions[sessionIndex] = session.copy(items = updatedItems)
         persistCustomizations()
+        syncSkipOverride(removedItem)
         renderAllSessions()
     }
 
@@ -823,9 +890,12 @@ class ProgramSessionActivity : AppCompatActivity() {
 
         val session = sessions[sessionIndex]
         val updatedItems = session.items.toMutableList()
-        updatedItems.add(item.copy(sortOrder = updatedItems.size))
+        val anchorItem = updatedItems.lastOrNull { !it.serverItemId.isNullOrBlank() }
+        val appendedItem = item.copy(sortOrder = updatedItems.size)
+        updatedItems.add(appendedItem)
         sessions[sessionIndex] = session.copy(items = updatedItems)
         persistCustomizations()
+        syncAddOverride(anchorItem, appendedItem)
         renderAllSessions()
     }
 
@@ -873,7 +943,7 @@ class ProgramSessionActivity : AppCompatActivity() {
                 row.setOnClickListener {
                     val updated = item.copy(exerciseSlug = ex.fileName)
                     exerciseNameMap[ex.fileName] = ex.name.get(language).ifBlank { ex.name.en }
-                    updateItemInSession(sessionId, itemIndex, updated)
+                    updateItemInSession(sessionId, itemIndex, updated, OverrideSyncKind.REPLACE)
                     dialog.dismiss()
                 }
                 layoutSimilar.addView(row)
@@ -1144,10 +1214,9 @@ class ProgramSessionActivity : AppCompatActivity() {
             Log.w(TAG, "Skip customization sync: missing access token")
             return
         }
-        val programRepo = ProgramRepository.getInstance(this)
-        val userProgramId = programRepo.getActiveUserProgramId()
+        val userProgramId = currentUserProgramId
         if (userProgramId.isNullOrBlank()) {
-            Log.w(TAG, "Skip customization sync: missing active userProgramId")
+            Log.w(TAG, "Skip customization sync: current screen is not bound to an active userProgramId")
             return
         }
 
@@ -1320,6 +1389,239 @@ class ProgramSessionActivity : AppCompatActivity() {
     // ═══════════════════════════════════════════════════════════
     // Helpers
     // ═══════════════════════════════════════════════════════════
+
+    /**
+     * Maps server effective plan to [DayCustomizationStore.CustomizedSession] list.
+     * Returns null if payload cannot be fully resolved (missing exercise id in cache).
+     */
+    private fun mapEffectivePlanToCustomizedSessions(
+        payload: EffectivePlanPayload,
+        originals: List<ProgramSession>,
+        exerciseRepo: ExerciseRepository
+    ): List<DayCustomizationStore.CustomizedSession> {
+        if (payload.sessions.isEmpty()) return emptyList()
+        val origById = originals.associateBy { it.id }
+        val out = mutableListOf<DayCustomizationStore.CustomizedSession>()
+        for (serverSession in payload.sessions.sortedBy { it.sortOrder }) {
+            val orig = origById[serverSession.id]
+            val name = localizedFromEffectiveName(serverSession.name, orig?.name)
+            val items = mutableListOf<ProgramSessionItem>()
+            for (serverItem in serverSession.items.sortedBy { it.sortOrder }) {
+                if (serverItem.skipped == true) continue
+                when (serverItem.type.lowercase(Locale.US)) {
+                    "exercise" -> {
+                        val ex = serverItem.exerciseId?.let { exerciseRepo.getExerciseById(it) }
+                        val resolvedSets = serverItem.sets ?: serverItem.suggestion?.suggestedSets
+                        val resolvedReps = serverItem.targetReps ?: serverItem.suggestion?.suggestedReps
+                        val resolvedDuration = serverItem.targetDuration ?: serverItem.suggestion?.suggestedDuration
+                        val resolvedWeight = serverItem.weightKg ?: serverItem.suggestion?.suggestedWeightKg
+                        if (ex != null) {
+                            items.add(
+                                ProgramSessionItem(
+                                    type = "exercise",
+                                    serverItemId = serverItem.id,
+                                    exerciseSlug = ex.fileName,
+                                    sets = resolvedSets,
+                                    targetReps = resolvedReps,
+                                    targetDuration = resolvedDuration,
+                                    restBetweenSetsMs = serverItem.restBetweenSetsMs?.toLong(),
+                                    weightKg = resolvedWeight?.toFloat(),
+                                    weightPerSet = serverItem.weightPerSet?.map { v -> v.toFloat() },
+                                    notes = notesFromApi(serverItem.notes),
+                                    restDurationMs = serverItem.restDurationMs?.toLong(),
+                                    suggestionSource = serverItem.suggestion?.source,
+                                    sortOrder = serverItem.sortOrder
+                                )
+                            )
+                        } else {
+                            val fallbackOriginal = orig
+                                ?.items
+                                ?.firstOrNull { item ->
+                                    item.type == "exercise" && item.sortOrder == serverItem.sortOrder
+                                }
+                            if (fallbackOriginal != null) {
+                                items.add(
+                                    fallbackOriginal.copy(
+                                        serverItemId = serverItem.id,
+                                        sets = resolvedSets ?: fallbackOriginal.sets,
+                                        targetReps = resolvedReps ?: fallbackOriginal.targetReps,
+                                        targetDuration = resolvedDuration ?: fallbackOriginal.targetDuration,
+                                        restBetweenSetsMs = serverItem.restBetweenSetsMs?.toLong()
+                                            ?: fallbackOriginal.restBetweenSetsMs,
+                                        weightKg = resolvedWeight?.toFloat() ?: fallbackOriginal.weightKg,
+                                        weightPerSet = serverItem.weightPerSet?.map { value -> value.toFloat() }
+                                            ?: fallbackOriginal.weightPerSet,
+                                        notes = notesFromApi(serverItem.notes) ?: fallbackOriginal.notes,
+                                        restDurationMs = serverItem.restDurationMs?.toLong()
+                                            ?: fallbackOriginal.restDurationMs,
+                                        suggestionSource = serverItem.suggestion?.source ?: fallbackOriginal.suggestionSource,
+                                        sortOrder = serverItem.sortOrder
+                                    )
+                                )
+                            } else {
+                                Log.w(
+                                    TAG,
+                                    "Skipping unresolved effective-plan item session=${serverSession.id} sortOrder=${serverItem.sortOrder}"
+                                )
+                            }
+                        }
+                    }
+                    "rest" -> {
+                        items.add(
+                            ProgramSessionItem(
+                                type = "rest",
+                                serverItemId = serverItem.id,
+                                restDurationMs = serverItem.restDurationMs?.toLong()
+                                    ?: ((serverItem.targetDuration ?: 60) * 1000L),
+                                suggestionSource = serverItem.suggestion?.source,
+                                sortOrder = serverItem.sortOrder
+                            )
+                        )
+                    }
+                    else -> { /* ignore unknown line types */ }
+                }
+            }
+            out.add(
+                DayCustomizationStore.CustomizedSession(
+                    id = serverSession.id,
+                    name = name,
+                    sortOrder = serverSession.sortOrder,
+                    items = items
+                )
+            )
+        }
+        return out
+    }
+
+    private fun localizedFromEffectiveName(
+        api: Map<String, String>?,
+        fallback: LocalizedText?
+    ): LocalizedText {
+        if (api != null && (api["en"]?.isNotBlank() == true || api["ar"]?.isNotBlank() == true)) {
+            return LocalizedText(ar = api["ar"] ?: "", en = api["en"] ?: "")
+        }
+        return fallback ?: LocalizedText()
+    }
+
+    private fun notesFromApi(notes: Map<String, String>?): LocalizedText? {
+        if (notes == null || notes.isEmpty()) return null
+        return LocalizedText(ar = notes["ar"] ?: "", en = notes["en"] ?: "")
+    }
+
+    private fun formatSuggestionSource(source: String?): String? {
+        return when (source) {
+            "progression_state" -> getString(R.string.training_suggestion_progression)
+            "template" -> getString(R.string.training_suggestion_template)
+            "goal_default" -> getString(R.string.training_suggestion_goal_default)
+            else -> null
+        }
+    }
+
+    private fun syncReplaceOverride(originalItem: ProgramSessionItem?, updatedItem: ProgramSessionItem) {
+        val slug = updatedItem.exerciseSlug ?: return
+        val exerciseRepo = ExerciseRepository.getInstance(this)
+        val exerciseId = exerciseRepo.getExerciseServerId(slug) ?: return
+        syncOverride(
+            sessionItemId = originalItem?.serverItemId,
+            overrideType = "REPLACE_EXERCISE",
+            data = mapOf("exerciseId" to exerciseId)
+        )
+    }
+
+    private fun syncAdjustOverride(originalItem: ProgramSessionItem?, updatedItem: ProgramSessionItem) {
+        if (originalItem?.serverItemId.isNullOrBlank()) return
+
+        val data = mutableMapOf<String, Any?>()
+        updatedItem.sets?.let { data["sets"] = it }
+        updatedItem.targetReps?.let { data["targetReps"] = it }
+        updatedItem.targetDuration?.let { data["targetDuration"] = it }
+        updatedItem.restBetweenSetsMs?.let { data["restBetweenSetsMs"] = it }
+        updatedItem.restDurationMs?.let { data["restDurationMs"] = it }
+        updatedItem.weightKg?.let { data["weightKg"] = it }
+
+        val slug = updatedItem.exerciseSlug
+        if (!slug.isNullOrBlank()) {
+            ExerciseRepository.getInstance(this).getExerciseServerId(slug)?.let { data["exerciseId"] = it }
+        }
+
+        syncOverride(
+            sessionItemId = originalItem.serverItemId,
+            overrideType = "ADJUST_PRESCRIPTION",
+            data = data
+        )
+    }
+
+    private fun syncSkipOverride(item: ProgramSessionItem?) {
+        syncOverride(
+            sessionItemId = item?.serverItemId,
+            overrideType = "SKIP_ITEM",
+            data = null
+        )
+    }
+
+    private fun syncAddOverride(anchorItem: ProgramSessionItem?, addedItem: ProgramSessionItem) {
+        val anchorId = anchorItem?.serverItemId ?: return
+        val data = mutableMapOf<String, Any?>(
+            "type" to addedItem.type
+        )
+
+        if (addedItem.type == "exercise") {
+            val slug = addedItem.exerciseSlug ?: return
+            val exerciseId = ExerciseRepository.getInstance(this).getExerciseServerId(slug) ?: return
+            data["exerciseId"] = exerciseId
+            addedItem.sets?.let { data["sets"] = it }
+            addedItem.targetReps?.let { data["targetReps"] = it }
+            addedItem.targetDuration?.let { data["targetDuration"] = it }
+            addedItem.restBetweenSetsMs?.let { data["restBetweenSetsMs"] = it }
+            addedItem.weightKg?.let { data["weightKg"] = it }
+        } else {
+            addedItem.restDurationMs?.let { data["restDurationMs"] = it }
+        }
+
+        syncOverride(
+            sessionItemId = anchorId,
+            overrideType = "ADD_ITEM",
+            data = data
+        )
+    }
+
+    private fun syncOverride(
+        sessionItemId: String?,
+        overrideType: String,
+        data: Map<String, Any?>?
+    ) {
+        val userProgramId = currentUserProgramId
+        val token = AuthManager.getAccessToken(this)
+        if (sessionItemId.isNullOrBlank() || userProgramId.isNullOrBlank() || token.isNullOrBlank()) {
+            return
+        }
+
+        val body = mutableMapOf<String, Any?>(
+            "weekNumber" to weekNumber,
+            "dayNumber" to dayNumber,
+            "sessionItemId" to sessionItemId,
+            "overrideType" to overrideType,
+            "reasonCode" to "PREFERENCE"
+        )
+        if (data != null) {
+            body["data"] = data
+        }
+
+        lifecycleScope.launch(Dispatchers.IO) {
+            try {
+                val response = ApiClient.mobileSyncApi.createUserProgramOverride(
+                    userProgramId,
+                    "Bearer $token",
+                    body
+                )
+                if (!response.isSuccessful) {
+                    Log.w(TAG, "Override sync failed type=$overrideType code=${response.code()}")
+                }
+            } catch (e: Exception) {
+                Log.w(TAG, "Override sync error type=$overrideType", e)
+            }
+        }
+    }
 
     private fun getCompletedSessionIds(): Set<String> {
         val pid = programId ?: return emptySet()

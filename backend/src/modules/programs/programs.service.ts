@@ -5,7 +5,9 @@
  */
 
 import { getPrisma } from '@/lib/prisma/client';
+import { legacyTypeToProgramDomain } from '@/lib/program-domain';
 import { Prisma } from '@prisma/client';
+import { getAutoAssignmentReadiness } from './program-assignment';
 import type {
   CreateProgramInput,
   ProgramExport,
@@ -110,6 +112,10 @@ function buildSessionItems(items?: ProgramSessionItemInput[]) {
       restDurationMs: item.restDurationMs ?? undefined,
       sourceWorkoutId: item.sourceWorkoutId ?? undefined,
       sortOrder: item.sortOrder ?? index,
+      allowedSubstitutions: item.allowedSubstitutions ?? item.alternatives ?? [],
+      role: item.role ?? undefined,
+      intent: item.intent ?? undefined,
+      coachingNotes: (item.coachingNotes as object) || undefined,
     })),
   };
 }
@@ -122,12 +128,14 @@ function buildWeeksCreate(weeks?: ProgramWeekInput[]) {
       name: (week.name as object) || undefined,
       description: (week.description as object) || undefined,
       sortOrder: week.sortOrder ?? weekIndex,
+      weekType: week.weekType ?? 'NORMAL',
       days: week.days
         ? {
             create: week.days.map((day, dayIndex) => ({
               dayNumber: day.dayNumber,
               isRestDay: day.isRestDay ?? false,
               name: (day.name as object) || undefined,
+              dayFocus: day.dayFocus ?? undefined,
               sessions: day.sessions
                 ? {
                     create: day.sessions.map((session, sessionIndex) => ({
@@ -145,11 +153,18 @@ function buildWeeksCreate(weeks?: ProgramWeekInput[]) {
 }
 
 export const programService = {
-  async list(filters?: { status?: 'draft' | 'published'; search?: string; page?: number; limit?: number }) {
+  async list(filters?: {
+    status?: 'draft' | 'published';
+    search?: string;
+    page?: number;
+    limit?: number;
+    programDomain?: string;
+    trainingGoal?: string;
+    readiness?: 'ready' | 'incomplete' | 'manual_only';
+  }) {
     const prisma = await getPrisma();
     const page = filters?.page || 1;
     const limit = filters?.limit || 20;
-    const skip = (page - 1) * limit;
 
     const where: Record<string, unknown> = {
       deletedAt: null,
@@ -166,16 +181,46 @@ export const programService = {
         { name: { path: ['ar'], string_contains: filters.search } },
       ];
     }
+    if (filters?.programDomain) {
+      where.programDomain = filters.programDomain;
+    }
+    if (filters?.trainingGoal) {
+      where.trainingGoal = filters.trainingGoal;
+    }
 
-    const [programs, total] = await Promise.all([
-      prisma.program.findMany({
-        where,
-        skip,
-        take: limit,
-        orderBy: { createdAt: 'desc' },
-      }),
-      prisma.program.count({ where }),
-    ]);
+    const rows = await prisma.program.findMany({
+      where,
+      orderBy: { createdAt: 'desc' },
+    });
+
+    const enriched = rows.map((program) => {
+      const readiness = getAutoAssignmentReadiness(program);
+      const entersAutoAssignment =
+        program.programType === 'SYSTEM' ||
+        (program.programType === 'COACH' && program.autoAssignable);
+      const status = !entersAutoAssignment
+        ? 'manual_only'
+        : readiness.ready
+          ? 'ready'
+          : 'incomplete';
+
+      return {
+        ...program,
+        autoAssignmentReadiness: {
+          ...readiness,
+          entersAutoAssignment,
+          status,
+        },
+      };
+    });
+
+    const filtered = filters?.readiness
+      ? enriched.filter((program) => program.autoAssignmentReadiness.status === filters.readiness)
+      : enriched;
+
+    const total = filtered.length;
+    const skip = (page - 1) * limit;
+    const programs = filtered.slice(skip, skip + limit);
 
     return {
       programs,
@@ -222,13 +267,25 @@ export const programService = {
         createdBy,
         updatedBy: createdBy,
         // Prescription metadata
-        type: data.type ?? 'training',
+        programType: data.programType ?? 'SYSTEM',
+        programDomain: data.programDomain ?? legacyTypeToProgramDomain(data.type),
+        trainingGoal: data.trainingGoal ?? undefined,
+        autoAssignable: data.autoAssignable ?? false,
+        version: data.version ?? 1,
+        ownerId: data.ownerId ?? undefined,
+        forkedFromId: data.forkedFromId ?? undefined,
+        coachingNotes: data.coachingNotes as object ?? undefined,
+        weeklySessionTarget: data.weeklySessionTarget ?? undefined,
+        estimatedSessionMinutes: data.estimatedSessionMinutes ?? undefined,
+        targetEquipment: data.targetEquipment as object ?? undefined,
         targetDomain: data.targetDomain ?? undefined,
         targetRegions: data.targetRegions ?? [],
         levelRangeMin: data.levelRangeMin ?? 1,
         levelRangeMax: data.levelRangeMax ?? 5,
-        entryCriteria: data.entryCriteria as object ?? undefined,
-        exitCriteria: data.exitCriteria as object ?? undefined,
+        entryRecommendations:
+          (data.entryRecommendations ?? data.entryCriteria) as object ?? undefined,
+        exitRecommendations:
+          (data.exitRecommendations ?? data.exitCriteria) as object ?? undefined,
         contraindications: data.contraindications ?? [],
         prescriptionPriority: data.prescriptionPriority ?? 100,
         prerequisiteProgramId: data.prerequisiteProgramId ?? undefined,
@@ -256,13 +313,38 @@ export const programService = {
     if (data.isDefault !== undefined) updateData.isDefault = data.isDefault;
     if (data.isPublished !== undefined) updateData.isPublished = data.isPublished;
     // Prescription metadata
-    if (data.type !== undefined) updateData.type = data.type;
+    if (data.programType !== undefined) updateData.programType = data.programType;
+    if (data.programDomain !== undefined) updateData.programDomain = data.programDomain;
+    if (data.type !== undefined && data.programDomain === undefined) {
+      updateData.programDomain = legacyTypeToProgramDomain(data.type);
+    }
+    if (data.trainingGoal !== undefined) updateData.trainingGoal = data.trainingGoal;
+    if (data.autoAssignable !== undefined) updateData.autoAssignable = data.autoAssignable;
+    if (data.version !== undefined) updateData.version = data.version;
+    if (data.ownerId !== undefined) updateData.ownerId = data.ownerId;
+    if (data.forkedFromId !== undefined) updateData.forkedFromId = data.forkedFromId;
+    if (data.coachingNotes !== undefined) updateData.coachingNotes = data.coachingNotes;
+    if (data.weeklySessionTarget !== undefined) {
+      updateData.weeklySessionTarget = data.weeklySessionTarget;
+    }
+    if (data.estimatedSessionMinutes !== undefined) {
+      updateData.estimatedSessionMinutes = data.estimatedSessionMinutes;
+    }
+    if (data.targetEquipment !== undefined) updateData.targetEquipment = data.targetEquipment;
     if (data.targetDomain !== undefined) updateData.targetDomain = data.targetDomain;
     if (data.targetRegions !== undefined) updateData.targetRegions = data.targetRegions;
     if (data.levelRangeMin !== undefined) updateData.levelRangeMin = data.levelRangeMin;
     if (data.levelRangeMax !== undefined) updateData.levelRangeMax = data.levelRangeMax;
-    if (data.entryCriteria !== undefined) updateData.entryCriteria = data.entryCriteria;
-    if (data.exitCriteria !== undefined) updateData.exitCriteria = data.exitCriteria;
+    if (data.entryRecommendations !== undefined) {
+      updateData.entryRecommendations = data.entryRecommendations;
+    } else if (data.entryCriteria !== undefined) {
+      updateData.entryRecommendations = data.entryCriteria;
+    }
+    if (data.exitRecommendations !== undefined) {
+      updateData.exitRecommendations = data.exitRecommendations;
+    } else if (data.exitCriteria !== undefined) {
+      updateData.exitRecommendations = data.exitCriteria;
+    }
     if (data.contraindications !== undefined) updateData.contraindications = data.contraindications;
     if (data.prescriptionPriority !== undefined) updateData.prescriptionPriority = data.prescriptionPriority;
     if (data.prerequisiteProgramId !== undefined) updateData.prerequisiteProgramId = data.prerequisiteProgramId;
@@ -304,6 +386,26 @@ export const programService = {
 
   async publish(id: string, updatedBy?: string) {
     const prisma = await getPrisma();
+    const program = await prisma.program.findUnique({
+      where: { id },
+    });
+    if (!program) {
+      throw new Error('Program not found');
+    }
+
+    const entersAutoAssignment =
+      program.programType === 'SYSTEM' ||
+      (program.programType === 'COACH' && program.autoAssignable);
+
+    if (entersAutoAssignment) {
+      const readiness = getAutoAssignmentReadiness(program);
+      if (!readiness.ready) {
+        throw new Error(
+          `Program is not auto-assignment ready: ${readiness.missingFields.join(', ')}`,
+        );
+      }
+    }
+
     return prisma.program.update({
       where: { id },
       data: { isPublished: true, updatedBy },
@@ -330,6 +432,7 @@ export const programService = {
 
     const weeks = original.weeks.map((week, weekIndex) => ({
       weekNumber: week.weekNumber,
+      weekType: week.weekType,
       name: parseLocalizedText(week.name),
       description: parseLocalizedText(week.description),
       sortOrder: week.sortOrder ?? weekIndex,
@@ -337,6 +440,7 @@ export const programService = {
         dayNumber: day.dayNumber,
         isRestDay: day.isRestDay,
         name: parseLocalizedText(day.name),
+        dayFocus: day.dayFocus ?? undefined,
         sessions: day.sessions.map((session, sessionIndex) => ({
           name: parseLocalizedText(session.name) || { ar: '', en: '' },
           sortOrder: session.sortOrder ?? sessionIndex,
@@ -353,6 +457,10 @@ export const programService = {
             restDurationMs: item.restDurationMs ?? undefined,
             sourceWorkoutId: item.sourceWorkoutId ?? undefined,
             sortOrder: item.sortOrder ?? itemIndex,
+            allowedSubstitutions: item.allowedSubstitutions ?? [],
+            role: item.role ?? undefined,
+            intent: item.intent ?? undefined,
+            coachingNotes: parseLocalizedText(item.coachingNotes),
           })),
         })),
       })),
@@ -367,6 +475,27 @@ export const programService = {
         difficulty: original.difficulty as 'beginner' | 'intermediate' | 'advanced',
         tags: (original.tags as string[]) || undefined,
         isDefault: false,
+        programType: original.programType,
+        programDomain: original.programDomain,
+        trainingGoal: original.trainingGoal ?? undefined,
+        autoAssignable: original.autoAssignable,
+        version: original.version,
+        ownerId: original.ownerId ?? undefined,
+        forkedFromId: original.id,
+        coachingNotes: (original.coachingNotes as Record<string, unknown>) || undefined,
+        weeklySessionTarget: original.weeklySessionTarget ?? undefined,
+        estimatedSessionMinutes: original.estimatedSessionMinutes ?? undefined,
+        targetEquipment: (original.targetEquipment as Record<string, unknown>) ?? undefined,
+        targetDomain: original.targetDomain ?? undefined,
+        targetRegions: original.targetRegions ?? [],
+        levelRangeMin: original.levelRangeMin,
+        levelRangeMax: original.levelRangeMax,
+        entryRecommendations: (original.entryRecommendations as Record<string, unknown>) ?? undefined,
+        exitRecommendations: (original.exitRecommendations as Record<string, unknown>) ?? undefined,
+        contraindications: original.contraindications ?? [],
+        prescriptionPriority: original.prescriptionPriority,
+        prerequisiteProgramId: original.prerequisiteProgramId ?? undefined,
+        nextProgramId: original.nextProgramId ?? undefined,
         weeks,
       },
       createdBy
@@ -379,6 +508,7 @@ export const programService = {
       data: {
         programId,
         weekNumber: week.weekNumber,
+        weekType: week.weekType ?? 'NORMAL',
         name: (week.name as object) || undefined,
         description: (week.description as object) || undefined,
         sortOrder: week.sortOrder ?? 0,
@@ -397,6 +527,7 @@ export const programService = {
       where: { id: weekId },
       data: {
         weekNumber: week.weekNumber ?? existing.weekNumber,
+        weekType: week.weekType ?? existing.weekType,
         name: week.name ? (week.name as object) : undefined,
         description: week.description ? (week.description as object) : undefined,
         sortOrder: week.sortOrder ?? existing.sortOrder,
@@ -456,6 +587,7 @@ export const programService = {
       data: {
         programId,
         weekNumber: targetWeekNumber,
+        weekType: sourceWeek.weekType,
         name: toInputJsonOrNull(sourceWeek.name),
         description: toInputJsonOrNull(sourceWeek.description),
         sortOrder: sourceWeek.sortOrder,
@@ -464,6 +596,7 @@ export const programService = {
             dayNumber: day.dayNumber,
             isRestDay: day.isRestDay,
             name: toInputJsonOrNull(day.name),
+            dayFocus: day.dayFocus ?? undefined,
             sessions: {
               create: day.sessions.map((session) => ({
                 name: toInputJsonOrNull(session.name),
@@ -482,6 +615,10 @@ export const programService = {
                     restDurationMs: item.restDurationMs ?? undefined,
                     sourceWorkoutId: item.sourceWorkoutId ?? undefined,
                     sortOrder: item.sortOrder,
+                    allowedSubstitutions: item.allowedSubstitutions ?? [],
+                    role: item.role ?? undefined,
+                    intent: item.intent ?? undefined,
+                    coachingNotes: toInputJsonOrNull(item.coachingNotes),
                   })),
                 },
               })),
@@ -503,6 +640,7 @@ export const programService = {
         dayNumber: day.dayNumber,
         isRestDay: day.isRestDay ?? false,
         name: (day.name as object) || undefined,
+        dayFocus: day.dayFocus ?? undefined,
         sessions: day.sessions
           ? {
               create: day.sessions.map((session, sessionIndex) => ({
@@ -530,6 +668,7 @@ export const programService = {
         dayNumber: day.dayNumber ?? existing.dayNumber,
         isRestDay: day.isRestDay ?? existing.isRestDay,
         name: day.name ? (day.name as object) : undefined,
+        dayFocus: day.dayFocus !== undefined ? day.dayFocus : undefined,
       },
     });
 
@@ -647,6 +786,10 @@ export const programService = {
         sourceWorkoutId: item.sourceWorkoutId ?? undefined,
         sortOrder: item.sortOrder ?? 0,
         isModified: false,
+        allowedSubstitutions: item.allowedSubstitutions ?? item.alternatives ?? [],
+        role: item.role ?? undefined,
+        intent: item.intent ?? undefined,
+        coachingNotes: (item.coachingNotes as object) || undefined,
       },
     });
   },
@@ -674,6 +817,10 @@ export const programService = {
         sourceWorkoutId: item.sourceWorkoutId ?? undefined,
         sortOrder: item.sortOrder ?? existing.sortOrder,
         isModified: true,
+        allowedSubstitutions: item.allowedSubstitutions ?? item.alternatives ?? undefined,
+        role: item.role ?? undefined,
+        intent: item.intent ?? undefined,
+        coachingNotes: item.coachingNotes ? (item.coachingNotes as object) : undefined,
       },
     });
   },

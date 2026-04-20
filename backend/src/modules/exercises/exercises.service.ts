@@ -8,6 +8,7 @@
 
 import { getPrisma } from '@/lib/prisma/client';
 import { deleteByUrl } from '@/lib/storage';
+import type { LoadCapability, MovementPattern } from '@prisma/client';
 import type { CountingMethodCode, PhaseName } from '@/lib/types/localized';
 import type {
   TrackedJoint,
@@ -66,6 +67,11 @@ interface CreateExerciseInput {
   };
   // Bilateral configuration
   bilateralConfig?: BilateralConfigInput;
+
+  movementPattern?: MovementPattern | null;
+  loadCapability?: LoadCapability | null;
+  familyKey?: string | null;
+  familyOrder?: number | null;
 }
 
 interface UpdateExerciseInput extends Partial<CreateExerciseInput> {
@@ -234,6 +240,10 @@ export const exerciseService = {
         defaultWeight: data.defaultWeight ?? null,
         // Report metrics configuration
         reportMetrics: data.reportMetrics ? (data.reportMetrics as object) : undefined,
+        movementPattern: data.movementPattern ?? undefined,
+        loadCapability: data.loadCapability ?? undefined,
+        familyKey: data.familyKey ?? undefined,
+        familyOrder: data.familyOrder ?? undefined,
         media: data.imageUrl
           ? {
             create: {
@@ -401,6 +411,10 @@ export const exerciseService = {
     if (data.defaultWeight !== undefined) updateData.defaultWeight = data.defaultWeight;
     // Report metrics configuration
     if (data.reportMetrics !== undefined) updateData.reportMetrics = data.reportMetrics;
+    if (data.movementPattern !== undefined) updateData.movementPattern = data.movementPattern;
+    if (data.loadCapability !== undefined) updateData.loadCapability = data.loadCapability;
+    if (data.familyKey !== undefined) updateData.familyKey = data.familyKey;
+    if (data.familyOrder !== undefined) updateData.familyOrder = data.familyOrder;
 
     await prisma.exercise.update({
       where: { id },

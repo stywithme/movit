@@ -20,6 +20,9 @@ export class ProgramsController {
   async list(
     @Query('status') status?: string,
     @Query('search') search?: string,
+    @Query('programDomain') programDomain?: string,
+    @Query('trainingGoal') trainingGoal?: string,
+    @Query('readiness') readiness?: string,
     @Query('page') page?: string,
     @Query('limit') limit?: string
   ) {
@@ -27,6 +30,9 @@ export class ProgramsController {
       const result = await programService.list({
         status: (status as 'draft' | 'published') || undefined,
         search: search || undefined,
+        programDomain: programDomain || undefined,
+        trainingGoal: trainingGoal || undefined,
+        readiness: (readiness as 'ready' | 'incomplete' | 'manual_only') || undefined,
         page: Number.parseInt(page || '1', 10),
         limit: Number.parseInt(limit || '20', 10),
       });
@@ -119,6 +125,16 @@ export class ProgramsController {
       return { success: true, data: program };
     } catch (error) {
       console.error('Error publishing program:', error);
+      if (error instanceof Error) {
+        if (error.message === 'Program not found') {
+          res.status(404);
+          return { success: false, error: error.message };
+        }
+        if (error.message.includes('auto-assignment ready')) {
+          res.status(400);
+          return { success: false, error: error.message };
+        }
+      }
       res.status(500);
       return { success: false, error: 'Failed to publish program' };
     }

@@ -1,0 +1,147 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:padding="20dp">
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/training_goal"
+            android:textColor="@color/text_primary"
+            android:textStyle="bold" />
+
+        <AutoCompleteTextView
+            android:id="@+id/inputTrainingGoal"
+            android:layout_width="match_parent"
+            android:layout_height="48dp"
+            android:layout_marginTop="8dp"
+            android:background="@drawable/bg_input_field"
+            android:inputType="none"
+            android:paddingHorizontal="16dp" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="16dp"
+            android:text="@string/display_mode"
+            android:textColor="@color/text_primary"
+            android:textStyle="bold" />
+
+        <AutoCompleteTextView
+            android:id="@+id/inputTrainingDisplayMode"
+            android:layout_width="match_parent"
+            android:layout_height="48dp"
+            android:layout_marginTop="8dp"
+            android:background="@drawable/bg_input_field"
+            android:inputType="none"
+            android:paddingHorizontal="16dp" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="16dp"
+            android:text="@string/available_days_per_week"
+            android:textColor="@color/text_primary"
+            android:textStyle="bold" />
+
+        <EditText
+            android:id="@+id/inputAvailableDays"
+            android:layout_width="match_parent"
+            android:layout_height="48dp"
+            android:layout_marginTop="8dp"
+            android:background="@drawable/bg_input_field"
+            android:gravity="center_vertical"
+            android:inputType="number"
+            android:paddingHorizontal="16dp" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="16dp"
+            android:text="@string/max_session_minutes"
+            android:textColor="@color/text_primary"
+            android:textStyle="bold" />
+
+        <EditText
+            android:id="@+id/inputMaxSessionMinutes"
+            android:layout_width="match_parent"
+            android:layout_height="48dp"
+            android:layout_marginTop="8dp"
+            android:background="@drawable/bg_input_field"
+            android:gravity="center_vertical"
+            android:inputType="number"
+            android:paddingHorizontal="16dp" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="16dp"
+            android:text="@string/available_equipment"
+            android:textColor="@color/text_primary"
+            android:textStyle="bold" />
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:orientation="vertical">
+
+            <com.google.android.material.checkbox.MaterialCheckBox
+                android:id="@+id/checkEquipmentBodyweight"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="bodyweight"
+                app:buttonTint="@color/primary" />
+
+            <com.google.android.material.checkbox.MaterialCheckBox
+                android:id="@+id/checkEquipmentDumbbell"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="dumbbell"
+                app:buttonTint="@color/primary" />
+
+            <com.google.android.material.checkbox.MaterialCheckBox
+                android:id="@+id/checkEquipmentBands"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="bands"
+                app:buttonTint="@color/primary" />
+
+            <com.google.android.material.checkbox.MaterialCheckBox
+                android:id="@+id/checkEquipmentKettlebell"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="kettlebell"
+                app:buttonTint="@color/primary" />
+
+            <com.google.android.material.checkbox.MaterialCheckBox
+                android:id="@+id/checkEquipmentBarbell"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="barbell"
+                app:buttonTint="@color/primary" />
+
+            <com.google.android.material.checkbox.MaterialCheckBox
+                android:id="@+id/checkEquipmentMachine"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="machine"
+                app:buttonTint="@color/primary" />
+
+            <com.google.android.material.checkbox.MaterialCheckBox
+                android:id="@+id/checkEquipmentCable"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="cable"
+                app:buttonTint="@color/primary" />
+        </LinearLayout>
+
+    </LinearLayout>
+</ScrollView>

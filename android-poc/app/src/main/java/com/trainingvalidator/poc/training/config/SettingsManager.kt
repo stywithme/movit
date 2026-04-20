@@ -354,6 +354,7 @@ object SettingsManager {
     private const val KEY_INDICATOR_TYPE = "indicator_type"
     private const val KEY_VOICE_FEEDBACK_ENABLED = "voice_feedback_enabled"
     private const val KEY_MODEL_TYPE = "model_type"
+    private const val KEY_TRAINING_DISPLAY_MODE = "training_display_mode"
     
     /**
      * Initialize SharedPreferences for runtime settings
@@ -399,4 +400,21 @@ object SettingsManager {
     fun setModelType(type: String) {
         runtimePrefs?.edit()?.putString(KEY_MODEL_TYPE, type)?.apply()
     }
+
+    /**
+     * Get training display mode: "beginner" or "advanced".
+     */
+    fun getTrainingDisplayMode(): String {
+        return runtimePrefs?.getString(KEY_TRAINING_DISPLAY_MODE, "beginner") ?: "beginner"
+    }
+
+    /**
+     * Set training display mode at runtime.
+     */
+    fun setTrainingDisplayMode(mode: String) {
+        val normalized = if (mode == "advanced") "advanced" else "beginner"
+        runtimePrefs?.edit()?.putString(KEY_TRAINING_DISPLAY_MODE, normalized)?.apply()
+    }
+
+    fun isAdvancedTrainingDisplay(): Boolean = getTrainingDisplayMode() == "advanced"
 }

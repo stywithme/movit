@@ -221,6 +221,15 @@ export default function EditExercisePage() {
             switchEvery: (exercise.bilateralConfig as { switchEvery?: number } | null)?.switchEvery || 1,
             startSide: ((exercise.bilateralConfig as { startSide?: string } | null)?.startSide || 'right') as 'left' | 'right',
           },
+          blueprintExerciseMeta: {
+            movementPattern: (exercise as { movementPattern?: string }).movementPattern ?? '',
+            loadCapability: (exercise as { loadCapability?: string }).loadCapability ?? '',
+            familyKey: (exercise as { familyKey?: string }).familyKey ?? '',
+            familyOrder:
+              (exercise as { familyOrder?: number | null }).familyOrder != null
+                ? String((exercise as { familyOrder?: number | null }).familyOrder)
+                : '',
+          },
         });
         
         setExerciseId(exercise.id);

@@ -5,6 +5,14 @@
  */
 
 import type { LocalizedText } from '@/lib/types/localized';
+import type {
+  ProgramDomain,
+  ProgramType,
+  SessionItemIntent,
+  SessionItemRole,
+  TrainingGoal,
+  WeekType,
+} from '@prisma/client';
 
 export type ProgramDifficulty = 'beginner' | 'intermediate' | 'advanced';
 
@@ -24,6 +32,13 @@ export interface ProgramSessionItemInput {
   restDurationMs?: number;
   sourceWorkoutId?: string;
   sortOrder?: number;
+  /** Preferred name; `alternatives` accepted for backward compatibility */
+  allowedSubstitutions?: string[];
+  /** @deprecated use allowedSubstitutions */
+  alternatives?: string[];
+  role?: SessionItemRole;
+  intent?: SessionItemIntent;
+  coachingNotes?: LocalizedText;
 }
 
 export interface ProgramSessionInput {
@@ -38,6 +53,7 @@ export interface ProgramDayInput {
   dayNumber: number;
   isRestDay?: boolean;
   name?: LocalizedText;
+  dayFocus?: string;
   sessions?: ProgramSessionInput[];
 }
 
@@ -47,6 +63,7 @@ export interface ProgramWeekInput {
   name?: LocalizedText;
   description?: LocalizedText;
   sortOrder?: number;
+  weekType?: WeekType;
   days?: ProgramDayInput[];
 }
 
@@ -60,13 +77,29 @@ export interface CreateProgramInput {
   tags?: string[];
   isDefault?: boolean;
   weeks?: ProgramWeekInput[];
-  // Prescription metadata (Phase 2)
-  type?: string;                   // training | mobility | therapeutic
-  targetDomain?: string;           // mobility | strength | control | symmetry
+  // Prescription metadata
+  /** @deprecated use programDomain */
+  type?: string;
+  programType?: ProgramType;
+  programDomain?: ProgramDomain;
+  trainingGoal?: TrainingGoal | null;
+  autoAssignable?: boolean;
+  version?: number;
+  ownerId?: string | null;
+  forkedFromId?: string | null;
+  coachingNotes?: Record<string, unknown>;
+  weeklySessionTarget?: number | null;
+  estimatedSessionMinutes?: number | null;
+  targetEquipment?: Record<string, unknown> | unknown[] | null;
+  targetDomain?: string;
   targetRegions?: string[];
-  levelRangeMin?: number;          // 1-5
-  levelRangeMax?: number;          // 1-5
+  levelRangeMin?: number;
+  levelRangeMax?: number;
+  entryRecommendations?: Record<string, unknown>;
+  exitRecommendations?: Record<string, unknown>;
+  /** @deprecated use entryRecommendations */
   entryCriteria?: Record<string, unknown>;
+  /** @deprecated use exitRecommendations */
   exitCriteria?: Record<string, unknown>;
   contraindications?: string[];
   prescriptionPriority?: number;

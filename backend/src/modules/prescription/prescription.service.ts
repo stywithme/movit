@@ -13,6 +13,12 @@
 
 import { getPrisma } from '@/lib/prisma/client';
 import { scoreToLevel } from '@/lib/metrics';
+import { legacyTypeToProgramDomain, programDomainToLegacyString } from '@/lib/program-domain';
+import {
+  buildAssignmentReason,
+  isProgramEligibleForAutoAssignment,
+  type ProgramAssignmentReason,
+} from '@/modules/programs/program-assignment';
 
 // ── Types ──
 
@@ -36,6 +42,7 @@ export interface Classification {
 export interface PrescriptionResult {
   classification: Classification;
   recommendedProgram: RecommendedProgram | null;
+  assignmentReason: ProgramAssignmentReason | null;
   fallbackUsed: boolean;
 }
 
@@ -68,6 +75,80 @@ function parseRegionLevels(raw: unknown): RegionLevel[] {
   return raw.filter(
     (r) => r && typeof r === 'object' && 'region' in r && 'level' in r && 'score' in r,
   ) as RegionLevel[];
+}
+
+function determineLimitingFactor(
+  safetyGateCodes: string[],
+  domainLevelsRaw: unknown,
+): string | null {
+  if (safetyGateCodes.length > 0) return 'safety';
+
+  const domainLevels = parseDomainLevels(domainLevelsRaw);
+  if (domainLevels.length === 0) return null;
+
+  return [...domainLevels]
+    .sort((a, b) => a.level - b.level || a.score - b.score || a.domain.localeCompare(b.domain))[0]
+    ?.domain ?? null;
+}
+
+function scoreProgramForLimitingFactor(
+  program: { targetDomain: string | null; targetRegions: string[] },
+  limitingFactor: string | null,
+): number {
+  if (!limitingFactor || limitingFactor === 'safety') return 0;
+  if (program.targetDomain === limitingFactor) return 3;
+  if (program.targetRegions.includes(limitingFactor)) return 1;
+  return 0;
+}
+
+function collectMatchedFactors(
+  program: {
+    trainingGoal: string | null;
+    targetEquipment: unknown;
+    targetDomain: string | null;
+    targetRegions: string[];
+  },
+  userTrainingGoal: string | null | undefined,
+  availableEquipment: string[],
+  classification: Classification,
+  limitingFactor: string | null,
+): string[] {
+  const factors = ['levelRange'];
+  if (userTrainingGoal && program.trainingGoal === userTrainingGoal) {
+    factors.push('trainingGoal');
+  }
+
+  const requiredEquipment = Array.isArray(program.targetEquipment)
+    ? (program.targetEquipment as string[])
+    : [];
+  if (
+    availableEquipment.length > 0 &&
+    requiredEquipment.length > 0 &&
+    requiredEquipment.some((code) => availableEquipment.includes(code))
+  ) {
+    factors.push('equipment');
+  }
+
+  if (classification.targetDomain && program.targetDomain === classification.targetDomain) {
+    factors.push('targetDomain');
+  }
+
+  if (
+    classification.targetRegions.length > 0 &&
+    program.targetRegions.some((region) => classification.targetRegions.includes(region))
+  ) {
+    factors.push('targetRegions');
+  }
+
+  if (classification.safetyGateCodes.length > 0) {
+    factors.push('contraindications');
+  }
+
+  if (limitingFactor && program.targetDomain === limitingFactor) {
+    factors.push('limitingFactor');
+  }
+
+  return factors;
 }
 
 // ── Classification Logic ──
@@ -200,6 +281,7 @@ export const prescriptionService = {
           reason: 'No assessment found — recommending default program',
         },
         recommendedProgram: null,
+        assignmentReason: null,
         fallbackUsed: true,
       };
     }
@@ -229,13 +311,25 @@ export const prescriptionService = {
       },
       effectiveProfile,
     );
+    const limitingFactor = determineLimitingFactor(
+      classification.safetyGateCodes,
+      effectiveProfile.domainLevels,
+    );
+
+    const userPrefs = await prisma.user.findUnique({
+      where: { id: userId },
+      select: {
+        trainingGoal: true,
+        trainingProfile: { select: { availableEquipment: true } },
+      },
+    });
 
     // 4. Filter matching programs
     const programs = await prisma.program.findMany({
       where: {
         isPublished: true,
         deletedAt: null,
-        type: classification.requiredType,
+        programDomain: legacyTypeToProgramDomain(classification.requiredType),
         levelRangeMin: { lte: overallLevel },
         levelRangeMax: { gte: overallLevel },
       },
@@ -243,7 +337,25 @@ export const prescriptionService = {
     });
 
     // Apply additional filtering
-    let matches = programs;
+    let matches = programs.filter(isProgramEligibleForAutoAssignment);
+
+    if (userPrefs?.trainingGoal) {
+      matches = matches.filter(
+        (p) => !p.trainingGoal || p.trainingGoal === userPrefs.trainingGoal,
+      );
+    }
+
+    const availRaw = userPrefs?.trainingProfile?.availableEquipment;
+    const availList = Array.isArray(availRaw) ? (availRaw as string[]) : [];
+    if (availList.length > 0) {
+      matches = matches.filter((p) => {
+        const te = p.targetEquipment;
+        if (te == null) return true;
+        const req = Array.isArray(te) ? (te as string[]) : [];
+        if (req.length === 0) return true;
+        return req.some((code) => availList.includes(code));
+      });
+    }
 
     // Filter by contraindications (exclude programs blocked by safety gates)
     if (classification.safetyGateCodes.length > 0) {
@@ -274,6 +386,21 @@ export const prescriptionService = {
       }
     }
 
+    matches = [...matches].sort((a, b) => {
+      const scoreDiff =
+        scoreProgramForLimitingFactor(
+          { targetDomain: b.targetDomain, targetRegions: b.targetRegions || [] },
+          limitingFactor,
+        ) -
+        scoreProgramForLimitingFactor(
+          { targetDomain: a.targetDomain, targetRegions: a.targetRegions || [] },
+          limitingFactor,
+        );
+
+      if (scoreDiff !== 0) return scoreDiff;
+      return a.prescriptionPriority - b.prescriptionPriority;
+    });
+
     // 5. Return best match
     if (matches.length > 0) {
       const best = matches[0];
@@ -283,19 +410,35 @@ export const prescriptionService = {
           id: best.id,
           name: best.name as Record<string, string>,
           slug: best.slug,
-          type: best.type,
+          type: programDomainToLegacyString(best.programDomain),
           targetDomain: best.targetDomain,
           durationWeeks: best.durationWeeks,
           difficulty: best.difficulty,
           coverImageUrl: best.coverImageUrl,
           matchReason: classification.reason,
         },
+        assignmentReason: buildAssignmentReason(
+          'selection_algorithm',
+          collectMatchedFactors(
+            {
+              trainingGoal: best.trainingGoal,
+              targetEquipment: best.targetEquipment,
+              targetDomain: best.targetDomain,
+              targetRegions: best.targetRegions || [],
+            },
+            userPrefs?.trainingGoal,
+            availList,
+            classification,
+            limitingFactor,
+          ),
+          limitingFactor,
+        ),
         fallbackUsed: false,
       };
     }
 
     // 6. Fallback — any program for this level
-    const fallback = await prisma.program.findFirst({
+    const fallbackPrograms = await prisma.program.findMany({
       where: {
         isPublished: true,
         deletedAt: null,
@@ -304,6 +447,7 @@ export const prescriptionService = {
       },
       orderBy: { prescriptionPriority: 'asc' },
     });
+    const fallback = fallbackPrograms.find(isProgramEligibleForAutoAssignment);
 
     if (fallback) {
       return {
@@ -312,13 +456,18 @@ export const prescriptionService = {
           id: fallback.id,
           name: fallback.name as Record<string, string>,
           slug: fallback.slug,
-          type: fallback.type,
+          type: programDomainToLegacyString(fallback.programDomain),
           targetDomain: fallback.targetDomain,
           durationWeeks: fallback.durationWeeks,
           difficulty: fallback.difficulty,
           coverImageUrl: fallback.coverImageUrl,
           matchReason: `Fallback: best available program for level ${overallLevel}`,
         },
+        assignmentReason: buildAssignmentReason(
+          'fallback_selection',
+          ['levelRange'],
+          limitingFactor,
+        ),
         fallbackUsed: true,
       };
     }
@@ -327,6 +476,7 @@ export const prescriptionService = {
     return {
       classification,
       recommendedProgram: null,
+      assignmentReason: null,
       fallbackUsed: true,
     };
   },

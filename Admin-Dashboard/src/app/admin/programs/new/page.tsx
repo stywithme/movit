@@ -1,9 +1,14 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
-import { useRouter } from 'next/navigation';
-import { Input, Select, Label, Button, Card, Textarea } from '@/components/ui';
+import Link from 'next/link';
+import { toast } from 'react-hot-toast';
+import { useRouter, useSearchParams } from 'next/navigation';
+import { Input, Select, Label, Button, Card, Textarea, SearchableSelect } from '@/components/ui';
 import type { LocalizedText } from '@/lib/types/localized';
+import { CollapsibleBuilderSection } from '../_components/CollapsibleBuilderSection';
+import { RecommendationEditor } from '../_components/RecommendationEditor';
+import { getAutoAssignmentReadiness } from '../_lib/auto-assignment';
 
 interface ProgramSummary {
   id: string;
@@ -11,6 +16,35 @@ interface ProgramSummary {
 }
 
 const TARGET_REGION_OPTIONS = ['shoulder', 'hip', 'spine', 'knee', 'core', 'balance'] as const;
+
+const TARGET_EQUIPMENT_OPTIONS = [
+  'barbell',
+  'dumbbell',
+  'cable',
+  'machine',
+  'bodyweight',
+  'kettlebell',
+  'bands',
+] as const;
+
+const SESSION_ITEM_ROLE_OPTIONS = [
+  { value: '', label: '—' },
+  { value: 'WARMUP', label: 'WARMUP' },
+  { value: 'ACTIVATION', label: 'ACTIVATION' },
+  { value: 'MAIN', label: 'MAIN' },
+  { value: 'ACCESSORY', label: 'ACCESSORY' },
+  { value: 'CORRECTIVE', label: 'CORRECTIVE' },
+  { value: 'COOLDOWN', label: 'COOLDOWN' },
+  { value: 'TEST', label: 'TEST' },
+];
+
+const SESSION_ITEM_INTENT_OPTIONS = [
+  { value: '', label: '—' },
+  { value: 'STANDARD', label: 'STANDARD' },
+  { value: 'POWER', label: 'POWER' },
+  { value: 'ECCENTRIC', label: 'ECCENTRIC' },
+  { value: 'VELOCITY_BASED', label: 'VELOCITY_BASED' },
+];
 
 interface ExerciseSummary {
   id: string;
@@ -53,6 +87,9 @@ interface SessionItemForm {
   weightPerSetText: string;
   notes: LocalizedText;
   restDurationMs?: number;
+  role?: string;
+  intent?: string;
+  coachingNotesJson?: string;
 }
 
 interface SessionForm {
@@ -65,6 +102,7 @@ interface DayForm {
   dayNumber: number;
   isRestDay: boolean;
   name: LocalizedText;
+  dayFocus?: string;
   sessions: SessionForm[];
 }
 
@@ -73,6 +111,7 @@ interface WeekForm {
   name: LocalizedText;
   description: LocalizedText;
   sortOrder: number;
+  weekType: 'NORMAL' | 'DELOAD';
   days: DayForm[];
 }
 
@@ -87,6 +126,9 @@ const createEmptyItem = (type: 'exercise' | 'rest', exerciseId?: string): Sessio
   weightPerSetText: '',
   notes: { ar: '', en: '' },
   restDurationMs: type === 'rest' ? 60000 : undefined,
+  role: '',
+  intent: '',
+  coachingNotesJson: '',
 });
 
 const createEmptySession = (sortOrder: number): SessionForm => ({
@@ -99,6 +141,7 @@ const createEmptyDay = (dayNumber: number): DayForm => ({
   dayNumber,
   isRestDay: false,
   name: { ar: '', en: '' },
+  dayFocus: '',
   sessions: [createEmptySession(0)],
 });
 
@@ -107,11 +150,76 @@ const createEmptyWeek = (weekNumber: number): WeekForm => ({
   name: { ar: '', en: '' },
   description: { ar: '', en: '' },
   sortOrder: weekNumber - 1,
+  weekType: 'NORMAL',
   days: [createEmptyDay(1)],
 });
 
+const PROGRAM_EDITOR_SECTIONS = [
+  { id: 'basic-information', label: 'Basic Info' },
+  { id: 'program-configuration', label: 'Configuration' },
+  { id: 'prescription-settings', label: 'Prescription' },
+  { id: 'program-builder', label: 'Builder' },
+] as const;
+
+function cloneItem(item: SessionItemForm): SessionItemForm {
+  return {
+    ...item,
+    notes: { ...item.notes },
+  };
+}
+
+function cloneSession(session: SessionForm): SessionForm {
+  return {
+    ...session,
+    name: { ...session.name },
+    items: session.items.map(cloneItem),
+  };
+}
+
+function cloneDay(day: DayForm): DayForm {
+  return {
+    ...day,
+    name: { ...day.name },
+    sessions: day.sessions.map(cloneSession),
+  };
+}
+
+function cloneWeek(week: WeekForm): WeekForm {
+  return {
+    ...week,
+    name: { ...week.name },
+    description: { ...week.description },
+    days: week.days.map(cloneDay),
+  };
+}
+
+function normalizeSession(session: SessionForm, sessionIndex: number): SessionForm {
+  return {
+    ...session,
+    sortOrder: sessionIndex,
+  };
+}
+
+function normalizeDay(day: DayForm, dayIndex: number): DayForm {
+  return {
+    ...day,
+    dayNumber: dayIndex + 1,
+    sessions: day.sessions.map(normalizeSession),
+  };
+}
+
+function normalizeWeek(week: WeekForm, weekIndex: number): WeekForm {
+  return {
+    ...week,
+    weekNumber: weekIndex + 1,
+    sortOrder: weekIndex,
+    days: week.days.map(normalizeDay),
+  };
+}
+
 export default function NewProgramPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [loading, setLoading] = useState(false);
   const [loadingExercises, setLoadingExercises] = useState(true);
   const [loadingWorkouts, setLoadingWorkouts] = useState(true);
@@ -120,17 +228,25 @@ export default function NewProgramPage() {
   const [description, setDescription] = useState({ ar: '', en: '' });
   const [coverImageUrl, setCoverImageUrl] = useState('');
   const [durationWeeks, setDurationWeeks] = useState(4);
+  const [version, setVersion] = useState(1);
   const [difficulty, setDifficulty] = useState<'beginner' | 'intermediate' | 'advanced'>('beginner');
   const [tags, setTags] = useState('');
   const [weeks, setWeeks] = useState<WeekForm[]>([createEmptyWeek(1)]);
 
-  const [programType, setProgramType] = useState('training');
+  const [programOwnership, setProgramOwnership] = useState<'SYSTEM' | 'COACH' | 'CUSTOM'>('SYSTEM');
+  const [programDomainEnum, setProgramDomainEnum] = useState<'TRAINING' | 'MOBILITY' | 'THERAPEUTIC'>('TRAINING');
+  const [trainingGoal, setTrainingGoal] = useState('');
+  const [autoAssignable, setAutoAssignable] = useState(false);
+  const [targetEquipment, setTargetEquipment] = useState<string[]>([]);
+  const [coachingNotesProgram, setCoachingNotesProgram] = useState('');
+  const [weeklySessionTarget, setWeeklySessionTarget] = useState<number | ''>('');
+  const [estimatedSessionMinutes, setEstimatedSessionMinutes] = useState<number | ''>('');
   const [targetDomain, setTargetDomain] = useState('none');
   const [targetRegions, setTargetRegions] = useState<string[]>([]);
   const [levelRangeMin, setLevelRangeMin] = useState(1);
   const [levelRangeMax, setLevelRangeMax] = useState(10);
-  const [entryCriteria, setEntryCriteria] = useState('');
-  const [exitCriteria, setExitCriteria] = useState('');
+  const [entryRecommendations, setEntryRecommendations] = useState('');
+  const [exitRecommendations, setExitRecommendations] = useState('');
   const [contraindications, setContraindications] = useState<string[]>([]);
   const [prescriptionPriority, setPrescriptionPriority] = useState(50);
   const [prerequisiteProgramId, setPrerequisiteProgramId] = useState('');
@@ -218,6 +334,129 @@ export default function NewProgramPage() {
     [workouts]
   );
 
+  const exerciseLabelById = useMemo(
+    () =>
+      new Map(
+        exercises.map((exercise) => [exercise.id, `${exercise.name.en} / ${exercise.name.ar}`])
+      ),
+    [exercises]
+  );
+
+  const autoAssignmentReadiness = useMemo(
+    () =>
+      getAutoAssignmentReadiness({
+        programType: programOwnership,
+        programDomain: programDomainEnum,
+        trainingGoal: programDomainEnum === 'TRAINING' ? trainingGoal || null : null,
+        autoAssignable,
+        levelRangeMin,
+        levelRangeMax,
+        contraindications,
+        targetEquipment,
+        targetDomain: targetDomain !== 'none' ? targetDomain : null,
+        targetRegions,
+        prescriptionPriority,
+      }),
+    [
+      autoAssignable,
+      contraindications,
+      levelRangeMax,
+      levelRangeMin,
+      prescriptionPriority,
+      programDomainEnum,
+      programOwnership,
+      targetDomain,
+      targetEquipment,
+      targetRegions,
+      trainingGoal,
+    ]
+  );
+
+  const prefillSummary = useMemo(() => {
+    const parts: string[] = [];
+    const domain = searchParams.get('programDomain');
+    const min = searchParams.get('levelRangeMin');
+    const max = searchParams.get('levelRangeMax');
+    const goal = searchParams.get('trainingGoal');
+
+    if (domain) parts.push(domain);
+    if (min || max) parts.push(`Levels ${min ?? '—'}-${max ?? '—'}`);
+    if (goal) parts.push(goal);
+
+    return parts;
+  }, [searchParams]);
+
+  const builderSummary = useMemo(() => {
+    const days = weeks.reduce((acc, week) => acc + week.days.length, 0);
+    const sessions = weeks.reduce(
+      (acc, week) => acc + week.days.reduce((dayAcc, day) => dayAcc + day.sessions.length, 0),
+      0
+    );
+    const items = weeks.reduce(
+      (acc, week) =>
+        acc +
+        week.days.reduce(
+          (dayAcc, day) =>
+            dayAcc + day.sessions.reduce((sessionAcc, session) => sessionAcc + session.items.length, 0),
+          0
+        ),
+      0
+    );
+
+    return { weeks: weeks.length, days, sessions, items };
+  }, [weeks]);
+
+  const getWeekSummary = (week: WeekForm) => {
+    const sessions = week.days.reduce((acc, day) => acc + day.sessions.length, 0);
+    const items = week.days.reduce(
+      (acc, day) => acc + day.sessions.reduce((sessionAcc, session) => sessionAcc + session.items.length, 0),
+      0
+    );
+    return `${week.days.length} day(s) • ${sessions} session(s) • ${items} item(s)`;
+  };
+
+  const getDaySummary = (day: DayForm) => {
+    const items = day.sessions.reduce((acc, session) => acc + session.items.length, 0);
+    return `${day.isRestDay ? 'Rest day' : 'Training day'} • ${day.sessions.length} session(s) • ${items} item(s)`;
+  };
+
+  const getSessionSummary = (session: SessionForm) => {
+    const exerciseCount = session.items.filter((item) => item.type === 'exercise').length;
+    const restCount = session.items.length - exerciseCount;
+    return `${session.items.length} item(s) • ${exerciseCount} exercise(s)${restCount ? ` • ${restCount} rest` : ''}`;
+  };
+
+  const getItemSummary = (item: SessionItemForm) => {
+    if (item.type === 'rest') {
+      return `${item.restDurationMs ?? 0} ms rest`;
+    }
+
+    const exerciseName = item.exerciseId ? exerciseLabelById.get(item.exerciseId) : null;
+    const target =
+      item.targetReps != null
+        ? `${item.targetReps} reps`
+        : item.targetDuration != null
+          ? `${item.targetDuration}s`
+          : 'No target';
+    return `${exerciseName ?? 'No exercise selected'} • ${item.sets} set(s) • ${target}`;
+  };
+
+  useEffect(() => {
+    const programDomain = searchParams.get('programDomain');
+    if (programDomain === 'TRAINING' || programDomain === 'MOBILITY' || programDomain === 'THERAPEUTIC') {
+      setProgramDomainEnum(programDomain);
+    }
+
+    const min = Number.parseInt(searchParams.get('levelRangeMin') || '', 10);
+    if (Number.isFinite(min) && min > 0) setLevelRangeMin(min);
+
+    const max = Number.parseInt(searchParams.get('levelRangeMax') || '', 10);
+    if (Number.isFinite(max) && max > 0) setLevelRangeMax(max);
+
+    const goal = searchParams.get('trainingGoal');
+    if (goal) setTrainingGoal(goal);
+  }, [searchParams]);
+
   const updateWeek = (weekIndex: number, updates: Partial<WeekForm>) => {
     setWeeks((prev) => prev.map((week, index) => (index === weekIndex ? { ...week, ...updates } : week)));
   };
@@ -281,12 +520,22 @@ export default function NewProgramPage() {
 
   const addWeek = () => {
     const nextWeekNumber = weeks.length + 1;
-    setWeeks((prev) => [...prev, createEmptyWeek(nextWeekNumber)]);
-    setDurationWeeks((prev) => Math.max(prev, nextWeekNumber));
+    setWeeks((prev) => [...prev, createEmptyWeek(nextWeekNumber)].map(normalizeWeek));
+    setDurationWeeks(nextWeekNumber);
   };
 
   const removeWeek = (index: number) => {
-    setWeeks((prev) => prev.filter((_, wIndex) => wIndex !== index));
+    setWeeks((prev) => prev.filter((_, wIndex) => wIndex !== index).map(normalizeWeek));
+    setDurationWeeks(Math.max(1, weeks.length - 1));
+  };
+
+  const duplicateWeek = (weekIndex: number) => {
+    setWeeks((prev) => {
+      const next = [...prev];
+      next.splice(weekIndex + 1, 0, cloneWeek(prev[weekIndex]));
+      return next.map(normalizeWeek);
+    });
+    setDurationWeeks(weeks.length + 1);
   };
 
   const addDay = (weekIndex: number) => {
@@ -294,7 +543,7 @@ export default function NewProgramPage() {
       prev.map((week, wIndex) => {
         if (wIndex !== weekIndex) return week;
         const nextDayNumber = week.days.length + 1;
-        return { ...week, days: [...week.days, createEmptyDay(nextDayNumber)] };
+        return { ...week, days: [...week.days, createEmptyDay(nextDayNumber)].map(normalizeDay) };
       })
     );
   };
@@ -303,7 +552,18 @@ export default function NewProgramPage() {
     setWeeks((prev) =>
       prev.map((week, wIndex) => {
         if (wIndex !== weekIndex) return week;
-        return { ...week, days: week.days.filter((_, dIndex) => dIndex !== dayIndex) };
+        return { ...week, days: week.days.filter((_, dIndex) => dIndex !== dayIndex).map(normalizeDay) };
+      })
+    );
+  };
+
+  const duplicateDay = (weekIndex: number, dayIndex: number) => {
+    setWeeks((prev) =>
+      prev.map((week, wIndex) => {
+        if (wIndex !== weekIndex) return week;
+        const nextDays = [...week.days];
+        nextDays.splice(dayIndex + 1, 0, cloneDay(week.days[dayIndex]));
+        return { ...week, days: nextDays.map(normalizeDay) };
       })
     );
   };
@@ -316,7 +576,7 @@ export default function NewProgramPage() {
           if (dIndex !== dayIndex) return day;
           return {
             ...day,
-            sessions: [...day.sessions, createEmptySession(day.sessions.length)],
+            sessions: [...day.sessions, createEmptySession(day.sessions.length)].map(normalizeSession),
           };
         });
         return { ...week, days };
@@ -330,7 +590,22 @@ export default function NewProgramPage() {
         if (wIndex !== weekIndex) return week;
         const days = week.days.map((day, dIndex) => {
           if (dIndex !== dayIndex) return day;
-          return { ...day, sessions: day.sessions.filter((_, sIndex) => sIndex !== sessionIndex) };
+          return { ...day, sessions: day.sessions.filter((_, sIndex) => sIndex !== sessionIndex).map(normalizeSession) };
+        });
+        return { ...week, days };
+      })
+    );
+  };
+
+  const duplicateSession = (weekIndex: number, dayIndex: number, sessionIndex: number) => {
+    setWeeks((prev) =>
+      prev.map((week, wIndex) => {
+        if (wIndex !== weekIndex) return week;
+        const days = week.days.map((day, dIndex) => {
+          if (dIndex !== dayIndex) return day;
+          const nextSessions = [...day.sessions];
+          nextSessions.splice(sessionIndex + 1, 0, cloneSession(day.sessions[sessionIndex]));
+          return { ...day, sessions: nextSessions.map(normalizeSession) };
         });
         return { ...week, days };
       })
@@ -395,6 +670,9 @@ export default function NewProgramPage() {
           weightPerSetText: exercise.weightPerSet ? exercise.weightPerSet.join(', ') : '',
           notes: exercise.notes || { ar: '', en: '' },
           restDurationMs: undefined,
+          role: '',
+          intent: '',
+          coachingNotesJson: '',
         });
 
         if (exercise.restAfterExerciseMs > 0) {
@@ -405,6 +683,9 @@ export default function NewProgramPage() {
             weightPerSetText: '',
             notes: { ar: '', en: '' },
             restDurationMs: exercise.restAfterExerciseMs,
+            role: '',
+            intent: '',
+            coachingNotesJson: '',
           });
         }
       });
@@ -450,19 +731,28 @@ export default function NewProgramPage() {
       .split(',')
       .map((tag) => tag.trim())
       .filter(Boolean),
-    type: programType,
+    programType: programOwnership,
+    programDomain: programDomainEnum,
+    trainingGoal: programDomainEnum === 'TRAINING' ? trainingGoal || undefined : undefined,
+    autoAssignable,
+    version,
+    coachingNotes: parseJsonField(coachingNotesProgram),
+    weeklySessionTarget: weeklySessionTarget === '' ? undefined : weeklySessionTarget,
+    estimatedSessionMinutes: estimatedSessionMinutes === '' ? undefined : estimatedSessionMinutes,
+    targetEquipment,
     targetDomain: targetDomain !== 'none' ? targetDomain : undefined,
-    targetRegions: targetRegions.length > 0 ? targetRegions : undefined,
+    targetRegions,
     levelRangeMin,
     levelRangeMax,
-    entryCriteria: parseJsonField(entryCriteria),
-    exitCriteria: parseJsonField(exitCriteria),
-    contraindications: contraindications.length > 0 ? contraindications : undefined,
+    entryRecommendations: parseJsonField(entryRecommendations),
+    exitRecommendations: parseJsonField(exitRecommendations),
+    contraindications,
     prescriptionPriority,
     prerequisiteProgramId: prerequisiteProgramId || undefined,
     nextProgramId: nextProgramId || undefined,
     weeks: weeks.map((week, weekIndex) => ({
       weekNumber: week.weekNumber || weekIndex + 1,
+      weekType: week.weekType,
       name: week.name.en || week.name.ar ? week.name : undefined,
       description: week.description.en || week.description.ar ? week.description : undefined,
       sortOrder: week.sortOrder ?? weekIndex,
@@ -470,6 +760,7 @@ export default function NewProgramPage() {
         dayNumber: day.dayNumber || dayIndex + 1,
         isRestDay: day.isRestDay,
         name: day.name.en || day.name.ar ? day.name : undefined,
+        dayFocus: day.dayFocus?.trim() ? day.dayFocus : undefined,
         sessions: day.sessions.map((session, sessionIndex) => ({
           name: session.name,
           sortOrder: session.sortOrder ?? sessionIndex,
@@ -491,6 +782,11 @@ export default function NewProgramPage() {
             notes: item.type === 'exercise' && (item.notes.en || item.notes.ar) ? item.notes : undefined,
             restDurationMs: item.type === 'rest' ? item.restDurationMs : undefined,
             sortOrder: itemIndex,
+            role: item.role || undefined,
+            intent: item.intent || undefined,
+            coachingNotes: item.coachingNotesJson?.trim()
+              ? parseJsonField(item.coachingNotesJson)
+              : undefined,
           })),
         })),
       })),
@@ -510,13 +806,14 @@ export default function NewProgramPage() {
 
       const data = await res.json();
       if (data.success) {
+        toast.success('Program created successfully');
         router.push('/admin/programs');
       } else {
-        alert(data.errors?.join('\n') || data.error || 'Failed to create program');
+        toast.error(data.errors?.join('\n') || data.error || 'Failed to create program');
       }
     } catch (error) {
       console.error('Error creating program:', error);
-      alert('Failed to create program');
+      toast.error('Failed to create program');
     } finally {
       setLoading(false);
     }
@@ -524,13 +821,53 @@ export default function NewProgramPage() {
 
   return (
     <div className="max-w-5xl mx-auto space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold text-gray-900">New Program</h1>
-        <p className="text-gray-600 mt-1">Create a structured training program</p>
+      <div className="flex items-start justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900">New Program</h1>
+          <p className="text-gray-600 mt-1">Create a structured training program</p>
+        </div>
+        <div className="flex items-center gap-3">
+          <Link href="/admin/programs/map">
+            <Button type="button" variant="outline">Open Map</Button>
+          </Link>
+          <Link href="/admin/programs">
+            <Button type="button" variant="secondary">Back to Programs</Button>
+          </Link>
+        </div>
       </div>
 
+      {prefillSummary.length > 0 ? (
+        <Card className="border-blue-100 bg-blue-50/70 shadow-none">
+          <div className="p-4">
+            <p className="text-sm font-semibold text-blue-950">Context prefilled</p>
+            <p className="mt-1 text-sm text-blue-900">
+              This form was opened with preset values: {prefillSummary.join(' • ')}
+            </p>
+          </div>
+        </Card>
+      ) : null}
+
       <form onSubmit={handleSubmit} className="space-y-6">
-        <Card className="p-6">
+        <Card className="sticky top-4 z-10 border-blue-100 bg-white/95 backdrop-blur p-4">
+          <div className="flex flex-wrap items-center justify-between gap-4">
+            <div className="flex flex-wrap gap-2">
+              {PROGRAM_EDITOR_SECTIONS.map((section) => (
+                <a
+                  key={section.id}
+                  href={`#${section.id}`}
+                  className="rounded-lg border border-gray-200 px-3 py-1.5 text-sm font-medium text-gray-700 hover:border-blue-300 hover:text-blue-700"
+                >
+                  {section.label}
+                </a>
+              ))}
+            </div>
+            <div className="text-sm text-gray-500">
+              {builderSummary.weeks} weeks • {builderSummary.days} days • {builderSummary.sessions} sessions • {builderSummary.items} items
+            </div>
+          </div>
+        </Card>
+
+        <Card id="basic-information" className="p-6 scroll-mt-24">
           <h2 className="text-lg font-semibold mb-4">Basic Information</h2>
 
           <div className="grid grid-cols-2 gap-4">
@@ -578,7 +915,7 @@ export default function NewProgramPage() {
           </div>
         </Card>
 
-        <Card className="p-6">
+        <Card id="program-configuration" className="p-6 scroll-mt-24">
           <h2 className="text-lg font-semibold mb-4">Program Configuration</h2>
 
           <div className="grid grid-cols-2 gap-4">
@@ -604,7 +941,7 @@ export default function NewProgramPage() {
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-4 mt-4">
+          <div className="grid grid-cols-3 gap-4 mt-4">
             <div>
               <Label>Duration (weeks)</Label>
               <Input
@@ -612,6 +949,15 @@ export default function NewProgramPage() {
                 min={1}
                 value={durationWeeks}
                 onChange={(e) => setDurationWeeks(Number.parseInt(e.target.value, 10) || 1)}
+              />
+            </div>
+            <div>
+              <Label>Version</Label>
+              <Input
+                type="number"
+                min={1}
+                value={version}
+                onChange={(e) => setVersion(Number.parseInt(e.target.value, 10) || 1)}
               />
             </div>
             <div>
@@ -623,24 +969,61 @@ export default function NewProgramPage() {
               />
             </div>
           </div>
+
+          {durationWeeks !== weeks.length ? (
+            <p className="mt-3 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-800">
+              Duration is set to {durationWeeks} week(s), but the builder currently contains {weeks.length} week block(s).
+            </p>
+          ) : null}
         </Card>
 
-        <Card className="p-6">
+        <Card id="prescription-settings" className="p-6 scroll-mt-24">
           <h2 className="text-lg font-semibold mb-4">Prescription Settings</h2>
 
           <div className="grid grid-cols-3 gap-4">
             <div>
-              <Label>Program Type</Label>
+              <Label>Program ownership</Label>
               <Select
-                value={programType}
-                onChange={(e) => setProgramType(e.target.value)}
+                value={programOwnership}
+                onChange={(e) => setProgramOwnership(e.target.value as 'SYSTEM' | 'COACH' | 'CUSTOM')}
                 options={[
-                  { value: 'training', label: 'Training' },
-                  { value: 'mobility', label: 'Mobility' },
-                  { value: 'therapeutic', label: 'Therapeutic' },
+                  { value: 'SYSTEM', label: 'System' },
+                  { value: 'COACH', label: 'Coach' },
+                  { value: 'CUSTOM', label: 'Custom' },
                 ]}
               />
             </div>
+            <div>
+              <Label>Program domain</Label>
+              <Select
+                value={programDomainEnum}
+                onChange={(e) =>
+                  setProgramDomainEnum(e.target.value as 'TRAINING' | 'MOBILITY' | 'THERAPEUTIC')
+                }
+                options={[
+                  { value: 'TRAINING', label: 'Training' },
+                  { value: 'MOBILITY', label: 'Mobility' },
+                  { value: 'THERAPEUTIC', label: 'Therapeutic' },
+                ]}
+              />
+            </div>
+            <div>
+              <Label>Training goal</Label>
+              <Select
+                value={trainingGoal}
+                onChange={(e) => setTrainingGoal(e.target.value)}
+                options={[
+                  { value: '', label: '—' },
+                  { value: 'STRENGTH', label: 'Strength' },
+                  { value: 'HYPERTROPHY', label: 'Hypertrophy' },
+                  { value: 'POWER', label: 'Power' },
+                  { value: 'GENERAL_HEALTH', label: 'General health' },
+                ]}
+              />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-3 gap-4 mt-4">
             <div>
               <Label>Target Domain</Label>
               <Select
@@ -665,6 +1048,105 @@ export default function NewProgramPage() {
                 onChange={(e) => setPrescriptionPriority(Number.parseInt(e.target.value, 10) || 1)}
               />
             </div>
+            <div className="flex items-end pb-2">
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={autoAssignable}
+                  onChange={(e) => setAutoAssignable(e.target.checked)}
+                  className="h-4 w-4 rounded border-gray-300"
+                />
+                <span className="text-sm text-gray-700">Auto-assignable</span>
+              </label>
+            </div>
+          </div>
+
+          <div className="mt-4 rounded-lg border border-gray-200 p-4">
+            <div className="flex items-center justify-between gap-4">
+              <div>
+                <p className="text-sm font-semibold text-gray-900">Auto-assignment readiness</p>
+                <p className="text-sm text-gray-600">
+                  {!autoAssignmentReadiness.entersAutoAssignment
+                    ? 'This program stays manual-only until ownership settings allow auto-assignment.'
+                    : autoAssignmentReadiness.ready
+                      ? 'Ready for auto-assignment.'
+                      : `Missing: ${autoAssignmentReadiness.missingFields.join(', ')}`}
+                </p>
+              </div>
+              <span
+                className={`inline-flex rounded-full px-3 py-1 text-xs font-medium ${
+                  autoAssignmentReadiness.status === 'ready'
+                    ? 'bg-green-100 text-green-800'
+                    : autoAssignmentReadiness.status === 'incomplete'
+                      ? 'bg-yellow-100 text-yellow-800'
+                      : 'bg-gray-100 text-gray-700'
+                }`}
+              >
+                {autoAssignmentReadiness.status === 'ready'
+                  ? 'Ready'
+                  : autoAssignmentReadiness.status === 'incomplete'
+                    ? 'Incomplete'
+                    : 'Manual only'}
+              </span>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4 mt-4">
+            <div>
+              <Label>Weekly session target</Label>
+              <Input
+                type="number"
+                min={1}
+                value={weeklySessionTarget}
+                onChange={(e) =>
+                  setWeeklySessionTarget(e.target.value === '' ? '' : Number.parseInt(e.target.value, 10) || '')
+                }
+              />
+            </div>
+            <div>
+              <Label>Estimated session minutes</Label>
+              <Input
+                type="number"
+                min={1}
+                value={estimatedSessionMinutes}
+                onChange={(e) =>
+                  setEstimatedSessionMinutes(e.target.value === '' ? '' : Number.parseInt(e.target.value, 10) || '')
+                }
+              />
+            </div>
+          </div>
+
+          <div className="mt-4">
+            <Label>Target equipment</Label>
+            <div className="flex flex-wrap gap-3 mt-1">
+              {TARGET_EQUIPMENT_OPTIONS.map((eq) => (
+                <label key={eq} className="flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={targetEquipment.includes(eq)}
+                    onChange={(e) => {
+                      if (e.target.checked) {
+                        setTargetEquipment((prev) => [...prev, eq]);
+                      } else {
+                        setTargetEquipment((prev) => prev.filter((x) => x !== eq));
+                      }
+                    }}
+                    className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                  />
+                  <span className="text-sm text-gray-700">{eq}</span>
+                </label>
+              ))}
+            </div>
+          </div>
+
+          <div className="mt-4">
+            <Label>Coaching notes (JSON)</Label>
+            <Textarea
+              value={coachingNotesProgram}
+              onChange={(e) => setCoachingNotesProgram(e.target.value)}
+              rows={2}
+              placeholder="{}"
+            />
           </div>
 
           <div className="mt-4">
@@ -712,24 +1194,20 @@ export default function NewProgramPage() {
           </div>
 
           <div className="grid grid-cols-2 gap-4 mt-4">
-            <div>
-              <Label>Entry Criteria (JSON)</Label>
-              <Textarea
-                value={entryCriteria}
-                onChange={(e) => setEntryCriteria(e.target.value)}
-                placeholder={'{\n  "minFormScore": 70,\n  "minCompletionRate": 0.8\n}'}
-                rows={3}
-              />
-            </div>
-            <div>
-              <Label>Exit Criteria (JSON)</Label>
-              <Textarea
-                value={exitCriteria}
-                onChange={(e) => setExitCriteria(e.target.value)}
-                placeholder={'{\n  "minFormScore": 90,\n  "minWeeksCompleted": 4\n}'}
-                rows={3}
-              />
-            </div>
+            <RecommendationEditor
+              title="Entry recommendations"
+              description="Guidance for when this program should start. Use structured thresholds instead of raw JSON where possible."
+              value={entryRecommendations}
+              onChange={setEntryRecommendations}
+              mode="entry"
+            />
+            <RecommendationEditor
+              title="Exit recommendations"
+              description="Used during exit review to decide whether the athlete should reassess or move to the next program."
+              value={exitRecommendations}
+              onChange={setExitRecommendations}
+              mode="exit"
+            />
           </div>
 
           <div className="mt-4">
@@ -758,24 +1236,49 @@ export default function NewProgramPage() {
           <div className="grid grid-cols-2 gap-4 mt-4">
             <div>
               <Label>Prerequisite Program</Label>
-              <Select
+              <SearchableSelect
                 value={prerequisiteProgramId}
-                onChange={(e) => setPrerequisiteProgramId(e.target.value)}
+                onChange={setPrerequisiteProgramId}
                 options={publishedProgramOptions}
+                placeholder="Select prerequisite"
+                searchPlaceholder="Search programs..."
               />
             </div>
             <div>
               <Label>Next Program</Label>
-              <Select
+              <SearchableSelect
                 value={nextProgramId}
-                onChange={(e) => setNextProgramId(e.target.value)}
+                onChange={setNextProgramId}
                 options={publishedProgramOptions}
+                placeholder="Select next program"
+                searchPlaceholder="Search programs..."
               />
             </div>
           </div>
         </Card>
 
-        <Card className="p-6 space-y-4">
+        <Card className="p-6 border-dashed border-gray-300">
+          <div className="grid grid-cols-4 gap-4">
+            <div>
+              <p className="text-sm text-gray-500">Weeks</p>
+              <p className="text-2xl font-semibold text-gray-900">{builderSummary.weeks}</p>
+            </div>
+            <div>
+              <p className="text-sm text-gray-500">Days</p>
+              <p className="text-2xl font-semibold text-gray-900">{builderSummary.days}</p>
+            </div>
+            <div>
+              <p className="text-sm text-gray-500">Sessions</p>
+              <p className="text-2xl font-semibold text-gray-900">{builderSummary.sessions}</p>
+            </div>
+            <div>
+              <p className="text-sm text-gray-500">Items</p>
+              <p className="text-2xl font-semibold text-gray-900">{builderSummary.items}</p>
+            </div>
+          </div>
+        </Card>
+
+        <Card id="program-builder" className="p-6 space-y-4 scroll-mt-24">
           <div className="flex items-center justify-between">
             <div>
               <h2 className="text-lg font-semibold">Program Builder</h2>
@@ -786,21 +1289,50 @@ export default function NewProgramPage() {
             </Button>
           </div>
 
-          {weeks.map((week, weekIndex) => (
-            <Card key={`week-${weekIndex}`} className="p-4 space-y-4 border border-gray-200">
-              <div className="flex items-center justify-between">
-                <h3 className="text-base font-semibold">Week {weekIndex + 1}</h3>
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => removeWeek(weekIndex)}
-                  disabled={weeks.length === 1}
-                >
-                  Remove Week
-                </Button>
-              </div>
+          <Card className="border-blue-100 bg-blue-50/70 shadow-none">
+            <div className="p-4">
+              <p className="text-sm font-semibold text-blue-950">Recommended workflow</p>
+              <ul className="mt-2 space-y-1 text-sm text-blue-900">
+                <li>1. Create the week structure first.</li>
+                <li>2. Add days and mark rest days early.</li>
+                <li>3. Build sessions before filling advanced item details.</li>
+                <li>4. Use duplicate actions to speed up repeated structures.</li>
+              </ul>
+            </div>
+          </Card>
 
-              <div className="grid grid-cols-3 gap-4">
+          {weeks.map((week, weekIndex) => (
+            <CollapsibleBuilderSection
+              key={`week-${weekIndex}`}
+              title={`Week ${weekIndex + 1}`}
+              subtitle={getWeekSummary(week)}
+              defaultOpen={weekIndex === 0}
+              meta={[
+                { label: week.weekType === 'DELOAD' ? 'Deload' : 'Normal', variant: week.weekType === 'DELOAD' ? 'warning' : 'default' },
+                { label: `${week.days.length} day(s)` },
+              ]}
+              actions={
+                <div className="flex items-center gap-2">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => removeWeek(weekIndex)}
+                    disabled={weeks.length === 1}
+                  >
+                    Remove Week
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="secondary"
+                    onClick={() => duplicateWeek(weekIndex)}
+                  >
+                    Duplicate Week
+                  </Button>
+                </div>
+              }
+            >
+              <div className="space-y-4">
+              <div className="grid grid-cols-4 gap-4">
                 <div>
                   <Label>Week Number</Label>
                   <Input
@@ -808,6 +1340,19 @@ export default function NewProgramPage() {
                     min={1}
                     value={week.weekNumber}
                     onChange={(e) => updateWeek(weekIndex, { weekNumber: Number.parseInt(e.target.value, 10) || 1 })}
+                  />
+                </div>
+                <div>
+                  <Label>Week type</Label>
+                  <Select
+                    value={week.weekType}
+                    onChange={(e) =>
+                      updateWeek(weekIndex, { weekType: e.target.value as 'NORMAL' | 'DELOAD' })
+                    }
+                    options={[
+                      { value: 'NORMAL', label: 'Normal' },
+                      { value: 'DELOAD', label: 'Deload' },
+                    ]}
                   />
                 </div>
                 <div>
@@ -855,20 +1400,38 @@ export default function NewProgramPage() {
               </div>
 
               {week.days.map((day, dayIndex) => (
-                <Card key={`day-${dayIndex}`} className="p-4 space-y-4 border border-gray-100">
-                  <div className="flex items-center justify-between">
-                    <h5 className="text-sm font-semibold">Day {dayIndex + 1}</h5>
-                    <Button
-                      type="button"
-                      variant="outline"
-                      onClick={() => removeDay(weekIndex, dayIndex)}
-                      disabled={week.days.length === 1}
-                    >
-                      Remove Day
-                    </Button>
-                  </div>
-
-                  <div className="grid grid-cols-4 gap-4">
+                <CollapsibleBuilderSection
+                  key={`day-${dayIndex}`}
+                  title={`Day ${dayIndex + 1}`}
+                  subtitle={getDaySummary(day)}
+                  defaultOpen={weekIndex === 0 && dayIndex === 0}
+                  meta={[
+                    { label: day.isRestDay ? 'Rest' : 'Training', variant: day.isRestDay ? 'warning' : 'primary' },
+                    { label: `${day.sessions.length} session(s)` },
+                  ]}
+                  actions={
+                    <div className="flex items-center gap-2">
+                      <Button
+                        type="button"
+                        variant="outline"
+                        onClick={() => removeDay(weekIndex, dayIndex)}
+                        disabled={week.days.length === 1}
+                      >
+                        Remove Day
+                      </Button>
+                      <Button
+                        type="button"
+                        variant="secondary"
+                        onClick={() => duplicateDay(weekIndex, dayIndex)}
+                      >
+                        Duplicate Day
+                      </Button>
+                    </div>
+                  }
+                  className="border-gray-100"
+                >
+                  <div className="space-y-4">
+                  <div className="grid grid-cols-5 gap-4">
                     <div>
                       <Label>Day Number</Label>
                       <Input
@@ -888,6 +1451,14 @@ export default function NewProgramPage() {
                         onChange={(e) => updateDay(weekIndex, dayIndex, { isRestDay: e.target.checked })}
                       />
                       <Label>Rest Day</Label>
+                    </div>
+                    <div>
+                      <Label>Day focus</Label>
+                      <Input
+                        value={day.dayFocus ?? ''}
+                        onChange={(e) => updateDay(weekIndex, dayIndex, { dayFocus: e.target.value })}
+                        placeholder="e.g. lower body"
+                      />
                     </div>
                     <div>
                       <Label>Day Name (EN)</Label>
@@ -914,19 +1485,36 @@ export default function NewProgramPage() {
                   </div>
 
                   {day.sessions.map((session, sessionIndex) => (
-                    <Card key={`session-${sessionIndex}`} className="p-4 space-y-4 border border-gray-100">
-                      <div className="flex items-center justify-between">
-                        <span className="text-sm font-semibold">Session {sessionIndex + 1}</span>
-                        <Button
-                          type="button"
-                          variant="outline"
-                          onClick={() => removeSession(weekIndex, dayIndex, sessionIndex)}
-                          disabled={day.sessions.length === 1}
-                        >
-                          Remove Session
-                        </Button>
-                      </div>
-
+                    <CollapsibleBuilderSection
+                      key={`session-${sessionIndex}`}
+                      title={`Session ${sessionIndex + 1}`}
+                      subtitle={getSessionSummary(session)}
+                      defaultOpen={weekIndex === 0 && dayIndex === 0 && sessionIndex === 0}
+                      meta={[
+                        { label: `${session.items.length} item(s)` },
+                      ]}
+                      actions={
+                        <div className="flex items-center gap-2">
+                          <Button
+                            type="button"
+                            variant="outline"
+                            onClick={() => removeSession(weekIndex, dayIndex, sessionIndex)}
+                            disabled={day.sessions.length === 1}
+                          >
+                            Remove Session
+                          </Button>
+                          <Button
+                            type="button"
+                            variant="secondary"
+                            onClick={() => duplicateSession(weekIndex, dayIndex, sessionIndex)}
+                          >
+                            Duplicate Session
+                          </Button>
+                        </div>
+                      }
+                      className="border-gray-100"
+                    >
+                      <div className="space-y-4">
                       <div className="grid grid-cols-2 gap-4">
                         <div>
                           <Label>Session Name (EN)</Label>
@@ -959,18 +1547,16 @@ export default function NewProgramPage() {
                           <p className="text-xs text-gray-500">Add exercises and rest periods</p>
                         </div>
                         <div className="flex items-center gap-2">
-                          <Select
+                          <SearchableSelect
                             value=""
-                            onChange={(e) => {
-                              const workoutId = e.target.value;
-                              if (workoutId) {
-                                importWorkout(weekIndex, dayIndex, sessionIndex, workoutId);
+                            onChange={(value) => {
+                              if (value) {
+                                importWorkout(weekIndex, dayIndex, sessionIndex, value);
                               }
                             }}
-                            options={[
-                              { value: '', label: loadingWorkouts ? 'Loading workouts...' : 'Import Workout' },
-                              ...workoutOptions,
-                            ]}
+                            options={workoutOptions}
+                            placeholder={loadingWorkouts ? 'Loading workouts...' : 'Import workout'}
+                            searchPlaceholder="Search workouts..."
                           />
                           <Button
                             type="button"
@@ -991,11 +1577,18 @@ export default function NewProgramPage() {
                       </div>
 
                       {session.items.map((item, itemIndex) => (
-                        <Card key={`item-${itemIndex}`} className="p-4 space-y-3 border border-gray-200">
-                          <div className="flex items-center justify-between">
-                            <span className="text-sm font-semibold">
-                              {item.type === 'exercise' ? 'Exercise' : 'Rest'} {itemIndex + 1}
-                            </span>
+                        <CollapsibleBuilderSection
+                          key={`item-${itemIndex}`}
+                          title={`${item.type === 'exercise' ? 'Exercise' : 'Rest'} ${itemIndex + 1}`}
+                          subtitle={getItemSummary(item)}
+                          defaultOpen={session.items.length <= 2}
+                          meta={[
+                            {
+                              label: item.type === 'exercise' ? 'Exercise' : 'Rest',
+                              variant: item.type === 'exercise' ? 'success' : 'warning',
+                            },
+                          ]}
+                          actions={
                             <Button
                               type="button"
                               variant="outline"
@@ -1003,8 +1596,10 @@ export default function NewProgramPage() {
                             >
                               Remove
                             </Button>
-                          </div>
-
+                          }
+                          className="border-gray-200"
+                        >
+                          <div className="space-y-3">
                           <div className="grid grid-cols-2 gap-4">
                             <div>
                               <Label>Type</Label>
@@ -1024,14 +1619,16 @@ export default function NewProgramPage() {
                             {item.type === 'exercise' ? (
                               <div>
                                 <Label>Exercise</Label>
-                                <Select
+                                <SearchableSelect
                                   value={item.exerciseId || ''}
-                                  onChange={(e) =>
+                                  onChange={(value) =>
                                     updateItem(weekIndex, dayIndex, sessionIndex, itemIndex, {
-                                      exerciseId: e.target.value,
+                                      exerciseId: value,
                                     })
                                   }
                                   options={exerciseOptions}
+                                  placeholder="Select exercise"
+                                  searchPlaceholder="Search exercises..."
                                 />
                               </div>
                             ) : (
@@ -1136,44 +1733,95 @@ export default function NewProgramPage() {
                                 </div>
                               </div>
 
-                              <div className="grid grid-cols-2 gap-4">
-                                <div>
-                                  <Label>Notes (EN)</Label>
-                                  <Input
-                                    value={item.notes.en}
-                                    onChange={(e) =>
-                                      updateItem(weekIndex, dayIndex, sessionIndex, itemIndex, {
-                                        notes: { ...item.notes, en: e.target.value },
-                                      })
-                                    }
-                                  />
+                              <details className="rounded-lg border border-gray-200 bg-gray-50">
+                                <summary className="cursor-pointer px-3 py-2 text-sm font-medium text-gray-700">
+                                  Advanced item settings
+                                </summary>
+                                <div className="space-y-4 border-t border-gray-200 p-3">
+                                  <div className="grid grid-cols-2 gap-4">
+                                    <div>
+                                      <Label>Notes (EN)</Label>
+                                      <Input
+                                        value={item.notes.en}
+                                        onChange={(e) =>
+                                          updateItem(weekIndex, dayIndex, sessionIndex, itemIndex, {
+                                            notes: { ...item.notes, en: e.target.value },
+                                          })
+                                        }
+                                      />
+                                    </div>
+                                    <div>
+                                      <Label>Notes (AR)</Label>
+                                      <Input
+                                        dir="rtl"
+                                        value={item.notes.ar}
+                                        onChange={(e) =>
+                                          updateItem(weekIndex, dayIndex, sessionIndex, itemIndex, {
+                                            notes: { ...item.notes, ar: e.target.value },
+                                          })
+                                        }
+                                      />
+                                    </div>
+                                  </div>
+
+                                  <div className="grid grid-cols-3 gap-4">
+                                    <div>
+                                      <Label>Role</Label>
+                                      <Select
+                                        value={item.role ?? ''}
+                                        onChange={(e) =>
+                                          updateItem(weekIndex, dayIndex, sessionIndex, itemIndex, {
+                                            role: e.target.value,
+                                          })
+                                        }
+                                        options={SESSION_ITEM_ROLE_OPTIONS}
+                                      />
+                                    </div>
+                                    <div>
+                                      <Label>Intent</Label>
+                                      <Select
+                                        value={item.intent ?? ''}
+                                        onChange={(e) =>
+                                          updateItem(weekIndex, dayIndex, sessionIndex, itemIndex, {
+                                            intent: e.target.value,
+                                          })
+                                        }
+                                        options={SESSION_ITEM_INTENT_OPTIONS}
+                                      />
+                                    </div>
+                                    <div>
+                                      <Label>Coaching notes (JSON)</Label>
+                                      <Textarea
+                                        rows={2}
+                                        value={item.coachingNotesJson ?? ''}
+                                        onChange={(e) =>
+                                          updateItem(weekIndex, dayIndex, sessionIndex, itemIndex, {
+                                            coachingNotesJson: e.target.value,
+                                          })
+                                        }
+                                        placeholder="{}"
+                                      />
+                                    </div>
+                                  </div>
                                 </div>
-                                <div>
-                                  <Label>Notes (AR)</Label>
-                                  <Input
-                                    dir="rtl"
-                                    value={item.notes.ar}
-                                    onChange={(e) =>
-                                      updateItem(weekIndex, dayIndex, sessionIndex, itemIndex, {
-                                        notes: { ...item.notes, ar: e.target.value },
-                                      })
-                                    }
-                                  />
-                                </div>
-                              </div>
+                              </details>
                             </>
                           )}
-                        </Card>
+                          </div>
+                        </CollapsibleBuilderSection>
                       ))}
-                    </Card>
+                      </div>
+                    </CollapsibleBuilderSection>
                   ))}
-                </Card>
+                  </div>
+                </CollapsibleBuilderSection>
               ))}
-            </Card>
+              </div>
+            </CollapsibleBuilderSection>
           ))}
         </Card>
 
-        <div className="flex justify-end gap-4">
+        <div className="sticky bottom-4 z-10 flex justify-end gap-4 rounded-2xl border border-gray-200 bg-white/95 p-4 shadow-sm backdrop-blur">
           <Button type="button" variant="outline" onClick={() => router.push('/admin/programs')}>
             Cancel
           </Button>

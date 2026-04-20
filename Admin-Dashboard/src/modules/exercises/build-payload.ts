@@ -115,6 +115,15 @@ export function buildExercisePayload() {
     ? { duration: store.repConfig.duration || 30, gracePeriodMs: store.repConfig.gracePeriodMs || 2500 }
     : { reps: store.repConfig.reps || 12, minRepIntervalMs: store.repConfig.minRepIntervalMs || 1500, maxRepIntervalMs: store.repConfig.maxRepIntervalMs || 5000 };
 
+  const b = store.blueprintExerciseMeta ?? {
+    movementPattern: '',
+    loadCapability: '',
+    familyKey: '',
+    familyOrder: '',
+  };
+  const familyOrderNum =
+    b.familyOrder.trim() === '' ? undefined : Number.parseInt(b.familyOrder, 10);
+
   return {
     name: store.basicInfo.name,
     description: store.basicInfo.description,
@@ -150,5 +159,11 @@ export function buildExercisePayload() {
     bilateralConfig: store.bilateralConfig.enabled
       ? { switchEvery: store.bilateralConfig.switchEvery, startSide: store.bilateralConfig.startSide }
       : null,
+    ...(b.movementPattern ? { movementPattern: b.movementPattern } : {}),
+    ...(b.loadCapability ? { loadCapability: b.loadCapability } : {}),
+    ...(b.familyKey.trim() ? { familyKey: b.familyKey.trim() } : {}),
+    ...(familyOrderNum !== undefined && Number.isFinite(familyOrderNum)
+      ? { familyOrder: familyOrderNum }
+      : {}),
   };
 }

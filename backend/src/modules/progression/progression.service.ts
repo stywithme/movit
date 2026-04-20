@@ -13,7 +13,13 @@
 
 import { getPrisma } from '@/lib/prisma/client';
 import { intX10ToFloat } from '@/lib/metrics';
-import type { AxisConfig, QualityGate, PromotionPolicy, RegressionPolicy } from './archetype-defaults';
+import {
+  applyGoalPriorityOrder,
+  type AxisConfig,
+  type QualityGate,
+  type PromotionPolicy,
+  type RegressionPolicy,
+} from './archetype-defaults';
 
 // ── Types ──
 
@@ -146,6 +152,11 @@ export const progressionService = {
   ): Promise<ProgressionChange[]> {
     const prisma = await getPrisma();
     const allChanges: ProgressionChange[] = [];
+    const userProgram = await prisma.userProgram.findUnique({
+      where: { id: userProgramId },
+      select: { user: { select: { trainingGoal: true } } },
+    });
+    const trainingGoal = userProgram?.user.trainingGoal;
 
     for (const exerciseId of exerciseIds) {
       const profile = await prisma.exerciseProgressionProfile.findUnique({
@@ -157,7 +168,11 @@ export const progressionService = {
       const promotionPolicy = profile.promotionPolicy as unknown as PromotionPolicy;
       const regressionPolicy = profile.regressionPolicy as unknown as RegressionPolicy;
       const allowedAxes = profile.allowedAxes as string[];
-      const priorityOrder = profile.priorityOrder as string[];
+      const priorityOrder = applyGoalPriorityOrder(
+        profile.priorityOrder as string[],
+        allowedAxes,
+        trainingGoal,
+      );
 
       const windowSize = Math.max(promotionPolicy.requiredStreakSessions, 2);
       const summary = await getRecentMetrics(userId, exerciseId, windowSize);
@@ -169,7 +184,7 @@ export const progressionService = {
       });
 
       if (!state) {
-        state = await this.initializeState(userProgramId, exerciseId, profile);
+        state = await this.initializeState(userProgramId, exerciseId, profile, trainingGoal);
       }
 
       if (!state) continue;
@@ -250,14 +265,19 @@ export const progressionService = {
     return allChanges;
   },
 
-  async initializeState(userProgramId: string, exerciseId: string, profile: any) {
+  async initializeState(userProgramId: string, exerciseId: string, profile: any, trainingGoal?: string | null) {
     const prisma = await getPrisma();
 
     const repAxis = profile.repAxis as AxisConfig | null;
     const loadAxis = profile.loadAxis as AxisConfig | null;
     const durationAxis = profile.durationAxis as AxisConfig | null;
     const setAxis = profile.setAxis as AxisConfig | null;
-    const priorityOrder = profile.priorityOrder as string[];
+    const allowedAxes = profile.allowedAxes as string[];
+    const priorityOrder = applyGoalPriorityOrder(
+      profile.priorityOrder as string[],
+      allowedAxes,
+      (trainingGoal as any) ?? undefined,
+    );
     const ladder = profile.difficultyLadder as string[] | null;
 
     const existingItem = await prisma.programSessionItem.findFirst({
@@ -457,8 +477,6 @@ export const progressionService = {
       return null;
     }
 
-    await this.materializeToNextItem(userProgramId, exerciseId);
-
     const updatedState = await prisma.userProgramExerciseProgressionState.findUnique({
       where: { userProgramId_exerciseId: { userProgramId, exerciseId } },
     });
@@ -588,8 +606,6 @@ export const progressionService = {
       data: updateData,
     });
 
-    await this.materializeToNextItem(userProgramId, exerciseId);
-
     const updatedState = await prisma.userProgramExerciseProgressionState.findUnique({
       where: { userProgramId_exerciseId: { userProgramId, exerciseId } },
     });
@@ -632,46 +648,6 @@ export const progressionService = {
         en: `Adjusted: ${reason}`,
       },
     };
-  },
-
-  async materializeToNextItem(userProgramId: string, exerciseId: string) {
-    const prisma = await getPrisma();
-
-    const state = await prisma.userProgramExerciseProgressionState.findUnique({
-      where: { userProgramId_exerciseId: { userProgramId, exerciseId } },
-    });
-    if (!state) return;
-
-    const nextItems = await prisma.programSessionItem.findMany({
-      where: {
-        exerciseId,
-        session: {
-          day: {
-            week: {
-              program: {
-                userPrograms: { some: { id: userProgramId, isActive: true } },
-              },
-            },
-          },
-          reports: { none: { status: 'completed' } },
-        },
-      },
-      orderBy: { sortOrder: 'asc' },
-    });
-
-    for (const item of nextItems) {
-      await prisma.programSessionItem.update({
-        where: { id: item.id },
-        data: {
-          ...(state.currentTargetReps != null ? { targetReps: state.currentTargetReps } : {}),
-          ...(state.currentWeightKg != null ? { weightKg: state.currentWeightKg } : {}),
-          ...(state.currentTargetDuration != null ? { targetDuration: state.currentTargetDuration } : {}),
-          ...(state.currentTargetSets != null ? { sets: state.currentTargetSets } : {}),
-          ...(state.currentDifficultyCode != null ? { difficultyCode: state.currentDifficultyCode } : {}),
-          isPersonalized: true,
-        },
-      });
-    }
   },
 
   async getHistory(userId: string, limit = 20): Promise<unknown[]> {

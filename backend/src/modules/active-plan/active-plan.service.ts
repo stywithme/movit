@@ -6,6 +6,19 @@
  */
 
 import { getPrisma } from '@/lib/prisma/client';
+import { programDomainToLegacyString } from '@/lib/program-domain';
+import {
+  countEffectiveExerciseItems,
+  effectivePlanService,
+  type EffectivePlanSession,
+} from '@/modules/effective-plan/effective-plan.service';
+import type { ProgramAssignmentReason } from '@/modules/programs/program-assignment';
+import { resolveCurrentProgramDay } from './plan-position';
+
+interface EnrollProgramOptions {
+  assignmentReason?: ProgramAssignmentReason | null;
+  name?: Record<string, string> | null;
+}
 
 // ── Types ──
 
@@ -82,7 +95,18 @@ export const activePlanService = {
           include: {
             userProgram: {
               include: {
-                program: true,
+                program: {
+                  include: {
+                    weeks: {
+                      select: {
+                        weekNumber: true,
+                        days: {
+                          select: { dayNumber: true },
+                        },
+                      },
+                    },
+                  },
+                },
                 progress: true,
               },
             },
@@ -102,7 +126,18 @@ export const activePlanService = {
             include: {
               userProgram: {
                 include: {
-                  program: true,
+                  program: {
+                    include: {
+                      weeks: {
+                        select: {
+                          weekNumber: true,
+                          days: {
+                            select: { dayNumber: true },
+                          },
+                        },
+                      },
+                    },
+                  },
                   progress: true,
                 },
               },
@@ -119,17 +154,10 @@ export const activePlanService = {
       programs: plan.programs.map((slot) => {
         const prog = slot.userProgram.program;
         const progressEntries = slot.userProgram.progress || [];
-        // Count only __day__ sentinel entries as fully completed days
-        const completedDaySentinels = progressEntries.filter(
-          (p) => p.status === 'completed' && p.sessionId === '__day__',
-        );
         const totalDays = prog ? prog.durationWeeks * 7 : 0;
-
-        // Find current position from day-level sentinels
-        const latestDay = completedDaySentinels.sort((a, b) => {
-          if (a.weekNumber !== b.weekNumber) return b.weekNumber - a.weekNumber;
-          return b.dayNumber - a.dayNumber;
-        })[0];
+        const position = prog
+          ? resolveCurrentProgramDay(prog.weeks, progressEntries)
+          : null;
 
         return {
           id: slot.id,
@@ -143,17 +171,17 @@ export const activePlanService = {
                 id: prog.id,
                 name: prog.name as Record<string, string>,
                 slug: prog.slug,
-                type: prog.type,
+                type: programDomainToLegacyString(prog.programDomain),
                 durationWeeks: prog.durationWeeks,
                 difficulty: prog.difficulty,
                 coverImageUrl: prog.coverImageUrl,
               }
             : null,
           progress: {
-            completedDays: completedDaySentinels.length,
+            completedDays: position?.completedDayCount ?? 0,
             totalDays,
-            currentWeek: latestDay?.weekNumber ?? 1,
-            currentDay: latestDay?.dayNumber ?? 1,
+            currentWeek: position?.targetWeekNumber ?? 1,
+            currentDay: position?.targetDayNumber ?? 1,
           },
         };
       }),
@@ -168,63 +196,61 @@ export const activePlanService = {
   async enrollProgram(
     userId: string,
     programId: string,
+    options?: EnrollProgramOptions,
   ): Promise<ActivePlanData> {
     const prisma = await getPrisma();
 
-    // Ensure plan exists
-    let plan = await prisma.activePlan.upsert({
-      where: { userId },
-      create: { userId, status: 'active' },
-      update: {},
-    });
+    await prisma.$transaction(async (tx) => {
+      const plan = await tx.activePlan.upsert({
+        where: { userId },
+        create: { userId, status: 'active' },
+        update: {},
+      });
 
-    // Create UserProgram enrollment
-    const userProgram = await prisma.userProgram.create({
-      data: {
-        userId,
-        programId,
-        isActive: true,
-      },
-    });
+      const userProgram = await tx.userProgram.create({
+        data: {
+          userId,
+          programId,
+          name: (options?.name as object) || undefined,
+          assignmentReason: (options?.assignmentReason as object) || undefined,
+          isActive: true,
+        },
+      });
 
-    // Deactivate previous UserPrograms
-    await prisma.userProgram.updateMany({
-      where: {
-        userId,
-        id: { not: userProgram.id },
-        isActive: true,
-      },
-      data: { isActive: false },
-    });
+      await tx.userProgram.updateMany({
+        where: {
+          userId,
+          id: { not: userProgram.id },
+          isActive: true,
+        },
+        data: { isActive: false },
+      });
 
-    // Get current max sortOrder
-    const maxSlot = await prisma.activePlanProgram.findFirst({
-      where: { activePlanId: plan.id },
-      orderBy: { sortOrder: 'desc' },
-    });
-    const nextOrder = (maxSlot?.sortOrder ?? -1) + 1;
+      const maxSlot = await tx.activePlanProgram.findFirst({
+        where: { activePlanId: plan.id },
+        orderBy: { sortOrder: 'desc' },
+      });
+      const nextOrder = (maxSlot?.sortOrder ?? -1) + 1;
 
-    // Mark previous active slot as completed
-    await prisma.activePlanProgram.updateMany({
-      where: { activePlanId: plan.id, status: 'active' },
-      data: { status: 'completed', completedAt: new Date() },
-    });
+      await tx.activePlanProgram.updateMany({
+        where: { activePlanId: plan.id, status: 'active' },
+        data: { status: 'completed', completedAt: new Date() },
+      });
 
-    // Add program to plan
-    await prisma.activePlanProgram.create({
-      data: {
-        activePlanId: plan.id,
-        userProgramId: userProgram.id,
-        sortOrder: nextOrder,
-        status: 'active',
-        actualStartDate: new Date(),
-      },
-    });
+      await tx.activePlanProgram.create({
+        data: {
+          activePlanId: plan.id,
+          userProgramId: userProgram.id,
+          sortOrder: nextOrder,
+          status: 'active',
+          actualStartDate: new Date(),
+        },
+      });
 
-    // Ensure plan is active
-    await prisma.activePlan.update({
-      where: { id: plan.id },
-      data: { status: 'active' },
+      await tx.activePlan.update({
+        where: { id: plan.id },
+        data: { status: 'active' },
+      });
     });
 
     return this.getOrCreate(userId);
@@ -306,49 +332,32 @@ export const activePlanService = {
       };
     }
 
-    // Determine current week/day from progress.
-    // Only use '__day__' sentinel entries to determine completed days
-    // (individual session entries don't mean the entire day is done).
     const progressEntries = activeSlot.userProgram.progress || [];
-    const completedDaySentinels = progressEntries.filter(
-      (p) => p.status === 'completed' && p.sessionId === '__day__',
-    );
+    const position = resolveCurrentProgramDay(program.weeks, progressEntries);
+    const targetWeek = position.targetWeekNumber;
+    const targetDay = position.targetDayNumber;
+    const week = position.targetWeek as (typeof program.weeks)[number] | undefined;
+    const day = position.targetDay as (typeof program.weeks)[number]['days'][number] | undefined;
 
-    // Calculate next training day
-    const allWeeks = program.weeks.sort((a, b) => a.weekNumber - b.weekNumber);
-    let targetWeek = 1;
-    let targetDay = 1;
-
-    if (completedDaySentinels.length > 0) {
-      // Find the latest completed day (by week then day number)
-      const latest = completedDaySentinels.sort((a, b) => {
-        if (a.weekNumber !== b.weekNumber) return b.weekNumber - a.weekNumber;
-        return b.dayNumber - a.dayNumber;
-      })[0];
-      targetWeek = latest.weekNumber;
-      targetDay = latest.dayNumber + 1;
-      if (targetDay > 7) {
-        targetWeek += 1;
-        targetDay = 1;
-      }
-    } else if (progressEntries.some((p) => p.status === 'completed')) {
-      // Sessions exist but no __day__ sentinel yet — user is mid-day.
-      // Find the day they're currently working on (latest session entry).
-      const latestSession = progressEntries
-        .filter((p) => p.status === 'completed' && p.sessionId !== '__day__')
-        .sort((a, b) => {
-          if (a.weekNumber !== b.weekNumber) return b.weekNumber - a.weekNumber;
-          return b.dayNumber - a.dayNumber;
-        })[0];
-      if (latestSession) {
-        targetWeek = latestSession.weekNumber;
-        targetDay = latestSession.dayNumber;
-      }
+    if (position.isProgramComplete) {
+      return {
+        activePlanStatus: 'program_complete',
+        currentProgram: {
+          name: program.name as Record<string, string>,
+          weekNumber: targetWeek,
+          dayNumber: targetDay,
+          dayType: 'completed',
+          isRestDay: false,
+          sessions: [],
+        },
+        nextReassessment: nextReassessment
+          ? {
+              scheduledDate: nextReassessment.scheduledDate.toISOString(),
+              reason: nextReassessment.reason,
+            }
+          : null,
+      };
     }
-
-    // Find the day
-    const week = allWeeks.find((w) => w.weekNumber === targetWeek);
-    const day = week?.days.find((d) => d.dayNumber === targetDay);
 
     if (!week || !day) {
       return {
@@ -370,6 +379,20 @@ export const activePlanService = {
       };
     }
 
+    const userProgramId = activeSlot.userProgram.id;
+    let effSessionById = new Map<string, EffectivePlanSession>();
+    try {
+      const eff = await effectivePlanService.getEffectivePlan(
+        userId,
+        userProgramId,
+        targetWeek,
+        targetDay,
+      );
+      effSessionById = new Map((eff?.sessions ?? []).map((s) => [s.id, s]));
+    } catch (error) {
+      console.warn('[ActivePlan] effective plan for today:', error);
+    }
+
     return {
       activePlanStatus: plan.status,
       currentProgram: {
@@ -378,14 +401,20 @@ export const activePlanService = {
         dayNumber: targetDay,
         dayType: day.dayType,
         isRestDay: day.isRestDay,
-        sessions: day.sessions.map((s) => ({
-          id: s.id,
-          name: s.name as Record<string, string>,
-          sessionCategory: s.sessionCategory,
-          estimatedDurationMin: s.estimatedDurationMin,
-          itemCount: s.items.length,
-          isCompleted: s.reports.length > 0,
-        })),
+        sessions: day.sessions.map((s) => {
+          const effS = effSessionById.get(s.id);
+          const itemCount = effS
+            ? countEffectiveExerciseItems(effS)
+            : s.items.filter((it) => it.type === 'exercise').length;
+          return {
+            id: s.id,
+            name: s.name as Record<string, string>,
+            sessionCategory: s.sessionCategory,
+            estimatedDurationMin: s.estimatedDurationMin,
+            itemCount,
+            isCompleted: s.reports.length > 0,
+          };
+        }),
       },
       nextReassessment: nextReassessment
         ? {
@@ -447,16 +476,26 @@ export const activePlanService = {
       });
     }
 
-    // Schedule reassessment after program completion
-    await prisma.reassessmentSchedule.create({
-      data: {
-        userId,
-        reason: 'program_complete',
-        scheduledDate: new Date(Date.now() + 24 * 60 * 60 * 1000), // Tomorrow
-        status: 'pending',
-        notes: `Auto-scheduled after completing program`,
-      },
-    });
+    if (!nextSlot) {
+      const existingPending = await prisma.reassessmentSchedule.findFirst({
+        where: {
+          userId,
+          reason: 'program_complete',
+          status: { in: ['pending', 'overdue'] },
+        },
+      });
+      if (!existingPending) {
+        await prisma.reassessmentSchedule.create({
+          data: {
+            userId,
+            reason: 'program_complete',
+            scheduledDate: new Date(),
+            status: 'pending',
+            notes: `Auto-scheduled after completing final program`,
+          },
+        });
+      }
+    }
 
     return this.getOrCreate(userId);
   },

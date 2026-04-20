@@ -12,6 +12,7 @@ import { seedAdmins } from './seeders/admins';
 import { seedLevels } from './seeders/levels';
 import { seedProgressionRules, assignArchetypesAndGenerateProfiles, backfillProgressionState } from './seeders/progression-rules';
 import { seedAssessmentTemplates } from './seeders/assessment-templates';
+import { runSeedValidatorsAndReport } from './seeders/seeder-validators';
 import { seedPermissions } from './seeders/permissions';
 import { seedSystemConfig } from './seeders/system';
 import { seedSystemMessages } from './seeders/system-messages';
@@ -44,6 +45,7 @@ async function main() {
   if (exerciseCount >= 4) {
     await seedPrograms(prisma);
     await seedUserPrograms(prisma);
+    await runSeedValidatorsAndReport(prisma);
   } else {
     console.warn('⚠️ Skipping programs & user programs (not enough exercises).');
   }

@@ -6,6 +6,7 @@
  */
 
 import {
+  applyGoalPriorityOrder,
   getArchetypeDefaults,
   buildDefaultProfile,
   ARCHETYPE_DEFAULTS,
@@ -80,6 +81,26 @@ describe('Archetype Defaults', () => {
 
   it('should return null for unknown archetype profile', () => {
     expect(buildDefaultProfile('nonexistent')).toBeNull();
+  });
+
+  it('should reorder priority by training goal without leaving allowed axes', () => {
+    const result = applyGoalPriorityOrder(
+      ['reps', 'load', 'sets'],
+      ['reps', 'load', 'sets'],
+      'STRENGTH',
+    );
+
+    expect(result).toEqual(['load', 'reps', 'sets']);
+  });
+
+  it('should keep only allowed axes when goal override introduces unsupported ones', () => {
+    const result = applyGoalPriorityOrder(
+      ['reps', 'difficulty'],
+      ['reps', 'difficulty'],
+      'POWER',
+    );
+
+    expect(result).toEqual(['difficulty', 'reps']);
   });
 });
 

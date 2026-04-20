@@ -7,6 +7,7 @@
  */
 
 import type { LocalizedText, CountingMethodCode, JointStateName } from '@/lib/types/localized';
+import type { LoadCapability, MovementPattern } from '@prisma/client';
 
 // ============================================
 // ANGLE RANGE TYPES
@@ -612,6 +613,12 @@ export interface CreateExerciseInput {
 
   // Report metrics configuration
   reportMetrics?: ReportMetricsConfig;
+
+  /** Blueprint: movement taxonomy & progression ladder */
+  movementPattern?: MovementPattern | null;
+  loadCapability?: LoadCapability | null;
+  familyKey?: string | null;
+  familyOrder?: number | null;
 }
 
 /**

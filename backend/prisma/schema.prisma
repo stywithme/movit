@@ -76,6 +76,10 @@ model Exercise {
   countingMethod            AttributeValue               @relation("ExerciseCountingMethod", fields: [countingMethodId], references: [id])
   poseVariants              PoseVariant[]
   archetype                 ExerciseArchetype?
+  movementPattern           MovementPattern?
+  loadCapability            LoadCapability?
+  familyKey                 String?
+  familyOrder               Int?
   programSessionItems       ProgramSessionItem[]
   trainingSessions          TrainingSession[]
   workoutExercises          WorkoutExercise[]
@@ -351,9 +355,9 @@ model Program {
   createdAt             DateTime               @default(now())
   updatedAt             DateTime               @updatedAt
   deletedAt             DateTime?
-  contraindications     String[]               @default([])
-  entryCriteria         Json?
-  exitCriteria          Json?
+  contraindications       String[]               @default([])
+  entryRecommendations    Json?
+  exitRecommendations     Json?
   levelRangeMax         Int                    @default(5)
   levelRangeMin         Int                    @default(1)
   nextProgramId         String?
@@ -361,7 +365,17 @@ model Program {
   prescriptionPriority  Int                    @default(100)
   targetDomain          String?
   targetRegions         String[]               @default([])
-  type                  String                 @default("training")
+  targetEquipment       Json?
+  programType           ProgramType            @default(SYSTEM)
+  programDomain         ProgramDomain          @default(TRAINING)
+  trainingGoal          TrainingGoal?
+  autoAssignable        Boolean                @default(false)
+  version               Int                    @default(1)
+  ownerId               String?
+  forkedFromId          String?
+  coachingNotes         Json?
+  weeklySessionTarget   Int?
+  estimatedSessionMinutes Int?
   isFeatured            Boolean                @default(false)
   programSessionReports ProgramSessionReport[]
   weeks                 ProgramWeek[]
@@ -369,12 +383,15 @@ model Program {
   previousPrograms      Program[]              @relation("ProgramNext")
   prerequisiteProgram   Program?               @relation("ProgramChain", fields: [prerequisiteProgramId], references: [id])
   dependentPrograms     Program[]              @relation("ProgramChain")
+  forkedFrom            Program?               @relation("ProgramFork", fields: [forkedFromId], references: [id])
+  forkedPrograms        Program[]              @relation("ProgramFork")
   progressionRules      ProgressionRule[]
   userPrograms          UserProgram[]
 
   @@index([deletedAt])
   @@index([isPublished])
-  @@index([type])
+  @@index([programType])
+  @@index([programDomain])
   @@index([levelRangeMin, levelRangeMax])
   @@map("programs")
 }
@@ -388,7 +405,7 @@ model ProgramWeek {
   sortOrder   Int          @default(0)
   createdAt   DateTime     @default(now())
   updatedAt   DateTime     @updatedAt
-  weekType    String       @default("normal")
+  weekType    WeekType     @default(NORMAL)
   days        ProgramDay[]
   program     Program      @relation(fields: [programId], references: [id], onDelete: Cascade)
 
@@ -406,6 +423,7 @@ model ProgramDay {
   createdAt DateTime         @default(now())
   updatedAt DateTime         @updatedAt
   dayType   String           @default("training")
+  dayFocus  String?
   week      ProgramWeek      @relation(fields: [weekId], references: [id], onDelete: Cascade)
   sessions  ProgramSession[]
 
@@ -449,7 +467,10 @@ model ProgramSessionItem {
   isModified        Boolean          @default(false)
   createdAt         DateTime         @default(now())
   updatedAt         DateTime         @updatedAt
-  alternatives      String[]         @default([])
+  allowedSubstitutions String[]       @default([])
+  role              SessionItemRole?
+  intent            SessionItemIntent?
+  coachingNotes     Json?
   difficultyCode    String?
   isPersonalized    Boolean          @default(false)
   levelOverride     Int?
@@ -460,6 +481,7 @@ model ProgramSessionItem {
   progressionRule   ProgressionRule? @relation(fields: [progressionRuleId], references: [id])
   session           ProgramSession   @relation(fields: [sessionId], references: [id], onDelete: Cascade)
   sourceWorkout     Workout?         @relation(fields: [sourceWorkoutId], references: [id])
+  userProgramOverrides UserProgramOverride[]
 
   @@index([sessionId])
   @@index([exerciseId])
@@ -476,17 +498,40 @@ model UserProgram {
   startDate       DateTime              @default(now())
   isActive        Boolean               @default(true)
   customizations  Json?
+  templateVersion Int                   @default(1)
+  assignmentReason Json?
   createdAt       DateTime              @default(now())
   updatedAt       DateTime              @updatedAt
   activePlanSlots    ActivePlanProgram[]
   progress           UserProgramProgress[]
   progressionStates  UserProgramExerciseProgressionState[]
+  overrides          UserProgramOverride[]
   program            Program?              @relation(fields: [programId], references: [id])
   user               User                  @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
   @@index([programId])
   @@map("user_programs")
+}
+
+/// User-specific overrides applied on top of program template (effective plan).
+model UserProgramOverride {
+  id             String             @id @default(uuid())
+  userProgramId  String
+  weekNumber     Int
+  dayNumber      Int
+  sessionItemId  String
+  overrideType   OverrideType
+  reasonCode     OverrideReason?
+  data           Json?
+  appliedBy      OverrideAppliedBy  @default(USER)
+  createdAt      DateTime           @default(now())
+  userProgram    UserProgram        @relation(fields: [userProgramId], references: [id], onDelete: Cascade)
+  sessionItem    ProgramSessionItem @relation(fields: [sessionItemId], references: [id], onDelete: Cascade)
+
+  @@index([userProgramId, weekNumber, dayNumber])
+  @@index([sessionItemId])
+  @@map("user_program_overrides")
 }
 
 model UserProgramProgress {
@@ -658,10 +703,39 @@ model User {
   userExercisePreferences UserExercisePreference[]
   bookings              Booking[]
   subscriptions         Subscription[]
+  trainingGoal          TrainingGoal           @default(GENERAL_HEALTH)
+  trainingProfile       TrainingProfile?
 
   @@index([email])
   @@index([googleId])
   @@map("users")
+}
+
+/// Training profile collected from user (onboarding); 1:1 with User.
+model TrainingProfile {
+  id                       String    @id @default(uuid())
+  userId                   String    @unique
+  heightCm                 Float?
+  weightKg                 Float?
+  dateOfBirth              DateTime?
+  biologicalSex            String?
+  currentActivityLevel     String?
+  trainingExperienceMonths Int?
+  resistanceExperience     String?
+  availableDaysPerWeek     Int?
+  maxSessionMinutes        Int?
+  availableEquipment       Json?
+  trainingLocation         String?
+  knownInjuries            Json?
+  painFlags                Json?
+  parqPassed               Boolean?
+  parqFlags                Json?
+  parqCompletedAt          DateTime?
+  createdAt                DateTime  @default(now())
+  updatedAt                DateTime  @updatedAt
+  user                     User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("training_profiles")
 }
 
 /// Refresh tokens for JWT authentication
@@ -1093,6 +1167,91 @@ enum Difficulty {
   beginner
   intermediate
   advanced
+}
+
+enum ProgramType {
+  SYSTEM
+  COACH
+  CUSTOM
+}
+
+enum ProgramDomain {
+  TRAINING
+  MOBILITY
+  THERAPEUTIC
+}
+
+enum TrainingGoal {
+  STRENGTH
+  HYPERTROPHY
+  POWER
+  GENERAL_HEALTH
+}
+
+enum WeekType {
+  NORMAL
+  DELOAD
+}
+
+enum SessionItemRole {
+  WARMUP
+  ACTIVATION
+  MAIN
+  ACCESSORY
+  CORRECTIVE
+  COOLDOWN
+  TEST
+}
+
+enum SessionItemIntent {
+  STANDARD
+  POWER
+  ECCENTRIC
+  VELOCITY_BASED
+}
+
+enum MovementPattern {
+  SQUAT
+  HINGE
+  LUNGE
+  PUSH_HORIZONTAL
+  PUSH_VERTICAL
+  PULL_HORIZONTAL
+  PULL_VERTICAL
+  CARRY
+  ROTATION
+  GAIT
+  JUMP_LAND
+  CORE_BRACE
+  MOBILITY_DRILL
+  OTHER
+}
+
+enum LoadCapability {
+  BODYWEIGHT_ONLY
+  EXTERNAL_LOAD_OPTIONAL
+  EXTERNAL_LOAD_REQUIRED
+}
+
+enum OverrideType {
+  REPLACE_EXERCISE
+  ADJUST_PRESCRIPTION
+  SKIP_ITEM
+  ADD_ITEM
+}
+
+enum OverrideReason {
+  PAIN_AVOIDANCE
+  EQUIPMENT_UNAVAILABLE
+  TIME_CONSTRAINT
+  PREFERENCE
+  COACH_RECOMMENDATION
+  OTHER
+}
+
+enum OverrideAppliedBy {
+  USER
+  COACH
 }
 
 enum ReportStatus {
