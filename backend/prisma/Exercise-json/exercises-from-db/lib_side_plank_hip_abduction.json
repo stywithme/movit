@@ -1,0 +1,390 @@
+{
+  "slug": "lib_side_plank_hip_abduction",
+  "status": "published",
+  "movementPattern": "CORE_BRACE",
+  "loadCapability": "BODYWEIGHT_ONLY",
+  "familyKey": "anti_lateral_flexion_family",
+  "familyOrder": 24,
+  "name": {
+    "ar": "بلانك جانبي مع خطف",
+    "en": "Side plank hip abduction"
+  },
+  "category": {
+    "code": "abs",
+    "name": {
+      "ar": "تمارين البطن",
+      "en": "Abs"
+    }
+  },
+  "countingMethod": "hold",
+  "muscles": [
+    "obliques",
+    "glutes"
+  ],
+  "equipment": [
+    "bodyweight",
+    "mat"
+  ],
+  "tags": [
+    "curated_library",
+    "core"
+  ],
+  "repCountingConfig": {
+    "duration": 30,
+    "gracePeriodMs": 2500
+  },
+  "poseVariants": [
+    {
+      "name": {
+        "ar": "مستلقٍ على الجانب",
+        "en": "Side lying"
+      },
+      "posePosition": "side_lying",
+      "expectedPostures": [
+        "lying_side"
+      ],
+      "expectedDirections": [
+        "side"
+      ],
+      "expectedRegions": [
+        "full_body"
+      ],
+      "trackedJoints": [
+        {
+          "joint": "left_hip",
+          "role": "primary",
+          "startPose": {
+            "max": 180,
+            "min": 150
+          },
+          "stateMessages": {
+            "danger": {
+              "ar": "توقف — فقدان الاستقرار",
+              "en": "Stop — stability lost"
+            },
+            "perfect": {
+              "ar": "خط جانبي ثابت — ممتاز",
+              "en": "Side line locked — great"
+            },
+            "warning": {
+              "ar": "لا تدع الوركين ينزلقان للأمام/الخلف",
+              "en": "Don’t let hips drift forward/back"
+            }
+          },
+          "range": {
+            "pad": {
+              "max": 180,
+              "min": 145
+            },
+            "danger": {
+              "max": 130,
+              "min": 0
+            },
+            "normal": {
+              "max": 180,
+              "min": 155
+            },
+            "perfect": {
+              "max": 180,
+              "min": 165
+            },
+            "warning": {
+              "max": 145,
+              "min": 130
+            }
+          }
+        },
+        {
+          "joint": "left_shoulder",
+          "role": "secondary",
+          "startPose": {
+            "max": 115,
+            "min": 70
+          },
+          "stateMessages": {
+            "perfect": {
+              "ar": "كتف فوق المرفق",
+              "en": "Shoulder over elbow"
+            },
+            "warning": {
+              "ar": "ادفع الأرض بقوة بالساعد",
+              "en": "Press the floor firmly through forearm"
+            }
+          },
+          "range": {
+            "normal": {
+              "max": 115,
+              "min": 78
+            },
+            "perfect": {
+              "max": 105,
+              "min": 85
+            },
+            "warning": {
+              "max": 130,
+              "min": 115
+            }
+          }
+        }
+      ],
+      "positionChecks": [
+        {
+          "id": "hip_stack_side",
+          "type": "horizontal_alignment",
+          "landmarks": {
+            "primary": "left_hip",
+            "secondary": "right_hip"
+          },
+          "condition": {
+            "operator": "approximately_equal",
+            "threshold": 0.12
+          },
+          "activePhases": [
+            "all"
+          ],
+          "errorMessage": {
+            "ar": "حافظ على الوركين في خط جانبي واحد.",
+            "en": "Keep hips stacked in one vertical line."
+          },
+          "severity": "warning",
+          "cooldownMs": 2500,
+          "minErrorFrames": 5
+        }
+      ],
+      "feedbackMessages": {
+        "motivational": [
+          {
+            "ar": "جذع ثابت — ممتاز!",
+            "en": "Stable core — great!"
+          },
+          {
+            "ar": "حافظ على الشد دون حبس أنفاس طويل",
+            "en": "Stay braced without long breath holds"
+          }
+        ],
+        "tips": [
+          {
+            "ar": "شدّ السرة برفق نحو العمود الفقري.",
+            "en": "Gently draw the navel toward the spine."
+          },
+          {
+            "ar": "زفير على الجهد، شهيق على التحضير.",
+            "en": "Exhale on effort, inhale to reset."
+          }
+        ]
+      },
+      "messageAssignments": [
+        {
+          "messageId": "43f54cc7-2a8d-4d66-8b9e-6f1a1c3f3cd0",
+          "target": "position",
+          "context": "error",
+          "checkId": "hip_stack_side",
+          "sortOrder": 1
+        },
+        {
+          "messageId": "bf4f2a8a-eb7d-485d-be09-f9a7f214b0ea",
+          "target": "joint_state",
+          "context": "perfect",
+          "jointCode": "left_hip",
+          "sortOrder": 2
+        },
+        {
+          "messageId": "46fe2b76-581f-4d62-bed9-e2a867bb9fe3",
+          "target": "joint_state",
+          "context": "warning",
+          "jointCode": "left_hip",
+          "sortOrder": 3
+        },
+        {
+          "messageId": "7e01c881-f058-42d0-9905-21b2b451cbbb",
+          "target": "joint_state",
+          "context": "danger",
+          "jointCode": "left_hip",
+          "sortOrder": 4
+        },
+        {
+          "messageId": "add3038e-79c0-4e70-a0c7-b8d1cb6592e6",
+          "target": "joint_state",
+          "context": "perfect",
+          "jointCode": "left_shoulder",
+          "sortOrder": 5
+        },
+        {
+          "messageId": "e9dc6ac7-2add-4ddf-a52b-fc0e5fe384ee",
+          "target": "joint_state",
+          "context": "warning",
+          "jointCode": "left_shoulder",
+          "sortOrder": 6
+        },
+        {
+          "messageId": "ef5f91b8-5791-4c91-ac6b-ba0ca3f1fab6",
+          "target": "feedback",
+          "context": "motivational",
+          "sortOrder": 7
+        },
+        {
+          "messageId": "af1a4cbc-3408-4c55-9049-6eac3b44acb8",
+          "target": "feedback",
+          "context": "motivational",
+          "sortOrder": 8
+        },
+        {
+          "messageId": "58fe0588-2666-424e-b6f9-9b548250b460",
+          "target": "feedback",
+          "context": "tip",
+          "sortOrder": 9
+        },
+        {
+          "messageId": "7dbe5d9c-255a-45d2-8c5d-0d24c21b81d3",
+          "target": "feedback",
+          "context": "tip",
+          "sortOrder": 10
+        }
+      ]
+    }
+  ],
+  "description": {
+    "ar": "تمرين مكتبة: بلانك جانبي مع خطف.",
+    "en": "Library exercise: Side plank hip abduction."
+  },
+  "instructions": {
+    "ar": "حافظ على عمود فقري محايد وتنفس بثبات وتوقف عند أي ألم حاد.",
+    "en": "Maintain neutral spine, steady breathing, and stop if sharp pain appears."
+  },
+  "reportMetrics": {
+    "primary": [
+      "FORM_SCORE"
+    ],
+    "excluded": [
+      "REP_COUNT",
+      "TEMPO",
+      "TUT",
+      "ROM",
+      "FORM_CONSISTENCY",
+      "FATIGUE_INDEX",
+      "VELOCITY",
+      "VELOCITY_LOSS",
+      "TEMPO_CONSISTENCY",
+      "WEIGHT",
+      "VOLUME",
+      "EST_1RM",
+      "SYMMETRY"
+    ]
+  },
+  "hasPositionChecks": true,
+  "_database": {
+    "id": "7f68b7ba-a39a-48f5-84c7-2736c5e7d054",
+    "categoryId": "01b944db-50df-4f53-aa08-ec5633820277",
+    "countingMethodId": "7ae86596-4b4b-400b-afa1-c7c0b6ba4fc9",
+    "publishedAt": "2026-04-20T17:26:29.045Z",
+    "createdAt": "2026-04-20T17:26:29.047Z",
+    "updatedAt": "2026-04-20T17:26:34.568Z",
+    "deletedAt": null,
+    "isFeatured": false,
+    "createdBy": null,
+    "updatedBy": null,
+    "repCountingConfig": null,
+    "bilateralConfig": null,
+    "isBilateral": false,
+    "supportsWeight": false,
+    "minWeight": null,
+    "maxWeight": null,
+    "defaultWeight": null,
+    "reportMetrics": {
+      "mode": "duration",
+      "version": 1,
+      "primaryKpi": "timeUnderTension",
+      "secondaryKpis": [
+        "avgFormScore",
+        "avgRom"
+      ]
+    },
+    "media": [],
+    "poseVariants": [
+      {
+        "id": "4647f075-7afc-4ab6-af31-13a592f24153",
+        "sortOrder": 1,
+        "description": null,
+        "trackedJointsConfig": [
+          {
+            "role": "primary",
+            "joint": "left_hip",
+            "range": {
+              "pad": {
+                "max": 180,
+                "min": 145
+              },
+              "danger": {
+                "max": 130,
+                "min": 0
+              },
+              "normal": {
+                "max": 180,
+                "min": 155
+              },
+              "perfect": {
+                "max": 180,
+                "min": 165
+              },
+              "warning": {
+                "max": 145,
+                "min": 130
+              }
+            },
+            "startPose": {
+              "max": 180,
+              "min": 150
+            },
+            "stateMessages": {
+              "danger": {
+                "ar": "توقف — فقدان الاستقرار",
+                "en": "Stop — stability lost"
+              },
+              "perfect": {
+                "ar": "خط جانبي ثابت — ممتاز",
+                "en": "Side line locked — great"
+              },
+              "warning": {
+                "ar": "لا تدع الوركين ينزلقان للأمام/الخلف",
+                "en": "Don’t let hips drift forward/back"
+              }
+            }
+          },
+          {
+            "role": "secondary",
+            "joint": "left_shoulder",
+            "range": {
+              "normal": {
+                "max": 115,
+                "min": 78
+              },
+              "perfect": {
+                "max": 105,
+                "min": 85
+              },
+              "warning": {
+                "max": 130,
+                "min": 115
+              }
+            },
+            "startPose": {
+              "max": 115,
+              "min": 70
+            },
+            "stateMessages": {
+              "perfect": {
+                "ar": "كتف فوق المرفق",
+                "en": "Shoulder over elbow"
+              },
+              "warning": {
+                "ar": "ادفع الأرض بقوة بالساعد",
+                "en": "Press the floor firmly through forearm"
+              }
+            }
+          }
+        ]
+      }
+    ],
+    "validationWarning": null
+  }
+}

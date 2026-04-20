@@ -1,0 +1,619 @@
+{
+  "slug": "superman",
+  "status": "published",
+  "movementPattern": "CORE_BRACE",
+  "loadCapability": "BODYWEIGHT_ONLY",
+  "familyKey": "back_extension_family",
+  "familyOrder": 15,
+  "name": {
+    "ar": "تمرين سوبرمان",
+    "en": "Superman Hold"
+  },
+  "category": {
+    "code": "back",
+    "name": {
+      "ar": "تمارين الظهر",
+      "en": "Back"
+    }
+  },
+  "countingMethod": "hold",
+  "muscles": [
+    "lower_back",
+    "glutes",
+    "hamstrings",
+    "front_delts"
+  ],
+  "equipment": [
+    "bodyweight"
+  ],
+  "tags": [
+    "isometric",
+    "tag_back",
+    "no_equipment",
+    "rehab"
+  ],
+  "repCountingConfig": {
+    "duration": 20,
+    "gracePeriodMs": 2500
+  },
+  "poseVariants": [
+    {
+      "name": {
+        "ar": "زاوية جانبية",
+        "en": "Side View"
+      },
+      "posePosition": "prone_side",
+      "expectedPostures": [
+        "lying_prone"
+      ],
+      "expectedDirections": [
+        "side"
+      ],
+      "expectedRegions": [
+        "full_body"
+      ],
+      "trackedJoints": [
+        {
+          "joint": "left_shoulder",
+          "role": "primary",
+          "startPose": {
+            "max": 180,
+            "min": 150
+          },
+          "stateMessages": {
+            "pad": {
+              "ar": "مقبول، لكن يمكنك التحسن",
+              "en": "Acceptable, but you can improve"
+            },
+            "normal": {
+              "ar": "جيد، حاول رفع الذراعين أكثر",
+              "en": "Good, try raising arms more"
+            },
+            "perfect": {
+              "ar": "ممتاز! ذراعيك مرفوعتين!",
+              "en": "Perfect! Arms raised!"
+            },
+            "warning": {
+              "ar": "افرد ذراعيك أمامك أكثر",
+              "en": "Extend arms more in front"
+            }
+          },
+          "pairedWith": "right_shoulder",
+          "range": {
+            "pad": {
+              "max": 180,
+              "min": 145
+            },
+            "normal": {
+              "max": 180,
+              "min": 155
+            },
+            "perfect": {
+              "max": 180,
+              "min": 165
+            },
+            "warning": {
+              "max": 145,
+              "min": 130
+            }
+          }
+        },
+        {
+          "joint": "right_shoulder",
+          "role": "primary",
+          "startPose": {
+            "max": 180,
+            "min": 150
+          },
+          "stateMessages": {
+            "pad": {
+              "ar": "مقبول، لكن يمكنك التحسن",
+              "en": "Acceptable, but you can improve"
+            },
+            "normal": {
+              "ar": "جيد، حاول رفع الذراعين أكثر",
+              "en": "Good, try raising arms more"
+            },
+            "perfect": {
+              "ar": "ممتاز! ذراعيك مرفوعتين!",
+              "en": "Perfect! Arms raised!"
+            },
+            "warning": {
+              "ar": "افرد ذراعيك أكثر",
+              "en": "Extend arms more"
+            }
+          },
+          "pairedWith": "left_shoulder",
+          "range": {
+            "pad": {
+              "max": 180,
+              "min": 145
+            },
+            "normal": {
+              "max": 180,
+              "min": 155
+            },
+            "perfect": {
+              "max": 180,
+              "min": 165
+            },
+            "warning": {
+              "max": 145,
+              "min": 130
+            }
+          }
+        },
+        {
+          "joint": "left_hip",
+          "role": "secondary",
+          "startPose": {
+            "max": 180,
+            "min": 160
+          },
+          "stateMessages": {
+            "perfect": {
+              "ar": "ممتاز - الساقين مرفوعتين",
+              "en": "Great - legs are raised"
+            }
+          },
+          "range": {
+            "pad": {
+              "max": 180,
+              "min": 155
+            },
+            "normal": {
+              "max": 180,
+              "min": 165
+            },
+            "perfect": {
+              "max": 180,
+              "min": 170
+            }
+          }
+        },
+        {
+          "joint": "left_knee",
+          "role": "secondary",
+          "startPose": {
+            "max": 180,
+            "min": 165
+          },
+          "stateMessages": {
+            "perfect": {
+              "ar": "ممتاز - الساقين مستقيمتين",
+              "en": "Great - legs are straight"
+            }
+          },
+          "range": {
+            "pad": {
+              "max": 180,
+              "min": 160
+            },
+            "normal": {
+              "max": 180,
+              "min": 168
+            },
+            "perfect": {
+              "max": 180,
+              "min": 172
+            }
+          }
+        }
+      ],
+      "positionChecks": [
+        {
+          "id": "arms_extended",
+          "type": "vertical_comparison",
+          "landmarks": {
+            "primary": "left_wrist",
+            "secondary": "left_shoulder"
+          },
+          "condition": {
+            "operator": "should_not_exceed",
+            "threshold": 0.02
+          },
+          "activePhases": [
+            "all"
+          ],
+          "errorMessage": {
+            "ar": "ارفع ذراعيك أعلى",
+            "en": "Raise arms higher"
+          },
+          "severity": "warning",
+          "cooldownMs": 2000,
+          "minErrorFrames": 5
+        },
+        {
+          "id": "legs_extended",
+          "type": "vertical_comparison",
+          "landmarks": {
+            "primary": "left_ankle",
+            "secondary": "left_hip"
+          },
+          "condition": {
+            "operator": "should_not_exceed",
+            "threshold": 0.05
+          },
+          "activePhases": [
+            "all"
+          ],
+          "errorMessage": {
+            "ar": "ارفع ساقيك أعلى",
+            "en": "Raise legs higher"
+          },
+          "severity": "warning",
+          "cooldownMs": 2000,
+          "minErrorFrames": 5
+        }
+      ],
+      "feedbackMessages": {
+        "motivational": [
+          {
+            "ar": "ظهر قوي!",
+            "en": "Strong back!"
+          },
+          {
+            "ar": "ممتاز! استمر!",
+            "en": "Excellent! Keep holding!"
+          },
+          {
+            "ar": "أنت سوبرمان حقيقي!",
+            "en": "You're a real Superman!"
+          }
+        ],
+        "tips": [
+          {
+            "ar": "انظر للأسفل للحفاظ على رقبتك",
+            "en": "Look down to protect your neck"
+          },
+          {
+            "ar": "تنفس بانتظام أثناء الثبات",
+            "en": "Breathe steadily while holding"
+          },
+          {
+            "ar": "ارفع ذراعيك وساقيك معاً",
+            "en": "Lift arms and legs simultaneously"
+          }
+        ]
+      },
+      "messageAssignments": [
+        {
+          "messageId": "d45b84e1-98bd-436f-9c59-91f6b8e1850d",
+          "target": "position",
+          "context": "error",
+          "checkId": "arms_extended",
+          "sortOrder": 1
+        },
+        {
+          "messageId": "d035ef0b-36d2-4269-93c8-b33ca89527fc",
+          "target": "position",
+          "context": "error",
+          "checkId": "legs_extended",
+          "sortOrder": 2
+        },
+        {
+          "messageId": "29abbb4c-907e-431a-b91e-324012870c16",
+          "target": "joint_state",
+          "context": "perfect",
+          "jointCode": "left_shoulder",
+          "sortOrder": 3
+        },
+        {
+          "messageId": "eb7c5547-edda-49a6-983d-a63cb2d1a81f",
+          "target": "joint_state",
+          "context": "normal",
+          "jointCode": "left_shoulder",
+          "sortOrder": 4
+        },
+        {
+          "messageId": "e70e4208-801c-4147-8ae2-74c2e23ceb2a",
+          "target": "joint_state",
+          "context": "pad",
+          "jointCode": "left_shoulder",
+          "sortOrder": 5
+        },
+        {
+          "messageId": "5d86ccb4-f6b9-494b-997f-52b3ae99ec5d",
+          "target": "joint_state",
+          "context": "warning",
+          "jointCode": "left_shoulder",
+          "sortOrder": 6
+        },
+        {
+          "messageId": "f7962773-744f-4f2c-b74a-4481ac56bb00",
+          "target": "joint_state",
+          "context": "perfect",
+          "jointCode": "right_shoulder",
+          "sortOrder": 7
+        },
+        {
+          "messageId": "77c40e39-d44a-496e-81a9-a6d43c8763bf",
+          "target": "joint_state",
+          "context": "normal",
+          "jointCode": "right_shoulder",
+          "sortOrder": 8
+        },
+        {
+          "messageId": "3ffbd3ed-4691-4dd9-bdf1-e6ff7e086302",
+          "target": "joint_state",
+          "context": "pad",
+          "jointCode": "right_shoulder",
+          "sortOrder": 9
+        },
+        {
+          "messageId": "16025b3e-010f-4e42-baa5-a51472a8181d",
+          "target": "joint_state",
+          "context": "warning",
+          "jointCode": "right_shoulder",
+          "sortOrder": 10
+        },
+        {
+          "messageId": "24724055-4bb6-4c3e-8ec1-eba6a2b5c065",
+          "target": "joint_state",
+          "context": "perfect",
+          "jointCode": "left_hip",
+          "sortOrder": 11
+        },
+        {
+          "messageId": "5bb48c23-d6d9-414c-94d6-24d70e9cb4cc",
+          "target": "joint_state",
+          "context": "perfect",
+          "jointCode": "left_knee",
+          "sortOrder": 12
+        },
+        {
+          "messageId": "32fd5fa0-5e0c-42cd-941d-879036111c02",
+          "target": "feedback",
+          "context": "motivational",
+          "sortOrder": 13
+        },
+        {
+          "messageId": "dfb4bca0-22e9-4d5d-8105-c0bd36bbb477",
+          "target": "feedback",
+          "context": "motivational",
+          "sortOrder": 14
+        },
+        {
+          "messageId": "0697fd86-30e8-4cec-8877-7f9035fc4d60",
+          "target": "feedback",
+          "context": "motivational",
+          "sortOrder": 15
+        },
+        {
+          "messageId": "721841bb-971a-4d04-966b-4c3721903ec0",
+          "target": "feedback",
+          "context": "tip",
+          "sortOrder": 16
+        },
+        {
+          "messageId": "13a8069b-19f8-40a5-88d1-2ee52c8ee9cd",
+          "target": "feedback",
+          "context": "tip",
+          "sortOrder": 17
+        },
+        {
+          "messageId": "b0f80741-28f8-4e5e-9f20-6240fc923bf3",
+          "target": "feedback",
+          "context": "tip",
+          "sortOrder": 18
+        }
+      ]
+    }
+  ],
+  "description": {
+    "ar": "تمرين لتقوية عضلات أسفل الظهر والمؤخرة والكتفين",
+    "en": "Exercise to strengthen lower back, glutes, and shoulders"
+  },
+  "instructions": {
+    "ar": "استلقِ على بطنك، ثم ارفع ذراعيك وساقيك عن الأرض معاً وثبّت",
+    "en": "Lie face down, then lift arms and legs off the ground simultaneously and hold"
+  },
+  "reportMetrics": {
+    "primary": [
+      "FORM_SCORE"
+    ],
+    "excluded": [
+      "REP_COUNT",
+      "TEMPO",
+      "TUT",
+      "ROM",
+      "FORM_CONSISTENCY",
+      "FATIGUE_INDEX",
+      "VELOCITY",
+      "VELOCITY_LOSS",
+      "TEMPO_CONSISTENCY",
+      "WEIGHT",
+      "VOLUME",
+      "EST_1RM"
+    ]
+  },
+  "hasPositionChecks": true,
+  "_database": {
+    "id": "251806b8-1843-4976-b8ca-e8ea33f271c2",
+    "categoryId": "d90cee55-225e-4127-9fdc-062a8a09522e",
+    "countingMethodId": "7ae86596-4b4b-400b-afa1-c7c0b6ba4fc9",
+    "publishedAt": "2026-04-20T17:26:23.301Z",
+    "createdAt": "2026-04-20T17:26:23.303Z",
+    "updatedAt": "2026-04-20T17:26:34.160Z",
+    "deletedAt": null,
+    "isFeatured": false,
+    "createdBy": null,
+    "updatedBy": null,
+    "repCountingConfig": {
+      "duration": 20,
+      "gracePeriodMs": 2500
+    },
+    "bilateralConfig": null,
+    "isBilateral": false,
+    "supportsWeight": false,
+    "minWeight": null,
+    "maxWeight": null,
+    "defaultWeight": null,
+    "reportMetrics": {
+      "mode": "duration",
+      "version": 1,
+      "primaryKpi": "timeUnderTension",
+      "secondaryKpis": [
+        "avgFormScore",
+        "avgRom"
+      ]
+    },
+    "media": [],
+    "poseVariants": [
+      {
+        "id": "022c7edb-3fd5-4e29-bd52-79e56772c9e6",
+        "sortOrder": 1,
+        "description": null,
+        "trackedJointsConfig": [
+          {
+            "role": "primary",
+            "joint": "left_shoulder",
+            "range": {
+              "pad": {
+                "max": 180,
+                "min": 145
+              },
+              "normal": {
+                "max": 180,
+                "min": 155
+              },
+              "perfect": {
+                "max": 180,
+                "min": 165
+              },
+              "warning": {
+                "max": 145,
+                "min": 130
+              }
+            },
+            "startPose": {
+              "max": 180,
+              "min": 150
+            },
+            "pairedWith": "right_shoulder",
+            "stateMessages": {
+              "pad": {
+                "ar": "مقبول، لكن يمكنك التحسن",
+                "en": "Acceptable, but you can improve"
+              },
+              "normal": {
+                "ar": "جيد، حاول رفع الذراعين أكثر",
+                "en": "Good, try raising arms more"
+              },
+              "perfect": {
+                "ar": "ممتاز! ذراعيك مرفوعتين!",
+                "en": "Perfect! Arms raised!"
+              },
+              "warning": {
+                "ar": "افرد ذراعيك أمامك أكثر",
+                "en": "Extend arms more in front"
+              }
+            }
+          },
+          {
+            "role": "primary",
+            "joint": "right_shoulder",
+            "range": {
+              "pad": {
+                "max": 180,
+                "min": 145
+              },
+              "normal": {
+                "max": 180,
+                "min": 155
+              },
+              "perfect": {
+                "max": 180,
+                "min": 165
+              },
+              "warning": {
+                "max": 145,
+                "min": 130
+              }
+            },
+            "startPose": {
+              "max": 180,
+              "min": 150
+            },
+            "pairedWith": "left_shoulder",
+            "stateMessages": {
+              "pad": {
+                "ar": "مقبول، لكن يمكنك التحسن",
+                "en": "Acceptable, but you can improve"
+              },
+              "normal": {
+                "ar": "جيد، حاول رفع الذراعين أكثر",
+                "en": "Good, try raising arms more"
+              },
+              "perfect": {
+                "ar": "ممتاز! ذراعيك مرفوعتين!",
+                "en": "Perfect! Arms raised!"
+              },
+              "warning": {
+                "ar": "افرد ذراعيك أكثر",
+                "en": "Extend arms more"
+              }
+            }
+          },
+          {
+            "role": "secondary",
+            "joint": "left_hip",
+            "range": {
+              "pad": {
+                "max": 180,
+                "min": 155
+              },
+              "normal": {
+                "max": 180,
+                "min": 165
+              },
+              "perfect": {
+                "max": 180,
+                "min": 170
+              }
+            },
+            "startPose": {
+              "max": 180,
+              "min": 160
+            },
+            "stateMessages": {
+              "perfect": {
+                "ar": "ممتاز - الساقين مرفوعتين",
+                "en": "Great - legs are raised"
+              }
+            }
+          },
+          {
+            "role": "secondary",
+            "joint": "left_knee",
+            "range": {
+              "pad": {
+                "max": 180,
+                "min": 160
+              },
+              "normal": {
+                "max": 180,
+                "min": 168
+              },
+              "perfect": {
+                "max": 180,
+                "min": 172
+              }
+            },
+            "startPose": {
+              "max": 180,
+              "min": 165
+            },
+            "stateMessages": {
+              "perfect": {
+                "ar": "ممتاز - الساقين مستقيمتين",
+                "en": "Great - legs are straight"
+              }
+            }
+          }
+        ]
+      }
+    ],
+    "validationWarning": null
+  }
+}

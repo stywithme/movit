@@ -138,12 +138,28 @@
         {
           "joint": "left_shoulder",
           "role": "secondary",
-          "startPose": { "min": 0, "max": 30 },
+          "startPose": { "min": 0, "max": 55 },
           "range": {
-            "perfect": { "min": 0, "max": 25 },
-            "normal": { "min": 0, "max": 30 },
-            "pad": { "min": 0, "max": 40 },
-            "warning": { "min": 40, "max": 60 }
+            "perfect": { "min": 0, "max": 55 },
+            "normal": { "min": 0, "max": 62 },
+            "pad": { "min": 0, "max": 70 },
+            "warning": { "min": 50, "max": 70 }
+          },
+          "phaseRanges": {
+            "top": { "perfect": { "min": 0, "max": 22 }, "normal": { "min": 0, "max": 28 } },
+            "down": { "perfect": { "min": 15, "max": 45 }, "normal": { "min": 10, "max": 52 } },
+            "bottom": { "perfect": { "min": 25, "max": 55 }, "normal": { "min": 18, "max": 62 } },
+            "up": { "perfect": { "min": 15, "max": 45 }, "normal": { "min": 10, "max": 52 } }
+          },
+          "phaseStateMessages": {
+            "top": {
+              "perfect": { "ar": "كتف ممدود في الإنهاء العلوي", "en": "Shoulder extended at the top lockout" },
+              "warning": { "ar": "اقفل الكوعين في الأعلى دون تكور الكتف", "en": "Lock elbows at top without shrugging" }
+            },
+            "bottom": {
+              "perfect": { "ar": "عمق dip متحكم به", "en": "Controlled dip depth" },
+              "warning": { "ar": "لا تنزل أكثر من تحكم الكتف", "en": "Do not lower past shoulder control" }
+            }
           },
           "stateMessages": {
             "perfect": { "ar": "ممتاز - الكتف ثابت", "en": "Great - shoulder is stable" },

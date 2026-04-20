@@ -1,0 +1,282 @@
+{
+  "slug": "lib_inchworm",
+  "status": "published",
+  "movementPattern": "MOBILITY_DRILL",
+  "loadCapability": "BODYWEIGHT_ONLY",
+  "familyKey": "posterior_chain_mobility_family",
+  "familyOrder": 19,
+  "name": {
+    "ar": "دودة بوصة",
+    "en": "Inchworm"
+  },
+  "category": {
+    "code": "full_body",
+    "name": {
+      "ar": "تمارين الجسم كامل",
+      "en": "Full Body"
+    }
+  },
+  "countingMethod": "up_down",
+  "muscles": [
+    "hamstrings",
+    "abs_muscle"
+  ],
+  "equipment": [
+    "bodyweight",
+    "mat"
+  ],
+  "tags": [
+    "curated_library",
+    "warmup"
+  ],
+  "repCountingConfig": {
+    "reps": 12,
+    "minRepIntervalMs": 1500,
+    "maxRepIntervalMs": 5000
+  },
+  "poseVariants": [
+    {
+      "name": {
+        "ar": "مستلقٍ على الوجه",
+        "en": "Lying face down (side angle)"
+      },
+      "posePosition": "prone_side",
+      "expectedPostures": [
+        "lying_prone"
+      ],
+      "expectedDirections": [
+        "side"
+      ],
+      "expectedRegions": [
+        "full_body"
+      ],
+      "trackedJoints": [
+        {
+          "joint": "spine",
+          "role": "primary",
+          "startPose": {
+            "max": 40,
+            "min": 0
+          },
+          "stateMessages": {
+            "perfect": {
+              "ar": "تحكم قطني جيد",
+              "en": "Good segmental control"
+            },
+            "warning": {
+              "ar": "قلل المدى إن الظهر يضيق",
+              "en": "Ease range if back pinches"
+            }
+          },
+          "range": {
+            "pad": {
+              "max": 50,
+              "min": 0
+            },
+            "normal": {
+              "max": 42,
+              "min": 0
+            },
+            "perfect": {
+              "max": 35,
+              "min": 8
+            },
+            "warning": {
+              "max": 62,
+              "min": 45
+            }
+          }
+        }
+      ],
+      "positionChecks": [
+        {
+          "id": "spine_seg_mob",
+          "type": "vertical_alignment",
+          "landmarks": {
+            "primary": "left_shoulder",
+            "secondary": "left_hip"
+          },
+          "condition": {
+            "operator": "approximately_equal",
+            "threshold": 0.14
+          },
+          "activePhases": [
+            "all"
+          ],
+          "errorMessage": {
+            "ar": "تحرّك بسلاسة داخل نطاق مريح.",
+            "en": "Move smoothly within a comfortable range."
+          },
+          "severity": "tip",
+          "cooldownMs": 3200,
+          "minErrorFrames": 6
+        }
+      ],
+      "feedbackMessages": {
+        "motivational": [
+          {
+            "ar": "مدى حركة جيد وتحكم أفضل",
+            "en": "Good range and better control"
+          },
+          {
+            "ar": "تحرك بسلاسة داخل نطاق مريح",
+            "en": "Move smoothly inside a comfortable range"
+          }
+        ],
+        "tips": [
+          {
+            "ar": "ابقِ الحركة نظيفة وهادئة بدون ارتداد.",
+            "en": "Keep the motion smooth and bounce-free."
+          },
+          {
+            "ar": "أي ألم حاد يعني تقليل المدى فوراً.",
+            "en": "Any sharp pain means reduce range immediately."
+          }
+        ]
+      },
+      "messageAssignments": [
+        {
+          "messageId": "e53ba853-2810-4693-8502-8435816258d8",
+          "target": "position",
+          "context": "error",
+          "checkId": "spine_seg_mob",
+          "sortOrder": 1
+        },
+        {
+          "messageId": "e4ef8bf5-0db4-4fa6-9fcd-d1b270487a5d",
+          "target": "joint_state",
+          "context": "perfect",
+          "jointCode": "spine",
+          "sortOrder": 2
+        },
+        {
+          "messageId": "d6b9231a-b7aa-4b34-9640-977863c5a124",
+          "target": "joint_state",
+          "context": "warning",
+          "jointCode": "spine",
+          "sortOrder": 3
+        },
+        {
+          "messageId": "ff134c5a-8b34-4316-9a0b-2cd269b13927",
+          "target": "feedback",
+          "context": "motivational",
+          "sortOrder": 4
+        },
+        {
+          "messageId": "e955409d-7fe2-4abd-9ada-f33220748b35",
+          "target": "feedback",
+          "context": "motivational",
+          "sortOrder": 5
+        },
+        {
+          "messageId": "66bbc517-97a0-41b5-a244-f29274058f16",
+          "target": "feedback",
+          "context": "tip",
+          "sortOrder": 6
+        },
+        {
+          "messageId": "7466ab03-675d-43dc-95e7-d8367d0b60f8",
+          "target": "feedback",
+          "context": "tip",
+          "sortOrder": 7
+        }
+      ]
+    }
+  ],
+  "description": {
+    "ar": "تمرين مكتبة: دودة بوصة.",
+    "en": "Library exercise: Inchworm."
+  },
+  "instructions": {
+    "ar": "حافظ على عمود فقري محايد وتنفس بثبات وتوقف عند أي ألم حاد.",
+    "en": "Maintain neutral spine, steady breathing, and stop if sharp pain appears."
+  },
+  "reportMetrics": {
+    "primary": [
+      "FORM_SCORE"
+    ],
+    "excluded": [
+      "HOLD_DURATION",
+      "WEIGHT",
+      "VOLUME",
+      "EST_1RM",
+      "SYMMETRY"
+    ]
+  },
+  "hasPositionChecks": true,
+  "_database": {
+    "id": "445c40b3-8074-4b37-b5a2-c11faca94557",
+    "categoryId": "da4f0d15-a7a4-4d8e-abd2-73ee921ef7dc",
+    "countingMethodId": "f4d48aef-1606-4f23-8c61-7b4a2546f990",
+    "publishedAt": "2026-04-20T17:26:29.008Z",
+    "createdAt": "2026-04-20T17:26:29.010Z",
+    "updatedAt": "2026-04-20T17:26:34.563Z",
+    "deletedAt": null,
+    "isFeatured": false,
+    "createdBy": null,
+    "updatedBy": null,
+    "repCountingConfig": null,
+    "bilateralConfig": null,
+    "isBilateral": false,
+    "supportsWeight": false,
+    "minWeight": null,
+    "maxWeight": null,
+    "defaultWeight": null,
+    "reportMetrics": {
+      "mode": "reps",
+      "version": 1,
+      "primaryKpi": "repQuality",
+      "secondaryKpis": [
+        "avgFormScore",
+        "avgRom"
+      ]
+    },
+    "media": [],
+    "poseVariants": [
+      {
+        "id": "b23d1d60-2e35-45a4-9c44-36db1fa0eef7",
+        "sortOrder": 1,
+        "description": null,
+        "trackedJointsConfig": [
+          {
+            "role": "primary",
+            "joint": "spine",
+            "range": {
+              "pad": {
+                "max": 50,
+                "min": 0
+              },
+              "normal": {
+                "max": 42,
+                "min": 0
+              },
+              "perfect": {
+                "max": 35,
+                "min": 8
+              },
+              "warning": {
+                "max": 62,
+                "min": 45
+              }
+            },
+            "startPose": {
+              "max": 40,
+              "min": 0
+            },
+            "stateMessages": {
+              "perfect": {
+                "ar": "تحكم قطني جيد",
+                "en": "Good segmental control"
+              },
+              "warning": {
+                "ar": "قلل المدى إن الظهر يضيق",
+                "en": "Ease range if back pinches"
+              }
+            }
+          }
+        ]
+      }
+    ],
+    "validationWarning": null
+  }
+}

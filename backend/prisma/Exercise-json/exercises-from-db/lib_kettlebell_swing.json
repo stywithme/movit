@@ -1,0 +1,507 @@
+{
+  "slug": "lib_kettlebell_swing",
+  "status": "published",
+  "movementPattern": "HINGE",
+  "loadCapability": "EXTERNAL_LOAD_REQUIRED",
+  "familyKey": "hinge_pattern_family",
+  "familyOrder": 55,
+  "name": {
+    "ar": "أرجوحة كيتل بيل",
+    "en": "Kettlebell swing"
+  },
+  "category": {
+    "code": "legs",
+    "name": {
+      "ar": "تمارين الأرجل",
+      "en": "Legs"
+    }
+  },
+  "countingMethod": "up_down",
+  "muscles": [
+    "glutes",
+    "hamstrings"
+  ],
+  "equipment": [
+    "kettlebell",
+    "mat"
+  ],
+  "tags": [
+    "curated_library",
+    "power",
+    "hip_hinge"
+  ],
+  "repCountingConfig": {
+    "reps": 12,
+    "minRepIntervalMs": 1500,
+    "maxRepIntervalMs": 5000
+  },
+  "poseVariants": [
+    {
+      "name": {
+        "ar": "زاوية جانبية",
+        "en": "Side view"
+      },
+      "posePosition": "standing_side",
+      "expectedPostures": [
+        "standing"
+      ],
+      "expectedDirections": [
+        "side"
+      ],
+      "expectedRegions": [
+        "full_body"
+      ],
+      "trackedJoints": [
+        {
+          "joint": "left_hip",
+          "role": "primary",
+          "startPose": {
+            "max": 180,
+            "min": 90
+          },
+          "stateMessages": {
+            "pad": {
+              "up": {
+                "ar": "مقبول، لكن القوة الانفجارية ما زالت محدودة",
+                "en": "Acceptable, but explosive intent is still limited"
+              }
+            },
+            "danger": {
+              "down": {
+                "ar": "توقف، الظهر يفقد الحياد أثناء التحميل",
+                "en": "Stop, the back is losing neutrality during the load"
+              }
+            },
+            "normal": {
+              "up": {
+                "ar": "جيد، اضرب الورك للأمام أسرع",
+                "en": "Good, snap the hips forward faster"
+              },
+              "down": {
+                "ar": "جيد، اجلس في الورك لا في الركبة",
+                "en": "Good, sit into the hips, not the knees"
+              }
+            },
+            "perfect": {
+              "up": {
+                "ar": "ممتاز! قفل ورك انفجاري ونظيف",
+                "en": "Perfect! Crisp, explosive hip lockout"
+              },
+              "down": {
+                "ar": "ممتاز! تحميل خلفي مضبوط",
+                "en": "Perfect! Clean back-swing load"
+              }
+            },
+            "warning": {
+              "down": {
+                "ar": "لا ترفع بالذراعين بدلاً من الورك",
+                "en": "Do not lift with the arms instead of the hips"
+              }
+            }
+          },
+          "pairedWith": "right_hip",
+          "upRange": {
+            "pad": {
+              "max": 180,
+              "min": 150
+            },
+            "normal": {
+              "max": 180,
+              "min": 160
+            },
+            "perfect": {
+              "max": 180,
+              "min": 168
+            }
+          },
+          "downRange": {
+            "pad": {
+              "max": 122,
+              "min": 68
+            },
+            "danger": {
+              "max": 55,
+              "min": 0
+            },
+            "normal": {
+              "max": 115,
+              "min": 75
+            },
+            "perfect": {
+              "max": 105,
+              "min": 82
+            },
+            "warning": {
+              "max": 68,
+              "min": 55
+            }
+          }
+        },
+        {
+          "joint": "left_knee",
+          "role": "secondary",
+          "startPose": {
+            "max": 180,
+            "min": 135
+          },
+          "stateMessages": {
+            "perfect": {
+              "ar": "الركبة تنثني قليلاً فقط",
+              "en": "The knees are only softly bent"
+            },
+            "warning": {
+              "ar": "لا تحوّلها إلى سكوات عميق",
+              "en": "Do not turn it into a deep squat"
+            }
+          },
+          "range": {
+            "pad": {
+              "max": 180,
+              "min": 130
+            },
+            "normal": {
+              "max": 180,
+              "min": 138
+            },
+            "perfect": {
+              "max": 175,
+              "min": 145
+            },
+            "warning": {
+              "max": 130,
+              "min": 118
+            }
+          }
+        }
+      ],
+      "positionChecks": [
+        {
+          "id": "ballistic_hinge_not_squat",
+          "type": "vertical_alignment",
+          "landmarks": {
+            "primary": "left_shoulder",
+            "secondary": "left_hip"
+          },
+          "condition": {
+            "operator": "approximately_equal",
+            "threshold": 0.12
+          },
+          "activePhases": [
+            "down"
+          ],
+          "errorMessage": {
+            "ar": "التحميل من مفصل الورك، وليس سكواتاً عمودياً.",
+            "en": "Load through the hip hinge, not a vertical squat."
+          },
+          "severity": "warning",
+          "cooldownMs": 2200,
+          "minErrorFrames": 4
+        }
+      ],
+      "feedbackMessages": {
+        "motivational": [
+          {
+            "ar": "أداء قوي ومنظم",
+            "en": "Strong and controlled work"
+          },
+          {
+            "ar": "حافظ على الشكل قبل السرعة",
+            "en": "Keep form before speed"
+          }
+        ],
+        "tips": [
+          {
+            "ar": "خذ نفساً تحضيرياً قبل كل عدة وازفر مع الجهد.",
+            "en": "Take a setup breath before each rep and exhale on effort."
+          },
+          {
+            "ar": "إذا فقدت التحكم الميكانيكي، قلل المدى أو الحمل.",
+            "en": "If mechanics break down, reduce range or load."
+          }
+        ]
+      },
+      "messageAssignments": [
+        {
+          "messageId": "6383cd90-800d-45f5-82a4-899ae14118dc",
+          "target": "position",
+          "context": "error",
+          "checkId": "ballistic_hinge_not_squat",
+          "sortOrder": 1
+        },
+        {
+          "messageId": "7e3b3536-0d67-4a16-9def-7fe0f950d90a",
+          "target": "joint_state",
+          "context": "perfect",
+          "jointCode": "left_hip",
+          "zone": "up",
+          "sortOrder": 2
+        },
+        {
+          "messageId": "722c5627-4152-498c-92bb-8525ac9996c5",
+          "target": "joint_state",
+          "context": "perfect",
+          "jointCode": "left_hip",
+          "zone": "down",
+          "sortOrder": 3
+        },
+        {
+          "messageId": "afa25338-72d7-4f2d-b554-2ebbfef126d3",
+          "target": "joint_state",
+          "context": "normal",
+          "jointCode": "left_hip",
+          "zone": "up",
+          "sortOrder": 4
+        },
+        {
+          "messageId": "5c40ae0c-5bac-4e05-992d-c5a9a2e11ab3",
+          "target": "joint_state",
+          "context": "normal",
+          "jointCode": "left_hip",
+          "zone": "down",
+          "sortOrder": 5
+        },
+        {
+          "messageId": "bb3eaf46-ee59-476c-9219-24e43b0b010e",
+          "target": "joint_state",
+          "context": "pad",
+          "jointCode": "left_hip",
+          "zone": "up",
+          "sortOrder": 6
+        },
+        {
+          "messageId": "6e87a117-df71-455b-893b-ac3a95519554",
+          "target": "joint_state",
+          "context": "warning",
+          "jointCode": "left_hip",
+          "zone": "down",
+          "sortOrder": 7
+        },
+        {
+          "messageId": "b66d99f6-6614-45d5-97bf-79ad49e4639c",
+          "target": "joint_state",
+          "context": "danger",
+          "jointCode": "left_hip",
+          "zone": "down",
+          "sortOrder": 8
+        },
+        {
+          "messageId": "d50dc70b-6282-4ae2-b474-458ca911e7ad",
+          "target": "joint_state",
+          "context": "perfect",
+          "jointCode": "left_knee",
+          "sortOrder": 9
+        },
+        {
+          "messageId": "6d77a3a3-eb73-41eb-93c3-d61a991f957e",
+          "target": "joint_state",
+          "context": "warning",
+          "jointCode": "left_knee",
+          "sortOrder": 10
+        },
+        {
+          "messageId": "d7a42de2-d150-42cb-862b-f03bf7ee6d0a",
+          "target": "feedback",
+          "context": "motivational",
+          "sortOrder": 11
+        },
+        {
+          "messageId": "b370c20c-0d63-4296-af0c-958a88bb34e6",
+          "target": "feedback",
+          "context": "motivational",
+          "sortOrder": 12
+        },
+        {
+          "messageId": "86581473-e66d-4ab1-988e-b996baf41120",
+          "target": "feedback",
+          "context": "tip",
+          "sortOrder": 13
+        },
+        {
+          "messageId": "ce7f8a77-e788-4dde-8264-bc4ee937bdc4",
+          "target": "feedback",
+          "context": "tip",
+          "sortOrder": 14
+        }
+      ],
+      "cameraPosition": "side_view"
+    }
+  ],
+  "description": {
+    "ar": "تمرين مكتبة: أرجوحة كيتل بيل.",
+    "en": "Library exercise: Kettlebell swing."
+  },
+  "instructions": {
+    "ar": "حافظ على عمود فقري محايد وتنفس بثبات وتوقف عند أي ألم حاد.",
+    "en": "Maintain neutral spine, steady breathing, and stop if sharp pain appears."
+  },
+  "supportsWeight": true,
+  "reportMetrics": {
+    "primary": [
+      "FORM_SCORE"
+    ],
+    "excluded": [
+      "HOLD_DURATION"
+    ]
+  },
+  "hasPositionChecks": true,
+  "_database": {
+    "id": "dc497958-8c98-4db4-8899-1641f0117231",
+    "categoryId": "a672c3d3-4449-4f74-bd8e-be73a0035e88",
+    "countingMethodId": "f4d48aef-1606-4f23-8c61-7b4a2546f990",
+    "publishedAt": "2026-04-20T17:26:25.051Z",
+    "createdAt": "2026-04-20T17:26:25.053Z",
+    "updatedAt": "2026-04-20T17:26:34.267Z",
+    "deletedAt": null,
+    "isFeatured": false,
+    "createdBy": null,
+    "updatedBy": null,
+    "repCountingConfig": null,
+    "bilateralConfig": null,
+    "isBilateral": false,
+    "supportsWeight": true,
+    "minWeight": null,
+    "maxWeight": null,
+    "defaultWeight": null,
+    "reportMetrics": {
+      "mode": "reps",
+      "version": 1,
+      "primaryKpi": "repQuality",
+      "secondaryKpis": [
+        "avgFormScore",
+        "avgRom"
+      ]
+    },
+    "media": [],
+    "poseVariants": [
+      {
+        "id": "6239f00a-b397-4a75-b062-c5690fe5c2f4",
+        "sortOrder": 1,
+        "description": null,
+        "trackedJointsConfig": [
+          {
+            "role": "primary",
+            "joint": "left_hip",
+            "upRange": {
+              "pad": {
+                "max": 180,
+                "min": 150
+              },
+              "normal": {
+                "max": 180,
+                "min": 160
+              },
+              "perfect": {
+                "max": 180,
+                "min": 168
+              }
+            },
+            "downRange": {
+              "pad": {
+                "max": 122,
+                "min": 68
+              },
+              "danger": {
+                "max": 55,
+                "min": 0
+              },
+              "normal": {
+                "max": 115,
+                "min": 75
+              },
+              "perfect": {
+                "max": 105,
+                "min": 82
+              },
+              "warning": {
+                "max": 68,
+                "min": 55
+              }
+            },
+            "startPose": {
+              "max": 180,
+              "min": 90
+            },
+            "pairedWith": "right_hip",
+            "stateMessages": {
+              "pad": {
+                "up": {
+                  "ar": "مقبول، لكن القوة الانفجارية ما زالت محدودة",
+                  "en": "Acceptable, but explosive intent is still limited"
+                }
+              },
+              "danger": {
+                "down": {
+                  "ar": "توقف، الظهر يفقد الحياد أثناء التحميل",
+                  "en": "Stop, the back is losing neutrality during the load"
+                }
+              },
+              "normal": {
+                "up": {
+                  "ar": "جيد، اضرب الورك للأمام أسرع",
+                  "en": "Good, snap the hips forward faster"
+                },
+                "down": {
+                  "ar": "جيد، اجلس في الورك لا في الركبة",
+                  "en": "Good, sit into the hips, not the knees"
+                }
+              },
+              "perfect": {
+                "up": {
+                  "ar": "ممتاز! قفل ورك انفجاري ونظيف",
+                  "en": "Perfect! Crisp, explosive hip lockout"
+                },
+                "down": {
+                  "ar": "ممتاز! تحميل خلفي مضبوط",
+                  "en": "Perfect! Clean back-swing load"
+                }
+              },
+              "warning": {
+                "down": {
+                  "ar": "لا ترفع بالذراعين بدلاً من الورك",
+                  "en": "Do not lift with the arms instead of the hips"
+                }
+              }
+            }
+          },
+          {
+            "role": "secondary",
+            "joint": "left_knee",
+            "range": {
+              "pad": {
+                "max": 180,
+                "min": 130
+              },
+              "normal": {
+                "max": 180,
+                "min": 138
+              },
+              "perfect": {
+                "max": 175,
+                "min": 145
+              },
+              "warning": {
+                "max": 130,
+                "min": 118
+              }
+            },
+            "startPose": {
+              "max": 180,
+              "min": 135
+            },
+            "stateMessages": {
+              "perfect": {
+                "ar": "الركبة تنثني قليلاً فقط",
+                "en": "The knees are only softly bent"
+              },
+              "warning": {
+                "ar": "لا تحوّلها إلى سكوات عميق",
+                "en": "Do not turn it into a deep squat"
+              }
+            }
+          }
+        ]
+      }
+    ],
+    "validationWarning": null
+  }
+}

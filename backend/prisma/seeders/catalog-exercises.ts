@@ -1,6 +1,8 @@
 import type { LoadCapability, MovementPattern, Prisma, PrismaClient } from '@prisma/client';
 import type { EnsureMessageTemplate } from './messages';
 import { CURATED_EXTENSION_EXERCISES } from './curated-catalog-extension';
+import { buildCuratedPoseVariants } from './curated-pose-blueprints';
+import { applyPoseVariantsForExercise } from './pose-variant-seed-helper';
 
 export function inferExerciseBlueprintFields(
   slug: string,
@@ -102,11 +104,15 @@ export async function seedCuratedCatalogExtensions(
   prisma: PrismaClient,
   ensureMessageTemplate: EnsureMessageTemplate,
 ) {
-  const pose = await prisma.posePosition.findFirst({
-    where: { code: 'standing_side', isActive: true },
-    select: { id: true },
+  const posePositions = await prisma.posePosition.findMany({
+    where: { isActive: true },
+    orderBy: { sortOrder: 'asc' },
   });
-  if (!pose) {
+  const positionByCode = new Map<string, string>();
+  for (const pp of posePositions) {
+    positionByCode.set(pp.code, pp.id);
+  }
+  if (!positionByCode.has('standing_side')) {
     throw new Error('Pose position standing_side is required before seeding curated catalog exercises');
   }
 
@@ -128,9 +134,6 @@ export async function seedCuratedCatalogExtensions(
   if (!upDown || !hold) {
     throw new Error('Counting methods up_down / hold are required');
   }
-
-  const curatedTipTemplateCode = (slug: string) =>
-    `exmsg_${slug.replace(/[^a-zA-Z0-9_]/g, '_').replace(/_+/g, '_')}_curated_tip`.slice(0, 190);
 
   const attributeValues = await prisma.attributeValue.findMany();
   const attributeValueByCode = new Map(attributeValues.map((v) => [v.code, v]));
@@ -238,36 +241,13 @@ export async function seedCuratedCatalogExtensions(
       });
     }
 
-    await prisma.poseVariant.deleteMany({ where: { exerciseId: exerciseRecord.id } });
-    const poseVariant = await prisma.poseVariant.create({
-      data: {
-        exerciseId: exerciseRecord.id,
-        posePositionId: pose.id,
-        name: { ar: 'وضعية جانبية', en: 'Side view' },
-        sortOrder: 1,
-      },
-    });
-
-    const messageId = await ensureMessageTemplate({
-      code: curatedTipTemplateCode(row.slug),
-      category: 'tip',
-      context: 'tip',
-      content: {
-        ar: 'ركّز على التمكين العميق قبل زيادة السرعة أو الحمل.',
-        en: 'Prioritize deep control before adding speed or load.',
-      },
-      tags: ['tip', 'curated_library'],
-    });
-
-    await prisma.feedbackMessageAssignment.deleteMany({ where: { poseVariantId: poseVariant.id } });
-    await prisma.feedbackMessageAssignment.create({
-      data: {
-        poseVariantId: poseVariant.id,
-        messageId,
-        target: 'feedback',
-        context: 'tip',
-        sortOrder: 1,
-      },
+    const poseVariants = buildCuratedPoseVariants(row);
+    await applyPoseVariantsForExercise(prisma, {
+      exerciseId: exerciseRecord.id,
+      slug: row.slug,
+      poseVariants,
+      positionByCode,
+      ensureMessageTemplate,
     });
   }
 

@@ -1,0 +1,464 @@
+{
+  "slug": "lib_wrist_flex_ext",
+  "status": "published",
+  "movementPattern": "MOBILITY_DRILL",
+  "loadCapability": "BODYWEIGHT_ONLY",
+  "familyKey": "wrist_mobility_family",
+  "familyOrder": 8,
+  "name": {
+    "ar": "ثني/مد رسغ",
+    "en": "Wrist flexion/extension"
+  },
+  "category": {
+    "code": "arms",
+    "name": {
+      "ar": "تمارين الذراعين",
+      "en": "Arms"
+    }
+  },
+  "countingMethod": "up_down",
+  "muscles": [
+    "forearms"
+  ],
+  "equipment": [
+    "bodyweight",
+    "mat"
+  ],
+  "tags": [
+    "curated_library",
+    "mobility"
+  ],
+  "repCountingConfig": {
+    "reps": 12,
+    "minRepIntervalMs": 1500,
+    "maxRepIntervalMs": 5000
+  },
+  "poseVariants": [
+    {
+      "name": {
+        "ar": "زاوية جانبية",
+        "en": "Side view"
+      },
+      "posePosition": "standing_side",
+      "expectedPostures": [
+        "standing"
+      ],
+      "expectedDirections": [
+        "side"
+      ],
+      "expectedRegions": [
+        "full_body"
+      ],
+      "trackedJoints": [
+        {
+          "joint": "left_elbow",
+          "role": "primary",
+          "startPose": {
+            "max": 180,
+            "min": 90
+          },
+          "stateMessages": {
+            "normal": {
+              "up": {
+                "ar": "جيد — قلل السرعة",
+                "en": "Good — slow down"
+              },
+              "down": {
+                "ar": "جيد — لا تفرط",
+                "en": "Good — stay submax"
+              }
+            },
+            "perfect": {
+              "up": {
+                "ar": "مدى مريح",
+                "en": "Comfortable range"
+              },
+              "down": {
+                "ar": "تحكم جيد",
+                "en": "Good control"
+              }
+            }
+          },
+          "pairedWith": "right_elbow",
+          "upRange": {
+            "pad": {
+              "max": 180,
+              "min": 155
+            },
+            "normal": {
+              "max": 180,
+              "min": 160
+            },
+            "perfect": {
+              "max": 180,
+              "min": 165
+            }
+          },
+          "downRange": {
+            "pad": {
+              "max": 152,
+              "min": 90
+            },
+            "normal": {
+              "max": 150,
+              "min": 100
+            },
+            "perfect": {
+              "max": 145,
+              "min": 110
+            }
+          }
+        },
+        {
+          "joint": "right_elbow",
+          "role": "primary",
+          "startPose": {
+            "max": 180,
+            "min": 90
+          },
+          "stateMessages": {
+            "normal": {
+              "up": {
+                "ar": "جيد — قلل السرعة",
+                "en": "Good — slow down"
+              },
+              "down": {
+                "ar": "جيد — لا تفرط",
+                "en": "Good — stay submax"
+              }
+            },
+            "perfect": {
+              "up": {
+                "ar": "مدى مريح",
+                "en": "Comfortable range"
+              },
+              "down": {
+                "ar": "تحكم جيد",
+                "en": "Good control"
+              }
+            }
+          },
+          "pairedWith": "left_elbow",
+          "upRange": {
+            "pad": {
+              "max": 180,
+              "min": 155
+            },
+            "normal": {
+              "max": 180,
+              "min": 160
+            },
+            "perfect": {
+              "max": 180,
+              "min": 165
+            }
+          },
+          "downRange": {
+            "pad": {
+              "max": 152,
+              "min": 90
+            },
+            "normal": {
+              "max": 150,
+              "min": 100
+            },
+            "perfect": {
+              "max": 145,
+              "min": 110
+            }
+          }
+        }
+      ],
+      "feedbackMessages": {
+        "motivational": [
+          {
+            "ar": "تحرّك ببطء داخل نطاق مريح",
+            "en": "Move slowly within a comfortable window"
+          },
+          {
+            "ar": "تنفس عميقاً — لا تتجاوز الألم الحاد",
+            "en": "Breathe deeply — stay below sharp pain"
+          }
+        ],
+        "tips": [
+          {
+            "ar": "لا تتجاوز 6–8/10 شدة إحساس — ركّز على التمدد وليس القفز.",
+            "en": "Stay around 6–8/10 intensity — smooth stretch, no bouncing."
+          },
+          {
+            "ar": "أبقِ الفك مرتخياً والرقبة جزءاً من الحركة.",
+            "en": "Keep the jaw soft; let the neck move as one unit."
+          }
+        ]
+      },
+      "messageAssignments": [
+        {
+          "messageId": "c82a991d-b21d-4028-9325-115f9a532601",
+          "target": "joint_state",
+          "context": "perfect",
+          "jointCode": "left_elbow",
+          "zone": "up",
+          "sortOrder": 1
+        },
+        {
+          "messageId": "7aff713d-3455-418c-b8d9-992a387f2df8",
+          "target": "joint_state",
+          "context": "perfect",
+          "jointCode": "left_elbow",
+          "zone": "down",
+          "sortOrder": 2
+        },
+        {
+          "messageId": "938264c1-f783-4fbc-99cc-cc8c956b0237",
+          "target": "joint_state",
+          "context": "normal",
+          "jointCode": "left_elbow",
+          "zone": "up",
+          "sortOrder": 3
+        },
+        {
+          "messageId": "8d53e05e-dd06-471d-a5f1-ea7d33b49a96",
+          "target": "joint_state",
+          "context": "normal",
+          "jointCode": "left_elbow",
+          "zone": "down",
+          "sortOrder": 4
+        },
+        {
+          "messageId": "18abff93-4b81-4a50-91bc-cf175bb3a2a4",
+          "target": "joint_state",
+          "context": "perfect",
+          "jointCode": "right_elbow",
+          "zone": "up",
+          "sortOrder": 5
+        },
+        {
+          "messageId": "c7f69157-82b8-4421-b30f-2e5c28c356b0",
+          "target": "joint_state",
+          "context": "perfect",
+          "jointCode": "right_elbow",
+          "zone": "down",
+          "sortOrder": 6
+        },
+        {
+          "messageId": "151f19a2-951c-457b-858a-a6cb60482fea",
+          "target": "joint_state",
+          "context": "normal",
+          "jointCode": "right_elbow",
+          "zone": "up",
+          "sortOrder": 7
+        },
+        {
+          "messageId": "ceb54193-34f9-43b5-aefa-d318d3bd6287",
+          "target": "joint_state",
+          "context": "normal",
+          "jointCode": "right_elbow",
+          "zone": "down",
+          "sortOrder": 8
+        },
+        {
+          "messageId": "75fb59be-671c-4ca9-aece-9c40ff35652b",
+          "target": "feedback",
+          "context": "motivational",
+          "sortOrder": 9
+        },
+        {
+          "messageId": "8a8a3796-96de-4891-9db9-4169a515df92",
+          "target": "feedback",
+          "context": "motivational",
+          "sortOrder": 10
+        },
+        {
+          "messageId": "f6f3bc6a-827c-4126-91c2-b34ba2387171",
+          "target": "feedback",
+          "context": "tip",
+          "sortOrder": 11
+        },
+        {
+          "messageId": "ae0291d1-6b07-4295-83e7-f789febe206c",
+          "target": "feedback",
+          "context": "tip",
+          "sortOrder": 12
+        }
+      ],
+      "cameraPosition": "side_view"
+    }
+  ],
+  "description": {
+    "ar": "تمرين مكتبة: ثني/مد رسغ.",
+    "en": "Library exercise: Wrist flexion/extension."
+  },
+  "instructions": {
+    "ar": "حافظ على عمود فقري محايد وتنفس بثبات وتوقف عند أي ألم حاد.",
+    "en": "Maintain neutral spine, steady breathing, and stop if sharp pain appears."
+  },
+  "reportMetrics": {
+    "primary": [
+      "FORM_SCORE"
+    ],
+    "excluded": [
+      "HOLD_DURATION",
+      "WEIGHT",
+      "VOLUME",
+      "EST_1RM",
+      "ALIGNMENT"
+    ]
+  },
+  "_database": {
+    "id": "53dfb9cd-0d32-4e12-a5ef-312c45bbfa46",
+    "categoryId": "46ce7826-7f11-437b-b9b0-de718b5adf7d",
+    "countingMethodId": "f4d48aef-1606-4f23-8c61-7b4a2546f990",
+    "publishedAt": "2026-04-20T17:26:27.856Z",
+    "createdAt": "2026-04-20T17:26:27.858Z",
+    "updatedAt": "2026-04-20T17:26:34.488Z",
+    "deletedAt": null,
+    "isFeatured": false,
+    "createdBy": null,
+    "updatedBy": null,
+    "repCountingConfig": null,
+    "bilateralConfig": null,
+    "isBilateral": false,
+    "supportsWeight": false,
+    "minWeight": null,
+    "maxWeight": null,
+    "defaultWeight": null,
+    "reportMetrics": {
+      "mode": "reps",
+      "version": 1,
+      "primaryKpi": "repQuality",
+      "secondaryKpis": [
+        "avgFormScore",
+        "avgRom"
+      ]
+    },
+    "media": [],
+    "poseVariants": [
+      {
+        "id": "4808f2f2-0b7d-4c0f-ba85-67b9a1ec3745",
+        "sortOrder": 1,
+        "description": null,
+        "trackedJointsConfig": [
+          {
+            "role": "primary",
+            "joint": "left_elbow",
+            "upRange": {
+              "pad": {
+                "max": 180,
+                "min": 155
+              },
+              "normal": {
+                "max": 180,
+                "min": 160
+              },
+              "perfect": {
+                "max": 180,
+                "min": 165
+              }
+            },
+            "downRange": {
+              "pad": {
+                "max": 152,
+                "min": 90
+              },
+              "normal": {
+                "max": 150,
+                "min": 100
+              },
+              "perfect": {
+                "max": 145,
+                "min": 110
+              }
+            },
+            "startPose": {
+              "max": 180,
+              "min": 90
+            },
+            "pairedWith": "right_elbow",
+            "stateMessages": {
+              "normal": {
+                "up": {
+                  "ar": "جيد — قلل السرعة",
+                  "en": "Good — slow down"
+                },
+                "down": {
+                  "ar": "جيد — لا تفرط",
+                  "en": "Good — stay submax"
+                }
+              },
+              "perfect": {
+                "up": {
+                  "ar": "مدى مريح",
+                  "en": "Comfortable range"
+                },
+                "down": {
+                  "ar": "تحكم جيد",
+                  "en": "Good control"
+                }
+              }
+            }
+          },
+          {
+            "role": "primary",
+            "joint": "right_elbow",
+            "upRange": {
+              "pad": {
+                "max": 180,
+                "min": 155
+              },
+              "normal": {
+                "max": 180,
+                "min": 160
+              },
+              "perfect": {
+                "max": 180,
+                "min": 165
+              }
+            },
+            "downRange": {
+              "pad": {
+                "max": 152,
+                "min": 90
+              },
+              "normal": {
+                "max": 150,
+                "min": 100
+              },
+              "perfect": {
+                "max": 145,
+                "min": 110
+              }
+            },
+            "startPose": {
+              "max": 180,
+              "min": 90
+            },
+            "pairedWith": "left_elbow",
+            "stateMessages": {
+              "normal": {
+                "up": {
+                  "ar": "جيد — قلل السرعة",
+                  "en": "Good — slow down"
+                },
+                "down": {
+                  "ar": "جيد — لا تفرط",
+                  "en": "Good — stay submax"
+                }
+              },
+              "perfect": {
+                "up": {
+                  "ar": "مدى مريح",
+                  "en": "Comfortable range"
+                },
+                "down": {
+                  "ar": "تحكم جيد",
+                  "en": "Good control"
+                }
+              }
+            }
+          }
+        ]
+      }
+    ],
+    "validationWarning": null
+  }
+}

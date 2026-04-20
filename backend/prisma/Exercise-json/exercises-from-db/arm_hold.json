@@ -1,0 +1,305 @@
+{
+  "slug": "arm_hold",
+  "status": "published",
+  "movementPattern": "CORE_BRACE",
+  "loadCapability": "BODYWEIGHT_ONLY",
+  "familyKey": "overhead_stability_family",
+  "familyOrder": 10,
+  "name": {
+    "ar": "ثبات الذراع المرفوعة",
+    "en": "Arm Hold"
+  },
+  "category": {
+    "code": "test",
+    "name": {
+      "ar": "اختبار",
+      "en": "Test"
+    }
+  },
+  "countingMethod": "hold",
+  "muscles": [
+    "front_delts",
+    "biceps"
+  ],
+  "equipment": [
+    "bodyweight"
+  ],
+  "tags": [
+    "test",
+    "easy",
+    "hold_tag"
+  ],
+  "repCountingConfig": {
+    "duration": 15,
+    "gracePeriodMs": 2500
+  },
+  "poseVariants": [
+    {
+      "name": {
+        "ar": "زاوية أمامية",
+        "en": "Front View"
+      },
+      "posePosition": "standing_front",
+      "expectedPostures": [
+        "standing"
+      ],
+      "expectedDirections": [
+        "front"
+      ],
+      "expectedRegions": [
+        "full_body"
+      ],
+      "trackedJoints": [
+        {
+          "joint": "right_shoulder",
+          "role": "primary",
+          "startPose": {
+            "max": 180,
+            "min": 120
+          },
+          "stateMessages": {
+            "pad": {
+              "ar": "مقبول، لكن يمكنك التحسن",
+              "en": "Acceptable, but you can improve"
+            },
+            "danger": {
+              "ar": "الذراع منخفضة جداً!",
+              "en": "Arm too low!"
+            },
+            "normal": {
+              "ar": "جيد، حاول رفع الذراع أكثر",
+              "en": "Good, try raising arm more"
+            },
+            "perfect": {
+              "ar": "ممتاز! ثبات مثالي!",
+              "en": "Perfect! Great hold!"
+            },
+            "warning": {
+              "ar": "ارفع ذراعك أكثر",
+              "en": "Raise arm higher"
+            }
+          },
+          "range": {
+            "pad": {
+              "max": 180,
+              "min": 145
+            },
+            "danger": {
+              "max": 130,
+              "min": 0
+            },
+            "normal": {
+              "max": 180,
+              "min": 150
+            },
+            "perfect": {
+              "max": 180,
+              "min": 160
+            },
+            "warning": {
+              "max": 155,
+              "min": 130
+            }
+          }
+        }
+      ],
+      "feedbackMessages": {
+        "motivational": [
+          {
+            "ar": "استمر! ذراعك مرفوعة!",
+            "en": "Keep going! Arm up!"
+          },
+          {
+            "ar": "ممتاز! حافظ على الوضع!",
+            "en": "Excellent! Hold it!"
+          }
+        ],
+        "tips": [
+          {
+            "ar": "حافظ على استقامة الذراع",
+            "en": "Keep your arm straight"
+          }
+        ]
+      },
+      "messageAssignments": [
+        {
+          "messageId": "37e5f0bd-5b3d-4013-956e-4969cd18d3b0",
+          "target": "joint_state",
+          "context": "perfect",
+          "jointCode": "right_shoulder",
+          "sortOrder": 1
+        },
+        {
+          "messageId": "86c35ae5-3644-48c9-aa0c-36f61b8f4d39",
+          "target": "joint_state",
+          "context": "normal",
+          "jointCode": "right_shoulder",
+          "sortOrder": 2
+        },
+        {
+          "messageId": "92d9d723-a80c-4177-bb41-d63049bbd06e",
+          "target": "joint_state",
+          "context": "pad",
+          "jointCode": "right_shoulder",
+          "sortOrder": 3
+        },
+        {
+          "messageId": "d512c60d-ed7e-4eb1-9d22-c64d48834d53",
+          "target": "joint_state",
+          "context": "warning",
+          "jointCode": "right_shoulder",
+          "sortOrder": 4
+        },
+        {
+          "messageId": "dff13768-fa35-4cb6-aeff-d1981e5acb54",
+          "target": "joint_state",
+          "context": "danger",
+          "jointCode": "right_shoulder",
+          "sortOrder": 5
+        },
+        {
+          "messageId": "fc90cc6e-6c91-493e-bdc7-8d596fab0ec4",
+          "target": "feedback",
+          "context": "motivational",
+          "sortOrder": 6
+        },
+        {
+          "messageId": "2641632a-2751-4fec-b668-f26b677d644d",
+          "target": "feedback",
+          "context": "motivational",
+          "sortOrder": 7
+        },
+        {
+          "messageId": "6ecb2beb-c211-4652-8a36-3d5ac5dbec29",
+          "target": "feedback",
+          "context": "tip",
+          "sortOrder": 8
+        }
+      ],
+      "cameraPosition": "front_view"
+    }
+  ],
+  "description": {
+    "ar": "تمرين بسيط لاختبار الثبات - ارفع ذراعك اليمنى للأعلى وابقِها مرفوعة",
+    "en": "Simple hold test - raise your right arm up and keep it raised"
+  },
+  "instructions": {
+    "ar": "قف بشكل مستقيم وارفع ذراعك اليمنى للأعلى بشكل مستقيم فوق رأسك",
+    "en": "Stand straight and raise your right arm straight up above your head"
+  },
+  "reportMetrics": {
+    "primary": [
+      "FORM_SCORE"
+    ],
+    "excluded": [
+      "REP_COUNT",
+      "TEMPO",
+      "TUT",
+      "ROM",
+      "FORM_CONSISTENCY",
+      "FATIGUE_INDEX",
+      "VELOCITY",
+      "VELOCITY_LOSS",
+      "TEMPO_CONSISTENCY",
+      "WEIGHT",
+      "VOLUME",
+      "EST_1RM",
+      "SYMMETRY",
+      "ALIGNMENT"
+    ]
+  },
+  "_database": {
+    "id": "ddc86b5a-fddf-4e1b-803d-60b7b27d2ee0",
+    "categoryId": "a0b8e4c8-502c-4cb8-b937-a4a79f5357fe",
+    "countingMethodId": "7ae86596-4b4b-400b-afa1-c7c0b6ba4fc9",
+    "publishedAt": "2026-04-20T17:26:22.107Z",
+    "createdAt": "2026-04-20T17:26:22.110Z",
+    "updatedAt": "2026-04-20T17:26:34.067Z",
+    "deletedAt": null,
+    "isFeatured": false,
+    "createdBy": null,
+    "updatedBy": null,
+    "repCountingConfig": {
+      "duration": 15,
+      "gracePeriodMs": 2500
+    },
+    "bilateralConfig": null,
+    "isBilateral": false,
+    "supportsWeight": false,
+    "minWeight": null,
+    "maxWeight": null,
+    "defaultWeight": null,
+    "reportMetrics": {
+      "mode": "duration",
+      "version": 1,
+      "primaryKpi": "timeUnderTension",
+      "secondaryKpis": [
+        "avgFormScore",
+        "avgRom"
+      ]
+    },
+    "media": [],
+    "poseVariants": [
+      {
+        "id": "5d2d001a-f105-4344-ae3e-9fad36d3f25c",
+        "sortOrder": 1,
+        "description": null,
+        "trackedJointsConfig": [
+          {
+            "role": "primary",
+            "joint": "right_shoulder",
+            "range": {
+              "pad": {
+                "max": 180,
+                "min": 145
+              },
+              "danger": {
+                "max": 130,
+                "min": 0
+              },
+              "normal": {
+                "max": 180,
+                "min": 150
+              },
+              "perfect": {
+                "max": 180,
+                "min": 160
+              },
+              "warning": {
+                "max": 155,
+                "min": 130
+              }
+            },
+            "startPose": {
+              "max": 180,
+              "min": 120
+            },
+            "stateMessages": {
+              "pad": {
+                "ar": "مقبول، لكن يمكنك التحسن",
+                "en": "Acceptable, but you can improve"
+              },
+              "danger": {
+                "ar": "الذراع منخفضة جداً!",
+                "en": "Arm too low!"
+              },
+              "normal": {
+                "ar": "جيد، حاول رفع الذراع أكثر",
+                "en": "Good, try raising arm more"
+              },
+              "perfect": {
+                "ar": "ممتاز! ثبات مثالي!",
+                "en": "Perfect! Great hold!"
+              },
+              "warning": {
+                "ar": "ارفع ذراعك أكثر",
+                "en": "Raise arm higher"
+              }
+            }
+          }
+        ]
+      }
+    ],
+    "validationWarning": null
+  }
+}

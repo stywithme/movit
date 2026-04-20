@@ -1,0 +1,507 @@
+{
+  "slug": "lib_pike_pushup",
+  "status": "published",
+  "movementPattern": "PUSH_VERTICAL",
+  "loadCapability": "BODYWEIGHT_ONLY",
+  "familyKey": "push_vertical_family",
+  "familyOrder": 28,
+  "name": {
+    "ar": "ضغط بايك",
+    "en": "Pike push-up"
+  },
+  "category": {
+    "code": "shoulders",
+    "name": {
+      "ar": "تمارين الأكتاف",
+      "en": "Shoulders"
+    }
+  },
+  "countingMethod": "up_down",
+  "muscles": [
+    "front_delts",
+    "triceps"
+  ],
+  "equipment": [
+    "bodyweight",
+    "mat"
+  ],
+  "tags": [
+    "curated_library"
+  ],
+  "repCountingConfig": {
+    "reps": 12,
+    "minRepIntervalMs": 1500,
+    "maxRepIntervalMs": 5000
+  },
+  "poseVariants": [
+    {
+      "name": {
+        "ar": "مستلقٍ على الوجه",
+        "en": "Lying face down (side angle)"
+      },
+      "posePosition": "prone_side",
+      "expectedPostures": [
+        "lying_prone"
+      ],
+      "expectedDirections": [
+        "side"
+      ],
+      "expectedRegions": [
+        "full_body"
+      ],
+      "trackedJoints": [
+        {
+          "joint": "left_elbow",
+          "role": "primary",
+          "startPose": {
+            "max": 180,
+            "min": 90
+          },
+          "stateMessages": {
+            "pad": {
+              "down": {
+                "ar": "مقبول، لكن المسار ما زال أمامياً",
+                "en": "Acceptable, but the path is still too far forward"
+              }
+            },
+            "danger": {
+              "down": {
+                "ar": "توقف، الكتف غير مرتاح في هذا المدى",
+                "en": "Stop, the shoulder is not tolerating this range"
+              }
+            },
+            "normal": {
+              "up": {
+                "ar": "جيد، أكمل التمدد في الأعلى",
+                "en": "Good, finish the top extension"
+              },
+              "down": {
+                "ar": "جيد، انزل عمودياً أكثر",
+                "en": "Good, descend more vertically"
+              }
+            },
+            "perfect": {
+              "up": {
+                "ar": "ممتاز! دفع قوي للأعلى",
+                "en": "Perfect! Strong overhead-style push"
+              },
+              "down": {
+                "ar": "ممتاز! رأسك يهبط بين اليدين",
+                "en": "Perfect! Head drops cleanly between the hands"
+              }
+            },
+            "warning": {
+              "down": {
+                "ar": "لا تدع المرفقين يبتعدان بشكل زائد",
+                "en": "Do not let the elbows flare excessively"
+              }
+            }
+          },
+          "pairedWith": "right_elbow",
+          "upRange": {
+            "pad": {
+              "max": 180,
+              "min": 145
+            },
+            "normal": {
+              "max": 180,
+              "min": 155
+            },
+            "perfect": {
+              "max": 180,
+              "min": 165
+            }
+          },
+          "downRange": {
+            "pad": {
+              "max": 102,
+              "min": 40
+            },
+            "danger": {
+              "max": 30,
+              "min": 0
+            },
+            "normal": {
+              "max": 92,
+              "min": 48
+            },
+            "perfect": {
+              "max": 82,
+              "min": 55
+            },
+            "warning": {
+              "max": 40,
+              "min": 30
+            }
+          }
+        },
+        {
+          "joint": "left_hip",
+          "role": "secondary",
+          "startPose": {
+            "max": 135,
+            "min": 75
+          },
+          "stateMessages": {
+            "perfect": {
+              "ar": "قمة الورك مرتفعة بالشكل الصحيح",
+              "en": "Hip peak is set correctly"
+            },
+            "warning": {
+              "ar": "الورك منخفض أكثر من المطلوب",
+              "en": "Hips are dropping too low"
+            }
+          },
+          "range": {
+            "pad": {
+              "max": 130,
+              "min": 75
+            },
+            "normal": {
+              "max": 122,
+              "min": 80
+            },
+            "perfect": {
+              "max": 115,
+              "min": 85
+            },
+            "warning": {
+              "max": 75,
+              "min": 65
+            }
+          }
+        }
+      ],
+      "positionChecks": [
+        {
+          "id": "pike_hips_high",
+          "type": "vertical_comparison",
+          "landmarks": {
+            "primary": "left_hip",
+            "secondary": "left_shoulder"
+          },
+          "condition": {
+            "operator": "should_not_exceed",
+            "threshold": 0.02
+          },
+          "activePhases": [
+            "up",
+            "down"
+          ],
+          "errorMessage": {
+            "ar": "حافظ على شكل الـ V ولا تتحول إلى push-up أفقي.",
+            "en": "Keep the inverted V and avoid turning it into a horizontal push-up."
+          },
+          "severity": "warning",
+          "cooldownMs": 2400,
+          "minErrorFrames": 4
+        }
+      ],
+      "feedbackMessages": {
+        "motivational": [
+          {
+            "ar": "أداء قوي ومنظم",
+            "en": "Strong and controlled work"
+          },
+          {
+            "ar": "حافظ على الشكل قبل السرعة",
+            "en": "Keep form before speed"
+          }
+        ],
+        "tips": [
+          {
+            "ar": "خذ نفساً تحضيرياً قبل كل عدة وازفر مع الجهد.",
+            "en": "Take a setup breath before each rep and exhale on effort."
+          },
+          {
+            "ar": "إذا فقدت التحكم الميكانيكي، قلل المدى أو الحمل.",
+            "en": "If mechanics break down, reduce range or load."
+          }
+        ]
+      },
+      "messageAssignments": [
+        {
+          "messageId": "7fc6f9e2-e93b-46ea-947c-c504f495d65d",
+          "target": "position",
+          "context": "error",
+          "checkId": "pike_hips_high",
+          "sortOrder": 1
+        },
+        {
+          "messageId": "bc84a2a1-126f-4cdf-b8ba-c3d59011f6ed",
+          "target": "joint_state",
+          "context": "perfect",
+          "jointCode": "left_elbow",
+          "zone": "up",
+          "sortOrder": 2
+        },
+        {
+          "messageId": "3c3fd365-2ba8-47b5-a110-d95a91cc46be",
+          "target": "joint_state",
+          "context": "perfect",
+          "jointCode": "left_elbow",
+          "zone": "down",
+          "sortOrder": 3
+        },
+        {
+          "messageId": "b4c33347-b573-46da-9185-98d63c68a0ea",
+          "target": "joint_state",
+          "context": "normal",
+          "jointCode": "left_elbow",
+          "zone": "up",
+          "sortOrder": 4
+        },
+        {
+          "messageId": "eae05b86-c1cf-43a6-806b-fdd842f06190",
+          "target": "joint_state",
+          "context": "normal",
+          "jointCode": "left_elbow",
+          "zone": "down",
+          "sortOrder": 5
+        },
+        {
+          "messageId": "39718d28-79a4-436a-95f7-4f28ffd5f1b6",
+          "target": "joint_state",
+          "context": "pad",
+          "jointCode": "left_elbow",
+          "zone": "down",
+          "sortOrder": 6
+        },
+        {
+          "messageId": "006c51d0-c13a-4166-9bff-9c3cd4d57daf",
+          "target": "joint_state",
+          "context": "warning",
+          "jointCode": "left_elbow",
+          "zone": "down",
+          "sortOrder": 7
+        },
+        {
+          "messageId": "05f74b58-f751-4ea3-8409-fdf7e292c78f",
+          "target": "joint_state",
+          "context": "danger",
+          "jointCode": "left_elbow",
+          "zone": "down",
+          "sortOrder": 8
+        },
+        {
+          "messageId": "10c90d42-cd5b-4a3e-8ef9-0c30848945b8",
+          "target": "joint_state",
+          "context": "perfect",
+          "jointCode": "left_hip",
+          "sortOrder": 9
+        },
+        {
+          "messageId": "49eb8e63-d85c-42c2-a7d1-c43b20445470",
+          "target": "joint_state",
+          "context": "warning",
+          "jointCode": "left_hip",
+          "sortOrder": 10
+        },
+        {
+          "messageId": "6ffa69ea-80d5-4622-a1e2-036b4d48e4dc",
+          "target": "feedback",
+          "context": "motivational",
+          "sortOrder": 11
+        },
+        {
+          "messageId": "b631fcc1-3f17-4ed9-8181-b2f474e2f065",
+          "target": "feedback",
+          "context": "motivational",
+          "sortOrder": 12
+        },
+        {
+          "messageId": "7ff74136-a964-4c31-8c1d-6dbe2834fc01",
+          "target": "feedback",
+          "context": "tip",
+          "sortOrder": 13
+        },
+        {
+          "messageId": "94439aca-f490-4d2d-a19e-b18797ca8d4f",
+          "target": "feedback",
+          "context": "tip",
+          "sortOrder": 14
+        }
+      ]
+    }
+  ],
+  "description": {
+    "ar": "تمرين مكتبة: ضغط بايك.",
+    "en": "Library exercise: Pike push-up."
+  },
+  "instructions": {
+    "ar": "حافظ على عمود فقري محايد وتنفس بثبات وتوقف عند أي ألم حاد.",
+    "en": "Maintain neutral spine, steady breathing, and stop if sharp pain appears."
+  },
+  "reportMetrics": {
+    "primary": [
+      "FORM_SCORE"
+    ],
+    "excluded": [
+      "HOLD_DURATION",
+      "WEIGHT",
+      "VOLUME",
+      "EST_1RM"
+    ]
+  },
+  "hasPositionChecks": true,
+  "_database": {
+    "id": "dcc633c0-b3de-4bec-b670-aaf36e0bd346",
+    "categoryId": "78daff70-6564-41cd-b768-462735416089",
+    "countingMethodId": "f4d48aef-1606-4f23-8c61-7b4a2546f990",
+    "publishedAt": "2026-04-20T17:26:24.953Z",
+    "createdAt": "2026-04-20T17:26:24.954Z",
+    "updatedAt": "2026-04-20T17:26:34.253Z",
+    "deletedAt": null,
+    "isFeatured": false,
+    "createdBy": null,
+    "updatedBy": null,
+    "repCountingConfig": null,
+    "bilateralConfig": null,
+    "isBilateral": false,
+    "supportsWeight": false,
+    "minWeight": null,
+    "maxWeight": null,
+    "defaultWeight": null,
+    "reportMetrics": {
+      "mode": "reps",
+      "version": 1,
+      "primaryKpi": "repQuality",
+      "secondaryKpis": [
+        "avgFormScore",
+        "avgRom"
+      ]
+    },
+    "media": [],
+    "poseVariants": [
+      {
+        "id": "82ac73aa-ec81-4090-a067-267f3a1b79fe",
+        "sortOrder": 1,
+        "description": null,
+        "trackedJointsConfig": [
+          {
+            "role": "primary",
+            "joint": "left_elbow",
+            "upRange": {
+              "pad": {
+                "max": 180,
+                "min": 145
+              },
+              "normal": {
+                "max": 180,
+                "min": 155
+              },
+              "perfect": {
+                "max": 180,
+                "min": 165
+              }
+            },
+            "downRange": {
+              "pad": {
+                "max": 102,
+                "min": 40
+              },
+              "danger": {
+                "max": 30,
+                "min": 0
+              },
+              "normal": {
+                "max": 92,
+                "min": 48
+              },
+              "perfect": {
+                "max": 82,
+                "min": 55
+              },
+              "warning": {
+                "max": 40,
+                "min": 30
+              }
+            },
+            "startPose": {
+              "max": 180,
+              "min": 90
+            },
+            "pairedWith": "right_elbow",
+            "stateMessages": {
+              "pad": {
+                "down": {
+                  "ar": "مقبول، لكن المسار ما زال أمامياً",
+                  "en": "Acceptable, but the path is still too far forward"
+                }
+              },
+              "danger": {
+                "down": {
+                  "ar": "توقف، الكتف غير مرتاح في هذا المدى",
+                  "en": "Stop, the shoulder is not tolerating this range"
+                }
+              },
+              "normal": {
+                "up": {
+                  "ar": "جيد، أكمل التمدد في الأعلى",
+                  "en": "Good, finish the top extension"
+                },
+                "down": {
+                  "ar": "جيد، انزل عمودياً أكثر",
+                  "en": "Good, descend more vertically"
+                }
+              },
+              "perfect": {
+                "up": {
+                  "ar": "ممتاز! دفع قوي للأعلى",
+                  "en": "Perfect! Strong overhead-style push"
+                },
+                "down": {
+                  "ar": "ممتاز! رأسك يهبط بين اليدين",
+                  "en": "Perfect! Head drops cleanly between the hands"
+                }
+              },
+              "warning": {
+                "down": {
+                  "ar": "لا تدع المرفقين يبتعدان بشكل زائد",
+                  "en": "Do not let the elbows flare excessively"
+                }
+              }
+            }
+          },
+          {
+            "role": "secondary",
+            "joint": "left_hip",
+            "range": {
+              "pad": {
+                "max": 130,
+                "min": 75
+              },
+              "normal": {
+                "max": 122,
+                "min": 80
+              },
+              "perfect": {
+                "max": 115,
+                "min": 85
+              },
+              "warning": {
+                "max": 75,
+                "min": 65
+              }
+            },
+            "startPose": {
+              "max": 135,
+              "min": 75
+            },
+            "stateMessages": {
+              "perfect": {
+                "ar": "قمة الورك مرتفعة بالشكل الصحيح",
+                "en": "Hip peak is set correctly"
+              },
+              "warning": {
+                "ar": "الورك منخفض أكثر من المطلوب",
+                "en": "Hips are dropping too low"
+              }
+            }
+          }
+        ]
+      }
+    ],
+    "validationWarning": null
+  }
+}

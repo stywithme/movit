@@ -1,0 +1,567 @@
+{
+  "slug": "lib_isometric_split_squat",
+  "status": "published",
+  "movementPattern": "LUNGE",
+  "loadCapability": "BODYWEIGHT_ONLY",
+  "familyKey": "lunge_pattern_family",
+  "familyOrder": 32,
+  "name": {
+    "ar": "اندفاع مقسم ثابت",
+    "en": "Isometric split squat"
+  },
+  "category": {
+    "code": "legs",
+    "name": {
+      "ar": "تمارين الأرجل",
+      "en": "Legs"
+    }
+  },
+  "countingMethod": "hold",
+  "muscles": [
+    "quadriceps",
+    "glutes"
+  ],
+  "equipment": [
+    "bodyweight",
+    "mat"
+  ],
+  "tags": [
+    "curated_library",
+    "strength"
+  ],
+  "repCountingConfig": {
+    "duration": 30,
+    "gracePeriodMs": 2500
+  },
+  "poseVariants": [
+    {
+      "name": {
+        "ar": "زاوية جانبية",
+        "en": "Side view"
+      },
+      "posePosition": "standing_side",
+      "expectedPostures": [
+        "standing"
+      ],
+      "expectedDirections": [
+        "side"
+      ],
+      "expectedRegions": [
+        "full_body"
+      ],
+      "trackedJoints": [
+        {
+          "joint": "left_knee",
+          "role": "primary",
+          "startPose": {
+            "max": 125,
+            "min": 65
+          },
+          "stateMessages": {
+            "pad": {
+              "ar": "مقبول، لكن الثبات ما زال متوسطاً",
+              "en": "Acceptable, but stability is still average"
+            },
+            "danger": {
+              "ar": "توقف، الركبة فقدت الثبات",
+              "en": "Stop, the knee has lost stability"
+            },
+            "normal": {
+              "ar": "جيد، اضبط العمق النهائي",
+              "en": "Good, fine-tune the hold depth"
+            },
+            "perfect": {
+              "ar": "زاوية ركبة ثابتة ومناسبة",
+              "en": "Front knee angle is strong and stable"
+            },
+            "warning": {
+              "ar": "لا تهبط أقل من قدرتك الحالية",
+              "en": "Do not sink deeper than you can control"
+            }
+          },
+          "range": {
+            "pad": {
+              "max": 118,
+              "min": 65
+            },
+            "danger": {
+              "max": 55,
+              "min": 0
+            },
+            "normal": {
+              "max": 108,
+              "min": 72
+            },
+            "perfect": {
+              "max": 100,
+              "min": 78
+            },
+            "warning": {
+              "max": 65,
+              "min": 55
+            }
+          }
+        },
+        {
+          "joint": "left_hip",
+          "role": "primary",
+          "startPose": {
+            "max": 150,
+            "min": 75
+          },
+          "stateMessages": {
+            "danger": {
+              "ar": "الوضعية منهارة عند الورك",
+              "en": "Hip position is collapsing"
+            },
+            "perfect": {
+              "ar": "ورك مضبوط فوق قاعدة ثابتة",
+              "en": "Hip is set over a stable base"
+            },
+            "warning": {
+              "ar": "قلل الميل الأمامي واضبط الحوض",
+              "en": "Reduce forward lean and tidy the pelvis"
+            }
+          },
+          "range": {
+            "pad": {
+              "max": 138,
+              "min": 75
+            },
+            "danger": {
+              "max": 60,
+              "min": 0
+            },
+            "normal": {
+              "max": 128,
+              "min": 80
+            },
+            "perfect": {
+              "max": 120,
+              "min": 85
+            },
+            "warning": {
+              "max": 75,
+              "min": 60
+            }
+          }
+        },
+        {
+          "joint": "spine",
+          "role": "secondary",
+          "startPose": {
+            "max": 28,
+            "min": 0
+          },
+          "stateMessages": {
+            "perfect": {
+              "ar": "جذع مرفوع ومحايد",
+              "en": "Tall, neutral trunk"
+            },
+            "warning": {
+              "ar": "لا تنهَر للأمام في الثبات",
+              "en": "Do not collapse forward in the hold"
+            }
+          },
+          "range": {
+            "pad": {
+              "max": 28,
+              "min": 0
+            },
+            "normal": {
+              "max": 22,
+              "min": 0
+            },
+            "perfect": {
+              "max": 16,
+              "min": 0
+            },
+            "warning": {
+              "max": 40,
+              "min": 28
+            }
+          }
+        }
+      ],
+      "positionChecks": [
+        {
+          "id": "split_squat_front_knee",
+          "type": "forward_comparison",
+          "landmarks": {
+            "primary": "left_knee",
+            "secondary": "left_ankle"
+          },
+          "condition": {
+            "operator": "should_not_exceed",
+            "threshold": 0.08
+          },
+          "activePhases": [
+            "all"
+          ],
+          "errorMessage": {
+            "ar": "اثبت على رجل أمامية قوية فوق القدم.",
+            "en": "Stack the front knee over the foot with control."
+          },
+          "severity": "warning",
+          "cooldownMs": 2200,
+          "minErrorFrames": 5
+        },
+        {
+          "id": "split_squat_torso",
+          "type": "vertical_alignment",
+          "landmarks": {
+            "primary": "left_shoulder",
+            "secondary": "left_hip"
+          },
+          "condition": {
+            "operator": "approximately_equal",
+            "threshold": 0.14
+          },
+          "activePhases": [
+            "all"
+          ],
+          "errorMessage": {
+            "ar": "حافظ على الجذع مرفوعاً فوق الورك.",
+            "en": "Keep the torso tall over the hip."
+          },
+          "severity": "tip",
+          "cooldownMs": 2600,
+          "minErrorFrames": 5
+        }
+      ],
+      "feedbackMessages": {
+        "motivational": [
+          {
+            "ar": "أداء قوي ومنظم",
+            "en": "Strong and controlled work"
+          },
+          {
+            "ar": "حافظ على الشكل قبل السرعة",
+            "en": "Keep form before speed"
+          }
+        ],
+        "tips": [
+          {
+            "ar": "خذ نفساً تحضيرياً قبل كل عدة وازفر مع الجهد.",
+            "en": "Take a setup breath before each rep and exhale on effort."
+          },
+          {
+            "ar": "إذا فقدت التحكم الميكانيكي، قلل المدى أو الحمل.",
+            "en": "If mechanics break down, reduce range or load."
+          }
+        ]
+      },
+      "messageAssignments": [
+        {
+          "messageId": "b20a2d7e-f988-4682-8941-d3f195161136",
+          "target": "position",
+          "context": "error",
+          "checkId": "split_squat_front_knee",
+          "sortOrder": 1
+        },
+        {
+          "messageId": "59ae81a8-2b9b-4e84-8cb4-52399a019803",
+          "target": "position",
+          "context": "error",
+          "checkId": "split_squat_torso",
+          "sortOrder": 2
+        },
+        {
+          "messageId": "7354087a-32b5-4da7-98fa-5d19df7bad11",
+          "target": "joint_state",
+          "context": "perfect",
+          "jointCode": "left_knee",
+          "sortOrder": 3
+        },
+        {
+          "messageId": "6d294115-389e-432c-bae8-89136c4b5027",
+          "target": "joint_state",
+          "context": "normal",
+          "jointCode": "left_knee",
+          "sortOrder": 4
+        },
+        {
+          "messageId": "2de7f2fb-cad4-4571-99ac-916baade46fc",
+          "target": "joint_state",
+          "context": "pad",
+          "jointCode": "left_knee",
+          "sortOrder": 5
+        },
+        {
+          "messageId": "f32e002b-39b9-4c04-a0e4-42d5c1acea1d",
+          "target": "joint_state",
+          "context": "warning",
+          "jointCode": "left_knee",
+          "sortOrder": 6
+        },
+        {
+          "messageId": "59325aa9-17f4-4090-9000-801cb5d45e76",
+          "target": "joint_state",
+          "context": "danger",
+          "jointCode": "left_knee",
+          "sortOrder": 7
+        },
+        {
+          "messageId": "99114c95-0e8a-44be-a8b9-cfe31b70f245",
+          "target": "joint_state",
+          "context": "perfect",
+          "jointCode": "left_hip",
+          "sortOrder": 8
+        },
+        {
+          "messageId": "10f8f7ed-8183-427a-a572-f61237103051",
+          "target": "joint_state",
+          "context": "warning",
+          "jointCode": "left_hip",
+          "sortOrder": 9
+        },
+        {
+          "messageId": "0b3c6cd6-0d9c-4e67-92d5-8d4917a15c54",
+          "target": "joint_state",
+          "context": "danger",
+          "jointCode": "left_hip",
+          "sortOrder": 10
+        },
+        {
+          "messageId": "c53d4b0a-401b-49b3-8255-210d33792835",
+          "target": "joint_state",
+          "context": "perfect",
+          "jointCode": "spine",
+          "sortOrder": 11
+        },
+        {
+          "messageId": "4c4b906a-e569-4f4a-be55-d4c4733cbc27",
+          "target": "joint_state",
+          "context": "warning",
+          "jointCode": "spine",
+          "sortOrder": 12
+        },
+        {
+          "messageId": "0e18ab72-1680-4309-9481-f98ccb6fa609",
+          "target": "feedback",
+          "context": "motivational",
+          "sortOrder": 13
+        },
+        {
+          "messageId": "a7f0663a-fa77-4d40-9e4f-35977a74348c",
+          "target": "feedback",
+          "context": "motivational",
+          "sortOrder": 14
+        },
+        {
+          "messageId": "027a012b-6e95-4690-b0ed-8406e44d3e04",
+          "target": "feedback",
+          "context": "tip",
+          "sortOrder": 15
+        },
+        {
+          "messageId": "1fb44e28-a073-4e6d-aa32-cbf093e8ba82",
+          "target": "feedback",
+          "context": "tip",
+          "sortOrder": 16
+        }
+      ],
+      "cameraPosition": "side_view"
+    }
+  ],
+  "description": {
+    "ar": "تمرين مكتبة: اندفاع مقسم ثابت.",
+    "en": "Library exercise: Isometric split squat."
+  },
+  "instructions": {
+    "ar": "حافظ على عمود فقري محايد وتنفس بثبات وتوقف عند أي ألم حاد.",
+    "en": "Maintain neutral spine, steady breathing, and stop if sharp pain appears."
+  },
+  "reportMetrics": {
+    "primary": [
+      "FORM_SCORE"
+    ],
+    "excluded": [
+      "REP_COUNT",
+      "TEMPO",
+      "TUT",
+      "ROM",
+      "FORM_CONSISTENCY",
+      "FATIGUE_INDEX",
+      "VELOCITY",
+      "VELOCITY_LOSS",
+      "TEMPO_CONSISTENCY",
+      "WEIGHT",
+      "VOLUME",
+      "EST_1RM",
+      "SYMMETRY"
+    ]
+  },
+  "hasPositionChecks": true,
+  "_database": {
+    "id": "64ec0085-b461-48be-a66c-22423a5451c1",
+    "categoryId": "a672c3d3-4449-4f74-bd8e-be73a0035e88",
+    "countingMethodId": "7ae86596-4b4b-400b-afa1-c7c0b6ba4fc9",
+    "publishedAt": "2026-04-20T17:26:29.573Z",
+    "createdAt": "2026-04-20T17:26:29.575Z",
+    "updatedAt": "2026-04-20T17:26:34.608Z",
+    "deletedAt": null,
+    "isFeatured": false,
+    "createdBy": null,
+    "updatedBy": null,
+    "repCountingConfig": null,
+    "bilateralConfig": null,
+    "isBilateral": false,
+    "supportsWeight": false,
+    "minWeight": null,
+    "maxWeight": null,
+    "defaultWeight": null,
+    "reportMetrics": {
+      "mode": "duration",
+      "version": 1,
+      "primaryKpi": "timeUnderTension",
+      "secondaryKpis": [
+        "avgFormScore",
+        "avgRom"
+      ]
+    },
+    "media": [],
+    "poseVariants": [
+      {
+        "id": "f3ca4d41-be97-46b9-87df-25025ec97867",
+        "sortOrder": 1,
+        "description": null,
+        "trackedJointsConfig": [
+          {
+            "role": "primary",
+            "joint": "left_knee",
+            "range": {
+              "pad": {
+                "max": 118,
+                "min": 65
+              },
+              "danger": {
+                "max": 55,
+                "min": 0
+              },
+              "normal": {
+                "max": 108,
+                "min": 72
+              },
+              "perfect": {
+                "max": 100,
+                "min": 78
+              },
+              "warning": {
+                "max": 65,
+                "min": 55
+              }
+            },
+            "startPose": {
+              "max": 125,
+              "min": 65
+            },
+            "stateMessages": {
+              "pad": {
+                "ar": "مقبول، لكن الثبات ما زال متوسطاً",
+                "en": "Acceptable, but stability is still average"
+              },
+              "danger": {
+                "ar": "توقف، الركبة فقدت الثبات",
+                "en": "Stop, the knee has lost stability"
+              },
+              "normal": {
+                "ar": "جيد، اضبط العمق النهائي",
+                "en": "Good, fine-tune the hold depth"
+              },
+              "perfect": {
+                "ar": "زاوية ركبة ثابتة ومناسبة",
+                "en": "Front knee angle is strong and stable"
+              },
+              "warning": {
+                "ar": "لا تهبط أقل من قدرتك الحالية",
+                "en": "Do not sink deeper than you can control"
+              }
+            }
+          },
+          {
+            "role": "primary",
+            "joint": "left_hip",
+            "range": {
+              "pad": {
+                "max": 138,
+                "min": 75
+              },
+              "danger": {
+                "max": 60,
+                "min": 0
+              },
+              "normal": {
+                "max": 128,
+                "min": 80
+              },
+              "perfect": {
+                "max": 120,
+                "min": 85
+              },
+              "warning": {
+                "max": 75,
+                "min": 60
+              }
+            },
+            "startPose": {
+              "max": 150,
+              "min": 75
+            },
+            "stateMessages": {
+              "danger": {
+                "ar": "الوضعية منهارة عند الورك",
+                "en": "Hip position is collapsing"
+              },
+              "perfect": {
+                "ar": "ورك مضبوط فوق قاعدة ثابتة",
+                "en": "Hip is set over a stable base"
+              },
+              "warning": {
+                "ar": "قلل الميل الأمامي واضبط الحوض",
+                "en": "Reduce forward lean and tidy the pelvis"
+              }
+            }
+          },
+          {
+            "role": "secondary",
+            "joint": "spine",
+            "range": {
+              "pad": {
+                "max": 28,
+                "min": 0
+              },
+              "normal": {
+                "max": 22,
+                "min": 0
+              },
+              "perfect": {
+                "max": 16,
+                "min": 0
+              },
+              "warning": {
+                "max": 40,
+                "min": 28
+              }
+            },
+            "startPose": {
+              "max": 28,
+              "min": 0
+            },
+            "stateMessages": {
+              "perfect": {
+                "ar": "جذع مرفوع ومحايد",
+                "en": "Tall, neutral trunk"
+              },
+              "warning": {
+                "ar": "لا تنهَر للأمام في الثبات",
+                "en": "Do not collapse forward in the hold"
+              }
+            }
+          }
+        ]
+      }
+    ],
+    "validationWarning": null
+  }
+}

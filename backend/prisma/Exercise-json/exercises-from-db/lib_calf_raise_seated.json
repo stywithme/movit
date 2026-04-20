@@ -1,0 +1,319 @@
+{
+  "slug": "lib_calf_raise_seated",
+  "status": "published",
+  "movementPattern": "GAIT",
+  "loadCapability": "EXTERNAL_LOAD_OPTIONAL",
+  "familyKey": "ankle_plantarflexion_family",
+  "familyOrder": 26,
+  "name": {
+    "ar": "سمانة جالس",
+    "en": "Seated calf raise"
+  },
+  "category": {
+    "code": "legs",
+    "name": {
+      "ar": "تمارين الأرجل",
+      "en": "Legs"
+    }
+  },
+  "countingMethod": "up_down",
+  "muscles": [
+    "calves"
+  ],
+  "equipment": [
+    "dumbbell",
+    "mat"
+  ],
+  "tags": [
+    "curated_library",
+    "accessory"
+  ],
+  "repCountingConfig": {
+    "reps": 12,
+    "minRepIntervalMs": 1500,
+    "maxRepIntervalMs": 5000
+  },
+  "poseVariants": [
+    {
+      "name": {
+        "ar": "جالس - جانبي",
+        "en": "Seated side"
+      },
+      "posePosition": "sitting_side",
+      "expectedPostures": [
+        "sitting"
+      ],
+      "expectedDirections": [
+        "side"
+      ],
+      "expectedRegions": [
+        "full_body"
+      ],
+      "trackedJoints": [
+        {
+          "joint": "left_ankle",
+          "role": "primary",
+          "startPose": {
+            "max": 110,
+            "min": 75
+          },
+          "stateMessages": {
+            "normal": {
+              "up": {
+                "ar": "جيد، ارفع الكعب أكثر",
+                "en": "Good, lift the heel a bit higher"
+              },
+              "down": {
+                "ar": "جيد، لا ترتد",
+                "en": "Good, no bouncing"
+              }
+            },
+            "perfect": {
+              "up": {
+                "ar": "ممتاز! ارتفاع كامل على أصابع القدم",
+                "en": "Perfect! Full rise onto the toes"
+              },
+              "down": {
+                "ar": "ممتاز! عودة متحكم بها",
+                "en": "Perfect! Controlled return"
+              }
+            }
+          },
+          "pairedWith": "right_ankle",
+          "upRange": {
+            "pad": {
+              "max": 158,
+              "min": 110
+            },
+            "normal": {
+              "max": 155,
+              "min": 118
+            },
+            "perfect": {
+              "max": 150,
+              "min": 125
+            }
+          },
+          "downRange": {
+            "pad": {
+              "max": 105,
+              "min": 65
+            },
+            "normal": {
+              "max": 100,
+              "min": 72
+            },
+            "perfect": {
+              "max": 95,
+              "min": 78
+            },
+            "warning": {
+              "max": 65,
+              "min": 50
+            }
+          }
+        }
+      ],
+      "feedbackMessages": {
+        "motivational": [
+          {
+            "ar": "أداء قوي ومنظم",
+            "en": "Strong and controlled work"
+          },
+          {
+            "ar": "حافظ على الشكل قبل السرعة",
+            "en": "Keep form before speed"
+          }
+        ],
+        "tips": [
+          {
+            "ar": "خذ نفساً تحضيرياً قبل كل عدة وازفر مع الجهد.",
+            "en": "Take a setup breath before each rep and exhale on effort."
+          },
+          {
+            "ar": "إذا فقدت التحكم الميكانيكي، قلل المدى أو الحمل.",
+            "en": "If mechanics break down, reduce range or load."
+          }
+        ]
+      },
+      "messageAssignments": [
+        {
+          "messageId": "02f2d298-0eb1-494c-8997-1b0b4ec40f67",
+          "target": "joint_state",
+          "context": "perfect",
+          "jointCode": "left_ankle",
+          "zone": "up",
+          "sortOrder": 1
+        },
+        {
+          "messageId": "6761fa24-5202-40ad-b6d7-f554e91b7771",
+          "target": "joint_state",
+          "context": "perfect",
+          "jointCode": "left_ankle",
+          "zone": "down",
+          "sortOrder": 2
+        },
+        {
+          "messageId": "7b00e000-9826-4025-86bf-86930a3c1095",
+          "target": "joint_state",
+          "context": "normal",
+          "jointCode": "left_ankle",
+          "zone": "up",
+          "sortOrder": 3
+        },
+        {
+          "messageId": "889044ba-1f28-44b3-9665-7d797409f9ef",
+          "target": "joint_state",
+          "context": "normal",
+          "jointCode": "left_ankle",
+          "zone": "down",
+          "sortOrder": 4
+        },
+        {
+          "messageId": "20226f91-d969-474c-a78a-9435beafa3b4",
+          "target": "feedback",
+          "context": "motivational",
+          "sortOrder": 5
+        },
+        {
+          "messageId": "65ca6f96-07d3-4b24-af72-3c5c9e59d681",
+          "target": "feedback",
+          "context": "motivational",
+          "sortOrder": 6
+        },
+        {
+          "messageId": "ff8b20c5-f84b-42fc-91f3-55529e6005aa",
+          "target": "feedback",
+          "context": "tip",
+          "sortOrder": 7
+        },
+        {
+          "messageId": "f7705456-bc60-47b9-98a1-caf843366046",
+          "target": "feedback",
+          "context": "tip",
+          "sortOrder": 8
+        }
+      ]
+    }
+  ],
+  "description": {
+    "ar": "تمرين مكتبة: سمانة جالس.",
+    "en": "Library exercise: Seated calf raise."
+  },
+  "instructions": {
+    "ar": "حافظ على عمود فقري محايد وتنفس بثبات وتوقف عند أي ألم حاد.",
+    "en": "Maintain neutral spine, steady breathing, and stop if sharp pain appears."
+  },
+  "supportsWeight": true,
+  "reportMetrics": {
+    "primary": [
+      "FORM_SCORE"
+    ],
+    "excluded": [
+      "HOLD_DURATION",
+      "ALIGNMENT"
+    ]
+  },
+  "_database": {
+    "id": "da3dbd0e-59de-430a-8ad0-1186b5d34e79",
+    "categoryId": "a672c3d3-4449-4f74-bd8e-be73a0035e88",
+    "countingMethodId": "f4d48aef-1606-4f23-8c61-7b4a2546f990",
+    "publishedAt": "2026-04-20T17:26:28.760Z",
+    "createdAt": "2026-04-20T17:26:28.762Z",
+    "updatedAt": "2026-04-20T17:26:34.545Z",
+    "deletedAt": null,
+    "isFeatured": false,
+    "createdBy": null,
+    "updatedBy": null,
+    "repCountingConfig": null,
+    "bilateralConfig": null,
+    "isBilateral": false,
+    "supportsWeight": true,
+    "minWeight": null,
+    "maxWeight": null,
+    "defaultWeight": null,
+    "reportMetrics": {
+      "mode": "reps",
+      "version": 1,
+      "primaryKpi": "repQuality",
+      "secondaryKpis": [
+        "avgFormScore",
+        "avgRom"
+      ]
+    },
+    "media": [],
+    "poseVariants": [
+      {
+        "id": "c48f0732-89ac-4d73-b3c0-716c4e982f24",
+        "sortOrder": 1,
+        "description": null,
+        "trackedJointsConfig": [
+          {
+            "role": "primary",
+            "joint": "left_ankle",
+            "upRange": {
+              "pad": {
+                "max": 158,
+                "min": 110
+              },
+              "normal": {
+                "max": 155,
+                "min": 118
+              },
+              "perfect": {
+                "max": 150,
+                "min": 125
+              }
+            },
+            "downRange": {
+              "pad": {
+                "max": 105,
+                "min": 65
+              },
+              "normal": {
+                "max": 100,
+                "min": 72
+              },
+              "perfect": {
+                "max": 95,
+                "min": 78
+              },
+              "warning": {
+                "max": 65,
+                "min": 50
+              }
+            },
+            "startPose": {
+              "max": 110,
+              "min": 75
+            },
+            "pairedWith": "right_ankle",
+            "stateMessages": {
+              "normal": {
+                "up": {
+                  "ar": "جيد، ارفع الكعب أكثر",
+                  "en": "Good, lift the heel a bit higher"
+                },
+                "down": {
+                  "ar": "جيد، لا ترتد",
+                  "en": "Good, no bouncing"
+                }
+              },
+              "perfect": {
+                "up": {
+                  "ar": "ممتاز! ارتفاع كامل على أصابع القدم",
+                  "en": "Perfect! Full rise onto the toes"
+                },
+                "down": {
+                  "ar": "ممتاز! عودة متحكم بها",
+                  "en": "Perfect! Controlled return"
+                }
+              }
+            }
+          }
+        ]
+      }
+    ],
+    "validationWarning": null
+  }
+}

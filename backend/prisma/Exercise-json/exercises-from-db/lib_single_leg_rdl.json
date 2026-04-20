@@ -1,0 +1,662 @@
+{
+  "slug": "lib_single_leg_rdl",
+  "status": "published",
+  "movementPattern": "HINGE",
+  "loadCapability": "EXTERNAL_LOAD_OPTIONAL",
+  "familyKey": "hinge_pattern_family",
+  "familyOrder": 48,
+  "name": {
+    "ar": "رفعة رومانية أحادية",
+    "en": "Single-leg RDL"
+  },
+  "category": {
+    "code": "legs",
+    "name": {
+      "ar": "تمارين الأرجل",
+      "en": "Legs"
+    }
+  },
+  "countingMethod": "up_down",
+  "muscles": [
+    "hamstrings",
+    "glutes"
+  ],
+  "equipment": [
+    "dumbbell",
+    "mat"
+  ],
+  "tags": [
+    "curated_library",
+    "unilateral"
+  ],
+  "repCountingConfig": {
+    "reps": 12,
+    "minRepIntervalMs": 1500,
+    "maxRepIntervalMs": 5000
+  },
+  "poseVariants": [
+    {
+      "name": {
+        "ar": "زاوية جانبية",
+        "en": "Side view"
+      },
+      "posePosition": "standing_side",
+      "expectedPostures": [
+        "standing"
+      ],
+      "expectedDirections": [
+        "side"
+      ],
+      "expectedRegions": [
+        "full_body"
+      ],
+      "trackedJoints": [
+        {
+          "joint": "left_hip",
+          "role": "primary",
+          "startPose": {
+            "max": 180,
+            "min": 120
+          },
+          "stateMessages": {
+            "pad": {
+              "down": {
+                "ar": "مقبول، لكن الاتزان ما زال ضعيفاً",
+                "en": "Acceptable, but balance is still limited"
+              }
+            },
+            "danger": {
+              "down": {
+                "ar": "توقف، فقدت السيطرة الأحادية",
+                "en": "Stop, single-leg control is lost"
+              }
+            },
+            "normal": {
+              "up": {
+                "ar": "جيد، أنهِ الوقوف بالكامل",
+                "en": "Good, finish the stand completely"
+              },
+              "down": {
+                "ar": "جيد، تحكم أكثر في الاتزان",
+                "en": "Good, control the balance more"
+              }
+            },
+            "perfect": {
+              "up": {
+                "ar": "ممتاز! قفل ورك قوي",
+                "en": "Perfect! Strong hip lockout"
+              },
+              "down": {
+                "ar": "ممتاز! مفصل ورك عميق ومتزن",
+                "en": "Perfect! Deep, balanced hinge"
+              }
+            },
+            "warning": {
+              "down": {
+                "ar": "لا تدع الحوض يلتف أو يفتح",
+                "en": "Do not let the pelvis rotate open"
+              }
+            }
+          },
+          "upRange": {
+            "pad": {
+              "max": 180,
+              "min": 152
+            },
+            "normal": {
+              "max": 180,
+              "min": 160
+            },
+            "perfect": {
+              "max": 180,
+              "min": 168
+            }
+          },
+          "downRange": {
+            "pad": {
+              "max": 118,
+              "min": 58
+            },
+            "danger": {
+              "max": 45,
+              "min": 0
+            },
+            "normal": {
+              "max": 108,
+              "min": 65
+            },
+            "perfect": {
+              "max": 98,
+              "min": 72
+            },
+            "warning": {
+              "max": 58,
+              "min": 45
+            }
+          }
+        },
+        {
+          "joint": "spine",
+          "role": "secondary",
+          "startPose": {
+            "max": 24,
+            "min": 0
+          },
+          "stateMessages": {
+            "perfect": {
+              "ar": "جذع ثابت طوال التوازن",
+              "en": "Torso remains stable through balance"
+            },
+            "warning": {
+              "ar": "لا تنهَر بالظهر لتعويض الاتزان",
+              "en": "Do not fold the spine to save balance"
+            }
+          },
+          "range": {
+            "pad": {
+              "max": 35,
+              "min": 0
+            },
+            "danger": {
+              "max": 85,
+              "min": 42
+            },
+            "normal": {
+              "max": 26,
+              "min": 0
+            },
+            "perfect": {
+              "max": 18,
+              "min": 0
+            },
+            "warning": {
+              "max": 45,
+              "min": 28
+            }
+          },
+          "phaseRanges": {
+            "up": {
+              "normal": {
+                "max": 24,
+                "min": 0
+              },
+              "perfect": {
+                "max": 18,
+                "min": 0
+              }
+            },
+            "top": {
+              "perfect": {
+                "max": 12,
+                "min": 0
+              }
+            },
+            "down": {
+              "normal": {
+                "max": 24,
+                "min": 0
+              },
+              "perfect": {
+                "max": 18,
+                "min": 0
+              }
+            },
+            "bottom": {
+              "normal": {
+                "max": 35,
+                "min": 5
+              },
+              "perfect": {
+                "max": 28,
+                "min": 8
+              }
+            }
+          },
+          "phaseStateMessages": {
+            "top": {
+              "perfect": {
+                "ar": "ظهر محايد في الوقفة",
+                "en": "Neutral spine at the top"
+              },
+              "warning": {
+                "ar": "لا تميل القطن للأمام في الأعلى",
+                "en": "Avoid excessive lumbar lean at the top"
+              }
+            },
+            "bottom": {
+              "perfect": {
+                "ar": "انحناء مقبول في القاع مع تحكم",
+                "en": "Acceptable flexion at bottom with control"
+              },
+              "warning": {
+                "ar": "قلل الانحناء القطني الزائد",
+                "en": "Reduce excessive lumbar flexion"
+              }
+            }
+          }
+        }
+      ],
+      "positionChecks": [
+        {
+          "id": "single_leg_rdl_spine",
+          "type": "vertical_alignment",
+          "landmarks": {
+            "primary": "left_shoulder",
+            "secondary": "left_hip"
+          },
+          "condition": {
+            "operator": "approximately_equal",
+            "threshold": 0.1
+          },
+          "activePhases": [
+            "up",
+            "down"
+          ],
+          "errorMessage": {
+            "ar": "حافظ على ظهر محايد أثناء مفصل الورك الأحادي.",
+            "en": "Keep a neutral spine during the single-leg hinge."
+          },
+          "severity": "warning",
+          "cooldownMs": 2200,
+          "minErrorFrames": 4
+        }
+      ],
+      "feedbackMessages": {
+        "motivational": [
+          {
+            "ar": "أداء قوي ومنظم",
+            "en": "Strong and controlled work"
+          },
+          {
+            "ar": "حافظ على الشكل قبل السرعة",
+            "en": "Keep form before speed"
+          }
+        ],
+        "tips": [
+          {
+            "ar": "خذ نفساً تحضيرياً قبل كل عدة وازفر مع الجهد.",
+            "en": "Take a setup breath before each rep and exhale on effort."
+          },
+          {
+            "ar": "إذا فقدت التحكم الميكانيكي، قلل المدى أو الحمل.",
+            "en": "If mechanics break down, reduce range or load."
+          }
+        ]
+      },
+      "messageAssignments": [
+        {
+          "messageId": "06a5ddc2-6f99-405a-9368-35cbc770fbec",
+          "target": "position",
+          "context": "error",
+          "checkId": "single_leg_rdl_spine",
+          "sortOrder": 1
+        },
+        {
+          "messageId": "8bbb399c-ee0b-400d-9d9c-d00b9a7df60e",
+          "target": "joint_state",
+          "context": "perfect",
+          "jointCode": "left_hip",
+          "zone": "up",
+          "sortOrder": 2
+        },
+        {
+          "messageId": "06e58d2f-23c5-462c-aaa6-a9f6ed98223f",
+          "target": "joint_state",
+          "context": "perfect",
+          "jointCode": "left_hip",
+          "zone": "down",
+          "sortOrder": 3
+        },
+        {
+          "messageId": "cbe38bad-e96f-46a5-bbc1-cf2b888eaf92",
+          "target": "joint_state",
+          "context": "normal",
+          "jointCode": "left_hip",
+          "zone": "up",
+          "sortOrder": 4
+        },
+        {
+          "messageId": "1ac71320-ca42-4bf6-afec-c127f3a635b0",
+          "target": "joint_state",
+          "context": "normal",
+          "jointCode": "left_hip",
+          "zone": "down",
+          "sortOrder": 5
+        },
+        {
+          "messageId": "a166b3bc-f0c5-49e9-aa60-37b86a90d03e",
+          "target": "joint_state",
+          "context": "pad",
+          "jointCode": "left_hip",
+          "zone": "down",
+          "sortOrder": 6
+        },
+        {
+          "messageId": "eeebafcc-cda0-412e-8b21-827ecd2e5dc8",
+          "target": "joint_state",
+          "context": "warning",
+          "jointCode": "left_hip",
+          "zone": "down",
+          "sortOrder": 7
+        },
+        {
+          "messageId": "589870e6-13ca-42d0-9026-c8d6b464182a",
+          "target": "joint_state",
+          "context": "danger",
+          "jointCode": "left_hip",
+          "zone": "down",
+          "sortOrder": 8
+        },
+        {
+          "messageId": "d64459ec-a59a-4e15-b783-65f400fd005b",
+          "target": "joint_state",
+          "context": "perfect",
+          "jointCode": "spine",
+          "sortOrder": 9
+        },
+        {
+          "messageId": "bf203224-6e92-432e-801d-9a680f90ded7",
+          "target": "joint_state",
+          "context": "warning",
+          "jointCode": "spine",
+          "sortOrder": 10
+        },
+        {
+          "messageId": "a6e8401c-8d58-4a40-a33e-b24a5eacf2f9",
+          "target": "joint_state_phase",
+          "context": "top:perfect",
+          "jointCode": "spine",
+          "sortOrder": 11
+        },
+        {
+          "messageId": "f802dad3-c2b0-4087-814a-bac8feb94649",
+          "target": "joint_state_phase",
+          "context": "top:warning",
+          "jointCode": "spine",
+          "sortOrder": 12
+        },
+        {
+          "messageId": "9e1c2720-a8ae-441e-923e-bbea7dadbaf5",
+          "target": "joint_state_phase",
+          "context": "bottom:perfect",
+          "jointCode": "spine",
+          "sortOrder": 13
+        },
+        {
+          "messageId": "ad6f35ae-e705-4694-b1a5-8041c1851750",
+          "target": "joint_state_phase",
+          "context": "bottom:warning",
+          "jointCode": "spine",
+          "sortOrder": 14
+        },
+        {
+          "messageId": "a2f4e584-e321-4b95-97a8-2d7476681ab7",
+          "target": "feedback",
+          "context": "motivational",
+          "sortOrder": 15
+        },
+        {
+          "messageId": "85cd8720-5f68-40d1-a232-abeffc38a0db",
+          "target": "feedback",
+          "context": "motivational",
+          "sortOrder": 16
+        },
+        {
+          "messageId": "bd60fbd5-408d-4b2f-9860-343e2e5f149d",
+          "target": "feedback",
+          "context": "tip",
+          "sortOrder": 17
+        },
+        {
+          "messageId": "b2f0626d-7721-45ee-8e16-98b8153e7f6f",
+          "target": "feedback",
+          "context": "tip",
+          "sortOrder": 18
+        }
+      ],
+      "cameraPosition": "side_view"
+    }
+  ],
+  "description": {
+    "ar": "تمرين مكتبة: رفعة رومانية أحادية.",
+    "en": "Library exercise: Single-leg RDL."
+  },
+  "instructions": {
+    "ar": "حافظ على عمود فقري محايد وتنفس بثبات وتوقف عند أي ألم حاد.",
+    "en": "Maintain neutral spine, steady breathing, and stop if sharp pain appears."
+  },
+  "supportsWeight": true,
+  "reportMetrics": {
+    "primary": [
+      "FORM_SCORE"
+    ],
+    "excluded": [
+      "HOLD_DURATION",
+      "SYMMETRY"
+    ]
+  },
+  "hasPositionChecks": true,
+  "_database": {
+    "id": "f882c183-c93e-4f17-ad0c-2b7b6946c23f",
+    "categoryId": "a672c3d3-4449-4f74-bd8e-be73a0035e88",
+    "countingMethodId": "f4d48aef-1606-4f23-8c61-7b4a2546f990",
+    "publishedAt": "2026-04-20T17:26:25.654Z",
+    "createdAt": "2026-04-20T17:26:25.655Z",
+    "updatedAt": "2026-04-20T17:26:34.322Z",
+    "deletedAt": null,
+    "isFeatured": false,
+    "createdBy": null,
+    "updatedBy": null,
+    "repCountingConfig": null,
+    "bilateralConfig": null,
+    "isBilateral": false,
+    "supportsWeight": true,
+    "minWeight": null,
+    "maxWeight": null,
+    "defaultWeight": null,
+    "reportMetrics": {
+      "mode": "reps",
+      "version": 1,
+      "primaryKpi": "repQuality",
+      "secondaryKpis": [
+        "avgFormScore",
+        "avgRom"
+      ]
+    },
+    "media": [],
+    "poseVariants": [
+      {
+        "id": "08276b86-74a6-4117-b816-f400aaac61a1",
+        "sortOrder": 1,
+        "description": null,
+        "trackedJointsConfig": [
+          {
+            "role": "primary",
+            "joint": "left_hip",
+            "upRange": {
+              "pad": {
+                "max": 180,
+                "min": 152
+              },
+              "normal": {
+                "max": 180,
+                "min": 160
+              },
+              "perfect": {
+                "max": 180,
+                "min": 168
+              }
+            },
+            "downRange": {
+              "pad": {
+                "max": 118,
+                "min": 58
+              },
+              "danger": {
+                "max": 45,
+                "min": 0
+              },
+              "normal": {
+                "max": 108,
+                "min": 65
+              },
+              "perfect": {
+                "max": 98,
+                "min": 72
+              },
+              "warning": {
+                "max": 58,
+                "min": 45
+              }
+            },
+            "startPose": {
+              "max": 180,
+              "min": 120
+            },
+            "stateMessages": {
+              "pad": {
+                "down": {
+                  "ar": "مقبول، لكن الاتزان ما زال ضعيفاً",
+                  "en": "Acceptable, but balance is still limited"
+                }
+              },
+              "danger": {
+                "down": {
+                  "ar": "توقف، فقدت السيطرة الأحادية",
+                  "en": "Stop, single-leg control is lost"
+                }
+              },
+              "normal": {
+                "up": {
+                  "ar": "جيد، أنهِ الوقوف بالكامل",
+                  "en": "Good, finish the stand completely"
+                },
+                "down": {
+                  "ar": "جيد، تحكم أكثر في الاتزان",
+                  "en": "Good, control the balance more"
+                }
+              },
+              "perfect": {
+                "up": {
+                  "ar": "ممتاز! قفل ورك قوي",
+                  "en": "Perfect! Strong hip lockout"
+                },
+                "down": {
+                  "ar": "ممتاز! مفصل ورك عميق ومتزن",
+                  "en": "Perfect! Deep, balanced hinge"
+                }
+              },
+              "warning": {
+                "down": {
+                  "ar": "لا تدع الحوض يلتف أو يفتح",
+                  "en": "Do not let the pelvis rotate open"
+                }
+              }
+            }
+          },
+          {
+            "role": "secondary",
+            "joint": "spine",
+            "range": {
+              "pad": {
+                "max": 35,
+                "min": 0
+              },
+              "danger": {
+                "max": 85,
+                "min": 42
+              },
+              "normal": {
+                "max": 26,
+                "min": 0
+              },
+              "perfect": {
+                "max": 18,
+                "min": 0
+              },
+              "warning": {
+                "max": 45,
+                "min": 28
+              }
+            },
+            "startPose": {
+              "max": 24,
+              "min": 0
+            },
+            "phaseRanges": {
+              "up": {
+                "normal": {
+                  "max": 24,
+                  "min": 0
+                },
+                "perfect": {
+                  "max": 18,
+                  "min": 0
+                }
+              },
+              "top": {
+                "perfect": {
+                  "max": 12,
+                  "min": 0
+                }
+              },
+              "down": {
+                "normal": {
+                  "max": 24,
+                  "min": 0
+                },
+                "perfect": {
+                  "max": 18,
+                  "min": 0
+                }
+              },
+              "bottom": {
+                "normal": {
+                  "max": 35,
+                  "min": 5
+                },
+                "perfect": {
+                  "max": 28,
+                  "min": 8
+                }
+              }
+            },
+            "stateMessages": {
+              "perfect": {
+                "ar": "جذع ثابت طوال التوازن",
+                "en": "Torso remains stable through balance"
+              },
+              "warning": {
+                "ar": "لا تنهَر بالظهر لتعويض الاتزان",
+                "en": "Do not fold the spine to save balance"
+              }
+            },
+            "phaseStateMessages": {
+              "top": {
+                "perfect": {
+                  "ar": "ظهر محايد في الوقفة",
+                  "en": "Neutral spine at the top"
+                },
+                "warning": {
+                  "ar": "لا تميل القطن للأمام في الأعلى",
+                  "en": "Avoid excessive lumbar lean at the top"
+                }
+              },
+              "bottom": {
+                "perfect": {
+                  "ar": "انحناء مقبول في القاع مع تحكم",
+                  "en": "Acceptable flexion at bottom with control"
+                },
+                "warning": {
+                  "ar": "قلل الانحناء القطني الزائد",
+                  "en": "Reduce excessive lumbar flexion"
+                }
+              }
+            }
+          }
+        ]
+      }
+    ],
+    "validationWarning": null
+  }
+}

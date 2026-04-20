@@ -1,0 +1,769 @@
+{
+  "slug": "side_plank",
+  "status": "published",
+  "movementPattern": "CORE_BRACE",
+  "loadCapability": "BODYWEIGHT_ONLY",
+  "familyKey": "anti_lateral_flexion_family",
+  "familyOrder": 20,
+  "name": {
+    "ar": "البلانك الجانبي",
+    "en": "Side Plank"
+  },
+  "category": {
+    "code": "core",
+    "name": {
+      "ar": "جذع",
+      "en": "Core"
+    }
+  },
+  "countingMethod": "hold",
+  "muscles": [
+    "obliques",
+    "abs_muscle",
+    "front_delts",
+    "glutes"
+  ],
+  "equipment": [
+    "bodyweight"
+  ],
+  "tags": [
+    "isometric",
+    "core",
+    "no_equipment",
+    "unilateral"
+  ],
+  "repCountingConfig": {
+    "duration": 25,
+    "gracePeriodMs": 2500
+  },
+  "poseVariants": [
+    {
+      "name": {
+        "ar": "الجانب الأيسر - زاوية أمامية",
+        "en": "Left Side - Front View"
+      },
+      "posePosition": "side_lying",
+      "expectedPostures": [
+        "lying_side"
+      ],
+      "expectedDirections": [
+        "side"
+      ],
+      "expectedRegions": [
+        "full_body"
+      ],
+      "trackedJoints": [
+        {
+          "joint": "left_hip",
+          "role": "primary",
+          "startPose": {
+            "max": 180,
+            "min": 160
+          },
+          "stateMessages": {
+            "pad": {
+              "ar": "مقبول، لكن يمكنك التحسن",
+              "en": "Acceptable, but you can improve"
+            },
+            "danger": {
+              "ar": "حوضك منخفض جداً!",
+              "en": "Hips too low!"
+            },
+            "normal": {
+              "ar": "جيد، حاول رفع الحوض أكثر قليلاً",
+              "en": "Good, try raising hips slightly more"
+            },
+            "perfect": {
+              "ar": "ممتاز! وضعية مثالية",
+              "en": "Perfect! Great form"
+            },
+            "warning": {
+              "ar": "ارفع حوضك أعلى",
+              "en": "Raise your hips higher"
+            }
+          },
+          "range": {
+            "pad": {
+              "max": 180,
+              "min": 155
+            },
+            "danger": {
+              "max": 140,
+              "min": 0
+            },
+            "normal": {
+              "max": 180,
+              "min": 165
+            },
+            "perfect": {
+              "max": 180,
+              "min": 170
+            },
+            "warning": {
+              "max": 155,
+              "min": 140
+            }
+          }
+        },
+        {
+          "joint": "left_shoulder",
+          "role": "secondary",
+          "startPose": {
+            "max": 110,
+            "min": 70
+          },
+          "stateMessages": {
+            "perfect": {
+              "ar": "ممتاز - الكتف في الوضع الصحيح",
+              "en": "Great - shoulder is positioned correctly"
+            }
+          },
+          "range": {
+            "pad": {
+              "max": 120,
+              "min": 70
+            },
+            "normal": {
+              "max": 110,
+              "min": 80
+            },
+            "perfect": {
+              "max": 100,
+              "min": 85
+            }
+          }
+        },
+        {
+          "joint": "left_knee",
+          "role": "secondary",
+          "startPose": {
+            "max": 180,
+            "min": 165
+          },
+          "stateMessages": {
+            "perfect": {
+              "ar": "ممتاز - الساقين مستقيمتين",
+              "en": "Great - legs are straight"
+            }
+          },
+          "range": {
+            "pad": {
+              "max": 180,
+              "min": 160
+            },
+            "normal": {
+              "max": 180,
+              "min": 168
+            },
+            "perfect": {
+              "max": 180,
+              "min": 172
+            }
+          }
+        }
+      ],
+      "positionChecks": [
+        {
+          "id": "hip_alignment",
+          "type": "horizontal_alignment",
+          "landmarks": {
+            "primary": "left_hip",
+            "secondary": "left_shoulder"
+          },
+          "condition": {
+            "operator": "approximately_equal",
+            "threshold": 0.08
+          },
+          "activePhases": [
+            "all"
+          ],
+          "errorMessage": {
+            "ar": "ارفع حوضك - لا تدعه يهبط",
+            "en": "Raise hips - don't let them drop"
+          },
+          "severity": "error",
+          "cooldownMs": 2000,
+          "minErrorFrames": 5
+        }
+      ],
+      "feedbackMessages": {
+        "motivational": [
+          {
+            "ar": "ممتاز! استمر!",
+            "en": "Excellent! Hold it!"
+          },
+          {
+            "ar": "قوي! لا تستسلم!",
+            "en": "Strong! Don't give up!"
+          },
+          {
+            "ar": "أداء رائع!",
+            "en": "Great form!"
+          }
+        ],
+        "tips": [
+          {
+            "ar": "تنفس بانتظام",
+            "en": "Breathe steadily"
+          },
+          {
+            "ar": "شد عضلات الجذع للثبات",
+            "en": "Engage core for stability"
+          },
+          {
+            "ar": "حافظ على رقبتك في خط مستقيم",
+            "en": "Keep neck in line with spine"
+          }
+        ]
+      },
+      "messageAssignments": [
+        {
+          "messageId": "7dedaaec-0410-47c7-84f8-5919194c3c63",
+          "target": "position",
+          "context": "error",
+          "checkId": "hip_alignment",
+          "sortOrder": 1
+        },
+        {
+          "messageId": "6908ebb7-4b6f-4b9a-ad21-1b30033c9f73",
+          "target": "joint_state",
+          "context": "perfect",
+          "jointCode": "left_hip",
+          "sortOrder": 2
+        },
+        {
+          "messageId": "34462e4c-acf4-4643-b672-53cea080ea81",
+          "target": "joint_state",
+          "context": "normal",
+          "jointCode": "left_hip",
+          "sortOrder": 3
+        },
+        {
+          "messageId": "10c5552a-8f06-4976-80e5-8147f891adcc",
+          "target": "joint_state",
+          "context": "pad",
+          "jointCode": "left_hip",
+          "sortOrder": 4
+        },
+        {
+          "messageId": "399aab11-6005-44cf-9cbf-448a0791568a",
+          "target": "joint_state",
+          "context": "warning",
+          "jointCode": "left_hip",
+          "sortOrder": 5
+        },
+        {
+          "messageId": "dd5135d9-c5c1-490f-bf5e-8deb2832867d",
+          "target": "joint_state",
+          "context": "danger",
+          "jointCode": "left_hip",
+          "sortOrder": 6
+        },
+        {
+          "messageId": "56152530-a3ec-4713-a466-334611eadd05",
+          "target": "joint_state",
+          "context": "perfect",
+          "jointCode": "left_shoulder",
+          "sortOrder": 7
+        },
+        {
+          "messageId": "7a40e7af-19b8-4280-8ca7-5379a504bd90",
+          "target": "joint_state",
+          "context": "perfect",
+          "jointCode": "left_knee",
+          "sortOrder": 8
+        },
+        {
+          "messageId": "90e30b75-0a93-4655-83d6-15e869f20d6d",
+          "target": "feedback",
+          "context": "motivational",
+          "sortOrder": 9
+        },
+        {
+          "messageId": "51b3dc9a-5665-48c5-bdad-d5092e4d23f1",
+          "target": "feedback",
+          "context": "motivational",
+          "sortOrder": 10
+        },
+        {
+          "messageId": "ad96b19b-27c3-4782-ab1b-6d5ccc880a75",
+          "target": "feedback",
+          "context": "motivational",
+          "sortOrder": 11
+        },
+        {
+          "messageId": "005d5cac-f0f5-4854-9669-bc688d5f6a7a",
+          "target": "feedback",
+          "context": "tip",
+          "sortOrder": 12
+        },
+        {
+          "messageId": "f393acd3-8281-4af2-8ed4-1f8593344da5",
+          "target": "feedback",
+          "context": "tip",
+          "sortOrder": 13
+        },
+        {
+          "messageId": "b118c1ed-c063-4905-bd87-e1103ee77796",
+          "target": "feedback",
+          "context": "tip",
+          "sortOrder": 14
+        }
+      ]
+    },
+    {
+      "name": {
+        "ar": "الجانب الأيمن - زاوية أمامية",
+        "en": "Right Side - Front View"
+      },
+      "posePosition": "side_lying",
+      "expectedPostures": [
+        "lying_side"
+      ],
+      "expectedDirections": [
+        "side"
+      ],
+      "expectedRegions": [
+        "full_body"
+      ],
+      "trackedJoints": [
+        {
+          "joint": "right_hip",
+          "role": "primary",
+          "startPose": {
+            "max": 180,
+            "min": 160
+          },
+          "stateMessages": {
+            "pad": {
+              "ar": "مقبول، لكن يمكنك التحسن",
+              "en": "Acceptable, but you can improve"
+            },
+            "danger": {
+              "ar": "حوضك منخفض جداً!",
+              "en": "Hips too low!"
+            },
+            "normal": {
+              "ar": "جيد، حاول رفع الحوض أكثر قليلاً",
+              "en": "Good, try raising hips slightly more"
+            },
+            "perfect": {
+              "ar": "ممتاز! وضعية مثالية",
+              "en": "Perfect! Great form"
+            },
+            "warning": {
+              "ar": "ارفع حوضك أعلى",
+              "en": "Raise your hips higher"
+            }
+          },
+          "range": {
+            "pad": {
+              "max": 180,
+              "min": 155
+            },
+            "danger": {
+              "max": 140,
+              "min": 0
+            },
+            "normal": {
+              "max": 180,
+              "min": 165
+            },
+            "perfect": {
+              "max": 180,
+              "min": 170
+            },
+            "warning": {
+              "max": 155,
+              "min": 140
+            }
+          }
+        },
+        {
+          "joint": "right_shoulder",
+          "role": "secondary",
+          "startPose": {
+            "max": 110,
+            "min": 70
+          },
+          "stateMessages": {
+            "perfect": {
+              "ar": "ممتاز - الكتف في الوضع الصحيح",
+              "en": "Great - shoulder is positioned correctly"
+            }
+          },
+          "range": {
+            "pad": {
+              "max": 120,
+              "min": 70
+            },
+            "normal": {
+              "max": 110,
+              "min": 80
+            },
+            "perfect": {
+              "max": 100,
+              "min": 85
+            }
+          }
+        }
+      ],
+      "positionChecks": [
+        {
+          "id": "hip_alignment_right",
+          "type": "horizontal_alignment",
+          "landmarks": {
+            "primary": "right_hip",
+            "secondary": "right_shoulder"
+          },
+          "condition": {
+            "operator": "approximately_equal",
+            "threshold": 0.08
+          },
+          "activePhases": [
+            "all"
+          ],
+          "errorMessage": {
+            "ar": "ارفع حوضك - لا تدعه يهبط",
+            "en": "Raise hips - don't let them drop"
+          },
+          "severity": "error",
+          "cooldownMs": 2000,
+          "minErrorFrames": 5
+        }
+      ],
+      "feedbackMessages": {
+        "motivational": [
+          {
+            "ar": "استمر!",
+            "en": "Keep going!"
+          }
+        ],
+        "tips": []
+      },
+      "messageAssignments": [
+        {
+          "messageId": "d00a5890-d15f-4bf5-beff-0776f38a6f94",
+          "target": "position",
+          "context": "error",
+          "checkId": "hip_alignment_right",
+          "sortOrder": 1
+        },
+        {
+          "messageId": "ea113f23-e81a-4be8-95f6-52281647a2d0",
+          "target": "joint_state",
+          "context": "perfect",
+          "jointCode": "right_hip",
+          "sortOrder": 2
+        },
+        {
+          "messageId": "ec8fd06e-2ac8-4a28-87b3-450348f71aef",
+          "target": "joint_state",
+          "context": "normal",
+          "jointCode": "right_hip",
+          "sortOrder": 3
+        },
+        {
+          "messageId": "11cf6726-f59b-45e5-992e-c879dc3590ae",
+          "target": "joint_state",
+          "context": "pad",
+          "jointCode": "right_hip",
+          "sortOrder": 4
+        },
+        {
+          "messageId": "7560d38e-3a64-4748-a8e6-26a6d238e3d5",
+          "target": "joint_state",
+          "context": "warning",
+          "jointCode": "right_hip",
+          "sortOrder": 5
+        },
+        {
+          "messageId": "7d75c486-96d0-4978-b496-a9585aa6d7cf",
+          "target": "joint_state",
+          "context": "danger",
+          "jointCode": "right_hip",
+          "sortOrder": 6
+        },
+        {
+          "messageId": "1c880feb-4158-4613-b976-4eacf12e39fd",
+          "target": "joint_state",
+          "context": "perfect",
+          "jointCode": "right_shoulder",
+          "sortOrder": 7
+        },
+        {
+          "messageId": "d6be5350-d1a3-417e-a57e-53605d996ad5",
+          "target": "feedback",
+          "context": "motivational",
+          "sortOrder": 8
+        }
+      ]
+    }
+  ],
+  "description": {
+    "ar": "تمرين ثبات لتقوية عضلات الجذع الجانبية والكتف",
+    "en": "Isometric exercise to strengthen obliques and shoulder"
+  },
+  "instructions": {
+    "ar": "استلقِ على جانبك، ثم ارفع جسمك على ساعدك وحافظ على خط مستقيم من الرأس للقدمين",
+    "en": "Lie on your side, lift body on forearm and maintain straight line from head to feet"
+  },
+  "reportMetrics": {
+    "primary": [
+      "FORM_SCORE"
+    ],
+    "excluded": [
+      "REP_COUNT",
+      "TEMPO",
+      "TUT",
+      "ROM",
+      "FORM_CONSISTENCY",
+      "FATIGUE_INDEX",
+      "VELOCITY",
+      "VELOCITY_LOSS",
+      "TEMPO_CONSISTENCY",
+      "WEIGHT",
+      "VOLUME",
+      "EST_1RM",
+      "SYMMETRY"
+    ]
+  },
+  "hasPositionChecks": true,
+  "_database": {
+    "id": "5c3cb927-c67f-498d-80b2-b52a81f54047",
+    "categoryId": "a75c8245-e1cd-4a4f-82f1-1e58df971999",
+    "countingMethodId": "7ae86596-4b4b-400b-afa1-c7c0b6ba4fc9",
+    "publishedAt": "2026-04-20T17:26:23.151Z",
+    "createdAt": "2026-04-20T17:26:23.152Z",
+    "updatedAt": "2026-04-20T17:26:34.152Z",
+    "deletedAt": null,
+    "isFeatured": false,
+    "createdBy": null,
+    "updatedBy": null,
+    "repCountingConfig": {
+      "duration": 25,
+      "gracePeriodMs": 2500
+    },
+    "bilateralConfig": null,
+    "isBilateral": false,
+    "supportsWeight": false,
+    "minWeight": null,
+    "maxWeight": null,
+    "defaultWeight": null,
+    "reportMetrics": {
+      "mode": "duration",
+      "version": 1,
+      "primaryKpi": "timeUnderTension",
+      "secondaryKpis": [
+        "avgFormScore",
+        "avgRom"
+      ]
+    },
+    "media": [],
+    "poseVariants": [
+      {
+        "id": "73a37515-b041-4848-8e71-164ab38d5321",
+        "sortOrder": 1,
+        "description": null,
+        "trackedJointsConfig": [
+          {
+            "role": "primary",
+            "joint": "left_hip",
+            "range": {
+              "pad": {
+                "max": 180,
+                "min": 155
+              },
+              "danger": {
+                "max": 140,
+                "min": 0
+              },
+              "normal": {
+                "max": 180,
+                "min": 165
+              },
+              "perfect": {
+                "max": 180,
+                "min": 170
+              },
+              "warning": {
+                "max": 155,
+                "min": 140
+              }
+            },
+            "startPose": {
+              "max": 180,
+              "min": 160
+            },
+            "stateMessages": {
+              "pad": {
+                "ar": "مقبول، لكن يمكنك التحسن",
+                "en": "Acceptable, but you can improve"
+              },
+              "danger": {
+                "ar": "حوضك منخفض جداً!",
+                "en": "Hips too low!"
+              },
+              "normal": {
+                "ar": "جيد، حاول رفع الحوض أكثر قليلاً",
+                "en": "Good, try raising hips slightly more"
+              },
+              "perfect": {
+                "ar": "ممتاز! وضعية مثالية",
+                "en": "Perfect! Great form"
+              },
+              "warning": {
+                "ar": "ارفع حوضك أعلى",
+                "en": "Raise your hips higher"
+              }
+            }
+          },
+          {
+            "role": "secondary",
+            "joint": "left_shoulder",
+            "range": {
+              "pad": {
+                "max": 120,
+                "min": 70
+              },
+              "normal": {
+                "max": 110,
+                "min": 80
+              },
+              "perfect": {
+                "max": 100,
+                "min": 85
+              }
+            },
+            "startPose": {
+              "max": 110,
+              "min": 70
+            },
+            "stateMessages": {
+              "perfect": {
+                "ar": "ممتاز - الكتف في الوضع الصحيح",
+                "en": "Great - shoulder is positioned correctly"
+              }
+            }
+          },
+          {
+            "role": "secondary",
+            "joint": "left_knee",
+            "range": {
+              "pad": {
+                "max": 180,
+                "min": 160
+              },
+              "normal": {
+                "max": 180,
+                "min": 168
+              },
+              "perfect": {
+                "max": 180,
+                "min": 172
+              }
+            },
+            "startPose": {
+              "max": 180,
+              "min": 165
+            },
+            "stateMessages": {
+              "perfect": {
+                "ar": "ممتاز - الساقين مستقيمتين",
+                "en": "Great - legs are straight"
+              }
+            }
+          }
+        ]
+      },
+      {
+        "id": "53cea258-6f29-42aa-94cb-ccecdbb96fc0",
+        "sortOrder": 2,
+        "description": null,
+        "trackedJointsConfig": [
+          {
+            "role": "primary",
+            "joint": "right_hip",
+            "range": {
+              "pad": {
+                "max": 180,
+                "min": 155
+              },
+              "danger": {
+                "max": 140,
+                "min": 0
+              },
+              "normal": {
+                "max": 180,
+                "min": 165
+              },
+              "perfect": {
+                "max": 180,
+                "min": 170
+              },
+              "warning": {
+                "max": 155,
+                "min": 140
+              }
+            },
+            "startPose": {
+              "max": 180,
+              "min": 160
+            },
+            "stateMessages": {
+              "pad": {
+                "ar": "مقبول، لكن يمكنك التحسن",
+                "en": "Acceptable, but you can improve"
+              },
+              "danger": {
+                "ar": "حوضك منخفض جداً!",
+                "en": "Hips too low!"
+              },
+              "normal": {
+                "ar": "جيد، حاول رفع الحوض أكثر قليلاً",
+                "en": "Good, try raising hips slightly more"
+              },
+              "perfect": {
+                "ar": "ممتاز! وضعية مثالية",
+                "en": "Perfect! Great form"
+              },
+              "warning": {
+                "ar": "ارفع حوضك أعلى",
+                "en": "Raise your hips higher"
+              }
+            }
+          },
+          {
+            "role": "secondary",
+            "joint": "right_shoulder",
+            "range": {
+              "pad": {
+                "max": 120,
+                "min": 70
+              },
+              "normal": {
+                "max": 110,
+                "min": 80
+              },
+              "perfect": {
+                "max": 100,
+                "min": 85
+              }
+            },
+            "startPose": {
+              "max": 110,
+              "min": 70
+            },
+            "stateMessages": {
+              "perfect": {
+                "ar": "ممتاز - الكتف في الوضع الصحيح",
+                "en": "Great - shoulder is positioned correctly"
+              }
+            }
+          }
+        ]
+      }
+    ],
+    "validationWarning": null
+  }
+}

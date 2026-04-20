@@ -1,0 +1,397 @@
+{
+  "slug": "lib_farmer_carry",
+  "status": "published",
+  "movementPattern": "CARRY",
+  "loadCapability": "EXTERNAL_LOAD_OPTIONAL",
+  "familyKey": "conditioning_family",
+  "familyOrder": 40,
+  "name": {
+    "ar": "حمل مزارع",
+    "en": "Farmer carry"
+  },
+  "category": {
+    "code": "full_body",
+    "name": {
+      "ar": "تمارين الجسم كامل",
+      "en": "Full Body"
+    }
+  },
+  "countingMethod": "hold",
+  "muscles": [
+    "forearms",
+    "traps"
+  ],
+  "equipment": [
+    "dumbbell",
+    "mat"
+  ],
+  "tags": [
+    "curated_library",
+    "conditioning"
+  ],
+  "repCountingConfig": {
+    "duration": 30,
+    "gracePeriodMs": 2500
+  },
+  "poseVariants": [
+    {
+      "name": {
+        "ar": "زاوية جانبية",
+        "en": "Side view"
+      },
+      "posePosition": "standing_side",
+      "expectedPostures": [
+        "standing"
+      ],
+      "expectedDirections": [
+        "side"
+      ],
+      "expectedRegions": [
+        "full_body"
+      ],
+      "trackedJoints": [
+        {
+          "joint": "left_hip",
+          "role": "primary",
+          "startPose": {
+            "max": 180,
+            "min": 160
+          },
+          "stateMessages": {
+            "danger": {
+              "ar": "توقف، فقدت وضعية الحمل",
+              "en": "Stop, loaded posture is lost"
+            },
+            "perfect": {
+              "ar": "مشية مستقرة تحت الحمل",
+              "en": "Stable gait under load"
+            },
+            "warning": {
+              "ar": "لا تمِل بالجذع أو الحوض",
+              "en": "Do not tilt the trunk or pelvis"
+            }
+          },
+          "range": {
+            "pad": {
+              "max": 180,
+              "min": 152
+            },
+            "danger": {
+              "max": 138,
+              "min": 0
+            },
+            "normal": {
+              "max": 180,
+              "min": 162
+            },
+            "perfect": {
+              "max": 180,
+              "min": 170
+            },
+            "warning": {
+              "max": 152,
+              "min": 138
+            }
+          }
+        },
+        {
+          "joint": "left_shoulder",
+          "role": "secondary",
+          "startPose": {
+            "max": 60,
+            "min": 15
+          },
+          "stateMessages": {
+            "perfect": {
+              "ar": "كتف منخفض ومتماسك بجانب الجسم",
+              "en": "Shoulder stays packed down by the side"
+            },
+            "warning": {
+              "ar": "لا ترفع الكتف تحت الحمل",
+              "en": "Do not shrug under load"
+            }
+          },
+          "range": {
+            "pad": {
+              "max": 54,
+              "min": 15
+            },
+            "normal": {
+              "max": 48,
+              "min": 18
+            },
+            "perfect": {
+              "max": 42,
+              "min": 22
+            },
+            "warning": {
+              "max": 70,
+              "min": 54
+            }
+          }
+        }
+      ],
+      "positionChecks": [
+        {
+          "id": "farmer_ribs_stack",
+          "type": "vertical_alignment",
+          "landmarks": {
+            "primary": "left_shoulder",
+            "secondary": "left_hip"
+          },
+          "condition": {
+            "operator": "approximately_equal",
+            "threshold": 0.1
+          },
+          "activePhases": [
+            "all"
+          ],
+          "errorMessage": {
+            "ar": "سر بخط مستقيم دون ميل جانبي أو بروز للأضلاع.",
+            "en": "Walk tall without side-bending or rib flare."
+          },
+          "severity": "warning",
+          "cooldownMs": 2400,
+          "minErrorFrames": 5
+        }
+      ],
+      "feedbackMessages": {
+        "motivational": [
+          {
+            "ar": "أداء قوي ومنظم",
+            "en": "Strong and controlled work"
+          },
+          {
+            "ar": "حافظ على الشكل قبل السرعة",
+            "en": "Keep form before speed"
+          }
+        ],
+        "tips": [
+          {
+            "ar": "خذ نفساً تحضيرياً قبل كل عدة وازفر مع الجهد.",
+            "en": "Take a setup breath before each rep and exhale on effort."
+          },
+          {
+            "ar": "إذا فقدت التحكم الميكانيكي، قلل المدى أو الحمل.",
+            "en": "If mechanics break down, reduce range or load."
+          }
+        ]
+      },
+      "messageAssignments": [
+        {
+          "messageId": "42f9b6c6-9bec-4ed4-a2d1-bcf9bd2eb2d7",
+          "target": "position",
+          "context": "error",
+          "checkId": "farmer_ribs_stack",
+          "sortOrder": 1
+        },
+        {
+          "messageId": "ec2081a5-44e3-4483-81c1-7b06b7409d1b",
+          "target": "joint_state",
+          "context": "perfect",
+          "jointCode": "left_hip",
+          "sortOrder": 2
+        },
+        {
+          "messageId": "5252bfd9-cfb0-467a-b1c6-119ad034517f",
+          "target": "joint_state",
+          "context": "warning",
+          "jointCode": "left_hip",
+          "sortOrder": 3
+        },
+        {
+          "messageId": "8047a7fb-7e74-4061-9538-9fca12ada32e",
+          "target": "joint_state",
+          "context": "danger",
+          "jointCode": "left_hip",
+          "sortOrder": 4
+        },
+        {
+          "messageId": "824f1272-bf1e-4ad8-a50b-a915681fb1f7",
+          "target": "joint_state",
+          "context": "perfect",
+          "jointCode": "left_shoulder",
+          "sortOrder": 5
+        },
+        {
+          "messageId": "31d4cb19-cc03-47b9-ba7d-62dd488b5a8f",
+          "target": "joint_state",
+          "context": "warning",
+          "jointCode": "left_shoulder",
+          "sortOrder": 6
+        },
+        {
+          "messageId": "7e9350b0-b00a-4621-aff0-38782f724b37",
+          "target": "feedback",
+          "context": "motivational",
+          "sortOrder": 7
+        },
+        {
+          "messageId": "b45711a6-d3a6-40c9-9efa-4cc2984f5492",
+          "target": "feedback",
+          "context": "motivational",
+          "sortOrder": 8
+        },
+        {
+          "messageId": "a46ceeac-77de-4e81-a1bc-b362b6da883f",
+          "target": "feedback",
+          "context": "tip",
+          "sortOrder": 9
+        },
+        {
+          "messageId": "0f75ce98-2388-4d89-8f56-fa518aef27a1",
+          "target": "feedback",
+          "context": "tip",
+          "sortOrder": 10
+        }
+      ],
+      "cameraPosition": "side_view"
+    }
+  ],
+  "description": {
+    "ar": "تمرين مكتبة: حمل مزارع.",
+    "en": "Library exercise: Farmer carry."
+  },
+  "instructions": {
+    "ar": "حافظ على عمود فقري محايد وتنفس بثبات وتوقف عند أي ألم حاد.",
+    "en": "Maintain neutral spine, steady breathing, and stop if sharp pain appears."
+  },
+  "supportsWeight": true,
+  "reportMetrics": {
+    "primary": [
+      "FORM_SCORE"
+    ],
+    "excluded": [
+      "REP_COUNT",
+      "TEMPO",
+      "TUT",
+      "ROM",
+      "FORM_CONSISTENCY",
+      "FATIGUE_INDEX",
+      "VELOCITY",
+      "VELOCITY_LOSS",
+      "TEMPO_CONSISTENCY",
+      "SYMMETRY"
+    ]
+  },
+  "hasPositionChecks": true,
+  "_database": {
+    "id": "15053f1b-31c8-4036-b374-ac42ae7061c5",
+    "categoryId": "da4f0d15-a7a4-4d8e-abd2-73ee921ef7dc",
+    "countingMethodId": "7ae86596-4b4b-400b-afa1-c7c0b6ba4fc9",
+    "publishedAt": "2026-04-20T17:26:25.507Z",
+    "createdAt": "2026-04-20T17:26:25.509Z",
+    "updatedAt": "2026-04-20T17:26:34.304Z",
+    "deletedAt": null,
+    "isFeatured": false,
+    "createdBy": null,
+    "updatedBy": null,
+    "repCountingConfig": null,
+    "bilateralConfig": null,
+    "isBilateral": false,
+    "supportsWeight": true,
+    "minWeight": null,
+    "maxWeight": null,
+    "defaultWeight": null,
+    "reportMetrics": {
+      "mode": "duration",
+      "version": 1,
+      "primaryKpi": "timeUnderTension",
+      "secondaryKpis": [
+        "avgFormScore",
+        "avgRom"
+      ]
+    },
+    "media": [],
+    "poseVariants": [
+      {
+        "id": "7707335d-4edf-4fc4-adbc-62d26637a9e3",
+        "sortOrder": 1,
+        "description": null,
+        "trackedJointsConfig": [
+          {
+            "role": "primary",
+            "joint": "left_hip",
+            "range": {
+              "pad": {
+                "max": 180,
+                "min": 152
+              },
+              "danger": {
+                "max": 138,
+                "min": 0
+              },
+              "normal": {
+                "max": 180,
+                "min": 162
+              },
+              "perfect": {
+                "max": 180,
+                "min": 170
+              },
+              "warning": {
+                "max": 152,
+                "min": 138
+              }
+            },
+            "startPose": {
+              "max": 180,
+              "min": 160
+            },
+            "stateMessages": {
+              "danger": {
+                "ar": "توقف، فقدت وضعية الحمل",
+                "en": "Stop, loaded posture is lost"
+              },
+              "perfect": {
+                "ar": "مشية مستقرة تحت الحمل",
+                "en": "Stable gait under load"
+              },
+              "warning": {
+                "ar": "لا تمِل بالجذع أو الحوض",
+                "en": "Do not tilt the trunk or pelvis"
+              }
+            }
+          },
+          {
+            "role": "secondary",
+            "joint": "left_shoulder",
+            "range": {
+              "pad": {
+                "max": 54,
+                "min": 15
+              },
+              "normal": {
+                "max": 48,
+                "min": 18
+              },
+              "perfect": {
+                "max": 42,
+                "min": 22
+              },
+              "warning": {
+                "max": 70,
+                "min": 54
+              }
+            },
+            "startPose": {
+              "max": 60,
+              "min": 15
+            },
+            "stateMessages": {
+              "perfect": {
+                "ar": "كتف منخفض ومتماسك بجانب الجسم",
+                "en": "Shoulder stays packed down by the side"
+              },
+              "warning": {
+                "ar": "لا ترفع الكتف تحت الحمل",
+                "en": "Do not shrug under load"
+              }
+            }
+          }
+        ]
+      }
+    ],
+    "validationWarning": null
+  }
+}

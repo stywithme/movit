@@ -1,0 +1,485 @@
+{
+  "slug": "lib_kb_goblet_clean",
+  "status": "published",
+  "movementPattern": "HINGE",
+  "loadCapability": "EXTERNAL_LOAD_REQUIRED",
+  "familyKey": "hinge_pattern_family",
+  "familyOrder": 52,
+  "name": {
+    "ar": "تنظيف جوبلت كيتل",
+    "en": "Kettlebell goblet clean"
+  },
+  "category": {
+    "code": "full_body",
+    "name": {
+      "ar": "تمارين الجسم كامل",
+      "en": "Full Body"
+    }
+  },
+  "countingMethod": "up_down",
+  "muscles": [
+    "glutes",
+    "front_delts"
+  ],
+  "equipment": [
+    "kettlebell",
+    "mat"
+  ],
+  "tags": [
+    "curated_library",
+    "power"
+  ],
+  "repCountingConfig": {
+    "reps": 12,
+    "minRepIntervalMs": 1500,
+    "maxRepIntervalMs": 5000
+  },
+  "poseVariants": [
+    {
+      "name": {
+        "ar": "زاوية جانبية",
+        "en": "Side view"
+      },
+      "posePosition": "standing_side",
+      "expectedPostures": [
+        "standing"
+      ],
+      "expectedDirections": [
+        "side"
+      ],
+      "expectedRegions": [
+        "full_body"
+      ],
+      "trackedJoints": [
+        {
+          "joint": "left_hip",
+          "role": "primary",
+          "startPose": {
+            "max": 180,
+            "min": 95
+          },
+          "stateMessages": {
+            "pad": {
+              "up": {
+                "ar": "مقبول — التوقيت ما زال يحتاج ضبطاً",
+                "en": "Acceptable — timing still needs tuning"
+              }
+            },
+            "normal": {
+              "up": {
+                "ar": "جيد، أكمل التمدد في الأعلى",
+                "en": "Good, finish the extension at the top"
+              },
+              "down": {
+                "ar": "جيد، اجلس في الورك لا في الركبة فقط",
+                "en": "Good, sit into the hips, not only the knees"
+              }
+            },
+            "perfect": {
+              "up": {
+                "ar": "ممتاز! قفل ورك مع قبضة عالية",
+                "en": "Perfect! Hip lockout with a tall rack"
+              },
+              "down": {
+                "ar": "ممتاز! تحميل سريع وقصير",
+                "en": "Perfect! Short, snappy load"
+              }
+            },
+            "warning": {
+              "down": {
+                "ar": "لا تسحب بالذراعين من الأسفل",
+                "en": "Don’t arm-pull from the bottom"
+              }
+            }
+          },
+          "upRange": {
+            "pad": {
+              "max": 180,
+              "min": 150
+            },
+            "normal": {
+              "max": 180,
+              "min": 160
+            },
+            "perfect": {
+              "max": 180,
+              "min": 168
+            }
+          },
+          "downRange": {
+            "pad": {
+              "max": 135,
+              "min": 72
+            },
+            "danger": {
+              "max": 58,
+              "min": 0
+            },
+            "normal": {
+              "max": 125,
+              "min": 80
+            },
+            "perfect": {
+              "max": 115,
+              "min": 88
+            },
+            "warning": {
+              "max": 72,
+              "min": 58
+            }
+          }
+        },
+        {
+          "joint": "left_knee",
+          "role": "secondary",
+          "startPose": {
+            "max": 180,
+            "min": 130
+          },
+          "stateMessages": {
+            "perfect": {
+              "ar": "ركبة ناعمة — ليست سكواتاً عميقاً",
+              "en": "Soft knees — not a deep squat"
+            },
+            "warning": {
+              "ar": "لا تغوص زائداً في الـ dip",
+              "en": "Don’t dive too deep in the dip"
+            }
+          },
+          "range": {
+            "pad": {
+              "max": 180,
+              "min": 128
+            },
+            "normal": {
+              "max": 180,
+              "min": 138
+            },
+            "perfect": {
+              "max": 172,
+              "min": 145
+            },
+            "warning": {
+              "max": 128,
+              "min": 115
+            }
+          }
+        }
+      ],
+      "positionChecks": [
+        {
+          "id": "goblet_clean_stack",
+          "type": "vertical_alignment",
+          "landmarks": {
+            "primary": "left_shoulder",
+            "secondary": "left_hip"
+          },
+          "condition": {
+            "operator": "approximately_equal",
+            "threshold": 0.13
+          },
+          "activePhases": [
+            "down"
+          ],
+          "errorMessage": {
+            "ar": "امتدد من الورك ثم «اقفز» الوزن للأعلى — ليس سكواتاً عمودياً.",
+            "en": "Extend from the hips then pop the weight up — not a vertical squat."
+          },
+          "severity": "warning",
+          "cooldownMs": 2200,
+          "minErrorFrames": 4
+        }
+      ],
+      "feedbackMessages": {
+        "motivational": [
+          {
+            "ar": "أداء قوي ومنظم",
+            "en": "Strong and controlled work"
+          },
+          {
+            "ar": "حافظ على الشكل قبل السرعة",
+            "en": "Keep form before speed"
+          }
+        ],
+        "tips": [
+          {
+            "ar": "خذ نفساً تحضيرياً قبل كل عدة وازفر مع الجهد.",
+            "en": "Take a setup breath before each rep and exhale on effort."
+          },
+          {
+            "ar": "إذا فقدت التحكم الميكانيكي، قلل المدى أو الحمل.",
+            "en": "If mechanics break down, reduce range or load."
+          }
+        ]
+      },
+      "messageAssignments": [
+        {
+          "messageId": "e5605af3-0a33-4c47-9209-5a46557df3ae",
+          "target": "position",
+          "context": "error",
+          "checkId": "goblet_clean_stack",
+          "sortOrder": 1
+        },
+        {
+          "messageId": "536aa23a-6330-44ae-992b-480eb3ba71ac",
+          "target": "joint_state",
+          "context": "perfect",
+          "jointCode": "left_hip",
+          "zone": "up",
+          "sortOrder": 2
+        },
+        {
+          "messageId": "09beada9-ecbd-4a81-9dc1-310739b27741",
+          "target": "joint_state",
+          "context": "perfect",
+          "jointCode": "left_hip",
+          "zone": "down",
+          "sortOrder": 3
+        },
+        {
+          "messageId": "e2e10111-66b8-40c3-a64d-af020990daba",
+          "target": "joint_state",
+          "context": "normal",
+          "jointCode": "left_hip",
+          "zone": "up",
+          "sortOrder": 4
+        },
+        {
+          "messageId": "101bfc9e-a8bb-42e8-b106-8506e285576d",
+          "target": "joint_state",
+          "context": "normal",
+          "jointCode": "left_hip",
+          "zone": "down",
+          "sortOrder": 5
+        },
+        {
+          "messageId": "756f9879-8c7e-4ee8-ab41-a607af6a73d0",
+          "target": "joint_state",
+          "context": "pad",
+          "jointCode": "left_hip",
+          "zone": "up",
+          "sortOrder": 6
+        },
+        {
+          "messageId": "3a29ee89-d9d8-402a-a06d-584266ada4d7",
+          "target": "joint_state",
+          "context": "warning",
+          "jointCode": "left_hip",
+          "zone": "down",
+          "sortOrder": 7
+        },
+        {
+          "messageId": "7ad33164-c28c-4850-a24c-5b423cb76e1d",
+          "target": "joint_state",
+          "context": "perfect",
+          "jointCode": "left_knee",
+          "sortOrder": 8
+        },
+        {
+          "messageId": "7f9e4986-7fbc-4941-a2ec-2142f3e5fe99",
+          "target": "joint_state",
+          "context": "warning",
+          "jointCode": "left_knee",
+          "sortOrder": 9
+        },
+        {
+          "messageId": "2d096982-bbc6-452e-b31b-aa7d1b4a28c9",
+          "target": "feedback",
+          "context": "motivational",
+          "sortOrder": 10
+        },
+        {
+          "messageId": "c19a54a6-6d82-4a25-9e66-485c459839d2",
+          "target": "feedback",
+          "context": "motivational",
+          "sortOrder": 11
+        },
+        {
+          "messageId": "2a15806b-1f2b-4b9a-8108-103ff4898dd8",
+          "target": "feedback",
+          "context": "tip",
+          "sortOrder": 12
+        },
+        {
+          "messageId": "777758e5-5a37-4c2f-a1b5-7dc2c839551c",
+          "target": "feedback",
+          "context": "tip",
+          "sortOrder": 13
+        }
+      ],
+      "cameraPosition": "side_view"
+    }
+  ],
+  "description": {
+    "ar": "تمرين مكتبة: تنظيف جوبلت كيتل.",
+    "en": "Library exercise: Kettlebell goblet clean."
+  },
+  "instructions": {
+    "ar": "حافظ على عمود فقري محايد وتنفس بثبات وتوقف عند أي ألم حاد.",
+    "en": "Maintain neutral spine, steady breathing, and stop if sharp pain appears."
+  },
+  "supportsWeight": true,
+  "reportMetrics": {
+    "primary": [
+      "FORM_SCORE"
+    ],
+    "excluded": [
+      "HOLD_DURATION",
+      "SYMMETRY"
+    ]
+  },
+  "hasPositionChecks": true,
+  "_database": {
+    "id": "c92f6583-605f-4783-9b3f-846bace8ebd0",
+    "categoryId": "da4f0d15-a7a4-4d8e-abd2-73ee921ef7dc",
+    "countingMethodId": "f4d48aef-1606-4f23-8c61-7b4a2546f990",
+    "publishedAt": "2026-04-20T17:26:29.852Z",
+    "createdAt": "2026-04-20T17:26:29.854Z",
+    "updatedAt": "2026-04-20T17:26:34.626Z",
+    "deletedAt": null,
+    "isFeatured": false,
+    "createdBy": null,
+    "updatedBy": null,
+    "repCountingConfig": null,
+    "bilateralConfig": null,
+    "isBilateral": false,
+    "supportsWeight": true,
+    "minWeight": null,
+    "maxWeight": null,
+    "defaultWeight": null,
+    "reportMetrics": {
+      "mode": "reps",
+      "version": 1,
+      "primaryKpi": "repQuality",
+      "secondaryKpis": [
+        "avgFormScore",
+        "avgRom"
+      ]
+    },
+    "media": [],
+    "poseVariants": [
+      {
+        "id": "b56bb097-3feb-4daf-9c40-15e3cd73e31d",
+        "sortOrder": 1,
+        "description": null,
+        "trackedJointsConfig": [
+          {
+            "role": "primary",
+            "joint": "left_hip",
+            "upRange": {
+              "pad": {
+                "max": 180,
+                "min": 150
+              },
+              "normal": {
+                "max": 180,
+                "min": 160
+              },
+              "perfect": {
+                "max": 180,
+                "min": 168
+              }
+            },
+            "downRange": {
+              "pad": {
+                "max": 135,
+                "min": 72
+              },
+              "danger": {
+                "max": 58,
+                "min": 0
+              },
+              "normal": {
+                "max": 125,
+                "min": 80
+              },
+              "perfect": {
+                "max": 115,
+                "min": 88
+              },
+              "warning": {
+                "max": 72,
+                "min": 58
+              }
+            },
+            "startPose": {
+              "max": 180,
+              "min": 95
+            },
+            "stateMessages": {
+              "pad": {
+                "up": {
+                  "ar": "مقبول — التوقيت ما زال يحتاج ضبطاً",
+                  "en": "Acceptable — timing still needs tuning"
+                }
+              },
+              "normal": {
+                "up": {
+                  "ar": "جيد، أكمل التمدد في الأعلى",
+                  "en": "Good, finish the extension at the top"
+                },
+                "down": {
+                  "ar": "جيد، اجلس في الورك لا في الركبة فقط",
+                  "en": "Good, sit into the hips, not only the knees"
+                }
+              },
+              "perfect": {
+                "up": {
+                  "ar": "ممتاز! قفل ورك مع قبضة عالية",
+                  "en": "Perfect! Hip lockout with a tall rack"
+                },
+                "down": {
+                  "ar": "ممتاز! تحميل سريع وقصير",
+                  "en": "Perfect! Short, snappy load"
+                }
+              },
+              "warning": {
+                "down": {
+                  "ar": "لا تسحب بالذراعين من الأسفل",
+                  "en": "Don’t arm-pull from the bottom"
+                }
+              }
+            }
+          },
+          {
+            "role": "secondary",
+            "joint": "left_knee",
+            "range": {
+              "pad": {
+                "max": 180,
+                "min": 128
+              },
+              "normal": {
+                "max": 180,
+                "min": 138
+              },
+              "perfect": {
+                "max": 172,
+                "min": 145
+              },
+              "warning": {
+                "max": 128,
+                "min": 115
+              }
+            },
+            "startPose": {
+              "max": 180,
+              "min": 130
+            },
+            "stateMessages": {
+              "perfect": {
+                "ar": "ركبة ناعمة — ليست سكواتاً عميقاً",
+                "en": "Soft knees — not a deep squat"
+              },
+              "warning": {
+                "ar": "لا تغوص زائداً في الـ dip",
+                "en": "Don’t dive too deep in the dip"
+              }
+            }
+          }
+        ]
+      }
+    ],
+    "validationWarning": null
+  }
+}

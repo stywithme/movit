@@ -1,0 +1,752 @@
+{
+  "slug": "lib_nordic_curl_eccentric",
+  "status": "published",
+  "movementPattern": "HINGE",
+  "loadCapability": "BODYWEIGHT_ONLY",
+  "familyKey": "hinge_pattern_family",
+  "familyOrder": 38,
+  "name": {
+    "ar": "نورديك خلفي",
+    "en": "Nordic hamstring (eccentric)"
+  },
+  "category": {
+    "code": "legs",
+    "name": {
+      "ar": "تمارين الأرجل",
+      "en": "Legs"
+    }
+  },
+  "countingMethod": "up_down",
+  "muscles": [
+    "hamstrings",
+    "glutes"
+  ],
+  "equipment": [
+    "bodyweight",
+    "mat"
+  ],
+  "tags": [
+    "curated_library",
+    "corrective"
+  ],
+  "repCountingConfig": {
+    "reps": 12,
+    "minRepIntervalMs": 1500,
+    "maxRepIntervalMs": 5000
+  },
+  "poseVariants": [
+    {
+      "name": {
+        "ar": "زاوية جانبية",
+        "en": "Side view"
+      },
+      "posePosition": "standing_side",
+      "expectedPostures": [
+        "standing"
+      ],
+      "expectedDirections": [
+        "side"
+      ],
+      "expectedRegions": [
+        "full_body"
+      ],
+      "trackedJoints": [
+        {
+          "joint": "left_knee",
+          "role": "primary",
+          "startPose": {
+            "max": 180,
+            "min": 130
+          },
+          "stateMessages": {
+            "pad": {
+              "down": {
+                "ar": "مقبول، لكن المدى ما زال محافظاً",
+                "en": "Acceptable, but range is still conservative"
+              }
+            },
+            "danger": {
+              "down": {
+                "ar": "توقف — ضغط حاد خلف الركبة",
+                "en": "Stop — sharp strain behind the knee"
+              }
+            },
+            "normal": {
+              "up": {
+                "ar": "جيد، ارجع للخط المستقيم بالكامل",
+                "en": "Good, return fully to the tall line"
+              },
+              "down": {
+                "ar": "جيد، قلل السرعة في النصف السفلي",
+                "en": "Good, slow down in the bottom half"
+              }
+            },
+            "perfect": {
+              "up": {
+                "ar": "ممتاز! بداية مستقيمة فوق الركبة",
+                "en": "Perfect! Tall start over the knees"
+              },
+              "down": {
+                "ar": "ممتاز! نزول إحصائي متحكم به",
+                "en": "Perfect! Controlled eccentric lowering"
+              }
+            },
+            "warning": {
+              "down": {
+                "ar": "لا تطوّي الظهر لتعويض الهمسترنج",
+                "en": "Do not fold the back to cheat the hamstrings"
+              }
+            }
+          },
+          "invertIndicator": true,
+          "upRange": {
+            "pad": {
+              "max": 180,
+              "min": 150
+            },
+            "normal": {
+              "max": 180,
+              "min": 158
+            },
+            "perfect": {
+              "max": 180,
+              "min": 165
+            }
+          },
+          "downRange": {
+            "pad": {
+              "max": 145,
+              "min": 80
+            },
+            "danger": {
+              "max": 68,
+              "min": 0
+            },
+            "normal": {
+              "max": 135,
+              "min": 88
+            },
+            "perfect": {
+              "max": 125,
+              "min": 95
+            },
+            "warning": {
+              "max": 80,
+              "min": 68
+            }
+          }
+        },
+        {
+          "joint": "left_hip",
+          "role": "secondary",
+          "startPose": {
+            "max": 180,
+            "min": 150
+          },
+          "stateMessages": {
+            "perfect": {
+              "ar": "ورك ممدود في خط الركبة",
+              "en": "Hip extended in line with the knee"
+            },
+            "warning": {
+              "ar": "لا تطوّي الورك مبكراً عن الصدر",
+              "en": "Do not break at the hip early into the chest"
+            }
+          },
+          "range": {
+            "pad": {
+              "max": 180,
+              "min": 150
+            },
+            "normal": {
+              "max": 180,
+              "min": 158
+            },
+            "perfect": {
+              "max": 180,
+              "min": 165
+            },
+            "warning": {
+              "max": 150,
+              "min": 135
+            }
+          }
+        },
+        {
+          "joint": "spine",
+          "role": "secondary",
+          "startPose": {
+            "max": 25,
+            "min": 0
+          },
+          "stateMessages": {
+            "perfect": {
+              "ar": "عمود فقري منظم في النزول",
+              "en": "Spine stays organized through the lowering"
+            },
+            "warning": {
+              "ar": "قلل المدى إذا انهار القطن",
+              "en": "Reduce range if the low back collapses"
+            }
+          },
+          "range": {
+            "pad": {
+              "max": 35,
+              "min": 0
+            },
+            "danger": {
+              "max": 85,
+              "min": 42
+            },
+            "normal": {
+              "max": 26,
+              "min": 0
+            },
+            "perfect": {
+              "max": 18,
+              "min": 0
+            },
+            "warning": {
+              "max": 45,
+              "min": 28
+            }
+          },
+          "phaseRanges": {
+            "up": {
+              "normal": {
+                "max": 24,
+                "min": 0
+              },
+              "perfect": {
+                "max": 18,
+                "min": 0
+              }
+            },
+            "top": {
+              "perfect": {
+                "max": 12,
+                "min": 0
+              }
+            },
+            "down": {
+              "normal": {
+                "max": 24,
+                "min": 0
+              },
+              "perfect": {
+                "max": 18,
+                "min": 0
+              }
+            },
+            "bottom": {
+              "normal": {
+                "max": 35,
+                "min": 5
+              },
+              "perfect": {
+                "max": 28,
+                "min": 8
+              }
+            }
+          },
+          "phaseStateMessages": {
+            "top": {
+              "perfect": {
+                "ar": "ظهر محايد في الوقفة",
+                "en": "Neutral spine at the top"
+              },
+              "warning": {
+                "ar": "لا تميل القطن للأمام في الأعلى",
+                "en": "Avoid excessive lumbar lean at the top"
+              }
+            },
+            "bottom": {
+              "perfect": {
+                "ar": "انحناء مقبول في القاع مع تحكم",
+                "en": "Acceptable flexion at bottom with control"
+              },
+              "warning": {
+                "ar": "قلل الانحناء القطني الزائد",
+                "en": "Reduce excessive lumbar flexion"
+              }
+            }
+          }
+        }
+      ],
+      "positionChecks": [
+        {
+          "id": "nordic_hip_shoulder_line",
+          "type": "vertical_alignment",
+          "landmarks": {
+            "primary": "left_shoulder",
+            "secondary": "left_hip"
+          },
+          "condition": {
+            "operator": "approximately_equal",
+            "threshold": 0.12
+          },
+          "activePhases": [
+            "up",
+            "down"
+          ],
+          "errorMessage": {
+            "ar": "حافظ على خط مستقيم من الركبة للكتف — لا تطوّي من الورك فقط.",
+            "en": "Keep a straight line from knee to shoulder — don’t break at the hips only."
+          },
+          "severity": "warning",
+          "cooldownMs": 2400,
+          "minErrorFrames": 4
+        }
+      ],
+      "feedbackMessages": {
+        "motivational": [
+          {
+            "ar": "أداء قوي ومنظم",
+            "en": "Strong and controlled work"
+          },
+          {
+            "ar": "حافظ على الشكل قبل السرعة",
+            "en": "Keep form before speed"
+          }
+        ],
+        "tips": [
+          {
+            "ar": "خذ نفساً تحضيرياً قبل كل عدة وازفر مع الجهد.",
+            "en": "Take a setup breath before each rep and exhale on effort."
+          },
+          {
+            "ar": "إذا فقدت التحكم الميكانيكي، قلل المدى أو الحمل.",
+            "en": "If mechanics break down, reduce range or load."
+          }
+        ]
+      },
+      "messageAssignments": [
+        {
+          "messageId": "a164a0cb-7872-45d7-819a-89f1980caaf4",
+          "target": "position",
+          "context": "error",
+          "checkId": "nordic_hip_shoulder_line",
+          "sortOrder": 1
+        },
+        {
+          "messageId": "251b1d83-c18f-4e3d-8819-a9a8d8eef35c",
+          "target": "joint_state",
+          "context": "perfect",
+          "jointCode": "left_knee",
+          "zone": "up",
+          "sortOrder": 2
+        },
+        {
+          "messageId": "69cea10c-af8c-4b90-97da-77b66b847570",
+          "target": "joint_state",
+          "context": "perfect",
+          "jointCode": "left_knee",
+          "zone": "down",
+          "sortOrder": 3
+        },
+        {
+          "messageId": "10e496e2-ac06-48ac-90ee-2a71fa954a85",
+          "target": "joint_state",
+          "context": "normal",
+          "jointCode": "left_knee",
+          "zone": "up",
+          "sortOrder": 4
+        },
+        {
+          "messageId": "1308834d-e433-49f5-9452-5c525cd17ea1",
+          "target": "joint_state",
+          "context": "normal",
+          "jointCode": "left_knee",
+          "zone": "down",
+          "sortOrder": 5
+        },
+        {
+          "messageId": "2401b70e-2f4a-4337-815c-562c093b7911",
+          "target": "joint_state",
+          "context": "pad",
+          "jointCode": "left_knee",
+          "zone": "down",
+          "sortOrder": 6
+        },
+        {
+          "messageId": "b23fbb6e-c589-41b1-9103-a0f310a29dda",
+          "target": "joint_state",
+          "context": "warning",
+          "jointCode": "left_knee",
+          "zone": "down",
+          "sortOrder": 7
+        },
+        {
+          "messageId": "923f8636-ec22-41c1-8ede-fcb7fe8e0699",
+          "target": "joint_state",
+          "context": "danger",
+          "jointCode": "left_knee",
+          "zone": "down",
+          "sortOrder": 8
+        },
+        {
+          "messageId": "c2fb5b29-2aa4-4b4f-a966-6d7893400016",
+          "target": "joint_state",
+          "context": "perfect",
+          "jointCode": "left_hip",
+          "sortOrder": 9
+        },
+        {
+          "messageId": "1a76c66b-b239-40fd-b65a-10b33958efa9",
+          "target": "joint_state",
+          "context": "warning",
+          "jointCode": "left_hip",
+          "sortOrder": 10
+        },
+        {
+          "messageId": "b50a9b39-688b-4432-aa16-bcb4890e2231",
+          "target": "joint_state",
+          "context": "perfect",
+          "jointCode": "spine",
+          "sortOrder": 11
+        },
+        {
+          "messageId": "8cd0517f-610d-495c-b178-afbecb484181",
+          "target": "joint_state",
+          "context": "warning",
+          "jointCode": "spine",
+          "sortOrder": 12
+        },
+        {
+          "messageId": "708152a0-6271-4634-9739-72bf8858069a",
+          "target": "joint_state_phase",
+          "context": "top:perfect",
+          "jointCode": "spine",
+          "sortOrder": 13
+        },
+        {
+          "messageId": "ac25beb7-533d-4bf7-8962-1a560a8563eb",
+          "target": "joint_state_phase",
+          "context": "top:warning",
+          "jointCode": "spine",
+          "sortOrder": 14
+        },
+        {
+          "messageId": "88f7e48a-7347-4f74-8a7f-d4d168fef607",
+          "target": "joint_state_phase",
+          "context": "bottom:perfect",
+          "jointCode": "spine",
+          "sortOrder": 15
+        },
+        {
+          "messageId": "e17a46dd-0e08-4bab-bdc2-8619a91914b6",
+          "target": "joint_state_phase",
+          "context": "bottom:warning",
+          "jointCode": "spine",
+          "sortOrder": 16
+        },
+        {
+          "messageId": "0b14e137-fd1e-4f4f-82ba-72ed6b018e06",
+          "target": "feedback",
+          "context": "motivational",
+          "sortOrder": 17
+        },
+        {
+          "messageId": "744a3a20-59dc-4c4f-bf1d-2b4487f08fc0",
+          "target": "feedback",
+          "context": "motivational",
+          "sortOrder": 18
+        },
+        {
+          "messageId": "4784891c-2b7f-447f-8eb3-b45af3421352",
+          "target": "feedback",
+          "context": "tip",
+          "sortOrder": 19
+        },
+        {
+          "messageId": "8a452e5b-e788-442c-92ab-e61b215113b8",
+          "target": "feedback",
+          "context": "tip",
+          "sortOrder": 20
+        }
+      ],
+      "cameraPosition": "side_view"
+    }
+  ],
+  "description": {
+    "ar": "تمرين مكتبة: نورديك خلفي.",
+    "en": "Library exercise: Nordic hamstring (eccentric)."
+  },
+  "instructions": {
+    "ar": "حافظ على عمود فقري محايد وتنفس بثبات وتوقف عند أي ألم حاد.",
+    "en": "Maintain neutral spine, steady breathing, and stop if sharp pain appears."
+  },
+  "reportMetrics": {
+    "primary": [
+      "FORM_SCORE"
+    ],
+    "excluded": [
+      "HOLD_DURATION",
+      "WEIGHT",
+      "VOLUME",
+      "EST_1RM",
+      "SYMMETRY"
+    ]
+  },
+  "hasPositionChecks": true,
+  "_database": {
+    "id": "e3151b78-3a30-4b4c-a219-83b2aa227472",
+    "categoryId": "a672c3d3-4449-4f74-bd8e-be73a0035e88",
+    "countingMethodId": "f4d48aef-1606-4f23-8c61-7b4a2546f990",
+    "publishedAt": "2026-04-20T17:26:25.267Z",
+    "createdAt": "2026-04-20T17:26:25.269Z",
+    "updatedAt": "2026-04-20T17:26:34.286Z",
+    "deletedAt": null,
+    "isFeatured": false,
+    "createdBy": null,
+    "updatedBy": null,
+    "repCountingConfig": null,
+    "bilateralConfig": null,
+    "isBilateral": false,
+    "supportsWeight": false,
+    "minWeight": null,
+    "maxWeight": null,
+    "defaultWeight": null,
+    "reportMetrics": {
+      "mode": "reps",
+      "version": 1,
+      "primaryKpi": "repQuality",
+      "secondaryKpis": [
+        "avgFormScore",
+        "avgRom"
+      ]
+    },
+    "media": [],
+    "poseVariants": [
+      {
+        "id": "507decc3-129b-48a6-a530-05cdafe2b1f6",
+        "sortOrder": 1,
+        "description": null,
+        "trackedJointsConfig": [
+          {
+            "role": "primary",
+            "joint": "left_knee",
+            "upRange": {
+              "pad": {
+                "max": 180,
+                "min": 150
+              },
+              "normal": {
+                "max": 180,
+                "min": 158
+              },
+              "perfect": {
+                "max": 180,
+                "min": 165
+              }
+            },
+            "downRange": {
+              "pad": {
+                "max": 145,
+                "min": 80
+              },
+              "danger": {
+                "max": 68,
+                "min": 0
+              },
+              "normal": {
+                "max": 135,
+                "min": 88
+              },
+              "perfect": {
+                "max": 125,
+                "min": 95
+              },
+              "warning": {
+                "max": 80,
+                "min": 68
+              }
+            },
+            "startPose": {
+              "max": 180,
+              "min": 130
+            },
+            "stateMessages": {
+              "pad": {
+                "down": {
+                  "ar": "مقبول، لكن المدى ما زال محافظاً",
+                  "en": "Acceptable, but range is still conservative"
+                }
+              },
+              "danger": {
+                "down": {
+                  "ar": "توقف — ضغط حاد خلف الركبة",
+                  "en": "Stop — sharp strain behind the knee"
+                }
+              },
+              "normal": {
+                "up": {
+                  "ar": "جيد، ارجع للخط المستقيم بالكامل",
+                  "en": "Good, return fully to the tall line"
+                },
+                "down": {
+                  "ar": "جيد، قلل السرعة في النصف السفلي",
+                  "en": "Good, slow down in the bottom half"
+                }
+              },
+              "perfect": {
+                "up": {
+                  "ar": "ممتاز! بداية مستقيمة فوق الركبة",
+                  "en": "Perfect! Tall start over the knees"
+                },
+                "down": {
+                  "ar": "ممتاز! نزول إحصائي متحكم به",
+                  "en": "Perfect! Controlled eccentric lowering"
+                }
+              },
+              "warning": {
+                "down": {
+                  "ar": "لا تطوّي الظهر لتعويض الهمسترنج",
+                  "en": "Do not fold the back to cheat the hamstrings"
+                }
+              }
+            },
+            "invertIndicator": true
+          },
+          {
+            "role": "secondary",
+            "joint": "left_hip",
+            "range": {
+              "pad": {
+                "max": 180,
+                "min": 150
+              },
+              "normal": {
+                "max": 180,
+                "min": 158
+              },
+              "perfect": {
+                "max": 180,
+                "min": 165
+              },
+              "warning": {
+                "max": 150,
+                "min": 135
+              }
+            },
+            "startPose": {
+              "max": 180,
+              "min": 150
+            },
+            "stateMessages": {
+              "perfect": {
+                "ar": "ورك ممدود في خط الركبة",
+                "en": "Hip extended in line with the knee"
+              },
+              "warning": {
+                "ar": "لا تطوّي الورك مبكراً عن الصدر",
+                "en": "Do not break at the hip early into the chest"
+              }
+            }
+          },
+          {
+            "role": "secondary",
+            "joint": "spine",
+            "range": {
+              "pad": {
+                "max": 35,
+                "min": 0
+              },
+              "danger": {
+                "max": 85,
+                "min": 42
+              },
+              "normal": {
+                "max": 26,
+                "min": 0
+              },
+              "perfect": {
+                "max": 18,
+                "min": 0
+              },
+              "warning": {
+                "max": 45,
+                "min": 28
+              }
+            },
+            "startPose": {
+              "max": 25,
+              "min": 0
+            },
+            "phaseRanges": {
+              "up": {
+                "normal": {
+                  "max": 24,
+                  "min": 0
+                },
+                "perfect": {
+                  "max": 18,
+                  "min": 0
+                }
+              },
+              "top": {
+                "perfect": {
+                  "max": 12,
+                  "min": 0
+                }
+              },
+              "down": {
+                "normal": {
+                  "max": 24,
+                  "min": 0
+                },
+                "perfect": {
+                  "max": 18,
+                  "min": 0
+                }
+              },
+              "bottom": {
+                "normal": {
+                  "max": 35,
+                  "min": 5
+                },
+                "perfect": {
+                  "max": 28,
+                  "min": 8
+                }
+              }
+            },
+            "stateMessages": {
+              "perfect": {
+                "ar": "عمود فقري منظم في النزول",
+                "en": "Spine stays organized through the lowering"
+              },
+              "warning": {
+                "ar": "قلل المدى إذا انهار القطن",
+                "en": "Reduce range if the low back collapses"
+              }
+            },
+            "phaseStateMessages": {
+              "top": {
+                "perfect": {
+                  "ar": "ظهر محايد في الوقفة",
+                  "en": "Neutral spine at the top"
+                },
+                "warning": {
+                  "ar": "لا تميل القطن للأمام في الأعلى",
+                  "en": "Avoid excessive lumbar lean at the top"
+                }
+              },
+              "bottom": {
+                "perfect": {
+                  "ar": "انحناء مقبول في القاع مع تحكم",
+                  "en": "Acceptable flexion at bottom with control"
+                },
+                "warning": {
+                  "ar": "قلل الانحناء القطني الزائد",
+                  "en": "Reduce excessive lumbar flexion"
+                }
+              }
+            }
+          }
+        ]
+      }
+    ],
+    "validationWarning": null
+  }
+}

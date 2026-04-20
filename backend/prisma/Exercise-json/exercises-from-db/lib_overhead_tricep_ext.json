@@ -1,0 +1,496 @@
+{
+  "slug": "lib_overhead_tricep_ext",
+  "status": "published",
+  "movementPattern": "PUSH_VERTICAL",
+  "loadCapability": "EXTERNAL_LOAD_OPTIONAL",
+  "familyKey": "push_vertical_family",
+  "familyOrder": 30,
+  "name": {
+    "ar": "تمديد ثلاثي علوي",
+    "en": "Overhead tricep extension"
+  },
+  "category": {
+    "code": "arms",
+    "name": {
+      "ar": "تمارين الذراعين",
+      "en": "Arms"
+    }
+  },
+  "countingMethod": "up_down",
+  "muscles": [
+    "triceps"
+  ],
+  "equipment": [
+    "dumbbell",
+    "mat"
+  ],
+  "tags": [
+    "curated_library"
+  ],
+  "repCountingConfig": {
+    "reps": 12,
+    "minRepIntervalMs": 1500,
+    "maxRepIntervalMs": 5000
+  },
+  "poseVariants": [
+    {
+      "name": {
+        "ar": "زاوية جانبية",
+        "en": "Side view"
+      },
+      "posePosition": "standing_side",
+      "expectedPostures": [
+        "standing"
+      ],
+      "expectedDirections": [
+        "side"
+      ],
+      "expectedRegions": [
+        "full_body"
+      ],
+      "trackedJoints": [
+        {
+          "joint": "left_elbow",
+          "role": "primary",
+          "startPose": {
+            "max": 115,
+            "min": 60
+          },
+          "stateMessages": {
+            "pad": {
+              "down": {
+                "ar": "مقبول، لكن المدى ما زال ناقصاً",
+                "en": "Acceptable, but the range is still short"
+              }
+            },
+            "danger": {
+              "down": {
+                "ar": "توقف، يوجد ضغط حاد على الكوع أو الكتف",
+                "en": "Stop, there is sharp elbow or shoulder stress"
+              }
+            },
+            "normal": {
+              "up": {
+                "ar": "جيد، أكمل فرد المرفق",
+                "en": "Good, finish the elbow extension"
+              },
+              "down": {
+                "ar": "جيد، تحكم في النزول أكثر",
+                "en": "Good, control the lowering more"
+              }
+            },
+            "perfect": {
+              "up": {
+                "ar": "ممتاز! تمدد علوي كامل",
+                "en": "Perfect! Full overhead extension"
+              },
+              "down": {
+                "ar": "ممتاز! نزول متحكم به خلف الرأس",
+                "en": "Perfect! Controlled lowering behind the head"
+              }
+            },
+            "warning": {
+              "down": {
+                "ar": "لا تفرط في النزول إن الكوع لا يحتمل",
+                "en": "Do not force depth if the elbow does not tolerate it"
+              }
+            }
+          },
+          "upRange": {
+            "pad": {
+              "max": 180,
+              "min": 140
+            },
+            "normal": {
+              "max": 180,
+              "min": 150
+            },
+            "perfect": {
+              "max": 180,
+              "min": 160
+            }
+          },
+          "downRange": {
+            "pad": {
+              "max": 110,
+              "min": 48
+            },
+            "danger": {
+              "max": 38,
+              "min": 0
+            },
+            "normal": {
+              "max": 100,
+              "min": 55
+            },
+            "perfect": {
+              "max": 92,
+              "min": 62
+            },
+            "warning": {
+              "max": 48,
+              "min": 38
+            }
+          }
+        },
+        {
+          "joint": "left_shoulder",
+          "role": "secondary",
+          "startPose": {
+            "max": 180,
+            "min": 145
+          },
+          "stateMessages": {
+            "perfect": {
+              "ar": "كتف ثابت فوق الرأس",
+              "en": "Shoulder stays stacked overhead"
+            },
+            "warning": {
+              "ar": "لا تدع العضد يهرب للأمام",
+              "en": "Do not let the upper arm drift forward"
+            }
+          },
+          "range": {
+            "normal": {
+              "max": 180,
+              "min": 148
+            },
+            "perfect": {
+              "max": 180,
+              "min": 155
+            },
+            "warning": {
+              "max": 148,
+              "min": 130
+            }
+          }
+        }
+      ],
+      "positionChecks": [
+        {
+          "id": "oh_tricep_upper_arm_fixed",
+          "type": "vertical_alignment",
+          "landmarks": {
+            "primary": "left_shoulder",
+            "secondary": "left_elbow"
+          },
+          "condition": {
+            "operator": "approximately_equal",
+            "threshold": 0.12
+          },
+          "activePhases": [
+            "up",
+            "down"
+          ],
+          "errorMessage": {
+            "ar": "اجعل العضد ثابتاً قرب الأذن طوال التمرين.",
+            "en": "Keep the upper arm fixed near the ear throughout the rep."
+          },
+          "severity": "warning",
+          "cooldownMs": 2200,
+          "minErrorFrames": 4
+        }
+      ],
+      "feedbackMessages": {
+        "motivational": [
+          {
+            "ar": "أداء قوي ومنظم",
+            "en": "Strong and controlled work"
+          },
+          {
+            "ar": "حافظ على الشكل قبل السرعة",
+            "en": "Keep form before speed"
+          }
+        ],
+        "tips": [
+          {
+            "ar": "خذ نفساً تحضيرياً قبل كل عدة وازفر مع الجهد.",
+            "en": "Take a setup breath before each rep and exhale on effort."
+          },
+          {
+            "ar": "إذا فقدت التحكم الميكانيكي، قلل المدى أو الحمل.",
+            "en": "If mechanics break down, reduce range or load."
+          }
+        ]
+      },
+      "messageAssignments": [
+        {
+          "messageId": "127c9bdc-2633-4bcf-a1c6-0604ada00207",
+          "target": "position",
+          "context": "error",
+          "checkId": "oh_tricep_upper_arm_fixed",
+          "sortOrder": 1
+        },
+        {
+          "messageId": "1470c364-be7b-464a-85ea-64769e3ff3bd",
+          "target": "joint_state",
+          "context": "perfect",
+          "jointCode": "left_elbow",
+          "zone": "up",
+          "sortOrder": 2
+        },
+        {
+          "messageId": "d60d2294-38ac-42b7-ba72-01e3bee64ff1",
+          "target": "joint_state",
+          "context": "perfect",
+          "jointCode": "left_elbow",
+          "zone": "down",
+          "sortOrder": 3
+        },
+        {
+          "messageId": "721a540c-1800-49b9-8f3f-9849d79e8c62",
+          "target": "joint_state",
+          "context": "normal",
+          "jointCode": "left_elbow",
+          "zone": "up",
+          "sortOrder": 4
+        },
+        {
+          "messageId": "a14bde4c-bc0d-43fb-80aa-1d0b97c76652",
+          "target": "joint_state",
+          "context": "normal",
+          "jointCode": "left_elbow",
+          "zone": "down",
+          "sortOrder": 5
+        },
+        {
+          "messageId": "92359cd9-e2ea-4579-ba15-be3ad2ed6384",
+          "target": "joint_state",
+          "context": "pad",
+          "jointCode": "left_elbow",
+          "zone": "down",
+          "sortOrder": 6
+        },
+        {
+          "messageId": "6d45865e-06cc-448c-a4f6-be7f5ec749f4",
+          "target": "joint_state",
+          "context": "warning",
+          "jointCode": "left_elbow",
+          "zone": "down",
+          "sortOrder": 7
+        },
+        {
+          "messageId": "38a51bcd-b2cf-4c85-97cf-e806faf747ff",
+          "target": "joint_state",
+          "context": "danger",
+          "jointCode": "left_elbow",
+          "zone": "down",
+          "sortOrder": 8
+        },
+        {
+          "messageId": "9d455e74-d09f-4f51-a29d-3040294b343f",
+          "target": "joint_state",
+          "context": "perfect",
+          "jointCode": "left_shoulder",
+          "sortOrder": 9
+        },
+        {
+          "messageId": "0227ddad-8ed1-4b6f-98ad-acce8da5aa25",
+          "target": "joint_state",
+          "context": "warning",
+          "jointCode": "left_shoulder",
+          "sortOrder": 10
+        },
+        {
+          "messageId": "1b1fc6d2-05a0-4ac1-833a-75b2675c1999",
+          "target": "feedback",
+          "context": "motivational",
+          "sortOrder": 11
+        },
+        {
+          "messageId": "e1b62720-bd3c-4734-8c65-29b038038403",
+          "target": "feedback",
+          "context": "motivational",
+          "sortOrder": 12
+        },
+        {
+          "messageId": "fb825b2c-c905-4530-8ac1-f45a44e7a672",
+          "target": "feedback",
+          "context": "tip",
+          "sortOrder": 13
+        },
+        {
+          "messageId": "0ab80bc0-a94f-49ec-83ed-8f5a736af386",
+          "target": "feedback",
+          "context": "tip",
+          "sortOrder": 14
+        }
+      ],
+      "cameraPosition": "side_view"
+    }
+  ],
+  "description": {
+    "ar": "تمرين مكتبة: تمديد ثلاثي علوي.",
+    "en": "Library exercise: Overhead tricep extension."
+  },
+  "instructions": {
+    "ar": "حافظ على عمود فقري محايد وتنفس بثبات وتوقف عند أي ألم حاد.",
+    "en": "Maintain neutral spine, steady breathing, and stop if sharp pain appears."
+  },
+  "supportsWeight": true,
+  "reportMetrics": {
+    "primary": [
+      "FORM_SCORE"
+    ],
+    "excluded": [
+      "HOLD_DURATION",
+      "SYMMETRY"
+    ]
+  },
+  "hasPositionChecks": true,
+  "_database": {
+    "id": "6655b06c-2e24-40cb-9876-7444763cd49e",
+    "categoryId": "46ce7826-7f11-437b-b9b0-de718b5adf7d",
+    "countingMethodId": "f4d48aef-1606-4f23-8c61-7b4a2546f990",
+    "publishedAt": "2026-04-20T17:26:30.094Z",
+    "createdAt": "2026-04-20T17:26:30.097Z",
+    "updatedAt": "2026-04-20T17:26:34.642Z",
+    "deletedAt": null,
+    "isFeatured": false,
+    "createdBy": null,
+    "updatedBy": null,
+    "repCountingConfig": null,
+    "bilateralConfig": null,
+    "isBilateral": false,
+    "supportsWeight": true,
+    "minWeight": null,
+    "maxWeight": null,
+    "defaultWeight": null,
+    "reportMetrics": {
+      "mode": "reps",
+      "version": 1,
+      "primaryKpi": "repQuality",
+      "secondaryKpis": [
+        "avgFormScore",
+        "avgRom"
+      ]
+    },
+    "media": [],
+    "poseVariants": [
+      {
+        "id": "90da2372-fd81-43ea-b4af-45fea4984fbf",
+        "sortOrder": 1,
+        "description": null,
+        "trackedJointsConfig": [
+          {
+            "role": "primary",
+            "joint": "left_elbow",
+            "upRange": {
+              "pad": {
+                "max": 180,
+                "min": 140
+              },
+              "normal": {
+                "max": 180,
+                "min": 150
+              },
+              "perfect": {
+                "max": 180,
+                "min": 160
+              }
+            },
+            "downRange": {
+              "pad": {
+                "max": 110,
+                "min": 48
+              },
+              "danger": {
+                "max": 38,
+                "min": 0
+              },
+              "normal": {
+                "max": 100,
+                "min": 55
+              },
+              "perfect": {
+                "max": 92,
+                "min": 62
+              },
+              "warning": {
+                "max": 48,
+                "min": 38
+              }
+            },
+            "startPose": {
+              "max": 115,
+              "min": 60
+            },
+            "stateMessages": {
+              "pad": {
+                "down": {
+                  "ar": "مقبول، لكن المدى ما زال ناقصاً",
+                  "en": "Acceptable, but the range is still short"
+                }
+              },
+              "danger": {
+                "down": {
+                  "ar": "توقف، يوجد ضغط حاد على الكوع أو الكتف",
+                  "en": "Stop, there is sharp elbow or shoulder stress"
+                }
+              },
+              "normal": {
+                "up": {
+                  "ar": "جيد، أكمل فرد المرفق",
+                  "en": "Good, finish the elbow extension"
+                },
+                "down": {
+                  "ar": "جيد، تحكم في النزول أكثر",
+                  "en": "Good, control the lowering more"
+                }
+              },
+              "perfect": {
+                "up": {
+                  "ar": "ممتاز! تمدد علوي كامل",
+                  "en": "Perfect! Full overhead extension"
+                },
+                "down": {
+                  "ar": "ممتاز! نزول متحكم به خلف الرأس",
+                  "en": "Perfect! Controlled lowering behind the head"
+                }
+              },
+              "warning": {
+                "down": {
+                  "ar": "لا تفرط في النزول إن الكوع لا يحتمل",
+                  "en": "Do not force depth if the elbow does not tolerate it"
+                }
+              }
+            }
+          },
+          {
+            "role": "secondary",
+            "joint": "left_shoulder",
+            "range": {
+              "normal": {
+                "max": 180,
+                "min": 148
+              },
+              "perfect": {
+                "max": 180,
+                "min": 155
+              },
+              "warning": {
+                "max": 148,
+                "min": 130
+              }
+            },
+            "startPose": {
+              "max": 180,
+              "min": 145
+            },
+            "stateMessages": {
+              "perfect": {
+                "ar": "كتف ثابت فوق الرأس",
+                "en": "Shoulder stays stacked overhead"
+              },
+              "warning": {
+                "ar": "لا تدع العضد يهرب للأمام",
+                "en": "Do not let the upper arm drift forward"
+              }
+            }
+          }
+        ]
+      }
+    ],
+    "validationWarning": null
+  }
+}

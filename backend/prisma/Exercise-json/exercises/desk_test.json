@@ -32,7 +32,7 @@
         "ar": "أمام الكاميرا",
         "en": "Front View"
       },
-      "cameraPosition": "front_view",
+      "cameraPosition": "sitting_front_upper",
       "expectedFacingDirection": "facing_camera",
       "positionChecks": [
         {
@@ -122,9 +122,11 @@
           "role": "primary",
           "startPose": { "min": 0, "max": 180 },
           "range": {
-            "perfect": { "min": 0, "max": 180 },
-            "normal": { "min": 0, "max": 180 },
-            "pad": { "min": 0, "max": 180 }
+            "perfect": { "min": 75, "max": 105 },
+            "normal": { "min": 65, "max": 118 },
+            "pad": { "min": 55, "max": 128 },
+            "warning": { "min": 45, "max": 65 },
+            "danger": { "min": 0, "max": 45 }
           },
           "stateMessages": {
             "perfect": { "ar": "ممتاز! وضعية صحيحة", "en": "Perfect! Correct position" }

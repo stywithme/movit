@@ -1,0 +1,471 @@
+{
+  "slug": "lib_scap_pushup",
+  "status": "published",
+  "movementPattern": "PUSH_HORIZONTAL",
+  "loadCapability": "BODYWEIGHT_ONLY",
+  "familyKey": "push_horizontal_family",
+  "familyOrder": 12,
+  "name": {
+    "ar": "ضغط لوح كتف",
+    "en": "Scapular push-up"
+  },
+  "category": {
+    "code": "chest",
+    "name": {
+      "ar": "تمارين الصدر",
+      "en": "Chest"
+    }
+  },
+  "countingMethod": "up_down",
+  "muscles": [
+    "chest_muscle",
+    "traps"
+  ],
+  "equipment": [
+    "bodyweight",
+    "mat"
+  ],
+  "tags": [
+    "curated_library",
+    "warmup"
+  ],
+  "repCountingConfig": {
+    "reps": 12,
+    "minRepIntervalMs": 1500,
+    "maxRepIntervalMs": 5000
+  },
+  "poseVariants": [
+    {
+      "name": {
+        "ar": "مستلقٍ على الوجه",
+        "en": "Lying face down (side angle)"
+      },
+      "posePosition": "prone_side",
+      "expectedPostures": [
+        "lying_prone"
+      ],
+      "expectedDirections": [
+        "side"
+      ],
+      "expectedRegions": [
+        "full_body"
+      ],
+      "trackedJoints": [
+        {
+          "joint": "left_shoulder",
+          "role": "primary",
+          "startPose": {
+            "max": 95,
+            "min": 45
+          },
+          "stateMessages": {
+            "pad": {
+              "up": {
+                "ar": "مقبول، لكن المدى الكتفي ما زال قصيراً",
+                "en": "Acceptable, but scapular range is still short"
+              }
+            },
+            "normal": {
+              "up": {
+                "ar": "جيد، ادفع الأرض أكثر",
+                "en": "Good, push the floor away more"
+              },
+              "down": {
+                "ar": "جيد، لا تسقط في الكتفين",
+                "en": "Good, do not sink into the shoulders"
+              }
+            },
+            "perfect": {
+              "up": {
+                "ar": "ممتاز! بروز جيد للوحي الكتف",
+                "en": "Perfect! Good scapular protraction"
+              },
+              "down": {
+                "ar": "ممتاز! رجوع متحكم به",
+                "en": "Perfect! Controlled retraction"
+              }
+            },
+            "warning": {
+              "down": {
+                "ar": "لا تثن المرفقين لتسرق الحركة",
+                "en": "Do not bend the elbows to cheat the movement"
+              }
+            }
+          },
+          "upRange": {
+            "pad": {
+              "max": 100,
+              "min": 72
+            },
+            "normal": {
+              "max": 98,
+              "min": 75
+            },
+            "perfect": {
+              "max": 95,
+              "min": 78
+            }
+          },
+          "downRange": {
+            "pad": {
+              "max": 70,
+              "min": 35
+            },
+            "normal": {
+              "max": 66,
+              "min": 40
+            },
+            "perfect": {
+              "max": 62,
+              "min": 45
+            },
+            "warning": {
+              "max": 35,
+              "min": 28
+            }
+          }
+        },
+        {
+          "joint": "left_elbow",
+          "role": "secondary",
+          "startPose": {
+            "max": 180,
+            "min": 155
+          },
+          "stateMessages": {
+            "perfect": {
+              "ar": "مرفق شبه مفرود طوال التمرين",
+              "en": "Elbow stays nearly straight throughout"
+            },
+            "warning": {
+              "ar": "لا تحوّلها إلى push-up عادي",
+              "en": "Do not turn it into a regular push-up"
+            }
+          },
+          "range": {
+            "normal": {
+              "max": 180,
+              "min": 158
+            },
+            "perfect": {
+              "max": 180,
+              "min": 165
+            },
+            "warning": {
+              "max": 158,
+              "min": 145
+            }
+          }
+        }
+      ],
+      "positionChecks": [
+        {
+          "id": "scap_pushup_elbows_straight",
+          "type": "vertical_alignment",
+          "landmarks": {
+            "primary": "left_shoulder",
+            "secondary": "left_elbow"
+          },
+          "condition": {
+            "operator": "approximately_equal",
+            "threshold": 0.12
+          },
+          "activePhases": [
+            "up",
+            "down"
+          ],
+          "errorMessage": {
+            "ar": "التمرين من لوح الكتف لا من ثني المرفق.",
+            "en": "This drill comes from the shoulder blades, not from bending the elbow."
+          },
+          "severity": "warning",
+          "cooldownMs": 2200,
+          "minErrorFrames": 4
+        }
+      ],
+      "feedbackMessages": {
+        "motivational": [
+          {
+            "ar": "مدى حركة جيد وتحكم أفضل",
+            "en": "Good range and better control"
+          },
+          {
+            "ar": "تحرك بسلاسة داخل نطاق مريح",
+            "en": "Move smoothly inside a comfortable range"
+          }
+        ],
+        "tips": [
+          {
+            "ar": "ابقِ الحركة نظيفة وهادئة بدون ارتداد.",
+            "en": "Keep the motion smooth and bounce-free."
+          },
+          {
+            "ar": "أي ألم حاد يعني تقليل المدى فوراً.",
+            "en": "Any sharp pain means reduce range immediately."
+          }
+        ]
+      },
+      "messageAssignments": [
+        {
+          "messageId": "0041f05a-6ae7-4d4c-b846-bbd18f8ae438",
+          "target": "position",
+          "context": "error",
+          "checkId": "scap_pushup_elbows_straight",
+          "sortOrder": 1
+        },
+        {
+          "messageId": "a1910aa3-0c71-4795-9bee-9dd4ae0cf51a",
+          "target": "joint_state",
+          "context": "perfect",
+          "jointCode": "left_shoulder",
+          "zone": "up",
+          "sortOrder": 2
+        },
+        {
+          "messageId": "087d92ee-22ab-4040-b33a-b339c5f73b8e",
+          "target": "joint_state",
+          "context": "perfect",
+          "jointCode": "left_shoulder",
+          "zone": "down",
+          "sortOrder": 3
+        },
+        {
+          "messageId": "cf3c5ad0-9c2a-44b8-bdeb-380c8ff2ded9",
+          "target": "joint_state",
+          "context": "normal",
+          "jointCode": "left_shoulder",
+          "zone": "up",
+          "sortOrder": 4
+        },
+        {
+          "messageId": "00d81305-47ad-48dd-925a-739e4087810e",
+          "target": "joint_state",
+          "context": "normal",
+          "jointCode": "left_shoulder",
+          "zone": "down",
+          "sortOrder": 5
+        },
+        {
+          "messageId": "8f50b67d-2bc9-463c-a2b2-2162e472ad59",
+          "target": "joint_state",
+          "context": "pad",
+          "jointCode": "left_shoulder",
+          "zone": "up",
+          "sortOrder": 6
+        },
+        {
+          "messageId": "01784ef1-207f-407a-a09d-af754f992c80",
+          "target": "joint_state",
+          "context": "warning",
+          "jointCode": "left_shoulder",
+          "zone": "down",
+          "sortOrder": 7
+        },
+        {
+          "messageId": "8f0b0294-537c-4b90-a205-0778459a308c",
+          "target": "joint_state",
+          "context": "perfect",
+          "jointCode": "left_elbow",
+          "sortOrder": 8
+        },
+        {
+          "messageId": "968b9cf1-4561-4738-9380-d3ff48c62f09",
+          "target": "joint_state",
+          "context": "warning",
+          "jointCode": "left_elbow",
+          "sortOrder": 9
+        },
+        {
+          "messageId": "ba242f0d-6c2d-48d4-b5a3-2a9da77a202d",
+          "target": "feedback",
+          "context": "motivational",
+          "sortOrder": 10
+        },
+        {
+          "messageId": "192c321b-53a5-4e0c-8b00-368b127fe760",
+          "target": "feedback",
+          "context": "motivational",
+          "sortOrder": 11
+        },
+        {
+          "messageId": "2dbac0f6-67f2-4671-a640-7995de5b36cc",
+          "target": "feedback",
+          "context": "tip",
+          "sortOrder": 12
+        },
+        {
+          "messageId": "d8fef199-3e36-4ed7-96d1-68de3faa1b0f",
+          "target": "feedback",
+          "context": "tip",
+          "sortOrder": 13
+        }
+      ]
+    }
+  ],
+  "description": {
+    "ar": "تمرين مكتبة: ضغط لوح كتف.",
+    "en": "Library exercise: Scapular push-up."
+  },
+  "instructions": {
+    "ar": "حافظ على عمود فقري محايد وتنفس بثبات وتوقف عند أي ألم حاد.",
+    "en": "Maintain neutral spine, steady breathing, and stop if sharp pain appears."
+  },
+  "reportMetrics": {
+    "primary": [
+      "FORM_SCORE"
+    ],
+    "excluded": [
+      "HOLD_DURATION",
+      "WEIGHT",
+      "VOLUME",
+      "EST_1RM",
+      "SYMMETRY"
+    ]
+  },
+  "hasPositionChecks": true,
+  "_database": {
+    "id": "51c19f3b-c9cb-4387-b838-220191a5229e",
+    "categoryId": "03555869-5399-4a82-9b38-00cea6177d4b",
+    "countingMethodId": "f4d48aef-1606-4f23-8c61-7b4a2546f990",
+    "publishedAt": "2026-04-20T17:26:30.357Z",
+    "createdAt": "2026-04-20T17:26:30.361Z",
+    "updatedAt": "2026-04-20T17:26:34.659Z",
+    "deletedAt": null,
+    "isFeatured": false,
+    "createdBy": null,
+    "updatedBy": null,
+    "repCountingConfig": null,
+    "bilateralConfig": null,
+    "isBilateral": false,
+    "supportsWeight": false,
+    "minWeight": null,
+    "maxWeight": null,
+    "defaultWeight": null,
+    "reportMetrics": {
+      "mode": "reps",
+      "version": 1,
+      "primaryKpi": "repQuality",
+      "secondaryKpis": [
+        "avgFormScore",
+        "avgRom"
+      ]
+    },
+    "media": [],
+    "poseVariants": [
+      {
+        "id": "7c09b6b7-dbf1-4c30-90a5-551ff6582b70",
+        "sortOrder": 1,
+        "description": null,
+        "trackedJointsConfig": [
+          {
+            "role": "primary",
+            "joint": "left_shoulder",
+            "upRange": {
+              "pad": {
+                "max": 100,
+                "min": 72
+              },
+              "normal": {
+                "max": 98,
+                "min": 75
+              },
+              "perfect": {
+                "max": 95,
+                "min": 78
+              }
+            },
+            "downRange": {
+              "pad": {
+                "max": 70,
+                "min": 35
+              },
+              "normal": {
+                "max": 66,
+                "min": 40
+              },
+              "perfect": {
+                "max": 62,
+                "min": 45
+              },
+              "warning": {
+                "max": 35,
+                "min": 28
+              }
+            },
+            "startPose": {
+              "max": 95,
+              "min": 45
+            },
+            "stateMessages": {
+              "pad": {
+                "up": {
+                  "ar": "مقبول، لكن المدى الكتفي ما زال قصيراً",
+                  "en": "Acceptable, but scapular range is still short"
+                }
+              },
+              "normal": {
+                "up": {
+                  "ar": "جيد، ادفع الأرض أكثر",
+                  "en": "Good, push the floor away more"
+                },
+                "down": {
+                  "ar": "جيد، لا تسقط في الكتفين",
+                  "en": "Good, do not sink into the shoulders"
+                }
+              },
+              "perfect": {
+                "up": {
+                  "ar": "ممتاز! بروز جيد للوحي الكتف",
+                  "en": "Perfect! Good scapular protraction"
+                },
+                "down": {
+                  "ar": "ممتاز! رجوع متحكم به",
+                  "en": "Perfect! Controlled retraction"
+                }
+              },
+              "warning": {
+                "down": {
+                  "ar": "لا تثن المرفقين لتسرق الحركة",
+                  "en": "Do not bend the elbows to cheat the movement"
+                }
+              }
+            }
+          },
+          {
+            "role": "secondary",
+            "joint": "left_elbow",
+            "range": {
+              "normal": {
+                "max": 180,
+                "min": 158
+              },
+              "perfect": {
+                "max": 180,
+                "min": 165
+              },
+              "warning": {
+                "max": 158,
+                "min": 145
+              }
+            },
+            "startPose": {
+              "max": 180,
+              "min": 155
+            },
+            "stateMessages": {
+              "perfect": {
+                "ar": "مرفق شبه مفرود طوال التمرين",
+                "en": "Elbow stays nearly straight throughout"
+              },
+              "warning": {
+                "ar": "لا تحوّلها إلى push-up عادي",
+                "en": "Do not turn it into a regular push-up"
+              }
+            }
+          }
+        ]
+      }
+    ],
+    "validationWarning": null
+  }
+}

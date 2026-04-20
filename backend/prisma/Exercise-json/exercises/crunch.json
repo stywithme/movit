@@ -33,7 +33,7 @@
         "ar": "زاوية جانبية",
         "en": "Side View"
       },
-      "cameraPosition": "side_view",
+      "cameraPosition": "supine_side",
       "expectedFacingDirection": "auto_detect",
       "trackedJoints": [
         {

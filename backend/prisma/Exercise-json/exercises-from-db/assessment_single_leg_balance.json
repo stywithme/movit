@@ -1,0 +1,396 @@
+{
+  "slug": "assessment_single_leg_balance",
+  "status": "published",
+  "movementPattern": "MOBILITY_DRILL",
+  "loadCapability": "BODYWEIGHT_ONLY",
+  "familyKey": "single_leg_balance_family",
+  "familyOrder": 10,
+  "name": {
+    "ar": "التوازن على رجل واحدة (تقييم)",
+    "en": "Single-Leg Balance (Assessment)"
+  },
+  "category": {
+    "code": "assessment",
+    "name": {
+      "ar": "تقييم",
+      "en": "Assessment"
+    }
+  },
+  "countingMethod": "hold",
+  "muscles": [
+    "calves",
+    "glutes",
+    "abs_muscle",
+    "ankle_stabilizers"
+  ],
+  "equipment": [
+    "bodyweight"
+  ],
+  "tags": [
+    "tag_assessment",
+    "balance",
+    "unilateral",
+    "bilateral"
+  ],
+  "repCountingConfig": {
+    "duration": 15,
+    "gracePeriodMs": 2000
+  },
+  "poseVariants": [
+    {
+      "name": {
+        "ar": "زاوية جانبية",
+        "en": "Side View"
+      },
+      "posePosition": "standing_side",
+      "expectedPostures": [
+        "standing"
+      ],
+      "expectedDirections": [
+        "side"
+      ],
+      "expectedRegions": [
+        "full_body"
+      ],
+      "trackedJoints": [
+        {
+          "joint": "right_knee",
+          "role": "primary",
+          "startPose": {
+            "max": 180,
+            "min": 120
+          },
+          "stateMessages": {
+            "normal": {
+              "ar": "ثبات جيد",
+              "en": "Good stability"
+            },
+            "perfect": {
+              "ar": "ثبات ممتاز",
+              "en": "Excellent stability"
+            },
+            "warning": {
+              "ar": "فقد التوازن",
+              "en": "Balance lost"
+            }
+          },
+          "range": {
+            "pad": {
+              "max": 180,
+              "min": 120
+            },
+            "normal": {
+              "max": 180,
+              "min": 135
+            },
+            "perfect": {
+              "max": 175,
+              "min": 150
+            },
+            "warning": {
+              "max": 120,
+              "min": 100
+            }
+          }
+        },
+        {
+          "joint": "right_hip",
+          "role": "secondary",
+          "startPose": {
+            "max": 180,
+            "min": 120
+          },
+          "stateMessages": {
+            "perfect": {
+              "ar": "ورك ثابت",
+              "en": "Hip stable"
+            },
+            "warning": {
+              "ar": "ميل في الورك",
+              "en": "Hip shift"
+            }
+          },
+          "range": {
+            "normal": {
+              "max": 180,
+              "min": 140
+            },
+            "perfect": {
+              "max": 175,
+              "min": 150
+            },
+            "warning": {
+              "max": 140,
+              "min": 120
+            }
+          }
+        }
+      ],
+      "positionChecks": [
+        {
+          "id": "excessive_trunk_sway",
+          "type": "vertical_alignment",
+          "landmarks": {
+            "primary": "right_shoulder",
+            "secondary": "right_hip"
+          },
+          "condition": {
+            "operator": "approximately_equal",
+            "threshold": 0.08
+          },
+          "activePhases": [
+            "top"
+          ],
+          "errorMessage": {
+            "ar": "تذبذب كبير في الجذع",
+            "en": "Excessive trunk sway"
+          },
+          "severity": "warning",
+          "cooldownMs": 3000,
+          "minErrorFrames": 4
+        }
+      ],
+      "feedbackMessages": {
+        "motivational": [
+          {
+            "ar": "توازن رائع",
+            "en": "Great balance"
+          },
+          {
+            "ar": "ثبات ممتاز",
+            "en": "Excellent stability"
+          }
+        ],
+        "tips": [
+          {
+            "ar": "ركّز نظرك على نقطة ثابتة",
+            "en": "Focus your eyes on a fixed point"
+          },
+          {
+            "ar": "شد عضلات بطنك",
+            "en": "Engage your core"
+          }
+        ]
+      },
+      "messageAssignments": [
+        {
+          "messageId": "c138877c-1ca8-4836-80fd-5b27d996a8ce",
+          "target": "position",
+          "context": "error",
+          "checkId": "excessive_trunk_sway",
+          "sortOrder": 1
+        },
+        {
+          "messageId": "14ab5155-b99a-4b08-83b3-49f4289aeb53",
+          "target": "joint_state",
+          "context": "perfect",
+          "jointCode": "right_knee",
+          "sortOrder": 2
+        },
+        {
+          "messageId": "31f0b407-6b06-4f8e-b6b4-0a3de050f754",
+          "target": "joint_state",
+          "context": "normal",
+          "jointCode": "right_knee",
+          "sortOrder": 3
+        },
+        {
+          "messageId": "502329e0-6e5d-424c-bd6d-985c0aac4e0d",
+          "target": "joint_state",
+          "context": "warning",
+          "jointCode": "right_knee",
+          "sortOrder": 4
+        },
+        {
+          "messageId": "1be55eb3-91a2-49a0-8f0e-b2f37684a2c5",
+          "target": "joint_state",
+          "context": "perfect",
+          "jointCode": "right_hip",
+          "sortOrder": 5
+        },
+        {
+          "messageId": "28f8f725-fadf-467a-9cb7-cac63671c704",
+          "target": "joint_state",
+          "context": "warning",
+          "jointCode": "right_hip",
+          "sortOrder": 6
+        },
+        {
+          "messageId": "032636d6-eac1-4f47-8961-1c3e1f3bf63b",
+          "target": "feedback",
+          "context": "motivational",
+          "sortOrder": 7
+        },
+        {
+          "messageId": "e65aa0bd-60b0-4ce2-8ed4-53f843cd3d88",
+          "target": "feedback",
+          "context": "motivational",
+          "sortOrder": 8
+        },
+        {
+          "messageId": "3bb4b91d-dbfc-4574-aedf-cfa8a2213c65",
+          "target": "feedback",
+          "context": "tip",
+          "sortOrder": 9
+        },
+        {
+          "messageId": "963ca0ef-1f89-4968-99fa-3c07e602dc24",
+          "target": "feedback",
+          "context": "tip",
+          "sortOrder": 10
+        }
+      ],
+      "cameraPosition": "side_view"
+    }
+  ],
+  "description": {
+    "ar": "حركة تقييمية لفحص التوازن العام وثبات الكاحل والجذع والتماثل بين الجانبين",
+    "en": "Assessment movement to evaluate overall balance, ankle/trunk stability, and symmetry"
+  },
+  "instructions": {
+    "ar": "قف على رجل واحدة وارفع الرجل الأخرى قليلاً عن الأرض، حافظ على التوازن لمدة 15 ثانية ثم بدّل",
+    "en": "Stand on one leg, lift the other slightly off the ground, hold balance for 15 seconds then switch"
+  },
+  "reportMetrics": {
+    "primary": [
+      "FORM_SCORE"
+    ],
+    "excluded": [
+      "REP_COUNT",
+      "TEMPO",
+      "TUT",
+      "ROM",
+      "FORM_CONSISTENCY",
+      "FATIGUE_INDEX",
+      "VELOCITY",
+      "VELOCITY_LOSS",
+      "TEMPO_CONSISTENCY",
+      "WEIGHT",
+      "VOLUME",
+      "EST_1RM"
+    ]
+  },
+  "isBilateral": true,
+  "bilateralConfig": {
+    "switchEvery": 1,
+    "startSide": "right"
+  },
+  "hasPositionChecks": true,
+  "_database": {
+    "id": "0da2e0f0-6e78-48a6-8796-1ac28a0b9ba9",
+    "categoryId": "bd9b85b7-61fb-4d2a-bfc9-17a0454d1dba",
+    "countingMethodId": "7ae86596-4b4b-400b-afa1-c7c0b6ba4fc9",
+    "publishedAt": "2026-04-20T17:26:22.367Z",
+    "createdAt": "2026-04-20T17:26:22.368Z",
+    "updatedAt": "2026-04-20T17:26:34.089Z",
+    "deletedAt": null,
+    "isFeatured": false,
+    "createdBy": null,
+    "updatedBy": null,
+    "repCountingConfig": {
+      "duration": 15,
+      "gracePeriodMs": 2000
+    },
+    "bilateralConfig": {
+      "startSide": "right",
+      "switchEvery": 1
+    },
+    "isBilateral": true,
+    "supportsWeight": false,
+    "minWeight": null,
+    "maxWeight": null,
+    "defaultWeight": null,
+    "reportMetrics": {
+      "mode": "duration",
+      "version": 1,
+      "primaryKpi": "timeUnderTension",
+      "secondaryKpis": [
+        "avgFormScore",
+        "avgRom"
+      ]
+    },
+    "media": [],
+    "poseVariants": [
+      {
+        "id": "9e167c4a-9ee1-4aff-b8bc-9368c40aeb73",
+        "sortOrder": 1,
+        "description": null,
+        "trackedJointsConfig": [
+          {
+            "role": "primary",
+            "joint": "right_knee",
+            "range": {
+              "pad": {
+                "max": 180,
+                "min": 120
+              },
+              "normal": {
+                "max": 180,
+                "min": 135
+              },
+              "perfect": {
+                "max": 175,
+                "min": 150
+              },
+              "warning": {
+                "max": 120,
+                "min": 100
+              }
+            },
+            "startPose": {
+              "max": 180,
+              "min": 120
+            },
+            "stateMessages": {
+              "normal": {
+                "ar": "ثبات جيد",
+                "en": "Good stability"
+              },
+              "perfect": {
+                "ar": "ثبات ممتاز",
+                "en": "Excellent stability"
+              },
+              "warning": {
+                "ar": "فقد التوازن",
+                "en": "Balance lost"
+              }
+            }
+          },
+          {
+            "role": "secondary",
+            "joint": "right_hip",
+            "range": {
+              "normal": {
+                "max": 180,
+                "min": 140
+              },
+              "perfect": {
+                "max": 175,
+                "min": 150
+              },
+              "warning": {
+                "max": 140,
+                "min": 120
+              }
+            },
+            "startPose": {
+              "max": 180,
+              "min": 120
+            },
+            "stateMessages": {
+              "perfect": {
+                "ar": "ورك ثابت",
+                "en": "Hip stable"
+              },
+              "warning": {
+                "ar": "ميل في الورك",
+                "en": "Hip shift"
+              }
+            }
+          }
+        ]
+      }
+    ],
+    "validationWarning": null
+  }
+}

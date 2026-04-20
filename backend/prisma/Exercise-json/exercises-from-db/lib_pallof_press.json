@@ -1,0 +1,480 @@
+{
+  "slug": "lib_pallof_press",
+  "status": "published",
+  "movementPattern": "CORE_BRACE",
+  "loadCapability": "EXTERNAL_LOAD_OPTIONAL",
+  "familyKey": "anti_rotation_family",
+  "familyOrder": 24,
+  "name": {
+    "ar": "ضغط بالوف",
+    "en": "Pallof press (band)"
+  },
+  "category": {
+    "code": "abs",
+    "name": {
+      "ar": "تمارين البطن",
+      "en": "Abs"
+    }
+  },
+  "countingMethod": "up_down",
+  "muscles": [
+    "obliques"
+  ],
+  "equipment": [
+    "resistance_band",
+    "mat"
+  ],
+  "tags": [
+    "curated_library",
+    "core"
+  ],
+  "repCountingConfig": {
+    "reps": 12,
+    "minRepIntervalMs": 1500,
+    "maxRepIntervalMs": 5000
+  },
+  "poseVariants": [
+    {
+      "name": {
+        "ar": "زاوية أمامية",
+        "en": "Front view"
+      },
+      "posePosition": "standing_front",
+      "expectedPostures": [
+        "standing"
+      ],
+      "expectedDirections": [
+        "front"
+      ],
+      "expectedRegions": [
+        "full_body"
+      ],
+      "trackedJoints": [
+        {
+          "joint": "left_elbow",
+          "role": "primary",
+          "startPose": {
+            "max": 180,
+            "min": 75
+          },
+          "stateMessages": {
+            "pad": {
+              "up": {
+                "ar": "مقبول، لكن المقاومة ما زالت تغلب الجذع",
+                "en": "Acceptable, but the resistance is still winning the trunk"
+              }
+            },
+            "normal": {
+              "up": {
+                "ar": "جيد، امدد الذراع أكثر مع ثبات الجذع",
+                "en": "Good, reach farther while keeping the trunk still"
+              },
+              "down": {
+                "ar": "جيد، عد ببطء أكثر",
+                "en": "Good, return more slowly"
+              }
+            },
+            "perfect": {
+              "up": {
+                "ar": "ممتاز! ذراع ممتدة دون دوران جذع",
+                "en": "Perfect! Full reach without trunk rotation"
+              },
+              "down": {
+                "ar": "ممتاز! عودة متحكم بها للصدر",
+                "en": "Perfect! Controlled return to the chest"
+              }
+            },
+            "warning": {
+              "up": {
+                "ar": "خفف المقاومة إذا بدأ الجذع يلتف",
+                "en": "Reduce resistance if the trunk starts rotating"
+              }
+            }
+          },
+          "pairedWith": "right_elbow",
+          "upRange": {
+            "pad": {
+              "max": 180,
+              "min": 140
+            },
+            "normal": {
+              "max": 180,
+              "min": 150
+            },
+            "perfect": {
+              "max": 180,
+              "min": 160
+            }
+          },
+          "downRange": {
+            "pad": {
+              "max": 114,
+              "min": 62
+            },
+            "normal": {
+              "max": 106,
+              "min": 70
+            },
+            "perfect": {
+              "max": 98,
+              "min": 78
+            },
+            "warning": {
+              "max": 62,
+              "min": 50
+            }
+          }
+        },
+        {
+          "joint": "spine",
+          "role": "secondary",
+          "startPose": {
+            "max": 16,
+            "min": 0
+          },
+          "stateMessages": {
+            "perfect": {
+              "ar": "مقاومة ممتازة للدوران",
+              "en": "Excellent anti-rotation control"
+            },
+            "warning": {
+              "ar": "الجذع يلف مع الحبل",
+              "en": "The trunk is rotating with the band"
+            }
+          },
+          "range": {
+            "pad": {
+              "max": 18,
+              "min": 0
+            },
+            "normal": {
+              "max": 14,
+              "min": 0
+            },
+            "perfect": {
+              "max": 10,
+              "min": 0
+            },
+            "warning": {
+              "max": 30,
+              "min": 18
+            }
+          }
+        }
+      ],
+      "positionChecks": [
+        {
+          "id": "pallof_square",
+          "type": "horizontal_alignment",
+          "landmarks": {
+            "primary": "left_shoulder",
+            "secondary": "right_shoulder"
+          },
+          "condition": {
+            "operator": "approximately_equal",
+            "threshold": 0.08
+          },
+          "activePhases": [
+            "up",
+            "down"
+          ],
+          "errorMessage": {
+            "ar": "أبقِ الكتفين والحوض في مواجهة واحدة — لا تستدر مع المقاومة.",
+            "en": "Keep shoulders and pelvis square — do not rotate with the resistance."
+          },
+          "severity": "warning",
+          "cooldownMs": 2400,
+          "minErrorFrames": 5
+        }
+      ],
+      "feedbackMessages": {
+        "motivational": [
+          {
+            "ar": "شد جذع ممتاز",
+            "en": "Excellent trunk tension"
+          },
+          {
+            "ar": "ثباتك يتحسن عدة بعد عدة",
+            "en": "Your stability improves rep by rep"
+          }
+        ],
+        "tips": [
+          {
+            "ar": "شد السرة برفق ولا تحبس النفس طويلاً.",
+            "en": "Brace gently and avoid long breath-holds."
+          },
+          {
+            "ar": "حرّك الأطراف دون أن ينهار الجذع.",
+            "en": "Move the limbs without letting the trunk collapse."
+          }
+        ]
+      },
+      "messageAssignments": [
+        {
+          "messageId": "5f7204ae-ffc1-4f52-82c2-7bb482b91dc1",
+          "target": "position",
+          "context": "error",
+          "checkId": "pallof_square",
+          "sortOrder": 1
+        },
+        {
+          "messageId": "87abefc8-1fab-46bc-a549-2b61dd8e3003",
+          "target": "joint_state",
+          "context": "perfect",
+          "jointCode": "left_elbow",
+          "zone": "up",
+          "sortOrder": 2
+        },
+        {
+          "messageId": "3a46c447-1374-48dd-8689-d54d2a0c2279",
+          "target": "joint_state",
+          "context": "perfect",
+          "jointCode": "left_elbow",
+          "zone": "down",
+          "sortOrder": 3
+        },
+        {
+          "messageId": "1240a34c-6823-4ca4-a124-b4a7b4f1d642",
+          "target": "joint_state",
+          "context": "normal",
+          "jointCode": "left_elbow",
+          "zone": "up",
+          "sortOrder": 4
+        },
+        {
+          "messageId": "ada3e041-14a3-4d1b-9b19-431eb81aead1",
+          "target": "joint_state",
+          "context": "normal",
+          "jointCode": "left_elbow",
+          "zone": "down",
+          "sortOrder": 5
+        },
+        {
+          "messageId": "3b20c443-d17a-450e-a2c7-f1637fb3193f",
+          "target": "joint_state",
+          "context": "pad",
+          "jointCode": "left_elbow",
+          "zone": "up",
+          "sortOrder": 6
+        },
+        {
+          "messageId": "aff2a2fd-4485-4822-92be-bd7633b87e6d",
+          "target": "joint_state",
+          "context": "warning",
+          "jointCode": "left_elbow",
+          "zone": "up",
+          "sortOrder": 7
+        },
+        {
+          "messageId": "41013617-f3dc-4034-93a5-4a927129c854",
+          "target": "joint_state",
+          "context": "perfect",
+          "jointCode": "spine",
+          "sortOrder": 8
+        },
+        {
+          "messageId": "e10d59fc-adf1-46d9-ade6-90aff42073a7",
+          "target": "joint_state",
+          "context": "warning",
+          "jointCode": "spine",
+          "sortOrder": 9
+        },
+        {
+          "messageId": "4bdeabd2-69d7-41d8-82f0-15abf0611cd5",
+          "target": "feedback",
+          "context": "motivational",
+          "sortOrder": 10
+        },
+        {
+          "messageId": "be868f23-6fae-44b5-9686-abb35c6d3064",
+          "target": "feedback",
+          "context": "motivational",
+          "sortOrder": 11
+        },
+        {
+          "messageId": "ae2873d9-9433-4b38-89b4-97ba09e25069",
+          "target": "feedback",
+          "context": "tip",
+          "sortOrder": 12
+        },
+        {
+          "messageId": "755833d6-63fb-422d-a665-a15fb281414f",
+          "target": "feedback",
+          "context": "tip",
+          "sortOrder": 13
+        }
+      ],
+      "cameraPosition": "front_view"
+    }
+  ],
+  "description": {
+    "ar": "تمرين مكتبة: ضغط بالوف.",
+    "en": "Library exercise: Pallof press (band)."
+  },
+  "instructions": {
+    "ar": "حافظ على عمود فقري محايد وتنفس بثبات وتوقف عند أي ألم حاد.",
+    "en": "Maintain neutral spine, steady breathing, and stop if sharp pain appears."
+  },
+  "reportMetrics": {
+    "primary": [
+      "FORM_SCORE"
+    ],
+    "excluded": [
+      "HOLD_DURATION",
+      "WEIGHT",
+      "VOLUME",
+      "EST_1RM"
+    ]
+  },
+  "hasPositionChecks": true,
+  "_database": {
+    "id": "288f58c3-fe53-4703-bf11-93ee722df43c",
+    "categoryId": "01b944db-50df-4f53-aa08-ec5633820277",
+    "countingMethodId": "f4d48aef-1606-4f23-8c61-7b4a2546f990",
+    "publishedAt": "2026-04-20T17:26:25.463Z",
+    "createdAt": "2026-04-20T17:26:25.464Z",
+    "updatedAt": "2026-04-20T17:26:34.300Z",
+    "deletedAt": null,
+    "isFeatured": false,
+    "createdBy": null,
+    "updatedBy": null,
+    "repCountingConfig": null,
+    "bilateralConfig": null,
+    "isBilateral": false,
+    "supportsWeight": false,
+    "minWeight": null,
+    "maxWeight": null,
+    "defaultWeight": null,
+    "reportMetrics": {
+      "mode": "reps",
+      "version": 1,
+      "primaryKpi": "repQuality",
+      "secondaryKpis": [
+        "avgFormScore",
+        "avgRom"
+      ]
+    },
+    "media": [],
+    "poseVariants": [
+      {
+        "id": "aa11d130-eaf1-456e-bec4-521f197320ba",
+        "sortOrder": 1,
+        "description": null,
+        "trackedJointsConfig": [
+          {
+            "role": "primary",
+            "joint": "left_elbow",
+            "upRange": {
+              "pad": {
+                "max": 180,
+                "min": 140
+              },
+              "normal": {
+                "max": 180,
+                "min": 150
+              },
+              "perfect": {
+                "max": 180,
+                "min": 160
+              }
+            },
+            "downRange": {
+              "pad": {
+                "max": 114,
+                "min": 62
+              },
+              "normal": {
+                "max": 106,
+                "min": 70
+              },
+              "perfect": {
+                "max": 98,
+                "min": 78
+              },
+              "warning": {
+                "max": 62,
+                "min": 50
+              }
+            },
+            "startPose": {
+              "max": 180,
+              "min": 75
+            },
+            "pairedWith": "right_elbow",
+            "stateMessages": {
+              "pad": {
+                "up": {
+                  "ar": "مقبول، لكن المقاومة ما زالت تغلب الجذع",
+                  "en": "Acceptable, but the resistance is still winning the trunk"
+                }
+              },
+              "normal": {
+                "up": {
+                  "ar": "جيد، امدد الذراع أكثر مع ثبات الجذع",
+                  "en": "Good, reach farther while keeping the trunk still"
+                },
+                "down": {
+                  "ar": "جيد، عد ببطء أكثر",
+                  "en": "Good, return more slowly"
+                }
+              },
+              "perfect": {
+                "up": {
+                  "ar": "ممتاز! ذراع ممتدة دون دوران جذع",
+                  "en": "Perfect! Full reach without trunk rotation"
+                },
+                "down": {
+                  "ar": "ممتاز! عودة متحكم بها للصدر",
+                  "en": "Perfect! Controlled return to the chest"
+                }
+              },
+              "warning": {
+                "up": {
+                  "ar": "خفف المقاومة إذا بدأ الجذع يلتف",
+                  "en": "Reduce resistance if the trunk starts rotating"
+                }
+              }
+            }
+          },
+          {
+            "role": "secondary",
+            "joint": "spine",
+            "range": {
+              "pad": {
+                "max": 18,
+                "min": 0
+              },
+              "normal": {
+                "max": 14,
+                "min": 0
+              },
+              "perfect": {
+                "max": 10,
+                "min": 0
+              },
+              "warning": {
+                "max": 30,
+                "min": 18
+              }
+            },
+            "startPose": {
+              "max": 16,
+              "min": 0
+            },
+            "stateMessages": {
+              "perfect": {
+                "ar": "مقاومة ممتازة للدوران",
+                "en": "Excellent anti-rotation control"
+              },
+              "warning": {
+                "ar": "الجذع يلف مع الحبل",
+                "en": "The trunk is rotating with the band"
+              }
+            }
+          }
+        ]
+      }
+    ],
+    "validationWarning": null
+  }
+}

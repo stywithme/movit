@@ -1,0 +1,353 @@
+{
+  "slug": "lib_supine_shoulder_flexion",
+  "status": "published",
+  "movementPattern": "MOBILITY_DRILL",
+  "loadCapability": "BODYWEIGHT_ONLY",
+  "familyKey": "shoulder_mobility_family",
+  "familyOrder": 15,
+  "name": {
+    "ar": "انزلاق كتف",
+    "en": "Supine shoulder flexion slide"
+  },
+  "category": {
+    "code": "shoulders",
+    "name": {
+      "ar": "تمارين الأكتاف",
+      "en": "Shoulders"
+    }
+  },
+  "countingMethod": "up_down",
+  "muscles": [
+    "front_delts"
+  ],
+  "equipment": [
+    "bodyweight",
+    "mat"
+  ],
+  "tags": [
+    "curated_library",
+    "mobility"
+  ],
+  "repCountingConfig": {
+    "reps": 12,
+    "minRepIntervalMs": 1500,
+    "maxRepIntervalMs": 5000
+  },
+  "poseVariants": [
+    {
+      "name": {
+        "ar": "مستلقٍ على الظهر",
+        "en": "Lying on back (side angle)"
+      },
+      "posePosition": "supine_side",
+      "expectedPostures": [
+        "lying_supine"
+      ],
+      "expectedDirections": [
+        "side"
+      ],
+      "expectedRegions": [
+        "full_body"
+      ],
+      "trackedJoints": [
+        {
+          "joint": "left_shoulder",
+          "role": "primary",
+          "startPose": {
+            "max": 100,
+            "min": 0
+          },
+          "stateMessages": {
+            "normal": {
+              "up": {
+                "ar": "جيد، صل لأقصى مدى مريح",
+                "en": "Good, reach as far as comfortable"
+              },
+              "down": {
+                "ar": "جيد، ارجع ببطء",
+                "en": "Good, return slowly"
+              }
+            },
+            "perfect": {
+              "up": {
+                "ar": "ممتاز! ذراعان فوق الرأس بانزلاق نظيف",
+                "en": "Perfect! Arms slide overhead cleanly"
+              },
+              "down": {
+                "ar": "ممتاز! بداية ثابتة بجانب الجسم",
+                "en": "Perfect! Stable start beside the body"
+              }
+            }
+          },
+          "pairedWith": "right_shoulder",
+          "upRange": {
+            "pad": {
+              "max": 180,
+              "min": 135
+            },
+            "normal": {
+              "max": 180,
+              "min": 145
+            },
+            "perfect": {
+              "max": 180,
+              "min": 155
+            }
+          },
+          "downRange": {
+            "pad": {
+              "max": 100,
+              "min": 15
+            },
+            "normal": {
+              "max": 85,
+              "min": 22
+            },
+            "perfect": {
+              "max": 70,
+              "min": 30
+            },
+            "warning": {
+              "max": 120,
+              "min": 100
+            }
+          }
+        }
+      ],
+      "positionChecks": [
+        {
+          "id": "supine_low_back_quiet",
+          "type": "vertical_alignment",
+          "landmarks": {
+            "primary": "left_shoulder",
+            "secondary": "left_hip"
+          },
+          "condition": {
+            "operator": "approximately_equal",
+            "threshold": 0.16
+          },
+          "activePhases": [
+            "up",
+            "down"
+          ],
+          "errorMessage": {
+            "ar": "ابقِ أسفل الظهر على الأرض أثناء الانزلاق.",
+            "en": "Keep the low back on the floor during the slide."
+          },
+          "severity": "warning",
+          "cooldownMs": 2400,
+          "minErrorFrames": 4
+        }
+      ],
+      "feedbackMessages": {
+        "motivational": [
+          {
+            "ar": "مدى حركة جيد وتحكم أفضل",
+            "en": "Good range and better control"
+          },
+          {
+            "ar": "تحرك بسلاسة داخل نطاق مريح",
+            "en": "Move smoothly inside a comfortable range"
+          }
+        ],
+        "tips": [
+          {
+            "ar": "ابقِ الحركة نظيفة وهادئة بدون ارتداد.",
+            "en": "Keep the motion smooth and bounce-free."
+          },
+          {
+            "ar": "أي ألم حاد يعني تقليل المدى فوراً.",
+            "en": "Any sharp pain means reduce range immediately."
+          }
+        ]
+      },
+      "messageAssignments": [
+        {
+          "messageId": "75dd3298-b7f1-4867-8676-6184d5ba8857",
+          "target": "position",
+          "context": "error",
+          "checkId": "supine_low_back_quiet",
+          "sortOrder": 1
+        },
+        {
+          "messageId": "9645889d-9f2c-4417-a41d-6a7fcd49df4a",
+          "target": "joint_state",
+          "context": "perfect",
+          "jointCode": "left_shoulder",
+          "zone": "up",
+          "sortOrder": 2
+        },
+        {
+          "messageId": "f995abb2-993e-4a42-886c-3403514cd1dc",
+          "target": "joint_state",
+          "context": "perfect",
+          "jointCode": "left_shoulder",
+          "zone": "down",
+          "sortOrder": 3
+        },
+        {
+          "messageId": "83109fe0-c0ca-4b60-8b72-48bf54342b62",
+          "target": "joint_state",
+          "context": "normal",
+          "jointCode": "left_shoulder",
+          "zone": "up",
+          "sortOrder": 4
+        },
+        {
+          "messageId": "27673b03-8e53-4cf9-ace6-becfaad83e63",
+          "target": "joint_state",
+          "context": "normal",
+          "jointCode": "left_shoulder",
+          "zone": "down",
+          "sortOrder": 5
+        },
+        {
+          "messageId": "775f16a8-3b82-4e0c-ae99-6cfa2e7714ea",
+          "target": "feedback",
+          "context": "motivational",
+          "sortOrder": 6
+        },
+        {
+          "messageId": "a88c5ab2-72f7-416c-96f8-aaaa2222f821",
+          "target": "feedback",
+          "context": "motivational",
+          "sortOrder": 7
+        },
+        {
+          "messageId": "0973c697-142c-4c02-9e4e-58c58a86af9e",
+          "target": "feedback",
+          "context": "tip",
+          "sortOrder": 8
+        },
+        {
+          "messageId": "9cef6580-8c5f-486f-af43-85d03e64debf",
+          "target": "feedback",
+          "context": "tip",
+          "sortOrder": 9
+        }
+      ]
+    }
+  ],
+  "description": {
+    "ar": "تمرين مكتبة: انزلاق كتف.",
+    "en": "Library exercise: Supine shoulder flexion slide."
+  },
+  "instructions": {
+    "ar": "حافظ على عمود فقري محايد وتنفس بثبات وتوقف عند أي ألم حاد.",
+    "en": "Maintain neutral spine, steady breathing, and stop if sharp pain appears."
+  },
+  "reportMetrics": {
+    "primary": [
+      "FORM_SCORE"
+    ],
+    "excluded": [
+      "HOLD_DURATION",
+      "WEIGHT",
+      "VOLUME",
+      "EST_1RM"
+    ]
+  },
+  "hasPositionChecks": true,
+  "_database": {
+    "id": "b16179b8-2087-456f-b383-1e347690a17d",
+    "categoryId": "78daff70-6564-41cd-b768-462735416089",
+    "countingMethodId": "f4d48aef-1606-4f23-8c61-7b4a2546f990",
+    "publishedAt": "2026-04-20T17:26:30.841Z",
+    "createdAt": "2026-04-20T17:26:30.846Z",
+    "updatedAt": "2026-04-20T17:26:34.680Z",
+    "deletedAt": null,
+    "isFeatured": false,
+    "createdBy": null,
+    "updatedBy": null,
+    "repCountingConfig": null,
+    "bilateralConfig": null,
+    "isBilateral": false,
+    "supportsWeight": false,
+    "minWeight": null,
+    "maxWeight": null,
+    "defaultWeight": null,
+    "reportMetrics": {
+      "mode": "reps",
+      "version": 1,
+      "primaryKpi": "repQuality",
+      "secondaryKpis": [
+        "avgFormScore",
+        "avgRom"
+      ]
+    },
+    "media": [],
+    "poseVariants": [
+      {
+        "id": "2fcb0279-1b78-45d2-9b91-ddd15fc391cf",
+        "sortOrder": 1,
+        "description": null,
+        "trackedJointsConfig": [
+          {
+            "role": "primary",
+            "joint": "left_shoulder",
+            "upRange": {
+              "pad": {
+                "max": 180,
+                "min": 135
+              },
+              "normal": {
+                "max": 180,
+                "min": 145
+              },
+              "perfect": {
+                "max": 180,
+                "min": 155
+              }
+            },
+            "downRange": {
+              "pad": {
+                "max": 100,
+                "min": 15
+              },
+              "normal": {
+                "max": 85,
+                "min": 22
+              },
+              "perfect": {
+                "max": 70,
+                "min": 30
+              },
+              "warning": {
+                "max": 120,
+                "min": 100
+              }
+            },
+            "startPose": {
+              "max": 100,
+              "min": 0
+            },
+            "pairedWith": "right_shoulder",
+            "stateMessages": {
+              "normal": {
+                "up": {
+                  "ar": "جيد، صل لأقصى مدى مريح",
+                  "en": "Good, reach as far as comfortable"
+                },
+                "down": {
+                  "ar": "جيد، ارجع ببطء",
+                  "en": "Good, return slowly"
+                }
+              },
+              "perfect": {
+                "up": {
+                  "ar": "ممتاز! ذراعان فوق الرأس بانزلاق نظيف",
+                  "en": "Perfect! Arms slide overhead cleanly"
+                },
+                "down": {
+                  "ar": "ممتاز! بداية ثابتة بجانب الجسم",
+                  "en": "Perfect! Stable start beside the body"
+                }
+              }
+            }
+          }
+        ]
+      }
+    ],
+    "validationWarning": null
+  }
+}

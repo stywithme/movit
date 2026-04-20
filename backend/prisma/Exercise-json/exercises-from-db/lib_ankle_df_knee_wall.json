@@ -1,0 +1,322 @@
+{
+  "slug": "lib_ankle_df_knee_wall",
+  "status": "published",
+  "movementPattern": "MOBILITY_DRILL",
+  "loadCapability": "BODYWEIGHT_ONLY",
+  "familyKey": "ankle_mobility_family",
+  "familyOrder": 10,
+  "name": {
+    "ar": "ثني ظهر الكاحل",
+    "en": "Ankle dorsiflexion knee-to-wall"
+  },
+  "category": {
+    "code": "legs",
+    "name": {
+      "ar": "تمارين الأرجل",
+      "en": "Legs"
+    }
+  },
+  "countingMethod": "up_down",
+  "muscles": [
+    "calves",
+    "quadriceps"
+  ],
+  "equipment": [
+    "bodyweight",
+    "mat"
+  ],
+  "tags": [
+    "curated_library",
+    "mobility"
+  ],
+  "repCountingConfig": {
+    "reps": 12,
+    "minRepIntervalMs": 1500,
+    "maxRepIntervalMs": 5000
+  },
+  "poseVariants": [
+    {
+      "name": {
+        "ar": "زاوية جانبية",
+        "en": "Side view"
+      },
+      "posePosition": "standing_side",
+      "expectedPostures": [
+        "standing"
+      ],
+      "expectedDirections": [
+        "side"
+      ],
+      "expectedRegions": [
+        "full_body"
+      ],
+      "trackedJoints": [
+        {
+          "joint": "left_ankle",
+          "role": "primary",
+          "startPose": {
+            "max": 110,
+            "min": 70
+          },
+          "stateMessages": {
+            "normal": {
+              "up": {
+                "ar": "جيد، زد المدى تدريجياً",
+                "en": "Good, build ROM gradually"
+              },
+              "down": {
+                "ar": "جيد، بدون ارتداد",
+                "en": "Good, no bouncing"
+              }
+            },
+            "perfect": {
+              "up": {
+                "ar": "ممتاز! حركة كاحل واضحة",
+                "en": "Perfect! Clear ankle motion"
+              },
+              "down": {
+                "ar": "ممتاز! عودة متحكم بها",
+                "en": "Perfect! Controlled return"
+              }
+            }
+          },
+          "upRange": {
+            "pad": {
+              "max": 160,
+              "min": 110
+            },
+            "normal": {
+              "max": 155,
+              "min": 115
+            },
+            "perfect": {
+              "max": 148,
+              "min": 120
+            }
+          },
+          "downRange": {
+            "pad": {
+              "max": 102,
+              "min": 65
+            },
+            "normal": {
+              "max": 98,
+              "min": 72
+            },
+            "perfect": {
+              "max": 92,
+              "min": 78
+            },
+            "warning": {
+              "max": 65,
+              "min": 55
+            }
+          }
+        }
+      ],
+      "feedbackMessages": {
+        "motivational": [
+          {
+            "ar": "مدى حركة جيد وتحكم أفضل",
+            "en": "Good range and better control"
+          },
+          {
+            "ar": "تحرك بسلاسة داخل نطاق مريح",
+            "en": "Move smoothly inside a comfortable range"
+          }
+        ],
+        "tips": [
+          {
+            "ar": "ابقِ الحركة نظيفة وهادئة بدون ارتداد.",
+            "en": "Keep the motion smooth and bounce-free."
+          },
+          {
+            "ar": "أي ألم حاد يعني تقليل المدى فوراً.",
+            "en": "Any sharp pain means reduce range immediately."
+          }
+        ]
+      },
+      "messageAssignments": [
+        {
+          "messageId": "13d25dab-baf9-4d9d-b913-a6491d1b362f",
+          "target": "joint_state",
+          "context": "perfect",
+          "jointCode": "left_ankle",
+          "zone": "up",
+          "sortOrder": 1
+        },
+        {
+          "messageId": "d1b8919a-ad8e-4839-b0ec-d109cacb65eb",
+          "target": "joint_state",
+          "context": "perfect",
+          "jointCode": "left_ankle",
+          "zone": "down",
+          "sortOrder": 2
+        },
+        {
+          "messageId": "afeb9b22-a5b6-4312-927b-359af8ab467b",
+          "target": "joint_state",
+          "context": "normal",
+          "jointCode": "left_ankle",
+          "zone": "up",
+          "sortOrder": 3
+        },
+        {
+          "messageId": "ac58cb18-9c8c-4d16-bdc8-1dbcac862ba8",
+          "target": "joint_state",
+          "context": "normal",
+          "jointCode": "left_ankle",
+          "zone": "down",
+          "sortOrder": 4
+        },
+        {
+          "messageId": "0292cf85-a19b-4511-9aab-0d992431a4dd",
+          "target": "feedback",
+          "context": "motivational",
+          "sortOrder": 5
+        },
+        {
+          "messageId": "73452bf4-eec2-475f-9db2-93126aaa0743",
+          "target": "feedback",
+          "context": "motivational",
+          "sortOrder": 6
+        },
+        {
+          "messageId": "24536fa5-15c5-4f18-9880-e09e2c74ad8f",
+          "target": "feedback",
+          "context": "tip",
+          "sortOrder": 7
+        },
+        {
+          "messageId": "c63bba7f-8eef-4f73-97c7-78f38daa97f6",
+          "target": "feedback",
+          "context": "tip",
+          "sortOrder": 8
+        }
+      ],
+      "cameraPosition": "side_view"
+    }
+  ],
+  "description": {
+    "ar": "تمرين مكتبة: ثني ظهر الكاحل.",
+    "en": "Library exercise: Ankle dorsiflexion knee-to-wall."
+  },
+  "instructions": {
+    "ar": "حافظ على عمود فقري محايد وتنفس بثبات وتوقف عند أي ألم حاد.",
+    "en": "Maintain neutral spine, steady breathing, and stop if sharp pain appears."
+  },
+  "reportMetrics": {
+    "primary": [
+      "FORM_SCORE"
+    ],
+    "excluded": [
+      "HOLD_DURATION",
+      "WEIGHT",
+      "VOLUME",
+      "EST_1RM",
+      "SYMMETRY",
+      "ALIGNMENT"
+    ]
+  },
+  "_database": {
+    "id": "245699e7-dfe0-4f47-bc73-d21202e271fa",
+    "categoryId": "a672c3d3-4449-4f74-bd8e-be73a0035e88",
+    "countingMethodId": "f4d48aef-1606-4f23-8c61-7b4a2546f990",
+    "publishedAt": "2026-04-20T17:26:31.025Z",
+    "createdAt": "2026-04-20T17:26:31.028Z",
+    "updatedAt": "2026-04-20T17:26:34.691Z",
+    "deletedAt": null,
+    "isFeatured": false,
+    "createdBy": null,
+    "updatedBy": null,
+    "repCountingConfig": null,
+    "bilateralConfig": null,
+    "isBilateral": false,
+    "supportsWeight": false,
+    "minWeight": null,
+    "maxWeight": null,
+    "defaultWeight": null,
+    "reportMetrics": {
+      "mode": "reps",
+      "version": 1,
+      "primaryKpi": "repQuality",
+      "secondaryKpis": [
+        "avgFormScore",
+        "avgRom"
+      ]
+    },
+    "media": [],
+    "poseVariants": [
+      {
+        "id": "6201abe1-6116-4e8d-8537-84fb3dd0fda0",
+        "sortOrder": 1,
+        "description": null,
+        "trackedJointsConfig": [
+          {
+            "role": "primary",
+            "joint": "left_ankle",
+            "upRange": {
+              "pad": {
+                "max": 160,
+                "min": 110
+              },
+              "normal": {
+                "max": 155,
+                "min": 115
+              },
+              "perfect": {
+                "max": 148,
+                "min": 120
+              }
+            },
+            "downRange": {
+              "pad": {
+                "max": 102,
+                "min": 65
+              },
+              "normal": {
+                "max": 98,
+                "min": 72
+              },
+              "perfect": {
+                "max": 92,
+                "min": 78
+              },
+              "warning": {
+                "max": 65,
+                "min": 55
+              }
+            },
+            "startPose": {
+              "max": 110,
+              "min": 70
+            },
+            "stateMessages": {
+              "normal": {
+                "up": {
+                  "ar": "جيد، زد المدى تدريجياً",
+                  "en": "Good, build ROM gradually"
+                },
+                "down": {
+                  "ar": "جيد، بدون ارتداد",
+                  "en": "Good, no bouncing"
+                }
+              },
+              "perfect": {
+                "up": {
+                  "ar": "ممتاز! حركة كاحل واضحة",
+                  "en": "Perfect! Clear ankle motion"
+                },
+                "down": {
+                  "ar": "ممتاز! عودة متحكم بها",
+                  "en": "Perfect! Controlled return"
+                }
+              }
+            }
+          }
+        ]
+      }
+    ],
+    "validationWarning": null
+  }
+}

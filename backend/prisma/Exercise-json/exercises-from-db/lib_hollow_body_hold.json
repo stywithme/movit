@@ -1,0 +1,397 @@
+{
+  "slug": "lib_hollow_body_hold",
+  "status": "published",
+  "movementPattern": "CORE_BRACE",
+  "loadCapability": "BODYWEIGHT_ONLY",
+  "familyKey": "anti_extension_family",
+  "familyOrder": 21,
+  "name": {
+    "ar": "جسم مجوف",
+    "en": "Hollow body hold"
+  },
+  "category": {
+    "code": "abs",
+    "name": {
+      "ar": "تمارين البطن",
+      "en": "Abs"
+    }
+  },
+  "countingMethod": "hold",
+  "muscles": [
+    "abs_muscle"
+  ],
+  "equipment": [
+    "bodyweight",
+    "mat"
+  ],
+  "tags": [
+    "curated_library",
+    "core"
+  ],
+  "repCountingConfig": {
+    "duration": 30,
+    "gracePeriodMs": 2500
+  },
+  "poseVariants": [
+    {
+      "name": {
+        "ar": "مستلقٍ على الظهر",
+        "en": "Lying on back (side angle)"
+      },
+      "posePosition": "supine_side",
+      "expectedPostures": [
+        "lying_supine"
+      ],
+      "expectedDirections": [
+        "side"
+      ],
+      "expectedRegions": [
+        "full_body"
+      ],
+      "trackedJoints": [
+        {
+          "joint": "spine",
+          "role": "primary",
+          "startPose": {
+            "max": 30,
+            "min": 0
+          },
+          "stateMessages": {
+            "danger": {
+              "ar": "توقف — فقد التحكم في القاع",
+              "en": "Stop — lost control of the hollow position"
+            },
+            "perfect": {
+              "ar": "جذع مجوف وثابت",
+              "en": "Hollow, anchored trunk"
+            },
+            "warning": {
+              "ar": "لا تدع أسفل الظهر يقوّس",
+              "en": "Do not let the low back arch"
+            }
+          },
+          "range": {
+            "pad": {
+              "max": 24,
+              "min": 0
+            },
+            "danger": {
+              "max": 70,
+              "min": 38
+            },
+            "normal": {
+              "max": 18,
+              "min": 0
+            },
+            "perfect": {
+              "max": 12,
+              "min": 0
+            },
+            "warning": {
+              "max": 38,
+              "min": 24
+            }
+          }
+        },
+        {
+          "joint": "left_hip",
+          "role": "secondary",
+          "startPose": {
+            "max": 160,
+            "min": 90
+          },
+          "stateMessages": {
+            "perfect": {
+              "ar": "ساقان مرفوعتان بزاوية مناسبة",
+              "en": "Legs lifted at the right angle"
+            },
+            "warning": {
+              "ar": "ارفع الساقين أعلى لتقليل ضغط القطن",
+              "en": "Lift legs higher to ease low-back stress"
+            }
+          },
+          "range": {
+            "pad": {
+              "max": 165,
+              "min": 95
+            },
+            "normal": {
+              "max": 155,
+              "min": 105
+            },
+            "perfect": {
+              "max": 145,
+              "min": 115
+            },
+            "warning": {
+              "max": 95,
+              "min": 80
+            }
+          }
+        }
+      ],
+      "positionChecks": [
+        {
+          "id": "hollow_low_back_anchor",
+          "type": "vertical_alignment",
+          "landmarks": {
+            "primary": "left_shoulder",
+            "secondary": "left_hip"
+          },
+          "condition": {
+            "operator": "approximately_equal",
+            "threshold": 0.18
+          },
+          "activePhases": [
+            "all"
+          ],
+          "errorMessage": {
+            "ar": "ابقِ أسفل الظهر ملتصقاً بالأرض طوال الثبات.",
+            "en": "Keep the low back glued to the floor throughout the hold."
+          },
+          "severity": "warning",
+          "cooldownMs": 2400,
+          "minErrorFrames": 5
+        }
+      ],
+      "feedbackMessages": {
+        "motivational": [
+          {
+            "ar": "شد جذع ممتاز",
+            "en": "Excellent trunk tension"
+          },
+          {
+            "ar": "ثباتك يتحسن عدة بعد عدة",
+            "en": "Your stability improves rep by rep"
+          }
+        ],
+        "tips": [
+          {
+            "ar": "شد السرة برفق ولا تحبس النفس طويلاً.",
+            "en": "Brace gently and avoid long breath-holds."
+          },
+          {
+            "ar": "حرّك الأطراف دون أن ينهار الجذع.",
+            "en": "Move the limbs without letting the trunk collapse."
+          }
+        ]
+      },
+      "messageAssignments": [
+        {
+          "messageId": "74efd400-b1c8-4230-b08a-7595a3e656e2",
+          "target": "position",
+          "context": "error",
+          "checkId": "hollow_low_back_anchor",
+          "sortOrder": 1
+        },
+        {
+          "messageId": "42c94de7-6aaa-4f54-9932-a9b91b2b3bca",
+          "target": "joint_state",
+          "context": "perfect",
+          "jointCode": "spine",
+          "sortOrder": 2
+        },
+        {
+          "messageId": "65019e6a-abf5-4d06-af29-b7beb95b0f3e",
+          "target": "joint_state",
+          "context": "warning",
+          "jointCode": "spine",
+          "sortOrder": 3
+        },
+        {
+          "messageId": "16c23321-b09d-406a-80ec-5e800cc637cd",
+          "target": "joint_state",
+          "context": "danger",
+          "jointCode": "spine",
+          "sortOrder": 4
+        },
+        {
+          "messageId": "d1ea4c5c-abcf-46a7-8a22-5f678088dd6e",
+          "target": "joint_state",
+          "context": "perfect",
+          "jointCode": "left_hip",
+          "sortOrder": 5
+        },
+        {
+          "messageId": "e95f5807-b897-454d-95e1-40b2a3541189",
+          "target": "joint_state",
+          "context": "warning",
+          "jointCode": "left_hip",
+          "sortOrder": 6
+        },
+        {
+          "messageId": "3a247e75-40dd-4993-a481-3c3a7844004a",
+          "target": "feedback",
+          "context": "motivational",
+          "sortOrder": 7
+        },
+        {
+          "messageId": "e192284b-517c-47ce-8892-7576fbe8bbcf",
+          "target": "feedback",
+          "context": "motivational",
+          "sortOrder": 8
+        },
+        {
+          "messageId": "63102a91-f459-4f72-99af-5157d992606d",
+          "target": "feedback",
+          "context": "tip",
+          "sortOrder": 9
+        },
+        {
+          "messageId": "99fcce33-d39e-47d7-a539-f9ce011a57ec",
+          "target": "feedback",
+          "context": "tip",
+          "sortOrder": 10
+        }
+      ]
+    }
+  ],
+  "description": {
+    "ar": "تمرين مكتبة: جسم مجوف.",
+    "en": "Library exercise: Hollow body hold."
+  },
+  "instructions": {
+    "ar": "حافظ على عمود فقري محايد وتنفس بثبات وتوقف عند أي ألم حاد.",
+    "en": "Maintain neutral spine, steady breathing, and stop if sharp pain appears."
+  },
+  "reportMetrics": {
+    "primary": [
+      "FORM_SCORE"
+    ],
+    "excluded": [
+      "REP_COUNT",
+      "TEMPO",
+      "TUT",
+      "ROM",
+      "FORM_CONSISTENCY",
+      "FATIGUE_INDEX",
+      "VELOCITY",
+      "VELOCITY_LOSS",
+      "TEMPO_CONSISTENCY",
+      "WEIGHT",
+      "VOLUME",
+      "EST_1RM",
+      "SYMMETRY"
+    ]
+  },
+  "hasPositionChecks": true,
+  "_database": {
+    "id": "af1c1ad7-f173-441e-b4ce-c755cb080f01",
+    "categoryId": "01b944db-50df-4f53-aa08-ec5633820277",
+    "countingMethodId": "7ae86596-4b4b-400b-afa1-c7c0b6ba4fc9",
+    "publishedAt": "2026-04-20T17:26:27.966Z",
+    "createdAt": "2026-04-20T17:26:27.968Z",
+    "updatedAt": "2026-04-20T17:26:34.495Z",
+    "deletedAt": null,
+    "isFeatured": false,
+    "createdBy": null,
+    "updatedBy": null,
+    "repCountingConfig": null,
+    "bilateralConfig": null,
+    "isBilateral": false,
+    "supportsWeight": false,
+    "minWeight": null,
+    "maxWeight": null,
+    "defaultWeight": null,
+    "reportMetrics": {
+      "mode": "duration",
+      "version": 1,
+      "primaryKpi": "timeUnderTension",
+      "secondaryKpis": [
+        "avgFormScore",
+        "avgRom"
+      ]
+    },
+    "media": [],
+    "poseVariants": [
+      {
+        "id": "321c0ab8-8ebc-40df-862b-aed8d386e959",
+        "sortOrder": 1,
+        "description": null,
+        "trackedJointsConfig": [
+          {
+            "role": "primary",
+            "joint": "spine",
+            "range": {
+              "pad": {
+                "max": 24,
+                "min": 0
+              },
+              "danger": {
+                "max": 70,
+                "min": 38
+              },
+              "normal": {
+                "max": 18,
+                "min": 0
+              },
+              "perfect": {
+                "max": 12,
+                "min": 0
+              },
+              "warning": {
+                "max": 38,
+                "min": 24
+              }
+            },
+            "startPose": {
+              "max": 30,
+              "min": 0
+            },
+            "stateMessages": {
+              "danger": {
+                "ar": "توقف — فقد التحكم في القاع",
+                "en": "Stop — lost control of the hollow position"
+              },
+              "perfect": {
+                "ar": "جذع مجوف وثابت",
+                "en": "Hollow, anchored trunk"
+              },
+              "warning": {
+                "ar": "لا تدع أسفل الظهر يقوّس",
+                "en": "Do not let the low back arch"
+              }
+            }
+          },
+          {
+            "role": "secondary",
+            "joint": "left_hip",
+            "range": {
+              "pad": {
+                "max": 165,
+                "min": 95
+              },
+              "normal": {
+                "max": 155,
+                "min": 105
+              },
+              "perfect": {
+                "max": 145,
+                "min": 115
+              },
+              "warning": {
+                "max": 95,
+                "min": 80
+              }
+            },
+            "startPose": {
+              "max": 160,
+              "min": 90
+            },
+            "stateMessages": {
+              "perfect": {
+                "ar": "ساقان مرفوعتان بزاوية مناسبة",
+                "en": "Legs lifted at the right angle"
+              },
+              "warning": {
+                "ar": "ارفع الساقين أعلى لتقليل ضغط القطن",
+                "en": "Lift legs higher to ease low-back stress"
+              }
+            }
+          }
+        ]
+      }
+    ],
+    "validationWarning": null
+  }
+}

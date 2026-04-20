@@ -32,7 +32,7 @@
         "ar": "الجانب الأيسر - زاوية أمامية",
         "en": "Left Side - Front View"
       },
-      "cameraPosition": "front_view",
+      "cameraPosition": "side_lying",
       "expectedFacingDirection": "facing_camera",
       "positionChecks": [
         {
@@ -124,7 +124,7 @@
         "ar": "الجانب الأيمن - زاوية أمامية",
         "en": "Right Side - Front View"
       },
-      "cameraPosition": "front_view",
+      "cameraPosition": "side_lying",
       "expectedFacingDirection": "facing_camera",
       "positionChecks": [
         {

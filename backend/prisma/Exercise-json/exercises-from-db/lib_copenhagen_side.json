@@ -1,0 +1,390 @@
+{
+  "slug": "lib_copenhagen_side",
+  "status": "published",
+  "movementPattern": "CORE_BRACE",
+  "loadCapability": "BODYWEIGHT_ONLY",
+  "familyKey": "anti_lateral_flexion_family",
+  "familyOrder": 26,
+  "name": {
+    "ar": "بلانك كوبنهاغن",
+    "en": "Copenhagen side plank adduction"
+  },
+  "category": {
+    "code": "legs",
+    "name": {
+      "ar": "تمارين الأرجل",
+      "en": "Legs"
+    }
+  },
+  "countingMethod": "hold",
+  "muscles": [
+    "obliques",
+    "quadriceps"
+  ],
+  "equipment": [
+    "bodyweight",
+    "mat"
+  ],
+  "tags": [
+    "curated_library",
+    "corrective"
+  ],
+  "repCountingConfig": {
+    "duration": 30,
+    "gracePeriodMs": 2500
+  },
+  "poseVariants": [
+    {
+      "name": {
+        "ar": "مستلقٍ على الجانب",
+        "en": "Side lying"
+      },
+      "posePosition": "side_lying",
+      "expectedPostures": [
+        "lying_side"
+      ],
+      "expectedDirections": [
+        "side"
+      ],
+      "expectedRegions": [
+        "full_body"
+      ],
+      "trackedJoints": [
+        {
+          "joint": "left_hip",
+          "role": "primary",
+          "startPose": {
+            "max": 180,
+            "min": 150
+          },
+          "stateMessages": {
+            "danger": {
+              "ar": "توقف — فقدان الاستقرار",
+              "en": "Stop — stability lost"
+            },
+            "perfect": {
+              "ar": "خط جانبي ثابت — ممتاز",
+              "en": "Side line locked — great"
+            },
+            "warning": {
+              "ar": "لا تدع الوركين ينزلقان للأمام/الخلف",
+              "en": "Don’t let hips drift forward/back"
+            }
+          },
+          "range": {
+            "pad": {
+              "max": 180,
+              "min": 145
+            },
+            "danger": {
+              "max": 130,
+              "min": 0
+            },
+            "normal": {
+              "max": 180,
+              "min": 155
+            },
+            "perfect": {
+              "max": 180,
+              "min": 165
+            },
+            "warning": {
+              "max": 145,
+              "min": 130
+            }
+          }
+        },
+        {
+          "joint": "left_shoulder",
+          "role": "secondary",
+          "startPose": {
+            "max": 115,
+            "min": 70
+          },
+          "stateMessages": {
+            "perfect": {
+              "ar": "كتف فوق المرفق",
+              "en": "Shoulder over elbow"
+            },
+            "warning": {
+              "ar": "ادفع الأرض بقوة بالساعد",
+              "en": "Press the floor firmly through forearm"
+            }
+          },
+          "range": {
+            "normal": {
+              "max": 115,
+              "min": 78
+            },
+            "perfect": {
+              "max": 105,
+              "min": 85
+            },
+            "warning": {
+              "max": 130,
+              "min": 115
+            }
+          }
+        }
+      ],
+      "positionChecks": [
+        {
+          "id": "hip_stack_side",
+          "type": "horizontal_alignment",
+          "landmarks": {
+            "primary": "left_hip",
+            "secondary": "right_hip"
+          },
+          "condition": {
+            "operator": "approximately_equal",
+            "threshold": 0.12
+          },
+          "activePhases": [
+            "all"
+          ],
+          "errorMessage": {
+            "ar": "حافظ على الوركين في خط جانبي واحد.",
+            "en": "Keep hips stacked in one vertical line."
+          },
+          "severity": "warning",
+          "cooldownMs": 2500,
+          "minErrorFrames": 5
+        }
+      ],
+      "feedbackMessages": {
+        "motivational": [
+          {
+            "ar": "جذع ثابت — ممتاز!",
+            "en": "Stable core — great!"
+          },
+          {
+            "ar": "حافظ على الشد دون حبس أنفاس طويل",
+            "en": "Stay braced without long breath holds"
+          }
+        ],
+        "tips": [
+          {
+            "ar": "شدّ السرة برفق نحو العمود الفقري.",
+            "en": "Gently draw the navel toward the spine."
+          },
+          {
+            "ar": "زفير على الجهد، شهيق على التحضير.",
+            "en": "Exhale on effort, inhale to reset."
+          }
+        ]
+      },
+      "messageAssignments": [
+        {
+          "messageId": "6750f6f7-fb0b-4f43-a428-3c53ce62746e",
+          "target": "position",
+          "context": "error",
+          "checkId": "hip_stack_side",
+          "sortOrder": 1
+        },
+        {
+          "messageId": "5ffd15b3-725b-4a84-90f5-3c2f4d28ee00",
+          "target": "joint_state",
+          "context": "perfect",
+          "jointCode": "left_hip",
+          "sortOrder": 2
+        },
+        {
+          "messageId": "bbf8423a-6053-4b1c-b393-15f33ae09a60",
+          "target": "joint_state",
+          "context": "warning",
+          "jointCode": "left_hip",
+          "sortOrder": 3
+        },
+        {
+          "messageId": "3fa98a96-08d8-43b7-87bd-e155aff8c07a",
+          "target": "joint_state",
+          "context": "danger",
+          "jointCode": "left_hip",
+          "sortOrder": 4
+        },
+        {
+          "messageId": "74c2ae00-e760-4e2a-9307-1f0d776496dd",
+          "target": "joint_state",
+          "context": "perfect",
+          "jointCode": "left_shoulder",
+          "sortOrder": 5
+        },
+        {
+          "messageId": "967e2825-465f-4c38-8a9f-ebf590c06c41",
+          "target": "joint_state",
+          "context": "warning",
+          "jointCode": "left_shoulder",
+          "sortOrder": 6
+        },
+        {
+          "messageId": "679b25b5-5ab6-42df-8ab6-eebbf4338455",
+          "target": "feedback",
+          "context": "motivational",
+          "sortOrder": 7
+        },
+        {
+          "messageId": "7f9f47d5-c36a-445f-9d87-ccdb8cbbe35c",
+          "target": "feedback",
+          "context": "motivational",
+          "sortOrder": 8
+        },
+        {
+          "messageId": "1efbfe0f-fcc4-413a-b879-4fca2da8395f",
+          "target": "feedback",
+          "context": "tip",
+          "sortOrder": 9
+        },
+        {
+          "messageId": "ff182068-69df-41cf-ae9c-157a5c27657d",
+          "target": "feedback",
+          "context": "tip",
+          "sortOrder": 10
+        }
+      ]
+    }
+  ],
+  "description": {
+    "ar": "تمرين مكتبة: بلانك كوبنهاغن.",
+    "en": "Library exercise: Copenhagen side plank adduction."
+  },
+  "instructions": {
+    "ar": "حافظ على عمود فقري محايد وتنفس بثبات وتوقف عند أي ألم حاد.",
+    "en": "Maintain neutral spine, steady breathing, and stop if sharp pain appears."
+  },
+  "reportMetrics": {
+    "primary": [
+      "FORM_SCORE"
+    ],
+    "excluded": [
+      "REP_COUNT",
+      "TEMPO",
+      "TUT",
+      "ROM",
+      "FORM_CONSISTENCY",
+      "FATIGUE_INDEX",
+      "VELOCITY",
+      "VELOCITY_LOSS",
+      "TEMPO_CONSISTENCY",
+      "WEIGHT",
+      "VOLUME",
+      "EST_1RM",
+      "SYMMETRY"
+    ]
+  },
+  "hasPositionChecks": true,
+  "_database": {
+    "id": "e3cb1310-33e0-43c1-87b8-c3b3401531f6",
+    "categoryId": "a672c3d3-4449-4f74-bd8e-be73a0035e88",
+    "countingMethodId": "7ae86596-4b4b-400b-afa1-c7c0b6ba4fc9",
+    "publishedAt": "2026-04-20T17:26:25.419Z",
+    "createdAt": "2026-04-20T17:26:25.420Z",
+    "updatedAt": "2026-04-20T17:26:34.295Z",
+    "deletedAt": null,
+    "isFeatured": false,
+    "createdBy": null,
+    "updatedBy": null,
+    "repCountingConfig": null,
+    "bilateralConfig": null,
+    "isBilateral": false,
+    "supportsWeight": false,
+    "minWeight": null,
+    "maxWeight": null,
+    "defaultWeight": null,
+    "reportMetrics": {
+      "mode": "duration",
+      "version": 1,
+      "primaryKpi": "timeUnderTension",
+      "secondaryKpis": [
+        "avgFormScore",
+        "avgRom"
+      ]
+    },
+    "media": [],
+    "poseVariants": [
+      {
+        "id": "58c992af-6b1f-4c04-b00b-d2ad8285678e",
+        "sortOrder": 1,
+        "description": null,
+        "trackedJointsConfig": [
+          {
+            "role": "primary",
+            "joint": "left_hip",
+            "range": {
+              "pad": {
+                "max": 180,
+                "min": 145
+              },
+              "danger": {
+                "max": 130,
+                "min": 0
+              },
+              "normal": {
+                "max": 180,
+                "min": 155
+              },
+              "perfect": {
+                "max": 180,
+                "min": 165
+              },
+              "warning": {
+                "max": 145,
+                "min": 130
+              }
+            },
+            "startPose": {
+              "max": 180,
+              "min": 150
+            },
+            "stateMessages": {
+              "danger": {
+                "ar": "توقف — فقدان الاستقرار",
+                "en": "Stop — stability lost"
+              },
+              "perfect": {
+                "ar": "خط جانبي ثابت — ممتاز",
+                "en": "Side line locked — great"
+              },
+              "warning": {
+                "ar": "لا تدع الوركين ينزلقان للأمام/الخلف",
+                "en": "Don’t let hips drift forward/back"
+              }
+            }
+          },
+          {
+            "role": "secondary",
+            "joint": "left_shoulder",
+            "range": {
+              "normal": {
+                "max": 115,
+                "min": 78
+              },
+              "perfect": {
+                "max": 105,
+                "min": 85
+              },
+              "warning": {
+                "max": 130,
+                "min": 115
+              }
+            },
+            "startPose": {
+              "max": 115,
+              "min": 70
+            },
+            "stateMessages": {
+              "perfect": {
+                "ar": "كتف فوق المرفق",
+                "en": "Shoulder over elbow"
+              },
+              "warning": {
+                "ar": "ادفع الأرض بقوة بالساعد",
+                "en": "Press the floor firmly through forearm"
+              }
+            }
+          }
+        ]
+      }
+    ],
+    "validationWarning": null
+  }
+}

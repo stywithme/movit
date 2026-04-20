@@ -138,14 +138,32 @@
         {
           "joint": "left_shoulder",
           "role": "secondary",
-          "startPose": { "min": 70, "max": 110 },
+          "startPose": { "min": 70, "max": 180 },
           "range": {
-            "perfect": { "min": 170, "max": 180 },
-            "normal": { "min": 165, "max": 180 },
-            "pad": { "min": 160, "max": 180 }
+            "perfect": { "min": 75, "max": 180 },
+            "normal": { "min": 65, "max": 180 },
+            "pad": { "min": 55, "max": 180 },
+            "warning": { "min": 40, "max": 60 }
+          },
+          "phaseRanges": {
+            "top": { "perfect": { "min": 165, "max": 180 }, "normal": { "min": 155, "max": 180 } },
+            "down": { "perfect": { "min": 85, "max": 115 }, "normal": { "min": 78, "max": 125 } },
+            "bottom": { "perfect": { "min": 75, "max": 105 }, "normal": { "min": 68, "max": 118 } },
+            "up": { "perfect": { "min": 140, "max": 175 }, "normal": { "min": 130, "max": 180 } }
+          },
+          "phaseStateMessages": {
+            "top": {
+              "perfect": { "ar": "تمدد كامل فوق الرأس", "en": "Full overhead lockout" },
+              "pad": { "ar": "أكمل التمدد قبل العد التالي", "en": "Finish lockout before the next rep" }
+            },
+            "bottom": {
+              "perfect": { "ar": "مستوى كتف جيد", "en": "Good shoulder-line position" },
+              "warning": { "ar": "اقترب لمستوى الكتف بسلاسة", "en": "Lower smoothly to shoulder level" }
+            }
           },
           "stateMessages": {
-            "perfect": { "ar": "ممتاز - الكتف ثابت", "en": "Great - shoulder is stable" }
+            "perfect": { "ar": "ممتاز - الكتف ثابت", "en": "Great - shoulder is stable" },
+            "warning": { "ar": "أكمل التمدد فوق الرأس", "en": "Finish the overhead lockout" }
           }
         }
       ],

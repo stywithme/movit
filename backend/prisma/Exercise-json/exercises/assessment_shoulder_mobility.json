@@ -70,12 +70,12 @@
           "upRange": {
             "perfect": {"min": 140, "max": 175},
             "normal": {"min": 120, "max": 180},
-            "pad": {"min": 100, "max": 180},
-            "warning": {"min": 80, "max": 100}
+            "pad": {"min": 105, "max": 180},
+            "warning": {"min": 90, "max": 100}
           },
           "downRange": {
             "perfect": {"min": 50, "max": 80},
-            "normal": {"min": 40, "max": 100}
+            "normal": {"min": 40, "max": 95}
           },
           "stateMessages": {
             "perfect": {"up": {"ar": "مدى حركة ممتاز", "en": "Excellent range of motion"}, "down": {"ar": "ممتاز", "en": "Perfect"}},

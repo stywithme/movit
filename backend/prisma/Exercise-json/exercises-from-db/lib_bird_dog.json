@@ -1,0 +1,479 @@
+{
+  "slug": "lib_bird_dog",
+  "status": "published",
+  "movementPattern": "CORE_BRACE",
+  "loadCapability": "BODYWEIGHT_ONLY",
+  "familyKey": "anti_extension_family",
+  "familyOrder": 18,
+  "name": {
+    "ar": "كلب طائر",
+    "en": "Bird dog"
+  },
+  "category": {
+    "code": "back",
+    "name": {
+      "ar": "تمارين الظهر",
+      "en": "Back"
+    }
+  },
+  "countingMethod": "up_down",
+  "muscles": [
+    "lower_back",
+    "glutes"
+  ],
+  "equipment": [
+    "bodyweight",
+    "mat"
+  ],
+  "tags": [
+    "curated_library",
+    "stability"
+  ],
+  "repCountingConfig": {
+    "reps": 12,
+    "minRepIntervalMs": 1500,
+    "maxRepIntervalMs": 5000
+  },
+  "poseVariants": [
+    {
+      "name": {
+        "ar": "مستلقٍ على الوجه",
+        "en": "Lying face down (side angle)"
+      },
+      "posePosition": "prone_side",
+      "expectedPostures": [
+        "lying_prone"
+      ],
+      "expectedDirections": [
+        "side"
+      ],
+      "expectedRegions": [
+        "full_body"
+      ],
+      "trackedJoints": [
+        {
+          "joint": "left_hip",
+          "role": "primary",
+          "startPose": {
+            "max": 180,
+            "min": 75
+          },
+          "stateMessages": {
+            "pad": {
+              "up": {
+                "ar": "مقبول، لكن المدى ما زال قصيراً",
+                "en": "Acceptable, but the reach is still short"
+              }
+            },
+            "normal": {
+              "up": {
+                "ar": "جيد، مد الرجل أكثر للخلف",
+                "en": "Good, reach the leg farther back"
+              },
+              "down": {
+                "ar": "جيد، عد ببطء أكثر",
+                "en": "Good, return more slowly"
+              }
+            },
+            "perfect": {
+              "up": {
+                "ar": "ممتاز! مد رجل قوي مع ثبات الجذع",
+                "en": "Perfect! Strong leg reach with a stable trunk"
+              },
+              "down": {
+                "ar": "ممتاز! عودة محكمة تحت الورك",
+                "en": "Perfect! Controlled reset under the hip"
+              }
+            },
+            "warning": {
+              "up": {
+                "ar": "لا تفتح الحوض جانبياً",
+                "en": "Do not open the pelvis sideways"
+              }
+            }
+          },
+          "upRange": {
+            "pad": {
+              "max": 180,
+              "min": 140
+            },
+            "normal": {
+              "max": 180,
+              "min": 150
+            },
+            "perfect": {
+              "max": 180,
+              "min": 160
+            }
+          },
+          "downRange": {
+            "pad": {
+              "max": 126,
+              "min": 70
+            },
+            "normal": {
+              "max": 118,
+              "min": 78
+            },
+            "perfect": {
+              "max": 110,
+              "min": 85
+            },
+            "warning": {
+              "max": 70,
+              "min": 58
+            }
+          }
+        },
+        {
+          "joint": "spine",
+          "role": "secondary",
+          "startPose": {
+            "max": 20,
+            "min": 0
+          },
+          "stateMessages": {
+            "perfect": {
+              "ar": "جذع ثابت ومحايد",
+              "en": "Stable, neutral trunk"
+            },
+            "warning": {
+              "ar": "قلل مدى الرجل حتى يعود الجذع للثبات",
+              "en": "Shorten the reach until trunk control returns"
+            }
+          },
+          "range": {
+            "pad": {
+              "max": 24,
+              "min": 0
+            },
+            "normal": {
+              "max": 18,
+              "min": 0
+            },
+            "perfect": {
+              "max": 12,
+              "min": 0
+            },
+            "warning": {
+              "max": 36,
+              "min": 24
+            }
+          }
+        }
+      ],
+      "positionChecks": [
+        {
+          "id": "bird_dog_trunk_quiet",
+          "type": "vertical_alignment",
+          "landmarks": {
+            "primary": "left_shoulder",
+            "secondary": "left_hip"
+          },
+          "condition": {
+            "operator": "approximately_equal",
+            "threshold": 0.14
+          },
+          "activePhases": [
+            "up",
+            "down"
+          ],
+          "errorMessage": {
+            "ar": "لا تسمح للجذع بالدوران أو الهبوط أثناء المد.",
+            "en": "Do not let the trunk rotate or sag during the reach."
+          },
+          "severity": "warning",
+          "cooldownMs": 2400,
+          "minErrorFrames": 4
+        }
+      ],
+      "feedbackMessages": {
+        "motivational": [
+          {
+            "ar": "شد جذع ممتاز",
+            "en": "Excellent trunk tension"
+          },
+          {
+            "ar": "ثباتك يتحسن عدة بعد عدة",
+            "en": "Your stability improves rep by rep"
+          }
+        ],
+        "tips": [
+          {
+            "ar": "شد السرة برفق ولا تحبس النفس طويلاً.",
+            "en": "Brace gently and avoid long breath-holds."
+          },
+          {
+            "ar": "حرّك الأطراف دون أن ينهار الجذع.",
+            "en": "Move the limbs without letting the trunk collapse."
+          }
+        ]
+      },
+      "messageAssignments": [
+        {
+          "messageId": "e5e5b56b-a693-4733-9e0a-8f13f9617232",
+          "target": "position",
+          "context": "error",
+          "checkId": "bird_dog_trunk_quiet",
+          "sortOrder": 1
+        },
+        {
+          "messageId": "e34a9444-302e-465f-a0e1-76d2011f9b6b",
+          "target": "joint_state",
+          "context": "perfect",
+          "jointCode": "left_hip",
+          "zone": "up",
+          "sortOrder": 2
+        },
+        {
+          "messageId": "20e2600e-f3d2-48d4-86c0-9db858044fa9",
+          "target": "joint_state",
+          "context": "perfect",
+          "jointCode": "left_hip",
+          "zone": "down",
+          "sortOrder": 3
+        },
+        {
+          "messageId": "f11b593c-ac4e-4901-96c8-2afbceab6193",
+          "target": "joint_state",
+          "context": "normal",
+          "jointCode": "left_hip",
+          "zone": "up",
+          "sortOrder": 4
+        },
+        {
+          "messageId": "846dc594-3d52-48d5-8046-b6d096366f90",
+          "target": "joint_state",
+          "context": "normal",
+          "jointCode": "left_hip",
+          "zone": "down",
+          "sortOrder": 5
+        },
+        {
+          "messageId": "2217efb3-d1c2-482c-8f1b-01f92e71ca12",
+          "target": "joint_state",
+          "context": "pad",
+          "jointCode": "left_hip",
+          "zone": "up",
+          "sortOrder": 6
+        },
+        {
+          "messageId": "2d923687-e9f3-4296-9d3c-a75e7d7a7ec7",
+          "target": "joint_state",
+          "context": "warning",
+          "jointCode": "left_hip",
+          "zone": "up",
+          "sortOrder": 7
+        },
+        {
+          "messageId": "7702281b-2ff5-42e1-8694-9e773b1d65d6",
+          "target": "joint_state",
+          "context": "perfect",
+          "jointCode": "spine",
+          "sortOrder": 8
+        },
+        {
+          "messageId": "0a544fb8-321f-44d6-8f98-1b86ee7f596b",
+          "target": "joint_state",
+          "context": "warning",
+          "jointCode": "spine",
+          "sortOrder": 9
+        },
+        {
+          "messageId": "5de60eb1-bdc3-4774-b6a8-7ba0222dfd44",
+          "target": "feedback",
+          "context": "motivational",
+          "sortOrder": 10
+        },
+        {
+          "messageId": "b4c373b2-bca0-43fa-9ef5-993663ae7c15",
+          "target": "feedback",
+          "context": "motivational",
+          "sortOrder": 11
+        },
+        {
+          "messageId": "fd5dd8ce-d3f8-4a82-bf02-ee5a9b2b0236",
+          "target": "feedback",
+          "context": "tip",
+          "sortOrder": 12
+        },
+        {
+          "messageId": "b3c53dcb-2bf0-45a3-8666-8247f86c3c19",
+          "target": "feedback",
+          "context": "tip",
+          "sortOrder": 13
+        }
+      ]
+    }
+  ],
+  "description": {
+    "ar": "تمرين مكتبة: كلب طائر.",
+    "en": "Library exercise: Bird dog."
+  },
+  "instructions": {
+    "ar": "حافظ على عمود فقري محايد وتنفس بثبات وتوقف عند أي ألم حاد.",
+    "en": "Maintain neutral spine, steady breathing, and stop if sharp pain appears."
+  },
+  "reportMetrics": {
+    "primary": [
+      "FORM_SCORE"
+    ],
+    "excluded": [
+      "HOLD_DURATION",
+      "WEIGHT",
+      "VOLUME",
+      "EST_1RM",
+      "SYMMETRY"
+    ]
+  },
+  "hasPositionChecks": true,
+  "_database": {
+    "id": "fc66b341-9278-4464-b61e-d21ef85b82b6",
+    "categoryId": "d90cee55-225e-4127-9fdc-062a8a09522e",
+    "countingMethodId": "f4d48aef-1606-4f23-8c61-7b4a2546f990",
+    "publishedAt": "2026-04-20T17:26:28.070Z",
+    "createdAt": "2026-04-20T17:26:28.072Z",
+    "updatedAt": "2026-04-20T17:26:34.257Z",
+    "deletedAt": null,
+    "isFeatured": false,
+    "createdBy": null,
+    "updatedBy": null,
+    "repCountingConfig": null,
+    "bilateralConfig": null,
+    "isBilateral": false,
+    "supportsWeight": false,
+    "minWeight": null,
+    "maxWeight": null,
+    "defaultWeight": null,
+    "reportMetrics": {
+      "mode": "reps",
+      "version": 1,
+      "primaryKpi": "repQuality",
+      "secondaryKpis": [
+        "avgFormScore",
+        "avgRom"
+      ]
+    },
+    "media": [],
+    "poseVariants": [
+      {
+        "id": "0ba5c675-16c8-4ff2-adad-1a99d04bb2b8",
+        "sortOrder": 1,
+        "description": null,
+        "trackedJointsConfig": [
+          {
+            "role": "primary",
+            "joint": "left_hip",
+            "upRange": {
+              "pad": {
+                "max": 180,
+                "min": 140
+              },
+              "normal": {
+                "max": 180,
+                "min": 150
+              },
+              "perfect": {
+                "max": 180,
+                "min": 160
+              }
+            },
+            "downRange": {
+              "pad": {
+                "max": 126,
+                "min": 70
+              },
+              "normal": {
+                "max": 118,
+                "min": 78
+              },
+              "perfect": {
+                "max": 110,
+                "min": 85
+              },
+              "warning": {
+                "max": 70,
+                "min": 58
+              }
+            },
+            "startPose": {
+              "max": 180,
+              "min": 75
+            },
+            "stateMessages": {
+              "pad": {
+                "up": {
+                  "ar": "مقبول، لكن المدى ما زال قصيراً",
+                  "en": "Acceptable, but the reach is still short"
+                }
+              },
+              "normal": {
+                "up": {
+                  "ar": "جيد، مد الرجل أكثر للخلف",
+                  "en": "Good, reach the leg farther back"
+                },
+                "down": {
+                  "ar": "جيد، عد ببطء أكثر",
+                  "en": "Good, return more slowly"
+                }
+              },
+              "perfect": {
+                "up": {
+                  "ar": "ممتاز! مد رجل قوي مع ثبات الجذع",
+                  "en": "Perfect! Strong leg reach with a stable trunk"
+                },
+                "down": {
+                  "ar": "ممتاز! عودة محكمة تحت الورك",
+                  "en": "Perfect! Controlled reset under the hip"
+                }
+              },
+              "warning": {
+                "up": {
+                  "ar": "لا تفتح الحوض جانبياً",
+                  "en": "Do not open the pelvis sideways"
+                }
+              }
+            }
+          },
+          {
+            "role": "secondary",
+            "joint": "spine",
+            "range": {
+              "pad": {
+                "max": 24,
+                "min": 0
+              },
+              "normal": {
+                "max": 18,
+                "min": 0
+              },
+              "perfect": {
+                "max": 12,
+                "min": 0
+              },
+              "warning": {
+                "max": 36,
+                "min": 24
+              }
+            },
+            "startPose": {
+              "max": 20,
+              "min": 0
+            },
+            "stateMessages": {
+              "perfect": {
+                "ar": "جذع ثابت ومحايد",
+                "en": "Stable, neutral trunk"
+              },
+              "warning": {
+                "ar": "قلل مدى الرجل حتى يعود الجذع للثبات",
+                "en": "Shorten the reach until trunk control returns"
+              }
+            }
+          }
+        ]
+      }
+    ],
+    "validationWarning": null
+  }
+}

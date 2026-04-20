@@ -1,0 +1,607 @@
+{
+  "slug": "lib_sled_push_walk",
+  "status": "published",
+  "movementPattern": "GAIT",
+  "loadCapability": "EXTERNAL_LOAD_OPTIONAL",
+  "familyKey": "conditioning_family",
+  "familyOrder": 35,
+  "name": {
+    "ar": "مشي ثقيل",
+    "en": "Heavy walk (sled substitute)"
+  },
+  "category": {
+    "code": "legs",
+    "name": {
+      "ar": "تمارين الأرجل",
+      "en": "Legs"
+    }
+  },
+  "countingMethod": "up_down",
+  "muscles": [
+    "quadriceps",
+    "glutes"
+  ],
+  "equipment": [
+    "dumbbell",
+    "mat"
+  ],
+  "tags": [
+    "curated_library",
+    "conditioning"
+  ],
+  "repCountingConfig": {
+    "reps": 12,
+    "minRepIntervalMs": 1500,
+    "maxRepIntervalMs": 5000
+  },
+  "poseVariants": [
+    {
+      "name": {
+        "ar": "زاوية جانبية",
+        "en": "Side view"
+      },
+      "posePosition": "standing_side",
+      "expectedPostures": [
+        "standing"
+      ],
+      "expectedDirections": [
+        "side"
+      ],
+      "expectedRegions": [
+        "full_body"
+      ],
+      "trackedJoints": [
+        {
+          "joint": "left_hip",
+          "role": "primary",
+          "startPose": {
+            "max": 180,
+            "min": 140
+          },
+          "stateMessages": {
+            "pad": {
+              "down": {
+                "ar": "مقبول — زد السرعة تدريجياً",
+                "en": "Acceptable — build speed slowly"
+              }
+            },
+            "normal": {
+              "up": {
+                "ar": "جيد — ارفع الركبة أكثر",
+                "en": "Good — lift knee higher"
+              },
+              "down": {
+                "ar": "جيد — اضبط الهبوط",
+                "en": "Good — control landing"
+              }
+            },
+            "perfect": {
+              "up": {
+                "ar": "ممتاز! ورك مرتفع",
+                "en": "Perfect! High hip drive"
+              },
+              "down": {
+                "ar": "ممتاز! خطوة نظيفة",
+                "en": "Perfect! Clean step"
+              }
+            },
+            "warning": {
+              "down": {
+                "ar": "لا تهبط بقسوة على الركبة",
+                "en": "Don’t crash down on the knee"
+              }
+            }
+          },
+          "pairedWith": "right_hip",
+          "upRange": {
+            "pad": {
+              "max": 180,
+              "min": 148
+            },
+            "normal": {
+              "max": 180,
+              "min": 152
+            },
+            "perfect": {
+              "max": 180,
+              "min": 160
+            }
+          },
+          "downRange": {
+            "pad": {
+              "max": 142,
+              "min": 75
+            },
+            "danger": {
+              "max": 60,
+              "min": 0
+            },
+            "normal": {
+              "max": 135,
+              "min": 85
+            },
+            "perfect": {
+              "max": 125,
+              "min": 95
+            },
+            "warning": {
+              "max": 75,
+              "min": 60
+            }
+          }
+        },
+        {
+          "joint": "right_hip",
+          "role": "primary",
+          "startPose": {
+            "max": 180,
+            "min": 140
+          },
+          "stateMessages": {
+            "pad": {
+              "down": {
+                "ar": "مقبول — زد السرعة تدريجياً",
+                "en": "Acceptable — build speed slowly"
+              }
+            },
+            "normal": {
+              "up": {
+                "ar": "جيد — ارفع الركبة أكثر",
+                "en": "Good — lift knee higher"
+              },
+              "down": {
+                "ar": "جيد — اضبط الهبوط",
+                "en": "Good — control landing"
+              }
+            },
+            "perfect": {
+              "up": {
+                "ar": "ممتاز! ورك مرتفع",
+                "en": "Perfect! High hip drive"
+              },
+              "down": {
+                "ar": "ممتاز! خطوة نظيفة",
+                "en": "Perfect! Clean step"
+              }
+            },
+            "warning": {
+              "down": {
+                "ar": "لا تهبط بقسوة على الركبة",
+                "en": "Don’t crash down on the knee"
+              }
+            }
+          },
+          "pairedWith": "left_hip",
+          "upRange": {
+            "pad": {
+              "max": 180,
+              "min": 148
+            },
+            "normal": {
+              "max": 180,
+              "min": 152
+            },
+            "perfect": {
+              "max": 180,
+              "min": 160
+            }
+          },
+          "downRange": {
+            "pad": {
+              "max": 142,
+              "min": 75
+            },
+            "danger": {
+              "max": 60,
+              "min": 0
+            },
+            "normal": {
+              "max": 135,
+              "min": 85
+            },
+            "perfect": {
+              "max": 125,
+              "min": 95
+            },
+            "warning": {
+              "max": 75,
+              "min": 60
+            }
+          }
+        }
+      ],
+      "positionChecks": [
+        {
+          "id": "trunk_quiet_gait",
+          "type": "vertical_alignment",
+          "landmarks": {
+            "primary": "left_shoulder",
+            "secondary": "left_hip"
+          },
+          "condition": {
+            "operator": "approximately_equal",
+            "threshold": 0.11
+          },
+          "activePhases": [
+            "up",
+            "down"
+          ],
+          "errorMessage": {
+            "ar": "حافظ على جذع مستقر — الحركة من الورك.",
+            "en": "Keep trunk quiet — move from the hip."
+          },
+          "severity": "warning",
+          "cooldownMs": 2200,
+          "minErrorFrames": 4
+        }
+      ],
+      "feedbackMessages": {
+        "motivational": [
+          {
+            "ar": "أداء ممتاز — حافظ على الإيقاع",
+            "en": "Strong work — keep the rhythm"
+          },
+          {
+            "ar": "قوي! لا تضحّي بالشكل من أجل السرعة",
+            "en": "Solid! Don’t sacrifice form for speed"
+          }
+        ],
+        "tips": [
+          {
+            "ar": "ثبّت القدمين ووزّع الوزن على كعب ووسط القدم.",
+            "en": "Root the feet; load heel and mid-foot evenly."
+          },
+          {
+            "ar": "أي ألم حاد في الركبة أو الظهر — توقف فوراً.",
+            "en": "Stop immediately if you feel sharp knee or back pain."
+          }
+        ]
+      },
+      "messageAssignments": [
+        {
+          "messageId": "d20719f8-a78e-4744-a5e4-96da0c177af6",
+          "target": "position",
+          "context": "error",
+          "checkId": "trunk_quiet_gait",
+          "sortOrder": 1
+        },
+        {
+          "messageId": "75b7ee76-4c0b-42f5-bdf8-f2080bdf0a35",
+          "target": "joint_state",
+          "context": "perfect",
+          "jointCode": "left_hip",
+          "zone": "up",
+          "sortOrder": 2
+        },
+        {
+          "messageId": "4d8b9eab-ac17-41de-8a59-4f8baf2181a5",
+          "target": "joint_state",
+          "context": "perfect",
+          "jointCode": "left_hip",
+          "zone": "down",
+          "sortOrder": 3
+        },
+        {
+          "messageId": "01ecaba6-b2e9-4d18-b826-7f1ea51cef85",
+          "target": "joint_state",
+          "context": "normal",
+          "jointCode": "left_hip",
+          "zone": "up",
+          "sortOrder": 4
+        },
+        {
+          "messageId": "dea8b93f-5e0a-4bb5-9ad6-52f5a63e2618",
+          "target": "joint_state",
+          "context": "normal",
+          "jointCode": "left_hip",
+          "zone": "down",
+          "sortOrder": 5
+        },
+        {
+          "messageId": "baeda003-370e-420c-8bc7-fd480d95a2d6",
+          "target": "joint_state",
+          "context": "pad",
+          "jointCode": "left_hip",
+          "zone": "down",
+          "sortOrder": 6
+        },
+        {
+          "messageId": "70c9593d-f231-46fa-8d86-72342ed0bda1",
+          "target": "joint_state",
+          "context": "warning",
+          "jointCode": "left_hip",
+          "zone": "down",
+          "sortOrder": 7
+        },
+        {
+          "messageId": "39c008e2-1162-48b3-aadc-e77cc151499c",
+          "target": "joint_state",
+          "context": "perfect",
+          "jointCode": "right_hip",
+          "zone": "up",
+          "sortOrder": 8
+        },
+        {
+          "messageId": "fd2bedf0-14e2-46ae-9cb9-7ba690b0ebcd",
+          "target": "joint_state",
+          "context": "perfect",
+          "jointCode": "right_hip",
+          "zone": "down",
+          "sortOrder": 9
+        },
+        {
+          "messageId": "724f316e-f768-4577-8124-8b35eedc7961",
+          "target": "joint_state",
+          "context": "normal",
+          "jointCode": "right_hip",
+          "zone": "up",
+          "sortOrder": 10
+        },
+        {
+          "messageId": "54d7c353-8feb-440f-abb7-618235dfd097",
+          "target": "joint_state",
+          "context": "normal",
+          "jointCode": "right_hip",
+          "zone": "down",
+          "sortOrder": 11
+        },
+        {
+          "messageId": "99a07f59-8bf1-4a65-9b3c-8317163f2853",
+          "target": "joint_state",
+          "context": "pad",
+          "jointCode": "right_hip",
+          "zone": "down",
+          "sortOrder": 12
+        },
+        {
+          "messageId": "63e934c7-812e-4516-b41b-73014e3070e3",
+          "target": "joint_state",
+          "context": "warning",
+          "jointCode": "right_hip",
+          "zone": "down",
+          "sortOrder": 13
+        },
+        {
+          "messageId": "6bb95d15-87a9-4199-808f-04d052d14739",
+          "target": "feedback",
+          "context": "motivational",
+          "sortOrder": 14
+        },
+        {
+          "messageId": "ea61a68a-26e1-4322-a369-3417170ec114",
+          "target": "feedback",
+          "context": "motivational",
+          "sortOrder": 15
+        },
+        {
+          "messageId": "1d84a246-f6b7-4167-9420-2b1ea8921105",
+          "target": "feedback",
+          "context": "tip",
+          "sortOrder": 16
+        },
+        {
+          "messageId": "9e209d14-3bd4-4744-b19d-fa3ee961e5fa",
+          "target": "feedback",
+          "context": "tip",
+          "sortOrder": 17
+        }
+      ],
+      "cameraPosition": "side_view"
+    }
+  ],
+  "description": {
+    "ar": "تمرين مكتبة: مشي ثقيل.",
+    "en": "Library exercise: Heavy walk (sled substitute)."
+  },
+  "instructions": {
+    "ar": "حافظ على عمود فقري محايد وتنفس بثبات وتوقف عند أي ألم حاد.",
+    "en": "Maintain neutral spine, steady breathing, and stop if sharp pain appears."
+  },
+  "supportsWeight": true,
+  "reportMetrics": {
+    "primary": [
+      "FORM_SCORE"
+    ],
+    "excluded": [
+      "HOLD_DURATION"
+    ]
+  },
+  "hasPositionChecks": true,
+  "_database": {
+    "id": "3fc44563-7dde-45c5-90d2-1c292f36b91d",
+    "categoryId": "a672c3d3-4449-4f74-bd8e-be73a0035e88",
+    "countingMethodId": "f4d48aef-1606-4f23-8c61-7b4a2546f990",
+    "publishedAt": "2026-04-20T17:26:26.063Z",
+    "createdAt": "2026-04-20T17:26:26.064Z",
+    "updatedAt": "2026-04-20T17:26:34.358Z",
+    "deletedAt": null,
+    "isFeatured": false,
+    "createdBy": null,
+    "updatedBy": null,
+    "repCountingConfig": null,
+    "bilateralConfig": null,
+    "isBilateral": false,
+    "supportsWeight": true,
+    "minWeight": null,
+    "maxWeight": null,
+    "defaultWeight": null,
+    "reportMetrics": {
+      "mode": "reps",
+      "version": 1,
+      "primaryKpi": "repQuality",
+      "secondaryKpis": [
+        "avgFormScore",
+        "avgRom"
+      ]
+    },
+    "media": [],
+    "poseVariants": [
+      {
+        "id": "107c16a9-3364-413f-93b7-5765ea02ab73",
+        "sortOrder": 1,
+        "description": null,
+        "trackedJointsConfig": [
+          {
+            "role": "primary",
+            "joint": "left_hip",
+            "upRange": {
+              "pad": {
+                "max": 180,
+                "min": 148
+              },
+              "normal": {
+                "max": 180,
+                "min": 152
+              },
+              "perfect": {
+                "max": 180,
+                "min": 160
+              }
+            },
+            "downRange": {
+              "pad": {
+                "max": 142,
+                "min": 75
+              },
+              "danger": {
+                "max": 60,
+                "min": 0
+              },
+              "normal": {
+                "max": 135,
+                "min": 85
+              },
+              "perfect": {
+                "max": 125,
+                "min": 95
+              },
+              "warning": {
+                "max": 75,
+                "min": 60
+              }
+            },
+            "startPose": {
+              "max": 180,
+              "min": 140
+            },
+            "pairedWith": "right_hip",
+            "stateMessages": {
+              "pad": {
+                "down": {
+                  "ar": "مقبول — زد السرعة تدريجياً",
+                  "en": "Acceptable — build speed slowly"
+                }
+              },
+              "normal": {
+                "up": {
+                  "ar": "جيد — ارفع الركبة أكثر",
+                  "en": "Good — lift knee higher"
+                },
+                "down": {
+                  "ar": "جيد — اضبط الهبوط",
+                  "en": "Good — control landing"
+                }
+              },
+              "perfect": {
+                "up": {
+                  "ar": "ممتاز! ورك مرتفع",
+                  "en": "Perfect! High hip drive"
+                },
+                "down": {
+                  "ar": "ممتاز! خطوة نظيفة",
+                  "en": "Perfect! Clean step"
+                }
+              },
+              "warning": {
+                "down": {
+                  "ar": "لا تهبط بقسوة على الركبة",
+                  "en": "Don’t crash down on the knee"
+                }
+              }
+            }
+          },
+          {
+            "role": "primary",
+            "joint": "right_hip",
+            "upRange": {
+              "pad": {
+                "max": 180,
+                "min": 148
+              },
+              "normal": {
+                "max": 180,
+                "min": 152
+              },
+              "perfect": {
+                "max": 180,
+                "min": 160
+              }
+            },
+            "downRange": {
+              "pad": {
+                "max": 142,
+                "min": 75
+              },
+              "danger": {
+                "max": 60,
+                "min": 0
+              },
+              "normal": {
+                "max": 135,
+                "min": 85
+              },
+              "perfect": {
+                "max": 125,
+                "min": 95
+              },
+              "warning": {
+                "max": 75,
+                "min": 60
+              }
+            },
+            "startPose": {
+              "max": 180,
+              "min": 140
+            },
+            "pairedWith": "left_hip",
+            "stateMessages": {
+              "pad": {
+                "down": {
+                  "ar": "مقبول — زد السرعة تدريجياً",
+                  "en": "Acceptable — build speed slowly"
+                }
+              },
+              "normal": {
+                "up": {
+                  "ar": "جيد — ارفع الركبة أكثر",
+                  "en": "Good — lift knee higher"
+                },
+                "down": {
+                  "ar": "جيد — اضبط الهبوط",
+                  "en": "Good — control landing"
+                }
+              },
+              "perfect": {
+                "up": {
+                  "ar": "ممتاز! ورك مرتفع",
+                  "en": "Perfect! High hip drive"
+                },
+                "down": {
+                  "ar": "ممتاز! خطوة نظيفة",
+                  "en": "Perfect! Clean step"
+                }
+              },
+              "warning": {
+                "down": {
+                  "ar": "لا تهبط بقسوة على الركبة",
+                  "en": "Don’t crash down on the knee"
+                }
+              }
+            }
+          }
+        ]
+      }
+    ],
+    "validationWarning": null
+  }
+}

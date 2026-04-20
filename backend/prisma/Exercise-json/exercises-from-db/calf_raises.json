@@ -1,0 +1,678 @@
+{
+  "slug": "calf_raises",
+  "status": "published",
+  "movementPattern": "GAIT",
+  "loadCapability": "EXTERNAL_LOAD_OPTIONAL",
+  "familyKey": "ankle_plantarflexion_family",
+  "familyOrder": 30,
+  "name": {
+    "ar": "رفع الكعب",
+    "en": "Calf Raises"
+  },
+  "category": {
+    "code": "legs",
+    "name": {
+      "ar": "تمارين الأرجل",
+      "en": "Legs"
+    }
+  },
+  "countingMethod": "up_down",
+  "muscles": [
+    "calves"
+  ],
+  "equipment": [
+    "bodyweight",
+    "dumbbell",
+    "smith_machine"
+  ],
+  "tags": [
+    "isolation",
+    "lower_body",
+    "beginner_friendly"
+  ],
+  "repCountingConfig": {
+    "reps": 20,
+    "minRepIntervalMs": 800,
+    "maxRepIntervalMs": 3000
+  },
+  "poseVariants": [
+    {
+      "name": {
+        "ar": "زاوية جانبية",
+        "en": "Side View"
+      },
+      "posePosition": "standing_side",
+      "expectedPostures": [
+        "standing"
+      ],
+      "expectedDirections": [
+        "side"
+      ],
+      "expectedRegions": [
+        "full_body"
+      ],
+      "trackedJoints": [
+        {
+          "joint": "left_ankle",
+          "role": "primary",
+          "startPose": {
+            "max": 100,
+            "min": 70
+          },
+          "stateMessages": {
+            "pad": {
+              "up": {
+                "ar": "مقبول، لكن يمكنك التحسن",
+                "en": "Acceptable, but you can improve"
+              }
+            },
+            "normal": {
+              "up": {
+                "ar": "جيد، حاول الارتفاع أكثر",
+                "en": "Good, try rising higher"
+              },
+              "down": {
+                "ar": "جيد، حاول النزول للأسفل",
+                "en": "Good, try lowering more"
+              }
+            },
+            "perfect": {
+              "up": {
+                "ar": "ممتاز! رفع مثالي",
+                "en": "Perfect! Great raise"
+              },
+              "down": {
+                "ar": "ممتاز! عودة مثالية",
+                "en": "Perfect! Great return"
+              }
+            },
+            "warning": {
+              "up": {
+                "ar": "ارتفع على أصابع قدميك أكثر",
+                "en": "Rise higher on your toes"
+              }
+            }
+          },
+          "pairedWith": "right_ankle",
+          "upRange": {
+            "pad": {
+              "max": 140,
+              "min": 110
+            },
+            "normal": {
+              "max": 145,
+              "min": 120
+            },
+            "perfect": {
+              "max": 150,
+              "min": 125
+            }
+          },
+          "downRange": {
+            "pad": {
+              "max": 100,
+              "min": 70
+            },
+            "normal": {
+              "max": 95,
+              "min": 75
+            },
+            "perfect": {
+              "max": 90,
+              "min": 80
+            }
+          }
+        },
+        {
+          "joint": "right_ankle",
+          "role": "primary",
+          "startPose": {
+            "max": 100,
+            "min": 70
+          },
+          "stateMessages": {
+            "pad": {
+              "up": {
+                "ar": "مقبول، لكن يمكنك التحسن",
+                "en": "Acceptable, but you can improve"
+              }
+            },
+            "normal": {
+              "up": {
+                "ar": "جيد، حاول الارتفاع أكثر",
+                "en": "Good, try rising higher"
+              },
+              "down": {
+                "ar": "جيد، حاول النزول للأسفل",
+                "en": "Good, try lowering more"
+              }
+            },
+            "perfect": {
+              "up": {
+                "ar": "ممتاز! رفع مثالي",
+                "en": "Perfect! Great raise"
+              },
+              "down": {
+                "ar": "ممتاز! عودة مثالية",
+                "en": "Perfect! Great return"
+              }
+            },
+            "warning": {
+              "up": {
+                "ar": "ارتفع على أصابع قدميك أكثر",
+                "en": "Rise higher on your toes"
+              }
+            }
+          },
+          "pairedWith": "left_ankle",
+          "upRange": {
+            "pad": {
+              "max": 140,
+              "min": 110
+            },
+            "normal": {
+              "max": 145,
+              "min": 120
+            },
+            "perfect": {
+              "max": 150,
+              "min": 125
+            }
+          },
+          "downRange": {
+            "pad": {
+              "max": 100,
+              "min": 70
+            },
+            "normal": {
+              "max": 95,
+              "min": 75
+            },
+            "perfect": {
+              "max": 90,
+              "min": 80
+            }
+          }
+        },
+        {
+          "joint": "left_knee",
+          "role": "secondary",
+          "startPose": {
+            "max": 180,
+            "min": 165
+          },
+          "stateMessages": {
+            "perfect": {
+              "ar": "ممتاز - ركبتان مستقيمتان",
+              "en": "Great - knees straight"
+            },
+            "warning": {
+              "ar": "لا تثني ركبتيك - ابقهما مفرودتين",
+              "en": "Don't bend knees - keep them straight"
+            }
+          },
+          "range": {
+            "pad": {
+              "max": 180,
+              "min": 160
+            },
+            "normal": {
+              "max": 180,
+              "min": 165
+            },
+            "perfect": {
+              "max": 180,
+              "min": 170
+            },
+            "warning": {
+              "max": 160,
+              "min": 145
+            }
+          }
+        }
+      ],
+      "positionChecks": [
+        {
+          "id": "body_straight",
+          "type": "vertical_alignment",
+          "landmarks": {
+            "primary": "left_shoulder",
+            "secondary": "left_hip"
+          },
+          "condition": {
+            "operator": "approximately_equal",
+            "threshold": 0.07
+          },
+          "activePhases": [
+            "up",
+            "top"
+          ],
+          "errorMessage": {
+            "ar": "حافظ على استقامة جسمك",
+            "en": "Keep your body straight"
+          },
+          "severity": "warning",
+          "cooldownMs": 2000,
+          "minErrorFrames": 4
+        }
+      ],
+      "feedbackMessages": {
+        "motivational": [
+          {
+            "ar": "ممتاز! سمانة قوية!",
+            "en": "Excellent! Strong calves!"
+          },
+          {
+            "ar": "استمر!",
+            "en": "Keep going!"
+          },
+          {
+            "ar": "رائع!",
+            "en": "Great!"
+          }
+        ],
+        "tips": [
+          {
+            "ar": "ثبّت لمدة ثانية في أعلى الحركة",
+            "en": "Pause for a second at the top"
+          },
+          {
+            "ar": "استخدم حائط للتوازن إذا لزم الأمر",
+            "en": "Use a wall for balance if needed"
+          }
+        ]
+      },
+      "messageAssignments": [
+        {
+          "messageId": "28b63dfe-2dfc-4f3a-af25-0739925bbab5",
+          "target": "position",
+          "context": "error",
+          "checkId": "body_straight",
+          "sortOrder": 1
+        },
+        {
+          "messageId": "3853b3e8-98db-4b30-ab73-bc4edfbdc087",
+          "target": "joint_state",
+          "context": "perfect",
+          "jointCode": "left_ankle",
+          "zone": "up",
+          "sortOrder": 2
+        },
+        {
+          "messageId": "8f8d2f29-f451-4dfa-a939-d7ffca8be87a",
+          "target": "joint_state",
+          "context": "perfect",
+          "jointCode": "left_ankle",
+          "zone": "down",
+          "sortOrder": 3
+        },
+        {
+          "messageId": "f2d478b5-3de7-46dd-9c31-ac3d222c14b9",
+          "target": "joint_state",
+          "context": "normal",
+          "jointCode": "left_ankle",
+          "zone": "up",
+          "sortOrder": 4
+        },
+        {
+          "messageId": "769899d8-4c01-494c-bc8a-2970c8ed4723",
+          "target": "joint_state",
+          "context": "normal",
+          "jointCode": "left_ankle",
+          "zone": "down",
+          "sortOrder": 5
+        },
+        {
+          "messageId": "a599b162-0450-4815-a7e0-fe594b09f7ba",
+          "target": "joint_state",
+          "context": "pad",
+          "jointCode": "left_ankle",
+          "zone": "up",
+          "sortOrder": 6
+        },
+        {
+          "messageId": "aa28fcca-ce1b-4ab1-938b-07006de3c1d8",
+          "target": "joint_state",
+          "context": "warning",
+          "jointCode": "left_ankle",
+          "zone": "up",
+          "sortOrder": 7
+        },
+        {
+          "messageId": "f5db8837-9bb7-4f8b-84f4-2be8a26ac7d8",
+          "target": "joint_state",
+          "context": "perfect",
+          "jointCode": "right_ankle",
+          "zone": "up",
+          "sortOrder": 8
+        },
+        {
+          "messageId": "001aa1d2-e4d2-4ab3-a6b4-305ce19e91a2",
+          "target": "joint_state",
+          "context": "perfect",
+          "jointCode": "right_ankle",
+          "zone": "down",
+          "sortOrder": 9
+        },
+        {
+          "messageId": "9a525784-26a5-4b8a-a8b4-658ccb770adf",
+          "target": "joint_state",
+          "context": "normal",
+          "jointCode": "right_ankle",
+          "zone": "up",
+          "sortOrder": 10
+        },
+        {
+          "messageId": "1f56f139-e282-4b17-8755-ad21debe8b14",
+          "target": "joint_state",
+          "context": "normal",
+          "jointCode": "right_ankle",
+          "zone": "down",
+          "sortOrder": 11
+        },
+        {
+          "messageId": "41a7afda-2cb6-4d3d-be5a-335e0d9e3762",
+          "target": "joint_state",
+          "context": "pad",
+          "jointCode": "right_ankle",
+          "zone": "up",
+          "sortOrder": 12
+        },
+        {
+          "messageId": "a2456564-532c-440e-92c1-a69eb99a4249",
+          "target": "joint_state",
+          "context": "warning",
+          "jointCode": "right_ankle",
+          "zone": "up",
+          "sortOrder": 13
+        },
+        {
+          "messageId": "0510735c-f708-4a7d-981a-9d029642c6c6",
+          "target": "joint_state",
+          "context": "perfect",
+          "jointCode": "left_knee",
+          "sortOrder": 14
+        },
+        {
+          "messageId": "43d0bed5-b048-4b9d-997f-0e0c45bc478c",
+          "target": "joint_state",
+          "context": "warning",
+          "jointCode": "left_knee",
+          "sortOrder": 15
+        },
+        {
+          "messageId": "88818ca2-2a26-4834-8193-a3f12ae1f5df",
+          "target": "feedback",
+          "context": "motivational",
+          "sortOrder": 16
+        },
+        {
+          "messageId": "12d2b720-1ad5-4332-a9f7-49b7f4084ff6",
+          "target": "feedback",
+          "context": "motivational",
+          "sortOrder": 17
+        },
+        {
+          "messageId": "fca59275-26ac-4dad-861d-66571a9df172",
+          "target": "feedback",
+          "context": "motivational",
+          "sortOrder": 18
+        },
+        {
+          "messageId": "8cc53921-a2f3-4c96-8288-378daa4f96e9",
+          "target": "feedback",
+          "context": "tip",
+          "sortOrder": 19
+        },
+        {
+          "messageId": "e8f62f6c-0dc4-4f3e-8177-b0997875cb1c",
+          "target": "feedback",
+          "context": "tip",
+          "sortOrder": 20
+        }
+      ],
+      "cameraPosition": "side_view"
+    }
+  ],
+  "description": {
+    "ar": "تمرين لتقوية عضلات السمانة (ربلة الساق)",
+    "en": "Exercise to strengthen calf muscles"
+  },
+  "instructions": {
+    "ar": "قف على أطراف أصابع قدميك، ثم ارتفع ببطء وانزل مع التحكم",
+    "en": "Stand on the balls of your feet, rise slowly and lower with control"
+  },
+  "reportMetrics": {
+    "primary": [
+      "FORM_SCORE"
+    ],
+    "excluded": [
+      "HOLD_DURATION",
+      "WEIGHT",
+      "VOLUME",
+      "EST_1RM"
+    ]
+  },
+  "hasPositionChecks": true,
+  "_database": {
+    "id": "e0beaacb-898b-4bd4-9499-152dcda4aba2",
+    "categoryId": "a672c3d3-4449-4f74-bd8e-be73a0035e88",
+    "countingMethodId": "f4d48aef-1606-4f23-8c61-7b4a2546f990",
+    "publishedAt": "2026-04-20T17:26:22.563Z",
+    "createdAt": "2026-04-20T17:26:22.564Z",
+    "updatedAt": "2026-04-20T17:26:34.103Z",
+    "deletedAt": null,
+    "isFeatured": false,
+    "createdBy": null,
+    "updatedBy": null,
+    "repCountingConfig": {
+      "reps": 20,
+      "maxRepIntervalMs": 3000,
+      "minRepIntervalMs": 800
+    },
+    "bilateralConfig": null,
+    "isBilateral": false,
+    "supportsWeight": false,
+    "minWeight": null,
+    "maxWeight": null,
+    "defaultWeight": null,
+    "reportMetrics": {
+      "mode": "reps",
+      "version": 1,
+      "primaryKpi": "repQuality",
+      "secondaryKpis": [
+        "avgFormScore",
+        "avgRom"
+      ]
+    },
+    "media": [],
+    "poseVariants": [
+      {
+        "id": "699ddc20-93ae-424d-9287-a67148af22ba",
+        "sortOrder": 1,
+        "description": null,
+        "trackedJointsConfig": [
+          {
+            "role": "primary",
+            "joint": "left_ankle",
+            "upRange": {
+              "pad": {
+                "max": 140,
+                "min": 110
+              },
+              "normal": {
+                "max": 145,
+                "min": 120
+              },
+              "perfect": {
+                "max": 150,
+                "min": 125
+              }
+            },
+            "downRange": {
+              "pad": {
+                "max": 100,
+                "min": 70
+              },
+              "normal": {
+                "max": 95,
+                "min": 75
+              },
+              "perfect": {
+                "max": 90,
+                "min": 80
+              }
+            },
+            "startPose": {
+              "max": 100,
+              "min": 70
+            },
+            "pairedWith": "right_ankle",
+            "stateMessages": {
+              "pad": {
+                "up": {
+                  "ar": "مقبول، لكن يمكنك التحسن",
+                  "en": "Acceptable, but you can improve"
+                }
+              },
+              "normal": {
+                "up": {
+                  "ar": "جيد، حاول الارتفاع أكثر",
+                  "en": "Good, try rising higher"
+                },
+                "down": {
+                  "ar": "جيد، حاول النزول للأسفل",
+                  "en": "Good, try lowering more"
+                }
+              },
+              "perfect": {
+                "up": {
+                  "ar": "ممتاز! رفع مثالي",
+                  "en": "Perfect! Great raise"
+                },
+                "down": {
+                  "ar": "ممتاز! عودة مثالية",
+                  "en": "Perfect! Great return"
+                }
+              },
+              "warning": {
+                "up": {
+                  "ar": "ارتفع على أصابع قدميك أكثر",
+                  "en": "Rise higher on your toes"
+                }
+              }
+            }
+          },
+          {
+            "role": "primary",
+            "joint": "right_ankle",
+            "upRange": {
+              "pad": {
+                "max": 140,
+                "min": 110
+              },
+              "normal": {
+                "max": 145,
+                "min": 120
+              },
+              "perfect": {
+                "max": 150,
+                "min": 125
+              }
+            },
+            "downRange": {
+              "pad": {
+                "max": 100,
+                "min": 70
+              },
+              "normal": {
+                "max": 95,
+                "min": 75
+              },
+              "perfect": {
+                "max": 90,
+                "min": 80
+              }
+            },
+            "startPose": {
+              "max": 100,
+              "min": 70
+            },
+            "pairedWith": "left_ankle",
+            "stateMessages": {
+              "pad": {
+                "up": {
+                  "ar": "مقبول، لكن يمكنك التحسن",
+                  "en": "Acceptable, but you can improve"
+                }
+              },
+              "normal": {
+                "up": {
+                  "ar": "جيد، حاول الارتفاع أكثر",
+                  "en": "Good, try rising higher"
+                },
+                "down": {
+                  "ar": "جيد، حاول النزول للأسفل",
+                  "en": "Good, try lowering more"
+                }
+              },
+              "perfect": {
+                "up": {
+                  "ar": "ممتاز! رفع مثالي",
+                  "en": "Perfect! Great raise"
+                },
+                "down": {
+                  "ar": "ممتاز! عودة مثالية",
+                  "en": "Perfect! Great return"
+                }
+              },
+              "warning": {
+                "up": {
+                  "ar": "ارتفع على أصابع قدميك أكثر",
+                  "en": "Rise higher on your toes"
+                }
+              }
+            }
+          },
+          {
+            "role": "secondary",
+            "joint": "left_knee",
+            "range": {
+              "pad": {
+                "max": 180,
+                "min": 160
+              },
+              "normal": {
+                "max": 180,
+                "min": 165
+              },
+              "perfect": {
+                "max": 180,
+                "min": 170
+              },
+              "warning": {
+                "max": 160,
+                "min": 145
+              }
+            },
+            "startPose": {
+              "max": 180,
+              "min": 165
+            },
+            "stateMessages": {
+              "perfect": {
+                "ar": "ممتاز - ركبتان مستقيمتان",
+                "en": "Great - knees straight"
+              },
+              "warning": {
+                "ar": "لا تثني ركبتيك - ابقهما مفرودتين",
+                "en": "Don't bend knees - keep them straight"
+              }
+            }
+          }
+        ]
+      }
+    ],
+    "validationWarning": null
+  }
+}

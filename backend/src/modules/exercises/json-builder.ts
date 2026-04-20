@@ -316,7 +316,10 @@ function buildPoseVariantConfig(
     expectedDirections,
     expectedRegions,
     trackedJoints: options.includeMessages
-      ? applyStateMessageAssignments(trackedJoints, dbVariant.messageAssignments)
+      ? applyPhaseStateMessageAssignments(
+          applyStateMessageAssignments(trackedJoints, dbVariant.messageAssignments),
+          dbVariant.messageAssignments,
+        )
       : trackedJoints,
   };
 
@@ -523,6 +526,65 @@ function applyStateMessageAssignments(
       ...joint,
       stateMessages: mergedStateMessages,
     };
+  });
+}
+
+type SecondaryPhaseKey = 'top' | 'down' | 'bottom' | 'up';
+
+/** Map assignment / seed phase string to secondary `phaseStateMessages` key */
+function normalizeSecondaryPhaseKey(raw: string): SecondaryPhaseKey | null {
+  const migrated = (PHASE_MIGRATION[raw] ?? PHASE_MIGRATION[raw.toLowerCase()] ?? raw) as string;
+  if (migrated === 'all') return null;
+  if (['top', 'down', 'bottom', 'up'].includes(migrated)) {
+    return migrated as SecondaryPhaseKey;
+  }
+  return null;
+}
+
+/**
+ * Merge DB message library into per-phase secondary joint messages (`joint_state_phase`).
+ * Assignment `context` format: `phase:state` (e.g. `bottom:warning`). Optional `zone`: up | down.
+ */
+function applyPhaseStateMessageAssignments(
+  trackedJoints: TrackedJoint[],
+  assignments: DbMessageAssignment[],
+): TrackedJoint[] {
+  const phaseAssignments = assignments.filter(
+    (a) => a.target === 'joint_state_phase' && a.jointCode && a.context,
+  );
+  if (phaseAssignments.length === 0) return trackedJoints;
+
+  return trackedJoints.map((joint) => {
+    if (joint.role !== 'secondary') return joint;
+
+    const jointAssignments = phaseAssignments.filter((a) => a.jointCode === joint.joint);
+    if (jointAssignments.length === 0) return joint;
+
+    const secondary = joint as SecondaryTrackedJoint;
+    const mergedPhases: Partial<Record<SecondaryPhaseKey, StateMessages>> = {
+      ...(secondary.phaseStateMessages || {}),
+    };
+
+    const sorted = [...jointAssignments].sort((a, b) => a.sortOrder - b.sortOrder);
+    for (const assignment of sorted) {
+      const ctx = assignment.context!;
+      const colon = ctx.indexOf(':');
+      if (colon <= 0) continue;
+      const phaseRaw = ctx.slice(0, colon);
+      const stateKey = ctx.slice(colon + 1) as keyof StateMessages;
+      const phase = normalizeSecondaryPhaseKey(phaseRaw);
+      if (!phase) continue;
+
+      const localizedText = toLocalizedText(assignment.message.content);
+      const phaseMsgs: StateMessages = { ...(mergedPhases[phase] || {}) };
+      setStateMessage(phaseMsgs, stateKey, localizedText, assignment.zone);
+      mergedPhases[phase] = phaseMsgs;
+    }
+
+    return {
+      ...secondary,
+      phaseStateMessages: mergedPhases,
+    } as TrackedJoint;
   });
 }
 

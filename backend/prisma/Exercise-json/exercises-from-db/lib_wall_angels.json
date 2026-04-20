@@ -1,0 +1,338 @@
+{
+  "slug": "lib_wall_angels",
+  "status": "published",
+  "movementPattern": "MOBILITY_DRILL",
+  "loadCapability": "BODYWEIGHT_ONLY",
+  "familyKey": "shoulder_mobility_family",
+  "familyOrder": 16,
+  "name": {
+    "ar": "ملائكة الحائط",
+    "en": "Wall angels"
+  },
+  "category": {
+    "code": "shoulders",
+    "name": {
+      "ar": "تمارين الأكتاف",
+      "en": "Shoulders"
+    }
+  },
+  "countingMethod": "up_down",
+  "muscles": [
+    "front_delts",
+    "traps"
+  ],
+  "equipment": [
+    "bodyweight",
+    "mat"
+  ],
+  "tags": [
+    "curated_library",
+    "posture"
+  ],
+  "repCountingConfig": {
+    "reps": 12,
+    "minRepIntervalMs": 1500,
+    "maxRepIntervalMs": 5000
+  },
+  "poseVariants": [
+    {
+      "name": {
+        "ar": "زاوية أمامية",
+        "en": "Front view"
+      },
+      "posePosition": "standing_front",
+      "expectedPostures": [
+        "standing"
+      ],
+      "expectedDirections": [
+        "front"
+      ],
+      "expectedRegions": [
+        "full_body"
+      ],
+      "trackedJoints": [
+        {
+          "joint": "left_shoulder",
+          "role": "primary",
+          "startPose": {
+            "max": 85,
+            "min": 25
+          },
+          "stateMessages": {
+            "perfect": {
+              "ar": "مدى كتف ممتاز",
+              "en": "Great shoulder range"
+            },
+            "warning": {
+              "ar": "قلل المدى إن شعرت بقرصة",
+              "en": "Ease range if you feel pinching"
+            }
+          },
+          "range": {
+            "pad": {
+              "max": 95,
+              "min": 20
+            },
+            "normal": {
+              "max": 85,
+              "min": 30
+            },
+            "perfect": {
+              "max": 72,
+              "min": 40
+            },
+            "warning": {
+              "max": 105,
+              "min": 85
+            }
+          }
+        },
+        {
+          "joint": "left_elbow",
+          "role": "secondary",
+          "startPose": {
+            "max": 180,
+            "min": 140
+          },
+          "stateMessages": {
+            "perfect": {
+              "ar": "مرفق مرتخٍ قليلاً",
+              "en": "Soft elbow"
+            }
+          },
+          "range": {
+            "normal": {
+              "max": 180,
+              "min": 145
+            },
+            "perfect": {
+              "max": 180,
+              "min": 155
+            }
+          }
+        }
+      ],
+      "positionChecks": [
+        {
+          "id": "shoulder_mob_window",
+          "type": "vertical_alignment",
+          "landmarks": {
+            "primary": "left_shoulder",
+            "secondary": "left_elbow"
+          },
+          "condition": {
+            "operator": "approximately_equal",
+            "threshold": 0.14
+          },
+          "activePhases": [
+            "all"
+          ],
+          "errorMessage": {
+            "ar": "تحرّك ضمن نطاق مريح — لا تتجاوز الألم الحاد.",
+            "en": "Stay in a comfortable window — no sharp pain."
+          },
+          "severity": "tip",
+          "cooldownMs": 3500,
+          "minErrorFrames": 6
+        }
+      ],
+      "feedbackMessages": {
+        "motivational": [
+          {
+            "ar": "مدى حركة جيد وتحكم أفضل",
+            "en": "Good range and better control"
+          },
+          {
+            "ar": "تحرك بسلاسة داخل نطاق مريح",
+            "en": "Move smoothly inside a comfortable range"
+          }
+        ],
+        "tips": [
+          {
+            "ar": "ابقِ الحركة نظيفة وهادئة بدون ارتداد.",
+            "en": "Keep the motion smooth and bounce-free."
+          },
+          {
+            "ar": "أي ألم حاد يعني تقليل المدى فوراً.",
+            "en": "Any sharp pain means reduce range immediately."
+          }
+        ]
+      },
+      "messageAssignments": [
+        {
+          "messageId": "02e7d79c-5862-441d-9ee7-7a089f95d206",
+          "target": "position",
+          "context": "error",
+          "checkId": "shoulder_mob_window",
+          "sortOrder": 1
+        },
+        {
+          "messageId": "5e3e7586-4525-4486-bc27-e10e6e7e5697",
+          "target": "joint_state",
+          "context": "perfect",
+          "jointCode": "left_shoulder",
+          "sortOrder": 2
+        },
+        {
+          "messageId": "09ebe220-771d-4fe6-86b8-859fef9552d7",
+          "target": "joint_state",
+          "context": "warning",
+          "jointCode": "left_shoulder",
+          "sortOrder": 3
+        },
+        {
+          "messageId": "3e68ecae-8db6-45cb-8aff-fd3cec90a28b",
+          "target": "joint_state",
+          "context": "perfect",
+          "jointCode": "left_elbow",
+          "sortOrder": 4
+        },
+        {
+          "messageId": "86a813b3-d79b-4b2e-92de-69f63c3f74f4",
+          "target": "feedback",
+          "context": "motivational",
+          "sortOrder": 5
+        },
+        {
+          "messageId": "0d06a879-89bd-4cdd-a117-799a87b424a7",
+          "target": "feedback",
+          "context": "motivational",
+          "sortOrder": 6
+        },
+        {
+          "messageId": "64691b4e-2e3e-424f-b6e8-550ef2b41ad7",
+          "target": "feedback",
+          "context": "tip",
+          "sortOrder": 7
+        },
+        {
+          "messageId": "c066c990-7ae4-45d8-aae1-2b069b843520",
+          "target": "feedback",
+          "context": "tip",
+          "sortOrder": 8
+        }
+      ],
+      "cameraPosition": "front_view"
+    }
+  ],
+  "description": {
+    "ar": "تمرين مكتبة: ملائكة الحائط.",
+    "en": "Library exercise: Wall angels."
+  },
+  "instructions": {
+    "ar": "حافظ على عمود فقري محايد وتنفس بثبات وتوقف عند أي ألم حاد.",
+    "en": "Maintain neutral spine, steady breathing, and stop if sharp pain appears."
+  },
+  "reportMetrics": {
+    "primary": [
+      "FORM_SCORE"
+    ],
+    "excluded": [
+      "HOLD_DURATION",
+      "WEIGHT",
+      "VOLUME",
+      "EST_1RM",
+      "SYMMETRY"
+    ]
+  },
+  "hasPositionChecks": true,
+  "_database": {
+    "id": "b9477b3d-9116-42ff-a1ee-e527bf1e0549",
+    "categoryId": "78daff70-6564-41cd-b768-462735416089",
+    "countingMethodId": "f4d48aef-1606-4f23-8c61-7b4a2546f990",
+    "publishedAt": "2026-04-20T17:26:27.247Z",
+    "createdAt": "2026-04-20T17:26:27.249Z",
+    "updatedAt": "2026-04-20T17:26:34.456Z",
+    "deletedAt": null,
+    "isFeatured": false,
+    "createdBy": null,
+    "updatedBy": null,
+    "repCountingConfig": null,
+    "bilateralConfig": null,
+    "isBilateral": false,
+    "supportsWeight": false,
+    "minWeight": null,
+    "maxWeight": null,
+    "defaultWeight": null,
+    "reportMetrics": {
+      "mode": "reps",
+      "version": 1,
+      "primaryKpi": "repQuality",
+      "secondaryKpis": [
+        "avgFormScore",
+        "avgRom"
+      ]
+    },
+    "media": [],
+    "poseVariants": [
+      {
+        "id": "63c57a8b-ce8a-46d5-8e6b-0d2609ebca39",
+        "sortOrder": 1,
+        "description": null,
+        "trackedJointsConfig": [
+          {
+            "role": "primary",
+            "joint": "left_shoulder",
+            "range": {
+              "pad": {
+                "max": 95,
+                "min": 20
+              },
+              "normal": {
+                "max": 85,
+                "min": 30
+              },
+              "perfect": {
+                "max": 72,
+                "min": 40
+              },
+              "warning": {
+                "max": 105,
+                "min": 85
+              }
+            },
+            "startPose": {
+              "max": 85,
+              "min": 25
+            },
+            "stateMessages": {
+              "perfect": {
+                "ar": "مدى كتف ممتاز",
+                "en": "Great shoulder range"
+              },
+              "warning": {
+                "ar": "قلل المدى إن شعرت بقرصة",
+                "en": "Ease range if you feel pinching"
+              }
+            }
+          },
+          {
+            "role": "secondary",
+            "joint": "left_elbow",
+            "range": {
+              "normal": {
+                "max": 180,
+                "min": 145
+              },
+              "perfect": {
+                "max": 180,
+                "min": 155
+              }
+            },
+            "startPose": {
+              "max": 180,
+              "min": 140
+            },
+            "stateMessages": {
+              "perfect": {
+                "ar": "مرفق مرتخٍ قليلاً",
+                "en": "Soft elbow"
+              }
+            }
+          }
+        ]
+      }
+    ],
+    "validationWarning": null
+  }
+}

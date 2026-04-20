@@ -43,9 +43,10 @@
           },
           "range": {
             "perfect": { "min": 160, "max": 180 },
-            "normal": { "min": 155, "max": 180 },
+            "normal": { "min": 150, "max": 180 },
             "pad": { "min": 145, "max": 180 },
-            "warning": { "min": 0, "max": 145 }
+            "warning": { "min": 130, "max": 155 },
+            "danger": { "min": 0, "max": 130 }
           },
           "stateMessages": {
             "perfect": { "ar": "ممتاز! ثبات مثالي!", "en": "Perfect! Great hold!" },

@@ -1,0 +1,392 @@
+{
+  "slug": "lib_tricep_pushdown_band",
+  "status": "published",
+  "movementPattern": "PUSH_HORIZONTAL",
+  "loadCapability": "EXTERNAL_LOAD_OPTIONAL",
+  "familyKey": "push_horizontal_family",
+  "familyOrder": 26,
+  "name": {
+    "ar": "دفع ثلاثي بحبل",
+    "en": "Tricep pushdown (band)"
+  },
+  "category": {
+    "code": "arms",
+    "name": {
+      "ar": "تمارين الذراعين",
+      "en": "Arms"
+    }
+  },
+  "countingMethod": "up_down",
+  "muscles": [
+    "triceps"
+  ],
+  "equipment": [
+    "resistance_band",
+    "mat"
+  ],
+  "tags": [
+    "curated_library"
+  ],
+  "repCountingConfig": {
+    "reps": 12,
+    "minRepIntervalMs": 1500,
+    "maxRepIntervalMs": 5000
+  },
+  "poseVariants": [
+    {
+      "name": {
+        "ar": "زاوية جانبية",
+        "en": "Side view"
+      },
+      "posePosition": "standing_side",
+      "expectedPostures": [
+        "standing"
+      ],
+      "expectedDirections": [
+        "side"
+      ],
+      "expectedRegions": [
+        "full_body"
+      ],
+      "trackedJoints": [
+        {
+          "joint": "left_elbow",
+          "role": "primary",
+          "startPose": {
+            "max": 110,
+            "min": 75
+          },
+          "stateMessages": {
+            "pad": {
+              "up": {
+                "ar": "مقبول، لكن التمدد ما زال ناقصاً",
+                "en": "Acceptable, but lockout is still incomplete"
+              }
+            },
+            "normal": {
+              "up": {
+                "ar": "جيد، أكمل فرد المرفق",
+                "en": "Good, finish the elbow extension"
+              },
+              "down": {
+                "ar": "جيد، لا تدع الحبل يسحبك بسرعة",
+                "en": "Good, do not let the band yank you back"
+              }
+            },
+            "perfect": {
+              "up": {
+                "ar": "ممتاز! تمدد ثلاثي كامل",
+                "en": "Perfect! Full triceps extension"
+              },
+              "down": {
+                "ar": "ممتاز! عودة متحكم بها",
+                "en": "Perfect! Controlled return"
+              }
+            },
+            "warning": {
+              "down": {
+                "ar": "لا تحرك الكتف للأمام والخلف",
+                "en": "Do not sway the shoulder forward and back"
+              }
+            }
+          },
+          "upRange": {
+            "pad": {
+              "max": 180,
+              "min": 140
+            },
+            "normal": {
+              "max": 180,
+              "min": 150
+            },
+            "perfect": {
+              "max": 180,
+              "min": 160
+            }
+          },
+          "downRange": {
+            "pad": {
+              "max": 112,
+              "min": 62
+            },
+            "normal": {
+              "max": 104,
+              "min": 70
+            },
+            "perfect": {
+              "max": 96,
+              "min": 78
+            },
+            "warning": {
+              "max": 62,
+              "min": 50
+            }
+          }
+        }
+      ],
+      "positionChecks": [
+        {
+          "id": "pushdown_upper_arm_fixed",
+          "type": "vertical_alignment",
+          "landmarks": {
+            "primary": "left_shoulder",
+            "secondary": "left_elbow"
+          },
+          "condition": {
+            "operator": "approximately_equal",
+            "threshold": 0.1
+          },
+          "activePhases": [
+            "up",
+            "down"
+          ],
+          "errorMessage": {
+            "ar": "ثبّت العضد بجانب الجذع أثناء الدفع.",
+            "en": "Keep the upper arm fixed beside the torso during the pushdown."
+          },
+          "severity": "warning",
+          "cooldownMs": 2200,
+          "minErrorFrames": 4
+        }
+      ],
+      "feedbackMessages": {
+        "motivational": [
+          {
+            "ar": "أداء قوي ومنظم",
+            "en": "Strong and controlled work"
+          },
+          {
+            "ar": "حافظ على الشكل قبل السرعة",
+            "en": "Keep form before speed"
+          }
+        ],
+        "tips": [
+          {
+            "ar": "خذ نفساً تحضيرياً قبل كل عدة وازفر مع الجهد.",
+            "en": "Take a setup breath before each rep and exhale on effort."
+          },
+          {
+            "ar": "إذا فقدت التحكم الميكانيكي، قلل المدى أو الحمل.",
+            "en": "If mechanics break down, reduce range or load."
+          }
+        ]
+      },
+      "messageAssignments": [
+        {
+          "messageId": "74efedca-a092-4e88-83fa-f46b09914891",
+          "target": "position",
+          "context": "error",
+          "checkId": "pushdown_upper_arm_fixed",
+          "sortOrder": 1
+        },
+        {
+          "messageId": "61c21028-1ae3-4f55-9d21-3c1617c7a3c1",
+          "target": "joint_state",
+          "context": "perfect",
+          "jointCode": "left_elbow",
+          "zone": "up",
+          "sortOrder": 2
+        },
+        {
+          "messageId": "8e4a3542-8c1f-40d5-a47e-037fda445947",
+          "target": "joint_state",
+          "context": "perfect",
+          "jointCode": "left_elbow",
+          "zone": "down",
+          "sortOrder": 3
+        },
+        {
+          "messageId": "7f5f8e40-a17e-4671-890f-59553d92be0d",
+          "target": "joint_state",
+          "context": "normal",
+          "jointCode": "left_elbow",
+          "zone": "up",
+          "sortOrder": 4
+        },
+        {
+          "messageId": "6243e160-d735-4347-b017-14671e7c65f1",
+          "target": "joint_state",
+          "context": "normal",
+          "jointCode": "left_elbow",
+          "zone": "down",
+          "sortOrder": 5
+        },
+        {
+          "messageId": "4102c9f1-3865-4c03-b887-a979e25d27f7",
+          "target": "joint_state",
+          "context": "pad",
+          "jointCode": "left_elbow",
+          "zone": "up",
+          "sortOrder": 6
+        },
+        {
+          "messageId": "2333954b-a307-4904-b4d6-a22ca6bfcd2b",
+          "target": "joint_state",
+          "context": "warning",
+          "jointCode": "left_elbow",
+          "zone": "down",
+          "sortOrder": 7
+        },
+        {
+          "messageId": "09aad0d8-c257-4070-a7e9-4c767d73d371",
+          "target": "feedback",
+          "context": "motivational",
+          "sortOrder": 8
+        },
+        {
+          "messageId": "c3a3d70d-2603-4a4b-aa2a-b4348b53e798",
+          "target": "feedback",
+          "context": "motivational",
+          "sortOrder": 9
+        },
+        {
+          "messageId": "96fc951c-1f43-4f1d-abc7-3411d25f8a69",
+          "target": "feedback",
+          "context": "tip",
+          "sortOrder": 10
+        },
+        {
+          "messageId": "7a331a63-be2c-4c58-80da-700a48954a84",
+          "target": "feedback",
+          "context": "tip",
+          "sortOrder": 11
+        }
+      ],
+      "cameraPosition": "side_view"
+    }
+  ],
+  "description": {
+    "ar": "تمرين مكتبة: دفع ثلاثي بحبل.",
+    "en": "Library exercise: Tricep pushdown (band)."
+  },
+  "instructions": {
+    "ar": "حافظ على عمود فقري محايد وتنفس بثبات وتوقف عند أي ألم حاد.",
+    "en": "Maintain neutral spine, steady breathing, and stop if sharp pain appears."
+  },
+  "reportMetrics": {
+    "primary": [
+      "FORM_SCORE"
+    ],
+    "excluded": [
+      "HOLD_DURATION",
+      "WEIGHT",
+      "VOLUME",
+      "EST_1RM",
+      "SYMMETRY"
+    ]
+  },
+  "hasPositionChecks": true,
+  "_database": {
+    "id": "57e7e912-acdc-4f21-b192-4f9ee9260268",
+    "categoryId": "46ce7826-7f11-437b-b9b0-de718b5adf7d",
+    "countingMethodId": "f4d48aef-1606-4f23-8c61-7b4a2546f990",
+    "publishedAt": "2026-04-20T17:26:28.878Z",
+    "createdAt": "2026-04-20T17:26:28.880Z",
+    "updatedAt": "2026-04-20T17:26:34.554Z",
+    "deletedAt": null,
+    "isFeatured": false,
+    "createdBy": null,
+    "updatedBy": null,
+    "repCountingConfig": null,
+    "bilateralConfig": null,
+    "isBilateral": false,
+    "supportsWeight": false,
+    "minWeight": null,
+    "maxWeight": null,
+    "defaultWeight": null,
+    "reportMetrics": {
+      "mode": "reps",
+      "version": 1,
+      "primaryKpi": "repQuality",
+      "secondaryKpis": [
+        "avgFormScore",
+        "avgRom"
+      ]
+    },
+    "media": [],
+    "poseVariants": [
+      {
+        "id": "3fe1a2a4-9d82-45b1-ac7f-cdc6f698cc1c",
+        "sortOrder": 1,
+        "description": null,
+        "trackedJointsConfig": [
+          {
+            "role": "primary",
+            "joint": "left_elbow",
+            "upRange": {
+              "pad": {
+                "max": 180,
+                "min": 140
+              },
+              "normal": {
+                "max": 180,
+                "min": 150
+              },
+              "perfect": {
+                "max": 180,
+                "min": 160
+              }
+            },
+            "downRange": {
+              "pad": {
+                "max": 112,
+                "min": 62
+              },
+              "normal": {
+                "max": 104,
+                "min": 70
+              },
+              "perfect": {
+                "max": 96,
+                "min": 78
+              },
+              "warning": {
+                "max": 62,
+                "min": 50
+              }
+            },
+            "startPose": {
+              "max": 110,
+              "min": 75
+            },
+            "stateMessages": {
+              "pad": {
+                "up": {
+                  "ar": "مقبول، لكن التمدد ما زال ناقصاً",
+                  "en": "Acceptable, but lockout is still incomplete"
+                }
+              },
+              "normal": {
+                "up": {
+                  "ar": "جيد، أكمل فرد المرفق",
+                  "en": "Good, finish the elbow extension"
+                },
+                "down": {
+                  "ar": "جيد، لا تدع الحبل يسحبك بسرعة",
+                  "en": "Good, do not let the band yank you back"
+                }
+              },
+              "perfect": {
+                "up": {
+                  "ar": "ممتاز! تمدد ثلاثي كامل",
+                  "en": "Perfect! Full triceps extension"
+                },
+                "down": {
+                  "ar": "ممتاز! عودة متحكم بها",
+                  "en": "Perfect! Controlled return"
+                }
+              },
+              "warning": {
+                "down": {
+                  "ar": "لا تحرك الكتف للأمام والخلف",
+                  "en": "Do not sway the shoulder forward and back"
+                }
+              }
+            }
+          }
+        ]
+      }
+    ],
+    "validationWarning": null
+  }
+}

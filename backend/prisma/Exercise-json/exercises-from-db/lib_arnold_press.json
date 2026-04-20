@@ -1,0 +1,877 @@
+{
+  "slug": "lib_arnold_press",
+  "status": "published",
+  "movementPattern": "PUSH_VERTICAL",
+  "loadCapability": "EXTERNAL_LOAD_OPTIONAL",
+  "familyKey": "push_vertical_family",
+  "familyOrder": 42,
+  "name": {
+    "ar": "ضغط أرنولد",
+    "en": "Arnold press"
+  },
+  "category": {
+    "code": "shoulders",
+    "name": {
+      "ar": "تمارين الأكتاف",
+      "en": "Shoulders"
+    }
+  },
+  "countingMethod": "up_down",
+  "muscles": [
+    "front_delts",
+    "side_delts"
+  ],
+  "equipment": [
+    "dumbbell",
+    "mat"
+  ],
+  "tags": [
+    "curated_library"
+  ],
+  "repCountingConfig": {
+    "reps": 12,
+    "minRepIntervalMs": 1500,
+    "maxRepIntervalMs": 5000
+  },
+  "poseVariants": [
+    {
+      "name": {
+        "ar": "زاوية أمامية",
+        "en": "Front view"
+      },
+      "posePosition": "standing_front",
+      "expectedPostures": [
+        "standing"
+      ],
+      "expectedDirections": [
+        "front"
+      ],
+      "expectedRegions": [
+        "full_body"
+      ],
+      "trackedJoints": [
+        {
+          "joint": "left_elbow",
+          "role": "primary",
+          "startPose": {
+            "max": 115,
+            "min": 70
+          },
+          "stateMessages": {
+            "pad": {
+              "up": {
+                "ar": "مقبول — زد التمدد تدريجياً",
+                "en": "Acceptable — build lockout slowly"
+              }
+            },
+            "normal": {
+              "up": {
+                "ar": "جيد — فرد أكثر في الأعلى",
+                "en": "Good — extend more at top"
+              },
+              "down": {
+                "ar": "جيد — انزل لمستوى الكتف",
+                "en": "Good — lower to shoulder level"
+              }
+            },
+            "perfect": {
+              "up": {
+                "ar": "ممتاز! تمدد كامل فوق الرأس",
+                "en": "Perfect! Full lockout"
+              },
+              "down": {
+                "ar": "ممتاز! مستوى كتف مثالي",
+                "en": "Perfect! Clean shoulder height"
+              }
+            },
+            "warning": {
+              "up": {
+                "ar": "لا تفرط في تمديد قطني",
+                "en": "Avoid excessive lumbar extension"
+              }
+            }
+          },
+          "pairedWith": "right_elbow",
+          "upRange": {
+            "pad": {
+              "max": 180,
+              "min": 145
+            },
+            "normal": {
+              "max": 180,
+              "min": 155
+            },
+            "perfect": {
+              "max": 180,
+              "min": 165
+            }
+          },
+          "downRange": {
+            "pad": {
+              "max": 115,
+              "min": 65
+            },
+            "danger": {
+              "max": 55,
+              "min": 0
+            },
+            "normal": {
+              "max": 105,
+              "min": 75
+            },
+            "perfect": {
+              "max": 98,
+              "min": 82
+            },
+            "warning": {
+              "max": 72,
+              "min": 55
+            }
+          }
+        },
+        {
+          "joint": "right_elbow",
+          "role": "primary",
+          "startPose": {
+            "max": 115,
+            "min": 70
+          },
+          "stateMessages": {
+            "pad": {
+              "up": {
+                "ar": "مقبول — زد التمدد تدريجياً",
+                "en": "Acceptable — build lockout slowly"
+              }
+            },
+            "normal": {
+              "up": {
+                "ar": "جيد — فرد أكثر في الأعلى",
+                "en": "Good — extend more at top"
+              },
+              "down": {
+                "ar": "جيد — انزل لمستوى الكتف",
+                "en": "Good — lower to shoulder level"
+              }
+            },
+            "perfect": {
+              "up": {
+                "ar": "ممتاز! تمدد كامل فوق الرأس",
+                "en": "Perfect! Full lockout"
+              },
+              "down": {
+                "ar": "ممتاز! مستوى كتف مثالي",
+                "en": "Perfect! Clean shoulder height"
+              }
+            },
+            "warning": {
+              "up": {
+                "ar": "لا تفرط في تمديد قطني",
+                "en": "Avoid excessive lumbar extension"
+              }
+            }
+          },
+          "pairedWith": "left_elbow",
+          "upRange": {
+            "pad": {
+              "max": 180,
+              "min": 145
+            },
+            "normal": {
+              "max": 180,
+              "min": 155
+            },
+            "perfect": {
+              "max": 180,
+              "min": 165
+            }
+          },
+          "downRange": {
+            "pad": {
+              "max": 115,
+              "min": 65
+            },
+            "danger": {
+              "max": 55,
+              "min": 0
+            },
+            "normal": {
+              "max": 105,
+              "min": 75
+            },
+            "perfect": {
+              "max": 98,
+              "min": 82
+            },
+            "warning": {
+              "max": 72,
+              "min": 55
+            }
+          }
+        },
+        {
+          "joint": "left_shoulder",
+          "role": "secondary",
+          "startPose": {
+            "max": 180,
+            "min": 70
+          },
+          "stateMessages": {
+            "perfect": {
+              "ar": "كتف يتبع خط الضغط العمودي",
+              "en": "Shoulder tracks the vertical press line"
+            },
+            "warning": {
+              "ar": "لا تدع الكتفين يرتفعان نحو الأذنين",
+              "en": "Do not shrug the shoulders toward the ears"
+            }
+          },
+          "range": {
+            "pad": {
+              "max": 180,
+              "min": 55
+            },
+            "normal": {
+              "max": 180,
+              "min": 65
+            },
+            "perfect": {
+              "max": 180,
+              "min": 75
+            },
+            "warning": {
+              "max": 60,
+              "min": 40
+            }
+          },
+          "phaseRanges": {
+            "up": {
+              "normal": {
+                "max": 180,
+                "min": 130
+              },
+              "perfect": {
+                "max": 175,
+                "min": 140
+              }
+            },
+            "top": {
+              "normal": {
+                "max": 180,
+                "min": 155
+              },
+              "perfect": {
+                "max": 180,
+                "min": 165
+              }
+            },
+            "down": {
+              "normal": {
+                "max": 125,
+                "min": 78
+              },
+              "perfect": {
+                "max": 115,
+                "min": 85
+              }
+            },
+            "bottom": {
+              "normal": {
+                "max": 118,
+                "min": 68
+              },
+              "perfect": {
+                "max": 105,
+                "min": 75
+              }
+            }
+          },
+          "phaseStateMessages": {
+            "top": {
+              "pad": {
+                "ar": "أكمل التمدد قبل العد التالي",
+                "en": "Finish lockout before the next rep"
+              },
+              "perfect": {
+                "ar": "تمدد كامل فوق الرأس",
+                "en": "Full overhead lockout"
+              }
+            },
+            "bottom": {
+              "perfect": {
+                "ar": "مستوى كتف جيد",
+                "en": "Good shoulder-line position"
+              },
+              "warning": {
+                "ar": "اقترب لمستوى الكتف بسلاسة",
+                "en": "Lower smoothly to shoulder level"
+              }
+            }
+          }
+        }
+      ],
+      "positionChecks": [
+        {
+          "id": "wrist_level_press",
+          "type": "horizontal_alignment",
+          "landmarks": {
+            "primary": "left_wrist",
+            "secondary": "right_wrist"
+          },
+          "condition": {
+            "operator": "approximately_equal",
+            "threshold": 0.09
+          },
+          "activePhases": [
+            "up",
+            "top"
+          ],
+          "errorMessage": {
+            "ar": "اجعل المعصمين في مستوى واحد فوق الرأس.",
+            "en": "Keep wrists level overhead."
+          },
+          "severity": "warning",
+          "cooldownMs": 2200,
+          "minErrorFrames": 4
+        },
+        {
+          "id": "stack_over_shoulder",
+          "type": "vertical_alignment",
+          "landmarks": {
+            "primary": "left_wrist",
+            "secondary": "left_shoulder"
+          },
+          "condition": {
+            "operator": "approximately_equal",
+            "threshold": 0.11
+          },
+          "activePhases": [
+            "top"
+          ],
+          "errorMessage": {
+            "ar": "اضغط فوق منتصف الكتف.",
+            "en": "Stack over the mid-shoulder."
+          },
+          "severity": "tip",
+          "cooldownMs": 2800,
+          "minErrorFrames": 5
+        }
+      ],
+      "feedbackMessages": {
+        "motivational": [
+          {
+            "ar": "تحكّم رائع في المدى",
+            "en": "Excellent range control"
+          },
+          {
+            "ar": "استمر — الجودة أهم من العدد",
+            "en": "Keep going — quality beats reps"
+          }
+        ],
+        "tips": [
+          {
+            "ar": "كتفاك للأسفل والخلف قليلاً (تثبيت لوح الكتف).",
+            "en": "Keep shoulders down and slightly back (scapular set)."
+          },
+          {
+            "ar": "لا تفرط في تمديد الرقبة؛ نظرة أمامية قصيرة.",
+            "en": "Avoid craning the neck; keep a short forward gaze."
+          }
+        ]
+      },
+      "messageAssignments": [
+        {
+          "messageId": "4531f0dd-9d4b-4d49-b1e3-382776b876e8",
+          "target": "position",
+          "context": "error",
+          "checkId": "wrist_level_press",
+          "sortOrder": 1
+        },
+        {
+          "messageId": "c9d59b24-72b5-4a0d-a319-1e911c050458",
+          "target": "position",
+          "context": "error",
+          "checkId": "stack_over_shoulder",
+          "sortOrder": 2
+        },
+        {
+          "messageId": "5420bff8-e257-4a22-987a-05d4b7af4898",
+          "target": "joint_state",
+          "context": "perfect",
+          "jointCode": "left_elbow",
+          "zone": "up",
+          "sortOrder": 3
+        },
+        {
+          "messageId": "245f3d8a-82a0-4805-955b-f16c455a5f54",
+          "target": "joint_state",
+          "context": "perfect",
+          "jointCode": "left_elbow",
+          "zone": "down",
+          "sortOrder": 4
+        },
+        {
+          "messageId": "c7fae9e4-39e0-4487-9000-221efdbea7d6",
+          "target": "joint_state",
+          "context": "normal",
+          "jointCode": "left_elbow",
+          "zone": "up",
+          "sortOrder": 5
+        },
+        {
+          "messageId": "cbc2aa70-98ad-41ad-bd09-c7477b45596d",
+          "target": "joint_state",
+          "context": "normal",
+          "jointCode": "left_elbow",
+          "zone": "down",
+          "sortOrder": 6
+        },
+        {
+          "messageId": "7a5567a1-2b70-46fa-a815-7ea5c0cbd407",
+          "target": "joint_state",
+          "context": "pad",
+          "jointCode": "left_elbow",
+          "zone": "up",
+          "sortOrder": 7
+        },
+        {
+          "messageId": "be26668c-7e72-45f6-b57d-66464baa38fb",
+          "target": "joint_state",
+          "context": "warning",
+          "jointCode": "left_elbow",
+          "zone": "up",
+          "sortOrder": 8
+        },
+        {
+          "messageId": "4406aebb-81b7-4be0-a966-a31a926cb02b",
+          "target": "joint_state",
+          "context": "perfect",
+          "jointCode": "right_elbow",
+          "zone": "up",
+          "sortOrder": 9
+        },
+        {
+          "messageId": "c6ca6b64-086f-4b92-a2c8-66c49a677870",
+          "target": "joint_state",
+          "context": "perfect",
+          "jointCode": "right_elbow",
+          "zone": "down",
+          "sortOrder": 10
+        },
+        {
+          "messageId": "5132ae29-6ab6-40a5-8461-9838ac6f308e",
+          "target": "joint_state",
+          "context": "normal",
+          "jointCode": "right_elbow",
+          "zone": "up",
+          "sortOrder": 11
+        },
+        {
+          "messageId": "9a2c2908-c406-4741-b799-9e217ce4dcf7",
+          "target": "joint_state",
+          "context": "normal",
+          "jointCode": "right_elbow",
+          "zone": "down",
+          "sortOrder": 12
+        },
+        {
+          "messageId": "0226a17d-102d-4931-b387-093a8d015a7c",
+          "target": "joint_state",
+          "context": "pad",
+          "jointCode": "right_elbow",
+          "zone": "up",
+          "sortOrder": 13
+        },
+        {
+          "messageId": "95c4a6bf-5c59-4d68-9a66-7a79bb914d34",
+          "target": "joint_state",
+          "context": "warning",
+          "jointCode": "right_elbow",
+          "zone": "up",
+          "sortOrder": 14
+        },
+        {
+          "messageId": "be59a69e-7631-47f3-bd48-cb06cf8ad5b8",
+          "target": "joint_state",
+          "context": "perfect",
+          "jointCode": "left_shoulder",
+          "sortOrder": 15
+        },
+        {
+          "messageId": "c4d9091b-9268-4cd1-94f4-8a0a0ed86394",
+          "target": "joint_state",
+          "context": "warning",
+          "jointCode": "left_shoulder",
+          "sortOrder": 16
+        },
+        {
+          "messageId": "3c5f45e6-bb5f-4f51-849c-b9d61a0b5331",
+          "target": "joint_state_phase",
+          "context": "top:perfect",
+          "jointCode": "left_shoulder",
+          "sortOrder": 17
+        },
+        {
+          "messageId": "a7c50fef-bd2f-4928-94e7-6965e63a42db",
+          "target": "joint_state_phase",
+          "context": "top:pad",
+          "jointCode": "left_shoulder",
+          "sortOrder": 18
+        },
+        {
+          "messageId": "cc85c239-bb31-4100-8b8c-fe25f43f9afd",
+          "target": "joint_state_phase",
+          "context": "bottom:perfect",
+          "jointCode": "left_shoulder",
+          "sortOrder": 19
+        },
+        {
+          "messageId": "b5662f6a-fa95-42bf-b848-1a4e6349ae5e",
+          "target": "joint_state_phase",
+          "context": "bottom:warning",
+          "jointCode": "left_shoulder",
+          "sortOrder": 20
+        },
+        {
+          "messageId": "6c364593-47bc-4486-b63b-ed5e456df9cd",
+          "target": "feedback",
+          "context": "motivational",
+          "sortOrder": 21
+        },
+        {
+          "messageId": "d46f42ee-2d0c-4419-be83-db4a0e8373dc",
+          "target": "feedback",
+          "context": "motivational",
+          "sortOrder": 22
+        },
+        {
+          "messageId": "daf82ee6-b36a-42a0-8000-0f939526a5f5",
+          "target": "feedback",
+          "context": "tip",
+          "sortOrder": 23
+        },
+        {
+          "messageId": "a6ab8b3e-dfd6-4778-8222-5eb35baade1d",
+          "target": "feedback",
+          "context": "tip",
+          "sortOrder": 24
+        }
+      ],
+      "cameraPosition": "front_view"
+    }
+  ],
+  "description": {
+    "ar": "تمرين مكتبة: ضغط أرنولد.",
+    "en": "Library exercise: Arnold press."
+  },
+  "instructions": {
+    "ar": "حافظ على عمود فقري محايد وتنفس بثبات وتوقف عند أي ألم حاد.",
+    "en": "Maintain neutral spine, steady breathing, and stop if sharp pain appears."
+  },
+  "supportsWeight": true,
+  "reportMetrics": {
+    "primary": [
+      "FORM_SCORE"
+    ],
+    "excluded": [
+      "HOLD_DURATION"
+    ]
+  },
+  "hasPositionChecks": true,
+  "_database": {
+    "id": "a210f13a-50c8-4454-9d25-e3acb135645b",
+    "categoryId": "78daff70-6564-41cd-b768-462735416089",
+    "countingMethodId": "f4d48aef-1606-4f23-8c61-7b4a2546f990",
+    "publishedAt": "2026-04-20T17:26:24.873Z",
+    "createdAt": "2026-04-20T17:26:24.875Z",
+    "updatedAt": "2026-04-20T17:26:34.249Z",
+    "deletedAt": null,
+    "isFeatured": false,
+    "createdBy": null,
+    "updatedBy": null,
+    "repCountingConfig": null,
+    "bilateralConfig": null,
+    "isBilateral": false,
+    "supportsWeight": true,
+    "minWeight": null,
+    "maxWeight": null,
+    "defaultWeight": null,
+    "reportMetrics": {
+      "mode": "reps",
+      "version": 1,
+      "primaryKpi": "repQuality",
+      "secondaryKpis": [
+        "avgFormScore",
+        "avgRom"
+      ]
+    },
+    "media": [],
+    "poseVariants": [
+      {
+        "id": "0f9ff624-ae3d-4a25-87d7-e8b45faa9533",
+        "sortOrder": 1,
+        "description": null,
+        "trackedJointsConfig": [
+          {
+            "role": "primary",
+            "joint": "left_elbow",
+            "upRange": {
+              "pad": {
+                "max": 180,
+                "min": 145
+              },
+              "normal": {
+                "max": 180,
+                "min": 155
+              },
+              "perfect": {
+                "max": 180,
+                "min": 165
+              }
+            },
+            "downRange": {
+              "pad": {
+                "max": 115,
+                "min": 65
+              },
+              "danger": {
+                "max": 55,
+                "min": 0
+              },
+              "normal": {
+                "max": 105,
+                "min": 75
+              },
+              "perfect": {
+                "max": 98,
+                "min": 82
+              },
+              "warning": {
+                "max": 72,
+                "min": 55
+              }
+            },
+            "startPose": {
+              "max": 115,
+              "min": 70
+            },
+            "pairedWith": "right_elbow",
+            "stateMessages": {
+              "pad": {
+                "up": {
+                  "ar": "مقبول — زد التمدد تدريجياً",
+                  "en": "Acceptable — build lockout slowly"
+                }
+              },
+              "normal": {
+                "up": {
+                  "ar": "جيد — فرد أكثر في الأعلى",
+                  "en": "Good — extend more at top"
+                },
+                "down": {
+                  "ar": "جيد — انزل لمستوى الكتف",
+                  "en": "Good — lower to shoulder level"
+                }
+              },
+              "perfect": {
+                "up": {
+                  "ar": "ممتاز! تمدد كامل فوق الرأس",
+                  "en": "Perfect! Full lockout"
+                },
+                "down": {
+                  "ar": "ممتاز! مستوى كتف مثالي",
+                  "en": "Perfect! Clean shoulder height"
+                }
+              },
+              "warning": {
+                "up": {
+                  "ar": "لا تفرط في تمديد قطني",
+                  "en": "Avoid excessive lumbar extension"
+                }
+              }
+            }
+          },
+          {
+            "role": "primary",
+            "joint": "right_elbow",
+            "upRange": {
+              "pad": {
+                "max": 180,
+                "min": 145
+              },
+              "normal": {
+                "max": 180,
+                "min": 155
+              },
+              "perfect": {
+                "max": 180,
+                "min": 165
+              }
+            },
+            "downRange": {
+              "pad": {
+                "max": 115,
+                "min": 65
+              },
+              "danger": {
+                "max": 55,
+                "min": 0
+              },
+              "normal": {
+                "max": 105,
+                "min": 75
+              },
+              "perfect": {
+                "max": 98,
+                "min": 82
+              },
+              "warning": {
+                "max": 72,
+                "min": 55
+              }
+            },
+            "startPose": {
+              "max": 115,
+              "min": 70
+            },
+            "pairedWith": "left_elbow",
+            "stateMessages": {
+              "pad": {
+                "up": {
+                  "ar": "مقبول — زد التمدد تدريجياً",
+                  "en": "Acceptable — build lockout slowly"
+                }
+              },
+              "normal": {
+                "up": {
+                  "ar": "جيد — فرد أكثر في الأعلى",
+                  "en": "Good — extend more at top"
+                },
+                "down": {
+                  "ar": "جيد — انزل لمستوى الكتف",
+                  "en": "Good — lower to shoulder level"
+                }
+              },
+              "perfect": {
+                "up": {
+                  "ar": "ممتاز! تمدد كامل فوق الرأس",
+                  "en": "Perfect! Full lockout"
+                },
+                "down": {
+                  "ar": "ممتاز! مستوى كتف مثالي",
+                  "en": "Perfect! Clean shoulder height"
+                }
+              },
+              "warning": {
+                "up": {
+                  "ar": "لا تفرط في تمديد قطني",
+                  "en": "Avoid excessive lumbar extension"
+                }
+              }
+            }
+          },
+          {
+            "role": "secondary",
+            "joint": "left_shoulder",
+            "range": {
+              "pad": {
+                "max": 180,
+                "min": 55
+              },
+              "normal": {
+                "max": 180,
+                "min": 65
+              },
+              "perfect": {
+                "max": 180,
+                "min": 75
+              },
+              "warning": {
+                "max": 60,
+                "min": 40
+              }
+            },
+            "startPose": {
+              "max": 180,
+              "min": 70
+            },
+            "phaseRanges": {
+              "up": {
+                "normal": {
+                  "max": 180,
+                  "min": 130
+                },
+                "perfect": {
+                  "max": 175,
+                  "min": 140
+                }
+              },
+              "top": {
+                "normal": {
+                  "max": 180,
+                  "min": 155
+                },
+                "perfect": {
+                  "max": 180,
+                  "min": 165
+                }
+              },
+              "down": {
+                "normal": {
+                  "max": 125,
+                  "min": 78
+                },
+                "perfect": {
+                  "max": 115,
+                  "min": 85
+                }
+              },
+              "bottom": {
+                "normal": {
+                  "max": 118,
+                  "min": 68
+                },
+                "perfect": {
+                  "max": 105,
+                  "min": 75
+                }
+              }
+            },
+            "stateMessages": {
+              "perfect": {
+                "ar": "كتف يتبع خط الضغط العمودي",
+                "en": "Shoulder tracks the vertical press line"
+              },
+              "warning": {
+                "ar": "لا تدع الكتفين يرتفعان نحو الأذنين",
+                "en": "Do not shrug the shoulders toward the ears"
+              }
+            },
+            "phaseStateMessages": {
+              "top": {
+                "pad": {
+                  "ar": "أكمل التمدد قبل العد التالي",
+                  "en": "Finish lockout before the next rep"
+                },
+                "perfect": {
+                  "ar": "تمدد كامل فوق الرأس",
+                  "en": "Full overhead lockout"
+                }
+              },
+              "bottom": {
+                "perfect": {
+                  "ar": "مستوى كتف جيد",
+                  "en": "Good shoulder-line position"
+                },
+                "warning": {
+                  "ar": "اقترب لمستوى الكتف بسلاسة",
+                  "en": "Lower smoothly to shoulder level"
+                }
+              }
+            }
+          }
+        ]
+      }
+    ],
+    "validationWarning": null
+  }
+}

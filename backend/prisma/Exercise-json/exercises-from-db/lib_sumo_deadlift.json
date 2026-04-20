@@ -1,0 +1,885 @@
+{
+  "slug": "lib_sumo_deadlift",
+  "status": "published",
+  "movementPattern": "HINGE",
+  "loadCapability": "EXTERNAL_LOAD_REQUIRED",
+  "familyKey": "hinge_pattern_family",
+  "familyOrder": 50,
+  "name": {
+    "ar": "رفعة سومو",
+    "en": "Sumo deadlift"
+  },
+  "category": {
+    "code": "legs",
+    "name": {
+      "ar": "تمارين الأرجل",
+      "en": "Legs"
+    }
+  },
+  "countingMethod": "up_down",
+  "muscles": [
+    "hamstrings",
+    "glutes",
+    "quadriceps"
+  ],
+  "equipment": [
+    "barbell",
+    "mat"
+  ],
+  "tags": [
+    "curated_library",
+    "compound"
+  ],
+  "repCountingConfig": {
+    "reps": 12,
+    "minRepIntervalMs": 1500,
+    "maxRepIntervalMs": 5000
+  },
+  "poseVariants": [
+    {
+      "name": {
+        "ar": "زاوية جانبية",
+        "en": "Side view"
+      },
+      "posePosition": "standing_side",
+      "expectedPostures": [
+        "standing"
+      ],
+      "expectedDirections": [
+        "side"
+      ],
+      "expectedRegions": [
+        "full_body"
+      ],
+      "trackedJoints": [
+        {
+          "joint": "left_hip",
+          "role": "primary",
+          "startPose": {
+            "max": 180,
+            "min": 160
+          },
+          "stateMessages": {
+            "pad": {
+              "down": {
+                "ar": "مقبول — زد العمق تدريجياً",
+                "en": "Acceptable — build range slowly"
+              }
+            },
+            "danger": {
+              "down": {
+                "ar": "توقف — خطر على أسفل الظهر",
+                "en": "Stop — low-back risk"
+              }
+            },
+            "normal": {
+              "up": {
+                "ar": "جيد — اضبط الاستقامة في الأعلى",
+                "en": "Good — tidy the top"
+              },
+              "down": {
+                "ar": "جيد — نزل أكثر إن كان آمناً للأوتار",
+                "en": "Good — go deeper if hamstrings allow"
+              }
+            },
+            "perfect": {
+              "up": {
+                "ar": "ممتاز! وقفة كاملة",
+                "en": "Perfect! Full lockout"
+              },
+              "down": {
+                "ar": "ممتاز! زاوية ورك مثالية",
+                "en": "Perfect! Ideal hinge depth"
+              }
+            },
+            "warning": {
+              "down": {
+                "ar": "قلل العمق إن الظهر يفقد الحياد",
+                "en": "Reduce depth if neutrality is lost"
+              }
+            }
+          },
+          "pairedWith": "right_hip",
+          "upRange": {
+            "pad": {
+              "max": 180,
+              "min": 155
+            },
+            "normal": {
+              "max": 180,
+              "min": 165
+            },
+            "perfect": {
+              "max": 180,
+              "min": 170
+            }
+          },
+          "downRange": {
+            "pad": {
+              "max": 115,
+              "min": 65
+            },
+            "danger": {
+              "max": 48,
+              "min": 0
+            },
+            "normal": {
+              "max": 105,
+              "min": 72
+            },
+            "perfect": {
+              "max": 98,
+              "min": 78
+            },
+            "warning": {
+              "max": 65,
+              "min": 48
+            }
+          }
+        },
+        {
+          "joint": "right_hip",
+          "role": "primary",
+          "startPose": {
+            "max": 180,
+            "min": 160
+          },
+          "stateMessages": {
+            "pad": {
+              "down": {
+                "ar": "مقبول — زد العمق تدريجياً",
+                "en": "Acceptable — build range slowly"
+              }
+            },
+            "danger": {
+              "down": {
+                "ar": "توقف — خطر على أسفل الظهر",
+                "en": "Stop — low-back risk"
+              }
+            },
+            "normal": {
+              "up": {
+                "ar": "جيد — اضبط الاستقامة في الأعلى",
+                "en": "Good — tidy the top"
+              },
+              "down": {
+                "ar": "جيد — نزل أكثر إن كان آمناً للأوتار",
+                "en": "Good — go deeper if hamstrings allow"
+              }
+            },
+            "perfect": {
+              "up": {
+                "ar": "ممتاز! وقفة كاملة",
+                "en": "Perfect! Full lockout"
+              },
+              "down": {
+                "ar": "ممتاز! زاوية ورك مثالية",
+                "en": "Perfect! Ideal hinge depth"
+              }
+            },
+            "warning": {
+              "down": {
+                "ar": "قلل العمق إن الظهر يفقد الحياد",
+                "en": "Reduce depth if neutrality is lost"
+              }
+            }
+          },
+          "pairedWith": "left_hip",
+          "upRange": {
+            "pad": {
+              "max": 180,
+              "min": 155
+            },
+            "normal": {
+              "max": 180,
+              "min": 165
+            },
+            "perfect": {
+              "max": 180,
+              "min": 170
+            }
+          },
+          "downRange": {
+            "pad": {
+              "max": 115,
+              "min": 65
+            },
+            "danger": {
+              "max": 48,
+              "min": 0
+            },
+            "normal": {
+              "max": 105,
+              "min": 72
+            },
+            "perfect": {
+              "max": 98,
+              "min": 78
+            },
+            "warning": {
+              "max": 65,
+              "min": 48
+            }
+          }
+        },
+        {
+          "joint": "left_knee",
+          "role": "secondary",
+          "startPose": {
+            "max": 180,
+            "min": 150
+          },
+          "stateMessages": {
+            "perfect": {
+              "ar": "ركبة ناعمة — ممتاز",
+              "en": "Soft knee — great"
+            },
+            "warning": {
+              "ar": "تجنب قفل الركبة بالكامل في الروماني",
+              "en": "Avoid fully locking knees in RDL-style hinges"
+            }
+          },
+          "range": {
+            "pad": {
+              "max": 180,
+              "min": 115
+            },
+            "normal": {
+              "max": 180,
+              "min": 125
+            },
+            "perfect": {
+              "max": 180,
+              "min": 135
+            },
+            "warning": {
+              "max": 118,
+              "min": 100
+            }
+          },
+          "phaseRanges": {
+            "up": {
+              "normal": {
+                "max": 178,
+                "min": 132
+              },
+              "perfect": {
+                "max": 172,
+                "min": 140
+              }
+            },
+            "top": {
+              "normal": {
+                "max": 180,
+                "min": 160
+              },
+              "perfect": {
+                "max": 180,
+                "min": 168
+              }
+            },
+            "down": {
+              "normal": {
+                "max": 178,
+                "min": 132
+              },
+              "perfect": {
+                "max": 172,
+                "min": 140
+              }
+            },
+            "bottom": {
+              "perfect": {
+                "max": 165,
+                "min": 130
+              }
+            }
+          },
+          "phaseStateMessages": {
+            "top": {
+              "perfect": {
+                "ar": "ورك وركبة ممتدان — قفل جيد",
+                "en": "Hip and knee extended — good lockout"
+              },
+              "warning": {
+                "ar": "اضغط لقفل الورك",
+                "en": "Drive hips through to lock out"
+              }
+            },
+            "bottom": {
+              "perfect": {
+                "ar": "ثني ركبة مناسب في القاع",
+                "en": "Appropriate knee bend at the bottom"
+              },
+              "warning": {
+                "ar": "اثنِ الركبة قليلاً إن كانت الساقان شبه مفرودتين",
+                "en": "Add a little knee bend if legs are too straight"
+              }
+            }
+          }
+        }
+      ],
+      "positionChecks": [
+        {
+          "id": "hinge_neutral_spine",
+          "type": "vertical_alignment",
+          "landmarks": {
+            "primary": "left_shoulder",
+            "secondary": "left_hip"
+          },
+          "condition": {
+            "operator": "approximately_equal",
+            "threshold": 0.09
+          },
+          "activePhases": [
+            "up",
+            "down",
+            "bottom"
+          ],
+          "errorMessage": {
+            "ar": "حافظ على استقامة الظهر — المفصل عند الورك وليس قطني حاد.",
+            "en": "Keep the back neutral — hinge at the hips, not a sharp lumbar round."
+          },
+          "severity": "error",
+          "cooldownMs": 2000,
+          "minErrorFrames": 4
+        }
+      ],
+      "feedbackMessages": {
+        "motivational": [
+          {
+            "ar": "أداء ممتاز — حافظ على الإيقاع",
+            "en": "Strong work — keep the rhythm"
+          },
+          {
+            "ar": "قوي! لا تضحّي بالشكل من أجل السرعة",
+            "en": "Solid! Don’t sacrifice form for speed"
+          }
+        ],
+        "tips": [
+          {
+            "ar": "ثبّت القدمين ووزّع الوزن على كعب ووسط القدم.",
+            "en": "Root the feet; load heel and mid-foot evenly."
+          },
+          {
+            "ar": "أي ألم حاد في الركبة أو الظهر — توقف فوراً.",
+            "en": "Stop immediately if you feel sharp knee or back pain."
+          }
+        ]
+      },
+      "messageAssignments": [
+        {
+          "messageId": "005ae080-92c9-457a-99e4-e033c5deb8ee",
+          "target": "position",
+          "context": "error",
+          "checkId": "hinge_neutral_spine",
+          "sortOrder": 1
+        },
+        {
+          "messageId": "2dc8e2b8-9bc6-46d5-ba9c-76521890ed7f",
+          "target": "joint_state",
+          "context": "perfect",
+          "jointCode": "left_hip",
+          "zone": "up",
+          "sortOrder": 2
+        },
+        {
+          "messageId": "35f50ba9-0993-46e3-b283-e1f03026ef2b",
+          "target": "joint_state",
+          "context": "perfect",
+          "jointCode": "left_hip",
+          "zone": "down",
+          "sortOrder": 3
+        },
+        {
+          "messageId": "f67a8316-ec55-4f1f-920f-d3670f8178fc",
+          "target": "joint_state",
+          "context": "normal",
+          "jointCode": "left_hip",
+          "zone": "up",
+          "sortOrder": 4
+        },
+        {
+          "messageId": "38c9a02b-2ad6-4e9c-9fdf-3418aeece9c2",
+          "target": "joint_state",
+          "context": "normal",
+          "jointCode": "left_hip",
+          "zone": "down",
+          "sortOrder": 5
+        },
+        {
+          "messageId": "518eaf0c-f725-4c13-97d8-5a2ca80ccadd",
+          "target": "joint_state",
+          "context": "pad",
+          "jointCode": "left_hip",
+          "zone": "down",
+          "sortOrder": 6
+        },
+        {
+          "messageId": "9b6f1563-ccc2-4a4b-bdc5-714b1c7a5219",
+          "target": "joint_state",
+          "context": "warning",
+          "jointCode": "left_hip",
+          "zone": "down",
+          "sortOrder": 7
+        },
+        {
+          "messageId": "f984ab46-3de0-46ae-9451-6742355e39e1",
+          "target": "joint_state",
+          "context": "danger",
+          "jointCode": "left_hip",
+          "zone": "down",
+          "sortOrder": 8
+        },
+        {
+          "messageId": "07a0e141-53bf-4d07-8661-825748f2328a",
+          "target": "joint_state",
+          "context": "perfect",
+          "jointCode": "right_hip",
+          "zone": "up",
+          "sortOrder": 9
+        },
+        {
+          "messageId": "5c4d3055-916f-46d0-9deb-f026e5f7c2a5",
+          "target": "joint_state",
+          "context": "perfect",
+          "jointCode": "right_hip",
+          "zone": "down",
+          "sortOrder": 10
+        },
+        {
+          "messageId": "16a87d61-1489-4393-a9f4-5f4aaa2e8ffe",
+          "target": "joint_state",
+          "context": "normal",
+          "jointCode": "right_hip",
+          "zone": "up",
+          "sortOrder": 11
+        },
+        {
+          "messageId": "ba258296-862f-4905-a5ee-418bbef1c371",
+          "target": "joint_state",
+          "context": "normal",
+          "jointCode": "right_hip",
+          "zone": "down",
+          "sortOrder": 12
+        },
+        {
+          "messageId": "fdc49ca5-081c-473e-8d2d-c70f4617c0a5",
+          "target": "joint_state",
+          "context": "pad",
+          "jointCode": "right_hip",
+          "zone": "down",
+          "sortOrder": 13
+        },
+        {
+          "messageId": "4e40952f-10e9-44e2-9849-29f93ee93171",
+          "target": "joint_state",
+          "context": "warning",
+          "jointCode": "right_hip",
+          "zone": "down",
+          "sortOrder": 14
+        },
+        {
+          "messageId": "5f014cab-fe48-4980-86c4-a8291170f0b0",
+          "target": "joint_state",
+          "context": "danger",
+          "jointCode": "right_hip",
+          "zone": "down",
+          "sortOrder": 15
+        },
+        {
+          "messageId": "49b20e60-d14b-4465-bf3a-38b1fab9ade1",
+          "target": "joint_state",
+          "context": "perfect",
+          "jointCode": "left_knee",
+          "sortOrder": 16
+        },
+        {
+          "messageId": "7f8d4566-d0b3-40ac-9bfd-5ab49db3474f",
+          "target": "joint_state",
+          "context": "warning",
+          "jointCode": "left_knee",
+          "sortOrder": 17
+        },
+        {
+          "messageId": "6cdf7995-77b2-4615-b58c-41141ee528f5",
+          "target": "joint_state_phase",
+          "context": "top:perfect",
+          "jointCode": "left_knee",
+          "sortOrder": 18
+        },
+        {
+          "messageId": "81b64daf-f97b-45b3-bf91-bcf51bf170d4",
+          "target": "joint_state_phase",
+          "context": "top:warning",
+          "jointCode": "left_knee",
+          "sortOrder": 19
+        },
+        {
+          "messageId": "4cd40111-2780-461b-90e0-be126bd57ae6",
+          "target": "joint_state_phase",
+          "context": "bottom:perfect",
+          "jointCode": "left_knee",
+          "sortOrder": 20
+        },
+        {
+          "messageId": "742c2fd3-f956-4f73-a28b-369c411b2a44",
+          "target": "joint_state_phase",
+          "context": "bottom:warning",
+          "jointCode": "left_knee",
+          "sortOrder": 21
+        },
+        {
+          "messageId": "c596f166-bb55-4991-b8eb-5a36538127ec",
+          "target": "feedback",
+          "context": "motivational",
+          "sortOrder": 22
+        },
+        {
+          "messageId": "9c6d01c4-5cb8-479f-9b45-9cc77600a4bf",
+          "target": "feedback",
+          "context": "motivational",
+          "sortOrder": 23
+        },
+        {
+          "messageId": "ddb704c3-3e04-4b6a-aa7b-8112d861251b",
+          "target": "feedback",
+          "context": "tip",
+          "sortOrder": 24
+        },
+        {
+          "messageId": "8a59196a-c081-4bfb-a710-04e0b6993af4",
+          "target": "feedback",
+          "context": "tip",
+          "sortOrder": 25
+        }
+      ],
+      "cameraPosition": "side_view"
+    }
+  ],
+  "description": {
+    "ar": "تمرين مكتبة: رفعة سومو.",
+    "en": "Library exercise: Sumo deadlift."
+  },
+  "instructions": {
+    "ar": "حافظ على عمود فقري محايد وتنفس بثبات وتوقف عند أي ألم حاد.",
+    "en": "Maintain neutral spine, steady breathing, and stop if sharp pain appears."
+  },
+  "reportMetrics": {
+    "primary": [
+      "FORM_SCORE"
+    ],
+    "excluded": [
+      "HOLD_DURATION",
+      "WEIGHT",
+      "VOLUME",
+      "EST_1RM"
+    ]
+  },
+  "hasPositionChecks": true,
+  "_database": {
+    "id": "67894431-ac9a-4de3-bf53-b5dbb0912442",
+    "categoryId": "a672c3d3-4449-4f74-bd8e-be73a0035e88",
+    "countingMethodId": "f4d48aef-1606-4f23-8c61-7b4a2546f990",
+    "publishedAt": "2026-04-20T17:26:23.925Z",
+    "createdAt": "2026-04-20T17:26:23.926Z",
+    "updatedAt": "2026-04-20T17:26:34.192Z",
+    "deletedAt": null,
+    "isFeatured": false,
+    "createdBy": null,
+    "updatedBy": null,
+    "repCountingConfig": null,
+    "bilateralConfig": null,
+    "isBilateral": false,
+    "supportsWeight": false,
+    "minWeight": null,
+    "maxWeight": null,
+    "defaultWeight": null,
+    "reportMetrics": {
+      "mode": "reps",
+      "version": 1,
+      "primaryKpi": "repQuality",
+      "secondaryKpis": [
+        "avgFormScore",
+        "avgRom"
+      ]
+    },
+    "media": [],
+    "poseVariants": [
+      {
+        "id": "ed5a44bf-4d29-481a-973c-02d95747b2b4",
+        "sortOrder": 1,
+        "description": null,
+        "trackedJointsConfig": [
+          {
+            "role": "primary",
+            "joint": "left_hip",
+            "upRange": {
+              "pad": {
+                "max": 180,
+                "min": 155
+              },
+              "normal": {
+                "max": 180,
+                "min": 165
+              },
+              "perfect": {
+                "max": 180,
+                "min": 170
+              }
+            },
+            "downRange": {
+              "pad": {
+                "max": 115,
+                "min": 65
+              },
+              "danger": {
+                "max": 48,
+                "min": 0
+              },
+              "normal": {
+                "max": 105,
+                "min": 72
+              },
+              "perfect": {
+                "max": 98,
+                "min": 78
+              },
+              "warning": {
+                "max": 65,
+                "min": 48
+              }
+            },
+            "startPose": {
+              "max": 180,
+              "min": 160
+            },
+            "pairedWith": "right_hip",
+            "stateMessages": {
+              "pad": {
+                "down": {
+                  "ar": "مقبول — زد العمق تدريجياً",
+                  "en": "Acceptable — build range slowly"
+                }
+              },
+              "danger": {
+                "down": {
+                  "ar": "توقف — خطر على أسفل الظهر",
+                  "en": "Stop — low-back risk"
+                }
+              },
+              "normal": {
+                "up": {
+                  "ar": "جيد — اضبط الاستقامة في الأعلى",
+                  "en": "Good — tidy the top"
+                },
+                "down": {
+                  "ar": "جيد — نزل أكثر إن كان آمناً للأوتار",
+                  "en": "Good — go deeper if hamstrings allow"
+                }
+              },
+              "perfect": {
+                "up": {
+                  "ar": "ممتاز! وقفة كاملة",
+                  "en": "Perfect! Full lockout"
+                },
+                "down": {
+                  "ar": "ممتاز! زاوية ورك مثالية",
+                  "en": "Perfect! Ideal hinge depth"
+                }
+              },
+              "warning": {
+                "down": {
+                  "ar": "قلل العمق إن الظهر يفقد الحياد",
+                  "en": "Reduce depth if neutrality is lost"
+                }
+              }
+            }
+          },
+          {
+            "role": "primary",
+            "joint": "right_hip",
+            "upRange": {
+              "pad": {
+                "max": 180,
+                "min": 155
+              },
+              "normal": {
+                "max": 180,
+                "min": 165
+              },
+              "perfect": {
+                "max": 180,
+                "min": 170
+              }
+            },
+            "downRange": {
+              "pad": {
+                "max": 115,
+                "min": 65
+              },
+              "danger": {
+                "max": 48,
+                "min": 0
+              },
+              "normal": {
+                "max": 105,
+                "min": 72
+              },
+              "perfect": {
+                "max": 98,
+                "min": 78
+              },
+              "warning": {
+                "max": 65,
+                "min": 48
+              }
+            },
+            "startPose": {
+              "max": 180,
+              "min": 160
+            },
+            "pairedWith": "left_hip",
+            "stateMessages": {
+              "pad": {
+                "down": {
+                  "ar": "مقبول — زد العمق تدريجياً",
+                  "en": "Acceptable — build range slowly"
+                }
+              },
+              "danger": {
+                "down": {
+                  "ar": "توقف — خطر على أسفل الظهر",
+                  "en": "Stop — low-back risk"
+                }
+              },
+              "normal": {
+                "up": {
+                  "ar": "جيد — اضبط الاستقامة في الأعلى",
+                  "en": "Good — tidy the top"
+                },
+                "down": {
+                  "ar": "جيد — نزل أكثر إن كان آمناً للأوتار",
+                  "en": "Good — go deeper if hamstrings allow"
+                }
+              },
+              "perfect": {
+                "up": {
+                  "ar": "ممتاز! وقفة كاملة",
+                  "en": "Perfect! Full lockout"
+                },
+                "down": {
+                  "ar": "ممتاز! زاوية ورك مثالية",
+                  "en": "Perfect! Ideal hinge depth"
+                }
+              },
+              "warning": {
+                "down": {
+                  "ar": "قلل العمق إن الظهر يفقد الحياد",
+                  "en": "Reduce depth if neutrality is lost"
+                }
+              }
+            }
+          },
+          {
+            "role": "secondary",
+            "joint": "left_knee",
+            "range": {
+              "pad": {
+                "max": 180,
+                "min": 115
+              },
+              "normal": {
+                "max": 180,
+                "min": 125
+              },
+              "perfect": {
+                "max": 180,
+                "min": 135
+              },
+              "warning": {
+                "max": 118,
+                "min": 100
+              }
+            },
+            "startPose": {
+              "max": 180,
+              "min": 150
+            },
+            "phaseRanges": {
+              "up": {
+                "normal": {
+                  "max": 178,
+                  "min": 132
+                },
+                "perfect": {
+                  "max": 172,
+                  "min": 140
+                }
+              },
+              "top": {
+                "normal": {
+                  "max": 180,
+                  "min": 160
+                },
+                "perfect": {
+                  "max": 180,
+                  "min": 168
+                }
+              },
+              "down": {
+                "normal": {
+                  "max": 178,
+                  "min": 132
+                },
+                "perfect": {
+                  "max": 172,
+                  "min": 140
+                }
+              },
+              "bottom": {
+                "perfect": {
+                  "max": 165,
+                  "min": 130
+                }
+              }
+            },
+            "stateMessages": {
+              "perfect": {
+                "ar": "ركبة ناعمة — ممتاز",
+                "en": "Soft knee — great"
+              },
+              "warning": {
+                "ar": "تجنب قفل الركبة بالكامل في الروماني",
+                "en": "Avoid fully locking knees in RDL-style hinges"
+              }
+            },
+            "phaseStateMessages": {
+              "top": {
+                "perfect": {
+                  "ar": "ورك وركبة ممتدان — قفل جيد",
+                  "en": "Hip and knee extended — good lockout"
+                },
+                "warning": {
+                  "ar": "اضغط لقفل الورك",
+                  "en": "Drive hips through to lock out"
+                }
+              },
+              "bottom": {
+                "perfect": {
+                  "ar": "ثني ركبة مناسب في القاع",
+                  "en": "Appropriate knee bend at the bottom"
+                },
+                "warning": {
+                  "ar": "اثنِ الركبة قليلاً إن كانت الساقان شبه مفرودتين",
+                  "en": "Add a little knee bend if legs are too straight"
+                }
+              }
+            }
+          }
+        ]
+      }
+    ],
+    "validationWarning": null
+  }
+}

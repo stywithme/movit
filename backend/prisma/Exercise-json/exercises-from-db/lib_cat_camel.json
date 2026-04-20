@@ -1,0 +1,281 @@
+{
+  "slug": "lib_cat_camel",
+  "status": "published",
+  "movementPattern": "MOBILITY_DRILL",
+  "loadCapability": "BODYWEIGHT_ONLY",
+  "familyKey": "spine_mobility_family",
+  "familyOrder": 10,
+  "name": {
+    "ar": "قطّ جمل",
+    "en": "Cat-camel"
+  },
+  "category": {
+    "code": "back",
+    "name": {
+      "ar": "تمارين الظهر",
+      "en": "Back"
+    }
+  },
+  "countingMethod": "up_down",
+  "muscles": [
+    "lower_back"
+  ],
+  "equipment": [
+    "bodyweight",
+    "mat"
+  ],
+  "tags": [
+    "curated_library",
+    "mobility"
+  ],
+  "repCountingConfig": {
+    "reps": 12,
+    "minRepIntervalMs": 1500,
+    "maxRepIntervalMs": 5000
+  },
+  "poseVariants": [
+    {
+      "name": {
+        "ar": "مستلقٍ على الوجه",
+        "en": "Lying face down (side angle)"
+      },
+      "posePosition": "prone_side",
+      "expectedPostures": [
+        "lying_prone"
+      ],
+      "expectedDirections": [
+        "side"
+      ],
+      "expectedRegions": [
+        "full_body"
+      ],
+      "trackedJoints": [
+        {
+          "joint": "spine",
+          "role": "primary",
+          "startPose": {
+            "max": 40,
+            "min": 0
+          },
+          "stateMessages": {
+            "perfect": {
+              "ar": "تحكم قطني جيد",
+              "en": "Good segmental control"
+            },
+            "warning": {
+              "ar": "قلل المدى إن الظهر يضيق",
+              "en": "Ease range if back pinches"
+            }
+          },
+          "range": {
+            "pad": {
+              "max": 50,
+              "min": 0
+            },
+            "normal": {
+              "max": 42,
+              "min": 0
+            },
+            "perfect": {
+              "max": 35,
+              "min": 8
+            },
+            "warning": {
+              "max": 62,
+              "min": 45
+            }
+          }
+        }
+      ],
+      "positionChecks": [
+        {
+          "id": "spine_seg_mob",
+          "type": "vertical_alignment",
+          "landmarks": {
+            "primary": "left_shoulder",
+            "secondary": "left_hip"
+          },
+          "condition": {
+            "operator": "approximately_equal",
+            "threshold": 0.14
+          },
+          "activePhases": [
+            "all"
+          ],
+          "errorMessage": {
+            "ar": "تحرّك بسلاسة داخل نطاق مريح.",
+            "en": "Move smoothly within a comfortable range."
+          },
+          "severity": "tip",
+          "cooldownMs": 3200,
+          "minErrorFrames": 6
+        }
+      ],
+      "feedbackMessages": {
+        "motivational": [
+          {
+            "ar": "مدى حركة جيد وتحكم أفضل",
+            "en": "Good range and better control"
+          },
+          {
+            "ar": "تحرك بسلاسة داخل نطاق مريح",
+            "en": "Move smoothly inside a comfortable range"
+          }
+        ],
+        "tips": [
+          {
+            "ar": "ابقِ الحركة نظيفة وهادئة بدون ارتداد.",
+            "en": "Keep the motion smooth and bounce-free."
+          },
+          {
+            "ar": "أي ألم حاد يعني تقليل المدى فوراً.",
+            "en": "Any sharp pain means reduce range immediately."
+          }
+        ]
+      },
+      "messageAssignments": [
+        {
+          "messageId": "49714514-f6e2-43ec-8c5a-7effe876d8c0",
+          "target": "position",
+          "context": "error",
+          "checkId": "spine_seg_mob",
+          "sortOrder": 1
+        },
+        {
+          "messageId": "469fb590-8001-48e3-bae3-f39d2f3ceb26",
+          "target": "joint_state",
+          "context": "perfect",
+          "jointCode": "spine",
+          "sortOrder": 2
+        },
+        {
+          "messageId": "6208e326-432a-4f33-9295-7983d493fa5c",
+          "target": "joint_state",
+          "context": "warning",
+          "jointCode": "spine",
+          "sortOrder": 3
+        },
+        {
+          "messageId": "81a5a0e0-abce-4004-b6c5-48a3912a2a74",
+          "target": "feedback",
+          "context": "motivational",
+          "sortOrder": 4
+        },
+        {
+          "messageId": "632020e0-da0e-4fe5-9591-c39edd0e226b",
+          "target": "feedback",
+          "context": "motivational",
+          "sortOrder": 5
+        },
+        {
+          "messageId": "265767b9-04b3-44fe-a91c-bf8a3d3196b3",
+          "target": "feedback",
+          "context": "tip",
+          "sortOrder": 6
+        },
+        {
+          "messageId": "307671d4-3e71-499a-a837-ce6cee1be405",
+          "target": "feedback",
+          "context": "tip",
+          "sortOrder": 7
+        }
+      ]
+    }
+  ],
+  "description": {
+    "ar": "تمرين مكتبة: قطّ جمل.",
+    "en": "Library exercise: Cat-camel."
+  },
+  "instructions": {
+    "ar": "حافظ على عمود فقري محايد وتنفس بثبات وتوقف عند أي ألم حاد.",
+    "en": "Maintain neutral spine, steady breathing, and stop if sharp pain appears."
+  },
+  "reportMetrics": {
+    "primary": [
+      "FORM_SCORE"
+    ],
+    "excluded": [
+      "HOLD_DURATION",
+      "WEIGHT",
+      "VOLUME",
+      "EST_1RM",
+      "SYMMETRY"
+    ]
+  },
+  "hasPositionChecks": true,
+  "_database": {
+    "id": "49963629-d6b0-4db9-95d8-620d642b9ca6",
+    "categoryId": "d90cee55-225e-4127-9fdc-062a8a09522e",
+    "countingMethodId": "f4d48aef-1606-4f23-8c61-7b4a2546f990",
+    "publishedAt": "2026-04-20T17:26:25.591Z",
+    "createdAt": "2026-04-20T17:26:25.593Z",
+    "updatedAt": "2026-04-20T17:26:34.313Z",
+    "deletedAt": null,
+    "isFeatured": false,
+    "createdBy": null,
+    "updatedBy": null,
+    "repCountingConfig": null,
+    "bilateralConfig": null,
+    "isBilateral": false,
+    "supportsWeight": false,
+    "minWeight": null,
+    "maxWeight": null,
+    "defaultWeight": null,
+    "reportMetrics": {
+      "mode": "reps",
+      "version": 1,
+      "primaryKpi": "repQuality",
+      "secondaryKpis": [
+        "avgFormScore",
+        "avgRom"
+      ]
+    },
+    "media": [],
+    "poseVariants": [
+      {
+        "id": "13ed71a0-03f8-4b72-9da5-2d19415d7907",
+        "sortOrder": 1,
+        "description": null,
+        "trackedJointsConfig": [
+          {
+            "role": "primary",
+            "joint": "spine",
+            "range": {
+              "pad": {
+                "max": 50,
+                "min": 0
+              },
+              "normal": {
+                "max": 42,
+                "min": 0
+              },
+              "perfect": {
+                "max": 35,
+                "min": 8
+              },
+              "warning": {
+                "max": 62,
+                "min": 45
+              }
+            },
+            "startPose": {
+              "max": 40,
+              "min": 0
+            },
+            "stateMessages": {
+              "perfect": {
+                "ar": "تحكم قطني جيد",
+                "en": "Good segmental control"
+              },
+              "warning": {
+                "ar": "قلل المدى إن الظهر يضيق",
+                "en": "Ease range if back pinches"
+              }
+            }
+          }
+        ]
+      }
+    ],
+    "validationWarning": null
+  }
+}

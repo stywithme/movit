@@ -1,0 +1,505 @@
+{
+  "slug": "lib_half_kneeling_lift",
+  "status": "published",
+  "movementPattern": "ROTATION",
+  "loadCapability": "EXTERNAL_LOAD_OPTIONAL",
+  "familyKey": "rotation_power_family",
+  "familyOrder": 30,
+  "name": {
+    "ar": "قطع نصف ركبة",
+    "en": "Half-kneeling chop (light)"
+  },
+  "category": {
+    "code": "abs",
+    "name": {
+      "ar": "تمارين البطن",
+      "en": "Abs"
+    }
+  },
+  "countingMethod": "up_down",
+  "muscles": [
+    "obliques"
+  ],
+  "equipment": [
+    "dumbbell",
+    "mat"
+  ],
+  "tags": [
+    "curated_library",
+    "core"
+  ],
+  "repCountingConfig": {
+    "reps": 12,
+    "minRepIntervalMs": 1500,
+    "maxRepIntervalMs": 5000
+  },
+  "poseVariants": [
+    {
+      "name": {
+        "ar": "زاوية جانبية",
+        "en": "Side view"
+      },
+      "posePosition": "standing_side",
+      "expectedPostures": [
+        "standing"
+      ],
+      "expectedDirections": [
+        "side"
+      ],
+      "expectedRegions": [
+        "full_body"
+      ],
+      "trackedJoints": [
+        {
+          "joint": "spine",
+          "role": "primary",
+          "startPose": {
+            "max": 45,
+            "min": 0
+          },
+          "stateMessages": {
+            "pad": {
+              "up": {
+                "ar": "مقبول — ابنِ المدى تدريجياً",
+                "en": "Acceptable — build ROM gradually"
+              }
+            },
+            "danger": {
+              "up": {
+                "ar": "توقف — ألم حاد",
+                "en": "Stop — sharp pain"
+              }
+            },
+            "normal": {
+              "up": {
+                "ar": "جيد، زد اللف قليلاً إن كان مريحاً",
+                "en": "Good, add a bit more rotation if comfortable"
+              },
+              "down": {
+                "ar": "جيد، ارجع للمحايد ببطء",
+                "en": "Good, return to neutral slowly"
+              }
+            },
+            "perfect": {
+              "up": {
+                "ar": "ممتاز! دوران صدري واضح",
+                "en": "Perfect! Clear thoracic rotation"
+              },
+              "down": {
+                "ar": "ممتاز! بداية محايدة منظمة",
+                "en": "Perfect! Organized neutral start"
+              }
+            },
+            "warning": {
+              "up": {
+                "ar": "لا تلتف من أسفل الظهر فقط",
+                "en": "Do not twist only from the low back"
+              }
+            }
+          },
+          "upRange": {
+            "pad": {
+              "max": 80,
+              "min": 22
+            },
+            "danger": {
+              "max": 130,
+              "min": 100
+            },
+            "normal": {
+              "max": 70,
+              "min": 28
+            },
+            "perfect": {
+              "max": 60,
+              "min": 35
+            },
+            "warning": {
+              "max": 100,
+              "min": 80
+            }
+          },
+          "downRange": {
+            "pad": {
+              "max": 20,
+              "min": 0
+            },
+            "normal": {
+              "max": 18,
+              "min": 0
+            },
+            "perfect": {
+              "max": 14,
+              "min": 0
+            }
+          }
+        },
+        {
+          "joint": "left_shoulder",
+          "role": "secondary",
+          "startPose": {
+            "max": 120,
+            "min": 40
+          },
+          "stateMessages": {
+            "perfect": {
+              "ar": "كتف يتحرك مع اللف بسلاسة",
+              "en": "Shoulder moves smoothly with the rotation"
+            },
+            "warning": {
+              "ar": "لا تشد الرقبة أو المرفق بعنف",
+              "en": "Do not yank the neck or elbow"
+            }
+          },
+          "range": {
+            "pad": {
+              "max": 115,
+              "min": 40
+            },
+            "normal": {
+              "max": 105,
+              "min": 48
+            },
+            "perfect": {
+              "max": 95,
+              "min": 55
+            },
+            "warning": {
+              "max": 130,
+              "min": 115
+            }
+          }
+        }
+      ],
+      "positionChecks": [
+        {
+          "id": "rotation_smooth_hips",
+          "type": "vertical_alignment",
+          "landmarks": {
+            "primary": "left_shoulder",
+            "secondary": "left_hip"
+          },
+          "condition": {
+            "operator": "approximately_equal",
+            "threshold": 0.18
+          },
+          "activePhases": [
+            "up",
+            "down"
+          ],
+          "errorMessage": {
+            "ar": "أدر الجذع بسلاسة دون انهيار أو اندفاع سريع.",
+            "en": "Rotate smoothly without collapsing or snapping."
+          },
+          "severity": "tip",
+          "cooldownMs": 2600,
+          "minErrorFrames": 5
+        }
+      ],
+      "feedbackMessages": {
+        "motivational": [
+          {
+            "ar": "مدى حركة جيد وتحكم أفضل",
+            "en": "Good range and better control"
+          },
+          {
+            "ar": "تحرك بسلاسة داخل نطاق مريح",
+            "en": "Move smoothly inside a comfortable range"
+          }
+        ],
+        "tips": [
+          {
+            "ar": "ابقِ الحركة نظيفة وهادئة بدون ارتداد.",
+            "en": "Keep the motion smooth and bounce-free."
+          },
+          {
+            "ar": "أي ألم حاد يعني تقليل المدى فوراً.",
+            "en": "Any sharp pain means reduce range immediately."
+          }
+        ]
+      },
+      "messageAssignments": [
+        {
+          "messageId": "1ce257b8-f3e5-4c2a-8c85-c24e3267d6df",
+          "target": "position",
+          "context": "error",
+          "checkId": "rotation_smooth_hips",
+          "sortOrder": 1
+        },
+        {
+          "messageId": "2595fcd2-8bd1-4198-b273-65c9d6169ed2",
+          "target": "joint_state",
+          "context": "perfect",
+          "jointCode": "spine",
+          "zone": "up",
+          "sortOrder": 2
+        },
+        {
+          "messageId": "cb388046-28a3-4ffb-bddc-9384bb986ead",
+          "target": "joint_state",
+          "context": "perfect",
+          "jointCode": "spine",
+          "zone": "down",
+          "sortOrder": 3
+        },
+        {
+          "messageId": "ead29659-a748-4a8d-a1ca-cf5d4e5d1dad",
+          "target": "joint_state",
+          "context": "normal",
+          "jointCode": "spine",
+          "zone": "up",
+          "sortOrder": 4
+        },
+        {
+          "messageId": "40be4c8e-700f-41f9-a1fe-0c81ea634ca3",
+          "target": "joint_state",
+          "context": "normal",
+          "jointCode": "spine",
+          "zone": "down",
+          "sortOrder": 5
+        },
+        {
+          "messageId": "b1d52594-acb0-4ea9-88f6-8ec6388c4082",
+          "target": "joint_state",
+          "context": "pad",
+          "jointCode": "spine",
+          "zone": "up",
+          "sortOrder": 6
+        },
+        {
+          "messageId": "edeaaa56-1d96-4990-a2cf-048ea8b965f6",
+          "target": "joint_state",
+          "context": "warning",
+          "jointCode": "spine",
+          "zone": "up",
+          "sortOrder": 7
+        },
+        {
+          "messageId": "d3d8b4de-89ba-4232-9aad-0534d20c4dd5",
+          "target": "joint_state",
+          "context": "danger",
+          "jointCode": "spine",
+          "zone": "up",
+          "sortOrder": 8
+        },
+        {
+          "messageId": "b12a71ee-f89e-4684-8196-edd1ea3f4801",
+          "target": "joint_state",
+          "context": "perfect",
+          "jointCode": "left_shoulder",
+          "sortOrder": 9
+        },
+        {
+          "messageId": "70f3e74a-c3b7-414a-823e-88fbcaecff29",
+          "target": "joint_state",
+          "context": "warning",
+          "jointCode": "left_shoulder",
+          "sortOrder": 10
+        },
+        {
+          "messageId": "ad7282a7-8049-428e-92cb-86dfc6b353bf",
+          "target": "feedback",
+          "context": "motivational",
+          "sortOrder": 11
+        },
+        {
+          "messageId": "50459da7-c693-4c40-b349-da7c1b35bbf5",
+          "target": "feedback",
+          "context": "motivational",
+          "sortOrder": 12
+        },
+        {
+          "messageId": "6d3c561e-e1ac-42ce-b515-67ba54532ebb",
+          "target": "feedback",
+          "context": "tip",
+          "sortOrder": 13
+        },
+        {
+          "messageId": "7d1848a8-a5de-4892-b0ff-7e09049e6126",
+          "target": "feedback",
+          "context": "tip",
+          "sortOrder": 14
+        }
+      ],
+      "cameraPosition": "side_view"
+    }
+  ],
+  "description": {
+    "ar": "تمرين مكتبة: قطع نصف ركبة.",
+    "en": "Library exercise: Half-kneeling chop (light)."
+  },
+  "instructions": {
+    "ar": "حافظ على عمود فقري محايد وتنفس بثبات وتوقف عند أي ألم حاد.",
+    "en": "Maintain neutral spine, steady breathing, and stop if sharp pain appears."
+  },
+  "supportsWeight": true,
+  "reportMetrics": {
+    "primary": [
+      "FORM_SCORE"
+    ],
+    "excluded": [
+      "HOLD_DURATION",
+      "SYMMETRY"
+    ]
+  },
+  "hasPositionChecks": true,
+  "_database": {
+    "id": "df9a1972-6894-465f-ae9f-2d1e45c5910f",
+    "categoryId": "01b944db-50df-4f53-aa08-ec5633820277",
+    "countingMethodId": "f4d48aef-1606-4f23-8c61-7b4a2546f990",
+    "publishedAt": "2026-04-20T17:26:25.971Z",
+    "createdAt": "2026-04-20T17:26:25.972Z",
+    "updatedAt": "2026-04-20T17:26:34.349Z",
+    "deletedAt": null,
+    "isFeatured": false,
+    "createdBy": null,
+    "updatedBy": null,
+    "repCountingConfig": null,
+    "bilateralConfig": null,
+    "isBilateral": false,
+    "supportsWeight": true,
+    "minWeight": null,
+    "maxWeight": null,
+    "defaultWeight": null,
+    "reportMetrics": {
+      "mode": "reps",
+      "version": 1,
+      "primaryKpi": "repQuality",
+      "secondaryKpis": [
+        "avgFormScore",
+        "avgRom"
+      ]
+    },
+    "media": [],
+    "poseVariants": [
+      {
+        "id": "91d4a938-bc31-4653-ad7a-8e189a04be3a",
+        "sortOrder": 1,
+        "description": null,
+        "trackedJointsConfig": [
+          {
+            "role": "primary",
+            "joint": "spine",
+            "upRange": {
+              "pad": {
+                "max": 80,
+                "min": 22
+              },
+              "danger": {
+                "max": 130,
+                "min": 100
+              },
+              "normal": {
+                "max": 70,
+                "min": 28
+              },
+              "perfect": {
+                "max": 60,
+                "min": 35
+              },
+              "warning": {
+                "max": 100,
+                "min": 80
+              }
+            },
+            "downRange": {
+              "pad": {
+                "max": 20,
+                "min": 0
+              },
+              "normal": {
+                "max": 18,
+                "min": 0
+              },
+              "perfect": {
+                "max": 14,
+                "min": 0
+              }
+            },
+            "startPose": {
+              "max": 45,
+              "min": 0
+            },
+            "stateMessages": {
+              "pad": {
+                "up": {
+                  "ar": "مقبول — ابنِ المدى تدريجياً",
+                  "en": "Acceptable — build ROM gradually"
+                }
+              },
+              "danger": {
+                "up": {
+                  "ar": "توقف — ألم حاد",
+                  "en": "Stop — sharp pain"
+                }
+              },
+              "normal": {
+                "up": {
+                  "ar": "جيد، زد اللف قليلاً إن كان مريحاً",
+                  "en": "Good, add a bit more rotation if comfortable"
+                },
+                "down": {
+                  "ar": "جيد، ارجع للمحايد ببطء",
+                  "en": "Good, return to neutral slowly"
+                }
+              },
+              "perfect": {
+                "up": {
+                  "ar": "ممتاز! دوران صدري واضح",
+                  "en": "Perfect! Clear thoracic rotation"
+                },
+                "down": {
+                  "ar": "ممتاز! بداية محايدة منظمة",
+                  "en": "Perfect! Organized neutral start"
+                }
+              },
+              "warning": {
+                "up": {
+                  "ar": "لا تلتف من أسفل الظهر فقط",
+                  "en": "Do not twist only from the low back"
+                }
+              }
+            }
+          },
+          {
+            "role": "secondary",
+            "joint": "left_shoulder",
+            "range": {
+              "pad": {
+                "max": 115,
+                "min": 40
+              },
+              "normal": {
+                "max": 105,
+                "min": 48
+              },
+              "perfect": {
+                "max": 95,
+                "min": 55
+              },
+              "warning": {
+                "max": 130,
+                "min": 115
+              }
+            },
+            "startPose": {
+              "max": 120,
+              "min": 40
+            },
+            "stateMessages": {
+              "perfect": {
+                "ar": "كتف يتحرك مع اللف بسلاسة",
+                "en": "Shoulder moves smoothly with the rotation"
+              },
+              "warning": {
+                "ar": "لا تشد الرقبة أو المرفق بعنف",
+                "en": "Do not yank the neck or elbow"
+              }
+            }
+          }
+        ]
+      }
+    ],
+    "validationWarning": null
+  }
+}

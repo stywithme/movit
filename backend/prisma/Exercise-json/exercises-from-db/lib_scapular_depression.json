@@ -1,0 +1,353 @@
+{
+  "slug": "lib_scapular_depression",
+  "status": "published",
+  "movementPattern": "PULL_VERTICAL",
+  "loadCapability": "BODYWEIGHT_ONLY",
+  "familyKey": "pull_vertical_family",
+  "familyOrder": 12,
+  "name": {
+    "ar": "تعليق خفض لوح",
+    "en": "Scapular depression hang"
+  },
+  "category": {
+    "code": "back",
+    "name": {
+      "ar": "تمارين الظهر",
+      "en": "Back"
+    }
+  },
+  "countingMethod": "hold",
+  "muscles": [
+    "lats",
+    "traps"
+  ],
+  "equipment": [
+    "pull_up_bar",
+    "mat"
+  ],
+  "tags": [
+    "curated_library",
+    "mobility"
+  ],
+  "repCountingConfig": {
+    "duration": 30,
+    "gracePeriodMs": 2500
+  },
+  "poseVariants": [
+    {
+      "name": {
+        "ar": "زاوية أمامية",
+        "en": "Front view"
+      },
+      "posePosition": "standing_front",
+      "expectedPostures": [
+        "standing"
+      ],
+      "expectedDirections": [
+        "front"
+      ],
+      "expectedRegions": [
+        "full_body"
+      ],
+      "trackedJoints": [
+        {
+          "joint": "left_shoulder",
+          "role": "primary",
+          "startPose": {
+            "max": 180,
+            "min": 140
+          },
+          "stateMessages": {
+            "perfect": {
+              "ar": "ذراع ممتدة — شد لوحي لأسفل (dead hang)",
+              "en": "Arms long — scapular depression in dead hang"
+            },
+            "warning": {
+              "ar": "لا ترفع الكتفين نحو الأذنين",
+              "en": "Do not shrug the shoulders toward the ears"
+            }
+          },
+          "range": {
+            "pad": {
+              "max": 180,
+              "min": 150
+            },
+            "normal": {
+              "max": 180,
+              "min": 158
+            },
+            "perfect": {
+              "max": 180,
+              "min": 165
+            },
+            "warning": {
+              "max": 150,
+              "min": 130
+            }
+          }
+        },
+        {
+          "joint": "left_elbow",
+          "role": "secondary",
+          "startPose": {
+            "max": 180,
+            "min": 160
+          },
+          "stateMessages": {
+            "perfect": {
+              "ar": "ذراعان طويلتان بدون شد زائد",
+              "en": "Arms stay long without excess tension"
+            }
+          },
+          "range": {
+            "pad": {
+              "max": 180,
+              "min": 152
+            },
+            "normal": {
+              "max": 180,
+              "min": 160
+            },
+            "perfect": {
+              "max": 180,
+              "min": 168
+            }
+          }
+        }
+      ],
+      "positionChecks": [
+        {
+          "id": "scap_dep_long_neck",
+          "type": "horizontal_alignment",
+          "landmarks": {
+            "primary": "left_shoulder",
+            "secondary": "right_shoulder"
+          },
+          "condition": {
+            "operator": "approximately_equal",
+            "threshold": 0.08
+          },
+          "activePhases": [
+            "all"
+          ],
+          "errorMessage": {
+            "ar": "اسحب لوحي الكتف لأسفل مع رقبة طويلة وهادئة.",
+            "en": "Pull the shoulder blades down with a long, quiet neck."
+          },
+          "severity": "warning",
+          "cooldownMs": 2600,
+          "minErrorFrames": 5
+        }
+      ],
+      "feedbackMessages": {
+        "motivational": [
+          {
+            "ar": "مدى حركة جيد وتحكم أفضل",
+            "en": "Good range and better control"
+          },
+          {
+            "ar": "تحرك بسلاسة داخل نطاق مريح",
+            "en": "Move smoothly inside a comfortable range"
+          }
+        ],
+        "tips": [
+          {
+            "ar": "ابقِ الحركة نظيفة وهادئة بدون ارتداد.",
+            "en": "Keep the motion smooth and bounce-free."
+          },
+          {
+            "ar": "أي ألم حاد يعني تقليل المدى فوراً.",
+            "en": "Any sharp pain means reduce range immediately."
+          }
+        ]
+      },
+      "messageAssignments": [
+        {
+          "messageId": "3770f4d7-b70a-4f4f-a576-69c53297a693",
+          "target": "position",
+          "context": "error",
+          "checkId": "scap_dep_long_neck",
+          "sortOrder": 1
+        },
+        {
+          "messageId": "77a7e8fd-d3b9-40cb-a88d-2cb9633cdeef",
+          "target": "joint_state",
+          "context": "perfect",
+          "jointCode": "left_shoulder",
+          "sortOrder": 2
+        },
+        {
+          "messageId": "a6ea5086-e9bb-4a03-8c44-90499d85b428",
+          "target": "joint_state",
+          "context": "warning",
+          "jointCode": "left_shoulder",
+          "sortOrder": 3
+        },
+        {
+          "messageId": "2eaf9c6f-6e39-4705-b2fa-fa1e4fa95a7c",
+          "target": "joint_state",
+          "context": "perfect",
+          "jointCode": "left_elbow",
+          "sortOrder": 4
+        },
+        {
+          "messageId": "c5bf638d-e44e-41ab-89a6-715033e9d51e",
+          "target": "feedback",
+          "context": "motivational",
+          "sortOrder": 5
+        },
+        {
+          "messageId": "0c84f58c-1ab0-4fc6-8e9a-037f4b8da7b6",
+          "target": "feedback",
+          "context": "motivational",
+          "sortOrder": 6
+        },
+        {
+          "messageId": "303b05e4-7879-47ea-a1f2-e6d7962f4b66",
+          "target": "feedback",
+          "context": "tip",
+          "sortOrder": 7
+        },
+        {
+          "messageId": "58692c33-23de-4248-b4a7-da36c891986a",
+          "target": "feedback",
+          "context": "tip",
+          "sortOrder": 8
+        }
+      ],
+      "cameraPosition": "front_view"
+    }
+  ],
+  "description": {
+    "ar": "تمرين مكتبة: تعليق خفض لوح.",
+    "en": "Library exercise: Scapular depression hang."
+  },
+  "instructions": {
+    "ar": "حافظ على عمود فقري محايد وتنفس بثبات وتوقف عند أي ألم حاد.",
+    "en": "Maintain neutral spine, steady breathing, and stop if sharp pain appears."
+  },
+  "reportMetrics": {
+    "primary": [
+      "FORM_SCORE"
+    ],
+    "excluded": [
+      "REP_COUNT",
+      "TEMPO",
+      "TUT",
+      "ROM",
+      "FORM_CONSISTENCY",
+      "FATIGUE_INDEX",
+      "VELOCITY",
+      "VELOCITY_LOSS",
+      "TEMPO_CONSISTENCY",
+      "WEIGHT",
+      "VOLUME",
+      "EST_1RM",
+      "SYMMETRY"
+    ]
+  },
+  "hasPositionChecks": true,
+  "_database": {
+    "id": "71220944-df7f-4bbe-8c96-16741881c171",
+    "categoryId": "d90cee55-225e-4127-9fdc-062a8a09522e",
+    "countingMethodId": "7ae86596-4b4b-400b-afa1-c7c0b6ba4fc9",
+    "publishedAt": "2026-04-20T17:26:27.041Z",
+    "createdAt": "2026-04-20T17:26:27.043Z",
+    "updatedAt": "2026-04-20T17:26:34.437Z",
+    "deletedAt": null,
+    "isFeatured": false,
+    "createdBy": null,
+    "updatedBy": null,
+    "repCountingConfig": null,
+    "bilateralConfig": null,
+    "isBilateral": false,
+    "supportsWeight": false,
+    "minWeight": null,
+    "maxWeight": null,
+    "defaultWeight": null,
+    "reportMetrics": {
+      "mode": "duration",
+      "version": 1,
+      "primaryKpi": "timeUnderTension",
+      "secondaryKpis": [
+        "avgFormScore",
+        "avgRom"
+      ]
+    },
+    "media": [],
+    "poseVariants": [
+      {
+        "id": "d087119c-d058-4760-a519-0b277f31b0f0",
+        "sortOrder": 1,
+        "description": null,
+        "trackedJointsConfig": [
+          {
+            "role": "primary",
+            "joint": "left_shoulder",
+            "range": {
+              "pad": {
+                "max": 180,
+                "min": 150
+              },
+              "normal": {
+                "max": 180,
+                "min": 158
+              },
+              "perfect": {
+                "max": 180,
+                "min": 165
+              },
+              "warning": {
+                "max": 150,
+                "min": 130
+              }
+            },
+            "startPose": {
+              "max": 180,
+              "min": 140
+            },
+            "stateMessages": {
+              "perfect": {
+                "ar": "ذراع ممتدة — شد لوحي لأسفل (dead hang)",
+                "en": "Arms long — scapular depression in dead hang"
+              },
+              "warning": {
+                "ar": "لا ترفع الكتفين نحو الأذنين",
+                "en": "Do not shrug the shoulders toward the ears"
+              }
+            }
+          },
+          {
+            "role": "secondary",
+            "joint": "left_elbow",
+            "range": {
+              "pad": {
+                "max": 180,
+                "min": 152
+              },
+              "normal": {
+                "max": 180,
+                "min": 160
+              },
+              "perfect": {
+                "max": 180,
+                "min": 168
+              }
+            },
+            "startPose": {
+              "max": 180,
+              "min": 160
+            },
+            "stateMessages": {
+              "perfect": {
+                "ar": "ذراعان طويلتان بدون شد زائد",
+                "en": "Arms stay long without excess tension"
+              }
+            }
+          }
+        ]
+      }
+    ],
+    "validationWarning": null
+  }
+}

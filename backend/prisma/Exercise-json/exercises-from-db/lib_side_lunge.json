@@ -1,0 +1,731 @@
+{
+  "slug": "lib_side_lunge",
+  "status": "published",
+  "movementPattern": "LUNGE",
+  "loadCapability": "BODYWEIGHT_ONLY",
+  "familyKey": "lunge_pattern_family",
+  "familyOrder": 28,
+  "name": {
+    "ar": "اندفاع جانبي",
+    "en": "Side lunge"
+  },
+  "category": {
+    "code": "legs",
+    "name": {
+      "ar": "تمارين الأرجل",
+      "en": "Legs"
+    }
+  },
+  "countingMethod": "up_down",
+  "muscles": [
+    "glutes",
+    "quadriceps"
+  ],
+  "equipment": [
+    "bodyweight",
+    "mat"
+  ],
+  "tags": [
+    "curated_library",
+    "mobility"
+  ],
+  "repCountingConfig": {
+    "reps": 12,
+    "minRepIntervalMs": 1500,
+    "maxRepIntervalMs": 5000
+  },
+  "poseVariants": [
+    {
+      "name": {
+        "ar": "زاوية أمامية",
+        "en": "Front view"
+      },
+      "posePosition": "standing_front",
+      "expectedPostures": [
+        "standing"
+      ],
+      "expectedDirections": [
+        "front"
+      ],
+      "expectedRegions": [
+        "full_body"
+      ],
+      "trackedJoints": [
+        {
+          "joint": "left_knee",
+          "role": "primary",
+          "startPose": {
+            "max": 180,
+            "min": 130
+          },
+          "stateMessages": {
+            "pad": {
+              "down": {
+                "ar": "مقبول، زد المدى تدريجياً",
+                "en": "Acceptable, increase range gradually"
+              }
+            },
+            "danger": {
+              "down": {
+                "ar": "توقف، الوضع الجانبي فقد الاستقرار",
+                "en": "Stop, the lateral position has lost stability"
+              }
+            },
+            "normal": {
+              "up": {
+                "ar": "جيد، ادفع الأرض بقوة للعودة",
+                "en": "Good, drive the floor to return"
+              },
+              "down": {
+                "ar": "جيد، ابقِ الجذع مرفوعاً أكثر",
+                "en": "Good, keep the torso a bit taller"
+              }
+            },
+            "perfect": {
+              "up": {
+                "ar": "ممتاز! عودة قوية للمركز",
+                "en": "Perfect! Strong return to center"
+              },
+              "down": {
+                "ar": "ممتاز! نزول جانبي متحكم به",
+                "en": "Perfect! Controlled lateral descent"
+              }
+            },
+            "warning": {
+              "down": {
+                "ar": "لا تدع الركبة تنهار للداخل",
+                "en": "Do not let the knee cave inward"
+              }
+            }
+          },
+          "upRange": {
+            "pad": {
+              "max": 180,
+              "min": 135
+            },
+            "normal": {
+              "max": 180,
+              "min": 145
+            },
+            "perfect": {
+              "max": 180,
+              "min": 155
+            }
+          },
+          "downRange": {
+            "pad": {
+              "max": 125,
+              "min": 60
+            },
+            "danger": {
+              "max": 48,
+              "min": 0
+            },
+            "normal": {
+              "max": 118,
+              "min": 68
+            },
+            "perfect": {
+              "max": 110,
+              "min": 75
+            },
+            "warning": {
+              "max": 60,
+              "min": 48
+            }
+          }
+        },
+        {
+          "joint": "right_knee",
+          "role": "primary",
+          "startPose": {
+            "max": 180,
+            "min": 130
+          },
+          "stateMessages": {
+            "pad": {
+              "down": {
+                "ar": "مقبول، زد المدى تدريجياً",
+                "en": "Acceptable, increase range gradually"
+              }
+            },
+            "danger": {
+              "down": {
+                "ar": "توقف، الوضع الجانبي فقد الاستقرار",
+                "en": "Stop, the lateral position has lost stability"
+              }
+            },
+            "normal": {
+              "up": {
+                "ar": "جيد، ادفع الأرض بقوة للعودة",
+                "en": "Good, drive the floor to return"
+              },
+              "down": {
+                "ar": "جيد، ابقِ الجذع مرفوعاً أكثر",
+                "en": "Good, keep the torso a bit taller"
+              }
+            },
+            "perfect": {
+              "up": {
+                "ar": "ممتاز! عودة قوية للمركز",
+                "en": "Perfect! Strong return to center"
+              },
+              "down": {
+                "ar": "ممتاز! نزول جانبي متحكم به",
+                "en": "Perfect! Controlled lateral descent"
+              }
+            },
+            "warning": {
+              "down": {
+                "ar": "لا تدع الركبة تنهار للداخل",
+                "en": "Do not let the knee cave inward"
+              }
+            }
+          },
+          "upRange": {
+            "pad": {
+              "max": 180,
+              "min": 135
+            },
+            "normal": {
+              "max": 180,
+              "min": 145
+            },
+            "perfect": {
+              "max": 180,
+              "min": 155
+            }
+          },
+          "downRange": {
+            "pad": {
+              "max": 125,
+              "min": 60
+            },
+            "danger": {
+              "max": 48,
+              "min": 0
+            },
+            "normal": {
+              "max": 118,
+              "min": 68
+            },
+            "perfect": {
+              "max": 110,
+              "min": 75
+            },
+            "warning": {
+              "max": 60,
+              "min": 48
+            }
+          }
+        },
+        {
+          "joint": "spine",
+          "role": "secondary",
+          "startPose": {
+            "max": 28,
+            "min": 0
+          },
+          "stateMessages": {
+            "perfect": {
+              "ar": "جذع متماسك ومرفوع",
+              "en": "Torso organized and upright"
+            },
+            "warning": {
+              "ar": "لا تنهَر للأمام أو للدوران",
+              "en": "Avoid folding forward or rotating"
+            }
+          },
+          "range": {
+            "pad": {
+              "max": 30,
+              "min": 0
+            },
+            "normal": {
+              "max": 24,
+              "min": 0
+            },
+            "perfect": {
+              "max": 18,
+              "min": 0
+            },
+            "warning": {
+              "max": 42,
+              "min": 30
+            }
+          }
+        }
+      ],
+      "positionChecks": [
+        {
+          "id": "lateral_squat_knee_track",
+          "type": "horizontal_alignment",
+          "landmarks": {
+            "primary": "left_knee",
+            "secondary": "left_ankle"
+          },
+          "condition": {
+            "operator": "approximately_equal",
+            "threshold": 0.12
+          },
+          "activePhases": [
+            "down"
+          ],
+          "errorMessage": {
+            "ar": "اجعل الركبة المنثنية تتبع اتجاه القدم في النزول الجانبي.",
+            "en": "Let the bending knee track with the foot in the lateral descent."
+          },
+          "severity": "warning",
+          "cooldownMs": 2200,
+          "minErrorFrames": 5
+        }
+      ],
+      "feedbackMessages": {
+        "motivational": [
+          {
+            "ar": "أداء قوي ومنظم",
+            "en": "Strong and controlled work"
+          },
+          {
+            "ar": "حافظ على الشكل قبل السرعة",
+            "en": "Keep form before speed"
+          }
+        ],
+        "tips": [
+          {
+            "ar": "خذ نفساً تحضيرياً قبل كل عدة وازفر مع الجهد.",
+            "en": "Take a setup breath before each rep and exhale on effort."
+          },
+          {
+            "ar": "إذا فقدت التحكم الميكانيكي، قلل المدى أو الحمل.",
+            "en": "If mechanics break down, reduce range or load."
+          }
+        ]
+      },
+      "messageAssignments": [
+        {
+          "messageId": "9d0039b7-e672-4ac4-ab25-c3bb573b65f9",
+          "target": "position",
+          "context": "error",
+          "checkId": "lateral_squat_knee_track",
+          "sortOrder": 1
+        },
+        {
+          "messageId": "34078f81-c1ef-46a2-9323-7d2afebaeda8",
+          "target": "joint_state",
+          "context": "perfect",
+          "jointCode": "left_knee",
+          "zone": "up",
+          "sortOrder": 2
+        },
+        {
+          "messageId": "62a98873-ab6f-4fa1-b14f-b627e784ed6f",
+          "target": "joint_state",
+          "context": "perfect",
+          "jointCode": "left_knee",
+          "zone": "down",
+          "sortOrder": 3
+        },
+        {
+          "messageId": "55298ee5-32f7-4ce9-9715-95d9a2c748c7",
+          "target": "joint_state",
+          "context": "normal",
+          "jointCode": "left_knee",
+          "zone": "up",
+          "sortOrder": 4
+        },
+        {
+          "messageId": "d3be7a48-cd0c-468b-8d32-0f8d979e3fe4",
+          "target": "joint_state",
+          "context": "normal",
+          "jointCode": "left_knee",
+          "zone": "down",
+          "sortOrder": 5
+        },
+        {
+          "messageId": "5ae48edf-3a34-4694-97f9-0b7fb3054bef",
+          "target": "joint_state",
+          "context": "pad",
+          "jointCode": "left_knee",
+          "zone": "down",
+          "sortOrder": 6
+        },
+        {
+          "messageId": "ab264e07-a319-4961-be39-a7dcbfb96e77",
+          "target": "joint_state",
+          "context": "warning",
+          "jointCode": "left_knee",
+          "zone": "down",
+          "sortOrder": 7
+        },
+        {
+          "messageId": "50848c1b-c91a-4629-bc9c-a42fe967fe18",
+          "target": "joint_state",
+          "context": "danger",
+          "jointCode": "left_knee",
+          "zone": "down",
+          "sortOrder": 8
+        },
+        {
+          "messageId": "3b2fd78e-abc1-4b05-a6db-617a9bf039b9",
+          "target": "joint_state",
+          "context": "perfect",
+          "jointCode": "right_knee",
+          "zone": "up",
+          "sortOrder": 9
+        },
+        {
+          "messageId": "b00261b9-c8fe-4845-9aa3-f7f1a7a7b6af",
+          "target": "joint_state",
+          "context": "perfect",
+          "jointCode": "right_knee",
+          "zone": "down",
+          "sortOrder": 10
+        },
+        {
+          "messageId": "52f0c2b6-2e0d-48dc-b3ce-6e51bf3255e2",
+          "target": "joint_state",
+          "context": "normal",
+          "jointCode": "right_knee",
+          "zone": "up",
+          "sortOrder": 11
+        },
+        {
+          "messageId": "19f5ed41-ea8e-4af3-9a4b-1a6e25b6716c",
+          "target": "joint_state",
+          "context": "normal",
+          "jointCode": "right_knee",
+          "zone": "down",
+          "sortOrder": 12
+        },
+        {
+          "messageId": "93c13e9b-699e-4f1c-a9d8-6b730fecdef4",
+          "target": "joint_state",
+          "context": "pad",
+          "jointCode": "right_knee",
+          "zone": "down",
+          "sortOrder": 13
+        },
+        {
+          "messageId": "8bc10b60-3825-448d-838c-c5e45bf3e0e0",
+          "target": "joint_state",
+          "context": "warning",
+          "jointCode": "right_knee",
+          "zone": "down",
+          "sortOrder": 14
+        },
+        {
+          "messageId": "e1989273-7321-4c6a-a809-fe0cc518572e",
+          "target": "joint_state",
+          "context": "danger",
+          "jointCode": "right_knee",
+          "zone": "down",
+          "sortOrder": 15
+        },
+        {
+          "messageId": "c13ea083-6c73-4b7c-ac88-84debf70df17",
+          "target": "joint_state",
+          "context": "perfect",
+          "jointCode": "spine",
+          "sortOrder": 16
+        },
+        {
+          "messageId": "6f7717ae-5a4a-4731-9b0e-1d5748bcd8a1",
+          "target": "joint_state",
+          "context": "warning",
+          "jointCode": "spine",
+          "sortOrder": 17
+        },
+        {
+          "messageId": "1a6f4b85-8722-4529-b207-97e94f251c94",
+          "target": "feedback",
+          "context": "motivational",
+          "sortOrder": 18
+        },
+        {
+          "messageId": "5f0ae95a-b913-471b-b98d-14a2ed1fd5ad",
+          "target": "feedback",
+          "context": "motivational",
+          "sortOrder": 19
+        },
+        {
+          "messageId": "f4edbb71-4c05-4d11-857f-7be40b5bfd80",
+          "target": "feedback",
+          "context": "tip",
+          "sortOrder": 20
+        },
+        {
+          "messageId": "72ad7f7e-5e43-41b5-a64a-10901e40df9b",
+          "target": "feedback",
+          "context": "tip",
+          "sortOrder": 21
+        }
+      ],
+      "cameraPosition": "front_view"
+    }
+  ],
+  "description": {
+    "ar": "تمرين مكتبة: اندفاع جانبي.",
+    "en": "Library exercise: Side lunge."
+  },
+  "instructions": {
+    "ar": "حافظ على عمود فقري محايد وتنفس بثبات وتوقف عند أي ألم حاد.",
+    "en": "Maintain neutral spine, steady breathing, and stop if sharp pain appears."
+  },
+  "reportMetrics": {
+    "primary": [
+      "FORM_SCORE"
+    ],
+    "excluded": [
+      "HOLD_DURATION",
+      "WEIGHT",
+      "VOLUME",
+      "EST_1RM",
+      "SYMMETRY"
+    ]
+  },
+  "hasPositionChecks": true,
+  "_database": {
+    "id": "28c82f37-dbc2-4d49-8cc5-1ebddd2918f6",
+    "categoryId": "a672c3d3-4449-4f74-bd8e-be73a0035e88",
+    "countingMethodId": "f4d48aef-1606-4f23-8c61-7b4a2546f990",
+    "publishedAt": "2026-04-20T17:26:26.753Z",
+    "createdAt": "2026-04-20T17:26:26.754Z",
+    "updatedAt": "2026-04-20T17:26:34.416Z",
+    "deletedAt": null,
+    "isFeatured": false,
+    "createdBy": null,
+    "updatedBy": null,
+    "repCountingConfig": null,
+    "bilateralConfig": null,
+    "isBilateral": false,
+    "supportsWeight": false,
+    "minWeight": null,
+    "maxWeight": null,
+    "defaultWeight": null,
+    "reportMetrics": {
+      "mode": "reps",
+      "version": 1,
+      "primaryKpi": "repQuality",
+      "secondaryKpis": [
+        "avgFormScore",
+        "avgRom"
+      ]
+    },
+    "media": [],
+    "poseVariants": [
+      {
+        "id": "b42e0b56-9d72-4b94-bc21-2c3c990da0dd",
+        "sortOrder": 1,
+        "description": null,
+        "trackedJointsConfig": [
+          {
+            "role": "primary",
+            "joint": "left_knee",
+            "upRange": {
+              "pad": {
+                "max": 180,
+                "min": 135
+              },
+              "normal": {
+                "max": 180,
+                "min": 145
+              },
+              "perfect": {
+                "max": 180,
+                "min": 155
+              }
+            },
+            "downRange": {
+              "pad": {
+                "max": 125,
+                "min": 60
+              },
+              "danger": {
+                "max": 48,
+                "min": 0
+              },
+              "normal": {
+                "max": 118,
+                "min": 68
+              },
+              "perfect": {
+                "max": 110,
+                "min": 75
+              },
+              "warning": {
+                "max": 60,
+                "min": 48
+              }
+            },
+            "startPose": {
+              "max": 180,
+              "min": 130
+            },
+            "stateMessages": {
+              "pad": {
+                "down": {
+                  "ar": "مقبول، زد المدى تدريجياً",
+                  "en": "Acceptable, increase range gradually"
+                }
+              },
+              "danger": {
+                "down": {
+                  "ar": "توقف، الوضع الجانبي فقد الاستقرار",
+                  "en": "Stop, the lateral position has lost stability"
+                }
+              },
+              "normal": {
+                "up": {
+                  "ar": "جيد، ادفع الأرض بقوة للعودة",
+                  "en": "Good, drive the floor to return"
+                },
+                "down": {
+                  "ar": "جيد، ابقِ الجذع مرفوعاً أكثر",
+                  "en": "Good, keep the torso a bit taller"
+                }
+              },
+              "perfect": {
+                "up": {
+                  "ar": "ممتاز! عودة قوية للمركز",
+                  "en": "Perfect! Strong return to center"
+                },
+                "down": {
+                  "ar": "ممتاز! نزول جانبي متحكم به",
+                  "en": "Perfect! Controlled lateral descent"
+                }
+              },
+              "warning": {
+                "down": {
+                  "ar": "لا تدع الركبة تنهار للداخل",
+                  "en": "Do not let the knee cave inward"
+                }
+              }
+            }
+          },
+          {
+            "role": "primary",
+            "joint": "right_knee",
+            "upRange": {
+              "pad": {
+                "max": 180,
+                "min": 135
+              },
+              "normal": {
+                "max": 180,
+                "min": 145
+              },
+              "perfect": {
+                "max": 180,
+                "min": 155
+              }
+            },
+            "downRange": {
+              "pad": {
+                "max": 125,
+                "min": 60
+              },
+              "danger": {
+                "max": 48,
+                "min": 0
+              },
+              "normal": {
+                "max": 118,
+                "min": 68
+              },
+              "perfect": {
+                "max": 110,
+                "min": 75
+              },
+              "warning": {
+                "max": 60,
+                "min": 48
+              }
+            },
+            "startPose": {
+              "max": 180,
+              "min": 130
+            },
+            "stateMessages": {
+              "pad": {
+                "down": {
+                  "ar": "مقبول، زد المدى تدريجياً",
+                  "en": "Acceptable, increase range gradually"
+                }
+              },
+              "danger": {
+                "down": {
+                  "ar": "توقف، الوضع الجانبي فقد الاستقرار",
+                  "en": "Stop, the lateral position has lost stability"
+                }
+              },
+              "normal": {
+                "up": {
+                  "ar": "جيد، ادفع الأرض بقوة للعودة",
+                  "en": "Good, drive the floor to return"
+                },
+                "down": {
+                  "ar": "جيد، ابقِ الجذع مرفوعاً أكثر",
+                  "en": "Good, keep the torso a bit taller"
+                }
+              },
+              "perfect": {
+                "up": {
+                  "ar": "ممتاز! عودة قوية للمركز",
+                  "en": "Perfect! Strong return to center"
+                },
+                "down": {
+                  "ar": "ممتاز! نزول جانبي متحكم به",
+                  "en": "Perfect! Controlled lateral descent"
+                }
+              },
+              "warning": {
+                "down": {
+                  "ar": "لا تدع الركبة تنهار للداخل",
+                  "en": "Do not let the knee cave inward"
+                }
+              }
+            }
+          },
+          {
+            "role": "secondary",
+            "joint": "spine",
+            "range": {
+              "pad": {
+                "max": 30,
+                "min": 0
+              },
+              "normal": {
+                "max": 24,
+                "min": 0
+              },
+              "perfect": {
+                "max": 18,
+                "min": 0
+              },
+              "warning": {
+                "max": 42,
+                "min": 30
+              }
+            },
+            "startPose": {
+              "max": 28,
+              "min": 0
+            },
+            "stateMessages": {
+              "perfect": {
+                "ar": "جذع متماسك ومرفوع",
+                "en": "Torso organized and upright"
+              },
+              "warning": {
+                "ar": "لا تنهَر للأمام أو للدوران",
+                "en": "Avoid folding forward or rotating"
+              }
+            }
+          }
+        ]
+      }
+    ],
+    "validationWarning": null
+  }
+}

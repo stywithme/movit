@@ -1,0 +1,480 @@
+{
+  "slug": "lib_reverse_crunch",
+  "status": "published",
+  "movementPattern": "CORE_BRACE",
+  "loadCapability": "BODYWEIGHT_ONLY",
+  "familyKey": "trunk_flexion_family",
+  "familyOrder": 22,
+  "name": {
+    "ar": "كرانش عكسي",
+    "en": "Reverse crunch"
+  },
+  "category": {
+    "code": "abs",
+    "name": {
+      "ar": "تمارين البطن",
+      "en": "Abs"
+    }
+  },
+  "countingMethod": "up_down",
+  "muscles": [
+    "abs_muscle"
+  ],
+  "equipment": [
+    "bodyweight",
+    "mat"
+  ],
+  "tags": [
+    "curated_library",
+    "core"
+  ],
+  "repCountingConfig": {
+    "reps": 12,
+    "minRepIntervalMs": 1500,
+    "maxRepIntervalMs": 5000
+  },
+  "poseVariants": [
+    {
+      "name": {
+        "ar": "مستلقٍ على الظهر",
+        "en": "Lying on back (side angle)"
+      },
+      "posePosition": "supine_side",
+      "expectedPostures": [
+        "lying_supine"
+      ],
+      "expectedDirections": [
+        "side"
+      ],
+      "expectedRegions": [
+        "full_body"
+      ],
+      "trackedJoints": [
+        {
+          "joint": "left_hip",
+          "role": "primary",
+          "startPose": {
+            "max": 170,
+            "min": 50
+          },
+          "stateMessages": {
+            "pad": {
+              "down": {
+                "ar": "مقبول، لكن الرفع من الحوض ما زال محدوداً",
+                "en": "Acceptable, but pelvic lift is still limited"
+              }
+            },
+            "normal": {
+              "up": {
+                "ar": "جيد، ابدأ من وضع أطول قليلاً",
+                "en": "Good, start from a slightly longer position"
+              },
+              "down": {
+                "ar": "جيد، قرّب الركبتين أكثر للأعلى",
+                "en": "Good, draw the knees higher up"
+              }
+            },
+            "perfect": {
+              "up": {
+                "ar": "ممتاز! تمدد منظم في البداية",
+                "en": "Perfect! Organized start position"
+              },
+              "down": {
+                "ar": "ممتاز! لف حوض قوي للأعلى",
+                "en": "Perfect! Strong pelvic roll-up"
+              }
+            },
+            "warning": {
+              "down": {
+                "ar": "لا تتأرجح بالوركين لتكسب عدة",
+                "en": "Do not swing the hips to steal the rep"
+              }
+            }
+          },
+          "invertIndicator": true,
+          "upRange": {
+            "pad": {
+              "max": 175,
+              "min": 115
+            },
+            "normal": {
+              "max": 170,
+              "min": 122
+            },
+            "perfect": {
+              "max": 165,
+              "min": 130
+            }
+          },
+          "downRange": {
+            "pad": {
+              "max": 110,
+              "min": 45
+            },
+            "normal": {
+              "max": 100,
+              "min": 50
+            },
+            "perfect": {
+              "max": 90,
+              "min": 55
+            },
+            "warning": {
+              "max": 45,
+              "min": 35
+            }
+          }
+        },
+        {
+          "joint": "spine",
+          "role": "secondary",
+          "startPose": {
+            "max": 24,
+            "min": 0
+          },
+          "stateMessages": {
+            "perfect": {
+              "ar": "جذع ثابت والرفع من أسفل البطن",
+              "en": "Trunk stays set and the lift comes from the lower abs"
+            },
+            "warning": {
+              "ar": "لا تترك أسفل الظهر ينهار بعنف",
+              "en": "Do not let the low back crash down"
+            }
+          },
+          "range": {
+            "pad": {
+              "max": 28,
+              "min": 0
+            },
+            "normal": {
+              "max": 22,
+              "min": 0
+            },
+            "perfect": {
+              "max": 16,
+              "min": 0
+            },
+            "warning": {
+              "max": 40,
+              "min": 28
+            }
+          }
+        }
+      ],
+      "positionChecks": [
+        {
+          "id": "reverse_crunch_pelvis_roll",
+          "type": "vertical_alignment",
+          "landmarks": {
+            "primary": "left_hip",
+            "secondary": "left_shoulder"
+          },
+          "condition": {
+            "operator": "approximately_equal",
+            "threshold": 0.16
+          },
+          "activePhases": [
+            "up",
+            "down"
+          ],
+          "errorMessage": {
+            "ar": "لف الحوض لأعلى بتحكم بدل التأرجح بالساقين.",
+            "en": "Roll the pelvis up under control instead of swinging the legs."
+          },
+          "severity": "warning",
+          "cooldownMs": 2200,
+          "minErrorFrames": 4
+        }
+      ],
+      "feedbackMessages": {
+        "motivational": [
+          {
+            "ar": "شد جذع ممتاز",
+            "en": "Excellent trunk tension"
+          },
+          {
+            "ar": "ثباتك يتحسن عدة بعد عدة",
+            "en": "Your stability improves rep by rep"
+          }
+        ],
+        "tips": [
+          {
+            "ar": "شد السرة برفق ولا تحبس النفس طويلاً.",
+            "en": "Brace gently and avoid long breath-holds."
+          },
+          {
+            "ar": "حرّك الأطراف دون أن ينهار الجذع.",
+            "en": "Move the limbs without letting the trunk collapse."
+          }
+        ]
+      },
+      "messageAssignments": [
+        {
+          "messageId": "ec9a54cd-833e-4f34-a41f-13460c498fd5",
+          "target": "position",
+          "context": "error",
+          "checkId": "reverse_crunch_pelvis_roll",
+          "sortOrder": 1
+        },
+        {
+          "messageId": "260b10ce-f9c4-4999-bf3f-0b7969e1e0fd",
+          "target": "joint_state",
+          "context": "perfect",
+          "jointCode": "left_hip",
+          "zone": "up",
+          "sortOrder": 2
+        },
+        {
+          "messageId": "c472d844-087a-4dbf-9024-160dbb5f7e28",
+          "target": "joint_state",
+          "context": "perfect",
+          "jointCode": "left_hip",
+          "zone": "down",
+          "sortOrder": 3
+        },
+        {
+          "messageId": "9e9ba302-6074-44e8-a308-1bab891fe3e8",
+          "target": "joint_state",
+          "context": "normal",
+          "jointCode": "left_hip",
+          "zone": "up",
+          "sortOrder": 4
+        },
+        {
+          "messageId": "04b0448e-8812-46a0-87f3-26adca93f5db",
+          "target": "joint_state",
+          "context": "normal",
+          "jointCode": "left_hip",
+          "zone": "down",
+          "sortOrder": 5
+        },
+        {
+          "messageId": "6d97ae07-46a5-4cd9-af69-eca51a32cb4a",
+          "target": "joint_state",
+          "context": "pad",
+          "jointCode": "left_hip",
+          "zone": "down",
+          "sortOrder": 6
+        },
+        {
+          "messageId": "77eed869-2e66-4512-8185-2a4832652a29",
+          "target": "joint_state",
+          "context": "warning",
+          "jointCode": "left_hip",
+          "zone": "down",
+          "sortOrder": 7
+        },
+        {
+          "messageId": "3d10a769-82a8-43f7-b2dc-fd39a85743eb",
+          "target": "joint_state",
+          "context": "perfect",
+          "jointCode": "spine",
+          "sortOrder": 8
+        },
+        {
+          "messageId": "893e0428-088c-4074-aff7-bc20160763ee",
+          "target": "joint_state",
+          "context": "warning",
+          "jointCode": "spine",
+          "sortOrder": 9
+        },
+        {
+          "messageId": "19a50d7e-86b5-4b1a-afff-167ba199fd25",
+          "target": "feedback",
+          "context": "motivational",
+          "sortOrder": 10
+        },
+        {
+          "messageId": "3cb703fe-4d36-48b7-9814-7fa454163c55",
+          "target": "feedback",
+          "context": "motivational",
+          "sortOrder": 11
+        },
+        {
+          "messageId": "83520ca0-ead2-452f-830e-7ce907151437",
+          "target": "feedback",
+          "context": "tip",
+          "sortOrder": 12
+        },
+        {
+          "messageId": "c3ac1790-ef20-4dd7-8c4a-dd8ab8800020",
+          "target": "feedback",
+          "context": "tip",
+          "sortOrder": 13
+        }
+      ]
+    }
+  ],
+  "description": {
+    "ar": "تمرين مكتبة: كرانش عكسي.",
+    "en": "Library exercise: Reverse crunch."
+  },
+  "instructions": {
+    "ar": "حافظ على عمود فقري محايد وتنفس بثبات وتوقف عند أي ألم حاد.",
+    "en": "Maintain neutral spine, steady breathing, and stop if sharp pain appears."
+  },
+  "reportMetrics": {
+    "primary": [
+      "FORM_SCORE"
+    ],
+    "excluded": [
+      "HOLD_DURATION",
+      "WEIGHT",
+      "VOLUME",
+      "EST_1RM",
+      "SYMMETRY"
+    ]
+  },
+  "hasPositionChecks": true,
+  "_database": {
+    "id": "26a3258c-5fcf-4572-8834-ed1040ce1e93",
+    "categoryId": "01b944db-50df-4f53-aa08-ec5633820277",
+    "countingMethodId": "f4d48aef-1606-4f23-8c61-7b4a2546f990",
+    "publishedAt": "2026-04-20T17:26:29.096Z",
+    "createdAt": "2026-04-20T17:26:29.098Z",
+    "updatedAt": "2026-04-20T17:26:34.572Z",
+    "deletedAt": null,
+    "isFeatured": false,
+    "createdBy": null,
+    "updatedBy": null,
+    "repCountingConfig": null,
+    "bilateralConfig": null,
+    "isBilateral": false,
+    "supportsWeight": false,
+    "minWeight": null,
+    "maxWeight": null,
+    "defaultWeight": null,
+    "reportMetrics": {
+      "mode": "reps",
+      "version": 1,
+      "primaryKpi": "repQuality",
+      "secondaryKpis": [
+        "avgFormScore",
+        "avgRom"
+      ]
+    },
+    "media": [],
+    "poseVariants": [
+      {
+        "id": "1798ad24-d726-4901-b8db-b98a4ee0d125",
+        "sortOrder": 1,
+        "description": null,
+        "trackedJointsConfig": [
+          {
+            "role": "primary",
+            "joint": "left_hip",
+            "upRange": {
+              "pad": {
+                "max": 175,
+                "min": 115
+              },
+              "normal": {
+                "max": 170,
+                "min": 122
+              },
+              "perfect": {
+                "max": 165,
+                "min": 130
+              }
+            },
+            "downRange": {
+              "pad": {
+                "max": 110,
+                "min": 45
+              },
+              "normal": {
+                "max": 100,
+                "min": 50
+              },
+              "perfect": {
+                "max": 90,
+                "min": 55
+              },
+              "warning": {
+                "max": 45,
+                "min": 35
+              }
+            },
+            "startPose": {
+              "max": 170,
+              "min": 50
+            },
+            "stateMessages": {
+              "pad": {
+                "down": {
+                  "ar": "مقبول، لكن الرفع من الحوض ما زال محدوداً",
+                  "en": "Acceptable, but pelvic lift is still limited"
+                }
+              },
+              "normal": {
+                "up": {
+                  "ar": "جيد، ابدأ من وضع أطول قليلاً",
+                  "en": "Good, start from a slightly longer position"
+                },
+                "down": {
+                  "ar": "جيد، قرّب الركبتين أكثر للأعلى",
+                  "en": "Good, draw the knees higher up"
+                }
+              },
+              "perfect": {
+                "up": {
+                  "ar": "ممتاز! تمدد منظم في البداية",
+                  "en": "Perfect! Organized start position"
+                },
+                "down": {
+                  "ar": "ممتاز! لف حوض قوي للأعلى",
+                  "en": "Perfect! Strong pelvic roll-up"
+                }
+              },
+              "warning": {
+                "down": {
+                  "ar": "لا تتأرجح بالوركين لتكسب عدة",
+                  "en": "Do not swing the hips to steal the rep"
+                }
+              }
+            },
+            "invertIndicator": true
+          },
+          {
+            "role": "secondary",
+            "joint": "spine",
+            "range": {
+              "pad": {
+                "max": 28,
+                "min": 0
+              },
+              "normal": {
+                "max": 22,
+                "min": 0
+              },
+              "perfect": {
+                "max": 16,
+                "min": 0
+              },
+              "warning": {
+                "max": 40,
+                "min": 28
+              }
+            },
+            "startPose": {
+              "max": 24,
+              "min": 0
+            },
+            "stateMessages": {
+              "perfect": {
+                "ar": "جذع ثابت والرفع من أسفل البطن",
+                "en": "Trunk stays set and the lift comes from the lower abs"
+              },
+              "warning": {
+                "ar": "لا تترك أسفل الظهر ينهار بعنف",
+                "en": "Do not let the low back crash down"
+              }
+            }
+          }
+        ]
+      }
+    ],
+    "validationWarning": null
+  }
+}

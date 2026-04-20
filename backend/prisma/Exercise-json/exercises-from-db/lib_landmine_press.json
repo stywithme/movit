@@ -1,0 +1,634 @@
+{
+  "slug": "lib_landmine_press",
+  "status": "published",
+  "movementPattern": "PUSH_VERTICAL",
+  "loadCapability": "EXTERNAL_LOAD_OPTIONAL",
+  "familyKey": "push_vertical_family",
+  "familyOrder": 44,
+  "name": {
+    "ar": "ضغط لاندمين",
+    "en": "Half-kneeling landmine press"
+  },
+  "category": {
+    "code": "shoulders",
+    "name": {
+      "ar": "تمارين الأكتاف",
+      "en": "Shoulders"
+    }
+  },
+  "countingMethod": "up_down",
+  "muscles": [
+    "front_delts",
+    "chest_muscle"
+  ],
+  "equipment": [
+    "barbell",
+    "mat"
+  ],
+  "tags": [
+    "curated_library",
+    "strength"
+  ],
+  "repCountingConfig": {
+    "reps": 12,
+    "minRepIntervalMs": 1500,
+    "maxRepIntervalMs": 5000
+  },
+  "poseVariants": [
+    {
+      "name": {
+        "ar": "زاوية جانبية",
+        "en": "Side view"
+      },
+      "posePosition": "standing_side",
+      "expectedPostures": [
+        "standing"
+      ],
+      "expectedDirections": [
+        "side"
+      ],
+      "expectedRegions": [
+        "full_body"
+      ],
+      "trackedJoints": [
+        {
+          "joint": "left_elbow",
+          "role": "primary",
+          "startPose": {
+            "max": 115,
+            "min": 70
+          },
+          "stateMessages": {
+            "pad": {
+              "up": {
+                "ar": "مقبول، لكن الذراع لا تزال قصيرة في النهاية",
+                "en": "Acceptable, but the finishing reach is still short"
+              }
+            },
+            "normal": {
+              "up": {
+                "ar": "جيد، أمدد اليد أكثر للأمام ولأعلى",
+                "en": "Good, reach a little farther up and forward"
+              },
+              "down": {
+                "ar": "جيد، استقبل فوق الكتف بثبات",
+                "en": "Good, catch over the shoulder with control"
+              }
+            },
+            "perfect": {
+              "up": {
+                "ar": "ممتاز! ضغط قطري نظيف",
+                "en": "Perfect! Clean diagonal press"
+              },
+              "down": {
+                "ar": "ممتاز! استقبال ثابت",
+                "en": "Perfect! Stable catch position"
+              }
+            },
+            "warning": {
+              "up": {
+                "ar": "لا تعوض بالظهر أو القفص الصدري",
+                "en": "Do not compensate with the back or rib cage"
+              }
+            }
+          },
+          "upRange": {
+            "pad": {
+              "max": 180,
+              "min": 130
+            },
+            "normal": {
+              "max": 180,
+              "min": 140
+            },
+            "perfect": {
+              "max": 175,
+              "min": 150
+            }
+          },
+          "downRange": {
+            "pad": {
+              "max": 112,
+              "min": 68
+            },
+            "normal": {
+              "max": 105,
+              "min": 75
+            },
+            "perfect": {
+              "max": 98,
+              "min": 82
+            },
+            "warning": {
+              "max": 68,
+              "min": 55
+            }
+          }
+        },
+        {
+          "joint": "spine",
+          "role": "secondary",
+          "startPose": {
+            "max": 22,
+            "min": 0
+          },
+          "stateMessages": {
+            "perfect": {
+              "ar": "جذع ثابت في نصف الركبة",
+              "en": "Trunk steady in the half-kneeling base"
+            },
+            "warning": {
+              "ar": "لا تفقد الحوض أو الجذع أثناء الضغط",
+              "en": "Do not lose the pelvis or trunk during the press"
+            }
+          },
+          "range": {
+            "pad": {
+              "max": 35,
+              "min": 0
+            },
+            "danger": {
+              "max": 85,
+              "min": 42
+            },
+            "normal": {
+              "max": 26,
+              "min": 0
+            },
+            "perfect": {
+              "max": 18,
+              "min": 0
+            },
+            "warning": {
+              "max": 45,
+              "min": 28
+            }
+          },
+          "phaseRanges": {
+            "up": {
+              "normal": {
+                "max": 24,
+                "min": 0
+              },
+              "perfect": {
+                "max": 18,
+                "min": 0
+              }
+            },
+            "top": {
+              "perfect": {
+                "max": 12,
+                "min": 0
+              }
+            },
+            "down": {
+              "normal": {
+                "max": 24,
+                "min": 0
+              },
+              "perfect": {
+                "max": 18,
+                "min": 0
+              }
+            },
+            "bottom": {
+              "normal": {
+                "max": 35,
+                "min": 5
+              },
+              "perfect": {
+                "max": 28,
+                "min": 8
+              }
+            }
+          },
+          "phaseStateMessages": {
+            "top": {
+              "perfect": {
+                "ar": "ظهر محايد في الوقفة",
+                "en": "Neutral spine at the top"
+              },
+              "warning": {
+                "ar": "لا تميل القطن للأمام في الأعلى",
+                "en": "Avoid excessive lumbar lean at the top"
+              }
+            },
+            "bottom": {
+              "perfect": {
+                "ar": "انحناء مقبول في القاع مع تحكم",
+                "en": "Acceptable flexion at bottom with control"
+              },
+              "warning": {
+                "ar": "قلل الانحناء القطني الزائد",
+                "en": "Reduce excessive lumbar flexion"
+              }
+            }
+          }
+        }
+      ],
+      "positionChecks": [
+        {
+          "id": "landmine_ribs_down",
+          "type": "vertical_alignment",
+          "landmarks": {
+            "primary": "left_shoulder",
+            "secondary": "left_hip"
+          },
+          "condition": {
+            "operator": "approximately_equal",
+            "threshold": 0.12
+          },
+          "activePhases": [
+            "up",
+            "down"
+          ],
+          "errorMessage": {
+            "ar": "حافظ على الأضلاع لأسفل أثناء الدفع القطري.",
+            "en": "Keep the ribs down during the diagonal press."
+          },
+          "severity": "warning",
+          "cooldownMs": 2300,
+          "minErrorFrames": 4
+        }
+      ],
+      "feedbackMessages": {
+        "motivational": [
+          {
+            "ar": "أداء قوي ومنظم",
+            "en": "Strong and controlled work"
+          },
+          {
+            "ar": "حافظ على الشكل قبل السرعة",
+            "en": "Keep form before speed"
+          }
+        ],
+        "tips": [
+          {
+            "ar": "خذ نفساً تحضيرياً قبل كل عدة وازفر مع الجهد.",
+            "en": "Take a setup breath before each rep and exhale on effort."
+          },
+          {
+            "ar": "إذا فقدت التحكم الميكانيكي، قلل المدى أو الحمل.",
+            "en": "If mechanics break down, reduce range or load."
+          }
+        ]
+      },
+      "messageAssignments": [
+        {
+          "messageId": "2848c35b-3f9f-47ab-9a27-ce60de2e723a",
+          "target": "position",
+          "context": "error",
+          "checkId": "landmine_ribs_down",
+          "sortOrder": 1
+        },
+        {
+          "messageId": "a799c408-76d6-4cf8-88f6-9d3a0b100dab",
+          "target": "joint_state",
+          "context": "perfect",
+          "jointCode": "left_elbow",
+          "zone": "up",
+          "sortOrder": 2
+        },
+        {
+          "messageId": "085f44bd-cf1b-4005-8862-2b42623358ee",
+          "target": "joint_state",
+          "context": "perfect",
+          "jointCode": "left_elbow",
+          "zone": "down",
+          "sortOrder": 3
+        },
+        {
+          "messageId": "e5f8853d-531a-4b9f-8293-85fdaa20e172",
+          "target": "joint_state",
+          "context": "normal",
+          "jointCode": "left_elbow",
+          "zone": "up",
+          "sortOrder": 4
+        },
+        {
+          "messageId": "4a47da5a-6e92-4223-9c9a-41447903faed",
+          "target": "joint_state",
+          "context": "normal",
+          "jointCode": "left_elbow",
+          "zone": "down",
+          "sortOrder": 5
+        },
+        {
+          "messageId": "a852a760-8d35-4f5e-b2c4-581d9b5ba7a2",
+          "target": "joint_state",
+          "context": "pad",
+          "jointCode": "left_elbow",
+          "zone": "up",
+          "sortOrder": 6
+        },
+        {
+          "messageId": "9835231c-0f1b-41b3-b382-8e5da4fff9cb",
+          "target": "joint_state",
+          "context": "warning",
+          "jointCode": "left_elbow",
+          "zone": "up",
+          "sortOrder": 7
+        },
+        {
+          "messageId": "1fb0d08d-0e4a-4723-84c9-ae99a33a9e88",
+          "target": "joint_state",
+          "context": "perfect",
+          "jointCode": "spine",
+          "sortOrder": 8
+        },
+        {
+          "messageId": "1cc43cba-0cfd-4731-b297-097ca20f6c5c",
+          "target": "joint_state",
+          "context": "warning",
+          "jointCode": "spine",
+          "sortOrder": 9
+        },
+        {
+          "messageId": "6e5d66e5-5d9e-45a8-a6ca-947b9544c326",
+          "target": "joint_state_phase",
+          "context": "top:perfect",
+          "jointCode": "spine",
+          "sortOrder": 10
+        },
+        {
+          "messageId": "fafd2150-405d-4dd1-a6a6-74ce1b98e4b0",
+          "target": "joint_state_phase",
+          "context": "top:warning",
+          "jointCode": "spine",
+          "sortOrder": 11
+        },
+        {
+          "messageId": "27b8a8ad-0e77-4ae3-a5ca-7ca920f46fd6",
+          "target": "joint_state_phase",
+          "context": "bottom:perfect",
+          "jointCode": "spine",
+          "sortOrder": 12
+        },
+        {
+          "messageId": "a8aeb703-8b93-458d-ab78-c80105e9e2a9",
+          "target": "joint_state_phase",
+          "context": "bottom:warning",
+          "jointCode": "spine",
+          "sortOrder": 13
+        },
+        {
+          "messageId": "6230ccc0-ca2d-440b-9437-e5cb474a285e",
+          "target": "feedback",
+          "context": "motivational",
+          "sortOrder": 14
+        },
+        {
+          "messageId": "f708ce8f-24fa-42c0-b96b-51469c4e907c",
+          "target": "feedback",
+          "context": "motivational",
+          "sortOrder": 15
+        },
+        {
+          "messageId": "3f187ec2-ad13-4ad5-9126-cef775d52f33",
+          "target": "feedback",
+          "context": "tip",
+          "sortOrder": 16
+        },
+        {
+          "messageId": "24b8abb1-37ac-41b6-adde-5c58d8fe1036",
+          "target": "feedback",
+          "context": "tip",
+          "sortOrder": 17
+        }
+      ],
+      "cameraPosition": "side_view"
+    }
+  ],
+  "description": {
+    "ar": "تمرين مكتبة: ضغط لاندمين.",
+    "en": "Library exercise: Half-kneeling landmine press."
+  },
+  "instructions": {
+    "ar": "حافظ على عمود فقري محايد وتنفس بثبات وتوقف عند أي ألم حاد.",
+    "en": "Maintain neutral spine, steady breathing, and stop if sharp pain appears."
+  },
+  "supportsWeight": true,
+  "reportMetrics": {
+    "primary": [
+      "FORM_SCORE"
+    ],
+    "excluded": [
+      "HOLD_DURATION",
+      "SYMMETRY"
+    ]
+  },
+  "hasPositionChecks": true,
+  "_database": {
+    "id": "087a325b-64f1-43a6-862f-fca00bf6e3f3",
+    "categoryId": "78daff70-6564-41cd-b768-462735416089",
+    "countingMethodId": "f4d48aef-1606-4f23-8c61-7b4a2546f990",
+    "publishedAt": "2026-04-20T17:26:28.457Z",
+    "createdAt": "2026-04-20T17:26:28.459Z",
+    "updatedAt": "2026-04-20T17:26:34.530Z",
+    "deletedAt": null,
+    "isFeatured": false,
+    "createdBy": null,
+    "updatedBy": null,
+    "repCountingConfig": null,
+    "bilateralConfig": null,
+    "isBilateral": false,
+    "supportsWeight": true,
+    "minWeight": null,
+    "maxWeight": null,
+    "defaultWeight": null,
+    "reportMetrics": {
+      "mode": "reps",
+      "version": 1,
+      "primaryKpi": "repQuality",
+      "secondaryKpis": [
+        "avgFormScore",
+        "avgRom"
+      ]
+    },
+    "media": [],
+    "poseVariants": [
+      {
+        "id": "a52f3444-f5c0-44a4-8dd9-3153de28c588",
+        "sortOrder": 1,
+        "description": null,
+        "trackedJointsConfig": [
+          {
+            "role": "primary",
+            "joint": "left_elbow",
+            "upRange": {
+              "pad": {
+                "max": 180,
+                "min": 130
+              },
+              "normal": {
+                "max": 180,
+                "min": 140
+              },
+              "perfect": {
+                "max": 175,
+                "min": 150
+              }
+            },
+            "downRange": {
+              "pad": {
+                "max": 112,
+                "min": 68
+              },
+              "normal": {
+                "max": 105,
+                "min": 75
+              },
+              "perfect": {
+                "max": 98,
+                "min": 82
+              },
+              "warning": {
+                "max": 68,
+                "min": 55
+              }
+            },
+            "startPose": {
+              "max": 115,
+              "min": 70
+            },
+            "stateMessages": {
+              "pad": {
+                "up": {
+                  "ar": "مقبول، لكن الذراع لا تزال قصيرة في النهاية",
+                  "en": "Acceptable, but the finishing reach is still short"
+                }
+              },
+              "normal": {
+                "up": {
+                  "ar": "جيد، أمدد اليد أكثر للأمام ولأعلى",
+                  "en": "Good, reach a little farther up and forward"
+                },
+                "down": {
+                  "ar": "جيد، استقبل فوق الكتف بثبات",
+                  "en": "Good, catch over the shoulder with control"
+                }
+              },
+              "perfect": {
+                "up": {
+                  "ar": "ممتاز! ضغط قطري نظيف",
+                  "en": "Perfect! Clean diagonal press"
+                },
+                "down": {
+                  "ar": "ممتاز! استقبال ثابت",
+                  "en": "Perfect! Stable catch position"
+                }
+              },
+              "warning": {
+                "up": {
+                  "ar": "لا تعوض بالظهر أو القفص الصدري",
+                  "en": "Do not compensate with the back or rib cage"
+                }
+              }
+            }
+          },
+          {
+            "role": "secondary",
+            "joint": "spine",
+            "range": {
+              "pad": {
+                "max": 35,
+                "min": 0
+              },
+              "danger": {
+                "max": 85,
+                "min": 42
+              },
+              "normal": {
+                "max": 26,
+                "min": 0
+              },
+              "perfect": {
+                "max": 18,
+                "min": 0
+              },
+              "warning": {
+                "max": 45,
+                "min": 28
+              }
+            },
+            "startPose": {
+              "max": 22,
+              "min": 0
+            },
+            "phaseRanges": {
+              "up": {
+                "normal": {
+                  "max": 24,
+                  "min": 0
+                },
+                "perfect": {
+                  "max": 18,
+                  "min": 0
+                }
+              },
+              "top": {
+                "perfect": {
+                  "max": 12,
+                  "min": 0
+                }
+              },
+              "down": {
+                "normal": {
+                  "max": 24,
+                  "min": 0
+                },
+                "perfect": {
+                  "max": 18,
+                  "min": 0
+                }
+              },
+              "bottom": {
+                "normal": {
+                  "max": 35,
+                  "min": 5
+                },
+                "perfect": {
+                  "max": 28,
+                  "min": 8
+                }
+              }
+            },
+            "stateMessages": {
+              "perfect": {
+                "ar": "جذع ثابت في نصف الركبة",
+                "en": "Trunk steady in the half-kneeling base"
+              },
+              "warning": {
+                "ar": "لا تفقد الحوض أو الجذع أثناء الضغط",
+                "en": "Do not lose the pelvis or trunk during the press"
+              }
+            },
+            "phaseStateMessages": {
+              "top": {
+                "perfect": {
+                  "ar": "ظهر محايد في الوقفة",
+                  "en": "Neutral spine at the top"
+                },
+                "warning": {
+                  "ar": "لا تميل القطن للأمام في الأعلى",
+                  "en": "Avoid excessive lumbar lean at the top"
+                }
+              },
+              "bottom": {
+                "perfect": {
+                  "ar": "انحناء مقبول في القاع مع تحكم",
+                  "en": "Acceptable flexion at bottom with control"
+                },
+                "warning": {
+                  "ar": "قلل الانحناء القطني الزائد",
+                  "en": "Reduce excessive lumbar flexion"
+                }
+              }
+            }
+          }
+        ]
+      }
+    ],
+    "validationWarning": null
+  }
+}

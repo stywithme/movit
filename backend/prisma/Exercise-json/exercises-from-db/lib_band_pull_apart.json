@@ -1,0 +1,640 @@
+{
+  "slug": "lib_band_pull_apart",
+  "status": "published",
+  "movementPattern": "PULL_HORIZONTAL",
+  "loadCapability": "EXTERNAL_LOAD_OPTIONAL",
+  "familyKey": "pull_horizontal_family",
+  "familyOrder": 19,
+  "name": {
+    "ar": "سحب أفقي بحبل",
+    "en": "Band pull-apart"
+  },
+  "category": {
+    "code": "back",
+    "name": {
+      "ar": "تمارين الظهر",
+      "en": "Back"
+    }
+  },
+  "countingMethod": "up_down",
+  "muscles": [
+    "rear_delts"
+  ],
+  "equipment": [
+    "resistance_band",
+    "mat"
+  ],
+  "tags": [
+    "curated_library",
+    "warmup"
+  ],
+  "repCountingConfig": {
+    "reps": 12,
+    "minRepIntervalMs": 1500,
+    "maxRepIntervalMs": 5000
+  },
+  "poseVariants": [
+    {
+      "name": {
+        "ar": "زاوية جانبية",
+        "en": "Side view"
+      },
+      "posePosition": "standing_side",
+      "expectedPostures": [
+        "standing"
+      ],
+      "expectedDirections": [
+        "side"
+      ],
+      "expectedRegions": [
+        "full_body"
+      ],
+      "trackedJoints": [
+        {
+          "joint": "left_elbow",
+          "role": "primary",
+          "startPose": {
+            "max": 180,
+            "min": 140
+          },
+          "stateMessages": {
+            "pad": {
+              "down": {
+                "ar": "مقبول — زد المدى تدريجياً",
+                "en": "Acceptable — build ROM slowly"
+              }
+            },
+            "normal": {
+              "up": {
+                "ar": "جيد — ابدأ بذراع أطول",
+                "en": "Good — start longer"
+              },
+              "down": {
+                "ar": "جيد — اسحب أقرب للوجه",
+                "en": "Good — pull closer to face"
+              }
+            },
+            "perfect": {
+              "up": {
+                "ar": "ممتاز! بداية طويلة",
+                "en": "Perfect! Long start"
+              },
+              "down": {
+                "ar": "ممتاز! شد خلفي مثالي",
+                "en": "Perfect! Strong rear-delt finish"
+              }
+            },
+            "warning": {
+              "down": {
+                "ar": "لا تدور الجذع للخلف",
+                "en": "Don’t yank with the torso"
+              }
+            }
+          },
+          "pairedWith": "right_elbow",
+          "invertIndicator": true,
+          "upRange": {
+            "pad": {
+              "max": 180,
+              "min": 140
+            },
+            "normal": {
+              "max": 180,
+              "min": 150
+            },
+            "perfect": {
+              "max": 180,
+              "min": 160
+            }
+          },
+          "downRange": {
+            "pad": {
+              "max": 95,
+              "min": 22
+            },
+            "danger": {
+              "max": 12,
+              "min": 0
+            },
+            "normal": {
+              "max": 85,
+              "min": 32
+            },
+            "perfect": {
+              "max": 72,
+              "min": 40
+            },
+            "warning": {
+              "max": 28,
+              "min": 12
+            }
+          }
+        },
+        {
+          "joint": "right_elbow",
+          "role": "primary",
+          "startPose": {
+            "max": 180,
+            "min": 140
+          },
+          "stateMessages": {
+            "pad": {
+              "down": {
+                "ar": "مقبول — زد المدى تدريجياً",
+                "en": "Acceptable — build ROM slowly"
+              }
+            },
+            "normal": {
+              "up": {
+                "ar": "جيد — ابدأ بذراع أطول",
+                "en": "Good — start longer"
+              },
+              "down": {
+                "ar": "جيد — اسحب أقرب للوجه",
+                "en": "Good — pull closer to face"
+              }
+            },
+            "perfect": {
+              "up": {
+                "ar": "ممتاز! بداية طويلة",
+                "en": "Perfect! Long start"
+              },
+              "down": {
+                "ar": "ممتاز! شد خلفي مثالي",
+                "en": "Perfect! Strong rear-delt finish"
+              }
+            },
+            "warning": {
+              "down": {
+                "ar": "لا تدور الجذع للخلف",
+                "en": "Don’t yank with the torso"
+              }
+            }
+          },
+          "pairedWith": "left_elbow",
+          "invertIndicator": true,
+          "upRange": {
+            "pad": {
+              "max": 180,
+              "min": 140
+            },
+            "normal": {
+              "max": 180,
+              "min": 150
+            },
+            "perfect": {
+              "max": 180,
+              "min": 160
+            }
+          },
+          "downRange": {
+            "pad": {
+              "max": 95,
+              "min": 22
+            },
+            "danger": {
+              "max": 12,
+              "min": 0
+            },
+            "normal": {
+              "max": 85,
+              "min": 32
+            },
+            "perfect": {
+              "max": 72,
+              "min": 40
+            },
+            "warning": {
+              "max": 28,
+              "min": 12
+            }
+          }
+        }
+      ],
+      "positionChecks": [
+        {
+          "id": "high_elbow_line",
+          "type": "vertical_alignment",
+          "landmarks": {
+            "primary": "left_elbow",
+            "secondary": "left_shoulder"
+          },
+          "condition": {
+            "operator": "approximately_equal",
+            "threshold": 0.14
+          },
+          "activePhases": [
+            "down"
+          ],
+          "errorMessage": {
+            "ar": "ارفع المرفق قليلاً فوق خط المعصم — سحب وجهي حقيقي.",
+            "en": "Finish with elbow above wrist line — classic face-pull finish."
+          },
+          "severity": "tip",
+          "cooldownMs": 2800,
+          "minErrorFrames": 5
+        },
+        {
+          "id": "wrist_follows_elbow",
+          "type": "forward_comparison",
+          "landmarks": {
+            "primary": "left_wrist",
+            "secondary": "left_elbow"
+          },
+          "condition": {
+            "operator": "should_exceed",
+            "threshold": 0.03
+          },
+          "activePhases": [
+            "down"
+          ],
+          "errorMessage": {
+            "ar": "اسحب نحو الأنف/الجبهة بخط مستقيم.",
+            "en": "Pull toward nose/forehead in a straight line."
+          },
+          "severity": "warning",
+          "cooldownMs": 2400,
+          "minErrorFrames": 4
+        }
+      ],
+      "feedbackMessages": {
+        "motivational": [
+          {
+            "ar": "تحكّم رائع في المدى",
+            "en": "Excellent range control"
+          },
+          {
+            "ar": "استمر — الجودة أهم من العدد",
+            "en": "Keep going — quality beats reps"
+          }
+        ],
+        "tips": [
+          {
+            "ar": "كتفاك للأسفل والخلف قليلاً (تثبيت لوح الكتف).",
+            "en": "Keep shoulders down and slightly back (scapular set)."
+          },
+          {
+            "ar": "لا تفرط في تمديد الرقبة؛ نظرة أمامية قصيرة.",
+            "en": "Avoid craning the neck; keep a short forward gaze."
+          }
+        ]
+      },
+      "messageAssignments": [
+        {
+          "messageId": "3b93e006-1547-4366-80c8-c77e1fcd78eb",
+          "target": "position",
+          "context": "error",
+          "checkId": "high_elbow_line",
+          "sortOrder": 1
+        },
+        {
+          "messageId": "1d628dec-cee7-412d-b7f2-3fac3a5d0c50",
+          "target": "position",
+          "context": "error",
+          "checkId": "wrist_follows_elbow",
+          "sortOrder": 2
+        },
+        {
+          "messageId": "db211211-23ba-44f3-b77b-ae9a37b78f43",
+          "target": "joint_state",
+          "context": "perfect",
+          "jointCode": "left_elbow",
+          "zone": "up",
+          "sortOrder": 3
+        },
+        {
+          "messageId": "d8d26a4b-6878-43d1-9396-22ecda67139a",
+          "target": "joint_state",
+          "context": "perfect",
+          "jointCode": "left_elbow",
+          "zone": "down",
+          "sortOrder": 4
+        },
+        {
+          "messageId": "92d01d56-710a-43a2-b84f-a511233481e7",
+          "target": "joint_state",
+          "context": "normal",
+          "jointCode": "left_elbow",
+          "zone": "up",
+          "sortOrder": 5
+        },
+        {
+          "messageId": "3129981a-675f-4bd6-b328-eaf12ac39b63",
+          "target": "joint_state",
+          "context": "normal",
+          "jointCode": "left_elbow",
+          "zone": "down",
+          "sortOrder": 6
+        },
+        {
+          "messageId": "a0fc8bdc-c685-47a0-9302-74f099659403",
+          "target": "joint_state",
+          "context": "pad",
+          "jointCode": "left_elbow",
+          "zone": "down",
+          "sortOrder": 7
+        },
+        {
+          "messageId": "c5d82440-2e86-4c56-b9ce-3a4aba317157",
+          "target": "joint_state",
+          "context": "warning",
+          "jointCode": "left_elbow",
+          "zone": "down",
+          "sortOrder": 8
+        },
+        {
+          "messageId": "696cc38a-8903-42c5-bce4-f88b6afc4114",
+          "target": "joint_state",
+          "context": "perfect",
+          "jointCode": "right_elbow",
+          "zone": "up",
+          "sortOrder": 9
+        },
+        {
+          "messageId": "bd782d75-076e-44b1-a55a-df89b91d4267",
+          "target": "joint_state",
+          "context": "perfect",
+          "jointCode": "right_elbow",
+          "zone": "down",
+          "sortOrder": 10
+        },
+        {
+          "messageId": "c50a9c31-913b-4058-812a-07b0be5047dc",
+          "target": "joint_state",
+          "context": "normal",
+          "jointCode": "right_elbow",
+          "zone": "up",
+          "sortOrder": 11
+        },
+        {
+          "messageId": "f88af34f-a33c-417f-b9b7-2b42052255bf",
+          "target": "joint_state",
+          "context": "normal",
+          "jointCode": "right_elbow",
+          "zone": "down",
+          "sortOrder": 12
+        },
+        {
+          "messageId": "5c72447b-a8ae-47c7-86a9-48860bc93136",
+          "target": "joint_state",
+          "context": "pad",
+          "jointCode": "right_elbow",
+          "zone": "down",
+          "sortOrder": 13
+        },
+        {
+          "messageId": "970824c4-cfab-499c-a0fd-d91dbd92e5a3",
+          "target": "joint_state",
+          "context": "warning",
+          "jointCode": "right_elbow",
+          "zone": "down",
+          "sortOrder": 14
+        },
+        {
+          "messageId": "6a2b06c8-d19d-41ec-b076-b12296fc5dac",
+          "target": "feedback",
+          "context": "motivational",
+          "sortOrder": 15
+        },
+        {
+          "messageId": "819ab364-b492-4f1f-af58-e10122713ac7",
+          "target": "feedback",
+          "context": "motivational",
+          "sortOrder": 16
+        },
+        {
+          "messageId": "1f29ea6e-3777-49fc-ae31-52b3cdc7fb15",
+          "target": "feedback",
+          "context": "tip",
+          "sortOrder": 17
+        },
+        {
+          "messageId": "7b7028b1-2a46-4731-835e-31a966556944",
+          "target": "feedback",
+          "context": "tip",
+          "sortOrder": 18
+        }
+      ],
+      "cameraPosition": "side_view"
+    }
+  ],
+  "description": {
+    "ar": "تمرين مكتبة: سحب أفقي بحبل.",
+    "en": "Library exercise: Band pull-apart."
+  },
+  "instructions": {
+    "ar": "حافظ على عمود فقري محايد وتنفس بثبات وتوقف عند أي ألم حاد.",
+    "en": "Maintain neutral spine, steady breathing, and stop if sharp pain appears."
+  },
+  "reportMetrics": {
+    "primary": [
+      "FORM_SCORE"
+    ],
+    "excluded": [
+      "HOLD_DURATION",
+      "WEIGHT",
+      "VOLUME",
+      "EST_1RM"
+    ]
+  },
+  "hasPositionChecks": true,
+  "_database": {
+    "id": "2b0612aa-fbde-486e-b9d4-5d032e458922",
+    "categoryId": "d90cee55-225e-4127-9fdc-062a8a09522e",
+    "countingMethodId": "f4d48aef-1606-4f23-8c61-7b4a2546f990",
+    "publishedAt": "2026-04-20T17:26:29.768Z",
+    "createdAt": "2026-04-20T17:26:29.770Z",
+    "updatedAt": "2026-04-20T17:26:34.621Z",
+    "deletedAt": null,
+    "isFeatured": false,
+    "createdBy": null,
+    "updatedBy": null,
+    "repCountingConfig": null,
+    "bilateralConfig": null,
+    "isBilateral": false,
+    "supportsWeight": false,
+    "minWeight": null,
+    "maxWeight": null,
+    "defaultWeight": null,
+    "reportMetrics": {
+      "mode": "reps",
+      "version": 1,
+      "primaryKpi": "repQuality",
+      "secondaryKpis": [
+        "avgFormScore",
+        "avgRom"
+      ]
+    },
+    "media": [],
+    "poseVariants": [
+      {
+        "id": "d5e6cfa2-6a4c-40df-bdfd-9b77b31ec9cf",
+        "sortOrder": 1,
+        "description": null,
+        "trackedJointsConfig": [
+          {
+            "role": "primary",
+            "joint": "left_elbow",
+            "upRange": {
+              "pad": {
+                "max": 180,
+                "min": 140
+              },
+              "normal": {
+                "max": 180,
+                "min": 150
+              },
+              "perfect": {
+                "max": 180,
+                "min": 160
+              }
+            },
+            "downRange": {
+              "pad": {
+                "max": 95,
+                "min": 22
+              },
+              "danger": {
+                "max": 12,
+                "min": 0
+              },
+              "normal": {
+                "max": 85,
+                "min": 32
+              },
+              "perfect": {
+                "max": 72,
+                "min": 40
+              },
+              "warning": {
+                "max": 28,
+                "min": 12
+              }
+            },
+            "startPose": {
+              "max": 180,
+              "min": 140
+            },
+            "pairedWith": "right_elbow",
+            "stateMessages": {
+              "pad": {
+                "down": {
+                  "ar": "مقبول — زد المدى تدريجياً",
+                  "en": "Acceptable — build ROM slowly"
+                }
+              },
+              "normal": {
+                "up": {
+                  "ar": "جيد — ابدأ بذراع أطول",
+                  "en": "Good — start longer"
+                },
+                "down": {
+                  "ar": "جيد — اسحب أقرب للوجه",
+                  "en": "Good — pull closer to face"
+                }
+              },
+              "perfect": {
+                "up": {
+                  "ar": "ممتاز! بداية طويلة",
+                  "en": "Perfect! Long start"
+                },
+                "down": {
+                  "ar": "ممتاز! شد خلفي مثالي",
+                  "en": "Perfect! Strong rear-delt finish"
+                }
+              },
+              "warning": {
+                "down": {
+                  "ar": "لا تدور الجذع للخلف",
+                  "en": "Don’t yank with the torso"
+                }
+              }
+            },
+            "invertIndicator": true
+          },
+          {
+            "role": "primary",
+            "joint": "right_elbow",
+            "upRange": {
+              "pad": {
+                "max": 180,
+                "min": 140
+              },
+              "normal": {
+                "max": 180,
+                "min": 150
+              },
+              "perfect": {
+                "max": 180,
+                "min": 160
+              }
+            },
+            "downRange": {
+              "pad": {
+                "max": 95,
+                "min": 22
+              },
+              "danger": {
+                "max": 12,
+                "min": 0
+              },
+              "normal": {
+                "max": 85,
+                "min": 32
+              },
+              "perfect": {
+                "max": 72,
+                "min": 40
+              },
+              "warning": {
+                "max": 28,
+                "min": 12
+              }
+            },
+            "startPose": {
+              "max": 180,
+              "min": 140
+            },
+            "pairedWith": "left_elbow",
+            "stateMessages": {
+              "pad": {
+                "down": {
+                  "ar": "مقبول — زد المدى تدريجياً",
+                  "en": "Acceptable — build ROM slowly"
+                }
+              },
+              "normal": {
+                "up": {
+                  "ar": "جيد — ابدأ بذراع أطول",
+                  "en": "Good — start longer"
+                },
+                "down": {
+                  "ar": "جيد — اسحب أقرب للوجه",
+                  "en": "Good — pull closer to face"
+                }
+              },
+              "perfect": {
+                "up": {
+                  "ar": "ممتاز! بداية طويلة",
+                  "en": "Perfect! Long start"
+                },
+                "down": {
+                  "ar": "ممتاز! شد خلفي مثالي",
+                  "en": "Perfect! Strong rear-delt finish"
+                }
+              },
+              "warning": {
+                "down": {
+                  "ar": "لا تدور الجذع للخلف",
+                  "en": "Don’t yank with the torso"
+                }
+              }
+            },
+            "invertIndicator": true
+          }
+        ]
+      }
+    ],
+    "validationWarning": null
+  }
+}

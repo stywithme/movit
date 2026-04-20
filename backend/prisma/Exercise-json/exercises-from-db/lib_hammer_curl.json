@@ -1,0 +1,610 @@
+{
+  "slug": "lib_hammer_curl",
+  "status": "published",
+  "movementPattern": "PULL_HORIZONTAL",
+  "loadCapability": "EXTERNAL_LOAD_OPTIONAL",
+  "familyKey": "elbow_flexion_family",
+  "familyOrder": 24,
+  "name": {
+    "ar": "طرق مطرقة",
+    "en": "Hammer curl"
+  },
+  "category": {
+    "code": "arms",
+    "name": {
+      "ar": "تمارين الذراعين",
+      "en": "Arms"
+    }
+  },
+  "countingMethod": "up_down",
+  "muscles": [
+    "biceps",
+    "forearms"
+  ],
+  "equipment": [
+    "dumbbell",
+    "mat"
+  ],
+  "tags": [
+    "curated_library"
+  ],
+  "repCountingConfig": {
+    "reps": 12,
+    "minRepIntervalMs": 1500,
+    "maxRepIntervalMs": 5000
+  },
+  "poseVariants": [
+    {
+      "name": {
+        "ar": "زاوية جانبية",
+        "en": "Side view"
+      },
+      "posePosition": "standing_side",
+      "expectedPostures": [
+        "standing"
+      ],
+      "expectedDirections": [
+        "side"
+      ],
+      "expectedRegions": [
+        "full_body"
+      ],
+      "trackedJoints": [
+        {
+          "joint": "left_elbow",
+          "role": "primary",
+          "startPose": {
+            "max": 180,
+            "min": 150
+          },
+          "stateMessages": {
+            "pad": {
+              "down": {
+                "ar": "مقبول — زد المدى تدريجياً",
+                "en": "Acceptable — build ROM slowly"
+              }
+            },
+            "normal": {
+              "up": {
+                "ar": "جيد — فرد أكثر في الأسفل",
+                "en": "Good — extend more at bottom"
+              },
+              "down": {
+                "ar": "جيد — ارفع أكثر نحو الكتف",
+                "en": "Good — lift higher toward shoulder"
+              }
+            },
+            "perfect": {
+              "up": {
+                "ar": "ممتاز! ذراع مفرودة",
+                "en": "Perfect! Arm long"
+              },
+              "down": {
+                "ar": "ممتاز! ثني مثالي",
+                "en": "Perfect! Strong curl"
+              }
+            },
+            "warning": {
+              "down": {
+                "ar": "لا تتأرجح بالظهر",
+                "en": "Don’t swing the torso"
+              }
+            }
+          },
+          "pairedWith": "right_elbow",
+          "invertIndicator": true,
+          "upRange": {
+            "pad": {
+              "max": 180,
+              "min": 148
+            },
+            "normal": {
+              "max": 180,
+              "min": 158
+            },
+            "perfect": {
+              "max": 180,
+              "min": 165
+            }
+          },
+          "downRange": {
+            "pad": {
+              "max": 62,
+              "min": 10
+            },
+            "danger": {
+              "max": 5,
+              "min": 0
+            },
+            "normal": {
+              "max": 52,
+              "min": 15
+            },
+            "perfect": {
+              "max": 42,
+              "min": 22
+            },
+            "warning": {
+              "max": 18,
+              "min": 5
+            }
+          }
+        },
+        {
+          "joint": "right_elbow",
+          "role": "primary",
+          "startPose": {
+            "max": 180,
+            "min": 150
+          },
+          "stateMessages": {
+            "pad": {
+              "down": {
+                "ar": "مقبول — زد المدى تدريجياً",
+                "en": "Acceptable — build ROM slowly"
+              }
+            },
+            "normal": {
+              "up": {
+                "ar": "جيد — فرد أكثر في الأسفل",
+                "en": "Good — extend more at bottom"
+              },
+              "down": {
+                "ar": "جيد — ارفع أكثر نحو الكتف",
+                "en": "Good — lift higher toward shoulder"
+              }
+            },
+            "perfect": {
+              "up": {
+                "ar": "ممتاز! ذراع مفرودة",
+                "en": "Perfect! Arm long"
+              },
+              "down": {
+                "ar": "ممتاز! ثني مثالي",
+                "en": "Perfect! Strong curl"
+              }
+            },
+            "warning": {
+              "down": {
+                "ar": "لا تتأرجح بالظهر",
+                "en": "Don’t swing the torso"
+              }
+            }
+          },
+          "pairedWith": "left_elbow",
+          "invertIndicator": true,
+          "upRange": {
+            "pad": {
+              "max": 180,
+              "min": 148
+            },
+            "normal": {
+              "max": 180,
+              "min": 158
+            },
+            "perfect": {
+              "max": 180,
+              "min": 165
+            }
+          },
+          "downRange": {
+            "pad": {
+              "max": 62,
+              "min": 10
+            },
+            "danger": {
+              "max": 5,
+              "min": 0
+            },
+            "normal": {
+              "max": 52,
+              "min": 15
+            },
+            "perfect": {
+              "max": 42,
+              "min": 22
+            },
+            "warning": {
+              "max": 18,
+              "min": 5
+            }
+          }
+        }
+      ],
+      "positionChecks": [
+        {
+          "id": "curl_elbow_stays_home",
+          "type": "vertical_alignment",
+          "landmarks": {
+            "primary": "left_elbow",
+            "secondary": "left_hip"
+          },
+          "condition": {
+            "operator": "approximately_equal",
+            "threshold": 0.09
+          },
+          "activePhases": [
+            "up",
+            "down"
+          ],
+          "errorMessage": {
+            "ar": "ثبّت المرفق بجانب الجذع.",
+            "en": "Anchor the elbow near the torso."
+          },
+          "severity": "warning",
+          "cooldownMs": 2000,
+          "minErrorFrames": 4
+        }
+      ],
+      "feedbackMessages": {
+        "motivational": [
+          {
+            "ar": "تحكّم رائع في المدى",
+            "en": "Excellent range control"
+          },
+          {
+            "ar": "استمر — الجودة أهم من العدد",
+            "en": "Keep going — quality beats reps"
+          }
+        ],
+        "tips": [
+          {
+            "ar": "كتفاك للأسفل والخلف قليلاً (تثبيت لوح الكتف).",
+            "en": "Keep shoulders down and slightly back (scapular set)."
+          },
+          {
+            "ar": "لا تفرط في تمديد الرقبة؛ نظرة أمامية قصيرة.",
+            "en": "Avoid craning the neck; keep a short forward gaze."
+          }
+        ]
+      },
+      "messageAssignments": [
+        {
+          "messageId": "608d654f-0828-41cf-9452-4603a4090f66",
+          "target": "position",
+          "context": "error",
+          "checkId": "curl_elbow_stays_home",
+          "sortOrder": 1
+        },
+        {
+          "messageId": "39fdea56-b88d-43ab-93bc-3a570f45d7c4",
+          "target": "joint_state",
+          "context": "perfect",
+          "jointCode": "left_elbow",
+          "zone": "up",
+          "sortOrder": 2
+        },
+        {
+          "messageId": "889774d2-4803-47eb-9288-2e2d805ceae4",
+          "target": "joint_state",
+          "context": "perfect",
+          "jointCode": "left_elbow",
+          "zone": "down",
+          "sortOrder": 3
+        },
+        {
+          "messageId": "3364161e-5b73-4811-8ac3-29260df2c97a",
+          "target": "joint_state",
+          "context": "normal",
+          "jointCode": "left_elbow",
+          "zone": "up",
+          "sortOrder": 4
+        },
+        {
+          "messageId": "428fd560-712c-4264-8e9e-bf862b7a118a",
+          "target": "joint_state",
+          "context": "normal",
+          "jointCode": "left_elbow",
+          "zone": "down",
+          "sortOrder": 5
+        },
+        {
+          "messageId": "af810a8c-2451-4589-92d5-de2cb1c6f686",
+          "target": "joint_state",
+          "context": "pad",
+          "jointCode": "left_elbow",
+          "zone": "down",
+          "sortOrder": 6
+        },
+        {
+          "messageId": "e4c76250-462a-4cf5-b428-edcd2f38ed3a",
+          "target": "joint_state",
+          "context": "warning",
+          "jointCode": "left_elbow",
+          "zone": "down",
+          "sortOrder": 7
+        },
+        {
+          "messageId": "8e45d9da-d293-4ebe-a01c-4515f0c3a21f",
+          "target": "joint_state",
+          "context": "perfect",
+          "jointCode": "right_elbow",
+          "zone": "up",
+          "sortOrder": 8
+        },
+        {
+          "messageId": "a6283ebb-cae3-4dde-90e1-bc8d5c44aa86",
+          "target": "joint_state",
+          "context": "perfect",
+          "jointCode": "right_elbow",
+          "zone": "down",
+          "sortOrder": 9
+        },
+        {
+          "messageId": "62e78223-d9dd-4a5a-b233-5ef6ca288ce2",
+          "target": "joint_state",
+          "context": "normal",
+          "jointCode": "right_elbow",
+          "zone": "up",
+          "sortOrder": 10
+        },
+        {
+          "messageId": "e7880795-e683-402e-8b52-059c5a0ee407",
+          "target": "joint_state",
+          "context": "normal",
+          "jointCode": "right_elbow",
+          "zone": "down",
+          "sortOrder": 11
+        },
+        {
+          "messageId": "6cb1fe1d-45d0-4e65-ac74-bfc8eb6c8ab0",
+          "target": "joint_state",
+          "context": "pad",
+          "jointCode": "right_elbow",
+          "zone": "down",
+          "sortOrder": 12
+        },
+        {
+          "messageId": "35440e50-5bed-4a7c-8da8-02c69bf81d4b",
+          "target": "joint_state",
+          "context": "warning",
+          "jointCode": "right_elbow",
+          "zone": "down",
+          "sortOrder": 13
+        },
+        {
+          "messageId": "cf5d6c51-f147-4db1-bc94-8985da021b97",
+          "target": "feedback",
+          "context": "motivational",
+          "sortOrder": 14
+        },
+        {
+          "messageId": "67f02b8d-3e18-4207-ba38-39b609ade89d",
+          "target": "feedback",
+          "context": "motivational",
+          "sortOrder": 15
+        },
+        {
+          "messageId": "710e79c3-5c94-4059-8ddd-b3124c4dcdab",
+          "target": "feedback",
+          "context": "tip",
+          "sortOrder": 16
+        },
+        {
+          "messageId": "15284fec-e47a-46fb-920c-5a8af264da15",
+          "target": "feedback",
+          "context": "tip",
+          "sortOrder": 17
+        }
+      ],
+      "cameraPosition": "side_view"
+    }
+  ],
+  "description": {
+    "ar": "تمرين مكتبة: طرق مطرقة.",
+    "en": "Library exercise: Hammer curl."
+  },
+  "instructions": {
+    "ar": "حافظ على عمود فقري محايد وتنفس بثبات وتوقف عند أي ألم حاد.",
+    "en": "Maintain neutral spine, steady breathing, and stop if sharp pain appears."
+  },
+  "supportsWeight": true,
+  "reportMetrics": {
+    "primary": [
+      "FORM_SCORE"
+    ],
+    "excluded": [
+      "HOLD_DURATION"
+    ]
+  },
+  "hasPositionChecks": true,
+  "_database": {
+    "id": "3213162c-0a12-4e1b-a06e-a472eee28f0f",
+    "categoryId": "46ce7826-7f11-437b-b9b0-de718b5adf7d",
+    "countingMethodId": "f4d48aef-1606-4f23-8c61-7b4a2546f990",
+    "publishedAt": "2026-04-20T17:26:28.805Z",
+    "createdAt": "2026-04-20T17:26:28.807Z",
+    "updatedAt": "2026-04-20T17:26:34.549Z",
+    "deletedAt": null,
+    "isFeatured": false,
+    "createdBy": null,
+    "updatedBy": null,
+    "repCountingConfig": null,
+    "bilateralConfig": null,
+    "isBilateral": false,
+    "supportsWeight": true,
+    "minWeight": null,
+    "maxWeight": null,
+    "defaultWeight": null,
+    "reportMetrics": {
+      "mode": "reps",
+      "version": 1,
+      "primaryKpi": "repQuality",
+      "secondaryKpis": [
+        "avgFormScore",
+        "avgRom"
+      ]
+    },
+    "media": [],
+    "poseVariants": [
+      {
+        "id": "f0d96bb6-30f0-4db7-ad66-ffe661a8780f",
+        "sortOrder": 1,
+        "description": null,
+        "trackedJointsConfig": [
+          {
+            "role": "primary",
+            "joint": "left_elbow",
+            "upRange": {
+              "pad": {
+                "max": 180,
+                "min": 148
+              },
+              "normal": {
+                "max": 180,
+                "min": 158
+              },
+              "perfect": {
+                "max": 180,
+                "min": 165
+              }
+            },
+            "downRange": {
+              "pad": {
+                "max": 62,
+                "min": 10
+              },
+              "danger": {
+                "max": 5,
+                "min": 0
+              },
+              "normal": {
+                "max": 52,
+                "min": 15
+              },
+              "perfect": {
+                "max": 42,
+                "min": 22
+              },
+              "warning": {
+                "max": 18,
+                "min": 5
+              }
+            },
+            "startPose": {
+              "max": 180,
+              "min": 150
+            },
+            "pairedWith": "right_elbow",
+            "stateMessages": {
+              "pad": {
+                "down": {
+                  "ar": "مقبول — زد المدى تدريجياً",
+                  "en": "Acceptable — build ROM slowly"
+                }
+              },
+              "normal": {
+                "up": {
+                  "ar": "جيد — فرد أكثر في الأسفل",
+                  "en": "Good — extend more at bottom"
+                },
+                "down": {
+                  "ar": "جيد — ارفع أكثر نحو الكتف",
+                  "en": "Good — lift higher toward shoulder"
+                }
+              },
+              "perfect": {
+                "up": {
+                  "ar": "ممتاز! ذراع مفرودة",
+                  "en": "Perfect! Arm long"
+                },
+                "down": {
+                  "ar": "ممتاز! ثني مثالي",
+                  "en": "Perfect! Strong curl"
+                }
+              },
+              "warning": {
+                "down": {
+                  "ar": "لا تتأرجح بالظهر",
+                  "en": "Don’t swing the torso"
+                }
+              }
+            },
+            "invertIndicator": true
+          },
+          {
+            "role": "primary",
+            "joint": "right_elbow",
+            "upRange": {
+              "pad": {
+                "max": 180,
+                "min": 148
+              },
+              "normal": {
+                "max": 180,
+                "min": 158
+              },
+              "perfect": {
+                "max": 180,
+                "min": 165
+              }
+            },
+            "downRange": {
+              "pad": {
+                "max": 62,
+                "min": 10
+              },
+              "danger": {
+                "max": 5,
+                "min": 0
+              },
+              "normal": {
+                "max": 52,
+                "min": 15
+              },
+              "perfect": {
+                "max": 42,
+                "min": 22
+              },
+              "warning": {
+                "max": 18,
+                "min": 5
+              }
+            },
+            "startPose": {
+              "max": 180,
+              "min": 150
+            },
+            "pairedWith": "left_elbow",
+            "stateMessages": {
+              "pad": {
+                "down": {
+                  "ar": "مقبول — زد المدى تدريجياً",
+                  "en": "Acceptable — build ROM slowly"
+                }
+              },
+              "normal": {
+                "up": {
+                  "ar": "جيد — فرد أكثر في الأسفل",
+                  "en": "Good — extend more at bottom"
+                },
+                "down": {
+                  "ar": "جيد — ارفع أكثر نحو الكتف",
+                  "en": "Good — lift higher toward shoulder"
+                }
+              },
+              "perfect": {
+                "up": {
+                  "ar": "ممتاز! ذراع مفرودة",
+                  "en": "Perfect! Arm long"
+                },
+                "down": {
+                  "ar": "ممتاز! ثني مثالي",
+                  "en": "Perfect! Strong curl"
+                }
+              },
+              "warning": {
+                "down": {
+                  "ar": "لا تتأرجح بالظهر",
+                  "en": "Don’t swing the torso"
+                }
+              }
+            },
+            "invertIndicator": true
+          }
+        ]
+      }
+    ],
+    "validationWarning": null
+  }
+}

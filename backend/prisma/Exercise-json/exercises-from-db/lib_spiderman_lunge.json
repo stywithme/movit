@@ -1,0 +1,565 @@
+{
+  "slug": "lib_spiderman_lunge",
+  "status": "published",
+  "movementPattern": "LUNGE",
+  "loadCapability": "BODYWEIGHT_ONLY",
+  "familyKey": "hip_mobility_family",
+  "familyOrder": 27,
+  "name": {
+    "ar": "اندفاع سبايدرمان",
+    "en": "Spiderman lunge with reach"
+  },
+  "category": {
+    "code": "legs",
+    "name": {
+      "ar": "تمارين الأرجل",
+      "en": "Legs"
+    }
+  },
+  "countingMethod": "up_down",
+  "muscles": [
+    "quadriceps",
+    "glutes"
+  ],
+  "equipment": [
+    "bodyweight",
+    "mat"
+  ],
+  "tags": [
+    "curated_library",
+    "mobility"
+  ],
+  "repCountingConfig": {
+    "reps": 12,
+    "minRepIntervalMs": 1500,
+    "maxRepIntervalMs": 5000
+  },
+  "poseVariants": [
+    {
+      "name": {
+        "ar": "مستلقٍ على الوجه",
+        "en": "Lying face down (side angle)"
+      },
+      "posePosition": "prone_side",
+      "expectedPostures": [
+        "lying_prone"
+      ],
+      "expectedDirections": [
+        "side"
+      ],
+      "expectedRegions": [
+        "full_body"
+      ],
+      "trackedJoints": [
+        {
+          "joint": "left_knee",
+          "role": "primary",
+          "startPose": {
+            "max": 140,
+            "min": 70
+          },
+          "stateMessages": {
+            "pad": {
+              "down": {
+                "ar": "مقبول — زد المدى تدريجياً",
+                "en": "Acceptable — build reach gradually"
+              }
+            },
+            "normal": {
+              "up": {
+                "ar": "جيد، افرد الرجل الخلفية أكثر",
+                "en": "Good, lengthen the back leg more"
+              },
+              "down": {
+                "ar": "جيد، ثبّت القدم الأمامية",
+                "en": "Good, anchor the front foot"
+              }
+            },
+            "perfect": {
+              "up": {
+                "ar": "ممتاز! عودة طويلة من الانبساط",
+                "en": "Perfect! Long return from the stretch"
+              },
+              "down": {
+                "ar": "ممتاز! ركبة أمامية عميقة مع مد",
+                "en": "Perfect! Deep front knee with reach"
+              }
+            },
+            "warning": {
+              "down": {
+                "ar": "لا تنهار على الركبة الأمامية",
+                "en": "Don’t collapse into the front knee"
+              }
+            }
+          },
+          "upRange": {
+            "pad": {
+              "max": 180,
+              "min": 140
+            },
+            "normal": {
+              "max": 180,
+              "min": 148
+            },
+            "perfect": {
+              "max": 180,
+              "min": 155
+            }
+          },
+          "downRange": {
+            "pad": {
+              "max": 132,
+              "min": 70
+            },
+            "normal": {
+              "max": 125,
+              "min": 78
+            },
+            "perfect": {
+              "max": 115,
+              "min": 85
+            },
+            "warning": {
+              "max": 70,
+              "min": 58
+            }
+          }
+        },
+        {
+          "joint": "right_hip",
+          "role": "secondary",
+          "startPose": {
+            "max": 180,
+            "min": 120
+          },
+          "stateMessages": {
+            "perfect": {
+              "ar": "ورك خلفي في امتداد جيد",
+              "en": "Rear hip shows good extension"
+            },
+            "warning": {
+              "ar": "لا تطوي الورك الخلفي مبكراً",
+              "en": "Don’t fold the rear hip early"
+            }
+          },
+          "range": {
+            "pad": {
+              "max": 180,
+              "min": 138
+            },
+            "normal": {
+              "max": 180,
+              "min": 148
+            },
+            "perfect": {
+              "max": 180,
+              "min": 155
+            },
+            "warning": {
+              "max": 138,
+              "min": 120
+            }
+          }
+        },
+        {
+          "joint": "spine",
+          "role": "secondary",
+          "startPose": {
+            "max": 28,
+            "min": 0
+          },
+          "stateMessages": {
+            "perfect": {
+              "ar": "جذع مرفوع فوق الورك",
+              "en": "Torso tall over the hips"
+            },
+            "warning": {
+              "ar": "لا تنهَر قطنيّاً في المد",
+              "en": "Avoid collapsing into lumbar flexion in the reach"
+            }
+          },
+          "range": {
+            "pad": {
+              "max": 30,
+              "min": 0
+            },
+            "normal": {
+              "max": 24,
+              "min": 0
+            },
+            "perfect": {
+              "max": 18,
+              "min": 0
+            },
+            "warning": {
+              "max": 45,
+              "min": 30
+            }
+          }
+        }
+      ],
+      "positionChecks": [
+        {
+          "id": "spidey_front_knee",
+          "type": "forward_comparison",
+          "landmarks": {
+            "primary": "left_knee",
+            "secondary": "left_foot_index"
+          },
+          "condition": {
+            "operator": "should_not_exceed",
+            "threshold": 0.12
+          },
+          "activePhases": [
+            "down",
+            "bottom"
+          ],
+          "errorMessage": {
+            "ar": "اثبت الركبة الأمامية فوق القدم أثناء المد.",
+            "en": "Stack the front knee over the foot during the reach."
+          },
+          "severity": "warning",
+          "cooldownMs": 2200,
+          "minErrorFrames": 4
+        }
+      ],
+      "feedbackMessages": {
+        "motivational": [
+          {
+            "ar": "مدى حركة جيد وتحكم أفضل",
+            "en": "Good range and better control"
+          },
+          {
+            "ar": "تحرك بسلاسة داخل نطاق مريح",
+            "en": "Move smoothly inside a comfortable range"
+          }
+        ],
+        "tips": [
+          {
+            "ar": "ابقِ الحركة نظيفة وهادئة بدون ارتداد.",
+            "en": "Keep the motion smooth and bounce-free."
+          },
+          {
+            "ar": "أي ألم حاد يعني تقليل المدى فوراً.",
+            "en": "Any sharp pain means reduce range immediately."
+          }
+        ]
+      },
+      "messageAssignments": [
+        {
+          "messageId": "b83e99a3-073e-451b-9678-6b7767dc19a7",
+          "target": "position",
+          "context": "error",
+          "checkId": "spidey_front_knee",
+          "sortOrder": 1
+        },
+        {
+          "messageId": "dbbb5008-ddd6-47ef-a106-361dbd393925",
+          "target": "joint_state",
+          "context": "perfect",
+          "jointCode": "left_knee",
+          "zone": "up",
+          "sortOrder": 2
+        },
+        {
+          "messageId": "ae66229d-71cd-4a4a-a6bd-573543ab45f0",
+          "target": "joint_state",
+          "context": "perfect",
+          "jointCode": "left_knee",
+          "zone": "down",
+          "sortOrder": 3
+        },
+        {
+          "messageId": "e7285ddc-1c32-4d0d-a7e4-290df3b3635d",
+          "target": "joint_state",
+          "context": "normal",
+          "jointCode": "left_knee",
+          "zone": "up",
+          "sortOrder": 4
+        },
+        {
+          "messageId": "c10b9902-f2d0-4d96-a3a2-3a7697fc4dec",
+          "target": "joint_state",
+          "context": "normal",
+          "jointCode": "left_knee",
+          "zone": "down",
+          "sortOrder": 5
+        },
+        {
+          "messageId": "6badc27f-0b24-42e8-9713-fd1e38362ef7",
+          "target": "joint_state",
+          "context": "pad",
+          "jointCode": "left_knee",
+          "zone": "down",
+          "sortOrder": 6
+        },
+        {
+          "messageId": "30fda5e3-7b67-4fe8-be71-21eb710e22fe",
+          "target": "joint_state",
+          "context": "warning",
+          "jointCode": "left_knee",
+          "zone": "down",
+          "sortOrder": 7
+        },
+        {
+          "messageId": "84309e71-c58c-4eb5-bdaa-448d275dee9d",
+          "target": "joint_state",
+          "context": "perfect",
+          "jointCode": "right_hip",
+          "sortOrder": 8
+        },
+        {
+          "messageId": "27a6004e-f243-4d69-91f7-33266310e981",
+          "target": "joint_state",
+          "context": "warning",
+          "jointCode": "right_hip",
+          "sortOrder": 9
+        },
+        {
+          "messageId": "9d29b91e-d003-420d-95d6-4c017fd4a034",
+          "target": "joint_state",
+          "context": "perfect",
+          "jointCode": "spine",
+          "sortOrder": 10
+        },
+        {
+          "messageId": "8035ac34-0eef-415e-bc8e-2b7de912a1df",
+          "target": "joint_state",
+          "context": "warning",
+          "jointCode": "spine",
+          "sortOrder": 11
+        },
+        {
+          "messageId": "ef16f74a-a4eb-4c33-9a53-5a0d7fc8237e",
+          "target": "feedback",
+          "context": "motivational",
+          "sortOrder": 12
+        },
+        {
+          "messageId": "e3faa3f2-270c-46e6-befd-918831434064",
+          "target": "feedback",
+          "context": "motivational",
+          "sortOrder": 13
+        },
+        {
+          "messageId": "addcc48a-8cd0-4c3f-ac54-2ad359a190a1",
+          "target": "feedback",
+          "context": "tip",
+          "sortOrder": 14
+        },
+        {
+          "messageId": "7ed3baee-0487-481a-a619-4e2320145af2",
+          "target": "feedback",
+          "context": "tip",
+          "sortOrder": 15
+        }
+      ]
+    }
+  ],
+  "description": {
+    "ar": "تمرين مكتبة: اندفاع سبايدرمان.",
+    "en": "Library exercise: Spiderman lunge with reach."
+  },
+  "instructions": {
+    "ar": "حافظ على عمود فقري محايد وتنفس بثبات وتوقف عند أي ألم حاد.",
+    "en": "Maintain neutral spine, steady breathing, and stop if sharp pain appears."
+  },
+  "reportMetrics": {
+    "primary": [
+      "FORM_SCORE"
+    ],
+    "excluded": [
+      "HOLD_DURATION",
+      "WEIGHT",
+      "VOLUME",
+      "EST_1RM",
+      "SYMMETRY"
+    ]
+  },
+  "hasPositionChecks": true,
+  "_database": {
+    "id": "c2b37ce9-3409-4d79-a6ee-5c665816c09f",
+    "categoryId": "a672c3d3-4449-4f74-bd8e-be73a0035e88",
+    "countingMethodId": "f4d48aef-1606-4f23-8c61-7b4a2546f990",
+    "publishedAt": "2026-04-20T17:26:28.938Z",
+    "createdAt": "2026-04-20T17:26:28.941Z",
+    "updatedAt": "2026-04-20T17:26:34.558Z",
+    "deletedAt": null,
+    "isFeatured": false,
+    "createdBy": null,
+    "updatedBy": null,
+    "repCountingConfig": null,
+    "bilateralConfig": null,
+    "isBilateral": false,
+    "supportsWeight": false,
+    "minWeight": null,
+    "maxWeight": null,
+    "defaultWeight": null,
+    "reportMetrics": {
+      "mode": "reps",
+      "version": 1,
+      "primaryKpi": "repQuality",
+      "secondaryKpis": [
+        "avgFormScore",
+        "avgRom"
+      ]
+    },
+    "media": [],
+    "poseVariants": [
+      {
+        "id": "4dff5bed-b055-4c95-aea6-71befd826469",
+        "sortOrder": 1,
+        "description": null,
+        "trackedJointsConfig": [
+          {
+            "role": "primary",
+            "joint": "left_knee",
+            "upRange": {
+              "pad": {
+                "max": 180,
+                "min": 140
+              },
+              "normal": {
+                "max": 180,
+                "min": 148
+              },
+              "perfect": {
+                "max": 180,
+                "min": 155
+              }
+            },
+            "downRange": {
+              "pad": {
+                "max": 132,
+                "min": 70
+              },
+              "normal": {
+                "max": 125,
+                "min": 78
+              },
+              "perfect": {
+                "max": 115,
+                "min": 85
+              },
+              "warning": {
+                "max": 70,
+                "min": 58
+              }
+            },
+            "startPose": {
+              "max": 140,
+              "min": 70
+            },
+            "stateMessages": {
+              "pad": {
+                "down": {
+                  "ar": "مقبول — زد المدى تدريجياً",
+                  "en": "Acceptable — build reach gradually"
+                }
+              },
+              "normal": {
+                "up": {
+                  "ar": "جيد، افرد الرجل الخلفية أكثر",
+                  "en": "Good, lengthen the back leg more"
+                },
+                "down": {
+                  "ar": "جيد، ثبّت القدم الأمامية",
+                  "en": "Good, anchor the front foot"
+                }
+              },
+              "perfect": {
+                "up": {
+                  "ar": "ممتاز! عودة طويلة من الانبساط",
+                  "en": "Perfect! Long return from the stretch"
+                },
+                "down": {
+                  "ar": "ممتاز! ركبة أمامية عميقة مع مد",
+                  "en": "Perfect! Deep front knee with reach"
+                }
+              },
+              "warning": {
+                "down": {
+                  "ar": "لا تنهار على الركبة الأمامية",
+                  "en": "Don’t collapse into the front knee"
+                }
+              }
+            }
+          },
+          {
+            "role": "secondary",
+            "joint": "right_hip",
+            "range": {
+              "pad": {
+                "max": 180,
+                "min": 138
+              },
+              "normal": {
+                "max": 180,
+                "min": 148
+              },
+              "perfect": {
+                "max": 180,
+                "min": 155
+              },
+              "warning": {
+                "max": 138,
+                "min": 120
+              }
+            },
+            "startPose": {
+              "max": 180,
+              "min": 120
+            },
+            "stateMessages": {
+              "perfect": {
+                "ar": "ورك خلفي في امتداد جيد",
+                "en": "Rear hip shows good extension"
+              },
+              "warning": {
+                "ar": "لا تطوي الورك الخلفي مبكراً",
+                "en": "Don’t fold the rear hip early"
+              }
+            }
+          },
+          {
+            "role": "secondary",
+            "joint": "spine",
+            "range": {
+              "pad": {
+                "max": 30,
+                "min": 0
+              },
+              "normal": {
+                "max": 24,
+                "min": 0
+              },
+              "perfect": {
+                "max": 18,
+                "min": 0
+              },
+              "warning": {
+                "max": 45,
+                "min": 30
+              }
+            },
+            "startPose": {
+              "max": 28,
+              "min": 0
+            },
+            "stateMessages": {
+              "perfect": {
+                "ar": "جذع مرفوع فوق الورك",
+                "en": "Torso tall over the hips"
+              },
+              "warning": {
+                "ar": "لا تنهَر قطنيّاً في المد",
+                "en": "Avoid collapsing into lumbar flexion in the reach"
+              }
+            }
+          }
+        ]
+      }
+    ],
+    "validationWarning": null
+  }
+}
