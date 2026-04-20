@@ -160,42 +160,6 @@
               "min": 120
             }
           }
-        },
-        {
-          "joint": "spine",
-          "role": "secondary",
-          "startPose": {
-            "max": 28,
-            "min": 0
-          },
-          "stateMessages": {
-            "perfect": {
-              "ar": "جذع مرفوع فوق الورك",
-              "en": "Torso tall over the hips"
-            },
-            "warning": {
-              "ar": "لا تنهَر قطنيّاً في المد",
-              "en": "Avoid collapsing into lumbar flexion in the reach"
-            }
-          },
-          "range": {
-            "pad": {
-              "max": 30,
-              "min": 0
-            },
-            "normal": {
-              "max": 24,
-              "min": 0
-            },
-            "perfect": {
-              "max": 18,
-              "min": 0
-            },
-            "warning": {
-              "max": 45,
-              "min": 30
-            }
-          }
         }
       ],
       "positionChecks": [
@@ -319,14 +283,14 @@
           "messageId": "9d29b91e-d003-420d-95d6-4c017fd4a034",
           "target": "joint_state",
           "context": "perfect",
-          "jointCode": "spine",
+          "jointCode": "left_hip",
           "sortOrder": 10
         },
         {
           "messageId": "8035ac34-0eef-415e-bc8e-2b7de912a1df",
           "target": "joint_state",
           "context": "warning",
-          "jointCode": "spine",
+          "jointCode": "left_hip",
           "sortOrder": 11
         },
         {
@@ -518,42 +482,6 @@
               "warning": {
                 "ar": "لا تطوي الورك الخلفي مبكراً",
                 "en": "Don’t fold the rear hip early"
-              }
-            }
-          },
-          {
-            "role": "secondary",
-            "joint": "spine",
-            "range": {
-              "pad": {
-                "max": 30,
-                "min": 0
-              },
-              "normal": {
-                "max": 24,
-                "min": 0
-              },
-              "perfect": {
-                "max": 18,
-                "min": 0
-              },
-              "warning": {
-                "max": 45,
-                "min": 30
-              }
-            },
-            "startPose": {
-              "max": 28,
-              "min": 0
-            },
-            "stateMessages": {
-              "perfect": {
-                "ar": "جذع مرفوع فوق الورك",
-                "en": "Torso tall over the hips"
-              },
-              "warning": {
-                "ar": "لا تنهَر قطنيّاً في المد",
-                "en": "Avoid collapsing into lumbar flexion in the reach"
               }
             }
           }

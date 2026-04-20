@@ -218,42 +218,6 @@
               "min": 48
             }
           }
-        },
-        {
-          "joint": "spine",
-          "role": "secondary",
-          "startPose": {
-            "max": 28,
-            "min": 0
-          },
-          "stateMessages": {
-            "perfect": {
-              "ar": "جذع متماسك ومرفوع",
-              "en": "Torso organized and upright"
-            },
-            "warning": {
-              "ar": "لا تنهَر للأمام أو للدوران",
-              "en": "Avoid folding forward or rotating"
-            }
-          },
-          "range": {
-            "pad": {
-              "max": 30,
-              "min": 0
-            },
-            "normal": {
-              "max": 24,
-              "min": 0
-            },
-            "perfect": {
-              "max": 18,
-              "min": 0
-            },
-            "warning": {
-              "max": 42,
-              "min": 30
-            }
-          }
         }
       ],
       "positionChecks": [
@@ -426,14 +390,14 @@
           "messageId": "c13ea083-6c73-4b7c-ac88-84debf70df17",
           "target": "joint_state",
           "context": "perfect",
-          "jointCode": "spine",
+          "jointCode": "left_hip",
           "sortOrder": 16
         },
         {
           "messageId": "6f7717ae-5a4a-4731-9b0e-1d5748bcd8a1",
           "target": "joint_state",
           "context": "warning",
-          "jointCode": "spine",
+          "jointCode": "left_hip",
           "sortOrder": 17
         },
         {
@@ -684,42 +648,6 @@
                   "ar": "لا تدع الركبة تنهار للداخل",
                   "en": "Do not let the knee cave inward"
                 }
-              }
-            }
-          },
-          {
-            "role": "secondary",
-            "joint": "spine",
-            "range": {
-              "pad": {
-                "max": 30,
-                "min": 0
-              },
-              "normal": {
-                "max": 24,
-                "min": 0
-              },
-              "perfect": {
-                "max": 18,
-                "min": 0
-              },
-              "warning": {
-                "max": 42,
-                "min": 30
-              }
-            },
-            "startPose": {
-              "max": 28,
-              "min": 0
-            },
-            "stateMessages": {
-              "perfect": {
-                "ar": "جذع متماسك ومرفوع",
-                "en": "Torso organized and upright"
-              },
-              "warning": {
-                "ar": "لا تنهَر للأمام أو للدوران",
-                "en": "Avoid folding forward or rotating"
               }
             }
           }

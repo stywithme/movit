@@ -124,42 +124,6 @@
               "min": 50
             }
           }
-        },
-        {
-          "joint": "spine",
-          "role": "secondary",
-          "startPose": {
-            "max": 16,
-            "min": 0
-          },
-          "stateMessages": {
-            "perfect": {
-              "ar": "مقاومة ممتازة للدوران",
-              "en": "Excellent anti-rotation control"
-            },
-            "warning": {
-              "ar": "الجذع يلف مع الحبل",
-              "en": "The trunk is rotating with the band"
-            }
-          },
-          "range": {
-            "pad": {
-              "max": 18,
-              "min": 0
-            },
-            "normal": {
-              "max": 14,
-              "min": 0
-            },
-            "perfect": {
-              "max": 10,
-              "min": 0
-            },
-            "warning": {
-              "max": 30,
-              "min": 18
-            }
-          }
         }
       ],
       "positionChecks": [
@@ -269,14 +233,14 @@
           "messageId": "41013617-f3dc-4034-93a5-4a927129c854",
           "target": "joint_state",
           "context": "perfect",
-          "jointCode": "spine",
+          "jointCode": "left_hip",
           "sortOrder": 8
         },
         {
           "messageId": "e10d59fc-adf1-46d9-ade6-90aff42073a7",
           "target": "joint_state",
           "context": "warning",
-          "jointCode": "spine",
+          "jointCode": "left_hip",
           "sortOrder": 9
         },
         {
@@ -433,42 +397,6 @@
                   "ar": "خفف المقاومة إذا بدأ الجذع يلتف",
                   "en": "Reduce resistance if the trunk starts rotating"
                 }
-              }
-            }
-          },
-          {
-            "role": "secondary",
-            "joint": "spine",
-            "range": {
-              "pad": {
-                "max": 18,
-                "min": 0
-              },
-              "normal": {
-                "max": 14,
-                "min": 0
-              },
-              "perfect": {
-                "max": 10,
-                "min": 0
-              },
-              "warning": {
-                "max": 30,
-                "min": 18
-              }
-            },
-            "startPose": {
-              "max": 16,
-              "min": 0
-            },
-            "stateMessages": {
-              "perfect": {
-                "ar": "مقاومة ممتازة للدوران",
-                "en": "Excellent anti-rotation control"
-              },
-              "warning": {
-                "ar": "الجذع يلف مع الحبل",
-                "en": "The trunk is rotating with the band"
               }
             }
           }

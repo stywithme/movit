@@ -124,42 +124,6 @@
               "min": 60
             }
           }
-        },
-        {
-          "joint": "spine",
-          "role": "secondary",
-          "startPose": {
-            "max": 22,
-            "min": 0
-          },
-          "stateMessages": {
-            "perfect": {
-              "ar": "جذع منظم في وضع plank",
-              "en": "Trunk organized in plank"
-            },
-            "warning": {
-              "ar": "قلل السرعة إذا فقد الظهر الحياد",
-              "en": "Slow down if spine loses neutrality"
-            }
-          },
-          "range": {
-            "pad": {
-              "max": 26,
-              "min": 0
-            },
-            "normal": {
-              "max": 20,
-              "min": 0
-            },
-            "perfect": {
-              "max": 14,
-              "min": 0
-            },
-            "warning": {
-              "max": 40,
-              "min": 26
-            }
-          }
         }
       ],
       "positionChecks": [
@@ -269,14 +233,14 @@
           "messageId": "e82f89e7-6deb-4b13-9792-7fe7deccf9ed",
           "target": "joint_state",
           "context": "perfect",
-          "jointCode": "spine",
+          "jointCode": "right_hip",
           "sortOrder": 8
         },
         {
           "messageId": "d5de9a46-d6fa-4c8e-b728-8806384e59df",
           "target": "joint_state",
           "context": "warning",
-          "jointCode": "spine",
+          "jointCode": "right_hip",
           "sortOrder": 9
         },
         {
@@ -432,42 +396,6 @@
                   "ar": "لا تهز الورك للأعلى مع الركبة",
                   "en": "Do not let the hip pike up with the knee"
                 }
-              }
-            }
-          },
-          {
-            "role": "secondary",
-            "joint": "spine",
-            "range": {
-              "pad": {
-                "max": 26,
-                "min": 0
-              },
-              "normal": {
-                "max": 20,
-                "min": 0
-              },
-              "perfect": {
-                "max": 14,
-                "min": 0
-              },
-              "warning": {
-                "max": 40,
-                "min": 26
-              }
-            },
-            "startPose": {
-              "max": 22,
-              "min": 0
-            },
-            "stateMessages": {
-              "perfect": {
-                "ar": "جذع منظم في وضع plank",
-                "en": "Trunk organized in plank"
-              },
-              "warning": {
-                "ar": "قلل السرعة إذا فقد الظهر الحياد",
-                "en": "Slow down if spine loses neutrality"
               }
             }
           }

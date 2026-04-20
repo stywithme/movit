@@ -105,12 +105,12 @@
           },
           "downRange": {
             "normal": {
-              "max": 95,
-              "min": 40
+              "max": 85,
+              "min": 35
             },
             "perfect": {
-              "max": 80,
-              "min": 50
+              "max": 72,
+              "min": 42
             }
           }
         },
@@ -343,36 +343,8 @@
         "description": null,
         "trackedJointsConfig": [
           {
-            "role": "primary",
             "joint": "right_shoulder",
-            "upRange": {
-              "pad": {
-                "max": 180,
-                "min": 105
-              },
-              "normal": {
-                "max": 180,
-                "min": 120
-              },
-              "perfect": {
-                "max": 175,
-                "min": 140
-              },
-              "warning": {
-                "max": 100,
-                "min": 90
-              }
-            },
-            "downRange": {
-              "normal": {
-                "max": 95,
-                "min": 40
-              },
-              "perfect": {
-                "max": 80,
-                "min": 50
-              }
-            },
+            "role": "primary",
             "startPose": {
               "max": 100,
               "min": 40
@@ -401,25 +373,39 @@
                 }
               }
             },
-            "invertIndicator": true
-          },
-          {
-            "role": "secondary",
-            "joint": "right_hip",
-            "range": {
+            "invertIndicator": true,
+            "upRange": {
+              "pad": {
+                "max": 180,
+                "min": 105
+              },
               "normal": {
                 "max": 180,
-                "min": 140
+                "min": 120
               },
               "perfect": {
                 "max": 175,
-                "min": 150
+                "min": 140
               },
               "warning": {
-                "max": 140,
-                "min": 120
+                "max": 100,
+                "min": 90
               }
             },
+            "downRange": {
+              "normal": {
+                "max": 85,
+                "min": 35
+              },
+              "perfect": {
+                "max": 72,
+                "min": 42
+              }
+            }
+          },
+          {
+            "joint": "right_hip",
+            "role": "secondary",
             "startPose": {
               "max": 180,
               "min": 120
@@ -432,6 +418,20 @@
               "warning": {
                 "ar": "تقوّس في الظهر",
                 "en": "Back arching"
+              }
+            },
+            "range": {
+              "normal": {
+                "max": 180,
+                "min": 140
+              },
+              "perfect": {
+                "max": 175,
+                "min": 150
+              },
+              "warning": {
+                "max": 140,
+                "min": 120
               }
             }
           }

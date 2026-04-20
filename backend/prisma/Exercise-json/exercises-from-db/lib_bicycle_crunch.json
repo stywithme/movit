@@ -126,102 +126,6 @@
               "min": 25
             }
           }
-        },
-        {
-          "joint": "spine",
-          "role": "secondary",
-          "startPose": {
-            "max": 60,
-            "min": 0
-          },
-          "stateMessages": {
-            "perfect": {
-              "ar": "لف جذع جيد مع ثبات البطن",
-              "en": "Good trunk rotation with stable abs"
-            },
-            "warning": {
-              "ar": "لا ترفع الرقبة لتعويض نقص اللف",
-              "en": "Do not crane the neck to fake the rotation"
-            }
-          },
-          "range": {
-            "pad": {
-              "max": 82,
-              "min": 0
-            },
-            "danger": {
-              "max": 95,
-              "min": 80
-            },
-            "normal": {
-              "max": 78,
-              "min": 0
-            },
-            "perfect": {
-              "max": 75,
-              "min": 0
-            },
-            "warning": {
-              "max": 85,
-              "min": 60
-            }
-          },
-          "phaseRanges": {
-            "up": {
-              "normal": {
-                "max": 78,
-                "min": 38
-              },
-              "perfect": {
-                "max": 72,
-                "min": 45
-              }
-            },
-            "top": {
-              "perfect": {
-                "max": 18,
-                "min": 0
-              }
-            },
-            "down": {
-              "normal": {
-                "max": 52,
-                "min": 8
-              },
-              "perfect": {
-                "max": 45,
-                "min": 12
-              }
-            },
-            "bottom": {
-              "perfect": {
-                "max": 15,
-                "min": 0
-              }
-            }
-          },
-          "phaseStateMessages": {
-            "up": {
-              "perfect": {
-                "ar": "انقباض جذع نظيف للأعلى",
-                "en": "Clean trunk flexion at the top"
-              },
-              "warning": {
-                "ar": "لا تشد بالرقبة لتعويض البطن",
-                "en": "Do not pull with the neck to cheat the abs"
-              }
-            },
-            "bottom": {
-              "perfect": {
-                "ar": "قاع مجوف وثابت — تحكم جيد",
-                "en": "Quiet, hollow bottom — good control"
-              },
-              "warning": {
-                "ar": "لا تدع الظهر السفلي يتقوس عن الأرض",
-                "en": "Do not let the low back arch off the floor"
-              }
-            }
-          }
         }
       ],
       "positionChecks": [
@@ -331,42 +235,42 @@
           "messageId": "cb7d64a0-2d98-45c8-8915-b2faf416aec7",
           "target": "joint_state",
           "context": "perfect",
-          "jointCode": "spine",
+          "jointCode": "left_hip",
           "sortOrder": 8
         },
         {
           "messageId": "36243ee4-98d3-4faa-bfde-42927e632053",
           "target": "joint_state",
           "context": "warning",
-          "jointCode": "spine",
+          "jointCode": "left_hip",
           "sortOrder": 9
         },
         {
           "messageId": "5b0509b3-493b-4a98-9714-12338d8d1255",
           "target": "joint_state_phase",
           "context": "bottom:perfect",
-          "jointCode": "spine",
+          "jointCode": "left_hip",
           "sortOrder": 10
         },
         {
           "messageId": "6281238a-c589-4c62-9432-1ad3499b2bed",
           "target": "joint_state_phase",
           "context": "bottom:warning",
-          "jointCode": "spine",
+          "jointCode": "left_hip",
           "sortOrder": 11
         },
         {
           "messageId": "7335b419-ea3c-4635-8186-919a26fab3f3",
           "target": "joint_state_phase",
           "context": "up:perfect",
-          "jointCode": "spine",
+          "jointCode": "left_hip",
           "sortOrder": 12
         },
         {
           "messageId": "e64589ba-ef93-4257-9704-30744a1c1740",
           "target": "joint_state_phase",
           "context": "up:warning",
-          "jointCode": "spine",
+          "jointCode": "left_hip",
           "sortOrder": 13
         },
         {
@@ -525,102 +429,6 @@
               }
             },
             "invertIndicator": true
-          },
-          {
-            "role": "secondary",
-            "joint": "spine",
-            "range": {
-              "pad": {
-                "max": 82,
-                "min": 0
-              },
-              "danger": {
-                "max": 95,
-                "min": 80
-              },
-              "normal": {
-                "max": 78,
-                "min": 0
-              },
-              "perfect": {
-                "max": 75,
-                "min": 0
-              },
-              "warning": {
-                "max": 85,
-                "min": 60
-              }
-            },
-            "startPose": {
-              "max": 60,
-              "min": 0
-            },
-            "phaseRanges": {
-              "up": {
-                "normal": {
-                  "max": 78,
-                  "min": 38
-                },
-                "perfect": {
-                  "max": 72,
-                  "min": 45
-                }
-              },
-              "top": {
-                "perfect": {
-                  "max": 18,
-                  "min": 0
-                }
-              },
-              "down": {
-                "normal": {
-                  "max": 52,
-                  "min": 8
-                },
-                "perfect": {
-                  "max": 45,
-                  "min": 12
-                }
-              },
-              "bottom": {
-                "perfect": {
-                  "max": 15,
-                  "min": 0
-                }
-              }
-            },
-            "stateMessages": {
-              "perfect": {
-                "ar": "لف جذع جيد مع ثبات البطن",
-                "en": "Good trunk rotation with stable abs"
-              },
-              "warning": {
-                "ar": "لا ترفع الرقبة لتعويض نقص اللف",
-                "en": "Do not crane the neck to fake the rotation"
-              }
-            },
-            "phaseStateMessages": {
-              "up": {
-                "perfect": {
-                  "ar": "انقباض جذع نظيف للأعلى",
-                  "en": "Clean trunk flexion at the top"
-                },
-                "warning": {
-                  "ar": "لا تشد بالرقبة لتعويض البطن",
-                  "en": "Do not pull with the neck to cheat the abs"
-                }
-              },
-              "bottom": {
-                "perfect": {
-                  "ar": "قاع مجوف وثابت — تحكم جيد",
-                  "en": "Quiet, hollow bottom — good control"
-                },
-                "warning": {
-                  "ar": "لا تدع الظهر السفلي يتقوس عن الأرض",
-                  "en": "Do not let the low back arch off the floor"
-                }
-              }
-            }
           }
         ]
       }

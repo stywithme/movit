@@ -164,42 +164,6 @@
               "min": 60
             }
           }
-        },
-        {
-          "joint": "spine",
-          "role": "secondary",
-          "startPose": {
-            "max": 24,
-            "min": 0
-          },
-          "stateMessages": {
-            "perfect": {
-              "ar": "ظهر منظم مع شد جذع جيد",
-              "en": "Spine stays organized with good brace"
-            },
-            "warning": {
-              "ar": "لا تحوّل الجسر إلى انحناء قطني",
-              "en": "Do not turn the bridge into a lumbar arch"
-            }
-          },
-          "range": {
-            "pad": {
-              "max": 26,
-              "min": 0
-            },
-            "normal": {
-              "max": 20,
-              "min": 0
-            },
-            "perfect": {
-              "max": 14,
-              "min": 0
-            },
-            "warning": {
-              "max": 40,
-              "min": 26
-            }
-          }
         }
       ],
       "positionChecks": [
@@ -332,14 +296,14 @@
           "messageId": "9238b753-0101-44d5-8b4c-f504a6502dd2",
           "target": "joint_state",
           "context": "perfect",
-          "jointCode": "spine",
+          "jointCode": "right_hip",
           "sortOrder": 11
         },
         {
           "messageId": "397eaa22-65ea-4ab1-936a-8b3942bb15e4",
           "target": "joint_state",
           "context": "warning",
-          "jointCode": "spine",
+          "jointCode": "right_hip",
           "sortOrder": 12
         },
         {
@@ -531,42 +495,6 @@
               "warning": {
                 "ar": "لا تدع القدمين يبتعدان كثيراً أو تقتربان جداً",
                 "en": "Do not let the feet drift too far or too close"
-              }
-            }
-          },
-          {
-            "role": "secondary",
-            "joint": "spine",
-            "range": {
-              "pad": {
-                "max": 26,
-                "min": 0
-              },
-              "normal": {
-                "max": 20,
-                "min": 0
-              },
-              "perfect": {
-                "max": 14,
-                "min": 0
-              },
-              "warning": {
-                "max": 40,
-                "min": 26
-              }
-            },
-            "startPose": {
-              "max": 24,
-              "min": 0
-            },
-            "stateMessages": {
-              "perfect": {
-                "ar": "ظهر منظم مع شد جذع جيد",
-                "en": "Spine stays organized with good brace"
-              },
-              "warning": {
-                "ar": "لا تحوّل الجسر إلى انحناء قطني",
-                "en": "Do not turn the bridge into a lumbar arch"
               }
             }
           }

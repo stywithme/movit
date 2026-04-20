@@ -160,42 +160,6 @@
               "min": 45
             }
           }
-        },
-        {
-          "joint": "spine",
-          "role": "secondary",
-          "startPose": {
-            "max": 22,
-            "min": 0
-          },
-          "stateMessages": {
-            "perfect": {
-              "ar": "جذع منظم في الرباعي",
-              "en": "Trunk organized in quadruped"
-            },
-            "warning": {
-              "ar": "قلل السرعة إذا فقد الظهر الحياد",
-              "en": "Slow down if spinal neutrality is lost"
-            }
-          },
-          "range": {
-            "pad": {
-              "max": 26,
-              "min": 0
-            },
-            "normal": {
-              "max": 20,
-              "min": 0
-            },
-            "perfect": {
-              "max": 14,
-              "min": 0
-            },
-            "warning": {
-              "max": 38,
-              "min": 26
-            }
-          }
         }
       ],
       "positionChecks": [
@@ -319,14 +283,14 @@
           "messageId": "40fa5a9a-4970-42b4-9b21-d7b397f276db",
           "target": "joint_state",
           "context": "perfect",
-          "jointCode": "spine",
+          "jointCode": "right_hip",
           "sortOrder": 10
         },
         {
           "messageId": "f2ff2751-2886-48c0-a00b-ea30c33dd6df",
           "target": "joint_state",
           "context": "warning",
-          "jointCode": "spine",
+          "jointCode": "right_hip",
           "sortOrder": 11
         },
         {
@@ -518,42 +482,6 @@
               "warning": {
                 "ar": "لا تدع الكتفين يزحفان للأذنين",
                 "en": "Don’t let the shoulders creep to the ears"
-              }
-            }
-          },
-          {
-            "role": "secondary",
-            "joint": "spine",
-            "range": {
-              "pad": {
-                "max": 26,
-                "min": 0
-              },
-              "normal": {
-                "max": 20,
-                "min": 0
-              },
-              "perfect": {
-                "max": 14,
-                "min": 0
-              },
-              "warning": {
-                "max": 38,
-                "min": 26
-              }
-            },
-            "startPose": {
-              "max": 22,
-              "min": 0
-            },
-            "stateMessages": {
-              "perfect": {
-                "ar": "جذع منظم في الرباعي",
-                "en": "Trunk organized in quadruped"
-              },
-              "warning": {
-                "ar": "قلل السرعة إذا فقد الظهر الحياد",
-                "en": "Slow down if spinal neutrality is lost"
               }
             }
           }

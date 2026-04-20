@@ -123,42 +123,6 @@
               "min": 55
             }
           }
-        },
-        {
-          "joint": "spine",
-          "role": "secondary",
-          "startPose": {
-            "max": 20,
-            "min": 0
-          },
-          "stateMessages": {
-            "perfect": {
-              "ar": "جذع محايد ومثبت",
-              "en": "Neutral, anchored trunk"
-            },
-            "warning": {
-              "ar": "خفف المدى حتى يعود الظهر للاستقرار",
-              "en": "Reduce range until the back is stable again"
-            }
-          },
-          "range": {
-            "pad": {
-              "max": 24,
-              "min": 0
-            },
-            "normal": {
-              "max": 18,
-              "min": 0
-            },
-            "perfect": {
-              "max": 12,
-              "min": 0
-            },
-            "warning": {
-              "max": 36,
-              "min": 24
-            }
-          }
         }
       ],
       "positionChecks": [
@@ -268,14 +232,14 @@
           "messageId": "5c4b88a6-7705-44a4-9989-167fdb6a1ba4",
           "target": "joint_state",
           "context": "perfect",
-          "jointCode": "spine",
+          "jointCode": "right_hip",
           "sortOrder": 8
         },
         {
           "messageId": "1b8b9bf7-b7c1-45b6-8be1-d6e24f8a762d",
           "target": "joint_state",
           "context": "warning",
-          "jointCode": "spine",
+          "jointCode": "right_hip",
           "sortOrder": 9
         },
         {
@@ -431,42 +395,6 @@
                   "ar": "لا تدع أسفل الظهر يرتفع عن الأرض",
                   "en": "Do not let the low back peel off the floor"
                 }
-              }
-            }
-          },
-          {
-            "role": "secondary",
-            "joint": "spine",
-            "range": {
-              "pad": {
-                "max": 24,
-                "min": 0
-              },
-              "normal": {
-                "max": 18,
-                "min": 0
-              },
-              "perfect": {
-                "max": 12,
-                "min": 0
-              },
-              "warning": {
-                "max": 36,
-                "min": 24
-              }
-            },
-            "startPose": {
-              "max": 20,
-              "min": 0
-            },
-            "stateMessages": {
-              "perfect": {
-                "ar": "جذع محايد ومثبت",
-                "en": "Neutral, anchored trunk"
-              },
-              "warning": {
-                "ar": "خفف المدى حتى يعود الظهر للاستقرار",
-                "en": "Reduce range until the back is stable again"
               }
             }
           }

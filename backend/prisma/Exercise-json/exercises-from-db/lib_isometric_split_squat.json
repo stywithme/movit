@@ -145,42 +145,6 @@
               "min": 60
             }
           }
-        },
-        {
-          "joint": "spine",
-          "role": "secondary",
-          "startPose": {
-            "max": 28,
-            "min": 0
-          },
-          "stateMessages": {
-            "perfect": {
-              "ar": "جذع مرفوع ومحايد",
-              "en": "Tall, neutral trunk"
-            },
-            "warning": {
-              "ar": "لا تنهَر للأمام في الثبات",
-              "en": "Do not collapse forward in the hold"
-            }
-          },
-          "range": {
-            "pad": {
-              "max": 28,
-              "min": 0
-            },
-            "normal": {
-              "max": 22,
-              "min": 0
-            },
-            "perfect": {
-              "max": 16,
-              "min": 0
-            },
-            "warning": {
-              "max": 40,
-              "min": 28
-            }
-          }
         }
       ],
       "positionChecks": [
@@ -326,14 +290,14 @@
           "messageId": "c53d4b0a-401b-49b3-8255-210d33792835",
           "target": "joint_state",
           "context": "perfect",
-          "jointCode": "spine",
+          "jointCode": "right_hip",
           "sortOrder": 11
         },
         {
           "messageId": "4c4b906a-e569-4f4a-be55-d4c4733cbc27",
           "target": "joint_state",
           "context": "warning",
-          "jointCode": "spine",
+          "jointCode": "right_hip",
           "sortOrder": 12
         },
         {
@@ -520,42 +484,6 @@
               "warning": {
                 "ar": "قلل الميل الأمامي واضبط الحوض",
                 "en": "Reduce forward lean and tidy the pelvis"
-              }
-            }
-          },
-          {
-            "role": "secondary",
-            "joint": "spine",
-            "range": {
-              "pad": {
-                "max": 28,
-                "min": 0
-              },
-              "normal": {
-                "max": 22,
-                "min": 0
-              },
-              "perfect": {
-                "max": 16,
-                "min": 0
-              },
-              "warning": {
-                "max": 40,
-                "min": 28
-              }
-            },
-            "startPose": {
-              "max": 28,
-              "min": 0
-            },
-            "stateMessages": {
-              "perfect": {
-                "ar": "جذع مرفوع ومحايد",
-                "en": "Tall, neutral trunk"
-              },
-              "warning": {
-                "ar": "لا تنهَر للأمام في الثبات",
-                "en": "Do not collapse forward in the hold"
               }
             }
           }

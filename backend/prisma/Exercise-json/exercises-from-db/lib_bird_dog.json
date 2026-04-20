@@ -124,42 +124,6 @@
               "min": 58
             }
           }
-        },
-        {
-          "joint": "spine",
-          "role": "secondary",
-          "startPose": {
-            "max": 20,
-            "min": 0
-          },
-          "stateMessages": {
-            "perfect": {
-              "ar": "جذع ثابت ومحايد",
-              "en": "Stable, neutral trunk"
-            },
-            "warning": {
-              "ar": "قلل مدى الرجل حتى يعود الجذع للثبات",
-              "en": "Shorten the reach until trunk control returns"
-            }
-          },
-          "range": {
-            "pad": {
-              "max": 24,
-              "min": 0
-            },
-            "normal": {
-              "max": 18,
-              "min": 0
-            },
-            "perfect": {
-              "max": 12,
-              "min": 0
-            },
-            "warning": {
-              "max": 36,
-              "min": 24
-            }
-          }
         }
       ],
       "positionChecks": [
@@ -269,14 +233,14 @@
           "messageId": "7702281b-2ff5-42e1-8694-9e773b1d65d6",
           "target": "joint_state",
           "context": "perfect",
-          "jointCode": "spine",
+          "jointCode": "right_hip",
           "sortOrder": 8
         },
         {
           "messageId": "0a544fb8-321f-44d6-8f98-1b86ee7f596b",
           "target": "joint_state",
           "context": "warning",
-          "jointCode": "spine",
+          "jointCode": "right_hip",
           "sortOrder": 9
         },
         {
@@ -432,42 +396,6 @@
                   "ar": "لا تفتح الحوض جانبياً",
                   "en": "Do not open the pelvis sideways"
                 }
-              }
-            }
-          },
-          {
-            "role": "secondary",
-            "joint": "spine",
-            "range": {
-              "pad": {
-                "max": 24,
-                "min": 0
-              },
-              "normal": {
-                "max": 18,
-                "min": 0
-              },
-              "perfect": {
-                "max": 12,
-                "min": 0
-              },
-              "warning": {
-                "max": 36,
-                "min": 24
-              }
-            },
-            "startPose": {
-              "max": 20,
-              "min": 0
-            },
-            "stateMessages": {
-              "perfect": {
-                "ar": "جذع ثابت ومحايد",
-                "en": "Stable, neutral trunk"
-              },
-              "warning": {
-                "ar": "قلل مدى الرجل حتى يعود الجذع للثبات",
-                "en": "Shorten the reach until trunk control returns"
               }
             }
           }

@@ -189,50 +189,6 @@
               "min": 55
             }
           }
-        },
-        {
-          "joint": "spine",
-          "role": "secondary",
-          "startPose": {
-            "max": 30,
-            "min": 0
-          },
-          "stateMessages": {
-            "danger": {
-              "ar": "توقف، الظهر يفقد الحياد بوضوح",
-              "en": "Stop, spinal neutrality is clearly lost"
-            },
-            "perfect": {
-              "ar": "ظهر محايد ومتماسك",
-              "en": "Neutral, organized spine"
-            },
-            "warning": {
-              "ar": "لا تنهَر قطنيّاً في القاع",
-              "en": "Avoid collapsing into lumbar flexion at the bottom"
-            }
-          },
-          "range": {
-            "pad": {
-              "max": 30,
-              "min": 0
-            },
-            "danger": {
-              "max": 80,
-              "min": 42
-            },
-            "normal": {
-              "max": 24,
-              "min": 0
-            },
-            "perfect": {
-              "max": 18,
-              "min": 0
-            },
-            "warning": {
-              "max": 42,
-              "min": 30
-            }
-          }
         }
       ],
       "positionChecks": [
@@ -406,21 +362,21 @@
           "messageId": "fb779b99-4f47-48bf-b146-d42e8677e647",
           "target": "joint_state",
           "context": "perfect",
-          "jointCode": "spine",
+          "jointCode": "right_hip",
           "sortOrder": 15
         },
         {
           "messageId": "b65d0eea-087e-463a-ad9b-46e7a3e832a7",
           "target": "joint_state",
           "context": "warning",
-          "jointCode": "spine",
+          "jointCode": "right_hip",
           "sortOrder": 16
         },
         {
           "messageId": "93a36169-695d-4b25-bc5b-6b1bad44753f",
           "target": "joint_state",
           "context": "danger",
-          "jointCode": "spine",
+          "jointCode": "right_hip",
           "sortOrder": 17
         },
         {
@@ -651,50 +607,6 @@
               "warning": {
                 "ar": "كعبك قد يرتفع أو الكاحل محدود",
                 "en": "Heel lift or ankle restriction is showing"
-              }
-            }
-          },
-          {
-            "role": "secondary",
-            "joint": "spine",
-            "range": {
-              "pad": {
-                "max": 30,
-                "min": 0
-              },
-              "danger": {
-                "max": 80,
-                "min": 42
-              },
-              "normal": {
-                "max": 24,
-                "min": 0
-              },
-              "perfect": {
-                "max": 18,
-                "min": 0
-              },
-              "warning": {
-                "max": 42,
-                "min": 30
-              }
-            },
-            "startPose": {
-              "max": 30,
-              "min": 0
-            },
-            "stateMessages": {
-              "danger": {
-                "ar": "توقف، الظهر يفقد الحياد بوضوح",
-                "en": "Stop, spinal neutrality is clearly lost"
-              },
-              "perfect": {
-                "ar": "ظهر محايد ومتماسك",
-                "en": "Neutral, organized spine"
-              },
-              "warning": {
-                "ar": "لا تنهَر قطنيّاً في القاع",
-                "en": "Avoid collapsing into lumbar flexion at the bottom"
               }
             }
           }

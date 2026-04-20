@@ -51,38 +51,73 @@
       ],
       "trackedJoints": [
         {
-          "joint": "spine",
+          "joint": "left_hip",
           "role": "primary",
           "startPose": {
-            "max": 40,
-            "min": 0
+            "max": 180,
+            "min": 130
           },
+          "pairedWith": "right_hip",
           "stateMessages": {
-            "perfect": {
-              "ar": "تحكم قطني جيد",
-              "en": "Good segmental control"
-            },
-            "warning": {
-              "ar": "قلل المدى إن الظهر يضيق",
-              "en": "Ease range if back pinches"
-            }
-          },
-          "range": {
             "pad": {
-              "max": 50,
-              "min": 0
+              "down": {
+                "ar": "مقبول — مدى أصغر",
+                "en": "Acceptable — smaller range"
+              }
             },
             "normal": {
-              "max": 42,
-              "min": 0
+              "up": {
+                "ar": "جيد — حركة أنعم",
+                "en": "Good — smoother motion"
+              },
+              "down": {
+                "ar": "جيد — تحكم أكبر",
+                "en": "Good — more control"
+              }
             },
             "perfect": {
-              "max": 35,
-              "min": 8
+              "up": {
+                "ar": "ممتاز! حركة متزنة",
+                "en": "Perfect! Balanced motion"
+              },
+              "down": {
+                "ar": "ممتاز! تحكم في الحوض",
+                "en": "Perfect! Hip control"
+              }
             },
             "warning": {
-              "max": 62,
-              "min": 45
+              "down": {
+                "ar": "قلل المدى إن الظهر يضيق",
+                "en": "Ease range if your back pinches"
+              }
+            }
+          },
+          "upRange": {
+            "normal": {
+              "max": 180,
+              "min": 158
+            },
+            "perfect": {
+              "max": 180,
+              "min": 168
+            }
+          },
+          "downRange": {
+            "pad": {
+              "max": 145,
+              "min": 105
+            },
+            "normal": {
+              "max": 138,
+              "min": 112
+            },
+            "perfect": {
+              "max": 128,
+              "min": 118
+            },
+            "warning": {
+              "max": 112,
+              "min": 98
             }
           }
         }
@@ -145,14 +180,14 @@
           "messageId": "469fb590-8001-48e3-bae3-f39d2f3ceb26",
           "target": "joint_state",
           "context": "perfect",
-          "jointCode": "spine",
+          "jointCode": "left_hip",
           "sortOrder": 2
         },
         {
           "messageId": "6208e326-432a-4f33-9295-7983d493fa5c",
           "target": "joint_state",
           "context": "warning",
-          "jointCode": "spine",
+          "jointCode": "left_hip",
           "sortOrder": 3
         },
         {
@@ -238,38 +273,73 @@
         "description": null,
         "trackedJointsConfig": [
           {
+            "joint": "left_hip",
             "role": "primary",
-            "joint": "spine",
-            "range": {
+            "startPose": {
+              "max": 180,
+              "min": 130
+            },
+            "pairedWith": "right_hip",
+            "stateMessages": {
               "pad": {
-                "max": 50,
-                "min": 0
+                "down": {
+                  "ar": "مقبول — مدى أصغر",
+                  "en": "Acceptable — smaller range"
+                }
               },
               "normal": {
-                "max": 42,
-                "min": 0
+                "up": {
+                  "ar": "جيد — حركة أنعم",
+                  "en": "Good — smoother motion"
+                },
+                "down": {
+                  "ar": "جيد — تحكم أكبر",
+                  "en": "Good — more control"
+                }
               },
               "perfect": {
-                "max": 35,
-                "min": 8
+                "up": {
+                  "ar": "ممتاز! حركة متزنة",
+                  "en": "Perfect! Balanced motion"
+                },
+                "down": {
+                  "ar": "ممتاز! تحكم في الحوض",
+                  "en": "Perfect! Hip control"
+                }
               },
               "warning": {
-                "max": 62,
-                "min": 45
+                "down": {
+                  "ar": "قلل المدى إن الظهر يضيق",
+                  "en": "Ease range if your back pinches"
+                }
               }
             },
-            "startPose": {
-              "max": 40,
-              "min": 0
-            },
-            "stateMessages": {
+            "upRange": {
+              "normal": {
+                "max": 180,
+                "min": 158
+              },
               "perfect": {
-                "ar": "تحكم قطني جيد",
-                "en": "Good segmental control"
+                "max": 180,
+                "min": 168
+              }
+            },
+            "downRange": {
+              "pad": {
+                "max": 145,
+                "min": 105
+              },
+              "normal": {
+                "max": 138,
+                "min": 112
+              },
+              "perfect": {
+                "max": 128,
+                "min": 118
               },
               "warning": {
-                "ar": "قلل المدى إن الظهر يضيق",
-                "en": "Ease range if back pinches"
+                "max": 112,
+                "min": 98
               }
             }
           }

@@ -124,42 +124,6 @@
               "min": 35
             }
           }
-        },
-        {
-          "joint": "spine",
-          "role": "secondary",
-          "startPose": {
-            "max": 24,
-            "min": 0
-          },
-          "stateMessages": {
-            "perfect": {
-              "ar": "جذع ثابت والرفع من أسفل البطن",
-              "en": "Trunk stays set and the lift comes from the lower abs"
-            },
-            "warning": {
-              "ar": "لا تترك أسفل الظهر ينهار بعنف",
-              "en": "Do not let the low back crash down"
-            }
-          },
-          "range": {
-            "pad": {
-              "max": 28,
-              "min": 0
-            },
-            "normal": {
-              "max": 22,
-              "min": 0
-            },
-            "perfect": {
-              "max": 16,
-              "min": 0
-            },
-            "warning": {
-              "max": 40,
-              "min": 28
-            }
-          }
         }
       ],
       "positionChecks": [
@@ -269,14 +233,14 @@
           "messageId": "3d10a769-82a8-43f7-b2dc-fd39a85743eb",
           "target": "joint_state",
           "context": "perfect",
-          "jointCode": "spine",
+          "jointCode": "right_hip",
           "sortOrder": 8
         },
         {
           "messageId": "893e0428-088c-4074-aff7-bc20160763ee",
           "target": "joint_state",
           "context": "warning",
-          "jointCode": "spine",
+          "jointCode": "right_hip",
           "sortOrder": 9
         },
         {
@@ -435,42 +399,6 @@
               }
             },
             "invertIndicator": true
-          },
-          {
-            "role": "secondary",
-            "joint": "spine",
-            "range": {
-              "pad": {
-                "max": 28,
-                "min": 0
-              },
-              "normal": {
-                "max": 22,
-                "min": 0
-              },
-              "perfect": {
-                "max": 16,
-                "min": 0
-              },
-              "warning": {
-                "max": 40,
-                "min": 28
-              }
-            },
-            "startPose": {
-              "max": 24,
-              "min": 0
-            },
-            "stateMessages": {
-              "perfect": {
-                "ar": "جذع ثابت والرفع من أسفل البطن",
-                "en": "Trunk stays set and the lift comes from the lower abs"
-              },
-              "warning": {
-                "ar": "لا تترك أسفل الظهر ينهار بعنف",
-                "en": "Do not let the low back crash down"
-              }
-            }
           }
         ]
       }

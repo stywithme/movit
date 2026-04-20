@@ -185,6 +185,65 @@
               "min": 88
             }
           }
+        },
+        {
+          "joint": "right_hip",
+          "role": "secondary",
+          "startPose": {
+            "max": 110,
+            "min": 75
+          },
+          "stateMessages": {
+            "danger": {
+              "ar": "توقف — انحناء زائد في أسفل الظهر قد يزيد الضغط.",
+              "en": "Stop — excessive low-back rounding increases strain."
+            },
+            "perfect": {
+              "ar": "جيد — الحوض والصدر في خط منظم فوق الركبة.",
+              "en": "Good — ribs and pelvis stay organized over the knee line."
+            },
+            "warning": {
+              "ar": "قلل الميل الأمامي للحوض؛ فكّر «تفتح بين الوركين».",
+              "en": "Reduce forward collapse at the hips; think “spread the hips”."
+            }
+          },
+          "range": {
+            "pad": {
+              "max": 110,
+              "min": 80
+            },
+            "normal": {
+              "max": 100,
+              "min": 85
+            },
+            "perfect": {
+              "max": 95,
+              "min": 88
+            }
+          },
+          "pairedWith": "left_hip",
+          "phaseStateMessages": {
+            "top": {
+              "perfect": {
+                "ar": "وقفة علوية — الحوض تحت الكتف دون ميل قطني زائد.",
+                "en": "Top position — hips under shoulders without big lumbar lean."
+              },
+              "warning": {
+                "ar": "تجنب دفع الحوض بعيداً جداً للأمام في الأعلى.",
+                "en": "Avoid pushing the hips too far forward at the finish."
+              }
+            },
+            "bottom": {
+              "perfect": {
+                "ar": "قاع متزن — وزن فوق منتصف القدم.",
+                "en": "Balanced bottom — weight stays through mid-foot."
+              },
+              "warning": {
+                "ar": "لا تدع الحوض ينهار للداخل أو للأمام بشكل مفاجئ.",
+                "en": "Don’t let the hips collapse inward or dive forward."
+              }
+            }
+          }
         }
       ],
       "positionChecks": [
@@ -386,12 +445,12 @@
     }
   ],
   "description": {
-    "ar": "تمرين ثبات لتقوية عضلات الفخذ والقدرة على التحمل",
-    "en": "Isometric exercise to strengthen quadriceps and build endurance"
+    "ar": "احتكاك جدارية لتثبيت الفخذين والأرداف تحت حمل ثابت زمنياً.",
+    "en": "An isometric wall sit to build thigh and glute endurance with fixed-time support."
   },
   "instructions": {
-    "ar": "اسند ظهرك على الحائط وانزل حتى تصبح ركبتيك بزاوية 90 درجة كأنك جالس على كرسي غير مرئي",
-    "en": "Lean back against a wall and lower until knees are at 90 degrees like sitting on an invisible chair"
+    "ar": "ظهرك ملاصق للجدار، انزل حتى زاوية تقريبية 90° بين الفخذ والساق، ثبّت الركبتين فوق الكعبين، وافرد ظهرك على الحائط دون انزلاق الحوض للأمام.",
+    "en": "Back on the wall, slide down until thighs are near parallel, knees over ankles, and keep your trunk tall against the wall without letting hips slide forward."
   },
   "reportMetrics": {
     "primary": [
@@ -581,6 +640,65 @@
               "perfect": {
                 "ar": "ممتاز - الفخذان موازيان للأرض",
                 "en": "Great - thighs parallel to floor"
+              }
+            }
+          },
+          {
+            "role": "secondary",
+            "joint": "right_hip",
+            "range": {
+              "pad": {
+                "max": 110,
+                "min": 80
+              },
+              "normal": {
+                "max": 100,
+                "min": 85
+              },
+              "perfect": {
+                "max": 95,
+                "min": 88
+              }
+            },
+            "startPose": {
+              "max": 110,
+              "min": 75
+            },
+            "stateMessages": {
+              "danger": {
+                "ar": "توقف — انحناء زائد في أسفل الظهر قد يزيد الضغط.",
+                "en": "Stop — excessive low-back rounding increases strain."
+              },
+              "perfect": {
+                "ar": "جيد — الحوض والصدر في خط منظم فوق الركبة.",
+                "en": "Good — ribs and pelvis stay organized over the knee line."
+              },
+              "warning": {
+                "ar": "قلل الميل الأمامي للحوض؛ فكّر «تفتح بين الوركين».",
+                "en": "Reduce forward collapse at the hips; think “spread the hips”."
+              }
+            },
+            "pairedWith": "left_hip",
+            "phaseStateMessages": {
+              "top": {
+                "perfect": {
+                  "ar": "وقفة علوية — الحوض تحت الكتف دون ميل قطني زائد.",
+                  "en": "Top position — hips under shoulders without big lumbar lean."
+                },
+                "warning": {
+                  "ar": "تجنب دفع الحوض بعيداً جداً للأمام في الأعلى.",
+                  "en": "Avoid pushing the hips too far forward at the finish."
+                }
+              },
+              "bottom": {
+                "perfect": {
+                  "ar": "قاع متزن — وزن فوق منتصف القدم.",
+                  "en": "Balanced bottom — weight stays through mid-foot."
+                },
+                "warning": {
+                  "ar": "لا تدع الحوض ينهار للداخل أو للأمام بشكل مفاجئ.",
+                  "en": "Don’t let the hips collapse inward or dive forward."
+                }
               }
             }
           }

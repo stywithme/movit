@@ -52,38 +52,38 @@
       ],
       "trackedJoints": [
         {
-          "joint": "spine",
+          "joint": "left_hip",
           "role": "primary",
           "startPose": {
-            "max": 30,
-            "min": 0
+            "max": 180,
+            "min": 95
           },
           "stateMessages": {
             "perfect": {
-              "ar": "حركة سلسة من الجذع",
-              "en": "Smooth movement from the trunk"
+              "ar": "حوض ثابت أثناء الحركة",
+              "en": "Pelvis stays quiet during the drill"
             },
             "warning": {
-              "ar": "قلل المدى إن انهار الجذع",
-              "en": "Reduce range if trunk collapses"
+              "ar": "قلل التمايل أو الدوران في الحوض",
+              "en": "Reduce rocking or twisting at the hips"
             }
           },
           "range": {
             "pad": {
-              "max": 35,
-              "min": 0
+              "max": 180,
+              "min": 88
             },
             "normal": {
-              "max": 26,
-              "min": 0
+              "max": 180,
+              "min": 95
             },
             "perfect": {
-              "max": 18,
-              "min": 0
+              "max": 180,
+              "min": 102
             },
             "warning": {
-              "max": 50,
-              "min": 32
+              "max": 95,
+              "min": 78
             }
           }
         }
@@ -115,14 +115,14 @@
           "messageId": "8a237ce3-5ddb-46be-abf2-d415a589ae48",
           "target": "joint_state",
           "context": "perfect",
-          "jointCode": "spine",
+          "jointCode": "left_hip",
           "sortOrder": 1
         },
         {
           "messageId": "9dce1f19-3eb5-4bfa-ac7a-62f7026c44c2",
           "target": "joint_state",
           "context": "warning",
-          "jointCode": "spine",
+          "jointCode": "left_hip",
           "sortOrder": 2
         },
         {
@@ -209,38 +209,38 @@
         "description": null,
         "trackedJointsConfig": [
           {
+            "joint": "left_hip",
             "role": "primary",
-            "joint": "spine",
-            "range": {
-              "pad": {
-                "max": 35,
-                "min": 0
-              },
-              "normal": {
-                "max": 26,
-                "min": 0
-              },
-              "perfect": {
-                "max": 18,
-                "min": 0
-              },
-              "warning": {
-                "max": 50,
-                "min": 32
-              }
-            },
             "startPose": {
-              "max": 30,
-              "min": 0
+              "max": 180,
+              "min": 95
             },
             "stateMessages": {
               "perfect": {
-                "ar": "حركة سلسة من الجذع",
-                "en": "Smooth movement from the trunk"
+                "ar": "حوض ثابت أثناء الحركة",
+                "en": "Pelvis stays quiet during the drill"
               },
               "warning": {
-                "ar": "قلل المدى إن انهار الجذع",
-                "en": "Reduce range if trunk collapses"
+                "ar": "قلل التمايل أو الدوران في الحوض",
+                "en": "Reduce rocking or twisting at the hips"
+              }
+            },
+            "range": {
+              "pad": {
+                "max": 180,
+                "min": 88
+              },
+              "normal": {
+                "max": 180,
+                "min": 95
+              },
+              "perfect": {
+                "max": 180,
+                "min": 102
+              },
+              "warning": {
+                "max": 95,
+                "min": 78
               }
             }
           }

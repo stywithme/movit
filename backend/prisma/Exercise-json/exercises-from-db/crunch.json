@@ -52,7 +52,7 @@
       ],
       "trackedJoints": [
         {
-          "joint": "spine",
+          "joint": "left_hip",
           "role": "primary",
           "startPose": {
             "max": 20,
@@ -68,7 +68,7 @@
             "danger": {
               "up": {
                 "ar": "توقف! ترفع أكثر من اللازم",
-                "en": "Stop! You're going too high"
+                "en": "Stop! You are going too high"
               }
             },
             "normal": {
@@ -191,7 +191,7 @@
           "messageId": "2d28a63e-8ec4-4f8e-9b36-6a06c51dc3e7",
           "target": "joint_state",
           "context": "perfect",
-          "jointCode": "spine",
+          "jointCode": "left_hip",
           "zone": "up",
           "sortOrder": 1
         },
@@ -199,7 +199,7 @@
           "messageId": "6eb4f0de-2111-458a-8dd5-bbbaf258b1e1",
           "target": "joint_state",
           "context": "perfect",
-          "jointCode": "spine",
+          "jointCode": "left_hip",
           "zone": "down",
           "sortOrder": 2
         },
@@ -207,7 +207,7 @@
           "messageId": "2e70830a-6749-4334-9654-19cc28b982c8",
           "target": "joint_state",
           "context": "normal",
-          "jointCode": "spine",
+          "jointCode": "left_hip",
           "zone": "up",
           "sortOrder": 3
         },
@@ -215,7 +215,7 @@
           "messageId": "ed4be33c-4930-4564-8c4d-bd0d45cc3998",
           "target": "joint_state",
           "context": "normal",
-          "jointCode": "spine",
+          "jointCode": "left_hip",
           "zone": "down",
           "sortOrder": 4
         },
@@ -223,7 +223,7 @@
           "messageId": "1976891e-d503-4c3b-a554-678ec33a8bf1",
           "target": "joint_state",
           "context": "pad",
-          "jointCode": "spine",
+          "jointCode": "left_hip",
           "zone": "up",
           "sortOrder": 5
         },
@@ -231,7 +231,7 @@
           "messageId": "7e121454-bc40-46a5-9304-ab485696d5e7",
           "target": "joint_state",
           "context": "warning",
-          "jointCode": "spine",
+          "jointCode": "left_hip",
           "zone": "up",
           "sortOrder": 6
         },
@@ -239,7 +239,7 @@
           "messageId": "d8438d62-05b0-4288-9912-3783cb8b0e4b",
           "target": "joint_state",
           "context": "danger",
-          "jointCode": "spine",
+          "jointCode": "left_hip",
           "zone": "up",
           "sortOrder": 7
         },
@@ -337,8 +337,52 @@
         "description": null,
         "trackedJointsConfig": [
           {
+            "joint": "left_hip",
             "role": "primary",
-            "joint": "spine",
+            "startPose": {
+              "max": 20,
+              "min": 0
+            },
+            "stateMessages": {
+              "pad": {
+                "up": {
+                  "ar": "مقبول، لكن يمكنك التحسن",
+                  "en": "Acceptable, but you can improve"
+                }
+              },
+              "danger": {
+                "up": {
+                  "ar": "توقف! ترفع أكثر من اللازم",
+                  "en": "Stop! You are going too high"
+                }
+              },
+              "normal": {
+                "up": {
+                  "ar": "جيد، حاول رفع الكتفين أكثر",
+                  "en": "Good, try lifting shoulders more"
+                },
+                "down": {
+                  "ar": "جيد، حاول النزول للأسفل",
+                  "en": "Good, try lowering more"
+                }
+              },
+              "perfect": {
+                "up": {
+                  "ar": "ممتاز! كرانش مثالي",
+                  "en": "Perfect! Great crunch"
+                },
+                "down": {
+                  "ar": "ممتاز! عودة مثالية",
+                  "en": "Perfect! Great return"
+                }
+              },
+              "warning": {
+                "up": {
+                  "ar": "لا ترفع كثيراً - هذا كرانش وليس sit-up",
+                  "en": "Don't go too high - this is a crunch, not sit-up"
+                }
+              }
+            },
             "upRange": {
               "pad": {
                 "max": 50,
@@ -374,55 +418,21 @@
                 "max": 15,
                 "min": 0
               }
-            },
-            "startPose": {
-              "max": 20,
-              "min": 0
-            },
-            "stateMessages": {
-              "pad": {
-                "up": {
-                  "ar": "مقبول، لكن يمكنك التحسن",
-                  "en": "Acceptable, but you can improve"
-                }
-              },
-              "danger": {
-                "up": {
-                  "ar": "توقف! ترفع أكثر من اللازم",
-                  "en": "Stop! You're going too high"
-                }
-              },
-              "normal": {
-                "up": {
-                  "ar": "جيد، حاول رفع الكتفين أكثر",
-                  "en": "Good, try lifting shoulders more"
-                },
-                "down": {
-                  "ar": "جيد، حاول النزول للأسفل",
-                  "en": "Good, try lowering more"
-                }
-              },
-              "perfect": {
-                "up": {
-                  "ar": "ممتاز! كرانش مثالي",
-                  "en": "Perfect! Great crunch"
-                },
-                "down": {
-                  "ar": "ممتاز! عودة مثالية",
-                  "en": "Perfect! Great return"
-                }
-              },
-              "warning": {
-                "up": {
-                  "ar": "لا ترفع كثيراً - هذا كرانش وليس sit-up",
-                  "en": "Don't go too high - this is a crunch, not sit-up"
-                }
-              }
             }
           },
           {
-            "role": "secondary",
             "joint": "left_knee",
+            "role": "secondary",
+            "startPose": {
+              "max": 110,
+              "min": 80
+            },
+            "stateMessages": {
+              "perfect": {
+                "ar": "ممتاز - الركبتان مثنيتان",
+                "en": "Great - knees are bent"
+              }
+            },
             "range": {
               "pad": {
                 "max": 115,
@@ -435,16 +445,6 @@
               "perfect": {
                 "max": 105,
                 "min": 85
-              }
-            },
-            "startPose": {
-              "max": 110,
-              "min": 80
-            },
-            "stateMessages": {
-              "perfect": {
-                "ar": "ممتاز - الركبتان مثنيتان",
-                "en": "Great - knees are bent"
               }
             }
           }

@@ -318,108 +318,113 @@
           }
         },
         {
-          "joint": "spine",
+          "joint": "right_hip",
           "role": "secondary",
           "startPose": {
-            "max": 18,
-            "min": 0
+            "max": 180,
+            "min": 55
           },
           "stateMessages": {
             "danger": {
-              "ar": "توقف — ظهر مقوّس بشكل خطير",
-              "en": "Stop — severely rounded back"
+              "ar": "توقف — انحناء زائد في أسفل الظهر قد يزيد الضغط.",
+              "en": "Stop — excessive low-back rounding increases strain."
             },
             "perfect": {
-              "ar": "عمود فقري محايد — ممتاز",
-              "en": "Neutral spine — excellent"
+              "ar": "جيد — الحوض والصدر في خط منظم فوق الركبة.",
+              "en": "Good — ribs and pelvis stay organized over the knee line."
             },
             "warning": {
-              "ar": "قلل الانحناء القطني الزائد",
-              "en": "Reduce excessive lumbar flexion"
+              "ar": "قلل الميل الأمامي للحوض؛ فكّر «تفتح بين الوركين».",
+              "en": "Reduce forward collapse at the hips; think “spread the hips”."
             }
           },
           "range": {
             "pad": {
+              "max": 180,
+              "min": 45
+            },
+            "danger": {
               "max": 35,
               "min": 0
             },
-            "danger": {
-              "max": 85,
-              "min": 42
-            },
             "normal": {
-              "max": 26,
-              "min": 0
+              "max": 180,
+              "min": 55
             },
             "perfect": {
-              "max": 18,
-              "min": 0
+              "max": 180,
+              "min": 70
             },
             "warning": {
-              "max": 45,
-              "min": 28
+              "max": 55,
+              "min": 35
             }
           },
           "phaseRanges": {
             "up": {
               "normal": {
-                "max": 24,
-                "min": 0
+                "max": 155,
+                "min": 85
               },
               "perfect": {
-                "max": 18,
-                "min": 0
+                "max": 140,
+                "min": 95
               }
             },
             "top": {
+              "normal": {
+                "max": 180,
+                "min": 158
+              },
               "perfect": {
-                "max": 12,
-                "min": 0
+                "max": 180,
+                "min": 165
               }
             },
             "down": {
               "normal": {
-                "max": 24,
-                "min": 0
+                "max": 155,
+                "min": 85
               },
               "perfect": {
-                "max": 18,
-                "min": 0
+                "max": 140,
+                "min": 95
               }
             },
             "bottom": {
               "normal": {
-                "max": 35,
-                "min": 5
+                "max": 115,
+                "min": 60
               },
               "perfect": {
-                "max": 28,
-                "min": 8
+                "max": 100,
+                "min": 70
               }
             }
           },
           "phaseStateMessages": {
             "top": {
               "perfect": {
-                "ar": "ظهر محايد في الوقفة",
-                "en": "Neutral spine at the top"
+                "ar": "وقفة علوية — الحوض تحت الكتف دون ميل قطني زائد.",
+                "en": "Top position — hips under shoulders without big lumbar lean."
               },
               "warning": {
-                "ar": "لا تميل القطن للأمام في الأعلى",
-                "en": "Avoid excessive lumbar lean at the top"
+                "ar": "تجنب دفع الحوض بعيداً جداً للأمام في الأعلى.",
+                "en": "Avoid pushing the hips too far forward at the finish."
               }
             },
             "bottom": {
               "perfect": {
-                "ar": "انحناء مقبول في القاع مع تحكم",
-                "en": "Acceptable flexion at bottom with control"
+                "ar": "قاع متزن — وزن فوق منتصف القدم.",
+                "en": "Balanced bottom — weight stays through mid-foot."
               },
               "warning": {
-                "ar": "قلل الانحناء القطني الزائد",
-                "en": "Reduce excessive lumbar flexion"
+                "ar": "لا تدع الحوض ينهار للداخل أو للأمام بشكل مفاجئ.",
+                "en": "Don’t let the hips collapse inward or dive forward."
               }
             }
-          }
+          },
+          "pairedWith": "left_hip"
         }
       ],
       "positionChecks": [
@@ -695,49 +700,49 @@
           "messageId": "43a56d68-84de-4e9d-a99b-46da4832d278",
           "target": "joint_state",
           "context": "perfect",
-          "jointCode": "spine",
+          "jointCode": "right_hip",
           "sortOrder": 24
         },
         {
           "messageId": "6c6eb839-e882-4459-aaeb-0a801abb7798",
           "target": "joint_state",
           "context": "warning",
-          "jointCode": "spine",
+          "jointCode": "right_hip",
           "sortOrder": 25
         },
         {
           "messageId": "44e9cc33-522a-4750-9fad-2b626e3c347f",
           "target": "joint_state",
           "context": "danger",
-          "jointCode": "spine",
+          "jointCode": "right_hip",
           "sortOrder": 26
         },
         {
           "messageId": "a686544c-8716-48ab-ad40-4b3f9b26d079",
           "target": "joint_state_phase",
           "context": "top:perfect",
-          "jointCode": "spine",
+          "jointCode": "right_hip",
           "sortOrder": 27
         },
         {
           "messageId": "1c100b27-5bea-4e32-9633-4de39db4d91e",
           "target": "joint_state_phase",
           "context": "top:warning",
-          "jointCode": "spine",
+          "jointCode": "right_hip",
           "sortOrder": 28
         },
         {
           "messageId": "13e80543-a0a9-45fd-9bb5-36ed60f94870",
           "target": "joint_state_phase",
           "context": "bottom:perfect",
-          "jointCode": "spine",
+          "jointCode": "right_hip",
           "sortOrder": 29
         },
         {
           "messageId": "029cc029-74a9-463a-828a-aaa8c350ce3a",
           "target": "joint_state_phase",
           "context": "bottom:warning",
-          "jointCode": "spine",
+          "jointCode": "right_hip",
           "sortOrder": 30
         },
         {
@@ -769,12 +774,12 @@
     }
   ],
   "description": {
-    "ar": "تمرين مكتبة: سكوات كعب مرتفع.",
-    "en": "Library exercise: Heel-elevated squat."
+    "ar": "سكوات مع رفع الكعبين لتحسين عمق الورك عند ضيق الكاحل.",
+    "en": "A heel-elevated squat to reach comfortable depth when ankle mobility is limited."
   },
   "instructions": {
-    "ar": "حافظ على عمود فقري محايد وتنفس بثبات وتوقف عند أي ألم حاد.",
-    "en": "Maintain neutral spine, steady breathing, and stop if sharp pain appears."
+    "ar": "ضع كعبيك مرتفعين بثبات، انزل مع الحفاظ على الوزن فوق منتصف القدم، وتجنب الدوران للأمام على أصابع القدم.",
+    "en": "Set a stable heel lift, keep weight over mid-foot as you squat, and avoid shifting all load onto the toes."
   },
   "reportMetrics": {
     "primary": [
@@ -1090,107 +1095,112 @@
           },
           {
             "role": "secondary",
-            "joint": "spine",
+            "joint": "right_hip",
             "range": {
               "pad": {
+                "max": 180,
+                "min": 45
+              },
+              "danger": {
                 "max": 35,
                 "min": 0
               },
-              "danger": {
-                "max": 85,
-                "min": 42
-              },
               "normal": {
-                "max": 26,
-                "min": 0
+                "max": 180,
+                "min": 55
               },
               "perfect": {
-                "max": 18,
-                "min": 0
+                "max": 180,
+                "min": 70
               },
               "warning": {
-                "max": 45,
-                "min": 28
+                "max": 55,
+                "min": 35
               }
             },
             "startPose": {
-              "max": 18,
-              "min": 0
+              "max": 180,
+              "min": 55
             },
             "phaseRanges": {
               "up": {
                 "normal": {
-                  "max": 24,
-                  "min": 0
+                  "max": 155,
+                  "min": 85
                 },
                 "perfect": {
-                  "max": 18,
-                  "min": 0
+                  "max": 140,
+                  "min": 95
                 }
               },
               "top": {
+                "normal": {
+                  "max": 180,
+                  "min": 158
+                },
                 "perfect": {
-                  "max": 12,
-                  "min": 0
+                  "max": 180,
+                  "min": 165
                 }
               },
               "down": {
                 "normal": {
-                  "max": 24,
-                  "min": 0
+                  "max": 155,
+                  "min": 85
                 },
                 "perfect": {
-                  "max": 18,
-                  "min": 0
+                  "max": 140,
+                  "min": 95
                 }
               },
               "bottom": {
                 "normal": {
-                  "max": 35,
-                  "min": 5
+                  "max": 115,
+                  "min": 60
                 },
                 "perfect": {
-                  "max": 28,
-                  "min": 8
+                  "max": 100,
+                  "min": 70
                 }
               }
             },
             "stateMessages": {
               "danger": {
-                "ar": "توقف — ظهر مقوّس بشكل خطير",
-                "en": "Stop — severely rounded back"
+                "ar": "توقف — انحناء زائد في أسفل الظهر قد يزيد الضغط.",
+                "en": "Stop — excessive low-back rounding increases strain."
               },
               "perfect": {
-                "ar": "عمود فقري محايد — ممتاز",
-                "en": "Neutral spine — excellent"
+                "ar": "جيد — الحوض والصدر في خط منظم فوق الركبة.",
+                "en": "Good — ribs and pelvis stay organized over the knee line."
               },
               "warning": {
-                "ar": "قلل الانحناء القطني الزائد",
-                "en": "Reduce excessive lumbar flexion"
+                "ar": "قلل الميل الأمامي للحوض؛ فكّر «تفتح بين الوركين».",
+                "en": "Reduce forward collapse at the hips; think “spread the hips”."
               }
             },
             "phaseStateMessages": {
               "top": {
                 "perfect": {
-                  "ar": "ظهر محايد في الوقفة",
-                  "en": "Neutral spine at the top"
+                  "ar": "وقفة علوية — الحوض تحت الكتف دون ميل قطني زائد.",
+                  "en": "Top position — hips under shoulders without big lumbar lean."
                 },
                 "warning": {
-                  "ar": "لا تميل القطن للأمام في الأعلى",
-                  "en": "Avoid excessive lumbar lean at the top"
+                  "ar": "تجنب دفع الحوض بعيداً جداً للأمام في الأعلى.",
+                  "en": "Avoid pushing the hips too far forward at the finish."
                 }
               },
               "bottom": {
                 "perfect": {
-                  "ar": "انحناء مقبول في القاع مع تحكم",
-                  "en": "Acceptable flexion at bottom with control"
+                  "ar": "قاع متزن — وزن فوق منتصف القدم.",
+                  "en": "Balanced bottom — weight stays through mid-foot."
                 },
                 "warning": {
-                  "ar": "قلل الانحناء القطني الزائد",
-                  "en": "Reduce excessive lumbar flexion"
+                  "ar": "لا تدع الحوض ينهار للداخل أو للأمام بشكل مفاجئ.",
+                  "en": "Don’t let the hips collapse inward or dive forward."
                 }
               }
-            }
+            },
+            "pairedWith": "left_hip"
           }
         ]
       }
