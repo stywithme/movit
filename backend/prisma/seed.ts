@@ -27,10 +27,26 @@ const adapter = new PrismaPg({
 
 const prisma = new PrismaClient({ adapter });
 
+function seedClearPreservesMessageTemplates(): boolean {
+  const argv = process.argv.slice(2);
+  const fullClear =
+    argv.includes('--full') ||
+    process.env.SEED_FULL_CLEAR === 'true' ||
+    process.env.SEED_CLEAR_MESSAGE_TEMPLATES === 'true';
+  return !fullClear;
+}
+
 async function main() {
   console.log('🌱 Seeding database...');
 
-  await clearDatabase(prisma);
+  const preserveMessageTemplates = seedClearPreservesMessageTemplates();
+  console.log(
+    preserveMessageTemplates
+      ? 'ℹ️ Clear mode: default — preserves feedback_message_templates (merge/upsert messages; keeps audio). Use --full or SEED_FULL_CLEAR=true to wipe templates too.'
+      : 'ℹ️ Clear mode: full — will delete feedback_message_templates before re-seeding.',
+  );
+
+  await clearDatabase(prisma, { preserveMessageTemplates });
 
   await seedAttributes(prisma);
 

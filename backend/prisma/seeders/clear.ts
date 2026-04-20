@@ -1,13 +1,27 @@
 import type { PrismaClient } from '@prisma/client';
 
-export async function clearDatabase(prisma: PrismaClient) {
-  console.log('🧹 Clearing existing data...');
+export type ClearDatabaseOptions = {
+  /**
+   * When true, `feedback_message_templates` rows are not deleted (keeps recorded TTS / audio URLs).
+   * Assignments are still cleared so exercises can be re-linked cleanly.
+   */
+  preserveMessageTemplates: boolean;
+};
+
+export async function clearDatabase(prisma: PrismaClient, options: ClearDatabaseOptions) {
+  const { preserveMessageTemplates } = options;
+  console.log(
+    preserveMessageTemplates
+      ? '🧹 Clearing data (preserving feedback_message_templates for audio/TTS)'
+      : '🧹 Clearing all data including feedback_message_templates',
+  );
 
   const safeDelete = async (name: string, action: () => Promise<unknown>) => {
     try {
       await action();
-    } catch (error: any) {
-      if (error?.code === 'P2021') {
+    } catch (error: unknown) {
+      const err = error as { code?: string };
+      if (err?.code === 'P2021') {
         console.warn(`⚠️ Skip missing table: ${name}`);
         return;
       }
@@ -45,7 +59,9 @@ export async function clearDatabase(prisma: PrismaClient) {
     { name: 'workout_exercises', action: () => prisma.workoutExercise.deleteMany() },
     { name: 'workouts', action: () => prisma.workout.deleteMany() },
     { name: 'feedback_message_assignments', action: () => prisma.feedbackMessageAssignment.deleteMany() },
-    { name: 'feedback_message_templates', action: () => prisma.feedbackMessageTemplate.deleteMany() },
+    ...(preserveMessageTemplates
+      ? []
+      : [{ name: 'feedback_message_templates', action: () => prisma.feedbackMessageTemplate.deleteMany() }]),
     { name: 'position_checks', action: () => prisma.positionCheck.deleteMany() },
     { name: 'pose_variants', action: () => prisma.poseVariant.deleteMany() },
     { name: 'exercise_media', action: () => prisma.exerciseMedia.deleteMany() },
