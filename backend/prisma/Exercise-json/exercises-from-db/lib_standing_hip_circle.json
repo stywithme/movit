@@ -214,12 +214,12 @@
     }
   ],
   "description": {
-    "ar": "تمرين مكتبة: دوائر ورك واقف.",
-    "en": "Library exercise: Standing hip circles."
+    "ar": "دوائر الورك واقفاً تُحمّل مفصل الورك بلطف وتُحسّن الإحساس بالحركة قبل التدريب أو بعد الجلوس الطويل.",
+    "en": "Standing hip circles lightly mobilize the hip joint and improve movement awareness before training or after long sitting."
   },
   "instructions": {
-    "ar": "حافظ على عمود فقري محايد وتنفس بثبات وتوقف عند أي ألم حاد.",
-    "en": "Maintain neutral spine, steady breathing, and stop if sharp pain appears."
+    "ar": "1. قف بجانب حائط أو كرسي للتوازر إن احتجت.\n2. ارفع ركبة واحدة قليلاً ثم ارسم دائرة صغيرة بالركبة في الهواء.\n3. عكس اتجاه الدائرة بعد عدة دورات.\n4. حافظ على الجذع ثابتاً دون ميل جانبي مفرط.\n5. بدّل الساق وكرر بنفس العدد تقريباً.\n6. توقف عند ألم حاد في الورك أو الركبة.",
+    "en": "1. Stand near a wall or chair for balance if needed.\n2. Lift one knee slightly and draw small circles in the air with the thigh.\n3. Reverse the circle direction after several rotations.\n4. Keep the torso quiet without big side bends.\n5. Switch legs and match reps on both sides.\n6. Stop if you feel sharp hip or knee pain."
   },
   "reportMetrics": {
     "primary": [

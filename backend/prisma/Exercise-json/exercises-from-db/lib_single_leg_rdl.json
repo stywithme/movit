@@ -134,106 +134,6 @@
               "min": 45
             }
           }
-        },
-        {
-          "joint": "spine",
-          "role": "secondary",
-          "startPose": {
-            "max": 24,
-            "min": 0
-          },
-          "stateMessages": {
-            "perfect": {
-              "ar": "جذع ثابت طوال التوازن",
-              "en": "Torso remains stable through balance"
-            },
-            "warning": {
-              "ar": "لا تنهَر بالظهر لتعويض الاتزان",
-              "en": "Do not fold the spine to save balance"
-            }
-          },
-          "range": {
-            "pad": {
-              "max": 35,
-              "min": 0
-            },
-            "danger": {
-              "max": 85,
-              "min": 42
-            },
-            "normal": {
-              "max": 26,
-              "min": 0
-            },
-            "perfect": {
-              "max": 18,
-              "min": 0
-            },
-            "warning": {
-              "max": 45,
-              "min": 28
-            }
-          },
-          "phaseRanges": {
-            "up": {
-              "normal": {
-                "max": 24,
-                "min": 0
-              },
-              "perfect": {
-                "max": 18,
-                "min": 0
-              }
-            },
-            "top": {
-              "perfect": {
-                "max": 12,
-                "min": 0
-              }
-            },
-            "down": {
-              "normal": {
-                "max": 24,
-                "min": 0
-              },
-              "perfect": {
-                "max": 18,
-                "min": 0
-              }
-            },
-            "bottom": {
-              "normal": {
-                "max": 35,
-                "min": 5
-              },
-              "perfect": {
-                "max": 28,
-                "min": 8
-              }
-            }
-          },
-          "phaseStateMessages": {
-            "top": {
-              "perfect": {
-                "ar": "ظهر محايد في الوقفة",
-                "en": "Neutral spine at the top"
-              },
-              "warning": {
-                "ar": "لا تميل القطن للأمام في الأعلى",
-                "en": "Avoid excessive lumbar lean at the top"
-              }
-            },
-            "bottom": {
-              "perfect": {
-                "ar": "انحناء مقبول في القاع مع تحكم",
-                "en": "Acceptable flexion at bottom with control"
-              },
-              "warning": {
-                "ar": "قلل الانحناء القطني الزائد",
-                "en": "Reduce excessive lumbar flexion"
-              }
-            }
-          }
         }
       ],
       "positionChecks": [
@@ -351,42 +251,42 @@
           "messageId": "d64459ec-a59a-4e15-b783-65f400fd005b",
           "target": "joint_state",
           "context": "perfect",
-          "jointCode": "spine",
+          "jointCode": "right_hip",
           "sortOrder": 9
         },
         {
           "messageId": "bf203224-6e92-432e-801d-9a680f90ded7",
           "target": "joint_state",
           "context": "warning",
-          "jointCode": "spine",
+          "jointCode": "right_hip",
           "sortOrder": 10
         },
         {
           "messageId": "a6e8401c-8d58-4a40-a33e-b24a5eacf2f9",
           "target": "joint_state_phase",
           "context": "top:perfect",
-          "jointCode": "spine",
+          "jointCode": "right_hip",
           "sortOrder": 11
         },
         {
           "messageId": "f802dad3-c2b0-4087-814a-bac8feb94649",
           "target": "joint_state_phase",
           "context": "top:warning",
-          "jointCode": "spine",
+          "jointCode": "right_hip",
           "sortOrder": 12
         },
         {
           "messageId": "9e1c2720-a8ae-441e-923e-bbea7dadbaf5",
           "target": "joint_state_phase",
           "context": "bottom:perfect",
-          "jointCode": "spine",
+          "jointCode": "right_hip",
           "sortOrder": 13
         },
         {
           "messageId": "ad6f35ae-e705-4694-b1a5-8041c1851750",
           "target": "joint_state_phase",
           "context": "bottom:warning",
-          "jointCode": "spine",
+          "jointCode": "right_hip",
           "sortOrder": 14
         },
         {
@@ -418,12 +318,12 @@
     }
   ],
   "description": {
-    "ar": "تمرين مكتبة: رفعة رومانية أحادية.",
-    "en": "Library exercise: Single-leg RDL."
+    "ar": "الرفعة الرومانية على ساق واحدة تزيد تحدي التوازن وتستهدف مؤخرة الفخذ والألوية مع الحفاظ على استقامة الجذع.",
+    "en": "A single-leg Romanian deadlift challenges balance while targeting the hamstrings and glutes with a long, neutral torso."
   },
   "instructions": {
-    "ar": "حافظ على عمود فقري محايد وتنفس بثبات وتوقف عند أي ألم حاد.",
-    "en": "Maintain neutral spine, steady breathing, and stop if sharp pain appears."
+    "ar": "1. قف على ساق واحدة مع ركبة خفيفة الانثناء في الساق الداعمة.\n2. ادفع الورك الخلفي للخلف بينما تمد الساق الحرة خلفك مع صدر مرتفع.\n3. انزل حتى خط مستقيم تقريباً من الرأس إلى الكعب الخلفي دون لف الحوض بشكل مفرط.\n4. ادفع الأرض للعودة الواقفة مع ضغط خفيف للألوية.\n5. نفّذ 6–10 تكرارات ثم بدّل الساق.\n6. توقف عند ألم حاد في أعلى الفخذ الخلفي أو أسفل الظهر أو الركبة.",
+    "en": "1. Stand on one leg with a soft bend in the supporting knee.\n2. Hinge the hips back while reaching the free leg behind you with a tall chest.\n3. Lower until the body forms a long line from head to rear heel without excessive pelvic rotation.\n4. Drive through the floor to stand and lightly squeeze the glutes.\n5. Complete 6–10 reps, then switch legs.\n6. Stop for sharp hamstring, low-back, or knee pain."
   },
   "supportsWeight": true,
   "reportMetrics": {
@@ -550,106 +450,6 @@
                 "down": {
                   "ar": "لا تدع الحوض يلتف أو يفتح",
                   "en": "Do not let the pelvis rotate open"
-                }
-              }
-            }
-          },
-          {
-            "role": "secondary",
-            "joint": "spine",
-            "range": {
-              "pad": {
-                "max": 35,
-                "min": 0
-              },
-              "danger": {
-                "max": 85,
-                "min": 42
-              },
-              "normal": {
-                "max": 26,
-                "min": 0
-              },
-              "perfect": {
-                "max": 18,
-                "min": 0
-              },
-              "warning": {
-                "max": 45,
-                "min": 28
-              }
-            },
-            "startPose": {
-              "max": 24,
-              "min": 0
-            },
-            "phaseRanges": {
-              "up": {
-                "normal": {
-                  "max": 24,
-                  "min": 0
-                },
-                "perfect": {
-                  "max": 18,
-                  "min": 0
-                }
-              },
-              "top": {
-                "perfect": {
-                  "max": 12,
-                  "min": 0
-                }
-              },
-              "down": {
-                "normal": {
-                  "max": 24,
-                  "min": 0
-                },
-                "perfect": {
-                  "max": 18,
-                  "min": 0
-                }
-              },
-              "bottom": {
-                "normal": {
-                  "max": 35,
-                  "min": 5
-                },
-                "perfect": {
-                  "max": 28,
-                  "min": 8
-                }
-              }
-            },
-            "stateMessages": {
-              "perfect": {
-                "ar": "جذع ثابت طوال التوازن",
-                "en": "Torso remains stable through balance"
-              },
-              "warning": {
-                "ar": "لا تنهَر بالظهر لتعويض الاتزان",
-                "en": "Do not fold the spine to save balance"
-              }
-            },
-            "phaseStateMessages": {
-              "top": {
-                "perfect": {
-                  "ar": "ظهر محايد في الوقفة",
-                  "en": "Neutral spine at the top"
-                },
-                "warning": {
-                  "ar": "لا تميل القطن للأمام في الأعلى",
-                  "en": "Avoid excessive lumbar lean at the top"
-                }
-              },
-              "bottom": {
-                "perfect": {
-                  "ar": "انحناء مقبول في القاع مع تحكم",
-                  "en": "Acceptable flexion at bottom with control"
-                },
-                "warning": {
-                  "ar": "قلل الانحناء القطني الزائد",
-                  "en": "Reduce excessive lumbar flexion"
                 }
               }
             }

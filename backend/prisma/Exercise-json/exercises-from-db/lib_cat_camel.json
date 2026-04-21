@@ -6,7 +6,7 @@
   "familyKey": "spine_mobility_family",
   "familyOrder": 10,
   "name": {
-    "ar": "قطّ جمل",
+    "ar": "قط - جمل",
     "en": "Cat-camel"
   },
   "category": {
@@ -18,7 +18,8 @@
   },
   "countingMethod": "up_down",
   "muscles": [
-    "lower_back"
+    "lower_back",
+    "core"
   ],
   "equipment": [
     "bodyweight",
@@ -26,7 +27,8 @@
   ],
   "tags": [
     "curated_library",
-    "mobility"
+    "mobility",
+    "warmup"
   ],
   "repCountingConfig": {
     "reps": 12,
@@ -36,12 +38,12 @@
   "poseVariants": [
     {
       "name": {
-        "ar": "مستلقٍ على الوجه",
-        "en": "Lying face down (side angle)"
+        "ar": "وضع رباعي من الجانب",
+        "en": "Quadruped (side view)"
       },
       "posePosition": "prone_side",
       "expectedPostures": [
-        "lying_prone"
+        "quadruped"
       ],
       "expectedDirections": [
         "side"
@@ -54,35 +56,143 @@
           "joint": "spine",
           "role": "primary",
           "startPose": {
-            "max": 40,
+            "max": 18,
             "min": 0
           },
           "stateMessages": {
+            "pad": {
+              "up": {
+                "ar": "مقبول — زِد التقوس تدريجياً بدون شد في الرقبة",
+                "en": "Acceptable — build the rounding gradually without neck tension"
+              }
+            },
+            "normal": {
+              "up": {
+                "ar": "جيد — لف الفقرات للأعلى بسلاسة",
+                "en": "Good — round the spine segment by segment"
+              },
+              "down": {
+                "ar": "جيد — افتح الصدر بلطف بدون ضغط أسفل الظهر",
+                "en": "Good — open the chest gently without dumping into the low back"
+              }
+            },
             "perfect": {
-              "ar": "تحكم قطني جيد",
-              "en": "Good segmental control"
+              "up": {
+                "ar": "ممتاز! تقوس قطّ واضح ومتحكم به",
+                "en": "Perfect! Clear, controlled cat position"
+              },
+              "down": {
+                "ar": "ممتاز! امتداد جمل لطيف وموزون",
+                "en": "Perfect! Smooth, gentle camel extension"
+              }
             },
             "warning": {
-              "ar": "قلل المدى إن الظهر يضيق",
-              "en": "Ease range if back pinches"
+              "down": {
+                "ar": "لا تضغط أسفل الظهر أو ترفع الذقن أكثر من اللازم",
+                "en": "Do not jam the low back or crank the chin up"
+              }
             }
           },
-          "range": {
+          "upRange": {
             "pad": {
-              "max": 50,
+              "max": 65,
+              "min": 24
+            },
+            "normal": {
+              "max": 60,
+              "min": 28
+            },
+            "perfect": {
+              "max": 55,
+              "min": 34
+            },
+            "warning": {
+              "max": 78,
+              "min": 65
+            },
+            "danger": {
+              "max": 95,
+              "min": 78
+            }
+          },
+          "downRange": {
+            "pad": {
+              "max": 24,
               "min": 0
             },
             "normal": {
-              "max": 42,
+              "max": 18,
               "min": 0
             },
             "perfect": {
-              "max": 35,
-              "min": 8
+              "max": 12,
+              "min": 0
+            }
+          }
+        },
+        {
+          "joint": "left_hip",
+          "role": "secondary",
+          "startPose": {
+            "max": 120,
+            "min": 75
+          },
+          "stateMessages": {
+            "perfect": {
+              "ar": "الوركان فوق الركبتين تقريباً",
+              "en": "Both hips stay stacked over the knees"
             },
             "warning": {
-              "max": 62,
-              "min": 45
+              "ar": "لا تحوّل الحركة إلى رجوع بالحوض للخلف أو للأمام",
+              "en": "Do not turn the drill into a hip shift forward or back"
+            }
+          },
+          "pairedWith": "right_hip",
+          "range": {
+            "normal": {
+              "max": 120,
+              "min": 72
+            },
+            "perfect": {
+              "max": 110,
+              "min": 82
+            },
+            "warning": {
+              "max": 130,
+              "min": 60
+            }
+          }
+        },
+        {
+          "joint": "right_hip",
+          "role": "secondary",
+          "startPose": {
+            "max": 120,
+            "min": 75
+          },
+          "stateMessages": {
+            "perfect": {
+              "ar": "الوركان فوق الركبتين تقريباً",
+              "en": "Both hips stay stacked over the knees"
+            },
+            "warning": {
+              "ar": "لا تحوّل الحركة إلى رجوع بالحوض للخلف أو للأمام",
+              "en": "Do not turn the drill into a hip shift forward or back"
+            }
+          },
+          "pairedWith": "left_hip",
+          "range": {
+            "normal": {
+              "max": 120,
+              "min": 72
+            },
+            "perfect": {
+              "max": 110,
+              "min": 82
+            },
+            "warning": {
+              "max": 130,
+              "min": 60
             }
           }
         }
@@ -97,14 +207,14 @@
           },
           "condition": {
             "operator": "approximately_equal",
-            "threshold": 0.14
+            "threshold": 0.18
           },
           "activePhases": [
             "all"
           ],
           "errorMessage": {
-            "ar": "تحرّك بسلاسة داخل نطاق مريح.",
-            "en": "Move smoothly within a comfortable range."
+            "ar": "حرّك العمود الفقري فقرة فقرة مع بقاء الكتفين والوركين تحت تحكم كامل.",
+            "en": "Move the spine one segment at a time while keeping the shoulders and hips under control."
           },
           "severity": "tip",
           "cooldownMs": 3200,
@@ -114,22 +224,22 @@
       "feedbackMessages": {
         "motivational": [
           {
-            "ar": "مدى حركة جيد وتحكم أفضل",
-            "en": "Good range and better control"
+            "ar": "حركة ممتازة وموزونة عبر العمود الفقري",
+            "en": "Great, balanced movement through the spine"
           },
           {
-            "ar": "تحرك بسلاسة داخل نطاق مريح",
-            "en": "Move smoothly inside a comfortable range"
+            "ar": "إيقاع هادئ وتحكم واضح من أول الحركة لآخرها",
+            "en": "Calm tempo and clear control from start to finish"
           }
         ],
         "tips": [
           {
-            "ar": "ابقِ الحركة نظيفة وهادئة بدون ارتداد.",
-            "en": "Keep the motion smooth and bounce-free."
+            "ar": "ابدأ من التنفس: زفير مع وضع القط، وشهيق مع وضع الجمل.",
+            "en": "Lead with the breath: exhale into cat, inhale into camel."
           },
           {
-            "ar": "أي ألم حاد يعني تقليل المدى فوراً.",
-            "en": "Any sharp pain means reduce range immediately."
+            "ar": "لا ترمِ الرأس للأعلى أو لأسفل بقوة؛ الحركة الأساسية من العمود الفقري.",
+            "en": "Do not fling the head up or down; the main motion comes from the spine."
           }
         ]
       },
@@ -157,38 +267,60 @@
         },
         {
           "messageId": "81a5a0e0-abce-4004-b6c5-48a3912a2a74",
-          "target": "feedback",
-          "context": "motivational",
+          "target": "joint_state",
+          "context": "perfect",
+          "jointCode": "left_hip",
           "sortOrder": 4
+        },
+        {
+          "messageId": "f1a2b3c4-d5e6-4789-a012-b3c4d5e6f708",
+          "target": "joint_state",
+          "context": "warning",
+          "jointCode": "left_hip",
+          "sortOrder": 5
+        },
+        {
+          "messageId": "a2b3c4d5-e6f7-4890-b123-c4d5e6f70891",
+          "target": "joint_state",
+          "context": "perfect",
+          "jointCode": "right_hip",
+          "sortOrder": 6
+        },
+        {
+          "messageId": "b3c4d5e6-f7a8-4901-c234-d5e6f70892a3",
+          "target": "joint_state",
+          "context": "warning",
+          "jointCode": "right_hip",
+          "sortOrder": 7
         },
         {
           "messageId": "632020e0-da0e-4fe5-9591-c39edd0e226b",
           "target": "feedback",
           "context": "motivational",
-          "sortOrder": 5
+          "sortOrder": 8
         },
         {
           "messageId": "265767b9-04b3-44fe-a91c-bf8a3d3196b3",
           "target": "feedback",
-          "context": "tip",
-          "sortOrder": 6
+          "context": "motivational",
+          "sortOrder": 9
         },
         {
           "messageId": "307671d4-3e71-499a-a837-ce6cee1be405",
           "target": "feedback",
           "context": "tip",
-          "sortOrder": 7
+          "sortOrder": 10
         }
       ]
     }
   ],
   "description": {
-    "ar": "تمرين مكتبة: قطّ جمل.",
-    "en": "Library exercise: Cat-camel."
+    "ar": "تمرين Cat-Camel هو Drill حركي للعمود الفقري يُستخدم لتحسين الإحساس بالفقرات والانتقال السلس بين الثني والامتداد. يفيد في الإحماء، تخفيف التيبس، وتعليم المتدرب كيف يحرّك الظهر كله بدون ضغط زائد على الرقبة أو أسفل الظهر.",
+    "en": "Cat-Camel is a spinal mobility drill used to improve segmental awareness as you move between flexion and extension. It works well in warm-ups, reduces stiffness, and teaches the athlete how to move the whole spine without dumping stress into the neck or lower back."
   },
   "instructions": {
-    "ar": "حافظ على عمود فقري محايد وتنفس بثبات وتوقف عند أي ألم حاد.",
-    "en": "Maintain neutral spine, steady breathing, and stop if sharp pain appears."
+    "ar": "1. ابدأ من وضع رباعي واليدان تحت الكتفين والركبتان تحت الوركين.\n2. مع الزفير، قرّب الضلوع إلى الداخل ودوّر الظهر للأعلى تدريجياً إلى وضع القط.\n3. مع الشهيق، افتح الصدر واسمح بامتداد لطيف عبر الظهر إلى وضع الجمل بدون ضغط أسفل الظهر.\n4. حافظ على الحوض فوق الركبتين ولا تحوّل الحركة إلى رجوع أو اندفاع بالورك.\n5. اجعل الحركة بطيئة ومقسمة فقرة فقرة، وليس بهزّة سريعة.\n6. إذا ظهر ألم حاد أو تنميل، قلّل المدى أو أوقف التمرين.",
+    "en": "1. Start on all fours with the hands under the shoulders and knees under the hips.\n2. As you exhale, draw the ribs in and round the spine upward gradually into cat.\n3. As you inhale, open the chest and move into a gentle camel position without jamming the low back.\n4. Keep the pelvis stacked over the knees and avoid turning the drill into a hip shift.\n5. Move slowly one segment at a time instead of using a fast swing.\n6. If you feel sharp pain or tingling, reduce the range or stop the drill."
   },
   "reportMetrics": {
     "primary": [
@@ -202,80 +334,5 @@
       "SYMMETRY"
     ]
   },
-  "hasPositionChecks": true,
-  "_database": {
-    "id": "49963629-d6b0-4db9-95d8-620d642b9ca6",
-    "categoryId": "d90cee55-225e-4127-9fdc-062a8a09522e",
-    "countingMethodId": "f4d48aef-1606-4f23-8c61-7b4a2546f990",
-    "publishedAt": "2026-04-20T17:26:25.591Z",
-    "createdAt": "2026-04-20T17:26:25.593Z",
-    "updatedAt": "2026-04-20T17:26:34.313Z",
-    "deletedAt": null,
-    "isFeatured": false,
-    "createdBy": null,
-    "updatedBy": null,
-    "repCountingConfig": null,
-    "bilateralConfig": null,
-    "isBilateral": false,
-    "supportsWeight": false,
-    "minWeight": null,
-    "maxWeight": null,
-    "defaultWeight": null,
-    "reportMetrics": {
-      "mode": "reps",
-      "version": 1,
-      "primaryKpi": "repQuality",
-      "secondaryKpis": [
-        "avgFormScore",
-        "avgRom"
-      ]
-    },
-    "media": [],
-    "poseVariants": [
-      {
-        "id": "13ed71a0-03f8-4b72-9da5-2d19415d7907",
-        "sortOrder": 1,
-        "description": null,
-        "trackedJointsConfig": [
-          {
-            "role": "primary",
-            "joint": "spine",
-            "range": {
-              "pad": {
-                "max": 50,
-                "min": 0
-              },
-              "normal": {
-                "max": 42,
-                "min": 0
-              },
-              "perfect": {
-                "max": 35,
-                "min": 8
-              },
-              "warning": {
-                "max": 62,
-                "min": 45
-              }
-            },
-            "startPose": {
-              "max": 40,
-              "min": 0
-            },
-            "stateMessages": {
-              "perfect": {
-                "ar": "تحكم قطني جيد",
-                "en": "Good segmental control"
-              },
-              "warning": {
-                "ar": "قلل المدى إن الظهر يضيق",
-                "en": "Ease range if back pinches"
-              }
-            }
-          }
-        ]
-      }
-    ],
-    "validationWarning": null
-  }
+  "hasPositionChecks": true
 }

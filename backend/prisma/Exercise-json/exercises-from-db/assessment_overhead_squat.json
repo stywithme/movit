@@ -285,6 +285,115 @@
           }
         },
         {
+          "joint": "right_hip",
+          "role": "secondary",
+          "startPose": {
+            "max": 180,
+            "min": 55
+          },
+          "stateMessages": {
+            "danger": {
+              "ar": "توقف — انحناء زائد في أسفل الظهر قد يزيد الضغط.",
+              "en": "Stop — excessive low-back rounding increases strain."
+            },
+            "perfect": {
+              "ar": "جيد — الحوض والصدر في خط منظم فوق الركبة.",
+              "en": "Good — ribs and pelvis stay organized over the knee line."
+            },
+            "warning": {
+              "ar": "قلل الميل الأمامي للحوض؛ فكّر «تفتح بين الوركين».",
+              "en": "Reduce forward collapse at the hips; think “spread the hips”."
+            }
+          },
+          "range": {
+            "pad": {
+              "max": 180,
+              "min": 45
+            },
+            "danger": {
+              "max": 35,
+              "min": 0
+            },
+            "normal": {
+              "max": 180,
+              "min": 55
+            },
+            "perfect": {
+              "max": 180,
+              "min": 70
+            },
+            "warning": {
+              "max": 55,
+              "min": 35
+            }
+          },
+          "phaseRanges": {
+            "up": {
+              "normal": {
+                "max": 155,
+                "min": 85
+              },
+              "perfect": {
+                "max": 140,
+                "min": 95
+              }
+            },
+            "top": {
+              "normal": {
+                "max": 180,
+                "min": 158
+              },
+              "perfect": {
+                "max": 180,
+                "min": 165
+              }
+            },
+            "down": {
+              "normal": {
+                "max": 155,
+                "min": 85
+              },
+              "perfect": {
+                "max": 140,
+                "min": 95
+              }
+            },
+            "bottom": {
+              "normal": {
+                "max": 115,
+                "min": 60
+              },
+              "perfect": {
+                "max": 100,
+                "min": 70
+              }
+            }
+          },
+          "phaseStateMessages": {
+            "top": {
+              "perfect": {
+                "ar": "وقفة علوية — الحوض تحت الكتف دون ميل قطني زائد.",
+                "en": "Top position — hips under shoulders without big lumbar lean."
+              },
+              "warning": {
+                "ar": "تجنب دفع الحوض بعيداً جداً للأمام في الأعلى.",
+                "en": "Avoid pushing the hips too far forward at the finish."
+              }
+            },
+            "bottom": {
+              "perfect": {
+                "ar": "قاع متزن — وزن فوق منتصف القدم.",
+                "en": "Balanced bottom — weight stays through mid-foot."
+              },
+              "warning": {
+                "ar": "لا تدع الحوض ينهار للداخل أو للأمام بشكل مفاجئ.",
+                "en": "Don’t let the hips collapse inward or dive forward."
+              }
+            }
+          },
+          "pairedWith": "left_hip"
+        },
+        {
           "joint": "left_shoulder",
           "role": "secondary",
           "startPose": {
@@ -317,106 +426,6 @@
             "warning": {
               "max": 100,
               "min": 70
-            }
-          }
-        },
-        {
-          "joint": "spine",
-          "role": "secondary",
-          "startPose": {
-            "max": 18,
-            "min": 0
-          },
-          "stateMessages": {
-            "perfect": {
-              "ar": "عمود فقري منظم",
-              "en": "Spine organized"
-            },
-            "warning": {
-              "ar": "تجنب انهيار قطني زائد في القاع",
-              "en": "Avoid excess lumbar flexion at bottom"
-            }
-          },
-          "range": {
-            "pad": {
-              "max": 35,
-              "min": 0
-            },
-            "danger": {
-              "max": 85,
-              "min": 42
-            },
-            "normal": {
-              "max": 26,
-              "min": 0
-            },
-            "perfect": {
-              "max": 18,
-              "min": 0
-            },
-            "warning": {
-              "max": 45,
-              "min": 28
-            }
-          },
-          "phaseRanges": {
-            "up": {
-              "normal": {
-                "max": 24,
-                "min": 0
-              },
-              "perfect": {
-                "max": 18,
-                "min": 0
-              }
-            },
-            "top": {
-              "perfect": {
-                "max": 12,
-                "min": 0
-              }
-            },
-            "down": {
-              "normal": {
-                "max": 24,
-                "min": 0
-              },
-              "perfect": {
-                "max": 18,
-                "min": 0
-              }
-            },
-            "bottom": {
-              "normal": {
-                "max": 35,
-                "min": 5
-              },
-              "perfect": {
-                "max": 28,
-                "min": 8
-              }
-            }
-          },
-          "phaseStateMessages": {
-            "top": {
-              "perfect": {
-                "ar": "ظهر محايد في الوقفة",
-                "en": "Neutral spine at the top"
-              },
-              "warning": {
-                "ar": "لا تميل القطن للأمام في الأعلى",
-                "en": "Avoid excessive lumbar lean at the top"
-              }
-            },
-            "bottom": {
-              "perfect": {
-                "ar": "انحناء مقبول في القاع مع تحكم",
-                "en": "Acceptable flexion at bottom with control"
-              },
-              "warning": {
-                "ar": "قلل الانحناء القطني الزائد",
-                "en": "Reduce excessive lumbar flexion"
-              }
             }
           }
         }
@@ -677,42 +686,42 @@
           "messageId": "8e3f553e-9c7b-4883-9eb3-764a16d21c4e",
           "target": "joint_state",
           "context": "perfect",
-          "jointCode": "spine",
+          "jointCode": "right_hip",
           "sortOrder": 19
         },
         {
           "messageId": "1b7a8eb5-b0d8-4221-b98b-846947d43b81",
           "target": "joint_state",
           "context": "warning",
-          "jointCode": "spine",
+          "jointCode": "right_hip",
           "sortOrder": 20
         },
         {
           "messageId": "8fea132c-7412-4487-a1db-fa4d32878eef",
           "target": "joint_state_phase",
           "context": "top:perfect",
-          "jointCode": "spine",
+          "jointCode": "right_hip",
           "sortOrder": 21
         },
         {
           "messageId": "87a117d4-1413-4530-ac4b-e3905bfe7a7c",
           "target": "joint_state_phase",
           "context": "top:warning",
-          "jointCode": "spine",
+          "jointCode": "right_hip",
           "sortOrder": 22
         },
         {
           "messageId": "b6fa6f7a-8148-48a9-80c9-cb726cfd6729",
           "target": "joint_state_phase",
           "context": "bottom:perfect",
-          "jointCode": "spine",
+          "jointCode": "right_hip",
           "sortOrder": 23
         },
         {
           "messageId": "2449fd40-f8c0-4204-bcc1-cd68b5b690fe",
           "target": "joint_state_phase",
           "context": "bottom:warning",
-          "jointCode": "spine",
+          "jointCode": "right_hip",
           "sortOrder": 24
         },
         {
@@ -750,12 +759,12 @@
     }
   ],
   "description": {
-    "ar": "حركة تقييمية شاملة لفحص مرونة الورك والكاحل والكتف وثبات الجذع",
-    "en": "Comprehensive assessment movement to evaluate hip, ankle, shoulder mobility and trunk stability"
+    "ar": "تقييم حركة سكوات علوي لرصد تقييدات الكتف والعمود الفقري والكاحل.",
+    "en": "An overhead squat screen to observe shoulder, trunk, and ankle limitations in one pattern."
   },
   "instructions": {
-    "ar": "قف بشكل مستقيم وارفع ذراعيك فوق رأسك، ثم انزل ببطء لوضع القرفصاء وعد ببطء",
-    "en": "Stand straight with arms overhead, slowly lower into a squat position and return slowly"
+    "ar": "نفّذ الحركة ببطء ونطاق مريح، راقب من الجانب محاذاة الركبة مع القدم وثبات الذراعين فوق الرأس.",
+    "en": "Move slowly through a comfortable range; from the side, check knee-to-foot alignment and stable arms overhead."
   },
   "reportMetrics": {
     "primary": [
@@ -1039,6 +1048,115 @@
           },
           {
             "role": "secondary",
+            "joint": "right_hip",
+            "range": {
+              "pad": {
+                "max": 180,
+                "min": 45
+              },
+              "danger": {
+                "max": 35,
+                "min": 0
+              },
+              "normal": {
+                "max": 180,
+                "min": 55
+              },
+              "perfect": {
+                "max": 180,
+                "min": 70
+              },
+              "warning": {
+                "max": 55,
+                "min": 35
+              }
+            },
+            "startPose": {
+              "max": 180,
+              "min": 55
+            },
+            "phaseRanges": {
+              "up": {
+                "normal": {
+                  "max": 155,
+                  "min": 85
+                },
+                "perfect": {
+                  "max": 140,
+                  "min": 95
+                }
+              },
+              "top": {
+                "normal": {
+                  "max": 180,
+                  "min": 158
+                },
+                "perfect": {
+                  "max": 180,
+                  "min": 165
+                }
+              },
+              "down": {
+                "normal": {
+                  "max": 155,
+                  "min": 85
+                },
+                "perfect": {
+                  "max": 140,
+                  "min": 95
+                }
+              },
+              "bottom": {
+                "normal": {
+                  "max": 115,
+                  "min": 60
+                },
+                "perfect": {
+                  "max": 100,
+                  "min": 70
+                }
+              }
+            },
+            "stateMessages": {
+              "danger": {
+                "ar": "توقف — انحناء زائد في أسفل الظهر قد يزيد الضغط.",
+                "en": "Stop — excessive low-back rounding increases strain."
+              },
+              "perfect": {
+                "ar": "جيد — الحوض والصدر في خط منظم فوق الركبة.",
+                "en": "Good — ribs and pelvis stay organized over the knee line."
+              },
+              "warning": {
+                "ar": "قلل الميل الأمامي للحوض؛ فكّر «تفتح بين الوركين».",
+                "en": "Reduce forward collapse at the hips; think “spread the hips”."
+              }
+            },
+            "phaseStateMessages": {
+              "top": {
+                "perfect": {
+                  "ar": "وقفة علوية — الحوض تحت الكتف دون ميل قطني زائد.",
+                  "en": "Top position — hips under shoulders without big lumbar lean."
+                },
+                "warning": {
+                  "ar": "تجنب دفع الحوض بعيداً جداً للأمام في الأعلى.",
+                  "en": "Avoid pushing the hips too far forward at the finish."
+                }
+              },
+              "bottom": {
+                "perfect": {
+                  "ar": "قاع متزن — وزن فوق منتصف القدم.",
+                  "en": "Balanced bottom — weight stays through mid-foot."
+                },
+                "warning": {
+                  "ar": "لا تدع الحوض ينهار للداخل أو للأمام بشكل مفاجئ.",
+                  "en": "Don’t let the hips collapse inward or dive forward."
+                }
+              }
+            },
+            "pairedWith": "left_hip"
+          },
+          {
+            "role": "secondary",
             "joint": "left_shoulder",
             "range": {
               "pad": {
@@ -1070,106 +1188,6 @@
               "warning": {
                 "ar": "سقوط الذراعين",
                 "en": "Arms dropping"
-              }
-            }
-          },
-          {
-            "role": "secondary",
-            "joint": "spine",
-            "range": {
-              "pad": {
-                "max": 35,
-                "min": 0
-              },
-              "danger": {
-                "max": 85,
-                "min": 42
-              },
-              "normal": {
-                "max": 26,
-                "min": 0
-              },
-              "perfect": {
-                "max": 18,
-                "min": 0
-              },
-              "warning": {
-                "max": 45,
-                "min": 28
-              }
-            },
-            "startPose": {
-              "max": 18,
-              "min": 0
-            },
-            "phaseRanges": {
-              "up": {
-                "normal": {
-                  "max": 24,
-                  "min": 0
-                },
-                "perfect": {
-                  "max": 18,
-                  "min": 0
-                }
-              },
-              "top": {
-                "perfect": {
-                  "max": 12,
-                  "min": 0
-                }
-              },
-              "down": {
-                "normal": {
-                  "max": 24,
-                  "min": 0
-                },
-                "perfect": {
-                  "max": 18,
-                  "min": 0
-                }
-              },
-              "bottom": {
-                "normal": {
-                  "max": 35,
-                  "min": 5
-                },
-                "perfect": {
-                  "max": 28,
-                  "min": 8
-                }
-              }
-            },
-            "stateMessages": {
-              "perfect": {
-                "ar": "عمود فقري منظم",
-                "en": "Spine organized"
-              },
-              "warning": {
-                "ar": "تجنب انهيار قطني زائد في القاع",
-                "en": "Avoid excess lumbar flexion at bottom"
-              }
-            },
-            "phaseStateMessages": {
-              "top": {
-                "perfect": {
-                  "ar": "ظهر محايد في الوقفة",
-                  "en": "Neutral spine at the top"
-                },
-                "warning": {
-                  "ar": "لا تميل القطن للأمام في الأعلى",
-                  "en": "Avoid excessive lumbar lean at the top"
-                }
-              },
-              "bottom": {
-                "perfect": {
-                  "ar": "انحناء مقبول في القاع مع تحكم",
-                  "en": "Acceptable flexion at bottom with control"
-                },
-                "warning": {
-                  "ar": "قلل الانحناء القطني الزائد",
-                  "en": "Reduce excessive lumbar flexion"
-                }
               }
             }
           }

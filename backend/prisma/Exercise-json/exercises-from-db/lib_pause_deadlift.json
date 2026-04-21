@@ -557,12 +557,12 @@
     }
   ],
   "description": {
-    "ar": "تمرين مكتبة: رفعة ميتة مع توقف.",
-    "en": "Library exercise: Pause deadlift."
+    "ar": "الديدلفت مع توقف يضيف ثباتاً تحت الحمل عند نقطة اختيارية (غالباً تحت الركبة أو فوقها)، فيحسّن الوضعية والتحكم دون تغيير المسار الأساسي للهيب هينج.",
+    "en": "The pause deadlift adds an isometric hold at a chosen point—often below or around the knees—to improve position and control without changing the basic hinge bar path."
   },
   "instructions": {
-    "ar": "حافظ على عمود فقري محايد وتنفس بثبات وتوقف عند أي ألم حاد.",
-    "en": "Maintain neutral spine, steady breathing, and stop if sharp pain appears."
+    "ar": "1. خذ وضعية بدء الديدلفت المعتادة مع الحمل قريباً من الساقين.\n2. انزل بتحكم حتى نقطة التوقف المحددة في البرنامج.\n3. ثبّت 1–3 ثوانٍ مع ظهر محايد وكتفين فوق الحمل.\n4. أكمل الصعود بقوة من الوركين مع إبقاء الحمل قريباً.\n5. لا تستخدم التوقف كذريعة لاستدارة الظهر.\n6. خفف الوزن إذا فقدت حياد العمود الفقري.",
+    "en": "1. Set your normal deadlift start with the load close to the shins.\n2. Lower under control to the programmed pause height.\n3. Hold for 1–3 seconds with a neutral back and shoulders over the load.\n4. Finish the pull by extending the hips while keeping the bar close.\n5. Do not use the pause as an excuse to round the spine.\n6. Reduce weight if spinal neutrality is lost."
   },
   "supportsWeight": true,
   "reportMetrics": {

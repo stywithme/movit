@@ -52,108 +52,73 @@
       ],
       "trackedJoints": [
         {
-          "joint": "spine",
+          "joint": "left_hip",
           "role": "primary",
           "startPose": {
-            "max": 40,
-            "min": 0
+            "max": 180,
+            "min": 140
           },
+          "pairedWith": "right_hip",
           "stateMessages": {
             "pad": {
-              "up": {
-                "ar": "مقبول، لكن المدى ما زال ضعيفاً",
-                "en": "Acceptable, but the extension range is still limited"
+              "down": {
+                "ar": "مقبول — مدى أقصر",
+                "en": "Acceptable — shorter range"
               }
             },
             "normal": {
               "up": {
-                "ar": "جيد، ارفع حتى الحياد ثم توقف",
-                "en": "Good, lift to neutral and stop there"
+                "ar": "جيد — امتداد أكثر من الورك",
+                "en": "Good — more hip-driven extension"
               },
               "down": {
-                "ar": "جيد، انزل ببطء أكثر",
-                "en": "Good, lower more slowly"
+                "ar": "جيد — تحكم في النزول",
+                "en": "Good — control the lowering"
               }
             },
             "perfect": {
               "up": {
-                "ar": "ممتاز! تمدد ظهري مضبوط",
-                "en": "Perfect! Controlled back extension"
+                "ar": "ممتاز! امتداد متزن",
+                "en": "Perfect! Balanced extension"
               },
               "down": {
-                "ar": "ممتاز! عودة محايدة",
-                "en": "Perfect! Neutral return"
+                "ar": "ممتاز! عودة دون انهيار",
+                "en": "Perfect! Return without collapsing"
               }
             },
             "warning": {
               "up": {
-                "ar": "لا تجعل الحركة من أسفل الظهر فقط",
-                "en": "Do not make the movement low-back only"
+                "ar": "لا تفرط في تمديد القطن",
+                "en": "Do not hyperextend the low back"
               }
             }
           },
           "upRange": {
-            "pad": {
-              "max": 42,
-              "min": 18
-            },
             "normal": {
-              "max": 38,
-              "min": 20
+              "max": 180,
+              "min": 150
             },
             "perfect": {
-              "max": 34,
-              "min": 22
+              "max": 180,
+              "min": 158
             }
           },
           "downRange": {
             "pad": {
-              "max": 16,
-              "min": 0
-            },
-            "normal": {
-              "max": 14,
-              "min": 0
-            },
-            "perfect": {
-              "max": 12,
-              "min": 0
-            }
-          }
-        },
-        {
-          "joint": "left_hip",
-          "role": "secondary",
-          "startPose": {
-            "max": 180,
-            "min": 145
-          },
-          "stateMessages": {
-            "perfect": {
-              "ar": "ورك ثابت على المقعد",
-              "en": "Hips stay stable on the pad/bench"
-            },
-            "warning": {
-              "ar": "لا تفقد ثبات الحوض أثناء الرفع",
-              "en": "Do not lose pelvic stability during the lift"
-            }
-          },
-          "range": {
-            "pad": {
-              "max": 180,
-              "min": 145
-            },
-            "normal": {
-              "max": 180,
-              "min": 152
-            },
-            "perfect": {
-              "max": 180,
-              "min": 160
-            },
-            "warning": {
               "max": 145,
-              "min": 130
+              "min": 120
+            },
+            "normal": {
+              "max": 138,
+              "min": 128
+            },
+            "perfect": {
+              "max": 132,
+              "min": 125
+            },
+            "warning": {
+              "max": 125,
+              "min": 110
             }
           }
         }
@@ -216,7 +181,7 @@
           "messageId": "47897eee-9381-4c11-8783-82301873aaae",
           "target": "joint_state",
           "context": "perfect",
-          "jointCode": "spine",
+          "jointCode": "right_hip",
           "zone": "up",
           "sortOrder": 2
         },
@@ -224,7 +189,7 @@
           "messageId": "b9aa9e28-c335-4338-8a59-187b87dc3786",
           "target": "joint_state",
           "context": "perfect",
-          "jointCode": "spine",
+          "jointCode": "right_hip",
           "zone": "down",
           "sortOrder": 3
         },
@@ -232,7 +197,7 @@
           "messageId": "d240d5c9-8742-439b-ae50-e1bc7890e54f",
           "target": "joint_state",
           "context": "normal",
-          "jointCode": "spine",
+          "jointCode": "right_hip",
           "zone": "up",
           "sortOrder": 4
         },
@@ -240,7 +205,7 @@
           "messageId": "2c066d5c-d35e-4c82-9e72-ee1ce6fe22c0",
           "target": "joint_state",
           "context": "normal",
-          "jointCode": "spine",
+          "jointCode": "right_hip",
           "zone": "down",
           "sortOrder": 5
         },
@@ -248,7 +213,7 @@
           "messageId": "d92d2c4c-464d-4f35-ae13-aa97dd569e93",
           "target": "joint_state",
           "context": "pad",
-          "jointCode": "spine",
+          "jointCode": "right_hip",
           "zone": "up",
           "sortOrder": 6
         },
@@ -256,7 +221,7 @@
           "messageId": "a2e3b8c3-682a-40ec-bb5c-aeee53d0f0e3",
           "target": "joint_state",
           "context": "warning",
-          "jointCode": "spine",
+          "jointCode": "right_hip",
           "zone": "up",
           "sortOrder": 7
         },
@@ -302,12 +267,12 @@
     }
   ],
   "description": {
-    "ar": "تمرين مكتبة: تمديد ظهر.",
-    "en": "Library exercise: Back extension (bodyweight)."
+    "ar": "تمديد الظهر على كرسي الرومان يحمّل أسفل الظهر والمؤخرة من وضعية ثابتة للقدمين، مع الحاجة لمدى مريح دون فرط قطني مؤلم.",
+    "en": "Roman chair back extension loads the low back and glutes from a fixed foot position, and should stay in a comfortable range without painful lumbar hyperextension."
   },
   "instructions": {
-    "ar": "حافظ على عمود فقري محايد وتنفس بثبات وتوقف عند أي ألم حاد.",
-    "en": "Maintain neutral spine, steady breathing, and stop if sharp pain appears."
+    "ar": "1. ثبّت القدمين والفخذين على الوسادة حسب إعداد الجهاز.\n2. انزل بخط الجذع مستقيماً حتى تشعر بامتداد خفيف في الخلفية للفخذ.\n3. ازفر وارفع الجذع بقوة من المؤخرة والظهر السفلي.\n4. توقف قبل أن يحدث فرط قطني حاد.\n5. لا تدفع الرقبة للخلف بشكل مفرط.\n6. أنهِ التمرين عند ألم حاد في أسفل الظهر.",
+    "en": "1. Secure the feet and thighs on the pads per your equipment setup.\n2. Lower with a long trunk line until you feel a mild stretch in the hamstrings.\n3. Exhale and lift using the glutes and low back muscles.\n4. Stop before you hit a sharp lumbar hyperextension.\n5. Do not crank the neck backward.\n6. End the set if you feel sharp low-back pain."
   },
   "reportMetrics": {
     "primary": [
@@ -357,108 +322,73 @@
         "description": null,
         "trackedJointsConfig": [
           {
+            "joint": "left_hip",
             "role": "primary",
-            "joint": "spine",
-            "upRange": {
+            "startPose": {
+              "max": 180,
+              "min": 140
+            },
+            "pairedWith": "right_hip",
+            "stateMessages": {
               "pad": {
-                "max": 42,
-                "min": 18
+                "down": {
+                  "ar": "مقبول — مدى أقصر",
+                  "en": "Acceptable — shorter range"
+                }
               },
               "normal": {
-                "max": 38,
-                "min": 20
+                "up": {
+                  "ar": "جيد — امتداد أكثر من الورك",
+                  "en": "Good — more hip-driven extension"
+                },
+                "down": {
+                  "ar": "جيد — تحكم في النزول",
+                  "en": "Good — control the lowering"
+                }
               },
               "perfect": {
-                "max": 34,
-                "min": 22
+                "up": {
+                  "ar": "ممتاز! امتداد متزن",
+                  "en": "Perfect! Balanced extension"
+                },
+                "down": {
+                  "ar": "ممتاز! عودة دون انهيار",
+                  "en": "Perfect! Return without collapsing"
+                }
+              },
+              "warning": {
+                "up": {
+                  "ar": "لا تفرط في تمديد القطن",
+                  "en": "Do not hyperextend the low back"
+                }
+              }
+            },
+            "upRange": {
+              "normal": {
+                "max": 180,
+                "min": 150
+              },
+              "perfect": {
+                "max": 180,
+                "min": 158
               }
             },
             "downRange": {
               "pad": {
-                "max": 16,
-                "min": 0
-              },
-              "normal": {
-                "max": 14,
-                "min": 0
-              },
-              "perfect": {
-                "max": 12,
-                "min": 0
-              }
-            },
-            "startPose": {
-              "max": 40,
-              "min": 0
-            },
-            "stateMessages": {
-              "pad": {
-                "up": {
-                  "ar": "مقبول، لكن المدى ما زال ضعيفاً",
-                  "en": "Acceptable, but the extension range is still limited"
-                }
-              },
-              "normal": {
-                "up": {
-                  "ar": "جيد، ارفع حتى الحياد ثم توقف",
-                  "en": "Good, lift to neutral and stop there"
-                },
-                "down": {
-                  "ar": "جيد، انزل ببطء أكثر",
-                  "en": "Good, lower more slowly"
-                }
-              },
-              "perfect": {
-                "up": {
-                  "ar": "ممتاز! تمدد ظهري مضبوط",
-                  "en": "Perfect! Controlled back extension"
-                },
-                "down": {
-                  "ar": "ممتاز! عودة محايدة",
-                  "en": "Perfect! Neutral return"
-                }
-              },
-              "warning": {
-                "up": {
-                  "ar": "لا تجعل الحركة من أسفل الظهر فقط",
-                  "en": "Do not make the movement low-back only"
-                }
-              }
-            }
-          },
-          {
-            "role": "secondary",
-            "joint": "left_hip",
-            "range": {
-              "pad": {
-                "max": 180,
-                "min": 145
-              },
-              "normal": {
-                "max": 180,
-                "min": 152
-              },
-              "perfect": {
-                "max": 180,
-                "min": 160
-              },
-              "warning": {
                 "max": 145,
-                "min": 130
-              }
-            },
-            "startPose": {
-              "max": 180,
-              "min": 145
-            },
-            "stateMessages": {
+                "min": 120
+              },
+              "normal": {
+                "max": 138,
+                "min": 128
+              },
               "perfect": {
-                "ar": "ورك ثابت على المقعد",
-                "en": "Hips stay stable on the pad/bench"
+                "max": 132,
+                "min": 125
               },
               "warning": {
-                "ar": "لا تفقد ثبات الحوض أثناء الرفع",
-                "en": "Do not lose pelvic stability during the lift"
+                "max": 125,
+                "min": 110
               }
             }
           }

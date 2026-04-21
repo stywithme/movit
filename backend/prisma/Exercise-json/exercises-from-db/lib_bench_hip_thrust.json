@@ -164,42 +164,6 @@
               "min": 60
             }
           }
-        },
-        {
-          "joint": "spine",
-          "role": "secondary",
-          "startPose": {
-            "max": 24,
-            "min": 0
-          },
-          "stateMessages": {
-            "perfect": {
-              "ar": "ظهر منظم مع شد جذع جيد",
-              "en": "Spine stays organized with good brace"
-            },
-            "warning": {
-              "ar": "لا تحوّل الجسر إلى انحناء قطني",
-              "en": "Do not turn the bridge into a lumbar arch"
-            }
-          },
-          "range": {
-            "pad": {
-              "max": 26,
-              "min": 0
-            },
-            "normal": {
-              "max": 20,
-              "min": 0
-            },
-            "perfect": {
-              "max": 14,
-              "min": 0
-            },
-            "warning": {
-              "max": 40,
-              "min": 26
-            }
-          }
         }
       ],
       "positionChecks": [
@@ -332,14 +296,14 @@
           "messageId": "9238b753-0101-44d5-8b4c-f504a6502dd2",
           "target": "joint_state",
           "context": "perfect",
-          "jointCode": "spine",
+          "jointCode": "right_hip",
           "sortOrder": 11
         },
         {
           "messageId": "397eaa22-65ea-4ab1-936a-8b3942bb15e4",
           "target": "joint_state",
           "context": "warning",
-          "jointCode": "spine",
+          "jointCode": "right_hip",
           "sortOrder": 12
         },
         {
@@ -370,12 +334,12 @@
     }
   ],
   "description": {
-    "ar": "تمرين مكتبة: دفع ورك بدعم مقعد.",
-    "en": "Library exercise: Bench-supported hip thrust."
+    "ar": "دفع الورك مع مسند الجزء العلوي من الظهر على مقعد يستهدف الألوية ومؤخرة الفخذ مع تقليل الحمل على أسفل الظهر مقارنة ببعض أشكال الجسر.",
+    "en": "A bench-supported hip thrust targets the glutes and hamstrings while often reducing low-back demand versus some bridge variations."
   },
   "instructions": {
-    "ar": "حافظ على عمود فقري محايد وتنفس بثبات وتوقف عند أي ألم حاد.",
-    "en": "Maintain neutral spine, steady breathing, and stop if sharp pain appears."
+    "ar": "1. اجلس على الأرض وضع الجزء العلوي من ظهرك على حافة المقعد الثابت والقدمان على الأرض.\n2. ادفع الوركين للأعلى حتى يصبح الجذع تقريباً في خط مستقيم من الركبة إلى الكتف.\n3. اضغط الألوية في الأعلى دون فرط في انحناء أسفل الظهر.\n4. انزل ببطء مع الحفاظ على ثبات الركبتين فوق القدمين.\n5. نفّذ 8–15 تكراراً أو احتفظ بالوضع حسب برنامجك.\n6. توقف عند ألم حاد في أسفل الظهر أو الركبة.",
+    "en": "1. Sit on the floor with the upper back on a stable bench edge and feet flat on the floor.\n2. Drive the hips up until the torso forms a straight line from knees to shoulders.\n3. Squeeze the glutes at the top without excessive lumbar hyperextension.\n4. Lower slowly while keeping the knees stacked over the feet.\n5. Complete 8–15 reps or hold as programmed.\n6. Stop if you feel sharp low-back or knee pain."
   },
   "supportsWeight": true,
   "reportMetrics": {
@@ -531,42 +495,6 @@
               "warning": {
                 "ar": "لا تدع القدمين يبتعدان كثيراً أو تقتربان جداً",
                 "en": "Do not let the feet drift too far or too close"
-              }
-            }
-          },
-          {
-            "role": "secondary",
-            "joint": "spine",
-            "range": {
-              "pad": {
-                "max": 26,
-                "min": 0
-              },
-              "normal": {
-                "max": 20,
-                "min": 0
-              },
-              "perfect": {
-                "max": 14,
-                "min": 0
-              },
-              "warning": {
-                "max": 40,
-                "min": 26
-              }
-            },
-            "startPose": {
-              "max": 24,
-              "min": 0
-            },
-            "stateMessages": {
-              "perfect": {
-                "ar": "ظهر منظم مع شد جذع جيد",
-                "en": "Spine stays organized with good brace"
-              },
-              "warning": {
-                "ar": "لا تحوّل الجسر إلى انحناء قطني",
-                "en": "Do not turn the bridge into a lumbar arch"
               }
             }
           }

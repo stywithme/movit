@@ -1,0 +1,11 @@
+Exercise_ID,1-Type,Landmark_1,Landmark_2,Landmark_3,Landmark_4,Tolerance,Active phase,Severity,2- Type,Landmark 1,Landmark 2,Landmark 3,Landmark 4,Active phase,Severity,3-Type,Landmark 1,Landmark 2,Landmark 3,Landmark 4,Active phase,Severity
+EX011,vertical aligned,shoulder,hip,knee,,,up,tip,Depth alignment: approximatly equal,shoulder,hip,knee,,up,error,,,,,,,
+EX012,,,,,,,,,,,,,,,,,,,,,,
+EX013,vertical aligned,shoulder,hip,knee,ankle,,"UP,Down,start",Tip,,,,,,,,,,,,,,
+EX014,,,,,,,,,,,,,,,,,,,,,,
+EX015,vertical aligned,shoulder,hip,knee,ankle,,"UP,Down,start",Error,,,,,,,,,,,,,,
+EX016,horizontal aligned,rt elbow,rt shoulder,lt shouler,lt elbow,,start,error,,,,,,,,,,,,,,
+EX017,horizontal aligned,rt elbow,rt shoulder,lt shouler,lt elbow,,start,error,vertical aligned,shoulder,hip,,,"start,up,down",tip,,,,,,,
+EX018,distance ratio should not exceed,rt shoulder,lt shoulder,rt elbow,lt elboe,,start,error,vertical aligned,shoulder,hip,,,"start,up,down",tip,,,,,,,
+EX019,Horizontal aligned,Rt elbow,rt shoulder,lt shouler,lt elbow,,up,tip,vertical aligned,shoulder,hip,,,"start,up,down",tip,,,,,,,
+EX020,vertical aligned,shoulder,hip,knee,ankle,,Up,tip,,,,,,,,,,,,,,

@@ -249,12 +249,12 @@
     }
   ],
   "description": {
-    "ar": "تمرين مكتبة: حمل مزارع.",
-    "en": "Library exercise: Farmer carry."
+    "ar": "حمل المزارع يبني قوة القبضة والأكتاف والجذع أثناء المشي القصير تحت حمل ثقيل نسبياً. الهدف هو وضعية منتصبة، كتفان منخفضان، ومشية ثابتة دون ميل جانبي.",
+    "en": "The farmer carry builds grip, shoulder, and trunk strength during short walks under relatively heavy loads. The goal is tall posture, packed shoulders, and steady steps without side-bending."
   },
   "instructions": {
-    "ar": "حافظ على عمود فقري محايد وتنفس بثبات وتوقف عند أي ألم حاد.",
-    "en": "Maintain neutral spine, steady breathing, and stop if sharp pain appears."
+    "ar": "1. ارفع الوزنين من الأرض بظهر محايد وقبضة آمنة.\n2. ابدأ المشي بخطوات قصيرة وثابتة مع الكتفين للأسفل والرقبة محايدة.\n3. شد الجذع برفق ولا تدع الأضلاع تبرز للأمام.\n4. حافظ على المسار مستقيماً دون ميل الحوض.\n5. ضع الأوزان بهدوء عند انتهاء المدة أو فقدان الشكل.\n6. توقف عند أي ألم حاد في اليدين أو أسفل الظهر.",
+    "en": "1. Lift the weights from the floor with a neutral back and secure grip.\n2. Begin walking with short, steady steps, shoulders down and neck neutral.\n3. Brace the trunk lightly and avoid excessive rib flare.\n4. Keep the path straight without tilting the pelvis.\n5. Set the weights down calmly when time ends or form breaks.\n6. Stop if you feel sharp pain in the hands or low back."
   },
   "supportsWeight": true,
   "reportMetrics": {

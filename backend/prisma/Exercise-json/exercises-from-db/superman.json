@@ -62,8 +62,8 @@
           },
           "stateMessages": {
             "pad": {
-              "ar": "مقبول، لكن يمكنك التحسن",
-              "en": "Acceptable, but you can improve"
+              "ar": "المدى مقبول — يمكنك رفع الذراعين قليلاً إذا بقي الظهر مريحاً.",
+              "en": "Range is acceptable — lift the arms slightly higher if the back stays comfortable."
             },
             "normal": {
               "ar": "جيد، حاول رفع الذراعين أكثر",
@@ -107,8 +107,8 @@
           },
           "stateMessages": {
             "pad": {
-              "ar": "مقبول، لكن يمكنك التحسن",
-              "en": "Acceptable, but you can improve"
+              "ar": "المدى مقبول — يمكنك رفع الذراعين قليلاً إذا بقي الظهر مريحاً.",
+              "en": "Range is acceptable — lift the arms slightly higher if the back stays comfortable."
             },
             "normal": {
               "ar": "جيد، حاول رفع الذراعين أكثر",
@@ -119,8 +119,8 @@
               "en": "Perfect! Arms raised!"
             },
             "warning": {
-              "ar": "افرد ذراعيك أكثر",
-              "en": "Extend arms more"
+              "ar": "افرد ذراعيك أمامك أكثر",
+              "en": "Extend arms more in front"
             }
           },
           "pairedWith": "left_shoulder",
@@ -152,10 +152,40 @@
           },
           "stateMessages": {
             "perfect": {
-              "ar": "ممتاز - الساقين مرفوعتين",
-              "en": "Great - legs are raised"
+              "ar": "ممتاز — رفع متساوٍ للفخذين عن الأرض",
+              "en": "Great — both thighs lift evenly off the floor"
             }
           },
+          "pairedWith": "right_hip",
+          "range": {
+            "pad": {
+              "max": 180,
+              "min": 155
+            },
+            "normal": {
+              "max": 180,
+              "min": 165
+            },
+            "perfect": {
+              "max": 180,
+              "min": 170
+            }
+          }
+        },
+        {
+          "joint": "right_hip",
+          "role": "secondary",
+          "startPose": {
+            "max": 180,
+            "min": 160
+          },
+          "stateMessages": {
+            "perfect": {
+              "ar": "ممتاز — رفع متساوٍ للفخذين عن الأرض",
+              "en": "Great — both thighs lift evenly off the floor"
+            }
+          },
+          "pairedWith": "left_hip",
           "range": {
             "pad": {
               "max": 180,
@@ -180,10 +210,40 @@
           },
           "stateMessages": {
             "perfect": {
-              "ar": "ممتاز - الساقين مستقيمتين",
-              "en": "Great - legs are straight"
+              "ar": "ممتاز — الساقان مستقيمتان دون فرط في الركبة",
+              "en": "Great — legs stay long without locking the knees harshly"
             }
           },
+          "pairedWith": "right_knee",
+          "range": {
+            "pad": {
+              "max": 180,
+              "min": 160
+            },
+            "normal": {
+              "max": 180,
+              "min": 168
+            },
+            "perfect": {
+              "max": 180,
+              "min": 172
+            }
+          }
+        },
+        {
+          "joint": "right_knee",
+          "role": "secondary",
+          "startPose": {
+            "max": 180,
+            "min": 165
+          },
+          "stateMessages": {
+            "perfect": {
+              "ar": "ممتاز — الساقان مستقيمتان دون فرط في الركبة",
+              "en": "Great — legs stay long without locking the knees harshly"
+            }
+          },
+          "pairedWith": "left_knee",
           "range": {
             "pad": {
               "max": 180,
@@ -257,8 +317,8 @@
             "en": "Excellent! Keep holding!"
           },
           {
-            "ar": "أنت سوبرمان حقيقي!",
-            "en": "You're a real Superman!"
+            "ar": "تحكم ممتاز في الامتداد الخلفي",
+            "en": "Excellent control on the back extension"
           }
         ],
         "tips": [
@@ -362,51 +422,65 @@
           "sortOrder": 12
         },
         {
-          "messageId": "32fd5fa0-5e0c-42cd-941d-879036111c02",
-          "target": "feedback",
-          "context": "motivational",
+          "messageId": "b7c2e8f1-9044-4b6a-a3d2-1e9f4c6b8a0d",
+          "target": "joint_state",
+          "context": "perfect",
+          "jointCode": "right_hip",
           "sortOrder": 13
         },
         {
-          "messageId": "dfb4bca0-22e9-4d5d-8105-c0bd36bbb477",
-          "target": "feedback",
-          "context": "motivational",
+          "messageId": "c8d3f9a2-0155-5c7b-b4e3-2f0a5d7c9b1e",
+          "target": "joint_state",
+          "context": "perfect",
+          "jointCode": "right_knee",
           "sortOrder": 14
         },
         {
-          "messageId": "0697fd86-30e8-4cec-8877-7f9035fc4d60",
+          "messageId": "32fd5fa0-5e0c-42cd-941d-879036111c02",
           "target": "feedback",
           "context": "motivational",
           "sortOrder": 15
         },
         {
+          "messageId": "dfb4bca0-22e9-4d5d-8105-c0bd36bbb477",
+          "target": "feedback",
+          "context": "motivational",
+          "sortOrder": 16
+        },
+        {
+          "messageId": "0697fd86-30e8-4cec-8877-7f9035fc4d60",
+          "target": "feedback",
+          "context": "motivational",
+          "sortOrder": 17
+        },
+        {
           "messageId": "721841bb-971a-4d04-966b-4c3721903ec0",
           "target": "feedback",
           "context": "tip",
-          "sortOrder": 16
+          "sortOrder": 18
         },
         {
           "messageId": "13a8069b-19f8-40a5-88d1-2ee52c8ee9cd",
           "target": "feedback",
           "context": "tip",
-          "sortOrder": 17
+          "sortOrder": 19
         },
         {
           "messageId": "b0f80741-28f8-4e5e-9f20-6240fc923bf3",
           "target": "feedback",
           "context": "tip",
-          "sortOrder": 18
+          "sortOrder": 20
         }
       ]
     }
   ],
   "description": {
-    "ar": "تمرين لتقوية عضلات أسفل الظهر والمؤخرة والكتفين",
-    "en": "Exercise to strengthen lower back, glutes, and shoulders"
+    "ar": "تمرين امتداد ظهري لتقوية أسفل الظهر والمؤخرة مع تفعيل خفيف للكتفين، مع الحفاظ على رقبة محايدة ومدى مريح دون فرط في الانحناء القطني.",
+    "en": "A prone back-extension pattern for the lower back and glutes with light shoulder work; keep the neck neutral and use a comfortable range without aggressive lumbar hyperextension."
   },
   "instructions": {
-    "ar": "استلقِ على بطنك، ثم ارفع ذراعيك وساقيك عن الأرض معاً وثبّت",
-    "en": "Lie face down, then lift arms and legs off the ground simultaneously and hold"
+    "ar": "استلق على البطن، الذراعان للأمام والجبهة نحو الأرض قليلاً. ازفر وارفع الذراعين والساقين معاً بارتفاع صغير إلى متوسط، ثبّت عضلات المؤخرة وأسفل الظهر دون ألم حاد. تنفس بهدوء وأعد الجسم بتحكم.",
+    "en": "Lie face-down with arms forward and gaze slightly down. Exhale and lift arms and legs together a small-to-moderate height; brace glutes and low back without sharp pain. Breathe quietly and lower with control."
   },
   "reportMetrics": {
     "primary": [
@@ -493,8 +567,8 @@
             "pairedWith": "right_shoulder",
             "stateMessages": {
               "pad": {
-                "ar": "مقبول، لكن يمكنك التحسن",
-                "en": "Acceptable, but you can improve"
+                "ar": "المدى مقبول — يمكنك رفع الذراعين قليلاً إذا بقي الظهر مريحاً.",
+                "en": "Range is acceptable — lift the arms slightly higher if the back stays comfortable."
               },
               "normal": {
                 "ar": "جيد، حاول رفع الذراعين أكثر",
@@ -538,8 +612,8 @@
             "pairedWith": "left_shoulder",
             "stateMessages": {
               "pad": {
-                "ar": "مقبول، لكن يمكنك التحسن",
-                "en": "Acceptable, but you can improve"
+                "ar": "المدى مقبول — يمكنك رفع الذراعين قليلاً إذا بقي الظهر مريحاً.",
+                "en": "Range is acceptable — lift the arms slightly higher if the back stays comfortable."
               },
               "normal": {
                 "ar": "جيد، حاول رفع الذراعين أكثر",
@@ -550,8 +624,8 @@
                 "en": "Perfect! Arms raised!"
               },
               "warning": {
-                "ar": "افرد ذراعيك أكثر",
-                "en": "Extend arms more"
+                "ar": "افرد ذراعيك أمامك أكثر",
+                "en": "Extend arms more in front"
               }
             }
           },
@@ -576,10 +650,40 @@
               "max": 180,
               "min": 160
             },
+            "pairedWith": "right_hip",
             "stateMessages": {
               "perfect": {
-                "ar": "ممتاز - الساقين مرفوعتين",
-                "en": "Great - legs are raised"
+                "ar": "ممتاز — رفع متساوٍ للفخذين عن الأرض",
+                "en": "Great — both thighs lift evenly off the floor"
+              }
+            }
+          },
+          {
+            "role": "secondary",
+            "joint": "right_hip",
+            "range": {
+              "pad": {
+                "max": 180,
+                "min": 155
+              },
+              "normal": {
+                "max": 180,
+                "min": 165
+              },
+              "perfect": {
+                "max": 180,
+                "min": 170
+              }
+            },
+            "startPose": {
+              "max": 180,
+              "min": 160
+            },
+            "pairedWith": "left_hip",
+            "stateMessages": {
+              "perfect": {
+                "ar": "ممتاز — رفع متساوٍ للفخذين عن الأرض",
+                "en": "Great — both thighs lift evenly off the floor"
               }
             }
           },
@@ -604,10 +708,40 @@
               "max": 180,
               "min": 165
             },
+            "pairedWith": "right_knee",
             "stateMessages": {
               "perfect": {
-                "ar": "ممتاز - الساقين مستقيمتين",
-                "en": "Great - legs are straight"
+                "ar": "ممتاز — الساقان مستقيمتان دون فرط في الركبة",
+                "en": "Great — legs stay long without locking the knees harshly"
+              }
+            }
+          },
+          {
+            "role": "secondary",
+            "joint": "right_knee",
+            "range": {
+              "pad": {
+                "max": 180,
+                "min": 160
+              },
+              "normal": {
+                "max": 180,
+                "min": 168
+              },
+              "perfect": {
+                "max": 180,
+                "min": 172
+              }
+            },
+            "startPose": {
+              "max": 180,
+              "min": 165
+            },
+            "pairedWith": "left_knee",
+            "stateMessages": {
+              "perfect": {
+                "ar": "ممتاز — الساقان مستقيمتان دون فرط في الركبة",
+                "en": "Great — legs stay long without locking the knees harshly"
               }
             }
           }

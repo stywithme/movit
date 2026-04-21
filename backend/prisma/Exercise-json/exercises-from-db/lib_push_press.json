@@ -225,106 +225,6 @@
               }
             }
           }
-        },
-        {
-          "joint": "spine",
-          "role": "secondary",
-          "startPose": {
-            "max": 22,
-            "min": 0
-          },
-          "stateMessages": {
-            "perfect": {
-              "ar": "الجذع يبقى منظماً أثناء النقل الانفجاري",
-              "en": "The trunk stays organized through the explosive transfer"
-            },
-            "warning": {
-              "ar": "لا تعوض بالظهر السفلي أثناء الدفع",
-              "en": "Do not compensate with the low back in the drive"
-            }
-          },
-          "range": {
-            "pad": {
-              "max": 35,
-              "min": 0
-            },
-            "danger": {
-              "max": 85,
-              "min": 42
-            },
-            "normal": {
-              "max": 26,
-              "min": 0
-            },
-            "perfect": {
-              "max": 18,
-              "min": 0
-            },
-            "warning": {
-              "max": 45,
-              "min": 28
-            }
-          },
-          "phaseRanges": {
-            "up": {
-              "normal": {
-                "max": 24,
-                "min": 0
-              },
-              "perfect": {
-                "max": 18,
-                "min": 0
-              }
-            },
-            "top": {
-              "perfect": {
-                "max": 12,
-                "min": 0
-              }
-            },
-            "down": {
-              "normal": {
-                "max": 24,
-                "min": 0
-              },
-              "perfect": {
-                "max": 18,
-                "min": 0
-              }
-            },
-            "bottom": {
-              "normal": {
-                "max": 35,
-                "min": 5
-              },
-              "perfect": {
-                "max": 28,
-                "min": 8
-              }
-            }
-          },
-          "phaseStateMessages": {
-            "top": {
-              "perfect": {
-                "ar": "ظهر محايد في الوقفة",
-                "en": "Neutral spine at the top"
-              },
-              "warning": {
-                "ar": "لا تميل القطن للأمام في الأعلى",
-                "en": "Avoid excessive lumbar lean at the top"
-              }
-            },
-            "bottom": {
-              "perfect": {
-                "ar": "انحناء مقبول في القاع مع تحكم",
-                "en": "Acceptable flexion at bottom with control"
-              },
-              "warning": {
-                "ar": "قلل الانحناء القطني الزائد",
-                "en": "Reduce excessive lumbar flexion"
-              }
-            }
-          }
         }
       ],
       "positionChecks": [
@@ -476,42 +376,42 @@
           "messageId": "50bb22df-324e-4f64-9043-ea5d0602ef98",
           "target": "joint_state",
           "context": "perfect",
-          "jointCode": "spine",
+          "jointCode": "left_hip",
           "sortOrder": 14
         },
         {
           "messageId": "4c55fd86-1fa3-42a9-8b26-84658774c809",
           "target": "joint_state",
           "context": "warning",
-          "jointCode": "spine",
+          "jointCode": "left_hip",
           "sortOrder": 15
         },
         {
           "messageId": "2566f368-5251-46f4-bbb0-0137fc9959a0",
           "target": "joint_state_phase",
           "context": "top:perfect",
-          "jointCode": "spine",
+          "jointCode": "left_hip",
           "sortOrder": 16
         },
         {
           "messageId": "cf177297-d0ad-45ba-b559-cc8840309410",
           "target": "joint_state_phase",
           "context": "top:warning",
-          "jointCode": "spine",
+          "jointCode": "left_hip",
           "sortOrder": 17
         },
         {
           "messageId": "2f71817c-0e06-4fc9-b2aa-1b90069eca8a",
           "target": "joint_state_phase",
           "context": "bottom:perfect",
-          "jointCode": "spine",
+          "jointCode": "left_hip",
           "sortOrder": 18
         },
         {
           "messageId": "0c8ef231-ae02-4dd6-9445-6fcd64f72edb",
           "target": "joint_state_phase",
           "context": "bottom:warning",
-          "jointCode": "spine",
+          "jointCode": "left_hip",
           "sortOrder": 19
         },
         {
@@ -543,12 +443,12 @@
     }
   ],
   "description": {
-    "ar": "تمرين مكتبة: ضغط دفع.",
-    "en": "Library exercise: Push press."
+    "ar": "البوش برس يجمع بين انحناء خفيف في الركبتين ودفع بالساقين لنقل الزخم إلى الضغط فوق الرأس، فيصبح الحمل أثقل قليلاً من الضغط العادي مع الحفاظ على خط الجذع.",
+    "en": "The push press uses a small dip and leg drive to transfer momentum into an overhead press, allowing slightly heavier loads than a strict press while keeping the trunk organized."
   },
   "instructions": {
-    "ar": "حافظ على عمود فقري محايد وتنفس بثبات وتوقف عند أي ألم حاد.",
-    "en": "Maintain neutral spine, steady breathing, and stop if sharp pain appears."
+    "ar": "1. امسك الحمل عند ارتفاع الكتفين في وضع وقوف ثابت.\n2. ازفر وادفع الركبتين قليلاً للأمام ثم انفجر للأعلى بقوة من الساقين.\n3. استخدم الزخم القانوني لدفع الحمل فوق الرأس مع بقاء الذراعين تحت الحمل بسرعة.\n4. ثبّت القفل فوق الرأس ثم انزل بتحكم إلى ارتفاع الكتفين.\n5. لا تفرط في الانحناء الأمامي للجذع أو فرط القطني في القمة.\n6. خفف الوزن إذا فقدت مسار الضغط.",
+    "en": "1. Hold the load at shoulder height in a stable standing setup.\n2. Exhale and dip the knees slightly, then explode up with strong leg drive.\n3. Use that drive to move the load overhead while actively punching under the bar.\n4. Fix the lockout overhead, then lower with control back to the shoulders.\n5. Do not lean the trunk far forward or over-arch at the top.\n6. Reduce load if the press path breaks down."
   },
   "supportsWeight": true,
   "reportMetrics": {
@@ -765,106 +665,6 @@
                 "warning": {
                   "ar": "لا تحوّل الـ dip إلى سكوات عميق",
                   "en": "Do not turn the dip into a deep squat"
-                }
-              }
-            }
-          },
-          {
-            "role": "secondary",
-            "joint": "spine",
-            "range": {
-              "pad": {
-                "max": 35,
-                "min": 0
-              },
-              "danger": {
-                "max": 85,
-                "min": 42
-              },
-              "normal": {
-                "max": 26,
-                "min": 0
-              },
-              "perfect": {
-                "max": 18,
-                "min": 0
-              },
-              "warning": {
-                "max": 45,
-                "min": 28
-              }
-            },
-            "startPose": {
-              "max": 22,
-              "min": 0
-            },
-            "phaseRanges": {
-              "up": {
-                "normal": {
-                  "max": 24,
-                  "min": 0
-                },
-                "perfect": {
-                  "max": 18,
-                  "min": 0
-                }
-              },
-              "top": {
-                "perfect": {
-                  "max": 12,
-                  "min": 0
-                }
-              },
-              "down": {
-                "normal": {
-                  "max": 24,
-                  "min": 0
-                },
-                "perfect": {
-                  "max": 18,
-                  "min": 0
-                }
-              },
-              "bottom": {
-                "normal": {
-                  "max": 35,
-                  "min": 5
-                },
-                "perfect": {
-                  "max": 28,
-                  "min": 8
-                }
-              }
-            },
-            "stateMessages": {
-              "perfect": {
-                "ar": "الجذع يبقى منظماً أثناء النقل الانفجاري",
-                "en": "The trunk stays organized through the explosive transfer"
-              },
-              "warning": {
-                "ar": "لا تعوض بالظهر السفلي أثناء الدفع",
-                "en": "Do not compensate with the low back in the drive"
-              }
-            },
-            "phaseStateMessages": {
-              "top": {
-                "perfect": {
-                  "ar": "ظهر محايد في الوقفة",
-                  "en": "Neutral spine at the top"
-                },
-                "warning": {
-                  "ar": "لا تميل القطن للأمام في الأعلى",
-                  "en": "Avoid excessive lumbar lean at the top"
-                }
-              },
-              "bottom": {
-                "perfect": {
-                  "ar": "انحناء مقبول في القاع مع تحكم",
-                  "en": "Acceptable flexion at bottom with control"
-                },
-                "warning": {
-                  "ar": "قلل الانحناء القطني الزائد",
-                  "en": "Reduce excessive lumbar flexion"
                 }
               }
             }

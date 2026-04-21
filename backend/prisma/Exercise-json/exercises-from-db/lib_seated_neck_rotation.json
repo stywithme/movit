@@ -51,38 +51,38 @@
       ],
       "trackedJoints": [
         {
-          "joint": "spine",
+          "joint": "left_hip",
           "role": "primary",
           "startPose": {
-            "max": 25,
-            "min": 0
+            "max": 180,
+            "min": 95
           },
           "stateMessages": {
             "perfect": {
-              "ar": "رقبة وجذع علوي هادئان",
-              "en": "Quiet neck and upper trunk"
+              "ar": "حوض ثابت أثناء الحركة",
+              "en": "Pelvis stays quiet during the drill"
             },
             "warning": {
-              "ar": "تجنب الاندفاع السريع",
-              "en": "Avoid snapping the head"
+              "ar": "قلل التمايل أو الدوران في الحوض",
+              "en": "Reduce rocking or twisting at the hips"
             }
           },
           "range": {
             "pad": {
-              "max": 24,
-              "min": 0
+              "max": 180,
+              "min": 88
             },
             "normal": {
-              "max": 18,
-              "min": 0
+              "max": 180,
+              "min": 95
             },
             "perfect": {
-              "max": 12,
-              "min": 0
+              "max": 180,
+              "min": 102
             },
             "warning": {
-              "max": 32,
-              "min": 22
+              "max": 95,
+              "min": 78
             }
           }
         }
@@ -114,14 +114,14 @@
           "messageId": "ef98362a-10f2-4894-9fb0-86b6176e8f4a",
           "target": "joint_state",
           "context": "perfect",
-          "jointCode": "spine",
+          "jointCode": "left_hip",
           "sortOrder": 1
         },
         {
           "messageId": "a5b01b66-0346-42b2-bdb9-11730e0c0cd7",
           "target": "joint_state",
           "context": "warning",
-          "jointCode": "spine",
+          "jointCode": "left_hip",
           "sortOrder": 2
         },
         {
@@ -152,12 +152,12 @@
     }
   ],
   "description": {
-    "ar": "تمرين مكتبة: دوران رقبة جالس.",
-    "en": "Library exercise: Seated neck rotation."
+    "ar": "دوران رقبة لطيف من الجلوس يزيد مرونة الرقبة الجانبية ويُستخدم غالباً كإحماء؛ تجنّب المبالغة إن كان تحريك الرقبة يسبب لك دوخة.",
+    "en": "Gentle seated neck rotation improves side-to-side neck mobility and is often used as a warm-up—avoid large ranges if you have dizziness or cervical issues."
   },
   "instructions": {
-    "ar": "حافظ على عمود فقري محايد وتنفس بثبات وتوقف عند أي ألم حاد.",
-    "en": "Maintain neutral spine, steady breathing, and stop if sharp pain appears."
+    "ar": "1. اجلس منتصباً مع الكتفين مرتخيين والنظر للأمام.\n2. أدر الرأس ببطء نحو الكتف الأيمن دون رفع الكتفين.\n3. عد للوسط ثم كرر نحو اليسار.\n4. حافظ على الحركة صغيرة ومريحة في البداية.\n5. نفّذ 5–8 تبديلات لكل جانب مع تنفس منتظم.\n6. توقف عند دوخة أو ألم حاد أو وخز في الذراعين.",
+    "en": "1. Sit tall with relaxed shoulders and eyes forward.\n2. Slowly turn the head toward the right shoulder without hiking the shoulders.\n3. Return to center, then repeat toward the left.\n4. Keep the range small and comfortable at first.\n5. Perform 5–8 switches per side with steady breathing.\n6. Stop for dizziness, sharp pain, or arm tingling."
   },
   "reportMetrics": {
     "primary": [
@@ -207,38 +207,38 @@
         "description": null,
         "trackedJointsConfig": [
           {
+            "joint": "left_hip",
             "role": "primary",
-            "joint": "spine",
-            "range": {
-              "pad": {
-                "max": 24,
-                "min": 0
-              },
-              "normal": {
-                "max": 18,
-                "min": 0
-              },
-              "perfect": {
-                "max": 12,
-                "min": 0
-              },
-              "warning": {
-                "max": 32,
-                "min": 22
-              }
-            },
             "startPose": {
-              "max": 25,
-              "min": 0
+              "max": 180,
+              "min": 95
             },
             "stateMessages": {
               "perfect": {
-                "ar": "رقبة وجذع علوي هادئان",
-                "en": "Quiet neck and upper trunk"
+                "ar": "حوض ثابت أثناء الحركة",
+                "en": "Pelvis stays quiet during the drill"
               },
               "warning": {
-                "ar": "تجنب الاندفاع السريع",
-                "en": "Avoid snapping the head"
+                "ar": "قلل التمايل أو الدوران في الحوض",
+                "en": "Reduce rocking or twisting at the hips"
+              }
+            },
+            "range": {
+              "pad": {
+                "max": 180,
+                "min": 88
+              },
+              "normal": {
+                "max": 180,
+                "min": 95
+              },
+              "perfect": {
+                "max": 180,
+                "min": 102
+              },
+              "warning": {
+                "max": 95,
+                "min": 78
               }
             }
           }

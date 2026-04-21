@@ -6,7 +6,7 @@
   "familyKey": "hip_mobility_family",
   "familyOrder": 11,
   "name": {
-    "ar": "صخ رباعي",
+    "ar": "روك باك رباعي",
     "en": "Quadruped rocking"
   },
   "category": {
@@ -18,6 +18,7 @@
   },
   "countingMethod": "up_down",
   "muscles": [
+    "glutes",
     "quadriceps"
   ],
   "equipment": [
@@ -26,6 +27,7 @@
   ],
   "tags": [
     "curated_library",
+    "mobility",
     "warmup"
   ],
   "repCountingConfig": {
@@ -36,12 +38,12 @@
   "poseVariants": [
     {
       "name": {
-        "ar": "مستلقٍ على الوجه",
-        "en": "Lying face down (side angle)"
+        "ar": "وضع رباعي من الجانب",
+        "en": "Quadruped (side view)"
       },
       "posePosition": "prone_side",
       "expectedPostures": [
-        "lying_prone"
+        "quadruped"
       ],
       "expectedDirections": [
         "side"
@@ -55,34 +57,76 @@
           "role": "primary",
           "startPose": {
             "max": 180,
-            "min": 120
+            "min": 145
           },
           "stateMessages": {
+            "pad": {
+              "down": {
+                "ar": "مقبول — زِد الرجوع للخلف تدريجياً",
+                "en": "Acceptable — build the backward rock gradually"
+              }
+            },
+            "normal": {
+              "up": {
+                "ar": "جيد — عد لوضع البداية بهدوء",
+                "en": "Good — return to the start under control"
+              },
+              "down": {
+                "ar": "جيد — ادفع الحوض للخلف أكثر إذا كان المدى مريحاً",
+                "en": "Good — sit back farther if the range is comfortable"
+              }
+            },
             "perfect": {
-              "ar": "مدى ورك ممتاز",
-              "en": "Great hip range"
+              "up": {
+                "ar": "ممتاز! عودة نظيفة لوضع البداية",
+                "en": "Perfect! Clean return to the start"
+              },
+              "down": {
+                "ar": "ممتاز! روك باك عميق مع ظهر محايد",
+                "en": "Perfect! Deep rock-back with a neutral spine"
+              }
             },
             "warning": {
-              "ar": "قلل المدى إن الركبة تضايقك",
-              "en": "Ease range if knee complains"
+              "down": {
+                "ar": "لا تدوّر أسفل الظهر أو تدفع الحركة بالقوة",
+                "en": "Do not round the low back or force the motion"
+              }
             }
           },
-          "range": {
+          "upRange": {
             "pad": {
               "max": 180,
-              "min": 110
+              "min": 145
             },
             "normal": {
               "max": 180,
-              "min": 125
+              "min": 152
             },
             "perfect": {
-              "max": 175,
-              "min": 140
+              "max": 180,
+              "min": 160
+            }
+          },
+          "downRange": {
+            "pad": {
+              "max": 138,
+              "min": 82
+            },
+            "normal": {
+              "max": 128,
+              "min": 88
+            },
+            "perfect": {
+              "max": 120,
+              "min": 95
             },
             "warning": {
-              "max": 110,
-              "min": 95
+              "max": 82,
+              "min": 70
+            },
+            "danger": {
+              "max": 70,
+              "min": 0
             }
           }
         },
@@ -90,23 +134,31 @@
           "joint": "left_knee",
           "role": "secondary",
           "startPose": {
-            "max": 130,
-            "min": 85
+            "max": 120,
+            "min": 75
           },
           "stateMessages": {
             "perfect": {
-              "ar": "ركبة مستقرة",
-              "en": "Knee steady"
+              "ar": "زاوية الركبة ثابتة تقريباً طوال الحركة",
+              "en": "The knee angle stays nearly constant through the drill"
+            },
+            "warning": {
+              "ar": "لا تغيّر زاوية الركبة كثيراً لتعويض نقص حركة الورك",
+              "en": "Do not change the knee angle too much to compensate for the hip"
             }
           },
           "range": {
             "normal": {
-              "max": 125,
-              "min": 85
+              "max": 118,
+              "min": 72
             },
             "perfect": {
-              "max": 118,
-              "min": 92
+              "max": 108,
+              "min": 82
+            },
+            "warning": {
+              "max": 130,
+              "min": 60
             }
           }
         }
@@ -114,21 +166,22 @@
       "positionChecks": [
         {
           "id": "hip_mob_smooth",
-          "type": "forward_comparison",
+          "type": "vertical_alignment",
           "landmarks": {
-            "primary": "left_hip",
-            "secondary": "left_knee"
+            "primary": "left_shoulder",
+            "secondary": "left_hip"
           },
           "condition": {
-            "operator": "should_exceed",
-            "threshold": 0.02
+            "operator": "approximately_equal",
+            "threshold": 0.16
           },
           "activePhases": [
-            "all"
+            "up",
+            "down"
           ],
           "errorMessage": {
-            "ar": "افتح الورك ببطء — لا تتجاوز الألم الحاد.",
-            "en": "Open the hip slowly — stay below sharp pain."
+            "ar": "ارجع بالحوض للخلف مع بقاء الجذع طويلاً والظهر محايداً قدر الإمكان.",
+            "en": "Rock the hips back while keeping the torso long and the spine as neutral as possible."
           },
           "severity": "tip",
           "cooldownMs": 3200,
@@ -138,22 +191,22 @@
       "feedbackMessages": {
         "motivational": [
           {
-            "ar": "مدى حركة جيد وتحكم أفضل",
-            "en": "Good range and better control"
+            "ar": "حركة ورك ممتازة وتحكم جيد في العودة",
+            "en": "Great hip motion and good control on the return"
           },
           {
-            "ar": "تحرك بسلاسة داخل نطاق مريح",
-            "en": "Move smoothly inside a comfortable range"
+            "ar": "الروك باك نظيف والظهر ثابت",
+            "en": "The rock-back is clean and the spine stays organized"
           }
         ],
         "tips": [
           {
-            "ar": "ابقِ الحركة نظيفة وهادئة بدون ارتداد.",
-            "en": "Keep the motion smooth and bounce-free."
+            "ar": "فكّر في دفع الوركين نحو الكعبين مع بقاء اليدين نشطتين على الأرض.",
+            "en": "Think about sending the hips toward the heels while the hands stay active on the floor."
           },
           {
-            "ar": "أي ألم حاد يعني تقليل المدى فوراً.",
-            "en": "Any sharp pain means reduce range immediately."
+            "ar": "إذا شعرت بانحناء أسفل الظهر مبكراً، قلّل المدى وابقَ في النطاق المريح.",
+            "en": "If the low back rounds early, reduce the range and stay in the comfortable window."
           }
         ]
       },
@@ -214,12 +267,12 @@
     }
   ],
   "description": {
-    "ar": "تمرين مكتبة: صخ رباعي.",
-    "en": "Library exercise: Quadruped rocking."
+    "ar": "Quadruped Rocking هو Drill للحوض والورك يُستخدم لتحسين hip flexion مع الحفاظ على ظهر محايد. يفيد كإحماء قبل السكوات والهيب هينج، ويساعد على تعليم المتدرب كيف يرجع بالورك للخلف بدون أن يعوّض بانحناء زائد في أسفل الظهر.",
+    "en": "Quadruped Rocking is a hip mobility drill that improves hip flexion while maintaining a neutral spine. It works well as a warm-up before squats and hinges and teaches the athlete how to sit the hips back without compensating through the lower back."
   },
   "instructions": {
-    "ar": "حافظ على عمود فقري محايد وتنفس بثبات وتوقف عند أي ألم حاد.",
-    "en": "Maintain neutral spine, steady breathing, and stop if sharp pain appears."
+    "ar": "1. ابدأ من وضع رباعي واليدان تحت الكتفين والركبتان تحت الوركين.\n2. شد البطن برفق وحافظ على العمود الفقري طويلاً ومحايداً.\n3. ادفع الحوض للخلف ببطء نحو الكعبين مع بقاء اليدين مثبتتين على الأرض.\n4. توقف عند آخر مدى يمكنك الحفاظ فيه على ظهر منظم بدون انحناء قوي في أسفل الظهر.\n5. عد ببطء إلى وضع البداية وكرر الحركة بنفس الجودة.\n6. إذا كان هناك شد قوي في مقدمة الركبة أو أسفل الظهر، قلّل المدى أو عدّل الوضعية.",
+    "en": "1. Start on all fours with the hands under the shoulders and knees under the hips.\n2. Brace lightly and keep the spine long and neutral.\n3. Slowly send the hips back toward the heels while the hands stay planted on the floor.\n4. Stop at the furthest range where you can still keep the spine organized.\n5. Return slowly to the start and repeat with the same quality.\n6. If you feel strong pressure in the front of the knee or low back, reduce the range or adjust the setup."
   },
   "reportMetrics": {
     "primary": [
@@ -233,104 +286,5 @@
       "SYMMETRY"
     ]
   },
-  "hasPositionChecks": true,
-  "_database": {
-    "id": "84eff950-7db4-45ae-993c-499b0592e0c4",
-    "categoryId": "a672c3d3-4449-4f74-bd8e-be73a0035e88",
-    "countingMethodId": "f4d48aef-1606-4f23-8c61-7b4a2546f990",
-    "publishedAt": "2026-04-20T17:26:26.895Z",
-    "createdAt": "2026-04-20T17:26:26.897Z",
-    "updatedAt": "2026-04-20T17:26:34.423Z",
-    "deletedAt": null,
-    "isFeatured": false,
-    "createdBy": null,
-    "updatedBy": null,
-    "repCountingConfig": null,
-    "bilateralConfig": null,
-    "isBilateral": false,
-    "supportsWeight": false,
-    "minWeight": null,
-    "maxWeight": null,
-    "defaultWeight": null,
-    "reportMetrics": {
-      "mode": "reps",
-      "version": 1,
-      "primaryKpi": "repQuality",
-      "secondaryKpis": [
-        "avgFormScore",
-        "avgRom"
-      ]
-    },
-    "media": [],
-    "poseVariants": [
-      {
-        "id": "c6ec6442-d541-40c5-aa9f-a6829858fec0",
-        "sortOrder": 1,
-        "description": null,
-        "trackedJointsConfig": [
-          {
-            "role": "primary",
-            "joint": "left_hip",
-            "range": {
-              "pad": {
-                "max": 180,
-                "min": 110
-              },
-              "normal": {
-                "max": 180,
-                "min": 125
-              },
-              "perfect": {
-                "max": 175,
-                "min": 140
-              },
-              "warning": {
-                "max": 110,
-                "min": 95
-              }
-            },
-            "startPose": {
-              "max": 180,
-              "min": 120
-            },
-            "stateMessages": {
-              "perfect": {
-                "ar": "مدى ورك ممتاز",
-                "en": "Great hip range"
-              },
-              "warning": {
-                "ar": "قلل المدى إن الركبة تضايقك",
-                "en": "Ease range if knee complains"
-              }
-            }
-          },
-          {
-            "role": "secondary",
-            "joint": "left_knee",
-            "range": {
-              "normal": {
-                "max": 125,
-                "min": 85
-              },
-              "perfect": {
-                "max": 118,
-                "min": 92
-              }
-            },
-            "startPose": {
-              "max": 130,
-              "min": 85
-            },
-            "stateMessages": {
-              "perfect": {
-                "ar": "ركبة مستقرة",
-                "en": "Knee steady"
-              }
-            }
-          }
-        ]
-      }
-    ],
-    "validationWarning": null
-  }
+  "hasPositionChecks": true
 }

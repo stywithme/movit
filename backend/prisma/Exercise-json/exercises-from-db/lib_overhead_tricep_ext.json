@@ -320,12 +320,12 @@
     }
   ],
   "description": {
-    "ar": "تمرين مكتبة: تمديد ثلاثي علوي.",
-    "en": "Library exercise: Overhead tricep extension."
+    "ar": "التمديد الثلاثي فوق الرأس يعزل العضلة ثلاثية الرؤوس مع الذراعين مرفوعتين، ويتطلب ثباتاً في الجذع والكتفين لتجنب فرط الامتداد في أسفل الظهر.",
+    "en": "The overhead tricep extension isolates the triceps with the arms overhead, and needs trunk and shoulder stability to avoid excessive low-back extension."
   },
   "instructions": {
-    "ar": "حافظ على عمود فقري محايد وتنفس بثبات وتوقف عند أي ألم حاد.",
-    "en": "Maintain neutral spine, steady breathing, and stop if sharp pain appears."
+    "ar": "1. امسك الوزن بيدين أو يد واحدة فوق الرأس بذراعين قريبين من الأذنين.\n2. شد الجذع برفق وابقَ الكتفين منخفضين.\n3. انزل الوزن خلف الرأس بثني المرفقين دون تحريك المرفقين للخارج بشكل مفرط.\n4. ازفر وافرد المرفقين حتى يعود الوزن فوق الرأس.\n5. لا تدفع الجذع للأمام أو تفرط في تقوس الظهر.\n6. خفف الوزن إذا شعرت بضغط في المرفق أو الرقبة.",
+    "en": "1. Hold the load with one or two hands overhead with the upper arms near the ears.\n2. Brace lightly and keep the shoulders down.\n3. Lower behind the head by bending the elbows without flaring them excessively.\n4. Exhale and extend the elbows to return overhead.\n5. Do not lean the trunk forward or over-arch the back.\n6. Reduce load if you feel elbow or neck strain."
   },
   "supportsWeight": true,
   "reportMetrics": {

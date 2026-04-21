@@ -124,106 +124,6 @@
               "min": 55
             }
           }
-        },
-        {
-          "joint": "spine",
-          "role": "secondary",
-          "startPose": {
-            "max": 22,
-            "min": 0
-          },
-          "stateMessages": {
-            "perfect": {
-              "ar": "جذع ثابت في نصف الركبة",
-              "en": "Trunk steady in the half-kneeling base"
-            },
-            "warning": {
-              "ar": "لا تفقد الحوض أو الجذع أثناء الضغط",
-              "en": "Do not lose the pelvis or trunk during the press"
-            }
-          },
-          "range": {
-            "pad": {
-              "max": 35,
-              "min": 0
-            },
-            "danger": {
-              "max": 85,
-              "min": 42
-            },
-            "normal": {
-              "max": 26,
-              "min": 0
-            },
-            "perfect": {
-              "max": 18,
-              "min": 0
-            },
-            "warning": {
-              "max": 45,
-              "min": 28
-            }
-          },
-          "phaseRanges": {
-            "up": {
-              "normal": {
-                "max": 24,
-                "min": 0
-              },
-              "perfect": {
-                "max": 18,
-                "min": 0
-              }
-            },
-            "top": {
-              "perfect": {
-                "max": 12,
-                "min": 0
-              }
-            },
-            "down": {
-              "normal": {
-                "max": 24,
-                "min": 0
-              },
-              "perfect": {
-                "max": 18,
-                "min": 0
-              }
-            },
-            "bottom": {
-              "normal": {
-                "max": 35,
-                "min": 5
-              },
-              "perfect": {
-                "max": 28,
-                "min": 8
-              }
-            }
-          },
-          "phaseStateMessages": {
-            "top": {
-              "perfect": {
-                "ar": "ظهر محايد في الوقفة",
-                "en": "Neutral spine at the top"
-              },
-              "warning": {
-                "ar": "لا تميل القطن للأمام في الأعلى",
-                "en": "Avoid excessive lumbar lean at the top"
-              }
-            },
-            "bottom": {
-              "perfect": {
-                "ar": "انحناء مقبول في القاع مع تحكم",
-                "en": "Acceptable flexion at bottom with control"
-              },
-              "warning": {
-                "ar": "قلل الانحناء القطني الزائد",
-                "en": "Reduce excessive lumbar flexion"
-              }
-            }
-          }
         }
       ],
       "positionChecks": [
@@ -333,42 +233,42 @@
           "messageId": "1fb0d08d-0e4a-4723-84c9-ae99a33a9e88",
           "target": "joint_state",
           "context": "perfect",
-          "jointCode": "spine",
+          "jointCode": "left_hip",
           "sortOrder": 8
         },
         {
           "messageId": "1cc43cba-0cfd-4731-b297-097ca20f6c5c",
           "target": "joint_state",
           "context": "warning",
-          "jointCode": "spine",
+          "jointCode": "left_hip",
           "sortOrder": 9
         },
         {
           "messageId": "6e5d66e5-5d9e-45a8-a6ca-947b9544c326",
           "target": "joint_state_phase",
           "context": "top:perfect",
-          "jointCode": "spine",
+          "jointCode": "left_hip",
           "sortOrder": 10
         },
         {
           "messageId": "fafd2150-405d-4dd1-a6a6-74ce1b98e4b0",
           "target": "joint_state_phase",
           "context": "top:warning",
-          "jointCode": "spine",
+          "jointCode": "left_hip",
           "sortOrder": 11
         },
         {
           "messageId": "27b8a8ad-0e77-4ae3-a5ca-7ca920f46fd6",
           "target": "joint_state_phase",
           "context": "bottom:perfect",
-          "jointCode": "spine",
+          "jointCode": "left_hip",
           "sortOrder": 12
         },
         {
           "messageId": "a8aeb703-8b93-458d-ab78-c80105e9e2a9",
           "target": "joint_state_phase",
           "context": "bottom:warning",
-          "jointCode": "spine",
+          "jointCode": "left_hip",
           "sortOrder": 13
         },
         {
@@ -400,12 +300,12 @@
     }
   ],
   "description": {
-    "ar": "تمرين مكتبة: ضغط لاندمين.",
-    "en": "Library exercise: Half-kneeling landmine press."
+    "ar": "ضغط لاندماين من نصف الركعة يستغل زاوية القضيب لتدريب الكتف والجذع بمسار يُعتبر أنعم على المفصل من بعض الضغوط العمودية الثقيلة.",
+    "en": "A half-kneeling landmine press uses an angled bar path to load the shoulder and trunk with a grip that many people tolerate better than strict vertical pressing."
   },
   "instructions": {
-    "ar": "حافظ على عمود فقري محايد وتنفس بثبات وتوقف عند أي ألم حاد.",
-    "en": "Maintain neutral spine, steady breathing, and stop if sharp pain appears."
+    "ar": "1. ثبّت طرف القضيب في ركن لاندماين أو زاوية آمنة.\n2. اركع بركبة واحدة للأمام والثانية تحت الورك مع شد خفيف للجذع.\n3. امسك الطرف الحر عند الصدر ثم ادفعه للأعلى بخط قطري أمامك.\n4. أعد الوزن ببطء دون فقدان استقرار الظهر.\n5. نفّذ 6–12 تكراراً ثم بدّل وضعية الركبتين.\n6. توقف عند ألم حاد في الكتف أو الركبة أو المعصم.",
+    "en": "1. Secure the bar in a landmine base or stable corner.\n2. Half-kneel with the front foot planted and the torso lightly braced.\n3. Hold the end of the bar at the chest, then press it up and forward on a diagonal.\n4. Lower with control without losing trunk position.\n5. Complete 6–12 reps, then switch the lead leg.\n6. Stop if you feel sharp shoulder, knee, or wrist pain."
   },
   "supportsWeight": true,
   "reportMetrics": {
@@ -522,106 +422,6 @@
                 "up": {
                   "ar": "لا تعوض بالظهر أو القفص الصدري",
                   "en": "Do not compensate with the back or rib cage"
-                }
-              }
-            }
-          },
-          {
-            "role": "secondary",
-            "joint": "spine",
-            "range": {
-              "pad": {
-                "max": 35,
-                "min": 0
-              },
-              "danger": {
-                "max": 85,
-                "min": 42
-              },
-              "normal": {
-                "max": 26,
-                "min": 0
-              },
-              "perfect": {
-                "max": 18,
-                "min": 0
-              },
-              "warning": {
-                "max": 45,
-                "min": 28
-              }
-            },
-            "startPose": {
-              "max": 22,
-              "min": 0
-            },
-            "phaseRanges": {
-              "up": {
-                "normal": {
-                  "max": 24,
-                  "min": 0
-                },
-                "perfect": {
-                  "max": 18,
-                  "min": 0
-                }
-              },
-              "top": {
-                "perfect": {
-                  "max": 12,
-                  "min": 0
-                }
-              },
-              "down": {
-                "normal": {
-                  "max": 24,
-                  "min": 0
-                },
-                "perfect": {
-                  "max": 18,
-                  "min": 0
-                }
-              },
-              "bottom": {
-                "normal": {
-                  "max": 35,
-                  "min": 5
-                },
-                "perfect": {
-                  "max": 28,
-                  "min": 8
-                }
-              }
-            },
-            "stateMessages": {
-              "perfect": {
-                "ar": "جذع ثابت في نصف الركبة",
-                "en": "Trunk steady in the half-kneeling base"
-              },
-              "warning": {
-                "ar": "لا تفقد الحوض أو الجذع أثناء الضغط",
-                "en": "Do not lose the pelvis or trunk during the press"
-              }
-            },
-            "phaseStateMessages": {
-              "top": {
-                "perfect": {
-                  "ar": "ظهر محايد في الوقفة",
-                  "en": "Neutral spine at the top"
-                },
-                "warning": {
-                  "ar": "لا تميل القطن للأمام في الأعلى",
-                  "en": "Avoid excessive lumbar lean at the top"
-                }
-              },
-              "bottom": {
-                "perfect": {
-                  "ar": "انحناء مقبول في القاع مع تحكم",
-                  "en": "Acceptable flexion at bottom with control"
-                },
-                "warning": {
-                  "ar": "قلل الانحناء القطني الزائد",
-                  "en": "Reduce excessive lumbar flexion"
                 }
               }
             }

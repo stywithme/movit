@@ -528,12 +528,12 @@
     }
   ],
   "description": {
-    "ar": "تمرين مكتبة: ضغط إيقاع.",
-    "en": "Library exercise: Tempo push-up."
+    "ar": "ضغط بإيقاع محدد (غالباً هبوط بطيء مع توقف قصير في الأسفل) يزيد زمن الشد على الصدر والكتفين والعضلة الثلاثية ويحسّن التحكم.",
+    "en": "A tempo push-up uses prescribed lowering speeds (often slow eccentric plus a pause) to increase time under tension for the chest, shoulders, and triceps."
   },
   "instructions": {
-    "ar": "حافظ على عمود فقري محايد وتنفس بثبات وتوقف عند أي ألم حاد.",
-    "en": "Maintain neutral spine, steady breathing, and stop if sharp pain appears."
+    "ar": "1. ادخل في وضع لوح علوي مع اليدين تحت الكتفين والجذع في خط مستقيم.\n2. انزل ببطء معدّ (مثلاً 3 ثوانٍ) حتى يقترب الصدر من الأرض.\n3. توقف لحظة في الأسفل إن طُلب ذلك في البرنامج.\n4. ادفع للأعلى بقوة لكن دون فقدان الشكل أو أرجحة الوركين.\n5. كرر حسب الإيقاع المحدد لكل مجموعة.\n6. توقف عند ألم حاد في الكتف أو المعصم أو أسفل الظهر.",
+    "en": "1. Set up in a plank with hands under the shoulders and a straight body line.\n2. Lower slowly on a set count (for example, three seconds) until the chest nears the floor.\n3. Pause briefly at the bottom if your program specifies it.\n4. Press up powerfully while keeping the hips from sagging or piking.\n5. Repeat for the prescribed tempo each set.\n6. Stop if you feel sharp shoulder, wrist, or low-back pain."
   },
   "reportMetrics": {
     "primary": [

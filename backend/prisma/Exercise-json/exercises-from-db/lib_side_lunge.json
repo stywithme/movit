@@ -218,42 +218,6 @@
               "min": 48
             }
           }
-        },
-        {
-          "joint": "spine",
-          "role": "secondary",
-          "startPose": {
-            "max": 28,
-            "min": 0
-          },
-          "stateMessages": {
-            "perfect": {
-              "ar": "جذع متماسك ومرفوع",
-              "en": "Torso organized and upright"
-            },
-            "warning": {
-              "ar": "لا تنهَر للأمام أو للدوران",
-              "en": "Avoid folding forward or rotating"
-            }
-          },
-          "range": {
-            "pad": {
-              "max": 30,
-              "min": 0
-            },
-            "normal": {
-              "max": 24,
-              "min": 0
-            },
-            "perfect": {
-              "max": 18,
-              "min": 0
-            },
-            "warning": {
-              "max": 42,
-              "min": 30
-            }
-          }
         }
       ],
       "positionChecks": [
@@ -426,14 +390,14 @@
           "messageId": "c13ea083-6c73-4b7c-ac88-84debf70df17",
           "target": "joint_state",
           "context": "perfect",
-          "jointCode": "spine",
+          "jointCode": "left_hip",
           "sortOrder": 16
         },
         {
           "messageId": "6f7717ae-5a4a-4731-9b0e-1d5748bcd8a1",
           "target": "joint_state",
           "context": "warning",
-          "jointCode": "spine",
+          "jointCode": "left_hip",
           "sortOrder": 17
         },
         {
@@ -465,12 +429,12 @@
     }
   ],
   "description": {
-    "ar": "تمرين مكتبة: اندفاع جانبي.",
-    "en": "Library exercise: Side lunge."
+    "ar": "الاندفاع الجانبي يحمّل ساقاً واحدة بانزلاق جانبي ويُطيل المضافين بينما تبقى الأخرى مستقيمة، ما يحسّن القوة والمرونة الجانبية.",
+    "en": "A side lunge loads one leg in a lateral shift while lengthening the adductors on the straight leg, building lateral strength and mobility."
   },
   "instructions": {
-    "ar": "حافظ على عمود فقري محايد وتنفس بثبات وتوقف عند أي ألم حاد.",
-    "en": "Maintain neutral spine, steady breathing, and stop if sharp pain appears."
+    "ar": "1. قف بقدمين بعرض أكبر من الكتفين مع أصابع القدمين قليلاً للأمام.\n2. انزل بثقلك نحو رجل واحدة مع إبقاء الأخرى ممدودة والقدم المسطحة على الأرض قدر الإمكان.\n3. حافظ على صدر مرتفع وركبة الانزلاق فوق القدم دون انهيار للداخل.\n4. ادفع للعودة للوسط ثم كرر نحو الجانب الآخر.\n5. نفّذ 6–12 تكراراً لكل جانب.\n6. توقف عند ألم حاد في الركبة أو الورك.",
+    "en": "1. Stand with a stance wider than shoulder width and toes slightly forward.\n2. Shift weight to one side while keeping the opposite leg long and the foot flat if possible.\n3. Keep the chest tall and the bending knee tracking over the foot.\n4. Push back to center, then repeat to the other side.\n5. Perform 6–12 reps per side.\n6. Stop if you feel sharp knee or hip pain."
   },
   "reportMetrics": {
     "primary": [
@@ -684,42 +648,6 @@
                   "ar": "لا تدع الركبة تنهار للداخل",
                   "en": "Do not let the knee cave inward"
                 }
-              }
-            }
-          },
-          {
-            "role": "secondary",
-            "joint": "spine",
-            "range": {
-              "pad": {
-                "max": 30,
-                "min": 0
-              },
-              "normal": {
-                "max": 24,
-                "min": 0
-              },
-              "perfect": {
-                "max": 18,
-                "min": 0
-              },
-              "warning": {
-                "max": 42,
-                "min": 30
-              }
-            },
-            "startPose": {
-              "max": 28,
-              "min": 0
-            },
-            "stateMessages": {
-              "perfect": {
-                "ar": "جذع متماسك ومرفوع",
-                "en": "Torso organized and upright"
-              },
-              "warning": {
-                "ar": "لا تنهَر للأمام أو للدوران",
-                "en": "Avoid folding forward or rotating"
               }
             }
           }

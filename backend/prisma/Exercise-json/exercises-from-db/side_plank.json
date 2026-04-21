@@ -6,8 +6,8 @@
   "familyKey": "anti_lateral_flexion_family",
   "familyOrder": 20,
   "name": {
-    "ar": "البلانك الجانبي",
-    "en": "Side Plank"
+    "ar": "بلانك جانبي",
+    "en": "Side plank"
   },
   "category": {
     "code": "core",
@@ -39,12 +39,12 @@
   "poseVariants": [
     {
       "name": {
-        "ar": "الجانب الأيسر - زاوية أمامية",
-        "en": "Left Side - Front View"
+        "ar": "الجهة اليسرى",
+        "en": "Left side"
       },
       "posePosition": "side_lying",
       "expectedPostures": [
-        "lying_side"
+        "side_lying"
       ],
       "expectedDirections": [
         "side"
@@ -62,46 +62,46 @@
           },
           "stateMessages": {
             "pad": {
-              "ar": "مقبول، لكن يمكنك التحسن",
-              "en": "Acceptable, but you can improve"
-            },
-            "danger": {
-              "ar": "حوضك منخفض جداً!",
-              "en": "Hips too low!"
+              "ar": "مقبول — ارفع الحوض وثبّت الخط الجانبي أكثر",
+              "en": "Acceptable — lift the hips and clean up the side line"
             },
             "normal": {
-              "ar": "جيد، حاول رفع الحوض أكثر قليلاً",
-              "en": "Good, try raising hips slightly more"
+              "ar": "جيد — الثبات موجود لكن ما زال هناك مجال لتحسين الارتفاع",
+              "en": "Good — the hold is there, but the hip height can be cleaner"
             },
             "perfect": {
-              "ar": "ممتاز! وضعية مثالية",
-              "en": "Perfect! Great form"
+              "ar": "ممتاز! خط جانبي قوي من الكتف للقدمين",
+              "en": "Perfect! Strong side line from shoulder to feet"
             },
             "warning": {
-              "ar": "ارفع حوضك أعلى",
-              "en": "Raise your hips higher"
+              "ar": "لا تدع الحوض يسقط أو يتحرك للأمام والخلف",
+              "en": "Do not let the hips drop or drift forward and back"
+            },
+            "danger": {
+              "ar": "توقف — فقدت الثبات الجانبي بشكل كبير",
+              "en": "Stop — the lateral hold has significantly collapsed"
             }
           },
           "range": {
             "pad": {
               "max": 180,
-              "min": 155
-            },
-            "danger": {
-              "max": 140,
-              "min": 0
+              "min": 154
             },
             "normal": {
               "max": 180,
-              "min": 165
+              "min": 164
             },
             "perfect": {
               "max": 180,
               "min": 170
             },
             "warning": {
-              "max": 155,
+              "max": 154,
               "min": 140
+            },
+            "danger": {
+              "max": 140,
+              "min": 0
             }
           }
         },
@@ -114,8 +114,12 @@
           },
           "stateMessages": {
             "perfect": {
-              "ar": "ممتاز - الكتف في الوضع الصحيح",
-              "en": "Great - shoulder is positioned correctly"
+              "ar": "الكتف مكدس فوق المرفق بثبات",
+              "en": "The shoulder stacks steadily over the elbow"
+            },
+            "warning": {
+              "ar": "اضغط الأرض بالساعد ولا تدع الكتف ينهار",
+              "en": "Press the floor through the forearm and do not let the shoulder collapse"
             }
           },
           "range": {
@@ -142,8 +146,8 @@
           },
           "stateMessages": {
             "perfect": {
-              "ar": "ممتاز - الساقين مستقيمتين",
-              "en": "Great - legs are straight"
+              "ar": "الساقان طويلتان ومثبتتان",
+              "en": "The legs stay long and locked in"
             }
           },
           "range": {
@@ -164,7 +168,7 @@
       ],
       "positionChecks": [
         {
-          "id": "hip_alignment",
+          "id": "hip_alignment_left",
           "type": "horizontal_alignment",
           "landmarks": {
             "primary": "left_hip",
@@ -178,8 +182,8 @@
             "all"
           ],
           "errorMessage": {
-            "ar": "ارفع حوضك - لا تدعه يهبط",
-            "en": "Raise hips - don't let them drop"
+            "ar": "ارفع الحوض وابقَ في خط جانبي واحد بدون سقوط.",
+            "en": "Lift the hips and stay in one side line without dropping."
           },
           "severity": "error",
           "cooldownMs": 2000,
@@ -189,30 +193,22 @@
       "feedbackMessages": {
         "motivational": [
           {
-            "ar": "ممتاز! استمر!",
-            "en": "Excellent! Hold it!"
+            "ar": "ثبات جانبي ممتاز",
+            "en": "Excellent lateral stability"
           },
           {
-            "ar": "قوي! لا تستسلم!",
-            "en": "Strong! Don't give up!"
-          },
-          {
-            "ar": "أداء رائع!",
-            "en": "Great form!"
+            "ar": "الخط الجانبي قوي ومنظم",
+            "en": "The side line looks strong and organized"
           }
         ],
         "tips": [
           {
-            "ar": "تنفس بانتظام",
-            "en": "Breathe steadily"
+            "ar": "شد الجذع والمؤخرة معاً حتى لا يسقط الحوض.",
+            "en": "Brace the trunk and glutes together so the hips do not drop."
           },
           {
-            "ar": "شد عضلات الجذع للثبات",
-            "en": "Engage core for stability"
-          },
-          {
-            "ar": "حافظ على رقبتك في خط مستقيم",
-            "en": "Keep neck in line with spine"
+            "ar": "أبقِ الرأس في امتداد العمود الفقري ولا ترفع الكتف نحو الأذن.",
+            "en": "Keep the head in line with the spine and avoid shrugging the shoulder."
           }
         ]
       },
@@ -221,7 +217,7 @@
           "messageId": "7dedaaec-0410-47c7-84f8-5919194c3c63",
           "target": "position",
           "context": "error",
-          "checkId": "hip_alignment",
+          "checkId": "hip_alignment_left",
           "sortOrder": 1
         },
         {
@@ -286,39 +282,27 @@
           "sortOrder": 10
         },
         {
-          "messageId": "ad96b19b-27c3-4782-ab1b-6d5ccc880a75",
-          "target": "feedback",
-          "context": "motivational",
-          "sortOrder": 11
-        },
-        {
           "messageId": "005d5cac-f0f5-4854-9669-bc688d5f6a7a",
           "target": "feedback",
           "context": "tip",
-          "sortOrder": 12
+          "sortOrder": 11
         },
         {
           "messageId": "f393acd3-8281-4af2-8ed4-1f8593344da5",
           "target": "feedback",
           "context": "tip",
-          "sortOrder": 13
-        },
-        {
-          "messageId": "b118c1ed-c063-4905-bd87-e1103ee77796",
-          "target": "feedback",
-          "context": "tip",
-          "sortOrder": 14
+          "sortOrder": 12
         }
       ]
     },
     {
       "name": {
-        "ar": "الجانب الأيمن - زاوية أمامية",
-        "en": "Right Side - Front View"
+        "ar": "الجهة اليمنى",
+        "en": "Right side"
       },
       "posePosition": "side_lying",
       "expectedPostures": [
-        "lying_side"
+        "side_lying"
       ],
       "expectedDirections": [
         "side"
@@ -336,46 +320,46 @@
           },
           "stateMessages": {
             "pad": {
-              "ar": "مقبول، لكن يمكنك التحسن",
-              "en": "Acceptable, but you can improve"
-            },
-            "danger": {
-              "ar": "حوضك منخفض جداً!",
-              "en": "Hips too low!"
+              "ar": "مقبول — ارفع الحوض وثبّت الخط الجانبي أكثر",
+              "en": "Acceptable — lift the hips and clean up the side line"
             },
             "normal": {
-              "ar": "جيد، حاول رفع الحوض أكثر قليلاً",
-              "en": "Good, try raising hips slightly more"
+              "ar": "جيد — الثبات موجود لكن ما زال هناك مجال لتحسين الارتفاع",
+              "en": "Good — the hold is there, but the hip height can be cleaner"
             },
             "perfect": {
-              "ar": "ممتاز! وضعية مثالية",
-              "en": "Perfect! Great form"
+              "ar": "ممتاز! خط جانبي قوي من الكتف للقدمين",
+              "en": "Perfect! Strong side line from shoulder to feet"
             },
             "warning": {
-              "ar": "ارفع حوضك أعلى",
-              "en": "Raise your hips higher"
+              "ar": "لا تدع الحوض يسقط أو يتحرك للأمام والخلف",
+              "en": "Do not let the hips drop or drift forward and back"
+            },
+            "danger": {
+              "ar": "توقف — فقدت الثبات الجانبي بشكل كبير",
+              "en": "Stop — the lateral hold has significantly collapsed"
             }
           },
           "range": {
             "pad": {
               "max": 180,
-              "min": 155
-            },
-            "danger": {
-              "max": 140,
-              "min": 0
+              "min": 154
             },
             "normal": {
               "max": 180,
-              "min": 165
+              "min": 164
             },
             "perfect": {
               "max": 180,
               "min": 170
             },
             "warning": {
-              "max": 155,
+              "max": 154,
               "min": 140
+            },
+            "danger": {
+              "max": 140,
+              "min": 0
             }
           }
         },
@@ -388,8 +372,12 @@
           },
           "stateMessages": {
             "perfect": {
-              "ar": "ممتاز - الكتف في الوضع الصحيح",
-              "en": "Great - shoulder is positioned correctly"
+              "ar": "الكتف مكدس فوق المرفق بثبات",
+              "en": "The shoulder stacks steadily over the elbow"
+            },
+            "warning": {
+              "ar": "اضغط الأرض بالساعد ولا تدع الكتف ينهار",
+              "en": "Press the floor through the forearm and do not let the shoulder collapse"
             }
           },
           "range": {
@@ -424,8 +412,8 @@
             "all"
           ],
           "errorMessage": {
-            "ar": "ارفع حوضك - لا تدعه يهبط",
-            "en": "Raise hips - don't let them drop"
+            "ar": "ارفع الحوض وابقَ في خط جانبي واحد بدون سقوط.",
+            "en": "Lift the hips and stay in one side line without dropping."
           },
           "severity": "error",
           "cooldownMs": 2000,
@@ -435,11 +423,16 @@
       "feedbackMessages": {
         "motivational": [
           {
-            "ar": "استمر!",
-            "en": "Keep going!"
+            "ar": "استمر — الجهة اليمنى جيدة",
+            "en": "Keep going — the right side looks strong"
           }
         ],
-        "tips": []
+        "tips": [
+          {
+            "ar": "اضغط الساعد في الأرض وابقَ طويلاً من الخاصرة.",
+            "en": "Drive the forearm into the floor and stay long through the underside waist."
+          }
+        ]
       },
       "messageAssignments": [
         {
@@ -501,12 +494,12 @@
     }
   ],
   "description": {
-    "ar": "تمرين ثبات لتقوية عضلات الجذع الجانبية والكتف",
-    "en": "Isometric exercise to strengthen obliques and shoulder"
+    "ar": "البلانك الجانبي تمرين ثبات ممتاز لعضلات الجذع الجانبية والورك والكتف، ويعلّم الجسم مقاومة الانهيار الجانبي. الهدف هو تكوين خط مستقيم تقريباً من الرأس حتى القدمين مع بقاء الحوض مرفوعاً والكتف مثبتاً فوق الساعد.",
+    "en": "The side plank is a strong isometric drill for the obliques, hip stabilizers, and shoulder, teaching the body to resist lateral collapse. The goal is to create a nearly straight line from head to feet while keeping the hips lifted and the shoulder stacked over the forearm."
   },
   "instructions": {
-    "ar": "استلقِ على جانبك، ثم ارفع جسمك على ساعدك وحافظ على خط مستقيم من الرأس للقدمين",
-    "en": "Lie on your side, lift body on forearm and maintain straight line from head to feet"
+    "ar": "1. استلقِ على جانبك وارتكز على الساعد بحيث يكون المرفق تحت الكتف.\n2. ارفع الحوض عن الأرض لتكوين خط جانبي مستقيم تقريباً من الرأس إلى القدمين.\n3. شد عضلات الجذع والمؤخرة ولا تدع الحوض يسقط أو يدور للأمام والخلف.\n4. اضغط الساعد بالأرض وحافظ على الكتف بعيداً عن الأذن.\n5. تنفّس بهدوء طوال الثبات ولا تحبس النفس.\n6. أنهِ المجموعة إذا فقدت الخط الجانبي أو ظهر ألم في الكتف.",
+    "en": "1. Lie on your side and set the forearm so the elbow is directly under the shoulder.\n2. Lift the hips off the floor to form a nearly straight side line from head to feet.\n3. Brace the trunk and glutes, and do not let the hips drop or rotate forward and back.\n4. Push through the forearm and keep the shoulder away from the ear.\n5. Breathe calmly during the hold without breath-holding.\n6. End the set if the side line is lost or shoulder pain appears."
   },
   "reportMetrics": {
     "primary": [
@@ -528,242 +521,5 @@
       "SYMMETRY"
     ]
   },
-  "hasPositionChecks": true,
-  "_database": {
-    "id": "5c3cb927-c67f-498d-80b2-b52a81f54047",
-    "categoryId": "a75c8245-e1cd-4a4f-82f1-1e58df971999",
-    "countingMethodId": "7ae86596-4b4b-400b-afa1-c7c0b6ba4fc9",
-    "publishedAt": "2026-04-20T17:26:23.151Z",
-    "createdAt": "2026-04-20T17:26:23.152Z",
-    "updatedAt": "2026-04-20T17:26:34.152Z",
-    "deletedAt": null,
-    "isFeatured": false,
-    "createdBy": null,
-    "updatedBy": null,
-    "repCountingConfig": {
-      "duration": 25,
-      "gracePeriodMs": 2500
-    },
-    "bilateralConfig": null,
-    "isBilateral": false,
-    "supportsWeight": false,
-    "minWeight": null,
-    "maxWeight": null,
-    "defaultWeight": null,
-    "reportMetrics": {
-      "mode": "duration",
-      "version": 1,
-      "primaryKpi": "timeUnderTension",
-      "secondaryKpis": [
-        "avgFormScore",
-        "avgRom"
-      ]
-    },
-    "media": [],
-    "poseVariants": [
-      {
-        "id": "73a37515-b041-4848-8e71-164ab38d5321",
-        "sortOrder": 1,
-        "description": null,
-        "trackedJointsConfig": [
-          {
-            "role": "primary",
-            "joint": "left_hip",
-            "range": {
-              "pad": {
-                "max": 180,
-                "min": 155
-              },
-              "danger": {
-                "max": 140,
-                "min": 0
-              },
-              "normal": {
-                "max": 180,
-                "min": 165
-              },
-              "perfect": {
-                "max": 180,
-                "min": 170
-              },
-              "warning": {
-                "max": 155,
-                "min": 140
-              }
-            },
-            "startPose": {
-              "max": 180,
-              "min": 160
-            },
-            "stateMessages": {
-              "pad": {
-                "ar": "مقبول، لكن يمكنك التحسن",
-                "en": "Acceptable, but you can improve"
-              },
-              "danger": {
-                "ar": "حوضك منخفض جداً!",
-                "en": "Hips too low!"
-              },
-              "normal": {
-                "ar": "جيد، حاول رفع الحوض أكثر قليلاً",
-                "en": "Good, try raising hips slightly more"
-              },
-              "perfect": {
-                "ar": "ممتاز! وضعية مثالية",
-                "en": "Perfect! Great form"
-              },
-              "warning": {
-                "ar": "ارفع حوضك أعلى",
-                "en": "Raise your hips higher"
-              }
-            }
-          },
-          {
-            "role": "secondary",
-            "joint": "left_shoulder",
-            "range": {
-              "pad": {
-                "max": 120,
-                "min": 70
-              },
-              "normal": {
-                "max": 110,
-                "min": 80
-              },
-              "perfect": {
-                "max": 100,
-                "min": 85
-              }
-            },
-            "startPose": {
-              "max": 110,
-              "min": 70
-            },
-            "stateMessages": {
-              "perfect": {
-                "ar": "ممتاز - الكتف في الوضع الصحيح",
-                "en": "Great - shoulder is positioned correctly"
-              }
-            }
-          },
-          {
-            "role": "secondary",
-            "joint": "left_knee",
-            "range": {
-              "pad": {
-                "max": 180,
-                "min": 160
-              },
-              "normal": {
-                "max": 180,
-                "min": 168
-              },
-              "perfect": {
-                "max": 180,
-                "min": 172
-              }
-            },
-            "startPose": {
-              "max": 180,
-              "min": 165
-            },
-            "stateMessages": {
-              "perfect": {
-                "ar": "ممتاز - الساقين مستقيمتين",
-                "en": "Great - legs are straight"
-              }
-            }
-          }
-        ]
-      },
-      {
-        "id": "53cea258-6f29-42aa-94cb-ccecdbb96fc0",
-        "sortOrder": 2,
-        "description": null,
-        "trackedJointsConfig": [
-          {
-            "role": "primary",
-            "joint": "right_hip",
-            "range": {
-              "pad": {
-                "max": 180,
-                "min": 155
-              },
-              "danger": {
-                "max": 140,
-                "min": 0
-              },
-              "normal": {
-                "max": 180,
-                "min": 165
-              },
-              "perfect": {
-                "max": 180,
-                "min": 170
-              },
-              "warning": {
-                "max": 155,
-                "min": 140
-              }
-            },
-            "startPose": {
-              "max": 180,
-              "min": 160
-            },
-            "stateMessages": {
-              "pad": {
-                "ar": "مقبول، لكن يمكنك التحسن",
-                "en": "Acceptable, but you can improve"
-              },
-              "danger": {
-                "ar": "حوضك منخفض جداً!",
-                "en": "Hips too low!"
-              },
-              "normal": {
-                "ar": "جيد، حاول رفع الحوض أكثر قليلاً",
-                "en": "Good, try raising hips slightly more"
-              },
-              "perfect": {
-                "ar": "ممتاز! وضعية مثالية",
-                "en": "Perfect! Great form"
-              },
-              "warning": {
-                "ar": "ارفع حوضك أعلى",
-                "en": "Raise your hips higher"
-              }
-            }
-          },
-          {
-            "role": "secondary",
-            "joint": "right_shoulder",
-            "range": {
-              "pad": {
-                "max": 120,
-                "min": 70
-              },
-              "normal": {
-                "max": 110,
-                "min": 80
-              },
-              "perfect": {
-                "max": 100,
-                "min": 85
-              }
-            },
-            "startPose": {
-              "max": 110,
-              "min": 70
-            },
-            "stateMessages": {
-              "perfect": {
-                "ar": "ممتاز - الكتف في الوضع الصحيح",
-                "en": "Great - shoulder is positioned correctly"
-              }
-            }
-          }
-        ]
-      }
-    ],
-    "validationWarning": null
-  }
+  "hasPositionChecks": true
 }

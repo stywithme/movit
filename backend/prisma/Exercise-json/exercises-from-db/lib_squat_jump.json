@@ -447,12 +447,12 @@
     }
   ],
   "description": {
-    "ar": "تمرين مكتبة: قفز سكوات.",
-    "en": "Library exercise: Squat jump (progression)."
+    "ar": "قفزة السكوات تطوّر القدرة الانفجارية في نمط القرفصاء مع هبوط مضبوط، وهي تقدم تدريجياً بعد إتقان القرفصاء الجيد على الأرض.",
+    "en": "Squat jumps build explosive power in a squat pattern with controlled landings, and should progress only after a solid bodyweight squat baseline."
   },
   "instructions": {
-    "ar": "حافظ على عمود فقري محايد وتنفس بثبات وتوقف عند أي ألم حاد.",
-    "en": "Maintain neutral spine, steady breathing, and stop if sharp pain appears."
+    "ar": "1. قف بعرض الكتفين وانزل بقرفصاء قصير إلى متوسط.\n2. ازفر وانفجر للأعلى مع مد الذراعين إن رغبت في التوازن.\n3. اهبط على منتصف القدمين مع ثني الركبتين لامتصاص الصدمة.\n4. ثبّت وقفة قصيرة قبل التكرار إن لزم.\n5. لا تهبط بساقين مفرودتين بالكامل أو ركبتين منهارتين للداخل.\n6. توقف عند ألم في الركبة أو عدم القدرة على الهبوط بهدوء.",
+    "en": "1. Stand about shoulder-width and squat to a short-to-moderate depth.\n2. Exhale and jump up, optionally swinging the arms for balance.\n3. Land through the mid-foot with knees bent to absorb impact.\n4. Pause briefly before the next rep if needed.\n5. Do not land on fully straight legs or knees collapsing inward.\n6. Stop if you feel knee pain or cannot land quietly."
   },
   "reportMetrics": {
     "primary": [

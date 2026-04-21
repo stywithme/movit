@@ -1,4 +1,4 @@
-import type { PrismaClient } from '@prisma/client';
+import type { LoadCapability, MovementPattern, Prisma, PrismaClient } from '@prisma/client';
 import * as fs from 'fs/promises';
 import * as path from 'path';
 import {
@@ -18,11 +18,10 @@ export async function seedExercisesAndWorkouts(
   prisma: PrismaClient,
   ensureMessageTemplate: EnsureMessageTemplate
 ) {
+  /** Canonical layout: `Exercise-json/exercises-from-db` + `Exercise-json/workouts`. */
   const candidateAssetsDirs = [
     process.env.SEED_ASSETS_DIR,
     path.resolve(__dirname, '../Exercise-json'),
-    path.resolve(__dirname, '../../../Docs/Old-way-json'),
-    path.resolve(__dirname, '../../../Docs/New-Project/Old-way-json'),
     path.resolve(__dirname, '../../data'),
   ].filter((dir): dir is string => Boolean(dir));
 
@@ -39,7 +38,7 @@ export async function seedExercisesAndWorkouts(
   }
 
   console.log(`📁 Seed assets dir: ${assetsDir}`);
-  const exercisesDir = path.join(assetsDir, 'exercises');
+  const exercisesFromDbDir = path.join(assetsDir, 'exercises-from-db');
   const workoutsDir = path.join(assetsDir, 'workouts');
 
   const attributeValues = await prisma.attributeValue.findMany();
@@ -89,8 +88,8 @@ export async function seedExercisesAndWorkouts(
     positionByCode.set(pp.code, pp.id);
   }
 
-  const exercisesDirExists = await fs
-    .stat(exercisesDir)
+  const exercisesFromDbDirExists = await fs
+    .stat(exercisesFromDbDir)
     .then(() => true)
     .catch(() => false);
   const workoutsDirExists = await fs
@@ -98,19 +97,22 @@ export async function seedExercisesAndWorkouts(
     .then(() => true)
     .catch(() => false);
 
-  if (!exercisesDirExists) {
-    console.warn(`⚠️ Exercises directory not found: ${exercisesDir}`);
+  if (!exercisesFromDbDirExists) {
+    throw new Error(
+      `Exercise library not found: ${exercisesFromDbDir}\n` +
+        `Add JSON files under prisma/Exercise-json/exercises-from-db (one file per slug), or set SEED_ASSETS_DIR to a folder that contains exercises-from-db/.`,
+    );
   }
   if (!workoutsDirExists) {
     console.warn(`⚠️ Workouts directory not found: ${workoutsDir}`);
   }
 
-  const exerciseFiles = exercisesDirExists
-    ? (await fs.readdir(exercisesDir)).filter((file) => file.endsWith('.json'))
-    : [];
+  const exerciseFiles = (await fs.readdir(exercisesFromDbDir)).filter((file) => file.endsWith('.json'));
+
+  const seededExerciseSlugs = new Set<string>();
 
   for (const file of exerciseFiles) {
-    const filePath = path.join(exercisesDir, file);
+    const filePath = path.join(exercisesFromDbDir, file);
     const raw = await fs.readFile(filePath, 'utf8');
     const exerciseJson = JSON.parse(raw) as {
       name: { ar: string; en: string };
@@ -146,9 +148,24 @@ export async function seedExercisesAndWorkouts(
           tips?: Array<{ ar: string; en: string }>;
         };
       }>;
+      movementPattern?: MovementPattern;
+      loadCapability?: LoadCapability;
+      familyKey?: string;
+      familyOrder?: number;
+      reportMetrics?: Prisma.InputJsonValue;
+      status?: string;
+      minWeight?: number | null;
+      maxWeight?: number | null;
+      defaultWeight?: number | null;
+      _database?: {
+        minWeight?: number | null;
+        maxWeight?: number | null;
+        defaultWeight?: number | null;
+      };
     };
 
     const slug = path.basename(file, '.json');
+    seededExerciseSlugs.add(slug);
     const categoryCode = categoryCodeMap[exerciseJson.category.code] || exerciseJson.category.code;
     const categoryValue = await ensureAttributeValue(
       categoryAttr.id,
@@ -163,12 +180,28 @@ export async function seedExercisesAndWorkouts(
       throw new Error(`Counting method not found for ${exerciseJson.countingMethod}`);
     }
 
-    const blueprint = resolveExerciseBlueprintForSlug(slug, {
+    const inferredBlueprint = resolveExerciseBlueprintForSlug(slug, {
       countingMethodCode: countingMethodValue.code,
       supportsWeight: exerciseJson.supportsWeight ?? false,
       equipmentCodes: exerciseJson.equipment || [],
       categoryCode: categoryValue.code,
     });
+
+    const blueprint = {
+      movementPattern: exerciseJson.movementPattern ?? inferredBlueprint.movementPattern,
+      loadCapability: exerciseJson.loadCapability ?? inferredBlueprint.loadCapability,
+      familyKey: exerciseJson.familyKey ?? inferredBlueprint.familyKey,
+      familyOrder: exerciseJson.familyOrder ?? inferredBlueprint.familyOrder,
+      reportMetrics: (exerciseJson.reportMetrics ?? inferredBlueprint.reportMetrics) as Prisma.InputJsonValue,
+    };
+
+    const dbWeights = exerciseJson._database;
+    const minWeight = exerciseJson.minWeight ?? dbWeights?.minWeight ?? undefined;
+    const maxWeight = exerciseJson.maxWeight ?? dbWeights?.maxWeight ?? undefined;
+    const defaultWeight = exerciseJson.defaultWeight ?? dbWeights?.defaultWeight ?? undefined;
+
+    const status = exerciseJson.status === 'draft' ? 'draft' : 'published';
+    const publishedAt = status === 'published' ? new Date() : null;
 
     const exerciseRecord = await prisma.exercise.upsert({
       where: { slug },
@@ -182,10 +215,13 @@ export async function seedExercisesAndWorkouts(
         isBilateral: exerciseJson.isBilateral ?? false,
         bilateralConfig: exerciseJson.bilateralConfig ? (exerciseJson.bilateralConfig as object) : undefined,
         supportsWeight: exerciseJson.supportsWeight ?? false,
-        status: 'published',
-        publishedAt: new Date(),
-        movementPattern: blueprint.movementPattern,
-        loadCapability: blueprint.loadCapability,
+        minWeight: minWeight ?? null,
+        maxWeight: maxWeight ?? null,
+        defaultWeight: defaultWeight ?? null,
+        status,
+        publishedAt,
+        movementPattern: blueprint.movementPattern as MovementPattern,
+        loadCapability: blueprint.loadCapability as LoadCapability,
         familyKey: blueprint.familyKey,
         familyOrder: blueprint.familyOrder,
         reportMetrics: blueprint.reportMetrics,
@@ -201,10 +237,13 @@ export async function seedExercisesAndWorkouts(
         isBilateral: exerciseJson.isBilateral ?? false,
         bilateralConfig: exerciseJson.bilateralConfig ? (exerciseJson.bilateralConfig as object) : undefined,
         supportsWeight: exerciseJson.supportsWeight ?? false,
-        status: 'published',
-        publishedAt: new Date(),
-        movementPattern: blueprint.movementPattern,
-        loadCapability: blueprint.loadCapability,
+        minWeight: minWeight ?? null,
+        maxWeight: maxWeight ?? null,
+        defaultWeight: defaultWeight ?? null,
+        status,
+        publishedAt,
+        movementPattern: blueprint.movementPattern as MovementPattern,
+        loadCapability: blueprint.loadCapability as LoadCapability,
         familyKey: blueprint.familyKey,
         familyOrder: blueprint.familyOrder,
         reportMetrics: blueprint.reportMetrics,
@@ -300,9 +339,11 @@ export async function seedExercisesAndWorkouts(
     });
   }
 
-  console.log('✅ Exercises seeded from assets');
+  console.log(`✅ Exercises seeded from library (${exerciseFiles.length} files in exercises-from-db)`);
 
-  await seedCuratedCatalogExtensions(prisma, ensureMessageTemplate);
+  await seedCuratedCatalogExtensions(prisma, ensureMessageTemplate, {
+    skipSlugs: seededExerciseSlugs,
+  });
 
   const workoutFiles = workoutsDirExists
     ? (await fs.readdir(workoutsDir)).filter((file) => file.endsWith('.json'))

@@ -213,106 +213,6 @@
               "min": 35
             }
           }
-        },
-        {
-          "joint": "spine",
-          "role": "secondary",
-          "startPose": {
-            "max": 18,
-            "min": 0
-          },
-          "stateMessages": {
-            "perfect": {
-              "ar": "جذع ثابت ومرفوع",
-              "en": "Torso stable and tall"
-            },
-            "warning": {
-              "ar": "لا تنهَر للأمام أثناء الاندفاع",
-              "en": "Avoid collapsing forward in the lunge"
-            }
-          },
-          "range": {
-            "pad": {
-              "max": 35,
-              "min": 0
-            },
-            "danger": {
-              "max": 85,
-              "min": 42
-            },
-            "normal": {
-              "max": 26,
-              "min": 0
-            },
-            "perfect": {
-              "max": 18,
-              "min": 0
-            },
-            "warning": {
-              "max": 45,
-              "min": 28
-            }
-          },
-          "phaseRanges": {
-            "up": {
-              "normal": {
-                "max": 24,
-                "min": 0
-              },
-              "perfect": {
-                "max": 18,
-                "min": 0
-              }
-            },
-            "top": {
-              "perfect": {
-                "max": 12,
-                "min": 0
-              }
-            },
-            "down": {
-              "normal": {
-                "max": 24,
-                "min": 0
-              },
-              "perfect": {
-                "max": 18,
-                "min": 0
-              }
-            },
-            "bottom": {
-              "normal": {
-                "max": 35,
-                "min": 5
-              },
-              "perfect": {
-                "max": 28,
-                "min": 8
-              }
-            }
-          },
-          "phaseStateMessages": {
-            "top": {
-              "perfect": {
-                "ar": "ظهر محايد في الوقفة",
-                "en": "Neutral spine at the top"
-              },
-              "warning": {
-                "ar": "لا تميل القطن للأمام في الأعلى",
-                "en": "Avoid excessive lumbar lean at the top"
-              }
-            },
-            "bottom": {
-              "perfect": {
-                "ar": "انحناء مقبول في القاع مع تحكم",
-                "en": "Acceptable flexion at bottom with control"
-              },
-              "warning": {
-                "ar": "قلل الانحناء القطني الزائد",
-                "en": "Reduce excessive lumbar flexion"
-              }
-            }
-          }
         }
       ],
       "positionChecks": [
@@ -516,42 +416,42 @@
           "messageId": "8d0a5647-70a4-456c-b274-ef3772e98c10",
           "target": "joint_state",
           "context": "perfect",
-          "jointCode": "spine",
+          "jointCode": "left_hip",
           "sortOrder": 17
         },
         {
           "messageId": "0048630b-ec6f-468f-842d-2da7ac1d9586",
           "target": "joint_state",
           "context": "warning",
-          "jointCode": "spine",
+          "jointCode": "left_hip",
           "sortOrder": 18
         },
         {
           "messageId": "e6fb74e3-2e6e-48c6-81f7-9a1317069692",
           "target": "joint_state_phase",
           "context": "top:perfect",
-          "jointCode": "spine",
+          "jointCode": "left_hip",
           "sortOrder": 19
         },
         {
           "messageId": "b5ba4556-15b8-4774-a86e-cabe45450c8b",
           "target": "joint_state_phase",
           "context": "top:warning",
-          "jointCode": "spine",
+          "jointCode": "left_hip",
           "sortOrder": 20
         },
         {
           "messageId": "1dc3e751-8532-4a01-8459-1a4fc601f5c5",
           "target": "joint_state_phase",
           "context": "bottom:perfect",
-          "jointCode": "spine",
+          "jointCode": "left_hip",
           "sortOrder": 21
         },
         {
           "messageId": "6e7e0474-0fdb-4dfb-b2b5-5c16e1ce4190",
           "target": "joint_state_phase",
           "context": "bottom:warning",
-          "jointCode": "spine",
+          "jointCode": "left_hip",
           "sortOrder": 22
         },
         {
@@ -583,12 +483,12 @@
     }
   ],
   "description": {
-    "ar": "تمرين مكتبة: سكوات مقسم.",
-    "en": "Library exercise: Split squat."
+    "ar": "السكوات المقسم يطوّر قوة رجل أمامية مع ثبات الجذع والحوض، ويُستخدم كثيراً كبديل أقل تأثيراً على الركبة من الاندفاع الديناميكي عند ضبط الخطوة والعمق.",
+    "en": "The split squat builds single-leg strength with trunk and pelvic control, and is often used as a lower-impact alternative to dynamic lunging when step length and depth are managed well."
   },
   "instructions": {
-    "ar": "حافظ على عمود فقري محايد وتنفس بثبات وتوقف عند أي ألم حاد.",
-    "en": "Maintain neutral spine, steady breathing, and stop if sharp pain appears."
+    "ar": "1. خطوة أمامية ثابتة بحيث تبقى الركبة الأمامية فوق الكعب قدر الإمكان.\n2. انزل بخط مستقيم دون أن يتحرك الجذع للأمام بشكل مفرط.\n3. ادفع من منتصف القدم للصعود مع الحفاظ على الحياد في الحوض.\n4. أكمل العدد ثم بدّل الرجل الأمامية في المجموعة التالية إن لزم.\n5. لا تدع الركبة الأمامية تنهار للداخل.\n6. توقف عند ألم حاد في الركبة.",
+    "en": "1. Set a stable forward stance with the front knee tracking over the ankle.\n2. Lower in a straight line without pushing the torso far forward.\n3. Drive up through the mid-foot while keeping the pelvis neutral.\n4. Finish the reps, then switch the front leg on the next set if needed.\n5. Do not let the front knee collapse inward.\n6. Stop if you feel sharp knee pain."
   },
   "supportsWeight": true,
   "reportMetrics": {
@@ -792,106 +692,6 @@
                 "down": {
                   "ar": "لا تفرط في المدى إن الركبة تتعب",
                   "en": "Ease range if the knee tires"
-                }
-              }
-            }
-          },
-          {
-            "role": "secondary",
-            "joint": "spine",
-            "range": {
-              "pad": {
-                "max": 35,
-                "min": 0
-              },
-              "danger": {
-                "max": 85,
-                "min": 42
-              },
-              "normal": {
-                "max": 26,
-                "min": 0
-              },
-              "perfect": {
-                "max": 18,
-                "min": 0
-              },
-              "warning": {
-                "max": 45,
-                "min": 28
-              }
-            },
-            "startPose": {
-              "max": 18,
-              "min": 0
-            },
-            "phaseRanges": {
-              "up": {
-                "normal": {
-                  "max": 24,
-                  "min": 0
-                },
-                "perfect": {
-                  "max": 18,
-                  "min": 0
-                }
-              },
-              "top": {
-                "perfect": {
-                  "max": 12,
-                  "min": 0
-                }
-              },
-              "down": {
-                "normal": {
-                  "max": 24,
-                  "min": 0
-                },
-                "perfect": {
-                  "max": 18,
-                  "min": 0
-                }
-              },
-              "bottom": {
-                "normal": {
-                  "max": 35,
-                  "min": 5
-                },
-                "perfect": {
-                  "max": 28,
-                  "min": 8
-                }
-              }
-            },
-            "stateMessages": {
-              "perfect": {
-                "ar": "جذع ثابت ومرفوع",
-                "en": "Torso stable and tall"
-              },
-              "warning": {
-                "ar": "لا تنهَر للأمام أثناء الاندفاع",
-                "en": "Avoid collapsing forward in the lunge"
-              }
-            },
-            "phaseStateMessages": {
-              "top": {
-                "perfect": {
-                  "ar": "ظهر محايد في الوقفة",
-                  "en": "Neutral spine at the top"
-                },
-                "warning": {
-                  "ar": "لا تميل القطن للأمام في الأعلى",
-                  "en": "Avoid excessive lumbar lean at the top"
-                }
-              },
-              "bottom": {
-                "perfect": {
-                  "ar": "انحناء مقبول في القاع مع تحكم",
-                  "en": "Acceptable flexion at bottom with control"
-                },
-                "warning": {
-                  "ar": "قلل الانحناء القطني الزائد",
-                  "en": "Reduce excessive lumbar flexion"
                 }
               }
             }

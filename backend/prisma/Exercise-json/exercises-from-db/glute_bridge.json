@@ -66,18 +66,18 @@
           "stateMessages": {
             "pad": {
               "up": {
-                "ar": "مقبول، لكن يمكنك التحسن",
-                "en": "Acceptable, but you can improve"
+                "ar": "الارتفاع مقبول — فكّر في ضغط أقوى من المؤخرة في القمة.",
+                "en": "Height is acceptable — try a stronger glute squeeze at the top."
               }
             },
             "normal": {
               "up": {
-                "ar": "جيد، حاول رفع الحوض أكثر",
-                "en": "Good, try lifting hips higher"
+                "ar": "جيد، حاول رفع الحوض أكثر مع الحفاظ على الركبتين فوق الكعبين.",
+                "en": "Good, try lifting the hips higher while keeping knees over ankles."
               },
               "down": {
-                "ar": "جيد، حاول النزول للأسفل",
-                "en": "Good, try lowering more"
+                "ar": "جيد، انزل ببطء أكثر دون فقدان التماسك.",
+                "en": "Good, lower more slowly without losing control."
               }
             },
             "perfect": {
@@ -92,8 +92,8 @@
             },
             "warning": {
               "up": {
-                "ar": "ارفع حوضك أعلى",
-                "en": "Lift hips higher"
+                "ar": "ارفع الحوض أكثر دون فرط في انحناء أسفل الظهر.",
+                "en": "Lift the hips higher without excessive lumbar arching."
               }
             }
           },
@@ -136,20 +136,36 @@
           },
           "stateMessages": {
             "pad": {
-              "ar": "مقبول، لكن يمكنك التحسن",
-              "en": "Acceptable, but you can improve"
+              "up": {
+                "ar": "الارتفاع مقبول — فكّر في ضغط أقوى من المؤخرة في القمة.",
+                "en": "Height is acceptable — try a stronger glute squeeze at the top."
+              }
             },
             "normal": {
-              "ar": "جيد، حاول رفع الحوض أكثر",
-              "en": "Good, try lifting hips higher"
+              "up": {
+                "ar": "جيد، حاول رفع الحوض أكثر مع الحفاظ على الركبتين فوق الكعبين.",
+                "en": "Good, try lifting the hips higher while keeping knees over ankles."
+              },
+              "down": {
+                "ar": "جيد، انزل ببطء أكثر دون فقدان التماسك.",
+                "en": "Good, lower more slowly without losing control."
+              }
             },
             "perfect": {
-              "ar": "ممتاز! جسر مثالي",
-              "en": "Perfect! Great bridge"
+              "up": {
+                "ar": "ممتاز! جسر مثالي",
+                "en": "Perfect! Great bridge"
+              },
+              "down": {
+                "ar": "ممتاز! عودة مثالية",
+                "en": "Perfect! Great return"
+              }
             },
             "warning": {
-              "ar": "ارفع الحوض",
-              "en": "Raise hips"
+              "up": {
+                "ar": "ارفع الحوض أكثر دون فرط في انحناء أسفل الظهر.",
+                "en": "Lift the hips higher without excessive lumbar arching."
+              }
             }
           },
           "pairedWith": "left_hip",
@@ -189,10 +205,15 @@
             "max": 110,
             "min": 80
           },
+          "pairedWith": "right_knee",
           "stateMessages": {
             "perfect": {
-              "ar": "ممتاز - زاوية الركبة مثالية",
-              "en": "Great - knee angle is perfect"
+              "ar": "ممتاز — زاوية الركبة ثابتة دون انهيار للداخل.",
+              "en": "Great — knee angle stays steady without collapsing inward."
+            },
+            "warning": {
+              "ar": "حافظ على الركبتين محاذيتين للقدمين دون دفعهما للأمام.",
+              "en": "Keep knees stacked over the feet without shoving them forward."
             }
           },
           "range": {
@@ -207,6 +228,47 @@
             "perfect": {
               "max": 95,
               "min": 88
+            },
+            "warning": {
+              "max": 105,
+              "min": 95
+            }
+          }
+        },
+        {
+          "joint": "right_knee",
+          "role": "secondary",
+          "startPose": {
+            "max": 110,
+            "min": 80
+          },
+          "pairedWith": "left_knee",
+          "stateMessages": {
+            "perfect": {
+              "ar": "ممتاز — زاوية الركبة ثابتة دون انهيار للداخل.",
+              "en": "Great — knee angle stays steady without collapsing inward."
+            },
+            "warning": {
+              "ar": "حافظ على الركبتين محاذيتين للقدمين دون دفعهما للأمام.",
+              "en": "Keep knees stacked over the feet without shoving them forward."
+            }
+          },
+          "range": {
+            "pad": {
+              "max": 110,
+              "min": 80
+            },
+            "normal": {
+              "max": 100,
+              "min": 85
+            },
+            "perfect": {
+              "max": 95,
+              "min": 88
+            },
+            "warning": {
+              "max": 105,
+              "min": 95
             }
           }
         }
@@ -386,12 +448,12 @@
     }
   ],
   "description": {
-    "ar": "تمرين لتقوية عضلات المؤخرة وأسفل الظهر",
-    "en": "Exercise to strengthen glutes and lower back"
+    "ar": "جسر الحوض يفعّل المؤخرة والهمسترنج مع حماية أسفل الظهر عندما يُحافظ على الجذع منظماً. الهدف هو خط مستقيم من الكتفين إلى الركبتين في القمة دون دفع الركبتين للأمام أو فرط قطني مفرط.",
+    "en": "The glute bridge targets the glutes and hamstrings while the trunk stays organized to protect the low back. The goal is a straight line from shoulders to knees at the top without shoving the knees forward or overarching aggressively."
   },
   "instructions": {
-    "ar": "استلقِ على ظهرك مع ثني الركبتين، ثم ارفع حوضك للأعلى حتى يصبح جسمك مستقيماً من الكتفين للركبتين",
-    "en": "Lie on back with knees bent, then lift hips until body is straight from shoulders to knees"
+    "ar": "1. استلق على ظهرك، ثنِ الركبتين، وضع القدمين تحت الركبتين تقريباً.\n2. ازفر وادفع من العقبين لرفع الحوض حتى يتشكل جسر بين الكتفين والركبتين.\n3. اضغط المؤخرة في الأعلى دون فرط في أسفل الظهر.\n4. انزل بتحكم وكرر بإيقاع هادئ.\n5. لا تدفع الركبتين للأمام أو ترفع الكعبين عن الأرض.",
+    "en": "1. Lie on your back, bend the knees, and set the feet under the knees roughly.\n2. Exhale and drive through the heels to lift the hips into a bridge from shoulders to knees.\n3. Squeeze the glutes at the top without aggressive lumbar arching.\n4. Lower with control and repeat at a steady tempo.\n5. Do not shove the knees forward or let the heels lift off the floor."
   },
   "reportMetrics": {
     "primary": [
@@ -482,18 +544,18 @@
             "stateMessages": {
               "pad": {
                 "up": {
-                  "ar": "مقبول، لكن يمكنك التحسن",
-                  "en": "Acceptable, but you can improve"
+                  "ar": "الارتفاع مقبول — فكّر في ضغط أقوى من المؤخرة في القمة.",
+                  "en": "Height is acceptable — try a stronger glute squeeze at the top."
                 }
               },
               "normal": {
                 "up": {
-                  "ar": "جيد، حاول رفع الحوض أكثر",
-                  "en": "Good, try lifting hips higher"
+                  "ar": "جيد، حاول رفع الحوض أكثر مع الحفاظ على الركبتين فوق الكعبين.",
+                  "en": "Good, try lifting the hips higher while keeping knees over ankles."
                 },
                 "down": {
-                  "ar": "جيد، حاول النزول للأسفل",
-                  "en": "Good, try lowering more"
+                  "ar": "جيد، انزل ببطء أكثر دون فقدان التماسك.",
+                  "en": "Good, lower more slowly without losing control."
                 }
               },
               "perfect": {
@@ -508,8 +570,8 @@
               },
               "warning": {
                 "up": {
-                  "ar": "ارفع حوضك أعلى",
-                  "en": "Lift hips higher"
+                  "ar": "ارفع الحوض أكثر دون فرط في انحناء أسفل الظهر.",
+                  "en": "Lift the hips higher without excessive lumbar arching."
                 }
               }
             }
@@ -552,20 +614,36 @@
             "pairedWith": "left_hip",
             "stateMessages": {
               "pad": {
-                "ar": "مقبول، لكن يمكنك التحسن",
-                "en": "Acceptable, but you can improve"
+                "up": {
+                  "ar": "الارتفاع مقبول — فكّر في ضغط أقوى من المؤخرة في القمة.",
+                  "en": "Height is acceptable — try a stronger glute squeeze at the top."
+                }
               },
               "normal": {
-                "ar": "جيد، حاول رفع الحوض أكثر",
-                "en": "Good, try lifting hips higher"
+                "up": {
+                  "ar": "جيد، حاول رفع الحوض أكثر مع الحفاظ على الركبتين فوق الكعبين.",
+                  "en": "Good, try lifting the hips higher while keeping knees over ankles."
+                },
+                "down": {
+                  "ar": "جيد، انزل ببطء أكثر دون فقدان التماسك.",
+                  "en": "Good, lower more slowly without losing control."
+                }
               },
               "perfect": {
-                "ar": "ممتاز! جسر مثالي",
-                "en": "Perfect! Great bridge"
+                "up": {
+                  "ar": "ممتاز! جسر مثالي",
+                  "en": "Perfect! Great bridge"
+                },
+                "down": {
+                  "ar": "ممتاز! عودة مثالية",
+                  "en": "Perfect! Great return"
+                }
               },
               "warning": {
-                "ar": "ارفع الحوض",
-                "en": "Raise hips"
+                "up": {
+                  "ar": "ارفع الحوض أكثر دون فرط في انحناء أسفل الظهر.",
+                  "en": "Lift the hips higher without excessive lumbar arching."
+                }
               }
             }
           },
@@ -584,16 +662,62 @@
               "perfect": {
                 "max": 95,
                 "min": 88
+              },
+              "warning": {
+                "max": 105,
+                "min": 95
               }
             },
             "startPose": {
               "max": 110,
               "min": 80
             },
+            "pairedWith": "right_knee",
             "stateMessages": {
               "perfect": {
-                "ar": "ممتاز - زاوية الركبة مثالية",
-                "en": "Great - knee angle is perfect"
+                "ar": "ممتاز — زاوية الركبة ثابتة دون انهيار للداخل.",
+                "en": "Great — knee angle stays steady without collapsing inward."
+              },
+              "warning": {
+                "ar": "حافظ على الركبتين محاذيتين للقدمين دون دفعهما للأمام.",
+                "en": "Keep knees stacked over the feet without shoving them forward."
+              }
+            }
+          },
+          {
+            "role": "secondary",
+            "joint": "right_knee",
+            "range": {
+              "pad": {
+                "max": 110,
+                "min": 80
+              },
+              "normal": {
+                "max": 100,
+                "min": 85
+              },
+              "perfect": {
+                "max": 95,
+                "min": 88
+              },
+              "warning": {
+                "max": 105,
+                "min": 95
+              }
+            },
+            "startPose": {
+              "max": 110,
+              "min": 80
+            },
+            "pairedWith": "left_knee",
+            "stateMessages": {
+              "perfect": {
+                "ar": "ممتاز — زاوية الركبة ثابتة دون انهيار للداخل.",
+                "en": "Great — knee angle stays steady without collapsing inward."
+              },
+              "warning": {
+                "ar": "حافظ على الركبتين محاذيتين للقدمين دون دفعهما للأمام.",
+                "en": "Keep knees stacked over the feet without shoving them forward."
               }
             }
           }

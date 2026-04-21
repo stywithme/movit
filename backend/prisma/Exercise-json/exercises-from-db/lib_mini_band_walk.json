@@ -389,12 +389,12 @@
     }
   ],
   "description": {
-    "ar": "تمرين مكتبة: مشي جانبي بحلقة.",
-    "en": "Library exercise: Mini-band lateral walk."
+    "ar": "مشي جانبي بحلقة صغيرة فوق الركبتين يقوّي الألوية الوسطى ويحسّن ثبات الركبة أثناء الحركات الجانبية.",
+    "en": "A mini-band lateral walk above the knees strengthens the gluteus medius and improves knee tracking during side-to-side movements."
   },
   "instructions": {
-    "ar": "حافظ على عمود فقري محايد وتنفس بثبات وتوقف عند أي ألم حاد.",
-    "en": "Maintain neutral spine, steady breathing, and stop if sharp pain appears."
+    "ar": "1. ضع الحلقة فوق الركبتين قليلاً وقف بقرفصاء خفيفة قصيرة.\n2. خطوة جانبية بقدم واحدة مع إبقاء القدم الأخرى ثابتة ثم تابع بالقدم الثانية دون فك شد الحلقة.\n3. حافظ على صدر مرتفع ولا تدع الركبتين ينهاران للداخل.\n4. امشِ مسافة محددة ثم عد بالاتجاه المعاكس.\n5. كرر 2–3 جولات أو حسب البرنامج.\n6. توقف عند ألم حاد في الركبة أو الورك.",
+    "en": "1. Place the band just above the knees and stand in a short athletic quarter-squat.\n2. Step sideways with one foot, then follow with the other while keeping tension on the band.\n3. Keep the chest tall and prevent the knees from collapsing inward.\n4. Walk a set distance, then return the other direction.\n5. Repeat for 2–3 laps or as programmed.\n6. Stop if you feel sharp knee or hip pain."
   },
   "reportMetrics": {
     "primary": [

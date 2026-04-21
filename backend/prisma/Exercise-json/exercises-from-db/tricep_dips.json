@@ -43,15 +43,15 @@
         "ar": "زاوية جانبية",
         "en": "Side View"
       },
-      "posePosition": "standing_side",
+      "posePosition": "sitting_side",
       "expectedPostures": [
-        "standing"
+        "sitting"
       ],
       "expectedDirections": [
         "side"
       ],
       "expectedRegions": [
-        "full_body"
+        "upper_body"
       ],
       "trackedJoints": [
         {
@@ -64,8 +64,8 @@
           "stateMessages": {
             "pad": {
               "down": {
-                "ar": "مقبول، لكن يمكنك التحسن",
-                "en": "Acceptable, but you can improve"
+                "ar": "العمق مقبول — زد التحكم قليلاً قبل أن تزيد النطاق.",
+                "en": "Depth is acceptable — build a bit more control before adding range."
               }
             },
             "danger": {
@@ -149,8 +149,8 @@
           "stateMessages": {
             "pad": {
               "down": {
-                "ar": "مقبول، لكن يمكنك التحسن",
-                "en": "Acceptable, but you can improve"
+                "ar": "العمق مقبول — زد التحكم قليلاً قبل أن تزيد النطاق.",
+                "en": "Depth is acceptable — build a bit more control before adding range."
               }
             },
             "danger": {
@@ -574,12 +574,12 @@
     }
   ],
   "description": {
-    "ar": "تمرين لتقوية عضلة الترايسبس الخلفية للذراع باستخدام كرسي أو مقعد",
-    "en": "Exercise to strengthen triceps using a chair or bench"
+    "ar": "الغطس خلف الجسم (bench dip) يحمّل الترايسبس والكتف الأمامي مع ثبات الجذع. المفتاح هو ثني مريح في المرفقين مع عدم دفع الكتفين للأمام أو النزول أعمق مما تتحكم به.",
+    "en": "Bench dips load the triceps and anterior shoulders while the trunk stays organized. The key is a comfortable elbow bend without driving the shoulders forward or sinking deeper than you can control."
   },
   "instructions": {
-    "ar": "اجلس على حافة كرسي، ضع يديك بجانب جسمك، ثم انزل بجسمك للأسفل واصعد بالدفع",
-    "en": "Sit on edge of chair, place hands beside body, lower yourself down and push back up"
+    "ar": "1. اجلس على حافة مقعد مستقر وضع راحتي اليد على الحافة بجانب الوركين.\n2. مد الساقين أمامك أو ثنِ الركبتين قليلاً حسب مستواك.\n3. انزل بخط مستقيم حتى زاوية مريحة في المرفقين دون تكور الكتفين للأمام.\n4. ادفع للأعلى بقوة من راحتي اليد مع بقاء المعصمين محايدين.\n5. لا تدع الأكتاف تنزلق للأمام أو تفقد انتظام الجذع.",
+    "en": "1. Sit on a stable bench edge and place the hands on the edge beside the hips.\n2. Extend the legs forward or keep a slight knee bend depending on your level.\n3. Lower in a straight line to a comfortable elbow angle without rolling the shoulders forward.\n4. Press up firmly through the hands while keeping the wrists neutral.\n5. Do not let the shoulders drift forward or lose trunk control."
   },
   "reportMetrics": {
     "primary": [
@@ -678,8 +678,8 @@
             "stateMessages": {
               "pad": {
                 "down": {
-                  "ar": "مقبول، لكن يمكنك التحسن",
-                  "en": "Acceptable, but you can improve"
+                  "ar": "العمق مقبول — زد التحكم قليلاً قبل أن تزيد النطاق.",
+                  "en": "Depth is acceptable — build a bit more control before adding range."
                 }
               },
               "danger": {
@@ -763,8 +763,8 @@
             "stateMessages": {
               "pad": {
                 "down": {
-                  "ar": "مقبول، لكن يمكنك التحسن",
-                  "en": "Acceptable, but you can improve"
+                  "ar": "العمق مقبول — زد التحكم قليلاً قبل أن تزيد النطاق.",
+                  "en": "Depth is acceptable — build a bit more control before adding range."
                 }
               },
               "danger": {

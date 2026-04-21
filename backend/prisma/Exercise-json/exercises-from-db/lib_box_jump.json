@@ -448,12 +448,12 @@
     }
   ],
   "description": {
-    "ar": "تمرين مكتبة: قفز صندوق منخفض.",
-    "en": "Library exercise: Box jump (low)."
+    "ar": "قفز الصندوق المنخفض يطوّر القدرة الانفجارية مع تقليل مخاطر الهبوط مقارنة بالقفز للأرض، بشرط اختيار ارتفاع آمن وهبوط هادئ فوق الصندوق.",
+    "en": "A low box jump builds explosive power with softer landing demands than jumping to flat ground, as long as the height is conservative and landings are controlled on top of the box."
   },
   "instructions": {
-    "ar": "حافظ على عمود فقري محايد وتنفس بثبات وتوقف عند أي ألم حاد.",
-    "en": "Maintain neutral spine, steady breathing, and stop if sharp pain appears."
+    "ar": "1. قف على مسافة مناسبة أمام صندوق ثابت ومنخفض.\n2. اركع قليلاً ثم اندفع للأعلى بذراعين يتأرجحان للأعلى.\n3. اهبط برفق على الصندوق بخطوط الركبتين محاذية للأصابع.\n4. وقف كاملاً على الصندوق ثم انزل خطوة بخطوة أو اقفز للخلف بهدوء حسب مستواك.\n5. لا تقفز إلى ارتفاع لا تستطيع هبوطه بتحكم.\n6. توقف عند أي ألم في الركبة.",
+    "en": "1. Stand an appropriate distance from a stable, low box.\n2. Dip slightly, then jump up with an arm swing.\n3. Land softly on the box with knees tracking over the toes.\n4. Stand fully on the box, then step or hop down calmly based on your level.\n5. Do not jump to a height you cannot land with control.\n6. Stop if you feel knee pain."
   },
   "reportMetrics": {
     "primary": [

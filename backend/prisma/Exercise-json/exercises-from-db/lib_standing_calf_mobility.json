@@ -197,12 +197,12 @@
     }
   ],
   "description": {
-    "ar": "تمرين مكتبة: تحريك سمانة واقف.",
-    "en": "Library exercise: Standing calf mobility."
+    "ar": "تحريك السمانة من وضع الوقوف يحسّن ثني ومد الكاحل والتوازن على قدم واحدة، وهو مفيد كإحماء قبل الجري أو بعد الجلوس الطويل.",
+    "en": "Standing calf mobility work improves ankle plantarflexion and dorsiflexion plus single-leg balance, useful before running or after prolonged sitting."
   },
   "instructions": {
-    "ar": "حافظ على عمود فقري محايد وتنفس بثبات وتوقف عند أي ألم حاد.",
-    "en": "Maintain neutral spine, steady breathing, and stop if sharp pain appears."
+    "ar": "1. قف بجانب حائط أو كرسي للتوازن إن لزم.\n2. ارفع الكعبين ثم انزل بهما ببطء لتحريك الكاحل.\n3. جرّب وضع القدم على منصة صغيرة لزيادة المدى بأمان.\n4. حافظ على الجذع منتصباً والركبة خفيفة الانثناء.\n5. لا تفرط في المدى إذا شعرت بضغط حاد على وتر أخيل.\n6. بدّل القدم أو كرر على الجانبين حسب البرنامج.",
+    "en": "1. Stand near a wall or chair for balance if needed.\n2. Lift both heels, then lower slowly to move the ankles through range.\n3. Optionally use a small step to increase range safely.\n4. Stay tall with a soft bend in the knees.\n5. Do not force range if the Achilles feels sharp pressure.\n6. Switch feet or repeat both sides as programmed."
   },
   "reportMetrics": {
     "primary": [

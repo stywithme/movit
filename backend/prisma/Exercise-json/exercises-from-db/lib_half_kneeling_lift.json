@@ -51,86 +51,73 @@
       ],
       "trackedJoints": [
         {
-          "joint": "spine",
+          "joint": "left_hip",
           "role": "primary",
           "startPose": {
-            "max": 45,
-            "min": 0
+            "max": 180,
+            "min": 120
           },
+          "pairedWith": "right_hip",
           "stateMessages": {
             "pad": {
-              "up": {
-                "ar": "مقبول — ابنِ المدى تدريجياً",
-                "en": "Acceptable — build ROM gradually"
-              }
-            },
-            "danger": {
-              "up": {
-                "ar": "توقف — ألم حاد",
-                "en": "Stop — sharp pain"
+              "down": {
+                "ar": "مقبول — ثبّت الحوض أكثر",
+                "en": "Acceptable — anchor the hips more"
               }
             },
             "normal": {
               "up": {
-                "ar": "جيد، زد اللف قليلاً إن كان مريحاً",
-                "en": "Good, add a bit more rotation if comfortable"
+                "ar": "جيد — أكمل الوقفة",
+                "en": "Good — finish the stand"
               },
               "down": {
-                "ar": "جيد، ارجع للمحايد ببطء",
-                "en": "Good, return to neutral slowly"
+                "ar": "جيد — دوران أنظف",
+                "en": "Good — cleaner rotation"
               }
             },
             "perfect": {
               "up": {
-                "ar": "ممتاز! دوران صدري واضح",
-                "en": "Perfect! Clear thoracic rotation"
+                "ar": "ممتاز! حوض ثابت في الأعلى",
+                "en": "Perfect! Stable hips at the top"
               },
               "down": {
-                "ar": "ممتاز! بداية محايدة منظمة",
-                "en": "Perfect! Organized neutral start"
+                "ar": "ممتاز! دوران من الصدر والورك",
+                "en": "Perfect! Rotation from thorax and hips"
               }
             },
             "warning": {
-              "up": {
-                "ar": "لا تلتف من أسفل الظهر فقط",
-                "en": "Do not twist only from the low back"
+              "down": {
+                "ar": "لا تلتف الحوض كاملاً مع الكتف",
+                "en": "Do not spin the whole pelvis with the shoulder"
               }
             }
           },
           "upRange": {
-            "pad": {
-              "max": 80,
-              "min": 22
-            },
-            "danger": {
-              "max": 130,
-              "min": 100
-            },
             "normal": {
-              "max": 70,
-              "min": 28
+              "max": 180,
+              "min": 158
             },
             "perfect": {
-              "max": 60,
-              "min": 35
-            },
-            "warning": {
-              "max": 100,
-              "min": 80
+              "max": 180,
+              "min": 168
             }
           },
           "downRange": {
             "pad": {
-              "max": 20,
-              "min": 0
+              "max": 135,
+              "min": 85
             },
             "normal": {
-              "max": 18,
-              "min": 0
+              "max": 125,
+              "min": 92
             },
             "perfect": {
-              "max": 14,
-              "min": 0
+              "max": 115,
+              "min": 100
+            },
+            "warning": {
+              "max": 92,
+              "min": 78
             }
           }
         },
@@ -230,7 +217,7 @@
           "messageId": "2595fcd2-8bd1-4198-b273-65c9d6169ed2",
           "target": "joint_state",
           "context": "perfect",
-          "jointCode": "spine",
+          "jointCode": "left_hip",
           "zone": "up",
           "sortOrder": 2
         },
@@ -238,7 +225,7 @@
           "messageId": "cb388046-28a3-4ffb-bddc-9384bb986ead",
           "target": "joint_state",
           "context": "perfect",
-          "jointCode": "spine",
+          "jointCode": "left_hip",
           "zone": "down",
           "sortOrder": 3
         },
@@ -246,7 +233,7 @@
           "messageId": "ead29659-a748-4a8d-a1ca-cf5d4e5d1dad",
           "target": "joint_state",
           "context": "normal",
-          "jointCode": "spine",
+          "jointCode": "left_hip",
           "zone": "up",
           "sortOrder": 4
         },
@@ -254,7 +241,7 @@
           "messageId": "40be4c8e-700f-41f9-a1fe-0c81ea634ca3",
           "target": "joint_state",
           "context": "normal",
-          "jointCode": "spine",
+          "jointCode": "left_hip",
           "zone": "down",
           "sortOrder": 5
         },
@@ -262,7 +249,7 @@
           "messageId": "b1d52594-acb0-4ea9-88f6-8ec6388c4082",
           "target": "joint_state",
           "context": "pad",
-          "jointCode": "spine",
+          "jointCode": "left_hip",
           "zone": "up",
           "sortOrder": 6
         },
@@ -270,7 +257,7 @@
           "messageId": "edeaaa56-1d96-4990-a2cf-048ea8b965f6",
           "target": "joint_state",
           "context": "warning",
-          "jointCode": "spine",
+          "jointCode": "left_hip",
           "zone": "up",
           "sortOrder": 7
         },
@@ -278,7 +265,7 @@
           "messageId": "d3d8b4de-89ba-4232-9aad-0534d20c4dd5",
           "target": "joint_state",
           "context": "danger",
-          "jointCode": "spine",
+          "jointCode": "left_hip",
           "zone": "up",
           "sortOrder": 8
         },
@@ -325,12 +312,12 @@
     }
   ],
   "description": {
-    "ar": "تمرين مكتبة: قطع نصف ركبة.",
-    "en": "Library exercise: Half-kneeling chop (light)."
+    "ar": "قطع قطري خفيف من وضع نصف الركعة يقوّي الجذع المائل ويربط الحركة بين الحوض والكتفين دون انهيار في أسفل الظهر.",
+    "en": "A light half-kneeling diagonal chop builds rotational core control and links hip and shoulder motion without low-back collapse."
   },
   "instructions": {
-    "ar": "حافظ على عمود فقري محايد وتنفس بثبات وتوقف عند أي ألم حاد.",
-    "en": "Maintain neutral spine, steady breathing, and stop if sharp pain appears."
+    "ar": "1. اركع بركبة واحدة على الأرض والثانية مثنية أمامك بزاوية تقريباً 90°.\n2. امسك المقاومة (حبل أو دمبل خفيف) بعيداً عن الركبة الأمامية.\n3. اسحب المقاومة قطرياً نحو الورك المعاكس مع ثبات الحوض.\n4. أعد الحركة ببطء دون دوران مفاجئ في أسفل الظهر.\n5. نفّذ 8–12 تكراراً ثم بدّل الركبتين والاتجاه.\n6. توقف عند ألم حاد في الركبة أو أسفل الظهر.",
+    "en": "1. Kneel on one knee with the other foot forward near a 90° knee angle.\n2. Hold light resistance away from the front knee.\n3. Pull diagonally toward the opposite hip while keeping the pelvis stable.\n4. Return slowly without twisting sharply through the low back.\n5. Complete 8–12 reps, then switch stance and direction.\n6. Stop if you feel sharp knee or low-back pain."
   },
   "supportsWeight": true,
   "reportMetrics": {
@@ -378,92 +365,93 @@
         "description": null,
         "trackedJointsConfig": [
           {
+            "joint": "left_hip",
             "role": "primary",
-            "joint": "spine",
-            "upRange": {
+            "startPose": {
+              "max": 180,
+              "min": 120
+            },
+            "pairedWith": "right_hip",
+            "stateMessages": {
               "pad": {
-                "max": 80,
-                "min": 22
-              },
-              "danger": {
-                "max": 130,
-                "min": 100
+                "down": {
+                  "ar": "مقبول — ثبّت الحوض أكثر",
+                  "en": "Acceptable — anchor the hips more"
+                }
               },
               "normal": {
-                "max": 70,
-                "min": 28
+                "up": {
+                  "ar": "جيد — أكمل الوقفة",
+                  "en": "Good — finish the stand"
+                },
+                "down": {
+                  "ar": "جيد — دوران أنظف",
+                  "en": "Good — cleaner rotation"
+                }
               },
               "perfect": {
-                "max": 60,
-                "min": 35
+                "up": {
+                  "ar": "ممتاز! حوض ثابت في الأعلى",
+                  "en": "Perfect! Stable hips at the top"
+                },
+                "down": {
+                  "ar": "ممتاز! دوران من الصدر والورك",
+                  "en": "Perfect! Rotation from thorax and hips"
+                }
               },
               "warning": {
-                "max": 100,
-                "min": 80
+                "down": {
+                  "ar": "لا تلتف الحوض كاملاً مع الكتف",
+                  "en": "Do not spin the whole pelvis with the shoulder"
+                }
+              }
+            },
+            "upRange": {
+              "normal": {
+                "max": 180,
+                "min": 158
+              },
+              "perfect": {
+                "max": 180,
+                "min": 168
               }
             },
             "downRange": {
               "pad": {
-                "max": 20,
-                "min": 0
+                "max": 135,
+                "min": 85
               },
               "normal": {
-                "max": 18,
-                "min": 0
+                "max": 125,
+                "min": 92
               },
               "perfect": {
-                "max": 14,
-                "min": 0
-              }
-            },
-            "startPose": {
-              "max": 45,
-              "min": 0
-            },
-            "stateMessages": {
-              "pad": {
-                "up": {
-                  "ar": "مقبول — ابنِ المدى تدريجياً",
-                  "en": "Acceptable — build ROM gradually"
-                }
-              },
-              "danger": {
-                "up": {
-                  "ar": "توقف — ألم حاد",
-                  "en": "Stop — sharp pain"
-                }
-              },
-              "normal": {
-                "up": {
-                  "ar": "جيد، زد اللف قليلاً إن كان مريحاً",
-                  "en": "Good, add a bit more rotation if comfortable"
-                },
-                "down": {
-                  "ar": "جيد، ارجع للمحايد ببطء",
-                  "en": "Good, return to neutral slowly"
-                }
-              },
-              "perfect": {
-                "up": {
-                  "ar": "ممتاز! دوران صدري واضح",
-                  "en": "Perfect! Clear thoracic rotation"
-                },
-                "down": {
-                  "ar": "ممتاز! بداية محايدة منظمة",
-                  "en": "Perfect! Organized neutral start"
-                }
+                "max": 115,
+                "min": 100
               },
               "warning": {
-                "up": {
-                  "ar": "لا تلتف من أسفل الظهر فقط",
-                  "en": "Do not twist only from the low back"
-                }
+                "max": 92,
+                "min": 78
               }
             }
           },
           {
-            "role": "secondary",
             "joint": "left_shoulder",
+            "role": "secondary",
+            "startPose": {
+              "max": 120,
+              "min": 40
+            },
+            "stateMessages": {
+              "perfect": {
+                "ar": "كتف يتحرك مع اللف بسلاسة",
+                "en": "Shoulder moves smoothly with the rotation"
+              },
+              "warning": {
+                "ar": "لا تشد الرقبة أو المرفق بعنف",
+                "en": "Do not yank the neck or elbow"
+              }
+            },
             "range": {
               "pad": {
                 "max": 115,
@@ -480,20 +468,6 @@
               "warning": {
                 "max": 130,
                 "min": 115
-              }
-            },
-            "startPose": {
-              "max": 120,
-              "min": 40
-            },
-            "stateMessages": {
-              "perfect": {
-                "ar": "كتف يتحرك مع اللف بسلاسة",
-                "en": "Shoulder moves smoothly with the rotation"
-              },
-              "warning": {
-                "ar": "لا تشد الرقبة أو المرفق بعنف",
-                "en": "Do not yank the neck or elbow"
               }
             }
           }

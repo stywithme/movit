@@ -212,42 +212,6 @@
               "min": 60
             }
           }
-        },
-        {
-          "joint": "spine",
-          "role": "secondary",
-          "startPose": {
-            "max": 24,
-            "min": 0
-          },
-          "stateMessages": {
-            "perfect": {
-              "ar": "ظهر محايد على الحائط",
-              "en": "Back stays neutral against the wall"
-            },
-            "warning": {
-              "ar": "لا تعوض بالظهر السفلي",
-              "en": "Do not compensate through the low back"
-            }
-          },
-          "range": {
-            "pad": {
-              "max": 26,
-              "min": 0
-            },
-            "normal": {
-              "max": 20,
-              "min": 0
-            },
-            "perfect": {
-              "max": 14,
-              "min": 0
-            },
-            "warning": {
-              "max": 40,
-              "min": 26
-            }
-          }
         }
       ],
       "positionChecks": [
@@ -386,14 +350,14 @@
           "messageId": "db92cf80-29fe-42e5-b5a3-2307f461e298",
           "target": "joint_state",
           "context": "perfect",
-          "jointCode": "spine",
+          "jointCode": "left_hip",
           "sortOrder": 12
         },
         {
           "messageId": "5d058e5c-5836-452b-b88b-61e30141a2df",
           "target": "joint_state",
           "context": "warning",
-          "jointCode": "spine",
+          "jointCode": "left_hip",
           "sortOrder": 13
         },
         {
@@ -425,12 +389,12 @@
     }
   ],
   "description": {
-    "ar": "تمرين مكتبة: جلوس حائط وضغط.",
-    "en": "Library exercise: Wall sit + overhead press."
+    "ar": "جلوس حائط مع ضغط فوق الرأس يجمع تحملاً ثابتاً للرباعية مع ضغط كتف يطلب ثباتاً للجذع دون دفع من الساقين.",
+    "en": "A wall sit paired with overhead pressing combines isometric quad demand with shoulder work that requires trunk stability without leg drive."
   },
   "instructions": {
-    "ar": "حافظ على عمود فقري محايد وتنفس بثبات وتوقف عند أي ألم حاد.",
-    "en": "Maintain neutral spine, steady breathing, and stop if sharp pain appears."
+    "ar": "1. استند ظهرك للحائط وانزل حتى زاوية تقريباً 90° عند الركبتين مع ظهر ملاصق للحائط.\n2. امسك الوزن عند مستوى الكتفين أو أعلى الصدر بقبضة مريحة.\n3. اضغط للأعلى بذراعين مستقيمتين دون فقدان الاتصال بالحائط أو انهيار الركبتين للداخل.\n4. أعد الوزن ببطء دون ارتداد من الحائط.\n5. نفّذ التكرارات أو احتفظ بالجلوس حسب البرنامج.\n6. توقف عند ألم حاد في الركبة أو الكتف أو دوخة أو ضيق في التنفس.",
+    "en": "1. Lean on the wall and slide down until the knees are near 90° with the back supported.\n2. Hold the load at shoulder height or the upper chest with a comfortable grip.\n3. Press overhead to straight arms without losing wall contact or letting the knees collapse inward.\n4. Lower the weight with control without bouncing off the wall.\n5. Perform reps or hold the wall sit as programmed.\n6. Stop for sharp knee or shoulder pain, dizziness, or breathing discomfort."
   },
   "supportsWeight": true,
   "reportMetrics": {
@@ -635,42 +599,6 @@
               "warning": {
                 "ar": "لا ترتفع كثيراً أثناء الضغط",
                 "en": "Do not drift too high while pressing"
-              }
-            }
-          },
-          {
-            "role": "secondary",
-            "joint": "spine",
-            "range": {
-              "pad": {
-                "max": 26,
-                "min": 0
-              },
-              "normal": {
-                "max": 20,
-                "min": 0
-              },
-              "perfect": {
-                "max": 14,
-                "min": 0
-              },
-              "warning": {
-                "max": 40,
-                "min": 26
-              }
-            },
-            "startPose": {
-              "max": 24,
-              "min": 0
-            },
-            "stateMessages": {
-              "perfect": {
-                "ar": "ظهر محايد على الحائط",
-                "en": "Back stays neutral against the wall"
-              },
-              "warning": {
-                "ar": "لا تعوض بالظهر السفلي",
-                "en": "Do not compensate through the low back"
               }
             }
           }

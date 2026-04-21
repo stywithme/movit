@@ -1,0 +1,200 @@
+{
+  "slug": "ex018_arnold_press",
+  "status": "published",
+  "movementPattern": "PUSH_VERTICAL",
+  "loadCapability": "EXTERNAL_LOAD_REQUIRED",
+  "familyKey": "push_vertical_family",
+  "familyOrder": 118,
+  "name": {
+    "ar": "أرنولد برس",
+    "en": "Arnold press"
+  },
+  "category": {
+    "code": "shoulders",
+    "name": {
+      "ar": "تمارين الأكتاف",
+      "en": "Shoulders"
+    }
+  },
+  "countingMethod": "up_down",
+  "muscles": [
+    "front_delts",
+    "side_delts",
+    "triceps"
+  ],
+  "equipment": [
+    "dumbbell",
+    "bench"
+  ],
+  "tags": [
+    "compound",
+    "upper_body",
+    "group_2"
+  ],
+  "repCountingConfig": {
+    "reps": 10,
+    "minRepIntervalMs": 1500,
+    "maxRepIntervalMs": 3000
+  },
+  "supportsWeight": true,
+  "poseVariants": [
+    {
+      "name": {
+        "ar": "أمامي - جالس",
+        "en": "Front view seated"
+      },
+      "posePosition": "sitting_front_upper",
+      "expectedPostures": [
+        "sitting"
+      ],
+      "expectedDirections": [
+        "front"
+      ],
+      "expectedRegions": [
+        "upper_body"
+      ],
+      "trackedJoints": [
+        {
+          "joint": "left_shoulder",
+          "role": "primary",
+          "pairedWith": "right_shoulder",
+          "startPose": {
+            "min": 0,
+            "max": 20
+          },
+          "upRange": {
+            "perfect": {
+              "min": 160,
+              "max": 180
+            },
+            "normal": {
+              "min": 150,
+              "max": 160
+            },
+            "pad": {
+              "min": 130,
+              "max": 150
+            }
+          },
+          "downRange": {
+            "perfect": {
+              "min": 0,
+              "max": 20
+            },
+            "normal": {
+              "min": 20,
+              "max": 35
+            },
+            "pad": {
+              "min": 35,
+              "max": 50
+            }
+          },
+          "stateMessages": {
+            "perfect": {
+              "up": {
+                "ar": "ممتاز! دوران وضغط سلسان حتى القفل",
+                "en": "Perfect! Smooth rotation and press into lockout"
+              },
+              "down": {
+                "ar": "ممتاز! عودة منظمة أمام الجسم",
+                "en": "Perfect! Organized return in front of the body"
+              }
+            },
+            "warning": {
+              "up": {
+                "ar": "ادفع مع دوران سلس ولا تندفع بالظهر",
+                "en": "Press with smooth rotation and do not drive the rep with the back"
+              }
+            }
+          }
+        },
+        {
+          "joint": "left_elbow",
+          "role": "secondary",
+          "range": {
+            "perfect": {
+              "min": 160,
+              "max": 180
+            },
+            "normal": {
+              "min": 150,
+              "max": 180
+            },
+            "warning": {
+              "min": 60,
+              "max": 150
+            }
+          },
+          "startPose": {
+            "min": 60,
+            "max": 80
+          },
+          "stateMessages": {
+            "perfect": {
+              "ar": "المرفق يكمل التمدد جيداً في الأعلى",
+              "en": "The elbow finishes the extension well at the top"
+            }
+          }
+        }
+      ],
+      "positionChecks": [
+        {
+          "id": "arnold_press_width",
+          "type": "distance_ratio",
+          "landmarks": {
+            "primary": "right_shoulder",
+            "secondary": "left_shoulder",
+            "tertiary": "right_elbow",
+            "quaternary": "left_elbow"
+          },
+          "condition": {
+            "operator": "less_than_ratio",
+            "threshold": 1.3
+          },
+          "activePhases": [
+            "up"
+          ],
+          "errorMessage": {
+            "ar": "حافظ على مسار متزن ولا توسّع المرفقين أكثر من اللازم أثناء الدوران.",
+            "en": "Keep the path balanced and do not flare the elbows too wide during the rotation."
+          },
+          "severity": "error",
+          "cooldownMs": 2200,
+          "minErrorFrames": 4
+        }
+      ],
+      "feedbackMessages": {
+        "motivational": [
+          {
+            "ar": "أرنولد برس ممتاز",
+            "en": "Excellent Arnold press"
+          }
+        ],
+        "tips": [
+          {
+            "ar": "ابدأ بحركة الدوران من الكتف بسلاسة وليس بسرعة مفاجئة.",
+            "en": "Start the rotation smoothly from the shoulder instead of snapping fast."
+          }
+        ]
+      }
+    }
+  ],
+  "description": {
+    "ar": "أرنولد برس يجمع بين دوران الكتف والضغط العمودي في نفس التكرار، لذلك هو يحمّل الكتف الأمامي والجانبي مع تحدٍّ أكبر للتحكم. أهم نقطة فيه أن تكون حركة الدوران ناعمة ومتصلة وليست انفصالاً بين مرحلتين.",
+    "en": "The Arnold press combines shoulder rotation with a vertical press in the same rep, creating a bigger control demand on the anterior and middle delts. The key is making the rotation smooth and connected rather than separating it into two disconnected phases."
+  },
+  "instructions": {
+    "ar": "1. اجلس وثبّت الجذع والدمبلان أمام الكتفين مع راحتي اليدين للداخل.\n2. ابدأ بالدوران للخارج وأنت تضغط الدمبلين للأعلى.\n3. أصل إلى القفل العلوي تحت تحكم كامل بدون تقوس الظهر.\n4. انزل ببطء مع إعادة الدوران للأمام حتى تعود لوضع البداية.\n5. لا تندفع بالحركة ولا تسمح للمرفقين بالخروج بعشوائية.\n6. استخدم وزناً أخف إذا فقدت نعومة المسار.",
+    "en": "1. Sit tall with the trunk braced and the dumbbells in front of the shoulders with the palms facing in.\n2. Begin rotating outward as you press the dumbbells overhead.\n3. Reach the top lockout under control without arching the back.\n4. Lower slowly while rotating back toward the front until you return to the start.\n5. Do not jerk the rep or let the elbows fly out randomly.\n6. Use a lighter load if the path loses its smoothness."
+  },
+  "reportMetrics": {
+    "primary": [
+      "FORM_SCORE"
+    ],
+    "excluded": [
+      "HOLD_DURATION"
+    ]
+  },
+  "hasPositionChecks": true
+}

@@ -557,12 +557,12 @@
     }
   ],
   "description": {
-    "ar": "تمرين مكتبة: رفعة ميتة فخذ.",
-    "en": "Library exercise: Trap bar deadlift."
+    "ar": "الرفعة الميتة بقضيب التراب (سداسي) تضع الجسم داخل الإطار وتسمح غالباً بوضعية أكثر عمودية للجذع مع قبضة محايدة وتحميل أكبر للرباعية.",
+    "en": "The trap-bar deadlift centers the lifter inside the frame, often allows a more upright torso with neutral grips, and biases knee extension compared with many conventional pulls."
   },
   "instructions": {
-    "ar": "حافظ على عمود فقري محايد وتنفس بثبات وتوقف عند أي ألم حاد.",
-    "en": "Maintain neutral spine, steady breathing, and stop if sharp pain appears."
+    "ar": "1. قف داخل الإطار مع القدمين تحت الوسط تقريباً.\n2. انحنِ للأسفل وامسك المقبضين مع ظهر محايد وكتفين فوق القضيب.\n3. شدّ الجذع، ادفع الأرض للوقوف مع إبقاء القضيب قريباً من الساقين.\n4. انزل بنفس التحكم دون تقوس مفاجئ في الظهر.\n5. نفّذ التكرارات حسب الوزن والبرنامج.\n6. توقف عند ألم حاد في أسفل الظهر أو الركبة أو الوخز في الساقين.",
+    "en": "1. Stand inside the trap bar with feet roughly centered.\n2. Hinge down, grip the handles, and set the shoulders over the bar with a neutral spine.\n3. Brace and drive the floor away while keeping the bar close to the legs.\n4. Lower with control without abrupt rounding.\n5. Perform reps according to load and program.\n6. Stop for sharp low-back or knee pain or leg tingling."
   },
   "supportsWeight": true,
   "reportMetrics": {

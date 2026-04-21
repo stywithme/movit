@@ -124,102 +124,6 @@
               "min": 22
             }
           }
-        },
-        {
-          "joint": "spine",
-          "role": "secondary",
-          "startPose": {
-            "max": 65,
-            "min": 0
-          },
-          "stateMessages": {
-            "perfect": {
-              "ar": "جذع قوي ومتماسك في التجميع",
-              "en": "Strong trunk through the compression"
-            },
-            "warning": {
-              "ar": "لا تسحب الرقبة أو تنهار في العودة",
-              "en": "Do not yank the neck or collapse on the return"
-            }
-          },
-          "range": {
-            "pad": {
-              "max": 82,
-              "min": 0
-            },
-            "danger": {
-              "max": 95,
-              "min": 80
-            },
-            "normal": {
-              "max": 78,
-              "min": 0
-            },
-            "perfect": {
-              "max": 75,
-              "min": 0
-            },
-            "warning": {
-              "max": 85,
-              "min": 60
-            }
-          },
-          "phaseRanges": {
-            "up": {
-              "normal": {
-                "max": 78,
-                "min": 38
-              },
-              "perfect": {
-                "max": 72,
-                "min": 45
-              }
-            },
-            "top": {
-              "perfect": {
-                "max": 18,
-                "min": 0
-              }
-            },
-            "down": {
-              "normal": {
-                "max": 52,
-                "min": 8
-              },
-              "perfect": {
-                "max": 45,
-                "min": 12
-              }
-            },
-            "bottom": {
-              "perfect": {
-                "max": 15,
-                "min": 0
-              }
-            }
-          },
-          "phaseStateMessages": {
-            "up": {
-              "perfect": {
-                "ar": "انقباض جذع نظيف للأعلى",
-                "en": "Clean trunk flexion at the top"
-              },
-              "warning": {
-                "ar": "لا تشد بالرقبة لتعويض البطن",
-                "en": "Do not pull with the neck to cheat the abs"
-              }
-            },
-            "bottom": {
-              "perfect": {
-                "ar": "قاع مجوف وثابت — تحكم جيد",
-                "en": "Quiet, hollow bottom — good control"
-              },
-              "warning": {
-                "ar": "لا تدع الظهر السفلي يتقوس عن الأرض",
-                "en": "Do not let the low back arch off the floor"
-              }
-            }
-          }
         }
       ],
       "positionChecks": [
@@ -329,42 +233,42 @@
           "messageId": "d4fbc631-c5f6-471a-8de5-968574c39a2f",
           "target": "joint_state",
           "context": "perfect",
-          "jointCode": "spine",
+          "jointCode": "right_hip",
           "sortOrder": 8
         },
         {
           "messageId": "d60bbd77-a074-415c-8cb7-4fae629f7f6e",
           "target": "joint_state",
           "context": "warning",
-          "jointCode": "spine",
+          "jointCode": "right_hip",
           "sortOrder": 9
         },
         {
           "messageId": "e19c3f87-1c48-4fee-be11-c1863d5e3ab6",
           "target": "joint_state_phase",
           "context": "bottom:perfect",
-          "jointCode": "spine",
+          "jointCode": "right_hip",
           "sortOrder": 10
         },
         {
           "messageId": "096ff485-1292-43cd-8e16-e96472c85d6f",
           "target": "joint_state_phase",
           "context": "bottom:warning",
-          "jointCode": "spine",
+          "jointCode": "right_hip",
           "sortOrder": 11
         },
         {
           "messageId": "7fcdfe98-6e9b-4ccc-a5e1-b445627abd10",
           "target": "joint_state_phase",
           "context": "up:perfect",
-          "jointCode": "spine",
+          "jointCode": "right_hip",
           "sortOrder": 12
         },
         {
           "messageId": "2677a8df-3304-4bca-b3ee-9ba4d24dd2e7",
           "target": "joint_state_phase",
           "context": "up:warning",
-          "jointCode": "spine",
+          "jointCode": "right_hip",
           "sortOrder": 13
         },
         {
@@ -395,12 +299,12 @@
     }
   ],
   "description": {
-    "ar": "تمرين مكتبة: قمة V.",
-    "en": "Library exercise: V-up."
+    "ar": "قمة V تجمع بين رفع الجذع والساقين لتشغيل العضلات المستقيمة ومثنيي الورك مع تحدٍ للتنسيق والتحمل.",
+    "en": "A V-up combines trunk flexion with leg lift to challenge the rectus abdominis and hip flexors with coordination and endurance demand."
   },
   "instructions": {
-    "ar": "حافظ على عمود فقري محايد وتنفس بثبات وتوقف عند أي ألم حاد.",
-    "en": "Maintain neutral spine, steady breathing, and stop if sharp pain appears."
+    "ar": "1. استلقِ على ظهرك مع الذراعين ممدودتين فوق الرأس والساقين مستقيمة.\n2. ارفع الجذع والساقين معاً نحو منتصف الجسم لتشكيل حرف V.\n3. انزل ببطء دون ارتطام عنيف بالأرض.\n4. حافظ على رقبة محايدة ولا تسحب الرأس باليدين.\n5. نفّذ 8–15 تكراراً أو حسب القدرة.\n6. توقف عند ألم حاد في أسفل الظهر أو الدوخة.",
+    "en": "1. Lie on your back with arms overhead and legs straight.\n2. Lift the torso and legs together toward the midline to form a V shape.\n3. Lower slowly without slamming to the floor.\n4. Keep the neck neutral—do not yank the head with the hands.\n5. Perform 8–15 reps or as tolerated.\n6. Stop for sharp low-back pain or dizziness."
   },
   "reportMetrics": {
     "primary": [
@@ -523,102 +427,6 @@
               }
             },
             "invertIndicator": true
-          },
-          {
-            "role": "secondary",
-            "joint": "spine",
-            "range": {
-              "pad": {
-                "max": 82,
-                "min": 0
-              },
-              "danger": {
-                "max": 95,
-                "min": 80
-              },
-              "normal": {
-                "max": 78,
-                "min": 0
-              },
-              "perfect": {
-                "max": 75,
-                "min": 0
-              },
-              "warning": {
-                "max": 85,
-                "min": 60
-              }
-            },
-            "startPose": {
-              "max": 65,
-              "min": 0
-            },
-            "phaseRanges": {
-              "up": {
-                "normal": {
-                  "max": 78,
-                  "min": 38
-                },
-                "perfect": {
-                  "max": 72,
-                  "min": 45
-                }
-              },
-              "top": {
-                "perfect": {
-                  "max": 18,
-                  "min": 0
-                }
-              },
-              "down": {
-                "normal": {
-                  "max": 52,
-                  "min": 8
-                },
-                "perfect": {
-                  "max": 45,
-                  "min": 12
-                }
-              },
-              "bottom": {
-                "perfect": {
-                  "max": 15,
-                  "min": 0
-                }
-              }
-            },
-            "stateMessages": {
-              "perfect": {
-                "ar": "جذع قوي ومتماسك في التجميع",
-                "en": "Strong trunk through the compression"
-              },
-              "warning": {
-                "ar": "لا تسحب الرقبة أو تنهار في العودة",
-                "en": "Do not yank the neck or collapse on the return"
-              }
-            },
-            "phaseStateMessages": {
-              "up": {
-                "perfect": {
-                  "ar": "انقباض جذع نظيف للأعلى",
-                  "en": "Clean trunk flexion at the top"
-                },
-                "warning": {
-                  "ar": "لا تشد بالرقبة لتعويض البطن",
-                  "en": "Do not pull with the neck to cheat the abs"
-                }
-              },
-              "bottom": {
-                "perfect": {
-                  "ar": "قاع مجوف وثابت — تحكم جيد",
-                  "en": "Quiet, hollow bottom — good control"
-                },
-                "warning": {
-                  "ar": "لا تدع الظهر السفلي يتقوس عن الأرض",
-                  "en": "Do not let the low back arch off the floor"
-                }
-              }
-            }
           }
         ]
       }

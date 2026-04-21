@@ -52,70 +52,73 @@
       ],
       "trackedJoints": [
         {
-          "joint": "spine",
+          "joint": "left_hip",
           "role": "primary",
           "startPose": {
-            "max": 70,
-            "min": 0
+            "max": 180,
+            "min": 120
           },
+          "pairedWith": "right_hip",
           "stateMessages": {
+            "pad": {
+              "down": {
+                "ar": "مقبول — مدى أقصر",
+                "en": "Acceptable — shorter hinge"
+              }
+            },
             "normal": {
               "up": {
-                "ar": "جيد، اجلس مرفوعاً قليلاً",
-                "en": "Good, sit a bit taller"
+                "ar": "جيد — ارجع للجلوس باستقامة",
+                "en": "Good — return tall"
               },
               "down": {
-                "ar": "جيد، انحنِ من الورك أكثر",
-                "en": "Good, hinge more from the hips"
+                "ar": "جيد — انحنِ من الورك",
+                "en": "Good — hinge from the hip"
               }
             },
             "perfect": {
               "up": {
-                "ar": "ممتاز! وقفة جالسة منظمة",
-                "en": "Perfect! Seated tall position"
+                "ar": "ممتاز! جذع منتصب",
+                "en": "Perfect! Upright torso"
               },
               "down": {
-                "ar": "ممتاز! انحناء ورك متحكم",
-                "en": "Perfect! Controlled hip hinge"
+                "ar": "ممتاز! مفصل ورك نظيف",
+                "en": "Perfect! Clean hip hinge"
               }
             },
             "warning": {
               "down": {
-                "ar": "لا تتجاوز نطاقك المريح",
-                "en": "Do not push past your comfortable range"
+                "ar": "لا تطوِ الجذع من الوسط فقط",
+                "en": "Do not fold only through the mid-back"
               }
             }
           },
           "upRange": {
-            "pad": {
-              "max": 30,
-              "min": 0
-            },
             "normal": {
-              "max": 24,
-              "min": 0
+              "max": 180,
+              "min": 158
             },
             "perfect": {
-              "max": 18,
-              "min": 0
+              "max": 180,
+              "min": 168
             }
           },
           "downRange": {
             "pad": {
-              "max": 80,
-              "min": 25
+              "max": 135,
+              "min": 88
             },
             "normal": {
-              "max": 70,
-              "min": 30
+              "max": 125,
+              "min": 95
             },
             "perfect": {
-              "max": 60,
-              "min": 35
+              "max": 115,
+              "min": 102
             },
             "warning": {
               "max": 95,
-              "min": 80
+              "min": 82
             }
           }
         }
@@ -179,7 +182,7 @@
           "messageId": "50bf5522-606e-4cd9-821d-ee727d976e36",
           "target": "joint_state",
           "context": "perfect",
-          "jointCode": "spine",
+          "jointCode": "left_hip",
           "zone": "up",
           "sortOrder": 2
         },
@@ -187,7 +190,7 @@
           "messageId": "989de535-a794-41f7-a756-3d4318752f50",
           "target": "joint_state",
           "context": "perfect",
-          "jointCode": "spine",
+          "jointCode": "left_hip",
           "zone": "down",
           "sortOrder": 3
         },
@@ -195,7 +198,7 @@
           "messageId": "c35bccd7-c7d9-4e45-82fe-180285319e3e",
           "target": "joint_state",
           "context": "normal",
-          "jointCode": "spine",
+          "jointCode": "left_hip",
           "zone": "up",
           "sortOrder": 4
         },
@@ -203,7 +206,7 @@
           "messageId": "3f092946-1276-4c27-b796-c01e3c2edfaa",
           "target": "joint_state",
           "context": "normal",
-          "jointCode": "spine",
+          "jointCode": "left_hip",
           "zone": "down",
           "sortOrder": 5
         },
@@ -211,7 +214,7 @@
           "messageId": "39dc65b1-7055-4207-abc7-26d2652d7eba",
           "target": "joint_state",
           "context": "warning",
-          "jointCode": "spine",
+          "jointCode": "left_hip",
           "zone": "down",
           "sortOrder": 6
         },
@@ -243,12 +246,12 @@
     }
   ],
   "description": {
-    "ar": "تمرين مكتبة: صباح خير جالس.",
-    "en": "Library exercise: Seated good morning (light)."
+    "ar": "صباح خير جالس خفيف يدرّب ميل الورك مع حمل خلف الرقبة أو على الأكتاف لزيادة قوة الخلفية والألوية مع تقليل تعقيد التوازن.",
+    "en": "A light seated good morning trains the hip hinge with load on the upper back or traps to build posterior-chain strength with simpler balance demands than standing."
   },
   "instructions": {
-    "ar": "حافظ على عمود فقري محايد وتنفس بثبات وتوقف عند أي ألم حاد.",
-    "en": "Maintain neutral spine, steady breathing, and stop if sharp pain appears."
+    "ar": "1. اجلس على طرف مقعد مع القدمين مسطحتين والركبتين فوق الكعبين تقريباً.\n2. ضع البار برفق فوق أعلى الظهر مع قبضة مريحة.\n3. انحنِ للأمام من الوركين مع صدر مرتفع وظهر محايد دون تقوس مفاجئ.\n4. انزل حتى شد معتدل في مؤخرة الفخذ ثم عد للجلوس مستقيماً.\n5. نفّذ 8–12 تكراراً بوزن خفيف للتحكم.\n6. توقف عند ألم حاد في أسفل الظهر أو الوخز في الساقين.",
+    "en": "1. Sit on the edge of a bench with feet flat and knees stacked over the ankles.\n2. Rest the bar gently across the upper back with a comfortable grip.\n3. Hinge forward from the hips with a tall chest and neutral spine—no abrupt rounding.\n4. Lower until you feel a mild hamstring pull, then return upright.\n5. Perform 8–12 reps with light load for control.\n6. Stop for sharp low-back pain or leg tingling."
   },
   "supportsWeight": true,
   "reportMetrics": {
@@ -296,70 +299,73 @@
         "description": null,
         "trackedJointsConfig": [
           {
+            "joint": "left_hip",
             "role": "primary",
-            "joint": "spine",
-            "upRange": {
+            "startPose": {
+              "max": 180,
+              "min": 120
+            },
+            "pairedWith": "right_hip",
+            "stateMessages": {
               "pad": {
-                "max": 30,
-                "min": 0
+                "down": {
+                  "ar": "مقبول — مدى أقصر",
+                  "en": "Acceptable — shorter hinge"
+                }
               },
               "normal": {
-                "max": 24,
-                "min": 0
+                "up": {
+                  "ar": "جيد — ارجع للجلوس باستقامة",
+                  "en": "Good — return tall"
+                },
+                "down": {
+                  "ar": "جيد — انحنِ من الورك",
+                  "en": "Good — hinge from the hip"
+                }
               },
               "perfect": {
-                "max": 18,
-                "min": 0
+                "up": {
+                  "ar": "ممتاز! جذع منتصب",
+                  "en": "Perfect! Upright torso"
+                },
+                "down": {
+                  "ar": "ممتاز! مفصل ورك نظيف",
+                  "en": "Perfect! Clean hip hinge"
+                }
+              },
+              "warning": {
+                "down": {
+                  "ar": "لا تطوِ الجذع من الوسط فقط",
+                  "en": "Do not fold only through the mid-back"
+                }
+              }
+            },
+            "upRange": {
+              "normal": {
+                "max": 180,
+                "min": 158
+              },
+              "perfect": {
+                "max": 180,
+                "min": 168
               }
             },
             "downRange": {
               "pad": {
-                "max": 80,
-                "min": 25
+                "max": 135,
+                "min": 88
               },
               "normal": {
-                "max": 70,
-                "min": 30
+                "max": 125,
+                "min": 95
               },
               "perfect": {
-                "max": 60,
-                "min": 35
+                "max": 115,
+                "min": 102
               },
               "warning": {
                 "max": 95,
-                "min": 80
-              }
-            },
-            "startPose": {
-              "max": 70,
-              "min": 0
-            },
-            "stateMessages": {
-              "normal": {
-                "up": {
-                  "ar": "جيد، اجلس مرفوعاً قليلاً",
-                  "en": "Good, sit a bit taller"
-                },
-                "down": {
-                  "ar": "جيد، انحنِ من الورك أكثر",
-                  "en": "Good, hinge more from the hips"
-                }
-              },
-              "perfect": {
-                "up": {
-                  "ar": "ممتاز! وقفة جالسة منظمة",
-                  "en": "Perfect! Seated tall position"
-                },
-                "down": {
-                  "ar": "ممتاز! انحناء ورك متحكم",
-                  "en": "Perfect! Controlled hip hinge"
-                }
-              },
-              "warning": {
-                "down": {
-                  "ar": "لا تتجاوز نطاقك المريح",
-                  "en": "Do not push past your comfortable range"
-                }
+                "min": 82
               }
             }
           }

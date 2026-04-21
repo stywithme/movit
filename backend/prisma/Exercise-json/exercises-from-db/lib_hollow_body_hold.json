@@ -50,64 +50,20 @@
       ],
       "trackedJoints": [
         {
-          "joint": "spine",
-          "role": "primary",
-          "startPose": {
-            "max": 30,
-            "min": 0
-          },
-          "stateMessages": {
-            "danger": {
-              "ar": "توقف — فقد التحكم في القاع",
-              "en": "Stop — lost control of the hollow position"
-            },
-            "perfect": {
-              "ar": "جذع مجوف وثابت",
-              "en": "Hollow, anchored trunk"
-            },
-            "warning": {
-              "ar": "لا تدع أسفل الظهر يقوّس",
-              "en": "Do not let the low back arch"
-            }
-          },
-          "range": {
-            "pad": {
-              "max": 24,
-              "min": 0
-            },
-            "danger": {
-              "max": 70,
-              "min": 38
-            },
-            "normal": {
-              "max": 18,
-              "min": 0
-            },
-            "perfect": {
-              "max": 12,
-              "min": 0
-            },
-            "warning": {
-              "max": 38,
-              "min": 24
-            }
-          }
-        },
-        {
           "joint": "left_hip",
-          "role": "secondary",
+          "role": "primary",
           "startPose": {
             "max": 160,
             "min": 90
           },
           "stateMessages": {
             "perfect": {
-              "ar": "ساقان مرفوعتان بزاوية مناسبة",
-              "en": "Legs lifted at the right angle"
+              "ar": "زاوية ثابتة للساقين مع ظهر ملتصق بالأرض",
+              "en": "Steady leg angle with low back pressed to the floor"
             },
             "warning": {
-              "ar": "ارفع الساقين أعلى لتقليل ضغط القطن",
-              "en": "Lift legs higher to ease low-back stress"
+              "ar": "لا تدع أسفل الظهر يرتفع عن الأرض",
+              "en": "Do not let the low back peel off the floor"
             }
           },
           "range": {
@@ -188,21 +144,21 @@
           "messageId": "42c94de7-6aaa-4f54-9932-a9b91b2b3bca",
           "target": "joint_state",
           "context": "perfect",
-          "jointCode": "spine",
+          "jointCode": "right_hip",
           "sortOrder": 2
         },
         {
           "messageId": "65019e6a-abf5-4d06-af29-b7beb95b0f3e",
           "target": "joint_state",
           "context": "warning",
-          "jointCode": "spine",
+          "jointCode": "right_hip",
           "sortOrder": 3
         },
         {
           "messageId": "16c23321-b09d-406a-80ec-5e800cc637cd",
           "target": "joint_state",
           "context": "danger",
-          "jointCode": "spine",
+          "jointCode": "right_hip",
           "sortOrder": 4
         },
         {
@@ -247,12 +203,12 @@
     }
   ],
   "description": {
-    "ar": "تمرين مكتبة: جسم مجوف.",
-    "en": "Library exercise: Hollow body hold."
+    "ar": "ثبات الجسم المجوف يقوّي الجدار الأمامي للجذع برفع الكتفين قليلاً عن الأرض مع ضغط أسفل الظهر نحو الأرض، وهو أساس لتمارين الجمباز والتسلق.",
+    "en": "The hollow body hold strengthens the anterior core by lifting the shoulders slightly while pressing the low back toward the floor, a foundation for gymnastics and climbing patterns."
   },
   "instructions": {
-    "ar": "حافظ على عمود فقري محايد وتنفس بثبات وتوقف عند أي ألم حاد.",
-    "en": "Maintain neutral spine, steady breathing, and stop if sharp pain appears."
+    "ar": "1. استلق على ظهرك وارفع الساقين والكتفين قليلاً مع إبقاء أسفل الظهر ملتصقاً بالأرض قدر الإمكان.\n2. مد الذراعين فوق الرأس أو بجانب الجسم حسب المستوى.\n3. شد البطن والفخذين معاً وخذ نفساً منتظماً.\n4. ثبّت الزمن المحدد دون اهتزاز مفرط.\n5. لا تدع أسفل الظهر ينفصل كثيراً عن الأرض.\n6. ارفع الركبتين نحو الصدر لتسهيل الوضع إن لزم.",
+    "en": "1. Lie on your back and lift the legs and shoulders slightly while keeping the low back pressed to the floor as much as possible.\n2. Reach the arms overhead or keep them by the sides based on level.\n3. Brace the abs and thighs together and breathe steadily.\n4. Hold for the prescribed time without excessive shaking.\n5. Do not let the low back peel far away from the floor.\n6. Bend the knees toward the chest to regress the drill if needed."
   },
   "reportMetrics": {
     "primary": [
@@ -310,52 +266,22 @@
         "description": null,
         "trackedJointsConfig": [
           {
+            "joint": "left_hip",
             "role": "primary",
-            "joint": "spine",
-            "range": {
-              "pad": {
-                "max": 24,
-                "min": 0
-              },
-              "danger": {
-                "max": 70,
-                "min": 38
-              },
-              "normal": {
-                "max": 18,
-                "min": 0
-              },
-              "perfect": {
-                "max": 12,
-                "min": 0
-              },
-              "warning": {
-                "max": 38,
-                "min": 24
-              }
-            },
             "startPose": {
-              "max": 30,
-              "min": 0
+              "max": 160,
+              "min": 90
             },
             "stateMessages": {
-              "danger": {
-                "ar": "توقف — فقد التحكم في القاع",
-                "en": "Stop — lost control of the hollow position"
-              },
               "perfect": {
-                "ar": "جذع مجوف وثابت",
-                "en": "Hollow, anchored trunk"
+                "ar": "زاوية ثابتة للساقين مع ظهر ملتصق بالأرض",
+                "en": "Steady leg angle with low back pressed to the floor"
               },
               "warning": {
-                "ar": "لا تدع أسفل الظهر يقوّس",
-                "en": "Do not let the low back arch"
+                "ar": "لا تدع أسفل الظهر يرتفع عن الأرض",
+                "en": "Do not let the low back peel off the floor"
               }
-            }
-          },
-          {
-            "role": "secondary",
-            "joint": "left_hip",
+            },
             "range": {
               "pad": {
                 "max": 165,
@@ -372,20 +298,6 @@
               "warning": {
                 "max": 95,
                 "min": 80
-              }
-            },
-            "startPose": {
-              "max": 160,
-              "min": 90
-            },
-            "stateMessages": {
-              "perfect": {
-                "ar": "ساقان مرفوعتان بزاوية مناسبة",
-                "en": "Legs lifted at the right angle"
-              },
-              "warning": {
-                "ar": "ارفع الساقين أعلى لتقليل ضغط القطن",
-                "en": "Lift legs higher to ease low-back stress"
               }
             }
           }

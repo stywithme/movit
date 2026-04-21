@@ -124,42 +124,6 @@
               "min": 60
             }
           }
-        },
-        {
-          "joint": "spine",
-          "role": "secondary",
-          "startPose": {
-            "max": 22,
-            "min": 0
-          },
-          "stateMessages": {
-            "perfect": {
-              "ar": "جذع منظم في وضع plank",
-              "en": "Trunk organized in plank"
-            },
-            "warning": {
-              "ar": "قلل السرعة إذا فقد الظهر الحياد",
-              "en": "Slow down if spine loses neutrality"
-            }
-          },
-          "range": {
-            "pad": {
-              "max": 26,
-              "min": 0
-            },
-            "normal": {
-              "max": 20,
-              "min": 0
-            },
-            "perfect": {
-              "max": 14,
-              "min": 0
-            },
-            "warning": {
-              "max": 40,
-              "min": 26
-            }
-          }
         }
       ],
       "positionChecks": [
@@ -269,14 +233,14 @@
           "messageId": "e82f89e7-6deb-4b13-9792-7fe7deccf9ed",
           "target": "joint_state",
           "context": "perfect",
-          "jointCode": "spine",
+          "jointCode": "right_hip",
           "sortOrder": 8
         },
         {
           "messageId": "d5de9a46-d6fa-4c8e-b728-8806384e59df",
           "target": "joint_state",
           "context": "warning",
-          "jointCode": "spine",
+          "jointCode": "right_hip",
           "sortOrder": 9
         },
         {
@@ -307,12 +271,12 @@
     }
   ],
   "description": {
-    "ar": "تمرين مكتبة: متسلق جبال بطيء.",
-    "en": "Library exercise: Slow mountain climber."
+    "ar": "متسلق الجبال البطيء يحافظ على ثبات الحوض أثناء تحريك الركبتين نحو الصدر بإيقاع متحكم، فيحمّل الجذع والكتفين أكثر من النسخة السريعة.",
+    "en": "The slow mountain climber keeps the pelvis steady while driving the knees toward the chest with controlled tempo, loading the trunk and shoulders more than a fast version."
   },
   "instructions": {
-    "ar": "حافظ على عمود فقري محايد وتنفس بثبات وتوقف عند أي ألم حاد.",
-    "en": "Maintain neutral spine, steady breathing, and stop if sharp pain appears."
+    "ar": "1. خذ وضعية بلانك عالية مع اليدين تحت الكتفين.\n2. شد الجذع ولا تدع الوركين يرتفعان ويهبطان مع كل خطوة.\n3. اسحب ركبة واحدة نحو الصدر ثم أعد القدم ببطء.\n4. كرر على الجانب الآخر مع الحفاظ على الرأس في امتداد الجسم.\n5. لا تثني الظهر أو تدع الرأس يتدلى.\n6. قلل المدى إذا شعرت بألم في المعصم أو أسفل الظهر.",
+    "en": "1. Set a tall plank with hands under the shoulders.\n2. Brace the trunk and avoid hiking or dropping the hips each step.\n3. Draw one knee toward the chest, then return the foot slowly.\n4. Alternate sides while keeping the head in line with the body.\n5. Do not round the low back or let the head hang.\n6. Reduce range if wrists or low back feel irritated."
   },
   "reportMetrics": {
     "primary": [
@@ -432,42 +396,6 @@
                   "ar": "لا تهز الورك للأعلى مع الركبة",
                   "en": "Do not let the hip pike up with the knee"
                 }
-              }
-            }
-          },
-          {
-            "role": "secondary",
-            "joint": "spine",
-            "range": {
-              "pad": {
-                "max": 26,
-                "min": 0
-              },
-              "normal": {
-                "max": 20,
-                "min": 0
-              },
-              "perfect": {
-                "max": 14,
-                "min": 0
-              },
-              "warning": {
-                "max": 40,
-                "min": 26
-              }
-            },
-            "startPose": {
-              "max": 22,
-              "min": 0
-            },
-            "stateMessages": {
-              "perfect": {
-                "ar": "جذع منظم في وضع plank",
-                "en": "Trunk organized in plank"
-              },
-              "warning": {
-                "ar": "قلل السرعة إذا فقد الظهر الحياد",
-                "en": "Slow down if spine loses neutrality"
               }
             }
           }

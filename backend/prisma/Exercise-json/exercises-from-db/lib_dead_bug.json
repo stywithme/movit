@@ -6,7 +6,7 @@
   "familyKey": "anti_extension_family",
   "familyOrder": 14,
   "name": {
-    "ar": "حشرة ميتة",
+    "ar": "ديد باج",
     "en": "Dead bug"
   },
   "category": {
@@ -26,7 +26,8 @@
   ],
   "tags": [
     "curated_library",
-    "beginner_friendly"
+    "beginner_friendly",
+    "stability"
   ],
   "repCountingConfig": {
     "reps": 12,
@@ -37,7 +38,7 @@
     {
       "name": {
         "ar": "مستلقٍ على الظهر",
-        "en": "Lying on back (side angle)"
+        "en": "Lying on back (side view)"
       },
       "posePosition": "supine_side",
       "expectedPostures": [
@@ -54,40 +55,40 @@
           "joint": "left_hip",
           "role": "primary",
           "startPose": {
-            "max": 180,
-            "min": 75
+            "max": 105,
+            "min": 78
           },
           "stateMessages": {
             "pad": {
               "up": {
-                "ar": "مقبول، لكن التمدد ما زال قصيراً",
-                "en": "Acceptable, but the reach is still short"
+                "ar": "مقبول — مدّ الرجل أكثر تدريجياً مع بقاء الجذع ثابتاً",
+                "en": "Acceptable — reach the leg longer while keeping the trunk stable"
               }
             },
             "normal": {
               "up": {
-                "ar": "جيد، أمدد الرجل أكثر دون فقدان الجذع",
-                "en": "Good, reach longer without losing the trunk"
+                "ar": "جيد — واصل المد بدون أن يرتفع أسفل الظهر",
+                "en": "Good — keep reaching without letting the low back lift"
               },
               "down": {
-                "ar": "جيد، أعد الركبة فوق الورك بدقة",
-                "en": "Good, return the knee over the hip precisely"
+                "ar": "جيد — أعد الركبة فوق الورك بهدوء",
+                "en": "Good — return the knee over the hip under control"
               }
             },
             "perfect": {
               "up": {
-                "ar": "ممتاز! رجل طويلة مع جذع ثابت",
-                "en": "Perfect! Long leg with stable trunk"
+                "ar": "ممتاز! مدّ طويل مع ظهر ثابت",
+                "en": "Perfect! Long reach with a steady back"
               },
               "down": {
-                "ar": "ممتاز! عودة دقيقة لموضع البداية",
-                "en": "Perfect! Precise return to start"
+                "ar": "ممتاز! رجوع دقيق لوضع البداية",
+                "en": "Perfect! Precise return to the start"
               }
             },
             "warning": {
               "up": {
-                "ar": "لا تدع أسفل الظهر يرتفع عن الأرض",
-                "en": "Do not let the low back peel off the floor"
+                "ar": "لا تدع الأضلاع تفتح أو أسفل الظهر يرتفع عن الأرض",
+                "en": "Do not let the ribs flare or the low back peel off the floor"
               }
             }
           },
@@ -98,28 +99,28 @@
             },
             "normal": {
               "max": 180,
-              "min": 130
+              "min": 132
             },
             "perfect": {
               "max": 175,
-              "min": 140
+              "min": 142
             }
           },
           "downRange": {
             "pad": {
               "max": 118,
-              "min": 65
+              "min": 68
             },
             "normal": {
-              "max": 110,
-              "min": 72
+              "max": 108,
+              "min": 76
             },
             "perfect": {
-              "max": 102,
-              "min": 78
+              "max": 100,
+              "min": 82
             },
             "warning": {
-              "max": 65,
+              "max": 68,
               "min": 55
             }
           }
@@ -128,35 +129,35 @@
           "joint": "spine",
           "role": "secondary",
           "startPose": {
-            "max": 20,
+            "max": 16,
             "min": 0
           },
           "stateMessages": {
             "perfect": {
-              "ar": "جذع محايد ومثبت",
-              "en": "Neutral, anchored trunk"
+              "ar": "القفص الصدري وأسفل الظهر ثابتان على الأرض",
+              "en": "The ribcage and low back stay grounded"
             },
             "warning": {
-              "ar": "خفف المدى حتى يعود الظهر للاستقرار",
-              "en": "Reduce range until the back is stable again"
+              "ar": "حافظ على الضلوع لأسفل ولا تعوّض بتمدد أسفل الظهر",
+              "en": "Keep the ribs down and do not compensate through lumbar extension"
             }
           },
           "range": {
             "pad": {
-              "max": 24,
+              "max": 22,
               "min": 0
             },
             "normal": {
-              "max": 18,
+              "max": 16,
               "min": 0
             },
             "perfect": {
-              "max": 12,
+              "max": 10,
               "min": 0
             },
             "warning": {
-              "max": 36,
-              "min": 24
+              "max": 30,
+              "min": 22
             }
           }
         }
@@ -178,8 +179,8 @@
             "down"
           ],
           "errorMessage": {
-            "ar": "حافظ على أسفل الظهر ثابتاً أثناء تحريك الرجل.",
-            "en": "Keep the low back steady while moving the leg."
+            "ar": "حافظ على أسفل الظهر ثابتاً وأنت تمد الرجل أو الذراع.",
+            "en": "Keep the low back steady while the leg or arm reaches."
           },
           "severity": "warning",
           "cooldownMs": 2200,
@@ -189,22 +190,22 @@
       "feedbackMessages": {
         "motivational": [
           {
-            "ar": "شد جذع ممتاز",
-            "en": "Excellent trunk tension"
+            "ar": "ثبات جذع ممتاز",
+            "en": "Excellent trunk stability"
           },
           {
-            "ar": "ثباتك يتحسن عدة بعد عدة",
-            "en": "Your stability improves rep by rep"
+            "ar": "كل عدة أنظف من التي قبلها",
+            "en": "Each rep looks cleaner than the last"
           }
         ],
         "tips": [
           {
-            "ar": "شد السرة برفق ولا تحبس النفس طويلاً.",
-            "en": "Brace gently and avoid long breath-holds."
+            "ar": "ازفر مع المد وابقَ الضلوع منخفضة.",
+            "en": "Exhale on the reach and keep the ribs down."
           },
           {
-            "ar": "حرّك الأطراف دون أن ينهار الجذع.",
-            "en": "Move the limbs without letting the trunk collapse."
+            "ar": "الهدف هو ثبات الجذع قبل طول الذراع أو الرجل.",
+            "en": "Trunk control matters more than how far the limb reaches."
           }
         ]
       },
@@ -306,12 +307,12 @@
     }
   ],
   "description": {
-    "ar": "تمرين مكتبة: حشرة ميتة.",
-    "en": "Library exercise: Dead bug."
+    "ar": "تمرين Dead Bug من أفضل تمارين ثبات الجذع للمبتدئين والمتوسطين لأنه يعلّم الجسم تحريك الأطراف مع بقاء القفص الصدري وأسفل الظهر تحت السيطرة. يفيد في تحسين anti-extension control ويُستخدم كثيراً قبل التمارين المركبة أو خلال إعادة التأهيل.",
+    "en": "Dead Bug is one of the best trunk-stability drills for beginners and intermediates because it teaches the body to move the limbs while the ribcage and low back stay organized. It improves anti-extension control and is commonly used in warm-ups, core work, and rehab progressions."
   },
   "instructions": {
-    "ar": "حافظ على عمود فقري محايد وتنفس بثبات وتوقف عند أي ألم حاد.",
-    "en": "Maintain neutral spine, steady breathing, and stop if sharp pain appears."
+    "ar": "1. استلقِ على ظهرك وارفع الساقين والذراعين لوضع البداية مع ثني الركبتين فوق الوركين.\n2. اضغط أسفل الظهر برفق على الأرض وخفّض الضلوع للأسفل.\n3. مدّ ذراعاً ورجلاً معاكسة ببطء بدون أن يتغير وضع الجذع.\n4. عد لوضع البداية ثم بدّل الجهة الأخرى.\n5. إذا ارتفع أسفل الظهر أو فتحت الأضلاع، قلّل طول المد.\n6. ركّز على الجودة والتنفس أكثر من السرعة.",
+    "en": "1. Lie on your back with the arms up and knees bent over the hips.\n2. Gently press the low back into the floor and keep the ribs down.\n3. Slowly reach one arm and the opposite leg away without changing the trunk position.\n4. Return to the start and switch sides.\n5. If the low back lifts or the ribs flare, shorten the reach.\n6. Focus on quality and breathing more than speed."
   },
   "reportMetrics": {
     "primary": [
@@ -325,154 +326,5 @@
       "SYMMETRY"
     ]
   },
-  "hasPositionChecks": true,
-  "_database": {
-    "id": "312e375d-4271-4b8a-89cb-01dc71b3afef",
-    "categoryId": "01b944db-50df-4f53-aa08-ec5633820277",
-    "countingMethodId": "f4d48aef-1606-4f23-8c61-7b4a2546f990",
-    "publishedAt": "2026-04-20T17:26:28.012Z",
-    "createdAt": "2026-04-20T17:26:28.013Z",
-    "updatedAt": "2026-04-20T17:26:34.499Z",
-    "deletedAt": null,
-    "isFeatured": false,
-    "createdBy": null,
-    "updatedBy": null,
-    "repCountingConfig": null,
-    "bilateralConfig": null,
-    "isBilateral": false,
-    "supportsWeight": false,
-    "minWeight": null,
-    "maxWeight": null,
-    "defaultWeight": null,
-    "reportMetrics": {
-      "mode": "reps",
-      "version": 1,
-      "primaryKpi": "repQuality",
-      "secondaryKpis": [
-        "avgFormScore",
-        "avgRom"
-      ]
-    },
-    "media": [],
-    "poseVariants": [
-      {
-        "id": "8029ca7c-3d74-4fbb-ae51-a504cf9d9873",
-        "sortOrder": 1,
-        "description": null,
-        "trackedJointsConfig": [
-          {
-            "role": "primary",
-            "joint": "left_hip",
-            "upRange": {
-              "pad": {
-                "max": 180,
-                "min": 120
-              },
-              "normal": {
-                "max": 180,
-                "min": 130
-              },
-              "perfect": {
-                "max": 175,
-                "min": 140
-              }
-            },
-            "downRange": {
-              "pad": {
-                "max": 118,
-                "min": 65
-              },
-              "normal": {
-                "max": 110,
-                "min": 72
-              },
-              "perfect": {
-                "max": 102,
-                "min": 78
-              },
-              "warning": {
-                "max": 65,
-                "min": 55
-              }
-            },
-            "startPose": {
-              "max": 180,
-              "min": 75
-            },
-            "stateMessages": {
-              "pad": {
-                "up": {
-                  "ar": "مقبول، لكن التمدد ما زال قصيراً",
-                  "en": "Acceptable, but the reach is still short"
-                }
-              },
-              "normal": {
-                "up": {
-                  "ar": "جيد، أمدد الرجل أكثر دون فقدان الجذع",
-                  "en": "Good, reach longer without losing the trunk"
-                },
-                "down": {
-                  "ar": "جيد، أعد الركبة فوق الورك بدقة",
-                  "en": "Good, return the knee over the hip precisely"
-                }
-              },
-              "perfect": {
-                "up": {
-                  "ar": "ممتاز! رجل طويلة مع جذع ثابت",
-                  "en": "Perfect! Long leg with stable trunk"
-                },
-                "down": {
-                  "ar": "ممتاز! عودة دقيقة لموضع البداية",
-                  "en": "Perfect! Precise return to start"
-                }
-              },
-              "warning": {
-                "up": {
-                  "ar": "لا تدع أسفل الظهر يرتفع عن الأرض",
-                  "en": "Do not let the low back peel off the floor"
-                }
-              }
-            }
-          },
-          {
-            "role": "secondary",
-            "joint": "spine",
-            "range": {
-              "pad": {
-                "max": 24,
-                "min": 0
-              },
-              "normal": {
-                "max": 18,
-                "min": 0
-              },
-              "perfect": {
-                "max": 12,
-                "min": 0
-              },
-              "warning": {
-                "max": 36,
-                "min": 24
-              }
-            },
-            "startPose": {
-              "max": 20,
-              "min": 0
-            },
-            "stateMessages": {
-              "perfect": {
-                "ar": "جذع محايد ومثبت",
-                "en": "Neutral, anchored trunk"
-              },
-              "warning": {
-                "ar": "خفف المدى حتى يعود الظهر للاستقرار",
-                "en": "Reduce range until the back is stable again"
-              }
-            }
-          }
-        ]
-      }
-    ],
-    "validationWarning": null
-  }
+  "hasPositionChecks": true
 }

@@ -558,12 +558,12 @@
     }
   ],
   "description": {
-    "ar": "تمرين مكتبة: رفعة سومو.",
-    "en": "Library exercise: Sumo deadlift."
+    "ar": "الرفعة الميتة بوضعية سومو (قدمان بعيدتان وأصابع للخارج) تزيد مشاركة الداخلية للفخذ والألوية مع مسار أكثر عمودية نسبياً للجذع.",
+    "en": "The sumo deadlift uses a wide, toes-out stance to emphasize the adductors and glutes while often allowing a more upright torso than conventional pulls."
   },
   "instructions": {
-    "ar": "حافظ على عمود فقري محايد وتنفس بثبات وتوقف عند أي ألم حاد.",
-    "en": "Maintain neutral spine, steady breathing, and stop if sharp pain appears."
+    "ar": "1. قف بعرض واسع مع أصابع القدمين للخارج وبار أمامك.\n2. انحنِ للأسفل وامسك القضيب بعرض الكتفين تقريباً بين الساقين.\n3. شدّ الجذع، ادفع الركبتين للخارج فوق أصابع القدمين، ثم ادفع الأرض للوقوف.\n4. انزل بنفس المسار مع الحفاظ على الظهر محايداً.\n5. نفّذ التكرارات حسب البرنامج مع تنفس منتظم.\n6. توقف عند ألم حاد في أسفل الظهر أو الركبة أو الوخز.",
+    "en": "1. Take a wide stance with toes turned out and the bar over mid-foot.\n2. Hinge down and grip the bar inside the legs near shoulder width.\n3. Brace the trunk, push knees out over the toes, then drive the floor away to stand.\n4. Lower on the same path while keeping the spine neutral.\n5. Perform reps as programmed with steady breathing.\n6. Stop for sharp low-back or knee pain or tingling."
   },
   "reportMetrics": {
     "primary": [

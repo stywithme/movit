@@ -51,38 +51,38 @@
       ],
       "trackedJoints": [
         {
-          "joint": "spine",
+          "joint": "left_hip",
           "role": "primary",
           "startPose": {
-            "max": 80,
-            "min": 0
+            "max": 180,
+            "min": 120
           },
           "stateMessages": {
             "perfect": {
-              "ar": "وضعية يوغا مفتوحة وثابتة",
-              "en": "Open, stable yoga shape"
+              "ar": "وركين مفتوحان مع إطالة ظهرية",
+              "en": "Hips open with a long back line"
             },
             "warning": {
-              "ar": "لا تفرط في التمدد القطني",
-              "en": "Avoid excessive lumbar extension"
+              "ar": "قلل الترهل في الكتف أو الانهيار في القطن",
+              "en": "Ease shoulder shrug or low-back collapse"
             }
           },
           "range": {
             "pad": {
-              "max": 70,
-              "min": 0
+              "max": 180,
+              "min": 105
             },
             "normal": {
-              "max": 55,
-              "min": 0
+              "max": 180,
+              "min": 118
             },
             "perfect": {
-              "max": 45,
-              "min": 5
+              "max": 180,
+              "min": 132
             },
             "warning": {
-              "max": 85,
-              "min": 65
+              "max": 105,
+              "min": 88
             }
           }
         },
@@ -181,14 +181,14 @@
           "messageId": "b8f4bd13-f39b-445c-b81d-fe4112c5d8fe",
           "target": "joint_state",
           "context": "perfect",
-          "jointCode": "spine",
+          "jointCode": "left_hip",
           "sortOrder": 2
         },
         {
           "messageId": "b52d5a51-2f3a-400c-a2d0-43e234f2e2d2",
           "target": "joint_state",
           "context": "warning",
-          "jointCode": "spine",
+          "jointCode": "left_hip",
           "sortOrder": 3
         },
         {
@@ -233,12 +233,12 @@
     }
   ],
   "description": {
-    "ar": "تمرين مكتبة: كلب صاعد.",
-    "en": "Library exercise: Upward dog."
+    "ar": "الكلب الصاعد (أوردف دوج) يمدّ الجزء الأمامي من الجسم ويفتح الصدر مع انثناء خفيف في العمود الفقري، ويُفضّل تنفيذه بمدى مريح للرسغين والظهر.",
+    "en": "Upward dog lengthens the front of the body and opens the chest with gentle spinal extension, and is best practiced in a range that feels OK for the wrists and back."
   },
   "instructions": {
-    "ar": "حافظ على عمود فقري محايد وتنفس بثبات وتوقف عند أي ألم حاد.",
-    "en": "Maintain neutral spine, steady breathing, and stop if sharp pain appears."
+    "ar": "1. ابدأ من وضع البطن أو الانتقال من أسفل الكلب حسب تسلسلك.\n2. ضع راحتي اليد تحت الكتفين وادفع الصدر للأمام والأعلى.\n3. افرد الساقين على الأرض مع إبقاء أعلى القدمين نشطاً.\n4. انظر قليلاً للأمام مع إطالة الرقبة دون إجهاد.\n5. لا تضغط على أسفل الظهر بشكل مؤلم.\n6. خفّف الارتفاع أو توقف عند ألم في الرسغ أو الظهر.",
+    "en": "1. Start prone or transition from downward dog depending on your flow.\n2. Set the hands under the shoulders and lift the chest forward and up.\n3. Extend the legs on the floor with the tops of the feet active.\n4. Gaze slightly forward while lengthening the neck without strain.\n5. Do not compress the low back painfully.\n6. Reduce height or stop if wrists or back feel sharp pain."
   },
   "reportMetrics": {
     "primary": [
@@ -296,44 +296,58 @@
         "description": null,
         "trackedJointsConfig": [
           {
+            "joint": "left_hip",
             "role": "primary",
-            "joint": "spine",
-            "range": {
-              "pad": {
-                "max": 70,
-                "min": 0
-              },
-              "normal": {
-                "max": 55,
-                "min": 0
-              },
-              "perfect": {
-                "max": 45,
-                "min": 5
-              },
-              "warning": {
-                "max": 85,
-                "min": 65
-              }
-            },
             "startPose": {
-              "max": 80,
-              "min": 0
+              "max": 180,
+              "min": 120
             },
             "stateMessages": {
               "perfect": {
-                "ar": "وضعية يوغا مفتوحة وثابتة",
-                "en": "Open, stable yoga shape"
+                "ar": "وركين مفتوحان مع إطالة ظهرية",
+                "en": "Hips open with a long back line"
               },
               "warning": {
-                "ar": "لا تفرط في التمدد القطني",
-                "en": "Avoid excessive lumbar extension"
+                "ar": "قلل الترهل في الكتف أو الانهيار في القطن",
+                "en": "Ease shoulder shrug or low-back collapse"
+              }
+            },
+            "range": {
+              "pad": {
+                "max": 180,
+                "min": 105
+              },
+              "normal": {
+                "max": 180,
+                "min": 118
+              },
+              "perfect": {
+                "max": 180,
+                "min": 132
+              },
+              "warning": {
+                "max": 105,
+                "min": 88
               }
             }
           },
           {
-            "role": "secondary",
             "joint": "left_shoulder",
+            "role": "secondary",
+            "startPose": {
+              "max": 180,
+              "min": 80
+            },
+            "stateMessages": {
+              "perfect": {
+                "ar": "كتفان طويلان ومنفتحان",
+                "en": "Shoulders long and open"
+              },
+              "warning": {
+                "ar": "لا تترك الكتفين يطفوان نحو الأذنين",
+                "en": "Do not let shoulders shrug to the ears"
+              }
+            },
             "range": {
               "pad": {
                 "max": 180,
@@ -350,20 +364,6 @@
               "warning": {
                 "max": 100,
                 "min": 80
-              }
-            },
-            "startPose": {
-              "max": 180,
-              "min": 80
-            },
-            "stateMessages": {
-              "perfect": {
-                "ar": "كتفان طويلان ومنفتحان",
-                "en": "Shoulders long and open"
-              },
-              "warning": {
-                "ar": "لا تترك الكتفين يطفوان نحو الأذنين",
-                "en": "Do not let shoulders shrug to the ears"
               }
             }
           }

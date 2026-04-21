@@ -123,42 +123,6 @@
               "min": 62
             }
           }
-        },
-        {
-          "joint": "spine",
-          "role": "secondary",
-          "startPose": {
-            "max": 20,
-            "min": 0
-          },
-          "stateMessages": {
-            "perfect": {
-              "ar": "جذع محايد ومثبت",
-              "en": "Neutral, anchored trunk"
-            },
-            "warning": {
-              "ar": "خفف المدى حتى يعود الظهر للاستقرار",
-              "en": "Reduce range until the back is stable again"
-            }
-          },
-          "range": {
-            "pad": {
-              "max": 24,
-              "min": 0
-            },
-            "normal": {
-              "max": 18,
-              "min": 0
-            },
-            "perfect": {
-              "max": 12,
-              "min": 0
-            },
-            "warning": {
-              "max": 36,
-              "min": 24
-            }
-          }
         }
       ],
       "positionChecks": [
@@ -268,14 +232,14 @@
           "messageId": "6d4d1097-ebdc-40db-b431-6b3a3164a3df",
           "target": "joint_state",
           "context": "perfect",
-          "jointCode": "spine",
+          "jointCode": "right_hip",
           "sortOrder": 8
         },
         {
           "messageId": "e335b1be-1dea-4d2c-9e83-2f79eecb4cce",
           "target": "joint_state",
           "context": "warning",
-          "jointCode": "spine",
+          "jointCode": "right_hip",
           "sortOrder": 9
         },
         {
@@ -306,12 +270,12 @@
     }
   ],
   "description": {
-    "ar": "تمرين مكتبة: لمس كعبين.",
-    "en": "Library exercise: Heel taps (dead bug variant)."
+    "ar": "لمس الكعبين من وضعية شبيهة بـ«ديد باغ» يحافظ على ثبات الحوض مع تحريك الركبتين، ويُستخدم لتطوير التحكم في الجذع دون حمل ثقيل.",
+    "en": "Heel taps from a dead-bug position keep the pelvis steady while moving the knees, building trunk control without heavy loading."
   },
   "instructions": {
-    "ar": "حافظ على عمود فقري محايد وتنفس بثبات وتوقف عند أي ألم حاد.",
-    "en": "Maintain neutral spine, steady breathing, and stop if sharp pain appears."
+    "ar": "1. استلق على ظهرك وارفع الركبتين فوق الوركين تقريباً مع ثني 90° في الورك والركبة.\n2. اضغط أسفل الظهر بلطف نحو الأرض.\n3. انزل قدم واحدة لتلامس الكعب الأرض ثم أعدها.\n4. كرر على الجانب الآخر مع الحفاظ على عدم اهتزاز الحوض.\n5. لا تدع أسفل الظهر ينفصل عن الأرض أثناء الحركة.\n6. قلل عمق الركبة إذا فقد التحكم.",
+    "en": "1. Lie on your back with hips and knees near 90°.\n2. Gently press the low back toward the floor.\n3. Lower one foot to tap the heel, then return.\n4. Alternate sides while keeping the pelvis from rocking.\n5. Do not let the low back peel away during the motion.\n6. Reduce knee depth if control is lost."
   },
   "reportMetrics": {
     "primary": [
@@ -431,42 +395,6 @@
                   "ar": "لا تدع أسفل الظهر يرتفع",
                   "en": "Do not let the low back lift off"
                 }
-              }
-            }
-          },
-          {
-            "role": "secondary",
-            "joint": "spine",
-            "range": {
-              "pad": {
-                "max": 24,
-                "min": 0
-              },
-              "normal": {
-                "max": 18,
-                "min": 0
-              },
-              "perfect": {
-                "max": 12,
-                "min": 0
-              },
-              "warning": {
-                "max": 36,
-                "min": 24
-              }
-            },
-            "startPose": {
-              "max": 20,
-              "min": 0
-            },
-            "stateMessages": {
-              "perfect": {
-                "ar": "جذع محايد ومثبت",
-                "en": "Neutral, anchored trunk"
-              },
-              "warning": {
-                "ar": "خفف المدى حتى يعود الظهر للاستقرار",
-                "en": "Reduce range until the back is stable again"
               }
             }
           }

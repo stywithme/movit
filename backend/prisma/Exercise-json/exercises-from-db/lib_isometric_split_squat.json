@@ -145,42 +145,6 @@
               "min": 60
             }
           }
-        },
-        {
-          "joint": "spine",
-          "role": "secondary",
-          "startPose": {
-            "max": 28,
-            "min": 0
-          },
-          "stateMessages": {
-            "perfect": {
-              "ar": "جذع مرفوع ومحايد",
-              "en": "Tall, neutral trunk"
-            },
-            "warning": {
-              "ar": "لا تنهَر للأمام في الثبات",
-              "en": "Do not collapse forward in the hold"
-            }
-          },
-          "range": {
-            "pad": {
-              "max": 28,
-              "min": 0
-            },
-            "normal": {
-              "max": 22,
-              "min": 0
-            },
-            "perfect": {
-              "max": 16,
-              "min": 0
-            },
-            "warning": {
-              "max": 40,
-              "min": 28
-            }
-          }
         }
       ],
       "positionChecks": [
@@ -326,14 +290,14 @@
           "messageId": "c53d4b0a-401b-49b3-8255-210d33792835",
           "target": "joint_state",
           "context": "perfect",
-          "jointCode": "spine",
+          "jointCode": "right_hip",
           "sortOrder": 11
         },
         {
           "messageId": "4c4b906a-e569-4f4a-be55-d4c4733cbc27",
           "target": "joint_state",
           "context": "warning",
-          "jointCode": "spine",
+          "jointCode": "right_hip",
           "sortOrder": 12
         },
         {
@@ -365,12 +329,12 @@
     }
   ],
   "description": {
-    "ar": "تمرين مكتبة: اندفاع مقسم ثابت.",
-    "en": "Library exercise: Isometric split squat."
+    "ar": "الاحتفاظ بوضع اندفاع مقسّم ثابت يزيد قوة الساقين وثبات الركبة والورك دون حركة صعود ونزول.",
+    "en": "An isometric split squat hold builds leg strength and knee/hip stability without dynamic up-and-down motion."
   },
   "instructions": {
-    "ar": "حافظ على عمود فقري محايد وتنفس بثبات وتوقف عند أي ألم حاد.",
-    "en": "Maintain neutral spine, steady breathing, and stop if sharp pain appears."
+    "ar": "1. تقدّم بخطوة طويلة أمامك وثبّت القدم الخلفية على أصابع القدم أو مسطحة حسب الراحة.\n2. انزل حتى زاوية تقريباً 90° عند الركبة الأمامية مع ركبة خلفية منحنية.\n3. ثبّت الوضع مع صدر مرتفع ووزن متوزع على القدم الأمامية بشكل أساسي.\n4. تنفس ببطء واحتفظ 20–45 ثانية لكل جانب في البداية.\n5. بدّل الأرجل بين المجموعات أو حسب البرنامج.\n6. توقف عند ألم حاد في الركبة أو الوخز.",
+    "en": "1. Step into a long split stance with the rear foot on the ball of the foot or flat as comfortable.\n2. Lower until the front knee is near 90° with a bent back knee.\n3. Hold steady with a tall chest and most weight through the front foot.\n4. Breathe slowly; start with 20–45 seconds per side.\n5. Switch legs between sets or as programmed.\n6. Stop if you feel sharp knee pain or tingling."
   },
   "reportMetrics": {
     "primary": [
@@ -520,42 +484,6 @@
               "warning": {
                 "ar": "قلل الميل الأمامي واضبط الحوض",
                 "en": "Reduce forward lean and tidy the pelvis"
-              }
-            }
-          },
-          {
-            "role": "secondary",
-            "joint": "spine",
-            "range": {
-              "pad": {
-                "max": 28,
-                "min": 0
-              },
-              "normal": {
-                "max": 22,
-                "min": 0
-              },
-              "perfect": {
-                "max": 16,
-                "min": 0
-              },
-              "warning": {
-                "max": 40,
-                "min": 28
-              }
-            },
-            "startPose": {
-              "max": 28,
-              "min": 0
-            },
-            "stateMessages": {
-              "perfect": {
-                "ar": "جذع مرفوع ومحايد",
-                "en": "Tall, neutral trunk"
-              },
-              "warning": {
-                "ar": "لا تنهَر للأمام في الثبات",
-                "en": "Do not collapse forward in the hold"
               }
             }
           }

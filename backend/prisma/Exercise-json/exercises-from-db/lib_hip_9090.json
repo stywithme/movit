@@ -38,12 +38,12 @@
   "poseVariants": [
     {
       "name": {
-        "ar": "مستلقٍ على الوجه",
-        "en": "Lying face down (side angle)"
+        "ar": "جالس 90/90 (من الجانب)",
+        "en": "Seated 90/90 (side view)"
       },
-      "posePosition": "prone_side",
+      "posePosition": "sitting_side",
       "expectedPostures": [
-        "lying_prone"
+        "sitting"
       ],
       "expectedDirections": [
         "side"
@@ -59,34 +59,34 @@
             "max": 180,
             "min": 120
           },
-          "stateMessages": {
-            "perfect": {
-              "ar": "مدى ورك ممتاز",
-              "en": "Great hip range"
+            "stateMessages": {
+              "perfect": {
+                "ar": "دوران ورك ممتاز مع تحكم كامل في 90/90",
+                "en": "Excellent hip rotation with full control in 90/90"
+              },
+              "warning": {
+                "ar": "قلل المدى إذا شعرت ب pinching في الركبة أو الورك - ركز على التحكم",
+                "en": "Reduce range if you feel pinching in knee or hip - focus on control"
+              }
             },
-            "warning": {
-              "ar": "قلل المدى إن الركبة تضايقك",
-              "en": "Ease range if knee complains"
+            "range": {
+              "pad": {
+                "max": 180,
+                "min": 115
+              },
+              "normal": {
+                "max": 175,
+                "min": 130
+              },
+              "perfect": {
+                "max": 170,
+                "min": 145
+              },
+              "warning": {
+                "max": 130,
+                "min": 100
+              }
             }
-          },
-          "range": {
-            "pad": {
-              "max": 180,
-              "min": 110
-            },
-            "normal": {
-              "max": 180,
-              "min": 125
-            },
-            "perfect": {
-              "max": 175,
-              "min": 140
-            },
-            "warning": {
-              "max": 110,
-              "min": 95
-            }
-          }
         },
         {
           "joint": "left_knee",
@@ -95,22 +95,30 @@
             "max": 130,
             "min": 85
           },
-          "stateMessages": {
-            "perfect": {
-              "ar": "ركبة مستقرة",
-              "en": "Knee steady"
-            }
-          },
-          "range": {
-            "normal": {
-              "max": 125,
-              "min": 85
+            "stateMessages": {
+              "perfect": {
+                "ar": "ركبة مستقرة بزاوية 90 درجة مع محاذاة جيدة",
+                "en": "Stable knee at 90 degrees with good alignment"
+              },
+              "warning": {
+                "ar": "حافظ على استقرار الركبة - تجنب الدوران الزائد",
+                "en": "Maintain knee stability - avoid excessive rotation"
+              }
             },
-            "perfect": {
-              "max": 118,
-              "min": 92
+            "range": {
+              "normal": {
+                "max": 125,
+                "min": 80
+              },
+              "perfect": {
+                "max": 115,
+                "min": 85
+              },
+              "warning": {
+                "max": 135,
+                "min": 70
+              }
             }
-          }
         }
       ],
       "positionChecks": [
@@ -122,15 +130,15 @@
             "secondary": "left_knee"
           },
           "condition": {
-            "operator": "should_exceed",
-            "threshold": 0.02
+            "operator": "approximately_equal",
+            "threshold": 0.16
           },
           "activePhases": [
             "all"
           ],
           "errorMessage": {
-            "ar": "افتح الورك ببطء — لا تتجاوز الألم الحاد.",
-            "en": "Open the hip slowly — stay below sharp pain."
+            "ar": "ابقَ طويلاً من الجذع ودوّر من الوركين بدون دفع الركبة أو لف أسفل الظهر.",
+            "en": "Stay tall through the torso and rotate from the hips without forcing the knee or twisting the low back."
           },
           "severity": "tip",
           "cooldownMs": 3200,
@@ -140,22 +148,22 @@
       "feedbackMessages": {
         "motivational": [
           {
-            "ar": "مدى حركة جيد وتحكم أفضل",
-            "en": "Good range and better control"
+            "ar": "تحكم ممتاز في دوران الورك 90/90!",
+            "en": "Excellent control in 90/90 hip rotation!"
           },
           {
-            "ar": "تحرك بسلاسة داخل نطاق مريح",
-            "en": "Move smoothly inside a comfortable range"
+            "ar": "مدى حركة جيد مع استقرار الظهر والركبة",
+            "en": "Good range with stable back and knee"
           }
         ],
         "tips": [
           {
-            "ar": "ابقِ الحركة نظيفة وهادئة بدون ارتداد.",
-            "en": "Keep the motion smooth and bounce-free."
+            "ar": "ركز على تدوير الحوض ببطء مع الحفاظ على زاوية 90 درجة في كلا الوركين.",
+            "en": "Focus on slowly rotating the pelvis while maintaining 90 degree angle in both hips."
           },
           {
-            "ar": "أي ألم حاد يعني تقليل المدى فوراً.",
-            "en": "Any sharp pain means reduce range immediately."
+            "ar": "ابقِ العمود الفقري محايداً وتنفس بعمق. توقف عند أي pinching.",
+            "en": "Keep spine neutral and breathe deeply. Stop at any pinching sensation."
           }
         ]
       },
@@ -216,12 +224,12 @@
     }
   ],
   "description": {
-    "ar": "تمرين مكتبة: تبديل ورك 90/90.",
-    "en": "Library exercise: 90/90 hip switch."
+    "ar": "تمرين تبديل الورك 90/90 هو Drill للحركة يستهدف تحسين الدوران الداخلي والخارجي للورك مع الحفاظ على الجذع ثابتاً. يفيد في تحسين مرونة الورك، تجهيز الحوض قبل السكوات والـ hinge، وتقليل الإحساس بالتيبس حول العضلات الألوية والورك الخلفي عندما يُؤدى ببطء وبدون ألم.",
+    "en": "The 90/90 Hip Switch is a mobility drill that improves hip internal and external rotation while keeping the torso controlled. It helps open the hips for squats and hinge patterns, reduce stiffness around the glutes and posterior hip, and build usable rotation without forcing the joint."
   },
   "instructions": {
-    "ar": "حافظ على عمود فقري محايد وتنفس بثبات وتوقف عند أي ألم حاد.",
-    "en": "Maintain neutral spine, steady breathing, and stop if sharp pain appears."
+    "ar": "1. اجلس على الأرض مع ثني الركبتين ووضع الساقين في وضع 90/90.\n2. ارفع الصدر وحافظ على العمود الفقري طويلاً بدون انحناء زائد.\n3. لف الحوض ببطء لتنقل الركبتين إلى الجهة الأخرى مع بقاء القدمين قريبين من الأرض.\n4. اسمح للورك بالدوران، لكن لا تدفع الركبة بالقوة إلى الأرض.\n5. توقف لحظة في كل جهة، تنفس بهدوء، ثم عد للجهة المقابلة.\n6. اعمل بعدد بطيء وجودة عالية، وتوقف فوراً إذا ظهر ألم حاد أو pinching داخل الورك أو الركبة.",
+    "en": "1. Sit on the floor with both knees bent in a 90/90 position.\n2. Lift the chest and keep the spine long without excessive arching.\n3. Slowly rotate the pelvis to move both knees to the other side while the feet stay close to the floor.\n4. Let the hips rotate, but do not force the knee down with the hands.\n5. Pause briefly on each side, breathe calmly, and switch back under control.\n6. Use slow, high-quality reps and stop immediately if you feel sharp pain or pinching in the hip or knee."
   },
   "reportMetrics": {
     "primary": [

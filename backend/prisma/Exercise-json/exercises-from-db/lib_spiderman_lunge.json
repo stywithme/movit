@@ -160,42 +160,6 @@
               "min": 120
             }
           }
-        },
-        {
-          "joint": "spine",
-          "role": "secondary",
-          "startPose": {
-            "max": 28,
-            "min": 0
-          },
-          "stateMessages": {
-            "perfect": {
-              "ar": "جذع مرفوع فوق الورك",
-              "en": "Torso tall over the hips"
-            },
-            "warning": {
-              "ar": "لا تنهَر قطنيّاً في المد",
-              "en": "Avoid collapsing into lumbar flexion in the reach"
-            }
-          },
-          "range": {
-            "pad": {
-              "max": 30,
-              "min": 0
-            },
-            "normal": {
-              "max": 24,
-              "min": 0
-            },
-            "perfect": {
-              "max": 18,
-              "min": 0
-            },
-            "warning": {
-              "max": 45,
-              "min": 30
-            }
-          }
         }
       ],
       "positionChecks": [
@@ -319,14 +283,14 @@
           "messageId": "9d29b91e-d003-420d-95d6-4c017fd4a034",
           "target": "joint_state",
           "context": "perfect",
-          "jointCode": "spine",
+          "jointCode": "left_hip",
           "sortOrder": 10
         },
         {
           "messageId": "8035ac34-0eef-415e-bc8e-2b7de912a1df",
           "target": "joint_state",
           "context": "warning",
-          "jointCode": "spine",
+          "jointCode": "left_hip",
           "sortOrder": 11
         },
         {
@@ -357,12 +321,12 @@
     }
   ],
   "description": {
-    "ar": "تمرين مكتبة: اندفاع سبايدرمان.",
-    "en": "Library exercise: Spiderman lunge with reach."
+    "ar": "اندفاع سبايدرمان مع مد الذراع يفتح الورك الأمامي والصدر معاً ويُحسّن تمدد عضلات الورك والعمود الصدري.",
+    "en": "A Spiderman lunge with a reach opens the front hip and thoracic spine together, improving hip flexor and upper-back mobility."
   },
   "instructions": {
-    "ar": "حافظ على عمود فقري محايد وتنفس بثبات وتوقف عند أي ألم حاد.",
-    "en": "Maintain neutral spine, steady breathing, and stop if sharp pain appears."
+    "ar": "1. ادخل في وضع لوح علوي.\n2. قدّم قدمك نحو يدك المعاكسة وضع الركبة بجانب أو خارج المرفق بلطف.\n3. مدّ الذراع البعيدة للأمام أو للأعلى مع دوران خفيف في الصدر دون ألم في الركبة.\n4. أعد القدم للوضع ثم كرر على الجانب الآخر.\n5. نفّذ 6–10 تبديلات ببطء.\n6. توقف عند ألم حاد في الركبة أو الورك أو الرسغ.",
+    "en": "1. Start in a high plank.\n2. Step the foot toward the opposite hand and place the knee near the elbow without forcing pain.\n3. Reach the far arm forward or overhead with a light thoracic rotation.\n4. Return the foot to plank, then alternate sides.\n5. Perform 6–10 slow switches.\n6. Stop if you feel sharp knee, hip, or wrist pain."
   },
   "reportMetrics": {
     "primary": [
@@ -518,42 +482,6 @@
               "warning": {
                 "ar": "لا تطوي الورك الخلفي مبكراً",
                 "en": "Don’t fold the rear hip early"
-              }
-            }
-          },
-          {
-            "role": "secondary",
-            "joint": "spine",
-            "range": {
-              "pad": {
-                "max": 30,
-                "min": 0
-              },
-              "normal": {
-                "max": 24,
-                "min": 0
-              },
-              "perfect": {
-                "max": 18,
-                "min": 0
-              },
-              "warning": {
-                "max": 45,
-                "min": 30
-              }
-            },
-            "startPose": {
-              "max": 28,
-              "min": 0
-            },
-            "stateMessages": {
-              "perfect": {
-                "ar": "جذع مرفوع فوق الورك",
-                "en": "Torso tall over the hips"
-              },
-              "warning": {
-                "ar": "لا تنهَر قطنيّاً في المد",
-                "en": "Avoid collapsing into lumbar flexion in the reach"
               }
             }
           }

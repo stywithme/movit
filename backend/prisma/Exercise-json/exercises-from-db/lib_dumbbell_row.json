@@ -274,6 +274,42 @@
               "min": 55
             }
           }
+        },
+        {
+          "joint": "spine",
+          "role": "secondary",
+          "startPose": {
+            "max": 185,
+            "min": 165
+          },
+          "stateMessages": {
+            "perfect": {
+              "ar": "ظهر محايد — لا تفرط في الدوران",
+              "en": "Neutral torso — avoid big twists"
+            },
+            "warning": {
+              "ar": "قلل دوران الجذع واسحب بالظهر",
+              "en": "Reduce trunk rotation and pull with the back"
+            }
+          },
+          "range": {
+            "pad": {
+              "max": 185,
+              "min": 158
+            },
+            "normal": {
+              "max": 185,
+              "min": 165
+            },
+            "perfect": {
+              "max": 182,
+              "min": 170
+            },
+            "warning": {
+              "max": 168,
+              "min": 145
+            }
+          }
         }
       ],
       "positionChecks": [
@@ -484,12 +520,12 @@
     }
   ],
   "description": {
-    "ar": "تمرين مكتبة: تجديف دمبل أحادي.",
-    "en": "Library exercise: Single-arm dumbbell row."
+    "ar": "تجديف دمبل أحادي من وضعية مائلة لتقوية ظهر أعلى والعضلة المستقيمة البطنية مع الحفاظ على ثبات الجذع.",
+    "en": "A single-arm dumbbell row from a hinged position to strengthen the upper back and lats while keeping the trunk quiet."
   },
   "instructions": {
-    "ar": "حافظ على عمود فقري محايد وتنفس بثبات وتوقف عند أي ألم حاد.",
-    "en": "Maintain neutral spine, steady breathing, and stop if sharp pain appears."
+    "ar": "ضع ركبة ويد دعم على المقعد، والقدم الآخر على الأرض. أدار الوركين قليلاً للخلف، ثم اسحب الدمبل بخط نحو الورك مع إبقاء المرفق قريباً من الجسم. تجنب الدوران المفرط أو رفع الكتف نحو الأذن. ضع الكاميرا بحيث يظهر جانب الذراع الذي يؤدي التكرارات.",
+    "en": "Set the knee and support hand on the bench with the other foot planted. Hinge the hips slightly back, then row the dumbbell in an arc toward the hip while keeping the elbow tucked. Avoid big torso twists or shrugging the working shoulder. Face the camera toward the side of the arm that is performing the reps."
   },
   "supportsWeight": true,
   "reportMetrics": {
@@ -756,6 +792,42 @@
               "warning": {
                 "ar": "تجنب رفع الكتف نحو الأذن",
                 "en": "Avoid hiking the shoulder to the ear"
+              }
+            }
+          },
+          {
+            "role": "secondary",
+            "joint": "spine",
+            "range": {
+              "pad": {
+                "max": 185,
+                "min": 158
+              },
+              "normal": {
+                "max": 185,
+                "min": 165
+              },
+              "perfect": {
+                "max": 182,
+                "min": 170
+              },
+              "warning": {
+                "max": 168,
+                "min": 145
+              }
+            },
+            "startPose": {
+              "max": 185,
+              "min": 165
+            },
+            "stateMessages": {
+              "perfect": {
+                "ar": "ظهر محايد — لا تفرط في الدوران",
+                "en": "Neutral torso — avoid big twists"
+              },
+              "warning": {
+                "ar": "قلل دوران الجذع واسحب بالظهر",
+                "en": "Reduce trunk rotation and pull with the back"
               }
             }
           }

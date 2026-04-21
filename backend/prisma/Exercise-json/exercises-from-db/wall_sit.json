@@ -24,7 +24,8 @@
     "abs_muscle"
   ],
   "equipment": [
-    "bodyweight"
+    "bodyweight",
+    "wall"
   ],
   "tags": [
     "isometric",
@@ -56,52 +57,52 @@
           "joint": "left_knee",
           "role": "primary",
           "startPose": {
-            "max": 110,
-            "min": 75
+            "min": 155,
+            "max": 180
           },
           "stateMessages": {
             "pad": {
-              "ar": "مقبول، لكن يمكنك التحسن",
-              "en": "Acceptable, but you can improve"
+              "ar": "العمق مقبول لكنه أقل مما نستهدفه — انزل قليلاً إذا كان آمناً.",
+              "en": "Depth is acceptable but shallower than ideal — lower slightly if it feels safe."
             },
             "danger": {
-              "ar": "توقف! ركبتيك منخفضة جداً",
-              "en": "Stop! Knees too low"
+              "ar": "توقف — عمق مفرط قد يزيد ضغط الركبة. ارتفع قليلاً أو أنهِ التمرين.",
+              "en": "Stop — excessive depth may overload the knee. Rise slightly or end the set."
             },
             "normal": {
-              "ar": "جيد، حاول النزول أكثر قليلاً",
-              "en": "Good, try going a bit lower"
+              "ar": "جيد — اقترب أكثر من 90° بين الفخذ والساق إن أمكن.",
+              "en": "Good — move closer to ~90° between thigh and shin if you can."
             },
             "perfect": {
-              "ar": "ممتاز! وضعية مثالية",
-              "en": "Perfect! Great position"
+              "ar": "ممتاز — زاوية ركبة ثابتة ومريحة قرب 90°.",
+              "en": "Perfect — stable, comfortable knee angle near 90°."
             },
             "warning": {
-              "ar": "انزل أكثر - ركبتيك بزاوية 90 درجة",
-              "en": "Lower down - knees at 90 degrees"
+              "ar": "أنت مرتفع جداً على الحائط — انزل قليلاً لتحمّل الفخذين بشكل أفضل.",
+              "en": "You are too high on the wall — slide down a bit to load the thighs better."
             }
           },
           "pairedWith": "right_knee",
           "range": {
-            "pad": {
-              "max": 110,
-              "min": 80
-            },
-            "danger": {
-              "max": 60,
-              "min": 0
+            "perfect": {
+              "min": 82,
+              "max": 102
             },
             "normal": {
-              "max": 100,
-              "min": 85
+              "min": 75,
+              "max": 112
             },
-            "perfect": {
-              "max": 95,
-              "min": 88
+            "pad": {
+              "min": 68,
+              "max": 120
             },
             "warning": {
-              "max": 80,
-              "min": 60
+              "min": 118,
+              "max": 175
+            },
+            "danger": {
+              "min": 35,
+              "max": 62
             }
           }
         },
@@ -109,52 +110,52 @@
           "joint": "right_knee",
           "role": "primary",
           "startPose": {
-            "max": 110,
-            "min": 75
+            "min": 155,
+            "max": 180
           },
           "stateMessages": {
             "pad": {
-              "ar": "مقبول، لكن يمكنك التحسن",
-              "en": "Acceptable, but you can improve"
+              "ar": "العمق مقبول لكنه أقل مما نستهدفه — انزل قليلاً إذا كان آمناً.",
+              "en": "Depth is acceptable but shallower than ideal — lower slightly if it feels safe."
             },
             "danger": {
-              "ar": "توقف! ركبتيك منخفضة جداً",
-              "en": "Stop! Knees too low"
+              "ar": "توقف — عمق مفرط قد يزيد ضغط الركبة. ارتفع قليلاً أو أنهِ التمرين.",
+              "en": "Stop — excessive depth may overload the knee. Rise slightly or end the set."
             },
             "normal": {
-              "ar": "جيد، حاول النزول أكثر قليلاً",
-              "en": "Good, try going a bit lower"
+              "ar": "جيد — اقترب أكثر من 90° بين الفخذ والساق إن أمكن.",
+              "en": "Good — move closer to ~90° between thigh and shin if you can."
             },
             "perfect": {
-              "ar": "ممتاز! وضعية مثالية",
-              "en": "Perfect! Great position"
+              "ar": "ممتاز — زاوية ركبة ثابتة ومريحة قرب 90°.",
+              "en": "Perfect — stable, comfortable knee angle near 90°."
             },
             "warning": {
-              "ar": "انزل للوضع الصحيح",
-              "en": "Lower to the correct position"
+              "ar": "أنت مرتفع جداً على الحائط — انزل قليلاً لتحمّل الفخذين بشكل أفضل.",
+              "en": "You are too high on the wall — slide down a bit to load the thighs better."
             }
           },
           "pairedWith": "left_knee",
           "range": {
-            "pad": {
-              "max": 110,
-              "min": 80
-            },
-            "danger": {
-              "max": 60,
-              "min": 0
+            "perfect": {
+              "min": 82,
+              "max": 102
             },
             "normal": {
-              "max": 100,
-              "min": 85
+              "min": 75,
+              "max": 112
             },
-            "perfect": {
-              "max": 95,
-              "min": 88
+            "pad": {
+              "min": 68,
+              "max": 120
             },
             "warning": {
-              "max": 80,
-              "min": 60
+              "min": 118,
+              "max": 175
+            },
+            "danger": {
+              "min": 35,
+              "max": 62
             }
           }
         },
@@ -162,27 +163,81 @@
           "joint": "left_hip",
           "role": "secondary",
           "startPose": {
-            "max": 110,
-            "min": 75
+            "min": 155,
+            "max": 180
           },
           "stateMessages": {
+            "normal": {
+              "ar": "جيد — حافظ على الحوض تحت الكتفين دون انزلاقه للأمام.",
+              "en": "Good — keep the hips under the shoulders without sliding them forward."
+            },
             "perfect": {
-              "ar": "ممتاز - الفخذان موازيان للأرض",
-              "en": "Great - thighs parallel to floor"
+              "ar": "ممتاز — فخذان موازيان تقريباً للأرض والظهر ملتصق بالحائط.",
+              "en": "Great — thighs near parallel to the floor and the back stays on the wall."
+            },
+            "warning": {
+              "ar": "لا تدفع الحوض بعيداً عن الحائط — أبقِ الوركين تحت الجذع.",
+              "en": "Do not push the hips away from the wall — keep them under your trunk."
             }
           },
+          "pairedWith": "right_hip",
           "range": {
-            "pad": {
-              "max": 110,
-              "min": 80
+            "perfect": {
+              "min": 82,
+              "max": 102
             },
             "normal": {
-              "max": 100,
-              "min": 85
+              "min": 75,
+              "max": 112
+            },
+            "pad": {
+              "min": 68,
+              "max": 120
+            },
+            "warning": {
+              "min": 118,
+              "max": 175
+            }
+          }
+        },
+        {
+          "joint": "right_hip",
+          "role": "secondary",
+          "startPose": {
+            "min": 155,
+            "max": 180
+          },
+          "stateMessages": {
+            "normal": {
+              "ar": "جيد — حافظ على الحوض تحت الكتفين دون انزلاقه للأمام.",
+              "en": "Good — keep the hips under the shoulders without sliding them forward."
             },
             "perfect": {
-              "max": 95,
-              "min": 88
+              "ar": "ممتاز — فخذان موازيان تقريباً للأرض والظهر ملتصق بالحائط.",
+              "en": "Great — thighs near parallel to the floor and the back stays on the wall."
+            },
+            "warning": {
+              "ar": "لا تدفع الحوض بعيداً عن الحائط — أبقِ الوركين تحت الجذع.",
+              "en": "Do not push the hips away from the wall — keep them under your trunk."
+            }
+          },
+          "pairedWith": "left_hip",
+          "range": {
+            "perfect": {
+              "min": 82,
+              "max": 102
+            },
+            "normal": {
+              "min": 75,
+              "max": 112
+            },
+            "pad": {
+              "min": 68,
+              "max": 120
+            },
+            "warning": {
+              "min": 118,
+              "max": 175
             }
           }
         }
@@ -386,16 +441,17 @@
     }
   ],
   "description": {
-    "ar": "تمرين ثبات لتقوية عضلات الفخذ والقدرة على التحمل",
-    "en": "Isometric exercise to strengthen quadriceps and build endurance"
+    "ar": "الجلوس على الحائط تمرين إسومتري يبني تحمل عضلات الفخذ والأرداف مع دعم الظهر بالحائط. الهدف هو ثبات مريح قرب 90° في الركبتين، ركبتان فوق الكعبين، وتجنب انهيار الركبتين للداخل.",
+    "en": "The wall sit is an isometric drill that builds thigh and glute endurance while the wall supports your back. The goal is a steady hold near 90° at the knees, knees over ankles, and no inward knee collapse."
   },
   "instructions": {
-    "ar": "اسند ظهرك على الحائط وانزل حتى تصبح ركبتيك بزاوية 90 درجة كأنك جالس على كرسي غير مرئي",
-    "en": "Lean back against a wall and lower until knees are at 90 degrees like sitting on an invisible chair"
+    "ar": "1. اسند ظهرك ورأسك على الحائط وابتعد بالقدمين قليلاً.\n2. انزل حتى يقترب الفخذان من التوازي مع الأرض وزاوية الركبة قرب 90° إن أمكن.\n3. ثبّت الركبتين فوق الكعبين ولا تدعهما ينهاران للداخل.\n4. شد الجذع قليلاً وتنفس بهدوء طوال الثبات.\n5. أنهِ التمرين عند ألم حاد في الركبة أو فقدان الشكل.",
+    "en": "1. Set your back and head on the wall and walk the feet slightly forward.\n2. Slide down until the thighs approach parallel to the floor and knee angles near 90° if comfortable.\n3. Keep knees over the ankles and prevent the knees from collapsing inward.\n4. Brace the trunk lightly and breathe steadily through the hold.\n5. Stop if you feel sharp knee pain or lose control of the position."
   },
   "reportMetrics": {
     "primary": [
-      "FORM_SCORE"
+      "FORM_SCORE",
+      "HOLD_DURATION"
     ],
     "excluded": [
       "REP_COUNT",
@@ -454,52 +510,52 @@
             "role": "primary",
             "joint": "left_knee",
             "range": {
-              "pad": {
-                "max": 110,
-                "min": 80
-              },
-              "danger": {
-                "max": 60,
-                "min": 0
+              "perfect": {
+                "min": 82,
+                "max": 102
               },
               "normal": {
-                "max": 100,
-                "min": 85
+                "min": 75,
+                "max": 112
               },
-              "perfect": {
-                "max": 95,
-                "min": 88
+              "pad": {
+                "min": 68,
+                "max": 120
               },
               "warning": {
-                "max": 80,
-                "min": 60
+                "min": 118,
+                "max": 175
+              },
+              "danger": {
+                "min": 35,
+                "max": 62
               }
             },
             "startPose": {
-              "max": 110,
-              "min": 75
+              "min": 155,
+              "max": 180
             },
             "pairedWith": "right_knee",
             "stateMessages": {
               "pad": {
-                "ar": "مقبول، لكن يمكنك التحسن",
-                "en": "Acceptable, but you can improve"
+                "ar": "العمق مقبول لكنه أقل مما نستهدفه — انزل قليلاً إذا كان آمناً.",
+                "en": "Depth is acceptable but shallower than ideal — lower slightly if it feels safe."
               },
               "danger": {
-                "ar": "توقف! ركبتيك منخفضة جداً",
-                "en": "Stop! Knees too low"
+                "ar": "توقف — عمق مفرط قد يزيد ضغط الركبة. ارتفع قليلاً أو أنهِ التمرين.",
+                "en": "Stop — excessive depth may overload the knee. Rise slightly or end the set."
               },
               "normal": {
-                "ar": "جيد، حاول النزول أكثر قليلاً",
-                "en": "Good, try going a bit lower"
+                "ar": "جيد — اقترب أكثر من 90° بين الفخذ والساق إن أمكن.",
+                "en": "Good — move closer to ~90° between thigh and shin if you can."
               },
               "perfect": {
-                "ar": "ممتاز! وضعية مثالية",
-                "en": "Perfect! Great position"
+                "ar": "ممتاز — زاوية ركبة ثابتة ومريحة قرب 90°.",
+                "en": "Perfect — stable, comfortable knee angle near 90°."
               },
               "warning": {
-                "ar": "انزل أكثر - ركبتيك بزاوية 90 درجة",
-                "en": "Lower down - knees at 90 degrees"
+                "ar": "أنت مرتفع جداً على الحائط — انزل قليلاً لتحمّل الفخذين بشكل أفضل.",
+                "en": "You are too high on the wall — slide down a bit to load the thighs better."
               }
             }
           },
@@ -507,52 +563,52 @@
             "role": "primary",
             "joint": "right_knee",
             "range": {
-              "pad": {
-                "max": 110,
-                "min": 80
-              },
-              "danger": {
-                "max": 60,
-                "min": 0
+              "perfect": {
+                "min": 82,
+                "max": 102
               },
               "normal": {
-                "max": 100,
-                "min": 85
+                "min": 75,
+                "max": 112
               },
-              "perfect": {
-                "max": 95,
-                "min": 88
+              "pad": {
+                "min": 68,
+                "max": 120
               },
               "warning": {
-                "max": 80,
-                "min": 60
+                "min": 118,
+                "max": 175
+              },
+              "danger": {
+                "min": 35,
+                "max": 62
               }
             },
             "startPose": {
-              "max": 110,
-              "min": 75
+              "min": 155,
+              "max": 180
             },
             "pairedWith": "left_knee",
             "stateMessages": {
               "pad": {
-                "ar": "مقبول، لكن يمكنك التحسن",
-                "en": "Acceptable, but you can improve"
+                "ar": "العمق مقبول لكنه أقل مما نستهدفه — انزل قليلاً إذا كان آمناً.",
+                "en": "Depth is acceptable but shallower than ideal — lower slightly if it feels safe."
               },
               "danger": {
-                "ar": "توقف! ركبتيك منخفضة جداً",
-                "en": "Stop! Knees too low"
+                "ar": "توقف — عمق مفرط قد يزيد ضغط الركبة. ارتفع قليلاً أو أنهِ التمرين.",
+                "en": "Stop — excessive depth may overload the knee. Rise slightly or end the set."
               },
               "normal": {
-                "ar": "جيد، حاول النزول أكثر قليلاً",
-                "en": "Good, try going a bit lower"
+                "ar": "جيد — اقترب أكثر من 90° بين الفخذ والساق إن أمكن.",
+                "en": "Good — move closer to ~90° between thigh and shin if you can."
               },
               "perfect": {
-                "ar": "ممتاز! وضعية مثالية",
-                "en": "Perfect! Great position"
+                "ar": "ممتاز — زاوية ركبة ثابتة ومريحة قرب 90°.",
+                "en": "Perfect — stable, comfortable knee angle near 90°."
               },
               "warning": {
-                "ar": "انزل للوضع الصحيح",
-                "en": "Lower to the correct position"
+                "ar": "أنت مرتفع جداً على الحائط — انزل قليلاً لتحمّل الفخذين بشكل أفضل.",
+                "en": "You are too high on the wall — slide down a bit to load the thighs better."
               }
             }
           },
@@ -560,29 +616,83 @@
             "role": "secondary",
             "joint": "left_hip",
             "range": {
-              "pad": {
-                "max": 110,
-                "min": 80
+              "perfect": {
+                "min": 82,
+                "max": 102
               },
               "normal": {
-                "max": 100,
-                "min": 85
+                "min": 75,
+                "max": 112
               },
-              "perfect": {
-                "max": 95,
-                "min": 88
+              "pad": {
+                "min": 68,
+                "max": 120
+              },
+              "warning": {
+                "min": 118,
+                "max": 175
               }
             },
             "startPose": {
-              "max": 110,
-              "min": 75
+              "min": 155,
+              "max": 180
             },
             "stateMessages": {
+              "normal": {
+                "ar": "جيد — حافظ على الحوض تحت الكتفين دون انزلاقه للأمام.",
+                "en": "Good — keep the hips under the shoulders without sliding them forward."
+              },
               "perfect": {
-                "ar": "ممتاز - الفخذان موازيان للأرض",
-                "en": "Great - thighs parallel to floor"
+                "ar": "ممتاز — فخذان موازيان تقريباً للأرض والظهر ملتصق بالحائط.",
+                "en": "Great — thighs near parallel to the floor and the back stays on the wall."
+              },
+              "warning": {
+                "ar": "لا تدفع الحوض بعيداً عن الحائط — أبقِ الوركين تحت الجذع.",
+                "en": "Do not push the hips away from the wall — keep them under your trunk."
               }
-            }
+            },
+            "pairedWith": "right_hip"
+          },
+          {
+            "role": "secondary",
+            "joint": "right_hip",
+            "range": {
+              "perfect": {
+                "min": 82,
+                "max": 102
+              },
+              "normal": {
+                "min": 75,
+                "max": 112
+              },
+              "pad": {
+                "min": 68,
+                "max": 120
+              },
+              "warning": {
+                "min": 118,
+                "max": 175
+              }
+            },
+            "startPose": {
+              "min": 155,
+              "max": 180
+            },
+            "stateMessages": {
+              "normal": {
+                "ar": "جيد — حافظ على الحوض تحت الكتفين دون انزلاقه للأمام.",
+                "en": "Good — keep the hips under the shoulders without sliding them forward."
+              },
+              "perfect": {
+                "ar": "ممتاز — فخذان موازيان تقريباً للأرض والظهر ملتصق بالحائط.",
+                "en": "Great — thighs near parallel to the floor and the back stays on the wall."
+              },
+              "warning": {
+                "ar": "لا تدفع الحوض بعيداً عن الحائط — أبقِ الوركين تحت الجذع.",
+                "en": "Do not push the hips away from the wall — keep them under your trunk."
+              }
+            },
+            "pairedWith": "left_hip"
           }
         ]
       }

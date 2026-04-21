@@ -484,12 +484,12 @@
     }
   ],
   "description": {
-    "ar": "تمرين مكتبة: تجديف جالس بحبل.",
-    "en": "Library exercise: Seated row (band)."
+    "ar": "التجديف الجالس بالحبل يقوّي الظهر الأوسط والعضلة ذات الرأسين مع وضعية جذع ثابتة، وهو بديل عملي عند عدم توفر أجهزة الجذب.",
+    "en": "The seated band row strengthens the mid-back and biceps while keeping the trunk tall, and is a practical substitute when cable rowing equipment is not available."
   },
   "instructions": {
-    "ar": "حافظ على عمود فقري محايد وتنفس بثبات وتوقف عند أي ألم حاد.",
-    "en": "Maintain neutral spine, steady breathing, and stop if sharp pain appears."
+    "ar": "1. اجلس مستقيماً مع تمديد الساقين أو ثني الركبتين حسب تثبيت الحبل.\n2. امسك المقبضين وابدأ الذراعين ممدودتين أمامك.\n3. ازفر واسحب المقبضين نحو الوركين مع ضمّ لوحي الكتف.\n4. توقف لحظة ثم ارجع ببطء دون تقوس الظهر.\n5. لا تدفع الصدر للأمام بميل زائد أو ترفع الكتفين.\n6. اضبط شد الحبل ليبقى التحكم في آخر المدى.",
+    "en": "1. Sit tall with legs extended or knees bent depending on how you anchor the band.\n2. Hold the handles and start with arms long in front.\n3. Exhale and row the handles toward the hips while squeezing the shoulder blades.\n4. Pause briefly, then return slowly without rounding the spine.\n5. Do not lean the torso far forward or shrug the shoulders.\n6. Adjust band tension so the end range stays controlled."
   },
   "reportMetrics": {
     "primary": [

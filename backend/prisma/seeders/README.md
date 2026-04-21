@@ -2,8 +2,9 @@
 
 ## Layout
 
-- **`Exercise-json/exercises/*.json`** — Core exercises (hand-authored). Use for stable products and detailed pose config.
-- **`curated-extension-rows.ts` + `curated-catalog-extension.ts`** — Curated `lib_*` library rows (metadata + blueprint fields).
+- **`Exercise-json/exercises-from-db/*.json`** — **Canonical exercise library** for `prisma:seed` (one JSON per `slug`; pose variants + checks live in-file). Export path: `prisma/export-exercises-json-from-db.ts`.
+- **`Exercise-json/workouts/*.json`** — Sample workouts (references exercise slugs from the library above).
+- **`curated-extension-rows.ts` + `curated-catalog-extension.ts`** — **Fallback only**: extra catalog rows not yet present as JSON files (skipped automatically when the same slug exists in `exercises-from-db`).
 - **`curated-pose-blueprints.ts`** — Default pose variants by `movementPattern` when no override exists.
 - **`curated-pose-overrides.ts`** — Per-slug pose variants (joints, checks, feedback) for `lib_*` exercises that must not use the generic blueprint.
 - **`phase-range-builders.ts`** — Reusable `phaseRanges` / `phaseStateMessages` helpers for secondary joints (see file header for conventions).
@@ -13,8 +14,8 @@
 
 ## When to add what
 
-1. **New core exercise** — Add JSON under `Exercise-json/exercises/` and ensure slug is picked up by `exercises-workouts.ts`.
-2. **New `lib_*` row** — Add tuple to `curated-extension-rows.ts`; if the default blueprint is wrong, add an override in `curated-pose-overrides.ts`.
+1. **New exercise** — Add `Exercise-json/exercises-from-db/<slug>.json` (re-seed). Optional: add a row to `exercise-manifest.ts` if inference is wrong for `movementPattern` / `familyKey`.
+2. **Curated extension without JSON yet** — Add tuple to `curated-extension-rows.ts`; once a JSON file exists for that slug, the row is ignored on seed.
 3. **Angles change by phase** — Use `phaseRanges` (and optionally `phaseStateMessages`) on **secondary** joints; keep `range` populated for the Admin UI template.
 
 ## Commands

@@ -171,106 +171,6 @@
               "min": 135
             }
           }
-        },
-        {
-          "joint": "spine",
-          "role": "secondary",
-          "startPose": {
-            "max": 25,
-            "min": 0
-          },
-          "stateMessages": {
-            "perfect": {
-              "ar": "عمود فقري منظم في النزول",
-              "en": "Spine stays organized through the lowering"
-            },
-            "warning": {
-              "ar": "قلل المدى إذا انهار القطن",
-              "en": "Reduce range if the low back collapses"
-            }
-          },
-          "range": {
-            "pad": {
-              "max": 35,
-              "min": 0
-            },
-            "danger": {
-              "max": 85,
-              "min": 42
-            },
-            "normal": {
-              "max": 26,
-              "min": 0
-            },
-            "perfect": {
-              "max": 18,
-              "min": 0
-            },
-            "warning": {
-              "max": 45,
-              "min": 28
-            }
-          },
-          "phaseRanges": {
-            "up": {
-              "normal": {
-                "max": 24,
-                "min": 0
-              },
-              "perfect": {
-                "max": 18,
-                "min": 0
-              }
-            },
-            "top": {
-              "perfect": {
-                "max": 12,
-                "min": 0
-              }
-            },
-            "down": {
-              "normal": {
-                "max": 24,
-                "min": 0
-              },
-              "perfect": {
-                "max": 18,
-                "min": 0
-              }
-            },
-            "bottom": {
-              "normal": {
-                "max": 35,
-                "min": 5
-              },
-              "perfect": {
-                "max": 28,
-                "min": 8
-              }
-            }
-          },
-          "phaseStateMessages": {
-            "top": {
-              "perfect": {
-                "ar": "ظهر محايد في الوقفة",
-                "en": "Neutral spine at the top"
-              },
-              "warning": {
-                "ar": "لا تميل القطن للأمام في الأعلى",
-                "en": "Avoid excessive lumbar lean at the top"
-              }
-            },
-            "bottom": {
-              "perfect": {
-                "ar": "انحناء مقبول في القاع مع تحكم",
-                "en": "Acceptable flexion at bottom with control"
-              },
-              "warning": {
-                "ar": "قلل الانحناء القطني الزائد",
-                "en": "Reduce excessive lumbar flexion"
-              }
-            }
-          }
         }
       ],
       "positionChecks": [
@@ -402,42 +302,42 @@
           "messageId": "b50a9b39-688b-4432-aa16-bcb4890e2231",
           "target": "joint_state",
           "context": "perfect",
-          "jointCode": "spine",
+          "jointCode": "right_hip",
           "sortOrder": 11
         },
         {
           "messageId": "8cd0517f-610d-495c-b178-afbecb484181",
           "target": "joint_state",
           "context": "warning",
-          "jointCode": "spine",
+          "jointCode": "right_hip",
           "sortOrder": 12
         },
         {
           "messageId": "708152a0-6271-4634-9739-72bf8858069a",
           "target": "joint_state_phase",
           "context": "top:perfect",
-          "jointCode": "spine",
+          "jointCode": "right_hip",
           "sortOrder": 13
         },
         {
           "messageId": "ac25beb7-533d-4bf7-8962-1a560a8563eb",
           "target": "joint_state_phase",
           "context": "top:warning",
-          "jointCode": "spine",
+          "jointCode": "right_hip",
           "sortOrder": 14
         },
         {
           "messageId": "88f7e48a-7347-4f74-8a7f-d4d168fef607",
           "target": "joint_state_phase",
           "context": "bottom:perfect",
-          "jointCode": "spine",
+          "jointCode": "right_hip",
           "sortOrder": 15
         },
         {
           "messageId": "e17a46dd-0e08-4bab-bdc2-8619a91914b6",
           "target": "joint_state_phase",
           "context": "bottom:warning",
-          "jointCode": "spine",
+          "jointCode": "right_hip",
           "sortOrder": 16
         },
         {
@@ -469,12 +369,12 @@
     }
   ],
   "description": {
-    "ar": "تمرين مكتبة: نورديك خلفي.",
-    "en": "Library exercise: Nordic hamstring (eccentric)."
+    "ar": "النورديك اللاحق (eccentric) يقوّي الهامسترنج عند الركبة بتمديد بطيء للجذع من وضع الركبتين، وهو تمرين متقدم يحتاج شريكاً أو تثبيتاً جيداً للقدمين.",
+    "en": "The eccentric Nordic curl strengthens the hamstrings at the knee with a slow lowering of the torso from kneeling, and is an advanced drill that needs a partner or secure foot fixation."
   },
   "instructions": {
-    "ar": "حافظ على عمود فقري محايد وتنفس بثبات وتوقف عند أي ألم حاد.",
-    "en": "Maintain neutral spine, steady breathing, and stop if sharp pain appears."
+    "ar": "1. اركع مع تثبيت الكعبين والقدمين من الشريك أو الجهاز.\n2. اجعل الجذع مستقيماً من الركبتين إلى الرأس في البداية.\n3. ابدأ الإنزال البطيء للأمام مع محاولة مقاومة السقوط بالخلفية للفخذ.\n4. استخدم دفع اليدين عند الحاجة للتحكم في النهاية فقط.\n5. لا تفرط في المدى إذا ظهر شد حاد.\n6. توقف عند أي ألم حاد خلف الفخذ أو الركبة.",
+    "en": "1. Kneel with ankles and feet secured by a partner or equipment.\n2. Keep a straight line from knees to head at the start.\n3. Lower forward slowly while resisting with the hamstrings.\n4. Use a light push from the hands only if needed for control at the bottom.\n5. Do not chase extra range if you feel sharp tension.\n6. Stop if you feel sharp pain behind the thigh or at the knee."
   },
   "reportMetrics": {
     "primary": [
@@ -641,106 +541,6 @@
               "warning": {
                 "ar": "لا تطوّي الورك مبكراً عن الصدر",
                 "en": "Do not break at the hip early into the chest"
-              }
-            }
-          },
-          {
-            "role": "secondary",
-            "joint": "spine",
-            "range": {
-              "pad": {
-                "max": 35,
-                "min": 0
-              },
-              "danger": {
-                "max": 85,
-                "min": 42
-              },
-              "normal": {
-                "max": 26,
-                "min": 0
-              },
-              "perfect": {
-                "max": 18,
-                "min": 0
-              },
-              "warning": {
-                "max": 45,
-                "min": 28
-              }
-            },
-            "startPose": {
-              "max": 25,
-              "min": 0
-            },
-            "phaseRanges": {
-              "up": {
-                "normal": {
-                  "max": 24,
-                  "min": 0
-                },
-                "perfect": {
-                  "max": 18,
-                  "min": 0
-                }
-              },
-              "top": {
-                "perfect": {
-                  "max": 12,
-                  "min": 0
-                }
-              },
-              "down": {
-                "normal": {
-                  "max": 24,
-                  "min": 0
-                },
-                "perfect": {
-                  "max": 18,
-                  "min": 0
-                }
-              },
-              "bottom": {
-                "normal": {
-                  "max": 35,
-                  "min": 5
-                },
-                "perfect": {
-                  "max": 28,
-                  "min": 8
-                }
-              }
-            },
-            "stateMessages": {
-              "perfect": {
-                "ar": "عمود فقري منظم في النزول",
-                "en": "Spine stays organized through the lowering"
-              },
-              "warning": {
-                "ar": "قلل المدى إذا انهار القطن",
-                "en": "Reduce range if the low back collapses"
-              }
-            },
-            "phaseStateMessages": {
-              "top": {
-                "perfect": {
-                  "ar": "ظهر محايد في الوقفة",
-                  "en": "Neutral spine at the top"
-                },
-                "warning": {
-                  "ar": "لا تميل القطن للأمام في الأعلى",
-                  "en": "Avoid excessive lumbar lean at the top"
-                }
-              },
-              "bottom": {
-                "perfect": {
-                  "ar": "انحناء مقبول في القاع مع تحكم",
-                  "en": "Acceptable flexion at bottom with control"
-                },
-                "warning": {
-                  "ar": "قلل الانحناء القطني الزائد",
-                  "en": "Reduce excessive lumbar flexion"
-                }
               }
             }
           }

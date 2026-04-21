@@ -19,7 +19,8 @@
   "countingMethod": "up_down",
   "muscles": [
     "front_delts",
-    "side_delts"
+    "side_delts",
+    "triceps"
   ],
   "equipment": [
     "dumbbell",
@@ -560,12 +561,12 @@
     }
   ],
   "description": {
-    "ar": "تمرين مكتبة: ضغط أرنولد.",
-    "en": "Library exercise: Arnold press."
+    "ar": "ضغط كتف بالدمبل مع دوران من الوضعية الأمامية إلى الانفتاح الجانبي لتفعيل الدالية الأمامية والوسطى مع تحكم في الجذع.",
+    "en": "A dumbbell shoulder press that rotates from a front rack into a wide overhead finish to load the anterior and lateral delts with strong trunk control."
   },
   "instructions": {
-    "ar": "حافظ على عمود فقري محايد وتنفس بثبات وتوقف عند أي ألم حاد.",
-    "en": "Maintain neutral spine, steady breathing, and stop if sharp pain appears."
+    "ar": "ابدأ بالدمبلتين أمام الصدر بقبضة محايدة تقريباً، ثم افتح الذراعين جانباً وأثناء الصعود حتى يصبحا فوق الرأس بزاوية خفيفة في المرفقين. انزل بعكس المسار بتحكم دون قوس زائد في أسفل الظهر. زفر عند الصعود وشهيق عند النزول.",
+    "en": "Start with the dumbbells in front of the chest in a roughly neutral grip, then rotate the arms outward as you press overhead with a soft bend at the elbows. Reverse the path on the way down without flaring the ribs or arching hard through the low back. Exhale on the way up and inhale on the way down."
   },
   "supportsWeight": true,
   "reportMetrics": {

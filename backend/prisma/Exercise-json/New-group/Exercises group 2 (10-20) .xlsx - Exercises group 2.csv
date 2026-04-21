@@ -1,0 +1,11 @@
+Exercise_ID,Exercise Name,Starting Postion,Body_Part,Plane,View_Camera,Type,Primary Joint,Secondary Joint,Secondary Joint,Secondaty Joint,Secondary Joint,Invert Indicator,Repetion,muscles,Rep Minimum Time,Rep Maximum Time,Equipment
+EX011,Barbell Hip Thrust,Back support on bar,Lower body,Sagital Plane,Side view,ups and down,Hip,Knee,,,,,10,"Gluteus Maximus, Hamstring",1.5 seconds,4 secondes,Bar
+EX012,Glutes Bridge,Laying down on back,Lower body,sagital plane,side view,Ups and down,hip,knee,ankle,,,,10,"Gluteus Maximus, Hamstring",1.5 seconds,4 secondes,
+EX013,wall sit,Standing,Lower Body,Sagital Plane,side view,Ups and down,hip,knee,,,,Yes,10,"Quadriceps, Glutes maximus",1.5 seconds,20 secondes,
+EX014,Standing Calf raise,Satnding,Lower Body,Sagital Plane,Side view lower body,Ups and down,Ankle,knee,,,,,10,Calf muscles,1.5 seconds,3 secondes,Dumbbells
+EX015,Push Up,"High plank position, arm extended",Upper Body,Sagital Plane,Side view,Ups and down,Elbow,Shoulder,,,,Yes,10,"Pectoralis Major, Triceps Brachii, Anterior Deltoid",1.5 seconds,3 secondes,
+EX016,Dumbell Bensh press,Laying down on bensh,Upper Body,Transverse Plane,front view upper body,Ups and down,Shoulder,Elbow,,,,,10,"Pectoralis Major, Triceps Brachii, Anterior Deltoid",1.5 seconds,3 secondes,Dumbbells
+EX017,Dumbell shoulder press,sitting,Upper Body,Frontal plane,front view upper body,Ups and down,Shoulder,Elbow,,,,,10,"Anterior Deltoid, Middle Deltoid, Triceps Brachii",1.5 seconds,3 secondes,Dumbbells
+EX018,Arnold press,sitting,Upper Body,fontal plane,front view upper body,Ups and down,Shoulder,Elbow,,,,,10,"Anterior Deltoid, Middle Deltoid, Triceps Brachii",1.5 seconds,3 secondes,Dumbbells
+EX019,Dumbell lateral raise,Standing,Upper Body,fontal plane,front view upper body,Ups and down,Shoulder cross,Elbow,,,,,10,"Middle Deltoid, Supraspinatus",1.5 seconds,3 secondes,Dumbbells
+EX020,Dumbell front raise,standing,Upper Body,sagital plane,Side view upper body,Ups and down,shoulder,Elbow,,,,,10,"Anterior Deltoid, Upper Pectoralis (assist)",1.5 seconds,3 secondes,Dumbbells

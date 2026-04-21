@@ -256,12 +256,12 @@
     }
   ],
   "description": {
-    "ar": "تمرين مكتبة: دفع ثلاثي بحبل.",
-    "en": "Library exercise: Tricep pushdown (band)."
+    "ar": "دفع الترايسبس بالحبل يعزل امتداد المرفق تحت مقاومة متزايدة مع ثبات الكتفين، ويُنفَّذ غالباً واقفاً مع تثبيت الحبل فوق الرأس أو أمام الصدر.",
+    "en": "The band tricep pushdown isolates elbow extension under progressive tension while the shoulders stay set, usually performed standing with the band anchored overhead or in front."
   },
   "instructions": {
-    "ar": "حافظ على عمود فقري محايد وتنفس بثبات وتوقف عند أي ألم حاد.",
-    "en": "Maintain neutral spine, steady breathing, and stop if sharp pain appears."
+    "ar": "1. ثبّت الحبل فوق الرأس أو على باب عالٍ وامسك الطرفين أو المقبض.\n2. ابدأ بمرفقين قريبين من الجسم وزاوية ثابتة في الكتف.\n3. ازفر وادفع للأسفل حتى يكاد يمتد المرفقان بالكامل.\n4. ارجع ببطء دون تحريك الكتفين للأمام.\n5. لا تفرد الكتفين أو تدور المعصمين بشكل مفرط.\n6. خفف الشد إذا فقدت خط المرفقين.",
+    "en": "1. Anchor the band overhead or on a tall door and grasp the ends or handle.\n2. Start with elbows near the torso and stable shoulder angles.\n3. Exhale and press down until the elbows are nearly straight.\n4. Return slowly without drifting the shoulders forward.\n5. Do not flare the shoulders or crank the wrists.\n6. Reduce tension if the elbow line breaks down."
   },
   "reportMetrics": {
     "primary": [

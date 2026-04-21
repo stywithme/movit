@@ -6,7 +6,7 @@
   "familyKey": "spine_mobility_family",
   "familyOrder": 16,
   "name": {
-    "ar": "كتاب مفتوح صدري",
+    "ar": "فتح صدري - Open Book",
     "en": "Open book thoracic rotation"
   },
   "category": {
@@ -18,7 +18,8 @@
   },
   "countingMethod": "up_down",
   "muscles": [
-    "obliques"
+    "obliques",
+    "upper_back"
   ],
   "equipment": [
     "bodyweight",
@@ -26,7 +27,8 @@
   ],
   "tags": [
     "curated_library",
-    "mobility"
+    "mobility",
+    "thoracic"
   ],
   "repCountingConfig": {
     "reps": 12,
@@ -36,92 +38,86 @@
   "poseVariants": [
     {
       "name": {
-        "ar": "زاوية جانبية",
-        "en": "Side view"
+        "ar": "استلقاء جانبي",
+        "en": "Side-lying"
       },
-      "posePosition": "standing_side",
+      "posePosition": "side_lying",
       "expectedPostures": [
-        "standing"
+        "side_lying"
       ],
       "expectedDirections": [
         "side"
       ],
       "expectedRegions": [
-        "full_body"
+        "upper_body"
       ],
       "trackedJoints": [
         {
           "joint": "spine",
           "role": "primary",
           "startPose": {
-            "max": 45,
+            "max": 15,
             "min": 0
           },
           "stateMessages": {
             "pad": {
               "up": {
-                "ar": "مقبول — ابنِ المدى تدريجياً",
-                "en": "Acceptable — build ROM gradually"
-              }
-            },
-            "danger": {
-              "up": {
-                "ar": "توقف — ألم حاد",
-                "en": "Stop — sharp pain"
+                "ar": "مقبول — زِد الفتح تدريجياً مع بقاء الركبتين ثابتتين",
+                "en": "Acceptable — build the opening gradually while the knees stay stacked"
               }
             },
             "normal": {
               "up": {
-                "ar": "جيد، زد اللف قليلاً إن كان مريحاً",
-                "en": "Good, add a bit more rotation if comfortable"
+                "ar": "جيد — افتح الصدر أكثر من أعلى الظهر",
+                "en": "Good — open more through the upper back"
               },
               "down": {
-                "ar": "جيد، ارجع للمحايد ببطء",
-                "en": "Good, return to neutral slowly"
+                "ar": "جيد — عد ببطء بدون فقدان السيطرة",
+                "en": "Good — return slowly without losing control"
               }
             },
             "perfect": {
               "up": {
-                "ar": "ممتاز! دوران صدري واضح",
-                "en": "Perfect! Clear thoracic rotation"
+                "ar": "ممتاز! دوران صدري نظيف بدون لف الحوض",
+                "en": "Perfect! Clean thoracic rotation without spinning the pelvis"
               },
               "down": {
-                "ar": "ممتاز! بداية محايدة منظمة",
-                "en": "Perfect! Organized neutral start"
+                "ar": "ممتاز! عودة متحكم بها للبداية",
+                "en": "Perfect! Controlled return to start"
               }
             },
             "warning": {
               "up": {
-                "ar": "لا تلتف من أسفل الظهر فقط",
-                "en": "Do not twist only from the low back"
+                "ar": "لا تعوّض من أسفل الظهر أو تدع الركبتين تنفصلان",
+                "en": "Do not compensate through the low back or let the knees separate"
               }
             }
           },
           "upRange": {
             "pad": {
-              "max": 80,
-              "min": 22
-            },
-            "danger": {
-              "max": 130,
-              "min": 100
+              "max": 70,
+              "min": 18
             },
             "normal": {
-              "max": 70,
-              "min": 28
+              "max": 62,
+              "min": 24
             },
             "perfect": {
-              "max": 60,
-              "min": 35
+              "max": 55,
+              "min": 32
             },
             "warning": {
-              "max": 100,
-              "min": 80
+              "max": 85,
+              "min": 70
+            },
+            "danger": {
+              "max": 110,
+              "min": 85
             }
           },
           "downRange": {
             "pad": {
-              "max": 20,
+              "max": 25,
               "min": 0
             },
             "normal": {
@@ -129,7 +125,7 @@
               "min": 0
             },
             "perfect": {
-              "max": 14,
+              "max": 12,
               "min": 0
             }
           }
@@ -138,35 +134,35 @@
           "joint": "left_shoulder",
           "role": "secondary",
           "startPose": {
-            "max": 120,
-            "min": 40
+            "max": 95,
+            "min": 20
           },
           "stateMessages": {
             "perfect": {
-              "ar": "كتف يتحرك مع اللف بسلاسة",
-              "en": "Shoulder moves smoothly with the rotation"
+              "ar": "الكتف يفتح بسلاسة مع القفص الصدري",
+              "en": "The shoulder opens smoothly with the ribcage"
             },
             "warning": {
-              "ar": "لا تشد الرقبة أو المرفق بعنف",
-              "en": "Do not yank the neck or elbow"
+              "ar": "لا تسحب الذراع بعنف أو ترفع الكتف نحو الأذن",
+              "en": "Do not yank the arm or shrug the shoulder toward the ear"
             }
           },
           "range": {
             "pad": {
-              "max": 115,
-              "min": 40
+              "max": 110,
+              "min": 20
             },
             "normal": {
-              "max": 105,
-              "min": 48
+              "max": 95,
+              "min": 28
             },
             "perfect": {
-              "max": 95,
-              "min": 55
+              "max": 82,
+              "min": 36
             },
             "warning": {
-              "max": 130,
-              "min": 115
+              "max": 125,
+              "min": 110
             }
           }
         }
@@ -181,15 +177,15 @@
           },
           "condition": {
             "operator": "approximately_equal",
-            "threshold": 0.18
+            "threshold": 0.2
           },
           "activePhases": [
             "up",
             "down"
           ],
           "errorMessage": {
-            "ar": "أدر الجذع بسلاسة دون انهيار أو اندفاع سريع.",
-            "en": "Rotate smoothly without collapsing or snapping."
+            "ar": "افتح من أعلى الظهر مع إبقاء الركبتين والحوض ثابتين قدر الإمكان.",
+            "en": "Open through the upper back while keeping the knees and pelvis as still as possible."
           },
           "severity": "tip",
           "cooldownMs": 2600,
@@ -199,22 +195,22 @@
       "feedbackMessages": {
         "motivational": [
           {
-            "ar": "مدى حركة جيد وتحكم أفضل",
-            "en": "Good range and better control"
+            "ar": "فتح ممتاز عبر أعلى الظهر مع تحكم واضح",
+            "en": "Great thoracic opening with clear control"
           },
           {
-            "ar": "تحرك بسلاسة داخل نطاق مريح",
-            "en": "Move smoothly inside a comfortable range"
+            "ar": "الحركة نظيفة والحوض ثابت",
+            "en": "The motion is clean and the pelvis stays anchored"
           }
         ],
         "tips": [
           {
-            "ar": "ابقِ الحركة نظيفة وهادئة بدون ارتداد.",
-            "en": "Keep the motion smooth and bounce-free."
+            "ar": "اضغط الركبتين معاً أو ثبتهما على وسادة حتى لا يأتي الدوران من الحوض.",
+            "en": "Keep the knees stacked or supported so the rotation comes from the thoracic spine."
           },
           {
-            "ar": "أي ألم حاد يعني تقليل المدى فوراً.",
-            "en": "Any sharp pain means reduce range immediately."
+            "ar": "ازفر أثناء الفتح وخذ وقتك في العودة للبداية.",
+            "en": "Exhale during the opening and take your time on the return."
           }
         ]
       },
@@ -320,17 +316,16 @@
           "context": "tip",
           "sortOrder": 14
         }
-      ],
-      "cameraPosition": "side_view"
+      ]
     }
   ],
   "description": {
-    "ar": "تمرين مكتبة: كتاب مفتوح صدري.",
-    "en": "Library exercise: Open book thoracic rotation."
+    "ar": "تمرين Open Book يستهدف زيادة دوران العمود الفقري الصدري مع تثبيت الحوض والركبتين. يفيد لمن يعاني من تيبس أعلى الظهر أو يحتاج إلى تحسين حركة الدوران للتنفس، للضغط فوق الرأس، ولتقليل التعويض من أسفل الظهر أثناء الحركات اليومية والرياضية.",
+    "en": "Open Book is a thoracic rotation drill that improves upper-back mobility while the pelvis and knees stay anchored. It is useful for people with a stiff thoracic spine, improves breathing and overhead mechanics, and reduces low-back compensation during daily and athletic movement."
   },
   "instructions": {
-    "ar": "حافظ على عمود فقري محايد وتنفس بثبات وتوقف عند أي ألم حاد.",
-    "en": "Maintain neutral spine, steady breathing, and stop if sharp pain appears."
+    "ar": "1. استلقِ على جانبك مع ثني الوركين والركبتين وتثبيت الركبتين فوق بعضهما.\n2. مد الذراعين أمامك ثم افتح الذراع العليا ببطء إلى الخلف كأنك تفتح كتاباً.\n3. دع العينين والرأس يتبعان الذراع، لكن حافظ على الركبتين والحوض ثابتين قدر الإمكان.\n4. خذ زفيراً أثناء الفتح واشعر بالحركة في القفص الصدري وأعلى الظهر لا في أسفل الظهر.\n5. عد ببطء إلى وضع البداية بدون رمي الذراع.\n6. قلّل المدى إذا شعرت بألم حاد أو إذا بدأت الركبتان في الانفصال.",
+    "en": "1. Lie on your side with the hips and knees bent and the knees stacked.\n2. Reach both arms forward, then slowly open the top arm backward as if opening a book.\n3. Let the eyes and head follow the hand, but keep the knees and pelvis as still as possible.\n4. Exhale during the opening and feel the motion in the ribcage and upper back, not the low back.\n5. Return slowly to the start without throwing the arm.\n6. Reduce the range if you feel sharp pain or if the knees begin to separate."
   },
   "reportMetrics": {
     "primary": [
@@ -344,164 +339,5 @@
       "SYMMETRY"
     ]
   },
-  "hasPositionChecks": true,
-  "_database": {
-    "id": "6e9bfa82-82bd-49aa-bc04-29f1cc5e1ef9",
-    "categoryId": "d90cee55-225e-4127-9fdc-062a8a09522e",
-    "countingMethodId": "f4d48aef-1606-4f23-8c61-7b4a2546f990",
-    "publishedAt": "2026-04-20T17:26:30.929Z",
-    "createdAt": "2026-04-20T17:26:30.933Z",
-    "updatedAt": "2026-04-20T17:26:34.686Z",
-    "deletedAt": null,
-    "isFeatured": false,
-    "createdBy": null,
-    "updatedBy": null,
-    "repCountingConfig": null,
-    "bilateralConfig": null,
-    "isBilateral": false,
-    "supportsWeight": false,
-    "minWeight": null,
-    "maxWeight": null,
-    "defaultWeight": null,
-    "reportMetrics": {
-      "mode": "reps",
-      "version": 1,
-      "primaryKpi": "repQuality",
-      "secondaryKpis": [
-        "avgFormScore",
-        "avgRom"
-      ]
-    },
-    "media": [],
-    "poseVariants": [
-      {
-        "id": "65d59fce-1a22-4dae-8ab3-c97642de5523",
-        "sortOrder": 1,
-        "description": null,
-        "trackedJointsConfig": [
-          {
-            "role": "primary",
-            "joint": "spine",
-            "upRange": {
-              "pad": {
-                "max": 80,
-                "min": 22
-              },
-              "danger": {
-                "max": 130,
-                "min": 100
-              },
-              "normal": {
-                "max": 70,
-                "min": 28
-              },
-              "perfect": {
-                "max": 60,
-                "min": 35
-              },
-              "warning": {
-                "max": 100,
-                "min": 80
-              }
-            },
-            "downRange": {
-              "pad": {
-                "max": 20,
-                "min": 0
-              },
-              "normal": {
-                "max": 18,
-                "min": 0
-              },
-              "perfect": {
-                "max": 14,
-                "min": 0
-              }
-            },
-            "startPose": {
-              "max": 45,
-              "min": 0
-            },
-            "stateMessages": {
-              "pad": {
-                "up": {
-                  "ar": "مقبول — ابنِ المدى تدريجياً",
-                  "en": "Acceptable — build ROM gradually"
-                }
-              },
-              "danger": {
-                "up": {
-                  "ar": "توقف — ألم حاد",
-                  "en": "Stop — sharp pain"
-                }
-              },
-              "normal": {
-                "up": {
-                  "ar": "جيد، زد اللف قليلاً إن كان مريحاً",
-                  "en": "Good, add a bit more rotation if comfortable"
-                },
-                "down": {
-                  "ar": "جيد، ارجع للمحايد ببطء",
-                  "en": "Good, return to neutral slowly"
-                }
-              },
-              "perfect": {
-                "up": {
-                  "ar": "ممتاز! دوران صدري واضح",
-                  "en": "Perfect! Clear thoracic rotation"
-                },
-                "down": {
-                  "ar": "ممتاز! بداية محايدة منظمة",
-                  "en": "Perfect! Organized neutral start"
-                }
-              },
-              "warning": {
-                "up": {
-                  "ar": "لا تلتف من أسفل الظهر فقط",
-                  "en": "Do not twist only from the low back"
-                }
-              }
-            }
-          },
-          {
-            "role": "secondary",
-            "joint": "left_shoulder",
-            "range": {
-              "pad": {
-                "max": 115,
-                "min": 40
-              },
-              "normal": {
-                "max": 105,
-                "min": 48
-              },
-              "perfect": {
-                "max": 95,
-                "min": 55
-              },
-              "warning": {
-                "max": 130,
-                "min": 115
-              }
-            },
-            "startPose": {
-              "max": 120,
-              "min": 40
-            },
-            "stateMessages": {
-              "perfect": {
-                "ar": "كتف يتحرك مع اللف بسلاسة",
-                "en": "Shoulder moves smoothly with the rotation"
-              },
-              "warning": {
-                "ar": "لا تشد الرقبة أو المرفق بعنف",
-                "en": "Do not yank the neck or elbow"
-              }
-            }
-          }
-        ]
-      }
-    ],
-    "validationWarning": null
-  }
+  "hasPositionChecks": true
 }

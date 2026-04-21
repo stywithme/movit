@@ -1,0 +1,175 @@
+{
+  "slug": "ex014_standing_calf_raise",
+  "status": "published",
+  "movementPattern": "GAIT",
+  "loadCapability": "EXTERNAL_LOAD_OPTIONAL",
+  "familyKey": "ankle_plantarflexion_family",
+  "familyOrder": 114,
+  "name": {
+    "ar": "رفع سمانة واقف",
+    "en": "Standing calf raise"
+  },
+  "category": {
+    "code": "legs",
+    "name": {
+      "ar": "تمارين الأرجل",
+      "en": "Legs"
+    }
+  },
+  "countingMethod": "up_down",
+  "muscles": [
+    "calves"
+  ],
+  "equipment": [
+    "bodyweight",
+    "dumbbell"
+  ],
+  "tags": [
+    "isolation",
+    "lower_body",
+    "group_2"
+  ],
+  "repCountingConfig": {
+    "reps": 10,
+    "minRepIntervalMs": 1500,
+    "maxRepIntervalMs": 3000
+  },
+  "supportsWeight": true,
+  "poseVariants": [
+    {
+      "name": {
+        "ar": "الجزء السفلي من الجانب",
+        "en": "Lower-body side view"
+      },
+      "posePosition": "standing_side_lower",
+      "expectedPostures": [
+        "standing"
+      ],
+      "expectedDirections": [
+        "side"
+      ],
+      "expectedRegions": [
+        "lower_body"
+      ],
+      "trackedJoints": [
+        {
+          "joint": "left_ankle",
+          "role": "primary",
+          "pairedWith": "right_ankle",
+          "startPose": {
+            "min": 80,
+            "max": 100
+          },
+          "upRange": {
+            "perfect": {
+              "min": 120,
+              "max": 130
+            },
+            "normal": {
+              "min": 110,
+              "max": 120
+            },
+            "pad": {
+              "min": 105,
+              "max": 110
+            }
+          },
+          "downRange": {
+            "perfect": {
+              "min": 80,
+              "max": 95
+            },
+            "normal": {
+              "min": 75,
+              "max": 98
+            },
+            "pad": {
+              "min": 70,
+              "max": 100
+            }
+          },
+          "stateMessages": {
+            "perfect": {
+              "up": {
+                "ar": "ممتاز! ارتفاع جيد على مشط القدم",
+                "en": "Perfect! Strong rise onto the balls of the feet"
+              },
+              "down": {
+                "ar": "ممتاز! نزول متحكم به",
+                "en": "Perfect! Controlled lowering"
+              }
+            },
+            "warning": {
+              "up": {
+                "ar": "ارفع الكعبين أعلى بدون ثني الركبتين",
+                "en": "Lift the heels higher without bending the knees"
+              }
+            }
+          }
+        },
+        {
+          "joint": "left_knee",
+          "role": "secondary",
+          "pairedWith": "right_knee",
+          "range": {
+            "perfect": {
+              "min": 160,
+              "max": 180
+            },
+            "normal": {
+              "min": 160,
+              "max": 180
+            },
+            "warning": {
+              "min": 145,
+              "max": 160
+            }
+          },
+          "startPose": {
+            "min": 160,
+            "max": 180
+          },
+          "stateMessages": {
+            "perfect": {
+              "ar": "الركبتان ثابتتان ومستقيمتان تقريباً",
+              "en": "The knees stay nearly straight and steady"
+            }
+          }
+        }
+      ],
+      "feedbackMessages": {
+        "motivational": [
+          {
+            "ar": "سمانة ممتازة وتحكم جيد",
+            "en": "Great calf work and good control"
+          }
+        ],
+        "tips": [
+          {
+            "ar": "توقف لحظة قصيرة في الأعلى قبل النزول.",
+            "en": "Pause briefly at the top before lowering."
+          }
+        ]
+      }
+    }
+  ],
+  "description": {
+    "ar": "رفع السمانة واقف يركز على plantar flexion في الكاحل مع تحميل عضلات السمانة في وضع الوقوف. يمكن تنفيذه بوزن الجسم أو مع دمبل خفيف، والأهم هو مدى الحركة الكامل والتحكم في النزول.",
+    "en": "The standing calf raise targets ankle plantar flexion while loading the calf muscles in a standing position. It can be done with bodyweight or light dumbbells, and the main goal is full range plus a controlled lowering phase."
+  },
+  "instructions": {
+    "ar": "1. قف بثبات مع توزيع الوزن على القدمين.\n2. ارفع الكعبين للأعلى بالضغط من مشط القدمين.\n3. لا تثنِ الركبتين لتسهيل الحركة.\n4. توقف لحظة قصيرة في أعلى نقطة.\n5. انزل ببطء حتى تعود القدمان بالكامل للأرض.\n6. استخدم دعماً خفيفاً للتوازن إذا احتجت.",
+    "en": "1. Stand steadily with the weight spread across both feet.\n2. Raise the heels by pushing through the balls of the feet.\n3. Do not bend the knees to make the motion easier.\n4. Pause briefly at the top.\n5. Lower slowly until the feet are fully back on the floor.\n6. Use light support for balance if needed."
+  },
+  "reportMetrics": {
+    "primary": [
+      "FORM_SCORE"
+    ],
+    "excluded": [
+      "HOLD_DURATION",
+      "WEIGHT",
+      "VOLUME",
+      "EST_1RM"
+    ]
+  }
+}

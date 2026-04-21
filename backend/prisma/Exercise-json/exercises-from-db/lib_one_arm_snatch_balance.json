@@ -308,12 +308,12 @@
     }
   ],
   "description": {
-    "ar": "تمرين مكتبة: سناتش كيتل أحادي.",
-    "en": "Library exercise: Single-arm KB snatch to rack."
+    "ar": "سناتش كيتل بيل بذراع واحدة حتى وضع الرف يطوّر القوة الانفجارية والتحكم في الكتف والجذع مع تحدي التوازن والتنسيق.",
+    "en": "A single-arm kettlebell snatch to the rack builds explosive hip power with shoulder and trunk control while challenging balance and coordination."
   },
   "instructions": {
-    "ar": "حافظ على عمود فقري محايد وتنفس بثبات وتوقف عند أي ألم حاد.",
-    "en": "Maintain neutral spine, steady breathing, and stop if sharp pain appears."
+    "ar": "1. ضع الكيتل بيل بين القدمين مع ظهر محايد وكتفين مستقرين.\n2. ادفع الوركين للخلف ثم انفجر للأعلى مع سحب الكرة قرب الجسم.\n3. مرّر الكرة حول المعصم بلطف وثبّتها في وضع الرف عند الصدر أو الكتف دون ضرب العظام.\n4. أعد الكرة للأسفل بتحكم أو إلى الأرض حسب مستواك.\n5. نفّذ تكرارات قليلة بجودة عالية لكل ذراع.\n6. توقف عند ألم حاد في المعصم أو الكتف أو أسفل الظهر.",
+    "en": "1. Set the kettlebell between the feet with a neutral spine and stable shoulders.\n2. Hinge back, then extend the hips to accelerate the bell along the torso.\n3. Punch around the wrist softly and catch in a rack position without slamming the forearm.\n4. Lower with control to the hang or floor depending on skill level.\n5. Keep rep quality high with low volume per arm at first.\n6. Stop for sharp wrist, shoulder, or low-back pain."
   },
   "supportsWeight": true,
   "reportMetrics": {

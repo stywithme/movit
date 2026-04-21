@@ -6,8 +6,8 @@
   "familyKey": "lunge_pattern_family",
   "familyOrder": 50,
   "name": {
-    "ar": "الاندفاع الأمامي",
-    "en": "Forward Lunge"
+    "ar": "اندفاع أمامي",
+    "en": "Forward lunge"
   },
   "category": {
     "code": "legs",
@@ -40,8 +40,8 @@
   "poseVariants": [
     {
       "name": {
-        "ar": "زاوية جانبية - الرجل اليسرى",
-        "en": "Side View - Left Leg"
+        "ar": "الرجل اليسرى أماماً",
+        "en": "Left leg forward"
       },
       "posePosition": "standing_side",
       "expectedPostures": [
@@ -64,40 +64,40 @@
           "stateMessages": {
             "pad": {
               "down": {
-                "ar": "مقبول، لكن يمكنك التحسن",
-                "en": "Acceptable, but you can improve"
-              }
-            },
-            "danger": {
-              "down": {
-                "ar": "توقف! قد تؤذي ركبتك",
-                "en": "Stop! This may hurt your knee"
+                "ar": "مقبول — زِد العمق تدريجياً إذا بقي التوازن جيداً",
+                "en": "Acceptable — build depth gradually if balance stays solid"
               }
             },
             "normal": {
               "up": {
-                "ar": "جيد، حاول الوقوف بشكل مستقيم",
-                "en": "Good, try standing straighter"
+                "ar": "جيد — ادفع بالكامل للعودة للوقفة",
+                "en": "Good — drive all the way back to standing"
               },
               "down": {
-                "ar": "جيد، حاول الثني أكثر قليلاً",
-                "en": "Good, try bending a bit more"
+                "ar": "جيد — انزل أكثر قليلاً إذا بقيت الركبة متتبعة للقدم",
+                "en": "Good — lower slightly more if the knee keeps tracking well"
               }
             },
             "perfect": {
               "up": {
-                "ar": "ممتاز! قف مستقيماً",
-                "en": "Perfect! Stand tall"
+                "ar": "ممتاز! عودة مستقيمة ومتزنة",
+                "en": "Perfect! Clean, balanced return"
               },
               "down": {
-                "ar": "ممتاز! اندفاع مثالي",
-                "en": "Perfect! Great lunge"
+                "ar": "ممتاز! وضع لنج قوي ومتحكم به",
+                "en": "Perfect! Strong, controlled lunge position"
               }
             },
             "warning": {
               "down": {
-                "ar": "لا تثني ركبتك كثيراً",
-                "en": "Don't bend your knee too much"
+                "ar": "لا تطارد عمقاً أكبر إذا بدأت الركبة أو التوازن يتدهوران",
+                "en": "Do not chase more depth if the knee or balance starts breaking down"
+              }
+            },
+            "danger": {
+              "down": {
+                "ar": "توقف — وضع الركبة الحالي غير مستقر",
+                "en": "Stop — the current knee position is unstable"
               }
             }
           },
@@ -112,29 +112,29 @@
             },
             "perfect": {
               "max": 180,
-              "min": 165
+              "min": 166
             }
           },
           "downRange": {
             "pad": {
-              "max": 110,
-              "min": 80
+              "max": 112,
+              "min": 78
+            },
+            "normal": {
+              "max": 102,
+              "min": 84
+            },
+            "perfect": {
+              "max": 96,
+              "min": 88
+            },
+            "warning": {
+              "max": 78,
+              "min": 60
             },
             "danger": {
               "max": 60,
               "min": 0
-            },
-            "normal": {
-              "max": 100,
-              "min": 85
-            },
-            "perfect": {
-              "max": 95,
-              "min": 88
-            },
-            "warning": {
-              "max": 80,
-              "min": 60
             }
           }
         },
@@ -147,12 +147,12 @@
           },
           "stateMessages": {
             "perfect": {
-              "ar": "ممتاز - الظهر مستقيم",
-              "en": "Great - back is straight"
+              "ar": "الجذع فوق الحوض والورك ثابت",
+              "en": "The torso stays stacked over the hips"
             },
             "warning": {
-              "ar": "حافظ على استقامة ظهرك",
-              "en": "Keep your back straight"
+              "ar": "لا تنهَر للأمام أو تدفع الحوض بشكل غير متزن",
+              "en": "Do not collapse forward or let the pelvis lose balance"
             }
           },
           "range": {
@@ -178,127 +178,30 @@
       "feedbackMessages": {
         "motivational": [
           {
-            "ar": "ممتاز! استمر!",
-            "en": "Excellent! Keep going!"
+            "ar": "توازن ممتاز",
+            "en": "Excellent balance"
           },
           {
-            "ar": "توازن رائع!",
-            "en": "Great balance!"
+            "ar": "إيقاع جميل في الاندفاع",
+            "en": "Nice rhythm in the lunge"
           }
         ],
         "tips": [
           {
-            "ar": "انظر للأمام لتحسين التوازن",
-            "en": "Look forward to improve balance"
+            "ar": "ثبّت القدم الأمامية كاملة على الأرض.",
+            "en": "Keep the whole front foot rooted to the floor."
           },
           {
-            "ar": "ادفع من كعبك للعودة للوضع الأصلي",
-            "en": "Push through your heel to return to start"
+            "ar": "ادفع من الكعب الأمامي للعودة للوقفة.",
+            "en": "Drive through the front heel to return to standing."
           }
         ]
-      },
-      "messageAssignments": [
-        {
-          "messageId": "bcd8d275-1f4c-4df2-b5b8-57f49dfb9beb",
-          "target": "joint_state",
-          "context": "perfect",
-          "jointCode": "left_knee",
-          "zone": "up",
-          "sortOrder": 1
-        },
-        {
-          "messageId": "88bb397a-1a63-4237-a33c-8e1d37de9cc7",
-          "target": "joint_state",
-          "context": "perfect",
-          "jointCode": "left_knee",
-          "zone": "down",
-          "sortOrder": 2
-        },
-        {
-          "messageId": "2d468c1b-b40a-4818-bd00-5f39be6e0fce",
-          "target": "joint_state",
-          "context": "normal",
-          "jointCode": "left_knee",
-          "zone": "up",
-          "sortOrder": 3
-        },
-        {
-          "messageId": "a74d1a1d-4867-42f3-b5bb-a299c5387d4a",
-          "target": "joint_state",
-          "context": "normal",
-          "jointCode": "left_knee",
-          "zone": "down",
-          "sortOrder": 4
-        },
-        {
-          "messageId": "4cda30cc-1411-47d0-a048-c91fec516b27",
-          "target": "joint_state",
-          "context": "pad",
-          "jointCode": "left_knee",
-          "zone": "down",
-          "sortOrder": 5
-        },
-        {
-          "messageId": "960c2880-9ef7-47ef-bcce-626114ada7dd",
-          "target": "joint_state",
-          "context": "warning",
-          "jointCode": "left_knee",
-          "zone": "down",
-          "sortOrder": 6
-        },
-        {
-          "messageId": "1a100c9c-90aa-4cd2-86e2-93f08176987e",
-          "target": "joint_state",
-          "context": "danger",
-          "jointCode": "left_knee",
-          "zone": "down",
-          "sortOrder": 7
-        },
-        {
-          "messageId": "85d07dab-9754-4d3b-8c35-bc555bfbd1ae",
-          "target": "joint_state",
-          "context": "perfect",
-          "jointCode": "left_hip",
-          "sortOrder": 8
-        },
-        {
-          "messageId": "851db60b-d2b4-4f1d-99a5-156be4036506",
-          "target": "joint_state",
-          "context": "warning",
-          "jointCode": "left_hip",
-          "sortOrder": 9
-        },
-        {
-          "messageId": "9420ade1-d98d-4913-a4e7-203490761a92",
-          "target": "feedback",
-          "context": "motivational",
-          "sortOrder": 10
-        },
-        {
-          "messageId": "4682d4b7-b539-4cbd-b71d-7d79a613f626",
-          "target": "feedback",
-          "context": "motivational",
-          "sortOrder": 11
-        },
-        {
-          "messageId": "72e40f8e-cfb9-4abc-beaf-43a2bdcd9156",
-          "target": "feedback",
-          "context": "tip",
-          "sortOrder": 12
-        },
-        {
-          "messageId": "6b6cfaa1-f1eb-4bed-a1df-eb852c18981e",
-          "target": "feedback",
-          "context": "tip",
-          "sortOrder": 13
-        }
-      ],
-      "cameraPosition": "side_view"
+      }
     },
     {
       "name": {
-        "ar": "زاوية جانبية - الرجل اليمنى",
-        "en": "Side View - Right Leg"
+        "ar": "الرجل اليمنى أماماً",
+        "en": "Right leg forward"
       },
       "posePosition": "standing_side",
       "expectedPostures": [
@@ -321,40 +224,40 @@
           "stateMessages": {
             "pad": {
               "down": {
-                "ar": "مقبول، لكن يمكنك التحسن",
-                "en": "Acceptable, but you can improve"
-              }
-            },
-            "danger": {
-              "down": {
-                "ar": "توقف! قد تؤذي ركبتك",
-                "en": "Stop! This may hurt your knee"
+                "ar": "مقبول — زِد العمق تدريجياً إذا بقي التوازن جيداً",
+                "en": "Acceptable — build depth gradually if balance stays solid"
               }
             },
             "normal": {
               "up": {
-                "ar": "جيد، حاول الوقوف بشكل مستقيم",
-                "en": "Good, try standing straighter"
+                "ar": "جيد — ادفع بالكامل للعودة للوقفة",
+                "en": "Good — drive all the way back to standing"
               },
               "down": {
-                "ar": "جيد، حاول الثني أكثر قليلاً",
-                "en": "Good, try bending a bit more"
+                "ar": "جيد — انزل أكثر قليلاً إذا بقيت الركبة متتبعة للقدم",
+                "en": "Good — lower slightly more if the knee keeps tracking well"
               }
             },
             "perfect": {
               "up": {
-                "ar": "ممتاز! قف مستقيماً",
-                "en": "Perfect! Stand tall"
+                "ar": "ممتاز! عودة مستقيمة ومتزنة",
+                "en": "Perfect! Clean, balanced return"
               },
               "down": {
-                "ar": "ممتاز! اندفاع مثالي",
-                "en": "Perfect! Great lunge"
+                "ar": "ممتاز! وضع لنج قوي ومتحكم به",
+                "en": "Perfect! Strong, controlled lunge position"
               }
             },
             "warning": {
               "down": {
-                "ar": "لا تثني ركبتك كثيراً",
-                "en": "Don't bend your knee too much"
+                "ar": "لا تطارد عمقاً أكبر إذا بدأت الركبة أو التوازن يتدهوران",
+                "en": "Do not chase more depth if the knee or balance starts breaking down"
+              }
+            },
+            "danger": {
+              "down": {
+                "ar": "توقف — وضع الركبة الحالي غير مستقر",
+                "en": "Stop — the current knee position is unstable"
               }
             }
           },
@@ -369,29 +272,29 @@
             },
             "perfect": {
               "max": 180,
-              "min": 165
+              "min": 166
             }
           },
           "downRange": {
             "pad": {
-              "max": 110,
-              "min": 80
+              "max": 112,
+              "min": 78
+            },
+            "normal": {
+              "max": 102,
+              "min": 84
+            },
+            "perfect": {
+              "max": 96,
+              "min": 88
+            },
+            "warning": {
+              "max": 78,
+              "min": 60
             },
             "danger": {
               "max": 60,
               "min": 0
-            },
-            "normal": {
-              "max": 100,
-              "min": 85
-            },
-            "perfect": {
-              "max": 95,
-              "min": 88
-            },
-            "warning": {
-              "max": 80,
-              "min": 60
             }
           }
         },
@@ -404,12 +307,12 @@
           },
           "stateMessages": {
             "perfect": {
-              "ar": "ممتاز - الظهر مستقيم",
-              "en": "Great - back is straight"
+              "ar": "الجذع فوق الحوض والورك ثابت",
+              "en": "The torso stays stacked over the hips"
             },
             "warning": {
-              "ar": "حافظ على استقامة ظهرك",
-              "en": "Keep your back straight"
+              "ar": "لا تنهَر للأمام أو تدفع الحوض بشكل غير متزن",
+              "en": "Do not collapse forward or let the pelvis lose balance"
             }
           },
           "range": {
@@ -435,100 +338,26 @@
       "feedbackMessages": {
         "motivational": [
           {
-            "ar": "ممتاز!",
-            "en": "Excellent!"
+            "ar": "أداء متزن وممتاز",
+            "en": "Balanced and excellent work"
           }
         ],
-        "tips": []
-      },
-      "messageAssignments": [
-        {
-          "messageId": "e7fada81-99c0-4007-b0f1-223f86da6231",
-          "target": "joint_state",
-          "context": "perfect",
-          "jointCode": "right_knee",
-          "zone": "up",
-          "sortOrder": 1
-        },
-        {
-          "messageId": "2a99cb81-c83e-4910-9027-d8786f9ad4f9",
-          "target": "joint_state",
-          "context": "perfect",
-          "jointCode": "right_knee",
-          "zone": "down",
-          "sortOrder": 2
-        },
-        {
-          "messageId": "6d3d577b-fe3a-44dd-be37-bc8928b6513a",
-          "target": "joint_state",
-          "context": "normal",
-          "jointCode": "right_knee",
-          "zone": "up",
-          "sortOrder": 3
-        },
-        {
-          "messageId": "856275f2-f616-41f0-a563-0b8aa4e0e8e1",
-          "target": "joint_state",
-          "context": "normal",
-          "jointCode": "right_knee",
-          "zone": "down",
-          "sortOrder": 4
-        },
-        {
-          "messageId": "a015a87c-46a0-441b-98fb-d34fe8e51cd9",
-          "target": "joint_state",
-          "context": "pad",
-          "jointCode": "right_knee",
-          "zone": "down",
-          "sortOrder": 5
-        },
-        {
-          "messageId": "8c7004d6-7456-43a4-9fc0-0933634b7124",
-          "target": "joint_state",
-          "context": "warning",
-          "jointCode": "right_knee",
-          "zone": "down",
-          "sortOrder": 6
-        },
-        {
-          "messageId": "8a9fa721-820c-4b1c-889a-2055d30e64e4",
-          "target": "joint_state",
-          "context": "danger",
-          "jointCode": "right_knee",
-          "zone": "down",
-          "sortOrder": 7
-        },
-        {
-          "messageId": "d5806593-0fc5-4fad-beca-721a4ec96fc8",
-          "target": "joint_state",
-          "context": "perfect",
-          "jointCode": "right_hip",
-          "sortOrder": 8
-        },
-        {
-          "messageId": "bf0e0c3e-9b62-4908-93af-1b4c5ecf2338",
-          "target": "joint_state",
-          "context": "warning",
-          "jointCode": "right_hip",
-          "sortOrder": 9
-        },
-        {
-          "messageId": "e5ff2b80-0872-4f0e-b40c-b11e97e88a66",
-          "target": "feedback",
-          "context": "motivational",
-          "sortOrder": 10
-        }
-      ],
-      "cameraPosition": "side_view"
+        "tips": [
+          {
+            "ar": "حافظ على نفس طول الخطوة في كل عدة.",
+            "en": "Keep the step length consistent on each rep."
+          }
+        ]
+      }
     }
   ],
   "description": {
-    "ar": "تمرين لتقوية عضلات الأرجل والتوازن",
-    "en": "Exercise to strengthen leg muscles and improve balance"
+    "ar": "الاندفاع الأمامي تمرين أحادي الجانب يطوّر قوة الرجل الأمامية والخلفية مع التوازن والتحكم في الجذع. هو مفيد لتعليم توزيع الوزن، تتبع الركبة فوق القدم، والقدرة على الهبوط والعودة بدون فقدان المحاذاة.",
+    "en": "The forward lunge is a unilateral pattern that builds leg strength, balance, and trunk control. It is useful for teaching weight distribution, knee tracking over the foot, and the ability to descend and return without losing alignment."
   },
   "instructions": {
-    "ar": "قف بشكل مستقيم، ثم اخطو للأمام واثني ركبتك حتى 90 درجة",
-    "en": "Stand straight, step forward and bend your knee to 90 degrees"
+    "ar": "1. قف منتصباً وابدأ بخطوة أمامية مريحة وليست طويلة جداً.\n2. انزل بثني الركبتين حتى يصل وضعك إلى لنج متزن مع بقاء الجذع مرتفعاً.\n3. حافظ على الركبة الأمامية متتبعة لاتجاه أصابع القدم ولا تدعها تنهار للداخل.\n4. المس القاع بتحكم بدون ارتطام الركبة الخلفية بالأرض بقوة.\n5. ادفع من الرجل الأمامية للعودة إلى وضع البداية.\n6. حافظ على نفس الطول والإيقاع بين الجهتين.",
+    "en": "1. Stand tall and step forward with a comfortable stride, not an overly long one.\n2. Lower by bending both knees until you reach a balanced lunge with the torso staying tall.\n3. Keep the front knee tracking with the toes and do not let it cave inward.\n4. Touch the bottom under control without crashing the rear knee into the floor.\n5. Drive through the front leg to return to the start.\n6. Keep the stride length and tempo consistent on both sides."
   },
   "reportMetrics": {
     "primary": [
@@ -542,295 +371,5 @@
       "SYMMETRY",
       "ALIGNMENT"
     ]
-  },
-  "_database": {
-    "id": "4c8dc59d-5ac7-4a8d-88a5-e739753434e6",
-    "categoryId": "a672c3d3-4449-4f74-bd8e-be73a0035e88",
-    "countingMethodId": "f4d48aef-1606-4f23-8c61-7b4a2546f990",
-    "publishedAt": "2026-04-20T17:26:22.886Z",
-    "createdAt": "2026-04-20T17:26:22.887Z",
-    "updatedAt": "2026-04-20T17:26:34.136Z",
-    "deletedAt": null,
-    "isFeatured": false,
-    "createdBy": null,
-    "updatedBy": null,
-    "repCountingConfig": {
-      "reps": 10,
-      "maxRepIntervalMs": 6000,
-      "minRepIntervalMs": 2000
-    },
-    "bilateralConfig": null,
-    "isBilateral": false,
-    "supportsWeight": false,
-    "minWeight": null,
-    "maxWeight": null,
-    "defaultWeight": null,
-    "reportMetrics": {
-      "mode": "reps",
-      "version": 1,
-      "primaryKpi": "repQuality",
-      "secondaryKpis": [
-        "avgFormScore",
-        "avgRom"
-      ]
-    },
-    "media": [],
-    "poseVariants": [
-      {
-        "id": "4aac3066-7759-45fb-b901-10ef0cc4e7f5",
-        "sortOrder": 1,
-        "description": null,
-        "trackedJointsConfig": [
-          {
-            "role": "primary",
-            "joint": "left_knee",
-            "upRange": {
-              "pad": {
-                "max": 180,
-                "min": 155
-              },
-              "normal": {
-                "max": 180,
-                "min": 160
-              },
-              "perfect": {
-                "max": 180,
-                "min": 165
-              }
-            },
-            "downRange": {
-              "pad": {
-                "max": 110,
-                "min": 80
-              },
-              "danger": {
-                "max": 60,
-                "min": 0
-              },
-              "normal": {
-                "max": 100,
-                "min": 85
-              },
-              "perfect": {
-                "max": 95,
-                "min": 88
-              },
-              "warning": {
-                "max": 80,
-                "min": 60
-              }
-            },
-            "startPose": {
-              "max": 180,
-              "min": 160
-            },
-            "stateMessages": {
-              "pad": {
-                "down": {
-                  "ar": "مقبول، لكن يمكنك التحسن",
-                  "en": "Acceptable, but you can improve"
-                }
-              },
-              "danger": {
-                "down": {
-                  "ar": "توقف! قد تؤذي ركبتك",
-                  "en": "Stop! This may hurt your knee"
-                }
-              },
-              "normal": {
-                "up": {
-                  "ar": "جيد، حاول الوقوف بشكل مستقيم",
-                  "en": "Good, try standing straighter"
-                },
-                "down": {
-                  "ar": "جيد، حاول الثني أكثر قليلاً",
-                  "en": "Good, try bending a bit more"
-                }
-              },
-              "perfect": {
-                "up": {
-                  "ar": "ممتاز! قف مستقيماً",
-                  "en": "Perfect! Stand tall"
-                },
-                "down": {
-                  "ar": "ممتاز! اندفاع مثالي",
-                  "en": "Perfect! Great lunge"
-                }
-              },
-              "warning": {
-                "down": {
-                  "ar": "لا تثني ركبتك كثيراً",
-                  "en": "Don't bend your knee too much"
-                }
-              }
-            }
-          },
-          {
-            "role": "secondary",
-            "joint": "left_hip",
-            "range": {
-              "pad": {
-                "max": 180,
-                "min": 155
-              },
-              "normal": {
-                "max": 180,
-                "min": 165
-              },
-              "perfect": {
-                "max": 180,
-                "min": 170
-              },
-              "warning": {
-                "max": 155,
-                "min": 140
-              }
-            },
-            "startPose": {
-              "max": 180,
-              "min": 160
-            },
-            "stateMessages": {
-              "perfect": {
-                "ar": "ممتاز - الظهر مستقيم",
-                "en": "Great - back is straight"
-              },
-              "warning": {
-                "ar": "حافظ على استقامة ظهرك",
-                "en": "Keep your back straight"
-              }
-            }
-          }
-        ]
-      },
-      {
-        "id": "b4eeb2fd-ef1c-4303-9f38-e17fc891ca43",
-        "sortOrder": 2,
-        "description": null,
-        "trackedJointsConfig": [
-          {
-            "role": "primary",
-            "joint": "right_knee",
-            "upRange": {
-              "pad": {
-                "max": 180,
-                "min": 155
-              },
-              "normal": {
-                "max": 180,
-                "min": 160
-              },
-              "perfect": {
-                "max": 180,
-                "min": 165
-              }
-            },
-            "downRange": {
-              "pad": {
-                "max": 110,
-                "min": 80
-              },
-              "danger": {
-                "max": 60,
-                "min": 0
-              },
-              "normal": {
-                "max": 100,
-                "min": 85
-              },
-              "perfect": {
-                "max": 95,
-                "min": 88
-              },
-              "warning": {
-                "max": 80,
-                "min": 60
-              }
-            },
-            "startPose": {
-              "max": 180,
-              "min": 160
-            },
-            "stateMessages": {
-              "pad": {
-                "down": {
-                  "ar": "مقبول، لكن يمكنك التحسن",
-                  "en": "Acceptable, but you can improve"
-                }
-              },
-              "danger": {
-                "down": {
-                  "ar": "توقف! قد تؤذي ركبتك",
-                  "en": "Stop! This may hurt your knee"
-                }
-              },
-              "normal": {
-                "up": {
-                  "ar": "جيد، حاول الوقوف بشكل مستقيم",
-                  "en": "Good, try standing straighter"
-                },
-                "down": {
-                  "ar": "جيد، حاول الثني أكثر قليلاً",
-                  "en": "Good, try bending a bit more"
-                }
-              },
-              "perfect": {
-                "up": {
-                  "ar": "ممتاز! قف مستقيماً",
-                  "en": "Perfect! Stand tall"
-                },
-                "down": {
-                  "ar": "ممتاز! اندفاع مثالي",
-                  "en": "Perfect! Great lunge"
-                }
-              },
-              "warning": {
-                "down": {
-                  "ar": "لا تثني ركبتك كثيراً",
-                  "en": "Don't bend your knee too much"
-                }
-              }
-            }
-          },
-          {
-            "role": "secondary",
-            "joint": "right_hip",
-            "range": {
-              "pad": {
-                "max": 180,
-                "min": 155
-              },
-              "normal": {
-                "max": 180,
-                "min": 165
-              },
-              "perfect": {
-                "max": 180,
-                "min": 170
-              },
-              "warning": {
-                "max": 155,
-                "min": 140
-              }
-            },
-            "startPose": {
-              "max": 180,
-              "min": 160
-            },
-            "stateMessages": {
-              "perfect": {
-                "ar": "ممتاز - الظهر مستقيم",
-                "en": "Great - back is straight"
-              },
-              "warning": {
-                "ar": "حافظ على استقامة ظهرك",
-                "en": "Keep your back straight"
-              }
-            }
-          }
-        ]
-      }
-    ],
-    "validationWarning": null
   }
 }

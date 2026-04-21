@@ -363,104 +363,113 @@
           }
         },
         {
-          "joint": "spine",
+          "joint": "right_hip",
           "role": "secondary",
           "startPose": {
-            "max": 25,
-            "min": 0
+            "max": 180,
+            "min": 55
           },
           "stateMessages": {
+            "danger": {
+              "ar": "توقف — انحناء زائد في أسفل الظهر قد يزيد الضغط.",
+              "en": "Stop — excessive low-back rounding increases strain."
+            },
             "perfect": {
-              "ar": "جذع منظم تحت الحمل العلوي",
-              "en": "Trunk organized under the overhead load"
+              "ar": "جيد — الحوض والصدر في خط منظم فوق الركبة.",
+              "en": "Good — ribs and pelvis stay organized over the knee line."
             },
             "warning": {
-              "ar": "لا تنهَر في الصدر أو الظهر السفلي",
-              "en": "Avoid collapsing through the chest or low back"
+              "ar": "قلل الميل الأمامي للحوض؛ فكّر «تفتح بين الوركين».",
+              "en": "Reduce forward collapse at the hips; think “spread the hips”."
             }
           },
           "range": {
             "pad": {
+              "max": 180,
+              "min": 45
+            },
+            "danger": {
               "max": 35,
               "min": 0
             },
-            "danger": {
-              "max": 85,
-              "min": 42
-            },
             "normal": {
-              "max": 26,
-              "min": 0
+              "max": 180,
+              "min": 55
             },
             "perfect": {
-              "max": 18,
-              "min": 0
+              "max": 180,
+              "min": 70
             },
             "warning": {
-              "max": 45,
-              "min": 28
+              "max": 55,
+              "min": 35
             }
           },
           "phaseRanges": {
             "up": {
               "normal": {
-                "max": 24,
-                "min": 0
+                "max": 155,
+                "min": 85
               },
               "perfect": {
-                "max": 18,
-                "min": 0
+                "max": 140,
+                "min": 95
               }
             },
             "top": {
+              "normal": {
+                "max": 180,
+                "min": 158
+              },
               "perfect": {
-                "max": 12,
-                "min": 0
+                "max": 180,
+                "min": 165
               }
             },
             "down": {
               "normal": {
-                "max": 24,
-                "min": 0
+                "max": 155,
+                "min": 85
               },
               "perfect": {
-                "max": 18,
-                "min": 0
+                "max": 140,
+                "min": 95
               }
             },
             "bottom": {
               "normal": {
-                "max": 35,
-                "min": 5
+                "max": 115,
+                "min": 60
               },
               "perfect": {
-                "max": 28,
-                "min": 8
+                "max": 100,
+                "min": 70
               }
             }
           },
           "phaseStateMessages": {
             "top": {
               "perfect": {
-                "ar": "ظهر محايد في الوقفة",
-                "en": "Neutral spine at the top"
+                "ar": "وقفة علوية — الحوض تحت الكتف دون ميل قطني زائد.",
+                "en": "Top position — hips under shoulders without big lumbar lean."
               },
               "warning": {
-                "ar": "لا تميل القطن للأمام في الأعلى",
-                "en": "Avoid excessive lumbar lean at the top"
+                "ar": "تجنب دفع الحوض بعيداً جداً للأمام في الأعلى.",
+                "en": "Avoid pushing the hips too far forward at the finish."
               }
             },
             "bottom": {
               "perfect": {
-                "ar": "انحناء مقبول في القاع مع تحكم",
-                "en": "Acceptable flexion at bottom with control"
+                "ar": "قاع متزن — وزن فوق منتصف القدم.",
+                "en": "Balanced bottom — weight stays through mid-foot."
               },
               "warning": {
-                "ar": "قلل الانحناء القطني الزائد",
-                "en": "Reduce excessive lumbar flexion"
+                "ar": "لا تدع الحوض ينهار للداخل أو للأمام بشكل مفاجئ.",
+                "en": "Don’t let the hips collapse inward or dive forward."
               }
             }
-          }
+          },
+          "pairedWith": "left_hip"
         }
       ],
       "positionChecks": [
@@ -719,42 +728,42 @@
           "messageId": "cef02fd5-35d4-402e-8fd0-dec480217f10",
           "target": "joint_state",
           "context": "perfect",
-          "jointCode": "spine",
+          "jointCode": "right_hip",
           "sortOrder": 25
         },
         {
           "messageId": "72af7463-ebcb-4a76-befd-af158629271a",
           "target": "joint_state",
           "context": "warning",
-          "jointCode": "spine",
+          "jointCode": "right_hip",
           "sortOrder": 26
         },
         {
           "messageId": "9b8d6f8e-78ff-4f4e-adc9-a50436d54674",
           "target": "joint_state_phase",
           "context": "top:perfect",
-          "jointCode": "spine",
+          "jointCode": "right_hip",
           "sortOrder": 27
         },
         {
           "messageId": "fda41619-1db7-403a-8c66-03f5c1d11fbf",
           "target": "joint_state_phase",
           "context": "top:warning",
-          "jointCode": "spine",
+          "jointCode": "right_hip",
           "sortOrder": 28
         },
         {
           "messageId": "0fc2d5c3-14fd-4cfd-828f-74e1ed89983f",
           "target": "joint_state_phase",
           "context": "bottom:perfect",
-          "jointCode": "spine",
+          "jointCode": "right_hip",
           "sortOrder": 29
         },
         {
           "messageId": "66fa4092-5857-431c-a15a-ab062e747378",
           "target": "joint_state_phase",
           "context": "bottom:warning",
-          "jointCode": "spine",
+          "jointCode": "right_hip",
           "sortOrder": 30
         },
         {
@@ -786,12 +795,12 @@
     }
   ],
   "description": {
-    "ar": "تمرين مكتبة: سكوات علوي PVC.",
-    "en": "Library exercise: Overhead squat (PVC)."
+    "ar": "سكوات علوي بعصا/PVC لفحص التحكم في الجذع والكتفين والعمق.",
+    "en": "An overhead squat with a PVC pipe or stick to screen shoulder, trunk, and squat mechanics."
   },
   "instructions": {
-    "ar": "حافظ على عمود فقري محايد وتنفس بثبات وتوقف عند أي ألم حاد.",
-    "en": "Maintain neutral spine, steady breathing, and stop if sharp pain appears."
+    "ar": "ارفع العصا فوق الرأس بعرض أوسع من الكتفين قليلاً، انزل بين الوركين مع إبقاء العصا فوق منتصف القدم تقريباً من الجانب.",
+    "en": "Press the bar overhead slightly wider than shoulders, squat between the hips while keeping the bar stacked over mid-foot from the side view."
   },
   "reportMetrics": {
     "primary": [
@@ -1151,103 +1160,112 @@
           },
           {
             "role": "secondary",
-            "joint": "spine",
+            "joint": "right_hip",
             "range": {
               "pad": {
+                "max": 180,
+                "min": 45
+              },
+              "danger": {
                 "max": 35,
                 "min": 0
               },
-              "danger": {
-                "max": 85,
-                "min": 42
-              },
               "normal": {
-                "max": 26,
-                "min": 0
+                "max": 180,
+                "min": 55
               },
               "perfect": {
-                "max": 18,
-                "min": 0
+                "max": 180,
+                "min": 70
               },
               "warning": {
-                "max": 45,
-                "min": 28
+                "max": 55,
+                "min": 35
               }
             },
             "startPose": {
-              "max": 25,
-              "min": 0
+              "max": 180,
+              "min": 55
             },
             "phaseRanges": {
               "up": {
                 "normal": {
-                  "max": 24,
-                  "min": 0
+                  "max": 155,
+                  "min": 85
                 },
                 "perfect": {
-                  "max": 18,
-                  "min": 0
+                  "max": 140,
+                  "min": 95
                 }
               },
               "top": {
+                "normal": {
+                  "max": 180,
+                  "min": 158
+                },
                 "perfect": {
-                  "max": 12,
-                  "min": 0
+                  "max": 180,
+                  "min": 165
                 }
               },
               "down": {
                 "normal": {
-                  "max": 24,
-                  "min": 0
+                  "max": 155,
+                  "min": 85
                 },
                 "perfect": {
-                  "max": 18,
-                  "min": 0
+                  "max": 140,
+                  "min": 95
                 }
               },
               "bottom": {
                 "normal": {
-                  "max": 35,
-                  "min": 5
+                  "max": 115,
+                  "min": 60
                 },
                 "perfect": {
-                  "max": 28,
-                  "min": 8
+                  "max": 100,
+                  "min": 70
                 }
               }
             },
             "stateMessages": {
+              "danger": {
+                "ar": "توقف — انحناء زائد في أسفل الظهر قد يزيد الضغط.",
+                "en": "Stop — excessive low-back rounding increases strain."
+              },
               "perfect": {
-                "ar": "جذع منظم تحت الحمل العلوي",
-                "en": "Trunk organized under the overhead load"
+                "ar": "جيد — الحوض والصدر في خط منظم فوق الركبة.",
+                "en": "Good — ribs and pelvis stay organized over the knee line."
               },
               "warning": {
-                "ar": "لا تنهَر في الصدر أو الظهر السفلي",
-                "en": "Avoid collapsing through the chest or low back"
+                "ar": "قلل الميل الأمامي للحوض؛ فكّر «تفتح بين الوركين».",
+                "en": "Reduce forward collapse at the hips; think “spread the hips”."
               }
             },
             "phaseStateMessages": {
               "top": {
                 "perfect": {
-                  "ar": "ظهر محايد في الوقفة",
-                  "en": "Neutral spine at the top"
+                  "ar": "وقفة علوية — الحوض تحت الكتف دون ميل قطني زائد.",
+                  "en": "Top position — hips under shoulders without big lumbar lean."
                 },
                 "warning": {
-                  "ar": "لا تميل القطن للأمام في الأعلى",
-                  "en": "Avoid excessive lumbar lean at the top"
+                  "ar": "تجنب دفع الحوض بعيداً جداً للأمام في الأعلى.",
+                  "en": "Avoid pushing the hips too far forward at the finish."
                 }
               },
               "bottom": {
                 "perfect": {
-                  "ar": "انحناء مقبول في القاع مع تحكم",
-                  "en": "Acceptable flexion at bottom with control"
+                  "ar": "قاع متزن — وزن فوق منتصف القدم.",
+                  "en": "Balanced bottom — weight stays through mid-foot."
                 },
                 "warning": {
-                  "ar": "قلل الانحناء القطني الزائد",
-                  "en": "Reduce excessive lumbar flexion"
+                  "ar": "لا تدع الحوض ينهار للداخل أو للأمام بشكل مفاجئ.",
+                  "en": "Don’t let the hips collapse inward or dive forward."
                 }
               }
-            }
+            },
+            "pairedWith": "left_hip"
           }
         ]
       }

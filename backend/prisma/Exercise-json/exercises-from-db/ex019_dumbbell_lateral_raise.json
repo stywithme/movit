@@ -1,0 +1,198 @@
+{
+  "slug": "ex019_dumbbell_lateral_raise",
+  "status": "published",
+  "movementPattern": "PUSH_VERTICAL",
+  "loadCapability": "EXTERNAL_LOAD_REQUIRED",
+  "familyKey": "push_vertical_family",
+  "familyOrder": 119,
+  "name": {
+    "ar": "رفع جانبي بالدمبل",
+    "en": "Dumbbell lateral raise"
+  },
+  "category": {
+    "code": "shoulders",
+    "name": {
+      "ar": "تمارين الأكتاف",
+      "en": "Shoulders"
+    }
+  },
+  "countingMethod": "up_down",
+  "muscles": [
+    "side_delts",
+    "supraspinatus"
+  ],
+  "equipment": [
+    "dumbbell"
+  ],
+  "tags": [
+    "isolation",
+    "upper_body",
+    "group_2"
+  ],
+  "repCountingConfig": {
+    "reps": 10,
+    "minRepIntervalMs": 1500,
+    "maxRepIntervalMs": 3000
+  },
+  "supportsWeight": true,
+  "poseVariants": [
+    {
+      "name": {
+        "ar": "أمامي - الجزء العلوي",
+        "en": "Front view upper body"
+      },
+      "posePosition": "standing_front_upper",
+      "expectedPostures": [
+        "standing"
+      ],
+      "expectedDirections": [
+        "front"
+      ],
+      "expectedRegions": [
+        "upper_body"
+      ],
+      "trackedJoints": [
+        {
+          "joint": "left_shoulder",
+          "role": "primary",
+          "pairedWith": "right_shoulder",
+          "startPose": {
+            "min": 0,
+            "max": 10
+          },
+          "upRange": {
+            "perfect": {
+              "min": 80,
+              "max": 100
+            },
+            "normal": {
+              "min": 70,
+              "max": 80
+            },
+            "pad": {
+              "min": 50,
+              "max": 70
+            }
+          },
+          "downRange": {
+            "perfect": {
+              "min": 0,
+              "max": 10
+            },
+            "normal": {
+              "min": 10,
+              "max": 20
+            },
+            "pad": {
+              "min": 20,
+              "max": 30
+            }
+          },
+          "stateMessages": {
+            "perfect": {
+              "up": {
+                "ar": "ممتاز! ارتفاع جيد حتى مستوى الكتف",
+                "en": "Perfect! Good raise to shoulder level"
+              },
+              "down": {
+                "ar": "ممتاز! عودة هادئة ومتحكم بها",
+                "en": "Perfect! Smooth controlled lowering"
+              }
+            },
+            "warning": {
+              "up": {
+                "ar": "لا ترفع أعلى من مستوى الكتف ولا تهز الجذع",
+                "en": "Do not raise above shoulder level and do not swing the torso"
+              }
+            }
+          }
+        },
+        {
+          "joint": "left_elbow",
+          "role": "secondary",
+          "range": {
+            "perfect": {
+              "min": 10,
+              "max": 30
+            },
+            "normal": {
+              "min": 10,
+              "max": 30
+            },
+            "warning": {
+              "min": 0,
+              "max": 45
+            }
+          },
+          "startPose": {
+            "min": 10,
+            "max": 30
+          },
+          "stateMessages": {
+            "perfect": {
+              "ar": "ثني المرفق بسيط وثابت",
+              "en": "The elbow bend stays slight and consistent"
+            }
+          }
+        }
+      ],
+      "positionChecks": [
+        {
+          "id": "lateral_raise_symmetry",
+          "type": "horizontal_alignment",
+          "landmarks": {
+            "primary": "right_elbow",
+            "secondary": "left_elbow",
+            "tertiary": "right_shoulder",
+            "quaternary": "left_shoulder"
+          },
+          "condition": {
+            "operator": "approximately_equal",
+            "threshold": 0.08
+          },
+          "activePhases": [
+            "up"
+          ],
+          "errorMessage": {
+            "ar": "ارفع الذراعين بتناظر ومن دون فرق واضح بين الجانبين.",
+            "en": "Raise both arms symmetrically without a clear side-to-side difference."
+          },
+          "severity": "tip",
+          "cooldownMs": 2200,
+          "minErrorFrames": 4
+        }
+      ],
+      "feedbackMessages": {
+        "motivational": [
+          {
+            "ar": "رفع جانبي ممتاز",
+            "en": "Excellent lateral raise"
+          }
+        ],
+        "tips": [
+          {
+            "ar": "فكّر في إبعاد الذراعين جانباً لا في سحب الوزن بالأكتاف العليا.",
+            "en": "Think about moving the arms outward, not shrugging the weight up."
+          }
+        ]
+      }
+    }
+  ],
+  "description": {
+    "ar": "الرفع الجانبي بالدمبل تمرين عزل أساسي للدالية الوسطى، ويحتاج وزناً مناسباً وتحكماً جيداً أكثر من حاجته لوزن كبير. أهم نقطة فيه هي الوصول لمستوى الكتف تقريباً مع ثني مرفق بسيط وثابت وعدم التأرجح بالجذع.",
+    "en": "The dumbbell lateral raise is a key isolation drill for the middle delts and depends more on load selection and control than on heavy weight. The main goal is raising to roughly shoulder level with a small steady elbow bend and no torso swinging."
+  },
+  "instructions": {
+    "ar": "1. قف منتصباً والدمبلان بجانب الجسم.\n2. حافظ على ثني بسيط وثابت في المرفقين.\n3. ارفع الذراعين جانباً حتى مستوى الكتف تقريباً.\n4. لا ترفع الكتفين للأعلى ولا تستخدم الزخم.\n5. انزل ببطء حتى تعود الذراعان بجانب الجسم.\n6. خفف الوزن إذا فقدت التحكم أو بدأت تتأرجح.",
+    "en": "1. Stand tall with the dumbbells at the sides.\n2. Keep a small, steady bend in the elbows.\n3. Raise the arms out to the sides until they approach shoulder level.\n4. Do not shrug the shoulders or use momentum.\n5. Lower slowly until the arms return to the sides.\n6. Reduce the load if you lose control or begin swinging."
+  },
+  "reportMetrics": {
+    "primary": [
+      "FORM_SCORE"
+    ],
+    "excluded": [
+      "HOLD_DURATION"
+    ]
+  },
+  "hasPositionChecks": true
+}

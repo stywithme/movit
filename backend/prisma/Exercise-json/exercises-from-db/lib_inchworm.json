@@ -52,38 +52,73 @@
       ],
       "trackedJoints": [
         {
-          "joint": "spine",
+          "joint": "left_hip",
           "role": "primary",
           "startPose": {
-            "max": 40,
-            "min": 0
+            "max": 180,
+            "min": 130
           },
+          "pairedWith": "right_hip",
           "stateMessages": {
-            "perfect": {
-              "ar": "تحكم قطني جيد",
-              "en": "Good segmental control"
-            },
-            "warning": {
-              "ar": "قلل المدى إن الظهر يضيق",
-              "en": "Ease range if back pinches"
-            }
-          },
-          "range": {
             "pad": {
-              "max": 50,
-              "min": 0
+              "down": {
+                "ar": "مقبول — مدى أصغر",
+                "en": "Acceptable — smaller range"
+              }
             },
             "normal": {
-              "max": 42,
-              "min": 0
+              "up": {
+                "ar": "جيد — حركة أنعم",
+                "en": "Good — smoother motion"
+              },
+              "down": {
+                "ar": "جيد — تحكم أكبر",
+                "en": "Good — more control"
+              }
             },
             "perfect": {
-              "max": 35,
-              "min": 8
+              "up": {
+                "ar": "ممتاز! حركة متزنة",
+                "en": "Perfect! Balanced motion"
+              },
+              "down": {
+                "ar": "ممتاز! تحكم في الحوض",
+                "en": "Perfect! Hip control"
+              }
             },
             "warning": {
-              "max": 62,
-              "min": 45
+              "down": {
+                "ar": "قلل المدى إن الظهر يضيق",
+                "en": "Ease range if your back pinches"
+              }
+            }
+          },
+          "upRange": {
+            "normal": {
+              "max": 180,
+              "min": 158
+            },
+            "perfect": {
+              "max": 180,
+              "min": 168
+            }
+          },
+          "downRange": {
+            "pad": {
+              "max": 145,
+              "min": 105
+            },
+            "normal": {
+              "max": 138,
+              "min": 112
+            },
+            "perfect": {
+              "max": 128,
+              "min": 118
+            },
+            "warning": {
+              "max": 112,
+              "min": 98
             }
           }
         }
@@ -146,14 +181,14 @@
           "messageId": "e4ef8bf5-0db4-4fa6-9fcd-d1b270487a5d",
           "target": "joint_state",
           "context": "perfect",
-          "jointCode": "spine",
+          "jointCode": "left_hip",
           "sortOrder": 2
         },
         {
           "messageId": "d6b9231a-b7aa-4b34-9640-977863c5a124",
           "target": "joint_state",
           "context": "warning",
-          "jointCode": "spine",
+          "jointCode": "left_hip",
           "sortOrder": 3
         },
         {
@@ -184,12 +219,12 @@
     }
   ],
   "description": {
-    "ar": "تمرين مكتبة: دودة بوصة.",
-    "en": "Library exercise: Inchworm."
+    "ar": "تمرين الدودة يربط بين ثبات الجذع ومرونة الخلفية للساقين عبر المشي باليدين من الوقوف إلى وضع ممدود ثم العودة بتحكم.",
+    "en": "The inchworm links trunk stability with posterior-chain mobility by walking the hands from standing into an extended position, then returning with control."
   },
   "instructions": {
-    "ar": "حافظ على عمود فقري محايد وتنفس بثبات وتوقف عند أي ألم حاد.",
-    "en": "Maintain neutral spine, steady breathing, and stop if sharp pain appears."
+    "ar": "1. انحنِ للأمام وضع اليدين على الأرض أمام القدمين.\n2. امشِ باليدين للأمام حتى تصل إلى وضع بلانك قصير أو ممدود حسب مستواك.\n3. ثبّت الجذع ثم امشِ بالقدمين نحو اليدين بخطوات صغيرة.\n4. قف منتصباً وكرر دون اندفاع زائد من الظهر.\n5. لا تفرط في مد الساقين إذا كان الضيق شديداً.\n6. توقف عند ألم حاد في أسفل الظهر أو الركبة.",
+    "en": "1. Fold forward and place the hands on the floor in front of the feet.\n2. Walk the hands forward until you reach a short plank or extended position based on your level.\n3. Brace the trunk, then walk the feet toward the hands with small steps.\n4. Stand tall and repeat without snapping from the low back.\n5. Do not force full hamstring stretch if it feels very tight.\n6. Stop if you feel sharp low-back or knee pain."
   },
   "reportMetrics": {
     "primary": [
@@ -239,38 +274,73 @@
         "description": null,
         "trackedJointsConfig": [
           {
+            "joint": "left_hip",
             "role": "primary",
-            "joint": "spine",
-            "range": {
+            "startPose": {
+              "max": 180,
+              "min": 130
+            },
+            "pairedWith": "right_hip",
+            "stateMessages": {
               "pad": {
-                "max": 50,
-                "min": 0
+                "down": {
+                  "ar": "مقبول — مدى أصغر",
+                  "en": "Acceptable — smaller range"
+                }
               },
               "normal": {
-                "max": 42,
-                "min": 0
+                "up": {
+                  "ar": "جيد — حركة أنعم",
+                  "en": "Good — smoother motion"
+                },
+                "down": {
+                  "ar": "جيد — تحكم أكبر",
+                  "en": "Good — more control"
+                }
               },
               "perfect": {
-                "max": 35,
-                "min": 8
+                "up": {
+                  "ar": "ممتاز! حركة متزنة",
+                  "en": "Perfect! Balanced motion"
+                },
+                "down": {
+                  "ar": "ممتاز! تحكم في الحوض",
+                  "en": "Perfect! Hip control"
+                }
               },
               "warning": {
-                "max": 62,
-                "min": 45
+                "down": {
+                  "ar": "قلل المدى إن الظهر يضيق",
+                  "en": "Ease range if your back pinches"
+                }
               }
             },
-            "startPose": {
-              "max": 40,
-              "min": 0
-            },
-            "stateMessages": {
+            "upRange": {
+              "normal": {
+                "max": 180,
+                "min": 158
+              },
               "perfect": {
-                "ar": "تحكم قطني جيد",
-                "en": "Good segmental control"
+                "max": 180,
+                "min": 168
+              }
+            },
+            "downRange": {
+              "pad": {
+                "max": 145,
+                "min": 105
+              },
+              "normal": {
+                "max": 138,
+                "min": 112
+              },
+              "perfect": {
+                "max": 128,
+                "min": 118
               },
               "warning": {
-                "ar": "قلل المدى إن الظهر يضيق",
-                "en": "Ease range if back pinches"
+                "max": 112,
+                "min": 98
               }
             }
           }

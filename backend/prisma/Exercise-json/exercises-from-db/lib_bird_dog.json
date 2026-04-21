@@ -6,7 +6,7 @@
   "familyKey": "anti_extension_family",
   "familyOrder": 18,
   "name": {
-    "ar": "كلب طائر",
+    "ar": "بيرد دوج",
     "en": "Bird dog"
   },
   "category": {
@@ -37,12 +37,12 @@
   "poseVariants": [
     {
       "name": {
-        "ar": "مستلقٍ على الوجه",
-        "en": "Lying face down (side angle)"
+        "ar": "وضع رباعي من الجانب",
+        "en": "Quadruped (side view)"
       },
       "posePosition": "prone_side",
       "expectedPostures": [
-        "lying_prone"
+        "quadruped"
       ],
       "expectedDirections": [
         "side"
@@ -55,72 +55,72 @@
           "joint": "left_hip",
           "role": "primary",
           "startPose": {
-            "max": 180,
+            "max": 110,
             "min": 75
           },
           "stateMessages": {
             "pad": {
               "up": {
-                "ar": "مقبول، لكن المدى ما زال قصيراً",
-                "en": "Acceptable, but the reach is still short"
+                "ar": "مقبول — مد الرجل أطول مع بقاء الحوض ثابتاً",
+                "en": "Acceptable — reach the leg longer while the pelvis stays still"
               }
             },
             "normal": {
               "up": {
-                "ar": "جيد، مد الرجل أكثر للخلف",
-                "en": "Good, reach the leg farther back"
+                "ar": "جيد — أكمل المد للخلف بدون فتح الحوض",
+                "en": "Good — reach farther back without opening the pelvis"
               },
               "down": {
-                "ar": "جيد، عد ببطء أكثر",
-                "en": "Good, return more slowly"
+                "ar": "جيد — عد تحت الورك ببطء",
+                "en": "Good — return under the hip with control"
               }
             },
             "perfect": {
               "up": {
-                "ar": "ممتاز! مد رجل قوي مع ثبات الجذع",
-                "en": "Perfect! Strong leg reach with a stable trunk"
+                "ar": "ممتاز! مد قوي مع جذع ثابت",
+                "en": "Perfect! Strong reach with a stable trunk"
               },
               "down": {
-                "ar": "ممتاز! عودة محكمة تحت الورك",
-                "en": "Perfect! Controlled reset under the hip"
+                "ar": "ممتاز! عودة منظمة لوضع البداية",
+                "en": "Perfect! Organized return to the start"
               }
             },
             "warning": {
               "up": {
-                "ar": "لا تفتح الحوض جانبياً",
-                "en": "Do not open the pelvis sideways"
+                "ar": "لا تفتح الحوض للجانب أو ترفع الرجل أعلى من اللازم",
+                "en": "Do not open the pelvis or kick the leg too high"
               }
             }
           },
           "upRange": {
             "pad": {
               "max": 180,
-              "min": 140
+              "min": 138
             },
             "normal": {
               "max": 180,
               "min": 150
             },
             "perfect": {
-              "max": 180,
+              "max": 178,
               "min": 160
             }
           },
           "downRange": {
             "pad": {
               "max": 126,
-              "min": 70
+              "min": 72
             },
             "normal": {
-              "max": 118,
-              "min": 78
+              "max": 116,
+              "min": 80
             },
             "perfect": {
-              "max": 110,
-              "min": 85
+              "max": 108,
+              "min": 86
             },
             "warning": {
-              "max": 70,
+              "max": 72,
               "min": 58
             }
           }
@@ -129,17 +129,17 @@
           "joint": "spine",
           "role": "secondary",
           "startPose": {
-            "max": 20,
+            "max": 18,
             "min": 0
           },
           "stateMessages": {
             "perfect": {
-              "ar": "جذع ثابت ومحايد",
-              "en": "Stable, neutral trunk"
+              "ar": "الجذع ثابت ومحايد طوال المد",
+              "en": "The trunk stays neutral throughout the reach"
             },
             "warning": {
-              "ar": "قلل مدى الرجل حتى يعود الجذع للثبات",
-              "en": "Shorten the reach until trunk control returns"
+              "ar": "لا تسمح للجذع بالدوران أو الهبوط أثناء المد",
+              "en": "Do not let the trunk rotate or sag during the reach"
             }
           },
           "range": {
@@ -156,7 +156,7 @@
               "min": 0
             },
             "warning": {
-              "max": 36,
+              "max": 32,
               "min": 24
             }
           }
@@ -179,8 +179,8 @@
             "down"
           ],
           "errorMessage": {
-            "ar": "لا تسمح للجذع بالدوران أو الهبوط أثناء المد.",
-            "en": "Do not let the trunk rotate or sag during the reach."
+            "ar": "ابقَ ثابتاً من الجذع ولا تدع الورك يلف مع الرجل الممدودة.",
+            "en": "Stay quiet through the trunk and do not let the hip rotate with the reaching leg."
           },
           "severity": "warning",
           "cooldownMs": 2400,
@@ -190,22 +190,22 @@
       "feedbackMessages": {
         "motivational": [
           {
-            "ar": "شد جذع ممتاز",
-            "en": "Excellent trunk tension"
+            "ar": "ثبات ممتاز في الجذع والحوض",
+            "en": "Excellent trunk and pelvic stability"
           },
           {
-            "ar": "ثباتك يتحسن عدة بعد عدة",
-            "en": "Your stability improves rep by rep"
+            "ar": "التحكم يتحسن مع كل عدة",
+            "en": "The control improves with every rep"
           }
         ],
         "tips": [
           {
-            "ar": "شد السرة برفق ولا تحبس النفس طويلاً.",
-            "en": "Brace gently and avoid long breath-holds."
+            "ar": "فكّر في مد الرجل للخلف لا رفعها للأعلى.",
+            "en": "Think about reaching long, not kicking high."
           },
           {
-            "ar": "حرّك الأطراف دون أن ينهار الجذع.",
-            "en": "Move the limbs without letting the trunk collapse."
+            "ar": "حافظ على الرقبة محايدة وانظر للأرض أمام يديك قليلاً.",
+            "en": "Keep the neck neutral and look slightly ahead of the hands."
           }
         ]
       },
@@ -307,12 +307,12 @@
     }
   ],
   "description": {
-    "ar": "تمرين مكتبة: كلب طائر.",
-    "en": "Library exercise: Bird dog."
+    "ar": "تمرين Bird Dog هو Drill للاستقرار الحركي يربط بين الجذع والورك والكتف أثناء حركة الأطراف. يعلّم المتدرب كيف يحافظ على ظهر محايد وحوض ثابت بينما تمتد الذراع والرجل المتعاكستان، لذلك هو مفيد جداً في الإحماء وإعادة التعليم الحركي وتقوية التحكم العصبي العضلي.",
+    "en": "Bird Dog is a motor-control and stability drill that links the trunk, hip, and shoulder while the limbs move. It teaches the athlete to keep a neutral spine and quiet pelvis as the opposite arm and leg reach away, making it highly useful in warm-ups, rehab, and trunk-control work."
   },
   "instructions": {
-    "ar": "حافظ على عمود فقري محايد وتنفس بثبات وتوقف عند أي ألم حاد.",
-    "en": "Maintain neutral spine, steady breathing, and stop if sharp pain appears."
+    "ar": "1. ابدأ من وضع رباعي واليدان تحت الكتفين والركبتان تحت الوركين.\n2. شد البطن برفق وحافظ على العمود الفقري محايداً.\n3. مد ذراعاً ورجلاً معاكسة في نفس الوقت مع الحفاظ على الحوض مواجهاً للأرض.\n4. لا ترفع الرجل أعلى من اللازم؛ فكّر في الطول لا الارتفاع.\n5. عد ببطء لوضع البداية ثم بدّل الجهة الأخرى.\n6. إذا بدأ الجذع يلف أو يهبط، قلّل مدى الحركة وركّز على الثبات.",
+    "en": "1. Start on all fours with the hands under the shoulders and knees under the hips.\n2. Brace lightly and keep the spine neutral.\n3. Reach one arm and the opposite leg at the same time while keeping the pelvis facing the floor.\n4. Do not kick the leg too high; think length, not height.\n5. Return slowly to the start and switch sides.\n6. If the trunk starts to rotate or sag, reduce the range and refocus on stability."
   },
   "reportMetrics": {
     "primary": [
@@ -326,154 +326,5 @@
       "SYMMETRY"
     ]
   },
-  "hasPositionChecks": true,
-  "_database": {
-    "id": "fc66b341-9278-4464-b61e-d21ef85b82b6",
-    "categoryId": "d90cee55-225e-4127-9fdc-062a8a09522e",
-    "countingMethodId": "f4d48aef-1606-4f23-8c61-7b4a2546f990",
-    "publishedAt": "2026-04-20T17:26:28.070Z",
-    "createdAt": "2026-04-20T17:26:28.072Z",
-    "updatedAt": "2026-04-20T17:26:34.257Z",
-    "deletedAt": null,
-    "isFeatured": false,
-    "createdBy": null,
-    "updatedBy": null,
-    "repCountingConfig": null,
-    "bilateralConfig": null,
-    "isBilateral": false,
-    "supportsWeight": false,
-    "minWeight": null,
-    "maxWeight": null,
-    "defaultWeight": null,
-    "reportMetrics": {
-      "mode": "reps",
-      "version": 1,
-      "primaryKpi": "repQuality",
-      "secondaryKpis": [
-        "avgFormScore",
-        "avgRom"
-      ]
-    },
-    "media": [],
-    "poseVariants": [
-      {
-        "id": "0ba5c675-16c8-4ff2-adad-1a99d04bb2b8",
-        "sortOrder": 1,
-        "description": null,
-        "trackedJointsConfig": [
-          {
-            "role": "primary",
-            "joint": "left_hip",
-            "upRange": {
-              "pad": {
-                "max": 180,
-                "min": 140
-              },
-              "normal": {
-                "max": 180,
-                "min": 150
-              },
-              "perfect": {
-                "max": 180,
-                "min": 160
-              }
-            },
-            "downRange": {
-              "pad": {
-                "max": 126,
-                "min": 70
-              },
-              "normal": {
-                "max": 118,
-                "min": 78
-              },
-              "perfect": {
-                "max": 110,
-                "min": 85
-              },
-              "warning": {
-                "max": 70,
-                "min": 58
-              }
-            },
-            "startPose": {
-              "max": 180,
-              "min": 75
-            },
-            "stateMessages": {
-              "pad": {
-                "up": {
-                  "ar": "مقبول، لكن المدى ما زال قصيراً",
-                  "en": "Acceptable, but the reach is still short"
-                }
-              },
-              "normal": {
-                "up": {
-                  "ar": "جيد، مد الرجل أكثر للخلف",
-                  "en": "Good, reach the leg farther back"
-                },
-                "down": {
-                  "ar": "جيد، عد ببطء أكثر",
-                  "en": "Good, return more slowly"
-                }
-              },
-              "perfect": {
-                "up": {
-                  "ar": "ممتاز! مد رجل قوي مع ثبات الجذع",
-                  "en": "Perfect! Strong leg reach with a stable trunk"
-                },
-                "down": {
-                  "ar": "ممتاز! عودة محكمة تحت الورك",
-                  "en": "Perfect! Controlled reset under the hip"
-                }
-              },
-              "warning": {
-                "up": {
-                  "ar": "لا تفتح الحوض جانبياً",
-                  "en": "Do not open the pelvis sideways"
-                }
-              }
-            }
-          },
-          {
-            "role": "secondary",
-            "joint": "spine",
-            "range": {
-              "pad": {
-                "max": 24,
-                "min": 0
-              },
-              "normal": {
-                "max": 18,
-                "min": 0
-              },
-              "perfect": {
-                "max": 12,
-                "min": 0
-              },
-              "warning": {
-                "max": 36,
-                "min": 24
-              }
-            },
-            "startPose": {
-              "max": 20,
-              "min": 0
-            },
-            "stateMessages": {
-              "perfect": {
-                "ar": "جذع ثابت ومحايد",
-                "en": "Stable, neutral trunk"
-              },
-              "warning": {
-                "ar": "قلل مدى الرجل حتى يعود الجذع للثبات",
-                "en": "Shorten the reach until trunk control returns"
-              }
-            }
-          }
-        ]
-      }
-    ],
-    "validationWarning": null
-  }
+  "hasPositionChecks": true
 }

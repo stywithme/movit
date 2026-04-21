@@ -1,0 +1,239 @@
+{
+  "slug": "ex015_push_up",
+  "status": "published",
+  "movementPattern": "PUSH_HORIZONTAL",
+  "loadCapability": "BODYWEIGHT_ONLY",
+  "familyKey": "push_horizontal_family",
+  "familyOrder": 115,
+  "name": {
+    "ar": "ضغط",
+    "en": "Push-up"
+  },
+  "category": {
+    "code": "chest",
+    "name": {
+      "ar": "تمارين الصدر",
+      "en": "Chest"
+    }
+  },
+  "countingMethod": "up_down",
+  "muscles": [
+    "chest_muscle",
+    "triceps",
+    "front_delts"
+  ],
+  "equipment": [
+    "bodyweight"
+  ],
+  "tags": [
+    "compound",
+    "upper_body",
+    "group_2"
+  ],
+  "repCountingConfig": {
+    "reps": 10,
+    "minRepIntervalMs": 1500,
+    "maxRepIntervalMs": 3000
+  },
+  "poseVariants": [
+    {
+      "name": {
+        "ar": "زاوية جانبية",
+        "en": "Side view"
+      },
+      "posePosition": "prone_side",
+      "expectedPostures": [
+        "lying_prone"
+      ],
+      "expectedDirections": [
+        "side"
+      ],
+      "expectedRegions": [
+        "full_body"
+      ],
+      "trackedJoints": [
+        {
+          "joint": "left_elbow",
+          "role": "primary",
+          "pairedWith": "right_elbow",
+          "invertIndicator": true,
+          "startPose": {
+            "min": 160,
+            "max": 180
+          },
+          "upRange": {
+            "perfect": {
+              "min": 165,
+              "max": 180
+            },
+            "normal": {
+              "min": 158,
+              "max": 180
+            },
+            "pad": {
+              "min": 150,
+              "max": 180
+            }
+          },
+          "downRange": {
+            "perfect": {
+              "min": 80,
+              "max": 110
+            },
+            "normal": {
+              "min": 110,
+              "max": 120
+            },
+            "pad": {
+              "min": 120,
+              "max": 130
+            },
+            "warning": {
+              "min": 140,
+              "max": 180
+            }
+          },
+          "stateMessages": {
+            "perfect": {
+              "up": {
+                "ar": "ممتاز! تمدد قوي في الأعلى",
+                "en": "Perfect! Strong extension at the top"
+              },
+              "down": {
+                "ar": "ممتاز! عمق ضغط جيد وتحكم واضح",
+                "en": "Perfect! Good pressing depth with clear control"
+              }
+            },
+            "warning": {
+              "down": {
+                "ar": "انزل أكثر إذا ظل الكتف والجذع تحت السيطرة",
+                "en": "Lower more if the shoulders and trunk stay under control"
+              }
+            }
+          }
+        },
+        {
+          "joint": "left_shoulder",
+          "role": "secondary",
+          "range": {
+            "perfect": {
+              "min": 80,
+              "max": 100
+            },
+            "normal": {
+              "min": 78,
+              "max": 104
+            },
+            "warning": {
+              "min": 104,
+              "max": 125
+            }
+          },
+          "startPose": {
+            "min": 80,
+            "max": 100
+          },
+          "stateMessages": {
+            "perfect": {
+              "ar": "الكتف يتحرك بتناغم جيد",
+              "en": "The shoulder moves in a well-organized pattern"
+            }
+          }
+        },
+        {
+          "joint": "left_hip",
+          "role": "secondary",
+          "range": {
+            "perfect": {
+              "min": 170,
+              "max": 180
+            },
+            "normal": {
+              "min": 162,
+              "max": 180
+            },
+            "warning": {
+              "min": 138,
+              "max": 162
+            },
+            "danger": {
+              "min": 0,
+              "max": 138
+            }
+          },
+          "startPose": {
+            "min": 160,
+            "max": 180
+          },
+          "stateMessages": {
+            "perfect": {
+              "ar": "الجذع ثابت والجسم في خط واحد",
+              "en": "The trunk stays firm and the body stays in one line"
+            }
+          }
+        }
+      ],
+      "positionChecks": [
+        {
+          "id": "pushup_body_line",
+          "type": "vertical_alignment",
+          "landmarks": {
+            "primary": "left_shoulder",
+            "secondary": "left_hip",
+            "tertiary": "left_knee",
+            "quaternary": "left_ankle"
+          },
+          "condition": {
+            "operator": "approximately_equal",
+            "threshold": 0.08
+          },
+          "activePhases": [
+            "up",
+            "down"
+          ],
+          "errorMessage": {
+            "ar": "حافظ على خط مستقيم من الكتف حتى الكعبين طوال الضغط.",
+            "en": "Keep a straight line from the shoulders to the heels throughout the push-up."
+          },
+          "severity": "error",
+          "cooldownMs": 2000,
+          "minErrorFrames": 4
+        }
+      ],
+      "feedbackMessages": {
+        "motivational": [
+          {
+            "ar": "ضغط ممتاز",
+            "en": "Excellent push-up"
+          }
+        ],
+        "tips": [
+          {
+            "ar": "شد الجذع طوال الحركة ولا تدع الحوض يهبط.",
+            "en": "Brace the trunk throughout and do not let the hips sag."
+          }
+        ]
+      }
+    }
+  ],
+  "description": {
+    "ar": "الضغط من أهم تمارين الدفع الأفقي بوزن الجسم، ويطوّر الصدر والكتف الأمامي والعضد مع حاجة عالية لثبات الجذع. نجاح التكرار يعتمد على حركة المرفقين بمدى جيد مع بقاء الجسم كله في خط منظم.",
+    "en": "The push-up is one of the key bodyweight horizontal pushing patterns, training the chest, front delts, and triceps while demanding trunk stiffness. A strong rep depends on good elbow range while the whole body stays organized in one line."
+  },
+  "instructions": {
+    "ar": "1. ابدأ من وضع البلانك العالي مع اليدين تحت الكتفين تقريباً.\n2. شد الجذع والمؤخرة ليبقى الجسم في خط واحد.\n3. انزل بصدرك نحو الأرض عبر ثني المرفقين تحت تحكم.\n4. لا تدع الحوض يهبط أو الكتفين ينهاران للأمام.\n5. ادفع للأعلى حتى تقترب من التمدد الكامل للمرفقين.\n6. عدّل المستوى برفع اليدين على سطح أعلى إذا احتجت.",
+    "en": "1. Start in a high plank with the hands roughly under the shoulders.\n2. Brace the trunk and glutes so the body stays in one line.\n3. Lower the chest toward the floor by bending the elbows under control.\n4. Do not let the hips sag or the shoulders collapse forward.\n5. Press back up until the elbows approach full extension.\n6. Regress by elevating the hands on a higher surface if needed."
+  },
+  "reportMetrics": {
+    "primary": [
+      "FORM_SCORE"
+    ],
+    "excluded": [
+      "HOLD_DURATION",
+      "WEIGHT",
+      "VOLUME",
+      "EST_1RM"
+    ]
+  },
+  "hasPositionChecks": true
+}

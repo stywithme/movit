@@ -325,12 +325,12 @@
     }
   ],
   "description": {
-    "ar": "تمرين مكتبة: ضغط بايك.",
-    "en": "Library exercise: Pike push-up."
+    "ar": "ضغط بايك يميل الجذع نحو الرأس ويزيد الحمل على الكتفين الأماميتين والعضلة الثلاثية الرؤوس مقارنة بالضغط التقليدي.",
+    "en": "A pike push-up angles the torso toward the head to emphasize the anterior deltoids and triceps versus a standard push-up."
   },
   "instructions": {
-    "ar": "حافظ على عمود فقري محايد وتنفس بثبات وتوقف عند أي ألم حاد.",
-    "en": "Maintain neutral spine, steady breathing, and stop if sharp pain appears."
+    "ar": "1. ادخل في وضعية هرم (اليدان أمام القدمين) مع الوركين مرتفعين والرأس بين الذراعين.\n2. انزل الصدر نحو الأرض مع ثني المرفقين قليلاً للخارج.\n3. ادفع للأعلى مع الحفاظ على الوركين مرتفعين دون هبوط شديد في أسفل الظهر.\n4. حافظ على رقبة محايدة ولا تغلق التنفس.\n5. نفّذ 6–15 تكراراً حسب الزاوية والقدرة.\n6. توقف عند ألم حاد في الكتف أو الرقبة أو المعصم.",
+    "en": "1. Set up in a pike position with hips high and hands ahead of the feet.\n2. Lower the head/upper chest toward the floor with elbows slightly flared.\n3. Press up while keeping the hips lifted without excessive low-back sag.\n4. Keep the neck neutral and breathe steadily.\n5. Perform 6–15 reps depending on angle and strength.\n6. Stop if you feel sharp shoulder, neck, or wrist pain."
   },
   "reportMetrics": {
     "primary": [

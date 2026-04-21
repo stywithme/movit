@@ -19,7 +19,8 @@
   "countingMethod": "up_down",
   "muscles": [
     "rear_delts",
-    "traps"
+    "traps",
+    "upper_back"
   ],
   "equipment": [
     "resistance_band",
@@ -210,6 +211,42 @@
               "min": 12
             }
           }
+        },
+        {
+          "joint": "spine",
+          "role": "secondary",
+          "startPose": {
+            "max": 185,
+            "min": 165
+          },
+          "stateMessages": {
+            "perfect": {
+              "ar": "جذع مستقيم — اسحب بالذراعين لا بالاندفاع للخلف",
+              "en": "Tall torso — pull with the arms, not a backward heave"
+            },
+            "warning": {
+              "ar": "قلل الميل الخلفي للجذع عند نهاية السحب",
+              "en": "Reduce backward lean at the finish of the pull"
+            }
+          },
+          "range": {
+            "pad": {
+              "max": 185,
+              "min": 158
+            },
+            "normal": {
+              "max": 185,
+              "min": 165
+            },
+            "perfect": {
+              "max": 182,
+              "min": 170
+            },
+            "warning": {
+              "max": 170,
+              "min": 148
+            }
+          }
         }
       ],
       "positionChecks": [
@@ -275,8 +312,8 @@
             "en": "Keep shoulders down and slightly back (scapular set)."
           },
           {
-            "ar": "لا تفرط في تمديد الرقبة؛ نظرة أمامية قصيرة.",
-            "en": "Avoid craning the neck; keep a short forward gaze."
+            "ar": "انتهِ بذراعين متوازيين تقريباً ولا تدع الرأس يندفع للأمام.",
+            "en": "Finish with the forearms roughly parallel and avoid jutting the head forward."
           }
         ]
       },
@@ -420,12 +457,12 @@
     }
   ],
   "description": {
-    "ar": "تمرين مكتبة: سحب وجهي بحبل.",
-    "en": "Library exercise: Face pull (band)."
+    "ar": "سحب أفقي نحو الوجه بالحبل لتقوية الكتف الخلفي والعضلة شبه المنحرفة مع تحسين وضعية الكتف.",
+    "en": "A horizontal pull toward the face using a band or cable to strengthen the rear delts and traps while reinforcing healthy shoulder posture."
   },
   "instructions": {
-    "ar": "حافظ على عمود فقري محايد وتنفس بثبات وتوقف عند أي ألم حاد.",
-    "en": "Maintain neutral spine, steady breathing, and stop if sharp pain appears."
+    "ar": "امسك الحبل بارتفاع مستوى الوجه تقريباً، ثم اسحب نحو الأنف أو الجبهة مع إبقاء المرفقين أعلى من المعصمين قليلاً في نهاية الحركة. فكّك ببطء مع إبقاء الصدر مرفوعاً قليلاً وتجنب الاندفاع الخلفي بالجذع. أضف دوراناً خفيفاً للخارج في المعصمين إن كان ذلك مريحاً للكتف.",
+    "en": "Set the band near face height, then pull toward the nose or forehead while finishing with elbows slightly higher than the wrists. Return slowly with a tall chest and minimal backward lean. Add a gentle outward rotation at the wrists if it feels good for the shoulders."
   },
   "reportMetrics": {
     "primary": [
@@ -632,6 +669,42 @@
               }
             },
             "invertIndicator": true
+          },
+          {
+            "role": "secondary",
+            "joint": "spine",
+            "range": {
+              "pad": {
+                "max": 185,
+                "min": 158
+              },
+              "normal": {
+                "max": 185,
+                "min": 165
+              },
+              "perfect": {
+                "max": 182,
+                "min": 170
+              },
+              "warning": {
+                "max": 170,
+                "min": 148
+              }
+            },
+            "startPose": {
+              "max": 185,
+              "min": 165
+            },
+            "stateMessages": {
+              "perfect": {
+                "ar": "جذع مستقيم — اسحب بالذراعين لا بالاندفاع للخلف",
+                "en": "Tall torso — pull with the arms, not a backward heave"
+              },
+              "warning": {
+                "ar": "قلل الميل الخلفي للجذع عند نهاية السحب",
+                "en": "Reduce backward lean at the finish of the pull"
+              }
+            }
           }
         ]
       }

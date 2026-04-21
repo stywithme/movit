@@ -390,12 +390,12 @@
     }
   ],
   "description": {
-    "ar": "تمرين مكتبة: مشي ثقيل.",
-    "en": "Library exercise: Heavy walk (sled substitute)."
+    "ar": "مشي دفع ثقيل (بديل زلاجة) يحمّل الساقين والجذع الأمامي ويحاكي دفع زلاجة لبناء القدرة على التحمل دون تشغيل معقد.",
+    "en": "A heavy push walk substitutes for sled work to load the legs and anterior core and build work capacity with simple, robust technique."
   },
   "instructions": {
-    "ar": "حافظ على عمود فقري محايد وتنفس بثبات وتوقف عند أي ألم حاد.",
-    "en": "Maintain neutral spine, steady breathing, and stop if sharp pain appears."
+    "ar": "1. امسك مقبضاً أو زلاجة أو جسم ثقيل منخفض الارتكاز أمامك.\n2. ميل الجذع قليلاً للأمام مع ظهر محايد وذراعين دافعتين.\n3. خطوات قصيرة وسريعة مع دفع ثابت خلال المسافة المحددة.\n4. حافظ على تنفس منتظم وتجنّب حبس النفس بإفراط.\n5. كرر جولات قصيرة حسب الوزن والهدف.\n6. توقف عند ألم حاد في أسفل الظهر أو الركبة أو الدوخة.",
+    "en": "1. Grip a sled handle, prowler, or low implement designed for pushing.\n2. Lean the torso slightly forward with a neutral spine and active arms.\n3. Take short, quick steps while maintaining steady pressure through the set distance.\n4. Breathe rhythmically and avoid breath-holding.\n5. Repeat short rounds according to load and goal.\n6. Stop for sharp low-back or knee pain or dizziness."
   },
   "supportsWeight": true,
   "reportMetrics": {

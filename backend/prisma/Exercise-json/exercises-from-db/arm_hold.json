@@ -10,10 +10,10 @@
     "en": "Arm Hold"
   },
   "category": {
-    "code": "test",
+    "code": "shoulders",
     "name": {
-      "ar": "اختبار",
-      "en": "Test"
+      "ar": "تمارين الأكتاف",
+      "en": "Shoulders"
     }
   },
   "countingMethod": "hold",
@@ -25,9 +25,9 @@
     "bodyweight"
   ],
   "tags": [
-    "test",
-    "easy",
-    "hold_tag"
+    "isometric",
+    "upper_body",
+    "overhead_mobility"
   ],
   "repCountingConfig": {
     "duration": 15,
@@ -59,8 +59,8 @@
           },
           "stateMessages": {
             "pad": {
-              "ar": "مقبول، لكن يمكنك التحسن",
-              "en": "Acceptable, but you can improve"
+              "ar": "الوضع مقبول — اقترب أكثر من خط الذراع بجانب الأذن.",
+              "en": "Acceptable — move closer to a straight arm line beside the ear."
             },
             "danger": {
               "ar": "الذراع منخفضة جداً!",
@@ -180,12 +180,12 @@
     }
   ],
   "description": {
-    "ar": "تمرين بسيط لاختبار الثبات - ارفع ذراعك اليمنى للأعلى وابقِها مرفوعة",
-    "en": "Simple hold test - raise your right arm up and keep it raised"
+    "ar": "ثبات الذراع فوق الرأس يقوّي ثبات الكتف والجذع في وضعية علوية، ويُستخدم غالباً كتمهيد خفيف أو اختبار تحكم بسيط. يُنفَّذ هنا على الجانب الأيمن مع بقاء المرفق قريباً من التمديد دون ميل الجذع.",
+    "en": "An overhead arm hold builds shoulder and trunk stability in an elevated position and is often used as a light warm-up or control check. This version uses the right arm with the elbow near full extension and no leaning of the trunk."
   },
   "instructions": {
-    "ar": "قف بشكل مستقيم وارفع ذراعك اليمنى للأعلى بشكل مستقيم فوق رأسك",
-    "en": "Stand straight and raise your right arm straight up above your head"
+    "ar": "1. قف منتصباً والقدمان بعرض الحوض.\n2. ارفع الذراع اليمنى فوق الرأس بخط قريب من المستقيم.\n3. شد الجذع برفق وابقَ الرقبة محايدة.\n4. ثبّت الوضع طوال الوقت المحدد دون ميل جانبي.\n5. خفّف الارتفاع إذا ظهر ألم في الكتف أو الرقبة.",
+    "en": "1. Stand tall with feet about hip-width apart.\n2. Raise the right arm overhead in a near-straight line.\n3. Brace the trunk lightly and keep the neck neutral.\n4. Hold steady for the prescribed time without side-bending.\n5. Reduce the height if you feel shoulder or neck irritation."
   },
   "reportMetrics": {
     "primary": [
@@ -210,7 +210,7 @@
   },
   "_database": {
     "id": "ddc86b5a-fddf-4e1b-803d-60b7b27d2ee0",
-    "categoryId": "a0b8e4c8-502c-4cb8-b937-a4a79f5357fe",
+    "categoryId": "78daff70-6564-41cd-b768-462735416089",
     "countingMethodId": "7ae86596-4b4b-400b-afa1-c7c0b6ba4fc9",
     "publishedAt": "2026-04-20T17:26:22.107Z",
     "createdAt": "2026-04-20T17:26:22.110Z",
@@ -276,8 +276,8 @@
             },
             "stateMessages": {
               "pad": {
-                "ar": "مقبول، لكن يمكنك التحسن",
-                "en": "Acceptable, but you can improve"
+                "ar": "الوضع مقبول — اقترب أكثر من خط الذراع بجانب الأذن.",
+                "en": "Acceptable — move closer to a straight arm line beside the ear."
               },
               "danger": {
                 "ar": "الذراع منخفضة جداً!",

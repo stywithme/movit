@@ -311,12 +311,12 @@
     }
   ],
   "description": {
-    "ar": "تمرين مكتبة: تنظيف جوبلت كيتل.",
-    "en": "Library exercise: Kettlebell goblet clean."
+    "ar": "تنظيف الكيتل بيل إلى وضع جوبلت ينقل القرص من بين الساقين إلى الصدر باندفاع وركي وقبضة أمامية آمنة نسبياً للمبتدئين.",
+    "en": "A kettlebell goblet clean pops the bell from between the legs to chest height with a hip drive and front-rack grip—often approachable for beginners."
   },
   "instructions": {
-    "ar": "حافظ على عمود فقري محايد وتنفس بثبات وتوقف عند أي ألم حاد.",
-    "en": "Maintain neutral spine, steady breathing, and stop if sharp pain appears."
+    "ar": "1. ضع الكيتل بيل بين القدمين مع قبضة على المقبض والظهر محايد.\n2. ادفع الوركين للخلف قليلاً ثم انفجر للأعلى مع سحب الكيتل بيل قرب الجسم.\n3. لفّ الذراعين حول القرص في وضع جوبلت قرب الصدر دون ضرب المعصمين.\n4. أعد القرص للأسفل بتحكم بين الساقين.\n5. نفّذ التكرارات بإيقاع ثابت وتنفس منتظم.\n6. توقف عند ألم حاد في أسفل الظهر أو المعصم أو الكتف.",
+    "en": "1. Set the kettlebell between the feet with a firm grip and a neutral spine.\n2. Hinge slightly, then extend the hips to accelerate the bell upward along the torso.\n3. Catch the bell in a goblet position at the chest without slamming the wrists.\n4. Lower the bell with control back between the legs.\n5. Repeat with a steady rhythm and breathing.\n6. Stop if you feel sharp low-back, wrist, or shoulder pain."
   },
   "supportsWeight": true,
   "reportMetrics": {
