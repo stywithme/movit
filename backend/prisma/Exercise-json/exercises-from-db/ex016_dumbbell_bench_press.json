@@ -1,0 +1,198 @@
+{
+  "slug": "ex016_dumbbell_bench_press",
+  "status": "published",
+  "movementPattern": "PUSH_HORIZONTAL",
+  "loadCapability": "EXTERNAL_LOAD_REQUIRED",
+  "familyKey": "push_horizontal_family",
+  "familyOrder": 116,
+  "name": {
+    "ar": "ضغط دمبل على بنش",
+    "en": "Dumbbell bench press"
+  },
+  "category": {
+    "code": "chest",
+    "name": {
+      "ar": "تمارين الصدر",
+      "en": "Chest"
+    }
+  },
+  "countingMethod": "up_down",
+  "muscles": [
+    "chest_muscle",
+    "triceps",
+    "front_delts"
+  ],
+  "equipment": [
+    "dumbbell",
+    "bench"
+  ],
+  "tags": [
+    "compound",
+    "upper_body",
+    "group_2"
+  ],
+  "repCountingConfig": {
+    "reps": 10,
+    "minRepIntervalMs": 1500,
+    "maxRepIntervalMs": 3000
+  },
+  "supportsWeight": true,
+  "poseVariants": [
+    {
+      "name": {
+        "ar": "أمامي - الجزء العلوي",
+        "en": "Front view upper body"
+      },
+      "posePosition": "supine_front",
+      "expectedPostures": [
+        "lying_supine"
+      ],
+      "expectedDirections": [
+        "front"
+      ],
+      "expectedRegions": [
+        "upper_body"
+      ],
+      "trackedJoints": [
+        {
+          "joint": "left_shoulder",
+          "role": "primary",
+          "pairedWith": "right_shoulder",
+          "startPose": {
+            "min": 0,
+            "max": 10
+          },
+          "upRange": {
+            "perfect": {
+              "min": 90,
+              "max": 110
+            },
+            "normal": {
+              "min": 70,
+              "max": 90
+            },
+            "pad": {
+              "min": 60,
+              "max": 80
+            }
+          },
+          "downRange": {
+            "perfect": {
+              "min": 0,
+              "max": 10
+            },
+            "normal": {
+              "min": 10,
+              "max": 20
+            },
+            "pad": {
+              "min": 20,
+              "max": 35
+            }
+          },
+          "stateMessages": {
+            "perfect": {
+              "up": {
+                "ar": "ممتاز! الذراعان في خط ضغط متزن",
+                "en": "Perfect! The arms are in a balanced pressing line"
+              },
+              "down": {
+                "ar": "ممتاز! عودة منظمة إلى أسفل الحركة",
+                "en": "Perfect! Controlled return to the bottom"
+              }
+            },
+            "warning": {
+              "up": {
+                "ar": "ارفع الدمبلين لمستوى متساوٍ ولا تدع أحد الجانبين يسبق الآخر",
+                "en": "Press both dumbbells evenly and do not let one side lead"
+              }
+            }
+          }
+        },
+        {
+          "joint": "left_elbow",
+          "role": "secondary",
+          "range": {
+            "perfect": {
+              "min": 160,
+              "max": 180
+            },
+            "normal": {
+              "min": 150,
+              "max": 180
+            },
+            "warning": {
+              "min": 80,
+              "max": 150
+            }
+          },
+          "startPose": {
+            "min": 80,
+            "max": 100
+          },
+          "stateMessages": {
+            "perfect": {
+              "ar": "المرفقان يمدان جيداً في الأعلى",
+              "en": "The elbows extend well at the top"
+            }
+          }
+        }
+      ],
+      "positionChecks": [
+        {
+          "id": "bench_press_symmetry",
+          "type": "horizontal_alignment",
+          "landmarks": {
+            "primary": "left_wrist",
+            "secondary": "right_wrist"
+          },
+          "condition": {
+            "operator": "approximately_equal",
+            "threshold": 0.08
+          },
+          "activePhases": [
+            "up"
+          ],
+          "errorMessage": {
+            "ar": "اضغط الدمبلين بنفس الارتفاع في الأعلى.",
+            "en": "Press both dumbbells to the same height at the top."
+          },
+          "severity": "warning",
+          "cooldownMs": 2200,
+          "minErrorFrames": 4
+        }
+      ],
+      "feedbackMessages": {
+        "motivational": [
+          {
+            "ar": "ضغط ممتاز ومتزن",
+            "en": "Excellent balanced press"
+          }
+        ],
+        "tips": [
+          {
+            "ar": "حافظ على قبضة ثابتة ومعصم فوق المرفق قدر الإمكان.",
+            "en": "Keep a steady grip and stack the wrist over the elbow as much as possible."
+          }
+        ]
+      }
+    }
+  ],
+  "description": {
+    "ar": "ضغط الدمبل على البنش يطوّر الصدر والعضد والكتف الأمامي مع حرية أكبر لكل ذراع مقارنة بالبار. لذلك هو ممتاز لتحسين التوازن بين الجانبين، لكنه يحتاج إلى تحكم جيد في مسار الدمبلين ومحاذاة المعصم والمرفق.",
+    "en": "The dumbbell bench press develops the chest, triceps, and front delts while giving each arm more freedom than a barbell. That makes it excellent for improving side-to-side balance, but it also demands better control of the dumbbell path and wrist-elbow alignment."
+  },
+  "instructions": {
+    "ar": "1. استلقِ على البنش مع تثبيت القدمين على الأرض.\n2. ابدأ بالدمبلين فوق الصدر مع شد الجذع وتثبيت الكتفين.\n3. انزل بالدمبلين تحت تحكم حتى مستوى مريح للكتفين.\n4. اضغط للأعلى في مسار متزن حتى يلتقي الذراعان تقريباً فوق الصدر.\n5. لا تدع أحد الجانبين يسبق الآخر.\n6. أوقف التمرين إذا شعرت بألم حاد في الكتف أو المعصم.",
+    "en": "1. Lie on the bench with the feet firmly planted on the floor.\n2. Start with the dumbbells over the chest while bracing and setting the shoulders.\n3. Lower the dumbbells under control to a shoulder-friendly bottom position.\n4. Press up in a balanced path until the arms nearly meet over the chest.\n5. Do not let one side lead the other.\n6. Stop if sharp shoulder or wrist pain appears."
+  },
+  "reportMetrics": {
+    "primary": [
+      "FORM_SCORE"
+    ],
+    "excluded": [
+      "HOLD_DURATION"
+    ]
+  },
+  "hasPositionChecks": true
+}

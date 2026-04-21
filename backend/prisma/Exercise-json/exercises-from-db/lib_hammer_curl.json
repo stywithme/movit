@@ -391,12 +391,12 @@
     }
   ],
   "description": {
-    "ar": "تمرين مكتبة: طرق مطرقة.",
-    "en": "Library exercise: Hammer curl."
+    "ar": "ثني المرفق بقبضة محايدة (مطرقة) يستهدف العضلة المطرقة والعظم الذراعي مع مشاركة الذراعين الأماميتين.",
+    "en": "Hammer curls use a neutral grip to emphasize the brachialis and brachioradialis with support from the biceps."
   },
   "instructions": {
-    "ar": "حافظ على عمود فقري محايد وتنفس بثبات وتوقف عند أي ألم حاد.",
-    "en": "Maintain neutral spine, steady breathing, and stop if sharp pain appears."
+    "ar": "1. قف أو اجلس مع الذراعين إلى الجانب والإبهامان للأعلى (قبضة محايدة).\n2. ارفع الأوزان نحو الكتفين مع إبقاء المرفقين قريبين من الجسم دون أرجحة.\n3. انزل ببطء إلى امتداد كامل مريح.\n4. حافظ على معصمين مستقيمين دون انحناء مفرط.\n5. نفّذ 8–15 تكراراً حسب الوزن.\n6. توقف عند ألم حاد في المرفق أو المعصم.",
+    "en": "1. Stand or sit with arms at the sides and palms facing each other (neutral grip).\n2. Curl the weights toward the shoulders while keeping the elbows close without swinging.\n3. Lower slowly to a comfortable full extension.\n4. Keep the wrists straight without excessive bending.\n5. Perform 8–15 reps depending on load.\n6. Stop if you feel sharp elbow or wrist pain."
   },
   "supportsWeight": true,
   "reportMetrics": {

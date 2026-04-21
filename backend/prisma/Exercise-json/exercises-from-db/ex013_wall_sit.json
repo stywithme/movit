@@ -1,0 +1,185 @@
+{
+  "slug": "ex013_wall_sit",
+  "status": "published",
+  "movementPattern": "CORE_BRACE",
+  "loadCapability": "BODYWEIGHT_ONLY",
+  "familyKey": "squat_pattern_family",
+  "familyOrder": 113,
+  "name": {
+    "ar": "وال سِت",
+    "en": "Wall sit"
+  },
+  "category": {
+    "code": "legs",
+    "name": {
+      "ar": "تمارين الأرجل",
+      "en": "Legs"
+    }
+  },
+  "countingMethod": "hold",
+  "muscles": [
+    "quadriceps",
+    "glutes"
+  ],
+  "equipment": [
+    "wall"
+  ],
+  "tags": [
+    "isometric",
+    "beginner_friendly",
+    "group_2"
+  ],
+  "repCountingConfig": {
+    "duration": 20,
+    "gracePeriodMs": 2500
+  },
+  "poseVariants": [
+    {
+      "name": {
+        "ar": "زاوية جانبية",
+        "en": "Side view"
+      },
+      "posePosition": "standing_side",
+      "expectedPostures": [
+        "standing"
+      ],
+      "expectedDirections": [
+        "side"
+      ],
+      "expectedRegions": [
+        "lower_body"
+      ],
+      "trackedJoints": [
+        {
+          "joint": "left_knee",
+          "role": "primary",
+          "range": {
+            "perfect": {
+              "min": 80,
+              "max": 100
+            },
+            "normal": {
+              "min": 100,
+              "max": 120
+            },
+            "pad": {
+              "min": 120,
+              "max": 140
+            },
+            "warning": {
+              "min": 140,
+              "max": 180
+            }
+          },
+          "startPose": {
+            "min": 160,
+            "max": 180
+          },
+          "stateMessages": {
+            "perfect": {
+              "ar": "ممتاز! زاوية جلوس قوية وثابتة",
+              "en": "Perfect! Strong and stable seated angle"
+            },
+            "warning": {
+              "ar": "انزل أكثر حتى تقترب الركبتان من زاوية 90 درجة إذا كان ذلك آمناً",
+              "en": "Lower more until the knees approach 90 degrees if that position feels safe"
+            }
+          }
+        },
+        {
+          "joint": "left_hip",
+          "role": "secondary",
+          "range": {
+            "perfect": {
+              "min": 80,
+              "max": 100
+            },
+            "normal": {
+              "min": 100,
+              "max": 120
+            },
+            "pad": {
+              "min": 120,
+              "max": 140
+            },
+            "warning": {
+              "min": 140,
+              "max": 180
+            }
+          },
+          "startPose": {
+            "min": 160,
+            "max": 180
+          },
+          "stateMessages": {
+            "perfect": {
+              "ar": "الورك في مستوى جلوس جيد مع الجذع ثابتاً على الحائط",
+              "en": "The hip stays in a solid seated position with the torso fixed to the wall"
+            }
+          }
+        }
+      ],
+      "positionChecks": [
+        {
+          "id": "wall_sit_stack",
+          "type": "vertical_alignment",
+          "landmarks": {
+            "primary": "left_shoulder",
+            "secondary": "left_hip",
+            "tertiary": "left_knee",
+            "quaternary": "left_ankle"
+          },
+          "condition": {
+            "operator": "approximately_equal",
+            "threshold": 0.12
+          },
+          "activePhases": [
+            "all"
+          ],
+          "errorMessage": {
+            "ar": "حافظ على الظهر على الحائط والقدمين تحتك بحيث تبقى الوضعية متزنة.",
+            "en": "Keep the back on the wall and the feet placed so the seated position stays balanced."
+          },
+          "severity": "tip",
+          "cooldownMs": 2800,
+          "minErrorFrames": 5
+        }
+      ],
+      "feedbackMessages": {
+        "motivational": [
+          {
+            "ar": "ثبات ممتاز في الوال سِت",
+            "en": "Excellent wall-sit hold"
+          }
+        ],
+        "tips": [
+          {
+            "ar": "تنفّس بهدوء ولا تحبس النفس تحت التعب.",
+            "en": "Breathe calmly and do not hold your breath under fatigue."
+          }
+        ]
+      }
+    }
+  ],
+  "description": {
+    "ar": "الوال سِت تمرين isometric بسيط لكنه قوي للفخذين والمؤخرة، ويُستخدم كثيراً لبناء تحمل العضلات في وضع القرفصاء الثابتة. أهم شيء هو الحفاظ على الظهر مدعوماً بالحائط وزاوية ركبة وورك متوازنة قدر الإمكان.",
+    "en": "The wall sit is a simple but demanding isometric drill for the quads and glutes, commonly used to build muscular endurance in a fixed squat position. The main goal is keeping the back supported by the wall and maintaining a balanced hip and knee angle."
+  },
+  "instructions": {
+    "ar": "1. اسند ظهرك إلى الحائط وابدأ بالمشي بالقدمين للأمام قليلاً.\n2. انزل حتى تصل لوضع جلوس ثابت ومريح قريب من 90 درجة في الركبتين إن أمكن.\n3. أبقِ الظهر والرأس على الحائط والقدمين ثابتتين على الأرض.\n4. شد الجذع وتنفس بهدوء طوال الثبات.\n5. لا تدع الركبتين تنهاران للداخل.\n6. أنهِ التمرين إذا ظهر ألم حاد في الركبة.",
+    "en": "1. Place your back against the wall and walk the feet slightly forward.\n2. Lower into a stable seated position, aiming toward 90 degrees at the knees if comfortable.\n3. Keep the back and head on the wall and the feet planted on the floor.\n4. Brace lightly and breathe steadily through the hold.\n5. Do not let the knees collapse inward.\n6. Stop if sharp knee pain appears."
+  },
+  "reportMetrics": {
+    "primary": [
+      "FORM_SCORE",
+      "HOLD_DURATION"
+    ],
+    "excluded": [
+      "REP_COUNT",
+      "WEIGHT",
+      "VOLUME",
+      "EST_1RM"
+    ]
+  },
+  "hasPositionChecks": true
+}

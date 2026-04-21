@@ -1,0 +1,194 @@
+{
+  "slug": "ex012_glute_bridge",
+  "status": "published",
+  "movementPattern": "HINGE",
+  "loadCapability": "BODYWEIGHT_ONLY",
+  "familyKey": "hinge_pattern_family",
+  "familyOrder": 112,
+  "name": {
+    "ar": "جسر المؤخرة",
+    "en": "Glute bridge"
+  },
+  "category": {
+    "code": "legs",
+    "name": {
+      "ar": "تمارين الأرجل",
+      "en": "Legs"
+    }
+  },
+  "countingMethod": "up_down",
+  "muscles": [
+    "glutes",
+    "hamstrings"
+  ],
+  "equipment": [
+    "bodyweight",
+    "mat"
+  ],
+  "tags": [
+    "beginner_friendly",
+    "rehab",
+    "group_2"
+  ],
+  "repCountingConfig": {
+    "reps": 10,
+    "minRepIntervalMs": 1500,
+    "maxRepIntervalMs": 4000
+  },
+  "poseVariants": [
+    {
+      "name": {
+        "ar": "زاوية جانبية",
+        "en": "Side view"
+      },
+      "posePosition": "supine_side",
+      "expectedPostures": [
+        "lying_supine"
+      ],
+      "expectedDirections": [
+        "side"
+      ],
+      "expectedRegions": [
+        "full_body"
+      ],
+      "trackedJoints": [
+        {
+          "joint": "left_hip",
+          "role": "primary",
+          "pairedWith": "right_hip",
+          "startPose": {
+            "min": 90,
+            "max": 110
+          },
+          "upRange": {
+            "perfect": {
+              "min": 150,
+              "max": 180
+            },
+            "normal": {
+              "min": 140,
+              "max": 180
+            },
+            "pad": {
+              "min": 130,
+              "max": 180
+            }
+          },
+          "downRange": {
+            "perfect": {
+              "min": 90,
+              "max": 110
+            },
+            "normal": {
+              "min": 88,
+              "max": 118
+            },
+            "pad": {
+              "min": 80,
+              "max": 125
+            }
+          },
+          "stateMessages": {
+            "perfect": {
+              "up": {
+                "ar": "ممتاز! قفل جيد من الورك مع شد المؤخرة",
+                "en": "Perfect! Good hip lockout with glute squeeze"
+              },
+              "down": {
+                "ar": "ممتاز! رجوع منظم لوضع البداية",
+                "en": "Perfect! Controlled return to the start"
+              }
+            },
+            "warning": {
+              "up": {
+                "ar": "ارفع الحوض أعلى بدون أن تبالغ في تقوس أسفل الظهر",
+                "en": "Lift the hips higher without over-arching the low back"
+              }
+            }
+          }
+        },
+        {
+          "joint": "left_knee",
+          "role": "secondary",
+          "range": {
+            "perfect": {
+              "min": 90,
+              "max": 110
+            },
+            "normal": {
+              "min": 88,
+              "max": 112
+            }
+          },
+          "startPose": {
+            "min": 90,
+            "max": 110
+          },
+          "stateMessages": {
+            "perfect": {
+              "ar": "الركبة ثابتة في زاوية مناسبة",
+              "en": "The knee stays at a solid working angle"
+            }
+          }
+        },
+        {
+          "joint": "left_ankle",
+          "role": "secondary",
+          "range": {
+            "perfect": {
+              "min": 90,
+              "max": 100
+            },
+            "normal": {
+              "min": 88,
+              "max": 104
+            }
+          },
+          "startPose": {
+            "min": 90,
+            "max": 100
+          },
+          "stateMessages": {
+            "perfect": {
+              "ar": "القدم ثابتة والضغط جيد عبر الكعب",
+              "en": "The foot stays planted with good heel pressure"
+            }
+          }
+        }
+      ],
+      "feedbackMessages": {
+        "motivational": [
+          {
+            "ar": "تفعيل ممتاز للمؤخرة",
+            "en": "Excellent glute activation"
+          }
+        ],
+        "tips": [
+          {
+            "ar": "ادفع من الكعبين لا من أصابع القدمين.",
+            "en": "Drive through the heels, not the toes."
+          }
+        ]
+      }
+    }
+  ],
+  "description": {
+    "ar": "جسر المؤخرة تمرين أساسي لتفعيل المؤخرة وتحسين hip extension بدون حمل كبير. يفيد في الإحماء، إعادة التأهيل، وتعليم الجسم كيف يمد الورك مع بقاء الأضلاع والحوض تحت تحكم جيد.",
+    "en": "The glute bridge is a foundational drill for glute activation and basic hip extension without heavy loading. It works well in warm-ups, rehab, and for teaching the body how to extend the hips while keeping the ribs and pelvis organized."
+  },
+  "instructions": {
+    "ar": "1. استلقِ على ظهرك مع ثني الركبتين والقدمين على الأرض.\n2. شد البطن قليلاً وثبّت القدمين بعرض مريح.\n3. ارفع الحوض للأعلى بعصر المؤخرة حتى يصل الجسم لخط قريب من الركبة إلى الكتف.\n4. توقف لحظة قصيرة في الأعلى.\n5. انزل ببطء إلى الأرض بدون ارتخاء كامل بين التكرارات.\n6. إذا شعرت بأسفل الظهر أكثر من المؤخرة، قلل المدى وأعد ضبط القدمين.",
+    "en": "1. Lie on your back with the knees bent and the feet on the floor.\n2. Lightly brace the abs and set the feet in a comfortable stance.\n3. Lift the hips by squeezing the glutes until the body forms a near line from knees to shoulders.\n4. Pause briefly at the top.\n5. Lower slowly without fully relaxing between reps.\n6. If you feel the low back more than the glutes, reduce the range and reset the foot position."
+  },
+  "reportMetrics": {
+    "primary": [
+      "FORM_SCORE"
+    ],
+    "excluded": [
+      "HOLD_DURATION",
+      "WEIGHT",
+      "VOLUME",
+      "EST_1RM"
+    ]
+  }
+}

@@ -318,12 +318,12 @@
     }
   ],
   "description": {
-    "ar": "تمرين مكتبة: رفعة رومانية متدرجة.",
-    "en": "Library exercise: Staggered stance RDL."
+    "ar": "الرفعة الرومانية بوقفة متدرجة تركّز معظم الحمل على الساق الأمامية مع دعم خفيف من إصبع القدم الخلفية.",
+    "en": "A staggered-stance RDL biases load to the front leg while the rear toe provides balance, bridging bilateral and single-leg hinge work."
   },
   "instructions": {
-    "ar": "حافظ على عمود فقري محايد وتنفس بثبات وتوقف عند أي ألم حاد.",
-    "en": "Maintain neutral spine, steady breathing, and stop if sharp pain appears."
+    "ar": "1. قف بقدم أمامية مسطحة وقدم خلفية على أصابع القدم مع خطوة قصيرة إلى متوسطة.\n2. امسك الأوزان وادفع الوركين للخلف مع إبقاء الوزن على القدم الأمامية بشكل أساسي.\n3. انزل حتى شد في مؤخرة الفخذ الأمامية مع ظهر محايد.\n4. عد للوضع الواقف بانقباض خفيف للألوية.\n5. نفّذ 8–12 تكراراً ثم بدّل ترتيب القدمين.\n6. توقف عند ألم حاد في أسفل الظهر أو الركبة.",
+    "en": "1. Stand with the front foot flat and the rear foot on the ball of the foot in a short-to-moderate split.\n2. Hold the weights and hinge the hips back while keeping most weight through the front foot.\n3. Lower until you feel tension in the front-leg hamstrings with a neutral spine.\n4. Return standing with a light glute squeeze.\n5. Complete 8–12 reps, then switch lead legs.\n6. Stop for sharp low-back or knee pain."
   },
   "supportsWeight": true,
   "reportMetrics": {

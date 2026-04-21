@@ -305,12 +305,12 @@
     }
   ],
   "description": {
-    "ar": "تمرين مكتبة: رفع قصبة.",
-    "en": "Library exercise: Tibialis raise."
+    "ar": "رفع الساق الأمامية (التيبياليس) يقوّي ثني الكاحل للأعلى ويُستخدم غالباً لتقليل إجهاد أسفل الساق أو تحسين التحكم في الكاحل عند العدّائين.",
+    "en": "Tibialis raises strengthen ankle dorsiflexion and are commonly used to reduce shin irritation and improve ankle control for runners."
   },
   "instructions": {
-    "ar": "حافظ على عمود فقري محايد وتنفس بثبات وتوقف عند أي ألم حاد.",
-    "en": "Maintain neutral spine, steady breathing, and stop if sharp pain appears."
+    "ar": "1. استند ظهرك للحائط أو اجلس على كرسي مع القدمين أمامك.\n2. اسحب أصابع القدمين نحو الركبتين مع إبقاء الكعب على الأرض.\n3. احتفظ بالقمة لثانية ثم انزل ببطء.\n4. كرر بمدى مريح دون تشنج في أعلى القدم.\n5. لا ترفع الكعبين عن الأرض أثناء الحركة.\n6. توقف عند ألم حاد على طول الساق الأمامية.",
+    "en": "1. Lean your back on a wall or sit on a chair with the feet in front of you.\n2. Pull the toes toward the knees while keeping the heels down.\n3. Hold the top briefly, then lower slowly.\n4. Repeat in a comfortable range without cramping the shin.\n5. Do not lift the heels off the floor during the motion.\n6. Stop if you feel sharp pain along the front of the shin."
   },
   "reportMetrics": {
     "primary": [

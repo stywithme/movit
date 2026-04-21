@@ -216,12 +216,12 @@
     }
   ],
   "description": {
-    "ar": "تمرين مكتبة: تدوير كتف بحبل.",
-    "en": "Library exercise: Shoulder dislocates (band)."
+    "ar": "تمرين «دسلوكات» الكتف بالحبل يوسّع مدى الحركة الأمامية للكتف بتحكم، ويُستخدم كإحماء للرياضات التي تتطلب رفع الذراع فوق الرأس — الاسم تقني وليس إزالة المفصل.",
+    "en": "Band shoulder dislocates improve controlled overhead shoulder range and are a common warm-up for overhead sports—the name is traditional, not literal joint dislocation."
   },
   "instructions": {
-    "ar": "حافظ على عمود فقري محايد وتنفس بثبات وتوقف عند أي ألم حاد.",
-    "en": "Maintain neutral spine, steady breathing, and stop if sharp pain appears."
+    "ar": "1. امسك حبل التمارين بعرض أوسع من الكتفين واقف منتصباً.\n2. ابدأ أمام الفخذين ثم ارفع الحبل ببطء فوق الرأس وخلف الظهر في قوس واسع.\n3. ارجع لنفس المسار دون قفز زائد في المرفقين.\n4. حافظ على الجذع ثابتاً والنظر للأمام.\n5. لا تفرط في العرض إذا شعرت بضغط مؤلم في الكتف.\n6. وسّع تدريجياً مع تحسن المدى.",
+    "en": "1. Hold a band wider than shoulder-width and stand tall.\n2. Start in front of the thighs, then slowly arc the band overhead and behind the back.\n3. Return along the same path without snapping the elbows.\n4. Keep the trunk still and eyes forward.\n5. Do not chase extreme width if the shoulder feels painful pinching.\n6. Progress width gradually as range improves."
   },
   "reportMetrics": {
     "primary": [

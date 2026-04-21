@@ -443,12 +443,12 @@
     }
   ],
   "description": {
-    "ar": "تمرين مكتبة: ضغط دفع.",
-    "en": "Library exercise: Push press."
+    "ar": "البوش برس يجمع بين انحناء خفيف في الركبتين ودفع بالساقين لنقل الزخم إلى الضغط فوق الرأس، فيصبح الحمل أثقل قليلاً من الضغط العادي مع الحفاظ على خط الجذع.",
+    "en": "The push press uses a small dip and leg drive to transfer momentum into an overhead press, allowing slightly heavier loads than a strict press while keeping the trunk organized."
   },
   "instructions": {
-    "ar": "حافظ على عمود فقري محايد وتنفس بثبات وتوقف عند أي ألم حاد.",
-    "en": "Maintain neutral spine, steady breathing, and stop if sharp pain appears."
+    "ar": "1. امسك الحمل عند ارتفاع الكتفين في وضع وقوف ثابت.\n2. ازفر وادفع الركبتين قليلاً للأمام ثم انفجر للأعلى بقوة من الساقين.\n3. استخدم الزخم القانوني لدفع الحمل فوق الرأس مع بقاء الذراعين تحت الحمل بسرعة.\n4. ثبّت القفل فوق الرأس ثم انزل بتحكم إلى ارتفاع الكتفين.\n5. لا تفرط في الانحناء الأمامي للجذع أو فرط القطني في القمة.\n6. خفف الوزن إذا فقدت مسار الضغط.",
+    "en": "1. Hold the load at shoulder height in a stable standing setup.\n2. Exhale and dip the knees slightly, then explode up with strong leg drive.\n3. Use that drive to move the load overhead while actively punching under the bar.\n4. Fix the lockout overhead, then lower with control back to the shoulders.\n5. Do not lean the trunk far forward or over-arch at the top.\n6. Reduce load if the press path breaks down."
   },
   "supportsWeight": true,
   "reportMetrics": {

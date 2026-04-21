@@ -197,12 +197,12 @@
     }
   ],
   "description": {
-    "ar": "تمرين مكتبة: قلب كاحل.",
-    "en": "Library exercise: Ankle inversion/eversion."
+    "ar": "انثناء الكاحل للداخل وللخارج يحسّن حركة مشط القدم والثبات الجانبي، وهو مفيد كإحماء أو إعادة تأهيل خفيف عند تنفيذه بمدى مريح دون ألم.",
+    "en": "Ankle inversion and eversion improve forefoot motion and lateral ankle control, and work well as a warm-up or light rehab drill when kept in a comfortable, pain-free range."
   },
   "instructions": {
-    "ar": "حافظ على عمود فقري محايد وتنفس بثبات وتوقف عند أي ألم حاد.",
-    "en": "Maintain neutral spine, steady breathing, and stop if sharp pain appears."
+    "ar": "1. اجلس أو استلق بحيث يكون الكاحل حراً دون تحميل كامل للجسم إن لزم.\n2. حرّك باطن القدم للداخل ثم للخارج ببطء وتحكم.\n3. تجنب الدوران من الورك أو الركبة — الحركة من الكاحل فقط.\n4. حافظ على تنفس منتظم ومدى صغير في البداية.\n5. زد المدى تدريجياً إذا بقي الألم بعيداً.\n6. توقف عند أي ألم حاد على جانبي الكاحل.",
+    "en": "1. Sit or lie so the ankle can move with minimal full-body load if needed.\n2. Slowly move the sole inward (inversion) then outward (eversion).\n3. Avoid twisting from the hip or knee — motion comes from the ankle.\n4. Breathe steadily and keep the range small at first.\n5. Progress range gradually if it stays pain-free.\n6. Stop if you feel sharp pain on either side of the ankle."
   },
   "reportMetrics": {
     "primary": [

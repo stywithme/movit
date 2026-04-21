@@ -391,12 +391,12 @@
     }
   ],
   "description": {
-    "ar": "تمرين مكتبة: شين أب.",
-    "en": "Library exercise: Chin-up."
+    "ar": "الشين أب سحب جسمك بقبضة تحتية (كفّان نحوك) يزيد مشاركة الذراعين الأماميتين مع الظهر العريض ويحتاج قوة قبضة جيدة.",
+    "en": "A chin-up uses a supinated grip to emphasize the biceps and lats while demanding solid grip strength and shoulder control."
   },
   "instructions": {
-    "ar": "حافظ على عمود فقري محايد وتنفس بثبات وتوقف عند أي ألم حاد.",
-    "en": "Maintain neutral spine, steady breathing, and stop if sharp pain appears."
+    "ar": "1. تعلّق بالقضيب بقبضة تحتية بعرض الكتفين تقريباً.\n2. ابدأ بتفعيل الكتفين للأسفل قليلاً قبل السحب.\n3. اسحب الصدر نحو القضيب مع إبقاء الجسم دون أرجحة كبيرة.\n4. انزل ببطء حتى امتداد كامل مريح دون فقدان التحكم.\n5. نفّذ التكرارات حسب قدرتك مع راحة كافية بين المجموعات.\n6. توقف عند ألم حاد في الكتف أو المرفق أو الرقبة.",
+    "en": "1. Hang from the bar with a supinated grip near shoulder width.\n2. Set the shoulders slightly down before you pull.\n3. Pull the chest toward the bar while limiting excessive swinging.\n4. Lower slowly to a comfortable full hang with control.\n5. Perform reps according to your ability with adequate rest between sets.\n6. Stop if you feel sharp shoulder, elbow, or neck pain."
   },
   "reportMetrics": {
     "primary": [

@@ -448,12 +448,12 @@
     }
   ],
   "description": {
-    "ar": "تمرين مكتبة: قفز متزلج.",
-    "en": "Library exercise: Skater hop."
+    "ar": "قفزة المتزلج تطوّر التوقف الجانبي والانطلاق على رجل واحدة مع ثبات الركبة، وهي شائعة في برامج اللاينية والرياضات التي تتطلب انزلاقاً جانبياً.",
+    "en": "Skater hops train lateral braking and single-leg takeoff with knee control, common in agility work and sports that demand side-to-side motion."
   },
   "instructions": {
-    "ar": "حافظ على عمود فقري محايد وتنفس بثبات وتوقف عند أي ألم حاد.",
-    "en": "Maintain neutral spine, steady breathing, and stop if sharp pain appears."
+    "ar": "1. ابدأ منتصباً ثم انطلق جانباً للهبوط على القدم البعيدة.\n2. اترك القدم الأخرى تمس الأرض خفيفاً أو تبقى قريبة كتوازن.\n3. ادفع للعودة أو للجهة المعاكسة حسب التصميم.\n4. حافظ على الجذع منتصباً والركبة فوق القدم.\n5. لا تهبط بقفزة عالية إذا فقدت التوازن.\n6. توقف عند ألم في الركبة أو الكاحل.",
+    "en": "1. Start tall, then push off to land on the far foot.\n2. Let the other foot touch lightly for balance or keep it close as programmed.\n3. Push back or to the opposite side depending on the drill.\n4. Stay tall with the knee tracking over the foot.\n5. Do not jump high if balance is shaky.\n6. Stop if you feel knee or ankle pain."
   },
   "reportMetrics": {
     "primary": [

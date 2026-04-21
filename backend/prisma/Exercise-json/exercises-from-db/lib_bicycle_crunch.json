@@ -301,12 +301,12 @@
     }
   ],
   "description": {
-    "ar": "تمرين مكتبة: دراجة بطن.",
-    "en": "Library exercise: Bicycle crunch."
+    "ar": "تمرين دراجة للبطن يجمع بين ثني الجذع والدوران الخفيف ليعمل على العضلات المستقيمة والمائلة مع تنسيق الحركة بين الركبتين والمرفقين.",
+    "en": "A bicycle-style crunch combines trunk flexion with light rotation to challenge the rectus abdominis and obliques while coordinating knees and elbows."
   },
   "instructions": {
-    "ar": "حافظ على عمود فقري محايد وتنفس بثبات وتوقف عند أي ألم حاد.",
-    "en": "Maintain neutral spine, steady breathing, and stop if sharp pain appears."
+    "ar": "1. استلقِ على ظهرك مع رفع الركبتين وزاوية تقريباً 90° عند الوركين.\n2. ضع يديك خلف الرأس برفق دون سحب الرقبة.\n3. أحضر ركبة نحو الصدر بينما تدور الجذع ليجتمع المرفق مع الركبة المعاكسة.\n4. بدّل الجانبين بإيقاع ثابت دون اهتزاز عنيف للرقبة.\n5. نفّذ 20–40 تبديلاً أو حسب القدرة مع تنفس منتظم.\n6. توقف عند ألم حاد في الظهر أو الدوخة.",
+    "en": "1. Lie on your back with hips near 90° and knees lifted.\n2. Place the hands lightly behind the head without pulling on the neck.\n3. Bring one knee toward the chest while rotating so the opposite elbow meets that knee.\n4. Alternate sides with a steady rhythm and avoid jerking the neck.\n5. Complete 20–40 switches or as tolerated with regular breathing.\n6. Stop if you feel sharp back pain or dizziness."
   },
   "reportMetrics": {
     "primary": [

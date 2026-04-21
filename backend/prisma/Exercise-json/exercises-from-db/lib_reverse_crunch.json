@@ -37,7 +37,7 @@
     {
       "name": {
         "ar": "مستلقٍ على الظهر",
-        "en": "Lying on back (side angle)"
+        "en": "Lying on back (side view)"
       },
       "posePosition": "supine_side",
       "expectedPostures": [
@@ -53,75 +53,111 @@
         {
           "joint": "left_hip",
           "role": "primary",
+          "invertIndicator": true,
           "startPose": {
-            "max": 170,
-            "min": 50
+            "max": 110,
+            "min": 55
           },
           "stateMessages": {
             "pad": {
               "down": {
-                "ar": "مقبول، لكن الرفع من الحوض ما زال محدوداً",
-                "en": "Acceptable, but pelvic lift is still limited"
+                "ar": "مقبول — لف الحوض للأعلى أكثر بدل مجرد سحب الركبتين",
+                "en": "Acceptable — roll the pelvis up more instead of only pulling the knees"
               }
             },
             "normal": {
               "up": {
-                "ar": "جيد، ابدأ من وضع أطول قليلاً",
-                "en": "Good, start from a slightly longer position"
+                "ar": "جيد — ابدأ من وضع مضبوط بدون تأرجح",
+                "en": "Good — start from a controlled position without swinging"
               },
               "down": {
-                "ar": "جيد، قرّب الركبتين أكثر للأعلى",
-                "en": "Good, draw the knees higher up"
+                "ar": "جيد — قرّب الركبتين للأعلى مع تحكم أفضل",
+                "en": "Good — bring the knees upward with better control"
               }
             },
             "perfect": {
               "up": {
-                "ar": "ممتاز! تمدد منظم في البداية",
-                "en": "Perfect! Organized start position"
+                "ar": "ممتاز! بداية منظمة وأسفل ظهر ثابت",
+                "en": "Perfect! Organized start with a steady low back"
               },
               "down": {
-                "ar": "ممتاز! لف حوض قوي للأعلى",
-                "en": "Perfect! Strong pelvic roll-up"
+                "ar": "ممتاز! لف حوض واضح ومتحكم به",
+                "en": "Perfect! Clear, controlled pelvic roll-up"
               }
             },
             "warning": {
               "down": {
-                "ar": "لا تتأرجح بالوركين لتكسب عدة",
-                "en": "Do not swing the hips to steal the rep"
+                "ar": "لا تتأرجح بالساقين لتخطف الحركة",
+                "en": "Do not swing the legs to steal the motion"
               }
             }
           },
-          "invertIndicator": true,
           "upRange": {
             "pad": {
               "max": 175,
-              "min": 115
+              "min": 116
             },
             "normal": {
               "max": 170,
-              "min": 122
+              "min": 124
             },
             "perfect": {
-              "max": 165,
-              "min": 130
+              "max": 164,
+              "min": 132
             }
           },
           "downRange": {
             "pad": {
               "max": 110,
-              "min": 45
+              "min": 48
             },
             "normal": {
               "max": 100,
-              "min": 50
+              "min": 54
             },
             "perfect": {
               "max": 90,
-              "min": 55
+              "min": 60
             },
             "warning": {
-              "max": 45,
-              "min": 35
+              "max": 48,
+              "min": 36
+            }
+          }
+        },
+        {
+          "joint": "spine",
+          "role": "secondary",
+          "startPose": {
+            "max": 18,
+            "min": 0
+          },
+          "stateMessages": {
+            "perfect": {
+              "ar": "العمود الفقري السفلي يبقى متحكماً فيه",
+              "en": "The lower spine stays organized and controlled"
+            },
+            "warning": {
+              "ar": "حافظ على التحكم ولا ترمِ الحوض بعنف نحو الأعلى",
+              "en": "Stay controlled and do not throw the pelvis upward"
+            }
+          },
+          "range": {
+            "pad": {
+              "max": 24,
+              "min": 0
+            },
+            "normal": {
+              "max": 18,
+              "min": 0
+            },
+            "perfect": {
+              "max": 12,
+              "min": 0
+            },
+            "warning": {
+              "max": 32,
+              "min": 24
             }
           }
         }
@@ -143,8 +179,8 @@
             "down"
           ],
           "errorMessage": {
-            "ar": "لف الحوض لأعلى بتحكم بدل التأرجح بالساقين.",
-            "en": "Roll the pelvis up under control instead of swinging the legs."
+            "ar": "لف الحوض للأعلى بتحكم بدل التأرجح بالساقين أو أخذ دفعة من الزخم.",
+            "en": "Roll the pelvis upward with control instead of swinging the legs or using momentum."
           },
           "severity": "warning",
           "cooldownMs": 2200,
@@ -154,22 +190,22 @@
       "feedbackMessages": {
         "motivational": [
           {
-            "ar": "شد جذع ممتاز",
-            "en": "Excellent trunk tension"
+            "ar": "شد بطن ممتاز وتحكم واضح",
+            "en": "Excellent ab tension and clear control"
           },
           {
-            "ar": "ثباتك يتحسن عدة بعد عدة",
-            "en": "Your stability improves rep by rep"
+            "ar": "الحركة نظيفة ومنظمة",
+            "en": "The motion is clean and organized"
           }
         ],
         "tips": [
           {
-            "ar": "شد السرة برفق ولا تحبس النفس طويلاً.",
-            "en": "Brace gently and avoid long breath-holds."
+            "ar": "فكّر في لف الحوض لا مجرد تقريب الركبتين من الصدر.",
+            "en": "Think about curling the pelvis, not just bringing the knees toward the chest."
           },
           {
-            "ar": "حرّك الأطراف دون أن ينهار الجذع.",
-            "en": "Move the limbs without letting the trunk collapse."
+            "ar": "انزل ببطء ولا تدع القدمين تسقطان بسرعة.",
+            "en": "Lower slowly and do not let the feet drop quickly."
           }
         ]
       },
@@ -233,14 +269,14 @@
           "messageId": "3d10a769-82a8-43f7-b2dc-fd39a85743eb",
           "target": "joint_state",
           "context": "perfect",
-          "jointCode": "right_hip",
+          "jointCode": "spine",
           "sortOrder": 8
         },
         {
           "messageId": "893e0428-088c-4074-aff7-bc20160763ee",
           "target": "joint_state",
           "context": "warning",
-          "jointCode": "right_hip",
+          "jointCode": "spine",
           "sortOrder": 9
         },
         {
@@ -271,12 +307,12 @@
     }
   ],
   "description": {
-    "ar": "تمرين مكتبة: كرانش عكسي.",
-    "en": "Library exercise: Reverse crunch."
+    "ar": "الـ Reverse Crunch يركز على الجزء السفلي من نمط ثني الجذع عبر سحب الحوض للأعلى بتدرج وتحكم، وليس بمجرد تحريك الساقين فقط. هو تمرين جيد لتحسين التحكم في pelvic tilt وتقوية البطن عندما يُنفّذ بهدوء وبدون زخم.",
+    "en": "The reverse crunch emphasizes the lower portion of trunk flexion by curling the pelvis upward under control rather than simply moving the legs. It is a useful exercise for improving pelvic control and strengthening the abs when performed slowly and without momentum."
   },
   "instructions": {
-    "ar": "حافظ على عمود فقري محايد وتنفس بثبات وتوقف عند أي ألم حاد.",
-    "en": "Maintain neutral spine, steady breathing, and stop if sharp pain appears."
+    "ar": "1. استلقِ على ظهرك مع رفع الركبتين ووضعهما فوق الوركين تقريباً.\n2. شد البطن واضغط أسفل الظهر بلطف نحو الأرض.\n3. ارفع الحوض قليلاً عن الأرض بسحب الركبتين للأعلى مع لف الحوض، لا بالتأرجح.\n4. انزل ببطء إلى وضع البداية بدون إسقاط الساقين بسرعة.\n5. أبقِ الرأس والرقبة مرتاحين طوال الحركة.\n6. إذا فقدت التحكم أو بدأت تستخدم الزخم، قلّل المدى وأبطئ التكرار.",
+    "en": "1. Lie on your back with the knees up over the hips.\n2. Brace the abs and gently press the low back into the floor.\n3. Lift the pelvis slightly off the floor by curling it upward, not by swinging the legs.\n4. Lower slowly back to the start without dropping the legs quickly.\n5. Keep the head and neck relaxed throughout the movement.\n6. If control is lost or momentum takes over, shorten the range and slow the rep down."
   },
   "reportMetrics": {
     "primary": [
@@ -290,119 +326,5 @@
       "SYMMETRY"
     ]
   },
-  "hasPositionChecks": true,
-  "_database": {
-    "id": "26a3258c-5fcf-4572-8834-ed1040ce1e93",
-    "categoryId": "01b944db-50df-4f53-aa08-ec5633820277",
-    "countingMethodId": "f4d48aef-1606-4f23-8c61-7b4a2546f990",
-    "publishedAt": "2026-04-20T17:26:29.096Z",
-    "createdAt": "2026-04-20T17:26:29.098Z",
-    "updatedAt": "2026-04-20T17:26:34.572Z",
-    "deletedAt": null,
-    "isFeatured": false,
-    "createdBy": null,
-    "updatedBy": null,
-    "repCountingConfig": null,
-    "bilateralConfig": null,
-    "isBilateral": false,
-    "supportsWeight": false,
-    "minWeight": null,
-    "maxWeight": null,
-    "defaultWeight": null,
-    "reportMetrics": {
-      "mode": "reps",
-      "version": 1,
-      "primaryKpi": "repQuality",
-      "secondaryKpis": [
-        "avgFormScore",
-        "avgRom"
-      ]
-    },
-    "media": [],
-    "poseVariants": [
-      {
-        "id": "1798ad24-d726-4901-b8db-b98a4ee0d125",
-        "sortOrder": 1,
-        "description": null,
-        "trackedJointsConfig": [
-          {
-            "role": "primary",
-            "joint": "left_hip",
-            "upRange": {
-              "pad": {
-                "max": 175,
-                "min": 115
-              },
-              "normal": {
-                "max": 170,
-                "min": 122
-              },
-              "perfect": {
-                "max": 165,
-                "min": 130
-              }
-            },
-            "downRange": {
-              "pad": {
-                "max": 110,
-                "min": 45
-              },
-              "normal": {
-                "max": 100,
-                "min": 50
-              },
-              "perfect": {
-                "max": 90,
-                "min": 55
-              },
-              "warning": {
-                "max": 45,
-                "min": 35
-              }
-            },
-            "startPose": {
-              "max": 170,
-              "min": 50
-            },
-            "stateMessages": {
-              "pad": {
-                "down": {
-                  "ar": "مقبول، لكن الرفع من الحوض ما زال محدوداً",
-                  "en": "Acceptable, but pelvic lift is still limited"
-                }
-              },
-              "normal": {
-                "up": {
-                  "ar": "جيد، ابدأ من وضع أطول قليلاً",
-                  "en": "Good, start from a slightly longer position"
-                },
-                "down": {
-                  "ar": "جيد، قرّب الركبتين أكثر للأعلى",
-                  "en": "Good, draw the knees higher up"
-                }
-              },
-              "perfect": {
-                "up": {
-                  "ar": "ممتاز! تمدد منظم في البداية",
-                  "en": "Perfect! Organized start position"
-                },
-                "down": {
-                  "ar": "ممتاز! لف حوض قوي للأعلى",
-                  "en": "Perfect! Strong pelvic roll-up"
-                }
-              },
-              "warning": {
-                "down": {
-                  "ar": "لا تتأرجح بالوركين لتكسب عدة",
-                  "en": "Do not swing the hips to steal the rep"
-                }
-              }
-            },
-            "invertIndicator": true
-          }
-        ]
-      }
-    ],
-    "validationWarning": null
-  }
+  "hasPositionChecks": true
 }

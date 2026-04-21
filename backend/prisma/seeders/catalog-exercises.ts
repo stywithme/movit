@@ -100,9 +100,18 @@ function reportMetricsForCounting(countingMethodCode: string): Prisma.InputJsonV
 /**
  * Upserts curated library exercises (no numeric filler). Safe after JSON import.
  */
+export type SeedCuratedCatalogExtensionsOptions = {
+  /**
+   * Slugs already seeded from `Exercise-json/exercises-from-db/*.json`.
+   * Those rows are skipped so JSON remains the single source of truth for exercise content + pose config.
+   */
+  skipSlugs?: ReadonlySet<string>;
+};
+
 export async function seedCuratedCatalogExtensions(
   prisma: PrismaClient,
   ensureMessageTemplate: EnsureMessageTemplate,
+  options?: SeedCuratedCatalogExtensionsOptions,
 ) {
   const posePositions = await prisma.posePosition.findMany({
     where: { isActive: true },
@@ -150,9 +159,16 @@ export async function seedCuratedCatalogExtensions(
     return created;
   };
 
-  console.log(`📚 Seeding ${CURATED_EXTENSION_EXERCISES.length} curated catalog exercises…`);
+  const skipSlugs = options?.skipSlugs;
+  const extensionRows = skipSlugs
+    ? CURATED_EXTENSION_EXERCISES.filter((row) => !skipSlugs.has(row.slug))
+    : CURATED_EXTENSION_EXERCISES;
+  const skipped = CURATED_EXTENSION_EXERCISES.length - extensionRows.length;
+  console.log(
+    `📚 Seeding ${extensionRows.length} curated catalog extension(s)${skipped > 0 ? ` (skipped ${skipped} already present in exercises-from-db)` : ''}…`,
+  );
 
-  for (const row of CURATED_EXTENSION_EXERCISES) {
+  for (const row of extensionRows) {
     const categoryValue =
       attributeValueByCode.get(row.categoryCode) ||
       (await ensureAttributeValue(categoryAttr.id, row.categoryCode, {

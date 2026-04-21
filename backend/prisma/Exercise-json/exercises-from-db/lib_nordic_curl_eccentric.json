@@ -369,12 +369,12 @@
     }
   ],
   "description": {
-    "ar": "تمرين مكتبة: نورديك خلفي.",
-    "en": "Library exercise: Nordic hamstring (eccentric)."
+    "ar": "النورديك اللاحق (eccentric) يقوّي الهامسترنج عند الركبة بتمديد بطيء للجذع من وضع الركبتين، وهو تمرين متقدم يحتاج شريكاً أو تثبيتاً جيداً للقدمين.",
+    "en": "The eccentric Nordic curl strengthens the hamstrings at the knee with a slow lowering of the torso from kneeling, and is an advanced drill that needs a partner or secure foot fixation."
   },
   "instructions": {
-    "ar": "حافظ على عمود فقري محايد وتنفس بثبات وتوقف عند أي ألم حاد.",
-    "en": "Maintain neutral spine, steady breathing, and stop if sharp pain appears."
+    "ar": "1. اركع مع تثبيت الكعبين والقدمين من الشريك أو الجهاز.\n2. اجعل الجذع مستقيماً من الركبتين إلى الرأس في البداية.\n3. ابدأ الإنزال البطيء للأمام مع محاولة مقاومة السقوط بالخلفية للفخذ.\n4. استخدم دفع اليدين عند الحاجة للتحكم في النهاية فقط.\n5. لا تفرط في المدى إذا ظهر شد حاد.\n6. توقف عند أي ألم حاد خلف الفخذ أو الركبة.",
+    "en": "1. Kneel with ankles and feet secured by a partner or equipment.\n2. Keep a straight line from knees to head at the start.\n3. Lower forward slowly while resisting with the hamstrings.\n4. Use a light push from the hands only if needed for control at the bottom.\n5. Do not chase extra range if you feel sharp tension.\n6. Stop if you feel sharp pain behind the thigh or at the knee."
   },
   "reportMetrics": {
     "primary": [

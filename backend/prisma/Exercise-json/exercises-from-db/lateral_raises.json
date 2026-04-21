@@ -137,20 +137,36 @@
           },
           "stateMessages": {
             "pad": {
-              "ar": "مقبول، لكن يمكنك التحسن",
-              "en": "Acceptable, but you can improve"
+              "up": {
+                "ar": "مقبول، لكن يمكنك التحسن",
+                "en": "Acceptable, but you can improve"
+              }
             },
             "normal": {
-              "ar": "جيد، حاول الوصول لمستوى الكتف",
-              "en": "Good, try reaching shoulder level"
+              "up": {
+                "ar": "جيد، حاول الوصول لمستوى الكتف",
+                "en": "Good, try reaching shoulder level"
+              },
+              "down": {
+                "ar": "جيد، حاول إرجاع الذراع للأسفل",
+                "en": "Good, try lowering arm more"
+              }
             },
             "perfect": {
-              "ar": "ممتاز! رفع مثالي",
-              "en": "Perfect! Great raise"
+              "up": {
+                "ar": "ممتاز! رفع مثالي",
+                "en": "Perfect! Great raise"
+              },
+              "down": {
+                "ar": "ممتاز! ذراعك بجانبك",
+                "en": "Perfect! Arm at side"
+              }
             },
             "warning": {
-              "ar": "لا ترفع أكثر من اللازم",
-              "en": "Don't go too high"
+              "up": {
+                "ar": "لا ترفع أعلى من مستوى الكتف",
+                "en": "Don't raise above shoulder level"
+              }
             }
           },
           "pairedWith": "left_shoulder",
@@ -196,10 +212,15 @@
           },
           "stateMessages": {
             "perfect": {
-              "ar": "ممتاز - المرفق ثابت",
-              "en": "Great - elbow is stable"
+              "ar": "ممتاز — المرفقان بنفس الثني الخفيف والثبات",
+              "en": "Great — both elbows keep the same soft bend and stay quiet"
+            },
+            "warning": {
+              "ar": "حافظ على ثني خفيف في كلا المرفقين دون قفل كامل",
+              "en": "Keep a slight bend in both elbows without locking out"
             }
           },
+          "pairedWith": "right_elbow",
           "range": {
             "pad": {
               "max": 180,
@@ -212,6 +233,47 @@
             "perfect": {
               "max": 180,
               "min": 165
+            },
+            "warning": {
+              "max": 175,
+              "min": 135
+            }
+          }
+        },
+        {
+          "joint": "right_elbow",
+          "role": "secondary",
+          "startPose": {
+            "max": 180,
+            "min": 150
+          },
+          "stateMessages": {
+            "perfect": {
+              "ar": "ممتاز — المرفقان بنفس الثني الخفيف والثبات",
+              "en": "Great — both elbows keep the same soft bend and stay quiet"
+            },
+            "warning": {
+              "ar": "حافظ على ثني خفيف في كلا المرفقين دون قفل كامل",
+              "en": "Keep a slight bend in both elbows without locking out"
+            }
+          },
+          "pairedWith": "left_elbow",
+          "range": {
+            "pad": {
+              "max": 180,
+              "min": 150
+            },
+            "normal": {
+              "max": 180,
+              "min": 160
+            },
+            "perfect": {
+              "max": 180,
+              "min": 165
+            },
+            "warning": {
+              "max": 175,
+              "min": 135
             }
           }
         }
@@ -388,46 +450,67 @@
           "sortOrder": 13
         },
         {
+          "messageId": "a1b2c3d4-e5f6-4789-a012-b3c4d5e6f708",
+          "target": "joint_state",
+          "context": "warning",
+          "jointCode": "left_elbow",
+          "sortOrder": 14
+        },
+        {
+          "messageId": "b2c3d4e5-f6a7-4890-b123-c4d5e6f70891",
+          "target": "joint_state",
+          "context": "perfect",
+          "jointCode": "right_elbow",
+          "sortOrder": 15
+        },
+        {
+          "messageId": "c3d4e5f6-a7b8-4901-c234-d5e6f70892a3",
+          "target": "joint_state",
+          "context": "warning",
+          "jointCode": "right_elbow",
+          "sortOrder": 16
+        },
+        {
           "messageId": "8606035d-65df-4872-b2e3-e632413dea81",
           "target": "feedback",
           "context": "motivational",
-          "sortOrder": 14
+          "sortOrder": 17
         },
         {
           "messageId": "f092bade-2202-44c7-9d86-00cc407a80e7",
           "target": "feedback",
           "context": "motivational",
-          "sortOrder": 15
+          "sortOrder": 18
         },
         {
           "messageId": "a918e319-9f71-4092-956f-7b52e577683e",
           "target": "feedback",
           "context": "motivational",
-          "sortOrder": 16
+          "sortOrder": 19
         },
         {
           "messageId": "fd2a9c97-025a-4898-8539-70905bc40ce3",
           "target": "feedback",
           "context": "tip",
-          "sortOrder": 17
+          "sortOrder": 20
         },
         {
           "messageId": "220c8ddd-330c-47e6-8184-26e1cc0840bf",
           "target": "feedback",
           "context": "tip",
-          "sortOrder": 18
+          "sortOrder": 21
         }
       ],
       "cameraPosition": "front_view"
     }
   ],
   "description": {
-    "ar": "تمرين عزل لتقوية عضلة الكتف الجانبية (الدالية الوسطى)",
-    "en": "Isolation exercise to strengthen side deltoid muscle"
+    "ar": "رفع جانبي لتطوير الدالية الوسطى مع الحفاظ على ثني خفيف في المرفقين وتجنب الارتفاع المفرط فوق مستوى الكتف.",
+    "en": "A lateral raise variation for the middle deltoids with a soft elbow bend and controlled height near shoulder level."
   },
   "instructions": {
-    "ar": "قف بشكل مستقيم مع إمساك الأوزان بجانبك، ثم ارفع ذراعيك جانبياً حتى مستوى الكتف",
-    "en": "Stand straight holding weights at sides, raise arms laterally to shoulder level"
+    "ar": "قف بصدر مرتفع وعضلات البطن خفيفة. ارفع الذراعين بخط أوسع قليلاً من الجسم مع ثني بسيط في المرفقين، حتى يقترب المعصم من مستوى الكتف. انزل ببطء دون هز الورك أو دفع الرأس للأمام.",
+    "en": "Stand tall with a light core brace. Lift the arms slightly wide of the body with a small bend in the elbows until the wrists approach shoulder height. Lower slowly without shrugging, swinging, or jutting the neck forward."
   },
   "reportMetrics": {
     "primary": [
@@ -596,20 +679,36 @@
             "pairedWith": "left_shoulder",
             "stateMessages": {
               "pad": {
-                "ar": "مقبول، لكن يمكنك التحسن",
-                "en": "Acceptable, but you can improve"
+                "up": {
+                  "ar": "مقبول، لكن يمكنك التحسن",
+                  "en": "Acceptable, but you can improve"
+                }
               },
               "normal": {
-                "ar": "جيد، حاول الوصول لمستوى الكتف",
-                "en": "Good, try reaching shoulder level"
+                "up": {
+                  "ar": "جيد، حاول الوصول لمستوى الكتف",
+                  "en": "Good, try reaching shoulder level"
+                },
+                "down": {
+                  "ar": "جيد، حاول إرجاع الذراع للأسفل",
+                  "en": "Good, try lowering arm more"
+                }
               },
               "perfect": {
-                "ar": "ممتاز! رفع مثالي",
-                "en": "Perfect! Great raise"
+                "up": {
+                  "ar": "ممتاز! رفع مثالي",
+                  "en": "Perfect! Great raise"
+                },
+                "down": {
+                  "ar": "ممتاز! ذراعك بجانبك",
+                  "en": "Perfect! Arm at side"
+                }
               },
               "warning": {
-                "ar": "لا ترفع أكثر من اللازم",
-                "en": "Don't go too high"
+                "up": {
+                  "ar": "لا ترفع أعلى من مستوى الكتف",
+                  "en": "Don't raise above shoulder level"
+                }
               }
             }
           },
@@ -628,16 +727,62 @@
               "perfect": {
                 "max": 180,
                 "min": 165
+              },
+              "warning": {
+                "max": 175,
+                "min": 135
               }
             },
             "startPose": {
               "max": 180,
               "min": 150
             },
+            "pairedWith": "right_elbow",
             "stateMessages": {
               "perfect": {
-                "ar": "ممتاز - المرفق ثابت",
-                "en": "Great - elbow is stable"
+                "ar": "ممتاز — المرفقان بنفس الثني الخفيف والثبات",
+                "en": "Great — both elbows keep the same soft bend and stay quiet"
+              },
+              "warning": {
+                "ar": "حافظ على ثني خفيف في كلا المرفقين دون قفل كامل",
+                "en": "Keep a slight bend in both elbows without locking out"
+              }
+            }
+          },
+          {
+            "role": "secondary",
+            "joint": "right_elbow",
+            "range": {
+              "pad": {
+                "max": 180,
+                "min": 150
+              },
+              "normal": {
+                "max": 180,
+                "min": 160
+              },
+              "perfect": {
+                "max": 180,
+                "min": 165
+              },
+              "warning": {
+                "max": 175,
+                "min": 135
+              }
+            },
+            "startPose": {
+              "max": 180,
+              "min": 150
+            },
+            "pairedWith": "left_elbow",
+            "stateMessages": {
+              "perfect": {
+                "ar": "ممتاز — المرفقان بنفس الثني الخفيف والثبات",
+                "en": "Great — both elbows keep the same soft bend and stay quiet"
+              },
+              "warning": {
+                "ar": "حافظ على ثني خفيف في كلا المرفقين دون قفل كامل",
+                "en": "Keep a slight bend in both elbows without locking out"
               }
             }
           }

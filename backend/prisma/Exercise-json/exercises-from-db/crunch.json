@@ -6,7 +6,7 @@
   "familyKey": "trunk_flexion_family",
   "familyOrder": 20,
   "name": {
-    "ar": "تمرين البطن (كرانش)",
+    "ar": "كرانش",
     "en": "Crunch"
   },
   "category": {
@@ -38,7 +38,7 @@
     {
       "name": {
         "ar": "زاوية جانبية",
-        "en": "Side View"
+        "en": "Side view"
       },
       "posePosition": "supine_side",
       "expectedPostures": [
@@ -52,7 +52,7 @@
       ],
       "trackedJoints": [
         {
-          "joint": "left_hip",
+          "joint": "spine",
           "role": "primary",
           "startPose": {
             "max": 20,
@@ -61,76 +61,76 @@
           "stateMessages": {
             "pad": {
               "up": {
-                "ar": "مقبول، لكن يمكنك التحسن",
-                "en": "Acceptable, but you can improve"
-              }
-            },
-            "danger": {
-              "up": {
-                "ar": "توقف! ترفع أكثر من اللازم",
-                "en": "Stop! You are going too high"
+                "ar": "مقبول — زِد الرفع قليلاً من القفص الصدري",
+                "en": "Acceptable — lift a bit more through the ribcage"
               }
             },
             "normal": {
               "up": {
-                "ar": "جيد، حاول رفع الكتفين أكثر",
-                "en": "Good, try lifting shoulders more"
+                "ar": "جيد — ارفع الكتفين أكثر بدون شد الرقبة",
+                "en": "Good — lift the shoulders more without pulling the neck"
               },
               "down": {
-                "ar": "جيد، حاول النزول للأسفل",
-                "en": "Good, try lowering more"
+                "ar": "جيد — انزل ببطء مع بقاء البطن مشدودة",
+                "en": "Good — lower slowly while keeping the abs engaged"
               }
             },
             "perfect": {
               "up": {
-                "ar": "ممتاز! كرانش مثالي",
-                "en": "Perfect! Great crunch"
+                "ar": "ممتاز! انقباض بطن نظيف ومتحكم به",
+                "en": "Perfect! Clean, controlled abdominal contraction"
               },
               "down": {
-                "ar": "ممتاز! عودة مثالية",
-                "en": "Perfect! Great return"
+                "ar": "ممتاز! عودة هادئة بدون ارتخاء كامل",
+                "en": "Perfect! Smooth return without fully relaxing"
               }
             },
             "warning": {
               "up": {
-                "ar": "لا ترفع كثيراً - هذا كرانش وليس sit-up",
-                "en": "Don't go too high - this is a crunch, not sit-up"
+                "ar": "لا تحوّل الحركة إلى sit-up كامل أو تسحب الرأس باليدين",
+                "en": "Do not turn it into a full sit-up or yank the head with the hands"
+              }
+            },
+            "danger": {
+              "up": {
+                "ar": "توقف — هناك تعويض كبير من الرقبة أو مدى مبالغ فيه",
+                "en": "Stop — there is too much neck compensation or excessive range"
               }
             }
           },
           "upRange": {
             "pad": {
-              "max": 50,
-              "min": 30
-            },
-            "danger": {
-              "max": 90,
-              "min": 75
+              "max": 48,
+              "min": 28
             },
             "normal": {
-              "max": 55,
-              "min": 35
+              "max": 58,
+              "min": 34
             },
             "perfect": {
-              "max": 60,
+              "max": 62,
               "min": 40
             },
             "warning": {
-              "max": 75,
-              "min": 60
+              "max": 78,
+              "min": 62
+            },
+            "danger": {
+              "max": 95,
+              "min": 78
             }
           },
           "downRange": {
             "pad": {
-              "max": 25,
+              "max": 24,
               "min": 0
             },
             "normal": {
-              "max": 20,
+              "max": 18,
               "min": 0
             },
             "perfect": {
-              "max": 15,
+              "max": 12,
               "min": 0
             }
           }
@@ -144,22 +144,60 @@
           },
           "stateMessages": {
             "perfect": {
-              "ar": "ممتاز - الركبتان مثنيتان",
-              "en": "Great - knees are bent"
+              "ar": "الركبتان ثابتتان ومثنيتان بشكل مناسب",
+              "en": "Both knees stay bent and stable"
+            },
+            "warning": {
+              "ar": "لا تدفع القدمين أو تغيّر زاوية الركبتين لتسهيل الحركة",
+              "en": "Do not push through the feet or change the knee angles to cheat the rep"
             }
           },
+          "pairedWith": "right_knee",
           "range": {
             "pad": {
-              "max": 115,
-              "min": 75
+              "max": 116,
+              "min": 74
             },
             "normal": {
               "max": 110,
               "min": 80
             },
             "perfect": {
-              "max": 105,
-              "min": 85
+              "max": 104,
+              "min": 86
+            }
+          }
+        },
+        {
+          "joint": "right_knee",
+          "role": "secondary",
+          "startPose": {
+            "max": 110,
+            "min": 80
+          },
+          "stateMessages": {
+            "perfect": {
+              "ar": "الركبتان ثابتتان ومثنيتان بشكل مناسب",
+              "en": "Both knees stay bent and stable"
+            },
+            "warning": {
+              "ar": "لا تدفع القدمين أو تغيّر زاوية الركبتين لتسهيل الحركة",
+              "en": "Do not push through the feet or change the knee angles to cheat the rep"
+            }
+          },
+          "pairedWith": "left_knee",
+          "range": {
+            "pad": {
+              "max": 116,
+              "min": 74
+            },
+            "normal": {
+              "max": 110,
+              "min": 80
+            },
+            "perfect": {
+              "max": 104,
+              "min": 86
             }
           }
         }
@@ -167,22 +205,22 @@
       "feedbackMessages": {
         "motivational": [
           {
-            "ar": "بطن قوية!",
-            "en": "Strong abs!"
+            "ar": "انقباض ممتاز في الجذع",
+            "en": "Excellent abdominal squeeze"
           },
           {
-            "ar": "ممتاز! استمر!",
-            "en": "Excellent! Keep going!"
+            "ar": "الإيقاع جميل والتحكم واضح",
+            "en": "Nice rhythm and clear control"
           }
         ],
         "tips": [
           {
-            "ar": "زفير عند الصعود، شهيق عند النزول",
-            "en": "Exhale going up, inhale going down"
+            "ar": "ازفر في الصعود وفكّر في تقريب الضلوع من الحوض.",
+            "en": "Exhale on the way up and think about bringing the ribs toward the pelvis."
           },
           {
-            "ar": "تخيل أنك تقرب أضلاعك من حوضك",
-            "en": "Imagine bringing ribs to pelvis"
+            "ar": "ابقِ الذقن مرتاحة ومسافة صغيرة بين الذقن والصدر.",
+            "en": "Keep the chin relaxed with a small gap between chin and chest."
           }
         ]
       },
@@ -191,7 +229,7 @@
           "messageId": "2d28a63e-8ec4-4f8e-9b36-6a06c51dc3e7",
           "target": "joint_state",
           "context": "perfect",
-          "jointCode": "left_hip",
+          "jointCode": "spine",
           "zone": "up",
           "sortOrder": 1
         },
@@ -199,7 +237,7 @@
           "messageId": "6eb4f0de-2111-458a-8dd5-bbbaf258b1e1",
           "target": "joint_state",
           "context": "perfect",
-          "jointCode": "left_hip",
+          "jointCode": "spine",
           "zone": "down",
           "sortOrder": 2
         },
@@ -207,7 +245,7 @@
           "messageId": "2e70830a-6749-4334-9654-19cc28b982c8",
           "target": "joint_state",
           "context": "normal",
-          "jointCode": "left_hip",
+          "jointCode": "spine",
           "zone": "up",
           "sortOrder": 3
         },
@@ -215,7 +253,7 @@
           "messageId": "ed4be33c-4930-4564-8c4d-bd0d45cc3998",
           "target": "joint_state",
           "context": "normal",
-          "jointCode": "left_hip",
+          "jointCode": "spine",
           "zone": "down",
           "sortOrder": 4
         },
@@ -223,7 +261,7 @@
           "messageId": "1976891e-d503-4c3b-a554-678ec33a8bf1",
           "target": "joint_state",
           "context": "pad",
-          "jointCode": "left_hip",
+          "jointCode": "spine",
           "zone": "up",
           "sortOrder": 5
         },
@@ -231,7 +269,7 @@
           "messageId": "7e121454-bc40-46a5-9304-ab485696d5e7",
           "target": "joint_state",
           "context": "warning",
-          "jointCode": "left_hip",
+          "jointCode": "spine",
           "zone": "up",
           "sortOrder": 6
         },
@@ -239,7 +277,7 @@
           "messageId": "d8438d62-05b0-4288-9912-3783cb8b0e4b",
           "target": "joint_state",
           "context": "danger",
-          "jointCode": "left_hip",
+          "jointCode": "spine",
           "zone": "up",
           "sortOrder": 7
         },
@@ -251,39 +289,60 @@
           "sortOrder": 8
         },
         {
+          "messageId": "c7d8e9f0-a1b2-4c3d-8e4f-5061728394a5",
+          "target": "joint_state",
+          "context": "warning",
+          "jointCode": "left_knee",
+          "sortOrder": 9
+        },
+        {
+          "messageId": "d8e9f0a1-b2c3-4d5e-9f5a-6172839405b6",
+          "target": "joint_state",
+          "context": "perfect",
+          "jointCode": "right_knee",
+          "sortOrder": 10
+        },
+        {
+          "messageId": "e9f0a1b2-c3d4-4e6f-a06b-7283940516c7",
+          "target": "joint_state",
+          "context": "warning",
+          "jointCode": "right_knee",
+          "sortOrder": 11
+        },
+        {
           "messageId": "20318300-a3d4-4c6d-ba5d-5b056642e60f",
           "target": "feedback",
           "context": "motivational",
-          "sortOrder": 9
+          "sortOrder": 12
         },
         {
           "messageId": "ce24cbcc-450c-4a6e-bb0f-454bbf47d0da",
           "target": "feedback",
           "context": "motivational",
-          "sortOrder": 10
+          "sortOrder": 13
         },
         {
           "messageId": "fe10e336-99a3-41f7-bd0a-14dd9f8bd5d5",
           "target": "feedback",
           "context": "tip",
-          "sortOrder": 11
+          "sortOrder": 14
         },
         {
           "messageId": "edc92e4c-3d20-438f-b817-0a6c14807c84",
           "target": "feedback",
           "context": "tip",
-          "sortOrder": 12
+          "sortOrder": 15
         }
       ]
     }
   ],
   "description": {
-    "ar": "تمرين كلاسيكي لتقوية عضلات البطن العلوية",
-    "en": "Classic exercise to strengthen upper abdominal muscles"
+    "ar": "الـ Crunch هو تمرين بسيط وفعّال لتقوية عضلات البطن الأمامية عبر ثني الجذع لمسافة قصيرة ومتحكم بها. الهدف ليس الجلوس بالكامل، بل رفع الكتفين ولوحَي الكتف قليلاً عن الأرض مع الحفاظ على الرقبة مرتاحة والتركيز على انقباض الجذع.",
+    "en": "The crunch is a simple and effective exercise for the front abs using a short, controlled trunk-flexion range. The goal is not to sit all the way up, but to lift the shoulders and upper back slightly off the floor while keeping the neck relaxed and the abs doing the work."
   },
   "instructions": {
-    "ar": "استلقِ على ظهرك مع ثني الركبتين، ثم ارفع كتفيك عن الأرض نحو ركبتيك",
-    "en": "Lie on back with knees bent, lift shoulders off floor toward knees"
+    "ar": "1. استلقِ على ظهرك مع ثني الركبتين ووضع القدمين على الأرض.\n2. ضع اليدين برفق خلف الرأس أو على الصدر بدون شد الرقبة.\n3. ازفر وارفع الكتفين ولوحي الكتف قليلاً عن الأرض باستخدام عضلات البطن.\n4. لا تتحول إلى sit-up كامل ولا تدفع من القدمين.\n5. انزل ببطء مع الحفاظ على بعض الشد في الجذع.\n6. توقف إذا ظهر شد مؤلم في الرقبة أو أسفل الظهر.",
+    "en": "1. Lie on your back with the knees bent and feet on the floor.\n2. Place the hands lightly behind the head or across the chest without pulling the neck.\n3. Exhale and lift the shoulders and upper back slightly off the floor using the abs.\n4. Do not turn it into a full sit-up and do not push through the feet.\n5. Lower slowly while keeping some tension in the trunk.\n6. Stop if you feel painful strain in the neck or lower back."
   },
   "reportMetrics": {
     "primary": [
@@ -297,160 +356,5 @@
       "SYMMETRY",
       "ALIGNMENT"
     ]
-  },
-  "_database": {
-    "id": "54acbc34-4c9e-49ab-85a4-f92972552088",
-    "categoryId": "a75c8245-e1cd-4a4f-82f1-1e58df971999",
-    "countingMethodId": "f4d48aef-1606-4f23-8c61-7b4a2546f990",
-    "publishedAt": "2026-04-20T17:26:22.622Z",
-    "createdAt": "2026-04-20T17:26:22.623Z",
-    "updatedAt": "2026-04-20T17:26:34.107Z",
-    "deletedAt": null,
-    "isFeatured": false,
-    "createdBy": null,
-    "updatedBy": null,
-    "repCountingConfig": {
-      "reps": 20,
-      "maxRepIntervalMs": 3000,
-      "minRepIntervalMs": 800
-    },
-    "bilateralConfig": null,
-    "isBilateral": false,
-    "supportsWeight": false,
-    "minWeight": null,
-    "maxWeight": null,
-    "defaultWeight": null,
-    "reportMetrics": {
-      "mode": "reps",
-      "version": 1,
-      "primaryKpi": "repQuality",
-      "secondaryKpis": [
-        "avgFormScore",
-        "avgRom"
-      ]
-    },
-    "media": [],
-    "poseVariants": [
-      {
-        "id": "9e7b21f1-a60e-4eb9-9090-1e73fe256ced",
-        "sortOrder": 1,
-        "description": null,
-        "trackedJointsConfig": [
-          {
-            "joint": "left_hip",
-            "role": "primary",
-            "startPose": {
-              "max": 20,
-              "min": 0
-            },
-            "stateMessages": {
-              "pad": {
-                "up": {
-                  "ar": "مقبول، لكن يمكنك التحسن",
-                  "en": "Acceptable, but you can improve"
-                }
-              },
-              "danger": {
-                "up": {
-                  "ar": "توقف! ترفع أكثر من اللازم",
-                  "en": "Stop! You are going too high"
-                }
-              },
-              "normal": {
-                "up": {
-                  "ar": "جيد، حاول رفع الكتفين أكثر",
-                  "en": "Good, try lifting shoulders more"
-                },
-                "down": {
-                  "ar": "جيد، حاول النزول للأسفل",
-                  "en": "Good, try lowering more"
-                }
-              },
-              "perfect": {
-                "up": {
-                  "ar": "ممتاز! كرانش مثالي",
-                  "en": "Perfect! Great crunch"
-                },
-                "down": {
-                  "ar": "ممتاز! عودة مثالية",
-                  "en": "Perfect! Great return"
-                }
-              },
-              "warning": {
-                "up": {
-                  "ar": "لا ترفع كثيراً - هذا كرانش وليس sit-up",
-                  "en": "Don't go too high - this is a crunch, not sit-up"
-                }
-              }
-            },
-            "upRange": {
-              "pad": {
-                "max": 50,
-                "min": 30
-              },
-              "danger": {
-                "max": 90,
-                "min": 75
-              },
-              "normal": {
-                "max": 55,
-                "min": 35
-              },
-              "perfect": {
-                "max": 60,
-                "min": 40
-              },
-              "warning": {
-                "max": 75,
-                "min": 60
-              }
-            },
-            "downRange": {
-              "pad": {
-                "max": 25,
-                "min": 0
-              },
-              "normal": {
-                "max": 20,
-                "min": 0
-              },
-              "perfect": {
-                "max": 15,
-                "min": 0
-              }
-            }
-          },
-          {
-            "joint": "left_knee",
-            "role": "secondary",
-            "startPose": {
-              "max": 110,
-              "min": 80
-            },
-            "stateMessages": {
-              "perfect": {
-                "ar": "ممتاز - الركبتان مثنيتان",
-                "en": "Great - knees are bent"
-              }
-            },
-            "range": {
-              "pad": {
-                "max": 115,
-                "min": 75
-              },
-              "normal": {
-                "max": 110,
-                "min": 80
-              },
-              "perfect": {
-                "max": 105,
-                "min": 85
-              }
-            }
-          }
-        ]
-      }
-    ],
-    "validationWarning": null
   }
 }

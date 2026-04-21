@@ -214,12 +214,12 @@
     }
   ],
   "description": {
-    "ar": "تمرين مكتبة: تمديد ركبة طرفي.",
-    "en": "Library exercise: Terminal knee extension (band)."
+    "ar": "التمديد الطرفي للركبة (TKE) يقوّي الانقباض النهائي لعضلة الفخذ الرباعية مع مقاومة الحبل، ويُستخدم غالباً في إعادة التأهيل بعد إصابة الركبة لتحسين الاستقامة الكاملة.",
+    "en": "Terminal knee extension (TKE) strengthens the last degrees of quadriceps contraction against band resistance, often used in knee rehab to improve front-side lockout."
   },
   "instructions": {
-    "ar": "حافظ على عمود فقري محايد وتنفس بثبات وتوقف عند أي ألم حاد.",
-    "en": "Maintain neutral spine, steady breathing, and stop if sharp pain appears."
+    "ar": "1. ثبّت الحبل خلف الركبة أو أسفلها حسب الإعداد.\n2. ابدأ بزاوية ركبة قريبة من 30–45° أو وضع الجلوس/الوقوف حسب الخطة.\n3. ادفع الساق للأمام لافرد الركبة بالكامل ضد الحبل.\n4. احتفظ بثانية في القمة ثم ارجع ببطء.\n5. حافظ على الحوض ثابتاً ولا تدور الفخذ للخارج بشكل مفرط.\n6. توقف عند ألم حاد داخل الركبة.",
+    "en": "1. Anchor the band behind or below the knee as prescribed.\n2. Start near 30–45° of knee bend, seated or standing per your plan.\n3. Straighten the knee fully against the band tension.\n4. Pause for one second at full extension, then return slowly.\n5. Keep the pelvis steady and avoid excessive thigh rotation.\n6. Stop if you feel sharp pain inside the knee."
   },
   "reportMetrics": {
     "primary": [

@@ -6,7 +6,7 @@
   "familyKey": "ankle_mobility_family",
   "familyOrder": 10,
   "name": {
-    "ar": "ثني ظهر الكاحل",
+    "ar": "كاحل - ركبة للحائط",
     "en": "Ankle dorsiflexion knee-to-wall"
   },
   "category": {
@@ -23,11 +23,12 @@
   ],
   "equipment": [
     "bodyweight",
-    "mat"
+    "wall"
   ],
   "tags": [
     "curated_library",
-    "mobility"
+    "mobility",
+    "ankle"
   ],
   "repCountingConfig": {
     "reps": 12,
@@ -42,74 +43,90 @@
       },
       "posePosition": "standing_side",
       "expectedPostures": [
-        "standing"
+        "standing_split"
       ],
       "expectedDirections": [
         "side"
       ],
       "expectedRegions": [
-        "full_body"
+        "lower_body"
       ],
       "trackedJoints": [
         {
           "joint": "left_ankle",
           "role": "primary",
           "startPose": {
-            "max": 110,
-            "min": 70
+            "max": 96,
+            "min": 78
           },
           "stateMessages": {
+            "pad": {
+              "up": {
+                "ar": "مقبول — زِد المدى تدريجياً مع بقاء الكعب مثبتاً",
+                "en": "Acceptable — build the range gradually while keeping the heel down"
+              }
+            },
             "normal": {
               "up": {
-                "ar": "جيد، زد المدى تدريجياً",
-                "en": "Good, build ROM gradually"
+                "ar": "جيد — ادفع الركبة للأمام بسلاسة",
+                "en": "Good — glide the knee forward smoothly"
               },
               "down": {
-                "ar": "جيد، بدون ارتداد",
-                "en": "Good, no bouncing"
+                "ar": "جيد — عد ببطء بدون ارتداد",
+                "en": "Good — return slowly without bouncing"
               }
             },
             "perfect": {
               "up": {
-                "ar": "ممتاز! حركة كاحل واضحة",
-                "en": "Perfect! Clear ankle motion"
+                "ar": "ممتاز! ثني ظهري واضح مع كعب ثابت",
+                "en": "Perfect! Clear dorsiflexion with the heel anchored"
               },
               "down": {
-                "ar": "ممتاز! عودة متحكم بها",
-                "en": "Perfect! Controlled return"
+                "ar": "ممتاز! عودة متحكم بها للبداية",
+                "en": "Perfect! Controlled return to start"
+              }
+            },
+            "warning": {
+              "up": {
+                "ar": "لا تدع الكعب يرتفع أو تنهار القدم للداخل",
+                "en": "Do not let the heel lift or the foot collapse inward"
               }
             }
           },
           "upRange": {
             "pad": {
-              "max": 160,
-              "min": 110
+              "max": 135,
+              "min": 98
             },
             "normal": {
-              "max": 155,
-              "min": 115
+              "max": 128,
+              "min": 102
             },
             "perfect": {
-              "max": 148,
-              "min": 120
+              "max": 122,
+              "min": 108
+            },
+            "warning": {
+              "max": 145,
+              "min": 135
             }
           },
           "downRange": {
             "pad": {
-              "max": 102,
-              "min": 65
-            },
-            "normal": {
-              "max": 98,
+              "max": 95,
               "min": 72
             },
-            "perfect": {
+            "normal": {
               "max": 92,
-              "min": 78
+              "min": 76
+            },
+            "perfect": {
+              "max": 88,
+              "min": 80
             },
             "warning": {
-              "max": 65,
-              "min": 55
+              "max": 72,
+              "min": 60
             }
           }
         }
@@ -117,22 +134,22 @@
       "feedbackMessages": {
         "motivational": [
           {
-            "ar": "مدى حركة جيد وتحكم أفضل",
-            "en": "Good range and better control"
+            "ar": "مدى الكاحل يتحسن مع تحكم جيد",
+            "en": "Ankle range is improving with good control"
           },
           {
-            "ar": "تحرك بسلاسة داخل نطاق مريح",
-            "en": "Move smoothly inside a comfortable range"
+            "ar": "الكعب ثابت والحركة نظيفة",
+            "en": "The heel stays down and the motion stays clean"
           }
         ],
         "tips": [
           {
-            "ar": "ابقِ الحركة نظيفة وهادئة بدون ارتداد.",
-            "en": "Keep the motion smooth and bounce-free."
+            "ar": "ثبّت القدم بالكامل على الأرض ووجّه الركبة فوق اتجاه أصابع القدم.",
+            "en": "Keep the whole foot grounded and drive the knee in line with the toes."
           },
           {
-            "ar": "أي ألم حاد يعني تقليل المدى فوراً.",
-            "en": "Any sharp pain means reduce range immediately."
+            "ar": "إذا ارتفع الكعب، قلّل المسافة عن الحائط أو قلّل المدى.",
+            "en": "If the heel lifts, move closer to the wall or reduce the range."
           }
         ]
       },
@@ -193,17 +210,16 @@
           "context": "tip",
           "sortOrder": 8
         }
-      ],
-      "cameraPosition": "side_view"
+      ]
     }
   ],
   "description": {
-    "ar": "تمرين مكتبة: ثني ظهر الكاحل.",
-    "en": "Library exercise: Ankle dorsiflexion knee-to-wall."
+    "ar": "تمرين Knee-to-Wall هو Drill لتحسين dorsiflexion في الكاحل مع بقاء الكعب ثابتاً على الأرض. يفيد في تحسين ميكانيكا السكوات واللانج والجري، ويكشف بسرعة إذا كانت صلابة السمانة أو الكاحل تقلل من مدى الحركة المتاح.",
+    "en": "Knee-to-Wall is a dorsiflexion drill that improves ankle mobility while the heel stays planted. It is useful for squats, lunges, and running mechanics, and quickly shows whether calf or ankle stiffness is limiting available range."
   },
   "instructions": {
-    "ar": "حافظ على عمود فقري محايد وتنفس بثبات وتوقف عند أي ألم حاد.",
-    "en": "Maintain neutral spine, steady breathing, and stop if sharp pain appears."
+    "ar": "1. قف بمواجهة الحائط وضع قدمك المستهدفة أمامه على مسافة قصيرة.\n2. حافظ على الكعب مثبتاً بالكامل على الأرض والقدم متجهة للأمام.\n3. حرّك الركبة ببطء نحو الحائط فوق اتجاه أصابع القدم بدون انهيار القدم للداخل.\n4. المس الحائط إذا استطعت مع بقاء الكعب ثابتاً، ثم عد ببطء إلى البداية.\n5. عدّل المسافة عن الحائط بحيث تشعر بتمدد وتحسن في الحركة لا بألم حاد.\n6. كرر الحركة ببطء وبجودة، ويمكن حبس التوقف ثانية قصيرة عند أقصى مدى آمن.",
+    "en": "1. Face a wall and place the target foot a short distance away.\n2. Keep the heel fully planted and the foot pointing forward.\n3. Glide the knee slowly toward the wall in line with the toes without letting the foot collapse inward.\n4. Touch the wall if possible while keeping the heel down, then return slowly to the start.\n5. Adjust the distance from the wall so you feel mobility work, not sharp pain.\n6. Repeat with slow, high-quality reps and pause briefly at the furthest safe range."
   },
   "reportMetrics": {
     "primary": [
@@ -217,106 +233,5 @@
       "SYMMETRY",
       "ALIGNMENT"
     ]
-  },
-  "_database": {
-    "id": "245699e7-dfe0-4f47-bc73-d21202e271fa",
-    "categoryId": "a672c3d3-4449-4f74-bd8e-be73a0035e88",
-    "countingMethodId": "f4d48aef-1606-4f23-8c61-7b4a2546f990",
-    "publishedAt": "2026-04-20T17:26:31.025Z",
-    "createdAt": "2026-04-20T17:26:31.028Z",
-    "updatedAt": "2026-04-20T17:26:34.691Z",
-    "deletedAt": null,
-    "isFeatured": false,
-    "createdBy": null,
-    "updatedBy": null,
-    "repCountingConfig": null,
-    "bilateralConfig": null,
-    "isBilateral": false,
-    "supportsWeight": false,
-    "minWeight": null,
-    "maxWeight": null,
-    "defaultWeight": null,
-    "reportMetrics": {
-      "mode": "reps",
-      "version": 1,
-      "primaryKpi": "repQuality",
-      "secondaryKpis": [
-        "avgFormScore",
-        "avgRom"
-      ]
-    },
-    "media": [],
-    "poseVariants": [
-      {
-        "id": "6201abe1-6116-4e8d-8537-84fb3dd0fda0",
-        "sortOrder": 1,
-        "description": null,
-        "trackedJointsConfig": [
-          {
-            "role": "primary",
-            "joint": "left_ankle",
-            "upRange": {
-              "pad": {
-                "max": 160,
-                "min": 110
-              },
-              "normal": {
-                "max": 155,
-                "min": 115
-              },
-              "perfect": {
-                "max": 148,
-                "min": 120
-              }
-            },
-            "downRange": {
-              "pad": {
-                "max": 102,
-                "min": 65
-              },
-              "normal": {
-                "max": 98,
-                "min": 72
-              },
-              "perfect": {
-                "max": 92,
-                "min": 78
-              },
-              "warning": {
-                "max": 65,
-                "min": 55
-              }
-            },
-            "startPose": {
-              "max": 110,
-              "min": 70
-            },
-            "stateMessages": {
-              "normal": {
-                "up": {
-                  "ar": "جيد، زد المدى تدريجياً",
-                  "en": "Good, build ROM gradually"
-                },
-                "down": {
-                  "ar": "جيد، بدون ارتداد",
-                  "en": "Good, no bouncing"
-                }
-              },
-              "perfect": {
-                "up": {
-                  "ar": "ممتاز! حركة كاحل واضحة",
-                  "en": "Perfect! Clear ankle motion"
-                },
-                "down": {
-                  "ar": "ممتاز! عودة متحكم بها",
-                  "en": "Perfect! Controlled return"
-                }
-              }
-            }
-          }
-        ]
-      }
-    ],
-    "validationWarning": null
   }
 }

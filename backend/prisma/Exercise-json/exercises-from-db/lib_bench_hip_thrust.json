@@ -334,12 +334,12 @@
     }
   ],
   "description": {
-    "ar": "تمرين مكتبة: دفع ورك بدعم مقعد.",
-    "en": "Library exercise: Bench-supported hip thrust."
+    "ar": "دفع الورك مع مسند الجزء العلوي من الظهر على مقعد يستهدف الألوية ومؤخرة الفخذ مع تقليل الحمل على أسفل الظهر مقارنة ببعض أشكال الجسر.",
+    "en": "A bench-supported hip thrust targets the glutes and hamstrings while often reducing low-back demand versus some bridge variations."
   },
   "instructions": {
-    "ar": "حافظ على عمود فقري محايد وتنفس بثبات وتوقف عند أي ألم حاد.",
-    "en": "Maintain neutral spine, steady breathing, and stop if sharp pain appears."
+    "ar": "1. اجلس على الأرض وضع الجزء العلوي من ظهرك على حافة المقعد الثابت والقدمان على الأرض.\n2. ادفع الوركين للأعلى حتى يصبح الجذع تقريباً في خط مستقيم من الركبة إلى الكتف.\n3. اضغط الألوية في الأعلى دون فرط في انحناء أسفل الظهر.\n4. انزل ببطء مع الحفاظ على ثبات الركبتين فوق القدمين.\n5. نفّذ 8–15 تكراراً أو احتفظ بالوضع حسب برنامجك.\n6. توقف عند ألم حاد في أسفل الظهر أو الركبة.",
+    "en": "1. Sit on the floor with the upper back on a stable bench edge and feet flat on the floor.\n2. Drive the hips up until the torso forms a straight line from knees to shoulders.\n3. Squeeze the glutes at the top without excessive lumbar hyperextension.\n4. Lower slowly while keeping the knees stacked over the feet.\n5. Complete 8–15 reps or hold as programmed.\n6. Stop if you feel sharp low-back or knee pain."
   },
   "supportsWeight": true,
   "reportMetrics": {

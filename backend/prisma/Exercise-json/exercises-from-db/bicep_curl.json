@@ -89,8 +89,14 @@
             },
             "warning": {
               "down": {
-                "ar": "ارفع الوزن أكثر",
-                "en": "Curl up more"
+                "ar": "تجنب ميل الجذع للخلف لرفع الوزن",
+                "en": "Avoid leaning back to move the weight"
+              }
+            },
+            "danger": {
+              "down": {
+                "ar": "توقف — المرفق أو المعصم في وضع غير مريح",
+                "en": "Stop — elbow or wrist position feels unsafe"
               }
             }
           },
@@ -121,7 +127,15 @@
             },
             "perfect": {
               "max": 40,
-              "min": 20
+              "min": 22
+            },
+            "warning": {
+              "max": 18,
+              "min": 8
+            },
+            "danger": {
+              "max": 8,
+              "min": 0
             }
           }
         },
@@ -161,8 +175,14 @@
             },
             "warning": {
               "down": {
-                "ar": "ارفع الوزن أكثر",
-                "en": "Curl up more"
+                "ar": "تجنب ميل الجذع للخلف لرفع الوزن",
+                "en": "Avoid leaning back to move the weight"
+              }
+            },
+            "danger": {
+              "down": {
+                "ar": "توقف — المرفق أو المعصم في وضع غير مريح",
+                "en": "Stop — elbow or wrist position feels unsafe"
               }
             }
           },
@@ -193,7 +213,15 @@
             },
             "perfect": {
               "max": 40,
-              "min": 20
+              "min": 22
+            },
+            "warning": {
+              "max": 18,
+              "min": 8
+            },
+            "danger": {
+              "max": 8,
+              "min": 0
             }
           }
         },
@@ -206,14 +234,52 @@
           },
           "stateMessages": {
             "perfect": {
-              "ar": "ممتاز - الكتف ثابت",
-              "en": "Great - shoulder is stable"
+              "ar": "ممتاز — الكتفان هادئان دون ارتفاع نحو الأذنين",
+              "en": "Great — both shoulders stay quiet without hiking"
             },
             "warning": {
-              "ar": "لا ترفع كتفك - ثبّته",
-              "en": "Don't lift your shoulder - keep it stable"
+              "ar": "لا ترفع الكتفين نحو الأذنين — أبقهما منخفضين",
+              "en": "Avoid shrugging either shoulder toward the ears"
             }
           },
+          "pairedWith": "right_shoulder",
+          "range": {
+            "pad": {
+              "max": 40,
+              "min": 0
+            },
+            "normal": {
+              "max": 30,
+              "min": 0
+            },
+            "perfect": {
+              "max": 20,
+              "min": 0
+            },
+            "warning": {
+              "max": 60,
+              "min": 40
+            }
+          }
+        },
+        {
+          "joint": "right_shoulder",
+          "role": "secondary",
+          "startPose": {
+            "max": 30,
+            "min": 0
+          },
+          "stateMessages": {
+            "perfect": {
+              "ar": "ممتاز — الكتفان هادئان دون ارتفاع نحو الأذنين",
+              "en": "Great — both shoulders stay quiet without hiking"
+            },
+            "warning": {
+              "ar": "لا ترفع الكتفين نحو الأذنين — أبقهما منخفضين",
+              "en": "Avoid shrugging either shoulder toward the ears"
+            }
+          },
+          "pairedWith": "left_shoulder",
           "range": {
             "pad": {
               "max": 40,
@@ -408,52 +474,66 @@
           "sortOrder": 15
         },
         {
-          "messageId": "74ccc607-9584-43b7-a0a4-404ed8fa35f5",
-          "target": "feedback",
-          "context": "motivational",
+          "messageId": "e1f2a3b4-c5d6-4789-e012-f3a4b5c6d7e8",
+          "target": "joint_state",
+          "context": "perfect",
+          "jointCode": "right_shoulder",
           "sortOrder": 16
         },
         {
-          "messageId": "5364617d-7a9c-4353-8c7d-34a9241be3e8",
-          "target": "feedback",
-          "context": "motivational",
+          "messageId": "f2a3b4c5-d6e7-4890-f123-a4b5c6d7e8f9",
+          "target": "joint_state",
+          "context": "warning",
+          "jointCode": "right_shoulder",
           "sortOrder": 17
         },
         {
-          "messageId": "615d5c29-19af-442b-9e9c-d051d542ee8b",
+          "messageId": "74ccc607-9584-43b7-a0a4-404ed8fa35f5",
           "target": "feedback",
           "context": "motivational",
           "sortOrder": 18
         },
         {
+          "messageId": "5364617d-7a9c-4353-8c7d-34a9241be3e8",
+          "target": "feedback",
+          "context": "motivational",
+          "sortOrder": 19
+        },
+        {
+          "messageId": "615d5c29-19af-442b-9e9c-d051d542ee8b",
+          "target": "feedback",
+          "context": "motivational",
+          "sortOrder": 20
+        },
+        {
           "messageId": "2b7e7f03-e35a-4389-b7a9-bc711c7f3b80",
           "target": "feedback",
           "context": "tip",
-          "sortOrder": 19
+          "sortOrder": 21
         },
         {
           "messageId": "2e7cfa70-263f-445e-9807-ee5b6a74a6b1",
           "target": "feedback",
           "context": "tip",
-          "sortOrder": 20
+          "sortOrder": 22
         },
         {
           "messageId": "019bf615-d835-45a0-8b21-2917c31dfe8e",
           "target": "feedback",
           "context": "tip",
-          "sortOrder": 21
+          "sortOrder": 23
         }
       ],
       "cameraPosition": "side_view"
     }
   ],
   "description": {
-    "ar": "تمرين لتقوية عضلة البايسبس الأمامية للذراع",
-    "en": "Exercise to strengthen the biceps muscle"
+    "ar": "ثني مرفق ثنائي لتقوية العضلة ذات الرأسين مع الحفاظ على ثبات الكتف والعمود الفقري.",
+    "en": "Bilateral elbow flexion to load the biceps while keeping the shoulders quiet and the spine tall."
   },
   "instructions": {
-    "ar": "قف بشكل مستقيم، ذراعيك بجانب جسمك، ثم اثني مرفقيك لرفع الوزن نحو الكتفين",
-    "en": "Stand straight with arms at sides, then bend elbows to curl weight toward shoulders"
+    "ar": "قف بصدر مرتفع وعضلات البطن خفيفة. ثبّت المرفقين بمحاذاة الجذع أو قليلاً للأمام، ثم ارفع الوزن بتحكم دون هز الورك أو رفع الكتفين نحو الأذنين. انزل ببطء حتى امتداد مريح دون قفل مفرط في المرفق.",
+    "en": "Stand tall with a light brace through the abs. Keep the elbows stacked near the torso, then curl the load under control without swinging the hips or shrugging. Lower slowly to a comfortable extension without slamming the elbows straight."
   },
   "reportMetrics": {
     "primary": [
@@ -533,7 +613,15 @@
               },
               "perfect": {
                 "max": 40,
-                "min": 20
+                "min": 22
+              },
+              "warning": {
+                "max": 18,
+                "min": 8
+              },
+              "danger": {
+                "max": 8,
+                "min": 0
               }
             },
             "startPose": {
@@ -570,8 +658,14 @@
               },
               "warning": {
                 "down": {
-                  "ar": "ارفع الوزن أكثر",
-                  "en": "Curl up more"
+                  "ar": "تجنب ميل الجذع للخلف لرفع الوزن",
+                  "en": "Avoid leaning back to move the weight"
+                }
+              },
+              "danger": {
+                "down": {
+                  "ar": "توقف — المرفق أو المعصم في وضع غير مريح",
+                  "en": "Stop — elbow or wrist position feels unsafe"
                 }
               }
             },
@@ -605,7 +699,15 @@
               },
               "perfect": {
                 "max": 40,
-                "min": 20
+                "min": 22
+              },
+              "warning": {
+                "max": 18,
+                "min": 8
+              },
+              "danger": {
+                "max": 8,
+                "min": 0
               }
             },
             "startPose": {
@@ -642,8 +744,14 @@
               },
               "warning": {
                 "down": {
-                  "ar": "ارفع الوزن أكثر",
-                  "en": "Curl up more"
+                  "ar": "تجنب ميل الجذع للخلف لرفع الوزن",
+                  "en": "Avoid leaning back to move the weight"
+                }
+              },
+              "danger": {
+                "down": {
+                  "ar": "توقف — المرفق أو المعصم في وضع غير مريح",
+                  "en": "Stop — elbow or wrist position feels unsafe"
                 }
               }
             },
@@ -674,14 +782,52 @@
               "max": 30,
               "min": 0
             },
+            "pairedWith": "right_shoulder",
             "stateMessages": {
               "perfect": {
-                "ar": "ممتاز - الكتف ثابت",
-                "en": "Great - shoulder is stable"
+                "ar": "ممتاز — الكتفان هادئان دون ارتفاع نحو الأذنين",
+                "en": "Great — both shoulders stay quiet without hiking"
               },
               "warning": {
-                "ar": "لا ترفع كتفك - ثبّته",
-                "en": "Don't lift your shoulder - keep it stable"
+                "ar": "لا ترفع الكتفين نحو الأذنين — أبقهما منخفضين",
+                "en": "Avoid shrugging either shoulder toward the ears"
+              }
+            }
+          },
+          {
+            "role": "secondary",
+            "joint": "right_shoulder",
+            "range": {
+              "pad": {
+                "max": 40,
+                "min": 0
+              },
+              "normal": {
+                "max": 30,
+                "min": 0
+              },
+              "perfect": {
+                "max": 20,
+                "min": 0
+              },
+              "warning": {
+                "max": 60,
+                "min": 40
+              }
+            },
+            "startPose": {
+              "max": 30,
+              "min": 0
+            },
+            "pairedWith": "left_shoulder",
+            "stateMessages": {
+              "perfect": {
+                "ar": "ممتاز — الكتفان هادئان دون ارتفاع نحو الأذنين",
+                "en": "Great — both shoulders stay quiet without hiking"
+              },
+              "warning": {
+                "ar": "لا ترفع الكتفين نحو الأذنين — أبقهما منخفضين",
+                "en": "Avoid shrugging either shoulder toward the ears"
               }
             }
           }

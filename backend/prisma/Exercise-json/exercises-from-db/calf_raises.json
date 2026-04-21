@@ -203,14 +203,52 @@
           },
           "stateMessages": {
             "perfect": {
-              "ar": "ممتاز - ركبتان مستقيمتان",
-              "en": "Great - knees straight"
+              "ar": "ممتاز — الركبتان مستقيمتان ومستقرتان",
+              "en": "Great — both knees stay straight and quiet"
             },
             "warning": {
-              "ar": "لا تثني ركبتيك - ابقهما مفرودتين",
-              "en": "Don't bend knees - keep them straight"
+              "ar": "لا تثنِ الركبتين أثناء الرفع — أبقهما مفرودتين",
+              "en": "Do not bend the knees during the raise — keep them long"
             }
           },
+          "pairedWith": "right_knee",
+          "range": {
+            "pad": {
+              "max": 180,
+              "min": 160
+            },
+            "normal": {
+              "max": 180,
+              "min": 165
+            },
+            "perfect": {
+              "max": 180,
+              "min": 170
+            },
+            "warning": {
+              "max": 160,
+              "min": 145
+            }
+          }
+        },
+        {
+          "joint": "right_knee",
+          "role": "secondary",
+          "startPose": {
+            "max": 180,
+            "min": 165
+          },
+          "stateMessages": {
+            "perfect": {
+              "ar": "ممتاز — الركبتان مستقيمتان ومستقرتان",
+              "en": "Great — both knees stay straight and quiet"
+            },
+            "warning": {
+              "ar": "لا تثنِ الركبتين أثناء الرفع — أبقهما مفرودتين",
+              "en": "Do not bend the knees during the raise — keep them long"
+            }
+          },
+          "pairedWith": "left_knee",
           "range": {
             "pad": {
               "max": 180,
@@ -401,46 +439,60 @@
           "sortOrder": 15
         },
         {
-          "messageId": "88818ca2-2a26-4834-8193-a3f12ae1f5df",
-          "target": "feedback",
-          "context": "motivational",
+          "messageId": "a4b5c6d7-e8f9-4012-a345-6789abcdef01",
+          "target": "joint_state",
+          "context": "perfect",
+          "jointCode": "right_knee",
           "sortOrder": 16
         },
         {
-          "messageId": "12d2b720-1ad5-4332-a9f7-49b7f4084ff6",
-          "target": "feedback",
-          "context": "motivational",
+          "messageId": "b5c6d7e8-f9a0-4123-b456-789abcdef012",
+          "target": "joint_state",
+          "context": "warning",
+          "jointCode": "right_knee",
           "sortOrder": 17
         },
         {
-          "messageId": "fca59275-26ac-4dad-861d-66571a9df172",
+          "messageId": "88818ca2-2a26-4834-8193-a3f12ae1f5df",
           "target": "feedback",
           "context": "motivational",
           "sortOrder": 18
         },
         {
+          "messageId": "12d2b720-1ad5-4332-a9f7-49b7f4084ff6",
+          "target": "feedback",
+          "context": "motivational",
+          "sortOrder": 19
+        },
+        {
+          "messageId": "fca59275-26ac-4dad-861d-66571a9df172",
+          "target": "feedback",
+          "context": "motivational",
+          "sortOrder": 20
+        },
+        {
           "messageId": "8cc53921-a2f3-4c96-8288-378daa4f96e9",
           "target": "feedback",
           "context": "tip",
-          "sortOrder": 19
+          "sortOrder": 21
         },
         {
           "messageId": "e8f62f6c-0dc4-4f3e-8177-b0997875cb1c",
           "target": "feedback",
           "context": "tip",
-          "sortOrder": 20
+          "sortOrder": 22
         }
       ],
       "cameraPosition": "side_view"
     }
   ],
   "description": {
-    "ar": "تمرين لتقوية عضلات السمانة (ربلة الساق)",
-    "en": "Exercise to strengthen calf muscles"
+    "ar": "ثني الكاحل لتحميل السمانة (العضلة ذات الرأسين والسوليوس) مع الحفاظ على استقامة الركبتين وثبات الجذع.",
+    "en": "Ankle plantarflexion to load the gastrocnemius and soleus while keeping the knees straight and the torso tall."
   },
   "instructions": {
-    "ar": "قف على أطراف أصابع قدميك، ثم ارتفع ببطء وانزل مع التحكم",
-    "en": "Stand on the balls of your feet, rise slowly and lower with control"
+    "ar": "قف بصدر مرتفع ووزن متوزع على كامل القدمين. ادفع من خلال كرة القدم والأصابع لرفع العقبين، ثم انزل ببطء حتى تمتد السمانة دون قفل ركبتيك أو الميل للأمام بشكل مفرط. توقف عند أي ألم حاد في وتر أخيلس.",
+    "en": "Stand tall with weight spread across the feet. Drive through the ball of the foot and toes to lift the heels, then lower slowly with a controlled stretch without locking the knees or collapsing forward. Stop if you feel sharp Achilles pain."
   },
   "reportMetrics": {
     "primary": [
@@ -659,14 +711,52 @@
               "max": 180,
               "min": 165
             },
+            "pairedWith": "right_knee",
             "stateMessages": {
               "perfect": {
-                "ar": "ممتاز - ركبتان مستقيمتان",
-                "en": "Great - knees straight"
+                "ar": "ممتاز — الركبتان مستقيمتان ومستقرتان",
+                "en": "Great — both knees stay straight and quiet"
               },
               "warning": {
-                "ar": "لا تثني ركبتيك - ابقهما مفرودتين",
-                "en": "Don't bend knees - keep them straight"
+                "ar": "لا تثنِ الركبتين أثناء الرفع — أبقهما مفرودتين",
+                "en": "Do not bend the knees during the raise — keep them long"
+              }
+            }
+          },
+          {
+            "role": "secondary",
+            "joint": "right_knee",
+            "range": {
+              "pad": {
+                "max": 180,
+                "min": 160
+              },
+              "normal": {
+                "max": 180,
+                "min": 165
+              },
+              "perfect": {
+                "max": 180,
+                "min": 170
+              },
+              "warning": {
+                "max": 160,
+                "min": 145
+              }
+            },
+            "startPose": {
+              "max": 180,
+              "min": 165
+            },
+            "pairedWith": "left_knee",
+            "stateMessages": {
+              "perfect": {
+                "ar": "ممتاز — الركبتان مستقيمتان ومستقرتان",
+                "en": "Great — both knees stay straight and quiet"
+              },
+              "warning": {
+                "ar": "لا تثنِ الركبتين أثناء الرفع — أبقهما مفرودتين",
+                "en": "Do not bend the knees during the raise — keep them long"
               }
             }
           }

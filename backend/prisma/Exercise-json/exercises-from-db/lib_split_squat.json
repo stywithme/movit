@@ -483,12 +483,12 @@
     }
   ],
   "description": {
-    "ar": "تمرين مكتبة: سكوات مقسم.",
-    "en": "Library exercise: Split squat."
+    "ar": "السكوات المقسم يطوّر قوة رجل أمامية مع ثبات الجذع والحوض، ويُستخدم كثيراً كبديل أقل تأثيراً على الركبة من الاندفاع الديناميكي عند ضبط الخطوة والعمق.",
+    "en": "The split squat builds single-leg strength with trunk and pelvic control, and is often used as a lower-impact alternative to dynamic lunging when step length and depth are managed well."
   },
   "instructions": {
-    "ar": "حافظ على عمود فقري محايد وتنفس بثبات وتوقف عند أي ألم حاد.",
-    "en": "Maintain neutral spine, steady breathing, and stop if sharp pain appears."
+    "ar": "1. خطوة أمامية ثابتة بحيث تبقى الركبة الأمامية فوق الكعب قدر الإمكان.\n2. انزل بخط مستقيم دون أن يتحرك الجذع للأمام بشكل مفرط.\n3. ادفع من منتصف القدم للصعود مع الحفاظ على الحياد في الحوض.\n4. أكمل العدد ثم بدّل الرجل الأمامية في المجموعة التالية إن لزم.\n5. لا تدع الركبة الأمامية تنهار للداخل.\n6. توقف عند ألم حاد في الركبة.",
+    "en": "1. Set a stable forward stance with the front knee tracking over the ankle.\n2. Lower in a straight line without pushing the torso far forward.\n3. Drive up through the mid-foot while keeping the pelvis neutral.\n4. Finish the reps, then switch the front leg on the next set if needed.\n5. Do not let the front knee collapse inward.\n6. Stop if you feel sharp knee pain."
   },
   "supportsWeight": true,
   "reportMetrics": {

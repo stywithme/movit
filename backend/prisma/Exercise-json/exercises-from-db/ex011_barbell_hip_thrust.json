@@ -1,0 +1,202 @@
+{
+  "slug": "ex011_barbell_hip_thrust",
+  "status": "published",
+  "movementPattern": "HINGE",
+  "loadCapability": "EXTERNAL_LOAD_REQUIRED",
+  "familyKey": "hinge_pattern_family",
+  "familyOrder": 111,
+  "name": {
+    "ar": "هيب ثرست بالبار",
+    "en": "Barbell hip thrust"
+  },
+  "category": {
+    "code": "legs",
+    "name": {
+      "ar": "تمارين الأرجل",
+      "en": "Legs"
+    }
+  },
+  "countingMethod": "up_down",
+  "muscles": [
+    "glutes",
+    "hamstrings"
+  ],
+  "equipment": [
+    "barbell",
+    "bench"
+  ],
+  "tags": [
+    "compound",
+    "glutes",
+    "group_2"
+  ],
+  "repCountingConfig": {
+    "reps": 10,
+    "minRepIntervalMs": 1500,
+    "maxRepIntervalMs": 4000
+  },
+  "supportsWeight": true,
+  "poseVariants": [
+    {
+      "name": {
+        "ar": "زاوية جانبية",
+        "en": "Side view"
+      },
+      "posePosition": "supine_side",
+      "expectedPostures": [
+        "lying_supine"
+      ],
+      "expectedDirections": [
+        "side"
+      ],
+      "expectedRegions": [
+        "full_body"
+      ],
+      "trackedJoints": [
+        {
+          "joint": "left_hip",
+          "role": "primary",
+          "pairedWith": "right_hip",
+          "startPose": {
+            "min": 80,
+            "max": 110
+          },
+          "upRange": {
+            "perfect": {
+              "min": 160,
+              "max": 180
+            },
+            "normal": {
+              "min": 148,
+              "max": 180
+            },
+            "pad": {
+              "min": 138,
+              "max": 180
+            }
+          },
+          "downRange": {
+            "perfect": {
+              "min": 80,
+              "max": 110
+            },
+            "normal": {
+              "min": 72,
+              "max": 118
+            },
+            "pad": {
+              "min": 68,
+              "max": 125
+            },
+            "warning": {
+              "min": 118,
+              "max": 138
+            }
+          },
+          "stateMessages": {
+            "perfect": {
+              "up": {
+                "ar": "ممتاز! قفل قوي من الورك في الأعلى",
+                "en": "Perfect! Strong hip lockout at the top"
+              },
+              "down": {
+                "ar": "ممتاز! بداية منظمة أسفل الحركة",
+                "en": "Perfect! Organized start position at the bottom"
+              }
+            },
+            "warning": {
+              "up": {
+                "ar": "ارفع الورك أكثر وانهِ التكرار بعصر المؤخرة",
+                "en": "Drive the hips higher and finish by squeezing the glutes"
+              }
+            }
+          }
+        },
+        {
+          "joint": "left_knee",
+          "role": "secondary",
+          "range": {
+            "perfect": {
+              "min": 90,
+              "max": 105
+            },
+            "normal": {
+              "min": 86,
+              "max": 112
+            },
+            "warning": {
+              "min": 105,
+              "max": 120
+            }
+          },
+          "startPose": {
+            "min": 90,
+            "max": 100
+          },
+          "stateMessages": {
+            "perfect": {
+              "ar": "زاوية الركبة مناسبة لنقل الحمل إلى المؤخرة",
+              "en": "The knee angle is set well to load the glutes"
+            }
+          }
+        }
+      ],
+      "positionChecks": [
+        {
+          "id": "top_line_bridge",
+          "type": "vertical_alignment",
+          "landmarks": {
+            "primary": "left_shoulder",
+            "secondary": "left_hip",
+            "tertiary": "left_knee"
+          },
+          "condition": {
+            "operator": "approximately_equal",
+            "threshold": 0.1
+          },
+          "activePhases": [
+            "up"
+          ],
+          "errorMessage": {
+            "ar": "في الأعلى حاول الوصول إلى خط أقرب من الكتف إلى الورك إلى الركبة.",
+            "en": "At the top, aim for a straighter line from shoulder to hip to knee."
+          },
+          "severity": "tip",
+          "cooldownMs": 2200,
+          "minErrorFrames": 4
+        }
+      ],
+      "feedbackMessages": {
+        "motivational": [
+          {
+            "ar": "شغل ممتاز على المؤخرة",
+            "en": "Excellent glute work"
+          }
+        ],
+        "tips": [
+          {
+            "ar": "ثبّت الذقن وخذ نفساً قبل كل عدة.",
+            "en": "Keep the chin tucked and take a breath before each rep."
+          }
+        ]
+      }
+    }
+  ],
+  "description": {
+    "ar": "تمرين الهيب ثرست بالبار يركز على المؤخرة بشكل قوي مع مساهمة من الأوتار، ويُستخدم كثيراً لبناء hip extension تحت حمل خارجي. أهم نقطة هي الوصول لقفل واضح في الورك مع بقاء الأضلاع والجذع تحت السيطرة.",
+    "en": "The barbell hip thrust emphasizes the glutes heavily with assistance from the hamstrings and is commonly used to build loaded hip extension. The key is reaching a clear hip lockout while keeping the ribs and trunk under control."
+  },
+  "instructions": {
+    "ar": "1. اسند أعلى الظهر على المقعد وضع القدمين بثبات على الأرض.\n2. ضع البار فوق الحوض مع شد الجذع وتثبيت الذقن قليلاً.\n3. ادفع من القدمين وارفع الحوض حتى يصل الورك لقفل قوي في الأعلى.\n4. لا تبالغ في تقوس أسفل الظهر عند القفل.\n5. انزل ببطء حتى تعود لوضع البداية تحت تحكم كامل.\n6. إذا شعرت بالألم في أسفل الظهر بدل المؤخرة، قلل الحمل أو المدى.",
+    "en": "1. Support the upper back on the bench and plant the feet firmly on the floor.\n2. Place the bar over the hips, brace the trunk, and keep a slight chin tuck.\n3. Drive through the feet and lift the hips until the hips reach a strong lockout.\n4. Do not overarch the lower back at the top.\n5. Lower slowly until you return to the start under full control.\n6. If you feel the low back more than the glutes, reduce the load or range."
+  },
+  "reportMetrics": {
+    "primary": [
+      "FORM_SCORE"
+    ],
+    "excluded": [
+      "HOLD_DURATION"
+    ]
+  },
+  "hasPositionChecks": true
+}

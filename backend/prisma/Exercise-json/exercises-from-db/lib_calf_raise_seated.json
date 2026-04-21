@@ -197,12 +197,12 @@
     }
   ],
   "description": {
-    "ar": "تمرين مكتبة: سمانة جالس.",
-    "en": "Library exercise: Seated calf raise."
+    "ar": "السمانة الجالسة تركّز غالباً على السوليوس لأن ثني الركبة يقلل مساهمة العضلة التوأمية مقارنة بالوضع الواقف، وتناسب أوزاناً متوسطة وتكرارات أعلى.",
+    "en": "Seated calf raises bias the soleus because knee flexion reduces gastrocnemius contribution versus standing calf work, and suit moderate loads with higher reps."
   },
   "instructions": {
-    "ar": "حافظ على عمود فقري محايد وتنفس بثبات وتوقف عند أي ألم حاد.",
-    "en": "Maintain neutral spine, steady breathing, and stop if sharp pain appears."
+    "ar": "1. اجلس مع القدمين على منصة والكعبين يتدليان خلف الحافة.\n2. ضع وسادات فوق الركبتين أو الفخذين حسب الجهاز.\n3. انزل بالكعبين تحت مستوى المنصة ثم ادفع لأعلى حتى تمدد السمانة بالكامل.\n4. توقف لحظة في القمة ثم كرر بإيقاع متحكم.\n5. لا تقفز من الأسفل — استخدم مدى كامل بهدوء.\n6. توقف عند ألم حاد في وتر أخيل.",
+    "en": "1. Sit with the feet on a platform and heels hanging off the edge.\n2. Set pads over the knees or thighs per your machine.\n3. Lower the heels below the platform, then drive up to a full calf squeeze.\n4. Pause briefly at the top and repeat with control.\n5. Do not bounce from the bottom — use a smooth full range.\n6. Stop if you feel sharp Achilles pain."
   },
   "supportsWeight": true,
   "reportMetrics": {

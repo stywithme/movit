@@ -152,12 +152,12 @@
     }
   ],
   "description": {
-    "ar": "تمرين مكتبة: تمديد كتف عبر الجسم.",
-    "en": "Library exercise: Cross-body shoulder stretch."
+    "ar": "تمديد الكتف عبر الجسم يفتح الجزء الخلفي من الكتف بلطف، وهو شائع كاستراحة بعد الجلوس أو التدريب الأمامي.",
+    "en": "The cross-body shoulder stretch gently opens the posterior shoulder and anterior capsule, commonly used as a reset after sitting or pressing work."
   },
   "instructions": {
-    "ar": "حافظ على عمود فقري محايد وتنفس بثبات وتوقف عند أي ألم حاد.",
-    "en": "Maintain neutral spine, steady breathing, and stop if sharp pain appears."
+    "ar": "1. اجلس أو قف منتصباً.\n2. ارفع الذراع الأفقية ثم ضمها نحو الصدر بيد الأخرى بلطف.\n3. حافظ على الكتف منخفضاً ولا ترفعه للأذن.\n4. تنفس ببطء 4–6 نفسات ثم بدّل الذراع.\n5. لا تدفع بقوة مفرطة أو تلف الرقبة.\n6. توقف عند تنميل في الذراع أو ألم حاد.",
+    "en": "1. Sit or stand tall.\n2. Bring the arm across the chest and guide it gently with the other hand.\n3. Keep the shoulder down without shrugging toward the ear.\n4. Breathe slowly for 4–6 breaths, then switch arms.\n5. Do not crank the arm or twist the neck.\n6. Stop if the arm goes numb or you feel sharp pain."
   },
   "reportMetrics": {
     "primary": [

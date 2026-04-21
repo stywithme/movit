@@ -153,12 +153,12 @@
     }
   ],
   "description": {
-    "ar": "تمرين مكتبة: إعادة وضعية حائط.",
-    "en": "Library exercise: Wall posture reset."
+    "ar": "إعادة ضبط الوضعية بالحائط تساعد على محاذاة الرأس والظهر والحوض من خلال ملامسة الحائط كمرجع، وهي مناسبة كاستراحة قصيرة بين الجلسات الطويلة.",
+    "en": "A wall posture reset uses the wall as feedback to align the head, upper back, and pelvis, and works well as a short break drill during long sitting sessions."
   },
   "instructions": {
-    "ar": "حافظ على عمود فقري محايد وتنفس بثبات وتوقف عند أي ألم حاد.",
-    "en": "Maintain neutral spine, steady breathing, and stop if sharp pain appears."
+    "ar": "1. قف ظهرك ملاصقاً للحائط من الرأس إلى أسفل الظهر قدر الإمكان.\n2. حاول لمس مؤخرة الرأس والكتفين والوسط والعجز للحائط دون إجهاد.\n3. اضغط القدمين على الأرض وافتح الصدر بلطف.\n4. تنفس بطيئاً 5–8 مرات مع الإحساس بالملامسة.\n5. لا تفرط في دفع الذقن للخلف أو رفع الصدر بشكل مؤلم.\n6. توقف عند دوخة أو ألم حاد.",
+    "en": "1. Stand with your back on the wall from the head down through the mid-back as much as comfortable.\n2. Aim to lightly touch the back of the head, shoulders, mid-back, and pelvis to the wall without forcing.\n3. Press the feet into the floor and gently open the chest.\n4. Take 5–8 slow breaths while noticing contact points.\n5. Do not jam the chin backward or crank the chest painfully.\n6. Stop if you feel dizzy or sharp pain."
   },
   "reportMetrics": {
     "primary": [

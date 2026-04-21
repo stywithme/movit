@@ -2,7 +2,7 @@ import type { LoadCapability, MovementPattern, Prisma } from '@prisma/client';
 import { inferExerciseBlueprintFields } from './catalog-exercises';
 
 /**
- * Explicit per-slug overrides for exercises shipped in `prisma/Exercise-json`.
+ * Explicit per-slug overrides when seeding from `prisma/Exercise-json/exercises-from-db`.
  * Slug keys must match JSON filenames (without .json).
  */
 

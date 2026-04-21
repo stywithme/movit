@@ -429,12 +429,12 @@
     }
   ],
   "description": {
-    "ar": "تمرين مكتبة: سكوات قوزاق جوبلت.",
-    "en": "Library exercise: Goblet Cossack squat."
+    "ar": "سكوات القوزاق بالجوبلت يوسّع مدى الفخذ والورك جانباً مع حمل أمامي يساعد على ثبات الجذع، وهو ممتاز لمرونة الجانب وقوة القرفصاء غير المتماثل.",
+    "en": "The goblet Cossack squat opens hip and thigh range to the side while the front load helps keep the trunk tall, making it useful for lateral mobility and uneven squat strength."
   },
   "instructions": {
-    "ar": "حافظ على عمود فقري محايد وتنفس بثبات وتوقف عند أي ألم حاد.",
-    "en": "Maintain neutral spine, steady breathing, and stop if sharp pain appears."
+    "ar": "1. امسك الوزن أمام الصدر وافرد القدمين بعرض واسع مع توجيه أصابع القدمين قليلاً للخارج.\n2. انزل ببطء نحو جانب ساق واحدة مع بقاء الجذع منتصباً.\n3. حافظ على كعب الجانب المنخفض على الأرض إن أمكن.\n4. ادفع للأعلى للعودة للوسط ثم كرر على الجانب الآخر.\n5. لا تدع الركبة تنهار للداخل.\n6. قلل العمق إذا ظهر ألم في الركبة أو الورك.",
+    "en": "1. Hold the load at the chest and take a wide stance with toes turned out slightly.\n2. Lower slowly toward one side while staying tall through the trunk.\n3. Keep the heel of the lowering side down if possible.\n4. Push back up to center, then repeat on the other side.\n5. Do not let the knee collapse inward.\n6. Reduce depth if you feel knee or hip irritation."
   },
   "supportsWeight": true,
   "reportMetrics": {

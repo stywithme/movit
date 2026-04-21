@@ -448,12 +448,12 @@
     }
   ],
   "description": {
-    "ar": "تمرين مكتبة: قفز جانبي.",
-    "en": "Library exercise: Lateral bound."
+    "ar": "القفز الجانبي يطوّر القدرة على التوقف والانطلاق جانباً مع ثبات الركبة، وهو مفيد في الرياضات التي تعتمد على التغيير السريع للاتجاه.",
+    "en": "Lateral bounds develop side-to-side braking and takeoff with knee control, and transfer well to sports that demand rapid changes of direction."
   },
   "instructions": {
-    "ar": "حافظ على عمود فقري محايد وتنفس بثبات وتوقف عند أي ألم حاد.",
-    "en": "Maintain neutral spine, steady breathing, and stop if sharp pain appears."
+    "ar": "1. ابدأ منتصباً ثم اندفع جانباً بقوة من القدم التي على الجهة المعاكسة لاتجاه القفزة.\n2. اهبط على القدم المقابلة بثني ركبة هادئ دون انهيار للداخل.\n3. ثبّت لحظة ثم عد بالتناوب أو كرر نفس الجانب حسب التصميم.\n4. حافظ على الجذع منتصباً والنظر للأمام.\n5. لا تقفز إلى مدى لا تستطيع استقراره.\n6. توقف عند ألم في الركبة أو الكاحل.",
+    "en": "1. Start tall, then push off hard sideways from the foot on the side opposite to the jump direction.\n2. Land on the opposite foot with a quiet knee bend and no inward collapse.\n3. Pause briefly, then return or repeat the same side as programmed.\n4. Keep the trunk tall and eyes forward.\n5. Do not jump to a distance you cannot stabilize.\n6. Stop if you feel knee or ankle pain."
   },
   "reportMetrics": {
     "primary": [

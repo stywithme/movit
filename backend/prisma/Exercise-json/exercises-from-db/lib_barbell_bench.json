@@ -19,6 +19,7 @@
   "countingMethod": "up_down",
   "muscles": [
     "chest_muscle",
+    "front_delts",
     "triceps"
   ],
   "equipment": [
@@ -558,12 +559,12 @@
     }
   ],
   "description": {
-    "ar": "تمرين مكتبة: ضغط بار مستلقي.",
-    "en": "Library exercise: Barbell bench press."
+    "ar": "ضغط أفقي بالبار على المقعد لتطوير قوة الصدر والكتف الأمامي والعضد مع تحكم في لوح الكتف والعمق.",
+    "en": "A horizontal barbell press from the bench to build chest, anterior shoulder, and triceps strength with controlled scapular setup and depth."
   },
   "instructions": {
-    "ar": "حافظ على عمود فقري محايد وتنفس بثبات وتوقف عند أي ألم حاد.",
-    "en": "Maintain neutral spine, steady breathing, and stop if sharp pain appears."
+    "ar": "اثبت القدمين على الأرض، ضغط ظهرك بلطف على المقعد، وضع اليدين بعرضة أكبر قليلاً من الكتفين. انزل البار بخط مستقيم نحو منتصف الصدر مع إبقاء المعصم فوق المرفق، ثم ادفع للأعلى دون رفع الأرداف عن المقعد. خذ شهيقاً عند النزول وزفر عند الصعود، وتوقف عند أي ألم حاد في الكتف أو المعصم.",
+    "en": "Plant the feet, set gentle upper-back tension on the bench, and grip slightly wider than the shoulders. Lower the bar in a straight line toward mid-chest while keeping the wrist stacked over the elbow, then press up without bridging the hips off the pad. Inhale on the way down, exhale on the way up, and stop if you feel sharp shoulder or wrist pain."
   },
   "supportsWeight": true,
   "reportMetrics": {

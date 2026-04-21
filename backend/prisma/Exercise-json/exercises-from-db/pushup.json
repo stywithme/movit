@@ -494,20 +494,42 @@
             "min": 150
           },
           "stateMessages": {
-            "normal": {
+            "pad": {
               "down": {
-                "ar": "جيد، حاول النزول أكثر",
-                "en": "Good, try going lower"
+                "ar": "مقبول، اقترب من الأرض أكثر",
+                "en": "Acceptable, get closer to floor"
+              }
+            },
+            "danger": {
+              "down": {
+                "ar": "توقف! هذا قد يؤذي كتفك",
+                "en": "Stop! This may hurt your shoulder"
+              }
+            },
+            "normal": {
+              "up": {
+                "ar": "جيد، حاول فرد الذراع أكثر",
+                "en": "Good, try extending more"
+              },
+              "down": {
+                "ar": "جيد، حاول النزول أكثر قليلاً",
+                "en": "Good, try going a bit lower"
               }
             },
             "perfect": {
               "up": {
-                "ar": "ممتاز! ذراعك مفرودة",
-                "en": "Perfect! Arm extended"
+                "ar": "ممتاز! ذراعك مفرودة بالكامل",
+                "en": "Perfect! Arm fully extended"
               },
               "down": {
                 "ar": "ممتاز! ضغط مثالي",
                 "en": "Perfect! Great push-up"
+              }
+            },
+            "warning": {
+              "down": {
+                "ar": "لا تنزل كثيراً",
+                "en": "Don't go too low"
               }
             }
           },
@@ -531,6 +553,10 @@
               "max": 110,
               "min": 40
             },
+            "danger": {
+              "max": 30,
+              "min": 0
+            },
             "normal": {
               "max": 90,
               "min": 45
@@ -538,6 +564,10 @@
             "perfect": {
               "max": 80,
               "min": 50
+            },
+            "warning": {
+              "max": 40,
+              "min": 30
             }
           }
         },
@@ -549,20 +579,42 @@
             "min": 150
           },
           "stateMessages": {
-            "normal": {
+            "pad": {
               "down": {
-                "ar": "جيد، حاول النزول أكثر",
-                "en": "Good, try going lower"
+                "ar": "مقبول، اقترب من الأرض أكثر",
+                "en": "Acceptable, get closer to floor"
+              }
+            },
+            "danger": {
+              "down": {
+                "ar": "توقف! هذا قد يؤذي كتفك",
+                "en": "Stop! This may hurt your shoulder"
+              }
+            },
+            "normal": {
+              "up": {
+                "ar": "جيد، حاول فرد الذراع أكثر",
+                "en": "Good, try extending more"
+              },
+              "down": {
+                "ar": "جيد، حاول النزول أكثر قليلاً",
+                "en": "Good, try going a bit lower"
               }
             },
             "perfect": {
               "up": {
-                "ar": "ممتاز! ذراعك مفرودة",
-                "en": "Perfect! Arm extended"
+                "ar": "ممتاز! ذراعك مفرودة بالكامل",
+                "en": "Perfect! Arm fully extended"
               },
               "down": {
                 "ar": "ممتاز! ضغط مثالي",
                 "en": "Perfect! Great push-up"
+              }
+            },
+            "warning": {
+              "down": {
+                "ar": "لا تنزل كثيراً",
+                "en": "Don't go too low"
               }
             }
           },
@@ -586,6 +638,10 @@
               "max": 110,
               "min": 40
             },
+            "danger": {
+              "max": 30,
+              "min": 0
+            },
             "normal": {
               "max": 90,
               "min": 45
@@ -593,6 +649,10 @@
             "perfect": {
               "max": 80,
               "min": 50
+            },
+            "warning": {
+              "max": 40,
+              "min": 30
             }
           }
         },
@@ -730,12 +790,12 @@
     }
   ],
   "description": {
-    "ar": "تمرين كلاسيكي لتقوية الصدر والكتفين والذراعين",
-    "en": "Classic exercise to strengthen chest, shoulders and arms"
+    "ar": "ضغط أفقي بوزن الجسم لتطوير قوة الصدر والكتف الأمامي والعضد مع ثبات الجذع.",
+    "en": "A bodyweight horizontal push to build chest, anterior shoulder, and triceps strength while keeping the trunk braced."
   },
   "instructions": {
-    "ar": "ابدأ بوضع اللوح الخشبي مع الذراعين ممدودتين، ثم انزل بصدرك نحو الأرض واصعد",
-    "en": "Start in plank position with arms extended, lower your chest toward the floor, then push back up"
+    "ar": "ابدأ بوضع البلانك مع اليدين تحت الكتفين تقريباً والرأس في امتداد العمود الفقري. انزل بصدرك نحو الأرض مع ثبات الحوض، ثم ادفع للأعلى دون قفل مفرط في المرفقين. حافظ على ضغط خفيف للمعدة وعدم انهيار أسفل الظهر.",
+    "en": "Start in a plank with hands roughly under the shoulders and the neck in line with the spine. Lower your chest toward the floor while keeping the hips quiet, then press up without slamming the elbows into hyperextension. Keep light ab tension and avoid collapsing the lower back."
   },
   "reportMetrics": {
     "primary": [
@@ -1030,6 +1090,10 @@
                 "max": 110,
                 "min": 40
               },
+              "danger": {
+                "max": 30,
+                "min": 0
+              },
               "normal": {
                 "max": 90,
                 "min": 45
@@ -1037,6 +1101,10 @@
               "perfect": {
                 "max": 80,
                 "min": 50
+              },
+              "warning": {
+                "max": 40,
+                "min": 30
               }
             },
             "startPose": {
@@ -1045,20 +1113,42 @@
             },
             "pairedWith": "right_elbow",
             "stateMessages": {
-              "normal": {
+              "pad": {
                 "down": {
-                  "ar": "جيد، حاول النزول أكثر",
-                  "en": "Good, try going lower"
+                  "ar": "مقبول، اقترب من الأرض أكثر",
+                  "en": "Acceptable, get closer to floor"
+                }
+              },
+              "danger": {
+                "down": {
+                  "ar": "توقف! هذا قد يؤذي كتفك",
+                  "en": "Stop! This may hurt your shoulder"
+                }
+              },
+              "normal": {
+                "up": {
+                  "ar": "جيد، حاول فرد الذراع أكثر",
+                  "en": "Good, try extending more"
+                },
+                "down": {
+                  "ar": "جيد، حاول النزول أكثر قليلاً",
+                  "en": "Good, try going a bit lower"
                 }
               },
               "perfect": {
                 "up": {
-                  "ar": "ممتاز! ذراعك مفرودة",
-                  "en": "Perfect! Arm extended"
+                  "ar": "ممتاز! ذراعك مفرودة بالكامل",
+                  "en": "Perfect! Arm fully extended"
                 },
                 "down": {
                   "ar": "ممتاز! ضغط مثالي",
                   "en": "Perfect! Great push-up"
+                }
+              },
+              "warning": {
+                "down": {
+                  "ar": "لا تنزل كثيراً",
+                  "en": "Don't go too low"
                 }
               }
             }
@@ -1085,6 +1175,10 @@
                 "max": 110,
                 "min": 40
               },
+              "danger": {
+                "max": 30,
+                "min": 0
+              },
               "normal": {
                 "max": 90,
                 "min": 45
@@ -1092,6 +1186,10 @@
               "perfect": {
                 "max": 80,
                 "min": 50
+              },
+              "warning": {
+                "max": 40,
+                "min": 30
               }
             },
             "startPose": {
@@ -1100,20 +1198,42 @@
             },
             "pairedWith": "left_elbow",
             "stateMessages": {
-              "normal": {
+              "pad": {
                 "down": {
-                  "ar": "جيد، حاول النزول أكثر",
-                  "en": "Good, try going lower"
+                  "ar": "مقبول، اقترب من الأرض أكثر",
+                  "en": "Acceptable, get closer to floor"
+                }
+              },
+              "danger": {
+                "down": {
+                  "ar": "توقف! هذا قد يؤذي كتفك",
+                  "en": "Stop! This may hurt your shoulder"
+                }
+              },
+              "normal": {
+                "up": {
+                  "ar": "جيد، حاول فرد الذراع أكثر",
+                  "en": "Good, try extending more"
+                },
+                "down": {
+                  "ar": "جيد، حاول النزول أكثر قليلاً",
+                  "en": "Good, try going a bit lower"
                 }
               },
               "perfect": {
                 "up": {
-                  "ar": "ممتاز! ذراعك مفرودة",
-                  "en": "Perfect! Arm extended"
+                  "ar": "ممتاز! ذراعك مفرودة بالكامل",
+                  "en": "Perfect! Arm fully extended"
                 },
                 "down": {
                   "ar": "ممتاز! ضغط مثالي",
                   "en": "Perfect! Great push-up"
+                }
+              },
+              "warning": {
+                "down": {
+                  "ar": "لا تنزل كثيراً",
+                  "en": "Don't go too low"
                 }
               }
             }

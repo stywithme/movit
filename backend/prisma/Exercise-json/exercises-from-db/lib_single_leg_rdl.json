@@ -318,12 +318,12 @@
     }
   ],
   "description": {
-    "ar": "تمرين مكتبة: رفعة رومانية أحادية.",
-    "en": "Library exercise: Single-leg RDL."
+    "ar": "الرفعة الرومانية على ساق واحدة تزيد تحدي التوازن وتستهدف مؤخرة الفخذ والألوية مع الحفاظ على استقامة الجذع.",
+    "en": "A single-leg Romanian deadlift challenges balance while targeting the hamstrings and glutes with a long, neutral torso."
   },
   "instructions": {
-    "ar": "حافظ على عمود فقري محايد وتنفس بثبات وتوقف عند أي ألم حاد.",
-    "en": "Maintain neutral spine, steady breathing, and stop if sharp pain appears."
+    "ar": "1. قف على ساق واحدة مع ركبة خفيفة الانثناء في الساق الداعمة.\n2. ادفع الورك الخلفي للخلف بينما تمد الساق الحرة خلفك مع صدر مرتفع.\n3. انزل حتى خط مستقيم تقريباً من الرأس إلى الكعب الخلفي دون لف الحوض بشكل مفرط.\n4. ادفع الأرض للعودة الواقفة مع ضغط خفيف للألوية.\n5. نفّذ 6–10 تكرارات ثم بدّل الساق.\n6. توقف عند ألم حاد في أعلى الفخذ الخلفي أو أسفل الظهر أو الركبة.",
+    "en": "1. Stand on one leg with a soft bend in the supporting knee.\n2. Hinge the hips back while reaching the free leg behind you with a tall chest.\n3. Lower until the body forms a long line from head to rear heel without excessive pelvic rotation.\n4. Drive through the floor to stand and lightly squeeze the glutes.\n5. Complete 6–10 reps, then switch legs.\n6. Stop for sharp hamstring, low-back, or knee pain."
   },
   "supportsWeight": true,
   "reportMetrics": {

@@ -19,7 +19,9 @@
   "countingMethod": "up_down",
   "muscles": [
     "lats",
-    "traps"
+    "traps",
+    "biceps",
+    "upper_back"
   ],
   "equipment": [
     "barbell",
@@ -274,6 +276,42 @@
               "min": 55
             }
           }
+        },
+        {
+          "joint": "spine",
+          "role": "secondary",
+          "startPose": {
+            "max": 185,
+            "min": 162
+          },
+          "stateMessages": {
+            "perfect": {
+              "ar": "ظهر محايد في الانحناء — لا تفرط في الدوران",
+              "en": "Neutral hinge — avoid big torso twists"
+            },
+            "warning": {
+              "ar": "ثبّت الجذع واسحب بالظهر لا بالزخرفة",
+              "en": "Keep the trunk quiet and pull with the back, not momentum"
+            }
+          },
+          "range": {
+            "pad": {
+              "max": 185,
+              "min": 155
+            },
+            "normal": {
+              "max": 185,
+              "min": 162
+            },
+            "perfect": {
+              "max": 182,
+              "min": 168
+            },
+            "warning": {
+              "max": 168,
+              "min": 145
+            }
+          }
         }
       ],
       "positionChecks": [
@@ -484,12 +522,12 @@
     }
   ],
   "description": {
-    "ar": "تمرين مكتبة: تجديف بار منحني.",
-    "en": "Library exercise: Bent-over barbell row."
+    "ar": "تجديف أفقي بالبار من وضعية الميل الأمامي لتطوير ظهر أعلى والعضلة المستقيمة مع الحفاظ على زاوية ثابتة للجذع.",
+    "en": "A bent-over barbell row to load the upper back and lats while holding a steady hip hinge."
   },
   "instructions": {
-    "ar": "حافظ على عمود فقري محايد وتنفس بثبات وتوقف عند أي ألم حاد.",
-    "en": "Maintain neutral spine, steady breathing, and stop if sharp pain appears."
+    "ar": "امسك البار بعرضة أوسع قليلاً من الكتفين، ثم أدار الوركين للخلف مع صدر مواجه للأرض قليلاً. اسحب المرفقين نحو الوركين دون فتحهما للجانب، ثم انزل بتحكم. حافظ على نظرة قصيرة للأمام وتوقف عند أي ألم حاد في أسفل الظهر.",
+    "en": "Grip the bar slightly wider than the shoulders and hinge the hips back with the chest angled toward the floor. Row the elbows toward the hips without flaring, then lower with control. Keep a short forward gaze and stop if you feel sharp low-back pain."
   },
   "supportsWeight": true,
   "reportMetrics": {
@@ -756,6 +794,42 @@
               "warning": {
                 "ar": "تجنب رفع الكتف نحو الأذن",
                 "en": "Avoid hiking the shoulder to the ear"
+              }
+            }
+          },
+          {
+            "role": "secondary",
+            "joint": "spine",
+            "range": {
+              "pad": {
+                "max": 185,
+                "min": 155
+              },
+              "normal": {
+                "max": 185,
+                "min": 162
+              },
+              "perfect": {
+                "max": 182,
+                "min": 168
+              },
+              "warning": {
+                "max": 168,
+                "min": 145
+              }
+            },
+            "startPose": {
+              "max": 185,
+              "min": 162
+            },
+            "stateMessages": {
+              "perfect": {
+                "ar": "ظهر محايد في الانحناء — لا تفرط في الدوران",
+                "en": "Neutral hinge — avoid big torso twists"
+              },
+              "warning": {
+                "ar": "ثبّت الجذع واسحب بالظهر لا بالزخرفة",
+                "en": "Keep the trunk quiet and pull with the back, not momentum"
               }
             }
           }

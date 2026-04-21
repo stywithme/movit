@@ -244,12 +244,12 @@
     }
   ],
   "description": {
-    "ar": "تمرين مكتبة: بلانك جانبي مع خطف.",
-    "en": "Library exercise: Side plank hip abduction."
+    "ar": "البلانك الجانبي مع بعاد الورك يجمع بين ثبات الجذع الجانبي ورفع الساق العلوية، فيحمّل الألوية الوسطى والجزء الجانبي من الورك بشكل فعال.",
+    "en": "Side plank with hip abduction blends lateral trunk bracing with lifting the top leg, strongly loading the glute medius and lateral hip."
   },
   "instructions": {
-    "ar": "حافظ على عمود فقري محايد وتنفس بثبات وتوقف عند أي ألم حاد.",
-    "en": "Maintain neutral spine, steady breathing, and stop if sharp pain appears."
+    "ar": "1. ادخل بلانك جانبي مع الكوع أو اليد تحت الكتف.\n2. اجعل الجسم في خط مستقيم من الرأس إلى القدمين.\n3. ارفع الساق العلوية ببطء دون ميل الجذع للخلف.\n4. انزل بتحكم وكرر حسب البرنامج ثم بدّل الجانب.\n5. لا تدع الوركين ينهاران للأمام أو للخلف.\n6. قلل الارتفاع إذا شعرت بألم في الورك.",
+    "en": "1. Set a side plank with the elbow or hand under the shoulder.\n2. Keep a straight line from head to feet.\n3. Lift the top leg slowly without leaning the trunk backward.\n4. Lower with control, repeat as programmed, then switch sides.\n5. Do not let the hips sag forward or backward.\n6. Reduce lift height if the hip feels irritated."
   },
   "reportMetrics": {
     "primary": [

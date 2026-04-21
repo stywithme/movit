@@ -391,12 +391,12 @@
     }
   ],
   "description": {
-    "ar": "تمرين مكتبة: علوي مساعد.",
-    "en": "Library exercise: Assisted pull-up."
+    "ar": "الشدّ العلوي المساعد يقلل جزءاً من وزن الجسم عبر حزام أو آلة، فيسمح ببناء قوة الظهر والذراعين مع الحفاظ على مسار جيد للكتفين.",
+    "en": "Assisted pull-ups unload part of body weight with a band or machine, helping you build back and arm strength while keeping healthier shoulder mechanics."
   },
   "instructions": {
-    "ar": "حافظ على عمود فقري محايد وتنفس بثبات وتوقف عند أي ألم حاد.",
-    "en": "Maintain neutral spine, steady breathing, and stop if sharp pain appears."
+    "ar": "1. علّق الحزام أو اضبط المساعدة حسب مستواك.\n2. امسك العقلة بعرض يزيد قليلاً عن الكتفين وعلق بذراعين ممدودتين تقريباً.\n3. ازفر واسحب الصدر نحو العقلة دون قفز زائد من الساقين.\n4. انزل بتحكم حتى تمتد الذراعان تقريباً بالكامل.\n5. لا تدع الكتفين يرتفعان للأذنين في الأسفل.\n6. قلل المساعدة تدريجياً مع تحسن القوة.",
+    "en": "1. Set the band or machine assistance to match your level.\n2. Grip the bar slightly wider than the shoulders and hang with nearly long arms.\n3. Exhale and pull the chest toward the bar without excessive leg kick.\n4. Lower with control until the arms are nearly long again.\n5. Do not let the shoulders shrug up to the ears at the bottom.\n6. Reduce assistance gradually as strength improves."
   },
   "reportMetrics": {
     "primary": [

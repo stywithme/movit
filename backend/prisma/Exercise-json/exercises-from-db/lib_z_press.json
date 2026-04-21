@@ -230,12 +230,12 @@
     }
   ],
   "description": {
-    "ar": "تمرين مكتبة: ضغط Z.",
-    "en": "Library exercise: Z-press."
+    "ar": "ضغط Z يُجرى جالساً على الأرض مع الساقين ممدودتين أمامك ما يزيل دفع الوركين ويُجبر الكتفين والجذع على العمل بشكل صارم فوق الرأس.",
+    "en": "The Z-press is performed seated on the floor with legs extended forward, removing leg drive so the shoulders and trunk must strictly control overhead pressing."
   },
   "instructions": {
-    "ar": "حافظ على عمود فقري محايد وتنفس بثبات وتوقف عند أي ألم حاد.",
-    "en": "Maintain neutral spine, steady breathing, and stop if sharp pain appears."
+    "ar": "1. اجلس على الأرض مع الساقين ممدودتين أمامك والظهر منتصباً قدر الإمكان.\n2. ارفع الدمبل أو البار إلى مستوى الكتفين بقبضة محايدة أو أمامية حسب البرنامج.\n3. اضغط للأعلى بخط مستقيم فوق الرأس دون قوس زائد في أسفل الظهر أو الميل للخلف.\n4. أعد الوزن للكتفين بتحكم.\n5. نفّذ 6–10 تكرارات بوزن معتدل للحفاظ على الشكل.\n6. توقف عند ألم حاد في أسفل الظهر أو الكتف أو المعصم.",
+    "en": "1. Sit on the floor with legs extended and the torso as tall as possible.\n2. Bring dumbbells or a bar to shoulder height with the prescribed grip.\n3. Press straight overhead without excessive lumbar arch or leaning back.\n4. Lower to the shoulders with control.\n5. Use moderate loads for 6–10 strict reps.\n6. Stop for sharp low-back, shoulder, or wrist pain."
   },
   "supportsWeight": true,
   "reportMetrics": {

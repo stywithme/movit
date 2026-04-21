@@ -152,12 +152,12 @@
     }
   ],
   "description": {
-    "ar": "تمرين مكتبة: دوران رقبة جالس.",
-    "en": "Library exercise: Seated neck rotation."
+    "ar": "دوران رقبة لطيف من الجلوس يزيد مرونة الرقبة الجانبية ويُستخدم غالباً كإحماء؛ تجنّب المبالغة إن كان تحريك الرقبة يسبب لك دوخة.",
+    "en": "Gentle seated neck rotation improves side-to-side neck mobility and is often used as a warm-up—avoid large ranges if you have dizziness or cervical issues."
   },
   "instructions": {
-    "ar": "حافظ على عمود فقري محايد وتنفس بثبات وتوقف عند أي ألم حاد.",
-    "en": "Maintain neutral spine, steady breathing, and stop if sharp pain appears."
+    "ar": "1. اجلس منتصباً مع الكتفين مرتخيين والنظر للأمام.\n2. أدر الرأس ببطء نحو الكتف الأيمن دون رفع الكتفين.\n3. عد للوسط ثم كرر نحو اليسار.\n4. حافظ على الحركة صغيرة ومريحة في البداية.\n5. نفّذ 5–8 تبديلات لكل جانب مع تنفس منتظم.\n6. توقف عند دوخة أو ألم حاد أو وخز في الذراعين.",
+    "en": "1. Sit tall with relaxed shoulders and eyes forward.\n2. Slowly turn the head toward the right shoulder without hiking the shoulders.\n3. Return to center, then repeat toward the left.\n4. Keep the range small and comfortable at first.\n5. Perform 5–8 switches per side with steady breathing.\n6. Stop for dizziness, sharp pain, or arm tingling."
   },
   "reportMetrics": {
     "primary": [

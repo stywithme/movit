@@ -285,12 +285,12 @@
     }
   ],
   "description": {
-    "ar": "تمرين مكتبة: ثني/مد رسغ.",
-    "en": "Library exercise: Wrist flexion/extension."
+    "ar": "ثني ومد الرسغ يحسّن حركة المعصم ويقلل التوتر بعد الكتابة أو التدريب بالأوزان، ويُنفَّذ بمدى صغير ومريح في البداية.",
+    "en": "Wrist flexion and extension drills improve wrist motion and reduce stiffness after typing or lifting, and should start in a small, comfortable range."
   },
   "instructions": {
-    "ar": "حافظ على عمود فقري محايد وتنفس بثبات وتوقف عند أي ألم حاد.",
-    "en": "Maintain neutral spine, steady breathing, and stop if sharp pain appears."
+    "ar": "1. اجلس مع الساعد على فخذك أو طاولة والرسغ يتدلى قليلاً عن الحافة.\n2. ابدأ بقبضة خفيفة ثم افرد الأصابع والرسغ لمد الرسغ.\n3. انحنِ بالرسغ نحو الأرض لثني الرسغ بلطف.\n4. كرر ببطء 8–12 مرة ثم بدّل المعصم إن لزم.\n5. لا تستخدم وزناً ثقيلاً على الرسغ المصاب.\n6. توقف عند ألم حاد أو تنميل.",
+    "en": "1. Sit with the forearm on the thigh or a table and the wrist just past the edge.\n2. Start with a light fist, then extend the fingers and wrist for extension.\n3. Flex the wrist gently toward the floor for flexion.\n4. Move slowly for 8–12 reps, then switch wrists if needed.\n5. Do not use heavy loading on an irritated wrist.\n6. Stop if you feel sharp pain or numbness."
   },
   "reportMetrics": {
     "primary": [

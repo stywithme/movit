@@ -327,12 +327,12 @@
     }
   ],
   "description": {
-    "ar": "تمرين مكتبة: أرجوحة كيتل بيل.",
-    "en": "Library exercise: Kettlebell swing."
+    "ar": "أرجوحة الكيتل بيل حركة قوة وتكييف تعتمد على هيب هينج قوي لدفع الوزن إلى مستوى الصدر تقريباً، مع ذراعين مرنّتين كحبلين والقوة من الوركين.",
+    "en": "The kettlebell swing is a power and conditioning hinge that drives the load to roughly chest height with relaxed arms acting like ropes while the hips supply the force."
   },
   "instructions": {
-    "ar": "حافظ على عمود فقري محايد وتنفس بثبات وتوقف عند أي ألم حاد.",
-    "en": "Maintain neutral spine, steady breathing, and stop if sharp pain appears."
+    "ar": "1. ضع القدمين بعرض تقريباً للأكتاف وامسك الوزن بذراعين ممدودتين.\n2. ادفع الوركين للخلف ثم انفجر للأمام ليصل الوزن لارتفاع مريح.\n3. اقفل الوركين في الأعلى دون فرط قطني مفرط.\n4. اترك الوزن يهبط بين الساقين مع ثني خفيف في الركبتين.\n5. لا ترفع الوزن بالكتفين أو تمد الذراعين بالقوة.\n6. توقف إذا فقد الجذع حياده أو شعرت بألم في الظهر.",
+    "en": "1. Set feet about shoulder-width and grasp the bell with long arms.\n2. Hinge the hips back, then snap the hips forward to float the load to a comfortable height.\n3. Finish tall at the top without aggressive lumbar arching.\n4. Let the bell fall back between the legs with a soft knee bend.\n5. Do not lift the load with the shoulders or muscle the arms up.\n6. Stop if the trunk loses neutrality or the back feels sharp pain."
   },
   "supportsWeight": true,
   "reportMetrics": {

@@ -312,12 +312,12 @@
     }
   ],
   "description": {
-    "ar": "تمرين مكتبة: قطع نصف ركبة.",
-    "en": "Library exercise: Half-kneeling chop (light)."
+    "ar": "قطع قطري خفيف من وضع نصف الركعة يقوّي الجذع المائل ويربط الحركة بين الحوض والكتفين دون انهيار في أسفل الظهر.",
+    "en": "A light half-kneeling diagonal chop builds rotational core control and links hip and shoulder motion without low-back collapse."
   },
   "instructions": {
-    "ar": "حافظ على عمود فقري محايد وتنفس بثبات وتوقف عند أي ألم حاد.",
-    "en": "Maintain neutral spine, steady breathing, and stop if sharp pain appears."
+    "ar": "1. اركع بركبة واحدة على الأرض والثانية مثنية أمامك بزاوية تقريباً 90°.\n2. امسك المقاومة (حبل أو دمبل خفيف) بعيداً عن الركبة الأمامية.\n3. اسحب المقاومة قطرياً نحو الورك المعاكس مع ثبات الحوض.\n4. أعد الحركة ببطء دون دوران مفاجئ في أسفل الظهر.\n5. نفّذ 8–12 تكراراً ثم بدّل الركبتين والاتجاه.\n6. توقف عند ألم حاد في الركبة أو أسفل الظهر.",
+    "en": "1. Kneel on one knee with the other foot forward near a 90° knee angle.\n2. Hold light resistance away from the front knee.\n3. Pull diagonally toward the opposite hip while keeping the pelvis stable.\n4. Return slowly without twisting sharply through the low back.\n5. Complete 8–12 reps, then switch stance and direction.\n6. Stop if you feel sharp knee or low-back pain."
   },
   "supportsWeight": true,
   "reportMetrics": {

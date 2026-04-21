@@ -301,12 +301,12 @@
     }
   ],
   "description": {
-    "ar": "تمرين مكتبة: تمرين مفصل الورك.",
-    "en": "Library exercise: Hip hinge drill."
+    "ar": "تمرين ميل الورك يعلّم دفع الوركين للخلف مع صدر مرتفع وظهر محايد، وهو أساس الرفعة الرومانية والرفعة الميتة والقرفصاء.",
+    "en": "A hip hinge drill teaches pushing the hips back with a tall chest and neutral spine—a foundation for RDLs, deadlifts, and squats."
   },
   "instructions": {
-    "ar": "حافظ على عمود فقري محايد وتنفس بثبات وتوقف عند أي ألم حاد.",
-    "en": "Maintain neutral spine, steady breathing, and stop if sharp pain appears."
+    "ar": "1. قف بقدمين بعرض الوركين تقريباً ويمكنك وضع عصا على ظهرك كإشارة راجعة لوضعية العمود الفقري.\n2. ادفع الوركين للخلف كأن تغلق باباً بالوركين مع ثني طفيف في الركبتين.\n3. انزل حتى تشعر بشد خفيف في أعلى الفخذ الخلفي دون تقوس شديد في الظهر.\n4. ادفع الأرض للعودة الواقفة بالألوية والفخذ الخلفي.\n5. كرر 8–12 مرة ببطء للتحكم.\n6. توقف عند ألم حاد في أسفل الظهر أو الوخز في الساقين.",
+    "en": "1. Stand with feet about hip width; optionally use a dowel along the spine for feedback.\n2. Push the hips back as if closing a door with the hips while allowing a slight knee bend.\n3. Lower until you feel a mild hamstring stretch without rounding aggressively.\n4. Drive the floor away to stand tall using the glutes and hamstrings.\n5. Repeat 8–12 slow, controlled reps.\n6. Stop if you feel sharp low-back pain or tingling down the legs."
   },
   "reportMetrics": {
     "primary": [

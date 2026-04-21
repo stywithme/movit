@@ -249,12 +249,12 @@
     }
   ],
   "description": {
-    "ar": "تمرين مكتبة: مشي نادل.",
-    "en": "Library exercise: Waiter walk."
+    "ar": "مشي النادل يحمّل الكتف والرسغ والجذع أثناء حمل وزن فوق الرأس بخط مستقيم، وهو ممتاز لبناء ثبات علوي تحت حمل خفيف إلى متوسط.",
+    "en": "The waiter walk loads the shoulder, wrist, and trunk while carrying a load overhead in a straight line, building upper-body stability under light to moderate load."
   },
   "instructions": {
-    "ar": "حافظ على عمود فقري محايد وتنفس بثبات وتوقف عند أي ألم حاد.",
-    "en": "Maintain neutral spine, steady breathing, and stop if sharp pain appears."
+    "ar": "1. ارفع الوزن فوق الرأس بذراع ممتدة تقريباً والرسغ محايد.\n2. شد الجذع وابدأ مشياً قصيراً وثابتاً.\n3. حافظ على الكتف منخفضاً بعيداً عن الأذن.\n4. نظر للأمام وتنفس بهدوء طوال المسافة أو الزمن.\n5. لا تميل جانباً لتعويض الوزن.\n6. ضع الوزن بهدوء عند أي ألم في المعصم أو الكتف.",
+    "en": "1. Press the load overhead with a nearly straight arm and a neutral wrist.\n2. Brace the trunk and begin a short, steady walk.\n3. Keep the shoulder packed down away from the ear.\n4. Look forward and breathe calmly for the set distance or time.\n5. Do not side-bend to compensate for the weight.\n6. Set the weight down calmly if the wrist or shoulder feels painful."
   },
   "supportsWeight": true,
   "reportMetrics": {

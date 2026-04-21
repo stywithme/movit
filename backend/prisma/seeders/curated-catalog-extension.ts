@@ -2,8 +2,8 @@ import type { LoadCapability, MovementPattern } from '@prisma/client';
 import { CURATED_EXTENSION_ROWS } from './curated-extension-rows';
 
 /**
- * Curated library exercises (not JSON assets). Each row is an intentional catalog entry
- * to close coverage gaps vs Blueprint / ACSM-oriented matrices.
+ * Curated library exercises used only when no JSON exists in `exercises-from-db` for the same slug.
+ * Each row closes coverage gaps; the seeder passes `skipSlugs` so JSON remains authoritative.
  */
 
 export type CuratedExtensionExercise = {

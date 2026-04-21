@@ -312,12 +312,12 @@
     }
   ],
   "description": {
-    "ar": "تمرين مكتبة: دوران وضع مقسم.",
-    "en": "Library exercise: Split stance rotation."
+    "ar": "الدوران من وضعية خطوة مقسمة يحسّن تنسيق الجذع والوركين أثناء تدوير الصدر، وهو مفيد لرياضات الرمي والضرب والتنسيق بين الأطراف السفلية والعلوية.",
+    "en": "Split-stance rotation improves trunk and hip coordination while turning the chest, and transfers well to throwing, striking, and linking lower- and upper-body timing."
   },
   "instructions": {
-    "ar": "حافظ على عمود فقري محايد وتنفس بثبات وتوقف عند أي ألم حاد.",
-    "en": "Maintain neutral spine, steady breathing, and stop if sharp pain appears."
+    "ar": "1. خذ خطوة أمامية متوسطة وثبّت القدمين على الأرض.\n2. شد الجذع وابدأ الدوران من الصدر والأضلاع دون تحريك القدمين.\n3. حافظ على الركبة الأمامية فوق الكعب قدر الإمكان.\n4. ارجع للوسط ببطء ثم كرر للجهة الأخرى حسب التصميم.\n5. لا تلتف من الرقبة فقط أو ترفع الكعب الخلفي.\n6. قلل المدى إذا شعرت بضغط غير مريح في الورك.",
+    "en": "1. Take a moderate split stance and plant both feet.\n2. Brace the trunk and rotate from the ribcage without sliding the feet.\n3. Keep the front knee tracking over the ankle as much as possible.\n4. Return to center slowly, then repeat to the other side as programmed.\n5. Do not twist only from the neck or lift the back heel unintentionally.\n6. Reduce range if the hip feels uncomfortable pressure."
   },
   "reportMetrics": {
     "primary": [

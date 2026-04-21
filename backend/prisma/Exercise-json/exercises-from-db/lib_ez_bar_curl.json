@@ -390,12 +390,12 @@
     }
   ],
   "description": {
-    "ar": "تمرين مكتبة: طحن EZ.",
-    "en": "Library exercise: EZ-bar curl."
+    "ar": "ثني البار ذي الزاوية EZ يقلل الإجهاد على المعصم مقارنة بالبار المستقيم، مع الحفاظ على تحميل جيد للعضلة ذات الرأسين أثناء ثني المرفقين بتحكم.",
+    "en": "Curling an EZ bar reduces wrist stress versus a straight bar while still loading the biceps well through controlled elbow flexion."
   },
   "instructions": {
-    "ar": "حافظ على عمود فقري محايد وتنفس بثبات وتوقف عند أي ألم حاد.",
-    "en": "Maintain neutral spine, steady breathing, and stop if sharp pain appears."
+    "ar": "1. قف منتصباً والبار أمام الفخذين بقبضة مريحة على المقابض المائلة.\n2. شد الجذع قليلاً وثبّت الكتفين للأسفل.\n3. ارفع البار نحو الكتفين دون هز الجذع أو دفع المرفقين للأمام.\n4. انزل ببطء حتى يكاد يمتد المرفقان دون قفل قاسٍ.\n5. لا تدع المعصمين ينهاران للخلف.\n6. خفف الوزن إذا فقدت التحكم.",
+    "en": "1. Stand tall with the bar in front of the thighs using a comfortable angled grip.\n2. Brace lightly and keep the shoulders set down.\n3. Curl the bar toward the shoulders without swinging the torso or drifting the elbows forward.\n4. Lower slowly until the elbows are nearly long without harsh locking.\n5. Do not let the wrists collapse backward.\n6. Reduce load if control is lost."
   },
   "supportsWeight": true,
   "reportMetrics": {

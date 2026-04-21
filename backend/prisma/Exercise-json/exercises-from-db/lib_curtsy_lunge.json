@@ -482,12 +482,12 @@
     }
   ],
   "description": {
-    "ar": "تمرين مكتبة: اندفاع كورتسي.",
-    "en": "Library exercise: Curtsy lunge."
+    "ar": "اندفاع كورتسي يعبر الرجل الخلفية خلف الجسم بزاوية ليحمّل الألوية والفخذ الداخلي مع تحدي التوازن قليلاً.",
+    "en": "A curtsy lunge crosses the rear leg behind the body to load the glutes and inner thigh while challenging balance."
   },
   "instructions": {
-    "ar": "حافظ على عمود فقري محايد وتنفس بثبات وتوقف عند أي ألم حاد.",
-    "en": "Maintain neutral spine, steady breathing, and stop if sharp pain appears."
+    "ar": "1. قف منتصباً مع قدمين بعرض الوركين تقريباً.\n2. خطوة خلفية متقاطعة قليلاً كأن تنحني تحية، مع ثني الركبتين.\n3. حافظ على الركبة الأمامية فوق القدم قدر الإمكان دون انهيار للداخل.\n4. ادفع عبر القدم الأمامية للعودة للوضع الابتدائي.\n5. بدّل الأرجل أو أكمل تكرارات جانب واحد حسب البرنامج.\n6. توقف عند ألم حاد في الركبة أو الورك.",
+    "en": "1. Stand tall with feet about hip-width apart.\n2. Step back and slightly across like a curtsy while bending both knees.\n3. Keep the front knee tracking over the foot without collapsing inward.\n4. Push through the front foot to return to the start.\n5. Alternate legs or complete one side per your program.\n6. Stop if you feel sharp knee or hip pain."
   },
   "supportsWeight": true,
   "reportMetrics": {

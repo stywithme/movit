@@ -300,12 +300,12 @@
     }
   ],
   "description": {
-    "ar": "تمرين مكتبة: ضغط لاندمين.",
-    "en": "Library exercise: Half-kneeling landmine press."
+    "ar": "ضغط لاندماين من نصف الركعة يستغل زاوية القضيب لتدريب الكتف والجذع بمسار يُعتبر أنعم على المفصل من بعض الضغوط العمودية الثقيلة.",
+    "en": "A half-kneeling landmine press uses an angled bar path to load the shoulder and trunk with a grip that many people tolerate better than strict vertical pressing."
   },
   "instructions": {
-    "ar": "حافظ على عمود فقري محايد وتنفس بثبات وتوقف عند أي ألم حاد.",
-    "en": "Maintain neutral spine, steady breathing, and stop if sharp pain appears."
+    "ar": "1. ثبّت طرف القضيب في ركن لاندماين أو زاوية آمنة.\n2. اركع بركبة واحدة للأمام والثانية تحت الورك مع شد خفيف للجذع.\n3. امسك الطرف الحر عند الصدر ثم ادفعه للأعلى بخط قطري أمامك.\n4. أعد الوزن ببطء دون فقدان استقرار الظهر.\n5. نفّذ 6–12 تكراراً ثم بدّل وضعية الركبتين.\n6. توقف عند ألم حاد في الكتف أو الركبة أو المعصم.",
+    "en": "1. Secure the bar in a landmine base or stable corner.\n2. Half-kneel with the front foot planted and the torso lightly braced.\n3. Hold the end of the bar at the chest, then press it up and forward on a diagonal.\n4. Lower with control without losing trunk position.\n5. Complete 6–12 reps, then switch the lead leg.\n6. Stop if you feel sharp shoulder, knee, or wrist pain."
   },
   "supportsWeight": true,
   "reportMetrics": {

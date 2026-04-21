@@ -6,7 +6,7 @@
   "familyKey": "push_horizontal_family",
   "familyOrder": 15,
   "name": {
-    "ar": "ضغط ترابيسي",
+    "ar": "ضغط مائل",
     "en": "Incline push-up"
   },
   "category": {
@@ -19,6 +19,7 @@
   "countingMethod": "up_down",
   "muscles": [
     "chest_muscle",
+    "front_delts",
     "triceps"
   ],
   "equipment": [
@@ -37,8 +38,8 @@
   "poseVariants": [
     {
       "name": {
-        "ar": "مستلقٍ على الوجه",
-        "en": "Lying face down (side angle)"
+        "ar": "ضغط مائل — زاوية جانبية",
+        "en": "Incline push-up (side view)"
       },
       "posePosition": "prone_side",
       "expectedPostures": [
@@ -340,8 +341,8 @@
             "en": "Keep shoulders down and slightly back (scapular set)."
           },
           {
-            "ar": "لا تفرط في تمديد الرقبة؛ نظرة أمامية قصيرة.",
-            "en": "Avoid craning the neck; keep a short forward gaze."
+            "ar": "اجعل المقعد ثابتاً ولا تدع اليدين تنزلق عن الحافة.",
+            "en": "Keep the bench stable and prevent the hands from sliding off the edge."
           }
         ]
       },
@@ -528,12 +529,12 @@
     }
   ],
   "description": {
-    "ar": "تمرين مكتبة: ضغط ترابيسي.",
-    "en": "Library exercise: Incline push-up."
+    "ar": "ضغط بوزن الجسم مع رفع اليدين على مقعد أو سطح مرتفع لتقليل الحمل على الكتفين مع الحفاظ على خط مستقيم للجسم.",
+    "en": "A bodyweight push-up with the hands elevated on a bench or sturdy surface to reduce shoulder load while keeping a straight body line."
   },
   "instructions": {
-    "ar": "حافظ على عمود فقري محايد وتنفس بثبات وتوقف عند أي ألم حاد.",
-    "en": "Maintain neutral spine, steady breathing, and stop if sharp pain appears."
+    "ar": "ضع راحتي اليد على حافة المقعد بعرضة أكبر قليلاً من الكتفين، ثم امشِ بالقدمين للخلف حتى يتشكل خط مستقيم من الرأس للكعب. انزل بصدرك نحو المقعد مع ثبات الكوعين قليلاً للداخل، ثم ادفع للأعلى دون ارتفاع الوسط أو انهياره. ضع الكاميرا من الجانب.",
+    "en": "Place the hands on the bench edge slightly wider than the shoulders, then walk the feet back until you form a straight line from head to heels. Lower your chest toward the bench with elbows tucked slightly in, then press up without hiking or sagging the hips. Film from the side."
   },
   "reportMetrics": {
     "primary": [

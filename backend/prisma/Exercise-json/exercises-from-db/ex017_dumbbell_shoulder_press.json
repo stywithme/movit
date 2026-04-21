@@ -1,0 +1,221 @@
+{
+  "slug": "ex017_dumbbell_shoulder_press",
+  "status": "published",
+  "movementPattern": "PUSH_VERTICAL",
+  "loadCapability": "EXTERNAL_LOAD_REQUIRED",
+  "familyKey": "push_vertical_family",
+  "familyOrder": 117,
+  "name": {
+    "ar": "ضغط كتف بالدمبل",
+    "en": "Dumbbell shoulder press"
+  },
+  "category": {
+    "code": "shoulders",
+    "name": {
+      "ar": "تمارين الأكتاف",
+      "en": "Shoulders"
+    }
+  },
+  "countingMethod": "up_down",
+  "muscles": [
+    "front_delts",
+    "side_delts",
+    "triceps"
+  ],
+  "equipment": [
+    "dumbbell",
+    "bench"
+  ],
+  "tags": [
+    "compound",
+    "upper_body",
+    "group_2"
+  ],
+  "repCountingConfig": {
+    "reps": 10,
+    "minRepIntervalMs": 1500,
+    "maxRepIntervalMs": 3000
+  },
+  "supportsWeight": true,
+  "poseVariants": [
+    {
+      "name": {
+        "ar": "أمامي - جالس",
+        "en": "Front view seated"
+      },
+      "posePosition": "sitting_front_upper",
+      "expectedPostures": [
+        "sitting"
+      ],
+      "expectedDirections": [
+        "front"
+      ],
+      "expectedRegions": [
+        "upper_body"
+      ],
+      "trackedJoints": [
+        {
+          "joint": "left_shoulder",
+          "role": "primary",
+          "pairedWith": "right_shoulder",
+          "startPose": {
+            "min": 80,
+            "max": 100
+          },
+          "upRange": {
+            "perfect": {
+              "min": 160,
+              "max": 180
+            },
+            "normal": {
+              "min": 150,
+              "max": 160
+            },
+            "pad": {
+              "min": 130,
+              "max": 150
+            }
+          },
+          "downRange": {
+            "perfect": {
+              "min": 80,
+              "max": 100
+            },
+            "normal": {
+              "min": 100,
+              "max": 110
+            },
+            "pad": {
+              "min": 110,
+              "max": 125
+            }
+          },
+          "stateMessages": {
+            "perfect": {
+              "up": {
+                "ar": "ممتاز! قفل جيد فوق الرأس",
+                "en": "Perfect! Strong overhead lockout"
+              },
+              "down": {
+                "ar": "ممتاز! عودة جيدة لمستوى الكتف",
+                "en": "Perfect! Clean return to shoulder level"
+              }
+            },
+            "warning": {
+              "up": {
+                "ar": "ادفع لأعلى مع بقاء القفص الصدري هادئاً وعدم تقوس الظهر",
+                "en": "Press overhead without flaring the ribs or over-arching the back"
+              }
+            }
+          }
+        },
+        {
+          "joint": "left_elbow",
+          "role": "secondary",
+          "range": {
+            "perfect": {
+              "min": 160,
+              "max": 180
+            },
+            "normal": {
+              "min": 150,
+              "max": 180
+            },
+            "warning": {
+              "min": 80,
+              "max": 150
+            }
+          },
+          "startPose": {
+            "min": 80,
+            "max": 100
+          },
+          "stateMessages": {
+            "perfect": {
+              "ar": "المرفقان يمدان جيداً في الأعلى",
+              "en": "The elbows extend well at the top"
+            }
+          }
+        }
+      ],
+      "positionChecks": [
+        {
+          "id": "press_symmetry",
+          "type": "horizontal_alignment",
+          "landmarks": {
+            "primary": "right_elbow",
+            "secondary": "left_elbow"
+          },
+          "condition": {
+            "operator": "approximately_equal",
+            "threshold": 0.08
+          },
+          "activePhases": [
+            "up"
+          ],
+          "errorMessage": {
+            "ar": "ارفع الذراعين بنفس المستوى في الأعلى.",
+            "en": "Keep both arms at the same level at the top."
+          },
+          "severity": "error",
+          "cooldownMs": 2200,
+          "minErrorFrames": 4
+        },
+        {
+          "id": "torso_vertical_press",
+          "type": "vertical_alignment",
+          "landmarks": {
+            "primary": "left_shoulder",
+            "secondary": "left_hip"
+          },
+          "condition": {
+            "operator": "approximately_equal",
+            "threshold": 0.12
+          },
+          "activePhases": [
+            "up",
+            "down"
+          ],
+          "errorMessage": {
+            "ar": "ابقَ طويلاً من الجذع ولا تدع الظهر يقوس لتعويض الضغط.",
+            "en": "Stay tall through the torso and do not arch the back to cheat the press."
+          },
+          "severity": "tip",
+          "cooldownMs": 2500,
+          "minErrorFrames": 5
+        }
+      ],
+      "feedbackMessages": {
+        "motivational": [
+          {
+            "ar": "ضغط علوي ممتاز",
+            "en": "Excellent overhead press"
+          }
+        ],
+        "tips": [
+          {
+            "ar": "شد الجذع وخذ نفساً قبل كل عدة.",
+            "en": "Brace the trunk and take a breath before each rep."
+          }
+        ]
+      }
+    }
+  ],
+  "description": {
+    "ar": "ضغط الكتف بالدمبل تمرين مركب يحمّل الدالية الأمامية والجانبية والعضد مع حاجة كبيرة لثبات الجذع. نجاحه يعتمد على ضغط الدمبلين لأعلى في مسار متزن مع إبقاء القفص الصدري والجذع تحت سيطرة جيدة.",
+    "en": "The dumbbell shoulder press is a compound lift that loads the anterior and middle delts along with the triceps, while also requiring strong trunk control. Good reps depend on pressing both dumbbells overhead in a balanced path without losing ribcage and torso position."
+  },
+  "instructions": {
+    "ar": "1. اجلس بوضع ثابت والدمبلان عند مستوى الكتفين.\n2. شد الجذع وابقَ الصدر مرتفعاً بدون مبالغة.\n3. اضغط الدمبلين للأعلى في مسار متزن حتى الاقتراب من التمدد الكامل.\n4. انزل ببطء حتى يعودا لمستوى الكتفين.\n5. لا تدع أحد الجانبين يسبق الآخر.\n6. إذا احتجت لتعويض واضح من أسفل الظهر، خفف الوزن.",
+    "en": "1. Sit in a stable position with the dumbbells at shoulder level.\n2. Brace the trunk and keep the chest tall without exaggeration.\n3. Press both dumbbells overhead in a balanced path until near full extension.\n4. Lower slowly until they return to shoulder level.\n5. Do not let one side lead the other.\n6. If you need obvious low-back compensation, reduce the load."
+  },
+  "reportMetrics": {
+    "primary": [
+      "FORM_SCORE"
+    ],
+    "excluded": [
+      "HOLD_DURATION"
+    ]
+  },
+  "hasPositionChecks": true
+}

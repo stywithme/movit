@@ -152,12 +152,12 @@
     }
   ],
   "description": {
-    "ar": "تمرين مكتبة: تمديد نائم كتف.",
-    "en": "Library exercise: Sleeper stretch."
+    "ar": "تمديد النائم يهدّئ دوران الكتف الداخلي بلطف ويُستخدم أحياناً بعد النشاط الزائد للكتف؛ تجنّبه إن كان هناك عدم استقرار في الكتف دون إشراف طبي.",
+    "en": "The sleeper stretch gently loads shoulder internal rotation and is sometimes used after overhead activity; avoid it with suspected shoulder instability unless cleared by a clinician."
   },
   "instructions": {
-    "ar": "حافظ على عمود فقري محايد وتنفس بثبات وتوقف عند أي ألم حاد.",
-    "en": "Maintain neutral spine, steady breathing, and stop if sharp pain appears."
+    "ar": "1. استلقِ على جانب الكتف المستهدف مع ثني المرفق تقريباً 90° والساعد عمودي على الأرض.\n2. اضغط الساعد للأرض بلطف بيدك الأخرى دون لف الحوض بعيداً.\n3. احتفظ 20–30 ثانية مع تنفس عميق.\n4. أبقِ الألم ضمن شد معتدل فقط.\n5. كرر 2–4 مرات ثم قارن الجانبين.\n6. توقف فوراً عند ألم حاد أو وخز أو شعور بعدم الاستقرار.",
+    "en": "1. Lie on the target shoulder with the elbow near 90° and the forearm vertical on the floor.\n2. Gently press the forearm toward the floor with the opposite hand without rolling the trunk away.\n3. Hold 20–30 seconds with slow breathing.\n4. Keep any discomfort to a mild stretch only.\n5. Repeat 2–4 times and compare sides.\n6. Stop immediately for sharp pain, numbness, or a sense of instability."
   },
   "reportMetrics": {
     "primary": [

@@ -714,12 +714,12 @@
     }
   ],
   "description": {
-    "ar": "تمرين مكتبة: ثرستر دمبل.",
-    "en": "Library exercise: Dumbbell thruster."
+    "ar": "ثرستر بالدمبل يدمج قرفصاء أمامية مع ضغط كتف فوق الرأس في حركة واحدة لتوليد قوة من الساقين والجذع والكتفين.",
+    "en": "A dumbbell thruster combines a front squat with an overhead press in one continuous motion to build leg, trunk, and shoulder power."
   },
   "instructions": {
-    "ar": "حافظ على عمود فقري محايد وتنفس بثبات وتوقف عند أي ألم حاد.",
-    "en": "Maintain neutral spine, steady breathing, and stop if sharp pain appears."
+    "ar": "1. امسك الدمبل عند مستوى الكتفين مع مرفقين تحت الأوزان قليلاً.\n2. انزل في قرفصاء مع الحفاظ على الصدر مرتفعاً والركبتين متوافقتين مع أصابع القدمين.\n3. انفجر للأعلى بقوة الساقين ومرّ الدمبل فوق الرأس بذراعين مستقيمتين دون قوس زائد في أسفل الظهر.\n4. أعد الدمبل للكتفين بتحكم قبل التكرار التالي.\n5. نفّذ التكرارات حسب الوزن والهدف مع تنفس منتظم.\n6. توقف عند ألم حاد في الركبة أو المعصم أو الكتف.",
+    "en": "1. Hold dumbbells at shoulder height with elbows slightly under the weights.\n2. Squat down with the chest tall and knees tracking over the toes.\n3. Drive up powerfully and press the weights overhead with arms straight and no excessive lumbar arch.\n4. Return the dumbbells to the shoulders with control before the next rep.\n5. Perform reps according to load and goal with steady breathing.\n6. Stop if you feel sharp knee, wrist, or shoulder pain."
   },
   "supportsWeight": true,
   "reportMetrics": {

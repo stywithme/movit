@@ -321,12 +321,12 @@
     }
   ],
   "description": {
-    "ar": "تمرين مكتبة: اندفاع سبايدرمان.",
-    "en": "Library exercise: Spiderman lunge with reach."
+    "ar": "اندفاع سبايدرمان مع مد الذراع يفتح الورك الأمامي والصدر معاً ويُحسّن تمدد عضلات الورك والعمود الصدري.",
+    "en": "A Spiderman lunge with a reach opens the front hip and thoracic spine together, improving hip flexor and upper-back mobility."
   },
   "instructions": {
-    "ar": "حافظ على عمود فقري محايد وتنفس بثبات وتوقف عند أي ألم حاد.",
-    "en": "Maintain neutral spine, steady breathing, and stop if sharp pain appears."
+    "ar": "1. ادخل في وضع لوح علوي.\n2. قدّم قدمك نحو يدك المعاكسة وضع الركبة بجانب أو خارج المرفق بلطف.\n3. مدّ الذراع البعيدة للأمام أو للأعلى مع دوران خفيف في الصدر دون ألم في الركبة.\n4. أعد القدم للوضع ثم كرر على الجانب الآخر.\n5. نفّذ 6–10 تبديلات ببطء.\n6. توقف عند ألم حاد في الركبة أو الورك أو الرسغ.",
+    "en": "1. Start in a high plank.\n2. Step the foot toward the opposite hand and place the knee near the elbow without forcing pain.\n3. Reach the far arm forward or overhead with a light thoracic rotation.\n4. Return the foot to plank, then alternate sides.\n5. Perform 6–10 slow switches.\n6. Stop if you feel sharp knee, hip, or wrist pain."
   },
   "reportMetrics": {
     "primary": [

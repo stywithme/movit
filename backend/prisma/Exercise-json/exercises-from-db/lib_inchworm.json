@@ -219,12 +219,12 @@
     }
   ],
   "description": {
-    "ar": "تمرين مكتبة: دودة بوصة.",
-    "en": "Library exercise: Inchworm."
+    "ar": "تمرين الدودة يربط بين ثبات الجذع ومرونة الخلفية للساقين عبر المشي باليدين من الوقوف إلى وضع ممدود ثم العودة بتحكم.",
+    "en": "The inchworm links trunk stability with posterior-chain mobility by walking the hands from standing into an extended position, then returning with control."
   },
   "instructions": {
-    "ar": "حافظ على عمود فقري محايد وتنفس بثبات وتوقف عند أي ألم حاد.",
-    "en": "Maintain neutral spine, steady breathing, and stop if sharp pain appears."
+    "ar": "1. انحنِ للأمام وضع اليدين على الأرض أمام القدمين.\n2. امشِ باليدين للأمام حتى تصل إلى وضع بلانك قصير أو ممدود حسب مستواك.\n3. ثبّت الجذع ثم امشِ بالقدمين نحو اليدين بخطوات صغيرة.\n4. قف منتصباً وكرر دون اندفاع زائد من الظهر.\n5. لا تفرط في مد الساقين إذا كان الضيق شديداً.\n6. توقف عند ألم حاد في أسفل الظهر أو الركبة.",
+    "en": "1. Fold forward and place the hands on the floor in front of the feet.\n2. Walk the hands forward until you reach a short plank or extended position based on your level.\n3. Brace the trunk, then walk the feet toward the hands with small steps.\n4. Stand tall and repeat without snapping from the low back.\n5. Do not force full hamstring stretch if it feels very tight.\n6. Stop if you feel sharp low-back or knee pain."
   },
   "reportMetrics": {
     "primary": [

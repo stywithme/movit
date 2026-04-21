@@ -229,12 +229,12 @@
     }
   ],
   "description": {
-    "ar": "تمرين مكتبة: انزلاق كتف.",
-    "en": "Library exercise: Supine shoulder flexion slide."
+    "ar": "انزلاق الكتف من الاستلقاء يعيد تدريب رفع الذراع فوق الرأس بحركة سلسة مع ظهر ملتصق بالأرض، وهو مفيد بعد الجلوس أو عند تقييد مدى الكتف.",
+    "en": "The supine shoulder flexion slide retrains smooth overhead reach with the back supported on the floor, helpful after sitting or when shoulder flexion feels limited."
   },
   "instructions": {
-    "ar": "حافظ على عمود فقري محايد وتنفس بثبات وتوقف عند أي ألم حاد.",
-    "en": "Maintain neutral spine, steady breathing, and stop if sharp pain appears."
+    "ar": "1. استلق على ظهرك مع ثني الركبتين والقدمين على الأرض.\n2. ضع رسغي اليدين أو المرفقين على الأرض بزاوية مريحة.\n3. انزلق بالذراعين للأعلى نحو الأذنين دون رفع أسفل الظهر عن الأرض.\n4. ارجع ببطء لنقطة البداية.\n5. لا ترفع الذقن بقوة أو تفرط في تقوس الرقبة.\n6. قلل المدى عند أي ألم حاد في الكتف.",
+    "en": "1. Lie on your back with knees bent and feet on the floor.\n2. Place the wrists or elbows on the ground at a comfortable angle.\n3. Slide the arms overhead toward the ears without lifting the low back off the floor.\n4. Return slowly to the start.\n5. Do not crank the chin or over-arch the neck.\n6. Reduce range if you feel sharp shoulder pain."
   },
   "reportMetrics": {
     "primary": [

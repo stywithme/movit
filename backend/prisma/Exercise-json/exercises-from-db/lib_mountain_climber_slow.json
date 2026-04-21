@@ -271,12 +271,12 @@
     }
   ],
   "description": {
-    "ar": "تمرين مكتبة: متسلق جبال بطيء.",
-    "en": "Library exercise: Slow mountain climber."
+    "ar": "متسلق الجبال البطيء يحافظ على ثبات الحوض أثناء تحريك الركبتين نحو الصدر بإيقاع متحكم، فيحمّل الجذع والكتفين أكثر من النسخة السريعة.",
+    "en": "The slow mountain climber keeps the pelvis steady while driving the knees toward the chest with controlled tempo, loading the trunk and shoulders more than a fast version."
   },
   "instructions": {
-    "ar": "حافظ على عمود فقري محايد وتنفس بثبات وتوقف عند أي ألم حاد.",
-    "en": "Maintain neutral spine, steady breathing, and stop if sharp pain appears."
+    "ar": "1. خذ وضعية بلانك عالية مع اليدين تحت الكتفين.\n2. شد الجذع ولا تدع الوركين يرتفعان ويهبطان مع كل خطوة.\n3. اسحب ركبة واحدة نحو الصدر ثم أعد القدم ببطء.\n4. كرر على الجانب الآخر مع الحفاظ على الرأس في امتداد الجسم.\n5. لا تثني الظهر أو تدع الرأس يتدلى.\n6. قلل المدى إذا شعرت بألم في المعصم أو أسفل الظهر.",
+    "en": "1. Set a tall plank with hands under the shoulders.\n2. Brace the trunk and avoid hiking or dropping the hips each step.\n3. Draw one knee toward the chest, then return the foot slowly.\n4. Alternate sides while keeping the head in line with the body.\n5. Do not round the low back or let the head hang.\n6. Reduce range if wrists or low back feel irritated."
   },
   "reportMetrics": {
     "primary": [

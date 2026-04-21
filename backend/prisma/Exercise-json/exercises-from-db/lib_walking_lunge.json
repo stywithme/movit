@@ -483,12 +483,12 @@
     }
   ],
   "description": {
-    "ar": "تمرين مكتبة: اندفاع مشي.",
-    "en": "Library exercise: Walking lunge."
+    "ar": "الاندفاع المتحرك يجمع بين القوة والتوازن والتحمل أثناء التقدم للأمام، ويحتاج خطوة متوسطة وثبات جذع لتفادي الضغط الزائد على الركبة.",
+    "en": "Walking lunges blend strength, balance, and endurance while moving forward, and need a moderate step length and trunk control to avoid excess knee stress."
   },
   "instructions": {
-    "ar": "حافظ على عمود فقري محايد وتنفس بثبات وتوقف عند أي ألم حاد.",
-    "en": "Maintain neutral spine, steady breathing, and stop if sharp pain appears."
+    "ar": "1. ابدأ منتصباً وخطوة أمامية متوسطة الطول.\n2. انزل حتى تقترب الركبتان من زاوية 90° دون لمس الركبة الخلفية للأرض بقوة.\n3. ادفع من القدم الأمامية للوقوف ثم قدم الخطوة التالية مباشرة.\n4. حافظ على الجذع منتصباً والنظر للأمام.\n5. لا تدع الركبة الأمامية تتجاوز أصابع القدم بشكل مفرط.\n6. أبطئ الإيقاع إذا فقدت التوازن.",
+    "en": "1. Start tall and take a moderate forward step.\n2. Lower until both knees approach about 90° without slamming the back knee down.\n3. Push through the front foot to stand, then step directly into the next lunge.\n4. Keep the trunk tall and eyes forward.\n5. Do not let the front knee drift far past the toes.\n6. Slow the tempo if balance breaks down."
   },
   "supportsWeight": true,
   "reportMetrics": {

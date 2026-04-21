@@ -219,12 +219,12 @@
     }
   ],
   "description": {
-    "ar": "تمرين مكتبة: تعليق خفض لوح.",
-    "en": "Library exercise: Scapular depression hang."
+    "ar": "التعليق مع خفض لوح الكتف يقوّي ثبات الكتفين والتحكم في الجذع العلوي دون ثني كامل في المرفق، ويُستخدم غالباً كإحماء للشد العلوي أو إعادة ضبط الوضعية.",
+    "en": "The scapular depression hang builds shoulder-blade control and upper-trunk stiffness without full elbow bending, often used as an upper-back warm-up or posture reset."
   },
   "instructions": {
-    "ar": "حافظ على عمود فقري محايد وتنفس بثبات وتوقف عند أي ألم حاد.",
-    "en": "Maintain neutral spine, steady breathing, and stop if sharp pain appears."
+    "ar": "1. امسك العقلة بعرض مريح وعلق بذراعين ممدودتين تقريباً.\n2. من دون ثني المرفقين، ادفع الصدر للأعلى بتحريك لوحي الكتف لأسفل.\n3. احتفظ بالوضع لثوانٍ ثم ارجع ببطء للتعليق المرتخ.\n4. حافظ على الرقبة محايدة والنظر للأمام.\n5. لا تقفز من التعليق أو تهز الجسم بقوة.\n6. توقف عند تنميل في الذراعين أو ألم في الكتف.",
+    "en": "1. Hang from a bar with a comfortable grip and nearly long arms.\n2. Without bending the elbows, lift the chest by pulling the shoulder blades downward.\n3. Hold for a few seconds, then relax back to a passive hang.\n4. Keep the neck neutral and eyes forward.\n5. Do not drop aggressively from the hang or swing violently.\n6. Stop if arms go numb or the shoulder feels sharp pain."
   },
   "reportMetrics": {
     "primary": [

@@ -6,7 +6,7 @@
   "familyKey": "anti_extension_family",
   "familyOrder": 20,
   "name": {
-    "ar": "تمرين البلانك",
+    "ar": "بلانك",
     "en": "Plank"
   },
   "category": {
@@ -38,7 +38,7 @@
     {
       "name": {
         "ar": "زاوية جانبية",
-        "en": "Side View"
+        "en": "Side view"
       },
       "posePosition": "prone_side",
       "expectedPostures": [
@@ -60,24 +60,24 @@
           },
           "stateMessages": {
             "pad": {
-              "ar": "مقبول، لكن يمكنك التحسن",
-              "en": "Acceptable, but you can improve"
-            },
-            "danger": {
-              "ar": "وسطك منخفض جداً! قد يؤذي ظهرك",
-              "en": "Hips too low! May hurt your back"
+              "ar": "مقبول — شد الجذع أكثر وابقَ في خط واحد",
+              "en": "Acceptable — brace harder and stay in one line"
             },
             "normal": {
-              "ar": "جيد، حاول رفع الوسط قليلاً",
-              "en": "Good, try raising hips slightly"
+              "ar": "جيد — هناك ثبات واضح لكن ما زال هناك مجال لتحسين الخط",
+              "en": "Good — the hold is solid but the line can be cleaner"
             },
             "perfect": {
-              "ar": "ممتاز! وضعية مثالية",
-              "en": "Perfect! Great form"
+              "ar": "ممتاز! خط جسم قوي من الكتف للكعب",
+              "en": "Perfect! Strong body line from shoulders to heels"
             },
             "warning": {
-              "ar": "ارفع الوسط قليلاً",
-              "en": "Raise your hips slightly"
+              "ar": "لا تدع الحوض يهبط أو يرتفع كثيراً",
+              "en": "Do not let the hips sag or rise too high"
+            },
+            "danger": {
+              "ar": "توقف — الوضعية انهارت وقد تضع ضغطاً غير جيد على أسفل الظهر",
+              "en": "Stop — the position has collapsed and may overload the lower back"
             }
           },
           "range": {
@@ -85,21 +85,21 @@
               "max": 180,
               "min": 150
             },
-            "danger": {
-              "max": 140,
-              "min": 0
-            },
             "normal": {
               "max": 180,
               "min": 160
             },
             "perfect": {
               "max": 180,
-              "min": 165
+              "min": 168
             },
             "warning": {
               "max": 150,
               "min": 140
+            },
+            "danger": {
+              "max": 140,
+              "min": 0
             }
           }
         },
@@ -112,26 +112,30 @@
           },
           "stateMessages": {
             "perfect": {
-              "ar": "ممتاز - وضعية الكتف مثالية",
-              "en": "Great - shoulder position is perfect"
+              "ar": "الكتف مكدس جيداً فوق الساعد",
+              "en": "The shoulder is stacked well over the forearm"
             },
             "warning": {
-              "ar": "عدّل وضع الكتف",
-              "en": "Adjust shoulder position"
+              "ar": "ادفع الأرض بالساعد ولا تترك الكتفين ينهاران",
+              "en": "Push through the forearms and do not let the shoulders collapse"
             }
           },
           "range": {
             "pad": {
-              "max": 120,
-              "min": 60
+              "max": 118,
+              "min": 64
             },
             "normal": {
               "max": 110,
-              "min": 70
+              "min": 72
             },
             "perfect": {
               "max": 100,
               "min": 80
+            },
+            "warning": {
+              "max": 128,
+              "min": 118
             }
           }
         },
@@ -144,29 +148,29 @@
           },
           "stateMessages": {
             "perfect": {
-              "ar": "ممتاز - الساقين مستقيمتين",
-              "en": "Great - legs are straight"
+              "ar": "الساقان طويلتان وثابتتان",
+              "en": "The legs stay long and steady"
             },
             "warning": {
-              "ar": "افرد ركبتيك",
-              "en": "Straighten your knees"
+              "ar": "لا تثنِ الركبتين لتخفيف الحمل عن الجذع",
+              "en": "Do not bend the knees to unload the trunk"
             }
           },
           "range": {
             "pad": {
               "max": 180,
-              "min": 155
+              "min": 154
             },
             "normal": {
               "max": 180,
-              "min": 165
+              "min": 164
             },
             "perfect": {
               "max": 180,
               "min": 170
             },
             "warning": {
-              "max": 155,
+              "max": 154,
               "min": 140
             }
           }
@@ -188,8 +192,8 @@
             "all"
           ],
           "errorMessage": {
-            "ar": "حافظ على استقامة جسمك من الكتف للورك",
-            "en": "Keep your body aligned from shoulder to hip"
+            "ar": "حافظ على خط متماسك من الكتف إلى الورك بدون سقوط أو pike.",
+            "en": "Keep a clean line from shoulder to hip without sagging or piking."
           },
           "severity": "warning",
           "cooldownMs": 2000,
@@ -210,8 +214,8 @@
             "all"
           ],
           "errorMessage": {
-            "ar": "لا تدع وسطك ينحني - شد عضلات البطن",
-            "en": "Don't let your hips sag - engage your core"
+            "ar": "لا تدع الحوض يهبط — شد البطن والمؤخرة.",
+            "en": "Do not let the hips sag — brace the abs and glutes."
           },
           "severity": "error",
           "cooldownMs": 2000,
@@ -232,8 +236,8 @@
             "all"
           ],
           "errorMessage": {
-            "ar": "لا ترفع مؤخرتك للأعلى - حافظ على خط مستقيم",
-            "en": "Don't pike your hips up - maintain a straight line"
+            "ar": "لا ترفع الحوض للأعلى كثيراً — ابقَ في خط بلانك حقيقي.",
+            "en": "Do not hike the hips too high — stay in a real plank line."
           },
           "severity": "warning",
           "cooldownMs": 2500,
@@ -243,26 +247,26 @@
       "feedbackMessages": {
         "motivational": [
           {
-            "ar": "استمر! أنت تفعلها!",
-            "en": "Keep going! You're doing great!"
+            "ar": "ثبات ممتاز — استمر",
+            "en": "Excellent stability — keep going"
           },
           {
-            "ar": "ممتاز! حافظ على الوضع!",
-            "en": "Excellent! Hold that position!"
+            "ar": "وضعية قوية ومنظمة",
+            "en": "Strong and organized position"
           },
           {
-            "ar": "قوي! لا تستسلم!",
-            "en": "Strong! Don't give up!"
+            "ar": "هذا هو الشد المطلوب في الجذع",
+            "en": "That is the trunk tension we want"
           }
         ],
         "tips": [
           {
-            "ar": "تنفس بانتظام ولا تحبس أنفاسك",
-            "en": "Breathe steadily, don't hold your breath"
+            "ar": "تنفّس بهدوء من غير حبس نفس طويل.",
+            "en": "Breathe calmly without long breath holds."
           },
           {
-            "ar": "شد عضلات بطنك طوال التمرين",
-            "en": "Keep your core engaged throughout"
+            "ar": "فكّر في تقريب الأضلاع للحوض وشد المؤخرة في نفس الوقت.",
+            "en": "Think about bringing the ribs toward the pelvis while squeezing the glutes."
           }
         ]
       },
@@ -385,12 +389,12 @@
     }
   ],
   "description": {
-    "ar": "تمرين لتقوية عضلات البطن والجذع عن طريق الثبات في وضع معين",
-    "en": "Core strengthening exercise by holding a stable position"
+    "ar": "البلانك تمرين ثبات أساسي لتقوية عضلات الجذع المضادة لتمدد أسفل الظهر. الفكرة ليست فقط البقاء في الوضع، بل الحفاظ على خط متماسك من الكتفين حتى الكعبين مع شد البطن والمؤخرة والتنفس بهدوء طوال مدة الثبات.",
+    "en": "The plank is a foundational isometric exercise that trains the trunk to resist excessive lumbar extension. The goal is not just to survive the hold, but to maintain a clean line from shoulders to heels while the abs and glutes stay engaged and breathing remains controlled."
   },
   "instructions": {
-    "ar": "ارتكز على ساعديك وأصابع قدميك، حافظ على استقامة الجسم من الرأس للكعب",
-    "en": "Rest on your forearms and toes, keep your body straight from head to heels"
+    "ar": "1. ارتكز على الساعدين وأصابع القدمين مع جعل المرفقين تحت الكتفين.\n2. ارفع الجسم ليصبح في خط مستقيم تقريباً من الرأس إلى الكعبين.\n3. شد عضلات البطن والمؤخرة، وابقِ الأضلاع مضمومة بدون تقوس زائد أسفل الظهر.\n4. لا تدع الحوض يهبط ولا ترفعه للأعلى أكثر من اللازم.\n5. ادفع الأرض بالساعدين وابقِ الرقبة محايدة مع النظر لأسفل قليلاً.\n6. تنفّس بثبات، وأنهِ التمرين إذا فقدت وضعية الجسم.",
+    "en": "1. Set up on the forearms and toes with the elbows under the shoulders.\n2. Lift the body so it forms a nearly straight line from head to heels.\n3. Brace the abs and glutes, and keep the ribs down without excessive low-back arching.\n4. Do not let the hips sag and do not lift them too high either.\n5. Push the floor away through the forearms and keep the neck neutral with a slight downward gaze.\n6. Breathe steadily and end the set if the body line is lost."
   },
   "reportMetrics": {
     "primary": [
@@ -412,167 +416,5 @@
       "SYMMETRY"
     ]
   },
-  "hasPositionChecks": true,
-  "_database": {
-    "id": "ea9c4364-390f-4ea8-a9f3-332f1eb16e9d",
-    "categoryId": "a75c8245-e1cd-4a4f-82f1-1e58df971999",
-    "countingMethodId": "7ae86596-4b4b-400b-afa1-c7c0b6ba4fc9",
-    "publishedAt": "2026-04-20T17:26:22.951Z",
-    "createdAt": "2026-04-20T17:26:22.952Z",
-    "updatedAt": "2026-04-20T17:26:34.140Z",
-    "deletedAt": null,
-    "isFeatured": false,
-    "createdBy": null,
-    "updatedBy": null,
-    "repCountingConfig": {
-      "duration": 30,
-      "gracePeriodMs": 2500
-    },
-    "bilateralConfig": null,
-    "isBilateral": false,
-    "supportsWeight": false,
-    "minWeight": null,
-    "maxWeight": null,
-    "defaultWeight": null,
-    "reportMetrics": {
-      "mode": "duration",
-      "version": 1,
-      "primaryKpi": "timeUnderTension",
-      "secondaryKpis": [
-        "avgFormScore",
-        "avgRom"
-      ]
-    },
-    "media": [],
-    "poseVariants": [
-      {
-        "id": "21602943-cd0f-4657-b011-1a069664ab21",
-        "sortOrder": 1,
-        "description": null,
-        "trackedJointsConfig": [
-          {
-            "role": "primary",
-            "joint": "left_hip",
-            "range": {
-              "pad": {
-                "max": 180,
-                "min": 150
-              },
-              "danger": {
-                "max": 140,
-                "min": 0
-              },
-              "normal": {
-                "max": 180,
-                "min": 160
-              },
-              "perfect": {
-                "max": 180,
-                "min": 165
-              },
-              "warning": {
-                "max": 150,
-                "min": 140
-              }
-            },
-            "startPose": {
-              "max": 180,
-              "min": 150
-            },
-            "stateMessages": {
-              "pad": {
-                "ar": "مقبول، لكن يمكنك التحسن",
-                "en": "Acceptable, but you can improve"
-              },
-              "danger": {
-                "ar": "وسطك منخفض جداً! قد يؤذي ظهرك",
-                "en": "Hips too low! May hurt your back"
-              },
-              "normal": {
-                "ar": "جيد، حاول رفع الوسط قليلاً",
-                "en": "Good, try raising hips slightly"
-              },
-              "perfect": {
-                "ar": "ممتاز! وضعية مثالية",
-                "en": "Perfect! Great form"
-              },
-              "warning": {
-                "ar": "ارفع الوسط قليلاً",
-                "en": "Raise your hips slightly"
-              }
-            }
-          },
-          {
-            "role": "secondary",
-            "joint": "left_shoulder",
-            "range": {
-              "pad": {
-                "max": 120,
-                "min": 60
-              },
-              "normal": {
-                "max": 110,
-                "min": 70
-              },
-              "perfect": {
-                "max": 100,
-                "min": 80
-              }
-            },
-            "startPose": {
-              "max": 110,
-              "min": 70
-            },
-            "stateMessages": {
-              "perfect": {
-                "ar": "ممتاز - وضعية الكتف مثالية",
-                "en": "Great - shoulder position is perfect"
-              },
-              "warning": {
-                "ar": "عدّل وضع الكتف",
-                "en": "Adjust shoulder position"
-              }
-            }
-          },
-          {
-            "role": "secondary",
-            "joint": "left_knee",
-            "range": {
-              "pad": {
-                "max": 180,
-                "min": 155
-              },
-              "normal": {
-                "max": 180,
-                "min": 165
-              },
-              "perfect": {
-                "max": 180,
-                "min": 170
-              },
-              "warning": {
-                "max": 155,
-                "min": 140
-              }
-            },
-            "startPose": {
-              "max": 180,
-              "min": 160
-            },
-            "stateMessages": {
-              "perfect": {
-                "ar": "ممتاز - الساقين مستقيمتين",
-                "en": "Great - legs are straight"
-              },
-              "warning": {
-                "ar": "افرد ركبتيك",
-                "en": "Straighten your knees"
-              }
-            }
-          }
-        ]
-      }
-    ],
-    "validationWarning": null
-  }
+  "hasPositionChecks": true
 }

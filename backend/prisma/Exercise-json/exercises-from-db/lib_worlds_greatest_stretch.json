@@ -6,7 +6,7 @@
   "familyKey": "hip_mobility_family",
   "familyOrder": 20,
   "name": {
-    "ar": "أعظم تمدد",
+    "ar": "أعظم إطالة في العالم",
     "en": "World’s greatest stretch"
   },
   "category": {
@@ -19,7 +19,8 @@
   "countingMethod": "up_down",
   "muscles": [
     "quadriceps",
-    "glutes"
+    "glutes",
+    "obliques"
   ],
   "equipment": [
     "bodyweight",
@@ -38,12 +39,12 @@
   "poseVariants": [
     {
       "name": {
-        "ar": "مستلقٍ على الوجه",
-        "en": "Lying face down (side angle)"
+        "ar": "لانج منخفض من الجانب",
+        "en": "Low lunge (side view)"
       },
       "posePosition": "prone_side",
       "expectedPostures": [
-        "lying_prone"
+        "low_lunge"
       ],
       "expectedDirections": [
         "side"
@@ -56,35 +57,73 @@
           "joint": "left_hip",
           "role": "primary",
           "startPose": {
-            "max": 180,
-            "min": 120
+            "max": 175,
+            "min": 130
           },
           "stateMessages": {
+            "pad": {
+              "down": {
+                "ar": "مقبول — زِد مدى اللانج والفتح الصدري تدريجياً",
+                "en": "Acceptable — build the lunge depth and thoracic opening gradually"
+              }
+            },
+            "normal": {
+              "up": {
+                "ar": "جيد — عد لوضع البداية بهدوء",
+                "en": "Good — return to the start under control"
+              },
+              "down": {
+                "ar": "جيد — افتح الورك والصدر أكثر إذا كان المدى مريحاً",
+                "en": "Good — open the hip and chest more if the range feels comfortable"
+              }
+            },
             "perfect": {
-              "ar": "مدى ورك ممتاز",
-              "en": "Great hip range"
+              "up": {
+                "ar": "ممتاز! عودة منظمة بدون فقدان التوازن",
+                "en": "Perfect! Organized return without losing balance"
+              },
+              "down": {
+                "ar": "ممتاز! لانج عميق مع فتح صدري جيد",
+                "en": "Perfect! Deep lunge with a solid thoracic opening"
+              }
             },
             "warning": {
-              "ar": "قلل المدى إن الركبة تضايقك",
-              "en": "Ease range if knee complains"
+              "down": {
+                "ar": "لا تدفع المدى بالقوة أو تترك الركبة الأمامية تنهار للداخل",
+                "en": "Do not force the range or let the front knee collapse inward"
+              }
             }
           },
-          "range": {
+          "upRange": {
             "pad": {
               "max": 180,
-              "min": 110
+              "min": 120
             },
             "normal": {
               "max": 180,
-              "min": 125
+              "min": 130
             },
             "perfect": {
               "max": 175,
-              "min": 140
+              "min": 142
+            }
+          },
+          "downRange": {
+            "pad": {
+              "max": 128,
+              "min": 70
+            },
+            "normal": {
+              "max": 120,
+              "min": 78
+            },
+            "perfect": {
+              "max": 112,
+              "min": 86
             },
             "warning": {
-              "max": 110,
-              "min": 95
+              "max": 70,
+              "min": 58
             }
           }
         },
@@ -92,23 +131,31 @@
           "joint": "left_knee",
           "role": "secondary",
           "startPose": {
-            "max": 130,
-            "min": 85
+            "max": 118,
+            "min": 70
           },
           "stateMessages": {
             "perfect": {
-              "ar": "ركبة مستقرة",
-              "en": "Knee steady"
+              "ar": "الركبة الأمامية تتبع اتجاه القدم بثبات",
+              "en": "The front knee tracks steadily over the foot"
+            },
+            "warning": {
+              "ar": "لا تترك الركبة الأمامية تنهار للداخل أو تتقدم بعنف",
+              "en": "Do not let the front knee cave in or crash forward"
             }
           },
           "range": {
             "normal": {
-              "max": 125,
-              "min": 85
+              "max": 115,
+              "min": 72
             },
             "perfect": {
-              "max": 118,
-              "min": 92
+              "max": 104,
+              "min": 82
+            },
+            "warning": {
+              "max": 128,
+              "min": 60
             }
           }
         }
@@ -116,21 +163,22 @@
       "positionChecks": [
         {
           "id": "hip_mob_smooth",
-          "type": "forward_comparison",
+          "type": "vertical_alignment",
           "landmarks": {
-            "primary": "left_hip",
-            "secondary": "left_knee"
+            "primary": "left_shoulder",
+            "secondary": "left_hip"
           },
           "condition": {
-            "operator": "should_exceed",
-            "threshold": 0.02
+            "operator": "approximately_equal",
+            "threshold": 0.16
           },
           "activePhases": [
-            "all"
+            "up",
+            "down"
           ],
           "errorMessage": {
-            "ar": "افتح الورك ببطء — لا تتجاوز الألم الحاد.",
-            "en": "Open the hip slowly — stay below sharp pain."
+            "ar": "ابقَ طويلاً من الجذع وافتح الصدر مع بقاء القدم الأمامية ثابتة على الأرض.",
+            "en": "Stay long through the torso and open the chest while the front foot stays rooted."
           },
           "severity": "tip",
           "cooldownMs": 3200,
@@ -140,22 +188,22 @@
       "feedbackMessages": {
         "motivational": [
           {
-            "ar": "مدى حركة جيد وتحكم أفضل",
-            "en": "Good range and better control"
+            "ar": "فتح ممتاز للورك والصدر في نفس الحركة",
+            "en": "Great hip and chest opening in one drill"
           },
           {
-            "ar": "تحرك بسلاسة داخل نطاق مريح",
-            "en": "Move smoothly inside a comfortable range"
+            "ar": "الحركة متزنة والسيطرة جيدة في اللانج",
+            "en": "The movement is balanced and the lunge control is solid"
           }
         ],
         "tips": [
           {
-            "ar": "ابقِ الحركة نظيفة وهادئة بدون ارتداد.",
-            "en": "Keep the motion smooth and bounce-free."
+            "ar": "فكّر في دفع الأرض بالقدم الأمامية وترك الورك الخلفي يتمدد مع الزفير.",
+            "en": "Think about rooting the front foot while the rear hip lengthens on the exhale."
           },
           {
-            "ar": "أي ألم حاد يعني تقليل المدى فوراً.",
-            "en": "Any sharp pain means reduce range immediately."
+            "ar": "لا تجعل الحركة مجرد دوران سريع؛ افتح من الصدر مع ثبات الحوض قدر الإمكان.",
+            "en": "Do not turn it into a fast twist; open from the chest while the pelvis stays organized."
           }
         ]
       },
@@ -189,39 +237,46 @@
           "sortOrder": 4
         },
         {
-          "messageId": "c3d443d9-6106-4bfb-acca-1407f165b456",
-          "target": "feedback",
-          "context": "motivational",
+          "messageId": "d4e5f6a7-b8c9-4012-d345-e6f7a8091234",
+          "target": "joint_state",
+          "context": "warning",
+          "jointCode": "left_knee",
           "sortOrder": 5
         },
         {
-          "messageId": "c3a3ffeb-0453-414a-ae4c-779f615c53c6",
+          "messageId": "c3d443d9-6106-4bfb-acca-1407f165b456",
           "target": "feedback",
           "context": "motivational",
           "sortOrder": 6
         },
         {
+          "messageId": "c3a3ffeb-0453-414a-ae4c-779f615c53c6",
+          "target": "feedback",
+          "context": "motivational",
+          "sortOrder": 7
+        },
+        {
           "messageId": "803bd740-4c5b-4b21-b987-537aa6dfb6c9",
           "target": "feedback",
           "context": "tip",
-          "sortOrder": 7
+          "sortOrder": 8
         },
         {
           "messageId": "e18a318e-d972-49ff-ae43-e98034bf8b5b",
           "target": "feedback",
           "context": "tip",
-          "sortOrder": 8
+          "sortOrder": 9
         }
       ]
     }
   ],
   "description": {
-    "ar": "تمرين مكتبة: أعظم تمدد.",
-    "en": "Library exercise: World’s greatest stretch."
+    "ar": "World’s Greatest Stretch هو Drill شامل يجمع بين hip flexor stretch، فتح للورك الأمامي، وتحريك للعمود الصدري في نفس التكرار. يُستخدم كثيراً في الإحماء لأنه يجهز الكاحل والورك والصدر قبل السكوات، اللانج، الجري، والرفع فوق الرأس.",
+    "en": "World’s Greatest Stretch is a full-body mobility drill that combines a hip-flexor stretch, front-hip opening, and thoracic rotation in the same rep. It is popular in warm-ups because it prepares the ankle, hip, and chest for squats, lunges, running, and overhead work."
   },
   "instructions": {
-    "ar": "حافظ على عمود فقري محايد وتنفس بثبات وتوقف عند أي ألم حاد.",
-    "en": "Maintain neutral spine, steady breathing, and stop if sharp pain appears."
+    "ar": "1. ابدأ في وضع لانج منخفض مع القدم الأمامية ثابتة والركبة الخلفية على الأرض أو مرتفعة حسب المستوى.\n2. ضع اليد المقابلة للقدم الأمامية على الأرض للحفاظ على التوازن.\n3. افتح الصدر ولف الجذع نحو الساق الأمامية مع رفع الذراع الحرة للأعلى.\n4. حافظ على استقرار القدم الأمامية ولا تدع الركبة تنهار للداخل.\n5. عد ببطء إلى وضع البداية ثم كرر بنفس الجودة قبل تغيير الجهة.\n6. استخدم مدى مريحاً وخالياً من الألم الحاد أو الضغط المزعج في أسفل الظهر.",
+    "en": "1. Start in a low lunge with the front foot planted and the back knee either down or hovering based on your level.\n2. Place the hand opposite the front foot on the floor for support.\n3. Open the chest and rotate the torso toward the front leg while reaching the free arm upward.\n4. Keep the front foot stable and do not let the knee collapse inward.\n5. Return slowly to the start and repeat with the same quality before switching sides.\n6. Work only through a comfortable range and avoid any sharp pain or irritating low-back pressure."
   },
   "reportMetrics": {
     "primary": [
@@ -235,104 +290,5 @@
       "SYMMETRY"
     ]
   },
-  "hasPositionChecks": true,
-  "_database": {
-    "id": "71bbb9d0-cbcd-42b6-8df7-1dba327c7077",
-    "categoryId": "da4f0d15-a7a4-4d8e-abd2-73ee921ef7dc",
-    "countingMethodId": "f4d48aef-1606-4f23-8c61-7b4a2546f990",
-    "publishedAt": "2026-04-20T17:26:25.231Z",
-    "createdAt": "2026-04-20T17:26:25.232Z",
-    "updatedAt": "2026-04-20T17:26:34.280Z",
-    "deletedAt": null,
-    "isFeatured": false,
-    "createdBy": null,
-    "updatedBy": null,
-    "repCountingConfig": null,
-    "bilateralConfig": null,
-    "isBilateral": false,
-    "supportsWeight": false,
-    "minWeight": null,
-    "maxWeight": null,
-    "defaultWeight": null,
-    "reportMetrics": {
-      "mode": "reps",
-      "version": 1,
-      "primaryKpi": "repQuality",
-      "secondaryKpis": [
-        "avgFormScore",
-        "avgRom"
-      ]
-    },
-    "media": [],
-    "poseVariants": [
-      {
-        "id": "4331d194-7adb-4bc5-bf21-b3b304a346d9",
-        "sortOrder": 1,
-        "description": null,
-        "trackedJointsConfig": [
-          {
-            "role": "primary",
-            "joint": "left_hip",
-            "range": {
-              "pad": {
-                "max": 180,
-                "min": 110
-              },
-              "normal": {
-                "max": 180,
-                "min": 125
-              },
-              "perfect": {
-                "max": 175,
-                "min": 140
-              },
-              "warning": {
-                "max": 110,
-                "min": 95
-              }
-            },
-            "startPose": {
-              "max": 180,
-              "min": 120
-            },
-            "stateMessages": {
-              "perfect": {
-                "ar": "مدى ورك ممتاز",
-                "en": "Great hip range"
-              },
-              "warning": {
-                "ar": "قلل المدى إن الركبة تضايقك",
-                "en": "Ease range if knee complains"
-              }
-            }
-          },
-          {
-            "role": "secondary",
-            "joint": "left_knee",
-            "range": {
-              "normal": {
-                "max": 125,
-                "min": 85
-              },
-              "perfect": {
-                "max": 118,
-                "min": 92
-              }
-            },
-            "startPose": {
-              "max": 130,
-              "min": 85
-            },
-            "stateMessages": {
-              "perfect": {
-                "ar": "ركبة مستقرة",
-                "en": "Knee steady"
-              }
-            }
-          }
-        ]
-      }
-    ],
-    "validationWarning": null
-  }
+  "hasPositionChecks": true
 }

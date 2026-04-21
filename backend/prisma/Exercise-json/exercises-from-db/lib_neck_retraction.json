@@ -152,12 +152,12 @@
     }
   ],
   "description": {
-    "ar": "تمرين مكتبة: سحب ذقن.",
-    "en": "Library exercise: Chin tuck / cervical retraction."
+    "ar": "سحب الذقن للخلف بلطف (إعادة وضع رقبية) يقلل الزحف الأمامي للرأس ويخفف إجهاد العضلات الخلفية للرقبة مع الجلوس.",
+    "en": "A gentle chin tuck (cervical retraction) reduces forward head posture and eases strain on the deep neck flexors and upper neck during prolonged sitting."
   },
   "instructions": {
-    "ar": "حافظ على عمود فقري محايد وتنفس بثبات وتوقف عند أي ألم حاد.",
-    "en": "Maintain neutral spine, steady breathing, and stop if sharp pain appears."
+    "ar": "1. اجلس أو قف منتصباً وانظر للأمام.\n2. انزلق الرأس للخلف كأن تُبعد أذنيك عن الكتفين دون رفع الذقن للأعلى.\n3. احتفظ لثانيتين ثم ارخِ الرقبة برفق.\n4. كرر 8–12 مرة ببطء مع تنفس طبيعي.\n5. لا تضغط بقوة على الفك أو الرقبة.\n6. توقف عند دوخة أو ألم حاد أو وخز في الذراعين.",
+    "en": "1. Sit or stand tall with the eyes level.\n2. Glide the head backward as if making space between the ears and shoulders—avoid lifting the chin upward.\n3. Hold for about two seconds, then relax gently.\n4. Repeat 8–12 slow reps with normal breathing.\n5. Do not forcefully jam the jaw or neck.\n6. Stop for dizziness, sharp pain, or arm tingling."
   },
   "reportMetrics": {
     "primary": [

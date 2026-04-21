@@ -227,12 +227,12 @@
     }
   ],
   "description": {
-    "ar": "تمرين مكتبة: قفز جانبي منخفض.",
-    "en": "Library exercise: Low-impact jack."
+    "ar": "القفزات الجانبية منخفضة التأثير ترفع معدل النبض بخطوات جانبية خفيفة أو ضربات قدم بدون قفز كامل، مناسبة للإحماء أو التكييف عند الحساسية للركبة.",
+    "en": "Low-impact jacks raise heart rate with small side steps or foot taps instead of full jumps, useful for warm-ups or conditioning when knee impact must stay low."
   },
   "instructions": {
-    "ar": "حافظ على عمود فقري محايد وتنفس بثبات وتوقف عند أي ألم حاد.",
-    "en": "Maintain neutral spine, steady breathing, and stop if sharp pain appears."
+    "ar": "1. قف منتصباً والذراعان على الجانبين أو أمام الصدر.\n2. خطوة خفيفة لليمين مع فتح الذراعين أو رفعهما حسب التصميم.\n3. ارجع للوسط ثم كرر لليسار.\n4. حافظ على ثبات الجذع ونظر للأمام.\n5. لا تدع الركبتين ينهاران للداخل.\n6. زد الإيقاع تدريجياً إذا بقي الألم بعيداً.",
+    "en": "1. Stand tall with arms at the sides or in front of the chest.\n2. Step lightly to the right while opening the arms or raising them as programmed.\n3. Return to center, then repeat to the left.\n4. Keep the trunk steady and eyes forward.\n5. Do not let the knees collapse inward.\n6. Gradually increase tempo if everything stays pain-free."
   },
   "reportMetrics": {
     "primary": [

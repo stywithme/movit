@@ -408,12 +408,12 @@
     }
   ],
   "description": {
-    "ar": "تمرين مكتبة: جلوس عميق ثابت.",
-    "en": "Library exercise: Deep squat hold."
+    "ar": "الاحتفاظ بقرفصاء عميقة لعدة ثوانٍ يحسّن مرونة الكاحل والورك ويُدرَّب على وضعية قرفصاء مريحة دون فقدان التوازن.",
+    "en": "Holding a deep squat for time improves ankle and hip mobility and trains a stable squat bottom position."
   },
   "instructions": {
-    "ar": "حافظ على عمود فقري محايد وتنفس بثبات وتوقف عند أي ألم حاد.",
-    "en": "Maintain neutral spine, steady breathing, and stop if sharp pain appears."
+    "ar": "1. قف بقدمين بعرض الكتفين تقريباً وأصابع القدمين قليلاً للخارج.\n2. انزل ببطء حتى عمق مريح مع إبقاء الكعبين على الأرض قدر الإمكان.\n3. حافظ على صدر مرتفع ووزن متوزع على القدمين بالكامل.\n4. تنفس بطيء وثابت أثناء الاحتفاظ بالوضع.\n5. ابدأ بـ20–45 ثانية وزد تدريجياً حسب القدرة.\n6. توقف عند ألم حاد في الركبة أو الورك أو الدوخة.",
+    "en": "1. Stand with feet about shoulder width and toes slightly turned out.\n2. Lower slowly to a comfortable depth while keeping the heels down as much as possible.\n3. Keep the chest tall and weight evenly through both feet.\n4. Breathe slowly and steadily while you hold.\n5. Start with 20–45 seconds and progress gradually as tolerated.\n6. Stop if you feel sharp knee or hip pain or dizziness."
   },
   "reportMetrics": {
     "primary": [

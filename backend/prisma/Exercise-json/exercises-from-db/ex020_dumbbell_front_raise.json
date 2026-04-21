@@ -1,0 +1,226 @@
+{
+  "slug": "ex020_dumbbell_front_raise",
+  "status": "published",
+  "movementPattern": "PUSH_VERTICAL",
+  "loadCapability": "EXTERNAL_LOAD_REQUIRED",
+  "familyKey": "push_vertical_family",
+  "familyOrder": 120,
+  "name": {
+    "ar": "رفع أمامي بالدمبل (ذراع يسرى)",
+    "en": "Dumbbell front raise (left arm)"
+  },
+  "category": {
+    "code": "shoulders",
+    "name": {
+      "ar": "تمارين الأكتاف",
+      "en": "Shoulders"
+    }
+  },
+  "countingMethod": "up_down",
+  "muscles": [
+    "front_delts",
+    "upper_pectoral"
+  ],
+  "equipment": [
+    "dumbbell"
+  ],
+  "tags": [
+    "isolation",
+    "upper_body",
+    "group_2"
+  ],
+  "repCountingConfig": {
+    "reps": 10,
+    "minRepIntervalMs": 1500,
+    "maxRepIntervalMs": 3000
+  },
+  "supportsWeight": true,
+  "poseVariants": [
+    {
+      "name": {
+        "ar": "جانبي - الجزء العلوي",
+        "en": "Upper-body side view"
+      },
+      "posePosition": "standing_side_upper",
+      "expectedPostures": [
+        "standing"
+      ],
+      "expectedDirections": [
+        "side"
+      ],
+      "expectedRegions": [
+        "upper_body"
+      ],
+      "trackedJoints": [
+        {
+          "joint": "left_shoulder",
+          "role": "primary",
+          "pairedWith": "right_shoulder",
+          "startPose": {
+            "min": 0,
+            "max": 20
+          },
+          "upRange": {
+            "perfect": {
+              "min": 80,
+              "max": 100
+            },
+            "normal": {
+              "min": 70,
+              "max": 80
+            },
+            "pad": {
+              "min": 60,
+              "max": 70
+            },
+            "warning": {
+              "min": 50,
+              "max": 60
+            }
+          },
+          "downRange": {
+            "perfect": {
+              "min": 0,
+              "max": 20
+            },
+            "normal": {
+              "min": 20,
+              "max": 30
+            },
+            "pad": {
+              "min": 30,
+              "max": 40
+            }
+          },
+          "stateMessages": {
+            "perfect": {
+              "up": {
+                "ar": "ممتاز! الذراع تصل لمستوى مناسب أمام الجسم",
+                "en": "Perfect! The arm reaches a strong front-raise height"
+              },
+              "down": {
+                "ar": "ممتاز! نزول هادئ تحت تحكم",
+                "en": "Perfect! Smooth controlled lowering"
+              }
+            },
+            "warning": {
+              "up": {
+                "ar": "ارفع أكثر قليلاً إذا بقي الجذع ثابتاً",
+                "en": "Lift a little higher if the torso stays stable"
+              }
+            }
+          }
+        },
+        {
+          "joint": "left_elbow",
+          "role": "secondary",
+          "range": {
+            "perfect": {
+              "min": 0,
+              "max": 10
+            },
+            "normal": {
+              "min": 0,
+              "max": 10
+            },
+            "warning": {
+              "min": 10,
+              "max": 25
+            }
+          },
+          "startPose": {
+            "min": 0,
+            "max": 10
+          },
+          "stateMessages": {
+            "perfect": {
+              "ar": "المرفق ثابت تقريباً أثناء الرفع",
+              "en": "The elbow stays nearly fixed during the raise"
+            }
+          }
+        },
+        {
+          "joint": "left_wrist",
+          "role": "secondary",
+          "range": {
+            "perfect": {
+              "min": 0,
+              "max": 10
+            },
+            "normal": {
+              "min": 0,
+              "max": 12
+            }
+          },
+          "startPose": {
+            "min": 0,
+            "max": 10
+          },
+          "stateMessages": {
+            "perfect": {
+              "ar": "المعصم ثابت ومحايد",
+              "en": "The wrist stays neutral and steady"
+            }
+          }
+        }
+      ],
+      "positionChecks": [
+        {
+          "id": "front_raise_torso_line",
+          "type": "vertical_alignment",
+          "landmarks": {
+            "primary": "left_shoulder",
+            "secondary": "left_hip",
+            "tertiary": "left_knee",
+            "quaternary": "left_ankle"
+          },
+          "condition": {
+            "operator": "approximately_equal",
+            "threshold": 0.1
+          },
+          "activePhases": [
+            "up"
+          ],
+          "errorMessage": {
+            "ar": "لا ترجّح الجذع للخلف أثناء الرفع.",
+            "en": "Do not lean the torso backward during the raise."
+          },
+          "severity": "tip",
+          "cooldownMs": 2200,
+          "minErrorFrames": 4
+        }
+      ],
+      "feedbackMessages": {
+        "motivational": [
+          {
+            "ar": "رفع أمامي ممتاز",
+            "en": "Excellent front raise"
+          }
+        ],
+        "tips": [
+          {
+            "ar": "ارفع الذراع بالكتف لا بالزخم من الظهر.",
+            "en": "Raise with the shoulder, not with momentum from the back."
+          }
+        ]
+      }
+    }
+  ],
+  "description": {
+    "ar": "هذا الإعداد يتتبع الرفع الأمامي بالدمبل للذراع اليسرى من الجانب؛ ضع الكاميرا بحيث يظهر الجانب الأيسر بوضوح. التمرين عزل للدالية الأمامية ويحتاج تحكماً جيداً لتجنب الزخم أو ميل الجذع للخلف.",
+    "en": "This configuration tracks a dumbbell front raise for the left arm in side view; set the camera so the left side is clearly visible. It is an anterior-deltoid isolation that needs solid control to avoid momentum or leaning backward."
+  },
+  "instructions": {
+    "ar": "0. استخدم ذراعاً واحدة (يسرى) مع الدمبل، ووجّه الجانب الأيسر للكاميرا.\n1. قف منتصباً والدمبل أمام الفخذين.\n2. شد الجذع وابقَ ثابتاً قبل بداية الرفع.\n3. ارفع الذراع أمام الجسم حتى مستوى قريب من الكتف.\n4. لا تندفع بالجذع للخلف ولا تثنِ المرفق أكثر من اللازم.\n5. انزل ببطء حتى يعود الدمبل لوضع البداية.\n6. استخدم وزناً أخف إذا بدأ الجذع يتحرك مع كل عدة.",
+    "en": "0. Use a single dumbbell in the left hand and face your left side to the camera.\n1. Stand tall with the dumbbell in front of the thighs.\n2. Brace the trunk and become still before the lift starts.\n3. Raise the arm in front of the body to roughly shoulder height.\n4. Do not lean backward and do not over-bend the elbow.\n5. Lower slowly until the dumbbell returns to the start.\n6. Use a lighter load if the torso starts moving on every rep."
+  },
+  "reportMetrics": {
+    "primary": [
+      "FORM_SCORE"
+    ],
+    "excluded": [
+      "HOLD_DURATION"
+    ]
+  },
+  "hasPositionChecks": true
+}

@@ -528,12 +528,12 @@
     }
   ],
   "description": {
-    "ar": "تمرين مكتبة: ضغط مائل لأسفل.",
-    "en": "Library exercise: Decline push-up."
+    "ar": "الضغط المائل لأسفل يزيد الحمل على الجزء العلوي من الصدر والكتفين مع الحفاظ على خط الجذع، ويحتاج سطحاً آمناً وثابتاً للقدمين.",
+    "en": "The decline push-up increases demand on the upper chest and shoulders while keeping a long trunk line, and needs a stable, safe surface for the feet."
   },
   "instructions": {
-    "ar": "حافظ على عمود فقري محايد وتنفس بثبات وتوقف عند أي ألم حاد.",
-    "en": "Maintain neutral spine, steady breathing, and stop if sharp pain appears."
+    "ar": "1. ثبّت القدمين على مقعد أو سطح مرتفع ومستقر.\n2. خذ وضعية بلانك عالية مع اليدين تحت الكتفين تقريباً.\n3. انزل بصدرك نحو الأرض مع ضمّ المرفقين قليلاً نحو الجسم.\n4. ادفع للأعلى بخط مستقيم من الرأس إلى الكعبين.\n5. لا تدع الوسط ينهار أو الرأس يتدلى.\n6. ارتفع بزاوية أقل إذا شعرت بضغط مفرط على المعصم.",
+    "en": "1. Secure the feet on a stable bench or elevated surface.\n2. Set a tall plank with hands roughly under the shoulders.\n3. Lower the chest toward the floor with elbows tracking slightly inward.\n4. Press up in one line from head to heels.\n5. Do not let the midsection sag or the head hang.\n6. Reduce the decline angle if wrist pressure feels excessive."
   },
   "reportMetrics": {
     "primary": [

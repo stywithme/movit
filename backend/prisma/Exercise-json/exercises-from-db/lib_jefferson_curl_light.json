@@ -300,12 +300,12 @@
     }
   ],
   "description": {
-    "ar": "تمرين مكتبة: جيفرسون خفيف.",
-    "en": "Library exercise: Jefferson curl (light)."
+    "ar": "جيفرسون خفيف يدرّب انثناء العمود الفقري تحكّماً مع حمل بسيط جداً؛ لا يناسب الجميع ويُفضّل الإشراف عند وجود تاريخ إصابة ظهر.",
+    "en": "A light Jefferson curl practices controlled spinal flexion under very small load; it is not for everyone and supervision is wise with a back injury history."
   },
   "instructions": {
-    "ar": "حافظ على عمود فقري محايد وتنفس بثبات وتوقف عند أي ألم حاد.",
-    "en": "Maintain neutral spine, steady breathing, and stop if sharp pain appears."
+    "ar": "1. قف على منصة منخفضة مع وزن خفيف جداً أو بدون وزن في البداية.\n2. انحنِ من الرأس نزولاً قطعة قطعة (ذقن، صدر، وسط، أسفل) دون اندفاع مفاجئ.\n3. انزل حتى شد معتدل في مؤخرة الفخذ ثم اصعد بنفس التسلسل ببطء.\n4. لا تتجاوز نطاقاً يسبب ألماً أو وخزاً.\n5. نفّذ 5–8 تكرارات فقط وبجودة حركة.\n6. توقف فوراً عند ألم حاد أو تنميل أو دوخة.",
+    "en": "1. Stand on a low platform with very light load or none at first.\n2. Round slowly segment by segment (chin, upper back, mid, low) without jerking.\n3. Lower to a mild hamstring pull, then reverse the sequence slowly.\n4. Do not push into pain, numbness, or nerve symptoms.\n5. Keep volume low—about 5–8 quality reps.\n6. Stop immediately for sharp pain, numbness, or dizziness."
   },
   "supportsWeight": true,
   "reportMetrics": {

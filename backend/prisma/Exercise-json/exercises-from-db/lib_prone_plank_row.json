@@ -276,12 +276,12 @@
     }
   ],
   "description": {
-    "ar": "تمرين مكتبة: تجديف متقلب.",
-    "en": "Library exercise: Renegade row."
+    "ar": "التجديف من بلانك متقلب يجمع بين ثبات الجذع وسحب للظهر، ويحمّل الكتفين والألوية مع منع دوران الحوض أثناء كل سحبة.",
+    "en": "The renegade row combines anti-rotation plank work with a horizontal pull, loading the shoulders and upper back while blocking hip twist on each rep."
   },
   "instructions": {
-    "ar": "حافظ على عمود فقري محايد وتنفس بثبات وتوقف عند أي ألم حاد.",
-    "en": "Maintain neutral spine, steady breathing, and stop if sharp pain appears."
+    "ar": "1. خذ وضعية بلانك عالية على اليدين مع الوزنين تحت الكتفين تقريباً.\n2. شد الجذع وافرد الساقين خلفك دون هبوط الوسط.\n3. اسحب الوزن نحو الورك دون أن يلتف الصدر أو الحوض.\n4. ضع الوزن بهدوء وكرر على الجانب الآخر.\n5. لا تدور الجذع للوصول بأقصى مدى.\n6. خفف الحمل إذا فقدت خط البلانك.",
+    "en": "1. Set a tall plank on the hands with weights roughly under the shoulders.\n2. Brace the trunk and keep the legs long without sagging the midsection.\n3. Row the weight toward the hip without rotating the chest or pelvis.\n4. Lower the weight calmly and repeat on the other side.\n5. Do not twist the trunk to chase extra range.\n6. Reduce load if the plank line breaks."
   },
   "supportsWeight": true,
   "reportMetrics": {

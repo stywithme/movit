@@ -321,12 +321,12 @@
     }
   ],
   "description": {
-    "ar": "تمرين مكتبة: زحف الدب.",
-    "en": "Library exercise: Bear crawl."
+    "ar": "زحف الدب يجمع بين تحميل الكتفين والركبتين والجذع في وضع رباعي مع رفع الركبتين قليلاً عن الأرض، وهو ممتاز للتنسيق والثبات الديناميكي.",
+    "en": "The bear crawl combines shoulder, knee, and trunk loading in a quadruped position with the knees slightly floated, and is great for coordination and dynamic stability."
   },
   "instructions": {
-    "ar": "حافظ على عمود فقري محايد وتنفس بثبات وتوقف عند أي ألم حاد.",
-    "en": "Maintain neutral spine, steady breathing, and stop if sharp pain appears."
+    "ar": "1. اتخذ وضعية رباعي مع اليدين تحت الكتفين والركبتين تحت الوركين.\n2. ارفع الركبتين قليلاً عن الأرض مع شد الجذع.\n3. تحرك اليد المعاكسة مع الرجل بخطوات صغيرة وثابتة.\n4. حافظ على الظهر مستوياً دون هبوط أو قوس مفرط.\n5. لا تدع الرأس يتدلى أو الوركين يرتفعان بشكل كبير.\n6. قلل المسافة أو السرعة إذا فقد التحكم.",
+    "en": "1. Set quadruped with hands under the shoulders and knees under the hips.\n2. Float the knees slightly off the floor while bracing the trunk.\n3. Move opposite hand and foot in small, steady steps.\n4. Keep the back flat without sagging or excessive arching.\n5. Do not let the head hang or the hips hike high.\n6. Reduce distance or speed if control is lost."
   },
   "reportMetrics": {
     "primary": [

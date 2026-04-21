@@ -19,7 +19,8 @@
   "countingMethod": "up_down",
   "muscles": [
     "lats",
-    "biceps"
+    "biceps",
+    "upper_back"
   ],
   "equipment": [
     "resistance_band",
@@ -81,8 +82,8 @@
                 "en": "Perfect! Long hang"
               },
               "down": {
-                "ar": "ممتاز! صدر للعارضة",
-                "en": "Perfect! Chest-to-bar quality"
+                "ar": "ممتاز! سحب قوي نحو الصدر بكتفين مثبتين",
+                "en": "Perfect! Strong pull toward the chest with stable shoulders"
               }
             },
             "warning": {
@@ -161,8 +162,8 @@
                 "en": "Perfect! Long hang"
               },
               "down": {
-                "ar": "ممتاز! صدر للعارضة",
-                "en": "Perfect! Chest-to-bar quality"
+                "ar": "ممتاز! سحب قوي نحو الصدر بكتفين مثبتين",
+                "en": "Perfect! Strong pull toward the chest with stable shoulders"
               }
             },
             "warning": {
@@ -210,6 +211,42 @@
               "min": 10
             }
           }
+        },
+        {
+          "joint": "spine",
+          "role": "secondary",
+          "startPose": {
+            "max": 185,
+            "min": 168
+          },
+          "stateMessages": {
+            "perfect": {
+              "ar": "عمود فقري محايد مع انحناء خفيف للأعلى فقط",
+              "en": "Neutral spine with only a slight proud-chest lean"
+            },
+            "warning": {
+              "ar": "قلل الميل الخلفي الشديد أو قوس الظهر الزائد",
+              "en": "Reduce excessive lean-back or overarching"
+            }
+          },
+          "range": {
+            "pad": {
+              "max": 185,
+              "min": 158
+            },
+            "normal": {
+              "max": 185,
+              "min": 165
+            },
+            "perfect": {
+              "max": 183,
+              "min": 170
+            },
+            "warning": {
+              "max": 172,
+              "min": 150
+            }
+          }
         }
       ],
       "positionChecks": [
@@ -253,8 +290,8 @@
             "en": "Keep shoulders down and slightly back (scapular set)."
           },
           {
-            "ar": "لا تفرط في تمديد الرقبة؛ نظرة أمامية قصيرة.",
-            "en": "Avoid craning the neck; keep a short forward gaze."
+            "ar": "وجّه المرفقين قليلاً للأمام وليس للخلف عند نهاية السحب.",
+            "en": "Finish with elbows tracking slightly forward, not flared behind you."
           }
         ]
       },
@@ -391,12 +428,12 @@
     }
   ],
   "description": {
-    "ar": "تمرين مكتبة: سحب لاتس بحبل.",
-    "en": "Library exercise: Lat pulldown (band)."
+    "ar": "سحب عمودي للظهر بالحبل أو الجهاز لتفعيل العضلة الظهرية العريضة والعضلة ذات الرأسين وعضلات الصدر الخلفي مع ضبط لوح الكتف.",
+    "en": "A vertical pull for the lats and biceps with scapular control; band or cable both fit the same pattern."
   },
   "instructions": {
-    "ar": "حافظ على عمود فقري محايد وتنفس بثبات وتوقف عند أي ألم حاد.",
-    "en": "Maintain neutral spine, steady breathing, and stop if sharp pain appears."
+    "ar": "اجلس أو قف بثبات، ثم اسحب المقبض بخط نحو أعلى الصدر مع إبقاء الكتفين للأسفل قليلاً. ابدأ بذراعين أطول قليلاً في الأعلى، ثم انزل بتحكم حتى تمتد جيداً. تجنب الاندفاع للخلف بالجذع أو لف الرسغين للداخل. زفر أثناء السحب وشهيق أثناء العودة.",
+    "en": "Sit or stand tall, then pull the handle in an arc toward the upper chest while keeping the shoulders slightly down. Start with a longer reach overhead, then return with control through a full stretch. Avoid snapping the torso backward or collapsing the wrists. Exhale as you pull and inhale as you return."
   },
   "reportMetrics": {
     "primary": [
@@ -511,8 +548,8 @@
                   "en": "Perfect! Long hang"
                 },
                 "down": {
-                  "ar": "ممتاز! صدر للعارضة",
-                  "en": "Perfect! Chest-to-bar quality"
+                  "ar": "ممتاز! سحب قوي نحو الصدر بكتفين مثبتين",
+                  "en": "Perfect! Strong pull toward the chest with stable shoulders"
                 }
               },
               "warning": {
@@ -591,8 +628,8 @@
                   "en": "Perfect! Long hang"
                 },
                 "down": {
-                  "ar": "ممتاز! صدر للعارضة",
-                  "en": "Perfect! Chest-to-bar quality"
+                  "ar": "ممتاز! سحب قوي نحو الصدر بكتفين مثبتين",
+                  "en": "Perfect! Strong pull toward the chest with stable shoulders"
                 }
               },
               "warning": {
@@ -603,6 +640,42 @@
               }
             },
             "invertIndicator": true
+          },
+          {
+            "role": "secondary",
+            "joint": "spine",
+            "range": {
+              "pad": {
+                "max": 185,
+                "min": 158
+              },
+              "normal": {
+                "max": 185,
+                "min": 165
+              },
+              "perfect": {
+                "max": 183,
+                "min": 170
+              },
+              "warning": {
+                "max": 172,
+                "min": 150
+              }
+            },
+            "startPose": {
+              "max": 185,
+              "min": 168
+            },
+            "stateMessages": {
+              "perfect": {
+                "ar": "عمود فقري محايد مع انحناء خفيف للأعلى فقط",
+                "en": "Neutral spine with only a slight proud-chest lean"
+              },
+              "warning": {
+                "ar": "قلل الميل الخلفي الشديد أو قوس الظهر الزائد",
+                "en": "Reduce excessive lean-back or overarching"
+              }
+            }
           }
         ]
       }

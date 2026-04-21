@@ -18,6 +18,7 @@
   },
   "countingMethod": "up_down",
   "muscles": [
+    "front_delts",
     "side_delts",
     "triceps",
     "chest_muscle"
@@ -134,20 +135,36 @@
           },
           "stateMessages": {
             "pad": {
-              "ar": "مقبول، لكن يمكنك التحسن",
-              "en": "Acceptable, but you can improve"
+              "up": {
+                "ar": "مقبول، لكن يمكنك التحسن",
+                "en": "Acceptable, but you can improve"
+              }
             },
             "normal": {
-              "ar": "جيد، حاول الإفرداد الكامل",
-              "en": "Good, try full extension"
+              "up": {
+                "ar": "جيد، حاول الإفرداد الكامل",
+                "en": "Good, try full extension"
+              },
+              "down": {
+                "ar": "جيد، حاول النزول لمستوى الكتف",
+                "en": "Good, try lowering to shoulder level"
+              }
             },
             "perfect": {
-              "ar": "ممتاز! ضغط مثالي",
-              "en": "Perfect! Great press"
+              "up": {
+                "ar": "ممتاز! ذراعك مفرودة بالكامل",
+                "en": "Perfect! Arm fully extended"
+              },
+              "down": {
+                "ar": "ممتاز! ضغط مثالي",
+                "en": "Perfect! Great press"
+              }
             },
             "warning": {
-              "ar": "افرد ذراعك تماماً",
-              "en": "Fully extend your arm"
+              "up": {
+                "ar": "افرد ذراعك تماماً في الأعلى",
+                "en": "Fully extend at the top"
+              }
             }
           },
           "pairedWith": "left_elbow",
@@ -522,12 +539,12 @@
     }
   ],
   "description": {
-    "ar": "تمرين لتقوية عضلات الكتف الأمامية والجانبية",
-    "en": "Exercise to strengthen front and side deltoid muscles"
+    "ar": "ضغط عمودي فوق الرأس لتطوير الدالية الأمامية والوسطى والعضد مع الحفاظ على ثبات الجذع.",
+    "en": "A vertical overhead press to build the anterior and lateral deltoids and triceps while keeping the trunk braced."
   },
   "instructions": {
-    "ar": "ابدأ بالأوزان عند مستوى الكتف، ثم ادفعها للأعلى فوق رأسك",
-    "en": "Start with weights at shoulder level, then press up overhead"
+    "ar": "قف بصدر مرتفع وعضلات البطن خفيفة. ابدأ بالأوزان عند مستوى الكتف تقريباً، ثم ادفع للأعلى بخط مستقيم دون دفع الرأس للأمام أو قوس زائد في أسفل الظهر. انزل ببطء إلى نفس المسار. زفر عند الصعود وشهيق عند النزول.",
+    "en": "Stand tall with a light core brace. Start with the weights near shoulder height, then press straight overhead without jutting the chin or flaring the ribs. Lower slowly on the same path. Exhale as you press up and inhale as you come down."
   },
   "reportMetrics": {
     "primary": [
@@ -688,20 +705,36 @@
             "pairedWith": "left_elbow",
             "stateMessages": {
               "pad": {
-                "ar": "مقبول، لكن يمكنك التحسن",
-                "en": "Acceptable, but you can improve"
+                "up": {
+                  "ar": "مقبول، لكن يمكنك التحسن",
+                  "en": "Acceptable, but you can improve"
+                }
               },
               "normal": {
-                "ar": "جيد، حاول الإفرداد الكامل",
-                "en": "Good, try full extension"
+                "up": {
+                  "ar": "جيد، حاول الإفرداد الكامل",
+                  "en": "Good, try full extension"
+                },
+                "down": {
+                  "ar": "جيد، حاول النزول لمستوى الكتف",
+                  "en": "Good, try lowering to shoulder level"
+                }
               },
               "perfect": {
-                "ar": "ممتاز! ضغط مثالي",
-                "en": "Perfect! Great press"
+                "up": {
+                  "ar": "ممتاز! ذراعك مفرودة بالكامل",
+                  "en": "Perfect! Arm fully extended"
+                },
+                "down": {
+                  "ar": "ممتاز! ضغط مثالي",
+                  "en": "Perfect! Great press"
+                }
               },
               "warning": {
-                "ar": "افرد ذراعك تماماً",
-                "en": "Fully extend your arm"
+                "up": {
+                  "ar": "افرد ذراعك تماماً في الأعلى",
+                  "en": "Fully extend at the top"
+                }
               }
             }
           },

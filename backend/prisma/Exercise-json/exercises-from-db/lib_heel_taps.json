@@ -270,12 +270,12 @@
     }
   ],
   "description": {
-    "ar": "تمرين مكتبة: لمس كعبين.",
-    "en": "Library exercise: Heel taps (dead bug variant)."
+    "ar": "لمس الكعبين من وضعية شبيهة بـ«ديد باغ» يحافظ على ثبات الحوض مع تحريك الركبتين، ويُستخدم لتطوير التحكم في الجذع دون حمل ثقيل.",
+    "en": "Heel taps from a dead-bug position keep the pelvis steady while moving the knees, building trunk control without heavy loading."
   },
   "instructions": {
-    "ar": "حافظ على عمود فقري محايد وتنفس بثبات وتوقف عند أي ألم حاد.",
-    "en": "Maintain neutral spine, steady breathing, and stop if sharp pain appears."
+    "ar": "1. استلق على ظهرك وارفع الركبتين فوق الوركين تقريباً مع ثني 90° في الورك والركبة.\n2. اضغط أسفل الظهر بلطف نحو الأرض.\n3. انزل قدم واحدة لتلامس الكعب الأرض ثم أعدها.\n4. كرر على الجانب الآخر مع الحفاظ على عدم اهتزاز الحوض.\n5. لا تدع أسفل الظهر ينفصل عن الأرض أثناء الحركة.\n6. قلل عمق الركبة إذا فقد التحكم.",
+    "en": "1. Lie on your back with hips and knees near 90°.\n2. Gently press the low back toward the floor.\n3. Lower one foot to tap the heel, then return.\n4. Alternate sides while keeping the pelvis from rocking.\n5. Do not let the low back peel away during the motion.\n6. Reduce knee depth if control is lost."
   },
   "reportMetrics": {
     "primary": [

@@ -19,6 +19,7 @@
   "countingMethod": "up_down",
   "muscles": [
     "chest_muscle",
+    "front_delts",
     "triceps"
   ],
   "equipment": [
@@ -558,12 +559,12 @@
     }
   ],
   "description": {
-    "ar": "تمرين مكتبة: ضغط دمبل مستلقي.",
-    "en": "Library exercise: Dumbbell bench press."
+    "ar": "ضغط أفقي بالدمبل على المقعد لتطوير الصدر والكتف الأمامي والعضد مع مدى أكبر قليلاً من البار.",
+    "en": "A horizontal dumbbell bench press to build chest, anterior shoulder, and triceps strength with a slightly larger range than a barbell."
   },
   "instructions": {
-    "ar": "حافظ على عمود فقري محايد وتنفس بثبات وتوقف عند أي ألم حاد.",
-    "en": "Maintain neutral spine, steady breathing, and stop if sharp pain appears."
+    "ar": "اثبت القدمين على الأرض واضغط ظهرك بلطف على المقعد. ابدأ بالدمبلتين فوق الصدر مع زاوية خفيفة في المرفقين، ثم انزل بخط مستقيم حتى يقترب الذراعان من خط الصدر دون لف الكتفين للأمام. ادفع للأعلى دون اصطدام الدمبلتين بقوة. خذ شهيقاً عند النزول وزفر عند الصعود.",
+    "en": "Plant the feet and set gentle upper-back pressure on the bench. Start with the dumbbells over the chest and a soft bend in the elbows, then lower in a straight line until the upper arms approach chest level without dumping the shoulders forward. Press up without slamming the bells together. Inhale on the way down and exhale on the way up."
   },
   "supportsWeight": true,
   "reportMetrics": {

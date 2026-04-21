@@ -244,12 +244,12 @@
     }
   ],
   "description": {
-    "ar": "تمرين مكتبة: كوبنهاغن رافعة قصيرة.",
-    "en": "Library exercise: Copenhagen short lever."
+    "ar": "تمرين كوبنهاغن بذراع قصيرة يقلل عزم الجذع مقارنة بالنسخة الكاملة، مع الإبقاء على تحميل العضلات المضافة للفخذ والورك الداخلي، وهو مناسب كبداية قبل تمديد الذراع.",
+    "en": "The short-lever Copenhagen plank reduces trunk torque versus the full version while still loading the adductors and medial hip, making it a useful entry before longer-lever progressions."
   },
   "instructions": {
-    "ar": "حافظ على عمود فقري محايد وتنفس بثبات وتوقف عند أي ألم حاد.",
-    "en": "Maintain neutral spine, steady breathing, and stop if sharp pain appears."
+    "ar": "1. استلق على جانبك مع الساق السفلى مستقيمة على مقعد أو منصة.\n2. ضع الركبة العلوية قرب مرفق الدعم لتقصير العزم.\n3. ارفع الورك عن الأرض مع خط مستقيم من الرأس إلى القدمين.\n4. ثبّت التنفس ولا تدع الورك ينهار.\n5. لا تبدأ النسخة الكاملة قبل إتقان هذا الوضع.\n6. توقف عند ألم حاد في أعلى الفخذ الداخلي أو الورك.",
+    "en": "1. Lie on your side with the bottom leg supported on a bench or platform.\n2. Set the top knee closer to the support elbow to shorten the lever.\n3. Lift the hip off the floor in a straight line from head to feet.\n4. Breathe steadily and avoid hip sag.\n5. Do not rush to the full lever before this position feels solid.\n6. Stop if you feel sharp pain in the groin or hip."
   },
   "reportMetrics": {
     "primary": [

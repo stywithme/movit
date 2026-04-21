@@ -322,12 +322,12 @@
     }
   ],
   "description": {
-    "ar": "تمرين مكتبة: نصف قومة تركية.",
-    "en": "Library exercise: Half Turkish get-up."
+    "ar": "نصف القومة التركية يدرّب ثبات الكتف والجذع أثناء الانتقال من الاستلقاء إلى الجلوس أو الوقوف الجزئي مع وزن فوق الصدر، وهو مرحلة تأسيسية قبل القومة الكاملة.",
+    "en": "The half Turkish get-up trains shoulder and trunk stability while moving from supine toward sitting or partial standing with load overhead, and is a foundational step before the full get-up."
   },
   "instructions": {
-    "ar": "حافظ على عمود فقري محايد وتنفس بثبات وتوقف عند أي ألم حاد.",
-    "en": "Maintain neutral spine, steady breathing, and stop if sharp pain appears."
+    "ar": "1. استلق على ظهرك مع الوزن مرفوعاً بذراع مستقيم نحو السقف.\n2. ثنِ الركبة على نفس جانب الوزن وادفع بالكوع للجلوس على الساعد.\n3. ارفع الورك من الأرض مع إبقاء المعصم والكتف في خط.\n4. ارجع بتحكم لنفس المسار دون فقدان النظر للوزن.\n5. لا تدع المعصم ينهار للخلف أو الكتف ينسحب من المفصل.\n6. استخدم وزناً خفيفاً حتى يصبح المسار مألوفاً.",
+    "en": "1. Lie on your back with the load locked overhead toward the ceiling.\n2. Bend the knee on the loaded side and drive through the elbow to sit up onto the forearm.\n3. Lift the hip off the floor while keeping the wrist and shoulder stacked.\n4. Reverse with control along the same path without losing sight of the load.\n5. Do not let the wrist collapse backward or the shoulder shrug out of position.\n6. Use a light load until the pattern feels familiar."
   },
   "supportsWeight": true,
   "reportMetrics": {

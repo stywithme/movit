@@ -389,12 +389,12 @@
     }
   ],
   "description": {
-    "ar": "تمرين مكتبة: جلوس حائط وضغط.",
-    "en": "Library exercise: Wall sit + overhead press."
+    "ar": "جلوس حائط مع ضغط فوق الرأس يجمع تحملاً ثابتاً للرباعية مع ضغط كتف يطلب ثباتاً للجذع دون دفع من الساقين.",
+    "en": "A wall sit paired with overhead pressing combines isometric quad demand with shoulder work that requires trunk stability without leg drive."
   },
   "instructions": {
-    "ar": "حافظ على عمود فقري محايد وتنفس بثبات وتوقف عند أي ألم حاد.",
-    "en": "Maintain neutral spine, steady breathing, and stop if sharp pain appears."
+    "ar": "1. استند ظهرك للحائط وانزل حتى زاوية تقريباً 90° عند الركبتين مع ظهر ملاصق للحائط.\n2. امسك الوزن عند مستوى الكتفين أو أعلى الصدر بقبضة مريحة.\n3. اضغط للأعلى بذراعين مستقيمتين دون فقدان الاتصال بالحائط أو انهيار الركبتين للداخل.\n4. أعد الوزن ببطء دون ارتداد من الحائط.\n5. نفّذ التكرارات أو احتفظ بالجلوس حسب البرنامج.\n6. توقف عند ألم حاد في الركبة أو الكتف أو دوخة أو ضيق في التنفس.",
+    "en": "1. Lean on the wall and slide down until the knees are near 90° with the back supported.\n2. Hold the load at shoulder height or the upper chest with a comfortable grip.\n3. Press overhead to straight arms without losing wall contact or letting the knees collapse inward.\n4. Lower the weight with control without bouncing off the wall.\n5. Perform reps or hold the wall sit as programmed.\n6. Stop for sharp knee or shoulder pain, dizziness, or breathing discomfort."
   },
   "supportsWeight": true,
   "reportMetrics": {

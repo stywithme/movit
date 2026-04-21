@@ -420,12 +420,12 @@
     }
   ],
   "description": {
-    "ar": "تمرين مكتبة: رفع T.",
-    "en": "Library exercise: Prone T raise."
+    "ar": "الرفع على شكل T من البطن يستهدف الجزء الخلفي من الكتفين والألوية العليا مع مد الذراعين جانباً، وهو ممتاز لموازنة تمارين الضغط الأمامية.",
+    "en": "The prone T raise targets the rear shoulders and upper back with the arms abducted to a T shape, helping balance forward pressing work."
   },
   "instructions": {
-    "ar": "حافظ على عمود فقري محايد وتنفس بثبات وتوقف عند أي ألم حاد.",
-    "en": "Maintain neutral spine, steady breathing, and stop if sharp pain appears."
+    "ar": "1. استلق على البطن مع الذراعان ممدودتان جانباً بزاوية 90° تقريباً من الجسم.\n2. اضغط الذقن قليلاً لإبقاء الرقبة محايدة.\n3. ازفر وارفع الذراعين عن الأرض مع ضمّ لوحي الكتف.\n4. انزل ببطء دون فقدان التحكم.\n5. لا ترفع الرأس بقوة أو تفرط في تقوس أسفل الظهر.\n6. استخدم وزناً خفيفاً جداً أو بدون وزن في البداية.",
+    "en": "1. Lie face-down with arms out to the sides near a 90° angle from the body.\n2. Gently tuck the chin to keep the neck neutral.\n3. Exhale and lift the arms off the floor while squeezing the shoulder blades.\n4. Lower slowly with control.\n5. Do not crank the head up or over-arch the low back.\n6. Use very light load or no load at first."
   },
   "reportMetrics": {
     "primary": [

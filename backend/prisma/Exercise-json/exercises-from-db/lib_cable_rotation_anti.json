@@ -239,12 +239,12 @@
     }
   ],
   "description": {
-    "ar": "تمرين مكتبة: ضد دوران بحبل.",
-    "en": "Library exercise: Anti-rotation press (band)."
+    "ar": "الضغط الأمامي المضاد للدوران يقوّي الجذع ضد سحب جانبي من الكابل أو الحبل مع بقاء الحوض والكتفين في مواجهة واحدة، وهو بديل ممتاز لضغط بالوف عند بعض المعدات.",
+    "en": "The anti-rotation cable press builds trunk stiffness against a lateral pull while the pelvis and shoulders stay square, and works well as a Pallof-style option on cable setups."
   },
   "instructions": {
-    "ar": "حافظ على عمود فقري محايد وتنفس بثبات وتوقف عند أي ألم حاد.",
-    "en": "Maintain neutral spine, steady breathing, and stop if sharp pain appears."
+    "ar": "1. قف بمحاذاة البكرة وامسك المقبض عند منتصف الصدر.\n2. ابتعد خطوة حتى تشعر بشد جانبي يحاول تدويرك.\n3. ازفر وادفع الذراع للأمام دون أن يلتف الصدر أو الحوض.\n4. ارجع ببطء مع الحفاظ على الكتفين في مستوى واحد.\n5. لا تعوّض بميل جانبي أو دفع الركبة.\n6. خفف الوزن إذا فقد الجذع حياده.",
+    "en": "1. Stand square to the stack and hold the handle at mid-chest.\n2. Step out until you feel lateral tension trying to rotate you.\n3. Exhale and press forward without letting the chest or pelvis turn.\n4. Return slowly while keeping the shoulders level.\n5. Do not compensate with side-bending or knee drive.\n6. Reduce load if the trunk loses neutrality."
   },
   "reportMetrics": {
     "primary": [

@@ -18,7 +18,9 @@
   },
   "countingMethod": "up_down",
   "muscles": [
-    "rear_delts"
+    "rear_delts",
+    "traps",
+    "upper_back"
   ],
   "equipment": [
     "resistance_band",
@@ -70,8 +72,8 @@
                 "en": "Good — start longer"
               },
               "down": {
-                "ar": "جيد — اسحب أقرب للوجه",
-                "en": "Good — pull closer to face"
+                "ar": "جيد — افتح الحبل أكثر مع ثبات المرفقين",
+                "en": "Good — open the band more while keeping elbows soft"
               }
             },
             "perfect": {
@@ -80,8 +82,8 @@
                 "en": "Perfect! Long start"
               },
               "down": {
-                "ar": "ممتاز! شد خلفي مثالي",
-                "en": "Perfect! Strong rear-delt finish"
+                "ar": "ممتاز! ضغط خلفي جيد مع كتفين مثبتين",
+                "en": "Perfect! Clean rear-delt squeeze with quiet shoulders"
               }
             },
             "warning": {
@@ -150,8 +152,8 @@
                 "en": "Good — start longer"
               },
               "down": {
-                "ar": "جيد — اسحب أقرب للوجه",
-                "en": "Good — pull closer to face"
+                "ar": "جيد — افتح الحبل أكثر مع ثبات المرفقين",
+                "en": "Good — open the band more while keeping elbows soft"
               }
             },
             "perfect": {
@@ -160,8 +162,8 @@
                 "en": "Perfect! Long start"
               },
               "down": {
-                "ar": "ممتاز! شد خلفي مثالي",
-                "en": "Perfect! Strong rear-delt finish"
+                "ar": "ممتاز! ضغط خلفي جيد مع كتفين مثبتين",
+                "en": "Perfect! Clean rear-delt squeeze with quiet shoulders"
               }
             },
             "warning": {
@@ -209,48 +211,63 @@
               "min": 12
             }
           }
+        },
+        {
+          "joint": "spine",
+          "role": "secondary",
+          "startPose": {
+            "max": 185,
+            "min": 165
+          },
+          "stateMessages": {
+            "perfect": {
+              "ar": "جذع مستقيم — لا تدفع الصدر للأمام بزخرفة",
+              "en": "Tall torso — avoid snapping the chest forward for range"
+            },
+            "warning": {
+              "ar": "قلل القوس في أسفل الظهر عند فتح الحبل",
+              "en": "Ease low-back arch as you open the band"
+            }
+          },
+          "range": {
+            "pad": {
+              "max": 185,
+              "min": 158
+            },
+            "normal": {
+              "max": 185,
+              "min": 165
+            },
+            "perfect": {
+              "max": 182,
+              "min": 170
+            },
+            "warning": {
+              "max": 172,
+              "min": 150
+            }
+          }
         }
       ],
       "positionChecks": [
         {
-          "id": "high_elbow_line",
-          "type": "vertical_alignment",
+          "id": "band_wrist_symmetry",
+          "type": "horizontal_alignment",
           "landmarks": {
-            "primary": "left_elbow",
-            "secondary": "left_shoulder"
+            "primary": "left_wrist",
+            "secondary": "right_wrist"
           },
           "condition": {
             "operator": "approximately_equal",
-            "threshold": 0.14
+            "threshold": 0.09
           },
           "activePhases": [
-            "down"
+            "down",
+            "top"
           ],
           "errorMessage": {
-            "ar": "ارفع المرفق قليلاً فوق خط المعصم — سحب وجهي حقيقي.",
-            "en": "Finish with elbow above wrist line — classic face-pull finish."
-          },
-          "severity": "tip",
-          "cooldownMs": 2800,
-          "minErrorFrames": 5
-        },
-        {
-          "id": "wrist_follows_elbow",
-          "type": "forward_comparison",
-          "landmarks": {
-            "primary": "left_wrist",
-            "secondary": "left_elbow"
-          },
-          "condition": {
-            "operator": "should_exceed",
-            "threshold": 0.03
-          },
-          "activePhases": [
-            "down"
-          ],
-          "errorMessage": {
-            "ar": "اسحب نحو الأنف/الجبهة بخط مستقيم.",
-            "en": "Pull toward nose/forehead in a straight line."
+            "ar": "افتح الحبل بذراعين متناظرتين على نفس المستوى.",
+            "en": "Open the band with symmetric arms at the same height."
           },
           "severity": "warning",
           "cooldownMs": 2400,
@@ -274,8 +291,8 @@
             "en": "Keep shoulders down and slightly back (scapular set)."
           },
           {
-            "ar": "لا تفرط في تمديد الرقبة؛ نظرة أمامية قصيرة.",
-            "en": "Avoid craning the neck; keep a short forward gaze."
+            "ar": "لا تشد الحبل باندفاع من أسفل الظهر؛ حركة قصيرة ومتزنة من الكتفين.",
+            "en": "Do not rip the band with low-back momentum; keep the motion short and driven from the shoulders."
           }
         ]
       },
@@ -284,15 +301,8 @@
           "messageId": "3b93e006-1547-4366-80c8-c77e1fcd78eb",
           "target": "position",
           "context": "error",
-          "checkId": "high_elbow_line",
+          "checkId": "band_wrist_symmetry",
           "sortOrder": 1
-        },
-        {
-          "messageId": "1d628dec-cee7-412d-b7f2-3fac3a5d0c50",
-          "target": "position",
-          "context": "error",
-          "checkId": "wrist_follows_elbow",
-          "sortOrder": 2
         },
         {
           "messageId": "db211211-23ba-44f3-b77b-ae9a37b78f43",
@@ -300,7 +310,7 @@
           "context": "perfect",
           "jointCode": "left_elbow",
           "zone": "up",
-          "sortOrder": 3
+          "sortOrder": 2
         },
         {
           "messageId": "d8d26a4b-6878-43d1-9396-22ecda67139a",
@@ -308,7 +318,7 @@
           "context": "perfect",
           "jointCode": "left_elbow",
           "zone": "down",
-          "sortOrder": 4
+          "sortOrder": 3
         },
         {
           "messageId": "92d01d56-710a-43a2-b84f-a511233481e7",
@@ -316,7 +326,7 @@
           "context": "normal",
           "jointCode": "left_elbow",
           "zone": "up",
-          "sortOrder": 5
+          "sortOrder": 4
         },
         {
           "messageId": "3129981a-675f-4bd6-b328-eaf12ac39b63",
@@ -324,7 +334,7 @@
           "context": "normal",
           "jointCode": "left_elbow",
           "zone": "down",
-          "sortOrder": 6
+          "sortOrder": 5
         },
         {
           "messageId": "a0fc8bdc-c685-47a0-9302-74f099659403",
@@ -332,7 +342,7 @@
           "context": "pad",
           "jointCode": "left_elbow",
           "zone": "down",
-          "sortOrder": 7
+          "sortOrder": 6
         },
         {
           "messageId": "c5d82440-2e86-4c56-b9ce-3a4aba317157",
@@ -340,7 +350,7 @@
           "context": "warning",
           "jointCode": "left_elbow",
           "zone": "down",
-          "sortOrder": 8
+          "sortOrder": 7
         },
         {
           "messageId": "696cc38a-8903-42c5-bce4-f88b6afc4114",
@@ -348,7 +358,7 @@
           "context": "perfect",
           "jointCode": "right_elbow",
           "zone": "up",
-          "sortOrder": 9
+          "sortOrder": 8
         },
         {
           "messageId": "bd782d75-076e-44b1-a55a-df89b91d4267",
@@ -356,7 +366,7 @@
           "context": "perfect",
           "jointCode": "right_elbow",
           "zone": "down",
-          "sortOrder": 10
+          "sortOrder": 9
         },
         {
           "messageId": "c50a9c31-913b-4058-812a-07b0be5047dc",
@@ -364,7 +374,7 @@
           "context": "normal",
           "jointCode": "right_elbow",
           "zone": "up",
-          "sortOrder": 11
+          "sortOrder": 10
         },
         {
           "messageId": "f88af34f-a33c-417f-b9b7-2b42052255bf",
@@ -372,7 +382,7 @@
           "context": "normal",
           "jointCode": "right_elbow",
           "zone": "down",
-          "sortOrder": 12
+          "sortOrder": 11
         },
         {
           "messageId": "5c72447b-a8ae-47c7-86a9-48860bc93136",
@@ -380,7 +390,7 @@
           "context": "pad",
           "jointCode": "right_elbow",
           "zone": "down",
-          "sortOrder": 13
+          "sortOrder": 12
         },
         {
           "messageId": "970824c4-cfab-499c-a0fd-d91dbd92e5a3",
@@ -388,43 +398,43 @@
           "context": "warning",
           "jointCode": "right_elbow",
           "zone": "down",
-          "sortOrder": 14
+          "sortOrder": 13
         },
         {
           "messageId": "6a2b06c8-d19d-41ec-b076-b12296fc5dac",
           "target": "feedback",
           "context": "motivational",
-          "sortOrder": 15
+          "sortOrder": 14
         },
         {
           "messageId": "819ab364-b492-4f1f-af58-e10122713ac7",
           "target": "feedback",
           "context": "motivational",
-          "sortOrder": 16
+          "sortOrder": 15
         },
         {
           "messageId": "1f29ea6e-3777-49fc-ae31-52b3cdc7fb15",
           "target": "feedback",
           "context": "tip",
-          "sortOrder": 17
+          "sortOrder": 16
         },
         {
           "messageId": "7b7028b1-2a46-4731-835e-31a966556944",
           "target": "feedback",
           "context": "tip",
-          "sortOrder": 18
+          "sortOrder": 17
         }
       ],
       "cameraPosition": "side_view"
     }
   ],
   "description": {
-    "ar": "تمرين مكتبة: سحب أفقي بحبل.",
-    "en": "Library exercise: Band pull-apart."
+    "ar": "سحب حبل باتجاه الأفق لفتح الصدر وتقوية الكتف الخلفي والعضلة شبه المنحرفة مع تحكم في لوح الكتف.",
+    "en": "A horizontal band pull-apart to open the chest and load the rear delts and mid traps with controlled scapular movement."
   },
   "instructions": {
-    "ar": "حافظ على عمود فقري محايد وتنفس بثبات وتوقف عند أي ألم حاد.",
-    "en": "Maintain neutral spine, steady breathing, and stop if sharp pain appears."
+    "ar": "امسك الحبل أمامك بعرض الكتفين تقريباً مع ثني خفيف في المرفقين. اسحب الذراعين للخارج بخط مستقيم حتى يشد الحبل خلفياً، ثم عد ببطء دون لف الرسغين للداخل. حافظ على صدر مرتفع وكتفين منخفضين قليلاً، وزفر عند الفتح وشهيق عند العودة.",
+    "en": "Hold the band in front of you near shoulder width with a soft bend in the elbows. Pull the arms straight out to the sides until the band loads the back of the shoulders, then return slowly without collapsing the wrists. Keep the chest tall and shoulders slightly down; exhale as you open and inhale as you return."
   },
   "reportMetrics": {
     "primary": [
@@ -529,8 +539,8 @@
                   "en": "Good — start longer"
                 },
                 "down": {
-                  "ar": "جيد — اسحب أقرب للوجه",
-                  "en": "Good — pull closer to face"
+                  "ar": "جيد — افتح الحبل أكثر مع ثبات المرفقين",
+                  "en": "Good — open the band more while keeping elbows soft"
                 }
               },
               "perfect": {
@@ -539,8 +549,8 @@
                   "en": "Perfect! Long start"
                 },
                 "down": {
-                  "ar": "ممتاز! شد خلفي مثالي",
-                  "en": "Perfect! Strong rear-delt finish"
+                  "ar": "ممتاز! ضغط خلفي جيد مع كتفين مثبتين",
+                  "en": "Perfect! Clean rear-delt squeeze with quiet shoulders"
                 }
               },
               "warning": {
@@ -609,8 +619,8 @@
                   "en": "Good — start longer"
                 },
                 "down": {
-                  "ar": "جيد — اسحب أقرب للوجه",
-                  "en": "Good — pull closer to face"
+                  "ar": "جيد — افتح الحبل أكثر مع ثبات المرفقين",
+                  "en": "Good — open the band more while keeping elbows soft"
                 }
               },
               "perfect": {
@@ -619,8 +629,8 @@
                   "en": "Perfect! Long start"
                 },
                 "down": {
-                  "ar": "ممتاز! شد خلفي مثالي",
-                  "en": "Perfect! Strong rear-delt finish"
+                  "ar": "ممتاز! ضغط خلفي جيد مع كتفين مثبتين",
+                  "en": "Perfect! Clean rear-delt squeeze with quiet shoulders"
                 }
               },
               "warning": {
@@ -631,6 +641,42 @@
               }
             },
             "invertIndicator": true
+          },
+          {
+            "role": "secondary",
+            "joint": "spine",
+            "range": {
+              "pad": {
+                "max": 185,
+                "min": 158
+              },
+              "normal": {
+                "max": 185,
+                "min": 165
+              },
+              "perfect": {
+                "max": 182,
+                "min": 170
+              },
+              "warning": {
+                "max": 172,
+                "min": 150
+              }
+            },
+            "startPose": {
+              "max": 185,
+              "min": 165
+            },
+            "stateMessages": {
+              "perfect": {
+                "ar": "جذع مستقيم — لا تدفع الصدر للأمام بزخرفة",
+                "en": "Tall torso — avoid snapping the chest forward for range"
+              },
+              "warning": {
+                "ar": "قلل القوس في أسفل الظهر عند فتح الحبل",
+                "en": "Ease low-back arch as you open the band"
+              }
+            }
           }
         ]
       }

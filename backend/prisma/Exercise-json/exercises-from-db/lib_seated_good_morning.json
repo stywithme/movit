@@ -246,12 +246,12 @@
     }
   ],
   "description": {
-    "ar": "تمرين مكتبة: صباح خير جالس.",
-    "en": "Library exercise: Seated good morning (light)."
+    "ar": "صباح خير جالس خفيف يدرّب ميل الورك مع حمل خلف الرقبة أو على الأكتاف لزيادة قوة الخلفية والألوية مع تقليل تعقيد التوازن.",
+    "en": "A light seated good morning trains the hip hinge with load on the upper back or traps to build posterior-chain strength with simpler balance demands than standing."
   },
   "instructions": {
-    "ar": "حافظ على عمود فقري محايد وتنفس بثبات وتوقف عند أي ألم حاد.",
-    "en": "Maintain neutral spine, steady breathing, and stop if sharp pain appears."
+    "ar": "1. اجلس على طرف مقعد مع القدمين مسطحتين والركبتين فوق الكعبين تقريباً.\n2. ضع البار برفق فوق أعلى الظهر مع قبضة مريحة.\n3. انحنِ للأمام من الوركين مع صدر مرتفع وظهر محايد دون تقوس مفاجئ.\n4. انزل حتى شد معتدل في مؤخرة الفخذ ثم عد للجلوس مستقيماً.\n5. نفّذ 8–12 تكراراً بوزن خفيف للتحكم.\n6. توقف عند ألم حاد في أسفل الظهر أو الوخز في الساقين.",
+    "en": "1. Sit on the edge of a bench with feet flat and knees stacked over the ankles.\n2. Rest the bar gently across the upper back with a comfortable grip.\n3. Hinge forward from the hips with a tall chest and neutral spine—no abrupt rounding.\n4. Lower until you feel a mild hamstring pull, then return upright.\n5. Perform 8–12 reps with light load for control.\n6. Stop for sharp low-back pain or leg tingling."
   },
   "supportsWeight": true,
   "reportMetrics": {
