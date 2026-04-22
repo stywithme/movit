@@ -112,10 +112,17 @@ data class PostTrainingReport(
     fun shouldCelebrate(): Boolean = summary.shouldCelebrate
     
     /**
-     * Get the best frame for comparison (first best rep frame)
+     * Get the best frame for comparison.
+     * Priority:
+     *   1. The resolved frame for the actual top-scoring rep in [bestReps] (already restricted to
+     *      BOTTOM-phase captures by the generator).
+     *   2. Any BEST_REP capture (promoted peak of a clean rep).
+     *   3. Any PEAK_FRAME capture (raw BOTTOM frame).
      */
-    fun getBestRepFrame(): FrameCapture? = 
-        frameCaptures.find { it.captureType == CaptureType.BEST_REP }
+    fun getBestRepFrame(): FrameCapture? =
+        bestReps.firstOrNull()?.frameCapture
+            ?: frameCaptures.firstOrNull { it.captureType == CaptureType.BEST_REP }
+            ?: frameCaptures.firstOrNull { it.captureType == CaptureType.PEAK_FRAME }
     
     /**
      * Get DANGER frame

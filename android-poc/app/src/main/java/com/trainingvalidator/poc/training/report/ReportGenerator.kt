@@ -69,14 +69,15 @@ object ReportGenerator {
         // 5. Find worst rep
         val worstRep = findWorstRep(summary.repDetails, frameCaptures)
 
-        // 6. Get best rep frame for angle comparison — MUST be the actual best rep's pose
-        // (no neighbor fallback: neighbor angles would pollute error-vs-best-angle diffs).
+        // 6. Get best rep frame for angle comparison — MUST be the actual best rep's pose at BOTTOM.
+        // (no neighbor fallback + strictTypes: neighbor/error angles would pollute diffs).
         val bestRepFrame = bestReps.firstOrNull()?.let { best ->
             resolveFrameForRep(
                 repNumber = best.repNumber,
                 frames = frameCaptures,
                 preferredTypes = listOf(CaptureType.BEST_REP, CaptureType.PEAK_FRAME),
-                maxNeighborDistance = 0
+                maxNeighborDistance = 0,
+                strictTypes = true
             )
         }
 
@@ -140,6 +141,12 @@ object ReportGenerator {
             performanceSummary = performanceSummary
         )
 
+        // Hero image on the first report page is the BOTTOM frame of the actual best rep.
+        // Falls back to any BEST_REP / PEAK_FRAME capture if the best rep itself has no still.
+        val heroFrame = bestReps.firstOrNull()?.frameCapture
+            ?: frameCaptures.firstOrNull { it.captureType == CaptureType.BEST_REP }
+            ?: frameCaptures.firstOrNull { it.captureType == CaptureType.PEAK_FRAME }
+
         return PostTrainingReport(
             id = UUID.randomUUID().toString(),
             sessionId = sessionId,
@@ -157,6 +164,7 @@ object ReportGenerator {
             improvementTips = tips,
             frameCaptures = frameCaptures,
             holdSummary = holdSummary,
+            heroFrame = heroFrame,
             overallQuality = overallQuality,
             exerciseConfig = configSnapshot
         )
@@ -579,12 +587,13 @@ object ReportGenerator {
             ?.feedbackMessages?.motivational ?: emptyList()
 
         return perfectReps.take(MAX_PERFECT_MOMENTS).mapIndexed { index, rep ->
-            // Perfect moment must be THIS rep's pose, never a neighbor's.
+            // Perfect moment must be THIS rep's BOTTOM pose, never a neighbor's or an error frame.
             val frame = resolveFrameForRep(
                 repNumber = rep.repNumber,
                 frames = frameCaptures,
                 preferredTypes = listOf(CaptureType.BEST_REP, CaptureType.PEAK_FRAME),
-                maxNeighborDistance = 0
+                maxNeighborDistance = 0,
+                strictTypes = true
             )
 
             // Select motivational message
@@ -606,13 +615,17 @@ object ReportGenerator {
     /**
      * Pick the best still for a rep: preferred [CaptureType]s on this rep (optional joint match on error frames),
      * then any capture for this rep, then the same strategy on neighbor rep numbers.
+     *
+     * @param strictTypes when true, never falls back to non-preferred capture types (e.g. used
+     *   for best-rep / hero frames where we must show a BOTTOM-phase frame, not an ERROR/DANGER one).
      */
     private fun resolveFrameForRep(
         repNumber: Int,
         frames: List<FrameCapture>,
         preferredTypes: List<CaptureType>,
         jointHint: String? = null,
-        maxNeighborDistance: Int = 2
+        maxNeighborDistance: Int = 2,
+        strictTypes: Boolean = false
     ): FrameCapture? {
         if (frames.isEmpty()) return null
 
@@ -629,6 +642,7 @@ object ReportGenerator {
                 if (hinted != null) return hinted
                 list.firstOrNull()?.let { return it }
             }
+            if (strictTypes) return null
             return frames.firstOrNull { it.repNumber == rep }
         }
 
@@ -668,10 +682,14 @@ object ReportGenerator {
         }
 
         return sortedReps.take(MAX_BEST_REPS).map { rep ->
+            // Hero/best-rep image MUST be the BOTTOM frame of this rep (BEST_REP promoted from PEAK,
+            // or the raw PEAK). Strict types + small neighbor window keeps semantics intact.
             val frame = resolveFrameForRep(
                 repNumber = rep.repNumber,
                 frames = frameCaptures,
-                preferredTypes = listOf(CaptureType.BEST_REP, CaptureType.PEAK_FRAME)
+                preferredTypes = listOf(CaptureType.BEST_REP, CaptureType.PEAK_FRAME),
+                maxNeighborDistance = 1,
+                strictTypes = true
             )
 
             val displayInfo = StateDisplayConfig.getDisplayInfo(rep.worstState)
@@ -839,7 +857,8 @@ object ReportGenerator {
             val bestAngle = bestRepAngles[jointCode]
 
             // Error frame must come from one of the affected reps (semantic accuracy).
-            // Try the jointHint match first, then settle for a generic DANGER/ERROR frame.
+            // Strict types: never surface a BEST/PEAK frame here — the label "error frame"
+            // must truly match a DANGER/ERROR capture.
             val errorFrame = affectedReps.asSequence()
                 .mapNotNull { repNum ->
                     resolveFrameForRep(
@@ -850,7 +869,8 @@ object ReportGenerator {
                             CaptureType.ERROR_FRAME
                         ),
                         jointHint = jointCode,
-                        maxNeighborDistance = 0
+                        maxNeighborDistance = 0,
+                        strictTypes = true
                     )
                 }
                 .firstOrNull()
