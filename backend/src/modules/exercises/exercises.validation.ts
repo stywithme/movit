@@ -172,6 +172,8 @@ export type PosePositionData = z.infer<typeof PosePositionSchema>;
 // STEP 4: JOINT CONFIGURATION (State-based)
 // ============================================
 
+export const TrackingModeSchema = z.enum(['two_sides', 'any_side']);
+
 /**
  * Primary joint for Up/Down exercises - has upRange and downRange
  */
@@ -184,6 +186,7 @@ export const UpDownPrimaryTrackedJointSchema = z.object({
   stateMessages: StateMessagesSchema,
   pairedWith: z.string().optional(),
   invertIndicator: z.boolean().optional(),
+  trackingMode: TrackingModeSchema.optional(),
 }).superRefine((data, ctx) => {
   // Validate transition zone: upRange min should be > downRange max
   const upMin = getOuterMinFromRanges(data.upRange);
@@ -209,6 +212,7 @@ export const HoldPrimaryTrackedJointSchema = z.object({
   stateMessages: StateMessagesSchema,
   pairedWith: z.string().optional(),
   invertIndicator: z.boolean().optional(),
+  trackingMode: TrackingModeSchema.optional(),
 });
 
 /**
@@ -227,6 +231,7 @@ export const PrimaryTrackedJointSchema = z.object({
   stateMessages: StateMessagesSchema,
   pairedWith: z.string().optional(),
   invertIndicator: z.boolean().optional(),
+  trackingMode: TrackingModeSchema.optional(),
 }).superRefine((data, ctx) => {
   const hasUpDown = data.upRange && data.downRange;
   const hasRange = data.range;
@@ -282,6 +287,7 @@ export const SecondaryTrackedJointSchema = z.object({
   stateMessages: StateMessagesSchema,
   pairedWith: z.string().optional(),
   invertIndicator: z.boolean().optional(),
+  trackingMode: TrackingModeSchema.optional(),
 }).superRefine((data, ctx) => {
   if (data.phaseRanges && Object.keys(data.phaseRanges).length === 0) {
     ctx.addIssue({

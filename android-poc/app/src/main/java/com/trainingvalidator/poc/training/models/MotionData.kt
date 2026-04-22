@@ -44,6 +44,12 @@ object PhaseCode {
 }
 
 /**
+ * Sentinel value in [FrameSample.angles] (joint angle ×10 slot) meaning the joint was
+ * intentionally skipped for this frame (e.g. Any-Side tracking with one side occluded).
+ */
+const val JOINT_SKIPPED_ANGLE_SENTINEL: Short = Short.MIN_VALUE
+
+/**
  * Joint state codes for compact storage (1 byte instead of enum)
  */
 object StateCode {
@@ -95,9 +101,16 @@ data class FrameSample(
      * Get angle in degrees for a specific joint index
      */
     fun getAngleDegrees(jointIndex: Int): Double {
-        return if (jointIndex in angles.indices) {
-            angles[jointIndex] / 10.0
-        } else 0.0
+        if (jointIndex !in angles.indices) return 0.0
+        val s = angles[jointIndex]
+        if (s == JOINT_SKIPPED_ANGLE_SENTINEL) return 0.0
+        return s / 10.0
+    }
+
+    /** False when this slot holds [JOINT_SKIPPED_ANGLE_SENTINEL] (skipped joint this frame). */
+    fun isJointAngleValid(jointIndex: Int): Boolean {
+        val s = angles.getOrNull(jointIndex) ?: return false
+        return s != JOINT_SKIPPED_ANGLE_SENTINEL
     }
     
     /**

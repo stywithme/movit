@@ -114,14 +114,27 @@ class FormDetailsFragment : Fragment() {
         }
 
         // ── Symmetry ─────────────────────────────────────────────
-        if (shouldShow(config, MetricCode.SYMMETRY) && config?.isBilateral == true) {
+        if (shouldShow(config, MetricCode.SYMMETRY)) {
             form.symmetry?.let { sym ->
                 col.addView(H.metricRow(ctx, "⚖️",
-                    if (isArabic) "التوازن (LSI)" else "Symmetry (LSI)",
+                    if (isArabic) "التوازن" else "Symmetry",
                     sym, isArabic
                 ))
-                // L vs R visual
-                addSymmetryVisual(ctx, col, report)
+                if (config?.isBilateral == true && config.hasAnySideJoints != true) {
+                    addSymmetryVisual(ctx, col, report)
+                }
+            }
+            if (config?.hasAnySideJoints == true) {
+                col.addView(TextView(ctx).apply {
+                    text = if (isArabic) {
+                        "استُخدم وضع تتبّع أي جانب — يُحسب التوازن فقط عندما يظهر الجانبان معاً في الكاميرا."
+                    } else {
+                        "Any-Side tracking was used — symmetry is measured only when both sides were visible."
+                    }
+                    textSize = 12f
+                    setTextColor(H.textMuted(requireContext()))
+                    setPadding(H.dp(ctx, 8), H.dp(ctx, 4), H.dp(ctx, 8), 0)
+                })
             }
         }
 

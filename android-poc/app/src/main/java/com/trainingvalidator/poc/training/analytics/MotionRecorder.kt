@@ -124,7 +124,8 @@ class MotionRecorder(
         timestamp: Long,
         phase: Phase,
         angles: Map<String, Double>,
-        states: Map<String, JointStateInfo>? = null
+        states: Map<String, JointStateInfo>? = null,
+        skippedJointCodes: Set<String> = emptySet()
     ) {
         if (!isRecording) return
         
@@ -150,7 +151,7 @@ class MotionRecorder(
         val relativeT = (timestamp - sessionStartMs).toInt()
         
         // Convert angles to ShortArray
-        val angleArray = anglesToShortArray(angles)
+        val angleArray = anglesToShortArray(angles, skippedJointCodes)
         
         // Convert states to ByteArray (only if changed)
         val stateArray = statesToByteArray(states)
@@ -468,11 +469,15 @@ class MotionRecorder(
     /**
      * Convert angle Map to ShortArray in trackedJoints order
      */
-    private fun anglesToShortArray(angles: Map<String, Double>): ShortArray {
+    private fun anglesToShortArray(angles: Map<String, Double>, skippedJointCodes: Set<String>): ShortArray {
         return ShortArray(trackedJoints.size) { i ->
             val jointName = trackedJoints[i]
-            val angle = angles[jointName] ?: 0.0
-            (angle * 10).toInt().coerceIn(0, 1800).toShort()  // 90.5° → 905
+            if (jointName in skippedJointCodes) {
+                JOINT_SKIPPED_ANGLE_SENTINEL
+            } else {
+                val angle = angles[jointName] ?: 0.0
+                (angle * 10).toInt().coerceIn(0, 1800).toShort()  // 90.5° → 905
+            }
         }
     }
     

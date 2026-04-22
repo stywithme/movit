@@ -43,7 +43,9 @@ object ReportGenerator {
         cameraWarningCount: Int = 0,
         frameCaptures: List<FrameCapture> = emptyList(),
         holdData: HoldData? = null,
-        sessionMetrics: SessionMetrics? = null
+        sessionMetrics: SessionMetrics? = null,
+        /** Which pose variant this session used (for [ExerciseConfigSnapshot.hasAnySideJoints] etc.). */
+        poseVariantIndex: Int = 0
     ): PostTrainingReport {
         Log.d(TAG, "Generating state-based report for ${summary.exerciseName}, ${summary.totalReps} reps")
 
@@ -103,12 +105,15 @@ object ReportGenerator {
         Log.d(TAG, "Exercise reportMetrics: ${exerciseConfig.reportMetrics}")
         Log.d(TAG, "  - excluded: ${exerciseConfig.reportMetrics?.excluded}")
 
+        val hasAnySideJoints = exerciseConfig.getTrackedJoints(poseVariantIndex)
+            .any { it.trackingMode == TrackingMode.ANY_SIDE }
         val configSnapshot = ExerciseConfigSnapshot.from(
             countingMethod = exerciseConfig.countingMethod,
             isBilateral = exerciseConfig.isBilateralExercise(),
             supportsWeight = exerciseConfig.supportsWeight,
             hasPositionChecks = exerciseConfig.hasPositionChecks,
-            metricsConfig = exerciseConfig.reportMetrics
+            metricsConfig = exerciseConfig.reportMetrics,
+            hasAnySideJoints = hasAnySideJoints
         )
 
         Log.d(TAG, "ConfigSnapshot metricsConfig: ${configSnapshot.metricsConfig}")
@@ -164,7 +169,9 @@ object ReportGenerator {
         sessionMetrics: SessionMetrics? = null,
         weightKg: Float? = null,
         weightUnit: String = "kg",
-        allSets: List<com.trainingvalidator.poc.training.session.SessionTrainingEngine.SetMetrics>? = null
+        allSets: List<com.trainingvalidator.poc.training.session.SessionTrainingEngine.SetMetrics>? = null,
+        /** Override variant for snapshot; default = engine's active variant. */
+        poseVariantIndex: Int? = null
     ): PostTrainingReport {
         val baseSummary = engine.stop()
 
@@ -194,7 +201,8 @@ object ReportGenerator {
             cameraWarningCount = cameraWarnings,
             frameCaptures = frameCaptures,
             holdData = holdData,
-            sessionMetrics = sessionMetrics
+            sessionMetrics = sessionMetrics,
+            poseVariantIndex = poseVariantIndex ?: engine.poseVariantIndex
         )
 
         if (allSets == null || allSets.size <= 1) return report

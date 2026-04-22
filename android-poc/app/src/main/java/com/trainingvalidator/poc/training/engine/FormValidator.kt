@@ -78,7 +78,11 @@ class FormValidator(
         reusableStateInfos.clear()
 
         for (joint in trackedJoints) {
-            val currentAngle = currentAngles[joint.joint] ?: continue
+            val currentAngle = currentAngles[joint.joint]
+            if (currentAngle == null) {
+                clearJointCaches(joint.joint)
+                continue
+            }
 
             if (!isJointActiveInPhase(joint, currentPhase)) {
                 clearJointCaches(joint.joint)

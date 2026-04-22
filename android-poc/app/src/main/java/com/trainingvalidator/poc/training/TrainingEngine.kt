@@ -13,6 +13,7 @@ import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 
 /**
  * TrainingEngine - The main orchestrator for exercise training
@@ -35,7 +36,8 @@ import kotlinx.coroutines.flow.StateFlow
  */
 class TrainingEngine(
     private val exerciseConfig: ExerciseConfig,
-    private val poseVariantIndex: Int = 0,
+    /** Active pose variant index (matches [ExerciseConfig.poseVariants]). */
+    val poseVariantIndex: Int = 0,
     /**
      * Override target reps from workout config (null = use exercise default)
      * Used in Workout Mode to apply WorkoutExercise.target.reps
@@ -203,9 +205,8 @@ class TrainingEngine(
      * Handles auto-pause when joints become invisible and resume when visible again
      */
     private val visibilityMonitor: VisibilityMonitor = VisibilityMonitor(
-        requiredJoints = poseVariant.trackedJoints
-            .filter { it.role == JointRole.PRIMARY || it.role == JointRole.SECONDARY }
-            .map { it.joint },
+        visibilityTrackedJoints = poseVariant.trackedJoints
+            .filter { it.role == JointRole.PRIMARY || it.role == JointRole.SECONDARY },
         minVisibility = 0.3f,
         graceDurationMs = 1000,
         warningDurationMs = 1000,   // Tier 1: suspend counting after 1s
@@ -310,6 +311,12 @@ class TrainingEngine(
     
     private val _currentAngles = MutableStateFlow<Map<String, Double>>(emptyMap())
     val currentAngles: StateFlow<Map<String, Double>> = _currentAngles
+
+    /**
+     * Config joint codes skipped this frame due to Any-Side low visibility (for overlay dimming).
+     */
+    private val _anySideDimmedJointCodes = MutableStateFlow<Set<String>>(emptySet())
+    val anySideDimmedJointCodes: StateFlow<Set<String>> = _anySideDimmedJointCodes.asStateFlow()
     
     // ==================== Position Validation State Flows ====================
     
@@ -644,6 +651,7 @@ class TrainingEngine(
             _isDangerActive.value = false
             _isInStartPosition.value = false
             _currentAngles.value = emptyMap()
+            _anySideDimmedJointCodes.value = emptySet()
             _jointStateInfos.value = emptyMap()
             
             // Reset position validation state
@@ -774,6 +782,7 @@ class TrainingEngine(
             _isVisibilityPaused.value = false
             visibilityResumeStartMs = 0L
             _visibilityResumeCountdown.value = null
+            _anySideDimmedJointCodes.value = emptySet()
         }
         
         val summary = SessionSummary(
@@ -833,7 +842,9 @@ class TrainingEngine(
             
             
             // ── 1. Extract angles (always — needed for UI even when suspended) ──
-            val rawTrackedAngles = jointTracker.extractTrackedAngles(angles, isBilateralFlipped)
+            val angleExtract = jointTracker.extractTrackedAngles(angles, isBilateralFlipped, landmarks)
+            val rawTrackedAngles = angleExtract.angles
+            val skippedForFrame = angleExtract.skippedJointCodes
 
             // ── 2. Visibility check (ALWAYS runs — never blocked by pause) ──
             var skipCounting = false
@@ -852,6 +863,7 @@ class TrainingEngine(
 
             // ── 2.1 Early exit: validate positions for UI overlay then return ──
             if (skipCounting || rawTrackedAngles.isEmpty()) {
+                _anySideDimmedJointCodes.value = skippedForFrame
                 if (landmarks != null) {
                     val pv = positionValidator.validate(
                         landmarks, stateMachine.currentPhase, isBilateralFlipped, isFrontCamera
@@ -876,6 +888,7 @@ class TrainingEngine(
             // ── 3. Smooth angles ──
             val smoothedAngles = angleSmoother.smooth(rawTrackedAngles)
             _currentAngles.value = smoothedAngles
+            _anySideDimmedJointCodes.value = skippedForFrame
 
             val primaryAngles = smoothedAngles.filterKeys { jointCode ->
                 primaryJointCodes.contains(jointCode)
@@ -921,7 +934,8 @@ class TrainingEngine(
                 timestamp = frameTimeMs,
                 phase = currentPhase,
                 angles = smoothedAngles,
-                states = jointStateInfos
+                states = jointStateInfos,
+                skippedJointCodes = skippedForFrame
             )
 
             @Suppress("DEPRECATION")

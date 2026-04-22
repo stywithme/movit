@@ -370,6 +370,9 @@ function parseTrackedJoints(config: unknown): TrackedJoint[] {
     if (joint.invertIndicator) {
       Object.assign(baseJoint, { invertIndicator: joint.invertIndicator as boolean });
     }
+    if (joint.trackingMode === 'two_sides' || joint.trackingMode === 'any_side') {
+      Object.assign(baseJoint, { trackingMode: joint.trackingMode });
+    }
 
     if (joint.role === 'primary') {
       // Hold exercises: primary has single range

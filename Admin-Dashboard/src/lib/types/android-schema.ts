@@ -182,6 +182,9 @@ export function isSimpleMessage(msg: StateMessageValue | undefined): msg is Loca
 /**
  * Base tracked joint properties
  */
+/** Bilateral visibility: two_sides = both must be visible; any_side = one side may be skipped when occluded */
+export type JointTrackingMode = 'two_sides' | 'any_side';
+
 interface BaseTrackedJoint {
   joint: string;
   role: JointRole;
@@ -190,6 +193,8 @@ interface BaseTrackedJoint {
   pairedWith?: string;
   /** When true, visual indicator direction is inverted */
   invertIndicator?: boolean;
+  /** Default two_sides when omitted (backward compatible) */
+  trackingMode?: JointTrackingMode;
 }
 
 /**

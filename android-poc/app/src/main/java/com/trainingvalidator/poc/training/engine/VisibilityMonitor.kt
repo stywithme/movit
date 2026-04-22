@@ -5,7 +5,10 @@ import com.trainingvalidator.poc.analysis.SmoothedLandmark
 import com.trainingvalidator.poc.pose.BodyLandmarks
 import com.trainingvalidator.poc.pose.JointLandmarkMapping
 import com.trainingvalidator.poc.training.feedback.SystemMessageRegistry
+import com.trainingvalidator.poc.training.models.JointRole
 import com.trainingvalidator.poc.training.models.LocalizedText
+import com.trainingvalidator.poc.training.models.TrackedJoint
+import com.trainingvalidator.poc.training.models.TrackingMode
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -28,7 +31,8 @@ import kotlinx.coroutines.flow.asStateFlow
  * - Provides smooth resume with countdown
  */
 class VisibilityMonitor(
-    private val requiredJoints: List<String>,
+    /** Primary + secondary joints from the active pose variant (visibility rules use roles + tracking mode). */
+    private val visibilityTrackedJoints: List<TrackedJoint>,
     private val minVisibility: Float = 0.5f,
     private val graceDurationMs: Long = 500,      // 0.5 seconds - ignore brief glitches
     private val warningDurationMs: Long = 1500,   // 1.5 seconds before showing warning
@@ -37,6 +41,40 @@ class VisibilityMonitor(
 ) {
     companion object {
         private const val TAG = "VisibilityMonitor"
+    }
+
+    private data class LenientPair(val jointA: String, val jointB: String)
+
+    private val primarySecondary: List<TrackedJoint> =
+        visibilityTrackedJoints.filter { it.role == JointRole.PRIMARY || it.role == JointRole.SECONDARY }
+
+    private val lenientPairs: List<LenientPair>
+    private val strictJointCodes: Set<String>
+
+    init {
+        val strict = mutableSetOf<String>()
+        val lenient = mutableListOf<LenientPair>()
+        val seenLenientKeys = mutableSetOf<Pair<String, String>>()
+        for (j in primarySecondary) {
+            val p = j.pairedWith
+            if (p != null) {
+                val partner = primarySecondary.find { it.joint == p }
+                val bothAnySide = j.trackingMode == TrackingMode.ANY_SIDE &&
+                    partner != null && partner.trackingMode == TrackingMode.ANY_SIDE
+                if (bothAnySide) {
+                    val a = minOf(j.joint, p)
+                    val b = maxOf(j.joint, p)
+                    val key = a to b
+                    if (seenLenientKeys.add(key)) {
+                        lenient.add(LenientPair(a, b))
+                    }
+                    continue
+                }
+            }
+            strict.add(j.joint)
+        }
+        strictJointCodes = strict
+        lenientPairs = lenient
     }
     
     // Current visibility state
@@ -87,45 +125,55 @@ class VisibilityMonitor(
     }
     
     /**
-     * All landmark indices required for angle calculation
-     * Includes all 3 points needed for each tracked joint's angle
+     * Minimum visibility across the three angle landmarks for [jointCode], using the same
+     * front-camera mirroring rules as the rest of the monitor.
      */
-    private val requiredLandmarkIndices: Set<Int> = 
-        JointLandmarkMapping.getAllLandmarksForAngles(requiredJoints)
-    
+    private fun minVisibilityForJoint(
+        jointCode: String,
+        landmarks: List<SmoothedLandmark>,
+        isFrontCamera: Boolean
+    ): Float {
+        val indices = JointLandmarkMapping.getLandmarksForAngle(jointCode)
+        if (indices.isEmpty()) return 0f
+        var minV = 1f
+        for (rawIndex in indices) {
+            val effectiveIndex = if (isFrontCamera) BodyLandmarks.getMirroredIndex(rawIndex) else rawIndex
+            val landmark = landmarks.getOrNull(effectiveIndex)
+            val v = landmark?.visibility ?: 0f
+            minV = kotlin.math.min(minV, v)
+        }
+        return minV
+    }
+
     /**
-     * Check visibility of each required joint and its dependencies
-     * 
-     * For each tracked joint (e.g., right_elbow), we need to check visibility of
-     * all 3 landmarks used to calculate its angle (shoulder, elbow, wrist).
-     * 
-     * For front camera, we mirror the landmark index because:
-     * - The image is mirrored before pose detection
-     * - So if exercise tracks "right_elbow" (index 14), in mirrored image it's at index 13
-     * - We need to check visibility of the mirrored index
+     * Build per-joint visibility rows for messages, and mark lenient pairs as visible
+     * when **at least one** side has all three landmarks ≥ [minVisibility].
      */
     private fun checkJointVisibility(
         landmarks: List<SmoothedLandmark>,
         isFrontCamera: Boolean
     ): List<JointVisibility> {
-        // Check all required landmarks (not just the joint itself)
-        return requiredLandmarkIndices.map { rawIndex ->
-            // For front camera, check the mirrored landmark index
-            val effectiveIndex = if (isFrontCamera) {
-                BodyLandmarks.getMirroredIndex(rawIndex)
-            } else {
-                rawIndex
-            }
-            val landmark = landmarks.getOrNull(effectiveIndex)
-            val visibility = landmark?.visibility ?: 0f
-            val jointName = JointLandmarkMapping.landmarkToJoint(rawIndex) ?: "landmark_$rawIndex"
-            
-            JointVisibility(
-                jointName = jointName,
-                visibility = visibility,
-                isVisible = visibility >= minVisibility
+        val details = mutableListOf<JointVisibility>()
+        for (code in strictJointCodes) {
+            val v = minVisibilityForJoint(code, landmarks, isFrontCamera)
+            details.add(
+                JointVisibility(
+                    jointName = code,
+                    visibility = v,
+                    isVisible = v >= minVisibility
+                )
             )
         }
+        for (pair in lenientPairs) {
+            val vA = minVisibilityForJoint(pair.jointA, landmarks, isFrontCamera)
+            val vB = minVisibilityForJoint(pair.jointB, landmarks, isFrontCamera)
+            val okA = vA >= minVisibility
+            val okB = vB >= minVisibility
+            val pairOk = okA || okB
+            details.add(JointVisibility(pair.jointA, vA, pairOk))
+            details.add(JointVisibility(pair.jointB, vB, pairOk))
+        }
+        return details
     }
     
     /**

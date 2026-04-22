@@ -747,7 +747,7 @@ function JointTabContent({ joint, onUpdate, onRemove, onCopyToMirror, isHold, ha
     const newJoint = buildTrackedJoint(joint.joint, newRole, joint.pairedWith, isHold);
     newJoint.startPose = joint.startPose;
     newJoint.stateMessages = joint.stateMessages;
-    onUpdate(newJoint);
+    onUpdate({ ...newJoint, trackingMode: joint.trackingMode ?? 'two_sides' });
   };
 
   // Invert Indicator toggle
@@ -949,7 +949,7 @@ function BilateralTabContent({ leftJoint, rightJoint, bilateralCode, onUpdateBot
       const newJoint = buildTrackedJoint(j.joint, newRole, j.pairedWith, isHold);
       newJoint.startPose = j.startPose;
       newJoint.stateMessages = j.stateMessages;
-      return newJoint;
+      return { ...newJoint, trackingMode: j.trackingMode ?? 'two_sides' };
     });
   };
 
@@ -974,6 +974,11 @@ function BilateralTabContent({ leftJoint, rightJoint, bilateralCode, onUpdateBot
     } else {
       onUpdateBoth((j) => ({ ...j, range } as SecondaryTrackedJointData));
     }
+  };
+
+  const trackingMode = joint.trackingMode ?? 'two_sides';
+  const setTrackingMode = (mode: 'two_sides' | 'any_side') => {
+    onUpdateBoth((j) => ({ ...j, trackingMode: mode }));
   };
 
   return (
@@ -1053,6 +1058,41 @@ function BilateralTabContent({ leftJoint, rightJoint, bilateralCode, onUpdateBot
               }`}
           />
         </button>
+      </div>
+
+      {/* Tracking mode (bilateral pair only) */}
+      <div className="flex flex-col gap-3 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+        <div>
+          <p className="font-medium text-gray-800">Tracking mode</p>
+          <p className="text-sm text-gray-500">
+            Side-view camera often hides one side. <strong>Any side</strong> lets training continue when only one side is visible (below visibility threshold).
+            Symmetry is averaged over the whole session only on frames where both sides are visible; otherwise the metric is hidden.
+          </p>
+        </div>
+        <div className="flex flex-wrap gap-2">
+          <button
+            type="button"
+            onClick={() => setTrackingMode('two_sides')}
+            className={`px-4 py-2 text-sm rounded-lg border-2 transition-all ${
+              trackingMode === 'two_sides'
+                ? 'bg-blue-600 border-blue-600 text-white font-medium'
+                : 'bg-white border-gray-200 text-gray-600 hover:border-gray-300'
+            }`}
+          >
+            Track two sides (default)
+          </button>
+          <button
+            type="button"
+            onClick={() => setTrackingMode('any_side')}
+            className={`px-4 py-2 text-sm rounded-lg border-2 transition-all ${
+              trackingMode === 'any_side'
+                ? 'bg-blue-600 border-blue-600 text-white font-medium'
+                : 'bg-white border-gray-200 text-gray-600 hover:border-gray-300'
+            }`}
+          >
+            Track any side
+          </button>
+        </div>
       </div>
 
       {/* Start Pose */}

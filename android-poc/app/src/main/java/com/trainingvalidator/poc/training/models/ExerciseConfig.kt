@@ -399,6 +399,20 @@ enum class JointRole {
 }
 
 /**
+ * Bilateral pair visibility policy (per joint in JSON; both sides of a pair should match).
+ * [TWO_SIDES]: all landmarks for both sides must meet visibility (legacy behaviour).
+ * [ANY_SIDE]: if one side is occluded below threshold and the other is not, the occluded
+ * side is skipped for that frame only; symmetry uses frames where both sides are valid.
+ */
+enum class TrackingMode {
+    @SerializedName("two_sides")
+    TWO_SIDES,
+
+    @SerializedName("any_side")
+    ANY_SIDE
+}
+
+/**
  * Tracked joint configuration - STATE-BASED STRUCTURE
  * 
  * Uses StateRanges for unified quality assessment:
@@ -448,6 +462,9 @@ data class TrackedJoint(
     // Use when the LOWER limb moves UP (like bicep curl: forearm moves up towards shoulder)
     // Default false: Upper limb moves down (like squat: thigh moves down)
     val invertIndicator: Boolean = false,
+
+    /** Default [TrackingMode.TWO_SIDES] when omitted in JSON (backward compatible). */
+    val trackingMode: TrackingMode = TrackingMode.TWO_SIDES,
     
     // Per-phase ranges for SECONDARY joints in UP_DOWN exercises.
     // Keys are phase names: "top", "down", "bottom", "up".

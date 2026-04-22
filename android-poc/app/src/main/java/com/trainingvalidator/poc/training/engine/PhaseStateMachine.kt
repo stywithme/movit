@@ -257,26 +257,25 @@ class PhaseStateMachine(
      * UP_DOWN with per-joint thresholds: every primary with up/down must satisfy the transition.
      */
     private fun updateUpDownStrict(joints: List<TrackedJoint>, primaryAngles: Map<String, Double>): Phase {
-        fun angleOrNull(j: TrackedJoint): Double? = primaryAngles[j.joint]
-        
+        // Only evaluate transitions against joints visible this frame. When a paired joint
+        // is intentionally skipped (e.g. Any-Side occlusion), its absence must NOT block the
+        // phase transition — the visible side decides.
+        val visibleJoints = joints.filter { primaryAngles[it.joint] != null }
+        if (visibleJoints.isEmpty()) return currentPhase
+        fun angleOf(j: TrackedJoint): Double = primaryAngles.getValue(j.joint)
+
         return when (currentPhase) {
             Phase.IDLE -> {
-                if (joints.all { j ->
-                        val a = angleOrNull(j) ?: return@all false
-                        jointInUpRange(j, a, exiting = false)
-                    }) {
+                if (visibleJoints.all { jointInUpRange(it, angleOf(it), exiting = false) }) {
                     Log.d(TAG, "Entered UP range (strict per joint)")
                     Phase.START
                 } else {
                     Phase.IDLE
                 }
             }
-            
+
             Phase.START -> {
-                if (joints.all { j ->
-                        val a = angleOrNull(j) ?: return@all false
-                        jointHasLeftUpRange(j, a)
-                    }) {
+                if (visibleJoints.all { jointHasLeftUpRange(it, angleOf(it)) }) {
                     Log.d(TAG, "Left UP range, starting descent (strict per joint)")
                     repCountedThisCycle = false
                     Phase.DOWN
@@ -284,59 +283,44 @@ class PhaseStateMachine(
                     Phase.START
                 }
             }
-            
+
             Phase.DOWN -> {
                 when {
-                    joints.all { j ->
-                        val a = angleOrNull(j) ?: return@all false
-                        jointHasEnteredDownRange(j, a)
-                    } -> {
+                    visibleJoints.all { jointHasEnteredDownRange(it, angleOf(it)) } -> {
                         Log.d(TAG, "Entered DOWN range (strict per joint)")
                         Phase.BOTTOM
                     }
-                    joints.all { j ->
-                        val a = angleOrNull(j) ?: return@all false
-                        jointInUpRange(j, a, exiting = false)
-                    } -> {
+                    visibleJoints.all { jointInUpRange(it, angleOf(it), exiting = false) } -> {
                         Log.d(TAG, "Returned to UP without reaching DOWN (strict per joint)")
                         Phase.START
                     }
                     else -> Phase.DOWN
                 }
             }
-            
+
             Phase.BOTTOM -> {
-                if (joints.all { j ->
-                        val a = angleOrNull(j) ?: return@all false
-                        jointHasLeftDownRange(j, a)
-                    }) {
+                if (visibleJoints.all { jointHasLeftDownRange(it, angleOf(it)) }) {
                     Log.d(TAG, "Left DOWN range, ascending (strict per joint)")
                     Phase.UP
                 } else {
                     Phase.BOTTOM
                 }
             }
-            
+
             Phase.UP -> {
                 when {
-                    joints.all { j ->
-                        val a = angleOrNull(j) ?: return@all false
-                        jointHasEnteredUpRange(j, a)
-                    } -> {
+                    visibleJoints.all { jointHasEnteredUpRange(it, angleOf(it)) } -> {
                         Log.d(TAG, "★ Requesting REP completion - Entered UP range (strict per joint)")
                         Phase.START
                     }
-                    joints.all { j ->
-                        val a = angleOrNull(j) ?: return@all false
-                        jointInDownRange(j, a, exiting = false)
-                    } -> {
+                    visibleJoints.all { jointInDownRange(it, angleOf(it), exiting = false) } -> {
                         Log.d(TAG, "Returned to DOWN range (strict per joint)")
                         Phase.BOTTOM
                     }
                     else -> Phase.UP
                 }
             }
-            
+
             else -> currentPhase
         }
     }
@@ -345,24 +329,24 @@ class PhaseStateMachine(
      * HOLD with per-joint hold ranges: all must enter; any leaving exits COUNT.
      */
     private fun updateHoldStrict(joints: List<TrackedJoint>, primaryAngles: Map<String, Double>): Phase {
+        // Only consider joints visible this frame. Skipped joints (Any-Side + partner
+        // visible) must not block HOLD entry nor drop the user out of COUNT.
+        val visibleJoints = joints.filter { primaryAngles[it.joint] != null }
+        if (visibleJoints.isEmpty()) return currentPhase
+        fun angleOf(j: TrackedJoint): Double = primaryAngles.getValue(j.joint)
+
         return when (currentPhase) {
             Phase.IDLE -> {
-                if (joints.all { j ->
-                        val a = primaryAngles[j.joint] ?: return@all false
-                        jointInHoldRange(j, a, exiting = false)
-                    }) {
+                if (visibleJoints.all { jointInHoldRange(it, angleOf(it), exiting = false) }) {
                     Log.d(TAG, "Entered HOLD zone (strict per joint)")
                     Phase.COUNT
                 } else {
                     Phase.IDLE
                 }
             }
-            
+
             Phase.COUNT -> {
-                val anyLeft = joints.any { j ->
-                    val a = primaryAngles[j.joint] ?: return@any true
-                    !jointInHoldRange(j, a, exiting = true)
-                }
+                val anyLeft = visibleJoints.any { !jointInHoldRange(it, angleOf(it), exiting = true) }
                 if (anyLeft) {
                     Log.d(TAG, "Left HOLD zone (strict per joint)")
                     Phase.IDLE
@@ -370,7 +354,7 @@ class PhaseStateMachine(
                     Phase.COUNT
                 }
             }
-            
+
             else -> currentPhase
         }
     }

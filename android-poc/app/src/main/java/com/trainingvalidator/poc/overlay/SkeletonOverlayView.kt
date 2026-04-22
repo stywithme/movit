@@ -197,6 +197,9 @@ class SkeletonOverlayView @JvmOverloads constructor(
     
     // Error state - which joints have errors (DANGER or WARNING)
     private var errorJointCodes: Set<String> = emptySet()
+
+    /** Config joint codes with Any-Side low visibility this frame (dim limb segments). */
+    private var anySideDimmedJointCodes: Set<String> = emptySet()
     
     // Position-based errors (knee-over-toe, alignment, etc.)
     private var positionErrors: List<PositionError> = emptyList()
@@ -535,7 +538,8 @@ class SkeletonOverlayView @JvmOverloads constructor(
         angles: JointAngles? = null,
         stateInfos: Map<String, JointStateInfo>,
         positionErrors: List<PositionError> = emptyList(),
-        bilateralFlipped: Boolean = false
+        bilateralFlipped: Boolean = false,
+        anySideDimmedJointCodes: Set<String> = emptySet()
     ) {
         landmarks = smoothedLandmarks
         val dimensionsChanged = imageWidth != inputImageWidth || imageHeight != inputImageHeight
@@ -545,6 +549,7 @@ class SkeletonOverlayView @JvmOverloads constructor(
         jointStateInfos = stateInfos
         this.positionErrors = positionErrors
         this.isBilateralFlipped = bilateralFlipped
+        this.anySideDimmedJointCodes = anySideDimmedJointCodes
         // OPTIMIZED: Only recalculate scale factor if dimensions changed
         if (dimensionsChanged) {
             recalculateScaleFactor()
@@ -794,6 +799,7 @@ class SkeletonOverlayView @JvmOverloads constructor(
         jointStateInfos = emptyMap()
         jointArrowInfos = emptyMap()
         errorJointCodes = emptySet()
+        anySideDimmedJointCodes = emptySet()
         positionErrors = emptyList()
         
         previousColors.clear()
@@ -840,6 +846,9 @@ class SkeletonOverlayView @JvmOverloads constructor(
                 }
                 if (jointStateInfos.isNotEmpty()) {
                     drawGlowingJoints(canvas, currentLandmarks, bodyScale)
+                }
+                if (anySideDimmedJointCodes.isNotEmpty()) {
+                    drawAnySideDimmedLimbSegments(canvas, currentLandmarks)
                 }
                 if (positionErrors.isNotEmpty()) {
                     drawPositionErrors(canvas, currentLandmarks)
@@ -2440,6 +2449,47 @@ class SkeletonOverlayView @JvmOverloads constructor(
         textPaint.color = Color.WHITE
     }
     
+    // ==================== Any-Side dimmed segments ====================
+
+    /**
+     * Subtle limb outline for joints skipped this frame (Any-Side + low visibility).
+     * Does not use error colors or text — silent per product spec.
+     */
+    private fun drawAnySideDimmedLimbSegments(canvas: Canvas, landmarks: List<SmoothedLandmark>) {
+        if (anySideDimmedJointCodes.isEmpty()) return
+        val savedAlpha = linePaint.alpha
+        val savedColor = linePaint.color
+        val savedWidth = linePaint.strokeWidth
+        linePaint.strokeWidth = TRACKED_LINE_WIDTH * 0.85f
+        linePaint.color = Color.argb(255, 160, 180, 200)
+        linePaint.alpha = 80
+
+        fun screenForRaw(rawIdx: Int): Pair<Float, Float>? {
+            val eff = if (isFrontCamera) BodyLandmarks.getMirroredIndex(rawIdx) else rawIdx
+            if (eff < 0 || eff >= landmarks.size) return null
+            val lm = landmarks[eff]
+            return Pair(toScreenX(lm.x), toScreenY(lm.y))
+        }
+
+        for (code in anySideDimmedJointCodes) {
+            val jointForLm = getEffectiveLandmarkJointCode(code)
+            val triple = JointLandmarkMapping.getLandmarksForAngle(jointForLm)
+            if (triple.size != 3) continue
+            val upper = triple[0]
+            val center = triple[1]
+            val lower = triple[2]
+            val pUpper = screenForRaw(upper) ?: continue
+            val pCenter = screenForRaw(center) ?: continue
+            val pLower = screenForRaw(lower) ?: continue
+            canvas.drawLine(pUpper.first, pUpper.second, pCenter.first, pCenter.second, linePaint)
+            canvas.drawLine(pCenter.first, pCenter.second, pLower.first, pLower.second, linePaint)
+        }
+
+        linePaint.strokeWidth = savedWidth
+        linePaint.color = savedColor
+        linePaint.alpha = savedAlpha
+    }
+
     // ==================== Position Error Drawing ====================
     
     /**
