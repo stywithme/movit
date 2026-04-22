@@ -102,9 +102,15 @@ class ImageViewerDialog(
      */
     private fun loadImageWithOverlay(): Bitmap? {
         return try {
-            val file = File(frameCapture.frameUri)
-            if (!file.exists()) return null
-            
+            val path = when {
+                frameCapture.frameUri.isNotEmpty() && File(frameCapture.frameUri).exists() ->
+                    frameCapture.frameUri
+                frameCapture.thumbnailUri.isNotEmpty() && File(frameCapture.thumbnailUri).exists() ->
+                    frameCapture.thumbnailUri
+                else -> return null
+            }
+            val file = File(path)
+
             val originalBitmap = BitmapFactory.decodeFile(file.absolutePath)
             if (originalBitmap == null) return null
             

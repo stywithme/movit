@@ -18,9 +18,9 @@ import java.util.UUID
  * - Hold exercise samples
  * 
  * Includes limits to prevent storage bloat:
- * - Max 2 DANGER frames (CRITICAL - always capture)
+ * - Max 6 DANGER frames (CRITICAL - always capture)
  * - Max 3 best reps
- * - One error frame per error type
+ * - One error frame per error type **per rep** (not global — so worst rep can still get a frame)
  * - One peak frame per rep
  * - Max 3 hold samples
  */
@@ -34,7 +34,7 @@ class FrameCaptureManager(
         private const val FULL_SIZE = 720       // px
         private const val JPEG_QUALITY = 85     // %
         private const val MAX_BEST_REPS = 3
-        private const val MAX_DANGER_FRAMES = 2
+        private const val MAX_DANGER_FRAMES = 6
         private const val MAX_HOLD_SAMPLES = 3
         private const val ERROR_CAPTURE_COOLDOWN_MS = 2000L
         private const val DANGER_CAPTURE_COOLDOWN_MS = 1000L  // Shorter cooldown for DANGER
@@ -43,8 +43,9 @@ class FrameCaptureManager(
     private val capturedFrames = mutableListOf<FrameCapture>()
     private val sessionDir: File = File(storageDir, "frame_captures/$sessionId")
     
-    // Track captured error types to avoid duplicates
-    private val capturedErrorTypes = mutableSetOf<String>()
+    // One capture per error type **per rep** (session-wide dedup caused missing worst-rep frames)
+    private val capturedErrorsByRep = mutableMapOf<Int, MutableSet<String>>()
+    /** Last capture time per rep+errorKey for cooldown (ms). */
     private val lastErrorCaptureTimes = mutableMapOf<String, Long>()
     
     // Track DANGER captures
@@ -175,17 +176,17 @@ class FrameCaptureManager(
         errorKey: String,
         angles: Map<String, Double>? = null
     ): FrameCapture? {
-        // Only one capture per error type per session
-        if (capturedErrorTypes.contains(errorKey)) {
+        val perRepKeys = capturedErrorsByRep.getOrPut(repNumber) { mutableSetOf() }
+        if (perRepKeys.contains(errorKey)) {
             return null
         }
-        
-        // Cooldown check
-        val lastTime = lastErrorCaptureTimes[errorKey] ?: 0L
+
+        val cooldownKey = "$repNumber:$errorKey"
+        val lastTime = lastErrorCaptureTimes[cooldownKey] ?: 0L
         if (System.currentTimeMillis() - lastTime < ERROR_CAPTURE_COOLDOWN_MS) {
             return null
         }
-        
+
         val capture = captureInternal(
             bitmap = bitmap,
             repNumber = repNumber,
@@ -194,10 +195,10 @@ class FrameCaptureManager(
             errorType = errorKey,
             angles = angles
         ) ?: return null
-        
-        capturedErrorTypes.add(errorKey)
-        lastErrorCaptureTimes[errorKey] = System.currentTimeMillis()
-        
+
+        perRepKeys.add(errorKey)
+        lastErrorCaptureTimes[cooldownKey] = System.currentTimeMillis()
+
         return capture
     }
     
@@ -404,6 +405,12 @@ class FrameCaptureManager(
      * Get peak/best frame for a specific rep
      */
     fun getFrameForRep(repNumber: Int): FrameCapture? = peakFramesByRep[repNumber]
+
+    /**
+     * Any still captured for this rep (peak, best, error, danger — first match in list order).
+     */
+    fun getAnyFrameForRep(repNumber: Int): FrameCapture? =
+        capturedFrames.firstOrNull { it.repNumber == repNumber }
     
     /**
      * Get hold sample frames
@@ -430,7 +437,7 @@ class FrameCaptureManager(
         try {
             sessionDir.deleteRecursively()
             capturedFrames.clear()
-            capturedErrorTypes.clear()
+            capturedErrorsByRep.clear()
             lastErrorCaptureTimes.clear()
             dangerFrameCount = 0
             lastDangerCaptureTime = 0L

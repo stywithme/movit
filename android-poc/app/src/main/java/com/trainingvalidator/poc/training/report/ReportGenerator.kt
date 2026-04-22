@@ -69,8 +69,16 @@ object ReportGenerator {
         // 5. Find worst rep
         val worstRep = findWorstRep(summary.repDetails, frameCaptures)
 
-        // 6. Get best rep frame for comparison
-        val bestRepFrame = frameCaptures.find { it.captureType == CaptureType.BEST_REP }
+        // 6. Get best rep frame for angle comparison — MUST be the actual best rep's pose
+        // (no neighbor fallback: neighbor angles would pollute error-vs-best-angle diffs).
+        val bestRepFrame = bestReps.firstOrNull()?.let { best ->
+            resolveFrameForRep(
+                repNumber = best.repNumber,
+                frames = frameCaptures,
+                preferredTypes = listOf(CaptureType.BEST_REP, CaptureType.PEAK_FRAME),
+                maxNeighborDistance = 0
+            )
+        }
 
         // 7. Generate state-based error analysis
         val errorAnalysis = generateStateBasedErrorAnalysis(
@@ -245,6 +253,10 @@ object ReportGenerator {
                     stateDisplayName = displayInfo.toLocalizedText(),
                     stateIcon = displayInfo.icon,
                     score = rep.score,
+                    quality = RepQuality.fromLegacyFlags(
+                        isCounted = rep.isCounted,
+                        isInvalidated = rep.worstState == 4
+                    ),
                     isCounted = rep.isCounted,
                     isInvalidated = worstState == JointState.DANGER,
                     setNumber = set.setNumber
@@ -523,12 +535,16 @@ object ReportGenerator {
                     actualAngle = dangerError.actualAngle
                 )
 
-            // Find DANGER frame
-            val dangerFrame = frameCaptures.find {
-                it.captureType == CaptureType.DANGER_FRAME && it.repNumber == rep.repNumber
-            } ?: frameCaptures.find {
-                it.captureType == CaptureType.ERROR_FRAME && it.repNumber == rep.repNumber
-            }
+            val dangerFrame = resolveFrameForRep(
+                repNumber = rep.repNumber,
+                frames = frameCaptures,
+                preferredTypes = listOf(
+                    CaptureType.DANGER_FRAME,
+                    CaptureType.ERROR_FRAME,
+                    CaptureType.PEAK_FRAME
+                ),
+                jointHint = jointCode
+            )
 
             DangerAlert(
                 repNumber = rep.repNumber,
@@ -563,11 +579,13 @@ object ReportGenerator {
             ?.feedbackMessages?.motivational ?: emptyList()
 
         return perfectReps.take(MAX_PERFECT_MOMENTS).mapIndexed { index, rep ->
-            // Get frame for this rep
-            val frame = frameCaptures.find {
-                it.repNumber == rep.repNumber &&
-                (it.captureType == CaptureType.BEST_REP || it.captureType == CaptureType.PEAK_FRAME)
-            }
+            // Perfect moment must be THIS rep's pose, never a neighbor's.
+            val frame = resolveFrameForRep(
+                repNumber = rep.repNumber,
+                frames = frameCaptures,
+                preferredTypes = listOf(CaptureType.BEST_REP, CaptureType.PEAK_FRAME),
+                maxNeighborDistance = 0
+            )
 
             // Select motivational message
             val motivational = motivationals.getOrNull(index % motivationals.size.coerceAtLeast(1))
@@ -585,27 +603,76 @@ object ReportGenerator {
 
     // ==================== Best/Worst Reps ====================
 
+    /**
+     * Pick the best still for a rep: preferred [CaptureType]s on this rep (optional joint match on error frames),
+     * then any capture for this rep, then the same strategy on neighbor rep numbers.
+     */
+    private fun resolveFrameForRep(
+        repNumber: Int,
+        frames: List<FrameCapture>,
+        preferredTypes: List<CaptureType>,
+        jointHint: String? = null,
+        maxNeighborDistance: Int = 2
+    ): FrameCapture? {
+        if (frames.isEmpty()) return null
+
+        fun jointMatches(f: FrameCapture): Boolean {
+            if (jointHint.isNullOrBlank()) return true
+            return f.errorType?.contains(jointHint, ignoreCase = true) == true ||
+                f.metadata.errorDetails?.contains(jointHint, ignoreCase = true) == true
+        }
+
+        fun pickForRep(rep: Int): FrameCapture? {
+            for (type in preferredTypes) {
+                val list = frames.filter { it.repNumber == rep && it.captureType == type }
+                val hinted = if (jointHint != null) list.find { jointMatches(it) } else null
+                if (hinted != null) return hinted
+                list.firstOrNull()?.let { return it }
+            }
+            return frames.firstOrNull { it.repNumber == rep }
+        }
+
+        pickForRep(repNumber)?.let { return it }
+
+        for (d in 1..maxNeighborDistance) {
+            for (neighbor in listOf(repNumber - d, repNumber + d)) {
+                if (neighbor < 1) continue
+                pickForRep(neighbor)?.let { return it }
+            }
+        }
+        return null
+    }
+
     private fun findBestRepsByScore(
         repDetails: List<RepResult>,
         frameCaptures: List<FrameCapture>
     ): List<BestRepHighlight> {
+        val bestPoolRaw = when {
+            repDetails.any { it.quality == RepQuality.CLEAN } ->
+                repDetails.filter { it.quality == RepQuality.CLEAN }
+            repDetails.any { it.quality == RepQuality.NEEDS_CORRECTION } ->
+                repDetails.filter { it.quality == RepQuality.NEEDS_CORRECTION }
+            else -> repDetails.filter { it.quality == RepQuality.DANGER }
+        }
+        val bestPool = bestPoolRaw.ifEmpty { repDetails }
+
         // Sort by score descending, then by fewest issues (position warnings/errors)
-        val sortedReps = repDetails
-            .filter { it.isCounted }
+        val sortedReps = bestPool
             .sortedWith(compareByDescending<RepResult> { it.score }
                 .thenBy { it.positionWarningCount + it.positionErrors.size }
                 .thenBy { it.errors.size })
 
         if (sortedReps.isEmpty()) {
-            Log.d(TAG, "No counted reps found")
+            Log.d(TAG, "No completed reps found for best-rep selection")
             return emptyList()
         }
 
         return sortedReps.take(MAX_BEST_REPS).map { rep ->
-            val frame = frameCaptures.find {
-                it.repNumber == rep.repNumber &&
-                (it.captureType == CaptureType.BEST_REP || it.captureType == CaptureType.PEAK_FRAME)
-            }
+            val frame = resolveFrameForRep(
+                repNumber = rep.repNumber,
+                frames = frameCaptures,
+                preferredTypes = listOf(CaptureType.BEST_REP, CaptureType.PEAK_FRAME)
+            )
 
             val displayInfo = StateDisplayConfig.getDisplayInfo(rep.worstState)
 
@@ -614,6 +681,7 @@ object ReportGenerator {
                 durationMs = calculateRepDuration(rep),
                 score = rep.score,
                 worstState = rep.worstState,
+                quality = rep.quality,
                 reasons = listOf(displayInfo.toLocalizedText()),
                 frameCapture = frame
             )
@@ -660,17 +728,28 @@ object ReportGenerator {
             ?: worstRep.positionErrors.firstOrNull()?.message
             ?: StateDisplayConfig.getDisplayInfo(worstRep.worstState).toLocalizedText()
 
-        val frame = frameCaptures.find {
-            it.repNumber == worstRep.repNumber &&
-                (it.captureType == CaptureType.ERROR_FRAME || it.captureType == CaptureType.DANGER_FRAME)
-        } ?: frameCaptures.find { it.repNumber == worstRep.repNumber }
+        val jointHint = worstRep.errors.firstOrNull()?.jointCode
+            ?: worstRep.positionErrors.firstOrNull()?.landmark1
+
+        val frame = resolveFrameForRep(
+            repNumber = worstRep.repNumber,
+            frames = frameCaptures,
+            preferredTypes = listOf(
+                CaptureType.DANGER_FRAME,
+                CaptureType.ERROR_FRAME,
+                CaptureType.PEAK_FRAME
+            ),
+            jointHint = jointHint
+        )
 
         return WorstRepHighlight(
             repNumber = worstRep.repNumber,
             durationMs = calculateRepDuration(worstRep),
+            score = worstRep.score,
             errorCount = worstRep.getTotalErrorCount()
                 + worstRep.positionWarningCount,     // Include warnings in count
             worstState = worstRep.worstState,
+            quality = worstRep.quality,
             primaryError = primaryError,
             frameCapture = frame
         )
@@ -759,14 +838,22 @@ object ReportGenerator {
             // Best rep angle for this joint
             val bestAngle = bestRepAngles[jointCode]
 
-            // Find error frame for this specific error type
-            val errorFrame = frameCaptures.find {
-                (it.captureType == CaptureType.ERROR_FRAME || it.captureType == CaptureType.DANGER_FRAME) &&
-                it.errorType?.contains(jointCode) == true
-            } ?: frameCaptures.find {
-                (it.captureType == CaptureType.ERROR_FRAME || it.captureType == CaptureType.DANGER_FRAME) &&
-                it.repNumber in affectedReps
-            }
+            // Error frame must come from one of the affected reps (semantic accuracy).
+            // Try the jointHint match first, then settle for a generic DANGER/ERROR frame.
+            val errorFrame = affectedReps.asSequence()
+                .mapNotNull { repNum ->
+                    resolveFrameForRep(
+                        repNumber = repNum,
+                        frames = frameCaptures,
+                        preferredTypes = listOf(
+                            CaptureType.DANGER_FRAME,
+                            CaptureType.ERROR_FRAME
+                        ),
+                        jointHint = jointCode,
+                        maxNeighborDistance = 0
+                    )
+                }
+                .firstOrNull()
 
             ErrorAnalysisItem(
                 errorKey = key,
@@ -821,8 +908,20 @@ object ReportGenerator {
             // Get short error labels
             val errors = rep.errors.map { getShortErrorLabel(it) }
 
-            // Find frame for this rep
-            val frame = frameCaptures.find { it.repNumber == rep.repNumber }
+            // Timeline thumbs are per-rep: NEVER borrow from neighbors (would mislead users
+            // into thinking another rep's frame represents this one).
+            val frame = resolveFrameForRep(
+                repNumber = rep.repNumber,
+                frames = frameCaptures,
+                preferredTypes = listOf(
+                    CaptureType.BEST_REP,
+                    CaptureType.PEAK_FRAME,
+                    CaptureType.DANGER_FRAME,
+                    CaptureType.ERROR_FRAME
+                ),
+                jointHint = rep.errors.firstOrNull()?.jointCode,
+                maxNeighborDistance = 0
+            )
 
             RepTimelineEntry(
                 repNumber = rep.repNumber,
@@ -836,6 +935,7 @@ object ReportGenerator {
                 stateDisplayName = displayInfo.toLocalizedText(),
                 stateIcon = displayInfo.icon,
                 score = rep.score,
+                quality = rep.quality,
                 isCounted = rep.isCounted,
                 isInvalidated = rep.isInvalidated,
                 stateMessage = stateMessage,

@@ -1778,8 +1778,11 @@ class TrainingActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetection
                     binding.tvPhase,
                     getPhaseDisplayName(phase, viewModel.isHoldExercise())
                 )
-                
-                // Capture peak frame when entering BOTTOM phase
+
+                // Capture peak frame when entering BOTTOM phase.
+                // Rep index: getCurrentRep() is completed count; +1 is the in-progress rep (1-based),
+                // same as FeedbackEvent.RepCompleted.repNumber after that rep finishes — must match
+                // FrameCaptureManager peak / error repNumber tagging.
                 if (phase != lastCapturedPhase) {
                     if (phase == Phase.BOTTOM) {
                         capturePeakFrame(phase)
@@ -2722,8 +2725,9 @@ class TrainingActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetection
             }
             
             is FeedbackEvent.JointErrorDetected -> {
-                // Capture error frame (first occurrence per error type)
+                // Capture error frame (deduped per rep + errorKey in FrameCaptureManager).
                 val errorKey = "${event.error.jointCode}:${event.error.state.name}"
+                // In-progress rep (1-based), aligned with peak capture and RepCompleted.repNumber.
                 val currentRep = (viewModel.trainingEngine?.getCurrentRep() ?: 0) + 1
                 val phase = viewModel.currentPhase.value
                 
@@ -2768,7 +2772,9 @@ class TrainingActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetection
     // ==================== Frame Capture ====================
     
     /**
-     * Capture peak frame when reaching BOTTOM phase
+     * Capture peak frame when reaching BOTTOM phase.
+     * Uses [TrainingEngine.getCurrentRep] + 1 as repNumber so it matches [FeedbackEvent.RepCompleted.repNumber]
+     * for the rep currently being performed (see FrameCaptureManager / ReportGenerator).
      */
     private fun capturePeakFrame(phase: Phase) {
         // Only capture during active training

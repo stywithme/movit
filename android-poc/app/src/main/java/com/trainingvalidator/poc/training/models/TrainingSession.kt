@@ -7,6 +7,24 @@ import com.trainingvalidator.poc.training.report.PerformanceRating
 // Session state is managed by TrainingEngine and RepCounter.
 // SessionSummary is used for the final report.
 
+enum class RepQuality {
+    CLEAN,
+    NEEDS_CORRECTION,
+    DANGER;
+
+    val isClean: Boolean get() = this == CLEAN
+    val needsCorrection: Boolean get() = this == NEEDS_CORRECTION
+    val isDanger: Boolean get() = this == DANGER
+
+    companion object {
+        fun fromLegacyFlags(isCounted: Boolean, isInvalidated: Boolean): RepQuality = when {
+            isInvalidated -> DANGER
+            isCounted -> CLEAN
+            else -> NEEDS_CORRECTION
+        }
+    }
+}
+
 /**
  * RepResult - Result of a single repetition
  * 
@@ -34,6 +52,10 @@ data class RepResult(
     val phaseTimings: Map<String, Long> = emptyMap(),
     val timestamp: Long = System.currentTimeMillis()
 ) {
+    /** Maps legacy counted / invalidated flags to session quality for reporting UI. */
+    val quality: RepQuality
+        get() = RepQuality.fromLegacyFlags(isCounted, isInvalidated)
+
     /**
      * Get total error count (angle + position)
      */

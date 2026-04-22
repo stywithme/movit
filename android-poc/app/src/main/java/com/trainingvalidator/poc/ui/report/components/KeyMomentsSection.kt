@@ -150,7 +150,14 @@ class KeyMomentsSection @JvmOverloads constructor(
     
     private fun loadFrame(frame: FrameCapture?, imageView: ImageView) {
         if (frame != null) {
-            val file = File(frame.frameUri.ifEmpty { frame.thumbnailUri })
+            val path = when {
+                frame.thumbnailUri.isNotEmpty() && File(frame.thumbnailUri).exists() ->
+                    frame.thumbnailUri
+                frame.frameUri.isNotEmpty() && File(frame.frameUri).exists() ->
+                    frame.frameUri
+                else -> frame.frameUri.ifEmpty { frame.thumbnailUri }
+            }
+            val file = File(path)
             if (file.exists()) {
                 val bitmap = BitmapFactory.decodeFile(file.absolutePath)
                 imageView.setImageBitmap(bitmap)
