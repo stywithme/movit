@@ -842,7 +842,12 @@ class TrainingEngine(
             
             
             // ── 1. Extract angles (always — needed for UI even when suspended) ──
-            val angleExtract = jointTracker.extractTrackedAngles(angles, isBilateralFlipped, landmarks)
+            val angleExtract = jointTracker.extractTrackedAngles(
+                angles = angles,
+                isFlipped = isBilateralFlipped,
+                landmarks = landmarks,
+                isFrontCamera = isFrontCamera
+            )
             val rawTrackedAngles = angleExtract.angles
             val skippedForFrame = angleExtract.skippedJointCodes
 

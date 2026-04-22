@@ -10,6 +10,7 @@ import com.trainingvalidator.poc.training.models.ExerciseConfig
 import com.trainingvalidator.poc.training.models.JointRole
 import com.trainingvalidator.poc.training.models.LocalizedText
 import com.trainingvalidator.poc.training.models.TrackedJoint
+import com.trainingvalidator.poc.training.models.TrackingMode
 
 /**
  * PoseSetupGuide - Smart pre-training position guidance system
@@ -165,14 +166,17 @@ class PoseSetupGuide(
         // Visibility-only confirmation: all PRIMARY joints must be visible
         // (angle computable = all 3 landmarks have sufficient visibility).
         // No angle-range validation — just presence in the frame.
+        //
+        // Any-Side exception: for a bilateral pair whose BOTH joints are tagged
+        // `any_side`, the setup phase accepts either side being visible (user
+        // may deliberately present a side-view where the far side is hidden).
         val guidanceByJoint = jointGuidances.associateBy { it.jointCode }
-        val requiredJointCodes = variant.trackedJoints
+        val primaryJoints = variant.trackedJoints
             .filter { it.role == JointRole.PRIMARY }
-            .map { it.joint }
-            .ifEmpty { variant.trackedJoints.map { it.joint } }
+            .ifEmpty { variant.trackedJoints }
 
         val requiredJointsPresent = phase == SetupPhase.ANGLES &&
-                requiredJointCodes.all { guidanceByJoint.containsKey(it) }
+                allPrimaryJointsPresent(primaryJoints, guidanceByJoint)
 
         jointWindow.add(requiredJointsPresent)
 
@@ -221,6 +225,41 @@ class PoseSetupGuide(
     // ──────────────────────────────────────────────────────────────────────
     // Private helpers
     // ──────────────────────────────────────────────────────────────────────
+
+    /**
+     * Does the setup consider all required primary joints "present"?
+     *
+     * Rule per joint:
+     *  - Default / `two_sides`: this specific joint must have guidance.
+     *  - `any_side` paired joint: the pair is satisfied when **at least one** side
+     *    of the pair has guidance. The joint pair is collapsed to a single check.
+     */
+    private fun allPrimaryJointsPresent(
+        primaryJoints: List<TrackedJoint>,
+        guidanceByJoint: Map<String, JointGuidance>
+    ): Boolean {
+        val visited = mutableSetOf<String>()
+        for (joint in primaryJoints) {
+            if (joint.joint in visited) continue
+            val partnerCode = joint.pairedWith
+            val isAnySidePair = partnerCode != null &&
+                joint.trackingMode == TrackingMode.ANY_SIDE &&
+                primaryJoints.any {
+                    it.joint == partnerCode && it.trackingMode == TrackingMode.ANY_SIDE
+                }
+            if (isAnySidePair && partnerCode != null) {
+                visited.add(joint.joint)
+                visited.add(partnerCode)
+                val ok = guidanceByJoint.containsKey(joint.joint) ||
+                    guidanceByJoint.containsKey(partnerCode)
+                if (!ok) return false
+            } else {
+                visited.add(joint.joint)
+                if (!guidanceByJoint.containsKey(joint.joint)) return false
+            }
+        }
+        return true
+    }
 
     private fun buildJointGuidance(
         joint: TrackedJoint,

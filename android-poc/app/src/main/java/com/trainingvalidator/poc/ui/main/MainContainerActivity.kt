@@ -2,10 +2,7 @@ package com.trainingvalidator.poc.ui.main
 
 import android.os.Bundle
 import androidx.appcompat.app.AppCompatActivity
-import androidx.core.view.ViewCompat
 import androidx.core.view.WindowCompat
-import androidx.core.view.WindowInsetsCompat
-import androidx.core.view.updatePadding
 import androidx.fragment.app.Fragment
 import com.trainingvalidator.poc.R
 import com.trainingvalidator.poc.databinding.ActivityMainContainerBinding
@@ -48,12 +45,6 @@ class MainContainerActivity : AppCompatActivity() {
         
         binding = ActivityMainContainerBinding.inflate(layoutInflater)
         setContentView(binding.root)
-
-        ViewCompat.setOnApplyWindowInsetsListener(binding.root) { view, windowInsets ->
-            val imeBottom = windowInsets.getInsets(WindowInsetsCompat.Type.ime()).bottom
-            view.updatePadding(bottom = imeBottom)
-            windowInsets
-        }
         
         if (savedInstanceState == null) {
             homeFragment = HomeFragment()
