@@ -25,17 +25,17 @@ class JointAngleTracker(
         private const val TAG = "JointAngleTracker"
 
         /**
-         * Minimum relative gap between the two sides of an Any-Side pair when both
-         * are above the hard threshold. A gap at or beyond this means the weaker
-         * side is MediaPipe's back-side hallucination — trust only the stronger.
+         * Above this min-landmark visibility a side is considered clearly visible
+         * (front-facing limb). Below this but above the hard skip threshold the
+         * side is "borderline" (commonly MediaPipe's back-side hallucination in a
+         * side-view pose).
          */
-        private const val VISIBILITY_PREFER_STRONGER_GAP = 0.2f
+        private const val VISIBILITY_STRONG_THRESHOLD = 0.7f
 
         /**
-         * Smaller gap used when both sides are below the hard threshold. Keeps the
-         * clearly-better side active so rep counting keeps running while the user
-         * is in a side-view. Below this gap we keep both sides and let
-         * VisibilityMonitor handle the full-occlusion case.
+         * Tiebreaker gap when both sides are below the hard [SettingsManager.getAnySideVisibilityThreshold].
+         * Keeps the clearly-better side active so rep counting survives a transient
+         * dip instead of freezing on both sides.
          */
         private const val VISIBILITY_TIEBREAK_GAP = 0.1f
         
@@ -161,11 +161,18 @@ class JointAngleTracker(
 
         fun anatomical(code: String): String = if (isFlipped) mirrorJointCode(code) else code
 
+        // Exercise-level Any-Side mode: if any tracked joint is any_side, apply the
+        // per-frame skip logic to every bilateral pair — otherwise a pair left at the
+        // default `two_sides` would pollute evaluation with the occluded side's
+        // hallucinated angle while the user is in a side-view.
+        val isAnySideExercise = trackedJoints.any { it.trackingMode == TrackingMode.ANY_SIDE }
+
         for (joint in trackedJoints) {
             val partnerCode = joint.pairedWith ?: continue
-            if (joint.trackingMode != TrackingMode.ANY_SIDE) continue
             val partnerCfg = trackedJoints.find { it.joint == partnerCode } ?: continue
-            if (partnerCfg.trackingMode != TrackingMode.ANY_SIDE) continue
+            val bothAnySide = joint.trackingMode == TrackingMode.ANY_SIDE &&
+                partnerCfg.trackingMode == TrackingMode.ANY_SIDE
+            if (!bothAnySide && !isAnySideExercise) continue
 
             val a = minOf(joint.joint, partnerCode)
             val b = maxOf(joint.joint, partnerCode)
@@ -177,8 +184,10 @@ class JointAngleTracker(
             val vB = JointLandmarkMapping.computeJointVisibility(anatomical(b), landmarks, isFrontCamera)
             val belowA = vA < threshold
             val belowB = vB < threshold
+            val strongA = vA >= VISIBILITY_STRONG_THRESHOLD
+            val strongB = vB >= VISIBILITY_STRONG_THRESHOLD
             when {
-                // Clear winner: one side passes the threshold, the other does not
+                // Clear winner: one side passes the hard threshold, the other does not
                 //   → drop the weaker side regardless of how big the gap is.
                 belowA && !belowB -> {
                     map.remove(a); skipped.add(a)
@@ -201,20 +210,22 @@ class JointAngleTracker(
                         }
                     }
                 }
-                // Both above threshold, but MediaPipe sometimes hallucinates the
-                // occluded side with a fake confidence just above 0.5. Any notable
-                // gap means one side is the front-facing one → trust only that side.
-                else -> {
-                    val diff = vA - vB
-                    when {
-                        diff >= VISIBILITY_PREFER_STRONGER_GAP -> {
-                            map.remove(b); skipped.add(b)
-                        }
-                        diff <= -VISIBILITY_PREFER_STRONGER_GAP -> {
-                            map.remove(a); skipped.add(a)
-                        }
-                    }
+                // Both above hard threshold but one is clearly dominant:
+                // MediaPipe commonly reports the back-side limbs with a fake
+                // confidence in the 0.5–0.7 "borderline" band even when they are
+                // fully occluded. In that case we trust only the front-facing
+                // (strong) side so phase transitions are not corrupted by the
+                // hallucinated back-side angle.
+                strongA && !strongB -> {
+                    map.remove(b); skipped.add(b)
                 }
+                strongB && !strongA -> {
+                    map.remove(a); skipped.add(a)
+                }
+                // Both clearly visible OR both borderline (frontal view / symmetrical
+                // partial occlusion) — keep both sides and let Symmetry/FormValidator
+                // use them normally.
+                else -> { /* keep both */ }
             }
         }
         return TrackedAnglesExtractResult(map, skipped)
