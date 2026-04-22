@@ -242,14 +242,24 @@ object JointLandmarkMapping {
      * Minimum visibility across the three landmarks that define this joint's angle.
      * Stricter than average: if any defining point is occluded, the joint is treated as low visibility.
      *
+     * When [isFrontCamera] is true, raw landmark indices are mirrored because MediaPipe
+     * runs on the already-mirrored image — so the user's anatomical "right_knee"
+     * sits at the mirrored index of landmark 26 rather than 26 itself.
+     *
      * @param jointCode Anatomical joint code (same space as [getLandmarksForAngle])
-     * @param landmarks Smoothed landmarks in MediaPipe index order (same indices as mapping)
+     * @param landmarks Smoothed landmarks in MediaPipe index order (raw from MediaPipe)
+     * @param isFrontCamera True when the pose was detected on a mirrored image.
      */
-    fun computeJointVisibility(jointCode: String, landmarks: List<SmoothedLandmark>): Float {
+    fun computeJointVisibility(
+        jointCode: String,
+        landmarks: List<SmoothedLandmark>,
+        isFrontCamera: Boolean = false
+    ): Float {
         val indices = getLandmarksForAngle(jointCode)
         if (indices.isEmpty() || landmarks.isEmpty()) return 0f
         var minV = 1f
-        for (idx in indices) {
+        for (rawIdx in indices) {
+            val idx = if (isFrontCamera) BodyLandmarks.getMirroredIndex(rawIdx) else rawIdx
             if (idx < 0 || idx >= landmarks.size) return 0f
             minV = kotlin.math.min(minV, landmarks[idx].visibility)
         }

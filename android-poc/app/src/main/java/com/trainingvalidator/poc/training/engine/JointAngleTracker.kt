@@ -23,6 +23,21 @@ class JointAngleTracker(
     
     companion object {
         private const val TAG = "JointAngleTracker"
+
+        /**
+         * Minimum relative gap between the two sides of an Any-Side pair when both
+         * are above the hard threshold. A gap at or beyond this means the weaker
+         * side is MediaPipe's back-side hallucination — trust only the stronger.
+         */
+        private const val VISIBILITY_PREFER_STRONGER_GAP = 0.2f
+
+        /**
+         * Smaller gap used when both sides are below the hard threshold. Keeps the
+         * clearly-better side active so rep counting keeps running while the user
+         * is in a side-view. Below this gap we keep both sides and let
+         * VisibilityMonitor handle the full-occlusion case.
+         */
+        private const val VISIBILITY_TIEBREAK_GAP = 0.1f
         
         /**
          * Map of joint codes to their angle getter functions
@@ -101,7 +116,7 @@ class JointAngleTracker(
      * @return Map of joint code to angle value (only tracked joints)
      */
     fun extractTrackedAngles(angles: JointAngles): Map<String, Double> =
-        extractTrackedAngles(angles, isFlipped = false, landmarks = null).angles
+        extractTrackedAngles(angles, isFlipped = false, landmarks = null, isFrontCamera = false).angles
     
     /**
      * Extract angles for tracked joints with optional bilateral flipping.
@@ -120,17 +135,21 @@ class JointAngleTracker(
      * @return Map of config joint code to angle value
      */
     fun extractTrackedAngles(angles: JointAngles, isFlipped: Boolean): Map<String, Double> =
-        extractTrackedAngles(angles, isFlipped, landmarks = null).angles
+        extractTrackedAngles(angles, isFlipped, landmarks = null, isFrontCamera = false).angles
 
     /**
      * Extract tracked angles with optional per-frame skipping for [TrackingMode.ANY_SIDE] pairs
      * when one side's landmarks fall below [SettingsManager.getAnySideVisibilityThreshold]
      * while the partner remains visible.
+     *
+     * @param isFrontCamera True when landmarks were produced from a mirrored image;
+     *  visibility lookups will use the mirrored raw index so the anatomical side is checked.
      */
     fun extractTrackedAngles(
         angles: JointAngles,
         isFlipped: Boolean,
-        landmarks: List<SmoothedLandmark>?
+        landmarks: List<SmoothedLandmark>?,
+        isFrontCamera: Boolean = false
     ): TrackedAnglesExtractResult {
         val map = buildAngleMap(angles, isFlipped)
         if (landmarks == null || landmarks.size < 33) {
@@ -154,16 +173,47 @@ class JointAngleTracker(
             if (key in processedPairs) continue
             processedPairs.add(key)
 
-            val vA = JointLandmarkMapping.computeJointVisibility(anatomical(a), landmarks)
-            val vB = JointLandmarkMapping.computeJointVisibility(anatomical(b), landmarks)
+            val vA = JointLandmarkMapping.computeJointVisibility(anatomical(a), landmarks, isFrontCamera)
+            val vB = JointLandmarkMapping.computeJointVisibility(anatomical(b), landmarks, isFrontCamera)
+            val belowA = vA < threshold
+            val belowB = vB < threshold
             when {
-                vA < threshold && vB >= threshold -> {
-                    map.remove(a)
-                    skipped.add(a)
+                // Clear winner: one side passes the threshold, the other does not
+                //   → drop the weaker side regardless of how big the gap is.
+                belowA && !belowB -> {
+                    map.remove(a); skipped.add(a)
                 }
-                vB < threshold && vA >= threshold -> {
-                    map.remove(b)
-                    skipped.add(b)
+                belowB && !belowA -> {
+                    map.remove(b); skipped.add(b)
+                }
+                // Both below threshold (e.g. side-view where even the "visible"
+                // side dips momentarily). Keep the clearly better side so phase
+                // counting survives, skip the weaker one. If both are equally
+                // low we keep both and let VisibilityMonitor decide to pause.
+                belowA && belowB -> {
+                    val diff = vA - vB
+                    when {
+                        diff > VISIBILITY_TIEBREAK_GAP -> {
+                            map.remove(b); skipped.add(b)
+                        }
+                        diff < -VISIBILITY_TIEBREAK_GAP -> {
+                            map.remove(a); skipped.add(a)
+                        }
+                    }
+                }
+                // Both above threshold, but MediaPipe sometimes hallucinates the
+                // occluded side with a fake confidence just above 0.5. Any notable
+                // gap means one side is the front-facing one → trust only that side.
+                else -> {
+                    val diff = vA - vB
+                    when {
+                        diff >= VISIBILITY_PREFER_STRONGER_GAP -> {
+                            map.remove(b); skipped.add(b)
+                        }
+                        diff <= -VISIBILITY_PREFER_STRONGER_GAP -> {
+                            map.remove(a); skipped.add(a)
+                        }
+                    }
                 }
             }
         }

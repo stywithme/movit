@@ -7,6 +7,7 @@ import android.view.ContextThemeWrapper
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.view.WindowManager
 import android.widget.ImageView
 import android.widget.TextView
 import androidx.core.widget.addTextChangedListener
@@ -90,7 +91,17 @@ class ExploreFragment : Fragment() {
 
     override fun onResume() {
         super.onResume()
+        requireActivity().window.setSoftInputMode(
+            WindowManager.LayoutParams.SOFT_INPUT_ADJUST_NOTHING
+        )
         if (_binding != null) bindHeaderAvatar()
+    }
+
+    override fun onPause() {
+        requireActivity().window.setSoftInputMode(
+            WindowManager.LayoutParams.SOFT_INPUT_ADJUST_UNSPECIFIED
+        )
+        super.onPause()
     }
 
     private fun bindHeaderAvatar() {
@@ -160,14 +171,6 @@ class ExploreFragment : Fragment() {
 
         binding.etSearch.addTextChangedListener {
             applyFilters()
-        }
-
-        binding.etSearch.setOnFocusChangeListener { _, hasFocus ->
-            if (hasFocus) {
-                binding.scrollView.post {
-                    binding.scrollView.smoothScrollTo(0, binding.tilSearch.top)
-                }
-            }
         }
 
         binding.chipGroupPrimaryFilter.setOnCheckedStateChangeListener { _, checkedIds ->

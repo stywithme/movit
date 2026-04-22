@@ -521,10 +521,14 @@ class FormValidator(
      * For HOLD exercises: Checks if in hold range with counted state
      */
     fun isInStartPosition(currentAngles: Map<String, Double>): Boolean {
+        var checked = 0
         for (joint in trackedJoints) {
             if (joint.role != JointRole.PRIMARY) continue
 
-            val currentAngle = currentAngles[joint.joint] ?: return false
+            // Skip primary joints without an angle this frame (e.g. an any_side
+            // side currently below the visibility threshold). A paired joint
+            // with the partner visible will still satisfy the check.
+            val currentAngle = currentAngles[joint.joint] ?: continue
 
             when {
                 joint.hasStateUpDownRanges() -> {
@@ -534,11 +538,13 @@ class FormValidator(
 
                     val upRange = joint.getStateUpRange()
                     if (!upRange.isInCountedState(currentAngle)) return false
+                    checked++
                 }
                 joint.hasStateHoldRange() -> {
                     // HOLD exercise: check hold range
                     val holdRange = joint.getStateHoldRange()
                     if (!holdRange.isInCountedState(currentAngle)) return false
+                    checked++
                 }
                 else -> {
                     // No state ranges defined - skip this joint
@@ -546,7 +552,9 @@ class FormValidator(
                 }
             }
         }
-        return true
+        // Require at least one primary joint to have been checked so we never
+        // report "in start position" when no primary joint is actually visible.
+        return checked > 0
     }
 
     /**
@@ -554,14 +562,20 @@ class FormValidator(
      * Uses startPose which is independent of state ranges
      */
     fun isInStartPose(currentAngles: Map<String, Double>): Boolean {
+        var checked = 0
         for (joint in trackedJoints) {
             if (joint.role != JointRole.PRIMARY) continue
 
-            val currentAngle = currentAngles[joint.joint] ?: return false
+            // Skip missing primaries (e.g. any_side occluded this frame) rather
+            // than failing the overall check.
+            val currentAngle = currentAngles[joint.joint] ?: continue
             if (!joint.isInStartPose(currentAngle)) {
                 return false
             }
+            checked++
         }
+        // No primary visible at all → not in start pose.
+        if (checked == 0) return false
         return true
     }
 
