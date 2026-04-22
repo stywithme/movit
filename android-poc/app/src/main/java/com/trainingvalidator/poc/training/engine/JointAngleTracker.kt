@@ -1,7 +1,10 @@
 package com.trainingvalidator.poc.training.engine
 
 import com.trainingvalidator.poc.analysis.JointAngles
+import com.trainingvalidator.poc.analysis.SmoothedLandmark
 import com.trainingvalidator.poc.pose.JointLandmarkMapping
+import com.trainingvalidator.poc.training.config.SettingsManager
+import com.trainingvalidator.poc.training.models.TrackingMode
 import com.trainingvalidator.poc.training.models.TrackedJoint
 
 /**
@@ -97,18 +100,8 @@ class JointAngleTracker(
      * @param angles All joint angles from AngleCalculator
      * @return Map of joint code to angle value (only tracked joints)
      */
-    fun extractTrackedAngles(angles: JointAngles): Map<String, Double> {
-        val result = mutableMapOf<String, Double>()
-        
-        for (joint in trackedJoints) {
-            val angleValue = getAngleForJoint(angles, joint.joint)
-            if (angleValue != null) {
-                result[joint.joint] = angleValue
-            }
-        }
-        
-        return result
-    }
+    fun extractTrackedAngles(angles: JointAngles): Map<String, Double> =
+        extractTrackedAngles(angles, isFlipped = false, landmarks = null).angles
     
     /**
      * Extract angles for tracked joints with optional bilateral flipping.
@@ -126,19 +119,64 @@ class JointAngleTracker(
      * @param isFlipped true when measuring the opposite side in bilateral mode
      * @return Map of config joint code to angle value
      */
-    fun extractTrackedAngles(angles: JointAngles, isFlipped: Boolean): Map<String, Double> {
-        if (!isFlipped) return extractTrackedAngles(angles)
-        
-        val result = mutableMapOf<String, Double>()
-        
+    fun extractTrackedAngles(angles: JointAngles, isFlipped: Boolean): Map<String, Double> =
+        extractTrackedAngles(angles, isFlipped, landmarks = null).angles
+
+    /**
+     * Extract tracked angles with optional per-frame skipping for [TrackingMode.ANY_SIDE] pairs
+     * when one side's landmarks fall below [SettingsManager.getAnySideVisibilityThreshold]
+     * while the partner remains visible.
+     */
+    fun extractTrackedAngles(
+        angles: JointAngles,
+        isFlipped: Boolean,
+        landmarks: List<SmoothedLandmark>?
+    ): TrackedAnglesExtractResult {
+        val map = buildAngleMap(angles, isFlipped)
+        if (landmarks == null || landmarks.size < 33) {
+            return TrackedAnglesExtractResult(map, emptySet())
+        }
+        val threshold = SettingsManager.getAnySideVisibilityThreshold()
+        val skipped = mutableSetOf<String>()
+        val processedPairs = mutableSetOf<Pair<String, String>>()
+
+        fun anatomical(code: String): String = if (isFlipped) mirrorJointCode(code) else code
+
         for (joint in trackedJoints) {
-            val lookupCode = mirrorJointCode(joint.joint)
-            val angleValue = getAngleForJoint(angles, lookupCode)
-            if (angleValue != null) {
-                result[joint.joint] = angleValue  // key stays as config key
+            val partnerCode = joint.pairedWith ?: continue
+            if (joint.trackingMode != TrackingMode.ANY_SIDE) continue
+            val partnerCfg = trackedJoints.find { it.joint == partnerCode } ?: continue
+            if (partnerCfg.trackingMode != TrackingMode.ANY_SIDE) continue
+
+            val a = minOf(joint.joint, partnerCode)
+            val b = maxOf(joint.joint, partnerCode)
+            val key = a to b
+            if (key in processedPairs) continue
+            processedPairs.add(key)
+
+            val vA = JointLandmarkMapping.computeJointVisibility(anatomical(a), landmarks)
+            val vB = JointLandmarkMapping.computeJointVisibility(anatomical(b), landmarks)
+            when {
+                vA < threshold && vB >= threshold -> {
+                    map.remove(a)
+                    skipped.add(a)
+                }
+                vB < threshold && vA >= threshold -> {
+                    map.remove(b)
+                    skipped.add(b)
+                }
             }
         }
-        
+        return TrackedAnglesExtractResult(map, skipped)
+    }
+
+    private fun buildAngleMap(angles: JointAngles, isFlipped: Boolean): MutableMap<String, Double> {
+        val result = mutableMapOf<String, Double>()
+        for (joint in trackedJoints) {
+            val lookupCode = if (isFlipped) mirrorJointCode(joint.joint) else joint.joint
+            val angleValue = getAngleForJoint(angles, lookupCode) ?: continue
+            result[joint.joint] = angleValue
+        }
         return result
     }
     
@@ -213,6 +251,15 @@ class JointAngleTracker(
         return trackedJoints.mapNotNull { JointLandmarkMapping.jointToLandmark(it.joint) }
     }
 }
+
+/**
+ * Result of [JointAngleTracker.extractTrackedAngles] including joints intentionally
+ * omitted this frame (Any-Side occlusion while partner visible).
+ */
+data class TrackedAnglesExtractResult(
+    val angles: Map<String, Double>,
+    val skippedJointCodes: Set<String>
+)
 
 /**
  * TrackedAngleResult - Result of tracking angles for one frame

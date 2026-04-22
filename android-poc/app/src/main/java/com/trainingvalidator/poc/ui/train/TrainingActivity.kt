@@ -3318,7 +3318,9 @@ class TrainingActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetection
                         angles = angles,
                         stateInfos = stateInfos,
                         positionErrors = positionErrors,
-                        bilateralFlipped = bilateralFlipped
+                        bilateralFlipped = bilateralFlipped,
+                        anySideDimmedJointCodes = viewModel.trainingEngine?.anySideDimmedJointCodes?.value
+                            ?: emptySet()
                     )
                 }
             } finally {
@@ -3479,7 +3481,9 @@ class TrainingActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetection
                     angles = angles,
                     stateInfos = stateInfos,
                     positionErrors = positionErrors,
-                    bilateralFlipped = bilateralFlipped
+                    bilateralFlipped = bilateralFlipped,
+                    anySideDimmedJointCodes = viewModel.trainingEngine?.anySideDimmedJointCodes?.value
+                        ?: emptySet()
                 )
             }
             

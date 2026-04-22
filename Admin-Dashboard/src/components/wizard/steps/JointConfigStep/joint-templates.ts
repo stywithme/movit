@@ -605,6 +605,8 @@ export function buildTrackedJoint(
     startPose: { min: 150, max: 180 },
     pairedWith,
     stateMessages,
+    /** Default: require both sides visible. Bilateral pairs can switch to any_side in JointConfigStep. */
+    trackingMode: 'two_sides' as const,
   };
 
   // Adjust startPose based on joint type

@@ -61,6 +61,7 @@ export function buildExercisePayload() {
         stateMessages: sanitizeStateMessages(joint.stateMessages),
         pairedWith: joint.pairedWith,
         invertIndicator: joint.invertIndicator,
+        ...(joint.trackingMode ? { trackingMode: joint.trackingMode } : {}),
       };
       return isHold
         ? { ...base, range: joint.range }
@@ -86,6 +87,7 @@ export function buildExercisePayload() {
       ...(hasPhaseMsgs && phaseStateMessages && { phaseStateMessages }),
       stateMessages: sanitizeStateMessages(joint.stateMessages),
       pairedWith: joint.pairedWith,
+      ...(joint.trackingMode ? { trackingMode: joint.trackingMode } : {}),
     };
   };
 

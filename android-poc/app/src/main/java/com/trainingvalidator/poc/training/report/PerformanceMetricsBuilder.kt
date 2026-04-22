@@ -243,52 +243,13 @@ object PerformanceMetricsBuilder {
      * For non-bilateral exercises with paired joints: Uses error-based approach.
      */
     private fun calculateSymmetryMetric(report: PostTrainingReport): MetricWithStatus? {
-        if (report.exerciseConfig?.isBilateral != true) {
-            return null
-        }
-        
-        val totalReps = report.repTimeline.size.coerceAtLeast(report.summary.totalReps)
-        if (totalReps < 2) return null
-        
-        // For bilateral alternating: Compare left-side reps vs right-side reps
-        // Side is deterministic: odd reps = startSide, even reps = otherSide
-        // We use rep scores as a proxy for performance comparison (LSI approach)
-        val leftScores = mutableListOf<Float>()
-        val rightScores = mutableListOf<Float>()
-        
-        report.repTimeline.forEachIndexed { index, rep ->
-            // Simple alternating: even index = right (startSide), odd index = left
-            // This matches default bilateral config: startSide = "right", switchEvery = 1
-            if (index % 2 == 0) {
-                rightScores.add(rep.score)
-            } else {
-                leftScores.add(rep.score)
-            }
-        }
-        
-        if (leftScores.isEmpty() || rightScores.isEmpty()) {
-            return MetricWithStatus.fromPercentage(
-                100f,
-                advice = LocalizedText(ar = "بيانات غير كافية", en = "Insufficient data")
-            )
-        }
-        
-        // LSI = min(avgLeft, avgRight) / max(avgLeft, avgRight) × 100
-        val avgLeft = leftScores.average().toFloat()
-        val avgRight = rightScores.average().toFloat()
-        val maxAvg = maxOf(avgLeft, avgRight)
-        val minAvg = minOf(avgLeft, avgRight)
-        
-        val lsiScore = if (maxAvg > 0) {
-            (minAvg / maxAvg * 100f).coerceIn(0f, 100f)
-        } else 100f
-        
+        val sym = report.summary.avgSymmetry ?: return null
         return MetricWithStatus.fromPercentage(
-            lsiScore,
+            sym,
             advice = when {
-                lsiScore >= 95 -> LocalizedText(ar = "متوازن تماماً", en = "Perfectly balanced")
-                lsiScore >= 85 -> LocalizedText(ar = "توازن جيد", en = "Good balance")
-                lsiScore >= 75 -> LocalizedText(ar = "فرق طفيف بين الجانبين", en = "Slight side difference")
+                sym >= 95f -> LocalizedText(ar = "متوازن تماماً", en = "Perfectly balanced")
+                sym >= 85f -> LocalizedText(ar = "توازن جيد", en = "Good balance")
+                sym >= 75f -> LocalizedText(ar = "فرق طفيف بين الجانبين", en = "Slight side difference")
                 else -> LocalizedText(ar = "عدم توازن واضح — ركز على الجانب الأضعف", en = "Noticeable imbalance — focus on weaker side")
             }
         )

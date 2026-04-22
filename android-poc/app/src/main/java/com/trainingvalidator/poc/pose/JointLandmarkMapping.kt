@@ -1,5 +1,7 @@
 package com.trainingvalidator.poc.pose
 
+import com.trainingvalidator.poc.analysis.SmoothedLandmark
+
 /**
  * JointLandmarkMapping - Single Source of Truth for Joint ↔ Landmark mapping
  * 
@@ -234,5 +236,23 @@ object JointLandmarkMapping {
      */
     fun getAllLandmarksForAngles(jointCodes: Collection<String>): Set<Int> {
         return jointCodes.flatMap { getLandmarksForAngle(it) }.toSet()
+    }
+
+    /**
+     * Minimum visibility across the three landmarks that define this joint's angle.
+     * Stricter than average: if any defining point is occluded, the joint is treated as low visibility.
+     *
+     * @param jointCode Anatomical joint code (same space as [getLandmarksForAngle])
+     * @param landmarks Smoothed landmarks in MediaPipe index order (same indices as mapping)
+     */
+    fun computeJointVisibility(jointCode: String, landmarks: List<SmoothedLandmark>): Float {
+        val indices = getLandmarksForAngle(jointCode)
+        if (indices.isEmpty() || landmarks.isEmpty()) return 0f
+        var minV = 1f
+        for (idx in indices) {
+            if (idx < 0 || idx >= landmarks.size) return 0f
+            minV = kotlin.math.min(minV, landmarks[idx].visibility)
+        }
+        return minV
     }
 }

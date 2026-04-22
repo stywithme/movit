@@ -1217,6 +1217,12 @@ data class ExerciseConfigSnapshot(
     
     /** Whether this exercise has bilateral (paired) joints */
     val isBilateral: Boolean,
+
+    /**
+     * True when at least one tracked joint used [TrackingMode.ANY_SIDE] (symmetry only
+     * from frames where both sides were visible).
+     */
+    val hasAnySideJoints: Boolean = false,
     
     /** Whether this exercise supports weights */
     val supportsWeight: Boolean,
@@ -1266,7 +1272,8 @@ data class ExerciseConfigSnapshot(
             isBilateral: Boolean,
             supportsWeight: Boolean,
             hasPositionChecks: Boolean,
-            metricsConfig: ReportMetricsConfig?
+            metricsConfig: ReportMetricsConfig?,
+            hasAnySideJoints: Boolean = false
         ): ExerciseConfigSnapshot {
             val effectiveConfig = metricsConfig ?: MetricCode.getDefaults(
                 isHold = countingMethod == CountingMethod.HOLD,
@@ -1277,6 +1284,7 @@ data class ExerciseConfigSnapshot(
             return ExerciseConfigSnapshot(
                 countingMethod = countingMethod,
                 isBilateral = isBilateral,
+                hasAnySideJoints = hasAnySideJoints,
                 supportsWeight = supportsWeight,
                 hasPositionChecks = hasPositionChecks,
                 metricsConfig = effectiveConfig

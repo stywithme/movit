@@ -16,6 +16,12 @@ object SettingsManager {
     
     private const val TAG = "SettingsManager"
     private const val SETTINGS_FILE = "app_settings.json"
+
+    /**
+     * Below this landmark visibility (min of the 3 angle points), an [com.trainingvalidator.poc.training.models.TrackingMode.ANY_SIDE]
+     * joint may be skipped for the frame when the partner side stays visible.
+     */
+    private const val ANY_SIDE_VISIBILITY_THRESHOLD = 0.5f
     
     @Volatile
     private var _settings: AppSettings? = null
@@ -191,6 +197,11 @@ object SettingsManager {
      * Get visibility threshold for pose validation
      */
     fun getPoseValidationVisibility(): Float = settings.visibility.poseValidation
+
+    /**
+     * Visibility threshold for skipping one side of an Any-Side bilateral pair per frame.
+     */
+    fun getAnySideVisibilityThreshold(): Float = ANY_SIDE_VISIBILITY_THRESHOLD
     
     // ==================== Pose Validation Settings ====================
     

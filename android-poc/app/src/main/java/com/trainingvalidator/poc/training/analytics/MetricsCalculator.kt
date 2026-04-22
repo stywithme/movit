@@ -232,8 +232,10 @@ object MetricsCalculator {
     fun calculateROM(frames: List<FrameSample>, jointIndex: Int): Short {
         if (frames.isEmpty() || jointIndex < 0) return 0
         
-        val angles = frames.mapNotNull { 
-            it.angles.getOrNull(jointIndex)?.toInt() 
+        val angles = frames.mapNotNull { frame ->
+            val s = frame.angles.getOrNull(jointIndex) ?: return@mapNotNull null
+            if (s == JOINT_SKIPPED_ANGLE_SENTINEL) return@mapNotNull null
+            s.toInt()
         }
         if (angles.isEmpty()) return 0
         
@@ -250,21 +252,21 @@ object MetricsCalculator {
      * 
      * @return Symmetry score × 10 (1000 = perfect symmetry, 0 = 180° difference)
      */
-    fun calculateSymmetry(frames: List<FrameSample>, leftIdx: Int, rightIdx: Int): Short {
-        if (frames.isEmpty()) return 1000
+    fun calculateSymmetry(frames: List<FrameSample>, leftIdx: Int, rightIdx: Int): Short? {
+        if (frames.isEmpty()) return null
         
-        val diffs = frames.mapNotNull { frame ->
-            val left = frame.angles.getOrNull(leftIdx)?.toInt()
-            val right = frame.angles.getOrNull(rightIdx)?.toInt()
-            if (left != null && right != null) abs(left - right) else null
+        var totalDiff = 0.0
+        var count = 0
+        for (f in frames) {
+            if (!f.isJointAngleValid(leftIdx) || !f.isJointAngleValid(rightIdx)) continue
+            val left = f.angles[leftIdx].toInt()
+            val right = f.angles[rightIdx].toInt()
+            totalDiff += abs(left - right) / 10.0
+            count++
         }
-        
-        if (diffs.isEmpty()) return 1000
-        
-        val avgDiff = diffs.average()
-        // 0 diff = 100%, 1800 (180°) diff = 0%
-        val score = ((1 - avgDiff / 1800.0) * 1000).toInt().coerceIn(0, 1000)
-        return score.toShort()
+        if (count == 0) return null
+        val avg = totalDiff / count
+        return (1000 - avg.coerceAtMost(100.0) * 10).toInt().coerceIn(0, 1000).toShort()
     }
     
     /**
@@ -310,7 +312,9 @@ object MetricsCalculator {
         if (frames.isEmpty()) return 1000
         
         val spineAngles = frames.mapNotNull { frame ->
-            frame.angles.getOrNull(spineIndex)?.toInt()
+            val s = frame.angles.getOrNull(spineIndex) ?: return@mapNotNull null
+            if (s == JOINT_SKIPPED_ANGLE_SENTINEL) return@mapNotNull null
+            s.toInt()
         }
         
         if (spineAngles.size < 2) return 1000
@@ -335,9 +339,12 @@ object MetricsCalculator {
         
         // Calculate midpoint of hips for each frame
         val midpoints = frames.mapNotNull { frame ->
-            val left = frame.angles.getOrNull(hipIndices.first)?.toInt()
-            val right = frame.angles.getOrNull(hipIndices.second)?.toInt()
-            if (left != null && right != null) (left + right) / 2 else null
+            val left = frame.angles.getOrNull(hipIndices.first) ?: return@mapNotNull null
+            val right = frame.angles.getOrNull(hipIndices.second) ?: return@mapNotNull null
+            if (left == JOINT_SKIPPED_ANGLE_SENTINEL || right == JOINT_SKIPPED_ANGLE_SENTINEL) {
+                return@mapNotNull null
+            }
+            (left.toInt() + right.toInt()) / 2
         }
         
         if (midpoints.size < 2) return 1000
@@ -358,11 +365,15 @@ object MetricsCalculator {
     fun calculateVelocity(frames: List<FrameSample>, jointIndex: Int): Short? {
         // Filter to concentric phase only
         val concentric = frames.filter { it.phase == PhaseCode.CONCENTRIC }
-        if (concentric.size < 2) return null
+        val validConcentric = concentric.filter { frame ->
+            val s = frame.angles.getOrNull(jointIndex)
+            s != null && s != JOINT_SKIPPED_ANGLE_SENTINEL
+        }
+        if (validConcentric.size < 2) return null
         
-        val firstAngle = concentric.first().angles.getOrNull(jointIndex)?.toInt() ?: return null
-        val lastAngle = concentric.last().angles.getOrNull(jointIndex)?.toInt() ?: return null
-        val timeDeltaMs = concentric.last().t - concentric.first().t
+        val firstAngle = validConcentric.first().angles[jointIndex].toInt()
+        val lastAngle = validConcentric.last().angles[jointIndex].toInt()
+        val timeDeltaMs = validConcentric.last().t - validConcentric.first().t
         
         if (timeDeltaMs <= 0) return null
         
@@ -431,10 +442,18 @@ object MetricsCalculator {
         
         // Get angle sequences from first and last 3 reps
         val firstReps = reps.take(3).flatMap { rep ->
-            rep.frames.mapNotNull { it.angles.getOrNull(jointIndex) }
+            rep.frames.mapNotNull { frame ->
+                val s = frame.angles.getOrNull(jointIndex) ?: return@mapNotNull null
+                if (s == JOINT_SKIPPED_ANGLE_SENTINEL) return@mapNotNull null
+                s
+            }
         }
         val lastReps = reps.takeLast(3).flatMap { rep ->
-            rep.frames.mapNotNull { it.angles.getOrNull(jointIndex) }
+            rep.frames.mapNotNull { frame ->
+                val s = frame.angles.getOrNull(jointIndex) ?: return@mapNotNull null
+                if (s == JOINT_SKIPPED_ANGLE_SENTINEL) return@mapNotNull null
+                s
+            }
         }
         
         if (firstReps.isEmpty() || lastReps.isEmpty()) return null
