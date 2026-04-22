@@ -231,23 +231,28 @@ class PoseSetupGuide(
      *
      * Rule per joint:
      *  - Default / `two_sides`: this specific joint must have guidance.
-     *  - `any_side` paired joint: the pair is satisfied when **at least one** side
-     *    of the pair has guidance. The joint pair is collapsed to a single check.
+     *  - `any_side` paired joint (or any bilateral pair when the exercise has
+     *    any `any_side` primary — "Any-Side exercise"): the pair is satisfied
+     *    when **at least one** side of the pair has guidance.
      */
     private fun allPrimaryJointsPresent(
         primaryJoints: List<TrackedJoint>,
         guidanceByJoint: Map<String, JointGuidance>
     ): Boolean {
+        val isAnySideExercise = primaryJoints.any { it.trackingMode == TrackingMode.ANY_SIDE }
         val visited = mutableSetOf<String>()
         for (joint in primaryJoints) {
             if (joint.joint in visited) continue
             val partnerCode = joint.pairedWith
-            val isAnySidePair = partnerCode != null &&
+            val partnerInPrimaries = partnerCode != null && primaryJoints.any { it.joint == partnerCode }
+            val explicitAnySidePair = partnerInPrimaries &&
                 joint.trackingMode == TrackingMode.ANY_SIDE &&
                 primaryJoints.any {
                     it.joint == partnerCode && it.trackingMode == TrackingMode.ANY_SIDE
                 }
-            if (isAnySidePair && partnerCode != null) {
+            val treatAsLenientPair = explicitAnySidePair ||
+                (isAnySideExercise && partnerInPrimaries)
+            if (treatAsLenientPair && partnerCode != null) {
                 visited.add(joint.joint)
                 visited.add(partnerCode)
                 val ok = guidanceByJoint.containsKey(joint.joint) ||

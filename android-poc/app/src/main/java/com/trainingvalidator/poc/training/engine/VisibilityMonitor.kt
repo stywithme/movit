@@ -48,6 +48,17 @@ class VisibilityMonitor(
     private val primarySecondary: List<TrackedJoint> =
         visibilityTrackedJoints.filter { it.role == JointRole.PRIMARY || it.role == JointRole.SECONDARY }
 
+    /**
+     * Exercise-level "Any-Side mode": if any primary or secondary joint was tagged
+     * `any_side`, the exercise is expected to work from a side view. All bilateral
+     * pairs in such an exercise are treated leniently (one-side-visible is enough),
+     * not only the individually-tagged ones — otherwise an untagged secondary pair
+     * such as hips or shoulders would block visibility the instant the far side is
+     * occluded.
+     */
+    private val isAnySideExercise: Boolean =
+        primarySecondary.any { it.trackingMode == TrackingMode.ANY_SIDE }
+
     private val lenientPairs: List<LenientPair>
     private val strictJointCodes: Set<String>
 
@@ -61,7 +72,8 @@ class VisibilityMonitor(
                 val partner = primarySecondary.find { it.joint == p }
                 val bothAnySide = j.trackingMode == TrackingMode.ANY_SIDE &&
                     partner != null && partner.trackingMode == TrackingMode.ANY_SIDE
-                if (bothAnySide) {
+                val treatAsLenient = bothAnySide || (isAnySideExercise && partner != null)
+                if (treatAsLenient) {
                     val a = minOf(j.joint, p)
                     val b = maxOf(j.joint, p)
                     val key = a to b
