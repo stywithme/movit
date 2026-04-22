@@ -162,6 +162,14 @@ class ExploreFragment : Fragment() {
             applyFilters()
         }
 
+        binding.etSearch.setOnFocusChangeListener { _, hasFocus ->
+            if (hasFocus) {
+                binding.scrollView.post {
+                    binding.scrollView.smoothScrollTo(0, binding.tilSearch.top)
+                }
+            }
+        }
+
         binding.chipGroupPrimaryFilter.setOnCheckedStateChangeListener { _, checkedIds ->
             currentContentFilter = when (checkedIds.firstOrNull()) {
                 R.id.chipFilterWorkouts -> ContentFilter.WORKOUTS
@@ -248,8 +256,6 @@ class ExploreFragment : Fragment() {
             currentExerciseCategory = null
         }
 
-        binding.tvWorkoutsCount.text = workoutItems.size.toString()
-        binding.tvExercisesCount.text = exerciseItems.size.toString()
         binding.headerWorkouts.tvViewAll.visibility =
             if (workoutItems.isNotEmpty()) View.VISIBLE else View.GONE
         binding.headerExercises.tvViewAll.visibility =

@@ -897,10 +897,7 @@
     <string name="section_top_programs">Top Programs</string>
     <string name="section_quick_workouts">Quick Workouts</string>
     <string name="section_exercise_library">Exercise Library</string>
-    <string name="explore_mobile_title">Training Library</string>
-    <string name="explore_mobile_subtitle">Search workouts and exercises, then narrow them down with smart filters.</string>
     <string name="explore_search_hint">Search workouts or exercises…</string>
-    <string name="explore_overview_badge">Unified Library</string>
     <string name="explore_results_summary_format">%1$d workouts • %2$d exercises</string>
     <string name="explore_workout_filter_beginner">Beginner</string>
     <string name="explore_workout_filter_intermediate">Intermediate</string>
