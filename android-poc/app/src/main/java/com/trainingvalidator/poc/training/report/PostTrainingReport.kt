@@ -7,6 +7,7 @@ import com.trainingvalidator.poc.training.models.ErrorType
 import com.trainingvalidator.poc.training.models.JointState
 import com.trainingvalidator.poc.training.models.LocalizedText
 import com.trainingvalidator.poc.training.models.MetricCode
+import com.trainingvalidator.poc.training.models.RepQuality
 import com.trainingvalidator.poc.training.models.ReportMetricsConfig
 import java.util.UUID
 
@@ -466,8 +467,10 @@ data class BestRepHighlight(
     val durationMs: Long,
     val score: Float = 100f,        // Score for this rep
     val worstState: JointState = JointState.PERFECT,
+    val quality: RepQuality = RepQuality.CLEAN,
     val reasons: List<LocalizedText>,
-    val frameCapture: FrameCapture?
+    val frameCapture: FrameCapture?,
+    val replayClip: RepReplayClip? = null
 ) {
     fun getFormattedDuration(): String {
         val seconds = durationMs / 1000.0
@@ -481,10 +484,13 @@ data class BestRepHighlight(
 data class WorstRepHighlight(
     val repNumber: Int,
     val durationMs: Long,
+    val score: Float = 0f,
     val errorCount: Int,
     val worstState: JointState = JointState.WARNING,
+    val quality: RepQuality = RepQuality.NEEDS_CORRECTION,
     val primaryError: LocalizedText,
-    val frameCapture: FrameCapture?
+    val frameCapture: FrameCapture?,
+    val replayClip: RepReplayClip? = null
 ) {
     fun getFormattedDuration(): String {
         val seconds = durationMs / 1000.0
@@ -589,6 +595,7 @@ data class RepTimelineEntry(
     val stateDisplayName: LocalizedText = LocalizedText(ar = "????", en = "Good"),
     val stateIcon: String = "???",
     val score: Float = 0f,          // 0-100
+    val quality: RepQuality = RepQuality.CLEAN,
     val isCounted: Boolean = true,
     val isInvalidated: Boolean = false,  // DANGER
     
@@ -910,6 +917,25 @@ data class FrameCapture(
     val frameUri: String,
     val thumbnailUri: String,
     val metadata: FrameMetadata
+)
+
+/**
+ * RepReplayClip - Temporary sampled image sequence for a completed rep.
+ *
+ * File paths point to cache-backed media and may disappear after the report closes.
+ */
+data class RepReplayClip(
+    val repNumber: Int,
+    val frames: List<ReplayFrameRef>,
+    val posterFrameUri: String? = frames.getOrNull(frames.size / 2)?.frameUri
+) {
+    val durationMs: Long
+        get() = frames.lastOrNull()?.offsetMs ?: 0L
+}
+
+data class ReplayFrameRef(
+    val frameUri: String,
+    val offsetMs: Long
 )
 
 /**
