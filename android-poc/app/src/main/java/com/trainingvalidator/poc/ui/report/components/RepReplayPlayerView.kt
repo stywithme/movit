@@ -13,6 +13,7 @@ import android.widget.ImageView
 import android.widget.TextView
 import androidx.core.view.isVisible
 import com.trainingvalidator.poc.R
+import com.trainingvalidator.poc.training.report.BestWorstReplayPipeline
 import com.trainingvalidator.poc.training.report.FrameCapture
 import com.trainingvalidator.poc.training.report.RepReplayClip
 import java.io.File
@@ -188,13 +189,16 @@ class RepReplayPlayerView @JvmOverloads constructor(
         this.playableFrames = framePaths
         this.frameOffsetsMs = availableFrames.map { it.offsetMs }
         this.currentFrameIndex = 0
-        val clipRepNumber = replayClip?.repNumber
 
         val totalClipFrames = replayClip?.frames?.size ?: 0
         val missingClipFrames = totalClipFrames - availableFrames.size
         Log.d(
-            TAG,
-            "$DEBUG_PREFIX bind clipRep=${replayClip?.repNumber} totalClipFrames=$totalClipFrames playableFrames=${playableFrames.size} missingClipFrames=$missingClipFrames fallbackFrame=${fallbackFrame != null} fallbackFramePath=${!fallbackFrame?.frameUri.isNullOrEmpty()} fallbackThumbPath=${!fallbackFrame?.thumbnailUri.isNullOrEmpty()}"
+            BestWorstReplayPipeline.LOG_TAG,
+            "ui_bind clipRep=${replayClip?.repNumber} totalClipFrames=$totalClipFrames " +
+                "playableFrames=${playableFrames.size} missingClipFrames=$missingClipFrames " +
+                "fallbackFrame=${fallbackFrame != null} " +
+                "fallbackFramePath=${!fallbackFrame?.frameUri.isNullOrEmpty()} " +
+                "fallbackThumbPath=${!fallbackFrame?.thumbnailUri.isNullOrEmpty()}"
         )
 
         statusView.background = GradientDrawable().apply {
@@ -253,7 +257,7 @@ class RepReplayPlayerView @JvmOverloads constructor(
             if (loadedFrames.isEmpty()) {
                 Log.w(
                     TAG,
-                    "$DEBUG_PREFIX preload_empty clipRep=$clipRepNumber sourceFrames=${framePaths.size}"
+                    "$DEBUG_PREFIX preload_empty clipRep=${replayClip?.repNumber} sourceFrames=${framePaths.size}"
                 )
                 val bitmap = decodeFallbackBitmapOnIo(fallbackFrame)
                 if (generation != loadGeneration) {
@@ -274,7 +278,7 @@ class RepReplayPlayerView @JvmOverloads constructor(
 
             Log.d(
                 TAG,
-                "$DEBUG_PREFIX preload_ready clipRep=$clipRepNumber loadedFrames=${loadedFrames.size} startHoldMs=$startFrameHoldMs stepDelayMs=$playbackFrameDelayMs"
+                "$DEBUG_PREFIX preload_ready clipRep=${replayClip?.repNumber} loadedFrames=${loadedFrames.size} startHoldMs=$startFrameHoldMs stepDelayMs=$playbackFrameDelayMs"
             )
             renderLoadedFrame(0)
             resumePlaybackOnAttach = loadedFrames.size > 1

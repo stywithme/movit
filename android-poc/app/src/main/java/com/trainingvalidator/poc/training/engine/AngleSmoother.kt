@@ -136,6 +136,17 @@ class AngleSmoother(
     }
     
     /**
+     * Clear smoothing buffers for specific joints (e.g. Any-Side skipped joints).
+     * Next time these joints appear, they start from scratch instead of averaging
+     * with stale historical data that may belong to a different camera perspective.
+     */
+    fun clearJoints(jointCodes: Set<String>) {
+        for (code in jointCodes) {
+            jointBuffers.remove(code)
+        }
+    }
+
+    /**
      * Reset all smoothing history
      * Call when training restarts or exercise changes
      */

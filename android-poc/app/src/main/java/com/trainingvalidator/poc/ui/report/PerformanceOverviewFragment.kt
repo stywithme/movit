@@ -172,7 +172,7 @@ class PerformanceOverviewFragment : Fragment() {
             buildScoreCard(
                 ctx,
                 icon = "🎯",
-                title = if (isArabic) "الشكل" else "Form",
+                title = if (isArabic) "الأداء" else "Performance",
                 score = metrics.formCard.getCardScore(),
                 accentColor = H.colorFromScore(ctx, metrics.formCard.getCardScore()),
                 subItems = buildFormChips(ctx, metrics.formCard)
@@ -520,6 +520,11 @@ class PerformanceOverviewFragment : Fragment() {
 
     private fun buildFormChips(ctx: android.content.Context, form: FormMetrics): List<View> {
         val chips = mutableListOf<View>()
+        chips.add(H.metricChip(ctx,
+            if (isArabic) "الشكل" else "Form",
+            form.formQuality.displayValue,
+            form.formQuality.status.getColor()
+        ))
         form.rom?.let {
             chips.add(H.metricChip(ctx,
                 if (isArabic) "المدى" else "ROM",

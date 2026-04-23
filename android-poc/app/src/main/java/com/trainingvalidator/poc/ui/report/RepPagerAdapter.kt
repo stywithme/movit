@@ -11,9 +11,9 @@ import com.trainingvalidator.poc.training.report.PostTrainingReport
  * Navigates 7 screens per exercise (no individual-rep pages):
  *
  *  0  Hero             — Overall score + reps + duration + QuickInsight + Share
- *  1  Overview         — Reps Journey chart + Form / Safety / Control cards
+ *  1  Overview         — Reps Journey chart + Performance / Safety / Control cards
  *  2  Best vs Worst    — Mirrored visual comparison
- *  3  Form Details     — ROM, Symmetry, Form Consistency
+ *  3  Performance      — Form, ROM, Symmetry, Form Consistency
  *  4  Safety Details   — Alignment, Stability, DangerAlerts
  *  5  Control+Fatigue  — Tempo, TUT, VL%, Fatigue analysis, Load
  *  6  Tips & Export    — Exercise-message tips + PDF / Share
@@ -118,7 +118,7 @@ class RepPagerAdapter : FragmentStateAdapter {
             TYPE_HERO -> if (isArabic) "ملخص التمرين" else "Exercise Summary"
             TYPE_OVERVIEW -> if (isArabic) "نظرة شاملة" else "Performance Overview"
             TYPE_BEST_WORST -> if (isArabic) "أفضل وأسوأ عدة" else "Best vs Worst"
-            TYPE_FORM_DETAILS -> if (isArabic) "تفاصيل الشكل" else "Form Details"
+            TYPE_FORM_DETAILS -> if (isArabic) "تفاصيل الأداء" else "Performance Details"
             TYPE_SAFETY_DETAILS -> if (isArabic) "تفاصيل الأمان" else "Safety Details"
             TYPE_CONTROL_DETAILS -> if (isArabic) "التحكم والتعب" else "Control & Fatigue"
             TYPE_TIPS -> if (isArabic) "النصائح" else "Tips"

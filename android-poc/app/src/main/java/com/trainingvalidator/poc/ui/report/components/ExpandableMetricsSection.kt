@@ -21,7 +21,7 @@ import com.trainingvalidator.poc.training.report.*
  * 
  * Shows:
  * - Section header with expand/collapse toggle
- * - Grouped metrics (Form, Safety, Control, Load)
+ * - Grouped metrics (Performance, Safety, Control, Load)
  * - Each metric with progress bar and status
  * 
  * Filters metrics based on ExerciseConfigSnapshot if provided.
@@ -80,11 +80,15 @@ class ExpandableMetricsSection @JvmOverloads constructor(
             return config?.shouldShowMetric(metric) != false
         }
         
-        // Form metrics group
+        // Performance metrics group
         val formMetrics = mutableListOf<MetricItem>()
         formMetrics.add(MetricItem(
-            if (isArabic) "جودة الأداء" else "Form Score",
+            if (isArabic) "الأداء العام" else "Overall Performance",
             metrics.formCard.overallScore
+        ))
+        formMetrics.add(MetricItem(
+            if (isArabic) "الشكل" else "Form",
+            metrics.formCard.formQuality
         ))
         if (shouldShow(MetricCode.ROM)) {
             metrics.formCard.rom?.let { 
@@ -103,7 +107,7 @@ class ExpandableMetricsSection @JvmOverloads constructor(
         }
         
         addMetricsGroup(
-            title = if (isArabic) "🎯 مقاييس الشكل" else "🎯 Form Metrics",
+            title = if (isArabic) "🎯 مقاييس الأداء" else "🎯 Performance Metrics",
             metrics = formMetrics,
             isArabic = isArabic
         )

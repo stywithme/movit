@@ -13,10 +13,11 @@ import com.trainingvalidator.poc.training.report.*
 import com.trainingvalidator.poc.ui.report.ReportUiHelper as H
 
 /**
- * Screen 4 — Form Details
+ * Screen 4 — Performance Details
  *
- * Deep-dive into the Form card:
- *   • Form Score (big ring + rating)
+ * Deep-dive into the Performance card:
+ *   • Performance Score (big ring + rating)
+ *   • Form Score (state-based quality)
  *   • ROM progress bar
  *   • Symmetry (L vs R breakdown for bilateral)
  *   • Form Consistency (with rep-range annotation)
@@ -69,9 +70,9 @@ class FormDetailsFragment : Fragment() {
         val config = report.exerciseConfig
 
         // Header
-        col.addView(H.sectionTitle(ctx, "🎯", if (isArabic) "تفاصيل الشكل" else "Form Details"))
+        col.addView(H.sectionTitle(ctx, "🎯", if (isArabic) "تفاصيل الأداء" else "Performance Details"))
         col.addView(H.sectionSubtitle(ctx,
-            if (isArabic) "تقييم جودة أداء الحركة" else "Movement quality assessment"
+            if (isArabic) "تفصيل مقاييس الأداء وجودة الحركة" else "Breakdown of movement performance metrics"
         ))
 
         // ── Big score + rating ────────────────────────────────────
@@ -98,6 +99,12 @@ class FormDetailsFragment : Fragment() {
             })
         }
         col.addView(scoreCard)
+
+        // ── Form (state-based) ────────────────────────────────────
+        col.addView(H.metricRow(ctx, "🎯",
+            if (isArabic) "الشكل" else "Form",
+            form.formQuality, isArabic
+        ))
 
         // ── ROM ──────────────────────────────────────────────────
         if (shouldShow(config, MetricCode.ROM)) {

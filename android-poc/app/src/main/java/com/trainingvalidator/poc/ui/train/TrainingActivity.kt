@@ -70,6 +70,7 @@ import android.widget.TextView
 import com.trainingvalidator.poc.training.engine.HoldState
 import com.trainingvalidator.poc.training.engine.Phase
 import com.trainingvalidator.poc.training.models.JointState
+import com.trainingvalidator.poc.training.report.BestWorstReplayPipeline
 import com.trainingvalidator.poc.training.report.FrameCaptureManager
 import com.trainingvalidator.poc.training.report.ReportGenerator
 import com.trainingvalidator.poc.storage.ReportStorage
@@ -164,9 +165,8 @@ class TrainingActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetection
         private val COLOR_ERROR = Color.parseColor("#FF5252")
         private val COLOR_DEFAULT = Color.WHITE
 
-        /** Rolling replay burst around BOTTOM phase (Best vs Worst motion). */
-        private const val REPLAY_BURST_FRAME_COUNT = 5
-        private const val REPLAY_BURST_INTERVAL_MS = 130L
+        /** Rep-wide replay sampling interval while [SessionState.TRAINING] (Best vs Worst motion). */
+        private const val REPLAY_SAMPLE_INTERVAL_MS = 180L
     }
 
     // View Binding
@@ -237,10 +237,30 @@ class TrainingActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetection
     private var lastCapturedPhase: Phase? = null
     private var generatedReportId: String? = null
 
-    // Replay burst scheduler: 5 frames at ~130 ms spacing starting when BOTTOM phase is entered.
-    private val replayBurstHandler = Handler(Looper.getMainLooper())
-    private var activeReplayBurstRunnable: Runnable? = null
-    private var activeReplayBurstRep: Int = -1
+    // Rep-wide replay sampler (single Handler loop during TRAINING; not hold exercises).
+    private val repWideReplayHandler = Handler(Looper.getMainLooper())
+    private var repWideReplayScheduled = false
+    private val repWideReplayRunnable = object : Runnable {
+        override fun run() {
+            if (!repWideReplayScheduled) return
+            if (viewModel.supervisor.state.value != SessionState.TRAINING || viewModel.isHoldExercise()) {
+                repWideReplayScheduled = false
+                return
+            }
+            val manager = frameCaptureManager
+            val repNumber = (viewModel.trainingEngine?.getCurrentRep() ?: 0) + 1
+            if (manager != null && repNumber >= 1) {
+                val bitmap = getBitmapForCapture()
+                if (bitmap != null) {
+                    manager.captureReplayFrame(bitmap = bitmap, repNumber = repNumber)
+                    if (isVideoMode) bitmap.recycle()
+                }
+            }
+            if (repWideReplayScheduled) {
+                repWideReplayHandler.postDelayed(this, REPLAY_SAMPLE_INTERVAL_MS)
+            }
+        }
+    }
 
     // FPS calculation
     private var frameCount = 0
@@ -1799,7 +1819,6 @@ class TrainingActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetection
                 if (phase != lastCapturedPhase) {
                     if (phase == Phase.BOTTOM) {
                         capturePeakFrame(phase)
-                        startReplayBurstForCurrentRep()
                     }
                     lastCapturedPhase = phase
                 }
@@ -2039,6 +2058,11 @@ class TrainingActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetection
      * Update UI based on SessionState (from SessionSupervisor)
      */
     private fun updateUIForSessionState(state: SessionState) {
+        if (state == SessionState.TRAINING && !viewModel.isHoldExercise()) {
+            startRepWideReplaySampler()
+        } else {
+            stopRepWideReplaySampler()
+        }
         when (state) {
             SessionState.IDLE -> {
                 // Initial state - waiting for exercise to load
@@ -2901,62 +2925,22 @@ class TrainingActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetection
         }
     }
 
-    /**
-     * Kick off a rolling replay-frame burst for the in-progress rep.
-     *
-     * Each rep gets up to [REPLAY_BURST_FRAME_COUNT] frames captured at
-     * [REPLAY_BURST_INTERVAL_MS] intervals starting when the user enters the BOTTOM phase.
-     * A single outstanding burst is enforced: if a new BOTTOM is entered before the previous
-     * burst finished, the old one is cancelled so captured frames stay tied to their rep.
-     *
-     * Frames are handed to [FrameCaptureManager.captureReplayFrame] which manages its own
-     * rolling storage window so older reps are evicted automatically.
-     */
-    private fun startReplayBurstForCurrentRep() {
-        if (viewModel.supervisor.state.value != SessionState.TRAINING) return
-        val manager = frameCaptureManager ?: return
-
-        val repNumber = (viewModel.trainingEngine?.getCurrentRep() ?: 0) + 1
-        cancelActiveReplayBurst()
-        activeReplayBurstRep = repNumber
-
-        val runnable = object : Runnable {
-            private var framesCaptured = 0
-
-            override fun run() {
-                if (viewModel.supervisor.state.value != SessionState.TRAINING) {
-                    activeReplayBurstRunnable = null
-                    return
-                }
-                if (activeReplayBurstRep != repNumber) {
-                    // Superseded by a newer rep's burst; abort silently.
-                    return
-                }
-
-                val bitmap = getBitmapForCapture()
-                if (bitmap != null) {
-                    manager.captureReplayFrame(bitmap = bitmap, repNumber = repNumber)
-                    // Only recycle when the source provided a copy (video mode); the camera
-                    // preview's bitmap must not be recycled (it is reused by PreviewView).
-                    if (isVideoMode) bitmap.recycle()
-                }
-
-                framesCaptured += 1
-                if (framesCaptured < REPLAY_BURST_FRAME_COUNT) {
-                    replayBurstHandler.postDelayed(this, REPLAY_BURST_INTERVAL_MS)
-                } else {
-                    activeReplayBurstRunnable = null
-                }
-            }
-        }
-        activeReplayBurstRunnable = runnable
-        replayBurstHandler.post(runnable)
+    private fun startRepWideReplaySampler() {
+        if (viewModel.isHoldExercise()) return
+        if (repWideReplayScheduled) return
+        repWideReplayScheduled = true
+        repWideReplayHandler.removeCallbacks(repWideReplayRunnable)
+        repWideReplayHandler.post(repWideReplayRunnable)
+        Log.d(BestWorstReplayPipeline.LOG_TAG, "rep_wide_sampler started")
     }
 
-    private fun cancelActiveReplayBurst() {
-        activeReplayBurstRunnable?.let { replayBurstHandler.removeCallbacks(it) }
-        activeReplayBurstRunnable = null
-        activeReplayBurstRep = -1
+    private fun stopRepWideReplaySampler() {
+        val wasRunning = repWideReplayScheduled
+        repWideReplayScheduled = false
+        repWideReplayHandler.removeCallbacks(repWideReplayRunnable)
+        if (wasRunning) {
+            Log.d(BestWorstReplayPipeline.LOG_TAG, "rep_wide_sampler stopped")
+        }
     }
     
     /**
@@ -3670,7 +3654,7 @@ class TrainingActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetection
 
     override fun onDestroy() {
         super.onDestroy()
-        cancelActiveReplayBurst()
+        stopRepWideReplaySampler()
         sessionRestTimer?.cancel()
         viewModel.countdownController.release()
         cameraManager?.stopCamera()
