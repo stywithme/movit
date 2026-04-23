@@ -8,6 +8,8 @@ import android.media.ToneGenerator
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
+import android.os.Handler
+import android.os.Looper
 import android.os.SystemClock
 import android.os.VibrationEffect
 import android.os.Vibrator
@@ -230,6 +232,16 @@ class TrainingActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetection
     private var sessionId: String = java.util.UUID.randomUUID().toString()
     private var lastCapturedPhase: Phase? = null
     private var generatedReportId: String? = null
+
+    // Replay burst scheduler: 5 frames at ~130 ms spacing starting when BOTTOM phase is entered.
+    private val replayBurstHandler = Handler(Looper.getMainLooper())
+    private var activeReplayBurstRunnable: Runnable? = null
+    private var activeReplayBurstRep: Int = -1
+
+    private companion object {
+        const val REPLAY_BURST_FRAME_COUNT = 5
+        const val REPLAY_BURST_INTERVAL_MS = 130L
+    }
     
     // FPS calculation
     private var frameCount = 0
@@ -1409,10 +1421,11 @@ class TrainingActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetection
         }
 
         val frameCaptures = frameCaptureManager?.getAllCaptures() ?: emptyList()
+        val replayClips = frameCaptureManager?.getAllReplayClips() ?: emptyList()
         val sessionDurationMs = sets.sumOf { it.durationMs }
 
         Log.d(TAG, "onExerciseCompleted: Generating rich report for $exerciseSlug " +
-                "(${sets.size} sets, ${frameCaptures.size} frames)")
+                "(${sets.size} sets, ${frameCaptures.size} frames, ${replayClips.size} clips)")
 
         val job = lifecycleScope.launch(Dispatchers.IO) {
             try {
@@ -1433,6 +1446,7 @@ class TrainingActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetection
                     exerciseConfig = exerciseConfig,
                     sessionDurationMs = sessionDurationMs,
                     frameCaptures = frameCaptures,
+                    replayClips = replayClips,
                     sessionMetrics = sessionMetrics,
                     weightKg = viewModel.getWeightKg(),
                     weightUnit = viewModel.getWeightUnit(),
@@ -1786,6 +1800,7 @@ class TrainingActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetection
                 if (phase != lastCapturedPhase) {
                     if (phase == Phase.BOTTOM) {
                         capturePeakFrame(phase)
+                        startReplayBurstForCurrentRep()
                     }
                     lastCapturedPhase = phase
                 }
@@ -2886,6 +2901,64 @@ class TrainingActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetection
             binding.previewView.bitmap
         }
     }
+
+    /**
+     * Kick off a rolling replay-frame burst for the in-progress rep.
+     *
+     * Each rep gets up to [REPLAY_BURST_FRAME_COUNT] frames captured at
+     * [REPLAY_BURST_INTERVAL_MS] intervals starting when the user enters the BOTTOM phase.
+     * A single outstanding burst is enforced: if a new BOTTOM is entered before the previous
+     * burst finished, the old one is cancelled so captured frames stay tied to their rep.
+     *
+     * Frames are handed to [FrameCaptureManager.captureReplayFrame] which manages its own
+     * rolling storage window so older reps are evicted automatically.
+     */
+    private fun startReplayBurstForCurrentRep() {
+        if (viewModel.supervisor.state.value != SessionState.TRAINING) return
+        val manager = frameCaptureManager ?: return
+
+        val repNumber = (viewModel.trainingEngine?.getCurrentRep() ?: 0) + 1
+        cancelActiveReplayBurst()
+        activeReplayBurstRep = repNumber
+
+        val runnable = object : Runnable {
+            private var framesCaptured = 0
+
+            override fun run() {
+                if (viewModel.supervisor.state.value != SessionState.TRAINING) {
+                    activeReplayBurstRunnable = null
+                    return
+                }
+                if (activeReplayBurstRep != repNumber) {
+                    // Superseded by a newer rep's burst; abort silently.
+                    return
+                }
+
+                val bitmap = getBitmapForCapture()
+                if (bitmap != null) {
+                    manager.captureReplayFrame(bitmap = bitmap, repNumber = repNumber)
+                    // Only recycle when the source provided a copy (video mode); the camera
+                    // preview's bitmap must not be recycled (it is reused by PreviewView).
+                    if (isVideoMode) bitmap.recycle()
+                }
+
+                framesCaptured += 1
+                if (framesCaptured < REPLAY_BURST_FRAME_COUNT) {
+                    replayBurstHandler.postDelayed(this, REPLAY_BURST_INTERVAL_MS)
+                } else {
+                    activeReplayBurstRunnable = null
+                }
+            }
+        }
+        activeReplayBurstRunnable = runnable
+        replayBurstHandler.post(runnable)
+    }
+
+    private fun cancelActiveReplayBurst() {
+        activeReplayBurstRunnable?.let { replayBurstHandler.removeCallbacks(it) }
+        activeReplayBurstRunnable = null
+        activeReplayBurstRep = -1
+    }
     
     /**
      * Generate report and navigate directly to ReportActivity
@@ -2906,7 +2979,8 @@ class TrainingActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetection
         }
         
         val frameCaptures = frameCaptureManager?.getAllCaptures() ?: emptyList()
-        Log.d(TAG, "Frame captures count: ${frameCaptures.size}")
+        val replayClips = frameCaptureManager?.getAllReplayClips() ?: emptyList()
+        Log.d(TAG, "Frame captures count: ${frameCaptures.size}, replay clips: ${replayClips.size}")
         
         // Show loading state
         binding.heroCounterContainer.visibility = View.GONE
@@ -2931,6 +3005,7 @@ class TrainingActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetection
                     exerciseConfig = exerciseConfig,
                     sessionDurationMs = viewModel.getSessionDurationMs(),
                     frameCaptures = frameCaptures,
+                    replayClips = replayClips,
                     sessionMetrics = sessionMetrics,
                     weightKg = viewModel.getWeightKg(),
                     weightUnit = viewModel.getWeightUnit()
@@ -3596,6 +3671,7 @@ class TrainingActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetection
 
     override fun onDestroy() {
         super.onDestroy()
+        cancelActiveReplayBurst()
         sessionRestTimer?.cancel()
         viewModel.countdownController.release()
         cameraManager?.stopCamera()

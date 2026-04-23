@@ -38,6 +38,13 @@ class FrameCaptureManager(
         private const val MAX_HOLD_SAMPLES = 3
         private const val ERROR_CAPTURE_COOLDOWN_MS = 2000L
         private const val DANGER_CAPTURE_COOLDOWN_MS = 1000L  // Shorter cooldown for DANGER
+
+        // Replay burst: compact animated sequence around each rep's BOTTOM phase.
+        private const val REPLAY_FRAME_SIZE = 360       // px (smaller → cheap motion preview)
+        private const val REPLAY_JPEG_QUALITY = 70      // %
+        private const val REPLAY_MAX_FRAMES_PER_REP = 6
+        private const val REPLAY_MAX_TRACKED_REPS = 6   // rolling window; oldest reps dropped
+        private const val REPLAY_MIN_FRAMES_FOR_CLIP = 2
     }
     
     private val capturedFrames = mutableListOf<FrameCapture>()
@@ -60,6 +67,11 @@ class FrameCaptureManager(
     
     // Track peak frames per rep (to later mark as best)
     private val peakFramesByRep = mutableMapOf<Int, FrameCapture>()
+
+    // Rolling replay-burst frames per rep (insertion-ordered so we can evict oldest rep).
+    private val replayFramesByRep = linkedMapOf<Int, MutableList<ReplayFrameRef>>()
+    // Track first burst timestamp per rep so we can store per-frame offsetMs.
+    private val replayStartTimesByRep = mutableMapOf<Int, Long>()
     
     init {
         sessionDir.mkdirs()
@@ -266,6 +278,83 @@ class FrameCaptureManager(
         return false
     }
     
+    /**
+     * Capture a single frame of a rolling replay burst for [repNumber].
+     *
+     * Called repeatedly (~4–6 times per rep, spaced ~120 ms) around the BOTTOM phase.
+     * Frames are saved at a smaller size to keep disk footprint minimal.
+     * Oldest reps are evicted automatically when more than [REPLAY_MAX_TRACKED_REPS] reps
+     * accumulate, so storage stays bounded regardless of session length.
+     *
+     * @return `true` if the frame was written to disk, `false` if it was skipped
+     *   (cap reached for this rep or save failure).
+     */
+    fun captureReplayFrame(
+        bitmap: Bitmap,
+        repNumber: Int
+    ): Boolean {
+        if (repNumber < 1) return false
+
+        val list = replayFramesByRep.getOrPut(repNumber) { mutableListOf() }
+        if (list.size >= REPLAY_MAX_FRAMES_PER_REP) return false
+
+        val startedAt = replayStartTimesByRep.getOrPut(repNumber) { System.currentTimeMillis() }
+        val offsetMs = System.currentTimeMillis() - startedAt
+
+        return try {
+            val bitmapCopy = bitmap.copy(bitmap.config ?: Bitmap.Config.ARGB_8888, false)
+                ?: return false
+            val id = "rep${repNumber}_replay_${list.size}_${UUID.randomUUID().toString().take(6)}"
+            val path = saveFrame(bitmapCopy, id, REPLAY_FRAME_SIZE, REPLAY_JPEG_QUALITY)
+            bitmapCopy.recycle()
+            if (path == null) return false
+
+            list.add(ReplayFrameRef(frameUri = path, offsetMs = offsetMs))
+            enforceReplayRollingWindow(keepRep = repNumber)
+            true
+        } catch (e: Exception) {
+            Log.e(TAG, "Error capturing replay frame for rep $repNumber: ${e.message}")
+            false
+        }
+    }
+
+    /**
+     * Drop the oldest tracked reps until only [REPLAY_MAX_TRACKED_REPS] remain (excluding
+     * [keepRep] to avoid evicting the rep currently being captured).
+     */
+    private fun enforceReplayRollingWindow(keepRep: Int) {
+        while (replayFramesByRep.size > REPLAY_MAX_TRACKED_REPS) {
+            val evictRep = replayFramesByRep.keys.firstOrNull { it != keepRep } ?: break
+            deleteReplayFramesForRep(evictRep)
+        }
+    }
+
+    private fun deleteReplayFramesForRep(repNumber: Int) {
+        val frames = replayFramesByRep.remove(repNumber) ?: return
+        replayStartTimesByRep.remove(repNumber)
+        for (ref in frames) {
+            try {
+                File(ref.frameUri).delete()
+            } catch (_: Exception) { /* best-effort */ }
+        }
+    }
+
+    /**
+     * Snapshot the current replay burst for [repNumber], or `null` if there are fewer than
+     * [REPLAY_MIN_FRAMES_FOR_CLIP] frames (in which case the still fallback is preferable).
+     */
+    fun getReplayClipForRep(repNumber: Int): RepReplayClip? {
+        val frames = replayFramesByRep[repNumber] ?: return null
+        if (frames.size < REPLAY_MIN_FRAMES_FOR_CLIP) return null
+        return RepReplayClip(repNumber = repNumber, frames = frames.toList())
+    }
+
+    /**
+     * All replay clips accumulated so far (caller-friendly snapshot).
+     */
+    fun getAllReplayClips(): List<RepReplayClip> =
+        replayFramesByRep.keys.mapNotNull { getReplayClipForRep(it) }
+
     // ==================== Internal Capture ====================
     
     private fun captureInternal(
@@ -325,9 +414,11 @@ class FrameCaptureManager(
     }
     
     /**
-     * Save bitmap to file with scaling
+     * Save bitmap to file with scaling.
+     *
+     * @param quality JPEG compression quality (0-100). Defaults to [JPEG_QUALITY].
      */
-    private fun saveFrame(bitmap: Bitmap, name: String, maxSize: Int): String? {
+    private fun saveFrame(bitmap: Bitmap, name: String, maxSize: Int, quality: Int = JPEG_QUALITY): String? {
         return try {
             // Scale if needed
             val scaled = if (bitmap.width > maxSize || bitmap.height > maxSize) {
@@ -341,17 +432,17 @@ class FrameCaptureManager(
             } else {
                 bitmap
             }
-            
+
             val file = File(sessionDir, "$name.jpg")
             FileOutputStream(file).use { out ->
-                scaled.compress(Bitmap.CompressFormat.JPEG, JPEG_QUALITY, out)
+                scaled.compress(Bitmap.CompressFormat.JPEG, quality, out)
             }
-            
+
             // Recycle scaled bitmap if we created it
             if (scaled !== bitmap) {
                 scaled.recycle()
             }
-            
+
             file.absolutePath
         } catch (e: Exception) {
             Log.e(TAG, "Failed to save frame $name: ${e.message}")
@@ -444,6 +535,8 @@ class FrameCaptureManager(
             peakFramesByRep.clear()
             bestRepCount = 0
             holdSampleCount = 0
+            replayFramesByRep.clear()
+            replayStartTimesByRep.clear()
             Log.d(TAG, "Cleaned up session: $sessionId")
         } catch (e: Exception) {
             Log.e(TAG, "Error during cleanup: ${e.message}")
