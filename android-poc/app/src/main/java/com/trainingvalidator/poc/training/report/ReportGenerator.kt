@@ -42,6 +42,7 @@ object ReportGenerator {
         visibilityStats: VisibilityStats? = null,
         cameraWarningCount: Int = 0,
         frameCaptures: List<FrameCapture> = emptyList(),
+        replayClips: List<RepReplayClip> = emptyList(),
         holdData: HoldData? = null,
         sessionMetrics: SessionMetrics? = null,
         /** Which pose variant this session used (for [ExerciseConfigSnapshot.hasAnySideJoints] etc.). */
@@ -64,10 +65,16 @@ object ReportGenerator {
         val perfectMoments = generatePerfectMoments(summary.repDetails, exerciseConfig, frameCaptures)
 
         // 4. Find best reps by score
-        val bestReps = findBestRepsByScore(summary.repDetails, frameCaptures)
+        val bestReps = attachReplayClipsToBest(
+            highlights = findBestRepsByScore(summary.repDetails, frameCaptures),
+            replayClips = replayClips
+        )
 
         // 5. Find worst rep
-        val worstRep = findWorstRep(summary.repDetails, frameCaptures)
+        val worstRep = attachReplayClipToWorst(
+            highlight = findWorstRep(summary.repDetails, frameCaptures),
+            replayClips = replayClips
+        )
 
         // 6. Get best rep frame for angle comparison — MUST be the actual best rep's pose at BOTTOM.
         // (no neighbor fallback + strictTypes: neighbor/error angles would pollute diffs).
@@ -182,6 +189,7 @@ object ReportGenerator {
         exerciseConfig: ExerciseConfig,
         sessionDurationMs: Long,
         frameCaptures: List<FrameCapture> = emptyList(),
+        replayClips: List<RepReplayClip> = emptyList(),
         sessionMetrics: SessionMetrics? = null,
         weightKg: Float? = null,
         weightUnit: String = "kg",
@@ -216,6 +224,7 @@ object ReportGenerator {
             visibilityStats = visibilityStats,
             cameraWarningCount = cameraWarnings,
             frameCaptures = frameCaptures,
+            replayClips = replayClips,
             holdData = holdData,
             sessionMetrics = sessionMetrics,
             poseVariantIndex = poseVariantIndex ?: engine.poseVariantIndex
@@ -655,6 +664,35 @@ object ReportGenerator {
             }
         }
         return null
+    }
+
+    /**
+     * Attach matching replay clips to each best-rep highlight by [BestRepHighlight.repNumber].
+     * Highlights without a clip keep [BestRepHighlight.replayClip] as null (UI falls back to still).
+     */
+    private fun attachReplayClipsToBest(
+        highlights: List<BestRepHighlight>,
+        replayClips: List<RepReplayClip>
+    ): List<BestRepHighlight> {
+        if (replayClips.isEmpty()) return highlights
+        val byRep = replayClips.associateBy { it.repNumber }
+        return highlights.map { h ->
+            val clip = byRep[h.repNumber]
+            if (clip != null) h.copy(replayClip = clip) else h
+        }
+    }
+
+    /**
+     * Attach the matching replay clip to the worst-rep highlight by [WorstRepHighlight.repNumber].
+     */
+    private fun attachReplayClipToWorst(
+        highlight: WorstRepHighlight?,
+        replayClips: List<RepReplayClip>
+    ): WorstRepHighlight? {
+        val h = highlight ?: return null
+        if (replayClips.isEmpty()) return h
+        val clip = replayClips.firstOrNull { it.repNumber == h.repNumber } ?: return h
+        return h.copy(replayClip = clip)
     }
 
     private fun findBestRepsByScore(
