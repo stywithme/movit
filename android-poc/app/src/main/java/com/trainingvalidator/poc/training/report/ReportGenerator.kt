@@ -67,13 +67,15 @@ object ReportGenerator {
         // 4. Find best reps by score
         val bestReps = attachReplayClipsToBest(
             highlights = findBestRepsByScore(summary.repDetails, frameCaptures),
-            replayClips = replayClips
+            replayClips = replayClips,
+            frameCaptures = frameCaptures
         )
 
         // 5. Find worst rep
         val worstRep = attachReplayClipToWorst(
             highlight = findWorstRep(summary.repDetails, frameCaptures),
-            replayClips = replayClips
+            replayClips = replayClips,
+            frameCaptures = frameCaptures
         )
 
         // 6. Get best rep frame for angle comparison — MUST be the actual best rep's pose at BOTTOM.
@@ -492,17 +494,33 @@ object ReportGenerator {
     }
 
     /**
-     * Target ROM is derived from primary joint up/down ranges.
+     * Target ROM (degrees) for percentage display.
+     *
+     * Prefer the distance between the centers of the PERFECT up/down ranges.
+     * This represents the "ideal" movement span and avoids two bad extremes:
+     * - the full outer envelope, which can under-rate good reps too harshly
+     * - the transition gap only, which makes ROM saturate at 100 too easily
      */
     private fun getTargetRomDegrees(exerciseConfig: ExerciseConfig): Float? {
         val primaryJoint = exerciseConfig.getPrimaryJoints().firstOrNull { it.hasStateUpDownRanges() }
             ?: return null
         val upRange = primaryJoint.getStateUpRange()
         val downRange = primaryJoint.getStateDownRange()
+
+        val upPerfectCenter = ((upRange.perfect.min + upRange.perfect.max) / 2.0).toFloat()
+        val downPerfectCenter = ((downRange.perfect.min + downRange.perfect.max) / 2.0).toFloat()
+        val perfectCenterSpan = upPerfectCenter - downPerfectCenter
+        if (perfectCenterSpan > 0f) return perfectCenterSpan
+
+        primaryJoint.getTransitionZone()?.let { (transitionMin, transitionMax) ->
+            val span = (transitionMax - transitionMin).toFloat()
+            if (span > 0f) return span
+        }
+
         val maxAngle = maxOf(upRange.effectiveMax, downRange.effectiveMax)
         val minAngle = minOf(upRange.effectiveMin, downRange.effectiveMin)
-        val target = (maxAngle - minAngle).toFloat()
-        return if (target > 0f) target else null
+        val envelope = (maxAngle - minAngle).toFloat()
+        return if (envelope > 0f) envelope else null
     }
 
     // ==================== DANGER Alerts ====================
@@ -667,31 +685,38 @@ object ReportGenerator {
     }
 
     /**
-     * Attach matching replay clips to each best-rep highlight by [BestRepHighlight.repNumber].
-     * Highlights without a clip keep [BestRepHighlight.replayClip] as null (UI falls back to still).
+     * Attach playable replay data to each best-rep highlight via [BestWorstReplayPipeline]
+     * (live-sampled clip and/or synthetic clip from [frameCaptures]).
      */
     private fun attachReplayClipsToBest(
         highlights: List<BestRepHighlight>,
-        replayClips: List<RepReplayClip>
+        replayClips: List<RepReplayClip>,
+        frameCaptures: List<FrameCapture>
     ): List<BestRepHighlight> {
-        if (replayClips.isEmpty()) return highlights
-        val byRep = replayClips.associateBy { it.repNumber }
         return highlights.map { h ->
-            val clip = byRep[h.repNumber]
-            if (clip != null) h.copy(replayClip = clip) else h
+            val clip = BestWorstReplayPipeline.resolveClipForRep(
+                repNumber = h.repNumber,
+                replayClips = replayClips,
+                frameCaptures = frameCaptures
+            )
+            h.copy(replayClip = clip)
         }
     }
 
     /**
-     * Attach the matching replay clip to the worst-rep highlight by [WorstRepHighlight.repNumber].
+     * Same unified pipeline for worst rep.
      */
     private fun attachReplayClipToWorst(
         highlight: WorstRepHighlight?,
-        replayClips: List<RepReplayClip>
+        replayClips: List<RepReplayClip>,
+        frameCaptures: List<FrameCapture>
     ): WorstRepHighlight? {
         val h = highlight ?: return null
-        if (replayClips.isEmpty()) return h
-        val clip = replayClips.firstOrNull { it.repNumber == h.repNumber } ?: return h
+        val clip = BestWorstReplayPipeline.resolveClipForRep(
+            repNumber = h.repNumber,
+            replayClips = replayClips,
+            frameCaptures = frameCaptures
+        )
         return h.copy(replayClip = clip)
     }
 
@@ -1365,8 +1390,14 @@ object ReportGenerator {
         performanceSummary: PerformanceSummary? = null
     ): OverallQualityScore {
 
-        // 1. Calculate Form Score
-        val formScore = calculateFormScoreForOverall(summary, timeline)
+        // 1. Calculate Form Score (aligned with Form card: state + ROM + consistency)
+        val formScore = calculateFormScoreForOverall(
+            summary = summary,
+            timeline = timeline,
+            isHoldExercise = isHoldExercise,
+            avgROM = performanceSummary?.avgROM,
+            formConsistency = performanceSummary?.formConsistency
+        )
 
         // 2. Calculate Safety Score
         val safetyScore = calculateSafetyScoreForOverall(errorAnalysis, summary.invalidatedReps, summary.totalReps)
@@ -1391,39 +1422,27 @@ object ReportGenerator {
     }
 
     /**
-     * Calculate Form Score from summary and timeline
-     *
-     * Uses ScoreCalculator rates for consistency (Single Source of Truth).
+     * Calculate Form leg for overall quality: same weighting as the Form card
+     * (50% rep state score, 25% ROM%, 25% form consistency) when metrics exist.
      */
     private fun calculateFormScoreForOverall(
         summary: SessionSummary,
-        timeline: List<RepTimelineEntry>
+        timeline: List<RepTimelineEntry>,
+        isHoldExercise: Boolean,
+        avgROM: Float?,
+        formConsistency: Float?
     ): Float {
-        // Use average score from timeline if available
-        if (timeline.isNotEmpty()) {
-            val avgScore = timeline.map { it.score }.average().toFloat()
-            return avgScore
-        }
-
-        // Fallback: calculate from state breakdown using ScoreCalculator rates
-        val breakdownMap = summary.stateBreakdown
-        val perfectCount = breakdownMap[JointState.PERFECT] ?: 0
-        val normalCount = breakdownMap[JointState.NORMAL] ?: 0
-        val padCount = breakdownMap[JointState.PAD] ?: 0
-        val warningCount = breakdownMap[JointState.WARNING] ?: 0
-        val dangerCount = breakdownMap[JointState.DANGER] ?: 0
-
-        val total = (perfectCount + normalCount + padCount + warningCount + dangerCount).toFloat()
-        if (total == 0f) return 0f
-
-        // Use ScoreCalculator rates (Single Source of Truth)
-        return (
-            perfectCount * ScoreCalculator.getScoreRate(JointState.PERFECT) +
-            normalCount * ScoreCalculator.getScoreRate(JointState.NORMAL) +
-            padCount * ScoreCalculator.getScoreRate(JointState.PAD) +
-            warningCount * ScoreCalculator.getScoreRate(JointState.WARNING) +
-            dangerCount * ScoreCalculator.getScoreRate(JointState.DANGER)
-        ) / total
+        val breakdown = StateBreakdown.fromMap(summary.stateBreakdown)
+        val stateScore = PerformanceMetricsBuilder.computeStateFormScorePercentFromTimeline(
+            timeline,
+            breakdown
+        )
+        return PerformanceMetricsBuilder.calculateCombinedFormScorePercent(
+            stateScore = stateScore,
+            romPercent = avgROM,
+            consistencyPercent = formConsistency,
+            isHoldExercise = isHoldExercise
+        )
     }
 
     /**

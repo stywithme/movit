@@ -847,9 +847,6 @@ class SkeletonOverlayView @JvmOverloads constructor(
                 if (jointStateInfos.isNotEmpty()) {
                     drawGlowingJoints(canvas, currentLandmarks, bodyScale)
                 }
-                if (anySideDimmedJointCodes.isNotEmpty()) {
-                    drawAnySideDimmedLimbSegments(canvas, currentLandmarks)
-                }
                 if (positionErrors.isNotEmpty()) {
                     drawPositionErrors(canvas, currentLandmarks)
                 }
@@ -1820,6 +1817,7 @@ class SkeletonOverlayView @JvmOverloads constructor(
         val baseGlowIntensity = 0.4f + 0.3f * sin(flowPhase * Math.PI * 2).toFloat()
         
         for ((jointCode, stateInfo) in jointStateInfos) {
+            if (jointCode in anySideDimmedJointCodes) continue
             // Get the center landmark for this joint
             // Use bilateral-aware joint code for landmark lookup
             val landmarkJointCode = getEffectiveLandmarkJointCode(jointCode)
@@ -1994,6 +1992,7 @@ class SkeletonOverlayView @JvmOverloads constructor(
 
         for ((jointCode, stateInfo) in jointStateInfos) {
             if (!stateInfo.isPrimary) continue
+            if (jointCode in anySideDimmedJointCodes) continue
 
             val landmarkJointCode = getEffectiveLandmarkJointCode(jointCode)
             val angleLandmarks = JointLandmarkMapping.getLandmarksForAngle(landmarkJointCode)
@@ -2078,6 +2077,7 @@ class SkeletonOverlayView @JvmOverloads constructor(
 
         for ((jointCode, stateInfo) in jointStateInfos) {
             if (!stateInfo.isPrimary) continue
+            if (jointCode in anySideDimmedJointCodes) continue
 
             val currentAngle = stateInfo.currentAngle
 
@@ -2449,47 +2449,6 @@ class SkeletonOverlayView @JvmOverloads constructor(
         textPaint.color = Color.WHITE
     }
     
-    // ==================== Any-Side dimmed segments ====================
-
-    /**
-     * Subtle limb outline for joints skipped this frame (Any-Side + low visibility).
-     * Does not use error colors or text — silent per product spec.
-     */
-    private fun drawAnySideDimmedLimbSegments(canvas: Canvas, landmarks: List<SmoothedLandmark>) {
-        if (anySideDimmedJointCodes.isEmpty()) return
-        val savedAlpha = linePaint.alpha
-        val savedColor = linePaint.color
-        val savedWidth = linePaint.strokeWidth
-        linePaint.strokeWidth = TRACKED_LINE_WIDTH * 0.85f
-        linePaint.color = Color.argb(255, 160, 180, 200)
-        linePaint.alpha = 80
-
-        fun screenForRaw(rawIdx: Int): Pair<Float, Float>? {
-            val eff = if (isFrontCamera) BodyLandmarks.getMirroredIndex(rawIdx) else rawIdx
-            if (eff < 0 || eff >= landmarks.size) return null
-            val lm = landmarks[eff]
-            return Pair(toScreenX(lm.x), toScreenY(lm.y))
-        }
-
-        for (code in anySideDimmedJointCodes) {
-            val jointForLm = getEffectiveLandmarkJointCode(code)
-            val triple = JointLandmarkMapping.getLandmarksForAngle(jointForLm)
-            if (triple.size != 3) continue
-            val upper = triple[0]
-            val center = triple[1]
-            val lower = triple[2]
-            val pUpper = screenForRaw(upper) ?: continue
-            val pCenter = screenForRaw(center) ?: continue
-            val pLower = screenForRaw(lower) ?: continue
-            canvas.drawLine(pUpper.first, pUpper.second, pCenter.first, pCenter.second, linePaint)
-            canvas.drawLine(pCenter.first, pCenter.second, pLower.first, pLower.second, linePaint)
-        }
-
-        linePaint.strokeWidth = savedWidth
-        linePaint.color = savedColor
-        linePaint.alpha = savedAlpha
-    }
-
     // ==================== Position Error Drawing ====================
     
     /**

@@ -891,6 +891,12 @@ class TrainingEngine(
             }
 
             // ── 3. Smooth angles ──
+            // Clear smoother history for skipped joints so stale data from a
+            // different camera perspective doesn't pollute angles if the joint
+            // briefly reappears in a MediaPipe hallucination frame.
+            if (skippedForFrame.isNotEmpty()) {
+                angleSmoother.clearJoints(skippedForFrame)
+            }
             val smoothedAngles = angleSmoother.smooth(rawTrackedAngles)
             _currentAngles.value = smoothedAngles
             _anySideDimmedJointCodes.value = skippedForFrame
@@ -961,7 +967,17 @@ class TrainingEngine(
             }
 
             if (shouldTrackState) {
-                repCounter.updateJointStates(jointStateInfos)
+                // Exclude joints that were skipped this frame from rep state
+                // accumulation. The FormValidator didn't evaluate them, but if a
+                // joint briefly appeared (MediaPipe visibility spike) and then was
+                // skipped again, we don't want its one-frame anomalous state to
+                // pollute the accumulated worst-state for the rep.
+                val statesForScoring = if (skippedForFrame.isEmpty()) {
+                    jointStateInfos
+                } else {
+                    jointStateInfos.filterKeys { it !in skippedForFrame }
+                }
+                repCounter.updateJointStates(statesForScoring)
             }
 
             // ── 7. Arrow infos for skeleton overlay ──

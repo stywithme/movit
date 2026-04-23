@@ -19,6 +19,12 @@ import com.trainingvalidator.poc.training.models.*
  * - DANGER state adds a penalty (-15% per DANGER joint)
  * - Rates: PERFECT=100, NORMAL=80, PAD=60, WARNING=40, DANGER=0
  *
+ * Rep-based primary joints (Up/Down): instead of keeping the worst quality state
+ * across the whole rep (which is dominated by brief transition / tracking noise),
+ * we keep the *best* quality reached in UP_ZONE and the *best* in DOWN_ZONE, then
+ * combine those two peaks (the worse of the two) for scoring. Any WARNING/DANGER
+ * frame for that joint still applies for the rep via a separate severity track.
+ *
  * For HOLD exercises, score is calculated using WEIGHTED AVERAGE of time in states.
  */
 class RepCounter(
@@ -43,6 +49,69 @@ class RepCounter(
         private const val TAG = "RepCounter"
         private const val POSITION_ERROR_PENALTY = 15f
         private const val POSITION_WARNING_PENALTY = 6f
+    }
+
+    /**
+     * Per primary joint: best quality in UP zone, best in DOWN zone, and worst
+     * WARNING/DANGER sample for the rep (safety / counting rules).
+     */
+    private class PrimaryRepZoneTracker {
+        var bestUpQuality: JointStateInfo? = null
+        var bestDownQuality: JointStateInfo? = null
+        var worstSeverityInfo: JointStateInfo? = null
+
+        private fun pickBetterQuality(
+            current: JointStateInfo?,
+            candidate: JointStateInfo
+        ): JointStateInfo {
+            if (current == null) return candidate
+            return if (candidate.state.isBetterThan(current.state)) candidate else current
+        }
+
+        private fun mergeZoneQuality(
+            up: JointStateInfo?,
+            down: JointStateInfo?
+        ): JointStateInfo? {
+            if (up == null) return down
+            if (down == null) return up
+            // A rep must be good in both directions, so score the joint by the
+            // weaker of the best-achieved UP and DOWN peaks.
+            return if (up.state.isWorseThan(down.state)) up else down
+        }
+
+        private fun JointState.isScorableQualityBand(): Boolean = when (this) {
+            JointState.PERFECT, JointState.NORMAL, JointState.PAD -> true
+            else -> false
+        }
+
+        fun ingest(stateInfo: JointStateInfo) {
+            val state = stateInfo.state
+            when (state) {
+                JointState.WARNING, JointState.DANGER -> {
+                    val cur = worstSeverityInfo
+                    if (cur == null || state.isWorseThan(cur.state)) {
+                        worstSeverityInfo = stateInfo
+                    }
+                }
+                else -> {
+                    if (!state.isScorableQualityBand()) return
+                    when (stateInfo.currentZone) {
+                        ZoneType.UP_ZONE ->
+                            bestUpQuality = pickBetterQuality(bestUpQuality, stateInfo)
+                        ZoneType.DOWN_ZONE ->
+                            bestDownQuality = pickBetterQuality(bestDownQuality, stateInfo)
+                        ZoneType.TRANSITION -> Unit
+                    }
+                }
+            }
+        }
+
+        fun mergedForScoring(): JointStateInfo? {
+            val zonePeak = mergeZoneQuality(bestUpQuality, bestDownQuality)
+            val sev = worstSeverityInfo ?: return zonePeak
+            val z = zonePeak ?: return sev
+            return if (sev.state.isWorseThan(z.state)) sev else z
+        }
     }
 
     /**
@@ -131,17 +200,15 @@ class RepCounter(
     private var currentJointStates: Map<String, JointStateInfo> = emptyMap()
 
     /**
-     * Accumulated worst state per joint across the entire current rep.
-     *
-     * When a rep completes the joints are typically in TRANSITION (moving
-     * back to start position).  If we scored from the instantaneous
-     * [currentJointStates] all joints would be TRANSITION → skipped →
-     * totalWeight = 0 → score = 0%.
-     *
-     * Instead we keep the worst state each joint reached during the rep
-     * and score from that.
+     * Primary joints: best quality in UP vs DOWN zones (see class KDoc), plus
+     * severity (WARNING/DANGER) tracking.
      */
-    private val repAccumulatedStates = mutableMapOf<String, JointStateInfo>()
+    private val primaryRepZoneTrackers = mutableMapOf<String, PrimaryRepZoneTracker>()
+
+    /**
+     * Secondary joints: keep worst non-TRANSITION state across the rep (unchanged).
+     */
+    private val secondaryRepWorstStates = mutableMapOf<String, JointStateInfo>()
 
     /**
      * Phase timings for current rep
@@ -175,13 +242,17 @@ class RepCounter(
         // Store instantaneous snapshot (real-time UI / fallback)
         currentJointStates = jointStates
 
-        // ── Accumulate worst state per joint across the rep ──────
         for ((jointCode, stateInfo) in jointStates) {
             if (stateInfo.state == JointState.TRANSITION) continue
 
-            val existing = repAccumulatedStates[jointCode]
-            if (existing == null || stateInfo.state.isWorseThan(existing.state)) {
-                repAccumulatedStates[jointCode] = stateInfo
+            if (primaryJoints.contains(jointCode) && stateInfo.isPrimary) {
+                primaryRepZoneTrackers.getOrPut(jointCode) { PrimaryRepZoneTracker() }
+                    .ingest(stateInfo)
+            } else {
+                val existing = secondaryRepWorstStates[jointCode]
+                if (existing == null || stateInfo.state.isWorseThan(existing.state)) {
+                    secondaryRepWorstStates[jointCode] = stateInfo
+                }
             }
         }
 
@@ -199,6 +270,17 @@ class RepCounter(
         if (isHoldExercise) {
             updateStateTimeTracking(worstState)
         }
+    }
+
+    private fun buildAccumulatedStatesForScoring(): Map<String, JointStateInfo> {
+        val out = LinkedHashMap<String, JointStateInfo>()
+        for ((code, tracker) in primaryRepZoneTrackers) {
+            tracker.mergedForScoring()?.let { out[code] = it }
+        }
+        for ((code, info) in secondaryRepWorstStates) {
+            out[code] = info
+        }
+        return out
     }
 
     /**
@@ -295,15 +377,16 @@ class RepCounter(
             // For hold exercises, calculate from time tracking
             updateStateTimeTracking(currentTrackingState)
             ScoreCalculator.calculateHoldScore(stateTimeTracking).score
-        } else if (repAccumulatedStates.isNotEmpty()) {
-            // Use accumulated worst-per-joint for accuracy
-            ScoreCalculator.calculateRepScore(repAccumulatedStates, primaryJoints).score
-        } else if (currentJointStates.isNotEmpty()) {
-            // Fallback: instantaneous snapshot
-            ScoreCalculator.calculateRepScore(currentJointStates, primaryJoints).score
         } else {
-            // Fallback: use worst state rate
-            ScoreCalculator.calculateScoreFromWorstState(currentRepWorstState)
+            val accumulated = buildAccumulatedStatesForScoring()
+            when {
+                accumulated.isNotEmpty() ->
+                    ScoreCalculator.calculateRepScore(accumulated, primaryJoints).score
+                currentJointStates.isNotEmpty() ->
+                    ScoreCalculator.calculateRepScore(currentJointStates, primaryJoints).score
+                else ->
+                    ScoreCalculator.calculateScoreFromWorstState(currentRepWorstState)
+            }
         }
     }
 
@@ -345,31 +428,34 @@ class RepCounter(
             score = holdResult.score
             isInvalidated = holdResult.isInvalidated
             isCounted = !isInvalidated && score > 0
-        } else if (repAccumulatedStates.isNotEmpty()) {
-            // Rep-based with weighted scoring — uses accumulated worst per joint
-            val repResult = ScoreCalculator.calculateRepScore(repAccumulatedStates, primaryJoints)
-            score = repResult.score
-            isCounted = repResult.isCounted
-            isInvalidated = repResult.isInvalidated
-            resultWorstState = repResult.worstState
-
-            Log.d(TAG, "Weighted score: ${score.toInt()}%, worst=${repResult.worstState}, " +
-                    "dangerJoints=${repResult.dangerJoints}, joints=${repAccumulatedStates.size}")
-        } else if (currentJointStates.isNotEmpty()) {
-            // Fallback: frame snapshot (should rarely happen)
-            val repResult = ScoreCalculator.calculateRepScore(currentJointStates, primaryJoints)
-            score = repResult.score
-            isCounted = repResult.isCounted
-            isInvalidated = repResult.isInvalidated
-            resultWorstState = repResult.worstState
-
-            Log.d(TAG, "Snapshot score: ${score.toInt()}%, worst=${repResult.worstState}")
         } else {
-            // Fallback: Legacy worst state scoring
-            val config = StateConfig.getConfig(currentRepWorstState)
-            score = ScoreCalculator.getScoreRate(currentRepWorstState)
-            isCounted = config.isRepCounted
-            isInvalidated = config.invalidatesRep
+            val accumulated = buildAccumulatedStatesForScoring()
+            if (accumulated.isNotEmpty()) {
+                // Rep-based: primary = zone peak scoring; secondary = worst-per-joint
+                val repResult = ScoreCalculator.calculateRepScore(accumulated, primaryJoints)
+                score = repResult.score
+                isCounted = repResult.isCounted
+                isInvalidated = repResult.isInvalidated
+                resultWorstState = repResult.worstState
+
+                Log.d(TAG, "Weighted score: ${score.toInt()}%, worst=${repResult.worstState}, " +
+                        "dangerJoints=${repResult.dangerJoints}, joints=${accumulated.size}")
+            } else if (currentJointStates.isNotEmpty()) {
+                // Fallback: frame snapshot (should rarely happen)
+                val repResult = ScoreCalculator.calculateRepScore(currentJointStates, primaryJoints)
+                score = repResult.score
+                isCounted = repResult.isCounted
+                isInvalidated = repResult.isInvalidated
+                resultWorstState = repResult.worstState
+
+                Log.d(TAG, "Snapshot score: ${score.toInt()}%, worst=${repResult.worstState}")
+            } else {
+                // Fallback: Legacy worst state scoring
+                val config = StateConfig.getConfig(currentRepWorstState)
+                score = ScoreCalculator.getScoreRate(currentRepWorstState)
+                isCounted = config.isRepCounted
+                isInvalidated = config.invalidatesRep
+            }
         }
 
         // Position checks affect rep quality classification and score.
@@ -458,7 +544,8 @@ class RepCounter(
         lastStateUpdateTime = 0L
         currentTrackingState = JointState.PERFECT
         currentJointStates = emptyMap()
-        repAccumulatedStates.clear()
+        primaryRepZoneTrackers.clear()
+        secondaryRepWorstStates.clear()
     }
 
     // ==================== Query Methods ====================

@@ -77,7 +77,7 @@ class PerformanceCard @JvmOverloads constructor(
         setupCard(
             type = CardType.FORM,
             icon = "🎯",
-            title = if (isArabic) "الشكل" else "Form",
+            title = if (isArabic) "الأداء" else "Performance",
             metric = metrics.overallScore,
             isArabic = isArabic
         )

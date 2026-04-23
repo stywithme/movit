@@ -9,7 +9,10 @@ import com.trainingvalidator.poc.training.models.MetricCode
  * PerformanceMetricsBuilder - Builds EnhancedPerformanceMetrics from report data
  * 
  * Aggregates metrics into the 3 main cards:
- * - Form (الشكل): FormScore, ROM, Symmetry (LSI for bilateral), FormConsistency
+ * - Performance (الأداء): Form, ROM, Symmetry (LSI for bilateral),
+ *   FormConsistency as inner metrics; the card arc score = 50% rep state
+ *   average + 25% ROM% + 25% form consistency
+ *   (weights re-normalized when ROM or consistency is unavailable; hold = state only).
  * - Safety (الأمان): PositionCheck-based Alignment, Trunk Stability, DangerCount
  * - Control (التحكم): Tempo, TUT, VelocityLoss, TempoConsistency, FatigueIndex
  * 
@@ -28,7 +31,65 @@ import com.trainingvalidator.poc.training.models.MetricCode
  * - TUT uses sum of rep durations (not session duration)
  */
 object PerformanceMetricsBuilder {
-    
+
+    /** Pure form/state weight in combined Performance card score */
+    const val FORM_CARD_WEIGHT_STATE = 0.5f
+
+    /** ROM% weight in combined Performance card score */
+    const val FORM_CARD_WEIGHT_ROM = 0.25f
+
+    /** Form-consistency weight in combined Performance card score */
+    const val FORM_CARD_WEIGHT_CONSISTENCY = 0.25f
+
+    /**
+     * Combined Performance card score for UI cards and overall-quality Form leg.
+     * Hold exercises: rep state only (ROM / consistency not meaningful the same way).
+     */
+    fun calculateCombinedFormScorePercent(
+        stateScore: Float,
+        romPercent: Float?,
+        consistencyPercent: Float?,
+        isHoldExercise: Boolean
+    ): Float {
+        if (isHoldExercise) {
+            return stateScore.coerceIn(0f, 100f)
+        }
+        var wState = FORM_CARD_WEIGHT_STATE
+        var wRom = FORM_CARD_WEIGHT_ROM
+        var wCons = FORM_CARD_WEIGHT_CONSISTENCY
+        if (romPercent == null) wRom = 0f
+        if (consistencyPercent == null) wCons = 0f
+        val sumW = wState + wRom + wCons
+        if (sumW <= 0f) return stateScore.coerceIn(0f, 100f)
+        return (
+            stateScore * (wState / sumW) +
+            (romPercent ?: 0f) * (wRom / sumW) +
+            (consistencyPercent ?: 0f) * (wCons / sumW)
+        ).coerceIn(0f, 100f)
+    }
+
+    /**
+     * Average rep score from timeline, else weighted mean from [StateBreakdown].
+     */
+    fun computeStateFormScorePercentFromTimeline(
+        timeline: List<RepTimelineEntry>,
+        breakdown: StateBreakdown
+    ): Float {
+        val timelineScores = timeline.map { it.score }
+        if (timelineScores.isNotEmpty()) {
+            return timelineScores.average().toFloat()
+        }
+        val total = breakdown.total.toFloat()
+        if (total == 0f) return 0f
+        return (
+            breakdown.perfectCount * ScoreCalculator.getScoreRate(JointState.PERFECT) +
+                breakdown.normalCount * ScoreCalculator.getScoreRate(JointState.NORMAL) +
+                breakdown.padCount * ScoreCalculator.getScoreRate(JointState.PAD) +
+                breakdown.warningCount * ScoreCalculator.getScoreRate(JointState.WARNING) +
+                breakdown.dangerCount * ScoreCalculator.getScoreRate(JointState.DANGER)
+            ) / total
+    }
+
     /**
      * Build enhanced performance metrics from a report
      * Only includes metrics that should be shown based on exercise config
@@ -45,33 +106,58 @@ object PerformanceMetricsBuilder {
     }
     
     /**
-     * Build Form metrics card
-     * Combines: FormScore, ROM, Symmetry (LSI for bilateral), FormConsistency
+     * Build Performance metrics card
+     * Inner metrics: Form, ROM, Symmetry, Form consistency.
+     * Arc score: weighted state + ROM + consistency.
      */
     private fun buildFormMetrics(report: PostTrainingReport, config: ExerciseConfigSnapshot?): FormMetrics {
         val summary = report.summary
         val stateBreakdown = summary.stateBreakdown
-        
-        // Calculate form score from state distribution (always shown)
-        val formScore = calculateFormScore(report, stateBreakdown)
-        
+        val isHold = report.isHoldExercise()
+
+        val statePercent = computeStateFormScorePercentFromTimeline(
+            report.repTimeline,
+            stateBreakdown
+        )
+        val formQualityMetric = MetricWithStatus.fromPercentage(
+            statePercent,
+            advice = formAdviceFromPercentage(statePercent)
+        )
+
         // ROM - use pre-calculated value from summary
         val romMetric = if (shouldShow(config, MetricCode.ROM)) {
             formatROMMetric(summary.avgROM)
         } else null
-        
+
         // Symmetry — uses LSI approach for bilateral alternating exercises
         val symmetryMetric = if (shouldShow(config, MetricCode.SYMMETRY)) {
             calculateSymmetryMetric(report)
         } else null
-        
+
         // Form Consistency - use pre-calculated value from summary
         val consistencyMetric = if (shouldShow(config, MetricCode.FORM_CONSISTENCY)) {
             formatFormConsistencyMetric(summary.formConsistency)
         } else null
-        
+
+        val romForCombine = romMetric?.value?.takeIf { shouldShow(config, MetricCode.ROM) }
+        val consForCombine =
+            consistencyMetric?.value?.takeIf { shouldShow(config, MetricCode.FORM_CONSISTENCY) }
+
+        val combinedPercent = calculateCombinedFormScorePercent(
+            stateScore = statePercent,
+            romPercent = romForCombine,
+            consistencyPercent = consForCombine,
+            isHoldExercise = isHold
+        )
+
+        val overallScore = MetricWithStatus.fromPercentage(
+            combinedPercent,
+            advice = formAdviceFromPercentage(combinedPercent)
+        )
+
         return FormMetrics(
-            overallScore = formScore,
+            overallScore = overallScore,
+            formQuality = formQualityMetric,
             rom = romMetric,
             symmetry = symmetryMetric,
             formConsistency = consistencyMetric
@@ -192,33 +278,10 @@ object PerformanceMetricsBuilder {
         return config.shouldShowMetric(metric)
     }
     
-    private fun calculateFormScore(report: PostTrainingReport, breakdown: StateBreakdown): MetricWithStatus {
-        val timelineScores = report.repTimeline.map { it.score }
-        val scoreValue = if (timelineScores.isNotEmpty()) {
-            timelineScores.average().toFloat()
-        } else {
-            val total = breakdown.total.toFloat()
-            if (total == 0f) {
-                0f
-            } else {
-                (
-                    breakdown.perfectCount * ScoreCalculator.getScoreRate(JointState.PERFECT) +
-                    breakdown.normalCount * ScoreCalculator.getScoreRate(JointState.NORMAL) +
-                    breakdown.padCount * ScoreCalculator.getScoreRate(JointState.PAD) +
-                    breakdown.warningCount * ScoreCalculator.getScoreRate(JointState.WARNING) +
-                    breakdown.dangerCount * ScoreCalculator.getScoreRate(JointState.DANGER)
-                ) / total
-            }
-        }
-        
-        return MetricWithStatus.fromPercentage(
-            scoreValue,
-            advice = when {
-                scoreValue >= 90 -> LocalizedText(ar = "شكل ممتاز!", en = "Excellent form!")
-                scoreValue >= 70 -> LocalizedText(ar = "شكل جيد", en = "Good form")
-                else -> LocalizedText(ar = "ركز على الشكل", en = "Focus on form")
-            }
-        )
+    private fun formAdviceFromPercentage(scoreValue: Float): LocalizedText = when {
+        scoreValue >= 90 -> LocalizedText(ar = "شكل ممتاز!", en = "Excellent form!")
+        scoreValue >= 70 -> LocalizedText(ar = "شكل جيد", en = "Good form")
+        else -> LocalizedText(ar = "ركز على الشكل", en = "Focus on form")
     }
     
     private fun formatROMMetric(avgROM: Float?): MetricWithStatus? {

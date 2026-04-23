@@ -39,11 +39,12 @@ class FrameCaptureManager(
         private const val ERROR_CAPTURE_COOLDOWN_MS = 2000L
         private const val DANGER_CAPTURE_COOLDOWN_MS = 1000L  // Shorter cooldown for DANGER
 
-        // Replay burst: compact animated sequence around each rep's BOTTOM phase.
-        private const val REPLAY_FRAME_SIZE = 360       // px (smaller → cheap motion preview)
-        private const val REPLAY_JPEG_QUALITY = 70      // %
-        private const val REPLAY_MAX_FRAMES_PER_REP = 6
-        private const val REPLAY_MAX_TRACKED_REPS = 6   // rolling window; oldest reps dropped
+        // Rep-wide replay sampling: JPEG sequence per rep (Best vs Worst motion).
+        private const val REPLAY_FRAME_SIZE = 540       // px – primary visual content on report
+        private const val REPLAY_JPEG_QUALITY = 82      // %
+        private const val REPLAY_MAX_FRAMES_PER_REP = 16
+        /** Prefer keeping **early** reps (best highlight is often rep 1–3). Evict highest rep first. */
+        private const val REPLAY_MAX_TRACKED_REPS = 10
         private const val REPLAY_MIN_FRAMES_FOR_CLIP = 2
     }
     
@@ -68,9 +69,9 @@ class FrameCaptureManager(
     // Track peak frames per rep (to later mark as best)
     private val peakFramesByRep = mutableMapOf<Int, FrameCapture>()
 
-    // Rolling replay-burst frames per rep (insertion-ordered so we can evict oldest rep).
+    // Rolling replay frames per rep (insertion order = first-seen rep; eviction is by rep **number**).
     private val replayFramesByRep = linkedMapOf<Int, MutableList<ReplayFrameRef>>()
-    // Track first burst timestamp per rep so we can store per-frame offsetMs.
+    // Track first sample timestamp per rep so we can store per-frame offsetMs.
     private val replayStartTimesByRep = mutableMapOf<Int, Long>()
     
     init {
@@ -279,12 +280,11 @@ class FrameCaptureManager(
     }
     
     /**
-     * Capture a single frame of a rolling replay burst for [repNumber].
+     * Capture one replay sample frame for [repNumber] (rep-wide periodic sampling in UI).
      *
-     * Called repeatedly (~4–6 times per rep, spaced ~120 ms) around the BOTTOM phase.
      * Frames are saved at a smaller size to keep disk footprint minimal.
-     * Oldest reps are evicted automatically when more than [REPLAY_MAX_TRACKED_REPS] reps
-     * accumulate, so storage stays bounded regardless of session length.
+     * When more than [REPLAY_MAX_TRACKED_REPS] reps have samples, **highest** rep numbers
+     * are dropped first so early reps (often “best”) are more likely to keep a clip.
      *
      * @return `true` if the frame was written to disk, `false` if it was skipped
      *   (cap reached for this rep or save failure).
@@ -319,12 +319,18 @@ class FrameCaptureManager(
     }
 
     /**
-     * Drop the oldest tracked reps until only [REPLAY_MAX_TRACKED_REPS] remain (excluding
-     * [keepRep] to avoid evicting the rep currently being captured).
+     * Drop reps until only [REPLAY_MAX_TRACKED_REPS] remain (excluding [keepRep]).
+     * Evicts **largest** rep numbers first so low rep indices are preserved.
      */
     private fun enforceReplayRollingWindow(keepRep: Int) {
         while (replayFramesByRep.size > REPLAY_MAX_TRACKED_REPS) {
-            val evictRep = replayFramesByRep.keys.firstOrNull { it != keepRep } ?: break
+            val candidates = replayFramesByRep.keys.filter { it != keepRep }
+            if (candidates.isEmpty()) break
+            val evictRep = candidates.maxOrNull() ?: break
+            Log.d(
+                BestWorstReplayPipeline.LOG_TAG,
+                "replay_evict rep=$evictRep keep=$keepRep tracked=${replayFramesByRep.size}"
+            )
             deleteReplayFramesForRep(evictRep)
         }
     }
@@ -340,7 +346,7 @@ class FrameCaptureManager(
     }
 
     /**
-     * Snapshot the current replay burst for [repNumber], or `null` if there are fewer than
+     * Snapshot the current replay track for [repNumber], or `null` if there are fewer than
      * [REPLAY_MIN_FRAMES_FOR_CLIP] frames (in which case the still fallback is preferable).
      */
     fun getReplayClipForRep(repNumber: Int): RepReplayClip? {
