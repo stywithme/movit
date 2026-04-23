@@ -376,7 +376,22 @@ class RepReplayPlayerView @JvmOverloads constructor(
         return true
     }
 
-    private fun renderFrame(path: String): Boolean {
+    private fun bitmapDecodeOptions(highQuality: Boolean): BitmapFactory.Options =
+        BitmapFactory.Options().apply {
+            inPreferredConfig =
+                if (highQuality) Bitmap.Config.ARGB_8888 else Bitmap.Config.RGB_565
+        }
+
+    /** Full-resolution still first, then thumbnail (report cards must not upscale 200px thumbs). */
+    private fun fallbackStillPaths(frame: FrameCapture?): List<String> {
+        val f = frame ?: return emptyList()
+        return listOfNotNull(
+            f.frameUri.takeIf { it.isNotEmpty() },
+            f.thumbnailUri.takeIf { it.isNotEmpty() }
+        )
+    }
+
+    private fun renderFrame(path: String, highQuality: Boolean = true): Boolean {
         val file = File(path)
         if (!file.exists()) {
             Log.w(TAG, "$DEBUG_PREFIX render_missing path=${file.absolutePath}")
@@ -385,9 +400,7 @@ class RepReplayPlayerView @JvmOverloads constructor(
 
         val bitmap = BitmapFactory.decodeFile(
             file.absolutePath,
-            BitmapFactory.Options().apply {
-                inPreferredConfig = Bitmap.Config.RGB_565
-            }
+            bitmapDecodeOptions(highQuality)
         ) ?: run {
             Log.w(TAG, "$DEBUG_PREFIX render_decode_failed path=${file.absolutePath}")
             return false
@@ -401,9 +414,7 @@ class RepReplayPlayerView @JvmOverloads constructor(
     private fun decodeReplayFrame(path: String): LoadedReplayFrame? {
         val bitmap = BitmapFactory.decodeFile(
             path,
-            BitmapFactory.Options().apply {
-                inPreferredConfig = Bitmap.Config.RGB_565
-            }
+            bitmapDecodeOptions(highQuality = false)
         ) ?: run {
             Log.w(TAG, "$DEBUG_PREFIX preload_decode_failed path=$path")
             return null
@@ -416,13 +427,9 @@ class RepReplayPlayerView @JvmOverloads constructor(
     }
 
     private fun showFallbackStill() {
-        val frame = fallbackFrame
-        val candidatePaths = listOfNotNull(
-            frame?.thumbnailUri?.takeIf { it.isNotEmpty() },
-            frame?.frameUri?.takeIf { it.isNotEmpty() }
-        )
+        val candidatePaths = fallbackStillPaths(fallbackFrame)
 
-        val renderedFallback = candidatePaths.any { renderFrame(it) }
+        val renderedFallback = candidatePaths.any { renderFrame(it, highQuality = true) }
         if (!renderedFallback) {
             Log.w(
                 TAG,
@@ -447,17 +454,11 @@ class RepReplayPlayerView @JvmOverloads constructor(
 
     private suspend fun decodeFallbackBitmapOnIo(frame: FrameCapture?): Bitmap? =
         withContext(Dispatchers.IO) {
-            val candidatePaths = listOfNotNull(
-                frame?.thumbnailUri?.takeIf { it.isNotEmpty() },
-                frame?.frameUri?.takeIf { it.isNotEmpty() }
-            )
-            for (path in candidatePaths) {
+            for (path in fallbackStillPaths(frame)) {
                 if (!File(path).exists()) continue
                 val bitmap = BitmapFactory.decodeFile(
                     path,
-                    BitmapFactory.Options().apply {
-                        inPreferredConfig = Bitmap.Config.RGB_565
-                    }
+                    bitmapDecodeOptions(highQuality = true)
                 ) ?: continue
                 return@withContext bitmap
             }
