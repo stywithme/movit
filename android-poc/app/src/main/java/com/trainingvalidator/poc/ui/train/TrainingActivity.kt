@@ -163,6 +163,10 @@ class TrainingActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetection
         private val COLOR_WARNING = Color.parseColor("#FFC107")
         private val COLOR_ERROR = Color.parseColor("#FF5252")
         private val COLOR_DEFAULT = Color.WHITE
+
+        /** Rolling replay burst around BOTTOM phase (Best vs Worst motion). */
+        private const val REPLAY_BURST_FRAME_COUNT = 5
+        private const val REPLAY_BURST_INTERVAL_MS = 130L
     }
 
     // View Binding
@@ -238,11 +242,6 @@ class TrainingActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetection
     private var activeReplayBurstRunnable: Runnable? = null
     private var activeReplayBurstRep: Int = -1
 
-    private companion object {
-        const val REPLAY_BURST_FRAME_COUNT = 5
-        const val REPLAY_BURST_INTERVAL_MS = 130L
-    }
-    
     // FPS calculation
     private var frameCount = 0
     private var lastFpsUpdateTime = System.currentTimeMillis()
