@@ -14,35 +14,28 @@ import android.widget.LinearLayout
 import android.widget.TextView
 import androidx.fragment.app.Fragment
 import com.trainingvalidator.poc.training.models.RepQuality
-import com.trainingvalidator.poc.training.report.BestRepHighlight
 import com.trainingvalidator.poc.training.report.FrameCapture
 import com.trainingvalidator.poc.training.report.PostTrainingReport
 import com.trainingvalidator.poc.training.report.RepReplayClip
-import com.trainingvalidator.poc.training.report.WorstRepHighlight
 import com.trainingvalidator.poc.ui.report.ReportUiHelper as H
 import com.trainingvalidator.poc.ui.report.components.RepReplayPlayerView
 import java.io.File
 
 /**
- * Screen 3 ΓÇö Best vs Worst Comparison
+ * Screen 3 — Best vs Worst comparison (50/50 vertical split).
  *
- * Exact 50/50 vertical split:
- *   ΓöîΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÉ
- *   Γöé  Γ¡É BEST REP             Γöé  50%
- *   Γöé  [image]  | #N  80%      Γöé
- *   Γöé           | ΓÅ▒ 3.2s       Γöé
- *   Γöé           | Perfect form Γöé
- *   Γö£ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöñ
- *   Γöé  ≡ƒôë WORST REP            Γöé  50%
- *   Γöé  [image]  | #9  80%      Γöé
- *   Γöé           | ΓÅ▒ 6.9s       Γöé
- *   Γöé           | Position warnΓöé
- *   ΓööΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÿ
+ * Emoji in user-visible strings use Unicode escapes so the source stays valid UTF-8
+ * even if tooling rewrites the file with a wrong encoding.
  */
 class BestWorstComparisonFragment : Fragment() {
 
     companion object {
         fun newInstance() = BestWorstComparisonFragment()
+
+        private const val STAR = "\u2B50" // medium star
+        private const val CHART_DOWN = "\uD83D\uDCC9" // chart decreasing
+        private const val PARTY = "\uD83C\uDF89" // party popper
+        private const val STOPWATCH = "\u23F1" // stopwatch (duration prefix)
     }
 
     private var report: PostTrainingReport? = null
@@ -74,10 +67,6 @@ class BestWorstComparisonFragment : Fragment() {
         this.isArabic = isArabic
         if (isAdded) bindData()
     }
-
-    // ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
-    //  Bind
-    // ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
 
     private fun bindData() {
         val report = this.report ?: return
@@ -127,7 +116,6 @@ class BestWorstComparisonFragment : Fragment() {
             }
         }
 
-        // ΓöÇΓöÇ Top half: Best Rep (weight = 1) ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
         root.addView(
             buildHalf(
                 isBest = true,
@@ -142,7 +130,6 @@ class BestWorstComparisonFragment : Fragment() {
             )
         )
 
-        // ΓöÇΓöÇ Thin VS divider ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
         root.addView(View(ctx).apply {
             layoutParams = LinearLayout.LayoutParams(
                 LinearLayout.LayoutParams.MATCH_PARENT, H.dp(ctx, 1)
@@ -150,7 +137,6 @@ class BestWorstComparisonFragment : Fragment() {
             setBackgroundColor(0x33FFFFFF)
         })
 
-        // ΓöÇΓöÇ Bottom half: Worst Rep (weight = 1) ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
         if (worstRep != null) {
             root.addView(
                 buildHalf(
@@ -187,10 +173,6 @@ class BestWorstComparisonFragment : Fragment() {
         }
     }
 
-    // ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
-    //  Build one half (50%)
-    // ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
-
     private fun buildHalf(
         isBest: Boolean,
         repNumber: Int?,
@@ -203,21 +185,18 @@ class BestWorstComparisonFragment : Fragment() {
     ): LinearLayout {
         val ctx = requireContext()
         val accent = if (isBest) H.colorGreen(ctx) else H.colorOrange(ctx)
-        val bgColor = if (isBest) 0x0D4CAF50 else 0x0DFF9800  // very subtle tint
+        val bgColor = if (isBest) 0x0D4CAF50 else 0x0DFF9800
 
         return LinearLayout(ctx).apply {
             orientation = LinearLayout.HORIZONTAL
             layoutParams = LinearLayout.LayoutParams(
-                LinearLayout.LayoutParams.MATCH_PARENT, 0, 1f  // weight = 1 ΓåÆ exact 50%
+                LinearLayout.LayoutParams.MATCH_PARENT, 0, 1f
             )
             gravity = Gravity.CENTER_VERTICAL
             setBackgroundColor(bgColor)
             setPadding(H.dp(ctx, 16), H.dp(ctx, 12), H.dp(ctx, 16), H.dp(ctx, 12))
 
-            // ΓöÇΓöÇ Left: Image ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
             addView(buildImageSection(frame, replayClip, accent, isBest, quality, repNumber))
-
-            // ΓöÇΓöÇ Right: Stats ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
             addView(buildStatsSection(isBest, repNumber, score, duration, quality, message, accent))
         }
     }
@@ -259,7 +238,7 @@ class BestWorstComparisonFragment : Fragment() {
 
         val noStill = !hasViewableStill(frame, replayClip)
         val placeholderHint = if (noStill) {
-            if (isArabic) "┘ä┘à ┘è╪¬┘à ╪º┘ä╪¬┘é╪º╪╖ ╪╡┘ê╪▒╪⌐ ┘ä┘ç╪░┘ç ╪º┘ä╪╣╪»╪⌐" else "No frame captured for this rep"
+            if (isArabic) "لم يتم التقاط صورة لهذه العدة" else "No frame captured for this rep"
         } else {
             null
         }
@@ -291,7 +270,7 @@ class BestWorstComparisonFragment : Fragment() {
                 }
                 setImageResource(android.R.drawable.ic_menu_search)
                 contentDescription =
-                    if (isArabic) "╪╣╪▒╪╢ ╪º┘ä╪╡┘ê╪▒╪⌐ ╪¿╪º┘ä╪¡╪¼┘à ╪º┘ä┘â╪º┘à┘ä" else "View full image"
+                    if (isArabic) "عرض الصورة بالحجم الكامل" else "View full image"
                 setBackgroundColor(0x66000000)
                 setOnClickListener {
                     openFrameViewer(frame, getHalfTitle(isBest, quality), repNumber)
@@ -325,7 +304,7 @@ class BestWorstComparisonFragment : Fragment() {
             else -> return
         }
         val forDialog = if (path == f.frameUri) f else f.copy(frameUri = path)
-        val details = repNumber?.let { if (isArabic) "╪º┘ä╪╣╪»╪⌐ #$it" else "Rep #$it" }.orEmpty()
+        val details = repNumber?.let { if (isArabic) "العدة #$it" else "Rep #$it" }.orEmpty()
         ImageViewerDialog(requireContext(), forDialog, title = title, details = details).show()
     }
 
@@ -344,7 +323,6 @@ class BestWorstComparisonFragment : Fragment() {
             layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f)
             gravity = Gravity.CENTER_VERTICAL
 
-            // Badge label
             addView(TextView(ctx).apply {
                 text = getHalfTitle(isBest, quality)
                 textSize = 15f
@@ -352,17 +330,15 @@ class BestWorstComparisonFragment : Fragment() {
                 setTypeface(typeface, android.graphics.Typeface.BOLD)
             })
 
-            // Rep #
             if (repNumber != null) {
                 addView(TextView(ctx).apply {
-                    text = if (isArabic) "╪º┘ä╪╣╪»╪⌐ #$repNumber" else "Rep #$repNumber"
+                    text = if (isArabic) "العدة #$repNumber" else "Rep #$repNumber"
                     textSize = 13f
                     setTextColor(H.textMuted(ctx))
                     setPadding(0, H.dp(ctx, 4), 0, 0)
                 })
             }
 
-            // Score (large)
             addView(TextView(ctx).apply {
                 text = "${score?.toInt() ?: 0}%"
                 textSize = 44f
@@ -371,17 +347,15 @@ class BestWorstComparisonFragment : Fragment() {
                 setPadding(0, H.dp(ctx, 6), 0, 0)
             })
 
-            // Duration
             if (duration != null) {
                 addView(TextView(ctx).apply {
-                    text = "ΓÅ▒ $duration"
+                    text = "$STOPWATCH $duration"
                     textSize = 14f
                     setTextColor(H.textMuted(ctx))
                     setPadding(0, H.dp(ctx, 4), 0, 0)
                 })
             }
 
-            // Message
             addView(TextView(ctx).apply {
                 text = message
                 textSize = 13f
@@ -391,10 +365,6 @@ class BestWorstComparisonFragment : Fragment() {
             })
         }
     }
-
-    // ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
-    //  All-great fallback
-    // ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
 
     private fun buildAllGreatHalf(): LinearLayout {
         val ctx = requireContext()
@@ -407,19 +377,19 @@ class BestWorstComparisonFragment : Fragment() {
             setBackgroundColor(0x0D4CAF50)
 
             addView(TextView(ctx).apply {
-                text = "≡ƒÄë"
+                text = PARTY
                 textSize = 48f
                 gravity = Gravity.CENTER
             })
             addView(TextView(ctx).apply {
-                text = if (isArabic) "╪¼┘à┘è╪╣ ╪º┘ä╪╣╪»╪º╪¬ ┘â╪º┘å╪¬ ╪▒╪º╪ª╪╣╪⌐!" else "All reps were great!"
+                text = if (isArabic) "جميع العدات كانت رائعة!" else "All reps were great!"
                 textSize = 18f
                 setTextColor(H.colorGreen(ctx))
                 gravity = Gravity.CENTER
                 setPadding(0, H.dp(ctx, 8), 0, 0)
             })
             addView(TextView(ctx).apply {
-                text = if (isArabic) "┘ä┘à ┘è┘Å┘ä╪º╪¡╪╕ ┘ü╪▒┘é ┘â╪¿┘è╪▒ ╪¿┘è┘å ╪º┘ä╪╣╪»╪º╪¬"
+                text = if (isArabic) "لم يُلاحظ فرق كبير بين العدات"
                 else "No significant difference between reps"
                 textSize = 13f
                 setTextColor(H.textMuted(ctx))
@@ -431,23 +401,33 @@ class BestWorstComparisonFragment : Fragment() {
     private fun getHalfTitle(isBest: Boolean, quality: RepQuality): String {
         return if (isBest) {
             when (quality) {
-                RepQuality.CLEAN -> if (isArabic) "Γ¡É ╪ú┘ü╪╢┘ä ╪╣╪»╪⌐" else "Γ¡É Best Rep"
-                RepQuality.NEEDS_CORRECTION -> if (isArabic) "Γ¡É ╪ú┘ü╪╢┘ä ┘à╪¡╪º┘ê┘ä╪⌐" else "Γ¡É Best Attempt"
-                RepQuality.DANGER -> if (isArabic) "Γ¡É ╪ú┘ü╪╢┘ä ┘à╪¡╪º┘ê┘ä╪⌐ ┘à╪¬╪º╪¡╪⌐" else "Γ¡É Best Available Attempt"
+                RepQuality.CLEAN ->
+                    if (isArabic) "$STAR أفضل عدة" else "$STAR Best Rep"
+                RepQuality.NEEDS_CORRECTION ->
+                    if (isArabic) "$STAR أفضل محاولة" else "$STAR Best Attempt"
+                RepQuality.DANGER ->
+                    if (isArabic) "$STAR أفضل محاولة متاحة" else "$STAR Best Available Attempt"
             }
         } else {
             when (quality) {
-                RepQuality.DANGER -> if (isArabic) "≡ƒôë ╪ú╪«╪╖╪▒ ╪╣╪»╪⌐" else "≡ƒôë Most Dangerous Rep"
-                else -> if (isArabic) "≡ƒôë ╪ú╪│┘ê╪ú ╪╣╪»╪⌐" else "≡ƒôë Worst Rep"
+                RepQuality.DANGER ->
+                    if (isArabic) "$CHART_DOWN أخطر عدة" else "$CHART_DOWN Most Dangerous Rep"
+                else ->
+                    if (isArabic) "$CHART_DOWN أسوأ عدة" else "$CHART_DOWN Worst Rep"
             }
         }
     }
 
     private fun defaultBestMessage(quality: RepQuality): String {
         return when (quality) {
-            RepQuality.CLEAN -> if (isArabic) "╪ú┘ü╪╢┘ä ╪╣╪»╪⌐ ┘à┘â╪¬┘à┘ä╪⌐ ┘ü┘è ╪º┘ä╪¼┘ä╪│╪⌐" else "Best completed rep in the session"
-            RepQuality.NEEDS_CORRECTION -> if (isArabic) "╪ú┘ü╪╢┘ä ┘à╪¡╪º┘ê┘ä╪⌐ ┘à┘â╪¬┘à┘ä╪⌐ ┘ä┘â┘å┘ç╪º ╪¬╪¡╪¬╪º╪¼ ╪¬╪╡╪¡┘è╪¡" else "Best completed attempt, but it still needs correction"
-            RepQuality.DANGER -> if (isArabic) "╪ú┘ü╪╢┘ä ┘à╪¡╪º┘ê┘ä╪⌐ ┘à╪¬╪º╪¡╪⌐ ┘ä┘â┘å┘ç╪º ┘â╪º┘å╪¬ ╪«╪╖╪▒╪⌐" else "Best available attempt, but it was dangerous"
+            RepQuality.CLEAN ->
+                if (isArabic) "أفضل عدة مكتملة في الجلسة" else "Best completed rep in the session"
+            RepQuality.NEEDS_CORRECTION ->
+                if (isArabic) "أفضل محاولة مكتملة لكنها تحتاج تصحيح"
+                else "Best completed attempt, but it still needs correction"
+            RepQuality.DANGER ->
+                if (isArabic) "أفضل محاولة متاحة لكنها كانت خطرة"
+                else "Best available attempt, but it was dangerous"
         }
     }
 }
