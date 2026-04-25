@@ -347,7 +347,6 @@ export class SubscriptionService {
                 CustomerName: user.name,
                 CustomerEmail: user.email,
                 ExternalIdentifier: checkout.id,
-                PaymentExpiry: expiresAt.toISOString(),
                 CallBackUrl: apiBase
                     ? `${apiBase}/api/payments/myfatoorah/subscriptions/result?checkoutId=${checkout.id}`
                     : undefined,
