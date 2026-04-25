@@ -169,8 +169,8 @@ class ProfileActivity : AppCompatActivity() {
     }
 
     /**
-     * Same layout as training settings dialog; hides voice and camera sections.
-     * Persists indicator type and MediaPipe model as user defaults ([SettingsManager]).
+     * Same layout as training settings dialog; hides the standalone voice row and camera switch.
+     * Persists live coach preferences, indicator type, and MediaPipe model as user defaults ([SettingsManager]).
      */
     private fun showExerciseSettingsDialog() {
         val dialogView = layoutInflater.inflate(R.layout.dialog_training_settings, null)
@@ -180,22 +180,25 @@ class ProfileActivity : AppCompatActivity() {
 
         var selectedIndicator = SettingsManager.getIndicatorType()
         var selectedModel = SettingsManager.getModelType()
+        var selectedCoachIntensity = SettingsManager.getCoachIntensity()
+        var selectedCameraCueMode = SettingsManager.getCameraCueMode()
+
+        fun setChoiceButtonSelected(button: MaterialButton, isSelected: Boolean) {
+            if (isSelected) {
+                button.setBackgroundColor(ContextCompat.getColor(this, R.color.primary))
+                button.setTextColor(ContextCompat.getColor(this, R.color.on_primary))
+            } else {
+                button.setBackgroundColor(android.graphics.Color.TRANSPARENT)
+                button.setTextColor(ContextCompat.getColor(this, R.color.text_primary))
+            }
+        }
 
         val btnLine = dialogView.findViewById<MaterialButton>(R.id.btnIndicatorLine)
         val btnArc = dialogView.findViewById<MaterialButton>(R.id.btnIndicatorArc)
 
         fun updateIndicatorButtons() {
-            if (selectedIndicator == "line") {
-                btnLine.setBackgroundColor(ContextCompat.getColor(this, R.color.primary))
-                btnLine.setTextColor(ContextCompat.getColor(this, R.color.on_primary))
-                btnArc.setBackgroundColor(android.graphics.Color.TRANSPARENT)
-                btnArc.setTextColor(ContextCompat.getColor(this, R.color.text_primary))
-            } else {
-                btnArc.setBackgroundColor(ContextCompat.getColor(this, R.color.primary))
-                btnArc.setTextColor(ContextCompat.getColor(this, R.color.on_primary))
-                btnLine.setBackgroundColor(android.graphics.Color.TRANSPARENT)
-                btnLine.setTextColor(ContextCompat.getColor(this, R.color.text_primary))
-            }
+            setChoiceButtonSelected(btnLine, selectedIndicator == "line")
+            setChoiceButtonSelected(btnArc, selectedIndicator != "line")
         }
         updateIndicatorButtons()
 
@@ -208,21 +211,60 @@ class ProfileActivity : AppCompatActivity() {
             updateIndicatorButtons()
         }
 
+        val btnCoachCalm = dialogView.findViewById<MaterialButton>(R.id.btnCoachCalm)
+        val btnCoachStandard = dialogView.findViewById<MaterialButton>(R.id.btnCoachStandard)
+        val btnCoachStrict = dialogView.findViewById<MaterialButton>(R.id.btnCoachStrict)
+
+        fun updateCoachButtons() {
+            setChoiceButtonSelected(btnCoachCalm, selectedCoachIntensity == "calm")
+            setChoiceButtonSelected(btnCoachStandard, selectedCoachIntensity == "standard")
+            setChoiceButtonSelected(btnCoachStrict, selectedCoachIntensity == "strict")
+        }
+        updateCoachButtons()
+
+        btnCoachCalm.setOnClickListener {
+            selectedCoachIntensity = "calm"
+            updateCoachButtons()
+        }
+        btnCoachStandard.setOnClickListener {
+            selectedCoachIntensity = "standard"
+            updateCoachButtons()
+        }
+        btnCoachStrict.setOnClickListener {
+            selectedCoachIntensity = "strict"
+            updateCoachButtons()
+        }
+
+        val btnCueVoice = dialogView.findViewById<MaterialButton>(R.id.btnCueVoice)
+        val btnCueTones = dialogView.findViewById<MaterialButton>(R.id.btnCueTones)
+        val btnCueBasic = dialogView.findViewById<MaterialButton>(R.id.btnCueBasic)
+
+        fun updateCameraCueButtons() {
+            setChoiceButtonSelected(btnCueVoice, selectedCameraCueMode == "voice")
+            setChoiceButtonSelected(btnCueTones, selectedCameraCueMode == "tones")
+            setChoiceButtonSelected(btnCueBasic, selectedCameraCueMode == "tones_basic")
+        }
+        updateCameraCueButtons()
+
+        btnCueVoice.setOnClickListener {
+            selectedCameraCueMode = "voice"
+            updateCameraCueButtons()
+        }
+        btnCueTones.setOnClickListener {
+            selectedCameraCueMode = "tones"
+            updateCameraCueButtons()
+        }
+        btnCueBasic.setOnClickListener {
+            selectedCameraCueMode = "tones_basic"
+            updateCameraCueButtons()
+        }
+
         val btnModelFull = dialogView.findViewById<MaterialButton>(R.id.btnModelFull)
         val btnModelHeavy = dialogView.findViewById<MaterialButton>(R.id.btnModelHeavy)
 
         fun updateModelButtons() {
-            if (selectedModel == "full") {
-                btnModelFull.setBackgroundColor(ContextCompat.getColor(this, R.color.primary))
-                btnModelFull.setTextColor(ContextCompat.getColor(this, R.color.on_primary))
-                btnModelHeavy.setBackgroundColor(android.graphics.Color.TRANSPARENT)
-                btnModelHeavy.setTextColor(ContextCompat.getColor(this, R.color.text_primary))
-            } else {
-                btnModelHeavy.setBackgroundColor(ContextCompat.getColor(this, R.color.primary))
-                btnModelHeavy.setTextColor(ContextCompat.getColor(this, R.color.on_primary))
-                btnModelFull.setBackgroundColor(android.graphics.Color.TRANSPARENT)
-                btnModelFull.setTextColor(ContextCompat.getColor(this, R.color.text_primary))
-            }
+            setChoiceButtonSelected(btnModelFull, selectedModel == "full")
+            setChoiceButtonSelected(btnModelHeavy, selectedModel != "full")
         }
         updateModelButtons()
 
@@ -238,7 +280,7 @@ class ProfileActivity : AppCompatActivity() {
         // Hide voice feedback row and adjacent dividers (standalone switch on profile)
         val switchVoice = dialogView.findViewById<View>(R.id.switchVoiceFeedback)
         val voiceRow = switchVoice.parent as View
-        val root = dialogView as ViewGroup
+        val root = dialogView.findViewById<ViewGroup>(R.id.settingsContent)
         val voiceIndex = root.indexOfChild(voiceRow)
         if (voiceIndex > 0) {
             root.getChildAt(voiceIndex - 1).visibility = View.GONE
@@ -266,6 +308,8 @@ class ProfileActivity : AppCompatActivity() {
         dialogView.findViewById<MaterialButton>(R.id.btnApplySettings).setOnClickListener {
             SettingsManager.setIndicatorType(selectedIndicator)
             SettingsManager.setModelType(selectedModel)
+            SettingsManager.setCoachIntensity(selectedCoachIntensity)
+            SettingsManager.setCameraCueMode(selectedCameraCueMode)
             dialog.dismiss()
             Toast.makeText(
                 this,

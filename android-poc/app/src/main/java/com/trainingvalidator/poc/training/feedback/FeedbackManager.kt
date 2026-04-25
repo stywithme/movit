@@ -1,6 +1,8 @@
 package com.trainingvalidator.poc.training.feedback
 
 import android.content.Context
+import android.media.AudioManager
+import android.media.ToneGenerator
 import android.os.Build
 import android.os.VibrationEffect
 import android.os.Vibrator
@@ -24,10 +26,10 @@ import java.util.*
  * FeedbackManager - Professional mode-aware feedback delivery system
  * 
  * MODE-AWARE BEHAVIOR:
- * - Camera Mode: Audio-first (TTS + Haptic), minimal visual messages
- * - Video Mode:  Visual-first (Glassmorphic messages), no audio/haptic
+ * - Camera Mode: Audio/tone-first, minimal visual messages
+ * - Video Mode:  Visual-first, scheduler-controlled haptic for important cues
  * 
- * SMART MESSAGING (via MessageOrchestrator):
+ * SMART MESSAGING (via FeedbackScheduler):
  * - First is loud, repeat is quiet
  * - Progressive silence after max repeats
  * - Category-aware delivery channels
@@ -35,8 +37,8 @@ import java.util.*
  * 
  * Features:
  * - Text-to-speech for audio feedback (Camera mode)
- * - Vibration patterns for haptic feedback (Camera mode)
- * - Smart throttling via MessageOrchestrator
+ * - Vibration patterns for haptic feedback (scheduler-controlled)
+ * - Smart throttling via FeedbackScheduler
  * - Priority-based feedback queuing
  * - Streak tracking for motivation
  */
@@ -65,8 +67,11 @@ class FeedbackManager(
         private const val NO_AUDIO_COUNTDOWN_MS = 850L
     }
     
-    // Smart message orchestrator (prevents spam, manages delivery)
-    private val messageOrchestrator = MessageOrchestrator()
+    // Single feedback scheduler (prevents spam, priority conflicts, and output overlap)
+    private val feedbackScheduler = FeedbackScheduler(
+        coachIntensity = CoachIntensity.from(SettingsManager.getCoachIntensity()),
+        cameraCueMode = CameraCueMode.from(SettingsManager.getCameraCueMode())
+    )
     
     // ===== MODE-AWARE SETTINGS =====
     var isVideoMode: Boolean = false
@@ -79,9 +84,9 @@ class FeedbackManager(
     private val isTtsEnabled: Boolean
         get() = !isVideoMode && isVoiceEnabled()
     
-    // Haptic enabled only in Camera mode
+    // Haptic is scheduler-controlled per mode.
     private val isHapticEnabled: Boolean
-        get() = !isVideoMode && config.enableHaptic
+        get() = config.enableHaptic
     
     // Event flow for UI to observe (Glassmorphic messages in Video mode)
     private val _events = MutableSharedFlow<FeedbackEvent>(
@@ -135,8 +140,10 @@ class FeedbackManager(
         // Avoid deprecated string-based service lookup
         ContextCompat.getSystemService(context, Vibrator::class.java)
     }
+
+    private var toneGenerator: ToneGenerator? = null
     
-    // Cooldown tracking (legacy - mostly handled by MessageOrchestrator now)
+    // Cooldown tracking (legacy fallback; scheduler owns feedback timing)
     private var lastSpeakTime = 0L
     private val minSpeakInterval = 1500L
     
@@ -254,20 +261,22 @@ class FeedbackManager(
         val messageKey = "joint:${error.jointCode}:${error.errorType}"
         val localizedText = error.message
         val displayText = localizedText.get(config.language)
-        
-        val category = if (isWarning) MessageOrchestrator.Category.WARNING
-                        else MessageOrchestrator.Category.ERROR
+
+        val severity = if (isWarning) FeedbackSeverity.WARNING else FeedbackSeverity.ERROR
         val messageType = if (isWarning) MessageType.WARNING else MessageType.ERROR
-        
-        val decision = messageOrchestrator.decide(
-            messageKey = messageKey,
-            category = category,
-            messageText = displayText
+
+        val delivered = scheduleAndDeliver(
+            kind = FeedbackKind.JOINT_QUALITY,
+            severity = severity,
+            localizedText = localizedText,
+            displayText = displayText,
+            dedupeKey = messageKey,
+            activeKey = "correction",
+            cooldownGroup = messageKey,
+            messageType = messageType
         )
-        
-        deliverLocalizedMessage(localizedText, displayText, decision, messageType)
-        
-        if (decision.channel != MessageOrchestrator.DeliveryChannel.SILENT) {
+
+        if (delivered) {
             correctRepStreak = 0
         }
     }
@@ -280,13 +289,13 @@ class FeedbackManager(
         val displayText = localizedText.get(config.language)
         if (displayText.isBlank()) return
         
-        val category = when (event.state) {
-            JointState.DANGER -> MessageOrchestrator.Category.CRITICAL
-            JointState.WARNING -> MessageOrchestrator.Category.WARNING
-            JointState.PAD -> MessageOrchestrator.Category.TIP
-            JointState.NORMAL -> MessageOrchestrator.Category.INFO
-            JointState.PERFECT -> MessageOrchestrator.Category.MOTIVATION
-            JointState.TRANSITION -> MessageOrchestrator.Category.INFO
+        val severity = when (event.state) {
+            JointState.DANGER -> FeedbackSeverity.CRITICAL
+            JointState.WARNING -> FeedbackSeverity.WARNING
+            JointState.PAD -> FeedbackSeverity.TIP
+            JointState.NORMAL -> FeedbackSeverity.INFO
+            JointState.PERFECT -> FeedbackSeverity.MOTIVATION
+            JointState.TRANSITION -> FeedbackSeverity.INFO
         }
         
         val messageType = when (event.state) {
@@ -298,111 +307,177 @@ class FeedbackManager(
             JointState.TRANSITION -> MessageType.INFO
         }
         
-        // Include zone in messageKey to track up/down messages separately
-        val decision = messageOrchestrator.decide(
-            messageKey = "state:${event.jointCode}:${event.state}:${event.zone}",
-            category = category,
-            messageText = displayText
-        )
-        
-        // Deliver with LocalizedText for audio support
-        deliverLocalizedMessage(localizedText, displayText, decision, messageType)
-    }
-    
-    /**
-     * Deliver a message based on orchestrator decision
-     * Handles mode-aware delivery (Camera vs Video)
-     * 
-     * @param message Text-only message (legacy, no audio URL support)
-     */
-    private suspend fun deliverMessage(
-        message: String, 
-        decision: MessageOrchestrator.DeliveryDecision,
-        messageType: MessageType
-    ) {
-        // Delegate to LocalizedText version (no audio URLs)
-        deliverLocalizedMessage(
-            localizedText = LocalizedText(ar = message, en = message),
-            displayText = message,
-            decision = decision,
+        val messageKey = "state:${event.jointCode}:${event.state}:${event.zone}"
+        scheduleAndDeliver(
+            kind = FeedbackKind.JOINT_QUALITY,
+            severity = severity,
+            localizedText = localizedText,
+            displayText = displayText,
+            dedupeKey = messageKey,
+            activeKey = if (severity.priority >= FeedbackSeverity.WARNING.priority) "correction" else messageKey,
+            cooldownGroup = messageKey,
             messageType = messageType
         )
     }
-    
-    /**
-     * Deliver a localized message based on orchestrator decision
-     * Supports cached audio playback via LocalizedText.audioAr/audioEn
-     * 
-     * @param localizedText Full LocalizedText with optional audio URLs
-     * @param displayText Text to display (already localized)
-     * @param decision Orchestrator delivery decision
-     * @param messageType Type for visual styling and haptics
-     */
-    private suspend fun deliverLocalizedMessage(
+
+    private suspend fun scheduleAndDeliver(
+        kind: FeedbackKind,
+        severity: FeedbackSeverity,
         localizedText: LocalizedText,
         displayText: String,
-        decision: MessageOrchestrator.DeliveryDecision,
-        messageType: MessageType
-    ) {
-        when (decision.channel) {
-            MessageOrchestrator.DeliveryChannel.SILENT -> {
-                // No message - visual overlay handles it
-                // Note: No log here - would fire every frame and cause spam
+        dedupeKey: String,
+        activeKey: String = dedupeKey,
+        cooldownGroup: String = dedupeKey,
+        messageType: MessageType,
+        forceAudible: Boolean = false,
+        allowVoice: Boolean = true,
+        allowTone: Boolean = true,
+        allowVisual: Boolean = true,
+        allowHaptic: Boolean = true,
+        interruptPolicy: FeedbackInterruptPolicy = FeedbackInterruptPolicy.defaultFor(severity)
+    ): Boolean {
+        refreshSchedulerSettings()
+        val plan = feedbackScheduler.schedule(
+            FeedbackSignal(
+                kind = kind,
+                severity = severity,
+                text = displayText,
+                dedupeKey = dedupeKey,
+                activeKey = activeKey,
+                cooldownGroup = cooldownGroup,
+                interruptPolicy = interruptPolicy,
+                forceAudible = forceAudible,
+                allowVoice = allowVoice,
+                allowTone = allowTone,
+                allowVisual = allowVisual,
+                allowHaptic = allowHaptic
+            ),
+            currentFeedbackMode()
+        )
+        if (!plan.shouldDeliver) return false
+
+        if (plan.showVisual) {
+            emitVisualMessage(displayText, messageType, plan.displayDurationMs)
+        }
+
+        when (plan.audible) {
+            FeedbackAudible.VOICE -> speakLocalized(localizedText, plan.speechPriority.toSpeakPriority())
+            FeedbackAudible.TONE -> playFeedbackTone(plan.tone)
+            FeedbackAudible.NONE -> {}
+        }
+
+        if (plan.vibrate && isHapticEnabled) {
+            vibrateForMessageType(messageType, severity)
+        }
+
+        if (severity == FeedbackSeverity.CRITICAL ||
+            severity == FeedbackSeverity.ERROR ||
+            severity == FeedbackSeverity.WARNING
+        ) {
+            markHighPriorityMessageDelivered()
+        }
+
+        return true
+    }
+
+    private fun scheduleAndDeliverImmediate(
+        kind: FeedbackKind,
+        severity: FeedbackSeverity,
+        localizedText: LocalizedText,
+        displayText: String,
+        dedupeKey: String,
+        activeKey: String = dedupeKey,
+        cooldownGroup: String = dedupeKey,
+        messageType: MessageType,
+        forceAudible: Boolean = false,
+        allowVoice: Boolean = true,
+        allowTone: Boolean = true,
+        allowHaptic: Boolean = true,
+        interruptPolicy: FeedbackInterruptPolicy = FeedbackInterruptPolicy.defaultFor(severity)
+    ): Boolean {
+        refreshSchedulerSettings()
+        val plan = feedbackScheduler.schedule(
+            FeedbackSignal(
+                kind = kind,
+                severity = severity,
+                text = displayText,
+                dedupeKey = dedupeKey,
+                activeKey = activeKey,
+                cooldownGroup = cooldownGroup,
+                interruptPolicy = interruptPolicy,
+                forceAudible = forceAudible,
+                allowVoice = allowVoice,
+                allowTone = allowTone,
+                allowVisual = false,
+                allowHaptic = allowHaptic
+            ),
+            currentFeedbackMode()
+        )
+        if (!plan.shouldDeliver) return false
+
+        when (plan.audible) {
+            FeedbackAudible.VOICE -> speakLocalized(localizedText, plan.speechPriority.toSpeakPriority())
+            FeedbackAudible.TONE -> playFeedbackTone(plan.tone)
+            FeedbackAudible.NONE -> {}
+        }
+        if (plan.vibrate && isHapticEnabled) {
+            vibrateForMessageType(messageType, severity)
+        }
+        if (severity == FeedbackSeverity.CRITICAL ||
+            severity == FeedbackSeverity.ERROR ||
+            severity == FeedbackSeverity.WARNING
+        ) {
+            markHighPriorityMessageDelivered()
+        }
+        return true
+    }
+
+    private fun currentFeedbackMode(): FeedbackRuntimeMode =
+        if (isVideoMode) FeedbackRuntimeMode.VIDEO else FeedbackRuntimeMode.CAMERA
+
+    private fun refreshSchedulerSettings() {
+        feedbackScheduler.updateSettings(
+            coachIntensity = CoachIntensity.from(SettingsManager.getCoachIntensity()),
+            cameraCueMode = CameraCueMode.from(SettingsManager.getCameraCueMode())
+        )
+    }
+
+    private fun FeedbackSpeechPriority.toSpeakPriority(): SpeakPriority = when (this) {
+        FeedbackSpeechPriority.INTERRUPT -> SpeakPriority.HIGH
+        FeedbackSpeechPriority.NORMAL -> SpeakPriority.NORMAL
+        FeedbackSpeechPriority.LOW -> SpeakPriority.LOW
+    }
+
+    private fun vibrateForMessageType(messageType: MessageType, severity: FeedbackSeverity) {
+        when {
+            severity == FeedbackSeverity.CRITICAL -> vibrateError()
+            messageType == MessageType.ERROR -> vibrateWarning()
+            messageType == MessageType.WARNING -> vibrateLight()
+            messageType == MessageType.MOTIVATION -> vibrateSuccess()
+            severity == FeedbackSeverity.SUCCESS -> vibrateSuccess()
+            else -> {}
+        }
+    }
+
+    private fun playFeedbackTone(tone: FeedbackTone) {
+        if (isVideoMode || tone == FeedbackTone.NONE) return
+        try {
+            val generator = toneGenerator ?: ToneGenerator(AudioManager.STREAM_MUSIC, 70).also {
+                toneGenerator = it
             }
-            
-            MessageOrchestrator.DeliveryChannel.HAPTIC_ONLY -> {
-                // Just haptic reminder
-                if (!isVideoMode && isHapticEnabled) {
-                    when (messageType) {
-                        MessageType.ERROR -> vibrateWarning()  // Reduced from vibrateError
-                        MessageType.WARNING -> vibrateLight()
-                        else -> {}
-                    }
-                }
+            val (toneType, durationMs) = when (tone) {
+                FeedbackTone.SUCCESS -> ToneGenerator.TONE_PROP_ACK to 120
+                FeedbackTone.WARNING -> ToneGenerator.TONE_PROP_BEEP to 120
+                FeedbackTone.ERROR -> ToneGenerator.TONE_PROP_NACK to 170
+                FeedbackTone.CRITICAL -> ToneGenerator.TONE_PROP_NACK to 260
+                FeedbackTone.INFO -> ToneGenerator.TONE_PROP_BEEP to 90
+                FeedbackTone.NONE -> ToneGenerator.TONE_PROP_BEEP to 0
             }
-            
-            MessageOrchestrator.DeliveryChannel.VISUAL_ONLY -> {
-                // Visual message only (no audio)
-                if (isVideoMode) {
-                    emitVisualMessage(displayText, messageType)
-                }
-                // In camera mode: just haptic as visual cue
-                if (!isVideoMode && isHapticEnabled) {
-                    vibrateLight()
-                }
+            if (durationMs > 0) {
+                generator.startTone(toneType, durationMs)
             }
-            
-            MessageOrchestrator.DeliveryChannel.AUDIO_AND_VISUAL -> {
-                // Full feedback
-                if (isVideoMode) {
-                    emitVisualMessage(displayText, messageType)
-                } else {
-                    // Determine speech priority based on message type
-                    val speechPriority = when (messageType) {
-                        MessageType.ERROR -> SpeakPriority.HIGH      // Can interrupt
-                        MessageType.WARNING -> SpeakPriority.HIGH    // Can interrupt
-                        MessageType.MOTIVATION -> SpeakPriority.NORMAL // Waits in queue
-                        MessageType.TIP -> SpeakPriority.LOW         // Skip if busy
-                        MessageType.INFO -> SpeakPriority.NORMAL     // Waits in queue
-                    }
-                    Log.d("AUDIO_TRACE", "[DELIVER] type=$messageType audioAr=${localizedText.audioAr?.takeLast(25)} audioEn=${localizedText.audioEn?.takeLast(25)} text=${displayText.take(25)}")
-                    // Use speakLocalized to leverage cached audio if available
-                    speakLocalized(localizedText, speechPriority)
-                    if (isHapticEnabled) {
-                        when (messageType) {
-                            MessageType.ERROR -> vibrateError()
-                            MessageType.WARNING -> vibrateWarning()
-                            MessageType.MOTIVATION -> vibrateSuccess()
-                            else -> vibrateLight()
-                        }
-                    }
-                }
-                
-                // Mark high-priority message delivered (resets idle timer for random messages)
-                if (messageType == MessageType.ERROR || messageType == MessageType.WARNING) {
-                    markHighPriorityMessageDelivered()
-                }
-            }
+        } catch (e: Exception) {
+            Log.w(TAG, "Tone playback failed", e)
         }
     }
     
@@ -445,14 +520,44 @@ class FeedbackManager(
         if (isVideoMode) {
             // Video mode: No audio, just visual pulse (handled by UI)
         } else {
-            // Camera mode: Haptic + occasional audio
-            if (isHapticEnabled) {
+            // Camera voice mode keeps the existing tactile pulse; tone modes use scheduler tones.
+            if (isHapticEnabled && CameraCueMode.from(SettingsManager.getCameraCueMode()) == CameraCueMode.VOICE) {
                 if (event.isCorrect) vibrateSuccess() else vibrateWarning()
             }
+
+            scheduleAndDeliver(
+                kind = FeedbackKind.REP,
+                severity = if (event.isCorrect) FeedbackSeverity.SUCCESS else FeedbackSeverity.WARNING,
+                localizedText = LocalizedText(),
+                displayText = "",
+                dedupeKey = "rep:${event.repNumber}:${event.isCorrect}",
+                activeKey = "rep_feedback",
+                cooldownGroup = "rep_feedback",
+                messageType = if (event.isCorrect) MessageType.MOTIVATION else MessageType.WARNING,
+                forceAudible = true,
+                allowVoice = false,
+                allowVisual = false,
+                allowHaptic = true
+            )
             
             // Announce rep count every N reps (NORMAL priority - shouldn't interrupt errors)
             if (event.repNumber - lastAnnouncedRep >= REP_AUDIO_INTERVAL) {
-                speakLocalized(MobileMessageResolver.resolveTrainingNumeral(event.repNumber), SpeakPriority.NORMAL)
+                val repLt = MobileMessageResolver.resolveTrainingNumeral(event.repNumber)
+                scheduleAndDeliver(
+                    kind = FeedbackKind.REP,
+                    severity = FeedbackSeverity.INFO,
+                    localizedText = repLt,
+                    displayText = repLt.get(config.language),
+                    dedupeKey = "rep_count:${event.repNumber}",
+                    activeKey = "rep_count",
+                    cooldownGroup = "rep_count:${event.repNumber}",
+                    messageType = MessageType.INFO,
+                    forceAudible = true,
+                    allowTone = false,
+                    allowVisual = false,
+                    allowHaptic = false,
+                    interruptPolicy = FeedbackInterruptPolicy.WAIT_FOR_SLOT
+                )
                 lastAnnouncedRep = event.repNumber
             }
         }
@@ -469,12 +574,19 @@ class FeedbackManager(
         val lt = SystemMessageRegistry.substitute(base, mapOf("n" to event.totalReps.toString()))
         val message = lt.get(config.language)
         
-        if (isVideoMode) {
-            emitVisualMessage(message, MessageType.MOTIVATION, 4000L)
-        } else {
-            speakLocalized(lt, SpeakPriority.HIGH)
-            if (isHapticEnabled) vibrateComplete()
-        }
+        scheduleAndDeliver(
+            kind = FeedbackKind.TARGET,
+            severity = FeedbackSeverity.MOTIVATION,
+            localizedText = lt,
+            displayText = message,
+            dedupeKey = "target:${event.totalReps}",
+            activeKey = "session_complete",
+            cooldownGroup = "target",
+            messageType = MessageType.MOTIVATION,
+            forceAudible = true,
+            interruptPolicy = FeedbackInterruptPolicy.REPLACE_LOWER
+        )
+        if (!isVideoMode && isHapticEnabled) vibrateComplete()
     }
     
     // ==================== Motivation ====================
@@ -498,15 +610,16 @@ class FeedbackManager(
         }
         val displayText = localizedText.get(config.language)
         
-        // Use MessageOrchestrator (will prevent duplicate messages)
-        val decision = messageOrchestrator.decide(
-            messageKey = "streak:$streak",
-            category = MessageOrchestrator.Category.MOTIVATION,
-            messageText = displayText
+        scheduleAndDeliver(
+            kind = FeedbackKind.REP,
+            severity = FeedbackSeverity.MOTIVATION,
+            localizedText = localizedText,
+            displayText = displayText,
+            dedupeKey = "streak:$streak",
+            activeKey = "motivation",
+            cooldownGroup = "streak:$streak",
+            messageType = MessageType.MOTIVATION
         )
-        
-        // Deliver with LocalizedText (TTS fallback since no audio URLs)
-        deliverLocalizedMessage(localizedText, displayText, decision, MessageType.MOTIVATION)
     }
     
     // ==================== Hold Event Handlers ====================
@@ -521,23 +634,35 @@ class FeedbackManager(
     private suspend fun handleHoldGraceStarted(event: FeedbackEvent.HoldGraceStarted) {
         val lt = SystemMessageRegistry.get("training_hold_stay", "ابق ثابتاً!", "Stay in position!")
         val message = lt.get(config.language)
-        
-        if (isVideoMode) {
-            emitVisualMessage(message, MessageType.WARNING)
-        } else {
-            // HIGH priority - warning should interrupt other messages
-            speakLocalized(lt, SpeakPriority.HIGH)
-            if (isHapticEnabled) vibrateWarning()
-        }
+
+        scheduleAndDeliver(
+            kind = FeedbackKind.HOLD,
+            severity = FeedbackSeverity.WARNING,
+            localizedText = lt,
+            displayText = message,
+            dedupeKey = "hold:grace",
+            activeKey = "correction",
+            cooldownGroup = "hold:grace",
+            messageType = MessageType.WARNING,
+            forceAudible = true,
+            interruptPolicy = FeedbackInterruptPolicy.WAIT_FOR_SLOT
+        )
     }
     
-    private fun handleHoldResumed(event: FeedbackEvent.HoldResumed) {
-        if (!isVideoMode) {
-            val lt = SystemMessageRegistry.get("training_hold_resumed", "أحسنت، استمر", "Good, keep holding")
-            // NORMAL priority - encouragement shouldn't interrupt warnings
-            speakLocalized(lt, SpeakPriority.NORMAL)
-            if (isHapticEnabled) vibrateSuccess()
-        }
+    private suspend fun handleHoldResumed(event: FeedbackEvent.HoldResumed) {
+        val lt = SystemMessageRegistry.get("training_hold_resumed", "أحسنت، استمر", "Good, keep holding")
+        scheduleAndDeliver(
+            kind = FeedbackKind.HOLD,
+            severity = FeedbackSeverity.SUCCESS,
+            localizedText = lt,
+            displayText = lt.get(config.language),
+            dedupeKey = "hold:resumed",
+            activeKey = "hold:resumed",
+            cooldownGroup = "hold:resumed",
+            messageType = MessageType.MOTIVATION,
+            forceAudible = true,
+            interruptPolicy = FeedbackInterruptPolicy.SKIP_IF_BUSY
+        )
     }
     
     private suspend fun handleHoldCompleted(event: FeedbackEvent.HoldCompleted) {
@@ -550,26 +675,39 @@ class FeedbackManager(
         val doneLt = SystemMessageRegistry.substitute(base, mapOf("n" to seconds.toString()))
         val message = doneLt.get(config.language)
         
-        if (isVideoMode) {
-            emitVisualMessage(message, MessageType.MOTIVATION, 4000L)
-        } else {
-            // HIGH priority - completion is important announcement
-            speakLocalized(doneLt, SpeakPriority.HIGH)
-            if (isHapticEnabled) vibrateComplete()
-        }
+        scheduleAndDeliver(
+            kind = FeedbackKind.HOLD,
+            severity = FeedbackSeverity.MOTIVATION,
+            localizedText = doneLt,
+            displayText = message,
+            dedupeKey = "hold:completed",
+            activeKey = "hold:completed",
+            cooldownGroup = "hold:completed",
+            messageType = MessageType.MOTIVATION,
+            forceAudible = true,
+            interruptPolicy = FeedbackInterruptPolicy.REPLACE_LOWER
+        )
+        if (!isVideoMode && isHapticEnabled) vibrateComplete()
     }
     
-    private fun handleHoldFailed(event: FeedbackEvent.HoldFailed) {
-        if (!isVideoMode) {
-            val lt = SystemMessageRegistry.get(
-                "training_hold_failed",
-                "فقدت الوضعية. حاول مجدداً",
-                "Position lost. Try again"
-            )
-            // HIGH priority - failure is important feedback
-            speakLocalized(lt, SpeakPriority.HIGH)
-            if (isHapticEnabled) vibrateError()
-        }
+    private suspend fun handleHoldFailed(event: FeedbackEvent.HoldFailed) {
+        val lt = SystemMessageRegistry.get(
+            "training_hold_failed",
+            "فقدت الوضعية. حاول مجدداً",
+            "Position lost. Try again"
+        )
+        scheduleAndDeliver(
+            kind = FeedbackKind.HOLD,
+            severity = FeedbackSeverity.ERROR,
+            localizedText = lt,
+            displayText = lt.get(config.language),
+            dedupeKey = "hold:failed",
+            activeKey = "correction",
+            cooldownGroup = "hold:failed",
+            messageType = MessageType.ERROR,
+            forceAudible = true,
+            interruptPolicy = FeedbackInterruptPolicy.REPLACE_LOWER
+        )
     }
     
     // ==================== Position / alignment (single event + severity) ====================
@@ -580,12 +718,16 @@ class FeedbackManager(
             CheckSeverity.ERROR -> {
                 val localizedText = pe.message
                 val displayText = localizedText.get(config.language)
-                val decision = messageOrchestrator.decide(
-                    messageKey = "position:${pe.checkId}",
-                    category = MessageOrchestrator.Category.ERROR,
-                    messageText = displayText
+                scheduleAndDeliver(
+                    kind = FeedbackKind.POSITION_CHECK,
+                    severity = FeedbackSeverity.ERROR,
+                    localizedText = localizedText,
+                    displayText = displayText,
+                    dedupeKey = "position:${pe.checkId}",
+                    activeKey = "correction",
+                    cooldownGroup = "position:${pe.checkId}",
+                    messageType = MessageType.ERROR
                 )
-                deliverLocalizedMessage(localizedText, displayText, decision, MessageType.ERROR)
             }
             CheckSeverity.WARNING -> {
                 val localizedText = pe.message
@@ -598,32 +740,36 @@ class FeedbackManager(
                     TAG,
                     "⚡ Position WARNING received: checkId=${pe.checkId}, text='${displayText.take(40)}', isVideoMode=$isVideoMode, isTtsEnabled=$isTtsEnabled"
                 )
-                val decision = messageOrchestrator.decide(
-                    messageKey = "position_warn:${pe.checkId}",
-                    category = MessageOrchestrator.Category.WARNING,
-                    messageText = displayText
+                val delivered = scheduleAndDeliver(
+                    kind = FeedbackKind.POSITION_CHECK,
+                    severity = FeedbackSeverity.WARNING,
+                    localizedText = localizedText,
+                    displayText = displayText,
+                    dedupeKey = "position_warn:${pe.checkId}",
+                    activeKey = "correction",
+                    cooldownGroup = "position_warn:${pe.checkId}",
+                    messageType = MessageType.WARNING
                 )
-                Log.d(
-                    TAG,
-                    "⚡ Position WARNING decision: channel=${decision.channel}, repeat=#${decision.repeatCount}, isFirst=${decision.isFirstOccurrence}"
-                )
-                deliverLocalizedMessage(localizedText, displayText, decision, MessageType.WARNING)
+                Log.d(TAG, "⚡ Position WARNING scheduled: checkId=${pe.checkId}, delivered=$delivered")
             }
             CheckSeverity.TIP -> {
-                val displayText = pe.message.get(config.language)
+                val localizedText = pe.message
+                val displayText = localizedText.get(config.language)
                 if (displayText.isBlank()) {
                     Log.w(TAG, "Position TIP skipped (empty message): checkId=${pe.checkId}")
                     return
                 }
-                val decision = messageOrchestrator.decide(
-                    messageKey = "position_tip:${pe.checkId}",
-                    category = MessageOrchestrator.Category.TIP,
-                    messageText = displayText
+                val delivered = scheduleAndDeliver(
+                    kind = FeedbackKind.POSITION_CHECK,
+                    severity = FeedbackSeverity.TIP,
+                    localizedText = localizedText,
+                    displayText = displayText,
+                    dedupeKey = "position_tip:${pe.checkId}",
+                    activeKey = "tip",
+                    cooldownGroup = "position_tip:${pe.checkId}",
+                    messageType = MessageType.TIP
                 )
-                if (isVideoMode && decision.channel != MessageOrchestrator.DeliveryChannel.SILENT) {
-                    emitVisualMessage(displayText, MessageType.TIP)
-                }
-                Log.d(TAG, "Position tip: ${pe.checkId} (channel: ${decision.channel})")
+                Log.d(TAG, "Position tip scheduled: ${pe.checkId} delivered=$delivered")
             }
         }
     }
@@ -633,13 +779,16 @@ class FeedbackManager(
             val localizedText = warning.message
             val displayText = localizedText.get(config.language)
 
-            val decision = messageOrchestrator.decide(
-                messageKey = "scene:${warning.axis}",
-                category = MessageOrchestrator.Category.WARNING,
-                messageText = displayText
+            scheduleAndDeliver(
+                kind = FeedbackKind.SCENE,
+                severity = FeedbackSeverity.WARNING,
+                localizedText = localizedText,
+                displayText = displayText,
+                dedupeKey = "scene:${warning.axis}",
+                activeKey = "correction",
+                cooldownGroup = "scene:${warning.axis}",
+                messageType = MessageType.WARNING
             )
-
-            deliverLocalizedMessage(localizedText, displayText, decision, MessageType.WARNING)
         }
     }
     
@@ -649,37 +798,36 @@ class FeedbackManager(
         val localizedText = event.message
         val displayText = localizedText.get(config.language)
         
-        // Use MessageOrchestrator for smart delivery
-        // Visibility warnings are important - user needs to adjust position
-        val decision = messageOrchestrator.decide(
-            messageKey = "visibility:warning",
-            category = MessageOrchestrator.Category.WARNING,
-            messageText = displayText
+        scheduleAndDeliver(
+            kind = FeedbackKind.VISIBILITY,
+            severity = FeedbackSeverity.WARNING,
+            localizedText = localizedText,
+            displayText = displayText,
+            dedupeKey = "visibility:warning",
+            activeKey = "correction",
+            cooldownGroup = "visibility:warning",
+            messageType = MessageType.WARNING,
+            forceAudible = true,
+            interruptPolicy = FeedbackInterruptPolicy.WAIT_FOR_SLOT
         )
-        
-        // Deliver with LocalizedText for audio support
-        deliverLocalizedMessage(localizedText, displayText, decision, MessageType.WARNING)
     }
     
     private suspend fun handleVisibilityPaused(event: FeedbackEvent.VisibilityPaused) {
         val localizedText = event.message
         val displayText = localizedText.get(config.language)
         
-        // Visibility paused is CRITICAL - training stopped, user must act
-        // Use CRITICAL category to ensure it's always heard
-        val decision = messageOrchestrator.decide(
-            messageKey = "visibility:paused",
-            category = MessageOrchestrator.Category.CRITICAL,
-            messageText = displayText
+        scheduleAndDeliver(
+            kind = FeedbackKind.VISIBILITY,
+            severity = FeedbackSeverity.CRITICAL,
+            localizedText = localizedText,
+            displayText = displayText,
+            dedupeKey = "visibility:paused",
+            activeKey = "critical",
+            cooldownGroup = "visibility:paused",
+            messageType = MessageType.ERROR,
+            forceAudible = true,
+            interruptPolicy = FeedbackInterruptPolicy.INTERRUPT
         )
-        
-        // Deliver with LocalizedText for audio support
-        deliverLocalizedMessage(localizedText, displayText, decision, MessageType.ERROR)
-        
-        // Extra haptic feedback for critical visibility loss
-        if (!isVideoMode && isHapticEnabled) {
-            vibrateError()
-        }
     }
     
     private fun handleVisibilityResumed(event: FeedbackEvent.VisibilityResumed) {
@@ -690,8 +838,8 @@ class FeedbackManager(
                 vibrateSuccess()
             }
             // Reset visibility message state so next warning is treated as new
-            messageOrchestrator.reset("visibility:warning")
-            messageOrchestrator.reset("visibility:paused")
+            feedbackScheduler.reset("visibility:warning")
+            feedbackScheduler.reset("visibility:paused")
         }
     }
     
@@ -837,20 +985,44 @@ class FeedbackManager(
     fun speakSetupGuidance(joint: com.trainingvalidator.poc.ui.training.JointGuidance) {
         if (!isTtsEnabled) return
         val localizedText = joint.message
-        if (localizedText.get(config.language).isBlank()) return
-        speakLocalized(localizedText, SpeakPriority.HIGH)
-        Log.d(TAG, "Setup guidance: ${localizedText.get(config.language)}")
+        val message = localizedText.get(config.language)
+        if (message.isBlank()) return
+        scheduleAndDeliverImmediate(
+            kind = FeedbackKind.SETUP,
+            severity = FeedbackSeverity.WARNING,
+            localizedText = localizedText,
+            displayText = message,
+            dedupeKey = "setup:${joint.jointCode}",
+            activeKey = "setup",
+            cooldownGroup = "setup:${joint.jointCode}",
+            messageType = MessageType.WARNING,
+            forceAudible = true,
+            interruptPolicy = FeedbackInterruptPolicy.WAIT_FOR_SLOT
+        )
+        Log.d(TAG, "Setup guidance: $message")
     }
 
     /**
      * Speak scene-phase guidance (Region / Posture / Direction).
-     * Interrupts any current speech since the user must fix this before proceeding.
+     * Routed through the scheduler so setup cues do not stack or cut each other.
      */
     fun speakSetupPhaseGuidance(message: com.trainingvalidator.poc.training.models.LocalizedText) {
         if (!isTtsEnabled) return
-        if (message.get(config.language).isBlank()) return
-        speakLocalized(message, SpeakPriority.HIGH)
-        Log.d(TAG, "Phase guidance: ${message.get(config.language)}")
+        val text = message.get(config.language)
+        if (text.isBlank()) return
+        scheduleAndDeliverImmediate(
+            kind = FeedbackKind.SETUP,
+            severity = FeedbackSeverity.WARNING,
+            localizedText = message,
+            displayText = text,
+            dedupeKey = "setup_phase:${text.hashCode()}",
+            activeKey = "setup",
+            cooldownGroup = "setup_phase:${text.hashCode()}",
+            messageType = MessageType.WARNING,
+            forceAudible = true,
+            interruptPolicy = FeedbackInterruptPolicy.WAIT_FOR_SLOT
+        )
+        Log.d(TAG, "Phase guidance: $text")
     }
 
     /**
@@ -903,6 +1075,32 @@ class FeedbackManager(
     /** Stops countdown / feedback audio when countdown is frozen (cancels pending await). */
     fun abortCountdownAudio() {
         audioPlayer?.stopAll()
+    }
+
+    fun speakSystemCue(
+        messageKey: String,
+        localizedText: LocalizedText,
+        severity: FeedbackSeverity = FeedbackSeverity.CRITICAL
+    ) {
+        if (!isTtsEnabled) return
+        val message = localizedText.get(config.language)
+        if (message.isBlank()) return
+        scheduleAndDeliverImmediate(
+            kind = FeedbackKind.SYSTEM,
+            severity = severity,
+            localizedText = localizedText,
+            displayText = message,
+            dedupeKey = "system:$messageKey",
+            activeKey = if (severity == FeedbackSeverity.CRITICAL) "critical" else "system",
+            cooldownGroup = "system:$messageKey",
+            messageType = if (severity.priority >= FeedbackSeverity.ERROR.priority) MessageType.ERROR else MessageType.WARNING,
+            forceAudible = true,
+            interruptPolicy = if (severity == FeedbackSeverity.CRITICAL) {
+                FeedbackInterruptPolicy.INTERRUPT
+            } else {
+                FeedbackInterruptPolicy.WAIT_FOR_SLOT
+            }
+        )
     }
 
     // ==================== Haptic (Vibration) ====================
@@ -1018,27 +1216,18 @@ class FeedbackManager(
         val messageText = message.get(config.language)
         val messageType = if (useMotivational) MessageType.MOTIVATION else MessageType.TIP
         
-        // Use MessageOrchestrator with LOW priority
-        val decision = messageOrchestrator.decide(
-            messageKey = "random:${messageText.hashCode()}",
-            category = if (useMotivational) MessageOrchestrator.Category.MOTIVATION else MessageOrchestrator.Category.TIP,
-            messageText = messageText
+        val delivered = scheduleAndDeliver(
+            kind = FeedbackKind.RANDOM,
+            severity = if (useMotivational) FeedbackSeverity.MOTIVATION else FeedbackSeverity.TIP,
+            localizedText = message,
+            displayText = messageText,
+            dedupeKey = "random:${messageText.hashCode()}",
+            activeKey = "random",
+            cooldownGroup = "random:${messageText.hashCode()}",
+            messageType = messageType,
+            interruptPolicy = FeedbackInterruptPolicy.SKIP_IF_BUSY
         )
-        
-        // Only deliver if not silenced
-        if (decision.channel == MessageOrchestrator.DeliveryChannel.SILENT) {
-            return false
-        }
-        
-        // Deliver with LOW priority (won't interrupt other messages)
-        if (isVideoMode) {
-            emitVisualMessage(messageText, messageType)
-        } else {
-            speakLocalized(message, SpeakPriority.LOW)
-            if (isHapticEnabled) {
-                vibrateLight()
-            }
-        }
+        if (!delivered) return false
         
         lastRandomMessageTime = now
         Log.d(TAG, "Random message delivered: $messageText")
@@ -1060,7 +1249,7 @@ class FeedbackManager(
      * Reset all message states (call when training starts/restarts)
      */
     fun resetMessageStates() {
-        messageOrchestrator.resetAll()
+        feedbackScheduler.resetAll()
         lastAnnouncedRep = 0
         correctRepStreak = 0
         lastHighPriorityMessageTime = System.currentTimeMillis()
@@ -1091,5 +1280,8 @@ class FeedbackManager(
         tts?.shutdown()
         tts = null
         isTtsReady = false
+
+        toneGenerator?.release()
+        toneGenerator = null
     }
 }

@@ -356,6 +356,24 @@ object SettingsManager {
      * Get random message cooldown in milliseconds
      */
     fun getRandomMessageCooldown(): Long = settings.feedback.randomMessageCooldownMs
+
+    /**
+     * User preference for live coach density: calm, standard, or strict.
+     */
+    fun getCoachIntensity(): String {
+        return normalizeCoachIntensity(
+            runtimePrefs?.getString(KEY_COACH_INTENSITY, null)
+        )
+    }
+
+    /**
+     * User preference for camera-mode audible cue style: voice, tones, or tones_basic.
+     */
+    fun getCameraCueMode(): String {
+        return normalizeCameraCueMode(
+            runtimePrefs?.getString(KEY_CAMERA_CUE_MODE, null)
+        )
+    }
     
     // ==================== Runtime Settings (SharedPreferences) ====================
     
@@ -366,6 +384,8 @@ object SettingsManager {
     private const val KEY_VOICE_FEEDBACK_ENABLED = "voice_feedback_enabled"
     private const val KEY_MODEL_TYPE = "model_type"
     private const val KEY_TRAINING_DISPLAY_MODE = "training_display_mode"
+    private const val KEY_COACH_INTENSITY = "coach_intensity"
+    private const val KEY_CAMERA_CUE_MODE = "camera_cue_mode"
     
     /**
      * Initialize SharedPreferences for runtime settings
@@ -396,6 +416,24 @@ object SettingsManager {
      */
     fun setVoiceFeedbackEnabled(enabled: Boolean) {
         runtimePrefs?.edit()?.putBoolean(KEY_VOICE_FEEDBACK_ENABLED, enabled)?.apply()
+    }
+
+    /**
+     * Set live coach density at runtime ("calm", "standard", or "strict").
+     */
+    fun setCoachIntensity(intensity: String) {
+        runtimePrefs?.edit()
+            ?.putString(KEY_COACH_INTENSITY, normalizeCoachIntensity(intensity))
+            ?.apply()
+    }
+
+    /**
+     * Set camera-mode audible cue style ("voice", "tones", or "tones_basic").
+     */
+    fun setCameraCueMode(mode: String) {
+        runtimePrefs?.edit()
+            ?.putString(KEY_CAMERA_CUE_MODE, normalizeCameraCueMode(mode))
+            ?.apply()
     }
     
     /**
@@ -428,4 +466,16 @@ object SettingsManager {
     }
 
     fun isAdvancedTrainingDisplay(): Boolean = getTrainingDisplayMode() == "advanced"
+
+    private fun normalizeCoachIntensity(raw: String?): String = when (raw?.trim()?.lowercase()) {
+        "calm" -> "calm"
+        "strict" -> "strict"
+        else -> "standard"
+    }
+
+    private fun normalizeCameraCueMode(raw: String?): String = when (raw?.trim()?.lowercase()) {
+        "tones", "tone" -> "tones"
+        "tones_basic", "tone_basic", "basic_tones", "basic" -> "tones_basic"
+        else -> "voice"
+    }
 }
