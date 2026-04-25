@@ -86,6 +86,15 @@ export class SubscriptionService {
             : plan.monthlyGooglePlayProductId || null;
     }
 
+    private async paymentCurrency(plan: any): Promise<string> {
+        const systemCurrency = await this.prisma.system.findUnique({
+            where: { key: 'currency' },
+        });
+        // Existing booking payments use system.currency. Prefer it for gateway calls so
+        // subscriptions follow the already-working MyFatoorah account configuration.
+        return systemCurrency?.value || plan.currency || 'EGP';
+    }
+
     private addPeriod(start: Date, billingPeriod: BillingPeriod): Date {
         const end = new Date(start);
         if (billingPeriod === 'yearly') {
@@ -300,7 +309,7 @@ export class SubscriptionService {
         });
         if (!user) throw new NotFoundException('User not found');
 
-        const currency = plan.currency || 'EGP';
+        const currency = await this.paymentCurrency(plan);
         const expiresAt = new Date(Date.now() + 60 * 60 * 1000);
 
         const checkout = await this.prisma.subscriptionCheckout.create({
@@ -334,11 +343,10 @@ export class SubscriptionService {
             const result = await createPayment({
                 NotificationOption: 'LNK',
                 InvoiceValue: amount,
-                DisplayCurrencyIso: currency,
+                CurrencyIso: currency,
                 CustomerName: user.name,
                 CustomerEmail: user.email,
-                CustomerReference: checkout.id,
-                UserDefinedField: `subscription:${checkout.id}`,
+                ExternalIdentifier: checkout.id,
                 PaymentExpiry: expiresAt.toISOString(),
                 CallBackUrl: apiBase
                     ? `${apiBase}/api/payments/myfatoorah/subscriptions/result?checkoutId=${checkout.id}`
@@ -346,16 +354,6 @@ export class SubscriptionService {
                 ErrorUrl: apiBase
                     ? `${apiBase}/api/payments/myfatoorah/subscriptions/result?checkoutId=${checkout.id}&failed=true`
                     : undefined,
-                WebhookUrl: apiBase
-                    ? `${apiBase}/api/payments/myfatoorah/subscriptions/webhook`
-                    : undefined,
-                InvoiceItems: [
-                    {
-                        ItemName: `${this.localizedName(plan.name)} (${dto.billingPeriod})`,
-                        Quantity: 1,
-                        UnitPrice: amount,
-                    },
-                ],
             }) as any;
 
             const updated = await this.prisma.subscriptionCheckout.update({
