@@ -146,7 +146,10 @@ export default function PlansPage() {
                                             )}
                                         </td>
                                         <td className="px-6 py-4 text-sm text-gray-600 text-center">
-                                            <div>${plan.monthlyPrice} / ${plan.yearlyPrice}</div>
+                                            <div>{plan.monthlyPrice} / {plan.yearlyPrice} {plan.currency || 'EGP'}</div>
+                                            {(plan.monthlyGooglePlayProductId || plan.yearlyGooglePlayProductId) && (
+                                                <div className="text-xs text-gray-500 mt-1">Google Play mapped</div>
+                                            )}
                                         </td>
                                         <td className="px-6 py-4 text-sm text-gray-600 text-center">
                                             <div>Workouts: {plan.maxWorkoutsLimit}</div>
