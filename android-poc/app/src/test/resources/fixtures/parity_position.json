@@ -1,0 +1,35 @@
+{
+  "name": { "en": "Parity Position", "ar": "ت" },
+  "category": { "code": "test", "name": { "en": "Test", "ar": "ت" } },
+  "countingMethod": "hold",
+  "repCountingConfig": { "duration": 15, "gracePeriodMs": 2000 },
+  "poseVariants": [
+    {
+      "name": { "en": "Front", "ar": "أ" },
+      "cameraPosition": "front_view",
+      "positionChecks": [
+        {
+          "id": "wrist_y",
+          "type": "vertical_comparison",
+          "landmarks": { "primary": "left_wrist", "secondary": "nose" },
+          "condition": { "operator": "should_not_exceed", "threshold": 0.1 },
+          "activePhases": ["all", "top"],
+          "errorMessage": { "en": "Raise hands", "ar": "ارفع" },
+          "severity": "warning",
+          "cooldownMs": 500,
+          "minErrorFrames": 2
+        }
+      ],
+      "trackedJoints": [
+        {
+          "joint": "right_elbow",
+          "role": "primary",
+          "startPose": { "min": 0, "max": 180 },
+          "range": {
+            "perfect": { "min": 0, "max": 180 }
+          }
+        }
+      ]
+    }
+  ]
+}

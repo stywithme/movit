@@ -14,7 +14,7 @@
   },
 
   "angleDetection": {
-    "_comment": "إعدادات اكتشاف الزوايا — FormValidator و PhaseStateMachine",
+    "_comment": "إعدادات اكتشاف الزوايا — joint pipeline و PhaseStateMachine",
     "hysteresisDegrees": 5.0,
     "_hysteresisDegrees_comment": "عازل لمنع الوميض عند الانتقال بين المناطق (بالدرجات)",
     "boundaryBufferDegrees": 3.0,

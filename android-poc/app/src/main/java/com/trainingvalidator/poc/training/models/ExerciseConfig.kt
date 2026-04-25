@@ -147,6 +147,55 @@ data class ExerciseConfig(
         equipment = equipment ?: emptyList(),
         tags = tags ?: emptyList()
     )
+
+    /**
+     * Quick structural check for config loaded from cache/network.
+     * @return non-empty if something is inconsistent (exercise can still be ignored upstream).
+     */
+    fun validationIssues(poseVariantIndex: Int = 0): List<String> {
+        val out = mutableListOf<String>()
+        if (name.ar.isBlank() && name.en.isBlank()) out.add("exercise name is empty")
+        if (poseVariants.isEmpty()) out.add("poseVariants is empty")
+        val v = poseVariants.getOrNull(poseVariantIndex)
+        if (v == null) out.add("pose variant $poseVariantIndex is missing")
+        else {
+            if (v.trackedJoints.isEmpty()) out.add("no trackedJoints in variant $poseVariantIndex")
+            if (v.trackedJoints.none { it.role == JointRole.PRIMARY }) {
+                out.add("no primary joints in variant $poseVariantIndex")
+            }
+        }
+        if (countingMethod == CountingMethod.UP_DOWN && repCountingConfig.reps < 0) {
+            out.add("negative rep target in repCountingConfig")
+        }
+        if (countingMethod == CountingMethod.HOLD) {
+            val d = repCountingConfig.duration
+            if (d != null && d < 0) {
+                out.add("negative hold duration (seconds) in repCountingConfig")
+            }
+        }
+        if (isBilateral) {
+            val c = bilateralConfig
+            if (c != null) {
+                if (c.switchEvery < 1) {
+                    out.add("bilateralConfig.switchEvery must be >= 1")
+                }
+            }
+        }
+        v?.let { variant ->
+            val allCodes = variant.trackedJoints.map { it.joint }.toSet()
+            for (tj in variant.trackedJoints) {
+                if (tj.startPose.min > tj.startPose.max) {
+                    out.add("startPose: min>max for joint ${tj.joint}")
+                }
+                tj.pairedWith?.let { p ->
+                    if (p !in allCodes) {
+                        out.add("joint ${tj.joint} pairedWith='$p' but that joint is not in trackedJoints")
+                    }
+                }
+            }
+        }
+        return out
+    }
 }
 
 /**
@@ -566,7 +615,7 @@ data class TrackedJoint(
      * Determine the ZoneType for an angle (PRIMARY joints)
      * 
      * NOTE: This is a raw calculation without hysteresis.
-     * For production use, prefer FormValidator.getJointStateInfos() which applies
+     * For production use, prefer [com.trainingvalidator.poc.training.engine.evaluation.JointEvaluator] which applies
      * hysteresis and danger frame smoothing for stable state transitions.
      * 
      * @param angle Current joint angle
@@ -601,7 +650,7 @@ data class TrackedJoint(
      * Determine JointState for an angle (raw calculation)
      * 
      * NOTE: This is a raw calculation without hysteresis or danger frame smoothing.
-     * For production use, prefer FormValidator.getJointStateInfos() which provides
+     * For production use, prefer [com.trainingvalidator.poc.training.engine.evaluation.JointEvaluator] which provides
      * stable state transitions with proper hysteresis.
      * 
      * @param angle Current joint angle
@@ -902,7 +951,7 @@ enum class FacingDirection {
 
 /**
  * Position-based validation check
- * Works alongside angle-based validation (FormValidator)
+ * Works alongside angle-based validation (JointEvaluator / [com.trainingvalidator.poc.training.TrainingEngine])
  * 
  * @param id Unique identifier for the check (e.g., "left_knee_over_toe")
  * @param type Type of position check

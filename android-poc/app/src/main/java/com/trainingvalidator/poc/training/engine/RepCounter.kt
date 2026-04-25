@@ -1,7 +1,7 @@
 package com.trainingvalidator.poc.training.engine
 
 import android.util.Log
-import com.trainingvalidator.poc.training.config.SettingsManager
+import com.trainingvalidator.poc.training.engine.evaluation.JointEval
 import com.trainingvalidator.poc.training.models.*
 
 /**
@@ -28,22 +28,19 @@ import com.trainingvalidator.poc.training.models.*
  * For HOLD exercises, score is calculated using WEIGHTED AVERAGE of time in states.
  */
 class RepCounter(
+    private val minRepIntervalMs: Long,
     private val targetReps: Int = 12,
-    repCountingConfig: RepCountingConfig? = null,
     private val isHoldExercise: Boolean = false,
     private val primaryJoints: Set<String> = emptySet(),
     private val timeProvider: () -> Long = { System.currentTimeMillis() }
 ) {
     /**
-     * Minimum time between reps.
+     * Minimum time between reps (from [com.trainingvalidator.poc.training.engine.policy.TimingPolicy] / exercise config).
      *
      * For rep-based exercises, cooldown is enforced upstream by PhaseStateMachine
      * before a rep completion is requested. This value remains here only as a
      * safety guard for hold exercises, which call completeRep() directly.
      */
-    private val minRepIntervalMs: Long = repCountingConfig?.getMinRepInterval(
-        SettingsManager.getDefaultMinRepInterval()
-    ) ?: SettingsManager.getDefaultMinRepInterval()
 
     companion object {
         private const val TAG = "RepCounter"
@@ -79,11 +76,6 @@ class RepCounter(
             return if (up.state.isWorseThan(down.state)) up else down
         }
 
-        private fun JointState.isScorableQualityBand(): Boolean = when (this) {
-            JointState.PERFECT, JointState.NORMAL, JointState.PAD -> true
-            else -> false
-        }
-
         fun ingest(stateInfo: JointStateInfo) {
             val state = stateInfo.state
             when (state) {
@@ -94,8 +86,33 @@ class RepCounter(
                     }
                 }
                 else -> {
-                    if (!state.isScorableQualityBand()) return
+                    if (!stateInfo.state.isScorableForRepQuality) return
                     when (stateInfo.currentZone) {
+                        ZoneType.UP_ZONE ->
+                            bestUpQuality = pickBetterQuality(bestUpQuality, stateInfo)
+                        ZoneType.DOWN_ZONE ->
+                            bestDownQuality = pickBetterQuality(bestDownQuality, stateInfo)
+                        ZoneType.TRANSITION -> Unit
+                    }
+                }
+            }
+        }
+
+        /**
+         * [JointEval] path — uses [JointEval.isScorableForRepQuality] (no duplicate rules).
+         * @param stateInfo same row as in the frame map (avoids second [JointEval.toJointStateInfo]).
+         */
+        fun ingestFromEval(eval: JointEval, stateInfo: JointStateInfo) {
+            when (eval.state) {
+                JointState.WARNING, JointState.DANGER -> {
+                    val cur = worstSeverityInfo
+                    if (cur == null || eval.state.isWorseThan(cur.state)) {
+                        worstSeverityInfo = stateInfo
+                    }
+                }
+                else -> {
+                    if (!eval.isScorableForRepQuality) return
+                    when (eval.zoneType) {
                         ZoneType.UP_ZONE ->
                             bestUpQuality = pickBetterQuality(bestUpQuality, stateInfo)
                         ZoneType.DOWN_ZONE ->
@@ -238,6 +255,43 @@ class RepCounter(
      *
      * @param jointStates Map of joint code to its state info
      */
+    /**
+     * Preferred path: same scoring semantics as [updateJointStates] but uses
+     * [PrimaryRepZoneTracker.ingestFromEval] to avoid duplicating "scorable" rules.
+     */
+    fun updateJointEvals(evals: Map<String, JointEval>) {
+        val stateInfos = evals.mapValues { it.value.toJointStateInfo() }
+        currentJointStates = stateInfos
+
+        for ((jointCode, eval) in evals) {
+            if (eval.state == JointState.TRANSITION) continue
+
+            if (primaryJoints.contains(jointCode) && eval.isPrimary) {
+                primaryRepZoneTrackers.getOrPut(jointCode) { PrimaryRepZoneTracker() }
+                    .ingestFromEval(eval, stateInfos.getValue(jointCode))
+            } else {
+                val stateInfo = stateInfos.getValue(jointCode)
+                val existing = secondaryRepWorstStates[jointCode]
+                if (existing == null || stateInfo.state.isWorseThan(existing.state)) {
+                    secondaryRepWorstStates[jointCode] = stateInfo
+                }
+            }
+        }
+
+        val worstState = stateInfos.values
+            .map { it.state }
+            .filter { it != JointState.TRANSITION }
+            .maxByOrNull { it.priority } ?: JointState.PERFECT
+
+        if (worstState.isWorseThan(currentRepWorstState)) {
+            currentRepWorstState = worstState
+        }
+
+        if (isHoldExercise) {
+            updateStateTimeTracking(worstState)
+        }
+    }
+
     fun updateJointStates(jointStates: Map<String, JointStateInfo>) {
         // Store instantaneous snapshot (real-time UI / fallback)
         currentJointStates = jointStates
@@ -450,9 +504,9 @@ class RepCounter(
 
                 Log.d(TAG, "Snapshot score: ${score.toInt()}%, worst=${repResult.worstState}")
             } else {
-                // Fallback: Legacy worst state scoring
+                // No joint snapshot for this rep — single-state score (rare)
+                score = ScoreCalculator.calculateScoreFromWorstState(currentRepWorstState)
                 val config = StateConfig.getConfig(currentRepWorstState)
-                score = ScoreCalculator.getScoreRate(currentRepWorstState)
                 isCounted = config.isRepCounted
                 isInvalidated = config.invalidatesRep
             }

@@ -118,7 +118,7 @@ class MotionRecorder(
      * @param timestamp Current timestamp in milliseconds
      * @param phase Current movement phase
      * @param angles Smoothed joint angles (Map from TrainingEngine)
-     * @param states Joint state infos (optional, from FormValidator)
+     * @param states Joint state infos (optional, from [JointEvaluator] / [JointStateInfo] map)
      */
     fun record(
         timestamp: Long,

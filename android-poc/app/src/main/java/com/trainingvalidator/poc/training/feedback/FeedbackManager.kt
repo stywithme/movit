@@ -10,7 +10,6 @@ import android.util.Log
 import androidx.core.content.ContextCompat
 import com.trainingvalidator.poc.storage.AudioCacheManager
 import com.trainingvalidator.poc.training.config.SettingsManager
-import com.trainingvalidator.poc.training.engine.PositionError
 import com.trainingvalidator.poc.training.models.CheckSeverity
 import com.trainingvalidator.poc.training.models.FeedbackMessages
 import com.trainingvalidator.poc.training.models.JointError
@@ -223,10 +222,12 @@ class FeedbackManager(
         
         // Handle based on event type and mode
         when (event) {
-            is FeedbackEvent.JointErrorDetected -> handleJointError(event)
+            is FeedbackEvent.JointQuality -> when (val c = event.content) {
+                is JointQualityContent.Error -> handleJointQualityError(c.error)
+                is JointQualityContent.StateMessage -> handleJointStateMessage(c)
+            }
             is FeedbackEvent.RepCompleted -> handleRepCompleted(event)
             is FeedbackEvent.TargetReached -> handleTargetReached(event)
-            is FeedbackEvent.JointStateMessage -> handleJointStateMessage(event)
             
             // Hold events
             is FeedbackEvent.HoldStarted -> handleHoldStarted()
@@ -235,10 +236,8 @@ class FeedbackManager(
             is FeedbackEvent.HoldCompleted -> handleHoldCompleted(event)
             is FeedbackEvent.HoldFailed -> handleHoldFailed(event)
             
-            // Position events
-            is FeedbackEvent.PositionErrorDetected -> handlePositionError(event)
-            is FeedbackEvent.PositionWarningDetected -> handlePositionWarning(event)
-            is FeedbackEvent.PositionTipDetected -> handlePositionTip(event)
+            // Position / alignment
+            is FeedbackEvent.PositionCheckFeedback -> handlePositionCheckFeedback(event)
             is FeedbackEvent.SceneWarnings -> handleSceneWarnings(event)
             
             // Visibility events (Camera mode audio feedback)
@@ -250,10 +249,10 @@ class FeedbackManager(
     
     // ==================== Joint Error Handling ====================
     
-    private suspend fun handleJointError(event: FeedbackEvent.JointErrorDetected) {
-        val isWarning = event.error.state == JointState.WARNING
-        val messageKey = "joint:${event.error.jointCode}:${event.error.errorType}"
-        val localizedText = event.error.message
+    private suspend fun handleJointQualityError(error: JointError) {
+        val isWarning = error.state == JointState.WARNING
+        val messageKey = "joint:${error.jointCode}:${error.errorType}"
+        val localizedText = error.message
         val displayText = localizedText.get(config.language)
         
         val category = if (isWarning) MessageOrchestrator.Category.WARNING
@@ -275,7 +274,7 @@ class FeedbackManager(
 
     // ==================== Joint State Messages ====================
 
-    private suspend fun handleJointStateMessage(event: FeedbackEvent.JointStateMessage) {
+    private suspend fun handleJointStateMessage(event: JointQualityContent.StateMessage) {
         // Ignore transition (shouldn't be emitted) and empty messages
         val localizedText = event.message
         val displayText = localizedText.get(config.language)
@@ -573,71 +572,60 @@ class FeedbackManager(
         }
     }
     
-    // ==================== Position Event Handlers ====================
+    // ==================== Position / alignment (single event + severity) ====================
     
-    private suspend fun handlePositionError(event: FeedbackEvent.PositionErrorDetected) {
-        val localizedText = event.error.message
-        val displayText = localizedText.get(config.language)
-        
-        // Use MessageOrchestrator for smart delivery
-        val decision = messageOrchestrator.decide(
-            messageKey = "position:${event.error.checkId}",
-            category = MessageOrchestrator.Category.ERROR,
-            messageText = displayText
-        )
-        
-        // Deliver with LocalizedText for audio support
-        deliverLocalizedMessage(localizedText, displayText, decision, MessageType.ERROR)
-    }
-    
-    private suspend fun handlePositionWarning(event: FeedbackEvent.PositionWarningDetected) {
-        val localizedText = event.error.message
-        val displayText = localizedText.get(config.language)
-
-        // Skip empty messages — exercise config may have a check with no errorMessage
-        if (displayText.isBlank()) {
-            Log.w(TAG, "⚡ Position WARNING skipped (empty message): checkId=${event.error.checkId}")
-            return
+    private suspend fun handlePositionCheckFeedback(event: FeedbackEvent.PositionCheckFeedback) {
+        val pe = event.check
+        when (pe.severity) {
+            CheckSeverity.ERROR -> {
+                val localizedText = pe.message
+                val displayText = localizedText.get(config.language)
+                val decision = messageOrchestrator.decide(
+                    messageKey = "position:${pe.checkId}",
+                    category = MessageOrchestrator.Category.ERROR,
+                    messageText = displayText
+                )
+                deliverLocalizedMessage(localizedText, displayText, decision, MessageType.ERROR)
+            }
+            CheckSeverity.WARNING -> {
+                val localizedText = pe.message
+                val displayText = localizedText.get(config.language)
+                if (displayText.isBlank()) {
+                    Log.w(TAG, "⚡ Position WARNING skipped (empty message): checkId=${pe.checkId}")
+                    return
+                }
+                Log.d(
+                    TAG,
+                    "⚡ Position WARNING received: checkId=${pe.checkId}, text='${displayText.take(40)}', isVideoMode=$isVideoMode, isTtsEnabled=$isTtsEnabled"
+                )
+                val decision = messageOrchestrator.decide(
+                    messageKey = "position_warn:${pe.checkId}",
+                    category = MessageOrchestrator.Category.WARNING,
+                    messageText = displayText
+                )
+                Log.d(
+                    TAG,
+                    "⚡ Position WARNING decision: channel=${decision.channel}, repeat=#${decision.repeatCount}, isFirst=${decision.isFirstOccurrence}"
+                )
+                deliverLocalizedMessage(localizedText, displayText, decision, MessageType.WARNING)
+            }
+            CheckSeverity.TIP -> {
+                val displayText = pe.message.get(config.language)
+                if (displayText.isBlank()) {
+                    Log.w(TAG, "Position TIP skipped (empty message): checkId=${pe.checkId}")
+                    return
+                }
+                val decision = messageOrchestrator.decide(
+                    messageKey = "position_tip:${pe.checkId}",
+                    category = MessageOrchestrator.Category.TIP,
+                    messageText = displayText
+                )
+                if (isVideoMode && decision.channel != MessageOrchestrator.DeliveryChannel.SILENT) {
+                    emitVisualMessage(displayText, MessageType.TIP)
+                }
+                Log.d(TAG, "Position tip: ${pe.checkId} (channel: ${decision.channel})")
+            }
         }
-
-        Log.d(TAG, "⚡ Position WARNING received: checkId=${event.error.checkId}, text='${displayText.take(40)}', isVideoMode=$isVideoMode, isTtsEnabled=$isTtsEnabled")
-
-        // Use MessageOrchestrator for smart delivery
-        val decision = messageOrchestrator.decide(
-            messageKey = "position_warn:${event.error.checkId}",
-            category = MessageOrchestrator.Category.WARNING,
-            messageText = displayText
-        )
-
-        Log.d(TAG, "⚡ Position WARNING decision: channel=${decision.channel}, repeat=#${decision.repeatCount}, isFirst=${decision.isFirstOccurrence}")
-
-        // Deliver with LocalizedText for audio support
-        deliverLocalizedMessage(localizedText, displayText, decision, MessageType.WARNING)
-    }
-
-    private suspend fun handlePositionTip(event: FeedbackEvent.PositionTipDetected) {
-        val displayText = event.error.message.get(config.language)
-
-        // Skip empty messages
-        if (displayText.isBlank()) {
-            Log.w(TAG, "Position TIP skipped (empty message): checkId=${event.error.checkId}")
-            return
-        }
-
-        // Use MessageOrchestrator for smart delivery
-        // Tips are VISUAL_ONLY by design (low priority)
-        val decision = messageOrchestrator.decide(
-            messageKey = "position_tip:${event.error.checkId}",
-            category = MessageOrchestrator.Category.TIP,
-            messageText = displayText
-        )
-
-        // Only deliver in Video mode (tips are visual-only per plan)
-        if (isVideoMode && decision.channel != MessageOrchestrator.DeliveryChannel.SILENT) {
-            emitVisualMessage(displayText, MessageType.TIP)
-        }
-
-        Log.d(TAG, "Position tip: ${event.error.checkId} (channel: ${decision.channel})")
     }
     
     private suspend fun handleSceneWarnings(event: FeedbackEvent.SceneWarnings) {

@@ -13,7 +13,7 @@ import com.trainingvalidator.poc.training.TrainingEngine
 import com.trainingvalidator.poc.training.analytics.MotionRecorder
 import com.trainingvalidator.poc.training.analytics.SessionUpload
 import com.trainingvalidator.poc.training.models.SessionSummary
-import com.trainingvalidator.poc.training.engine.HoldState
+import com.trainingvalidator.poc.training.engine.HoldStatus
 import com.trainingvalidator.poc.training.engine.Phase
 import com.trainingvalidator.poc.training.config.SettingsManager
 import com.trainingvalidator.poc.ui.utils.feedbackLanguageCode
@@ -88,11 +88,13 @@ class TrainingViewModel(
     private val _currentPhase = MutableStateFlow(Phase.IDLE)
     val currentPhase: StateFlow<Phase> = _currentPhase.asStateFlow()
     
-    private val _holdElapsedMs = MutableStateFlow<Long?>(null)
-    val holdElapsedMs: StateFlow<Long?> = _holdElapsedMs.asStateFlow()
-    
-    private val _holdState = MutableStateFlow<HoldState?>(null)
-    val holdState: StateFlow<HoldState?> = _holdState.asStateFlow()
+    /** Engine snapshot for hold UI (null for rep exercises or before first tick). */
+    private val _holdStatus = MutableStateFlow<HoldStatus?>(null)
+    val holdStatus: StateFlow<HoldStatus?> = _holdStatus.asStateFlow()
+
+    /** For debug: last [com.trainingvalidator.poc.training.engine.observability.PipelineTrace] lines. */
+    fun getPipelineTraceSnapshot(): List<String> =
+        trainingEngine?.pipelineTrace?.snapshot().orEmpty()
     
     // Weight for weighted exercises (kg)
     private var _weightKg: Float? = null
@@ -719,19 +721,13 @@ class TrainingViewModel(
                 }
             }
             
-            // Observe hold state
+            // Observe hold snapshot
             if (engine.isHoldExercise) {
                 launch {
-                    engine.holdElapsedMs.collect { elapsed ->
-                        _holdElapsedMs.value = elapsed
-                    }
+                    engine.holdStatus.collect { s -> _holdStatus.value = s }
                 }
-                
-                launch {
-                    engine.holdState.collect { state ->
-                        _holdState.value = state
-                    }
-                }
+            } else {
+                _holdStatus.value = null
             }
             
             // Observe completion

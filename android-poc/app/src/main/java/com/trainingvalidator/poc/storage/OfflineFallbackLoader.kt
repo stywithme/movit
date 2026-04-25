@@ -33,7 +33,11 @@ object OfflineFallbackLoader {
                 val config = gson.fromJson(
                     input.bufferedReader(),
                     ExerciseConfig::class.java
-                )
+                ).sanitizeGsonDefaults()
+                val vIssues = config.validationIssues()
+                if (vIssues.isNotEmpty()) {
+                    Log.w(TAG, "Bundled exercise validation: ${vIssues.joinToString("; ")}")
+                }
                 listOf(
                     ExerciseConfigWithMeta.fromExerciseConfig(
                         id = "offline-bundled-desk-test",

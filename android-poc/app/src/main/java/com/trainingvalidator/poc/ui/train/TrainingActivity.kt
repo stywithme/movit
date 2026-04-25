@@ -44,6 +44,7 @@ import com.trainingvalidator.poc.pose.PoseResult
 import com.trainingvalidator.poc.training.config.SettingsManager
 import com.trainingvalidator.poc.training.feedback.FeedbackEvent
 import com.trainingvalidator.poc.training.feedback.FeedbackManager
+import com.trainingvalidator.poc.training.feedback.JointQualityContent
 import com.trainingvalidator.poc.training.feedback.SystemMessageRegistry
 import com.trainingvalidator.poc.training.engine.BodyPosture
 import com.trainingvalidator.poc.training.engine.ExpectedDirection
@@ -65,6 +66,7 @@ import com.trainingvalidator.poc.ui.training.SetupResult
 import com.trainingvalidator.poc.ui.training.TrainingUIEvent
 import com.trainingvalidator.poc.ui.training.TrainingViewModel
 import com.trainingvalidator.poc.ui.training.VideoModeController
+import androidx.appcompat.app.AlertDialog
 import android.widget.SeekBar
 import android.widget.TextView
 import com.trainingvalidator.poc.training.engine.HoldState
@@ -424,32 +426,32 @@ class TrainingActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetection
     }
     
     private fun parseIntentExtras() {
-        // Ensure ExerciseRepository is initialized before loading exercise
-        initializeExerciseRepository()
-        
-        // Training mode
         val trainingMode = intent.getStringExtra(EXTRA_TRAINING_MODE) ?: MODE_CAMERA
         isVideoMode = trainingMode == MODE_VIDEO
         videoUri = IntentCompat.getParcelableExtra(intent, EXTRA_VIDEO_URI, Uri::class.java)
-        
+        viewModel.supervisor.isVideoMode = isVideoMode
+
         if (isVideoMode && videoUri == null) {
             Toast.makeText(this, getString(R.string.no_video_selected), Toast.LENGTH_LONG).show()
             finish()
             return
         }
-        
-        // Indicator type
-        val indicatorType = intent.getStringExtra(EXTRA_INDICATOR_TYPE) 
+
+        val indicatorType = intent.getStringExtra(EXTRA_INDICATOR_TYPE)
             ?: com.trainingvalidator.poc.training.config.SettingsManager.getIndicatorType()
         currentIndicatorType = indicatorType
         SettingsManager.setIndicatorType(indicatorType)
         binding.skeletonOverlay.setIndicatorType(indicatorType)
 
-        // Assessment mode flag
         isAssessmentMode = intent.getBooleanExtra(EXTRA_ASSESSMENT_MODE, false)
-
-        // ── SESSION MODE ──
         isSessionMode = intent.getBooleanExtra(EXTRA_IS_SESSION_MODE, false)
+
+        initializeExerciseRepository {
+            parseIntentExtrasAfterRepositoryReady()
+        }
+    }
+
+    private fun parseIntentExtrasAfterRepositoryReady() {
         if (isSessionMode) {
             initializeSessionMode()
             viewModel.initializeFeedback(this, isVideoMode)
@@ -483,11 +485,8 @@ class TrainingActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetection
         }
         val weightUnit = intent.getStringExtra(EXTRA_WEIGHT_UNIT) ?: "kg"
         
-        // Set video mode on supervisor before loading exercise
-        // (onExerciseLoaded needs to know mode to decide SETUP_POSE vs IDLE)
         viewModel.supervisor.isVideoMode = isVideoMode
-        
-        // Load exercise via ViewModel
+
         if (!viewModel.loadExercise(
                 exerciseName,
                 difficultyStr,
@@ -1825,22 +1824,29 @@ class TrainingActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetection
             }
         }
         
-        // Observe hold state
+        // Observe hold (single flow: [HoldStatus] from engine)
         lifecycleScope.launch {
-            viewModel.holdElapsedMs.collectLatest { elapsed ->
+            viewModel.holdStatus.collectLatest { s ->
                 if (!viewModel.isHoldExercise()) return@collectLatest
-                elapsed?.let {
-                    binding.tvRepCount.text = formatTimeMs(it)
-                    binding.tvProgress.text = "${formatTimeMs(it)} / ${formatTimeMs(viewModel.getTargetDurationMs())}"
-                }
+                s ?: return@collectLatest
+                binding.tvRepCount.text = formatTimeMs(s.elapsedMs)
+                binding.tvProgress.text =
+                    "${formatTimeMs(s.elapsedMs)} / ${formatTimeMs(viewModel.getTargetDurationMs())}"
+                updateUIForHoldState(s.state)
             }
         }
-
-        lifecycleScope.launch {
-            viewModel.holdState.collectLatest { holdState ->
-                if (!viewModel.isHoldExercise()) return@collectLatest
-                holdState?.let { updateUIForHoldState(it) }
+        binding.tvRepCount.setOnLongClickListener {
+            val lines = viewModel.getPipelineTraceSnapshot()
+            if (lines.isEmpty()) {
+                Toast.makeText(this, "Pipeline trace (empty — start a session first)", Toast.LENGTH_SHORT).show()
+            } else {
+                AlertDialog.Builder(this)
+                    .setTitle("Pipeline trace")
+                    .setMessage(lines.takeLast(50).joinToString("\n"))
+                    .setPositiveButton(android.R.string.ok, null)
+                    .show()
             }
+            true
         }
         
         // Observe UI events
@@ -2288,7 +2294,14 @@ class TrainingActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetection
 
     /** Show a concise reason while countdown is frozen/canceling due pose drift. */
     private fun showCountdownPoseIssue(result: SetupResult) {
-        if (isTextlessSetupState()) {
+        if (!isVideoMode) {
+            binding.glassmorphicMessage.clearAll()
+            binding.vignetteOverlay.showWarning()
+            return
+        }
+        if (viewModel.supervisor.state.value == SessionState.SETUP_POSE ||
+            viewModel.supervisor.state.value == SessionState.RESUME_SETUP
+        ) {
             binding.glassmorphicMessage.clearAll()
             binding.vignetteOverlay.showWarning()
             return
@@ -2355,14 +2368,8 @@ class TrainingActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetection
             val landmarks = viewModel.lastSmoothedLandmarks
             val imageSize = viewModel.lastImageSize
             if (landmarks != null) {
-                val visibilityGuidances = result.joints.map { joint ->
-                    joint.copy(
-                        level = if (joint.level != GuidanceLevel.RED) GuidanceLevel.GREEN else GuidanceLevel.RED,
-                        direction = null
-                    )
-                }
                 binding.skeletonOverlay.updateSetupGuidance(
-                    guidances = visibilityGuidances,
+                    guidances = result.joints,
                     smoothedLandmarks = landmarks,
                     imageW = imageSize.first,
                     imageH = imageSize.second,
@@ -2683,6 +2690,15 @@ class TrainingActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetection
             FeedbackManager.MessageType.INFO -> GlassmorphicMessageView.TYPE_INFO
         }
         
+        if (!isVideoMode) {
+            when (message.type) {
+                FeedbackManager.MessageType.ERROR -> binding.vignetteOverlay.showError()
+                FeedbackManager.MessageType.WARNING -> binding.vignetteOverlay.showWarning()
+                else -> {}
+            }
+            return
+        }
+
         binding.glassmorphicMessage.showMessage(message.text, type, message.durationMs)
         
         when (message.type) {
@@ -2762,20 +2778,20 @@ class TrainingActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetection
                 }
             }
             
-            is FeedbackEvent.JointErrorDetected -> {
+            is FeedbackEvent.JointQuality -> {
+                val err = (event.content as? JointQualityContent.Error)?.error ?: return@handleFeedbackEvent
                 // Capture error frame (deduped per rep + errorKey in FrameCaptureManager).
-                val errorKey = "${event.error.jointCode}:${event.error.state.name}"
+                val errorKey = "${err.jointCode}:${err.state.name}"
                 // In-progress rep (1-based), aligned with peak capture and RepCompleted.repNumber.
                 val currentRep = (viewModel.trainingEngine?.getCurrentRep() ?: 0) + 1
                 val phase = viewModel.currentPhase.value
-                
-                // Check if this is DANGER state - capture DANGER frame 🚨
-                if (event.error.state == com.trainingvalidator.poc.training.models.JointState.DANGER) {
+
+                if (err.state == com.trainingvalidator.poc.training.models.JointState.DANGER) {
                     captureDangerFrame(
                         repNumber = currentRep,
                         phase = phase,
-                        jointCode = event.error.jointCode,
-                        actualAngle = event.error.actualAngle
+                        jointCode = err.jointCode,
+                        actualAngle = err.actualAngle
                     )
                 } else {
                     captureErrorFrame(currentRep, phase, errorKey)
@@ -3231,7 +3247,7 @@ class TrainingActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetection
         binding.skeletonOverlay.setTrainingMode(false)
         
         if (viewModel.isHoldExercise()) {
-            val holdElapsed = viewModel.holdElapsedMs.value ?: 0L
+            val holdElapsed = viewModel.holdStatus.value?.elapsedMs ?: 0L
             binding.tvSummaryReps.text = formatTimeMs(holdElapsed)
             binding.tvSummaryCorrect.text = getString(R.string.training_target_format, formatTimeMs(viewModel.getTargetDurationMs()))
             binding.tvSummaryAccuracy.text = getString(R.string.training_grace_periods_format, viewModel.trainingEngine?.getGracePeriodCount() ?: 0)

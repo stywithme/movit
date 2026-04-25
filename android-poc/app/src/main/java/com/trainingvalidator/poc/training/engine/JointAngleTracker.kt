@@ -3,7 +3,7 @@ package com.trainingvalidator.poc.training.engine
 import com.trainingvalidator.poc.analysis.JointAngles
 import com.trainingvalidator.poc.analysis.SmoothedLandmark
 import com.trainingvalidator.poc.pose.JointLandmarkMapping
-import com.trainingvalidator.poc.training.config.SettingsManager
+import com.trainingvalidator.poc.training.engine.policy.StabilityPolicy
 import com.trainingvalidator.poc.training.models.TrackingMode
 import com.trainingvalidator.poc.training.models.TrackedJoint
 
@@ -18,26 +18,12 @@ import com.trainingvalidator.poc.training.models.TrackedJoint
  * Note: Uses JointLandmarkMapping as single source of truth for joint↔landmark mapping.
  */
 class JointAngleTracker(
-    private val trackedJoints: List<TrackedJoint>
+    private val trackedJoints: List<TrackedJoint>,
+    private val stabilityPolicy: StabilityPolicy = StabilityPolicy.default()
 ) {
     
     companion object {
         private const val TAG = "JointAngleTracker"
-
-        /**
-         * Above this min-landmark visibility a side is considered clearly visible
-         * (front-facing limb). Below this but above the hard skip threshold the
-         * side is "borderline" (commonly MediaPipe's back-side hallucination in a
-         * side-view pose).
-         */
-        private const val VISIBILITY_STRONG_THRESHOLD = 0.7f
-
-        /**
-         * Tiebreaker gap when both sides are below the hard [SettingsManager.getAnySideVisibilityThreshold].
-         * Keeps the clearly-better side active so rep counting survives a transient
-         * dip instead of freezing on both sides.
-         */
-        private const val VISIBILITY_TIEBREAK_GAP = 0.1f
         
         /**
          * Map of joint codes to their angle getter functions
@@ -126,7 +112,7 @@ class JointAngleTracker(
      * Example: config has "right_elbow", isFlipped=true
      *   -> reads angles.leftElbow (the mirrored side)
      *   -> stores result["right_elbow"] = leftElbowAngle
-     *   -> PhaseStateMachine/FormValidator see "right_elbow" with left side's angle
+     *   -> PhaseStateMachine / joint pipeline see "right_elbow" with left side's angle
      * 
      * Shared joints (spine, neck, etc.) read from the same key regardless of flip.
      * 
@@ -139,7 +125,7 @@ class JointAngleTracker(
 
     /**
      * Extract tracked angles with optional per-frame skipping for [TrackingMode.ANY_SIDE] pairs
-     * when one side's landmarks fall below [SettingsManager.getAnySideVisibilityThreshold]
+     * when one side's landmarks fall below [StabilityPolicy.anySideVisibilityThreshold]
      * while the partner remains visible.
      *
      * @param isFrontCamera True when landmarks were produced from a mirrored image;
@@ -155,7 +141,9 @@ class JointAngleTracker(
         if (landmarks == null || landmarks.size < 33) {
             return TrackedAnglesExtractResult(map, emptySet())
         }
-        val threshold = SettingsManager.getAnySideVisibilityThreshold()
+        val threshold = stabilityPolicy.anySideVisibilityThreshold
+        val strongMin = stabilityPolicy.anySideStrongMinVisibility
+        val tiebreak = stabilityPolicy.anySideTiebreakGap
         val skipped = mutableSetOf<String>()
         val processedPairs = mutableSetOf<Pair<String, String>>()
 
@@ -184,8 +172,8 @@ class JointAngleTracker(
             val vB = JointLandmarkMapping.computeJointVisibility(anatomical(b), landmarks, isFrontCamera)
             val belowA = vA < threshold
             val belowB = vB < threshold
-            val strongA = vA >= VISIBILITY_STRONG_THRESHOLD
-            val strongB = vB >= VISIBILITY_STRONG_THRESHOLD
+            val strongA = vA >= strongMin
+            val strongB = vB >= strongMin
             when {
                 // Clear winner: one side passes the hard threshold, the other does not
                 //   → drop the weaker side regardless of how big the gap is.
@@ -202,10 +190,10 @@ class JointAngleTracker(
                 belowA && belowB -> {
                     val diff = vA - vB
                     when {
-                        diff > VISIBILITY_TIEBREAK_GAP -> {
+                        diff > tiebreak -> {
                             map.remove(b); skipped.add(b)
                         }
-                        diff < -VISIBILITY_TIEBREAK_GAP -> {
+                        diff < -tiebreak -> {
                             map.remove(a); skipped.add(a)
                         }
                     }
@@ -223,7 +211,7 @@ class JointAngleTracker(
                     map.remove(a); skipped.add(a)
                 }
                 // Both clearly visible OR both borderline (frontal view / symmetrical
-                // partial occlusion) — keep both sides and let Symmetry/FormValidator
+                // partial occlusion) — keep both sides and let Symmetry / joint eval
                 // use them normally.
                 else -> { /* keep both */ }
             }

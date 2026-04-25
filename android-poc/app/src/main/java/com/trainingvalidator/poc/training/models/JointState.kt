@@ -67,6 +67,13 @@ enum class JointState {
      */
     fun isBetterThan(other: JointState): Boolean = this.priority < other.priority
 
+    /**
+     * Used for UP/DOWN per-zone peak rep scoring (not counted for WARNING+).
+     * Aligned with [com.trainingvalidator.poc.training.engine.evaluation.JointEval.isScorableForRepQuality].
+     */
+    val isScorableForRepQuality: Boolean
+        get() = this == PERFECT || this == NORMAL || this == PAD
+
     companion object {
         /**
          * Get the worst state from a collection of states
@@ -138,7 +145,6 @@ enum class Severity {
  * StateConfig - Pre-defined configuration for each JointState
  *
  * Contains all decision parameters for a state:
- * - rate: Score percentage (0-100)
  * - isRepCounted: Whether reps in this state count toward total
  * - invalidatesRep: Whether entering this state invalidates the current rep
  * - color: Visual representation color
@@ -146,7 +152,6 @@ enum class Severity {
  */
 data class StateConfig(
     val state: JointState,
-    val rate: Float,
     val isRepCounted: Boolean,
     val invalidatesRep: Boolean,
     val color: Int,
@@ -179,7 +184,6 @@ data class StateConfig(
         val STATE_CONFIGS: Map<JointState, StateConfig> = mapOf(
             JointState.PERFECT to StateConfig(
                 state = JointState.PERFECT,
-                rate = 100f,
                 isRepCounted = true,
                 invalidatesRep = false,
                 color = COLOR_GREEN,
@@ -187,7 +191,6 @@ data class StateConfig(
             ),
             JointState.NORMAL to StateConfig(
                 state = JointState.NORMAL,
-                rate = 60f,
                 isRepCounted = true,
                 invalidatesRep = false,
                 color = COLOR_YELLOW,
@@ -195,7 +198,6 @@ data class StateConfig(
             ),
             JointState.PAD to StateConfig(
                 state = JointState.PAD,
-                rate = 20f,
                 isRepCounted = true,
                 invalidatesRep = false,
                 color = COLOR_ORANGE,
@@ -203,7 +205,6 @@ data class StateConfig(
             ),
             JointState.WARNING to StateConfig(
                 state = JointState.WARNING,
-                rate = 0f,
                 isRepCounted = false,
                 invalidatesRep = false,
                 color = COLOR_LIGHT_RED,
@@ -211,7 +212,6 @@ data class StateConfig(
             ),
             JointState.DANGER to StateConfig(
                 state = JointState.DANGER,
-                rate = 0f,
                 isRepCounted = false,
                 invalidatesRep = true,
                 color = COLOR_DARK_RED,
@@ -219,7 +219,6 @@ data class StateConfig(
             ),
             JointState.TRANSITION to StateConfig(
                 state = JointState.TRANSITION,
-                rate = -1f,  // Not applicable
                 isRepCounted = false,
                 invalidatesRep = false,
                 color = COLOR_YELLOW,  // Same as NORMAL - transition is movement zone
@@ -266,12 +265,6 @@ data class StateConfig(
             return getConfig(state).invalidatesRep
         }
 
-        /**
-         * Get the rate (score percentage) for a state
-         */
-        fun getRate(state: JointState): Float {
-            return getConfig(state).rate
-        }
     }
 }
 
@@ -540,9 +533,6 @@ data class JointStateInfo(
     /** State ranges for DOWN zone (for track rendering) */
     val downStateRanges: StateRanges? = null,
 
-    /** Pre-resolved rate from stateConfig */
-    val rate: Float,
-
     /** Pre-resolved isRepCounted from stateConfig */
     val isRepCounted: Boolean,
 
@@ -591,7 +581,6 @@ data class JointStateInfo(
                 stateRanges = stateRanges,
                 upStateRanges = upStateRanges,
                 downStateRanges = downStateRanges,
-                rate = config.rate,
                 isRepCounted = config.isRepCounted,
                 invalidatesRep = config.invalidatesRep,
                 color = config.color,

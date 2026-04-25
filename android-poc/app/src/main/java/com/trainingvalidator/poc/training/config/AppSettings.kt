@@ -51,7 +51,7 @@ data class RangeIndicatorSettings(
 }
 
 /**
- * Angle detection settings - Used by FormValidator and PhaseStateMachine
+ * Angle detection settings - used by [JointAngleTracker], [PhaseStateMachine], and overlays
  *
  * @param hysteresisDegrees Buffer to prevent flickering when transitioning between zones
  * @param boundaryBufferDegrees Buffer around range boundaries for validation tolerance

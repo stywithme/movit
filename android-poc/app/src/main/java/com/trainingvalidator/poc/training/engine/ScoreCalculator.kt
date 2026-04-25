@@ -39,12 +39,11 @@ object ScoreCalculator {
     const val DANGER_PENALTY_PER_JOINT = 15f
     
     // ═══════════════════════════════════════════════════════════════
-    // SCORE RATES (different from StateConfig for more fair scoring)
+    // SCORE RATES (single source; [StateConfig.getRate] delegates here)
     // ═══════════════════════════════════════════════════════════════
     
     /**
-     * Get score rate for a state (for weighted calculation)
-     * These rates are more balanced than StateConfig.rate
+     * Get score rate for a state (for weighted calculation).
      */
     fun getScoreRate(state: JointState): Float {
         return when (state) {
