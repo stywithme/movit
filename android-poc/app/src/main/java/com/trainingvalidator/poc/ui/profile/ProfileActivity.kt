@@ -30,10 +30,13 @@ import com.trainingvalidator.poc.storage.AuthManager
 import com.trainingvalidator.poc.storage.UserDataCleaner
 import com.trainingvalidator.poc.training.config.SettingsManager
 import com.trainingvalidator.poc.ui.auth.SignInActivity
+import com.trainingvalidator.poc.ui.subscription.SubscriptionActivity
 import com.trainingvalidator.poc.ui.debug.DebugActivity
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import java.text.DateFormat
+import java.text.SimpleDateFormat
 import java.util.Locale
 
 /**
@@ -103,6 +106,7 @@ class ProfileActivity : AppCompatActivity() {
     override fun onResume() {
         super.onResume()
         binding.ivAvatar.bindUserAvatar(AuthManager.getAvatarUrl(this))
+        bindProMembershipUi()
     }
 
     private fun loadUserData() {
@@ -120,11 +124,38 @@ class ProfileActivity : AppCompatActivity() {
         binding.tvMinutesCount.text = AuthManager.getTotalMinutes(this).toString()
 
         binding.ivAvatar.bindUserAvatar(AuthManager.getAvatarUrl(this))
+        bindProMembershipUi()
+    }
+
+    private fun bindProMembershipUi() {
+        if (AuthManager.isProUser(this)) {
+            binding.tvProMembershipTitle.text = getString(R.string.pro_membership)
+            val exp = AuthManager.getSubscriptionExpiryIso(this)
+            binding.tvProMembershipSubtitle.text = if (!exp.isNullOrBlank()) {
+                getString(R.string.profile_pro_expires, formatProfileExpiryIso(exp))
+            } else {
+                getString(R.string.pro_membership_desc)
+            }
+        } else {
+            binding.tvProMembershipTitle.text = getString(R.string.profile_membership_free_title)
+            binding.tvProMembershipSubtitle.text = getString(R.string.profile_membership_free_desc)
+        }
+    }
+
+    private fun formatProfileExpiryIso(iso: String): String {
+        return try {
+            val cleaned = iso.take(19).replace('T', ' ')
+            val parser = SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.US)
+            val d = parser.parse(cleaned) ?: return iso
+            DateFormat.getDateInstance(DateFormat.MEDIUM, Locale.getDefault()).format(d)
+        } catch (_: Exception) {
+            iso
+        }
     }
 
     private fun setupListeners() {
         binding.btnManageSubscription.setOnClickListener {
-            Toast.makeText(this, getString(R.string.coming_soon), Toast.LENGTH_SHORT).show()
+            startActivity(Intent(this, SubscriptionActivity::class.java))
         }
 
         binding.itemExerciseSettings.setOnClickListener {

@@ -7,10 +7,22 @@ import { UpdatePlanDto } from './dto/update-plan.dto';
 export class PlanService {
     constructor(private readonly db: PrismaService) { }
 
+    private serializePlan(plan: any) {
+        if (!plan) return plan;
+        return {
+            ...plan,
+            monthlyPrice: Number(plan.monthlyPrice),
+            yearlyPrice: Number(plan.yearlyPrice),
+            discount: plan.discount == null ? 0 : Number(plan.discount),
+        };
+    }
+
     async create(createPlanDto: CreatePlanDto) {
-        return this.db.plan.create({
+        const db = this.db as any;
+        const plan = await db.plan.create({
             data: createPlanDto,
         });
+        return this.serializePlan(plan);
     }
 
     async findAll(query: any = {}) {
@@ -22,18 +34,26 @@ export class PlanService {
             where.isActive = isActive === 'true' || isActive === true;
         }
 
+        if (search) {
+            where.OR = [
+                { name: { path: ['en'], string_contains: search, mode: 'insensitive' } },
+                { name: { path: ['ar'], string_contains: search, mode: 'insensitive' } },
+            ];
+        }
+
+        const db = this.db as any;
         const [data, total] = await Promise.all([
-            this.db.plan.findMany({
+            db.plan.findMany({
                 where,
                 skip: Number(skip),
                 take: Number(limit),
                 orderBy: { createdAt: 'desc' },
             }),
-            this.db.plan.count({ where }),
+            db.plan.count({ where }),
         ]);
 
         return {
-            data,
+            data: data.map((plan: any) => this.serializePlan(plan)),
             meta: {
                 total,
                 page: Number(page),
@@ -44,7 +64,8 @@ export class PlanService {
     }
 
     async findOne(id: string) {
-        const plan = await this.db.plan.findUnique({
+        const db = this.db as any;
+        const plan = await db.plan.findUnique({
             where: { id },
         });
 
@@ -52,25 +73,29 @@ export class PlanService {
             throw new NotFoundException(`Plan with ID ${id} not found`);
         }
 
-        return plan;
+        return this.serializePlan(plan);
     }
 
     async update(id: string, updatePlanDto: UpdatePlanDto) {
         await this.findOne(id);
 
-        return this.db.plan.update({
+        const db = this.db as any;
+        const plan = await db.plan.update({
             where: { id },
             data: updatePlanDto,
         });
+        return this.serializePlan(plan);
     }
 
     async remove(id: string) {
         await this.findOne(id);
 
         // Soft delete
-        return this.db.plan.update({
+        const db = this.db as any;
+        const plan = await db.plan.update({
             where: { id },
             data: { isActive: false },
         });
+        return this.serializePlan(plan);
     }
 }

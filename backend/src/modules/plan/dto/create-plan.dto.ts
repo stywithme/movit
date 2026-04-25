@@ -3,9 +3,13 @@ export class CreatePlanDto {
     description?: any;
     monthlyPrice: number;
     yearlyPrice: number;
+    currency?: string;
     discount?: number;
     maxExercisesLimit?: number;
     maxWorkoutsLimit?: number;
     freeDoctorSessionsLimit?: number;
+    monthlyGooglePlayProductId?: string;
+    yearlyGooglePlayProductId?: string;
+    features?: any;
     isActive?: boolean;
 }

@@ -132,6 +132,10 @@ dependencies {
     implementation("com.squareup.okhttp3:okhttp:$okhttpVersion")
     implementation("com.squareup.okhttp3:logging-interceptor:$okhttpVersion")
 
+    // Subscriptions: MyFatoorah return URL (Custom Tabs) + Google Play Billing
+    implementation("androidx.browser:browser:1.8.0")
+    implementation("com.android.billingclient:billing-ktx:6.2.1")
+
     // Charts
     implementation("com.github.PhilJay:MPAndroidChart:v3.1.0")
 
