@@ -3,6 +3,7 @@ import {
     ForbiddenException,
     Injectable,
     NotFoundException,
+    ServiceUnavailableException,
 } from '@nestjs/common';
 import { PrismaService } from '@/prisma/prisma.service';
 import { CreateSubscriptionDto } from './dto/create-subscription.dto';
@@ -100,6 +101,7 @@ export class SubscriptionService {
             process.env.BACKEND_PUBLIC_URL ||
             process.env.PUBLIC_API_URL ||
             process.env.API_PUBLIC_URL ||
+            process.env.API_BASE_URL ||
             process.env.APP_URL;
         return raw ? raw.replace(/\/$/, '') : null;
     }
@@ -373,15 +375,26 @@ export class SubscriptionService {
             });
             return this.serializeCheckout(updated);
         } catch (error) {
+            const lastError = error instanceof Error ? error.message : 'Payment gateway error';
             await this.prisma.subscriptionCheckout.update({
                 where: { id: checkout.id },
                 data: {
                     status: 'failed',
                     failedAt: new Date(),
-                    lastError: error instanceof Error ? error.message : 'Payment gateway error',
+                    lastError,
                 },
             });
-            throw error;
+            if (
+                lastError.includes('MYFATOORAH_API_TOKEN') ||
+                lastError.includes('MYFATOORAH_TOKEN') ||
+                lastError.includes('MYFATOORAH_API_KEY') ||
+                lastError.includes('MyFatoorah API token is not configured')
+            ) {
+                throw new ServiceUnavailableException(
+                    'Payment gateway is not configured on the server (set MYFATOORAH_API_KEY, MYFATOORAH_API_TOKEN, or MYFATOORAH_TOKEN, and use MYFATOORAH_ENV=sandbox or MYFATOORAH_API_BASE_URL for test mode; then restart).',
+                );
+            }
+            throw new BadRequestException(lastError);
         }
     }
 
