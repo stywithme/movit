@@ -50,10 +50,15 @@ async function postToMyFatoorah(path: string, body: Record<string, unknown>) {
 
   const payload = await response.json().catch(() => null);
   if (!response.ok || payload?.IsSuccess === false) {
+    const validationErrors = Array.isArray(payload?.ValidationErrors)
+      ? payload.ValidationErrors
+        .map((item: any) => item?.Error || item?.Name || JSON.stringify(item))
+        .filter(Boolean)
+      : [];
     const message =
-      payload?.Message ||
-      payload?.ValidationErrors?.[0]?.Error ||
-      `MyFatoorah request failed with ${response.status}`;
+      validationErrors.length > 0
+        ? validationErrors.join('; ')
+        : payload?.Message || `MyFatoorah request failed with ${response.status}`;
     throw new Error(message);
   }
   return payload;
@@ -94,7 +99,6 @@ export async function createPayment(input: Record<string, unknown>): Promise<unk
     CustomerReference: input.CustomerReference || input.ExternalIdentifier,
     UserDefinedField: input.UserDefinedField || input.ExternalIdentifier,
     ExpiryDate: paymentExpiry,
-    WebhookUrl: input.WebhookUrl,
     InvoiceItems: input.InvoiceItems,
     ProcessingDetails: processingDetails,
   };
