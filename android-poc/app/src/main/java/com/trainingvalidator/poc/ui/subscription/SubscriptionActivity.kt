@@ -8,6 +8,7 @@ import android.view.LayoutInflater
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.browser.customtabs.CustomTabsIntent
+import androidx.core.content.ContextCompat
 import androidx.core.view.isVisible
 import androidx.lifecycle.lifecycleScope
 import com.android.billingclient.api.AcknowledgePurchaseParams
@@ -20,6 +21,7 @@ import com.android.billingclient.api.Purchase
 import com.android.billingclient.api.PurchasesUpdatedListener
 import com.android.billingclient.api.QueryProductDetailsParams
 import com.google.gson.JsonElement
+import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.trainingvalidator.poc.BuildConfig
 import com.trainingvalidator.poc.R
 import com.trainingvalidator.poc.databinding.ActivitySubscriptionBinding
@@ -68,9 +70,12 @@ class SubscriptionActivity : AppCompatActivity(), PurchasesUpdatedListener {
             binding.scrollContent.canScrollVertically(-1)
         }
         binding.swipeRefresh.setOnRefreshListener { loadAll(showRefreshIndicator = true) }
+        binding.btnRefreshSubscription.setOnClickListener { loadAll(showRefreshIndicator = true) }
 
         binding.chipBillingPeriod.setOnCheckedStateChangeListener { _, _ ->
             renderPlanCards()
+            renderIncludedFeatures()
+            updatePaymentOptions()
             updateSelectionStrokes()
         }
 
@@ -177,22 +182,31 @@ class SubscriptionActivity : AppCompatActivity(), PurchasesUpdatedListener {
 
     private fun applyStatus(data: com.trainingvalidator.poc.network.SubscriptionStatusDto?) {
         if (data == null) return
-        val title = when {
+        val pill = when {
             data.isPro -> getString(R.string.subscription_status_pro)
             data.pendingCheckouts.isNotEmpty() -> getString(R.string.subscription_status_pending)
             else -> getString(R.string.subscription_status_free)
         }
-        binding.tvStatusTitle.text = title
+        binding.tvStatusPill.text = pill
+        binding.tvStatusTitle.text = when {
+            data.isPro -> localizedText(data.activeSubscription?.plan?.name, currentLanguage, getString(R.string.pro_membership))
+            data.pendingCheckouts.isNotEmpty() -> getString(R.string.subscription_status_pending)
+            else -> getString(R.string.subscription_free_headline)
+        }
         val expiry = data.subscriptionExpiry
         binding.tvStatusDetail.text = when {
-            data.isPro && !expiry.isNullOrBlank() -> getString(R.string.subscription_expires, formatIsoDate(expiry))
-            data.pendingCheckouts.isNotEmpty() -> getString(R.string.subscription_payment_pending)
-            else -> ""
+            data.isPro && !expiry.isNullOrBlank() -> getString(R.string.subscription_pro_detail, formatIsoDate(expiry))
+            data.pendingCheckouts.isNotEmpty() -> getString(R.string.subscription_pending_detail)
+            else -> getString(R.string.subscription_free_detail)
         }
         val active = data.activeSubscription
         activeSubscriptionId = active?.id
-        binding.btnCancelSubscription.isVisible =
-            data.isPro && active != null && (active.gateway == "myfatoorah" || active.gateway == "google_play")
+        val canManage = data.isPro && active != null && (active.gateway == "myfatoorah" || active.gateway == "google_play")
+        binding.cardManageSubscription.isVisible = canManage
+        binding.btnCancelSubscription.isVisible = canManage
+        binding.tvManageSubscriptionDetail.text =
+            if (!expiry.isNullOrBlank()) getString(R.string.subscription_manage_detail, formatIsoDate(expiry))
+            else getString(R.string.subscription_cancel_at_period_end)
     }
 
     private fun formatIsoDate(iso: String): String {
@@ -213,6 +227,7 @@ class SubscriptionActivity : AppCompatActivity(), PurchasesUpdatedListener {
         for (plan in plans) {
             val cardBinding = ItemSubscriptionPlanBinding.inflate(inflater, binding.containerPlans, false)
             cardBinding.tvPlanTitle.text = localizedText(plan.name, lang, plan.id)
+            cardBinding.tvPlanBadge.isVisible = plan.id == selectedPlan?.id
             val desc = localizedText(plan.description, lang, "")
             if (desc.isNotBlank()) {
                 cardBinding.tvPlanDesc.isVisible = true
@@ -222,16 +237,26 @@ class SubscriptionActivity : AppCompatActivity(), PurchasesUpdatedListener {
             }
             val currency = plan.currency ?: "EGP"
             val price = if (billingPeriod() == "yearly") plan.yearlyPrice else plan.monthlyPrice
-            val suffix = if (billingPeriod() == "yearly") "/yr" else "/mo"
-            cardBinding.tvPlanPrice.text = String.format(Locale.getDefault(), "%.2f %s %s", price, currency, suffix)
+            val suffix = if (billingPeriod() == "yearly") {
+                getString(R.string.subscription_period_year)
+            } else {
+                getString(R.string.subscription_period_month)
+            }
+            cardBinding.tvPlanPrice.text = String.format(Locale.getDefault(), "%.2f %s", price, currency)
+            cardBinding.tvPlanPeriod.text = suffix
+            cardBinding.tvPlanFeatures.text = planFeatureLines(plan).take(3).joinToString("\n")
 
             cardBinding.root.setOnClickListener {
                 selectedPlan = plan
+                renderPlanCards()
+                renderIncludedFeatures()
                 updateSelectionStrokes()
             }
             cardBinding.root.tag = plan.id
             binding.containerPlans.addView(cardBinding.root)
         }
+        renderIncludedFeatures()
+        updatePaymentOptions()
         updateSelectionStrokes()
     }
 
@@ -242,6 +267,81 @@ class SubscriptionActivity : AppCompatActivity(), PurchasesUpdatedListener {
             val id = child.tag as? String
             val selected = id != null && id == selectedPlan?.id
             card.strokeWidth = if (selected) 2 else 0
+            card.setCardBackgroundColor(
+                ContextCompat.getColor(
+                    this,
+                    if (selected) R.color.surface_elevated else R.color.surface,
+                ),
+            )
+        }
+    }
+
+    private fun renderIncludedFeatures() {
+        val plan = selectedPlan
+        binding.tvIncludedFeatures.text =
+            if (plan == null) defaultFeatureLines().joinToString("\n")
+            else planFeatureLines(plan).joinToString("\n")
+    }
+
+    private fun updatePaymentOptions() {
+        val plan = selectedPlan
+        val googleProductId = if (billingPeriod() == "yearly") {
+            plan?.yearlyGooglePlayProductId
+        } else {
+            plan?.monthlyGooglePlayProductId
+        }
+        binding.btnPayMyFatoorah.isEnabled = plan != null
+        binding.btnPayGooglePlay.isVisible = !googleProductId.isNullOrBlank()
+        binding.tvPaymentSubtitle.text = if (plan == null) {
+            getString(R.string.subscription_payment_subtitle)
+        } else {
+            val name = localizedText(plan.name, currentLanguage, getString(R.string.pro_membership))
+            val price = if (billingPeriod() == "yearly") plan.yearlyPrice else plan.monthlyPrice
+            val currency = plan.currency ?: "EGP"
+            getString(R.string.subscription_payment_selected, name, String.format(Locale.getDefault(), "%.2f %s", price, currency))
+        }
+    }
+
+    private fun planFeatureLines(plan: SubscriptionPlanDto): List<String> {
+        val localized = localizedFeatureLines(plan.features)
+        val lines = mutableListOf<String>()
+        if (localized.isNotEmpty()) lines += localized
+        if (plan.maxWorkoutsLimit > 0) lines += "✓ ${getString(R.string.subscription_feature_workouts, plan.maxWorkoutsLimit)}"
+        if (plan.maxExercisesLimit > 0) lines += "✓ ${getString(R.string.subscription_feature_exercises, plan.maxExercisesLimit)}"
+        if (plan.freeDoctorSessionsLimit > 0) {
+            lines += "✓ ${getString(R.string.subscription_feature_doctor_sessions, plan.freeDoctorSessionsLimit)}"
+        }
+        if (lines.isEmpty()) lines += defaultFeatureLines()
+        return lines.distinct()
+    }
+
+    private fun defaultFeatureLines(): List<String> = listOf(
+        "✓ ${getString(R.string.subscription_feature_ai)}",
+        "✓ ${getString(R.string.subscription_feature_reports)}",
+        "✓ ${getString(R.string.subscription_feature_programs)}",
+        "✓ ${getString(R.string.subscription_feature_video)}",
+    )
+
+    private fun localizedFeatureLines(features: JsonElement?): List<String> {
+        if (features == null || features.isJsonNull) return emptyList()
+        val lang = currentLanguage
+        return when {
+            features.isJsonArray -> features.asJsonArray.mapNotNull { feature ->
+                localizedText(feature, lang, "").takeIf { it.isNotBlank() }?.let { "✓ $it" }
+            }
+            features.isJsonObject -> {
+                val obj = features.asJsonObject
+                val localized = obj.get(if (lang.startsWith("ar")) "ar" else "en")
+                when {
+                    localized != null && localized.isJsonArray -> localized.asJsonArray.mapNotNull {
+                        localizedText(it, lang, "").takeIf { value -> value.isNotBlank() }?.let { value -> "✓ $value" }
+                    }
+                    localized != null && localized.isJsonPrimitive -> listOf("✓ ${localized.asString}")
+                    else -> emptyList()
+                }
+            }
+            features.isJsonPrimitive -> listOf("✓ ${features.asString}")
+            else -> emptyList()
         }
     }
 
@@ -381,6 +481,17 @@ class SubscriptionActivity : AppCompatActivity(), PurchasesUpdatedListener {
     }
 
     private fun cancelRenewal() {
+        MaterialAlertDialogBuilder(this)
+            .setTitle(R.string.subscription_cancel_title)
+            .setMessage(R.string.subscription_cancel_message)
+            .setNegativeButton(R.string.subscription_keep_plan, null)
+            .setPositiveButton(R.string.subscription_confirm_cancel) { _, _ ->
+                performCancelRenewal()
+            }
+            .show()
+    }
+
+    private fun performCancelRenewal() {
         lifecycleScope.launch {
             try {
                 val body = CancelSubscriptionRequest(

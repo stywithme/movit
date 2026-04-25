@@ -7,9 +7,10 @@
     android:layout_marginBottom="@dimen/spacing_sm"
     android:clickable="true"
     android:focusable="true"
+    android:foreground="?attr/selectableItemBackground"
     app:cardBackgroundColor="@color/surface"
-    app:cardCornerRadius="14dp"
-    app:cardElevation="1dp"
+    app:cardCornerRadius="@dimen/radius_lg"
+    app:cardElevation="0dp"
     app:strokeColor="@color/primary"
     app:strokeWidth="0dp">
 
@@ -17,34 +18,83 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="vertical"
-        android:padding="@dimen/spacing_md">
+        android:padding="@dimen/spacing_base">
 
-        <TextView
-            android:id="@+id/tvPlanTitle"
-            style="@style/TextAppearance.WayToFix.Headline3"
+        <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:textColor="@color/text_primary"
-            tools:text="Pro" />
+            android:gravity="center_vertical"
+            android:orientation="horizontal">
 
-        <TextView
-            android:id="@+id/tvPlanPrice"
-            style="@style/TextAppearance.WayToFix.Body1"
+            <TextView
+                android:id="@+id/tvPlanTitle"
+                style="@style/TextAppearance.WayToFix.Headline3"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:textColor="@color/text_primary"
+                tools:text="Pro" />
+
+            <TextView
+                android:id="@+id/tvPlanBadge"
+                style="@style/TextAppearance.WayToFix.Caption"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:background="@drawable/bg_chip_accent"
+                android:paddingHorizontal="@dimen/spacing_sm"
+                android:paddingVertical="@dimen/spacing_xs"
+                android:text="@string/subscription_selected"
+                android:textColor="@color/primary"
+                android:visibility="gone"
+                tools:visibility="visible" />
+        </LinearLayout>
+
+        <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="@dimen/spacing_xs"
-            android:textColor="@color/primary"
-            tools:text="199 EGP / mo" />
+            android:layout_marginTop="@dimen/spacing_sm"
+            android:baselineAligned="false"
+            android:gravity="bottom"
+            android:orientation="horizontal">
+
+            <TextView
+                android:id="@+id/tvPlanPrice"
+                style="@style/TextAppearance.WayToFix.Headline2"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:textColor="@color/primary"
+                tools:text="99.00 KWD" />
+
+            <TextView
+                android:id="@+id/tvPlanPeriod"
+                style="@style/TextAppearance.WayToFix.Body2"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="@dimen/spacing_xs"
+                android:paddingBottom="2dp"
+                android:textColor="@color/text_secondary"
+                tools:text="/mo" />
+        </LinearLayout>
 
         <TextView
             android:id="@+id/tvPlanDesc"
             style="@style/TextAppearance.WayToFix.Body2"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="@dimen/spacing_xs"
+            android:layout_marginTop="@dimen/spacing_sm"
             android:textColor="@color/text_secondary"
             android:visibility="gone"
-            tools:text="Description"
+            tools:text="Everything you need for guided training."
             tools:visibility="visible" />
+
+        <TextView
+            android:id="@+id/tvPlanFeatures"
+            style="@style/TextAppearance.WayToFix.Caption"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="@dimen/spacing_sm"
+            android:lineSpacingExtra="3dp"
+            android:textColor="@color/text_hint"
+            tools:text="✓ Advanced reports\n✓ Personalized programs" />
     </LinearLayout>
 </com.google.android.material.card.MaterialCardView>

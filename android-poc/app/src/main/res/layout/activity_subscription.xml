@@ -32,9 +32,14 @@
             android:text="@string/plans_subscriptions"
             android:textColor="@color/text_primary" />
 
-        <View
+        <ImageButton
+            android:id="@+id/btnRefreshSubscription"
             android:layout_width="48dp"
-            android:layout_height="48dp" />
+            android:layout_height="48dp"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:contentDescription="@string/subscription_refresh"
+            android:src="@drawable/ic_refresh"
+            app:tint="@color/text_primary" />
     </LinearLayout>
 
     <androidx.swiperefreshlayout.widget.SwipeRefreshLayout
@@ -48,74 +53,117 @@
             android:layout_width="match_parent"
             android:layout_height="match_parent"
             android:clipToPadding="false"
-            android:paddingBottom="@dimen/spacing_xl">
+            android:paddingBottom="@dimen/spacing_2xl">
 
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:orientation="vertical"
-                android:paddingHorizontal="@dimen/spacing_md">
+                android:paddingHorizontal="@dimen/screen_padding_horizontal">
 
                 <com.google.android.material.card.MaterialCardView
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginBottom="@dimen/spacing_md"
-                    app:cardBackgroundColor="@color/surface"
-                    app:cardCornerRadius="16dp"
-                    app:cardElevation="2dp">
+                    app:cardBackgroundColor="@color/surface_elevated"
+                    app:cardCornerRadius="@dimen/radius_xl"
+                    app:cardElevation="0dp"
+                    app:strokeColor="@color/surface_border"
+                    app:strokeWidth="@dimen/border_thin">
 
                     <LinearLayout
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:orientation="vertical"
-                        android:padding="@dimen/spacing_md">
+                        android:padding="@dimen/spacing_lg">
 
                         <TextView
+                            android:id="@+id/tvStatusPill"
                             style="@style/TextAppearance.WayToFix.Caption"
-                            android:layout_width="match_parent"
+                            android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:text="@string/subscription_current_status"
-                            android:textColor="@color/text_secondary" />
+                            android:background="@drawable/bg_chip_success"
+                            android:paddingHorizontal="@dimen/spacing_md"
+                            android:paddingVertical="@dimen/spacing_xs"
+                            android:text="@string/subscription_status_free"
+                            android:textColor="@color/primary"
+                            tools:text="Pro active" />
 
                         <TextView
                             android:id="@+id/tvStatusTitle"
-                            style="@style/TextAppearance.WayToFix.Headline3"
+                            style="@style/TextAppearance.WayToFix.Headline1"
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
-                            android:layout_marginTop="@dimen/spacing_xs"
+                            android:layout_marginTop="@dimen/spacing_md"
                             android:textColor="@color/text_primary"
-                            tools:text="Pro active" />
+                            tools:text="Train without limits" />
 
                         <TextView
                             android:id="@+id/tvStatusDetail"
                             style="@style/TextAppearance.WayToFix.Body2"
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
-                            android:layout_marginTop="@dimen/spacing_xs"
+                            android:layout_marginTop="@dimen/spacing_sm"
                             android:textColor="@color/text_secondary"
-                            tools:text="Renews …" />
+                            tools:text="Your Pro plan is active until May 25, 2026." />
+
+                        <LinearLayout
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="@dimen/spacing_lg"
+                            android:orientation="horizontal">
+
+                            <TextView
+                                style="@style/TextAppearance.WayToFix.Caption"
+                                android:layout_width="0dp"
+                                android:layout_height="wrap_content"
+                                android:layout_marginEnd="@dimen/spacing_sm"
+                                android:layout_weight="1"
+                                android:background="@drawable/bg_glass_pill"
+                                android:padding="@dimen/spacing_sm"
+                                android:text="@string/subscription_benefit_reports"
+                                android:textColor="@color/text_primary" />
+
+                            <TextView
+                                style="@style/TextAppearance.WayToFix.Caption"
+                                android:layout_width="0dp"
+                                android:layout_height="wrap_content"
+                                android:layout_weight="1"
+                                android:background="@drawable/bg_glass_pill"
+                                android:padding="@dimen/spacing_sm"
+                                android:text="@string/subscription_benefit_programs"
+                                android:textColor="@color/text_primary" />
+                        </LinearLayout>
                     </LinearLayout>
                 </com.google.android.material.card.MaterialCardView>
+
+                <TextView
+                    style="@style/TextAppearance.WayToFix.Headline3"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="@dimen/spacing_2xl"
+                    android:text="@string/subscription_choose_plan"
+                    android:textColor="@color/text_primary" />
 
                 <TextView
                     style="@style/TextAppearance.WayToFix.Body2"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginBottom="@dimen/spacing_sm"
-                    android:text="@string/subscription_billing_period"
+                    android:layout_marginTop="@dimen/spacing_xs"
+                    android:text="@string/subscription_choose_plan_subtitle"
                     android:textColor="@color/text_secondary" />
 
                 <com.google.android.material.chip.ChipGroup
                     android:id="@+id/chipBillingPeriod"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
+                    android:layout_marginTop="@dimen/spacing_md"
                     android:layout_marginBottom="@dimen/spacing_md"
-                    app:singleSelection="true"
-                    app:selectionRequired="true">
+                    app:selectionRequired="true"
+                    app:singleSelection="true">
 
                     <com.google.android.material.chip.Chip
                         android:id="@+id/chipMonthly"
-                        style="@style/Widget.MaterialComponents.Chip.Choice"
+                        style="@style/Widget.WayToFix.Chip.Filter"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:checked="true"
@@ -123,19 +171,11 @@
 
                     <com.google.android.material.chip.Chip
                         android:id="@+id/chipYearly"
-                        style="@style/Widget.MaterialComponents.Chip.Choice"
+                        style="@style/Widget.WayToFix.Chip.Filter"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:text="@string/subscription_yearly" />
                 </com.google.android.material.chip.ChipGroup>
-
-                <TextView
-                    style="@style/TextAppearance.WayToFix.Body2"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginBottom="@dimen/spacing_sm"
-                    android:text="@string/subscription_choose_plan"
-                    android:textColor="@color/text_secondary" />
 
                 <LinearLayout
                     android:id="@+id/containerPlans"
@@ -143,31 +183,137 @@
                     android:layout_height="wrap_content"
                     android:orientation="vertical" />
 
-                <com.google.android.material.button.MaterialButton
-                    android:id="@+id/btnPayMyFatoorah"
-                    style="@style/Widget.MaterialComponents.Button"
+                <com.google.android.material.card.MaterialCardView
+                    android:id="@+id/cardPlanFeatures"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="@dimen/spacing_md"
-                    android:text="@string/subscription_pay_myfatoorah" />
+                    android:layout_marginTop="@dimen/spacing_lg"
+                    app:cardBackgroundColor="@color/surface"
+                    app:cardCornerRadius="@dimen/radius_lg"
+                    app:cardElevation="0dp"
+                    app:strokeColor="@color/surface_border"
+                    app:strokeWidth="@dimen/border_thin">
 
-                <com.google.android.material.button.MaterialButton
-                    android:id="@+id/btnPayGooglePlay"
-                    style="@style/Widget.MaterialComponents.Button.OutlinedButton"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="@dimen/spacing_sm"
-                    android:text="@string/subscription_pay_google_play" />
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="vertical"
+                        android:padding="@dimen/spacing_base">
 
-                <com.google.android.material.button.MaterialButton
-                    android:id="@+id/btnCancelSubscription"
-                    style="@style/Widget.MaterialComponents.Button.TextButton"
+                        <TextView
+                            style="@style/TextAppearance.WayToFix.Headline3"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:text="@string/subscription_included_title"
+                            android:textColor="@color/text_primary" />
+
+                        <TextView
+                            android:id="@+id/tvIncludedFeatures"
+                            style="@style/TextAppearance.WayToFix.Body2"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="@dimen/spacing_sm"
+                            android:lineSpacingExtra="4dp"
+                            android:textColor="@color/text_secondary"
+                            tools:text="✓ AI form analysis\n✓ Advanced reports\n✓ Personalized programs" />
+                    </LinearLayout>
+                </com.google.android.material.card.MaterialCardView>
+
+                <com.google.android.material.card.MaterialCardView
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="@dimen/spacing_sm"
-                    android:text="@string/subscription_cancel_at_period_end"
+                    android:layout_marginTop="@dimen/spacing_lg"
+                    app:cardBackgroundColor="@color/surface"
+                    app:cardCornerRadius="@dimen/radius_lg"
+                    app:cardElevation="0dp"
+                    app:strokeColor="@color/surface_border"
+                    app:strokeWidth="@dimen/border_thin">
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="vertical"
+                        android:padding="@dimen/spacing_base">
+
+                        <TextView
+                            style="@style/TextAppearance.WayToFix.Headline3"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:text="@string/subscription_payment_title"
+                            android:textColor="@color/text_primary" />
+
+                        <TextView
+                            android:id="@+id/tvPaymentSubtitle"
+                            style="@style/TextAppearance.WayToFix.Body2"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="@dimen/spacing_xs"
+                            android:text="@string/subscription_payment_subtitle"
+                            android:textColor="@color/text_secondary" />
+
+                        <com.google.android.material.button.MaterialButton
+                            android:id="@+id/btnPayMyFatoorah"
+                            style="@style/Widget.WayToFix.Button.Primary"
+                            android:layout_width="match_parent"
+                            android:layout_height="@dimen/button_height"
+                            android:layout_marginTop="@dimen/spacing_base"
+                            android:text="@string/subscription_pay_myfatoorah" />
+
+                        <com.google.android.material.button.MaterialButton
+                            android:id="@+id/btnPayGooglePlay"
+                            style="@style/Widget.WayToFix.Button.Secondary"
+                            android:layout_width="match_parent"
+                            android:layout_height="@dimen/button_height"
+                            android:layout_marginTop="@dimen/spacing_sm"
+                            android:text="@string/subscription_pay_google_play" />
+                    </LinearLayout>
+                </com.google.android.material.card.MaterialCardView>
+
+                <com.google.android.material.card.MaterialCardView
+                    android:id="@+id/cardManageSubscription"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="@dimen/spacing_lg"
                     android:visibility="gone"
-                    tools:visibility="visible" />
+                    app:cardBackgroundColor="@color/surface"
+                    app:cardCornerRadius="@dimen/radius_lg"
+                    app:cardElevation="0dp"
+                    app:strokeColor="@color/surface_border"
+                    app:strokeWidth="@dimen/border_thin"
+                    tools:visibility="visible">
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="vertical"
+                        android:padding="@dimen/spacing_base">
+
+                        <TextView
+                            style="@style/TextAppearance.WayToFix.Headline3"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:text="@string/subscription_manage_title"
+                            android:textColor="@color/text_primary" />
+
+                        <TextView
+                            android:id="@+id/tvManageSubscriptionDetail"
+                            style="@style/TextAppearance.WayToFix.Body2"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="@dimen/spacing_xs"
+                            android:textColor="@color/text_secondary"
+                            tools:text="Your access remains active until the end of the current period." />
+
+                        <com.google.android.material.button.MaterialButton
+                            android:id="@+id/btnCancelSubscription"
+                            style="@style/Widget.MaterialComponents.Button.TextButton"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="@dimen/spacing_sm"
+                            android:text="@string/subscription_cancel_at_period_end"
+                            android:textColor="@color/error" />
+                    </LinearLayout>
+                </com.google.android.material.card.MaterialCardView>
             </LinearLayout>
         </androidx.core.widget.NestedScrollView>
     </androidx.swiperefreshlayout.widget.SwipeRefreshLayout>
