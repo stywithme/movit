@@ -3,6 +3,7 @@ package com.trainingvalidator.poc.training.feedback
 import com.trainingvalidator.poc.training.engine.SceneAxisWarning
 import com.trainingvalidator.poc.training.engine.Phase
 import com.trainingvalidator.poc.training.engine.PositionError
+import com.trainingvalidator.poc.training.models.CheckSeverity
 import com.trainingvalidator.poc.training.models.JointError
 import com.trainingvalidator.poc.training.models.JointState
 import com.trainingvalidator.poc.training.models.LocalizedText
@@ -34,15 +35,6 @@ sealed class FeedbackEvent {
         val worstState: JointState? = null,
         override val timestamp: Long = System.currentTimeMillis(),
         override val priority: FeedbackPriority = FeedbackPriority.MEDIUM
-    ) : FeedbackEvent()
-    
-    /**
-     * Joint error event (real-time feedback)
-     */
-    data class JointErrorDetected(
-        val error: JointError,
-        override val timestamp: Long = System.currentTimeMillis(),
-        override val priority: FeedbackPriority = FeedbackPriority.HIGH
     ) : FeedbackEvent()
     
     /**
@@ -109,33 +101,31 @@ sealed class FeedbackEvent {
         override val priority: FeedbackPriority = FeedbackPriority.HIGH
     ) : FeedbackEvent()
     
-    // ==================== Position-based Events ====================
+    // ==================== Joint quality (state messages + form errors) ====================
     
     /**
-     * Position error detected (severity: ERROR - affects rep correctness)
+     * Real-time joint quality: informational state lines or [JointError] (WARNING/DANGER, etc.).
+     * Replaces the former separate state-message and joint-error event types in the public taxonomy.
      */
-    data class PositionErrorDetected(
-        val error: PositionError,
-        override val timestamp: Long = System.currentTimeMillis(),
-        override val priority: FeedbackPriority = FeedbackPriority.HIGH
-    ) : FeedbackEvent()
-    
-    /**
-     * Position warning detected (severity: WARNING - form feedback only)
-     */
-    data class PositionWarningDetected(
-        val error: PositionError,
+    data class JointQuality(
+        val content: JointQualityContent,
         override val timestamp: Long = System.currentTimeMillis(),
         override val priority: FeedbackPriority = FeedbackPriority.MEDIUM
     ) : FeedbackEvent()
     
+    // ==================== Position-based (single type; severity on [PositionError]) ====================
+    
     /**
-     * Position tip detected (severity: TIP - improvement suggestion)
+     * One position / alignment check. Use [PositionError.severity] for ERROR vs WARNING vs TIP.
      */
-    data class PositionTipDetected(
-        val error: PositionError,
+    data class PositionCheckFeedback(
+        val check: PositionError,
         override val timestamp: Long = System.currentTimeMillis(),
-        override val priority: FeedbackPriority = FeedbackPriority.LOW
+        override val priority: FeedbackPriority = when (check.severity) {
+            CheckSeverity.ERROR -> FeedbackPriority.HIGH
+            CheckSeverity.WARNING -> FeedbackPriority.MEDIUM
+            CheckSeverity.TIP -> FeedbackPriority.LOW
+        }
     ) : FeedbackEvent()
     
     /**
@@ -182,25 +172,22 @@ sealed class FeedbackEvent {
         override val priority: FeedbackPriority = FeedbackPriority.MEDIUM
     ) : FeedbackEvent()
     
-    // ==================== STATE-BASED Events ====================
-    
-    /**
-     * Joint state message - state-based feedback (warning/pad/normal/perfect)
-     * 
-     * This is emitted when a joint enters or stays in a state that has a message.
-     * DANGER state is excluded (handled via _isDangerActive StateFlow + JointErrorDetected).
-     * 
-     * The zone field indicates whether the joint is in UP or DOWN position,
-     * allowing for zone-specific messages in Up&Down exercises.
-     */
-    data class JointStateMessage(
+}
+
+/**
+ * Unified payload for [FeedbackEvent.JointQuality] (per-frame guidance vs errors).
+ */
+sealed class JointQualityContent {
+    data class StateMessage(
         val jointCode: String,
         val state: JointState,
         val zone: ZoneType,
-        val message: LocalizedText,
-        override val timestamp: Long = System.currentTimeMillis(),
-        override val priority: FeedbackPriority = FeedbackPriority.MEDIUM
-    ) : FeedbackEvent()
+        val message: LocalizedText
+    ) : JointQualityContent()
+
+    data class Error(
+        val error: JointError
+    ) : JointQualityContent()
 }
 
 /**

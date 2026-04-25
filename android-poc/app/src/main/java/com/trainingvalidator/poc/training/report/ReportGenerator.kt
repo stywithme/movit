@@ -209,12 +209,13 @@ object ReportGenerator {
         val cameraWarnings = engine.getCameraWarningCount()
 
         val holdData = if (engine.isHoldExercise) {
+            val hs = engine.holdStatus.value
             HoldData(
                 targetMs = engine.getTargetDurationMs(),
-                achievedMs = engine.holdElapsedMs.value ?: 0L,
-                formQuality = engine.holdFormQuality.value ?: 1f,
+                achievedMs = hs?.elapsedMs ?: 0L,
+                formQuality = hs?.formQuality ?: 1f,
                 gracePeriodsUsed = engine.getGracePeriodCount(),
-                jointErrorMap = engine.holdJointErrorMap.value ?: emptyMap()
+                jointErrorMap = hs?.jointErrorMap ?: emptyMap()
             )
         } else null
 

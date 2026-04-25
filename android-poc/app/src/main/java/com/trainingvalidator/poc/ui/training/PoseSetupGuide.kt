@@ -163,20 +163,17 @@ class PoseSetupGuide(
             emptyList()
         }
 
-        // Visibility-only confirmation: all PRIMARY joints must be visible
-        // (angle computable = all 3 landmarks have sufficient visibility).
-        // No angle-range validation — just presence in the frame.
-        //
-        // Any-Side exception: for a bilateral pair whose BOTH joints are tagged
-        // `any_side`, the setup phase accepts either side being visible (user
-        // may deliberately present a side-view where the far side is hidden).
-        val guidanceByJoint = jointGuidances.associateBy { it.jointCode }
+        // Start-pose confirmation: all required PRIMARY joints must be in the green
+        // startPose band. Any-Side pairs accept either side when that side is green.
+        val startPoseReadyByJoint = jointGuidances
+            .filter { it.level == GuidanceLevel.GREEN }
+            .associateBy { it.jointCode }
         val primaryJoints = variant.trackedJoints
             .filter { it.role == JointRole.PRIMARY }
             .ifEmpty { variant.trackedJoints }
 
         val requiredJointsPresent = phase == SetupPhase.ANGLES &&
-                allPrimaryJointsPresent(primaryJoints, guidanceByJoint)
+                allPrimaryJointsPresent(primaryJoints, startPoseReadyByJoint)
 
         jointWindow.add(requiredJointsPresent)
 
@@ -205,7 +202,7 @@ class PoseSetupGuide(
             .maxByOrNull { it.distance }
 
         if (progress.isConfirmed) {
-            Log.d(TAG, "Pose confirmed via rolling window (visibility-only)")
+            Log.d(TAG, "Pose confirmed via rolling window (startPose-ready)")
         }
 
         return SetupResult(
@@ -252,11 +249,13 @@ class PoseSetupGuide(
                 }
             val treatAsLenientPair = explicitAnySidePair ||
                 (isAnySideExercise && partnerInPrimaries)
-            if (treatAsLenientPair && partnerCode != null) {
+            if (treatAsLenientPair) {
+                // `treatAsLenientPair` implies a paired primary; if `pairedWith` is missing, fail closed.
+                val partner = partnerCode ?: return false
                 visited.add(joint.joint)
-                visited.add(partnerCode)
+                visited.add(partner)
                 val ok = guidanceByJoint.containsKey(joint.joint) ||
-                    guidanceByJoint.containsKey(partnerCode)
+                    guidanceByJoint.containsKey(partner)
                 if (!ok) return false
             } else {
                 visited.add(joint.joint)

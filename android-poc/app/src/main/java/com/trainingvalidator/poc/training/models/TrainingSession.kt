@@ -1,6 +1,7 @@
 package com.trainingvalidator.poc.training.models
 
 import com.trainingvalidator.poc.training.engine.PositionError
+import com.trainingvalidator.poc.training.engine.ScoreCalculator
 import com.trainingvalidator.poc.training.report.PerformanceRating
 
 // NOTE: TrainingSession class has been REMOVED as it duplicated RepCounter logic.
@@ -34,7 +35,7 @@ enum class RepQuality {
  * - isCounted: Whether this rep is quality-counted (PERFECT/NORMAL/PAD)
  * - isInvalidated: Whether this rep was invalidated by DANGER state
  * 
- * @param errors Angle-based errors from FormValidator
+ * @param errors Angle-based errors from [JointErrorCollection] / [JointStateInfo] path
  * @param positionErrors Position-based errors from PositionValidator (severity: ERROR only)
  * @param positionWarningCount Count of WARNING-severity position check violations during this rep
  * @param positionTipCount Count of TIP-severity position check violations during this rep
@@ -80,7 +81,7 @@ data class RepResult(
             val config = StateConfig.getConfig(worstState)
             return RepResult(
                 repNumber = repNumber,
-                score = config.rate.coerceAtLeast(0f),
+                score = ScoreCalculator.getScoreRate(worstState).coerceAtLeast(0f),
                 worstState = worstState,
                 isCounted = config.isRepCounted,
                 isInvalidated = config.invalidatesRep,

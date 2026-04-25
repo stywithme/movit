@@ -1,13 +1,12 @@
 package com.trainingvalidator.poc.training.engine
 
-import com.trainingvalidator.poc.training.config.SettingsManager
 import java.util.ArrayDeque
 
 /**
  * AngleSmoother - Centralized angle smoothing layer
  * 
  * Single Source of Truth for smoothed angles.
- * All components (PhaseStateMachine, FormValidator, UI) should use
+ * All components (PhaseStateMachine, JointEvaluator, UI) should use
  * smoothed angles from this class to ensure consistency.
  * 
  * Smoothing Algorithm:
@@ -20,7 +19,7 @@ import java.util.ArrayDeque
  * 
  * Usage:
  * ```kotlin
- * val smoother = AngleSmoother()
+ * val smoother = AngleSmoother(timingPolicy.smoothingWindowSize)
  * 
  * // In processFrame:
  * val smoothedAngles = smoother.smooth(rawAngles)
@@ -37,7 +36,7 @@ import java.util.ArrayDeque
  * - O(1) operations for high-frequency frame processing
  */
 class AngleSmoother(
-    private val windowSize: Int = SettingsManager.getSmoothingWindowSize()
+    private val windowSize: Int
 ) {
     
     companion object {

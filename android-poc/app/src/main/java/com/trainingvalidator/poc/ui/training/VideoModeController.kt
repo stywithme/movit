@@ -370,7 +370,7 @@ class VideoModeController(
             exerciseName = exerciseConfig.name,
             videoUri = uri,
             videoDurationMs = getDuration(),
-            holdDurationMs = if (engine.isHoldExercise) engine.holdElapsedMs.value else null,
+            holdDurationMs = if (engine.isHoldExercise) engine.holdStatus.value?.elapsedMs else null,
             holdTargetMs = if (engine.isHoldExercise) engine.getTargetDurationMs() else null,
             gracePeriodsUsed = if (engine.isHoldExercise) engine.getGracePeriodCount() else null,
             holdCompleted = if (engine.isHoldExercise) engine.isHoldCompleted() else null

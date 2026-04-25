@@ -11,8 +11,8 @@ import kotlin.math.sqrt
 /**
  * PositionValidator - Validates position-based checks
  * 
- * Works alongside FormValidator to provide comprehensive exercise validation.
- * FormValidator handles angle-based checks, PositionValidator handles position-based.
+ * Works alongside [JointEvaluator] (angle/quality) for full exercise feedback.
+ * Joint quality uses state-based ranges; PositionValidator handles world/landmark checks.
  * 
  * Features:
  * - Camera-aware axis selection (FORWARD/VERTICAL/SIDEWAYS)

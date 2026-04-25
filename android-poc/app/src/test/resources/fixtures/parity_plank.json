@@ -1,0 +1,23 @@
+{
+  "name": { "en": "Parity Plank", "ar": "ت" },
+  "category": { "code": "test", "name": { "en": "Test", "ar": "ت" } },
+  "countingMethod": "hold",
+  "repCountingConfig": { "duration": 10, "gracePeriodMs": 2000 },
+  "poseVariants": [
+    {
+      "name": { "en": "Prone", "ar": "ن" },
+      "cameraPosition": "front_view",
+      "trackedJoints": [
+        {
+          "joint": "right_elbow",
+          "role": "primary",
+          "startPose": { "min": 80, "max": 100 },
+          "range": {
+            "perfect": { "min": 80, "max": 100 },
+            "normal": { "min": 70, "max": 110 }
+          }
+        }
+      ]
+    }
+  ]
+}

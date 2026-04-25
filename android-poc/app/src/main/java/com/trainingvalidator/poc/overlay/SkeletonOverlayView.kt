@@ -18,7 +18,6 @@ import com.trainingvalidator.poc.pose.BodyLandmarks
 import com.trainingvalidator.poc.pose.JointLandmarkMapping
 import com.trainingvalidator.poc.training.config.SettingsManager
 import com.trainingvalidator.poc.training.engine.CameraPositionDetector
-import com.trainingvalidator.poc.training.engine.JointArrowInfo
 import com.trainingvalidator.poc.training.engine.PositionError
 import com.trainingvalidator.poc.training.models.CheckSeverity
 import com.trainingvalidator.poc.training.models.JointState
@@ -187,13 +186,11 @@ class SkeletonOverlayView @JvmOverloads constructor(
     private var isFrontCamera: Boolean = false  // For mirroring tracked indices
     private var isBilateralFlipped: Boolean = false  // For bilateral side flipping
     
-    // Joint state info for each tracked joint (calculated by FormValidator)
+    // Joint state info for each tracked joint (from [JointStateInfo] / [JointEvaluator])
     // NEW: Uses JointStateInfo from unified state system
     private var jointStateInfos: Map<String, JointStateInfo> = emptyMap()
     
     // Legacy: kept for backward compatibility during migration
-    @Deprecated("Use jointStateInfos instead")
-    private var jointArrowInfos: Map<String, JointArrowInfo> = emptyMap()
     
     // Error state - which joints have errors (DANGER or WARNING)
     private var errorJointCodes: Set<String> = emptySet()
@@ -564,38 +561,6 @@ class SkeletonOverlayView @JvmOverloads constructor(
     }
     
     /**
-     * Update with arrow infos for direction feedback
-     * @deprecated Use updateWithStateInfos() instead
-     */
-    @Suppress("DEPRECATION")
-    @Deprecated("Use updateWithStateInfos() instead")
-    fun updateWithArrowInfos(
-        smoothedLandmarks: List<SmoothedLandmark>?,
-        inputImageWidth: Int = 1,
-        inputImageHeight: Int = 1,
-        angles: JointAngles? = null,
-        arrowInfos: Map<String, JointArrowInfo>,
-        positionErrors: List<PositionError> = emptyList()
-    ) {
-        landmarks = smoothedLandmarks
-        val dimensionsChanged = imageWidth != inputImageWidth || imageHeight != inputImageHeight
-        imageWidth = inputImageWidth
-        imageHeight = inputImageHeight
-        jointAngles = angles
-        jointArrowInfos = arrowInfos
-        this.positionErrors = positionErrors
-        // OPTIMIZED: Only recalculate scale factor if dimensions changed
-        if (dimensionsChanged) {
-            recalculateScaleFactor()
-        }
-        
-        // Collect error joints (TOO_HIGH or TOO_LOW zones)
-        errorJointCodes = arrowInfos.filter { it.value.isError }.keys
-        
-        invalidate()
-    }
-    
-    /**
      * Set training mode with tracked landmarks
      * 
      * @param enabled Whether training mode is enabled
@@ -713,18 +678,6 @@ class SkeletonOverlayView @JvmOverloads constructor(
         invalidate()
     }
     
-    /**
-     * Update arrow infos (for real-time feedback)
-     * @deprecated Use setStateInfos() instead
-     */
-    @Suppress("DEPRECATION")
-    @Deprecated("Use setStateInfos() instead")
-    fun setArrowInfos(arrowInfos: Map<String, JointArrowInfo>) {
-        jointArrowInfos = arrowInfos
-        errorJointCodes = arrowInfos.filter { it.value.isError }.keys
-        invalidate()
-    }
-
     fun setShowAngles(show: Boolean) {
         showAngles = show
         invalidate()
@@ -797,7 +750,6 @@ class SkeletonOverlayView @JvmOverloads constructor(
         landmarks = null
         jointAngles = null
         jointStateInfos = emptyMap()
-        jointArrowInfos = emptyMap()
         errorJointCodes = emptySet()
         anySideDimmedJointCodes = emptySet()
         positionErrors = emptyList()
@@ -1344,14 +1296,14 @@ class SkeletonOverlayView @JvmOverloads constructor(
                         val endJointCode = landmarkIndexToJointCode(endIdx)
                         
                         // For front camera, we need to look up the mirrored joint code
-                        // because jointArrowInfos uses the "logical" joint (after angle mirroring)
+                        // (logical joint name after angle mirroring).
                         val effectiveStartJointCode = getEffectiveJointCode(startJointCode)
                         val effectiveEndJointCode = getEffectiveJointCode(endJointCode)
                         
                         // Find the relevant joint for this connection (if any)
                         val relevantJointCode = when {
-                            effectiveStartJointCode in jointArrowInfos -> effectiveStartJointCode
-                            effectiveEndJointCode in jointArrowInfos -> effectiveEndJointCode
+                            effectiveStartJointCode in jointStateInfos -> effectiveStartJointCode
+                            effectiveEndJointCode in jointStateInfos -> effectiveEndJointCode
                             else -> null
                         }
                         
@@ -1360,15 +1312,13 @@ class SkeletonOverlayView @JvmOverloads constructor(
                             (startIdx in trackedLandmarkIndices || endIdx in trackedLandmarkIndices)
                         
                         // Get gradient color and state for tracked joints
-                        val arrowInfo = relevantJointCode?.let { jointArrowInfos[it] }
-                        val gradientColor = arrowInfo?.let { getGradientColorForPosition(it) }
+                        val stInfo = relevantJointCode?.let { jointStateInfos[it] }
+                        val gradientColor = stInfo?.let { getGradientColorForState(it) }
                         
-                        // Determine opacity based on joint state
-                        // Lower opacity (50%) for correct/warning state to focus on Arc
-                        // Higher opacity (75%) for error state to draw attention
-                        val trackedOpacity = when {
-                            arrowInfo?.isError == true -> trackedOpacityError
-                            arrowInfo?.isWarning == true -> trackedOpacityError
+                        // Match legacy arrow opacity: PAD/WARNING/DANGER use "error" opacity
+                        val trackedOpacity = when (stInfo?.state) {
+                            JointState.DANGER, JointState.WARNING, JointState.PAD -> trackedOpacityError
+                            null -> trackedOpacityCorrect
                             else -> trackedOpacityCorrect
                         }
                         
@@ -1561,124 +1511,6 @@ class SkeletonOverlayView @JvmOverloads constructor(
         }
     }
     
-    // ==================== Legacy: Arrow-based Color Calculation ====================
-    
-    /**
-     * Calculate gradient color based on angle position with SMOOTHING
-     * @deprecated Use getGradientColorForState() instead
-     */
-    @Suppress("DEPRECATION")
-    @Deprecated("Use getGradientColorForState() instead")
-    private fun getGradientColorForPosition(arrowInfo: JointArrowInfo): Int {
-        val jointCode = arrowInfo.jointCode
-        val currentAngle = arrowInfo.currentAngle
-        
-        // Calculate target color based on position
-        val targetColor = calculateTargetColor(arrowInfo, currentAngle)
-        
-        // Apply color smoothing (lerp with previous color)
-        val previousColor = previousColors[jointCode]
-        val smoothedColor = if (previousColor != null) {
-            smoothInterpolateColor(previousColor, targetColor, COLOR_LERP_FACTOR)
-        } else {
-            targetColor
-        }
-        
-        // Store for next frame
-        previousColors[jointCode] = smoothedColor
-        
-        return smoothedColor
-    }
-    
-    /**
-     * Calculate target color based on position (before smoothing)
-     * @deprecated Use calculateTargetColorFromState() instead
-     */
-    @Suppress("DEPRECATION")
-    @Deprecated("Use calculateTargetColorFromState() instead")
-    private fun calculateTargetColor(arrowInfo: JointArrowInfo, currentAngle: Double): Int {
-        // Use StateConfig colors instead of hardcoded values
-        val perfectColor = StateConfig.getColor(JointState.PERFECT)
-        val normalColor = StateConfig.getColor(JointState.NORMAL)
-        val padColor = StateConfig.getColor(JointState.PAD)
-        val warningColor = StateConfig.getColor(JointState.WARNING)
-        val dangerColor = StateConfig.getColor(JointState.DANGER)
-        val transitionColor = StateConfig.getColor(JointState.TRANSITION)
-        
-        val downMin = arrowInfo.downRangeMin
-        val downMax = arrowInfo.downRangeMax
-        val upMin = arrowInfo.upRangeMin
-        val upMax = arrowInfo.upRangeMax
-        
-        // Handle errors first
-        if (arrowInfo.isError) {
-            val distanceOutside = when (arrowInfo.zone) {
-                com.trainingvalidator.poc.training.engine.JointZone.TOO_HIGH -> currentAngle - upMax
-                com.trainingvalidator.poc.training.engine.JointZone.TOO_LOW -> downMin - currentAngle
-                else -> 0.0
-            }
-            // Quick ramp to danger color (within 10°)
-            val errorRatio = (distanceOutside / 10.0).coerceIn(0.0, 1.0)
-            return interpolateColor(padColor, dangerColor, errorRatio.toFloat())
-        }
-        
-        // For valid zones, use unified gradient approach
-        return when (arrowInfo.zone) {
-            com.trainingvalidator.poc.training.engine.JointZone.DOWN_ZONE -> {
-                val rangeSize = downMax - downMin
-                if (rangeSize <= 0) return perfectColor
-                
-                val center = (downMin + downMax) / 2
-                val distFromCenter = kotlin.math.abs(currentAngle - center)
-                val normalizedDist = (distFromCenter / (rangeSize / 2)).coerceIn(0.0, 1.0)
-                val isOuterSide = currentAngle < center
-                
-                getColorForNormalizedPositionLegacy(normalizedDist, isOuterSide)
-            }
-            
-            com.trainingvalidator.poc.training.engine.JointZone.UP_ZONE -> {
-                val rangeSize = upMax - upMin
-                if (rangeSize <= 0) return perfectColor
-                
-                val center = (upMin + upMax) / 2
-                val distFromCenter = kotlin.math.abs(currentAngle - center)
-                val normalizedDist = (distFromCenter / (rangeSize / 2)).coerceIn(0.0, 1.0)
-                val isOuterSide = currentAngle > center
-                
-                getColorForNormalizedPositionLegacy(normalizedDist, isOuterSide)
-            }
-            
-            com.trainingvalidator.poc.training.engine.JointZone.TRANSITION -> transitionColor
-            
-            else -> perfectColor
-        }
-    }
-    
-    /**
-     * Get color for normalized position (legacy version using StateConfig)
-     */
-    private fun getColorForNormalizedPositionLegacy(normalizedDist: Double, isOuterSide: Boolean = true): Int {
-        val perfectColor = StateConfig.getColor(JointState.PERFECT)
-        val normalColor = StateConfig.getColor(JointState.NORMAL)
-        val padColor = StateConfig.getColor(JointState.PAD)
-        
-        return when {
-            normalizedDist < 0.4 -> perfectColor
-            normalizedDist < 0.7 -> {
-                val t = ((normalizedDist - 0.4) / 0.3).toFloat()
-                interpolateColor(perfectColor, normalColor, t)
-            }
-            else -> {
-                if (isOuterSide) {
-                    val t = ((normalizedDist - 0.7) / 0.3).toFloat()
-                    interpolateColor(normalColor, padColor, t)
-                } else {
-                    normalColor
-                }
-            }
-        }
-    }
-    
     /**
      * Smooth interpolation between colors (for animation)
      */
@@ -1718,19 +1550,17 @@ class SkeletonOverlayView @JvmOverloads constructor(
                 val jointCode = landmarkIndexToJointCode(index)
                 val isTracked = index in trackedLandmarkIndices
                 
-                // For front camera, look up mirrored joint code in jointArrowInfos
+                // For front camera, look up mirrored joint code
                 val effectiveJointCode = getEffectiveJointCode(jointCode)
                 
                 // Get gradient color and state for tracked joints
-                val arrowInfo = effectiveJointCode?.let { jointArrowInfos[it] }
-                val gradientColor = arrowInfo?.let { getGradientColorForPosition(it) }
+                val stInfo = effectiveJointCode?.let { jointStateInfos[it] }
+                val gradientColor = stInfo?.let { getGradientColorForState(it) }
                 
-                // Determine opacity based on joint state (consistent with lines)
-                // Lower opacity (50%) for correct state to focus on Arc
-                // Higher opacity (75%) for error/warning state
-                val trackedOpacity = when {
-                    arrowInfo?.isError == true -> trackedOpacityError
-                    arrowInfo?.isWarning == true -> trackedOpacityError
+                // Match legacy: PAD / WARNING / DANGER use "error" opacity
+                val trackedOpacity = when (stInfo?.state) {
+                    JointState.DANGER, JointState.WARNING, JointState.PAD -> trackedOpacityError
+                    null -> trackedOpacityCorrect
                     else -> trackedOpacityCorrect
                 }
                 
@@ -1909,14 +1739,14 @@ class SkeletonOverlayView @JvmOverloads constructor(
     }
     
     /**
-     * Get the effective joint code for looking up in jointArrowInfos
+     * Get the effective joint code for looking up in jointStateInfos
      * 
      * For front camera, the image is mirrored, so:
-     * - left_elbow in the image → right_elbow in jointArrowInfos
-     * - right_elbow in the image → left_elbow in jointArrowInfos
+     * - left_elbow in the image → right_elbow in jointStateInfos
+     * - right_elbow in the image → left_elbow in jointStateInfos
      * 
      * This is because angles are mirrored before being sent to the engine,
-     * so jointArrowInfos contains "right_elbow" even though the visible
+     * so jointStateInfos contains "right_elbow" even though the visible
      * landmark in the mirrored image is at the left_elbow position.
      */
     private fun getEffectiveJointCode(jointCode: String?): String? {
@@ -2237,168 +2067,25 @@ class SkeletonOverlayView @JvmOverloads constructor(
             )
         }
     }
-    
-    /**
-     * Draw Line Range Indicators - LEGACY (using JointArrowInfo)
-     * @deprecated Use drawLineRangeIndicatorsNew() instead
-     */
-    @Suppress("DEPRECATION")
-    @Deprecated("Use drawLineRangeIndicatorsNew() instead")
-    private fun drawLineRangeIndicators(
-        canvas: Canvas,
-        landmarks: List<SmoothedLandmark>
-    ) {
-        val density = cachedDensity
-        
-        for ((jointCode, arrowInfo) in jointArrowInfos) {
-            // Only show Line Indicator for PRIMARY joints
-            if (!arrowInfo.isPrimary) continue
-            
-            val currentAngle = arrowInfo.currentAngle
-            
-            // Get the 3 landmarks that form this angle
-            val angleLandmarks = JointLandmarkMapping.getLandmarksForAngle(jointCode)
-            if (angleLandmarks.size != 3) continue
-            
-            val (upperIdx, centerIdx, lowerIdx) = angleLandmarks
-            
-            // Apply mirroring for front camera
-            val effectiveUpperIdx = if (isFrontCamera) BodyLandmarks.getMirroredIndex(upperIdx) else upperIdx
-            val effectiveCenterIdx = if (isFrontCamera) BodyLandmarks.getMirroredIndex(centerIdx) else centerIdx
-            val effectiveLowerIdx = if (isFrontCamera) BodyLandmarks.getMirroredIndex(lowerIdx) else lowerIdx
-            
-            // Validate center landmark
-            if (effectiveCenterIdx >= landmarks.size) continue
-            val centerLm = landmarks[effectiveCenterIdx]
-            if (centerLm.visibility < visibilityThreshold) continue
-            
-            // Get UPPER landmark
-            if (effectiveUpperIdx >= landmarks.size) continue
-            val upperLm = landmarks[effectiveUpperIdx]
-            
-            // Get LOWER landmark
-            if (effectiveLowerIdx >= landmarks.size) continue
-            val lowerLm = landmarks[effectiveLowerIdx]
-            
-            val centerX = toScreenX(centerLm.x)
-            val centerY = toScreenY(centerLm.y)
-            val upperX = toScreenX(upperLm.x)
-            val upperY = toScreenY(upperLm.y)
-            val lowerX = toScreenX(lowerLm.x)
-            val lowerY = toScreenY(lowerLm.y)
-            
-            val upperDistance = kotlin.math.sqrt(
-                (upperX - centerX) * (upperX - centerX) +
-                (upperY - centerY) * (upperY - centerY)
-            )
-            val lowerDistance = kotlin.math.sqrt(
-                (lowerX - centerX) * (lowerX - centerX) +
-                (lowerY - centerY) * (lowerY - centerY)
-            )
-            
-            // Max lengths from settings
-            val upperMaxLength = upperDistance * SettingsManager.getLineIndicatorUpperLengthRatio()
-            val lowerMaxLength = lowerDistance * SettingsManager.getLineIndicatorLowerLengthRatio()
-            
-            // Get style
-            val style = LineStyle.forState(arrowInfo, density)
-            
-            // ========== 1. Draw STATIC TRACKS on BOTH limbs ==========
-            
-            // Draw UPPER track (if visible)
-            if (upperLm.visibility >= visibilityThreshold) {
-                lineRangeIndicator.drawTrack(
-                    canvas = canvas,
-                    centerX = centerX,
-                    centerY = centerY,
-                    targetX = upperX,
-                    targetY = upperY,
-                    maxLength = upperMaxLength,
-                    style = style,
-                    arrowInfo = arrowInfo,
-                    limbType = LineRangeIndicator.LimbType.UPPER
-                )
-            }
-            
-            // Draw LOWER track (if visible)
-            if (lowerLm.visibility >= visibilityThreshold) {
-                lineRangeIndicator.drawTrack(
-                    canvas = canvas,
-                    centerX = centerX,
-                    centerY = centerY,
-                    targetX = lowerX,
-                    targetY = lowerY,
-                    maxLength = lowerMaxLength,
-                    style = style,
-                    arrowInfo = arrowInfo,
-                    limbType = LineRangeIndicator.LimbType.LOWER
-                )
-            }
-            
-            // ========== 2. Draw MOVING INDICATOR on current limb only ==========
-            
-            // Use hysteresis to prevent flickering when crossing center angle
-            val limbType = lineRangeIndicator.getTargetLimbWithHysteresis(
-                jointCode = jointCode,
-                currentAngle = currentAngle,
-                invertIndicator = false
-            )
-            lineRangeIndicator.updateTransitionProgress(jointCode)
-            
-            if (limbType == LineRangeIndicator.LimbType.NONE) continue
-            
-            val (targetX, targetY, maxLength) = when (limbType) {
-                LineRangeIndicator.LimbType.UPPER -> Triple(upperX, upperY, upperMaxLength)
-                LineRangeIndicator.LimbType.LOWER -> Triple(lowerX, lowerY, lowerMaxLength)
-                LineRangeIndicator.LimbType.NONE -> continue
-            }
-            
-            // Calculate indicator length based on angle (with transition smoothing)
-            val lineLength = lineRangeIndicator.calculateLineLength(
-                jointCode = jointCode,
-                currentAngle = currentAngle,
-                maxLength = maxLength
-            )
-            
-            // Draw the moving indicator
-            lineRangeIndicator.drawIndicator(
-                canvas = canvas,
-                centerX = centerX,
-                centerY = centerY,
-                targetX = targetX,
-                targetY = targetY,
-                lineLength = lineLength,
-                arrowInfo = arrowInfo,
-                style = style,
-                density = density,
-                maxLength = maxLength,
-                limbType = limbType
-            )
-        }
-    }
 
     /**
-     * Draw angles - DATA-DRIVEN from jointArrowInfos (tracked joints only)
-     * 
-     * Only shows angles for:
-     * - Tracked joints (from exercise config)
-     * - When in error or warning state (minimalist principle)
+     * Draw angles for tracked joints (from [jointStateInfos]).
      */
     private fun drawAngles(canvas: Canvas, landmarks: List<SmoothedLandmark>) {
         val angles = jointAngles ?: return
-        
-        // DATA-DRIVEN: Use jointArrowInfos which comes from tracked joints
-        // This ensures we only show angles for joints that are actually tracked
-        for ((jointCode, arrowInfo) in jointArrowInfos) {
+
+        for ((jointCode, stateInfo) in jointStateInfos) {
             val index = jointCodeToLandmarkIndex(jointCode) ?: continue
-            
-            // Get the actual angle value from JointAngles
             val angle = getAngleForJointCode(angles, jointCode) ?: continue
-            
-            // MINIMALIST: Only show angles on error or warning
-            if (showAnglesOnlyOnError && !arrowInfo.isError && !arrowInfo.isWarning) continue
-            
-            drawAngleAt(canvas, landmarks, index, angle, jointCode, arrowInfo.isWarning)
+            if (showAnglesOnlyOnError &&
+                stateInfo.state != JointState.DANGER &&
+                stateInfo.state != JointState.WARNING &&
+                stateInfo.state != JointState.PAD
+            ) {
+                continue
+            }
+            val isPadWarningStyle = stateInfo.state == JointState.PAD
+            drawAngleAt(canvas, landmarks, index, angle, jointCode, isPadWarningStyle)
         }
     }
     

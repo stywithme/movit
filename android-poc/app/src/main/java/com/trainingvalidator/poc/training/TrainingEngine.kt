@@ -5,9 +5,25 @@ import android.os.SystemClock
 import com.trainingvalidator.poc.analysis.JointAngles
 import com.trainingvalidator.poc.analysis.SmoothedLandmark
 import com.trainingvalidator.poc.training.analytics.MotionRecorder
-import com.trainingvalidator.poc.training.config.SettingsManager
 import com.trainingvalidator.poc.training.engine.*
+import com.trainingvalidator.poc.training.engine.bilateral.BilateralController
+import com.trainingvalidator.poc.training.engine.bilateral.BilateralSide
+import com.trainingvalidator.poc.training.engine.evaluation.JointEvaluator
+import com.trainingvalidator.poc.training.engine.evaluation.hasAnyDangerState
+import com.trainingvalidator.poc.training.engine.feedback.FrameFeedbackEmitter
+import com.trainingvalidator.poc.training.engine.observability.PipelineTrace
+import com.trainingvalidator.poc.training.engine.session.HoldSessionCoordinator
+import com.trainingvalidator.poc.training.engine.session.RepCompletionCoordinator
+import com.trainingvalidator.poc.training.engine.session.SessionSummaryBuilder
+import com.trainingvalidator.poc.training.engine.pipeline.FrameEvaluationPipeline
+import com.trainingvalidator.poc.training.engine.pipeline.FrameInput
+import com.trainingvalidator.poc.training.engine.pipeline.FramePipelineExecutor
+import com.trainingvalidator.poc.training.engine.policy.FeedbackPolicy
+import com.trainingvalidator.poc.training.engine.policy.StabilityPolicy
+import com.trainingvalidator.poc.training.engine.policy.TimingPolicy
 import com.trainingvalidator.poc.training.feedback.FeedbackEvent
+import com.trainingvalidator.poc.training.feedback.FeedbackPriority
+import com.trainingvalidator.poc.training.feedback.JointQualityContent
 import com.trainingvalidator.poc.training.models.*
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -16,150 +32,93 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 
 /**
- * TrainingEngine - The main orchestrator for exercise training
- * 
- * This is the "brain" of the training system. It coordinates:
- * - JointAngleTracker: Extracts relevant joint angles
- * - PhaseStateMachine: Tracks exercise phases
- * - FormValidator: Validates form and detects errors (STATE-BASED)
- * - RepCounter: Counts repetitions with scores
- * 
- * STATE-BASED ARCHITECTURE:
- * - Quality assessment uses JointState (PERFECT/NORMAL/PAD/WARNING/DANGER)
- * - Rep scoring based on worst state reached
- * - Single source of truth from StateConfig
- * 
- * Usage:
- * 1. Create instance with exercise config (no difficulty needed)
- * 2. Call processFrame() for each camera frame
- * 3. Observe state flows for UI updates
+ * Session facade for one exercise run.
+ *
+ * Milestones owned here:
+ * - lifecycle/time/locks and public StateFlows
+ * - frame entry: extract + visibility, then [FramePipelineExecutor]
+ * - side effects: UI flows, recorder, feedback, rep/hold completion, safety guards
+ *
+ * Joint quality remains state-based ([JointState]); scoring/summary live in the lower-level coordinators.
  */
 class TrainingEngine(
     private val exerciseConfig: ExerciseConfig,
-    /** Active pose variant index (matches [ExerciseConfig.poseVariants]). */
     val poseVariantIndex: Int = 0,
-    /**
-     * Override target reps from workout config (null = use exercise default)
-     * Used in Workout Mode to apply WorkoutExercise.target.reps
-     */
     private val targetRepsOverride: Int? = null,
-    /**
-     * Override target duration from workout config in milliseconds (null = use exercise default)
-     * Used in Workout Mode to apply WorkoutExercise.target.durationSec
-     */
-    private val targetDurationMsOverride: Long? = null
+    private val targetDurationMsOverride: Long? = null,
+    private val stabilityPolicy: StabilityPolicy = StabilityPolicy.default(),
+    private val timingPolicy: TimingPolicy = TimingPolicy.default()
 ) {
     
     companion object {
         private const val TAG = "TrainingEngine"
-        private const val STATE_MESSAGE_COOLDOWN_MS_DEFAULT = 2000L
-        private const val VISIBILITY_RESUME_COUNTDOWN_MS = 3000L
     }
     
-    // ==================== Bilateral Side ====================
+    private val cameraWarningEventCooldownMs: Long = timingPolicy.cameraWarningEventCooldownMs
+
+    private val pauseController: PauseController = PauseController.fromTiming(timingPolicy) { nowMs() }
+    private val feedbackPolicy: FeedbackPolicy = FeedbackPolicy.from(timingPolicy)
     
-    /**
-     * Bilateral side enum for per-rep left/right alternation
-     */
-    enum class BilateralSide {
-        LEFT, RIGHT;
-        fun flip(): BilateralSide = if (this == LEFT) RIGHT else LEFT
-    }
+    val pipelineTrace: PipelineTrace = PipelineTrace()
     
-    // ==================== Configuration ====================
+    private val bilateral = BilateralController(
+        isBilateral = exerciseConfig.isBilateral,
+        config = exerciseConfig.bilateralConfig
+    )
+    val bilateralSide: StateFlow<BilateralSide> = bilateral.side
+    
+    // Milestone: config and active variant.
     
     private val poseVariant: PoseVariant = exerciseConfig.poseVariants[poseVariantIndex]
     private val repCountingConfig: RepCountingConfig = exerciseConfig.repCountingConfig
+
+    private val minRepIntervalMs: Long = timingPolicy.minRepIntervalFor(repCountingConfig)
     
     private val trackedJoints: List<TrackedJoint> = poseVariant.trackedJoints
+    private val trackedJointsByCode: Map<String, TrackedJoint> = trackedJoints.associateBy { it.joint }
     private val primaryJoints: List<TrackedJoint> = poseVariant.getPrimaryJoints()
     
-    // OPTIMIZED: Pre-computed Set for O(1) lookup instead of O(n) any{} on every frame
     private val primaryJointCodes: Set<String> = primaryJoints.map { it.joint }.toSet()
     
-    // ==================== Bilateral Runtime Flipping ====================
+    val isBilateralFlipped: Boolean get() = bilateral.isFlipped
     
-    private val isBilateral: Boolean = exerciseConfig.isBilateral
-    private val bilateralConfig: BilateralConfig? = exerciseConfig.bilateralConfig
-    
-    /** The startSide from config (e.g., "right") — this is the side the joints are configured for */
-    private val bilateralStartSide: BilateralSide = when (bilateralConfig?.startSide) {
-        "left" -> BilateralSide.LEFT
-        else -> BilateralSide.RIGHT
-    }
-    
-    /** Current active side for bilateral exercises */
-    private var _currentBilateralSide: BilateralSide = bilateralStartSide
-    
-    /** Observable current bilateral side */
-    private val _bilateralSide = MutableStateFlow(_currentBilateralSide)
-    val bilateralSide: StateFlow<BilateralSide> = _bilateralSide
-    
-    /**
-     * Whether the current bilateral side is flipped relative to the configured side.
-     * When true, JointAngleTracker reads the OPPOSITE side's angles and
-     * the overlay should draw indicators on the mirrored landmarks.
-     */
-    val isBilateralFlipped: Boolean
-        get() = isBilateral && _currentBilateralSide != bilateralStartSide
-    
-    /**
-     * Effective target reps: override takes precedence, then exercise config
-     */
     private val targetReps: Int = targetRepsOverride 
         ?: repCountingConfig.reps
     
-    /**
-     * Feedback messages for random delivery (LOW priority)
-     * 
-     * Access this to configure FeedbackManager with exercise-specific messages.
-     * Call feedbackManager.setRandomMessages(engine.feedbackMessages) when starting.
-     */
     val feedbackMessages: FeedbackMessages
         get() = poseVariant.feedbackMessages
     
-    // ==================== Components ====================
+    // Milestone: frame components and session coordinators.
     
-    private val jointTracker = JointAngleTracker(trackedJoints)
+    private val jointTracker = JointAngleTracker(trackedJoints, stabilityPolicy)
     
-    /**
-     * Motion recorder for analytics (optional)
-     * 
-     * When set, records frame-by-frame motion data for post-session analysis.
-     * Set this before calling start() to enable motion recording.
-     * Call getMotionRecord() after stop() to retrieve the session data.
-     */
     var motionRecorder: MotionRecorder? = null
     
-    /**
-     * Centralized angle smoother - Single Source of Truth for smoothed angles
-     * All components use smoothed angles from here for consistency
-     */
-    private val angleSmoother = AngleSmoother()
+    private val angleSmoother = AngleSmoother(timingPolicy.smoothingWindowSize)
     
     private val stateMachine = PhaseStateMachine(
         countingMethod = exerciseConfig.countingMethod,
         primaryJoints = primaryJoints,
         repCountingConfig = repCountingConfig,
-        numberOfPhases = 4,  // Default phases: START → DOWN → BOTTOM → UP
-        timeProvider = { nowMs() }
+        numberOfPhases = 4,
+        timeProvider = { nowMs() },
+        phaseHysteresisDegrees = stabilityPolicy.phaseHysteresisDegrees,
+        timingPolicy = timingPolicy
     )
     
-    private val formValidator = FormValidator(
-        trackedJoints = trackedJoints
-    )
+    private val jointEvaluator = JointEvaluator(trackedJoints, stabilityPolicy)
+    private val frameEvalPipeline = FrameEvaluationPipeline(jointEvaluator)
+    private val startPoseGate = StartPoseGate(trackedJoints, stabilityPolicy)
+    private val repCompletionSignal = RepCompletionSignal()
     
     private val repCounter = RepCounter(
+        minRepIntervalMs = minRepIntervalMs,
         targetReps = targetReps,
-        repCountingConfig = repCountingConfig,
         isHoldExercise = exerciseConfig.countingMethod == CountingMethod.HOLD,
-        primaryJoints = exerciseConfig.getPrimaryJoints().map { it.joint }.toSet(),
+        primaryJoints = primaryJointCodes,
         timeProvider = { nowMs() }
     )
 
-    /**
-     * Per-check cooldown for emitting feedback events (visual overlay stays active, but events are throttled).
-     */
     private val configuredPositionChecks: List<PositionCheck> = poseVariant.positionChecks
 
     private val hasPositionChecksConfigured: Boolean = configuredPositionChecks.isNotEmpty()
@@ -167,21 +126,15 @@ class TrainingEngine(
     private val positionChecksById: Map<String, PositionCheck> =
         configuredPositionChecks.associateBy { it.id }
 
-    private val lastPositionEventTimes = mutableMapOf<String, Long>()
+    private val frameFeedback: FrameFeedbackEmitter = FrameFeedbackEmitter(
+        feedbackPolicy = feedbackPolicy,
+        positionChecksById = positionChecksById,
+        timeProvider = { nowMs() },
+        jointErrorCooldownMs = timingPolicy.stateMessageCooldownMs
+    )
     
-    // Camera warning event throttle (UI overlay uses StateFlow, but FeedbackEvent is throttled)
     private var lastCameraWarningEventTime = 0L
-    private val CAMERA_WARNING_EVENT_COOLDOWN_MS = 2000L  // Only emit event every 2s
 
-    // Scene lock: freeze axis selection after first valid detection to avoid mid-training noise
-    private var sceneLocked = false
-    
-    // ==================== Position Validator ====================
-    
-    /**
-     * Position validator for position-based checks (knee-over-toe, alignment, etc.)
-     * Always initialized (scene checks run even when positionChecks is empty)
-     */
     private val resolvedPosePositionCode: String =
         poseVariant.posePosition ?: poseVariant.cameraPosition ?: "standing_side"
 
@@ -197,87 +150,81 @@ class TrainingEngine(
         posePositionCode = resolvedPosePositionCode,
         sceneExpectation = resolvedExpectation
     )
+
+    private val framePipelineExecutor: FramePipelineExecutor = FramePipelineExecutor(
+        angleSmoother = angleSmoother,
+        startPoseGate = startPoseGate,
+        stateMachine = stateMachine,
+        positionValidator = positionValidator,
+        frameEvalPipeline = frameEvalPipeline,
+        primaryJointCodes = primaryJointCodes
+    )
     
-    // ==================== Visibility Monitor ====================
-    
-    /**
-     * Visibility monitor for tracking required joints visibility
-     * Handles auto-pause when joints become invisible and resume when visible again
-     */
     private val visibilityMonitor: VisibilityMonitor = VisibilityMonitor(
         visibilityTrackedJoints = poseVariant.trackedJoints
             .filter { it.role == JointRole.PRIMARY || it.role == JointRole.SECONDARY },
-        minVisibility = 0.3f,
-        graceDurationMs = 1000,
-        warningDurationMs = 1000,   // Tier 1: suspend counting after 1s
-        pauseAfterMs = 4000,        // Tier 2: full pause UI after 4s
+        minVisibility = timingPolicy.visibilityMinVisibility,
+        graceDurationMs = timingPolicy.visibilityGraceDurationMs,
+        warningDurationMs = timingPolicy.visibilityWarningDurationMs,
+        pauseAfterMs = timingPolicy.visibilityPauseAfterMs,
         timeProvider = { nowMs() }
     )
     
-    // ==================== Hold Timer (for HOLD exercises only) ====================
-    
-    /**
-     * Check if this is a hold exercise
-     */
+    // Milestone: hold/repetition targets and guardrails.
+
     val isHoldExercise: Boolean = exerciseConfig.countingMethod == CountingMethod.HOLD
     
-    /**
-     * Target duration for hold exercises (null for rep-based)
-     */
-    /**
-     * Effective target duration for hold exercises: override takes precedence, then exercise config
-     */
     val targetDurationMs: Long? = if (isHoldExercise) {
-        targetDurationMsOverride 
+        targetDurationMsOverride
             ?: repCountingConfig.getDurationMs(
-                SettingsManager.getDefaultHoldDuration()
+                timingPolicy.defaultHoldDurationSeconds
             )
     } else null
     
-    /**
-     * Hold timer instance (null for rep-based exercises)
-     * Uses safe null-check: holdTimer exists only if targetDurationMs is not null
-     */
     private val holdTimer: HoldTimer? = targetDurationMs?.let { duration ->
         HoldTimer(
             targetDurationMs = duration,
             gracePeriodMs = repCountingConfig.getGracePeriod(
-                SettingsManager.getDefaultGracePeriod()
+                timingPolicy.defaultGracePeriodMs
             )
         )
     }
 
-    // ==================== Safety Guardrails ====================
-
-    private val minRepIntervalMs: Long = repCountingConfig.getMinRepInterval(
-        SettingsManager.getDefaultMinRepInterval()
+    private val repCompletion: RepCompletionCoordinator = RepCompletionCoordinator(
+        tag = TAG,
+        stateMachine = stateMachine,
+        repCounter = repCounter,
+        repCompletionSignal = repCompletionSignal,
+        motionRecorder = { motionRecorder },
+        bilateral = bilateral,
+        pipelineTrace = pipelineTrace
     )
 
-    private val maxRepsGuard: Int = if (isHoldExercise) {
-        1
-    } else {
-        if (targetReps > 0) maxOf(targetReps * 3, targetReps + 12) else 60
-    }
+    private val holdSession: HoldSessionCoordinator = HoldSessionCoordinator(
+        tag = TAG,
+        holdTimer = holdTimer,
+        repCounter = repCounter,
+        getTargetDurationMs = { targetDurationMs ?: 0L },
+        timeProvider = { nowMs() },
+        motionRecorder = { motionRecorder },
+        bilateral = bilateral,
+        pipelineTrace = pipelineTrace
+    )
 
-    private val maxSessionDurationGuardMs: Long = if (isHoldExercise) {
-        maxOf((targetDurationMs ?: 0L) * 3L, 180_000L)
-    } else {
-        maxOf(targetReps.coerceAtLeast(1).toLong() * minRepIntervalMs * 4L, 180_000L)
-    }
+    private val sessionSafety = SessionSafetyGuards(
+        timingPolicy = timingPolicy,
+        isHoldExercise = isHoldExercise,
+        targetReps = targetReps,
+        targetDurationMs = targetDurationMs,
+        minRepIntervalMs = minRepIntervalMs
+    )
     @Volatile
     private var cameraWarningCount: Int = 0
 
     @Volatile
     private var safetyStopTriggered: Boolean = false
     
-    // ==================== Hold Form Quality Tracking ====================
-    
-    // NOTE: Legacy tracking variables removed.
-    // Form quality is now calculated by RepCounter using weighted average of time in states.
-    // See RepCounter.calculateHoldScore()
-
-    
-    // ==================== State Flows ====================
+    // Milestone: public state streams consumed by ViewModel/UI.
     
     private val _currentPhase = MutableStateFlow(Phase.IDLE)
     val currentPhase: StateFlow<Phase> = _currentPhase
@@ -285,21 +232,9 @@ class TrainingEngine(
     private val _repCount = MutableStateFlow(0)
     val repCount: StateFlow<Int> = _repCount
     
-    @Suppress("DEPRECATION")
-    private val _jointStatuses = MutableStateFlow<Map<String, JointStatus>>(emptyMap())
-    @Suppress("DEPRECATION")
-    val jointStatuses: StateFlow<Map<String, JointStatus>> = _jointStatuses
-    
-    @Suppress("DEPRECATION")
-    private val _arrowInfos = MutableStateFlow<Map<String, JointArrowInfo>>(emptyMap())
-    @Suppress("DEPRECATION")
-    val arrowInfos: StateFlow<Map<String, JointArrowInfo>> = _arrowInfos
-    
-    /** NEW: State-based joint info for modern UI components */
     private val _jointStateInfos = MutableStateFlow<Map<String, JointStateInfo>>(emptyMap())
     val jointStateInfos: StateFlow<Map<String, JointStateInfo>> = _jointStateInfos
     
-    /** Flag indicating if any joint is currently in DANGER state */
     private val _isDangerActive = MutableStateFlow(false)
     val isDangerActive: StateFlow<Boolean> = _isDangerActive
     
@@ -312,106 +247,26 @@ class TrainingEngine(
     private val _currentAngles = MutableStateFlow<Map<String, Double>>(emptyMap())
     val currentAngles: StateFlow<Map<String, Double>> = _currentAngles
 
-    /**
-     * Config joint codes skipped this frame due to Any-Side low visibility (for overlay dimming).
-     */
     private val _anySideDimmedJointCodes = MutableStateFlow<Set<String>>(emptySet())
     val anySideDimmedJointCodes: StateFlow<Set<String>> = _anySideDimmedJointCodes.asStateFlow()
     
-    // ==================== Position Validation State Flows ====================
-    
-    /**
-     * Position errors from PositionValidator (severity: ERROR + WARNING)
-     */
     private val _positionErrors = MutableStateFlow<List<PositionError>>(emptyList())
     val positionErrors: StateFlow<List<PositionError>> = _positionErrors
     
-    /**
-     * Per-axis scene warnings (posture/direction/region mismatches).
-     */
     private val _sceneWarnings = MutableStateFlow<List<SceneAxisWarning>>(emptyList())
     val sceneWarnings: StateFlow<List<SceneAxisWarning>> = _sceneWarnings
-    
-    // ==================== Visibility State Flows ====================
     
     private val _visibilityState = MutableStateFlow(VisibilityState.VISIBLE)
     val visibilityState: StateFlow<VisibilityState> = _visibilityState
     
-    /**
-     * Tier 1: Rep counting is suspended (joints missing 1-4s).
-     * processFrame keeps running but skips phase/form/rep logic.
-     */
-    private val _isCountingSuspended = MutableStateFlow(false)
-    val isCountingSuspended: StateFlow<Boolean> = _isCountingSuspended
-    
-    /**
-     * Tier 2: Full visibility pause (joints missing 4s+). UI shows pause overlay,
-     * but processFrame keeps running for visibility checks so auto-resume works.
-     */
-    private val _isVisibilityPaused = MutableStateFlow(false)
-    val isVisibilityPaused: StateFlow<Boolean> = _isVisibilityPaused
-    
-    /**
-     * Internal countdown seconds remaining for auto-resume after Tier 2 pause.
-     * null when no countdown is active.
-     */
-    private val _visibilityResumeCountdown = MutableStateFlow<Int?>(null)
-    val visibilityResumeCountdown: StateFlow<Int?> = _visibilityResumeCountdown
-    
-    private var visibilityResumeStartMs: Long = 0L
-    
-    // ==================== Hold-specific State Flows ====================
-    
-    /**
-     * Current hold state (null for rep-based exercises)
-     */
-    private val _holdState = MutableStateFlow<HoldState?>(null)
-    val holdState: StateFlow<HoldState?> = _holdState
-    
-    /**
-     * Elapsed hold time in milliseconds (null for rep-based exercises)
-     */
-    private val _holdElapsedMs = MutableStateFlow<Long?>(null)
-    val holdElapsedMs: StateFlow<Long?> = _holdElapsedMs
-    
-    /**
-     * Remaining hold time in milliseconds (null for rep-based exercises)
-     */
-    private val _holdRemainingMs = MutableStateFlow<Long?>(null)
-    val holdRemainingMs: StateFlow<Long?> = _holdRemainingMs
-    
-    /**
-     * Hold progress (0.0 - 1.0, null for rep-based exercises)
-     */
-    private val _holdProgress = MutableStateFlow<Float?>(null)
-    val holdProgress: StateFlow<Float?> = _holdProgress
-    
-    /**
-     * Grace period remaining in milliseconds (null when not in grace period)
-     */
-    private val _graceRemainingMs = MutableStateFlow<Long?>(null)
-    val graceRemainingMs: StateFlow<Long?> = _graceRemainingMs
-    
-    /**
-     * Form quality during hold (0.0 - 1.0, null for rep-based exercises)
-     * Represents percentage of time with correct form
-     */
-    private val _holdFormQuality = MutableStateFlow<Float?>(null)
-    val holdFormQuality: StateFlow<Float?> = _holdFormQuality
-    
-    /**
-     * Number of frames with errors during hold (null for rep-based exercises)
-     */
-    private val _holdErrorCount = MutableStateFlow<Int?>(null)
-    val holdErrorCount: StateFlow<Int?> = _holdErrorCount
-    
-    /**
-     * Map of joint codes to their error counts during hold (null for rep-based exercises)
-     */
-    private val _holdJointErrorMap = MutableStateFlow<Map<String, Int>?>(null)
-    val holdJointErrorMap: StateFlow<Map<String, Int>?> = _holdJointErrorMap
-    
-    // ==================== Events ====================
+    val isCountingSuspended: StateFlow<Boolean> = pauseController.isCountingSuspended
+
+    val isVisibilityPaused: StateFlow<Boolean> = pauseController.isVisibilityPaused
+
+    val visibilityResumeCountdown: StateFlow<Int?> = pauseController.visibilityResumeCountdown
+
+    private val _holdStatus = MutableStateFlow<HoldStatus?>(null)
+    val holdStatus: StateFlow<HoldStatus?> = _holdStatus.asStateFlow()
     
     private val _events = MutableSharedFlow<FeedbackEvent>(
         replay = 0,
@@ -419,10 +274,7 @@ class TrainingEngine(
     )
     val events: SharedFlow<FeedbackEvent> = _events
     
-    // ==================== State ====================
-    // NOTE: These flags are marked @Volatile for thread safety.
-    // processFrame() can be called from background threads (video mode)
-    // while start/pause/resume/stop are called from Main thread.
+    // Milestone: lifecycle/time state. All mutations are synchronized by [stateLock].
     
     @Volatile
     private var isRunning = false
@@ -430,63 +282,22 @@ class TrainingEngine(
     @Volatile
     private var isPaused = false
     
-    @Suppress("DEPRECATION")
-    @Volatile
-    private var lastValidationResult: ValidationResult? = null
-    
-    /**
-     * Session start timestamp for duration tracking
-     */
     @Volatile
     private var sessionStartTimeMs: Long = 0L
     
-    /**
-     * Total paused duration (accumulated when paused)
-     */
     @Volatile
     private var totalPausedDurationMs: Long = 0L
     
-    /**
-     * Timestamp when pause started (for calculating pause duration)
-     */
     @Volatile
     private var pauseStartTimeMs: Long = 0L
     
-    /**
-     * Latest frame timestamp (monotonic) for deterministic timing
-     * Used to keep video analysis consistent across runs.
-     */
     @Volatile
     private var currentFrameTimeMs: Long = 0L
 
-    /**
-     * True when frame timestamps come from an external timeline (e.g. video position)
-     * rather than uptime. Pause duration must follow the same timeline domain.
-     */
     @Volatile
     private var usesExternalFrameTimeline: Boolean = false
     
-    /**
-     * Flag to defer rep completion until after validation and error collection.
-     * This ensures errors from the current frame are included in the rep that just completed.
-     * Thread safety: marked @Volatile as it's read/written from different threads.
-     */
-    @Volatile
-    private var pendingRepCompletion = false
     
-    /**
-     * Throttling for DANGER events to prevent spamming
-     */
-    /**
-     * State message throttling per joint
-     * Tracks last emitted state and timestamp to avoid spamming
-     */
-    private val lastStateMessageTimes = mutableMapOf<String, Long>()
-    private val lastEmittedStates = mutableMapOf<String, JointState>()
-    
-    /**
-     * Current time source (monotonic when timestamps are provided)
-     */
     private fun nowMs(): Long {
         return if (currentFrameTimeMs > 0L) currentFrameTimeMs else SystemClock.uptimeMillis()
     }
@@ -503,9 +314,6 @@ class TrainingEngine(
         }
     }
     
-    /**
-     * Check if we should emit a DANGER event (throttling)
-     */
     private fun getActiveSessionDurationMs(now: Long = nowMs()): Long {
         if (sessionStartTimeMs <= 0L) return 0L
 
@@ -531,18 +339,18 @@ class TrainingEngine(
             TAG,
             "Safety stop triggered: $reason, reps=${repCounter.count}, counted=${repCounter.countedCount}, duration=${getActiveSessionDurationMs()}ms"
         )
+        pipelineTrace.record("safety stop: $reason (reps=${repCounter.count})")
     }
 
     private fun evaluateSafetyStop(now: Long = nowMs()): Boolean {
         if (safetyStopTriggered || _isCompleted.value) return true
 
-        if (repCounter.count >= maxRepsGuard) {
-            triggerSafetyStop("max reps guard reached ($maxRepsGuard)")
+        if (repCounter.count >= sessionSafety.maxRepsGuard) {
+            triggerSafetyStop("max reps guard reached (${sessionSafety.maxRepsGuard})")
             return true
         }
-        // NOTE: Danger state invalidates reps, but does not auto-end the session.
         val activeDurationMs = getActiveSessionDurationMs(now)
-        if (activeDurationMs >= maxSessionDurationGuardMs) {
+        if (activeDurationMs >= sessionSafety.maxSessionDurationGuardMs) {
             triggerSafetyStop("max session duration guard reached (${activeDurationMs}ms)")
             return true
         }
@@ -550,28 +358,24 @@ class TrainingEngine(
         return false
     }
 
-    // ==================== Initialization ====================
-    
+    // Milestone: callbacks translate lower-level completion into public events/state.
+
     init {
-        // Setup callbacks
         stateMachine.onPhaseChanged = { previous, current ->
             _currentPhase.value = current
         }
         
         stateMachine.onRepCompleted = {
-            // Don't handle immediately - set flag to process after validation
-            // This ensures errors from the current frame are included in this rep
-            pendingRepCompletion = true
+            repCompletion.onPhaseMachineWantsComplete()
         }
         
         repCounter.onRepCountChanged = { count, score, isCounted ->
             _repCount.value = count
-            // Use errors from the completed rep (accumulated during the entire rep)
             val completedRep = repCounter.getLastRepResult()
             val completedRepErrors = completedRep?.errors ?: emptyList()
             emitEvent(FeedbackEvent.RepCompleted(
                 repNumber = count,
-                isCorrect = isCounted,  // Legacy compatibility
+                isCorrect = isCounted,
                 errors = completedRepErrors,
                 score = score,
                 worstState = completedRep?.worstState
@@ -590,8 +394,12 @@ class TrainingEngine(
             ))
         }
         
-        // Setup Hold Timer callbacks (if hold exercise)
-        setupHoldTimerCallbacks()
+        holdSession.installCallbacks(
+            isHoldExercise = isHoldExercise,
+            onEmit = { event -> emitEvent(event) },
+            publishStatus = { s -> _holdStatus.value = s },
+            setSessionCompleted = { completed -> if (completed) _isCompleted.value = true }
+        )
         
         Log.d(TAG, "TrainingEngine initialized (STATE-BASED)")
         Log.d(TAG, "Exercise: ${exerciseConfig.name.en}")
@@ -606,18 +414,10 @@ class TrainingEngine(
         Log.d(TAG, "Primary Joints: ${primaryJoints.map { it.joint }}")
     }
     
-    // ==================== Thread Safety ====================
-    
-    // Lock object for thread-safe state modifications
-    // Used by start/pause/resume/stop and processFrame
     private val stateLock = Any()
-    
-    // ==================== Public API ====================
-    
-    /**
-     * Start the training session
-     * Thread safety: Uses synchronized block to coordinate with processFrame
-     */
+
+    // Milestone: lifecycle API. These methods reset/settle session state under the same lock as frames.
+
     fun start() {
         synchronized(stateLock) {
             isRunning = true
@@ -627,23 +427,27 @@ class TrainingEngine(
             sessionStartTimeMs = 0L
             totalPausedDurationMs = 0L
             pauseStartTimeMs = 0L
-            angleSmoother.reset()  // Reset smoothing history for fresh start
+            angleSmoother.reset()
             stateMachine.reset()
             repCounter.reset()
             holdTimer?.reset()
             positionValidator.clearCooldowns()
-            formValidator.reset()  // Reset zone hysteresis state
-            lastPositionEventTimes.clear()
+            jointEvaluator.reset()
+            bilateral.resetToConfigStart()
             lastCameraWarningEventTime = 0L
-            pendingRepCompletion = false
+            repCompletion.clear()
+            frameFeedback.clearPositionCooldowns()
+            pipelineTrace.clear()
+            if (isHoldExercise) {
+                pipelineTrace.record("start hold targetMs=$targetDurationMs")
+            } else {
+                pipelineTrace.record("start reps target=$targetReps")
+            }
             cameraWarningCount = 0
             safetyStopTriggered = false
-            sceneLocked = false
             positionValidator.unlockScene()
             
-            // Reset state message throttling
-            lastStateMessageTimes.clear()
-            lastEmittedStates.clear()
+            feedbackPolicy.resetSession()
             
             _currentPhase.value = Phase.IDLE
             _repCount.value = 0
@@ -654,30 +458,20 @@ class TrainingEngine(
             _anySideDimmedJointCodes.value = emptySet()
             _jointStateInfos.value = emptyMap()
             
-            // Reset position validation state
             _positionErrors.value = emptyList()
             _sceneWarnings.value = emptyList()
             
-            // Reset visibility monitor and two-tier state
             visibilityMonitor.reset()
             visibilityMonitor.resetStats()
             _visibilityState.value = VisibilityState.VISIBLE
-            _isCountingSuspended.value = false
-            _isVisibilityPaused.value = false
-            visibilityResumeStartMs = 0L
-            _visibilityResumeCountdown.value = null
+            pauseController.resetSession()
             
-            // Reset hold-specific state
             if (isHoldExercise) {
-                _holdState.value = HoldState.IDLE
-                _holdElapsedMs.value = 0L
-                _holdRemainingMs.value = targetDurationMs
-                _holdProgress.value = 0f
-                _graceRemainingMs.value = null
-                resetHoldTracking()
+                holdSession.resetTracking { _holdStatus.value = it }
+            } else {
+                _holdStatus.value = null
             }
             
-            // Start motion recording if enabled
             motionRecorder?.start(0L)
         }
         
@@ -687,10 +481,6 @@ class TrainingEngine(
         }
     }
     
-    /**
-     * Pause training
-     * Thread safety: Uses synchronized block to coordinate with processFrame
-     */
     fun pause() {
         synchronized(stateLock) {
             if (!isPaused) {
@@ -701,75 +491,45 @@ class TrainingEngine(
         Log.d(TAG, "Training paused at rep ${repCounter.count}")
     }
     
-    /**
-     * Resume training after any external pause (manual or auto-pause).
-     *
-     * Clears stale internal VisibilityMonitor state so the engine doesn't
-     * start a redundant 3-2-1 countdown when the Supervisor has already
-     * run its own RESUME_SETUP → RESUME_COUNTDOWN flow.
-     *
-     * Thread safety: Uses synchronized block to coordinate with processFrame.
-     */
     fun resume() {
         synchronized(stateLock) {
             settlePauseDurationLocked()
             isPaused = false
 
-            if (_isVisibilityPaused.value || _isCountingSuspended.value) {
-                _isCountingSuspended.value = false
-                _isVisibilityPaused.value = false
-                visibilityResumeStartMs = 0L
-                _visibilityResumeCountdown.value = null
+            if (pauseController.onUserOrSupervisorResume(visibilityMonitor)) {
                 _visibilityState.value = VisibilityState.VISIBLE
-                visibilityMonitor.onResumeCountdownComplete()
-                Log.d(TAG, "Cleared stale visibility state on resume")
             }
         }
         Log.d(TAG, "Training resumed")
     }
     
-    /**
-     * Internal auto-resume called when the 3-2-1 countdown finishes after a
-     * Tier-2 visibility pause. Resets engine state and resumes counting.
-     * Preserves rep count. No SessionSupervisor involvement.
-     */
     private fun performVisibilityResume() {
         stateMachine.reset()
         angleSmoother.reset()
-        formValidator.reset()
+        jointEvaluator.reset()
         positionValidator.clearCooldowns()
         positionValidator.unlockScene()
-        sceneLocked = false
-        lastPositionEventTimes.clear()
-        pendingRepCompletion = false
+        repCompletion.clear()
+        frameFeedback.clearPositionCooldowns()
 
-        _isCountingSuspended.value = false
-        _isVisibilityPaused.value = false
-        visibilityResumeStartMs = 0L
-        _visibilityResumeCountdown.value = null
+        pauseController.clearAfterAutoResume(visibilityMonitor)
         _visibilityState.value = VisibilityState.VISIBLE
-        visibilityMonitor.onResumeCountdownComplete()
 
         _currentPhase.value = Phase.IDLE
         _positionErrors.value = emptyList()
         _sceneWarnings.value = emptyList()
 
         emitEvent(FeedbackEvent.VisibilityResumed(repCount = repCounter.count))
+        pipelineTrace.record("visibility auto-resume rep=${repCounter.count}")
         Log.d(TAG, "Auto-resumed from visibility pause at rep ${repCounter.count}")
     }
     
-    /**
-     * Stop training and get summary
-     * Thread safety: Uses synchronized block to coordinate with processFrame
-     */
     fun stop(): SessionSummary {
         val actualDurationMs: Long
         synchronized(stateLock) {
-            // Calculate actual duration (excluding paused time)
             val now = nowMs()
             val totalElapsed = if (sessionStartTimeMs > 0) now - sessionStartTimeMs else 0L
             
-            // If currently paused, add pending pause duration
             val pendingPause = if (isPaused && pauseStartTimeMs > 0) {
                 pauseClockNowMs() - pauseStartTimeMs
             } else 0L
@@ -778,40 +538,35 @@ class TrainingEngine(
             
             isRunning = false
             isPaused = false
-            _isCountingSuspended.value = false
-            _isVisibilityPaused.value = false
-            visibilityResumeStartMs = 0L
-            _visibilityResumeCountdown.value = null
+            pauseController.resetSession()
             _anySideDimmedJointCodes.value = emptySet()
         }
         
-        val summary = SessionSummary(
-            exerciseName = exerciseConfig.name.en,
-            totalReps = repCounter.count,
-            countedReps = repCounter.countedCount,
-            invalidatedReps = repCounter.invalidatedCount,
-            averageScore = repCounter.getAverageScore(),
-            countedRatio = if (repCounter.count > 0) repCounter.countedCount.toFloat() / repCounter.count else 0f,
-            durationMs = actualDurationMs,
-            stateBreakdown = repCounter.getStateBreakdown(),
-            commonErrors = repCounter.getMostCommonErrors(),
-            repDetails = repCounter.repResults
+        val summary = SessionSummaryBuilder.build(
+            config = exerciseConfig,
+            repCounter = repCounter,
+            durationMs = actualDurationMs
         )
         
         Log.d(TAG, "Training stopped. Duration: ${actualDurationMs}ms, Summary: $summary")
         return summary
     }
     
-    /**
-     * Process a frame with joint angles and optional landmarks
-     * This is called every frame from the camera/pose detection pipeline
-     * 
-     * Thread Safety: Uses synchronized block to prevent concurrent modifications
-     * when called from background thread (video mode) or camera callback thread.
-     * 
-     * @param angles JointAngles from AngleCalculator (already mirrored for front camera)
-     * @param landmarks Optional smoothed landmarks for position-based validation
-     * @param isFrontCamera Whether using front camera (for visibility check mirroring)
+    fun processFrame(input: FrameInput) {
+        processFrame(
+            angles = input.angles,
+            landmarks = input.landmarks,
+            isFrontCamera = input.isFrontCamera,
+            timestampMs = input.timestampMs
+        )
+    }
+
+    /*
+     * Milestone: frame runner.
+     * 1) Set the frame clock and safety guard.
+     * 2) Extract raw tracked angles, then run visibility/pause even while counting is suspended.
+     * 3) If counting can continue, delegate smooth/start/phase/position/joint quality to FramePipelineExecutor.
+     * 4) Publish flows, accumulate rep/hold state, emit throttled feedback, then complete rep/hold after errors.
      */
     fun processFrame(
         angles: JointAngles,
@@ -819,16 +574,13 @@ class TrainingEngine(
         isFrontCamera: Boolean = false,
         timestampMs: Long = SystemClock.uptimeMillis()
     ) {
-        // Early return outside lock for performance
-        // Visibility-paused/suspended frames MUST keep running (for auto-resume detection)
         if (!isRunning || _isCompleted.value) return
-        if (isPaused && !_isVisibilityPaused.value && !_isCountingSuspended.value) return
-        
+        if (isPaused && !pauseController.isVisibilityPaused.value && !pauseController.isCountingSuspended.value) return
+
         synchronized(stateLock) {
             if (!isRunning || _isCompleted.value) return
-            if (isPaused && !_isVisibilityPaused.value && !_isCountingSuspended.value) return
+            if (isPaused && !pauseController.isVisibilityPaused.value && !pauseController.isCountingSuspended.value) return
             
-            // Update current frame time for deterministic timing
             val frameTimeMs = if (timestampMs > 0L) timestampMs else SystemClock.uptimeMillis()
             currentFrameTimeMs = frameTimeMs
             usesExternalFrameTimeline =
@@ -839,9 +591,6 @@ class TrainingEngine(
             if (evaluateSafetyStop(frameTimeMs)) {
                 return
             }
-            
-            
-            // ── 1. Extract angles (always — needed for UI even when suspended) ──
             val angleExtract = jointTracker.extractTrackedAngles(
                 angles = angles,
                 isFlipped = isBilateralFlipped,
@@ -851,7 +600,6 @@ class TrainingEngine(
             val rawTrackedAngles = angleExtract.angles
             val skippedForFrame = angleExtract.skippedJointCodes
 
-            // ── 2. Visibility check (ALWAYS runs — never blocked by pause) ──
             var skipCounting = false
             var allJointsVisible = false
             if (landmarks != null) {
@@ -862,24 +610,27 @@ class TrainingEngine(
                     isFrontCamera = isFrontCamera
                 )
                 _visibilityState.value = visibilityMonitor.state.value
-                skipCounting = handleVisibilityResult(visibilityResult)
+                skipCounting = pauseController.processVisibilityResult(
+                    visibilityResult,
+                    emit = { emitEvent(it) },
+                    onAutoResumeComplete = { performVisibilityResume() }
+                )
                 allJointsVisible = visibilityMonitor.state.value == VisibilityState.VISIBLE
             }
 
-            // ── 2.1 Early exit: validate positions for UI overlay then return ──
             if (skipCounting || rawTrackedAngles.isEmpty()) {
                 _anySideDimmedJointCodes.value = skippedForFrame
                 if (landmarks != null) {
                     val pv = positionValidator.validate(
                         landmarks, stateMachine.currentPhase, isBilateralFlipped, isFrontCamera
                     )
-                    if (!sceneLocked) { positionValidator.lockScene(); sceneLocked = true }
+                    if (!positionValidator.isSceneLocked) { positionValidator.lockScene() }
                     _positionErrors.value = pv.errors + pv.warnings + pv.tips
                     _sceneWarnings.value = if (allJointsVisible) emptyList() else pv.sceneWarnings
                     if (!allJointsVisible) {
                         pv.sceneWarnings.takeIf { it.isNotEmpty() }?.let { warnings ->
                             val now = nowMs()
-                            if (now - lastCameraWarningEventTime >= CAMERA_WARNING_EVENT_COOLDOWN_MS) {
+                            if (now - lastCameraWarningEventTime >= cameraWarningEventCooldownMs) {
                                 lastCameraWarningEventTime = now
                                 cameraWarningCount++
                                 emitEvent(FeedbackEvent.SceneWarnings(warnings))
@@ -890,44 +641,31 @@ class TrainingEngine(
                 return
             }
 
-            // ── 3. Smooth angles ──
-            // Clear smoother history for skipped joints so stale data from a
-            // different camera perspective doesn't pollute angles if the joint
-            // briefly reappears in a MediaPipe hallucination frame.
-            if (skippedForFrame.isNotEmpty()) {
-                angleSmoother.clearJoints(skippedForFrame)
+            val m = framePipelineExecutor.runMainPath(
+                rawTrackedAngles = rawTrackedAngles,
+                skippedForFrame = skippedForFrame,
+                landmarks = landmarks,
+                isBilateralFlipped = isBilateralFlipped,
+                isFrontCamera = isFrontCamera,
+                allJointsVisible = allJointsVisible
+            )
+            val lastPhase = _currentPhase.value
+            if (m.currentPhase != lastPhase) {
+                pipelineTrace.record("phase: $lastPhase -> ${m.currentPhase}")
             }
-            val smoothedAngles = angleSmoother.smooth(rawTrackedAngles)
-            _currentAngles.value = smoothedAngles
-            _anySideDimmedJointCodes.value = skippedForFrame
-
-            val primaryAngles = smoothedAngles.filterKeys { jointCode ->
-                primaryJointCodes.contains(jointCode)
-            }
-
-            // ── 4. Start position check ──
-            val inStartPos = formValidator.isInStartPosition(smoothedAngles)
-            _isInStartPosition.value = inStartPos
-
-            // ── 5. Phase machine (BEFORE position validation for correct phase) ──
-            val currentPhase = stateMachine.update(primaryAngles)
-            _currentPhase.value = currentPhase
-
-            // ── 5.1 Position validation (uses UPDATED phase) ──
-            var cachedPositionValidation: PositionValidationResult? = null
-            if (landmarks != null) {
-                cachedPositionValidation = positionValidator.validate(
-                    landmarks, currentPhase, isBilateralFlipped, isFrontCamera
-                )
-                if (!sceneLocked) { positionValidator.lockScene(); sceneLocked = true }
+            _currentAngles.value = m.smoothedAngles
+            _anySideDimmedJointCodes.value = m.skippedForFrame
+            _isInStartPosition.value = m.inStartPosition
+            _currentPhase.value = m.currentPhase
+            m.positionResult?.let { cachedPositionValidation ->
                 _positionErrors.value = cachedPositionValidation.errors +
-                        cachedPositionValidation.warnings + cachedPositionValidation.tips
+                    cachedPositionValidation.warnings + cachedPositionValidation.tips
                 _sceneWarnings.value = if (allJointsVisible) emptyList()
                     else cachedPositionValidation.sceneWarnings
                 if (!allJointsVisible) {
                     cachedPositionValidation.sceneWarnings.takeIf { it.isNotEmpty() }?.let { warnings ->
                         val now = nowMs()
-                        if (now - lastCameraWarningEventTime >= CAMERA_WARNING_EVENT_COOLDOWN_MS) {
+                        if (now - lastCameraWarningEventTime >= cameraWarningEventCooldownMs) {
                             lastCameraWarningEventTime = now
                             cameraWarningCount++
                             emitEvent(FeedbackEvent.SceneWarnings(warnings))
@@ -935,31 +673,25 @@ class TrainingEngine(
                     }
                 }
             }
-
-            // ── 6. Form validation (state-based) ──
-            val jointStateInfos = formValidator.getJointStateInfos(smoothedAngles, currentPhase)
+            val frameResult = m.frameJoint
+            val currentPhase = m.currentPhase
+            val jointEvals = frameResult.jointEvals
+            val jointStateInfos = frameResult.jointStateInfos
+            val cachedPositionValidation = m.positionResult
             _jointStateInfos.value = jointStateInfos
-            emitStateMessages(jointStateInfos)
+            frameFeedback.emitThrottledStateMessages(jointStateInfos, ::emitEvent)
 
             motionRecorder?.record(
                 timestamp = frameTimeMs,
                 phase = currentPhase,
-                angles = smoothedAngles,
+                angles = m.smoothedAngles,
                 states = jointStateInfos,
-                skippedJointCodes = skippedForFrame
+                skippedJointCodes = m.skippedForFrame
             )
 
-            @Suppress("DEPRECATION")
-            val validation = formValidator.validateFromStateInfos(jointStateInfos)
-            @Suppress("DEPRECATION")
-            lastValidationResult = validation
-            @Suppress("DEPRECATION")
-            _jointStatuses.value = validation.jointStatuses
-
-            val hasDanger = formValidator.hasDangerState(jointStateInfos)
+            val hasDanger = jointEvals.hasAnyDangerState()
             _isDangerActive.value = hasDanger
 
-            // ── 6.2 Rep scoring ──
             val shouldTrackState = if (isHoldExercise) {
                 currentPhase == Phase.COUNT
             } else {
@@ -967,357 +699,60 @@ class TrainingEngine(
             }
 
             if (shouldTrackState) {
-                // Exclude joints that were skipped this frame from rep state
-                // accumulation. The FormValidator didn't evaluate them, but if a
-                // joint briefly appeared (MediaPipe visibility spike) and then was
-                // skipped again, we don't want its one-frame anomalous state to
-                // pollute the accumulated worst-state for the rep.
-                val statesForScoring = if (skippedForFrame.isEmpty()) {
-                    jointStateInfos
-                } else {
-                    jointStateInfos.filterKeys { it !in skippedForFrame }
-                }
-                repCounter.updateJointStates(statesForScoring)
+                repCounter.updateJointEvals(
+                    frameResult.forScoring(m.skippedForFrame)
+                )
             }
 
-            // ── 7. Arrow infos for skeleton overlay ──
-            @Suppress("DEPRECATION")
-            _arrowInfos.value = formValidator.buildJointArrowInfos(jointStateInfos)
-
-            // ── 8. Form + position errors ──
-            for (error in validation.errors) {
+            val jointErrors = JointErrorCollection.collectJointErrors(trackedJointsByCode, jointStateInfos)
+            for (error in jointErrors) {
                 repCounter.addError(error)
-                emitEvent(FeedbackEvent.JointErrorDetected(error))
+                if (!frameFeedback.shouldEmitJointError(error)) continue
+                emitEvent(
+                    FeedbackEvent.JointQuality(
+                        content = JointQualityContent.Error(error),
+                        priority = FeedbackPriority.HIGH
+                    )
+                )
             }
 
             cachedPositionValidation?.let { pv ->
                 pv.errors.forEach { error ->
                     repCounter.addPositionError(error)
-                    if (shouldEmitPositionEvent(error.checkId)) {
-                        emitEvent(FeedbackEvent.PositionErrorDetected(error))
+                    if (frameFeedback.shouldEmitPositionEvent(error.checkId)) {
+                        emitEvent(FeedbackEvent.PositionCheckFeedback(error))
                     }
                 }
                 pv.warnings.forEach { error ->
                     repCounter.addPositionWarning(error)
-                    if (shouldEmitPositionEvent(error.checkId)) {
-                        emitEvent(FeedbackEvent.PositionWarningDetected(error))
+                    if (frameFeedback.shouldEmitPositionEvent(error.checkId)) {
+                        emitEvent(FeedbackEvent.PositionCheckFeedback(error))
                     }
                 }
                 pv.tips.forEach { tip ->
                     repCounter.addPositionTip(tip)
-                    if (shouldEmitPositionEvent(tip.checkId)) {
-                        emitEvent(FeedbackEvent.PositionTipDetected(tip))
+                    if (frameFeedback.shouldEmitPositionEvent(tip.checkId)) {
+                        emitEvent(FeedbackEvent.PositionCheckFeedback(tip))
                     }
                 }
             }
 
-            // ── 9. Handle based on counting method ──
             if (isHoldExercise) {
-                // Update hold timer based on current phase
-                // Phase.COUNT means user is in hold zone (downRange)
                 val isInHoldZone = (currentPhase == Phase.COUNT)
-                updateHoldTimer(isInHoldZone)
-                
-                // Form quality is now tracked internally by RepCounter via updateWorstState/stateTimeTracking
-                // We update the state flow for UI purposes using intermediate calculation
-                if (_holdState.value == HoldState.HOLDING) {
-                    // Estimate current quality from RepCounter (if exposed) or keep 1.0 until completion
-                    // For now, we'll rely on the final score at completion
-                }
+                holdSession.updateHoldTimer(isInHoldZone) { s -> _holdStatus.value = s }
             } else {
-                // Rep-based: Handle pending rep completion AFTER validation and error collection
-                // This ensures all errors from the final frame are included in the completed rep
-                if (pendingRepCompletion) {
-                    pendingRepCompletion = false
-                    handleRepCompleted()
-                }
+                repCompletion.consumeIfPendingAndHandle()
             }
 
             evaluateSafetyStop(frameTimeMs)
-        } // End synchronized(stateLock)
-    }
-    
-    /**
-     * Handle rep completion (called by state machine)
-     */
-    private fun handleRepCompleted() {
-        // Record phase timings
-        val phaseTimings = stateMachine.getPhaseTimings()
-        repCounter.setPhaseTimings(phaseTimings)
-        
-        // Get current state before completing rep
-        val worstState = repCounter.getCurrentWorstState()
-        val score = repCounter.getPendingScore()
-        
-        // Complete the rep
-        val previousCount = repCounter.count
-        repCounter.completeRep()
-
-        // Clear phase timings for next cycle regardless of completion
-        stateMachine.clearTimings()
-
-        val repCompleted = repCounter.count > previousCount
-        if (!repCompleted) {
-            Log.w(TAG, "Rep completion ignored by RepCounter (likely min interval guard)")
-            return
-        }
-        
-        // Finalize motion recording for this rep
-        motionRecorder?.finalizeRep(
-            repNumber = repCounter.count,
-            phaseTimings = phaseTimings.mapKeys { it.key.name.lowercase() },
-            worstState = worstState,
-            score = score
-        )
-        
-        // Bilateral: Switch side after every N reps
-        if (isBilateral) {
-            val switchEvery = bilateralConfig?.switchEvery ?: 1
-            if (repCounter.count % switchEvery == 0) {
-                _currentBilateralSide = _currentBilateralSide.flip()
-                _bilateralSide.value = _currentBilateralSide
-                Log.d(TAG, "Bilateral side switched to: $_currentBilateralSide")
-            }
-        }
-        
-        Log.d(TAG, "Rep ${repCounter.count} completed. Correct: ${repCounter.correctCount}/${repCounter.count}")
-    }
-    
-    // ==================== Hold Timer Methods ====================
-    
-    /**
-     * Setup callbacks for HoldTimer
-     */
-    private fun setupHoldTimerCallbacks() {
-        holdTimer?.let { timer ->
-            timer.onStateChanged = { oldState, newState ->
-                _holdState.value = newState
-                Log.d(TAG, "Hold state: $oldState → $newState")
-            }
-            
-            timer.onHoldStarted = {
-                // Reset tracking when hold starts
-                resetHoldTracking()
-                emitEvent(FeedbackEvent.HoldStarted())
-                Log.d(TAG, "Hold started!")
-            }
-            
-            timer.onGraceStarted = { elapsedMs, gracePeriodMs ->
-                emitEvent(FeedbackEvent.HoldGraceStarted(
-                    gracePeriodMs = gracePeriodMs,
-                    elapsedBeforeGraceMs = elapsedMs
-                ))
-                Log.d(TAG, "Grace period started (elapsed: ${elapsedMs}ms)")
-            }
-            
-            timer.onGraceResumed = { elapsedMs, gracePeriodsUsed ->
-                emitEvent(FeedbackEvent.HoldResumed(
-                    elapsedMs = elapsedMs,
-                    gracePeriodsUsed = gracePeriodsUsed
-                ))
-                Log.d(TAG, "Resumed from grace (elapsed: ${elapsedMs}ms, graceCount: $gracePeriodsUsed)")
-            }
-            
-            timer.onCompleted = { totalMs, gracePeriodsUsed ->
-                // Finalize scoring FIRST — completeRep may trigger onTargetReached
-                // which sets _isCompleted via the existing callback chain.
-                repCounter.completeRep()
-
-                val finalResult = repCounter.getLastRepResult()
-                val score = finalResult?.score ?: 0f
-                val formQuality = score / 100f
-
-                _holdFormQuality.value = formQuality
-                _holdErrorCount.value = finalResult?.getTotalErrorCount() ?: 0
-                _holdJointErrorMap.value = emptyMap()
-
-                // Guarantee completion flag (idempotent if onTargetReached already set it)
-                _isCompleted.value = true
-
-                emitEvent(FeedbackEvent.HoldCompleted(
-                    totalMs = totalMs,
-                    targetMs = targetDurationMs ?: 0L,
-                    formQuality = formQuality,
-                    gracePeriodsUsed = gracePeriodsUsed
-                ))
-                Log.d(TAG, "★ Hold COMPLETED! (totalMs: $totalMs, formQuality: $formQuality, score: $score)")
-            }
-            
-            timer.onFailed = { elapsedMs, gracePeriodsUsed ->
-                emitEvent(FeedbackEvent.HoldFailed(
-                    elapsedBeforeFailMs = elapsedMs,
-                    targetMs = targetDurationMs ?: 0L,
-                    gracePeriodCount = gracePeriodsUsed
-                ))
-                Log.d(TAG, "✗ Hold FAILED! (elapsedMs: $elapsedMs)")
-                
-                // Auto-reset after failure
-                timer.reset()
-                _holdState.value = HoldState.IDLE
-                _holdElapsedMs.value = 0L
-                _holdRemainingMs.value = targetDurationMs
-                _holdProgress.value = 0f
-                _graceRemainingMs.value = null
-                resetHoldTracking()
-            }
         }
     }
     
-    /**
-     * Update hold timer and state flows
-     */
-    private fun updateHoldTimer(isInHoldZone: Boolean) {
-        holdTimer?.let { timer ->
-            val currentTimeMs = nowMs()
-            timer.update(isInHoldZone, currentTimeMs)
-            
-            // Update state flows
-            _holdState.value = timer.state.value
-            _holdElapsedMs.value = timer.elapsedMs.value
-            _holdRemainingMs.value = timer.getRemainingMs()
-            _holdProgress.value = timer.getProgress()
-            _graceRemainingMs.value = timer.graceRemainingMs.value
-        }
-    }
-    
-    /**
-     * Reset hold form quality tracking
-     * Called when hold starts or resets
-     */
-    private fun resetHoldTracking() {
-        _holdFormQuality.value = 1.0f // Start with perfect quality
-        _holdErrorCount.value = 0
-        _holdJointErrorMap.value = emptyMap()
-        Log.d(TAG, "Hold form tracking reset")
-    }
-    
-    /**
-     * Emit feedback event
-     */
     private fun emitEvent(event: FeedbackEvent) {
         _events.tryEmit(event)
     }
 
-    /**
-     * Emit state messages for joints (WARNING/PAD/NORMAL/PERFECT)
-     * Uses throttling per joint to avoid spam.
-     */
-    private fun emitStateMessages(stateInfos: Map<String, JointStateInfo>) {
-        val now = nowMs()
-        
-        for ((jointCode, info) in stateInfos) {
-            val state = info.state
-            
-            // Skip transition, danger, and warning — all three produce JointErrors
-            // and are delivered via JointErrorDetected (with phase-aware messages).
-            if (state == JointState.TRANSITION || state == JointState.DANGER || state == JointState.WARNING) continue
-            
-            val message = info.messages.firstOrNull() ?: continue
-            val lastState = lastEmittedStates[jointCode]
-            val lastTime = lastStateMessageTimes[jointCode] ?: 0L
-            val cooldown = SettingsManager.getStateMessageCooldown()
-            
-            val shouldEmit = (lastState != state) || (now - lastTime >= cooldown)
-            if (!shouldEmit) continue
-            
-            emitEvent(FeedbackEvent.JointStateMessage(
-                jointCode = jointCode,
-                state = state,
-                zone = info.currentZone,
-                message = message
-            ))
-            
-            lastEmittedStates[jointCode] = state
-            lastStateMessageTimes[jointCode] = now
-        }
-    }
-
-    /**
-     * Two-tier visibility handling. Returns true when frame should skip
-     * rep-counting logic (tiers 1 & 2), false to continue normally.
-     *
-     * Tier 1 (ShowWarning): suspend counting, keep processFrame alive.
-     * Tier 2 (PauseTraining): full-pause UI overlay, still keep processFrame alive.
-     * Auto-resume: internal 3-2-1 countdown, no SessionSupervisor involvement.
-     */
-    private fun handleVisibilityResult(result: VisibilityCheckResult): Boolean {
-        return when (result) {
-
-            is VisibilityCheckResult.ShowWarning -> {
-                _isCountingSuspended.value = true
-                visibilityResumeStartMs = 0L
-                _visibilityResumeCountdown.value = null
-                emitEvent(FeedbackEvent.VisibilityWarning(
-                    message = result.message,
-                    remainingBeforePauseMs = result.remainingBeforePause,
-                    invisibleJoints = result.invisibleJoints
-                ))
-                true
-            }
-
-            is VisibilityCheckResult.PauseTraining -> {
-                _isCountingSuspended.value = true
-                if (!_isVisibilityPaused.value) {
-                    _isVisibilityPaused.value = true
-                    emitEvent(FeedbackEvent.VisibilityPaused(
-                        savedRepCount = result.savedRepCount,
-                        savedPhase = result.savedPhase,
-                        message = result.message
-                    ))
-                }
-                true
-            }
-
-            is VisibilityCheckResult.StartResumeCountdown -> {
-                visibilityResumeStartMs = nowMs()
-                _visibilityResumeCountdown.value = 3
-                true
-            }
-
-            is VisibilityCheckResult.ContinueCountdown -> {
-                if (visibilityResumeStartMs > 0L) {
-                    val elapsed = nowMs() - visibilityResumeStartMs
-                    val remaining = ((VISIBILITY_RESUME_COUNTDOWN_MS - elapsed) / 1000).toInt().coerceAtLeast(0)
-                    _visibilityResumeCountdown.value = remaining
-
-                    if (elapsed >= VISIBILITY_RESUME_COUNTDOWN_MS) {
-                        performVisibilityResume()
-                        return false
-                    }
-                }
-                true
-            }
-
-            is VisibilityCheckResult.ContinueTraining -> {
-                val wasSuspended = _isCountingSuspended.value
-                val wasPaused = _isVisibilityPaused.value
-
-                if (wasSuspended && !wasPaused) {
-                    _isCountingSuspended.value = false
-                    visibilityResumeStartMs = 0L
-                    _visibilityResumeCountdown.value = null
-                }
-                false
-            }
-        }
-    }
-
-    /**
-     * Throttle position feedback events per check using the check's cooldownMs.
-     * Visual overlay is driven by state flows and remains visible while the issue persists.
-     */
-    private fun shouldEmitPositionEvent(checkId: String): Boolean {
-        val now = nowMs()
-        val cooldown = positionChecksById[checkId]?.cooldownMs ?: 1500L
-        val lastTime = lastPositionEventTimes[checkId] ?: 0L
-        if (now - lastTime < cooldown) return false
-        lastPositionEventTimes[checkId] = now
-        return true
-    }
-    
-    // NOTE: shouldEmitCameraWarning() removed - throttling now handled by MessageOrchestrator
-    
-    // ==================== Getters ====================
+    // Milestone: compatibility getters used by UI/reporting while the internals keep moving out.
     
     fun getExerciseConfig(): ExerciseConfig = exerciseConfig
     fun getTargetReps(): Int = targetReps
@@ -1328,123 +763,37 @@ class TrainingEngine(
     fun getProgress(): Float = repCounter.getProgress()
     fun isTrainingActive(): Boolean = isRunning && !isPaused
 
-    /** Get all rep results for detailed reporting. */
     fun getRepResults(): List<RepResult> = repCounter.repResults
     
-    /** Legacy compatibility */
     fun getCorrectReps(): Int = repCounter.countedCount
-    
-    /**
-     * Get tracked joint codes (for UI to know which joints to highlight)
-     */
+
     fun getTrackedJointCodes(): Set<String> = jointTracker.trackedJointCodes
-    
-    /**
-     * Get primary joint codes
-     */
     fun getPrimaryJointCodes(): Set<String> = jointTracker.primaryJointCodes
-    
-    /**
-     * Get landmark index for a joint code (for skeleton overlay)
-     */
     fun getLandmarkIndex(jointCode: String): Int? = jointTracker.getLandmarkIndex(jointCode)
-    
-    /**
-     * Get all tracked landmark indices
-     */
     fun getTrackedLandmarkIndices(): List<Int> = jointTracker.getTrackedLandmarkIndices()
-    
-    // ==================== Hot-Swap Support ====================
-    
-    /**
-     * Check if this engine can be hot-swapped to a new exercise
-     * Hot-swap is supported when the new exercise uses the same counting method
-     */
+
     fun canHotSwapTo(newConfig: ExerciseConfig): Boolean {
         return newConfig.countingMethod == exerciseConfig.countingMethod
     }
-    
-    /**
-     * Get current exercise config (for comparison during hot-swap)
-     */
+
     fun getCurrentExerciseConfig(): ExerciseConfig = exerciseConfig
-    
-    // ==================== Hold-specific Getters ====================
-    
-    /**
-     * Get target duration for hold exercises (returns 0 for rep-based)
-     */
+
     fun getTargetDurationMs(): Long = targetDurationMs ?: 0L
-    
-    /**
-     * Get target duration in seconds for hold exercises (returns 0 for rep-based)
-     */
     fun getTargetDurationSeconds(): Int = ((targetDurationMs ?: 0L) / 1000L).toInt()
-    
-    /**
-     * Get current hold timer instance (null for rep-based)
-     */
     fun getHoldTimer(): HoldTimer? = holdTimer
-    
-    /**
-     * Check if hold is completed
-     */
     fun isHoldCompleted(): Boolean = holdTimer?.isCompleted() ?: false
-    
-    /**
-     * Check if hold has failed
-     */
     fun isHoldFailed(): Boolean = holdTimer?.isFailed() ?: false
-    
-    /**
-     * Check if currently in grace period
-     */
     fun isInGracePeriod(): Boolean = holdTimer?.isInGracePeriod() ?: false
-    
-    /**
-     * Get number of grace periods used
-     */
     fun getGracePeriodCount(): Int = holdTimer?.getGracePeriodCount() ?: 0
-    
-    // ==================== Position Validation Getters ====================
-    
-    /**
-     * Check if position validation is enabled for this exercise
-     */
+
     fun hasPositionChecks(): Boolean = hasPositionChecksConfigured
-
-    /**
-     * Number of throttled scene-warning events emitted during this session.
-     */
     fun getCameraWarningCount(): Int = cameraWarningCount
-
-    
-    /**
-     * Get current position errors
-     */
     fun getCurrentPositionErrors(): List<PositionError> = _positionErrors.value
-    
-    /**
-     * Get last detected camera result
-     */
     fun getLastCameraResult(): CameraPositionDetector.CameraDetectionResult? = 
         positionValidator.getLastCameraResult()
-    
-    // ==================== Visibility Getters ====================
-    
-    /**
-     * Check if currently paused due to visibility
-     */
-    fun isVisibilityPausedNow(): Boolean = _isVisibilityPaused.value
-    
-    /**
-     * Get current visibility state
-     */
+
+    fun isVisibilityPausedNow(): Boolean = pauseController.isVisibilityPaused.value
     fun getVisibilityState(): VisibilityState = _visibilityState.value
-    
-    /**
-     * Get visibility statistics
-     */
     fun getVisibilityStats(): VisibilityStats = visibilityMonitor.getStats()
 }
 

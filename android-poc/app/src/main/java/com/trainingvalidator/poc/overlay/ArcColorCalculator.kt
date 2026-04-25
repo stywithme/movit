@@ -103,7 +103,7 @@ object ArcColorCalculator {
      * Get color for a specific angle based on its position within the ranges
      * 
      * USES ENGINE ZONE LOGIC:
-     * First determines zone using same logic as FormValidator,
+     * First determines zone using same range logic as [JointEvaluator] / [TrackedJoint],
      * then applies gradient within valid zones.
      * 
      * @param angle Current joint angle

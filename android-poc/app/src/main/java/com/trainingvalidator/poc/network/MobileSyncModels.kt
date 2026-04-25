@@ -1,5 +1,7 @@
 package com.trainingvalidator.poc.network
 
+import android.util.Log
+
 import com.google.gson.annotations.SerializedName
 import com.trainingvalidator.poc.training.models.ExerciseConfig
 import com.trainingvalidator.poc.training.models.WorkoutConfig
@@ -155,7 +157,7 @@ data class ExerciseConfigWithMeta(
      * Convert to ExerciseConfig (without meta)
      */
     fun toExerciseConfig(): ExerciseConfig {
-        return ExerciseConfig(
+        val config = ExerciseConfig(
             name = name,
             description = description,
             instructions = instructions,
@@ -177,10 +179,16 @@ data class ExerciseConfigWithMeta(
             isBilateral = isBilateral,
             bilateralConfig = bilateralConfig,
             fileName = slug  // Use slug as fileName for compatibility
-        )
+        ).sanitizeGsonDefaults()
+        val issues = config.validationIssues()
+        if (issues.isNotEmpty()) {
+            Log.w(TAG, "ExerciseConfig validation for slug=$slug: ${issues.joinToString("; ")}")
+        }
+        return config
     }
 
     companion object {
+        private const val TAG = "ExerciseConfigWithMeta"
         /**
          * Build network meta from a cached [ExerciseConfig] (e.g. offline fallback or message re-resolve).
          */

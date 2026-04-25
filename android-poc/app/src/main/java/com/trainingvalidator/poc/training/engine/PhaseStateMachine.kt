@@ -2,6 +2,7 @@ package com.trainingvalidator.poc.training.engine
 
 import android.util.Log
 import com.trainingvalidator.poc.training.config.SettingsManager
+import com.trainingvalidator.poc.training.engine.policy.TimingPolicy
 import com.trainingvalidator.poc.training.models.CountingMethod
 import com.trainingvalidator.poc.training.models.RepCountingConfig
 import com.trainingvalidator.poc.training.models.TrackedJoint
@@ -10,7 +11,7 @@ import com.trainingvalidator.poc.training.models.TrackedJoint
  * PhaseStateMachine - Manages exercise phases using STATE-BASED ranges
  * 
  * Phase determination uses the OUTERMOST bounds of StateRanges to define zones.
- * Quality assessment (PERFECT/NORMAL/PAD/WARNING/DANGER) is handled by FormValidator.
+ * Per-joint quality (PERFECT/NORMAL/PAD/WARNING/DANGER) is handled by [com.trainingvalidator.poc.training.engine.evaluation.JointEvaluator].
  * 
  * Zone Layout (using StateRanges):
  * 
@@ -36,14 +37,19 @@ import com.trainingvalidator.poc.training.models.TrackedJoint
  *     0° ─────────────────────────
  * 
  * NOTE: Difficulty level has been REMOVED. All users get the same phase thresholds.
- * Quality scoring is handled separately by FormValidator using JointState.
+ * Per-rep quality scoring is handled by [RepCounter] from [JointState] / [com.trainingvalidator.poc.training.engine.evaluation.JointEval].
  */
 class PhaseStateMachine(
     private val countingMethod: CountingMethod,
     private val primaryJoints: List<TrackedJoint>,
     private val repCountingConfig: RepCountingConfig? = null,
     private val numberOfPhases: Int = 4,
-    private val timeProvider: () -> Long = { System.currentTimeMillis() }
+    private val timeProvider: () -> Long = { System.currentTimeMillis() },
+    /**
+     * Phase boundary buffer (°). Default matches legacy [SettingsManager] until all call sites pass [com.trainingvalidator.poc.training.engine.policy.StabilityPolicy.phaseHysteresisDegrees].
+     */
+    phaseHysteresisDegrees: Double = SettingsManager.getHysteresis(),
+    private val timingPolicy: TimingPolicy = TimingPolicy.default()
 ) {
     
     companion object {
@@ -53,25 +59,14 @@ class PhaseStateMachine(
     // ==================== Configurable Thresholds ====================
     
     /**
-     * Hysteresis buffer from global settings (prevents flickering at boundaries)
+     * Hysteresis buffer (prevents flickering at boundaries)
      */
-    private val hysteresis: Double = SettingsManager.getHysteresis()
+    private val hysteresis: Double = phaseHysteresisDegrees
     
-    /**
-     * Minimum rep interval from exercise config or global default
-     */
-    private val minRepIntervalMs: Long = repCountingConfig?.getMinRepInterval(
-        SettingsManager.getDefaultMinRepInterval()
-    ) ?: SettingsManager.getDefaultMinRepInterval()
-    
-    /**
-     * Minimum phase duration calculated from minRepInterval / numberOfPhases
-     * or fallback to global default
-     */
-    private val minPhaseDurationMs: Long = repCountingConfig?.calculateMinPhaseDuration(
-        numberOfPhases,
-        SettingsManager.getDefaultMinPhaseDuration()
-    ) ?: SettingsManager.getDefaultMinPhaseDuration()
+    private val minRepIntervalMs: Long = timingPolicy.minRepIntervalFor(repCountingConfig)
+
+    private val minPhaseDurationMs: Long =
+        timingPolicy.minPhaseDurationFor(repCountingConfig, numberOfPhases)
     
     /**
      * Current phase of the exercise
@@ -170,7 +165,7 @@ class PhaseStateMachine(
      * Update the state machine with new angles
      * 
      * NOTE: Expects pre-smoothed angles from AngleSmoother (via TrainingEngine)
-     * This ensures consistency with FormValidator which uses the same smoothed angles.
+     * This ensures consistency with [JointEvaluator] which uses the same smoothed angles.
      * 
      * For multi-primary UP_DOWN exercises, each joint uses its own StateRanges thresholds
      * (strict all-must-complete). Transitions require every primary joint to satisfy the

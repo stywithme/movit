@@ -8,8 +8,7 @@ import com.trainingvalidator.poc.training.models.ZoneType
 /**
  * ArcRangeData - Data model for Arc Range visualization
  * 
- * UPDATED: Now supports both legacy JointArrowInfo and new JointStateInfo.
- * Uses StateRanges for accurate color calculation matching LineRangeIndicator.
+ * Built from [JointStateInfo] for accurate coloring (matches [LineRangeIndicator]).
  * 
  * Coordinate System:
  * - Joint angles: 0° (fully bent) to 180° (fully extended)
@@ -169,42 +168,6 @@ data class ArcRangeData(
                 downStateRanges = downRanges,
                 zoneType = stateInfo.currentZone,
                 invertAngles = stateInfo.invertIndicator
-            )
-        }
-        
-        /**
-         * Create ArcRangeData from JointArrowInfo (Legacy)
-         * @deprecated Use fromStateInfo() instead
-         */
-        @Suppress("DEPRECATION")
-        @Deprecated("Use fromStateInfo() with JointStateInfo instead")
-        fun fromArrowInfo(
-            jointCode: String,
-            centerX: Float,
-            centerY: Float,
-            arrowInfo: com.trainingvalidator.poc.training.engine.JointArrowInfo
-        ): ArcRangeData {
-            // Convert legacy JointZone to ZoneType
-            val zoneType = when (arrowInfo.zone) {
-                com.trainingvalidator.poc.training.engine.JointZone.UP_ZONE -> ZoneType.UP_ZONE
-                com.trainingvalidator.poc.training.engine.JointZone.DOWN_ZONE -> ZoneType.DOWN_ZONE
-                com.trainingvalidator.poc.training.engine.JointZone.TRANSITION -> ZoneType.TRANSITION
-                com.trainingvalidator.poc.training.engine.JointZone.TOO_HIGH -> ZoneType.UP_ZONE
-                com.trainingvalidator.poc.training.engine.JointZone.TOO_LOW -> ZoneType.DOWN_ZONE
-            }
-            return ArcRangeData(
-                jointCode = jointCode,
-                centerX = centerX,
-                centerY = centerY,
-                currentAngle = arrowInfo.currentAngle,
-                upRangeMin = arrowInfo.upRangeMin,
-                upRangeMax = arrowInfo.upRangeMax,
-                downRangeMin = arrowInfo.downRangeMin,
-                downRangeMax = arrowInfo.downRangeMax,
-                zone = zoneType,
-                isError = arrowInfo.isError,
-                isWarning = arrowInfo.isWarning,
-                isPrimary = arrowInfo.isPrimary
             )
         }
     }

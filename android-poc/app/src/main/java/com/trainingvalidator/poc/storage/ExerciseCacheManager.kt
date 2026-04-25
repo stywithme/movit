@@ -84,6 +84,13 @@ class ExerciseCacheManager(private val context: Context) {
                             gson.fromJson(file.readText(), cachedEntityType)
                         val sanitized = cached.copy(config = cached.config.sanitizeGsonDefaults())
                         sanitized.config.fileName = cached.slug
+                        val cacheIssues = sanitized.config.validationIssues()
+                        if (cacheIssues.isNotEmpty()) {
+                            Log.w(
+                                TAG,
+                                "ExerciseConfig validation for cached slug=${sanitized.slug}: ${cacheIssues.joinToString("; ")}"
+                            )
+                        }
                         exerciseCache[sanitized.slug] = sanitized
                     } catch (e: Exception) {
                         Log.w(TAG, "Failed to load exercise: ${file.name}", e)
