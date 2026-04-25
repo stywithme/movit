@@ -1,6 +1,7 @@
 package com.trainingvalidator.poc.ui.subscription
 
 import android.content.Context
+import android.content.Intent
 import android.net.Uri
 import android.os.Bundle
 import android.view.LayoutInflater
@@ -93,6 +94,13 @@ class SubscriptionActivity : AppCompatActivity(), PurchasesUpdatedListener {
         })
 
         loadAll(showRefreshIndicator = false)
+        handleReturnIntent(intent)
+    }
+
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        setIntent(intent)
+        handleReturnIntent(intent)
     }
 
     override fun onResume() {
@@ -285,6 +293,37 @@ class SubscriptionActivity : AppCompatActivity(), PurchasesUpdatedListener {
                 }
             } catch (_: Exception) {
                 Toast.makeText(this@SubscriptionActivity, R.string.subscription_checkout_failed, Toast.LENGTH_LONG).show()
+            }
+        }
+    }
+
+    private fun handleReturnIntent(source: Intent?) {
+        val data = source?.data ?: return
+        if (data.scheme != "waytofix" || data.host != "subscription") return
+        val checkoutId = data.getQueryParameter("checkoutId")
+        val status = data.getQueryParameter("status")
+
+        lifecycleScope.launch {
+            when (status) {
+                "paid" -> {
+                    clearPendingCheckout()
+                    refreshSessionFromServer()
+                    Toast.makeText(this@SubscriptionActivity, R.string.subscription_purchase_success, Toast.LENGTH_SHORT).show()
+                    loadAll(showRefreshIndicator = true)
+                }
+                "pending" -> {
+                    if (!checkoutId.isNullOrBlank()) {
+                        savePendingCheckout(checkoutId)
+                        pollCheckoutOnce(checkoutId)
+                    }
+                    Toast.makeText(this@SubscriptionActivity, R.string.subscription_payment_pending, Toast.LENGTH_LONG).show()
+                    loadAll(showRefreshIndicator = true)
+                }
+                "failed" -> {
+                    clearPendingCheckout()
+                    Toast.makeText(this@SubscriptionActivity, R.string.subscription_checkout_failed, Toast.LENGTH_LONG).show()
+                    loadAll(showRefreshIndicator = true)
+                }
             }
         }
     }

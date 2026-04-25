@@ -37,33 +37,34 @@ export class SubscriptionMyFatoorahController {
     ) {
         const failedBool = failed === 'true' || failed === '1' || failed === 'True';
         try {
-            const { outcome } = await this.subscriptionService.reconcileMyFatoorahResult({
+            const { outcome, checkout } = await this.subscriptionService.reconcileMyFatoorahResult({
                 checkoutId: checkoutId || null,
                 paymentId: paymentId || paymentIdAlt || null,
                 invoiceId: invoiceId || invoiceIdAlt || idAlt || null,
                 failed: failedBool,
             });
+            const appUrl = this.appReturnUrl(outcome, checkout?.id || checkoutId || null);
             let title: string;
             let body: string;
             if (outcome === 'failed') {
                 title = 'Payment failed';
-                body = 'You can close this window and return to the app.';
+                body = 'Returning to the app...';
             } else if (outcome === 'paid') {
                 title = 'Payment successful';
-                body = 'Your subscription will update in the app shortly. You can close this window.';
+                body = 'Returning to the app to refresh your subscription...';
             } else {
                 title = 'Payment pending';
                 body =
-                    'We could not confirm payment yet. Return to the app and pull to refresh, or wait for confirmation.';
+                    'Returning to the app. If payment is still pending, pull to refresh after a few seconds.';
             }
             res.status(HttpStatus.OK);
             res.setHeader('Content-Type', 'text/html; charset=utf-8');
-            return res.send(this.resultHtml(title, body));
+            return res.send(this.resultHtml(title, body, appUrl));
         } catch (e) {
             const message = e instanceof Error ? e.message : 'Unable to confirm payment';
             res.status(HttpStatus.BAD_REQUEST);
             res.setHeader('Content-Type', 'text/html; charset=utf-8');
-            return res.send(this.resultHtml('Payment status', message));
+            return res.send(this.resultHtml('Payment status', message, null));
         }
     }
 
@@ -80,9 +81,23 @@ export class SubscriptionMyFatoorahController {
         return this.subscriptionService.handleMyFatoorahWebhook(body, signature);
     }
 
-    private resultHtml(title: string, message: string): string {
+    private appReturnUrl(status: 'paid' | 'pending' | 'failed', checkoutId: string | null): string {
+        const scheme = process.env.MOBILE_APP_DEEP_LINK_SCHEME || 'waytofix';
+        const params = new URLSearchParams({ status });
+        if (checkoutId) params.set('checkoutId', checkoutId);
+        return `${scheme}://subscription/result?${params.toString()}`;
+    }
+
+    private resultHtml(title: string, message: string, appUrl: string | null): string {
         const safeTitle = title.replace(/</g, '&lt;').replace(/>/g, '&gt;');
         const safeMessage = message.replace(/</g, '&lt;').replace(/>/g, '&gt;');
-        return `<!DOCTYPE html><html><head><meta charset="utf-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/><title>${safeTitle}</title></head><body style="font-family:system-ui,sans-serif;padding:24px;background:#0f172a;color:#e2e8f0;"><h1 style="font-size:1.25rem;">${safeTitle}</h1><p style="opacity:.9;">${safeMessage}</p></body></html>`;
+        const safeAppUrl = appUrl?.replace(/"/g, '&quot;') || '';
+        const redirect = appUrl
+            ? `<script>setTimeout(function(){ window.location.href = "${safeAppUrl}"; }, 700);</script>`
+            : '';
+        const button = appUrl
+            ? `<p><a href="${safeAppUrl}" style="display:inline-block;margin-top:16px;padding:10px 14px;border-radius:10px;background:#22c55e;color:#07111f;text-decoration:none;font-weight:700;">Open app</a></p>`
+            : '';
+        return `<!DOCTYPE html><html><head><meta charset="utf-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/><title>${safeTitle}</title>${redirect}</head><body style="font-family:system-ui,sans-serif;padding:24px;background:#0f172a;color:#e2e8f0;"><h1 style="font-size:1.25rem;">${safeTitle}</h1><p style="opacity:.9;">${safeMessage}</p>${button}<p style="opacity:.65;font-size:.85rem;">If you are not redirected automatically, tap Open app.</p></body></html>`;
     }
 }
