@@ -9,6 +9,7 @@ import {
     Post,
     Req,
     Res,
+    ServiceUnavailableException,
 } from '@nestjs/common';
 import { SubscriptionService } from './subscription.service';
 import { verifyMobileToken } from '@/modules/auth/auth.service';
@@ -84,6 +85,10 @@ export class MobileSubscriptionController {
             }
             if (error instanceof BadRequestException) {
                 res.status(400);
+                return { success: false, error: error.message };
+            }
+            if (error instanceof ServiceUnavailableException) {
+                res.status(503);
                 return { success: false, error: error.message };
             }
             console.error('[Subscription] Error checkout:', error);

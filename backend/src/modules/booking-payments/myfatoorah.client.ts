@@ -11,15 +11,28 @@ import crypto from 'crypto';
 type MyFatoorahKeyType = 'InvoiceId' | 'PaymentId';
 
 const DEFAULT_BASE_URL = 'https://api.myfatoorah.com';
+const SANDBOX_BASE_URL = 'https://apitest.myfatoorah.com';
 
 function baseUrl(): string {
-  return (process.env.MYFATOORAH_API_BASE_URL || DEFAULT_BASE_URL).replace(/\/$/, '');
+  const explicit = process.env.MYFATOORAH_API_BASE_URL?.trim();
+  if (explicit) return explicit.replace(/\/$/, '');
+  const env = (process.env.MYFATOORAH_ENV || '').toLowerCase();
+  if (env === 'sandbox' || env === 'test' || env === 'development') {
+    return SANDBOX_BASE_URL;
+  }
+  return DEFAULT_BASE_URL;
 }
 
+/** Same secret MyFatoorah calls "API Key" in the portal — support all common env names. */
 function apiToken(): string {
-  const token = process.env.MYFATOORAH_API_TOKEN || process.env.MYFATOORAH_TOKEN;
+  const token =
+    process.env.MYFATOORAH_API_TOKEN?.trim() ||
+    process.env.MYFATOORAH_TOKEN?.trim() ||
+    process.env.MYFATOORAH_API_KEY?.trim();
   if (!token) {
-    throw new Error('MYFATOORAH_API_TOKEN is not configured');
+    throw new Error(
+      'MyFatoorah API token is not configured (set MYFATOORAH_API_KEY, MYFATOORAH_API_TOKEN, or MYFATOORAH_TOKEN)',
+    );
   }
   return token;
 }
