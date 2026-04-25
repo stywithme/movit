@@ -1,102 +1,52 @@
 package com.trainingvalidator.poc.ui.train
 
 import android.Manifest
-import android.content.pm.PackageManager
 import android.graphics.Color
 import android.media.AudioManager
 import android.media.ToneGenerator
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
-import android.os.Handler
-import android.os.Looper
-import android.os.SystemClock
 import android.os.VibrationEffect
 import android.os.Vibrator
 import android.util.Log
 import android.view.View
 import android.view.WindowManager
-import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
-import androidx.core.content.IntentCompat
 import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.WindowInsetsControllerCompat
-import androidx.lifecycle.ProcessLifecycleOwner
 import androidx.lifecycle.lifecycleScope
-import com.trainingvalidator.poc.training.analytics.SessionUpload
 import com.trainingvalidator.poc.R
-import com.trainingvalidator.poc.analysis.AngleCalculator
 import com.trainingvalidator.poc.analysis.ElbowAngleEstimator
-import com.trainingvalidator.poc.analysis.JointAngles
 import com.trainingvalidator.poc.analysis.LandmarkSmoother
-import com.trainingvalidator.poc.analysis.SmoothedLandmark
-import com.trainingvalidator.poc.camera.CameraManager
 import com.trainingvalidator.poc.databinding.ActivityTrainingBinding
-import com.trainingvalidator.poc.pose.ModelType
 import com.trainingvalidator.poc.pose.PoseLandmarkerHelper
 import com.trainingvalidator.poc.pose.PoseResult
 import com.trainingvalidator.poc.training.config.SettingsManager
-import com.trainingvalidator.poc.training.feedback.FeedbackEvent
-import com.trainingvalidator.poc.training.feedback.FeedbackManager
-import com.trainingvalidator.poc.training.feedback.JointQualityContent
-import com.trainingvalidator.poc.training.feedback.SystemMessageRegistry
-import com.trainingvalidator.poc.training.engine.BodyPosture
-import com.trainingvalidator.poc.training.engine.ExpectedDirection
-import com.trainingvalidator.poc.training.session.PauseReason
 import com.trainingvalidator.poc.training.session.SessionState
-import com.trainingvalidator.poc.training.engine.PoseSceneExpectation
-import com.trainingvalidator.poc.training.engine.VisibleRegion
-import com.trainingvalidator.poc.training.models.PoseVariant
 import com.trainingvalidator.poc.ui.components.AnimationUtils
-import com.trainingvalidator.poc.ui.components.GlassmorphicMessageView
-import com.trainingvalidator.poc.ui.training.CameraGuidance
-import com.trainingvalidator.poc.ui.training.CountdownController
-import com.trainingvalidator.poc.ui.training.Direction
-import com.trainingvalidator.poc.ui.training.GuidanceLevel
-import com.trainingvalidator.poc.ui.training.JointGuidance
-import com.trainingvalidator.poc.ui.training.SetupPhase
-import com.trainingvalidator.poc.ui.training.AxisStatus
-import com.trainingvalidator.poc.ui.training.SetupResult
 import com.trainingvalidator.poc.ui.training.TrainingUIEvent
 import com.trainingvalidator.poc.ui.training.TrainingViewModel
 import com.trainingvalidator.poc.ui.training.VideoModeController
-import androidx.appcompat.app.AlertDialog
-import android.widget.SeekBar
 import android.widget.TextView
 import com.trainingvalidator.poc.training.engine.HoldState
 import com.trainingvalidator.poc.training.engine.Phase
 import com.trainingvalidator.poc.training.models.JointState
-import com.trainingvalidator.poc.training.report.BestWorstReplayPipeline
 import com.trainingvalidator.poc.training.report.FrameCaptureManager
-import com.trainingvalidator.poc.training.report.ReportGenerator
 import com.trainingvalidator.poc.storage.ReportStorage
-import com.trainingvalidator.poc.storage.ExerciseRepository
-import com.trainingvalidator.poc.storage.AnalyticsStorage
 import com.trainingvalidator.poc.storage.AuthManager
 import com.trainingvalidator.poc.storage.UserExercisePreferenceStore
-import com.trainingvalidator.poc.network.ApiClient
-import com.trainingvalidator.poc.network.UserExercisePreferenceUpsertRequest
-import com.trainingvalidator.poc.training.models.CountingMethod
 import com.trainingvalidator.poc.network.SessionSyncService
 import com.trainingvalidator.poc.network.ApiConfig
-import com.trainingvalidator.poc.ui.report.SessionReportActivity
-import com.trainingvalidator.poc.ui.utils.currentLanguage
-import com.trainingvalidator.poc.video.VideoManager
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
-import okhttp3.MediaType.Companion.toMediaType
-import okhttp3.RequestBody.Companion.toRequestBody
-import coil.ImageLoader
-import coil.request.ImageRequest
 
 /**
  * TrainingActivity - Professional Training Screen
@@ -107,17 +57,19 @@ import coil.request.ImageRequest
  * - CountdownController for countdown logic
  * - VideoModeController for video mode
  * 
- * This Activity is now primarily responsible for:
- * - UI binding and updates
- * - Camera/Pose detection setup
- * - User interactions
- * - Forwarding pose data to ViewModel
+ * This Activity is primarily a thin host for:
+ * - [TrainingLaunchCoordinator], [TrainingPreferenceDialogs], [TrainingSessionModeController],
+ *   [CameraTrainingInputController], [VideoTrainingInputController],
+ *   [TrainingFeedbackBinder], [SetupCountdownBinder], [TrainingFrameCaptureController],
+ *   [TrainingReportCoordinator]
+ * - Android lifecycle, [ActivityTrainingBinding], and delegating
+ *   [PoseLandmarkerHelper.PoseDetectionListener] to [CameraTrainingInputController] in camera mode
  */
 class TrainingActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetectionListener,
     com.trainingvalidator.poc.training.session.SessionTrainingEngine.OnExerciseCompletedListener {
 
     companion object {
-        private const val TAG = "TrainingActivity"
+        const val TAG = "TrainingActivity"
         
         // Intent extras
         const val EXTRA_EXERCISE_NAME = "exercise_name"
@@ -167,107 +119,70 @@ class TrainingActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetection
         private val COLOR_ERROR = Color.parseColor("#FF5252")
         private val COLOR_DEFAULT = Color.WHITE
 
-        /** Rep-wide replay sampling interval while [SessionState.TRAINING] (Best vs Worst motion). */
-        private const val REPLAY_SAMPLE_INTERVAL_MS = 180L
     }
 
-    // View Binding
-    private lateinit var binding: ActivityTrainingBinding
-    
+    // View Binding (host packages access launch/coordinators in this module)
+    internal lateinit var binding: ActivityTrainingBinding
+
     // ViewModel
-    private val viewModel: TrainingViewModel by viewModels { 
-        TrainingViewModel.Factory(assets) 
+    internal val viewModel: TrainingViewModel by viewModels {
+        TrainingViewModel.Factory(assets)
     }
+
+    private val launchCoordinator = TrainingLaunchCoordinator(this)
     
-    // Camera & Pose Detection
-    private var cameraManager: CameraManager? = null
-    private var poseLandmarkerHelper: PoseLandmarkerHelper? = null
-    private lateinit var landmarkSmoother: LandmarkSmoother
-    private val elbowAngleEstimator = ElbowAngleEstimator()
+    // Camera / video input (ML Kit + camera, or [VideoModeController] — see controllers)
+    internal lateinit var cameraInput: CameraTrainingInputController
+    internal lateinit var videoInput: VideoTrainingInputController
+
+    // Video (owned by [VideoTrainingInputController] when in video mode)
+    internal var videoModeController: VideoModeController? = null
+
+    internal lateinit var landmarkSmoother: LandmarkSmoother
+    internal val elbowAngleEstimator = ElbowAngleEstimator()
     
-    // Video Mode Controller
-    private var videoModeController: VideoModeController? = null
-    
-    // Scene-to-visibility transition tracking
-    private var lastSetupPhase: SetupPhase? = null
+    // Scene-to-visibility transition: [SetupCountdownBinder]
 
     // State
-    private var useFrontCamera = true
-    private var isVideoMode = false
-    private var currentIndicatorType: String = "line"
-    private var currentModelType: String = "full"
-    private var videoUri: Uri? = null
+    internal var useFrontCamera = true
+    internal var isVideoMode = false
+    internal var currentIndicatorType: String = "line"
+    internal var currentModelType: String = "full"
+    internal var videoUri: Uri? = null
     private var lastRepCount = 0
-    private var currentSessionSetRunId: Long = 0L
-    private var lastCompletedSessionSetRunId: Long = -1L
-    private var isWeightDialogVisible = false
-    /** Session mode: weight-only dialog between sets */
-    private var hasShownWeightDialog = false
-    /** Single-exercise mode: full pre-training dialog */
-    private var hasShownPreTrainingDialog = false
 
     // Assessment mode (suppresses report page, returns report ID)
-    private var isAssessmentMode = false
+    internal var isAssessmentMode = false
 
-    // Session mode state
-    private var isSessionMode = false
-    private var sessionTrainingEngine: com.trainingvalidator.poc.training.session.SessionTrainingEngine? = null
-    private var sessionRestTimer: android.os.CountDownTimer? = null
-    private var sessionRestRemainingMs: Long = 0L
-    private var sessionSetStartTimeMs: Long = 0L
-    private val pendingReportJobs = mutableListOf<kotlinx.coroutines.Job>()
-    private val sessionExerciseConfigMap = mutableMapOf<String, com.trainingvalidator.poc.training.models.ExerciseConfig>()
+    // Session mode (see [TrainingSessionModeController])
+    internal var isSessionMode = false
+    internal lateinit var preferenceDialogs: TrainingPreferenceDialogs
+    internal lateinit var sessionModeController: TrainingSessionModeController
 
     // Alternating variant info removed - bilateral side management is now handled by TrainingEngine
 
     // Tracks pose presence transitions to avoid leaving stale form feedback visible when pose is lost.
     // This is intentionally Activity-local (UI concern) and does not affect session state machine behavior.
-    private var wasPoseDetectedLastFrame: Boolean = false
-
-    // Prevents spamming TTS for NoPose/AutoPause (speak once, not every frame)
-    private var noPoseTtsSpoken: Boolean = false
-    
-    // Frame processing guard - drops frames if previous is still processing
-    // to prevent Main Thread queue buildup and skeleton lag
+    /**
+     * Pose present this frame; used to clear form UI once on pose→no-pose transition (camera and video).
+     */
     @Volatile
-    private var isProcessingPoseFrame = false
-    
-    // Report & Frame Capture
-    private var frameCaptureManager: FrameCaptureManager? = null
-    private var reportStorage: ReportStorage? = null
-    private var sessionId: String = java.util.UUID.randomUUID().toString()
-    private var lastCapturedPhase: Phase? = null
-    private var generatedReportId: String? = null
+    internal var wasPoseDetectedLastFrame: Boolean = false
 
-    // Rep-wide replay sampler (single Handler loop during TRAINING; not hold exercises).
-    private val repWideReplayHandler = Handler(Looper.getMainLooper())
-    private var repWideReplayScheduled = false
-    private val repWideReplayRunnable = object : Runnable {
-        override fun run() {
-            if (!repWideReplayScheduled) return
-            if (viewModel.supervisor.state.value != SessionState.TRAINING || viewModel.isHoldExercise()) {
-                repWideReplayScheduled = false
-                return
-            }
-            val manager = frameCaptureManager
-            val repNumber = (viewModel.trainingEngine?.getCurrentRep() ?: 0) + 1
-            if (manager != null && repNumber >= 1) {
-                val bitmap = getBitmapForCapture()
-                if (bitmap != null) {
-                    manager.captureReplayFrame(bitmap = bitmap, repNumber = repNumber)
-                    if (isVideoMode) bitmap.recycle()
-                }
-            }
-            if (repWideReplayScheduled) {
-                repWideReplayHandler.postDelayed(this, REPLAY_SAMPLE_INTERVAL_MS)
-            }
-        }
-    }
+    // Prevents spamming TTS for NoPose/AutoPause (speak once, not every frame) — used by [TrainingFeedbackBinder]
+    internal var noPoseTtsSpoken: Boolean = false
+
+    internal lateinit var feedbackBinder: TrainingFeedbackBinder
+    private lateinit var setupCountdownBinder: SetupCountdownBinder
+    
+    // Report & Frame Capture (init / capture in [TrainingFrameCaptureController])
+    internal var frameCaptureManager: FrameCaptureManager? = null
+    internal var reportStorage: ReportStorage? = null
+
+    internal lateinit var frameCaptureController: TrainingFrameCaptureController
+    internal lateinit var reportCoordinator: TrainingReportCoordinator
 
     // FPS calculation
-    private var frameCount = 0
-    private var lastFpsUpdateTime = System.currentTimeMillis()
-    private var currentFps = 0
     
     // Elapsed time tracking
     private var trainingStartTime: Long = 0L
@@ -278,14 +193,9 @@ class TrainingActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetection
         ActivityResultContracts.RequestPermission()
     ) { isGranted ->
         if (isGranted) {
-            onCameraPermissionGranted()
+            cameraInput.onPermissionGranted()
         } else {
-            Toast.makeText(
-                this,
-                getString(R.string.camera_permission_required),
-                Toast.LENGTH_LONG
-            ).show()
-            finish()
+            cameraInput.onPermissionDeniedShowToastAndFinish()
         }
     }
 
@@ -297,16 +207,24 @@ class TrainingActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetection
         
         binding = ActivityTrainingBinding.inflate(layoutInflater)
         setContentView(binding.root)
-        
+        feedbackBinder = TrainingFeedbackBinder(this)
+        setupCountdownBinder = SetupCountdownBinder(this)
+        preferenceDialogs = TrainingPreferenceDialogs(this)
+        sessionModeController = TrainingSessionModeController(this, preferenceDialogs)
+        cameraInput = CameraTrainingInputController(this)
+        videoInput = VideoTrainingInputController(this)
+        frameCaptureController = TrainingFrameCaptureController(this)
+        reportCoordinator = TrainingReportCoordinator(this)
+
         window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
 
         // Handle back press with modern OnBackPressedDispatcher
         onBackPressedDispatcher.addCallback(this, object : androidx.activity.OnBackPressedCallback(true) {
             override fun handleOnBackPressed() {
-                if (isSessionMode && sessionTrainingEngine != null) {
-                    val currentState = sessionTrainingEngine?.state?.value
+                if (isSessionMode && sessionModeController.sessionEngine != null) {
+                    val currentState = sessionModeController.sessionEngine?.state?.value
                     if (currentState !is com.trainingvalidator.poc.training.session.SessionTrainingEngine.State.SessionComplete) {
-                        showExitSessionDialog()
+                        sessionModeController.showExitSessionDialog()
                         return
                     }
                 }
@@ -317,8 +235,8 @@ class TrainingActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetection
         
         parseIntentExtras()
         setupUI()
-        setupCountdownController()
-        initializeReportSystem()
+        setupCountdownBinder.installCountdownListener()
+        frameCaptureController.initializeReportSystem()
         observeViewModel()
         
         // Sync pending sessions before starting new training
@@ -326,25 +244,10 @@ class TrainingActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetection
         
         // Initialize based on mode
         if (isVideoMode) {
-            setupVideoMode()
+            videoInput.setupVideoMode()
         } else {
             checkCameraPermission()
         }
-    }
-
-    private fun showExitSessionDialog() {
-        android.app.AlertDialog.Builder(this)
-            .setTitle(getString(R.string.session_exit_title))
-            .setMessage(getString(R.string.session_exit_message))
-            .setPositiveButton(getString(R.string.session_exit_keep)) { dialog, _ ->
-                dialog.dismiss()
-            }
-            .setNegativeButton(getString(R.string.session_exit_exit)) { dialog, _ ->
-                dialog.dismiss()
-                finish()
-            }
-            .setCancelable(true)
-            .show()
     }
     
     /**
@@ -390,33 +293,6 @@ class TrainingActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetection
         }
     }
     
-    /**
-     * Initialize Exercise Repository to ensure cached/synced data is available.
-     * This is needed when TrainingActivity is launched directly (e.g., from deep link).
-     * 
-     * Strategy: Cache First, then Backend Sync if cache is empty.
-     * Uses lifecycleScope to avoid blocking the main thread (ANR risk).
-     */
-    private fun initializeExerciseRepository(onReady: () -> Unit = {}) {
-        lifecycleScope.launch {
-            try {
-                val exerciseRepo = ExerciseRepository.getInstance(this@TrainingActivity)
-                val exerciseSuccess = withContext(Dispatchers.IO) {
-                    exerciseRepo.initialize(autoSync = true)
-                }
-                if (exerciseSuccess) {
-                    Log.d(TAG, "ExerciseRepository initialized successfully")
-                } else {
-                    Log.w(TAG, "ExerciseRepository initialized but no exercises available")
-                }
-            } catch (e: Exception) {
-                Log.e(TAG, "Failed to initialize repositories", e)
-            } finally {
-                onReady()
-            }
-        }
-    }
-
     private fun setupFullscreen() {
         WindowCompat.setDecorFitsSystemWindows(window, false)
         WindowInsetsControllerCompat(window, window.decorView).apply {
@@ -426,35 +302,15 @@ class TrainingActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetection
     }
     
     private fun parseIntentExtras() {
-        val trainingMode = intent.getStringExtra(EXTRA_TRAINING_MODE) ?: MODE_CAMERA
-        isVideoMode = trainingMode == MODE_VIDEO
-        videoUri = IntentCompat.getParcelableExtra(intent, EXTRA_VIDEO_URI, Uri::class.java)
-        viewModel.supervisor.isVideoMode = isVideoMode
-
-        if (isVideoMode && videoUri == null) {
-            Toast.makeText(this, getString(R.string.no_video_selected), Toast.LENGTH_LONG).show()
-            finish()
-            return
-        }
-
-        val indicatorType = intent.getStringExtra(EXTRA_INDICATOR_TYPE)
-            ?: com.trainingvalidator.poc.training.config.SettingsManager.getIndicatorType()
-        currentIndicatorType = indicatorType
-        SettingsManager.setIndicatorType(indicatorType)
-        binding.skeletonOverlay.setIndicatorType(indicatorType)
-
-        isAssessmentMode = intent.getBooleanExtra(EXTRA_ASSESSMENT_MODE, false)
-        isSessionMode = intent.getBooleanExtra(EXTRA_IS_SESSION_MODE, false)
-
-        initializeExerciseRepository {
-            parseIntentExtrasAfterRepositoryReady()
-        }
+        if (!launchCoordinator.applyEarlyIntentOrFinish()) return
+        launchCoordinator.runAfterRepositoryReady { parseIntentExtrasAfterRepositoryReady() }
     }
 
     private fun parseIntentExtrasAfterRepositoryReady() {
         if (isSessionMode) {
-            initializeSessionMode()
+            sessionModeController.initializeFromIntent()
             viewModel.initializeFeedback(this, isVideoMode)
+            feedbackBinder.rebindVisualMessageFlow()
             return
         }
         
@@ -507,11 +363,12 @@ class TrainingActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetection
         }
         
         if (!isAssessmentMode) {
-            maybeShowPreTrainingDialog()
+            preferenceDialogs.maybeShowPreTrainingDialog()
         }
 
         // Initialize feedback
         viewModel.initializeFeedback(this, isVideoMode)
+        feedbackBinder.rebindVisualMessageFlow()
     }
 
     private fun setupUI() {
@@ -520,7 +377,7 @@ class TrainingActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetection
         
         // Close button
         binding.btnClose.setOnClickListener { 
-            sessionRestTimer?.cancel()
+            sessionModeController.cancelSessionRestOnClose()
             viewModel.requestStop()
             finish() 
         }
@@ -545,972 +402,10 @@ class TrainingActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetection
         // Initial state (camera mode only - video mode sets its own UI in setupVideoMode)
         if (!isVideoMode) {
             updateUIForSessionState(SessionState.SETUP_POSE)
-            showSetupPoseUI()
+            setupCountdownBinder.showSetupPoseUI()
         }
     }
 
-    /**
-     * Session mode only: confirm weight before set (legacy dialog).
-     */
-    private fun maybeShowSessionWeightDialog() {
-        val config = viewModel.exerciseConfig.value ?: return
-        if (!config.supportsWeight || hasShownWeightDialog) return
-
-        hasShownWeightDialog = true
-        isWeightDialogVisible = true
-
-        val dialogView = layoutInflater.inflate(R.layout.dialog_weight_confirm, null)
-        val dialog = android.app.AlertDialog.Builder(this, R.style.Theme_WayToFix_Dialog)
-            .setView(dialogView)
-            .setCancelable(false)
-            .create()
-
-        val inputLayout = dialogView.findViewById<com.google.android.material.textfield.TextInputLayout>(R.id.inputWeightLayout)
-        val inputField = dialogView.findViewById<com.google.android.material.textfield.TextInputEditText>(R.id.inputWeight)
-        val tvRange = dialogView.findViewById<TextView>(R.id.tvWeightRange)
-        val btnStart = dialogView.findViewById<com.google.android.material.button.MaterialButton>(R.id.btnWeightStart)
-        val btnCancel = dialogView.findViewById<com.google.android.material.button.MaterialButton>(R.id.btnWeightCancel)
-
-        val defaultWeight = viewModel.getWeightKg() ?: config.defaultWeight
-        val minWeight = config.minWeight
-        val maxWeight = config.maxWeight
-
-        inputField.setText(defaultWeight?.toString().orEmpty())
-
-        val rangeText = when {
-            minWeight != null && maxWeight != null ->
-                getString(R.string.weight_min_max_format, minWeight, maxWeight)
-            minWeight != null ->
-                getString(R.string.weight_min_only_format, minWeight)
-            maxWeight != null ->
-                getString(R.string.weight_max_only_format, maxWeight)
-            else -> ""
-        }
-        tvRange.text = rangeText
-        tvRange.visibility = if (rangeText.isNotEmpty()) View.VISIBLE else View.GONE
-
-        btnStart.setOnClickListener {
-            val rawInput = inputField.text?.toString()?.trim().orEmpty()
-            val parsed = rawInput.toFloatOrNull() ?: defaultWeight
-
-            if (parsed != null) {
-                if (minWeight != null && parsed < minWeight) {
-                    inputLayout.error = getString(R.string.weight_min_error, minWeight)
-                    return@setOnClickListener
-                }
-                if (maxWeight != null && parsed > maxWeight) {
-                    inputLayout.error = getString(R.string.weight_max_error, maxWeight)
-                    return@setOnClickListener
-                }
-            }
-
-            inputLayout.error = null
-            viewModel.updateSessionWeight(parsed, "kg")
-            isWeightDialogVisible = false
-            dialog.dismiss()
-        }
-
-        btnCancel.setOnClickListener {
-            viewModel.updateSessionWeight(null, "kg")
-            isWeightDialogVisible = false
-            dialog.dismiss()
-        }
-
-        dialog.setOnDismissListener {
-            isWeightDialogVisible = false
-        }
-
-        dialog.show()
-    }
-
-    /**
-     * Single-exercise mode: reps / hold duration / weight before training starts.
-     */
-    private fun maybeShowPreTrainingDialog() {
-        if (hasShownPreTrainingDialog) return
-        val config = viewModel.exerciseConfig.value ?: return
-        hasShownPreTrainingDialog = true
-        isWeightDialogVisible = true
-
-        val slug = config.fileName.ifEmpty { viewModel.exerciseName.value }
-        val store = UserExercisePreferenceStore(this)
-        val saved = store.get(slug)
-
-        val dialogView = layoutInflater.inflate(R.layout.dialog_pre_training, null)
-        val dialog = android.app.AlertDialog.Builder(this, R.style.Theme_WayToFix_Dialog)
-            .setView(dialogView)
-            .setCancelable(false)
-            .create()
-
-        val sectionReps = dialogView.findViewById<LinearLayout>(R.id.sectionReps)
-        val sectionDuration = dialogView.findViewById<LinearLayout>(R.id.sectionDuration)
-        val sectionWeight = dialogView.findViewById<LinearLayout>(R.id.sectionWeight)
-        val inputRepsLayout =
-            dialogView.findViewById<com.google.android.material.textfield.TextInputLayout>(R.id.inputRepsLayout)
-        val inputReps =
-            dialogView.findViewById<com.google.android.material.textfield.TextInputEditText>(R.id.inputReps)
-        val inputDurationLayout =
-            dialogView.findViewById<com.google.android.material.textfield.TextInputLayout>(R.id.inputDurationLayout)
-        val inputDuration =
-            dialogView.findViewById<com.google.android.material.textfield.TextInputEditText>(R.id.inputDuration)
-        val inputWeightLayout =
-            dialogView.findViewById<com.google.android.material.textfield.TextInputLayout>(R.id.inputWeightLayout)
-        val inputWeight =
-            dialogView.findViewById<com.google.android.material.textfield.TextInputEditText>(R.id.inputWeight)
-        val tvWeightRange = dialogView.findViewById<TextView>(R.id.tvWeightRange)
-        val btnStart = dialogView.findViewById<com.google.android.material.button.MaterialButton>(R.id.btnPreTrainingStart)
-        val btnReset = dialogView.findViewById<com.google.android.material.button.MaterialButton>(R.id.btnPreTrainingReset)
-
-        when (config.countingMethod) {
-            CountingMethod.HOLD -> {
-                sectionDuration.visibility = View.VISIBLE
-                sectionReps.visibility = View.GONE
-            }
-            else -> {
-                sectionReps.visibility = View.VISIBLE
-                sectionDuration.visibility = View.GONE
-            }
-        }
-        sectionWeight.visibility = if (config.supportsWeight) View.VISIBLE else View.GONE
-
-        val defaultReps = config.repCountingConfig.reps
-        val defaultDurationSec = config.repCountingConfig.duration
-            ?: SettingsManager.getDefaultHoldDuration()
-
-        val initialReps = saved?.customReps ?: defaultReps
-        val initialDurationSec = saved?.customDurationSec ?: defaultDurationSec
-        val initialWeight = saved?.customWeightKg ?: viewModel.getWeightKg() ?: config.defaultWeight
-
-        inputReps.setText(initialReps.toString())
-        inputDuration.setText(initialDurationSec.toString())
-        inputWeight.setText(initialWeight?.toString().orEmpty())
-
-        if (config.supportsWeight) {
-            val minW = config.minWeight
-            val maxW = config.maxWeight
-            val rangeText = when {
-                minW != null && maxW != null ->
-                    getString(R.string.weight_min_max_format, minW, maxW)
-                minW != null ->
-                    getString(R.string.weight_min_only_format, minW)
-                maxW != null ->
-                    getString(R.string.weight_max_only_format, maxW)
-                else -> ""
-            }
-            tvWeightRange.text = rangeText
-            tvWeightRange.visibility = if (rangeText.isNotEmpty()) View.VISIBLE else View.GONE
-        }
-
-        fun applyAndDismiss(reps: Int?, durationSec: Int?, weight: Float?) {
-            val repsOverride = if (config.countingMethod != CountingMethod.HOLD) reps else null
-            val durationMs = if (config.countingMethod == CountingMethod.HOLD) {
-                durationSec?.takeIf { it > 0 }?.times(1000L)
-            } else {
-                null
-            }
-
-            val stored = UserExercisePreferenceStore.Stored(
-                customReps = repsOverride,
-                customDurationSec = if (config.countingMethod == CountingMethod.HOLD) {
-                    durationSec?.takeIf { it > 0 }
-                } else {
-                    null
-                },
-                customWeightKg = if (config.supportsWeight) weight else null,
-                updatedAt = null
-            )
-            val hasAny = stored.customReps != null || stored.customDurationSec != null || stored.customWeightKg != null
-            if (hasAny) {
-                store.save(slug, stored)
-            } else {
-                store.remove(slug)
-            }
-
-            viewModel.rebuildTrainingEngineWithOverrides(
-                targetRepsOverride = repsOverride,
-                targetDurationMsOverride = durationMs,
-                weightKg = if (config.supportsWeight) weight else null,
-                weightUnit = "kg"
-            )
-            pushUserExercisePreferenceToBackend(slug, stored, clearOnServer = !hasAny)
-            isWeightDialogVisible = false
-            dialog.dismiss()
-        }
-
-        btnStart.setOnClickListener {
-            inputRepsLayout.error = null
-            inputDurationLayout.error = null
-            inputWeightLayout.error = null
-
-            val repsParsed = inputReps.text?.toString()?.trim()?.toIntOrNull()
-            val durParsed = inputDuration.text?.toString()?.trim()?.toIntOrNull()
-            val weightParsed = inputWeight.text?.toString()?.trim().orEmpty().toFloatOrNull()
-
-            if (config.countingMethod != CountingMethod.HOLD) {
-                val tr = repsParsed ?: defaultReps
-                if (tr <= 0) {
-                    inputRepsLayout.error = "Invalid reps"
-                    return@setOnClickListener
-                }
-            } else {
-                val td = durParsed ?: defaultDurationSec
-                if (td <= 0) {
-                    inputDurationLayout.error = "Invalid duration"
-                    return@setOnClickListener
-                }
-            }
-
-            if (config.supportsWeight && weightParsed != null) {
-                val minW = config.minWeight
-                val maxW = config.maxWeight
-                if (minW != null && weightParsed < minW) {
-                    inputWeightLayout.error = getString(R.string.weight_min_error, minW)
-                    return@setOnClickListener
-                }
-                if (maxW != null && weightParsed > maxW) {
-                    inputWeightLayout.error = getString(R.string.weight_max_error, maxW)
-                    return@setOnClickListener
-                }
-            }
-
-            val finalReps = if (config.countingMethod != CountingMethod.HOLD) {
-                (repsParsed ?: defaultReps).coerceAtLeast(1)
-            } else {
-                null
-            }
-            val finalDur = if (config.countingMethod == CountingMethod.HOLD) {
-                (durParsed ?: defaultDurationSec).coerceAtLeast(1)
-            } else {
-                null
-            }
-            val finalWeight = if (config.supportsWeight) weightParsed else null
-
-            applyAndDismiss(finalReps, finalDur, finalWeight)
-        }
-
-        btnReset.setOnClickListener {
-            store.remove(slug)
-            viewModel.rebuildTrainingEngineWithOverrides(
-                targetRepsOverride = null,
-                targetDurationMsOverride = null,
-                weightKg = if (config.supportsWeight) config.defaultWeight else null,
-                weightUnit = "kg"
-            )
-            pushUserExercisePreferenceDelete(slug)
-            inputReps.setText(config.repCountingConfig.reps.toString())
-            inputDuration.setText(
-                (config.repCountingConfig.duration ?: SettingsManager.getDefaultHoldDuration()).toString()
-            )
-            inputWeight.setText(config.defaultWeight?.toString().orEmpty())
-        }
-
-        dialog.setOnDismissListener {
-            isWeightDialogVisible = false
-        }
-
-        dialog.show()
-    }
-
-    private fun pushUserExercisePreferenceToBackend(
-        slug: String,
-        stored: UserExercisePreferenceStore.Stored,
-        clearOnServer: Boolean
-    ) {
-        lifecycleScope.launch(Dispatchers.IO) {
-            try {
-                val auth = AuthManager.getAuthHeader(this@TrainingActivity) ?: return@launch
-                val exerciseId = ExerciseRepository.getInstance(applicationContext).getExerciseServerId(slug)
-                    ?: return@launch
-                if (clearOnServer) {
-                    ApiClient.mobileSyncApi.deleteExercisePreference(exerciseId, auth)
-                } else {
-                    ApiClient.mobileSyncApi.upsertExercisePreference(
-                        exerciseId,
-                        auth,
-                        UserExercisePreferenceUpsertRequest(
-                            customReps = stored.customReps,
-                            customDurationSec = stored.customDurationSec,
-                            customWeightKg = stored.customWeightKg
-                        )
-                    )
-                }
-            } catch (e: Exception) {
-                Log.w(TAG, "pushUserExercisePreferenceToBackend failed", e)
-            }
-        }
-    }
-
-    private fun pushUserExercisePreferenceDelete(slug: String) {
-        lifecycleScope.launch(Dispatchers.IO) {
-            try {
-                val auth = AuthManager.getAuthHeader(this@TrainingActivity) ?: return@launch
-                val exerciseId = ExerciseRepository.getInstance(applicationContext).getExerciseServerId(slug)
-                    ?: return@launch
-                ApiClient.mobileSyncApi.deleteExercisePreference(exerciseId, auth)
-            } catch (e: Exception) {
-                Log.w(TAG, "pushUserExercisePreferenceDelete failed", e)
-            }
-        }
-    }
-    
-    // ==================== Session Mode ====================
-
-    /**
-     * Initialize session mode: parse items, create SessionTrainingEngine,
-     * resolve exercise names, observe state, and start the session.
-     */
-    private fun initializeSessionMode() {
-        val json = intent.getStringExtra(EXTRA_SESSION_ITEMS_JSON)
-        if (json.isNullOrBlank()) {
-            Log.e(TAG, "Session mode but no items JSON provided")
-            finish()
-            return
-        }
-
-        val gson = com.google.gson.Gson()
-        val itemsType = object : com.google.gson.reflect.TypeToken<List<com.trainingvalidator.poc.training.models.ProgramSessionItem>>() {}.type
-        val items: List<com.trainingvalidator.poc.training.models.ProgramSessionItem> = try {
-            gson.fromJson(json, itemsType)
-        } catch (e: Exception) {
-            Log.e(TAG, "Failed to parse session items JSON", e)
-            finish()
-            return
-        }
-
-        if (items.isEmpty()) {
-            Log.w(TAG, "Session items list is empty")
-            finish()
-            return
-        }
-
-        val invalidExerciseItem = items.firstOrNull { it.type == "exercise" && it.exerciseSlug.isNullOrBlank() }
-        if (invalidExerciseItem != null) {
-            Log.e(TAG, "Invalid session payload: exercise item without exerciseSlug")
-            Toast.makeText(
-                this,
-                getString(R.string.session_invalid_payload),
-                Toast.LENGTH_LONG
-            ).show()
-            setResult(RESULT_CANCELED)
-            finish()
-            return
-        }
-
-        // Create engine
-        val engine = com.trainingvalidator.poc.training.session.SessionTrainingEngine(items)
-
-        // Resolve exercise names
-        val exerciseRepo = ExerciseRepository.getInstance(this)
-        val language = currentLanguage
-        sessionExerciseConfigMap.clear()
-        items.filter { it.type == "exercise" && it.exerciseSlug != null }.forEach { item ->
-            val slug = item.exerciseSlug ?: return@forEach
-            val config = exerciseRepo.getExercise(slug)
-            if (config != null) {
-                sessionExerciseConfigMap[slug] = config
-                val name = config.name.get(language).ifBlank { config.name.en }
-                engine.setExerciseName(slug, name)
-            }
-        }
-
-        sessionTrainingEngine = engine
-
-        // Register for exercise completion callbacks (rich report generation)
-        engine.onExerciseCompletedListener = this
-
-        // Observe session engine state
-        observeSessionEngineState()
-
-        // Start the session
-        engine.start()
-    }
-
-    /**
-     * Observe SessionTrainingEngine state changes and update UI accordingly.
-     */
-    private fun observeSessionEngineState() {
-        val engine = sessionTrainingEngine ?: return
-        lifecycleScope.launch {
-            engine.state.collectLatest { sessionState ->
-                when (sessionState) {
-                    is com.trainingvalidator.poc.training.session.SessionTrainingEngine.State.Idle -> {
-                        // Waiting
-                    }
-                    is com.trainingvalidator.poc.training.session.SessionTrainingEngine.State.PreExercise -> {
-                        showSessionPreExercise(sessionState)
-                    }
-                    is com.trainingvalidator.poc.training.session.SessionTrainingEngine.State.Training -> {
-                        // Training handled by supervisor - panels already hidden
-                    }
-                    is com.trainingvalidator.poc.training.session.SessionTrainingEngine.State.SetRest -> {
-                        showCelebrationMessage(getString(R.string.session_celebrate_set))
-                        showSessionRest(
-                            durationMs = sessionState.durationMs,
-                            title = getString(R.string.session_rest_between_sets),
-                            nextInfo = getString(
-                                R.string.session_rest_next_set_format,
-                                sessionState.exerciseName,
-                                sessionState.nextSetNumber,
-                                sessionState.totalSets
-                            )
-                        )
-                    }
-                    is com.trainingvalidator.poc.training.session.SessionTrainingEngine.State.ExerciseRest -> {
-                        showCelebrationMessage(getString(R.string.session_celebrate_exercise))
-                        showSessionRest(
-                            durationMs = sessionState.durationMs,
-                            title = getString(R.string.session_rest_between_exercises),
-                            nextInfo = getString(
-                                R.string.session_rest_next_exercise_format,
-                                sessionState.nextExerciseName
-                            )
-                        )
-                    }
-                    is com.trainingvalidator.poc.training.session.SessionTrainingEngine.State.SessionComplete -> {
-                        showCelebrationMessage(getString(R.string.session_celebrate_session))
-                        showSessionComplete(sessionState.report)
-                    }
-                }
-            }
-        }
-    }
-
-    /**
-     * Show pre-exercise overlay with exercise info and "Start Set" button.
-     */
-    private fun showSessionPreExercise(
-        state: com.trainingvalidator.poc.training.session.SessionTrainingEngine.State.PreExercise
-    ) {
-        hideSessionPanels()
-        binding.sessionPreExercisePanel.visibility = View.VISIBLE
-
-        // Hide normal training UI
-        binding.setupPosePanel.visibility = View.GONE
-        binding.setupIndicatorBar.visibility = View.GONE
-        binding.countdownPanel.visibility = View.GONE
-        binding.heroCounterContainer.visibility = View.GONE
-        binding.completedPanel.visibility = View.GONE
-        binding.bottomStatsBar.visibility = View.GONE
-        binding.progressContainer.visibility = View.GONE
-
-        val engine = sessionTrainingEngine ?: return
-        val item = state.item
-
-        // Exercise label: "EXERCISE 2/5"
-        binding.tvSessionExerciseLabel.text = getString(
-            R.string.session_exercise_label,
-            state.exerciseIndex + 1,
-            engine.getExerciseCount()
-        )
-
-        // Exercise name
-        binding.tvSessionExerciseName.text = state.exerciseName
-
-        hideAlternatingLabels()
-        updateSessionSetIndicator(state.setNumber, state.totalSets)
-
-        // Set info: "Set 1 of 3 · 12 reps" or "Set 1 of 3 · 30s hold"
-        val targetReps = item.targetReps
-        val targetDuration = item.targetDuration
-        binding.tvSessionSetInfo.text = when {
-            targetReps != null && targetReps > 0 -> getString(
-                R.string.session_set_reps_format,
-                state.setNumber, state.totalSets, targetReps
-            )
-            targetDuration != null && targetDuration > 0 -> getString(
-                R.string.session_set_duration_format,
-                state.setNumber, state.totalSets, targetDuration
-            )
-            else -> getString(
-                R.string.session_set_only_format,
-                state.setNumber, state.totalSets
-            )
-        }
-
-        // Weight info
-        val weight = engine.getCurrentSetWeight()
-        if (weight != null && weight > 0f) {
-            binding.tvSessionWeightInfo.text = getString(R.string.session_weight_format, weight)
-            binding.tvSessionWeightInfo.visibility = View.VISIBLE
-        } else {
-            binding.tvSessionWeightInfo.visibility = View.GONE
-        }
-
-        // "Start Set" button
-        binding.btnSessionStartSet.setOnClickListener {
-            onSessionStartSetClicked(state)
-        }
-    }
-
-    /**
-     * Handle "Start Set" click: load exercise into ViewModel and start training.
-     */
-    private fun onSessionStartSetClicked(
-        state: com.trainingvalidator.poc.training.session.SessionTrainingEngine.State.PreExercise
-    ) {
-        val engine = sessionTrainingEngine ?: return
-        val item = state.item
-        val slug = item.exerciseSlug ?: return
-
-        // Hide pre-exercise panel
-        hideSessionPanels()
-
-        // Show normal training UI
-        binding.bottomStatsBar.visibility = View.VISIBLE
-        updateSessionSetIndicator(state.setNumber, state.totalSets)
-
-        // Reset supervisor for fresh exercise flow
-        viewModel.supervisor.reset()
-        hasShownWeightDialog = false
-
-        // Prepare target overrides
-        val targetReps = item.targetReps?.takeIf { it > 0 }
-        val targetDurationMs = item.targetDuration?.takeIf { it > 0 }?.let { it * 1000L }
-        val weight = engine.getCurrentSetWeight()
-        val poseVariantIndex = item.variantIndex ?: 0
-
-        // Load exercise into ViewModel (triggers supervisor → SETUP_POSE → COUNTDOWN → TRAINING)
-        if (!viewModel.loadExercise(
-                exerciseName = slug,
-                poseVariantIndex = poseVariantIndex,
-                targetRepsOverride = targetReps,
-                targetDurationMsOverride = targetDurationMs,
-                context = this,
-                weightKg = weight,
-                weightUnit = "kg"
-            )) {
-            Log.e(TAG, "Failed to load exercise for session: $slug")
-            Toast.makeText(
-                this,
-                getString(R.string.session_exercise_load_failed),
-                Toast.LENGTH_LONG
-            ).show()
-            setResult(RESULT_CANCELED)
-            finish()
-            return
-        }
-
-        updateCounterLabelForCurrentExercise()
-
-        // Mark session engine as training
-        engine.startTraining()
-
-        // Track a unique run id for this set attempt.
-        // Both ExerciseCompleted and TrainingCompleted can arrive for the same set,
-        // so completion must be accepted once per run id only.
-        currentSessionSetRunId += 1L
-
-        // Record set start time for duration tracking
-        sessionSetStartTimeMs = System.currentTimeMillis()
-
-        // Show weight dialog if applicable (session mode)
-        maybeShowSessionWeightDialog()
-
-        // Initialize feedback if not yet done
-        if (viewModel.feedbackManager == null) {
-            viewModel.initializeFeedback(this, isVideoMode)
-        }
-    }
-
-    /**
-     * Hide alternating labels (legacy UI elements).
-     * Bilateral side display is now driven by TrainingEngine.bilateralSide StateFlow.
-     */
-    private fun hideAlternatingLabels() {
-        binding.tvSessionAlternatingLabel.visibility = View.GONE
-        binding.tvAlternatingLabel.visibility = View.GONE
-    }
-
-    private fun updateSessionSetIndicator(setNumber: Int, totalSets: Int) {
-        binding.tvSessionSetIndicator.text = getString(
-            R.string.session_set_indicator_format,
-            setNumber,
-            totalSets
-        )
-        binding.tvSessionSetIndicator.visibility = View.VISIBLE
-    }
-
-    /**
-     * Show rest countdown overlay (between sets or between exercises).
-     */
-    private fun showSessionRest(durationMs: Long, title: String, nextInfo: String) {
-        hideSessionPanels()
-        binding.sessionRestPanel.visibility = View.VISIBLE
-
-        // Hide normal training UI
-        binding.setupPosePanel.visibility = View.GONE
-        binding.setupIndicatorBar.visibility = View.GONE
-        binding.countdownPanel.visibility = View.GONE
-        binding.heroCounterContainer.visibility = View.GONE
-        binding.completedPanel.visibility = View.GONE
-        binding.bottomStatsBar.visibility = View.GONE
-        binding.progressContainer.visibility = View.GONE
-        binding.vignetteOverlay.clear()
-        binding.skeletonOverlay.setTrainingMode(false)
-
-        binding.tvSessionRestTitle.text = title
-        binding.tvSessionRestNext.text = nextInfo
-        binding.tvSessionRestTip.text = getRestTip(title)
-
-        startSessionRestTimer(durationMs)
-
-        binding.btnSessionAddTime.setOnClickListener {
-            startSessionRestTimer(sessionRestRemainingMs + 20000L)
-        }
-
-        binding.btnSessionEditRest.setOnClickListener {
-            showEditRestDialog()
-        }
-
-        // Skip rest button
-        binding.btnSessionSkipRest.setOnClickListener {
-            sessionRestTimer?.cancel()
-            sessionTrainingEngine?.onRestCompleted()
-        }
-    }
-
-    private fun startSessionRestTimer(durationMs: Long) {
-        sessionRestTimer?.cancel()
-        sessionRestRemainingMs = durationMs
-        sessionRestTimer = object : android.os.CountDownTimer(durationMs, 1000L) {
-            override fun onTick(millisUntilFinished: Long) {
-                val secs = (millisUntilFinished / 1000).toInt()
-                val m = secs / 60
-                val s = secs % 60
-                binding.tvSessionRestCountdown.text = String.format("%02d:%02d", m, s)
-                sessionRestRemainingMs = millisUntilFinished
-            }
-
-            override fun onFinish() {
-                binding.tvSessionRestCountdown.text = "00:00"
-                sessionRestRemainingMs = 0L
-                playRestEndAlert()
-                sessionTrainingEngine?.onRestCompleted()
-            }
-        }.start()
-    }
-
-    private fun showEditRestDialog() {
-        val input = android.widget.EditText(this).apply {
-            hint = getString(R.string.rest_seconds_hint)
-            inputType = android.text.InputType.TYPE_CLASS_NUMBER
-            setText((sessionRestRemainingMs / 1000L).toString())
-        }
-
-        android.app.AlertDialog.Builder(this)
-            .setTitle(getString(R.string.edit_rest))
-            .setView(input)
-            .setPositiveButton(getString(R.string.save)) { dialog, _ ->
-                val seconds = input.text.toString().toLongOrNull()
-                if (seconds != null && seconds > 0) {
-                    startSessionRestTimer(seconds * 1000L)
-                }
-                dialog.dismiss()
-            }
-            .setNegativeButton(getString(R.string.cancel)) { dialog, _ -> dialog.dismiss() }
-            .show()
-    }
-
-    private fun showCelebrationMessage(message: String) {
-        binding.glassmorphicMessage.showMessage(message, GlassmorphicMessageView.TYPE_MOTIVATION, 800)
-        vibrateShort()
-    }
-
-    private fun vibrateShort() {
-        val vibrator = if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.S) {
-            val manager = getSystemService(android.content.Context.VIBRATOR_MANAGER_SERVICE) as android.os.VibratorManager
-            manager.defaultVibrator
-        } else {
-            @Suppress("DEPRECATION")
-            getSystemService(android.content.Context.VIBRATOR_SERVICE) as android.os.Vibrator
-        }
-        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
-            vibrator.vibrate(android.os.VibrationEffect.createOneShot(80, android.os.VibrationEffect.DEFAULT_AMPLITUDE))
-        } else {
-            @Suppress("DEPRECATION")
-            vibrator.vibrate(80)
-        }
-    }
-
-    private fun getRestTip(title: String): String {
-        val tips = if (title.contains(getString(R.string.session_rest_between_sets), true)) {
-            listOf(
-                getString(R.string.rest_tip_breathe),
-                getString(R.string.rest_tip_quality),
-                getString(R.string.rest_tip_focus)
-            )
-        } else {
-            listOf(
-                getString(R.string.rest_tip_next),
-                getString(R.string.rest_tip_recovery),
-                getString(R.string.rest_tip_consistency)
-            )
-        }
-        return tips.random()
-    }
-
-    private fun playRestEndAlert() {
-        val tone = ToneGenerator(AudioManager.STREAM_NOTIFICATION, 80)
-        tone.startTone(ToneGenerator.TONE_PROP_BEEP, 200)
-        tone.release()
-
-        val vibrator = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-            val vibratorManager = getSystemService(android.os.VibratorManager::class.java)
-            vibratorManager?.defaultVibrator
-        } else {
-            @Suppress("DEPRECATION")
-            getSystemService(VIBRATOR_SERVICE) as? Vibrator
-        }
-        if (vibrator?.hasVibrator() == true) {
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                vibrator.vibrate(VibrationEffect.createOneShot(200, VibrationEffect.DEFAULT_AMPLITUDE))
-            } else {
-                @Suppress("DEPRECATION")
-                vibrator.vibrate(200)
-            }
-        }
-    }
-
-    /**
-     * Show session complete overlay with summary.
-     */
-    private fun showSessionComplete(
-        report: com.trainingvalidator.poc.training.session.SessionTrainingEngine.SessionReport
-    ) {
-        hideSessionPanels()
-        binding.sessionCompletePanel.visibility = View.VISIBLE
-
-        // Hide normal training UI
-        binding.setupPosePanel.visibility = View.GONE
-        binding.setupIndicatorBar.visibility = View.GONE
-        binding.countdownPanel.visibility = View.GONE
-        binding.heroCounterContainer.visibility = View.GONE
-        binding.completedPanel.visibility = View.GONE
-        binding.bottomStatsBar.visibility = View.GONE
-        binding.progressContainer.visibility = View.GONE
-        binding.vignetteOverlay.clear()
-        binding.skeletonOverlay.setTrainingMode(false)
-
-        // Stop elapsed timer
-        stopElapsedTimeTimer()
-
-        val minutes = (report.totalDurationMs / 60000).toInt()
-        val seconds = ((report.totalDurationMs % 60000) / 1000).toInt()
-
-        binding.tvSessionCompleteSets.text = getString(
-            R.string.session_complete_sets_format,
-            report.totalSetsCompleted,
-            report.totalSetsPlanned
-        )
-        binding.tvSessionCompleteReps.text = getString(
-            R.string.session_complete_reps_format,
-            report.totalReps
-        )
-        binding.tvSessionCompleteDuration.text = getString(
-            R.string.session_complete_duration_format,
-            minutes, seconds
-        )
-        binding.tvSessionCompleteAccuracy.text = getString(
-            R.string.session_complete_accuracy_format,
-            report.averageAccuracy.toInt()
-        )
-
-        binding.btnSessionDone.setOnClickListener {
-            finishSessionWithResult(report)
-        }
-    }
-
-    /**
-     * Called when a set completes during session mode.
-     * Collects metrics and passes to SessionTrainingEngine.
-     */
-    private fun onSessionSetCompleted() {
-        val engine = sessionTrainingEngine ?: return
-        val currentItem = engine.getCurrentExerciseItem() ?: return
-        val trainingEng = viewModel.trainingEngine
-
-        val reps = trainingEng?.getCurrentRep() ?: 0
-        val accuracy = trainingEng?.getAccuracy() ?: 0f
-        val durationMs = System.currentTimeMillis() - sessionSetStartTimeMs
-        val weight = engine.getCurrentSetWeight()
-        val targetReps = currentItem.targetReps ?: reps
-
-        // Stop the training engine for this set
-        trainingEng?.stop()
-        stopElapsedTimeTimer()
-
-        // Build per-rep details from the training engine's rep results
-        val repDetails = trainingEng?.getRepResults()?.map { repResult ->
-            val repDurationMs = repResult.phaseTimings.values.sum()
-            com.trainingvalidator.poc.training.session.SessionTrainingEngine.RepDetail(
-                repNumber = repResult.repNumber,
-                score = repResult.score,
-                worstState = repResult.worstState.ordinal,
-                isCounted = repResult.isCounted,
-                durationMs = repDurationMs
-            )
-        } ?: emptyList()
-
-        // Form score = average rep score (quality of movement, 0-100)
-        val formScore = if (repDetails.isNotEmpty()) {
-            repDetails.map { it.score }.average().toFloat()
-        } else {
-            accuracy // Fallback to completion rate if no rep data
-        }
-
-        val metrics = com.trainingvalidator.poc.training.session.SessionTrainingEngine.SetMetrics(
-            exerciseSlug = currentItem.exerciseSlug ?: "",
-            exerciseIndex = engine.getCurrentExerciseIndex(),
-            setNumber = engine.getCurrentSetNumber(),
-            repsCompleted = reps,
-            repsTarget = targetReps,
-            durationMs = durationMs,
-            accuracy = accuracy,
-            formScore = formScore,
-            weightKg = weight,
-            repDetails = repDetails
-        )
-
-        Log.d(TAG, "Session set completed: ${metrics.exerciseSlug} " +
-                "set ${metrics.setNumber}, reps=$reps, formScore=${formScore.toInt()}")
-
-        engine.onSetCompleted(metrics)
-    }
-
-    /**
-     * Finish session mode and return result to calling activity.
-     * Awaits any pending report generation jobs to ensure all report IDs
-     * are available, then re-builds the report for the final result.
-     */
-    private fun finishSessionWithResult(
-        @Suppress("UNUSED_PARAMETER") initialReport: com.trainingvalidator.poc.training.session.SessionTrainingEngine.SessionReport
-    ) {
-        lifecycleScope.launch {
-            val jobs = synchronized(pendingReportJobs) { pendingReportJobs.toList() }
-            if (jobs.isNotEmpty()) {
-                Log.d(TAG, "Waiting for ${jobs.size} pending report job(s) to complete...")
-                jobs.forEach { it.join() }
-            }
-
-            val report = sessionTrainingEngine?.getCurrentReport() ?: initialReport
-            val reportJson = com.google.gson.Gson().toJson(report)
-            val resultIntent = android.content.Intent().apply {
-                putExtra(RESULT_IS_COMPLETED, true)
-                putExtra(RESULT_DURATION_MS, report.totalDurationMs)
-                putExtra(RESULT_SESSION_SETS_COMPLETED, report.totalSetsCompleted)
-                putExtra(RESULT_SESSION_SETS_PLANNED, report.totalSetsPlanned)
-                putExtra(RESULT_SESSION_TOTAL_REPS, report.totalReps)
-                putExtra(RESULT_SESSION_AVG_ACCURACY, report.averageAccuracy)
-                putExtra(RESULT_SESSION_AVG_FORM_SCORE, report.averageFormScore)
-                putExtra(RESULT_SESSION_REPORT_JSON, reportJson)
-                putStringArrayListExtra(
-                    RESULT_SESSION_REPORT_IDS,
-                    ArrayList(report.reportIds)
-                )
-                putStringArrayListExtra(
-                    RESULT_SESSION_SESSION_IDS,
-                    ArrayList(report.sessionIds)
-                )
-            }
-            setResult(RESULT_OK, resultIntent)
-            finish()
-        }
-    }
-
-    // ==================== OnExerciseCompletedListener ====================
-
-    /**
-     * Called by SessionTrainingEngine when the LAST set of an exercise completes.
-     * Generates a rich PostTrainingReport using the current TrainingEngine data
-     * (which still has this exercise loaded) and saves it to ReportStorage.
-     */
-    override fun onExerciseCompleted(
-        exerciseIndex: Int,
-        exerciseSlug: String,
-        sets: List<com.trainingvalidator.poc.training.session.SessionTrainingEngine.SetMetrics>
-    ) {
-        val engine = viewModel.trainingEngine ?: run {
-            Log.w(TAG, "onExerciseCompleted: TrainingEngine is null, skipping report generation")
-            return
-        }
-        val exerciseConfig = sessionExerciseConfigMap[exerciseSlug] ?: run {
-            Log.w(TAG, "onExerciseCompleted: ExerciseConfig not found for $exerciseSlug")
-            return
-        }
-
-        val frameCaptures = frameCaptureManager?.getAllCaptures() ?: emptyList()
-        val replayClips = frameCaptureManager?.getAllReplayClips() ?: emptyList()
-        val sessionDurationMs = sets.sumOf { it.durationMs }
-
-        Log.d(TAG, "onExerciseCompleted: Generating rich report for $exerciseSlug " +
-                "(${sets.size} sets, ${frameCaptures.size} frames, ${replayClips.size} clips)")
-
-        val job = lifecycleScope.launch(Dispatchers.IO) {
-            try {
-                val sessionUpload = viewModel.finalizeAndGetSessionUpload()
-                val sessionMetrics = sessionUpload?.sessionMetrics
-
-                if (sessionUpload != null) {
-                    sessionTrainingEngine?.setExerciseSessionId(exerciseIndex, sessionUpload.id)
-                    try {
-                        syncSessionToBackendStandalone(sessionUpload.id, sessionUpload)
-                    } catch (e: Exception) {
-                        Log.w(TAG, "Per-exercise sync failed for $exerciseSlug, will retry later", e)
-                    }
-                }
-
-                val report = ReportGenerator.generateFromEngine(
-                    engine = engine,
-                    exerciseConfig = exerciseConfig,
-                    sessionDurationMs = sessionDurationMs,
-                    frameCaptures = frameCaptures,
-                    replayClips = replayClips,
-                    sessionMetrics = sessionMetrics,
-                    weightKg = viewModel.getWeightKg(),
-                    weightUnit = viewModel.getWeightUnit(),
-                    allSets = sets
-                )
-
-                val saved = reportStorage?.save(report) ?: false
-                Log.d(TAG, "onExerciseCompleted: Report saved for $exerciseSlug: " +
-                        "id=${report.id}, saved=$saved")
-
-                if (saved) {
-                    sessionTrainingEngine?.setExerciseReportId(exerciseIndex, report.id)
-                }
-            } catch (e: Exception) {
-                Log.e(TAG, "onExerciseCompleted: Failed to generate report for $exerciseSlug", e)
-            }
-        }
-        synchronized(pendingReportJobs) { pendingReportJobs.add(job) }
-        job.invokeOnCompletion { synchronized(pendingReportJobs) { pendingReportJobs.remove(job) } }
-
-        // Reset frame capture manager for the next exercise
-        resetFrameCaptureManagerForNextExercise()
-    }
-
-    /**
-     * Reset the FrameCaptureManager with a new session ID for the next exercise.
-     * Each exercise in a session gets its own set of frame captures.
-     */
-    private fun resetFrameCaptureManagerForNextExercise() {
-        val newSessionId = java.util.UUID.randomUUID().toString()
-        Log.d(TAG, "Resetting FrameCaptureManager for next exercise: sessionId=$newSessionId")
-        frameCaptureManager = FrameCaptureManager(this, newSessionId)
-    }
-
-    /**
-     * Hide all session overlay panels.
-     */
-    private fun hideSessionPanels() {
-        binding.sessionPreExercisePanel.visibility = View.GONE
-        binding.sessionRestPanel.visibility = View.GONE
-        binding.sessionCompletePanel.visibility = View.GONE
-        binding.tvSessionAlternatingLabel.visibility = View.GONE
-        binding.tvAlternatingLabel.visibility = View.GONE
-        binding.tvSessionSetIndicator.visibility = View.GONE
-        sessionRestTimer?.cancel()
-    }
 
     /**
      * Show training settings dialog
@@ -1612,14 +507,7 @@ class TrainingActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetection
             tvCurrentCamera.text = if (useFrontCamera) getString(R.string.front_camera) else getString(R.string.back_camera)
             
             btnSwitchCameraDialog.setOnClickListener {
-                useFrontCamera = !useFrontCamera
-                cameraManager?.switchCamera(useFrontCamera)
-                if (::landmarkSmoother.isInitialized) {
-                    landmarkSmoother.reset()
-                }
-                elbowAngleEstimator.reset()
-                // Keep overlay mirroring in sync with the active camera
-                binding.skeletonOverlay.updateFrontCameraState(useFrontCamera)
+                cameraInput.applySwitchCameraFromSettings()
                 tvCurrentCamera.text = if (useFrontCamera) getString(R.string.front_camera) else getString(R.string.back_camera)
             }
         }
@@ -1645,7 +533,7 @@ class TrainingActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetection
 
             // Reinitialize pose detector when model type changes
             if (modelChanged) {
-                reinitializePoseDetector()
+                cameraInput.reinitializePoseDetector()
             }
             
             dialog.dismiss()
@@ -1657,46 +545,10 @@ class TrainingActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetection
         dialog.show()
     }
     
-    private fun setupCountdownController() {
-        viewModel.countdownController.setListener(object : CountdownController.CountdownListener {
-            override fun onTick(secondsRemaining: Int) {
-                AnimationUtils.animateCountdown(binding.tvCountdown, secondsRemaining.toString())
-            }
-
-            override fun onFinish() {
-                // Notify supervisor IMMEDIATELY - animation runs in parallel
-                viewModel.onCountdownFinished()
-                val goOverlay = SystemMessageRegistry.get("training_go_overlay", "انطلق!", "GO!")
-                    .get(viewModel.poseSetupGuide.language)
-                AnimationUtils.animateGoText(binding.tvCountdown, goOverlay) { /* cosmetic only */ }
-            }
-
-            override fun onCancelled() {
-                // UI update handled by TrainingUIEvent.CountdownCancelled — no-op here
-            }
-
-            override fun onFrozen() {
-                // Dim the countdown number + show pulsing warning colour
-                binding.tvCountdown.alpha = 0.45f
-                binding.tvCountdown.setTextColor(
-                    ContextCompat.getColor(this@TrainingActivity, R.color.warning)
-                )
-            }
-
-            override fun onUnfrozen() {
-                binding.tvCountdown.alpha = 1f
-                binding.tvCountdown.setTextColor(
-                    ContextCompat.getColor(this@TrainingActivity, R.color.text_primary)
-                )
-                binding.vignetteOverlay.clear()
-            }
-        })
-    }
-    
     /**
      * Start elapsed time timer
      */
-    private fun startElapsedTimeTimer() {
+    internal fun startElapsedTimeTimer() {
         trainingStartTime = System.currentTimeMillis()
         elapsedTimeJob?.cancel()
         elapsedTimeJob = lifecycleScope.launch {
@@ -1711,9 +563,10 @@ class TrainingActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetection
     /**
      * Stop elapsed time timer
      */
-    private fun stopElapsedTimeTimer() {
+    internal fun stopElapsedTimeTimer() {
         elapsedTimeJob?.cancel()
         elapsedTimeJob = null
+        trainingStartTime = 0L
     }
     
     /**
@@ -1740,18 +593,6 @@ class TrainingActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetection
         }
         binding.tvFormStatus.text = text
         binding.tvFormStatus.setTextColor(ContextCompat.getColor(this, color))
-    }
-    
-    private fun initializeReportSystem() {
-        // Generate new session ID for each training
-        sessionId = java.util.UUID.randomUUID().toString()
-        
-        // Initialize frame capture manager
-        frameCaptureManager = FrameCaptureManager(this, sessionId)
-        frameCaptureManager?.cleanupOldSessions(5)  // Keep last 5 sessions
-        
-        // Initialize report storage
-        reportStorage = ReportStorage(this)
     }
     
     // ==================== ViewModel Observers ====================
@@ -1811,16 +652,8 @@ class TrainingActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetection
                     getPhaseDisplayName(phase, viewModel.isHoldExercise())
                 )
 
-                // Capture peak frame when entering BOTTOM phase.
-                // Rep index: getCurrentRep() is completed count; +1 is the in-progress rep (1-based),
-                // same as FeedbackEvent.RepCompleted.repNumber after that rep finishes — must match
-                // FrameCaptureManager peak / error repNumber tagging.
-                if (phase != lastCapturedPhase) {
-                    if (phase == Phase.BOTTOM) {
-                        capturePeakFrame(phase)
-                    }
-                    lastCapturedPhase = phase
-                }
+                // Capture peak frame when entering BOTTOM phase (de-dupe + repNumber in [TrainingFrameCaptureController])
+                frameCaptureController.onCurrentPhaseForPeakCapture(phase)
             }
         }
         
@@ -1835,38 +668,15 @@ class TrainingActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetection
                 updateUIForHoldState(s.state)
             }
         }
-        binding.tvRepCount.setOnLongClickListener {
-            val lines = viewModel.getPipelineTraceSnapshot()
-            if (lines.isEmpty()) {
-                Toast.makeText(this, "Pipeline trace (empty — start a session first)", Toast.LENGTH_SHORT).show()
-            } else {
-                AlertDialog.Builder(this)
-                    .setTitle("Pipeline trace")
-                    .setMessage(lines.takeLast(50).joinToString("\n"))
-                    .setPositiveButton(android.R.string.ok, null)
-                    .show()
-            }
-            true
-        }
+        feedbackBinder.registerPipelineTraceShortcut()
+        feedbackBinder.startFeedbackObservers()
+        // Visual glassmorphic: [TrainingFeedbackBinder.rebindVisualMessageFlow] after [TrainingViewModel.initializeFeedback]
+        feedbackBinder.rebindVisualMessageFlow()
         
         // Observe UI events
         lifecycleScope.launch {
             viewModel.events.collectLatest { event ->
                 handleUIEvent(event)
-            }
-        }
-        
-        // Observe feedback events
-        lifecycleScope.launch {
-            viewModel.feedbackEvents.collectLatest { event ->
-                handleFeedbackEvent(event)
-            }
-        }
-        
-        // Observe visual messages from feedback manager
-        lifecycleScope.launch {
-            viewModel.feedbackManager?.visualMessages?.collectLatest { message ->
-                showGlassmorphicMessage(message)
             }
         }
     }
@@ -1879,7 +689,7 @@ class TrainingActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetection
      */
     private var stateInfosObserverJob: kotlinx.coroutines.Job? = null
     
-    private fun observeTrainingEngineState() {
+    internal fun observeTrainingEngineState() {
         // Cancel previous observer to avoid duplicates
         stateInfosObserverJob?.cancel()
         
@@ -1889,7 +699,6 @@ class TrainingActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetection
         }
         
         stateInfosObserverJob = lifecycleScope.launch {
-            // Observe state infos for visual feedback
             launch {
                 engine.jointStateInfos.collectLatest { stateInfos ->
                     binding.skeletonOverlay.setStateInfos(stateInfos)
@@ -1921,40 +730,7 @@ class TrainingActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetection
                     )
                 }
             }
-
-            // Observe visibility pause/resume (auto-resume, no manual button needed)
-            launch {
-                engine.isVisibilityPaused.collect { paused ->
-                    if (paused) {
-                        binding.vignetteOverlay.showError()
-                        if (isVideoMode) {
-                            binding.glassmorphicMessage.showMessage(
-                                "Return to frame to continue",
-                                GlassmorphicMessageView.TYPE_ERROR,
-                                durationMs = -1
-                            )
-                        }
-                    } else {
-                        if (isVideoMode) binding.glassmorphicMessage.clearAll()
-                        binding.vignetteOverlay.clear()
-                    }
-                }
-            }
-
-            // Observe auto-resume countdown (3-2-1)
-            launch {
-                engine.visibilityResumeCountdown.collect { seconds ->
-                    if (seconds != null && seconds > 0) {
-                        if (isVideoMode) {
-                            binding.glassmorphicMessage.showMessage(
-                                "Resuming in $seconds...",
-                                GlassmorphicMessageView.TYPE_INFO,
-                                durationMs = 900
-                            )
-                        }
-                    }
-                }
-            }
+            feedbackBinder.collectEngineVisibilityInScope(this, engine)
         }
     }
     
@@ -1962,11 +738,11 @@ class TrainingActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetection
     private fun handleUIEvent(event: TrainingUIEvent) {
         when (event) {
             is TrainingUIEvent.ShowSetupPose -> {
-                showSetupPoseUI()
+                setupCountdownBinder.showSetupPoseUI()
             }
 
             is TrainingUIEvent.SetupGuidanceUpdate -> {
-                updateSetupGuidanceUI(event.result)
+                setupCountdownBinder.updateSetupGuidanceUI(event.result)
             }
 
             is TrainingUIEvent.StartCountdown -> {
@@ -1978,13 +754,13 @@ class TrainingActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetection
                 binding.tvCountdown.setTextColor(
                     ContextCompat.getColor(this, R.color.text_primary)
                 )
-                switchBottomBarToFormMode()
+                setupCountdownBinder.switchBottomBarToFormMode()
                 binding.skeletonOverlay.clearSetupMode()
             }
 
             is TrainingUIEvent.CountdownCancelled -> {
                 updateUIForSessionState(SessionState.SETUP_POSE)
-                showSetupPoseUI()
+                setupCountdownBinder.showSetupPoseUI()
             }
 
             is TrainingUIEvent.CountdownFrozen -> {
@@ -1992,7 +768,7 @@ class TrainingActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetection
             }
 
             is TrainingUIEvent.CountdownPoseIssue -> {
-                showCountdownPoseIssue(event.result)
+                feedbackBinder.showCountdownPoseIssue(event.result)
             }
 
             is TrainingUIEvent.CountdownUnfrozen -> {
@@ -2009,18 +785,18 @@ class TrainingActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetection
             is TrainingUIEvent.ExerciseCompleted,
             is TrainingUIEvent.TrainingCompleted -> {
                 if (isSessionMode) {
-                    tryHandleSessionSetCompleted()
+                    sessionModeController.tryHandleSessionSetCompleted()
                 } else {
                     completeTraining()
                 }
             }
             
             is TrainingUIEvent.AutoPaused -> {
-                handleAutoPaused(event.reason)
+                feedbackBinder.handleAutoPaused(event.reason)
             }
             
             is TrainingUIEvent.NoPoseWarning -> {
-                handleNoPoseWarning(event.elapsedMs)
+                feedbackBinder.handleNoPoseWarning(event.elapsedMs)
             }
             
             is TrainingUIEvent.PauseVideoPlayback -> {
@@ -2035,25 +811,7 @@ class TrainingActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetection
         }
     }
 
-    private fun tryHandleSessionSetCompleted() {
-        if (currentSessionSetRunId <= 0L) {
-            Log.w(TAG, "Ignoring completion event without active set run id")
-            return
-        }
-
-        if (lastCompletedSessionSetRunId == currentSessionSetRunId) {
-            Log.d(
-                TAG,
-                "Ignoring duplicate session completion event for runId=$currentSessionSetRunId"
-            )
-            return
-        }
-
-        lastCompletedSessionSetRunId = currentSessionSetRunId
-        onSessionSetCompleted()
-    }
-
-    private fun updateCounterLabelForCurrentExercise() {
+    internal fun updateCounterLabelForCurrentExercise() {
         val labelRes = if (viewModel.isHoldExercise()) R.string.time else R.string.reps
         binding.tvRepsLabel.text = getString(labelRes)
     }
@@ -2065,9 +823,9 @@ class TrainingActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetection
      */
     private fun updateUIForSessionState(state: SessionState) {
         if (state == SessionState.TRAINING && !viewModel.isHoldExercise()) {
-            startRepWideReplaySampler()
+            frameCaptureController.startRepWideReplaySampler()
         } else {
-            stopRepWideReplaySampler()
+            frameCaptureController.stopRepWideReplaySampler()
         }
         when (state) {
             SessionState.IDLE -> {
@@ -2094,7 +852,7 @@ class TrainingActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetection
                 elbowAngleEstimator.reset()
 
                 binding.skeletonOverlay.clearSetupMode()
-                switchBottomBarToFormMode()
+                setupCountdownBinder.switchBottomBarToFormMode()
 
                 // Hide indicator bar, show countdown
                 binding.setupIndicatorBar.visibility = View.GONE
@@ -2119,7 +877,7 @@ class TrainingActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetection
                 updatePlayPauseIcon(isPlaying = true)
 
                 binding.skeletonOverlay.clearSetupMode()
-                switchBottomBarToFormMode()
+                setupCountdownBinder.switchBottomBarToFormMode()
 
                 // Start elapsed time timer
                 if (trainingStartTime == 0L) {
@@ -2153,7 +911,7 @@ class TrainingActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetection
             
             SessionState.RESUME_COUNTDOWN -> {
                 binding.skeletonOverlay.clearSetupMode()
-                switchBottomBarToFormMode()
+                setupCountdownBinder.switchBottomBarToFormMode()
                 binding.setupPosePanel.visibility = View.GONE
                 binding.setupIndicatorBar.visibility = View.GONE
                 binding.countdownPanel.visibility = View.VISIBLE
@@ -2181,468 +939,9 @@ class TrainingActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetection
         }
     }
     
-    private fun handleAutoPaused(reason: PauseReason) {
-        val lang = viewModel.poseSetupGuide.language
-        val lt = when (reason) {
-            PauseReason.VISIBILITY -> SystemMessageRegistry.get(
-                "training_pause_visibility_joints",
-                "المفاصل المطلوبة غير مرئية",
-                "Required joints not visible"
-            )
-            PauseReason.NO_POSE -> SystemMessageRegistry.get(
-                "training_pause_no_pose_long",
-                "لم يتم اكتشاف وضعية لفترة طويلة",
-                "No pose detected for too long"
-            )
-            PauseReason.MANUAL -> SystemMessageRegistry.get(
-                "training_pause_manual",
-                "تم إيقاف التمرين مؤقتاً",
-                "Training paused"
-            )
-        }
-        val message = lt.get(lang)
-
-        if (reason != PauseReason.MANUAL) {
-            binding.vignetteOverlay.showError()
-        }
-
-        if (!isVideoMode && reason != PauseReason.MANUAL) {
-            viewModel.feedbackManager?.speakLocalized(lt, FeedbackManager.SpeakPriority.HIGH)
-        } else {
-            binding.glassmorphicMessage.showMessage(
-                message,
-                if (reason == PauseReason.MANUAL) GlassmorphicMessageView.TYPE_INFO
-                else GlassmorphicMessageView.TYPE_ERROR,
-                durationMs = -1
-            )
-        }
-        
-        Log.d(TAG, "Auto-paused: $reason")
-    }
+    internal fun isTextlessSetupState(): Boolean = setupCountdownBinder.isTextlessSetupState()
     
-    private fun handleNoPoseWarning(elapsedMs: Long) {
-        if (isTextlessSetupState()) {
-            binding.glassmorphicMessage.clearAll()
-            binding.vignetteOverlay.showWarning()
-            return
-        }
-
-        binding.vignetteOverlay.showWarning()
-
-        if (!isVideoMode) {
-            if (!noPoseTtsSpoken) {
-                noPoseTtsSpoken = true
-                val lt = SystemMessageRegistry.get(
-                    "training_no_pose_return_camera",
-                    "عد إلى الكاميرا",
-                    "Return to the camera"
-                )
-                viewModel.feedbackManager?.speakLocalized(
-                    lt,
-                    FeedbackManager.SpeakPriority.HIGH
-                )
-            }
-        } else {
-            val remainingSeconds = ((4000 - elapsedMs) / 1000).toInt().coerceAtLeast(0)
-            val base = SystemMessageRegistry.get(
-                "training_no_pose_countdown_warning",
-                "لم يتم اكتشاف وضعية! العودة خلال {seconds}ث...",
-                "No pose detected! Return in {seconds}s..."
-            )
-            val message = SystemMessageRegistry.substitute(
-                base,
-                mapOf("seconds" to remainingSeconds.toString())
-            ).get(viewModel.poseSetupGuide.language)
-            binding.glassmorphicMessage.showMessage(
-                message,
-                GlassmorphicMessageView.TYPE_WARNING,
-                durationMs = 500
-            )
-        }
-    }
-    
-    // ──────────────────────────────────────────────────────────────────────
-    // Setup Pose UI
-    // ──────────────────────────────────────────────────────────────────────
-
-    /** Show the setup indicator bar + scene check skeleton, hide old panels. */
-    private fun showSetupPoseUI() {
-        // Hide old text-based setup panel and bottom bar
-        binding.setupPosePanel.visibility = View.GONE
-        binding.bottomStatsBar.visibility = View.GONE
-        binding.countdownPanel.visibility = View.GONE
-        binding.glassmorphicMessage.clearAll()
-
-        // Clear any leftover vignette from a cancelled countdown
-        binding.vignetteOverlay.clear()
-
-        // Show floating indicator bar
-        binding.setupIndicatorBar.visibility = View.VISIBLE
-        bindSetupIndicatorExpectations()
-        resetAxisIcons()
-
-        // Load reference image if available
-        loadSetupReferenceImage()
-
-        // Start in scene-check mode (torso-only skeleton)
-        binding.skeletonOverlay.setSceneCheckMode(true)
-        binding.skeletonOverlay.updateFrontCameraState(useFrontCamera)
-
-        // Reset phase transition tracker
-        lastSetupPhase = null
-    }
-
-    /** Show a concise reason while countdown is frozen/canceling due pose drift. */
-    private fun showCountdownPoseIssue(result: SetupResult) {
-        if (!isVideoMode) {
-            binding.glassmorphicMessage.clearAll()
-            binding.vignetteOverlay.showWarning()
-            return
-        }
-        if (viewModel.supervisor.state.value == SessionState.SETUP_POSE ||
-            viewModel.supervisor.state.value == SessionState.RESUME_SETUP
-        ) {
-            binding.glassmorphicMessage.clearAll()
-            binding.vignetteOverlay.showWarning()
-            return
-        }
-
-        val lang = viewModel.poseSetupGuide.language
-        val message = when {
-            result.phase != SetupPhase.ANGLES -> result.phaseMessage?.get(lang)
-            result.worstJoint != null -> result.worstJoint.message.get(lang)
-            else -> SystemMessageRegistry.get(
-                "training_setup_return_start_pose",
-                "عد إلى وضعية البداية",
-                "Return to the start pose"
-            ).get(lang)
-        } ?: return
-
-        binding.glassmorphicMessage.showMessage(
-            message,
-            GlassmorphicMessageView.TYPE_WARNING,
-            1000
-        )
-        binding.vignetteOverlay.showWarning()
-    }
-
-    /**
-     * Visual-first setup guidance using the floating indicator bar.
-     * Stage 1 (scene check): Shows 3 axis status icons; skeleton in torso-only mode.
-     * Stage 2 (visibility check): Shows tracked joints on skeleton overlay.
-     */
-    private fun updateSetupGuidanceUI(result: SetupResult) {
-        val state = viewModel.supervisor.state.value
-        if (state != SessionState.SETUP_POSE && state != SessionState.RESUME_SETUP) return
-
-        val phase = result.phase
-
-        // ── Update axis status icons ────────────────────────────────────
-        updateAxisIcons(result)
-
-        // ── Detect scene → visibility transition ────────────────────────
-        val previousPhase = lastSetupPhase
-        lastSetupPhase = phase
-
-        if (phase == SetupPhase.ANGLES && previousPhase != null && previousPhase != SetupPhase.ANGLES) {
-            // Transition: scene check passed → switch to visibility check overlay
-            binding.skeletonOverlay.setSceneCheckMode(false)
-
-            val transitionMsg = com.trainingvalidator.poc.training.feedback.MobileMessageResolver.resolveSetupSceneToVisibility()
-            viewModel.feedbackManager?.speakSetupPhaseGuidance(transitionMsg)
-        }
-
-        // ── Stage 1: Scene check (REGION/POSTURE/DIRECTION) ─────────────
-        if (phase != SetupPhase.ANGLES) {
-            binding.skeletonOverlay.setSceneCheckMode(true)
-
-            // Voice guidance for scene phases (only on blocker change)
-            if (result.phaseMessage != null &&
-                viewModel.poseSetupGuide.shouldSpeakPhaseGuidance(phase)
-            ) {
-                viewModel.feedbackManager?.speakSetupPhaseGuidance(result.phaseMessage)
-                viewModel.poseSetupGuide.onPhaseGuidanceSpoken(phase)
-            }
-        } else {
-            // ── Stage 2: Visibility check ───────────────────────────────
-            val landmarks = viewModel.lastSmoothedLandmarks
-            val imageSize = viewModel.lastImageSize
-            if (landmarks != null) {
-                binding.skeletonOverlay.updateSetupGuidance(
-                    guidances = result.joints,
-                    smoothedLandmarks = landmarks,
-                    imageW = imageSize.first,
-                    imageH = imageSize.second,
-                    useFrontCamera = useFrontCamera
-                )
-            }
-
-            // Voice for missing joints (speaks only when blocker changes)
-            val missingJoint = result.joints.firstOrNull { it.level == GuidanceLevel.RED }
-            if (missingJoint != null && viewModel.poseSetupGuide.shouldSpeakGuidance(missingJoint)) {
-                viewModel.feedbackManager?.speakSetupGuidance(missingJoint)
-                viewModel.poseSetupGuide.onVoiceGuidanceSpoken(missingJoint)
-            }
-        }
-    }
-
-    /**
-     * Build/update the per-joint guidance rows inside [jointGuidanceContainer].
-     *
-     * We recycle existing TextViews by tag to avoid layout churn.
-     */
-    private fun updateJointGuidanceRows(joints: List<JointGuidance>) {
-        val container = binding.jointGuidanceContainer
-
-        joints.forEachIndexed { i, guidance ->
-            val row = container.findViewWithTag<android.widget.TextView>("joint_row_$i")
-                ?: android.widget.TextView(this).also { tv ->
-                    tv.tag = "joint_row_$i"
-                    tv.textSize = 16f
-                    tv.setPadding(0, 8, 0, 8)
-                    tv.typeface = android.graphics.Typeface.DEFAULT_BOLD
-                    container.addView(tv)
-                }
-
-            row.visibility = View.VISIBLE
-            val colorRes = when (guidance.level) {
-                GuidanceLevel.GREEN  -> R.color.success
-                GuidanceLevel.YELLOW -> R.color.warning
-                GuidanceLevel.RED    -> R.color.error
-            }
-            val icon = when (guidance.level) {
-                GuidanceLevel.GREEN  -> "✓"
-                GuidanceLevel.YELLOW -> "⚠"
-                GuidanceLevel.RED    -> "✗"
-            }
-            val arrow = when (guidance.direction) {
-                Direction.LOWER -> " ↓"
-                Direction.RAISE -> " ↑"
-                else            -> ""
-            }
-            val angleStr = "%.0f°".format(guidance.currentAngle)
-
-            row.text = "$icon  ${guidance.jointName}  $angleStr$arrow"
-            row.setTextColor(ContextCompat.getColor(this, colorRes))
-        }
-
-        for (i in joints.size until container.childCount) {
-            container.getChildAt(i).visibility = View.GONE
-        }
-    }
-
-    /**
-     * Update the bottom bar FORM/VIEW card with camera-position tip or form quality.
-     */
-    private fun updateViewCard(cameraGuidance: CameraGuidance?) {
-        if (cameraGuidance == null) return
-        val lang = viewModel.poseSetupGuide.language
-        val (text, colorRes) = if (cameraGuidance.isCorrect) {
-            (if (lang == "ar") "✓" else "✓ OK") to R.color.success
-        } else {
-            val label = cameraGuidance.tip?.get(lang) ?: "—"
-            label to R.color.warning
-        }
-        binding.tvFormStatus.text = text
-        binding.tvFormStatus.setTextColor(ContextCompat.getColor(this, colorRes))
-    }
-
-    /** Switch bottom bar to setup mode: TIME→READY, FORM→VIEW */
-    private fun switchBottomBarToSetupMode() {
-        val isAr = viewModel.poseSetupGuide.language == "ar"
-        // TIME card → READY card
-        binding.tvTimeCardLabel.text = if (isAr) "جاهز" else "READY"
-        binding.tvTimeElapsed.text = "0%"
-        binding.tvTimeElapsed.visibility = View.VISIBLE
-        binding.progressSetupReadyBar.visibility = View.VISIBLE
-        binding.progressSetupReadyBar.progress = 0
-        // FORM card → VIEW card
-        binding.tvFormCardLabel.text = if (isAr) "الوضعية" else "VIEW"
-    }
-
-    /** Update the READY percent in the bottom bar TIME card. */
-    private fun updateReadyPercent(percent: Int) {
-        binding.tvTimeElapsed.text = "$percent%"
-        binding.progressSetupReadyBar.progress = percent
-    }
-
-    /** Switch bottom bar back to training layout. */
-    private fun switchBottomBarToFormMode() {
-        binding.tvTimeCardLabel.text = getString(R.string.time)
-        binding.tvFormCardLabel.text = getString(R.string.form)
-        binding.progressSetupReadyBar.visibility = View.GONE
-        binding.tvTimeElapsed.text = "00:00"
-        binding.tvTimeElapsed.visibility = View.VISIBLE
-        binding.tvFormStatus.text = getString(R.string.good)
-        binding.tvFormStatus.setTextColor(ContextCompat.getColor(this, R.color.primary))
-    }
-
-    // ──────────────────────────────────────────────────────────────────────
-    // Setup Indicator Bar Helpers
-    // ──────────────────────────────────────────────────────────────────────
-
-    private fun isTextlessSetupState(): Boolean {
-        return when (viewModel.supervisor.state.value) {
-            SessionState.SETUP_POSE,
-            SessionState.RESUME_SETUP,
-            SessionState.COUNTDOWN,
-            SessionState.RESUME_COUNTDOWN -> true
-            else -> false
-        }
-    }
-
-    private val AXIS_COLOR_PENDING = Color.parseColor("#66FFFFFF")
-    private val AXIS_COLOR_FAILED  = Color.parseColor("#FFA726") // warning amber
-    private val AXIS_COLOR_PASSED  = Color.parseColor("#4CAF50") // success green
-
-    private fun resetAxisIcons() {
-        updateAxisRow(binding.ivAxisRegion, binding.tvAxisRegionExpected, AxisStatus.PENDING, R.drawable.ic_viewfinder)
-        updateAxisRow(binding.ivAxisPosture, binding.tvAxisPostureExpected, AxisStatus.PENDING, R.drawable.ic_person_placeholder)
-        updateAxisRow(binding.ivAxisDirection, binding.tvAxisDirectionExpected, AxisStatus.PENDING, R.drawable.ic_eye)
-    }
-
-    private fun updateAxisIcons(result: SetupResult) {
-        updateAxisRow(binding.ivAxisRegion, binding.tvAxisRegionExpected, result.regionStatus, R.drawable.ic_viewfinder)
-        updateAxisRow(binding.ivAxisPosture, binding.tvAxisPostureExpected, result.postureStatus, R.drawable.ic_person_placeholder)
-        updateAxisRow(binding.ivAxisDirection, binding.tvAxisDirectionExpected, result.directionStatus, R.drawable.ic_eye)
-    }
-
-    private fun axisColor(status: AxisStatus): Int = when (status) {
-        AxisStatus.PENDING -> AXIS_COLOR_PENDING
-        AxisStatus.FAILED  -> AXIS_COLOR_FAILED
-        AxisStatus.PASSED  -> AXIS_COLOR_PASSED
-    }
-
-    private fun updateAxisRow(iconView: ImageView, labelView: TextView, status: AxisStatus, defaultIconRes: Int) {
-        val color = axisColor(status)
-        when (status) {
-            AxisStatus.PENDING -> {
-                iconView.setImageResource(defaultIconRes)
-                labelView.alpha = 0.5f
-            }
-            AxisStatus.FAILED -> {
-                iconView.setImageResource(R.drawable.ic_warning)
-                labelView.alpha = 1f
-            }
-            AxisStatus.PASSED -> {
-                iconView.setImageResource(R.drawable.ic_check)
-                labelView.alpha = 1f
-            }
-        }
-        iconView.setColorFilter(color)
-        labelView.setTextColor(color)
-    }
-
-    private fun currentPoseVariant(): PoseVariant? {
-        val config = viewModel.exerciseConfig.value ?: return null
-        return config.getPoseVariant(viewModel.poseVariantIndex.value)
-    }
-
-    private fun currentSetupExpectation(): PoseSceneExpectation? {
-        val variant = currentPoseVariant() ?: return null
-        return if (variant.expectedPostures != null) {
-            PoseSceneExpectation.fromJson(
-                postures = variant.expectedPostures,
-                directions = variant.expectedDirections,
-                regions = variant.expectedRegions
-            )
-        } else {
-            val posCode = variant.posePosition ?: variant.cameraPosition ?: "standing_side"
-            PoseSceneExpectation.fromLegacyCode(posCode)
-        }
-    }
-
-    private fun bindSetupIndicatorExpectations() {
-        val expectation = currentSetupExpectation()
-        if (expectation == null) {
-            binding.tvSetupRefTitle.text = "Target pose"
-            binding.tvSetupRefSubtitle.text = "Reference"
-            binding.tvAxisRegionExpected.text = "Show your body in frame"
-            binding.tvAxisPostureExpected.text = "Get into position"
-            binding.tvAxisDirectionExpected.text = "Adjust camera angle"
-            return
-        }
-
-        val postureText = expectation.postures
-            .ifEmpty { listOf(BodyPosture.UNKNOWN) }
-            .joinToString(" / ") { postureLabel(it) }
-        val regionText = expectation.regions
-            .ifEmpty { listOf(VisibleRegion.UNKNOWN) }
-            .joinToString(" / ") { regionLabel(it) }
-        val directionText = expectation.directions
-            .ifEmpty { listOf(ExpectedDirection.ANY) }
-            .joinToString(" / ") { directionLabel(it) }
-
-        binding.tvSetupRefTitle.text = postureText
-        binding.tvSetupRefSubtitle.text = directionText
-        binding.tvAxisRegionExpected.text = regionText
-        binding.tvAxisPostureExpected.text = postureText
-        binding.tvAxisDirectionExpected.text = directionText
-    }
-
-    private fun postureLabel(posture: BodyPosture): String = when (posture) {
-        BodyPosture.STANDING -> "Stand upright"
-        BodyPosture.LYING_PRONE -> "Lie face down"
-        BodyPosture.LYING_SUPINE -> "Lie on your back"
-        BodyPosture.LYING_SIDE -> "Lie on your side"
-        BodyPosture.SITTING -> "Sit down"
-        BodyPosture.UNKNOWN -> "Get into position"
-    }
-
-    private fun regionLabel(region: VisibleRegion): String = when (region) {
-        VisibleRegion.FULL_BODY -> "Show full body"
-        VisibleRegion.UPPER_BODY -> "Show upper body"
-        VisibleRegion.LOWER_BODY -> "Show lower body"
-        VisibleRegion.UNKNOWN -> "Show your body in frame"
-    }
-
-    private fun directionLabel(direction: ExpectedDirection): String = when (direction) {
-        ExpectedDirection.FRONT -> "Face the camera"
-        ExpectedDirection.BACK -> "Turn your back to camera"
-        ExpectedDirection.SIDE_ANY -> "Stand sideways to camera"
-        ExpectedDirection.SIDE_LEFT -> "Show your left side"
-        ExpectedDirection.SIDE_RIGHT -> "Show your right side"
-        ExpectedDirection.DIAGONAL -> "Stand at an angle"
-        ExpectedDirection.ANY -> "Any camera angle"
-    }
-
-    private fun loadSetupReferenceImage() {
-        val variant = currentPoseVariant()
-        if (variant == null) {
-            Log.d(TAG, "SetupRefImage: no variant loaded — showing fallback")
-            binding.ivSetupRefImage.setImageDrawable(null)
-            binding.setupRefFallbackContainer.visibility = View.VISIBLE
-            return
-        }
-        val imageUrl = variant.positionImageUrl
-        Log.d(TAG, "SetupRefImage: url=${imageUrl ?: "(null)"}")
-
-        if (!imageUrl.isNullOrBlank()) {
-            ImageLoader(this).enqueue(
-                ImageRequest.Builder(this)
-                    .data(imageUrl)
-                    .target(
-                        onSuccess = { result ->
-                            Log.d(TAG, "SetupRefImage: loaded successfully")
-                            binding.ivSetupRefImage.setImageDrawable(result)
-                            binding.setupRefFallbackContainer.visibility = View.GONE
-                        },
-                        onError = {
-                            Log.w(TAG, "SetupRefImage: failed to load image from $imageUrl")
-                            binding.ivSetupRefImage.setImageDrawable(null)
-                            binding.setupRefFallbackContainer.visibility = View.VISIBLE
-                        }
-                    )
-                    .crossfade(true)
-                    .build()
-            )
-        } else {
-            binding.ivSetupRefImage.setImageDrawable(null)
-            binding.setupRefFallbackContainer.visibility = View.VISIBLE
-        }
-    }
-    
-    private fun updatePlayPauseIcon(isPlaying: Boolean) {
+    internal fun updatePlayPauseIcon(isPlaying: Boolean) {
         // stopIcon is now a View with background, not an ImageView
         // Toggle visibility or background based on state
         if (isPlaying) {
@@ -2678,33 +977,6 @@ class TrainingActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetection
                 SessionState.PAUSED, SessionState.AUTO_PAUSED -> viewModel.requestResume()
                 else -> {}
             }
-        }
-    }
-    
-    private fun showGlassmorphicMessage(message: FeedbackManager.VisualMessage) {
-        val type = when (message.type) {
-            FeedbackManager.MessageType.TIP -> GlassmorphicMessageView.TYPE_TIP
-            FeedbackManager.MessageType.WARNING -> GlassmorphicMessageView.TYPE_WARNING
-            FeedbackManager.MessageType.ERROR -> GlassmorphicMessageView.TYPE_ERROR
-            FeedbackManager.MessageType.MOTIVATION -> GlassmorphicMessageView.TYPE_MOTIVATION
-            FeedbackManager.MessageType.INFO -> GlassmorphicMessageView.TYPE_INFO
-        }
-        
-        if (!isVideoMode) {
-            when (message.type) {
-                FeedbackManager.MessageType.ERROR -> binding.vignetteOverlay.showError()
-                FeedbackManager.MessageType.WARNING -> binding.vignetteOverlay.showWarning()
-                else -> {}
-            }
-            return
-        }
-
-        binding.glassmorphicMessage.showMessage(message.text, type, message.durationMs)
-        
-        when (message.type) {
-            FeedbackManager.MessageType.ERROR -> binding.vignetteOverlay.showError()
-            FeedbackManager.MessageType.WARNING -> binding.vignetteOverlay.showWarning()
-            else -> {}
         }
     }
     
@@ -2746,7 +1018,7 @@ class TrainingActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetection
         generateReportAndNavigate()
     }
     
-    private fun finishWithResult() {
+    internal fun finishWithResult() {
         val resultIntent = android.content.Intent().apply {
             val engine = viewModel.trainingEngine
             putExtra(RESULT_REPS_COMPLETED, engine?.getCurrentRep() ?: 0)
@@ -2758,897 +1030,38 @@ class TrainingActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetection
         setResult(RESULT_OK, resultIntent)
         finish()
     }
-    
-    // ==================== Feedback Events ====================
-    
-    private fun handleFeedbackEvent(event: FeedbackEvent) {
-        when (event) {
-            is FeedbackEvent.RepCompleted -> {
-                AnimationUtils.repCompletedPulse(
-                    binding.tvRepCount,
-                    event.isCorrect,
-                    COLOR_CORRECT,
-                    COLOR_WARNING,
-                    COLOR_DEFAULT
-                )
-                
-                // Mark as best rep if correct
-                if (event.isCorrect) {
-                    frameCaptureManager?.markAsBestRep(event.repNumber)
-                }
-            }
-            
-            is FeedbackEvent.JointQuality -> {
-                val err = (event.content as? JointQualityContent.Error)?.error ?: return@handleFeedbackEvent
-                // Capture error frame (deduped per rep + errorKey in FrameCaptureManager).
-                val errorKey = "${err.jointCode}:${err.state.name}"
-                // In-progress rep (1-based), aligned with peak capture and RepCompleted.repNumber.
-                val currentRep = (viewModel.trainingEngine?.getCurrentRep() ?: 0) + 1
-                val phase = viewModel.currentPhase.value
 
-                if (err.state == com.trainingvalidator.poc.training.models.JointState.DANGER) {
-                    captureDangerFrame(
-                        repNumber = currentRep,
-                        phase = phase,
-                        jointCode = err.jointCode,
-                        actualAngle = err.actualAngle
-                    )
-                } else {
-                    captureErrorFrame(currentRep, phase, errorKey)
-                }
-            }
-            
-            is FeedbackEvent.HoldGraceStarted -> {
-                AnimationUtils.shake(binding.tvRepCount)
-            }
-            
-            is FeedbackEvent.HoldFailed -> {
-                AnimationUtils.shake(binding.tvRepCount, 15f)
-                binding.tvRepCount.text = "00:00"
-                binding.tvRepCount.setTextColor(COLOR_DEFAULT)
-            }
-            
-            is FeedbackEvent.VisibilityWarning -> {
-                binding.vignetteOverlay.showWarning()
-                if (isVideoMode) {
-                    binding.glassmorphicMessage.showMessage(
-                        event.message.en,
-                        GlassmorphicMessageView.TYPE_WARNING,
-                        durationMs = 1000
-                    )
-                }
-            }
-            
-            else -> {}
-        }
-    }
+    private fun generateReportAndNavigate() = reportCoordinator.generateReportAndNavigate()
     
-    // ==================== Frame Capture ====================
-    
-    /**
-     * Capture peak frame when reaching BOTTOM phase.
-     * Uses [TrainingEngine.getCurrentRep] + 1 as repNumber so it matches [FeedbackEvent.RepCompleted.repNumber]
-     * for the rep currently being performed (see FrameCaptureManager / ReportGenerator).
-     */
-    private fun capturePeakFrame(phase: Phase) {
-        // Only capture during active training
-        if (viewModel.supervisor.state.value != SessionState.TRAINING) {
-            return
-        }
-        
-        // Get bitmap from camera or video mode
-        val bitmap = getBitmapForCapture()
-        
-        bitmap?.let { bmp ->
-            val currentRep = (viewModel.trainingEngine?.getCurrentRep() ?: 0) + 1
-            val angles = viewModel.trainingEngine?.currentAngles?.value ?: emptyMap()
-            
-            frameCaptureManager?.capturePeakFrame(
-                bitmap = bmp,
-                repNumber = currentRep,
-                phase = phase,
-                angles = angles
-            )
-            
-            Log.d(TAG, "Captured peak frame for rep $currentRep at phase ${phase.name}")
-            
-            // Recycle if from video mode (it's a copy)
-            if (isVideoMode) {
-                bmp.recycle()
-            }
-        }
-    }
-    
-    /**
-     * Capture error frame when error detected
-     */
-    private fun captureErrorFrame(repNumber: Int, phase: Phase, errorKey: String) {
-        // Only capture during active training
-        if (viewModel.supervisor.state.value != SessionState.TRAINING) {
-            return
-        }
-        
-        // Get bitmap from camera or video mode
-        val bitmap = getBitmapForCapture()
-        
-        bitmap?.let { bmp ->
-            val angles = viewModel.trainingEngine?.currentAngles?.value ?: emptyMap()
-            
-            val captured = frameCaptureManager?.captureErrorFrame(
-                bitmap = bmp,
-                repNumber = repNumber,
-                phase = phase,
-                errorKey = errorKey,
-                angles = angles
-            )
-            
-            if (captured != null) {
-                Log.d(TAG, "Captured error frame for $errorKey at rep $repNumber")
-            }
-            
-            // Recycle if from video mode (it's a copy)
-            if (isVideoMode) {
-                bmp.recycle()
-            }
-        }
-    }
-    
-    /**
-     * Capture DANGER frame when DANGER state detected 🚨
-     */
-    private fun captureDangerFrame(repNumber: Int, phase: Phase, jointCode: String, actualAngle: Double) {
-        // Only capture during active training
-        if (viewModel.supervisor.state.value != SessionState.TRAINING) {
-            return
-        }
-        
-        // Get bitmap from camera or video mode
-        val bitmap = getBitmapForCapture()
-        
-        bitmap?.let { bmp ->
-            val angles = viewModel.trainingEngine?.currentAngles?.value ?: emptyMap()
-            
-            val captured = frameCaptureManager?.captureDangerFrame(
-                bitmap = bmp,
-                repNumber = repNumber,
-                phase = phase,
-                jointCode = jointCode,
-                actualAngle = actualAngle,
-                angles = angles
-            )
-            
-            if (captured != null) {
-                Log.d(TAG, "🚨 Captured DANGER frame for $jointCode at ${actualAngle.toInt()}° (rep $repNumber)")
-            }
-            
-            // Recycle if from video mode (it's a copy)
-            if (isVideoMode) {
-                bmp.recycle()
-            }
-        }
-    }
-    
-    /**
-     * Get bitmap for frame capture (works in both camera and video mode)
-     */
-    private fun getBitmapForCapture(): android.graphics.Bitmap? {
-        return if (isVideoMode) {
-            // Get current frame from video controller
-            videoModeController?.getCurrentFrameBitmap()
-        } else {
-            // Get from camera preview
-            binding.previewView.bitmap
-        }
-    }
-
-    private fun startRepWideReplaySampler() {
-        if (viewModel.isHoldExercise()) return
-        if (repWideReplayScheduled) return
-        repWideReplayScheduled = true
-        repWideReplayHandler.removeCallbacks(repWideReplayRunnable)
-        repWideReplayHandler.post(repWideReplayRunnable)
-        Log.d(BestWorstReplayPipeline.LOG_TAG, "rep_wide_sampler started")
-    }
-
-    private fun stopRepWideReplaySampler() {
-        val wasRunning = repWideReplayScheduled
-        repWideReplayScheduled = false
-        repWideReplayHandler.removeCallbacks(repWideReplayRunnable)
-        if (wasRunning) {
-            Log.d(BestWorstReplayPipeline.LOG_TAG, "rep_wide_sampler stopped")
-        }
-    }
-    
-    /**
-     * Generate report and navigate directly to ReportActivity
-     */
-    private fun generateReportAndNavigate() {
-        val engine = viewModel.trainingEngine
-        if (engine == null) {
-            Log.e(TAG, "TrainingEngine is null!")
-            showFallbackSummary()
-            return
-        }
-        
-        val exerciseConfig = viewModel.exerciseConfig.value
-        if (exerciseConfig == null) {
-            Log.e(TAG, "ExerciseConfig is null!")
-            showFallbackSummary()
-            return
-        }
-        
-        val frameCaptures = frameCaptureManager?.getAllCaptures() ?: emptyList()
-        val replayClips = frameCaptureManager?.getAllReplayClips() ?: emptyList()
-        Log.d(TAG, "Frame captures count: ${frameCaptures.size}, replay clips: ${replayClips.size}")
-        
-        // Show loading state
-        binding.heroCounterContainer.visibility = View.GONE
-        binding.progressContainer.visibility = View.GONE
-        binding.completedPanel.visibility = View.GONE
-        
-        binding.glassmorphicMessage.showMessage(
-            "📊 Generating report...",
-            GlassmorphicMessageView.TYPE_INFO,
-            durationMs = -1
-        )
-        
-        lifecycleScope.launch(Dispatchers.IO) {
-            try {
-                Log.d(TAG, "Generating report in background...")
-                
-                val sessionUpload = viewModel.finalizeAndGetSessionUpload()
-                val sessionMetrics = sessionUpload?.sessionMetrics
-                
-                val report = ReportGenerator.generateFromEngine(
-                    engine = engine,
-                    exerciseConfig = exerciseConfig,
-                    sessionDurationMs = viewModel.getSessionDurationMs(),
-                    frameCaptures = frameCaptures,
-                    replayClips = replayClips,
-                    sessionMetrics = sessionMetrics,
-                    weightKg = viewModel.getWeightKg(),
-                    weightUnit = viewModel.getWeightUnit()
-                )
-                
-                Log.d(TAG, "Report generated: id=${report.id}, accuracy=${report.summary.accuracy}%")
-                
-                val saved = reportStorage?.save(report) ?: false
-                Log.d(TAG, "Report saved locally: $saved")
-                
-                // Navigate to report IMMEDIATELY (Offline-First)
-                launch(Dispatchers.Main) {
-                    binding.glassmorphicMessage.hide()
-                    
-                    if (isAssessmentMode) {
-                        // Assessment mode: return report ID without showing report page
-                        val resultIntent = android.content.Intent().apply {
-                            putExtra(RESULT_REPORT_ID, report.id)
-                            putExtra(RESULT_IS_COMPLETED, true)
-                        }
-                        setResult(RESULT_OK, resultIntent)
-                        finish()
-                        return@launch
-                    }
-
-                    if (saved) {
-                        Log.d(TAG, "Navigating to SessionReportActivity with id: ${report.id}")
-                        
-                        try {
-                            val intent = SessionReportActivity.createIntent(this@TrainingActivity, report.id)
-                            startActivity(intent)
-                            finish()
-                        } catch (e: Exception) {
-                            Log.e(TAG, "Failed to start SessionReportActivity: ${e.message}", e)
-                            showFallbackSummary()
-                        }
-                    } else {
-                        Log.e(TAG, "Failed to save report, showing fallback")
-                        showFallbackSummary()
-                    }
-                }
-                
-                // Sync to backend in background (non-blocking, lifecycle-safe)
-                // ProcessLifecycleOwner survives Activity finish since navigation already happened
-                androidx.lifecycle.ProcessLifecycleOwner.get().lifecycleScope.launch(Dispatchers.IO) {
-                    try {
-                        syncSessionToBackendStandalone(report.id, sessionUpload)
-                    } catch (e: Exception) {
-                        Log.w(TAG, "Background sync failed, will retry later: ${e.message}")
-                    }
-                }
-            } catch (e: Exception) {
-                Log.e(TAG, "Error generating report: ${e.message}", e)
-                e.printStackTrace()
-                launch(Dispatchers.Main) {
-                    binding.glassmorphicMessage.hide()
-                    Toast.makeText(
-                        this@TrainingActivity,
-                        "Error: ${e.message}",
-                        Toast.LENGTH_LONG
-                    ).show()
-                    showFallbackSummary()
-                }
-            }
-        }
-    }
-    
-    /**
-     * Sync session data to backend. Accepts the already-finalized upload to avoid
-     * calling finalizeAndGetSessionUpload() twice (race condition risk).
-     * Uses applicationContext to survive Activity destruction.
-     */
-    private suspend fun syncSessionToBackendStandalone(
-        sessionId: String,
-        sessionUpload: SessionUpload?
-    ) {
-        val appContext = applicationContext
-        
-        try {
-            if (sessionUpload == null) {
-                Log.w(TAG, "No session data to sync (MotionRecorder not active)")
-                return
-            }
-            
-            Log.d(TAG, "Syncing session to backend: ${sessionUpload.id}, " +
-                       "${sessionUpload.totalReps} reps, " +
-                       "avgScore=${sessionUpload.sessionMetrics.avgFormScore / 10f}%")
-            
-            // Refresh token if needed (after 20 hours)
-            if (AuthManager.shouldRefreshToken(appContext)) {
-                Log.d(TAG, "Token needs refresh, attempting...")
-                refreshTokenStandalone(appContext)
-            }
-            
-            // Get sync service
-            val syncService = SessionSyncService.getInstance(
-                appContext,
-                ApiConfig.getEffectiveBaseUrl()
-            )
-            
-            // Get auth token from AuthManager
-            val token = AuthManager.getAccessToken(appContext)
-            
-            if (token != null) {
-                syncService.setAuthToken(token)
-                
-                // Upload session
-                val result = syncService.uploadSession(sessionUpload)
-                
-                if (result.success) {
-                    Log.d(TAG, "Session synced successfully!")
-                } else {
-                    Log.w(TAG, "Session sync failed (saved for later): ${result.error}")
-                    // Session is saved locally in AnalyticsStorage for retry
-                }
-            } else {
-                Log.w(TAG, "No auth token, saving session for later sync")
-                // Save locally for later sync
-                val storage = AnalyticsStorage(appContext)
-                storage.savePending(sessionUpload)
-            }
-        } catch (e: Exception) {
-            Log.e(TAG, "Error syncing session: ${e.message}", e)
-            // Don't fail the whole flow, just log the error
-        }
-    }
-    
-    /**
-     * Standalone token refresh that uses Context instead of Activity
-     */
-    private suspend fun refreshTokenStandalone(context: android.content.Context) {
-        try {
-            val refreshTokenValue = AuthManager.getRefreshToken(context)
-            if (refreshTokenValue == null) {
-                Log.w(TAG, "No refresh token available")
-                return
-            }
-            
-            val client = okhttp3.OkHttpClient()
-            val json = """{"refreshToken": "$refreshTokenValue"}"""
-            val body = json.toRequestBody("application/json".toMediaType())
-            
-            val request = okhttp3.Request.Builder()
-                .url("${ApiConfig.getEffectiveBaseUrl()}api/mobile/auth/refresh")
-                .post(body)
-                .build()
-            
-            withContext(Dispatchers.IO) {
-                client.newCall(request).execute().use { response ->
-                    if (response.isSuccessful) {
-                        val responseBody = response.body?.string()
-                        responseBody?.let { bodyStr ->
-                            val gson = com.google.gson.Gson()
-                            val result = gson.fromJson(bodyStr, RefreshResponse::class.java)
-                            if (result.tokens != null) {
-                                AuthManager.saveNewTokens(
-                                    context,
-                                    result.tokens.accessToken,
-                                    result.tokens.refreshToken,
-                                    result.tokens.expiresIn
-                                )
-                                Log.d(TAG, "Token refreshed successfully (standalone)")
-                            }
-                        }
-                    } else {
-                        Log.w(TAG, "Token refresh failed: ${response.code}")
-                    }
-                }
-            }
-        } catch (e: Exception) {
-            Log.w(TAG, "Token refresh error: ${e.message}")
-        }
-    }
-    
-    /**
-     * Refresh access token using refresh token
-     */
-    private suspend fun refreshTokenIfNeeded() {
-        try {
-            val refreshToken = AuthManager.getRefreshToken(this@TrainingActivity)
-            if (refreshToken == null) {
-                Log.w(TAG, "No refresh token available")
-                return
-            }
-            
-            val client = okhttp3.OkHttpClient()
-            val json = """{"refreshToken": "$refreshToken"}"""
-            val body = json.toRequestBody("application/json".toMediaType())
-            
-            val request = okhttp3.Request.Builder()
-                .url("${ApiConfig.getEffectiveBaseUrl()}api/mobile/auth/refresh")
-                .post(body)
-                .build()
-            
-            withContext(Dispatchers.IO) {
-                client.newCall(request).execute().use { response ->
-                    if (response.isSuccessful) {
-                        val responseBody = response.body?.string()
-                        // Parse response and save new tokens
-                        responseBody?.let { body ->
-                            val gson = com.google.gson.Gson()
-                            val result = gson.fromJson(body, RefreshResponse::class.java)
-                            if (result.tokens != null) {
-                                AuthManager.saveNewTokens(
-                                    this@TrainingActivity,
-                                    result.tokens.accessToken,
-                                    result.tokens.refreshToken,
-                                    result.tokens.expiresIn
-                                )
-                                Log.d(TAG, "Token refreshed successfully")
-                            }
-                        }
-                    } else {
-                        Log.w(TAG, "Token refresh failed: ${response.code}")
-                    }
-                }
-            }
-        } catch (e: Exception) {
-            Log.e(TAG, "Token refresh error: ${e.message}")
-        }
-    }
-    
-    // Helper class for parsing refresh response
-    private data class RefreshResponse(
-        val tokens: TokenData? = null
-    )
-    
-    private data class TokenData(
-        val accessToken: String,
-        val refreshToken: String,
-        val expiresIn: Long
-    )
-    
-    /**
-     * Show fallback summary screen if report generation fails
-     */
-    private fun showFallbackSummary() {
-        val summary = viewModel.trainingEngine?.stop()
-        
-        binding.skeletonOverlay.setTrainingMode(false)
-        
-        if (viewModel.isHoldExercise()) {
-            val holdElapsed = viewModel.holdStatus.value?.elapsedMs ?: 0L
-            binding.tvSummaryReps.text = formatTimeMs(holdElapsed)
-            binding.tvSummaryCorrect.text = getString(R.string.training_target_format, formatTimeMs(viewModel.getTargetDurationMs()))
-            binding.tvSummaryAccuracy.text = getString(R.string.training_grace_periods_format, viewModel.trainingEngine?.getGracePeriodCount() ?: 0)
-        } else {
-            binding.tvSummaryReps.text = "${summary?.totalReps ?: 0}"
-            binding.tvSummaryCorrect.text = "${summary?.correctReps ?: 0} correct"
-            binding.tvSummaryAccuracy.text = "${String.format("%.0f", summary?.accuracy ?: 0f)}%"
-        }
-        
-        binding.tvSummaryDuration.text = summary?.getFormattedDuration() ?: "00:00"
-        binding.completedPanel.visibility = android.view.View.VISIBLE
-        
-        binding.btnFinish.setOnClickListener { finishWithResult() }
-    }
-    
-    // ==================== Camera & Pose Detection ====================
-
+    // Camera: ML Kit wiring lives in [CameraTrainingInputController]; this activity implements
+    // [PoseLandmarkerHelper.PoseDetectionListener] and delegates here.
     private fun checkCameraPermission() {
-        when {
-            ContextCompat.checkSelfPermission(
-                this, Manifest.permission.CAMERA
-            ) == PackageManager.PERMISSION_GRANTED -> {
-                onCameraPermissionGranted()
-            }
-            else -> {
-                cameraPermissionLauncher.launch(Manifest.permission.CAMERA)
-            }
+        if (cameraInput.hasCameraPermission()) {
+            cameraInput.onPermissionGranted()
+        } else {
+            cameraPermissionLauncher.launch(Manifest.permission.CAMERA)
         }
     }
 
-    private fun onCameraPermissionGranted() {
-        initializePoseDetection()
-        initializeCamera()
+    override fun onPoseDetected(result: PoseResult) = cameraInput.onPoseDetected(result)
+
+    override fun onNoPoseDetected() = cameraInput.onNoPoseDetected()
+
+    override fun onError(message: String) = cameraInput.onPoseError(message)
+
+    override fun onExerciseCompleted(
+        exerciseIndex: Int,
+        exerciseSlug: String,
+        sets: List<com.trainingvalidator.poc.training.session.SessionTrainingEngine.SetMetrics>
+    ) {
+        sessionModeController.onExerciseCompletedFromEngine(exerciseIndex, exerciseSlug, sets)
     }
 
-    private fun initializePoseDetection() {
-        poseLandmarkerHelper = PoseLandmarkerHelper(
-            context = applicationContext,
-            listener = this
-        )
-        
-        val modelType = if (currentModelType == "heavy") ModelType.HEAVY else ModelType.FULL
-        lifecycleScope.launch(Dispatchers.IO) {
-            poseLandmarkerHelper?.initialize(modelType = modelType, useGpu = true)
-            
-            launch(Dispatchers.Main) {
-                if (poseLandmarkerHelper?.isReady() == true) {
-                    Log.d(TAG, "Pose detection ready")
-                }
-            }
-        }
-    }
+    internal fun isLandmarkSmootherReady() = ::landmarkSmoother.isInitialized
 
-    private fun reinitializePoseDetector() {
-        val modelType = if (currentModelType == "heavy") ModelType.HEAVY else ModelType.FULL
-        lifecycleScope.launch(Dispatchers.IO) {
-            poseLandmarkerHelper?.close()
-            poseLandmarkerHelper?.initialize(modelType = modelType, useGpu = true)
-
-            launch(Dispatchers.Main) {
-                if (poseLandmarkerHelper?.isReady() == true) {
-                    Log.d(TAG, "Pose detector reinitialized with model: $currentModelType")
-                }
-            }
-        }
-    }
-
-    private fun initializeCamera() {
-        cameraManager = CameraManager(
-            context = this,
-            lifecycleOwner = this,
-            previewView = binding.previewView
-        )
-        
-        cameraManager?.startCamera(useFrontCamera = useFrontCamera) { imageProxy ->
-            poseLandmarkerHelper?.detectPose(imageProxy, useFrontCamera)
-        }
-        binding.skeletonOverlay.updateFrontCameraState(useFrontCamera)
-    }
-
-    // ==================== PoseDetectionListener ====================
-
-    override fun onPoseDetected(result: PoseResult) {
-        if (isWeightDialogVisible) return
-
-        // In session mode, skip pose processing when session panels are visible
-        if (isSessionMode && (
-            binding.sessionPreExercisePanel.visibility == View.VISIBLE ||
-            binding.sessionRestPanel.visibility == View.VISIBLE ||
-            binding.sessionCompletePanel.visibility == View.VISIBLE
-        )) return
-
-        // Drop frame if previous is still processing (prevents Main Thread queue buildup)
-        if (isProcessingPoseFrame) return
-        isProcessingPoseFrame = true
-        
-        lifecycleScope.launch(Dispatchers.Default) {
-            try {
-                if (!::landmarkSmoother.isInitialized) return@launch
-                
-                // === Heavy computation on background thread ===
-                val smoothedLandmarks = landmarkSmoother.smooth(result.landmarks, result.timestampMs)
-                
-                val worldLandmarks = result.worldLandmarks?.let {
-                    landmarkSmoother.convertWorld(it, result.timestampMs)
-                }
-                
-                val rawAngles = if (worldLandmarks != null) {
-                    AngleCalculator.calculateAllAnglesSmoothed(
-                        worldLandmarks,
-                        visibilityThreshold = 0.5f,
-                        use3D = true
-                    )
-                } else {
-                    AngleCalculator.calculateAllAnglesSmoothed(
-                        smoothedLandmarks,
-                        visibilityThreshold = 0.5f
-                    )
-                }
-
-                val correctedAngles = if (worldLandmarks != null) {
-                    elbowAngleEstimator.correct(rawAngles, worldLandmarks, smoothedLandmarks, result.timestampMs)
-                } else rawAngles
-
-                val angles = if (result.isFrontCamera) correctedAngles.mirrored() else correctedAngles
-                
-                // === Minimal work on Main Thread: supervisor signal + UI update ===
-                withContext(Dispatchers.Main) {
-                    updateFps()
-                    wasPoseDetectedLastFrame = true
-                    noPoseTtsSpoken = false
-                    
-                    // Forward pose frame to supervisor via ViewModel
-                    viewModel.onPoseFrame(
-                        angles, smoothedLandmarks, result.isFrontCamera, result.timestampMs,
-                        imageWidth = result.imageWidth, imageHeight = result.imageHeight
-                    )
-
-                    // Update skeleton overlay with JointStateInfo
-                    val stateInfos = viewModel.trainingEngine?.jointStateInfos?.value ?: emptyMap()
-                    val positionErrors = viewModel.trainingEngine?.positionErrors?.value ?: emptyList()
-                    val bilateralFlipped = viewModel.trainingEngine?.isBilateralFlipped ?: false
-                    
-                    binding.skeletonOverlay.updateWithStateInfos(
-                        smoothedLandmarks = smoothedLandmarks,
-                        inputImageWidth = result.imageWidth,
-                        inputImageHeight = result.imageHeight,
-                        angles = angles,
-                        stateInfos = stateInfos,
-                        positionErrors = positionErrors,
-                        bilateralFlipped = bilateralFlipped,
-                        anySideDimmedJointCodes = viewModel.trainingEngine?.anySideDimmedJointCodes?.value
-                            ?: emptySet()
-                    )
-                }
-            } finally {
-                isProcessingPoseFrame = false
-            }
-        }
-    }
-
-    override fun onNoPoseDetected() {
-        if (isWeightDialogVisible) return
-
-        // In session mode, skip when session panels are visible
-        if (isSessionMode && (
-            binding.sessionPreExercisePanel.visibility == View.VISIBLE ||
-            binding.sessionRestPanel.visibility == View.VISIBLE ||
-            binding.sessionCompletePanel.visibility == View.VISIBLE
-        )) return
-
-        lifecycleScope.launch(Dispatchers.Main) {
-            updateFps()
-            binding.skeletonOverlay.clear()
-
-            // If we just transitioned from pose → no pose, clear stale form messages immediately.
-            // Otherwise, warnings shown by supervisor after 2s could be immediately cleared every frame.
-            if (wasPoseDetectedLastFrame && viewModel.supervisor.state.value == SessionState.TRAINING) {
-                binding.glassmorphicMessage.hide()
-                binding.vignetteOverlay.clear()
-            }
-            wasPoseDetectedLastFrame = false
-            
-            // Always notify supervisor about NoPose
-            viewModel.onNoPoseDetected(SystemClock.uptimeMillis())
-            
-            // Update UI for setup pose state - show no-pose warning in the guidance container
-            if (viewModel.supervisor.state.value == SessionState.SETUP_POSE) {
-                viewModel.poseSetupGuide.reset()
-            }
-        }
-    }
-
-    override fun onError(message: String) {
-        lifecycleScope.launch(Dispatchers.Main) {
-            Toast.makeText(this@TrainingActivity, message, Toast.LENGTH_SHORT).show()
-            Log.e(TAG, "Pose detection error: $message")
-        }
-    }
-
-    private fun updateFps() {
-        frameCount++
-        val currentTime = System.currentTimeMillis()
-        val elapsed = currentTime - lastFpsUpdateTime
-        
-        if (elapsed >= 1000) {
-            currentFps = frameCount
-            frameCount = 0
-            lastFpsUpdateTime = currentTime
-            binding.tvFps.text = getString(R.string.fps_format, currentFps)
-        }
-    }
-
-    // ==================== Video Mode ====================
-    
-    private fun setupVideoMode() {
-        Log.d(TAG, "Setting up VIDEO mode with URI: $videoUri")
-        
-        binding.previewView.visibility = View.GONE
-        binding.videoTextureView.visibility = View.VISIBLE
-        binding.btnSwitchCamera.visibility = View.GONE
-        binding.videoControlsPanel.visibility = View.VISIBLE
-        binding.setupPosePanel.visibility = View.GONE
-        binding.setupIndicatorBar.visibility = View.GONE
-        binding.countdownPanel.visibility = View.GONE
-        binding.bottomStatsBar.visibility = View.VISIBLE
-        binding.btnSaveResults.visibility = View.VISIBLE
-        updatePlayPauseIcon(isPlaying = false)
-        
-        videoModeController = VideoModeController(this, lifecycleScope)
-        videoModeController?.setListener(createVideoModeListener())
-        
-        val uri = videoUri ?: return
-        videoModeController?.initialize(binding.videoTextureView, uri, landmarkSmoother)
-        
-        setupVideoControls()
-    }
-    
-    private fun createVideoModeListener(): VideoModeController.VideoModeListener {
-        return object : VideoModeController.VideoModeListener {
-            override fun onVideoReady(durationMs: Long) {
-                binding.tvVideoDuration.text = formatTimeMs(durationMs)
-                binding.glassmorphicMessage.showMessage(
-                    "Video ready. Press play to start.",
-                    GlassmorphicMessageView.TYPE_INFO
-                )
-            }
-            
-            override fun onPlaybackStateChanged(state: VideoManager.PlaybackState) {
-                when (state) {
-                    VideoManager.PlaybackState.PLAYING -> {
-                        updatePlayPauseIcon(isPlaying = true)
-                        if (viewModel.supervisor.state.value != SessionState.TRAINING &&
-                            viewModel.supervisor.state.value != SessionState.COMPLETED) {
-                            startVideoTraining()
-                        }
-                    }
-                    VideoManager.PlaybackState.PAUSED -> {
-                        updatePlayPauseIcon(isPlaying = false)
-                    }
-                    VideoManager.PlaybackState.ENDED -> {
-                        updatePlayPauseIcon(isPlaying = false)
-                        viewModel.onVideoEnded()
-                    }
-                    VideoManager.PlaybackState.ERROR -> {
-                        binding.glassmorphicMessage.showError(getString(R.string.error_video_playback))
-                    }
-                    else -> {}
-                }
-            }
-            
-            override fun onProgressChanged(currentMs: Long, durationMs: Long) {
-                binding.tvVideoCurrentTime.text = formatTimeMs(currentMs)
-                if (durationMs > 0) {
-                    val progress = (currentMs.toFloat() / durationMs.toFloat() * 100).toInt()
-                    binding.videoSeekBar.progress = progress
-                }
-            }
-            
-            override fun onSeekPerformed() {
-                viewModel.onVideoSeeked()
-                binding.glassmorphicMessage.showMessage("Analysis reset", GlassmorphicMessageView.TYPE_INFO)
-            }
-            
-            override fun onVideoEnded() {
-                viewModel.onVideoEnded()
-            }
-            
-            override fun onFrameProcessed(
-                angles: JointAngles,
-                smoothedLandmarks: List<SmoothedLandmark>,
-                imageWidth: Int,
-                imageHeight: Int,
-                timestampMs: Long
-            ) {
-                wasPoseDetectedLastFrame = true
-                viewModel.onPoseFrame(
-                    angles, smoothedLandmarks, false, timestampMs,
-                    imageWidth = imageWidth, imageHeight = imageHeight
-                )
-
-                // Update skeleton overlay with JointStateInfo
-                val stateInfos = viewModel.trainingEngine?.jointStateInfos?.value ?: emptyMap()
-                val positionErrors = viewModel.trainingEngine?.positionErrors?.value ?: emptyList()
-                val bilateralFlipped = viewModel.trainingEngine?.isBilateralFlipped ?: false
-                
-                binding.skeletonOverlay.updateWithStateInfos(
-                    smoothedLandmarks = smoothedLandmarks,
-                    inputImageWidth = imageWidth,
-                    inputImageHeight = imageHeight,
-                    angles = angles,
-                    stateInfos = stateInfos,
-                    positionErrors = positionErrors,
-                    bilateralFlipped = bilateralFlipped,
-                    anySideDimmedJointCodes = viewModel.trainingEngine?.anySideDimmedJointCodes?.value
-                        ?: emptySet()
-                )
-            }
-            
-            override fun onNoPoseDetected(timestampMs: Long) {
-                binding.skeletonOverlay.clear()
-                // Same transition-based clearing as camera mode:
-                // clear stale form feedback once when pose disappears.
-                if (wasPoseDetectedLastFrame && viewModel.supervisor.state.value == SessionState.TRAINING) {
-                    binding.glassmorphicMessage.hide()
-                    binding.vignetteOverlay.clear()
-                }
-                wasPoseDetectedLastFrame = false
-                viewModel.onNoPoseDetected(timestampMs)
-            }
-            
-            override fun onResultsSaved(success: Boolean) {
-                if (success) {
-                    binding.glassmorphicMessage.showMotivation(getString(R.string.results_saved))
-                    binding.btnSaveResults.isEnabled = false
-                    binding.btnSaveResults.text = getString(R.string.btn_saved)
-                } else {
-                    binding.glassmorphicMessage.showError(getString(R.string.error_save_failed))
-                }
-            }
-            
-            override fun onError(message: String) {
-                Toast.makeText(this@TrainingActivity, message, Toast.LENGTH_SHORT).show()
-            }
-        }
-    }
-    
-    private fun setupVideoControls() {
-        binding.videoSeekBar.setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
-            private var wasPlaying = false
-            
-            override fun onProgressChanged(seekBar: SeekBar?, progress: Int, fromUser: Boolean) {
-                if (fromUser) {
-                    val duration = videoModeController?.getDuration() ?: 0L
-                    val position = (progress / 100f * duration).toLong()
-                    binding.tvVideoCurrentTime.text = formatTimeMs(position)
-                }
-            }
-            
-            override fun onStartTrackingTouch(seekBar: SeekBar?) {
-                wasPlaying = videoModeController?.isPlaying() ?: false
-                videoModeController?.pause()
-            }
-            
-            override fun onStopTrackingTouch(seekBar: SeekBar?) {
-                val progress = seekBar?.progress ?: 0
-                val duration = videoModeController?.getDuration() ?: 0L
-                val position = (progress / 100f * duration).toLong()
-                videoModeController?.seekTo(position)
-                
-                if (wasPlaying) {
-                    videoModeController?.play()
-                }
-            }
-        })
-        
-        binding.btnSaveResults.setOnClickListener {
-            val exerciseConfig = viewModel.exerciseConfig.value ?: return@setOnClickListener
-            videoModeController?.saveResults(
-                viewModel.trainingEngine ?: return@setOnClickListener,
-                exerciseConfig
-            )
-        }
-    }
-    
-    private fun startVideoTraining() {
-        // Video mode starts immediately via supervisor
-        viewModel.requestVideoStart()
-        
-        val trackedIndices = viewModel.getTrackedLandmarkIndices()
-        binding.skeletonOverlay.setTrainingMode(true, trackedIndices, useFrontCamera = false)
-        
-        // Set up observers on the training engine
-        observeTrainingEngineState()
-        
-        Log.d(TAG, "Video training started")
-    }
-    
     // ==================== Helpers ====================
     
-    private fun formatTimeMs(ms: Long): String {
+    internal fun formatTimeMs(ms: Long): String {
         val totalSeconds = ms / 1000
         val minutes = totalSeconds / 60
         val seconds = totalSeconds % 60
@@ -3670,13 +1083,11 @@ class TrainingActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetection
 
     override fun onDestroy() {
         super.onDestroy()
-        stopRepWideReplaySampler()
-        sessionRestTimer?.cancel()
+        frameCaptureController.onDestroy()
+        sessionModeController.onDestroy()
         viewModel.countdownController.release()
-        cameraManager?.stopCamera()
-        videoModeController?.release()
-        poseLandmarkerHelper?.close()
-        poseLandmarkerHelper?.closeVideoMode()
+        videoInput.release()
+        cameraInput.onDestroy()
     }
 }
 
