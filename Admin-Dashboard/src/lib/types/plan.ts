@@ -4,10 +4,14 @@ export interface Plan {
     description?: Record<string, any> | null;
     monthlyPrice: number;
     yearlyPrice: number;
+    currency: string;
     discount: number;
     maxExercisesLimit: number;
     maxWorkoutsLimit: number;
     freeDoctorSessionsLimit: number;
+    monthlyGooglePlayProductId?: string | null;
+    yearlyGooglePlayProductId?: string | null;
+    features?: any;
     isActive: boolean;
     createdAt: string;
     updatedAt: string;
@@ -18,10 +22,14 @@ export interface CreatePlanDto {
     description?: Record<string, any> | null;
     monthlyPrice: number;
     yearlyPrice: number;
+    currency?: string;
     discount?: number;
     maxExercisesLimit?: number;
     maxWorkoutsLimit?: number;
     freeDoctorSessionsLimit?: number;
+    monthlyGooglePlayProductId?: string | null;
+    yearlyGooglePlayProductId?: string | null;
+    features?: any;
     isActive?: boolean;
 }
 

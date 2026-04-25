@@ -19,10 +19,13 @@ export function PlanFormModal({ plan, onClose, onSuccess }: Props) {
     const [descriptionAr, setDescriptionAr] = useState(plan?.description?.ar || '');
     const [monthlyPrice, setMonthlyPrice] = useState(plan?.monthlyPrice?.toString() || '0');
     const [yearlyPrice, setYearlyPrice] = useState(plan?.yearlyPrice?.toString() || '0');
+    const [currency, setCurrency] = useState(plan?.currency || 'EGP');
     const [discount, setDiscount] = useState(plan?.discount?.toString() || '0');
     const [maxWorkouts, setMaxWorkouts] = useState(plan?.maxWorkoutsLimit?.toString() || '0');
     const [maxExercises, setMaxExercises] = useState(plan?.maxExercisesLimit?.toString() || '0');
     const [freeSessions, setFreeSessions] = useState(plan?.freeDoctorSessionsLimit?.toString() || '0');
+    const [monthlyGooglePlayProductId, setMonthlyGooglePlayProductId] = useState(plan?.monthlyGooglePlayProductId || '');
+    const [yearlyGooglePlayProductId, setYearlyGooglePlayProductId] = useState(plan?.yearlyGooglePlayProductId || '');
     const [isActive, setIsActive] = useState(plan ? plan.isActive : true);
 
     const handleSubmit = async (e: React.FormEvent) => {
@@ -35,10 +38,13 @@ export function PlanFormModal({ plan, onClose, onSuccess }: Props) {
                 description: { en: descriptionEn, ar: descriptionAr },
                 monthlyPrice: parseFloat(monthlyPrice),
                 yearlyPrice: parseFloat(yearlyPrice),
+                currency: currency.trim() || 'EGP',
                 discount: parseFloat(discount),
                 maxWorkoutsLimit: parseInt(maxWorkouts, 10),
                 maxExercisesLimit: parseInt(maxExercises, 10),
                 freeDoctorSessionsLimit: parseInt(freeSessions, 10),
+                monthlyGooglePlayProductId: monthlyGooglePlayProductId.trim() || null,
+                yearlyGooglePlayProductId: yearlyGooglePlayProductId.trim() || null,
                 isActive,
             };
 
@@ -118,6 +124,30 @@ export function PlanFormModal({ plan, onClose, onSuccess }: Props) {
                         <div>
                             <label className="block text-sm font-medium text-gray-700 mb-1">Discount (%)</label>
                             <Input type="number" step="0.01" value={discount} onChange={(e) => setDiscount(e.target.value)} />
+                        </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">Currency</label>
+                            <Input value={currency} onChange={(e) => setCurrency(e.target.value.toUpperCase())} placeholder="EGP / KWD / SAR" />
+                            <p className="mt-1 text-xs text-gray-500">For MyFatoorah sandbox with a KWT key, use KWD if EGP is rejected.</p>
+                        </div>
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">Google Play Monthly Product ID</label>
+                            <Input
+                                value={monthlyGooglePlayProductId}
+                                onChange={(e) => setMonthlyGooglePlayProductId(e.target.value)}
+                                placeholder="pose_pro_monthly"
+                            />
+                        </div>
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">Google Play Yearly Product ID</label>
+                            <Input
+                                value={yearlyGooglePlayProductId}
+                                onChange={(e) => setYearlyGooglePlayProductId(e.target.value)}
+                                placeholder="pose_pro_yearly"
+                            />
                         </div>
                     </div>
 

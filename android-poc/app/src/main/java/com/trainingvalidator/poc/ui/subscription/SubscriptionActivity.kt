@@ -36,6 +36,8 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.coroutines.withContext
+import org.json.JSONObject
+import retrofit2.Response
 import java.text.DateFormat
 import java.util.Locale
 import kotlin.coroutines.resume
@@ -263,7 +265,7 @@ class SubscriptionActivity : AppCompatActivity(), PurchasesUpdatedListener {
                 )
                 val res = withContext(Dispatchers.IO) { ApiClient.subscriptionApi.createCheckout(body) }
                 if (!res.isSuccessful || res.body()?.success != true) {
-                    Toast.makeText(this@SubscriptionActivity, res.body()?.error ?: getString(R.string.subscription_checkout_failed), Toast.LENGTH_LONG).show()
+                    Toast.makeText(this@SubscriptionActivity, apiErrorMessage(res, R.string.subscription_checkout_failed), Toast.LENGTH_LONG).show()
                     return@launch
                 }
                 val checkout = res.body()?.data
@@ -354,7 +356,7 @@ class SubscriptionActivity : AppCompatActivity(), PurchasesUpdatedListener {
                         refreshSessionFromServer()
                         loadAll(showRefreshIndicator = true)
                     } else {
-                        Toast.makeText(this@SubscriptionActivity, res.body()?.error ?: getString(R.string.subscription_load_error), Toast.LENGTH_LONG).show()
+                        Toast.makeText(this@SubscriptionActivity, apiErrorMessage(res, R.string.subscription_load_error), Toast.LENGTH_LONG).show()
                     }
                 }
             } catch (_: Exception) {
@@ -398,7 +400,7 @@ class SubscriptionActivity : AppCompatActivity(), PurchasesUpdatedListener {
                     refreshSessionFromServer()
                     loadAll(showRefreshIndicator = true)
                 } else {
-                    Toast.makeText(this@SubscriptionActivity, res.body()?.error ?: getString(R.string.subscription_load_error), Toast.LENGTH_LONG).show()
+                Toast.makeText(this@SubscriptionActivity, apiErrorMessage(res, R.string.subscription_load_error), Toast.LENGTH_LONG).show()
                 }
             }
         } catch (_: Exception) {
@@ -463,6 +465,28 @@ class SubscriptionActivity : AppCompatActivity(), PurchasesUpdatedListener {
 
     private fun clearPendingCheckout() {
         prefs().edit().remove(KEY_PENDING_CHECKOUT).apply()
+    }
+
+    private fun apiErrorMessage(response: Response<*>, fallbackResId: Int): String {
+        response.body()?.let { body ->
+            val error = when (body) {
+                is com.trainingvalidator.poc.network.SubscriptionApiEnvelope<*> -> body.error
+                else -> null
+            }
+            if (!error.isNullOrBlank()) return error
+        }
+
+        val raw = response.errorBody()?.string()
+        if (!raw.isNullOrBlank()) {
+            runCatching {
+                val json = JSONObject(raw)
+                val error = json.optString("error")
+                val message = json.optString("message")
+                if (error.isNotBlank()) return error
+                if (message.isNotBlank()) return message
+            }
+        }
+        return getString(fallbackResId)
     }
 
     companion object {

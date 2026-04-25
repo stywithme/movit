@@ -376,6 +376,14 @@ export class SubscriptionService {
             return this.serializeCheckout(updated);
         } catch (error) {
             const lastError = error instanceof Error ? error.message : 'Payment gateway error';
+            console.warn('[Subscription] MyFatoorah checkout failed', {
+                checkoutId: checkout.id,
+                planId: plan.id,
+                billingPeriod: dto.billingPeriod,
+                amount,
+                currency,
+                error: lastError,
+            });
             await this.prisma.subscriptionCheckout.update({
                 where: { id: checkout.id },
                 data: {
