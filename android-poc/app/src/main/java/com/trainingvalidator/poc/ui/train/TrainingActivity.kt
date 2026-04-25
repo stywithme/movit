@@ -35,6 +35,7 @@ import com.trainingvalidator.poc.ui.training.TrainingUIEvent
 import com.trainingvalidator.poc.ui.training.TrainingViewModel
 import com.trainingvalidator.poc.ui.training.VideoModeController
 import android.widget.TextView
+import com.google.android.material.button.MaterialButton
 import com.trainingvalidator.poc.training.engine.HoldState
 import com.trainingvalidator.poc.training.engine.Phase
 import com.trainingvalidator.poc.training.models.JointState
@@ -421,23 +422,26 @@ class TrainingActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetection
         var selectedIndicator = currentIndicatorType
         var voiceFeedbackEnabled = SettingsManager.isVoiceFeedbackEnabled()
         var selectedModel = currentModelType
+        var selectedCoachIntensity = SettingsManager.getCoachIntensity()
+        var selectedCameraCueMode = SettingsManager.getCameraCueMode()
+
+        fun setChoiceButtonSelected(button: MaterialButton, isSelected: Boolean) {
+            if (isSelected) {
+                button.setBackgroundColor(ContextCompat.getColor(this, R.color.primary))
+                button.setTextColor(ContextCompat.getColor(this, R.color.on_primary))
+            } else {
+                button.setBackgroundColor(android.graphics.Color.TRANSPARENT)
+                button.setTextColor(ContextCompat.getColor(this, R.color.text_primary))
+            }
+        }
         
         // Setup indicator buttons
-        val btnLine = dialogView.findViewById<com.google.android.material.button.MaterialButton>(R.id.btnIndicatorLine)
-        val btnArc = dialogView.findViewById<com.google.android.material.button.MaterialButton>(R.id.btnIndicatorArc)
+        val btnLine = dialogView.findViewById<MaterialButton>(R.id.btnIndicatorLine)
+        val btnArc = dialogView.findViewById<MaterialButton>(R.id.btnIndicatorArc)
         
         fun updateIndicatorButtons() {
-            if (selectedIndicator == "line") {
-                btnLine.setBackgroundColor(ContextCompat.getColor(this, R.color.primary))
-                btnLine.setTextColor(ContextCompat.getColor(this, R.color.on_primary))
-                btnArc.setBackgroundColor(android.graphics.Color.TRANSPARENT)
-                btnArc.setTextColor(ContextCompat.getColor(this, R.color.text_primary))
-            } else {
-                btnArc.setBackgroundColor(ContextCompat.getColor(this, R.color.primary))
-                btnArc.setTextColor(ContextCompat.getColor(this, R.color.on_primary))
-                btnLine.setBackgroundColor(android.graphics.Color.TRANSPARENT)
-                btnLine.setTextColor(ContextCompat.getColor(this, R.color.text_primary))
-            }
+            setChoiceButtonSelected(btnLine, selectedIndicator == "line")
+            setChoiceButtonSelected(btnArc, selectedIndicator != "line")
         }
         updateIndicatorButtons()
         
@@ -456,23 +460,64 @@ class TrainingActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetection
         switchVoice.setOnCheckedChangeListener { _, isChecked ->
             voiceFeedbackEnabled = isChecked
         }
+
+        // Setup coach intensity buttons
+        val btnCoachCalm = dialogView.findViewById<MaterialButton>(R.id.btnCoachCalm)
+        val btnCoachStandard = dialogView.findViewById<MaterialButton>(R.id.btnCoachStandard)
+        val btnCoachStrict = dialogView.findViewById<MaterialButton>(R.id.btnCoachStrict)
+
+        fun updateCoachButtons() {
+            setChoiceButtonSelected(btnCoachCalm, selectedCoachIntensity == "calm")
+            setChoiceButtonSelected(btnCoachStandard, selectedCoachIntensity == "standard")
+            setChoiceButtonSelected(btnCoachStrict, selectedCoachIntensity == "strict")
+        }
+        updateCoachButtons()
+
+        btnCoachCalm.setOnClickListener {
+            selectedCoachIntensity = "calm"
+            updateCoachButtons()
+        }
+        btnCoachStandard.setOnClickListener {
+            selectedCoachIntensity = "standard"
+            updateCoachButtons()
+        }
+        btnCoachStrict.setOnClickListener {
+            selectedCoachIntensity = "strict"
+            updateCoachButtons()
+        }
+
+        // Setup camera cue mode buttons
+        val btnCueVoice = dialogView.findViewById<MaterialButton>(R.id.btnCueVoice)
+        val btnCueTones = dialogView.findViewById<MaterialButton>(R.id.btnCueTones)
+        val btnCueBasic = dialogView.findViewById<MaterialButton>(R.id.btnCueBasic)
+
+        fun updateCameraCueButtons() {
+            setChoiceButtonSelected(btnCueVoice, selectedCameraCueMode == "voice")
+            setChoiceButtonSelected(btnCueTones, selectedCameraCueMode == "tones")
+            setChoiceButtonSelected(btnCueBasic, selectedCameraCueMode == "tones_basic")
+        }
+        updateCameraCueButtons()
+
+        btnCueVoice.setOnClickListener {
+            selectedCameraCueMode = "voice"
+            updateCameraCueButtons()
+        }
+        btnCueTones.setOnClickListener {
+            selectedCameraCueMode = "tones"
+            updateCameraCueButtons()
+        }
+        btnCueBasic.setOnClickListener {
+            selectedCameraCueMode = "tones_basic"
+            updateCameraCueButtons()
+        }
         
         // Setup model buttons
-        val btnModelFull = dialogView.findViewById<com.google.android.material.button.MaterialButton>(R.id.btnModelFull)
-        val btnModelHeavy = dialogView.findViewById<com.google.android.material.button.MaterialButton>(R.id.btnModelHeavy)
+        val btnModelFull = dialogView.findViewById<MaterialButton>(R.id.btnModelFull)
+        val btnModelHeavy = dialogView.findViewById<MaterialButton>(R.id.btnModelHeavy)
         
         fun updateModelButtons() {
-            if (selectedModel == "full") {
-                btnModelFull.setBackgroundColor(ContextCompat.getColor(this, R.color.primary))
-                btnModelFull.setTextColor(ContextCompat.getColor(this, R.color.on_primary))
-                btnModelHeavy.setBackgroundColor(android.graphics.Color.TRANSPARENT)
-                btnModelHeavy.setTextColor(ContextCompat.getColor(this, R.color.text_primary))
-            } else {
-                btnModelHeavy.setBackgroundColor(ContextCompat.getColor(this, R.color.primary))
-                btnModelHeavy.setTextColor(ContextCompat.getColor(this, R.color.on_primary))
-                btnModelFull.setBackgroundColor(android.graphics.Color.TRANSPARENT)
-                btnModelFull.setTextColor(ContextCompat.getColor(this, R.color.text_primary))
-            }
+            setChoiceButtonSelected(btnModelFull, selectedModel == "full")
+            setChoiceButtonSelected(btnModelHeavy, selectedModel != "full")
         }
         updateModelButtons()
         
@@ -494,16 +539,24 @@ class TrainingActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetection
         val cameraSectionContainer = dialogView.findViewById<android.widget.LinearLayout>(R.id.cameraSectionContainer)
         val dividerCamera = dialogView.findViewById<View>(R.id.dividerCamera)
         val tvCurrentCamera = dialogView.findViewById<android.widget.TextView>(R.id.tvCurrentCamera)
-        val btnSwitchCameraDialog = dialogView.findViewById<com.google.android.material.button.MaterialButton>(R.id.btnSwitchCameraDialog)
+        val btnSwitchCameraDialog = dialogView.findViewById<MaterialButton>(R.id.btnSwitchCameraDialog)
+        val cameraCueViews = listOf(
+            dialogView.findViewById<View>(R.id.dividerCameraCue),
+            dialogView.findViewById<View>(R.id.cameraCueSectionTitle),
+            dialogView.findViewById<View>(R.id.tvCameraCueDesc),
+            dialogView.findViewById<View>(R.id.cameraCueSection)
+        )
         
         if (isVideoMode) {
             // Hide camera section in video mode
             cameraSectionContainer.visibility = View.GONE
             dividerCamera.visibility = View.GONE
+            cameraCueViews.forEach { it.visibility = View.GONE }
         } else {
             // Show camera section and update current camera text
             cameraSectionContainer.visibility = View.VISIBLE
             dividerCamera.visibility = View.VISIBLE
+            cameraCueViews.forEach { it.visibility = View.VISIBLE }
             tvCurrentCamera.text = if (useFrontCamera) getString(R.string.front_camera) else getString(R.string.back_camera)
             
             btnSwitchCameraDialog.setOnClickListener {
@@ -513,7 +566,7 @@ class TrainingActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetection
         }
         
         // Apply button
-        dialogView.findViewById<com.google.android.material.button.MaterialButton>(R.id.btnApplySettings).setOnClickListener {
+        dialogView.findViewById<MaterialButton>(R.id.btnApplySettings).setOnClickListener {
             val modelChanged = selectedModel != currentModelType
 
             // Sync local state
@@ -523,6 +576,8 @@ class TrainingActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetection
             // Persist to SharedPreferences
             SettingsManager.setIndicatorType(selectedIndicator)
             SettingsManager.setVoiceFeedbackEnabled(voiceFeedbackEnabled)
+            SettingsManager.setCoachIntensity(selectedCoachIntensity)
+            SettingsManager.setCameraCueMode(selectedCameraCueMode)
             SettingsManager.setModelType(selectedModel)
             
             // Apply indicator change immediately
@@ -1090,4 +1145,3 @@ class TrainingActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetection
         cameraInput.onDestroy()
     }
 }
-

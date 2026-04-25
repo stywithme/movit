@@ -10,6 +10,7 @@ import com.trainingvalidator.poc.ui.components.GlassmorphicMessageView
 import com.trainingvalidator.poc.training.TrainingEngine
 import com.trainingvalidator.poc.training.feedback.FeedbackEvent
 import com.trainingvalidator.poc.training.feedback.FeedbackManager
+import com.trainingvalidator.poc.training.feedback.FeedbackSeverity
 import com.trainingvalidator.poc.training.feedback.JointQualityContent
 import com.trainingvalidator.poc.training.feedback.SystemMessageRegistry
 import com.trainingvalidator.poc.training.models.JointState
@@ -191,13 +192,6 @@ class TrainingFeedbackBinder(
 
             is FeedbackEvent.VisibilityWarning -> {
                 host.binding.vignetteOverlay.showWarning()
-                if (isVideoMode) {
-                    host.binding.glassmorphicMessage.showMessage(
-                        event.message.en,
-                        GlassmorphicMessageView.TYPE_WARNING,
-                        durationMs = 1000
-                    )
-                }
             }
 
             else -> {}
@@ -230,7 +224,11 @@ class TrainingFeedbackBinder(
         }
 
         if (!isVideoMode && reason != PauseReason.MANUAL) {
-            host.viewModel.feedbackManager?.speakLocalized(lt, FeedbackManager.SpeakPriority.HIGH)
+            host.viewModel.feedbackManager?.speakSystemCue(
+                messageKey = "auto_pause_${reason.name.lowercase()}",
+                localizedText = lt,
+                severity = FeedbackSeverity.CRITICAL
+            )
         } else {
             host.binding.glassmorphicMessage.showMessage(
                 message,
@@ -259,9 +257,10 @@ class TrainingFeedbackBinder(
                     "عد إلى الكاميرا",
                     "Return to the camera"
                 )
-                host.viewModel.feedbackManager?.speakLocalized(
-                    lt,
-                    FeedbackManager.SpeakPriority.HIGH
+                host.viewModel.feedbackManager?.speakSystemCue(
+                    messageKey = "no_pose_return_camera",
+                    localizedText = lt,
+                    severity = FeedbackSeverity.WARNING
                 )
             }
         } else {
