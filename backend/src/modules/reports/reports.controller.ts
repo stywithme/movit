@@ -7,15 +7,17 @@
  * One endpoint to rule them all. Scope + filters determine what you get back.
  */
 
-import { Controller, Get, Query, Req, Res } from '@nestjs/common';
+import { Controller, Get, Query, Req, Res, UseGuards } from '@nestjs/common';
 import type { Request, Response } from 'express';
-import { verifyMobileToken } from '@/modules/auth/auth.service';
 import { reportsService } from './reports.service';
 import type { MetricsScope, MetricsQuery } from './reports.types';
+import { MobileAuthGuard, RequireProUser } from '@/lib/guards/mobile-auth.guard';
 
 @Controller('mobile/reports')
 export class ReportsController {
   @Get('metrics')
+  @UseGuards(MobileAuthGuard)
+  @RequireProUser()
   async getMetrics(
     @Req() req: Request,
     @Res({ passthrough: true }) res: Response,
@@ -29,11 +31,10 @@ export class ReportsController {
     @Query('includeChildren') includeChildren?: string,
   ) {
     try {
-      // ── Auth ──
-      const authResult = await verifyMobileToken(req);
-      if (!authResult.success || !authResult.userId) {
+      const userId = (req as any).userId as string | undefined;
+      if (!userId) {
         res.status(401);
-        return { success: false, error: authResult.error || 'Unauthorized' };
+        return { success: false, error: 'Unauthorized' };
       }
 
       // ── Validate required params ──
@@ -66,7 +67,7 @@ export class ReportsController {
       };
 
       // ── Get metrics ──
-      const result = await reportsService.getMetrics(authResult.userId, query);
+      const result = await reportsService.getMetrics(userId, query);
 
       return result;
     } catch (error) {

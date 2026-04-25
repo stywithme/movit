@@ -1,29 +1,150 @@
+import crypto from 'crypto';
+
 /**
- * MyFatoorah API client (HTTP calls). Implementations are mocked in unit tests.
+ * MyFatoorah API client.
+ *
+ * The app uses hosted invoice links for mobile checkout. SendPayment returns
+ * InvoiceURL, while older booking code expects PaymentURL, so responses are
+ * normalized to expose both names.
  */
 
-export async function createPayment(
-  _input: Record<string, unknown>,
-): Promise<unknown> {
-  throw new Error('MyFatoorah createPayment is not configured');
+type MyFatoorahKeyType = 'InvoiceId' | 'PaymentId';
+
+const DEFAULT_BASE_URL = 'https://api.myfatoorah.com';
+
+function baseUrl(): string {
+  return (process.env.MYFATOORAH_API_BASE_URL || DEFAULT_BASE_URL).replace(/\/$/, '');
 }
 
-export async function getPaymentDetails(_invoiceId: string): Promise<unknown> {
-  throw new Error('MyFatoorah getPaymentDetails is not configured');
+function apiToken(): string {
+  const token = process.env.MYFATOORAH_API_TOKEN || process.env.MYFATOORAH_TOKEN;
+  if (!token) {
+    throw new Error('MYFATOORAH_API_TOKEN is not configured');
+  }
+  return token;
+}
+
+async function postToMyFatoorah(path: string, body: Record<string, unknown>) {
+  const response = await fetch(`${baseUrl()}${path}`, {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${apiToken()}`,
+      Accept: 'application/json',
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(body),
+  });
+
+  const payload = await response.json().catch(() => null);
+  if (!response.ok || payload?.IsSuccess === false) {
+    const message =
+      payload?.Message ||
+      payload?.ValidationErrors?.[0]?.Error ||
+      `MyFatoorah request failed with ${response.status}`;
+    throw new Error(message);
+  }
+  return payload;
+}
+
+function normalizePaymentResponse(payload: any): any {
+  const data = payload?.Data || {};
+  const paymentUrl = data.PaymentURL || data.InvoiceURL || data.InvoiceUrl || null;
+  return {
+    ...payload,
+    Data: {
+      ...data,
+      PaymentURL: paymentUrl,
+      InvoiceURL: data.InvoiceURL || paymentUrl,
+      PaymentId: data.PaymentId || data.PaymentID || null,
+      InvoiceId: data.InvoiceId || data.InvoiceID || null,
+    },
+  };
+}
+
+export async function createPayment(input: Record<string, unknown>): Promise<unknown> {
+  const paymentExpiry = input.PaymentExpiry || input.ExpiryDate;
+  const invoiceValue = input.InvoiceValue ?? input.totalAmount;
+  const currency = input.DisplayCurrencyIso ?? input.CurrencyIso ?? input.Currency;
+  const processingDetails = input.OperationType
+    ? { AutoCapture: input.OperationType !== 'AUTHORIZE' }
+    : input.ProcessingDetails;
+
+  const body: Record<string, unknown> = {
+    CustomerName: input.CustomerName || 'Customer',
+    CustomerEmail: input.CustomerEmail,
+    NotificationOption: input.NotificationOption || 'LNK',
+    InvoiceValue: invoiceValue,
+    DisplayCurrencyIso: currency,
+    CallBackUrl: input.CallBackUrl,
+    ErrorUrl: input.ErrorUrl,
+    Language: input.Language || 'en',
+    CustomerReference: input.CustomerReference || input.ExternalIdentifier,
+    UserDefinedField: input.UserDefinedField || input.ExternalIdentifier,
+    ExpiryDate: paymentExpiry,
+    WebhookUrl: input.WebhookUrl,
+    InvoiceItems: input.InvoiceItems,
+    ProcessingDetails: processingDetails,
+  };
+
+  Object.keys(body).forEach((key) => {
+    if (body[key] === undefined || body[key] === null || body[key] === '') {
+      delete body[key];
+    }
+  });
+
+  return normalizePaymentResponse(await postToMyFatoorah('/v2/SendPayment', body));
+}
+
+export async function getPaymentDetails(
+  key: string,
+  keyType: MyFatoorahKeyType = 'InvoiceId',
+): Promise<unknown> {
+  const endpoint = process.env.MYFATOORAH_GET_PAYMENT_STATUS_PATH || '/v2/GetPaymentStatus';
+  return postToMyFatoorah(endpoint, { Key: key, KeyType: keyType });
 }
 
 export async function updatePayment(
-  _paymentId: string,
-  _input: Record<string, unknown>,
+  paymentId: string,
+  input: Record<string, unknown>,
 ): Promise<unknown> {
-  throw new Error('MyFatoorah updatePayment is not configured');
+  const endpoint = process.env.MYFATOORAH_UPDATE_PAYMENT_STATUS_PATH || '/v2/UpdatePaymentStatus';
+  return postToMyFatoorah(endpoint, {
+    Key: paymentId,
+    KeyType: 'PaymentId',
+    ...input,
+  });
 }
 
-export function verifyWebhookSignature(
-  _payload: unknown,
-  _signature: string,
-): boolean {
-  return false;
+function flattenSignatureFields(value: unknown, prefix = ''): Array<[string, string]> {
+  if (value === null || value === undefined) {
+    return [[prefix, '']];
+  }
+  if (Array.isArray(value)) {
+    return [[prefix, JSON.stringify(value)]];
+  }
+  if (typeof value === 'object') {
+    return Object.entries(value as Record<string, unknown>).flatMap(([key, child]) => {
+      const nextKey = prefix ? `${prefix}.${key}` : key;
+      return flattenSignatureFields(child, nextKey);
+    });
+  }
+  return [[prefix, String(value)]];
+}
+
+export function verifyWebhookSignature(payload: unknown, signature: string): boolean {
+  const secret = getWebhookSecret();
+  if (!secret || !signature) return false;
+
+  const data = flattenSignatureFields(payload)
+    .filter(([key]) => key && !key.toLowerCase().includes('signature'))
+    .sort(([a], [b]) => a.localeCompare(b))
+    .map(([key, value]) => `${key}=${value}`)
+    .join(',');
+
+  const digest = crypto.createHmac('sha256', secret).update(data, 'utf8').digest('base64');
+  const a = Buffer.from(digest);
+  const b = Buffer.from(signature);
+  return a.length === b.length && crypto.timingSafeEqual(a, b);
 }
 
 export function getWebhookSecret(): string {

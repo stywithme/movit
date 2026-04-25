@@ -1,11 +1,27 @@
-import { Controller, Get, Post, Body, Req, Res, UseGuards } from '@nestjs/common';
+import {
+    BadRequestException,
+    Body,
+    Controller,
+    ForbiddenException,
+    Get,
+    NotFoundException,
+    Param,
+    Post,
+    Req,
+    Res,
+} from '@nestjs/common';
 import { SubscriptionService } from './subscription.service';
 import { verifyMobileToken } from '@/modules/auth/auth.service';
 import type { Request, Response } from 'express';
+import {
+    cancelSubscriptionSchema,
+    createSubscriptionCheckoutSchema,
+    verifyGooglePlayPurchaseSchema,
+} from './subscription.types';
 
 @Controller('mobile/subscriptions')
 export class MobileSubscriptionController {
-    constructor(private readonly subscriptionService: SubscriptionService) { }
+    constructor(private readonly subscriptionService: SubscriptionService) {}
 
     @Get('mine')
     async findMine(@Req() req: Request, @Res({ passthrough: true }) res: Response) {
@@ -16,16 +32,8 @@ export class MobileSubscriptionController {
                 return { success: false, error: 'Unauthorized' };
             }
 
-            // Reuse findAll with filter for the current user
-            const result = await this.subscriptionService.findAll({ search: authResult.userId, limit: 100 });
-
-            // Filter precisely by userId to be safe
-            const mySubscriptions = result.data.filter(s => s.userId === authResult.userId);
-
-            return {
-                success: true,
-                data: mySubscriptions,
-            };
+            const data = await this.subscriptionService.findByUserId(authResult.userId);
+            return { success: true, data };
         } catch (error) {
             console.error('[Subscription] Error fetching mine:', error);
             res.status(500);
@@ -33,11 +41,28 @@ export class MobileSubscriptionController {
         }
     }
 
-    @Post()
-    async subscribe(
+    @Get('status')
+    async status(@Req() req: Request, @Res({ passthrough: true }) res: Response) {
+        try {
+            const authResult = await verifyMobileToken(req);
+            if (!authResult.success || !authResult.userId) {
+                res.status(401);
+                return { success: false, error: 'Unauthorized' };
+            }
+            const data = await this.subscriptionService.getStatus(authResult.userId);
+            return { success: true, data };
+        } catch (error) {
+            console.error('[Subscription] Error status:', error);
+            res.status(500);
+            return { success: false, error: 'Failed to load subscription status' };
+        }
+    }
+
+    @Post('checkout')
+    async checkout(
         @Req() req: Request,
         @Res({ passthrough: true }) res: Response,
-        @Body() body: { planId: string, amountPaid: number, type?: string }
+        @Body() body: unknown,
     ) {
         try {
             const authResult = await verifyMobileToken(req);
@@ -45,30 +70,130 @@ export class MobileSubscriptionController {
                 res.status(401);
                 return { success: false, error: 'Unauthorized' };
             }
-
-            if (!body.planId) {
+            const parsed = createSubscriptionCheckoutSchema.safeParse(body);
+            if (!parsed.success) {
                 res.status(400);
-                return { success: false, error: 'planId is required' };
+                return { success: false, error: 'Invalid checkout payload', details: parsed.error.flatten() };
             }
-
-            const subscription = await this.subscriptionService.create({
-                userId: authResult.userId,
-                planId: body.planId,
-                amountPaid: body.amountPaid || 0,
-                status: 'active',
-                startDate: new Date().toISOString(),
-                // Default expiry based on typical plan logic (placeholder for now)
-                endDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
-            });
-
-            return {
-                success: true,
-                data: subscription,
-            };
+            const data = await this.subscriptionService.createCheckout(authResult.userId, parsed.data);
+            return { success: true, data };
         } catch (error) {
-            console.error('[Subscription] Error creating:', error);
+            if (error instanceof NotFoundException) {
+                res.status(404);
+                return { success: false, error: error.message };
+            }
+            if (error instanceof BadRequestException) {
+                res.status(400);
+                return { success: false, error: error.message };
+            }
+            console.error('[Subscription] Error checkout:', error);
             res.status(500);
-            return { success: false, error: 'Failed to create subscription' };
+            return { success: false, error: 'Failed to create checkout' };
+        }
+    }
+
+    @Get('checkout/:id')
+    async getCheckout(
+        @Req() req: Request,
+        @Res({ passthrough: true }) res: Response,
+        @Param('id') id: string,
+    ) {
+        try {
+            const authResult = await verifyMobileToken(req);
+            if (!authResult.success || !authResult.userId) {
+                res.status(401);
+                return { success: false, error: 'Unauthorized' };
+            }
+            const data = await this.subscriptionService.getCheckout(authResult.userId, id);
+            return { success: true, data };
+        } catch (error) {
+            if (error instanceof NotFoundException) {
+                res.status(404);
+                return { success: false, error: error.message };
+            }
+            if (error instanceof ForbiddenException) {
+                res.status(403);
+                return { success: false, error: error.message };
+            }
+            if (error instanceof BadRequestException) {
+                res.status(400);
+                return { success: false, error: error.message };
+            }
+            console.error('[Subscription] Error getCheckout:', error);
+            res.status(500);
+            return { success: false, error: 'Failed to load checkout' };
+        }
+    }
+
+    @Post('google-play/verify')
+    async verifyGooglePlay(
+        @Req() req: Request,
+        @Res({ passthrough: true }) res: Response,
+        @Body() body: unknown,
+    ) {
+        try {
+            const authResult = await verifyMobileToken(req);
+            if (!authResult.success || !authResult.userId) {
+                res.status(401);
+                return { success: false, error: 'Unauthorized' };
+            }
+            const parsed = verifyGooglePlayPurchaseSchema.safeParse(body);
+            if (!parsed.success) {
+                res.status(400);
+                return { success: false, error: 'Invalid verify payload', details: parsed.error.flatten() };
+            }
+            const data = await this.subscriptionService.verifyGooglePlay(authResult.userId, parsed.data);
+            return { success: true, data };
+        } catch (error) {
+            if (error instanceof NotFoundException) {
+                res.status(404);
+                return { success: false, error: error.message };
+            }
+            if (error instanceof BadRequestException) {
+                res.status(400);
+                return { success: false, error: error.message };
+            }
+            console.error('[Subscription] Error verifyGooglePlay:', error);
+            res.status(500);
+            return { success: false, error: 'Failed to verify purchase' };
+        }
+    }
+
+    @Post('cancel')
+    async cancel(
+        @Req() req: Request,
+        @Res({ passthrough: true }) res: Response,
+        @Body() body: unknown,
+    ) {
+        try {
+            const authResult = await verifyMobileToken(req);
+            if (!authResult.success || !authResult.userId) {
+                res.status(401);
+                return { success: false, error: 'Unauthorized' };
+            }
+            const parsed = cancelSubscriptionSchema.safeParse(body ?? {});
+            if (!parsed.success) {
+                res.status(400);
+                return { success: false, error: 'Invalid cancel payload', details: parsed.error.flatten() };
+            }
+            const data = await this.subscriptionService.cancelForUser(authResult.userId, parsed.data);
+            return { success: true, data };
+        } catch (error) {
+            if (error instanceof NotFoundException) {
+                res.status(404);
+                return { success: false, error: error.message };
+            }
+            if (error instanceof ForbiddenException) {
+                res.status(403);
+                return { success: false, error: error.message };
+            }
+            if (error instanceof BadRequestException) {
+                res.status(400);
+                return { success: false, error: error.message };
+            }
+            console.error('[Subscription] Error cancel:', error);
+            res.status(500);
+            return { success: false, error: 'Failed to cancel subscription' };
         }
     }
 }

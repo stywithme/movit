@@ -160,6 +160,11 @@ class ReportRepository private constructor(private val context: Context) {
             return readCache(cacheKey)
         }
 
+        if (!AuthManager.isProUser(context)) {
+            Log.d(TAG, "Metrics require Pro — skipping network fetch")
+            return null
+        }
+
         return try {
             val response = api.getMetrics(
                 authorization = authHeader,

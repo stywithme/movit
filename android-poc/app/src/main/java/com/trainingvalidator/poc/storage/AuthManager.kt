@@ -30,6 +30,9 @@ object AuthManager {
     private const val KEY_TOTAL_WORKOUTS = "total_workouts"
     private const val KEY_TOTAL_MINUTES = "total_minutes"
 
+    private const val KEY_IS_PRO = "is_pro"
+    private const val KEY_SUBSCRIPTION_EXPIRY = "subscription_expiry"
+
     private fun prefs(context: Context) =
         context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
 
@@ -48,6 +51,8 @@ object AuthManager {
         editor.putBoolean(KEY_NOTIFICATIONS, data.user.notifications)
         editor.putInt(KEY_TOTAL_WORKOUTS, data.user.totalWorkouts)
         editor.putInt(KEY_TOTAL_MINUTES, data.user.totalMinutes)
+        editor.putBoolean(KEY_IS_PRO, data.user.isPro)
+        editor.putString(KEY_SUBSCRIPTION_EXPIRY, data.user.subscriptionExpiry)
         editor.apply()
     }
 
@@ -62,6 +67,8 @@ object AuthManager {
         editor.putBoolean(KEY_NOTIFICATIONS, user.notifications)
         editor.putInt(KEY_TOTAL_WORKOUTS, user.totalWorkouts)
         editor.putInt(KEY_TOTAL_MINUTES, user.totalMinutes)
+        editor.putBoolean(KEY_IS_PRO, user.isPro)
+        editor.putString(KEY_SUBSCRIPTION_EXPIRY, user.subscriptionExpiry)
         editor.apply()
     }
 
@@ -130,6 +137,12 @@ object AuthManager {
     fun getTotalMinutes(context: Context): Int =
         prefs(context).getInt(KEY_TOTAL_MINUTES, 0)
 
+    fun isProUser(context: Context): Boolean =
+        prefs(context).getBoolean(KEY_IS_PRO, false)
+
+    fun getSubscriptionExpiryIso(context: Context): String? =
+        prefs(context).getString(KEY_SUBSCRIPTION_EXPIRY, null)
+
     fun clearAuthData(context: Context) {
         val editor = prefs(context).edit()
         editor.putBoolean(KEY_IS_LOGGED_IN, false)
@@ -142,6 +155,8 @@ object AuthManager {
         editor.remove(KEY_AVATAR_URL)
         editor.remove(KEY_TOTAL_WORKOUTS)
         editor.remove(KEY_TOTAL_MINUTES)
+        editor.remove(KEY_IS_PRO)
+        editor.remove(KEY_SUBSCRIPTION_EXPIRY)
         editor.apply()
     }
     
