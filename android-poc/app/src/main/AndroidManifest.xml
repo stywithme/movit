@@ -93,9 +93,20 @@
 
         <activity
             android:name=".ui.subscription.SubscriptionActivity"
-            android:exported="false"
+            android:exported="true"
+            android:launchMode="singleTop"
             android:screenOrientation="portrait"
-            android:theme="@style/Theme.WayToFix" />
+            android:theme="@style/Theme.WayToFix">
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data
+                    android:host="subscription"
+                    android:pathPrefix="/result"
+                    android:scheme="waytofix" />
+            </intent-filter>
+        </activity>
         
         <!-- ═══════════════════════════════════════════════════ -->
         <!-- MAIN CONTAINER (Bottom Navigation) -->
