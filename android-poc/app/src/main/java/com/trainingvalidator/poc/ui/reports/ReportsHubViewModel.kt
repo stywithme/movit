@@ -58,8 +58,6 @@ class ReportsHubViewModel(app: Application) : AndroidViewModel(app) {
                         source = "all"
                     )
                 }
-                val dashboardMetrics = dashboard.toMetricsResponse()
-
                 when {
                     dashboard == null -> {
                         _uiState.value = ReportsHubUiState.Error("Unable to load reports right now")
@@ -67,11 +65,13 @@ class ReportsHubViewModel(app: Application) : AndroidViewModel(app) {
                     !dashboard.success -> {
                         _uiState.value = ReportsHubUiState.Error(dashboard.error ?: "Unable to load reports right now")
                     }
-                    dashboardMetrics?.summary.hasTrainingData() -> {
-                        _uiState.value = ReportsHubUiState.Success(dashboardMetrics)
-                    }
                     else -> {
-                        _uiState.value = ReportsHubUiState.Empty
+                        val metrics = dashboard.toMetricsResponse()
+                        if (metrics != null && metrics.summary.hasTrainingData()) {
+                            _uiState.value = ReportsHubUiState.Success(metrics)
+                        } else {
+                            _uiState.value = ReportsHubUiState.Empty
+                        }
                     }
                 }
             } catch (e: Exception) {
