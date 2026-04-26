@@ -10,11 +10,69 @@
 import { Controller, Get, Query, Req, Res, UseGuards } from '@nestjs/common';
 import type { Request, Response } from 'express';
 import { reportsService } from './reports.service';
-import type { MetricsScope, MetricsQuery } from './reports.types';
+import type {
+  MetricsScope,
+  MetricsQuery,
+  ReportDashboardPeriod,
+  ReportDashboardQuery,
+  ReportDashboardSource,
+} from './reports.types';
 import { MobileAuthGuard, RequireProUser } from '@/lib/guards/mobile-auth.guard';
 
 @Controller('mobile/reports')
 export class ReportsController {
+  @Get('dashboard')
+  @UseGuards(MobileAuthGuard)
+  @RequireProUser()
+  async getDashboard(
+    @Req() req: Request,
+    @Res({ passthrough: true }) res: Response,
+    @Query('programId') programId?: string,
+    @Query('period') period?: string,
+    @Query('source') source?: string,
+    @Query('exerciseSlug') exerciseSlug?: string,
+  ) {
+    try {
+      const userId = (req as any).userId as string | undefined;
+      if (!userId) {
+        res.status(401);
+        return { success: false, error: 'Unauthorized' };
+      }
+
+      const validPeriods: ReportDashboardPeriod[] = ['7d', '30d', '90d', 'program', 'all'];
+      const validSources: ReportDashboardSource[] = ['all', 'program', 'free', 'workout', 'quick', 'explore'];
+
+      if (period && !validPeriods.includes(period as ReportDashboardPeriod)) {
+        res.status(400);
+        return {
+          success: false,
+          error: `period must be one of: ${validPeriods.join(', ')}`,
+        };
+      }
+
+      if (source && !validSources.includes(source as ReportDashboardSource)) {
+        res.status(400);
+        return {
+          success: false,
+          error: `source must be one of: ${validSources.join(', ')}`,
+        };
+      }
+
+      const query: ReportDashboardQuery = {
+        programId: programId || undefined,
+        period: (period as ReportDashboardPeriod | undefined) ?? undefined,
+        source: (source as ReportDashboardSource | undefined) ?? undefined,
+        exerciseSlug: exerciseSlug || undefined,
+      };
+
+      return await reportsService.getDashboard(userId, query);
+    } catch (error) {
+      console.error('[Reports Dashboard] Error:', error);
+      res.status(500);
+      return { success: false, error: 'Internal server error' };
+    }
+  }
+
   @Get('metrics')
   @UseGuards(MobileAuthGuard)
   @RequireProUser()

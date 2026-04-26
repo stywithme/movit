@@ -23,6 +23,16 @@ export interface MetricsQuery {
   includeChildren?: boolean;
 }
 
+export type ReportDashboardPeriod = '7d' | '30d' | '90d' | 'program' | 'all';
+export type ReportDashboardSource = 'all' | 'program' | 'free' | 'workout' | 'quick' | 'explore';
+
+export interface ReportDashboardQuery {
+  programId?: string;
+  period?: ReportDashboardPeriod;
+  source?: ReportDashboardSource;
+  exerciseSlug?: string;
+}
+
 // ============================================
 // STORED REPORT JSON STRUCTURE (from mobile)
 // ============================================
@@ -370,6 +380,60 @@ export interface MetricsResponse {
     | SessionMetricsOutput
     | ExerciseMetricsOutput;
   comparison?: ComparisonData;
+  insights?: Insight[];
+  error?: string;
+}
+
+export interface ReportDashboardResponse {
+  success: boolean;
+  scope: 'dashboard';
+  period: ReportDashboardPeriod;
+  source: ReportDashboardSource;
+  summary?: {
+    programId: string | null;
+    programProgress: number;
+    overallFormScore: number;
+    totalReps: number;
+    totalVolume: number;
+    totalTrainingTime: number;
+    daysTrained: number;
+    currentStreak: number;
+    programGrade: ProgramGrade;
+    strongestExercise: string | null;
+    weakestExercise: string | null;
+  };
+  trends?: {
+    formScoreByWeek: number[];
+    attendanceByWeek: number[];
+    volumeByWeek: number[];
+    repsByWeek: number[];
+  };
+  exerciseBreakdown?: Array<{
+    exerciseSlug: string;
+    exerciseName: string;
+    averageFormScore: number;
+    sessionsCount: number;
+    totalReps: number;
+    totalVolume: number;
+    focusArea: 'maintain' | 'improve-form' | 'build-consistency';
+  }>;
+  sessionTimeline?: Array<{
+    sessionId: string;
+    weekNumber: number;
+    dayNumber: number;
+    completedAt: string | null;
+    totalDurationMs: number;
+    totalReps: number;
+    averageFormScore: number;
+    strongestExercise: string | null;
+    weakestExercise: string | null;
+  }>;
+  records?: {
+    bestFormScore: number;
+    bestWeekNumber: number | null;
+    longestStreak: number;
+    mostRepsInSession: number;
+  };
   insights?: Insight[];
   error?: string;
 }

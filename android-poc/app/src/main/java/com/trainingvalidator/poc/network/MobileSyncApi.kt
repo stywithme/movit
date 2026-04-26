@@ -249,6 +249,18 @@ interface MobileSyncApi {
     // ─── Unified Reports Endpoint ────────────────────────────────
 
     /**
+     * Coach-style dashboard payload for the redesigned Reports tab.
+     */
+    @GET("api/mobile/reports/dashboard")
+    suspend fun getReportsDashboard(
+        @Header("Authorization") authorization: String,
+        @Query("programId") programId: String? = null,
+        @Query("period") period: String? = null,
+        @Query("source") source: String? = null,
+        @Query("exerciseSlug") exerciseSlug: String? = null
+    ): Response<ReportDashboardResponse>
+
+    /**
      * Unified metrics endpoint — returns aggregated metrics at any scope.
      * scope: program | week | day | session | exercise
      */

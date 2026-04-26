@@ -6,6 +6,7 @@ import com.google.gson.Gson
 import com.trainingvalidator.poc.network.ApiClient
 import com.trainingvalidator.poc.network.MetricsResponse
 import com.trainingvalidator.poc.network.MetricsSummary
+import com.trainingvalidator.poc.network.ReportDashboardResponse
 import java.io.File
 
 /**
@@ -128,6 +129,50 @@ class ReportRepository private constructor(private val context: Context) {
     }
 
     /**
+     * Fetch the coach-style dashboard payload for the redesigned Reports tab.
+     */
+    suspend fun getReportsDashboard(
+        programId: String? = null,
+        period: String = "all",
+        source: String = "all",
+        exerciseSlug: String? = null
+    ): ReportDashboardResponse? {
+        val cacheKey = listOf("dashboard", programId ?: "active", period, source, exerciseSlug ?: "all")
+            .joinToString("_")
+        val authHeader = AuthManager.getAuthHeader(context)
+        if (authHeader == null) {
+            Log.w(TAG, "No auth token — returning cached dashboard")
+            return readDashboardCache(cacheKey)
+        }
+
+        if (!AuthManager.isProUser(context)) {
+            Log.d(TAG, "Dashboard reports require Pro — skipping network fetch")
+            return null
+        }
+
+        return try {
+            val response = api.getReportsDashboard(
+                authorization = authHeader,
+                programId = programId,
+                period = period,
+                source = source,
+                exerciseSlug = exerciseSlug
+            )
+            if (response.isSuccessful && response.body()?.success == true) {
+                val body = response.body()!!
+                writeDashboardCache(cacheKey, body)
+                body
+            } else {
+                Log.w(TAG, "Dashboard API error: ${response.code()} — using cache")
+                readDashboardCache(cacheKey)
+            }
+        } catch (e: Exception) {
+            Log.w(TAG, "Dashboard network error — using cache: ${e.message}")
+            readDashboardCache(cacheKey)
+        }
+    }
+
+    /**
      * Clear all cached metrics (e.g., on logout).
      */
     fun clearCache() {
@@ -209,6 +254,26 @@ class ReportRepository private constructor(private val context: Context) {
             gson.fromJson(file.readText(), MetricsResponse::class.java)
         } catch (e: Exception) {
             Log.w(TAG, "Failed to read cache: $key", e)
+            null
+        }
+    }
+
+    private fun writeDashboardCache(key: String, data: ReportDashboardResponse) {
+        try {
+            val file = File(cacheDir, "$key.json")
+            file.writeText(gson.toJson(data))
+        } catch (e: Exception) {
+            Log.w(TAG, "Failed to write dashboard cache: $key", e)
+        }
+    }
+
+    private fun readDashboardCache(key: String): ReportDashboardResponse? {
+        return try {
+            val file = File(cacheDir, "$key.json")
+            if (!file.exists()) return null
+            gson.fromJson(file.readText(), ReportDashboardResponse::class.java)
+        } catch (e: Exception) {
+            Log.w(TAG, "Failed to read dashboard cache: $key", e)
             null
         }
     }

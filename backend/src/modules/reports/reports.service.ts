@@ -11,6 +11,8 @@ import { getPrisma } from '@/lib/prisma/client';
 import type {
   MetricsQuery,
   MetricsResponse,
+  ReportDashboardQuery,
+  ReportDashboardResponse,
   StoredSessionReport,
   StoredExerciseReport,
   StoredSetMetrics,
@@ -794,11 +796,355 @@ function buildWeekMetrics(
     positionTipReps: weekCounting.positionTipReps,
   };
 }
+
+function getDashboardPeriodStart(period: ReportDashboardQuery['period']): Date | undefined {
+  if (!period || period === 'all' || period === 'program') return undefined;
+  const days = period === '7d' ? 7 : period === '30d' ? 30 : 90;
+  const start = new Date();
+  start.setDate(start.getDate() - days);
+  return start;
+}
+
+function normalizeStoredScore(score: number | null | undefined): number {
+  if (!score || score <= 0) return 0;
+  return Math.round((score / 10) * 10) / 10;
+}
+
+function formatExerciseName(name: unknown, fallback: string): string {
+  if (typeof name === 'string') return name;
+  if (name && typeof name === 'object') {
+    const localized = name as { en?: unknown; ar?: unknown };
+    if (typeof localized.en === 'string' && localized.en) return localized.en;
+    if (typeof localized.ar === 'string' && localized.ar) return localized.ar;
+  }
+  return fallback;
+}
+
+function getWeekKey(date: Date): string {
+  const start = new Date(date);
+  const day = start.getDay();
+  const diff = start.getDate() - day + (day === 0 ? -6 : 1);
+  start.setDate(diff);
+  start.setHours(0, 0, 0, 0);
+  return start.toISOString().slice(0, 10);
+}
+
+function buildTrainingSessionTrends(sessions: any[]) {
+  const byWeek = new Map<string, {
+    scores: number[];
+    days: Set<string>;
+    volume: number;
+    reps: number;
+  }>();
+
+  for (const session of sessions) {
+    const key = getWeekKey(session.timestamp);
+    const existing = byWeek.get(key) ?? {
+      scores: [],
+      days: new Set<string>(),
+      volume: 0,
+      reps: 0,
+    };
+    const score = normalizeStoredScore(session.sessionMetrics?.avgFormScore);
+    if (score > 0) existing.scores.push(score);
+    existing.days.add(session.timestamp.toISOString().slice(0, 10));
+    existing.volume += session.sessionMetrics?.totalVolume ?? 0;
+    existing.reps += session.totalReps;
+    byWeek.set(key, existing);
+  }
+
+  const weeks = [...byWeek.entries()].sort(([a], [b]) => a.localeCompare(b));
+  return {
+    formScoreByWeek: weeks.map(([, value]) =>
+      value.scores.length > 0
+        ? Math.round((value.scores.reduce((sum, score) => sum + score, 0) / value.scores.length) * 10) / 10
+        : 0,
+    ),
+    attendanceByWeek: weeks.map(([, value]) => value.days.size),
+    volumeByWeek: weeks.map(([, value]) => Math.round(value.volume * 10) / 10),
+    repsByWeek: weeks.map(([, value]) => value.reps),
+  };
+}
+
+function calculateDateStreak(dates: Date[]): number {
+  const trainedDays = new Set(dates.map((date) => date.toISOString().slice(0, 10)));
+  if (trainedDays.size === 0) return 0;
+
+  let streak = 0;
+  const cursor = new Date();
+  cursor.setHours(0, 0, 0, 0);
+
+  while (trainedDays.has(cursor.toISOString().slice(0, 10))) {
+    streak += 1;
+    cursor.setDate(cursor.getDate() - 1);
+  }
+
+  return streak;
+}
 // ============================================
 // MAIN SERVICE
 // ============================================
 
 export const reportsService = {
+  /**
+   * Coach-style dashboard payload for the mobile Reports tab.
+   *
+   * Combines two report sources:
+   * - program sessions from ProgramSessionReport
+   * - free / quick / workout sessions from TrainingSession
+   */
+  async getDashboard(userId: string, query: ReportDashboardQuery): Promise<ReportDashboardResponse> {
+    const prisma = await getPrisma();
+    const period = query.period ?? 'all';
+    const source = query.source ?? 'all';
+    const includeProgram = source === 'all' || source === 'program';
+    const includeTrainingSessions = source !== 'program';
+    const periodStart = getDashboardPeriodStart(period);
+
+    const resolvedProgramId = query.programId ?? (
+      await prisma.userProgram.findFirst({
+        where: { userId, isActive: true },
+        orderBy: { createdAt: 'desc' },
+        select: { programId: true },
+      })
+    )?.programId;
+
+    let metrics: MetricsResponse | null = null;
+    if (includeProgram && resolvedProgramId) {
+      const programMetrics = await this.getMetrics(userId, {
+        programId: resolvedProgramId,
+        scope: 'program',
+        includeChildren: true,
+        includeHistory: true,
+      });
+      metrics = programMetrics;
+
+      if (!programMetrics.success && source === 'program') {
+        return {
+          success: false,
+          scope: 'dashboard',
+          period,
+          source,
+          error: programMetrics.error ?? 'Unable to build program dashboard reports',
+        };
+      }
+    } else if (source === 'program') {
+      return {
+        success: false,
+        scope: 'dashboard',
+        period,
+        source,
+        error: 'No active program found for dashboard reports',
+      };
+    }
+
+    const programSummary = metrics?.success ? metrics.summary as ProgramMetricsOutput : null;
+    const weeks = programSummary?.weeks ?? [];
+    const programExercises = (programSummary?.exercises ?? [])
+      .filter((exercise) => !query.exerciseSlug || exercise.exerciseSlug === query.exerciseSlug);
+    const programSessions = weeks.flatMap((week) =>
+      (week.days ?? []).flatMap((day) => day.sessions ?? []),
+    );
+
+    const trainingSessionRows = includeTrainingSessions
+      ? await prisma.trainingSession.findMany({
+        where: {
+          userId,
+          ...(periodStart && { timestamp: { gte: periodStart } }),
+        },
+        orderBy: { timestamp: 'desc' },
+        take: 500,
+        include: {
+          exercise: { select: { name: true, slug: true } },
+          sessionMetrics: true,
+        },
+      })
+      : [];
+
+    const filteredTrainingSessions = trainingSessionRows.filter((session) => {
+      if (query.exerciseSlug && session.exercise?.slug !== query.exerciseSlug) return false;
+      if (source === 'free') return session.context === 'free';
+      if (source === 'quick') return session.context === 'quick_start';
+      if (source === 'explore') return session.context === 'explore_workout';
+      if (source === 'workout') return Boolean(session.workoutId);
+      return ['free', 'quick_start', 'explore_workout'].includes(session.context);
+    });
+
+    const freeExerciseMap = new Map<string, {
+      slug: string;
+      name: string;
+      sessionsCount: number;
+      totalScore: number;
+      totalReps: number;
+      totalVolume: number;
+    }>();
+
+    for (const session of filteredTrainingSessions) {
+      const slug = session.exercise?.slug ?? session.exerciseId;
+      const existing = freeExerciseMap.get(slug) ?? {
+        slug,
+        name: formatExerciseName(session.exercise?.name, slug),
+        sessionsCount: 0,
+        totalScore: 0,
+        totalReps: 0,
+        totalVolume: 0,
+      };
+      existing.sessionsCount += 1;
+      existing.totalScore += normalizeStoredScore(session.sessionMetrics?.avgFormScore);
+      existing.totalReps += session.totalReps;
+      existing.totalVolume += session.sessionMetrics?.totalVolume ?? 0;
+      freeExerciseMap.set(slug, existing);
+    }
+
+    const combinedExerciseMap = new Map<string, {
+      exerciseSlug: string;
+      exerciseName: string;
+      averageFormScore: number;
+      sessionsCount: number;
+      totalReps: number;
+      totalVolume: number;
+    }>();
+
+    for (const exercise of programExercises) {
+      combinedExerciseMap.set(exercise.exerciseSlug, {
+        exerciseSlug: exercise.exerciseSlug,
+        exerciseName: exercise.exerciseName,
+        averageFormScore: exercise.averageFormScore,
+        sessionsCount: exercise.sessionsCount ?? 0,
+        totalReps: exercise.totalReps,
+        totalVolume: exercise.totalVolume,
+      });
+    }
+
+    for (const exercise of freeExerciseMap.values()) {
+      const averageFormScore = exercise.sessionsCount > 0
+        ? Math.round((exercise.totalScore / exercise.sessionsCount) * 10) / 10
+        : 0;
+      const existing = combinedExerciseMap.get(exercise.slug);
+
+      if (!existing) {
+        combinedExerciseMap.set(exercise.slug, {
+          exerciseSlug: exercise.slug,
+          exerciseName: exercise.name,
+          averageFormScore,
+          sessionsCount: exercise.sessionsCount,
+          totalReps: exercise.totalReps,
+          totalVolume: Math.round(exercise.totalVolume * 10) / 10,
+        });
+      } else {
+        const totalSessions = existing.sessionsCount + exercise.sessionsCount;
+        combinedExerciseMap.set(exercise.slug, {
+          ...existing,
+          averageFormScore: totalSessions > 0
+            ? Math.round(((existing.averageFormScore * existing.sessionsCount) + exercise.totalScore) / totalSessions * 10) / 10
+            : 0,
+          sessionsCount: totalSessions,
+          totalReps: existing.totalReps + exercise.totalReps,
+          totalVolume: Math.round((existing.totalVolume + exercise.totalVolume) * 10) / 10,
+        });
+      }
+    }
+
+    const exerciseBreakdown = [...combinedExerciseMap.values()]
+      .sort((a, b) => b.averageFormScore - a.averageFormScore);
+    const programTimeline = programSessions.map((session) => ({
+      sessionId: session.sessionId,
+      weekNumber: session.weekNumber,
+      dayNumber: session.dayNumber,
+      completedAt: session.completedAt,
+      totalDurationMs: session.totalDurationMs,
+      totalReps: session.totalReps,
+      averageFormScore: session.averageFormScore,
+      strongestExercise: session.strongestExercise,
+      weakestExercise: session.weakestExercise,
+    }));
+    const freeTimeline = filteredTrainingSessions.map((session) => ({
+      sessionId: session.groupId ?? session.id,
+      weekNumber: 0,
+      dayNumber: 0,
+      completedAt: session.timestamp.toISOString(),
+      totalDurationMs: session.durationMs,
+      totalReps: session.totalReps,
+      averageFormScore: normalizeStoredScore(session.sessionMetrics?.avgFormScore),
+      strongestExercise: formatExerciseName(session.exercise?.name, session.exercise?.slug ?? session.exerciseId),
+      weakestExercise: null,
+    }));
+    const sortedSessions = [...programTimeline, ...freeTimeline].sort((a, b) => {
+      const aTime = a.completedAt ? new Date(a.completedAt).getTime() : 0;
+      const bTime = b.completedAt ? new Date(b.completedAt).getTime() : 0;
+      return bTime - aTime;
+    });
+
+    const freeScores = filteredTrainingSessions.map((session) => normalizeStoredScore(session.sessionMetrics?.avgFormScore));
+    const programScores = programSessions.map((session) => session.averageFormScore);
+    const allScores = [...programScores, ...freeScores].filter((score) => score > 0);
+    const overallFormScore = allScores.length > 0
+      ? Math.round((allScores.reduce((sum, score) => sum + score, 0) / allScores.length) * 10) / 10
+      : 0;
+    const rawTrends = buildTrainingSessionTrends(filteredTrainingSessions);
+    const rawStreak = calculateDateStreak(filteredTrainingSessions.map((session) => session.timestamp));
+    const totalReps = (programSummary?.totalReps ?? 0) +
+      filteredTrainingSessions.reduce((sum, session) => sum + session.totalReps, 0);
+    const totalVolume = (programSummary?.totalVolume ?? 0) +
+      filteredTrainingSessions.reduce((sum, session) => sum + (session.sessionMetrics?.totalVolume ?? 0), 0);
+    const totalTrainingTime = (programSummary?.totalTrainingTime ?? 0) +
+      filteredTrainingSessions.reduce((sum, session) => sum + session.durationMs, 0);
+    const rawDays = new Set(filteredTrainingSessions.map((session) => session.timestamp.toISOString().slice(0, 10))).size;
+    const daysTrained = (programSummary?.daysTrained ?? 0) + rawDays;
+    const currentStreak = Math.max(programSummary?.currentStreak ?? 0, rawStreak);
+    const strongestExercise = exerciseBreakdown[0]?.exerciseName ?? null;
+    const weakestExercise = exerciseBreakdown.length > 0
+      ? exerciseBreakdown[exerciseBreakdown.length - 1].exerciseName
+      : null;
+
+    return {
+      success: true,
+      scope: 'dashboard',
+      period,
+      source,
+      summary: {
+        programId: programSummary?.programId ?? null,
+        programProgress: programSummary?.programProgress ?? 0,
+        overallFormScore,
+        totalReps,
+        totalVolume: Math.round(totalVolume * 10) / 10,
+        totalTrainingTime,
+        daysTrained,
+        currentStreak,
+        programGrade: programSummary?.programGrade ?? getProgramGrade(100, overallFormScore, 100),
+        strongestExercise,
+        weakestExercise,
+      },
+      trends: {
+        formScoreByWeek: [...(programSummary?.weeklyFormScores ?? []), ...rawTrends.formScoreByWeek],
+        attendanceByWeek: [...weeks.map((week) => week.daysTrained), ...rawTrends.attendanceByWeek],
+        volumeByWeek: [...weeks.map((week) => week.totalVolume), ...rawTrends.volumeByWeek],
+        repsByWeek: [...weeks.map((week) => week.totalReps), ...rawTrends.repsByWeek],
+      },
+      exerciseBreakdown: exerciseBreakdown.map((exercise) => ({
+        exerciseSlug: exercise.exerciseSlug,
+        exerciseName: exercise.exerciseName,
+        averageFormScore: exercise.averageFormScore,
+        sessionsCount: exercise.sessionsCount,
+        totalReps: exercise.totalReps,
+        totalVolume: exercise.totalVolume,
+        focusArea: exercise.averageFormScore >= 85
+          ? 'maintain'
+          : exercise.sessionsCount < 3
+            ? 'build-consistency'
+            : 'improve-form',
+      })),
+      sessionTimeline: sortedSessions.slice(0, 20),
+      records: {
+        bestFormScore: Math.max(0, ...weeks.map((week) => week.averageFormScore), ...freeScores),
+        bestWeekNumber: programSummary?.bestWeekNumber ?? null,
+        longestStreak: currentStreak,
+        mostRepsInSession: Math.max(0, ...sortedSessions.map((session) => session.totalReps)),
+      },
+      insights: metrics?.success ? metrics.insights : [],
+    };
+  },
+
   /**
    * Unified metrics endpoint — returns aggregated metrics at the requested scope.
    */

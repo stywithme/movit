@@ -723,6 +723,14 @@
     <string name="session_complete_accuracy_format">Average Accuracy: %1$d%%</string>
     <string name="session_invalid_payload">Session data is invalid. Please sync and try again.</string>
     <string name="session_exercise_load_failed">Failed to load exercise. Please return and adjust the session.</string>
+    <string name="session_preview_content_description">Exercise preview image</string>
+    <string name="session_start_set_numbered">Start set %1$d</string>
+    <string name="session_start_first_exercise">Start exercise</string>
+    <string name="session_target_reps_format">%1$d sets · %2$d reps</string>
+    <string name="session_target_hold_format">%1$d sets · %2$ds hold</string>
+    <string name="session_target_sets_only_format">%1$d sets</string>
+    <string name="session_complete_subtitle">Your results are saved. Open the report for the full breakdown.</string>
+    <string name="session_view_report">View report</string>
 
     <!-- ═══════════════════════════════════════════════════ -->
     <!-- Program Page (Redesigned)                          -->
@@ -803,6 +811,19 @@
     <string name="reports_consistency">Consistency</string>
     <string name="reports_improvement">Improvement</string>
     <string name="reports_no_data">Complete your first workout to see reports</string>
+    <string name="reports_state_loading_title">Building your training report</string>
+    <string name="reports_state_loading_message">We are collecting your sessions, form scores, and progress trends.</string>
+    <string name="reports_state_empty_title">No report data yet</string>
+    <string name="reports_state_empty_message">Complete a training session and your form, consistency, records, and exercise insights will appear here.</string>
+    <string name="reports_state_no_program_title">Start a plan to unlock reports</string>
+    <string name="reports_state_no_program_message">Reports work best when your sessions are connected to a training plan, so progress can be measured week by week.</string>
+    <string name="reports_state_locked_title">Reports are a Pro feature</string>
+    <string name="reports_state_locked_message">Upgrade to track form trends, exercise progress, milestones, and coaching insights across your training history.</string>
+    <string name="reports_state_error_title">Reports could not load</string>
+    <string name="reports_state_error_message">Check your connection and try again. If the issue continues, your cached report data will appear when available.</string>
+    <string name="reports_state_retry">Try again</string>
+    <string name="reports_state_start_training">Start training</string>
+    <string name="reports_state_upgrade">View Pro</string>
     <string name="reports_times_trained_format">Trained %d times</string>
     <string name="reports_form_score_format">Form: %d%%</string>
     <string name="reports_exercise_detail">Exercise Detail</string>

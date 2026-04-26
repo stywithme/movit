@@ -8,8 +8,10 @@ import android.os.VibrationEffect
 import android.os.Vibrator
 import android.util.Log
 import android.view.View
+import android.widget.ImageView
 import android.widget.Toast
 import androidx.lifecycle.lifecycleScope
+import coil.load
 import com.trainingvalidator.poc.R
 import com.trainingvalidator.poc.storage.ExerciseRepository
 import com.trainingvalidator.poc.training.models.ExerciseConfig
@@ -113,6 +115,60 @@ class TrainingSessionModeController(
         engine.start()
     }
 
+    private fun localizedInstruction(config: ExerciseConfig?, language: String): String? {
+        if (config == null) return null
+        val primary = config.instructions?.get(language)?.trim().orEmpty()
+        val text = primary.ifBlank {
+            config.instructions?.en?.trim().orEmpty()
+        }.ifBlank {
+            config.instructions?.ar?.trim().orEmpty()
+        }
+        return text.takeIf { it.isNotEmpty() }
+    }
+
+    private fun bindExercisePreviewImage(slug: String?, imageView: ImageView, fallbackView: ImageView) {
+        val url = slug?.takeIf { it.isNotBlank() }
+            ?.let { sessionExerciseConfigMap[it]?.imageUrl }
+            ?.trim()
+        if (url.isNullOrEmpty()) {
+            imageView.setImageDrawable(null)
+            fallbackView.visibility = View.VISIBLE
+            return
+        }
+        imageView.load(url) {
+            placeholder(R.drawable.gradient_report_hero)
+            error(R.drawable.gradient_report_hero)
+            crossfade(true)
+            listener(
+                onStart = { fallbackView.visibility = View.GONE },
+                onSuccess = { _, _ -> fallbackView.visibility = View.GONE },
+                onError = { _, _ ->
+                    imageView.setImageDrawable(null)
+                    fallbackView.visibility = View.VISIBLE
+                }
+            )
+        }
+    }
+
+    private fun buildSessionTargetSummaryLine(item: ProgramSessionItem): String {
+        val sets = item.sets?.coerceAtLeast(1) ?: 1
+        val base = when {
+            item.targetDuration != null && item.targetDuration > 0 ->
+                host.getString(R.string.session_target_hold_format, sets, item.targetDuration)
+            item.targetReps != null && item.targetReps > 0 ->
+                host.getString(R.string.session_target_reps_format, sets, item.targetReps)
+            else ->
+                host.getString(R.string.session_target_sets_only_format, sets)
+        }
+        val w = item.weightPerSet?.firstOrNull()?.takeIf { it > 0f }
+            ?: item.weightKg?.takeIf { it > 0f }
+        return if (w != null) {
+            "$base · ${host.getString(R.string.session_weight_format, w)}"
+        } else {
+            base
+        }
+    }
+
     private fun observeSessionEngineState() {
         val engine = sessionEngine ?: return
         host.lifecycleScope.launch {
@@ -125,26 +181,36 @@ class TrainingSessionModeController(
                     is SessionTrainingEngine.State.Training -> { }
                     is SessionTrainingEngine.State.SetRest -> {
                         showCelebrationMessage(host.getString(R.string.session_celebrate_set))
+                        val setsTitle = host.getString(R.string.session_rest_between_sets)
                         showSessionRest(
                             durationMs = sessionState.durationMs,
-                            title = host.getString(R.string.session_rest_between_sets),
-                            nextInfo = host.getString(
+                            title = setsTitle,
+                            headline = sessionState.exerciseName,
+                            detailLine = host.getString(
                                 R.string.session_rest_next_set_format,
                                 sessionState.exerciseName,
                                 sessionState.nextSetNumber,
                                 sessionState.totalSets
-                            )
+                            ),
+                            previewSlug = sessionState.exerciseSlug,
+                            instructionText = null,
+                            tipTitleKey = setsTitle
                         )
                     }
                     is SessionTrainingEngine.State.ExerciseRest -> {
                         showCelebrationMessage(host.getString(R.string.session_celebrate_exercise))
+                        val restTitle = host.getString(R.string.session_rest_between_exercises)
+                        val lang = host.currentLanguage
+                        val nextSlug = sessionState.nextExerciseSlug
+                        val nextCfg = sessionExerciseConfigMap[nextSlug]
                         showSessionRest(
                             durationMs = sessionState.durationMs,
-                            title = host.getString(R.string.session_rest_between_exercises),
-                            nextInfo = host.getString(
-                                R.string.session_rest_next_exercise_format,
-                                sessionState.nextExerciseName
-                            )
+                            title = restTitle,
+                            headline = sessionState.nextExerciseName,
+                            detailLine = buildSessionTargetSummaryLine(sessionState.nextExerciseItem),
+                            previewSlug = nextSlug,
+                            instructionText = localizedInstruction(nextCfg, lang),
+                            tipTitleKey = restTitle
                         )
                     }
                     is SessionTrainingEngine.State.SessionComplete -> {
@@ -201,6 +267,23 @@ class TrainingSessionModeController(
             b.tvSessionWeightInfo.visibility = View.VISIBLE
         } else {
             b.tvSessionWeightInfo.visibility = View.GONE
+        }
+        val lang = host.currentLanguage
+        val slug = item.exerciseSlug
+        bindExercisePreviewImage(slug, b.ivSessionPreExercisePreview, b.ivSessionPreExerciseFallbackIcon)
+        val cfg = slug?.let { sessionExerciseConfigMap[it] }
+        val instruction = localizedInstruction(cfg, lang)
+        if (!instruction.isNullOrBlank()) {
+            b.tvSessionInstruction.text = instruction
+            b.tvSessionInstruction.visibility = View.VISIBLE
+        } else {
+            b.tvSessionInstruction.visibility = View.GONE
+        }
+        b.btnSessionStartSet.text = when {
+            state.exerciseIndex == 0 && state.setNumber == 1 ->
+                host.getString(R.string.session_start_first_exercise)
+            else ->
+                host.getString(R.string.session_start_set_numbered, state.setNumber)
         }
         b.btnSessionStartSet.setOnClickListener {
             onSessionStartSetClicked(state)
@@ -268,7 +351,15 @@ class TrainingSessionModeController(
         b.tvSessionSetIndicator.visibility = View.VISIBLE
     }
 
-    private fun showSessionRest(durationMs: Long, title: String, nextInfo: String) {
+    private fun showSessionRest(
+        durationMs: Long,
+        title: String,
+        headline: String,
+        detailLine: String,
+        previewSlug: String,
+        instructionText: String?,
+        tipTitleKey: String
+    ) {
         hideSessionPanels()
         val b = host.binding
         b.sessionRestPanel.visibility = View.VISIBLE
@@ -282,8 +373,20 @@ class TrainingSessionModeController(
         b.vignetteOverlay.clear()
         b.skeletonOverlay.setTrainingMode(false)
         b.tvSessionRestTitle.text = title
-        b.tvSessionRestNext.text = nextInfo
-        b.tvSessionRestTip.text = getRestTip(title)
+        b.tvSessionRestHeadline.text = headline
+        b.tvSessionRestNext.text = detailLine
+        bindExercisePreviewImage(
+            previewSlug.takeIf { it.isNotBlank() },
+            b.ivSessionRestPreview,
+            b.ivSessionRestFallbackIcon
+        )
+        if (!instructionText.isNullOrBlank()) {
+            b.tvSessionRestInstruction.text = instructionText
+            b.tvSessionRestInstruction.visibility = View.VISIBLE
+        } else {
+            b.tvSessionRestInstruction.visibility = View.GONE
+        }
+        b.tvSessionRestTip.text = getRestTip(tipTitleKey)
         startSessionRestTimer(durationMs)
         b.btnSessionAddTime.setOnClickListener {
             startSessionRestTimer(sessionRestRemainingMs + 20000L)
@@ -432,6 +535,7 @@ class TrainingSessionModeController(
             R.string.session_complete_accuracy_format,
             report.averageAccuracy.toInt()
         )
+        b.tvSessionCompleteSubtitle.visibility = View.VISIBLE
         b.btnSessionDone.setOnClickListener { finishSessionWithResult(report) }
     }
 
