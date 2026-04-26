@@ -753,7 +753,6 @@
     <string name="alternating_label_format">Alternating: %1$s</string>
     <string name="session_set_indicator_format">Set %1$d of %2$d</string>
     <string name="session_rest_next_set_format">Next: %1$s · Set %2$d/%3$d</string>
-    <string name="session_rest_next_exercise_format">Next: %1$s</string>
     <string name="session_complete_sets_format">Sets: %1$d/%2$d</string>
     <string name="session_complete_reps_format">Total Reps: %1$d</string>
     <string name="session_complete_duration_format">Duration: %1$02d:%2$02d</string>

@@ -43,7 +43,7 @@
             android:src="@drawable/ic_person" />
     </LinearLayout>
 
-    <!-- Tabs: Overview | Exercises | Trends | Records -->
+    <!-- Tabs: Overview | Exercises | Trends -->
     <com.google.android.material.tabs.TabLayout
         android:id="@+id/tabLayout"
         android:layout_width="match_parent"
