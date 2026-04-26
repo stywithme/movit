@@ -295,7 +295,9 @@ class MotionRecorder(
         isRecording = false
         
         val id = sessionId ?: UUID.randomUUID().toString()
-        val durationMs = (endTimestampMs - sessionStartMs).toInt()
+        // Never cast (end - start) straight to Int: wall ms since epoch (~1e12) overflows Int → negative DB values.
+        val deltaMs = (endTimestampMs - sessionStartMs).coerceAtLeast(0L)
+        val durationMs = deltaMs.coerceAtMost(Int.MAX_VALUE.toLong()).toInt()
         
         // Calculate aggregated session metrics
         val sessionMetrics = calculateSessionMetrics()

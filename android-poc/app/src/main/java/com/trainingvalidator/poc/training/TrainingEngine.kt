@@ -472,7 +472,9 @@ class TrainingEngine(
                 _holdStatus.value = null
             }
             
-            motionRecorder?.start(0L)
+            // Wall-clock start so finalize() can compute (end - start) without Int overflow.
+            // start(0L) made (nowMs - 0) exceed Int.MAX_VALUE when cast to Int → negative durations in DB/UI.
+            motionRecorder?.start(System.currentTimeMillis())
         }
         
         Log.d(TAG, "Training started (${if (isHoldExercise) "HOLD" else "REPS"} mode)")

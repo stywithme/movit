@@ -54,6 +54,8 @@ export async function saveSession(
   // Use transaction to ensure all data is saved together
   const result = await prisma.$transaction(async (tx) => {
     // 1. Create or update TrainingSession (use actual exercise.id, not slug)
+    const durationMs = Math.max(0, Math.min(payload.durationMs, 2147483647));
+
     const session = await tx.trainingSession.upsert({
       where: { id: payload.id },
       create: {
@@ -61,7 +63,7 @@ export async function saveSession(
         userId,
         exerciseId: exercise.id,
         timestamp: new Date(payload.timestamp),
-        durationMs: payload.durationMs,
+        durationMs,
         totalReps: payload.totalReps,
         countedReps: payload.countedReps,
         invalidReps: payload.invalidReps,
@@ -73,7 +75,7 @@ export async function saveSession(
         legacyReport: payload.legacyReport as any,
       },
       update: {
-        durationMs: payload.durationMs,
+        durationMs,
         totalReps: payload.totalReps,
         countedReps: payload.countedReps,
         invalidReps: payload.invalidReps,
@@ -1425,11 +1427,14 @@ async function updateUserStats(userId: string) {
     _sum: { durationMs: true },
   });
 
+  const sumMs = stats._sum.durationMs ?? 0;
+  const safeSumMs = sumMs < 0 ? 0 : sumMs;
+
   await prisma.user.update({
     where: { id: userId },
     data: {
       totalWorkouts: stats._count,
-      totalMinutes: Math.floor((stats._sum.durationMs || 0) / 60000),
+      totalMinutes: Math.floor(safeSumMs / 60000),
     },
   });
 }

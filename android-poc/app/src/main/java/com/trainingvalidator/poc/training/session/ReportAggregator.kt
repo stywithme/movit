@@ -35,7 +35,8 @@ object ReportAggregator {
      * e.g. 3600000 -> "1h 0m", 150000 -> "2m"
      */
     fun formatDuration(durationMs: Long): String {
-        val totalMinutes = durationMs / 60000
+        val safeMs = durationMs.coerceAtLeast(0L)
+        val totalMinutes = safeMs / 60000
         val hours = totalMinutes / 60
         val minutes = totalMinutes % 60
         return if (hours > 0) "${hours}h ${minutes}m" else "${minutes}m"

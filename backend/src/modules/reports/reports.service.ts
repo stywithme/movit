@@ -1063,7 +1063,7 @@ export const reportsService = {
       weekNumber: 0,
       dayNumber: 0,
       completedAt: session.timestamp.toISOString(),
-      totalDurationMs: session.durationMs,
+      totalDurationMs: Math.max(0, session.durationMs),
       totalReps: session.totalReps,
       averageFormScore: normalizeStoredScore(session.sessionMetrics?.avgFormScore),
       strongestExercise: formatExerciseName(session.exercise?.name, session.exercise?.slug ?? session.exerciseId),
@@ -1088,7 +1088,7 @@ export const reportsService = {
     const totalVolume = (programSummary?.totalVolume ?? 0) +
       filteredTrainingSessions.reduce((sum, session) => sum + (session.sessionMetrics?.totalVolume ?? 0), 0);
     const totalTrainingTime = (programSummary?.totalTrainingTime ?? 0) +
-      filteredTrainingSessions.reduce((sum, session) => sum + session.durationMs, 0);
+      filteredTrainingSessions.reduce((sum, session) => sum + Math.max(0, session.durationMs), 0);
     const rawDays = new Set(filteredTrainingSessions.map((session) => session.timestamp.toISOString().slice(0, 10))).size;
     const daysTrained = (programSummary?.daysTrained ?? 0) + rawDays;
     const currentStreak = Math.max(programSummary?.currentStreak ?? 0, rawStreak);
