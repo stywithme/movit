@@ -5,6 +5,7 @@ import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import androidx.core.view.isVisible
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.activityViewModels
 import androidx.lifecycle.Lifecycle
@@ -15,7 +16,9 @@ import com.google.android.material.tabs.TabLayoutMediator
 import com.trainingvalidator.poc.R
 import com.trainingvalidator.poc.databinding.FragmentHistoryBinding
 import com.trainingvalidator.poc.storage.AuthManager
+import com.trainingvalidator.poc.ui.main.MainContainerActivity
 import com.trainingvalidator.poc.ui.profile.ProfileActivity
+import com.trainingvalidator.poc.ui.subscription.SubscriptionActivity
 import com.trainingvalidator.poc.ui.utils.bindUserAvatar
 import kotlinx.coroutines.launch
 
@@ -32,6 +35,7 @@ class HistoryFragment : Fragment() {
 
     // Shared with child tab fragments
     private val viewModel: ReportsHubViewModel by activityViewModels()
+    private var hasVisibleReportContent = false
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?
@@ -94,12 +98,97 @@ class HistoryFragment : Fragment() {
         viewLifecycleOwner.lifecycleScope.launch {
             repeatOnLifecycle(Lifecycle.State.STARTED) {
                 viewModel.uiState.collect { state ->
-                    if (_binding != null && state !is ReportsHubUiState.Loading) {
-                        binding.swipeRefresh.isRefreshing = false
-                    }
+                    if (_binding != null) renderHubState(state)
                 }
             }
         }
+    }
+
+    private fun renderHubState(state: ReportsHubUiState) {
+        binding.swipeRefresh.isRefreshing = state is ReportsHubUiState.Loading && hasVisibleReportContent
+
+        when (state) {
+            ReportsHubUiState.Idle -> Unit
+            ReportsHubUiState.Loading -> {
+                if (!hasVisibleReportContent) {
+                    showState(
+                        title = getString(R.string.reports_state_loading_title),
+                        message = getString(R.string.reports_state_loading_message),
+                        showProgress = true
+                    )
+                }
+            }
+            is ReportsHubUiState.Success -> {
+                hasVisibleReportContent = true
+                binding.layoutReportsState.isVisible = false
+                binding.tabLayout.isVisible = true
+                binding.viewPager.isVisible = true
+            }
+            ReportsHubUiState.Empty -> {
+                hasVisibleReportContent = false
+                showState(
+                    title = getString(R.string.reports_state_empty_title),
+                    message = getString(R.string.reports_state_empty_message),
+                    actionText = getString(R.string.reports_state_start_training),
+                    action = ::openTrainingTab
+                )
+            }
+            ReportsHubUiState.NoActiveProgram -> {
+                hasVisibleReportContent = false
+                showState(
+                    title = getString(R.string.reports_state_no_program_title),
+                    message = getString(R.string.reports_state_no_program_message),
+                    actionText = getString(R.string.reports_state_start_training),
+                    action = ::openTrainingTab
+                )
+            }
+            ReportsHubUiState.Locked -> {
+                hasVisibleReportContent = false
+                showState(
+                    title = getString(R.string.reports_state_locked_title),
+                    message = getString(R.string.reports_state_locked_message),
+                    actionText = getString(R.string.reports_state_upgrade),
+                    action = ::openSubscription
+                )
+            }
+            is ReportsHubUiState.Error -> {
+                hasVisibleReportContent = false
+                showState(
+                    title = getString(R.string.reports_state_error_title),
+                    message = getString(R.string.reports_state_error_message),
+                    actionText = getString(R.string.reports_state_retry),
+                    action = viewModel::loadMetrics
+                )
+            }
+        }
+    }
+
+    private fun showState(
+        title: String,
+        message: String,
+        showProgress: Boolean = false,
+        actionText: String? = null,
+        action: (() -> Unit)? = null
+    ) {
+        binding.tabLayout.isVisible = false
+        binding.viewPager.isVisible = false
+        binding.layoutReportsState.isVisible = true
+        binding.progressReportsState.isVisible = showProgress
+        binding.tvReportsStateTitle.text = title
+        binding.tvReportsStateMessage.text = message
+        binding.btnReportsStateAction.isVisible = actionText != null && action != null
+        if (actionText != null && action != null) {
+            binding.btnReportsStateAction.text = actionText
+            binding.btnReportsStateAction.setOnClickListener { action() }
+        }
+    }
+
+    private fun openTrainingTab() {
+        (activity as? MainContainerActivity)?.navigateToTab(R.id.nav_train)
+    }
+
+    private fun openSubscription() {
+        startActivity(Intent(requireContext(), SubscriptionActivity::class.java))
     }
 }
 

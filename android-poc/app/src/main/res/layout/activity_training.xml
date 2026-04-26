@@ -1016,170 +1016,295 @@
 
     <!-- ==================== SESSION MODE: Pre-Exercise Overlay ==================== -->
 
-    <LinearLayout
+    <ScrollView
         android:id="@+id/sessionPreExercisePanel"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:orientation="vertical"
-        android:gravity="center"
-        android:padding="@dimen/spacing_2xl"
         android:background="#CC000000"
         android:visibility="gone"
+        android:fillViewport="true"
+        android:clipToPadding="false"
+        android:overScrollMode="ifContentScrolls"
         app:layout_constraintTop_toTopOf="parent"
         app:layout_constraintBottom_toBottomOf="parent">
 
-        <TextView
-            android:id="@+id/tvSessionExerciseLabel"
-            android:layout_width="wrap_content"
+        <LinearLayout
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:textColor="@color/primary"
-            android:textSize="14sp"
-            android:textAllCaps="true"
-            android:letterSpacing="0.08"
-            tools:text="NEXT EXERCISE · 2/5" />
+            android:orientation="vertical"
+            android:gravity="center_horizontal">
 
-        <TextView
-            android:id="@+id/tvSessionExerciseName"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:textColor="@android:color/white"
-            android:textSize="28sp"
-            android:textStyle="bold"
-            android:layout_marginTop="@dimen/spacing_sm"
-            tools:text="Push-ups" />
+            <!-- Full-width square hero at top of screen -->
+            <androidx.constraintlayout.widget.ConstraintLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content">
 
-        <TextView
-            android:id="@+id/tvSessionAlternatingLabel"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:textColor="@color/pro_gold"
-            android:textSize="14sp"
-            android:layout_marginTop="@dimen/spacing_xs"
-            android:visibility="gone"
-            tools:text="Alternating: Variant" />
+                <FrameLayout
+                    android:id="@+id/sessionPreExerciseImageContainer"
+                    android:layout_width="0dp"
+                    android:layout_height="0dp"
+                    android:background="@drawable/gradient_report_hero"
+                    app:layout_constraintDimensionRatio="1:1"
+                    app:layout_constraintEnd_toEndOf="parent"
+                    app:layout_constraintStart_toStartOf="parent"
+                    app:layout_constraintTop_toTopOf="parent">
 
-        <TextView
-            android:id="@+id/tvSessionSetInfo"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:textColor="#CCFFFFFF"
-            android:textSize="18sp"
-            android:layout_marginTop="@dimen/spacing_sm"
-            tools:text="Set 1 of 3 · 12 reps" />
+                    <ImageView
+                        android:id="@+id/ivSessionPreExercisePreview"
+                        android:layout_width="match_parent"
+                        android:layout_height="match_parent"
+                        android:scaleType="centerCrop"
+                        android:contentDescription="@string/session_preview_content_description" />
 
-        <TextView
-            android:id="@+id/tvSessionWeightInfo"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:textColor="@color/pro_gold"
-            android:textSize="16sp"
-            android:layout_marginTop="@dimen/spacing_xs"
-            android:visibility="gone"
-            tools:text="Weight: 10 kg" />
+                    <ImageView
+                        android:id="@+id/ivSessionPreExerciseFallbackIcon"
+                        android:layout_width="96dp"
+                        android:layout_height="96dp"
+                        android:layout_gravity="center"
+                        android:src="@drawable/ic_exercise"
+                        android:visibility="gone"
+                        android:contentDescription="@null"
+                        app:tint="@color/primary" />
+                </FrameLayout>
+            </androidx.constraintlayout.widget.ConstraintLayout>
 
-        <com.google.android.material.button.MaterialButton
-            android:id="@+id/btnSessionStartSet"
-            style="@style/Widget.WayToFix.Button.Primary"
-            android:layout_width="220dp"
-            android:layout_height="56dp"
-            android:layout_marginTop="@dimen/spacing_2xl"
-            android:text="@string/session_start_set"
-            android:textSize="18sp"
-            android:textStyle="bold" />
+            <!-- Details below hero -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:gravity="center_horizontal"
+                android:paddingHorizontal="@dimen/spacing_2xl"
+                android:paddingTop="@dimen/spacing_lg"
+                android:paddingBottom="@dimen/spacing_2xl">
 
-    </LinearLayout>
+                <TextView
+                    android:id="@+id/tvSessionExerciseLabel"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:textColor="@color/primary"
+                    android:textSize="14sp"
+                    android:textAllCaps="true"
+                    android:letterSpacing="0.08"
+                    tools:text="NEXT EXERCISE · 2/5" />
+
+                <TextView
+                    android:id="@+id/tvSessionExerciseName"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:textColor="@android:color/white"
+                    android:textSize="28sp"
+                    android:textStyle="bold"
+                    android:layout_marginTop="@dimen/spacing_sm"
+                    android:gravity="center"
+                    tools:text="Push-ups" />
+
+                <TextView
+                    android:id="@+id/tvSessionAlternatingLabel"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:textColor="@color/pro_gold"
+                    android:textSize="14sp"
+                    android:layout_marginTop="@dimen/spacing_xs"
+                    android:visibility="gone"
+                    tools:text="Alternating: Variant" />
+
+                <TextView
+                    android:id="@+id/tvSessionSetInfo"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:textColor="#CCFFFFFF"
+                    android:textSize="18sp"
+                    android:layout_marginTop="@dimen/spacing_sm"
+                    android:gravity="center"
+                    tools:text="Set 1 of 3 · 12 reps" />
+
+                <TextView
+                    android:id="@+id/tvSessionWeightInfo"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:textColor="@color/pro_gold"
+                    android:textSize="16sp"
+                    android:layout_marginTop="@dimen/spacing_xs"
+                    android:visibility="gone"
+                    tools:text="Weight: 10 kg" />
+
+                <TextView
+                    android:id="@+id/tvSessionInstruction"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="@dimen/spacing_sm"
+                    android:gravity="center"
+                    android:maxLines="4"
+                    android:ellipsize="end"
+                    android:textColor="#99FFFFFF"
+                    android:textSize="14sp"
+                    android:visibility="gone"
+                    tools:text="Keep your core tight and move with control."
+                    tools:visibility="visible" />
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnSessionStartSet"
+                    style="@style/Widget.WayToFix.Button.Primary"
+                    android:layout_width="match_parent"
+                    android:layout_height="56dp"
+                    android:layout_marginTop="@dimen/spacing_2xl"
+                    android:text="@string/session_start_set"
+                    android:textSize="18sp"
+                    android:textStyle="bold" />
+            </LinearLayout>
+
+        </LinearLayout>
+    </ScrollView>
 
     <!-- ==================== SESSION MODE: Rest Overlay ==================== -->
 
-    <LinearLayout
+    <ScrollView
         android:id="@+id/sessionRestPanel"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:orientation="vertical"
-        android:gravity="center"
-        android:padding="@dimen/spacing_2xl"
         android:background="#CC000000"
         android:visibility="gone"
+        android:fillViewport="true"
+        android:overScrollMode="ifContentScrolls"
         app:layout_constraintTop_toTopOf="parent"
         app:layout_constraintBottom_toBottomOf="parent">
 
-        <TextView
-            android:id="@+id/tvSessionRestTitle"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:textColor="#CCFFFFFF"
-            android:textSize="16sp"
-            android:textAllCaps="true"
-            android:letterSpacing="0.08"
-            tools:text="REST BETWEEN SETS" />
-
-        <TextView
-            android:id="@+id/tvSessionRestCountdown"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:textColor="@color/primary"
-            android:textSize="72sp"
-            android:fontFamily="sans-serif-thin"
-            android:layout_marginTop="@dimen/spacing_base"
-            tools:text="00:30" />
-
-        <TextView
-            android:id="@+id/tvSessionRestNext"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:textColor="#99FFFFFF"
-            android:textSize="14sp"
-            android:layout_marginTop="@dimen/spacing_lg"
-            android:gravity="center"
-            tools:text="Next: Squats · Set 1/3 · 12 reps" />
-
-        <TextView
-            android:id="@+id/tvSessionRestTip"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:textColor="#99FFFFFF"
-            android:textSize="12sp"
-            android:layout_marginTop="@dimen/spacing_sm"
-            android:gravity="center"
-            tools:text="Rest helps your muscles prepare for the next round" />
-
         <LinearLayout
-            android:layout_width="wrap_content"
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="@dimen/spacing_xl"
-            android:orientation="horizontal">
+            android:orientation="vertical"
+            android:gravity="center_horizontal"
+            android:padding="@dimen/spacing_2xl">
 
-            <com.google.android.material.button.MaterialButton
-                android:id="@+id/btnSessionAddTime"
-                style="@style/Widget.WayToFix.Button.Secondary"
-                android:layout_width="0dp"
-                android:layout_height="48dp"
-                android:layout_weight="1"
-                android:text="@string/add_20s"
-                android:textSize="14sp" />
+            <TextView
+                android:id="@+id/tvSessionRestTitle"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:textColor="#CCFFFFFF"
+                android:textSize="16sp"
+                android:textAllCaps="true"
+                android:letterSpacing="0.08"
+                tools:text="REST BETWEEN SETS" />
 
-            <com.google.android.material.button.MaterialButton
-                android:id="@+id/btnSessionSkipRest"
-                style="@style/Widget.WayToFix.Button.Secondary"
-                android:layout_width="0dp"
-                android:layout_height="48dp"
-                android:layout_marginStart="@dimen/spacing_sm"
-                android:layout_weight="1"
-                android:text="@string/skip"
-                android:textSize="16sp" />
+            <TextView
+                android:id="@+id/tvSessionRestCountdown"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:textColor="@color/primary"
+                android:textSize="72sp"
+                android:fontFamily="sans-serif-thin"
+                android:layout_marginTop="@dimen/spacing_base"
+                tools:text="00:30" />
 
-            <com.google.android.material.button.MaterialButton
-                android:id="@+id/btnSessionEditRest"
-                style="@style/Widget.WayToFix.Button.Secondary"
-                android:layout_width="0dp"
-                android:layout_height="48dp"
-                android:layout_marginStart="@dimen/spacing_sm"
-                android:layout_weight="1"
-                android:text="@string/edit_rest"
-                android:textSize="12sp" />
+            <FrameLayout
+                android:layout_width="160dp"
+                android:layout_height="160dp"
+                android:layout_marginTop="@dimen/spacing_base"
+                android:background="@drawable/gradient_report_hero">
+
+                <ImageView
+                    android:id="@+id/ivSessionRestPreview"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:scaleType="centerCrop"
+                    android:contentDescription="@string/session_preview_content_description" />
+
+                <ImageView
+                    android:id="@+id/ivSessionRestFallbackIcon"
+                    android:layout_width="64dp"
+                    android:layout_height="64dp"
+                    android:layout_gravity="center"
+                    android:src="@drawable/ic_exercise"
+                    android:visibility="gone"
+                    android:contentDescription="@null"
+                    app:tint="@color/primary" />
+            </FrameLayout>
+
+            <TextView
+                android:id="@+id/tvSessionRestHeadline"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="@dimen/spacing_sm"
+                android:gravity="center"
+                android:textColor="@android:color/white"
+                android:textSize="20sp"
+                android:textStyle="bold"
+                tools:text="Push-ups" />
+
+            <TextView
+                android:id="@+id/tvSessionRestNext"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:textColor="#99FFFFFF"
+                android:textSize="14sp"
+                android:layout_marginTop="@dimen/spacing_sm"
+                android:gravity="center"
+                tools:text="Set 1/3 · 12 reps" />
+
+            <TextView
+                android:id="@+id/tvSessionRestInstruction"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="@dimen/spacing_xs"
+                android:gravity="center"
+                android:maxLines="2"
+                android:ellipsize="end"
+                android:textColor="#99FFFFFF"
+                android:textSize="13sp"
+                android:visibility="gone"
+                tools:text="Keep shoulders over wrists."
+                tools:visibility="visible" />
+
+            <TextView
+                android:id="@+id/tvSessionRestTip"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:textColor="#99FFFFFF"
+                android:textSize="12sp"
+                android:layout_marginTop="@dimen/spacing_sm"
+                android:gravity="center"
+                tools:text="Rest helps your muscles prepare for the next round" />
+
+            <LinearLayout
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="@dimen/spacing_xl"
+                android:layout_marginBottom="@dimen/spacing_base"
+                android:orientation="horizontal">
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnSessionAddTime"
+                    style="@style/Widget.WayToFix.Button.Secondary"
+                    android:layout_width="0dp"
+                    android:layout_height="48dp"
+                    android:layout_weight="1"
+                    android:text="@string/add_20s"
+                    android:textSize="14sp" />
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnSessionSkipRest"
+                    style="@style/Widget.WayToFix.Button.Secondary"
+                    android:layout_width="0dp"
+                    android:layout_height="48dp"
+                    android:layout_marginStart="@dimen/spacing_sm"
+                    android:layout_weight="1"
+                    android:text="@string/skip"
+                    android:textSize="16sp" />
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnSessionEditRest"
+                    style="@style/Widget.WayToFix.Button.Secondary"
+                    android:layout_width="0dp"
+                    android:layout_height="48dp"
+                    android:layout_marginStart="@dimen/spacing_sm"
+                    android:layout_weight="1"
+                    android:text="@string/edit_rest"
+                    android:textSize="12sp" />
+            </LinearLayout>
+
         </LinearLayout>
-
-    </LinearLayout>
+    </ScrollView>
 
     <!-- ==================== SESSION MODE: Complete Overlay ==================== -->
 
@@ -1199,7 +1324,7 @@
             android:layout_width="80dp"
             android:layout_height="80dp"
             android:src="@drawable/ic_celebration"
-            android:contentDescription="Session Complete" />
+            android:contentDescription="@string/session_complete" />
 
         <TextView
             android:layout_width="wrap_content"
@@ -1209,6 +1334,17 @@
             android:textSize="28sp"
             android:textStyle="bold"
             android:layout_marginTop="@dimen/spacing_base" />
+
+        <TextView
+            android:id="@+id/tvSessionCompleteSubtitle"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="@dimen/spacing_sm"
+            android:paddingHorizontal="@dimen/spacing_lg"
+            android:gravity="center"
+            android:text="@string/session_complete_subtitle"
+            android:textColor="@color/text_secondary"
+            android:textSize="15sp" />
 
         <TextView
             android:id="@+id/tvSessionCompleteSets"
@@ -1252,7 +1388,7 @@
             android:layout_width="220dp"
             android:layout_height="56dp"
             android:layout_marginTop="@dimen/spacing_2xl"
-            android:text="@string/done"
+            android:text="@string/session_view_report"
             android:textSize="18sp"
             android:textStyle="bold" />
 

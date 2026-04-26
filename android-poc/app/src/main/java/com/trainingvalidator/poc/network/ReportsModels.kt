@@ -203,3 +203,69 @@ data class ComparisonData(
     val repsDelta: Int?,
     val trendDirection: String?
 )
+
+// ── Dashboard response for the redesigned Reports tab ──
+
+data class ReportDashboardResponse(
+    val success: Boolean,
+    val scope: String,
+    val period: String?,
+    val source: String?,
+    val summary: ReportDashboardSummary?,
+    val trends: ReportDashboardTrends?,
+    val exerciseBreakdown: List<ReportDashboardExercise>?,
+    val sessionTimeline: List<ReportDashboardSession>?,
+    val records: ReportDashboardRecords?,
+    val insights: List<InsightData>?,
+    val error: String?
+)
+
+data class ReportDashboardSummary(
+    val programId: String?,
+    val programProgress: Float?,
+    val overallFormScore: Float?,
+    val totalReps: Int?,
+    val totalVolume: Float?,
+    val totalTrainingTime: Long?,
+    val daysTrained: Int?,
+    val currentStreak: Int?,
+    val programGrade: String?,
+    val strongestExercise: String?,
+    val weakestExercise: String?
+)
+
+data class ReportDashboardTrends(
+    val formScoreByWeek: List<Float>?,
+    val attendanceByWeek: List<Int>?,
+    val volumeByWeek: List<Float>?,
+    val repsByWeek: List<Int>?
+)
+
+data class ReportDashboardExercise(
+    val exerciseSlug: String,
+    val exerciseName: String,
+    val averageFormScore: Float,
+    val sessionsCount: Int,
+    val totalReps: Int,
+    val totalVolume: Float,
+    val focusArea: String
+)
+
+data class ReportDashboardSession(
+    val sessionId: String,
+    val weekNumber: Int,
+    val dayNumber: Int,
+    val completedAt: String?,
+    val totalDurationMs: Long,
+    val totalReps: Int,
+    val averageFormScore: Float,
+    val strongestExercise: String?,
+    val weakestExercise: String?
+)
+
+data class ReportDashboardRecords(
+    val bestFormScore: Float,
+    val bestWeekNumber: Int?,
+    val longestStreak: Int,
+    val mostRepsInSession: Int
+)

@@ -303,6 +303,15 @@ GET /bookings/:id/report
 
 ---
 
+## 📊 Mobile Reports (`/mobile/reports`)
+
+| Method | Endpoint | Description |
+| :--- | :--- | :--- |
+| GET | `/mobile/reports/dashboard` | Coach-style dashboard payload for all report sources (`all`, `program`, `free`, `workout`, `quick`, `explore`) |
+| GET | `/mobile/reports/metrics` | Unified scoped metrics (`program`, `week`, `day`, `session`, `exercise`) |
+
+---
+
 ## 🔍 Body Scan & Assessments (`/assessment`)
 
 | Method | Endpoint | Description |

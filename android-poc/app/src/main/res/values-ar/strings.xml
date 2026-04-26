@@ -390,6 +390,14 @@
     <string name="session_complete_accuracy_format">متوسط الدقة: %1$d%%</string>
     <string name="session_invalid_payload">بيانات الجلسة غير صحيحة. يرجى المزامنة والمحاولة مرة أخرى.</string>
     <string name="session_exercise_load_failed">فشل تحميل التمرين. يرجى الرجوع وتعديل الجلسة.</string>
+    <string name="session_preview_content_description">صورة معاينة التمرين</string>
+    <string name="session_start_set_numbered">ابدأ المجموعة %1$d</string>
+    <string name="session_start_first_exercise">ابدأ التمرين</string>
+    <string name="session_target_reps_format">%1$d مجموعات · %2$d تكرار</string>
+    <string name="session_target_hold_format">%1$d مجموعات · ثبات %2$d ث</string>
+    <string name="session_target_sets_only_format">%1$d مجموعات</string>
+    <string name="session_complete_subtitle">تم حفظ نتائجك. افتح التقرير للتفاصيل الكاملة.</string>
+    <string name="session_view_report">عرض التقرير</string>
 
     <!-- History -->
     <string name="no_workouts_yet">لا توجد تمارين بعد</string>
@@ -808,6 +816,19 @@
     <string name="reports_consistency">الاستمرارية</string>
     <string name="reports_improvement">التحسن</string>
     <string name="reports_no_data">أكمل أول تمرين لعرض التقارير</string>
+    <string name="reports_state_loading_title">نجهّز تقرير تدريبك</string>
+    <string name="reports_state_loading_message">نجمع جلساتك ونقاط الأداء واتجاهات التطور.</string>
+    <string name="reports_state_empty_title">لا توجد بيانات تقارير بعد</string>
+    <string name="reports_state_empty_message">أكمل جلسة تدريبية وستظهر هنا مؤشرات الأداء والاستمرارية والأرقام الشخصية وتحليل التمارين.</string>
+    <string name="reports_state_no_program_title">ابدأ خطة لفتح التقارير</string>
+    <string name="reports_state_no_program_message">التقارير تكون أوضح عندما تكون جلساتك مرتبطة بخطة تدريب، حتى نتابع التقدم أسبوعاً بعد أسبوع.</string>
+    <string name="reports_state_locked_title">التقارير ميزة Pro</string>
+    <string name="reports_state_locked_message">قم بالترقية لمتابعة اتجاهات الأداء وتطور التمارين والإنجازات والرؤى التدريبية عبر تاريخك التدريبي.</string>
+    <string name="reports_state_error_title">تعذر تحميل التقارير</string>
+    <string name="reports_state_error_message">تحقق من الاتصال وحاول مرة أخرى. إذا استمرت المشكلة فستظهر البيانات المحفوظة عند توفرها.</string>
+    <string name="reports_state_retry">حاول مرة أخرى</string>
+    <string name="reports_state_start_training">ابدأ التدريب</string>
+    <string name="reports_state_upgrade">عرض Pro</string>
     <string name="reports_times_trained_format">تدرّبت %d مرات</string>
     <string name="reports_form_score_format">الأداء: %d%%</string>
     <string name="reports_exercise_detail">تفاصيل التمرين</string>

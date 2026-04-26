@@ -53,13 +53,18 @@ class SessionTrainingEngine(
             val exerciseIndex: Int,
             val nextSetNumber: Int,
             val totalSets: Int,
-            val exerciseName: String
+            val exerciseName: String,
+            /** Slug for loading preview image (same exercise during set rest). */
+            val exerciseSlug: String
         ) : State()
 
         data class ExerciseRest(
             val durationMs: Long,
             val nextExerciseIndex: Int,
-            val nextExerciseName: String = ""
+            val nextExerciseName: String = "",
+            val nextExerciseSlug: String = "",
+            /** Next exercise line item for UI (sets, targets, variant, etc.). */
+            val nextExerciseItem: ProgramSessionItem
         ) : State()
 
         data class SessionComplete(
@@ -293,7 +298,8 @@ class SessionTrainingEngine(
                     exerciseIndex = currentExerciseIdx,
                     nextSetNumber = currentSetNumber,
                     totalSets = totalSets,
-                    exerciseName = exerciseName
+                    exerciseName = exerciseName,
+                    exerciseSlug = currentItem.item.exerciseSlug ?: ""
                 )
             } else {
                 showPreExercise()
@@ -355,7 +361,9 @@ class SessionTrainingEngine(
             _state.value = State.ExerciseRest(
                 durationMs = restMs,
                 nextExerciseIndex = currentExerciseIdx,
-                nextExerciseName = getExerciseName(nextItem)
+                nextExerciseName = getExerciseName(nextItem),
+                nextExerciseSlug = nextItem.item.exerciseSlug ?: "",
+                nextExerciseItem = nextItem.item
             )
         } else {
             showPreExercise()

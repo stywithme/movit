@@ -62,11 +62,66 @@
         android:layout_height="0dp"
         android:layout_weight="1">
 
-        <!-- ViewPager2 for tab content -->
-        <androidx.viewpager2.widget.ViewPager2
-            android:id="@+id/viewPager"
+        <FrameLayout
             android:layout_width="match_parent"
-            android:layout_height="match_parent" />
+            android:layout_height="match_parent">
+
+            <!-- ViewPager2 for tab content -->
+            <androidx.viewpager2.widget.ViewPager2
+                android:id="@+id/viewPager"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent" />
+
+            <LinearLayout
+                android:id="@+id/layoutReportsState"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:gravity="center"
+                android:orientation="vertical"
+                android:paddingHorizontal="@dimen/screen_padding_horizontal"
+                android:paddingBottom="@dimen/spacing_4xl"
+                android:visibility="gone"
+                tools:visibility="visible">
+
+                <ProgressBar
+                    android:id="@+id/progressReportsState"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:indeterminateTint="@color/primary"
+                    android:visibility="gone" />
+
+                <TextView
+                    android:id="@+id/tvReportsStateTitle"
+                    style="@style/TextAppearance.WayToFix.Headline3"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="@dimen/spacing_base"
+                    android:gravity="center"
+                    android:textColor="@color/text_primary"
+                    tools:text="@string/reports_state_empty_title" />
+
+                <TextView
+                    android:id="@+id/tvReportsStateMessage"
+                    style="@style/TextAppearance.WayToFix.Body2"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="@dimen/spacing_sm"
+                    android:gravity="center"
+                    android:textColor="@color/text_secondary"
+                    tools:text="@string/reports_state_empty_message" />
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnReportsStateAction"
+                    android:layout_width="wrap_content"
+                    android:layout_height="@dimen/button_height_small"
+                    android:layout_marginTop="@dimen/spacing_lg"
+                    android:text="@string/reports_state_retry"
+                    android:textColor="@color/on_primary"
+                    app:backgroundTint="@color/primary"
+                    app:cornerRadius="@dimen/radius_full" />
+
+            </LinearLayout>
+        </FrameLayout>
 
     </androidx.swiperefreshlayout.widget.SwipeRefreshLayout>
 
