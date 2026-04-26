@@ -31,6 +31,7 @@ class SessionTrainingEngine(
         private const val TAG = "SessionTrainingEngine"
         private const val DEFAULT_REST_BETWEEN_SETS_MS = 30000L
         private const val DEFAULT_REST_BETWEEN_EXERCISES_MS = 60000L
+        private const val MIN_EXERCISE_PREVIEW_MS = 5000L
     }
 
     // ==================== State Sealed Class ====================
@@ -355,7 +356,7 @@ class SessionTrainingEngine(
             return
         }
 
-        val restMs = finishedItem.restAfterMs
+        val restMs = finishedItem.restAfterMs.coerceAtLeast(MIN_EXERCISE_PREVIEW_MS)
         if (restMs > 0) {
             val nextItem = exerciseItems[currentExerciseIdx]
             _state.value = State.ExerciseRest(
