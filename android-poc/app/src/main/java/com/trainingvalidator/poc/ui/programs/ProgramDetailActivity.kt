@@ -98,6 +98,9 @@ class ProgramDetailActivity : AppCompatActivity() {
                             }
                             is EnrollState.Success -> {
                                 Toast.makeText(this@ProgramDetailActivity, getString(R.string.enrolled_success), Toast.LENGTH_SHORT).show()
+                                val enrolled =
+                                    (viewModel.uiState.value as? ProgramDetailUiState.Success)?.isEnrolled ?: true
+                                updateCTAButton(isEnrolled = enrolled)
                                 viewModel.resetEnrollState()
                             }
                             is EnrollState.Error -> {
