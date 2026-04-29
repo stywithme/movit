@@ -1,6 +1,7 @@
 import { Body, Controller, Get, Param, Post, Req, Res } from '@nestjs/common';
 import type { Request, Response } from 'express';
 import { verifyMobileToken } from '@/modules/auth/auth.service';
+import { activePlanService } from '@/modules/active-plan/active-plan.service';
 import { programService } from './programs.service';
 
 @Controller('mobile/programs')
@@ -60,8 +61,10 @@ export class MobileProgramsController {
         return { success: false, error: 'Program not found' };
       }
 
-      const enrollment = await programService.enrollUser(authResult.userId, id, body?.name as any);
-      return { success: true, data: enrollment };
+      const plan = await activePlanService.enrollProgram(authResult.userId, id, {
+        name: body?.name as Record<string, string> | undefined,
+      });
+      return { success: true, data: plan };
     } catch (error) {
       console.error('Error enrolling in program:', error);
       res.status(500);

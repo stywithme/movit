@@ -25,6 +25,7 @@ import coil.load
 import com.google.android.material.button.MaterialButton
 import com.google.android.material.card.MaterialCardView
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
+import com.google.android.material.snackbar.Snackbar
 import com.trainingvalidator.poc.ui.utils.currentLanguage
 import com.trainingvalidator.poc.R
 import com.trainingvalidator.poc.databinding.ActivityProgramSessionBinding
@@ -1220,11 +1221,12 @@ class ProgramSessionActivity : AppCompatActivity() {
     private fun syncCustomizationsToBackend() {
         val token = AuthManager.getAccessToken(this)
         if (token.isNullOrBlank()) {
-            Log.w(TAG, "Skip customization sync: missing access token")
+            Snackbar.make(binding.root, getString(R.string.session_customization_pending), Snackbar.LENGTH_SHORT).show()
             return
         }
         val userProgramId = currentUserProgramId
         if (userProgramId.isNullOrBlank()) {
+            Snackbar.make(binding.root, getString(R.string.session_customization_pending), Snackbar.LENGTH_SHORT).show()
             Log.w(TAG, "Skip customization sync: current screen is not bound to an active userProgramId")
             return
         }
@@ -1258,19 +1260,30 @@ class ProgramSessionActivity : AppCompatActivity() {
             "customizations" to mapOf(dayKey to sessionsPayload)
         )
 
-        lifecycleScope.launch(Dispatchers.IO) {
-            try {
-                val response = ApiClient.mobileSyncApi.updateUserProgram(
-                    userProgramId, "Bearer $token", payload
-                )
-                if (response.isSuccessful) {
-                    Log.d(TAG, "Synced customizations to backend for $dayKey")
-                } else {
-                    Log.w(TAG, "Failed to sync customizations: ${response.code()}")
+        lifecycleScope.launch {
+            val ok = withContext(Dispatchers.IO) {
+                try {
+                    val response = ApiClient.mobileSyncApi.updateUserProgram(
+                        userProgramId, "Bearer $token", payload
+                    )
+                    if (response.isSuccessful) {
+                        Log.d(TAG, "Synced customizations to backend for $dayKey")
+                        true
+                    } else {
+                        Log.w(TAG, "Failed to sync customizations: ${response.code()}")
+                        false
+                    }
+                } catch (e: Exception) {
+                    Log.w(TAG, "Failed to sync customizations to backend: ${e.message}")
+                    false
                 }
-            } catch (e: Exception) {
-                Log.w(TAG, "Failed to sync customizations to backend: ${e.message}")
             }
+            val msg = if (ok) {
+                getString(R.string.session_customization_synced)
+            } else {
+                getString(R.string.session_customization_pending)
+            }
+            Snackbar.make(binding.root, msg, Snackbar.LENGTH_SHORT).show()
         }
     }
 

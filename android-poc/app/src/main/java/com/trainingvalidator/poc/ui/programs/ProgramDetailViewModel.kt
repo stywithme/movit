@@ -133,17 +133,17 @@ class ProgramDetailViewModel(app: Application) : AndroidViewModel(app) {
     }
 
     private fun checkEnrollment(program: ProgramConfig): Boolean {
-        val activeUserProgram = programRepository.getActiveUserProgramExport()
-        if (activeUserProgram?.isActive == true && activeUserProgram.programId == program.id) {
+        val cachedHome = homeRepository.getCachedData()
+        val cachedPlan = cachedHome?.activePlan
+        if (cachedPlan?.programs?.any { it.program?.id == program.id && it.status == "active" } == true) {
             return true
         }
 
-        val cachedHome = homeRepository.getCachedData()
         if (cachedHome?.trainMode?.activeProgram?.id == program.id) {
             return true
         }
 
-        val cachedPlan = cachedHome?.activePlan
-        return cachedPlan?.programs?.any { it.program?.id == program.id && it.status == "active" } == true
+        val activeUserProgram = programRepository.getActiveUserProgramExport()
+        return activeUserProgram?.isActive == true && activeUserProgram.programId == program.id
     }
 }

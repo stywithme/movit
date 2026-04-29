@@ -14,6 +14,8 @@ import {
 } from '@/modules/effective-plan/effective-plan.service';
 import type { ProgramAssignmentReason } from '@/modules/programs/program-assignment';
 import { resolveCurrentProgramDay } from './plan-position';
+import { programCompletionService } from '@/modules/programs/program-completion.service';
+import type { ProgramCompletionDecision } from '@/modules/programs/program-completion.service';
 
 interface EnrollProgramOptions {
   assignmentReason?: ProgramAssignmentReason | null;
@@ -158,6 +160,7 @@ export const activePlanService = {
         const position = prog
           ? resolveCurrentProgramDay(prog.weeks, progressEntries, {
               startDate: slot.userProgram.startDate,
+              durationWeeks: prog.durationWeeks,
             })
           : null;
 
@@ -358,6 +361,7 @@ export const activePlanService = {
     const progressEntries = activeSlot.userProgram.progress || [];
     const position = resolveCurrentProgramDay(program.weeks, progressEntries, {
       startDate: activeSlot.userProgram.startDate,
+      durationWeeks: program.durationWeeks,
     });
     const targetWeek = position.targetWeekNumber;
     const targetDay = position.targetDayNumber;
@@ -452,8 +456,12 @@ export const activePlanService = {
 
   /**
    * Transition the active program (complete it and activate next).
+   * Runs completion evaluation before mutating state.
    */
-  async completeActiveProgram(userId: string): Promise<ActivePlanData | null> {
+  async completeActiveProgram(userId: string): Promise<{
+    plan: ActivePlanData;
+    completion: ProgramCompletionDecision | null;
+  } | null> {
     const prisma = await getPrisma();
 
     const plan = await prisma.activePlan.findUnique({
@@ -469,6 +477,8 @@ export const activePlanService = {
 
     const activeSlot = plan.programs.find((p) => p.status === 'active');
     if (!activeSlot) return null;
+
+    const completion = await programCompletionService.evaluate(userId, activeSlot.userProgramId);
 
     // Mark current as completed
     await prisma.activePlanProgram.update({
@@ -501,27 +511,7 @@ export const activePlanService = {
       });
     }
 
-    if (!nextSlot) {
-      const existingPending = await prisma.reassessmentSchedule.findFirst({
-        where: {
-          userId,
-          reason: 'program_complete',
-          status: { in: ['pending', 'overdue'] },
-        },
-      });
-      if (!existingPending) {
-        await prisma.reassessmentSchedule.create({
-          data: {
-            userId,
-            reason: 'program_complete',
-            scheduledDate: new Date(),
-            status: 'pending',
-            notes: `Auto-scheduled after completing final program`,
-          },
-        });
-      }
-    }
-
-    return this.getOrCreate(userId);
+    const updated = await this.getOrCreate(userId);
+    return { plan: updated, completion };
   },
 };

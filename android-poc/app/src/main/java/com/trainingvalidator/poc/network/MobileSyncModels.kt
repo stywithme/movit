@@ -298,7 +298,13 @@ data class ProgramConfigWithMeta(
     val durationWeeks: Int,
     val difficulty: String = "beginner",
     val tags: List<String>? = emptyList(),
-    val weeks: List<ProgramWeek>? = emptyList()
+    val weeks: List<ProgramWeek>? = emptyList(),
+    val trainingGoal: String? = null,
+    val weeklySessionTarget: Int? = null,
+    val estimatedSessionMinutes: Int? = null,
+    val targetDomain: String? = null,
+    val targetEquipment: List<String>? = emptyList(),
+    val isFeatured: Boolean = false
 ) {
     fun toProgramConfig(): ProgramConfig {
         return ProgramConfig(
@@ -310,7 +316,13 @@ data class ProgramConfigWithMeta(
             durationWeeks = durationWeeks,
             difficulty = difficulty,
             tags = tags ?: emptyList(),
-            weeks = weeks ?: emptyList()
+            weeks = weeks ?: emptyList(),
+            trainingGoal = trainingGoal,
+            weeklySessionTarget = weeklySessionTarget,
+            estimatedSessionMinutes = estimatedSessionMinutes,
+            targetDomain = targetDomain,
+            targetEquipment = targetEquipment ?: emptyList(),
+            isFeatured = isFeatured
         )
     }
 }

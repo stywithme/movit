@@ -91,6 +91,62 @@
                     android:lineSpacingExtra="4dp"
                     tools:text="Build your baseline muscle and perfect your form in this 4-week program..." />
 
+                <TextView
+                    android:id="@+id/tvWhyTitle"
+                    style="@style/TextAppearance.WayToFix.Headline3"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="20dp"
+                    android:text="@string/program_detail_why_title"
+                    android:textColor="@color/text_primary"
+                    android:visibility="gone" />
+
+                <TextView
+                    android:id="@+id/tvWhyProgram"
+                    style="@style/TextAppearance.WayToFix.Body2"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="8dp"
+                    android:textColor="@color/text_secondary"
+                    android:visibility="gone"
+                    tools:text="Training goal: Strength" />
+
+                <TextView
+                    android:id="@+id/tvWeek1Title"
+                    style="@style/TextAppearance.WayToFix.Headline3"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="16dp"
+                    android:text="@string/program_detail_week1_title"
+                    android:textColor="@color/text_primary"
+                    android:visibility="gone" />
+
+                <HorizontalScrollView
+                    android:id="@+id/scrollWeek1Preview"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="8dp"
+                    android:scrollbars="none"
+                    android:visibility="gone">
+
+                    <LinearLayout
+                        android:id="@+id/layoutWeek1Preview"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal"
+                        android:paddingBottom="4dp" />
+                </HorizontalScrollView>
+
+                <TextView
+                    android:id="@+id/tvProgramPolicies"
+                    style="@style/TextAppearance.WayToFix.Body2"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="12dp"
+                    android:text="@string/program_detail_policies"
+                    android:textColor="@color/text_secondary"
+                    android:visibility="gone" />
+
                 <!-- Stats Grid / Row -->
                 <LinearLayout
                     android:layout_width="match_parent"

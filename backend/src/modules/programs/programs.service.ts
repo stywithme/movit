@@ -7,7 +7,9 @@
 import { getPrisma } from '@/lib/prisma/client';
 import { legacyTypeToProgramDomain } from '@/lib/program-domain';
 import { Prisma } from '@prisma/client';
+import { resolveCurrentProgramDay } from '@/modules/active-plan/plan-position';
 import { getAutoAssignmentReadiness } from './program-assignment';
+import { validateCalendarProgramStructure } from './calendar-program-structure';
 import type {
   CreateProgramInput,
   ProgramExport,
@@ -84,17 +86,7 @@ const programFullInclude = {
   },
 };
 
-function normalizeDate(date: Date) {
-  return new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate()));
-}
-
-function getProgramDayIndex(startDate: Date, now: Date) {
-  const start = normalizeDate(startDate);
-  const today = normalizeDate(now);
-  const diffMs = Math.max(0, today.getTime() - start.getTime());
-  const diffDays = Math.floor(diffMs / (24 * 60 * 60 * 1000));
-  return diffDays;
-}
+export { validateCalendarProgramStructure } from './calendar-program-structure';
 
 function buildSessionItems(items?: ProgramSessionItemInput[]) {
   if (!items || items.length === 0) return undefined;
@@ -386,12 +378,22 @@ export const programService = {
 
   async publish(id: string, updatedBy?: string) {
     const prisma = await getPrisma();
-    const program = await prisma.program.findUnique({
-      where: { id },
+    const program = await prisma.program.findFirst({
+      where: { id, deletedAt: null },
+      include: {
+        weeks: {
+          orderBy: [{ sortOrder: 'asc' }, { weekNumber: 'asc' }],
+          include: {
+            days: { orderBy: { dayNumber: 'asc' } },
+          },
+        },
+      },
     });
     if (!program) {
       throw new Error('Program not found');
     }
+
+    validateCalendarProgramStructure(program.durationWeeks, program.weeks);
 
     const entersAutoAssignment =
       program.programType === 'SYSTEM' ||
@@ -948,20 +950,14 @@ export const programService = {
     if (!userProgram || !userProgram.program) return null;
 
     const program = userProgram.program;
-    const dayIndex = getProgramDayIndex(userProgram.startDate, new Date());
-    const totalDays = program.durationWeeks * 7;
+    const position = resolveCurrentProgramDay(program.weeks, userProgram.progress ?? [], {
+      startDate: userProgram.startDate,
+      durationWeeks: program.durationWeeks,
+    });
 
-    // Check if program is completed (past the total duration)
-    const isProgramComplete = dayIndex >= totalDays;
-
-    // Calculate week and day from date (1-indexed)
-    // dayIndex 0 = week 1, day 1; dayIndex 6 = week 1, day 7; dayIndex 7 = week 2, day 1
-    const weekNumber = isProgramComplete
-      ? program.durationWeeks
-      : Math.min(Math.floor(dayIndex / 7) + 1, program.durationWeeks);
-    const dayNumber = isProgramComplete
-      ? 7
-      : (dayIndex % 7) + 1;
+    const weekNumber = position.targetWeekNumber;
+    const dayNumber = position.targetDayNumber;
+    const isProgramComplete = position.isProgramComplete;
 
     const week = program.weeks.find((w) => w.weekNumber === weekNumber);
     const day = week?.days.find((d) => d.dayNumber === dayNumber);
@@ -990,6 +986,7 @@ export const programService = {
             sortOrder: session.sortOrder,
             items: session.items.map((item) => ({
               type: item.type as 'exercise' | 'rest',
+              serverItemId: item.id,
               exerciseSlug: item.exercise?.slug ?? undefined,
               sets: item.sets ?? undefined,
               targetReps: item.targetReps ?? undefined,
@@ -1008,6 +1005,11 @@ export const programService = {
 
   buildProgramExport(program: Awaited<ReturnType<typeof this.getById>>): ProgramExport | null {
     if (!program) return null;
+    const equipmentRaw = program.targetEquipment as unknown;
+    const targetEquipment = Array.isArray(equipmentRaw)
+      ? equipmentRaw.filter((x): x is string => typeof x === 'string')
+      : undefined;
+
     return {
       id: program.id,
       slug: program.slug,
@@ -1017,6 +1019,12 @@ export const programService = {
       durationWeeks: program.durationWeeks,
       difficulty: program.difficulty as 'beginner' | 'intermediate' | 'advanced',
       tags: (program.tags as string[]) || undefined,
+      trainingGoal: program.trainingGoal ?? undefined,
+      weeklySessionTarget: program.weeklySessionTarget ?? undefined,
+      estimatedSessionMinutes: program.estimatedSessionMinutes ?? undefined,
+      targetDomain: program.targetDomain ?? undefined,
+      targetEquipment: targetEquipment?.length ? targetEquipment : undefined,
+      isFeatured: program.isFeatured ?? undefined,
       weeks: program.weeks.map((week) => ({
         weekNumber: week.weekNumber,
         name: parseLocalizedText(week.name),
@@ -1031,6 +1039,7 @@ export const programService = {
             sortOrder: session.sortOrder,
             items: session.items.map((item) => ({
               type: item.type as 'exercise' | 'rest',
+              serverItemId: item.id,
               exerciseSlug: item.exercise?.slug ?? undefined,
               sets: item.sets ?? undefined,
               targetReps: item.targetReps ?? undefined,

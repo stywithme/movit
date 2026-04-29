@@ -785,6 +785,7 @@
 
     <!-- Week Calendar -->
     <string name="pg_week_format">Week %1$d</string>
+    <string name="pg_calendar_day_missing">!</string>
 
     <!-- Today Section -->
     <string name="pg_today_format">TODAY — Day %1$d</string>
@@ -901,6 +902,10 @@
     <string name="pg_complete_subtitle">You\'ve completed the program. Look how far you\'ve come!</string>
     <string name="pg_view_journey">See Your Journey</string>
     <string name="pg_start_next">Start Next Challenge</string>
+    <string name="pg_complete_whats_next">What\'s next?</string>
+    <string name="pg_complete_finishing">Updating your plan…</string>
+    <string name="pg_cta_reassess">Start reassessment</string>
+    <string name="pg_cta_next_program">Continue to next program</string>
 
     <!-- ═══════════════════════════════════════════════════ -->
     <!-- Day Session Page                                   -->
@@ -994,6 +999,22 @@
     <!-- List Screen Headers -->
     <string name="program_list_title">Training Programs</string>
     <string name="program_list_subtitle">Select a program to plan your training</string>
+    <string name="program_filter_all">All levels</string>
+    <string name="program_filter_goal_any">All goals</string>
+    <string name="program_badge_featured">Featured</string>
+    <string name="program_card_sessions_weekly_format">%1$d sessions · ~%2$d / week</string>
+    <string name="program_detail_why_title">Why this program</string>
+    <string name="program_detail_week1_title">First week at a glance</string>
+    <string name="program_detail_policies">Rest days are built in. If you miss a training day, continue on the next scheduled day—your progress follows the calendar.</string>
+    <string name="program_detail_meta_goal">Goal: %1$s</string>
+    <string name="program_detail_meta_domain">Focus: %1$s</string>
+    <string name="program_detail_meta_weekly_sessions">~%1$d sessions / week (target)</string>
+    <string name="program_detail_meta_session_length">~%1$d min / session (typical)</string>
+    <string name="program_detail_meta_equipment">Equipment: %1$s</string>
+    <string name="program_week1_pill_rest">Rest</string>
+    <string name="program_week1_pill_light">Recovery</string>
+    <string name="session_customization_synced">Changes saved to your plan</string>
+    <string name="session_customization_pending">Saved on this device — will sync when you\'re back online</string>
     <string name="workout_list_title">Workouts</string>
     <string name="workout_list_subtitle">Choose a workout to get started</string>
     <string name="exercise_list_subtitle">Explore our full exercise library</string>

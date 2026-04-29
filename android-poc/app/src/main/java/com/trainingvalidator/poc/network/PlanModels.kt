@@ -44,6 +44,8 @@ data class RecommendedProgramData(
 data class ActivePlanResponse(
     val success: Boolean,
     val data: ActivePlanData? = null,
+    /** Present on POST /api/mobile/plan/complete when the program is finalized on the server. */
+    val completion: ProgramCompleteData? = null,
     val error: String? = null
 )
 
