@@ -52,4 +52,39 @@ describe('resolveCurrentProgramDay', () => {
     expect(result.isProgramComplete).toBe(true);
     expect(result.lastDay).toEqual({ weekNumber: 2, dayNumber: 1 });
   });
+
+  it('anchors day one to the enrollment start date', () => {
+    const result = resolveCurrentProgramDay(weeks, [], {
+      startDate: new Date('2026-04-29T14:00:00.000Z'),
+      now: new Date('2026-04-29T20:00:00.000Z'),
+    });
+
+    expect(result.targetWeekNumber).toBe(1);
+    expect(result.targetDayNumber).toBe(1);
+  });
+
+  it('does not advance to tomorrow just because the current day is completed', () => {
+    const result = resolveCurrentProgramDay(
+      weeks,
+      [{ weekNumber: 1, dayNumber: 1, sessionId: '__day__', status: 'completed' }],
+      {
+        startDate: new Date('2026-04-29T14:00:00.000Z'),
+        now: new Date('2026-04-29T20:00:00.000Z'),
+      },
+    );
+
+    expect(result.targetWeekNumber).toBe(1);
+    expect(result.targetDayNumber).toBe(1);
+    expect(result.completedDayCount).toBe(1);
+  });
+
+  it('moves by elapsed calendar days from the enrollment start date', () => {
+    const result = resolveCurrentProgramDay(weeks, [], {
+      startDate: new Date('2026-04-29T14:00:00.000Z'),
+      now: new Date('2026-05-01T08:00:00.000Z'),
+    });
+
+    expect(result.targetWeekNumber).toBe(2);
+    expect(result.targetDayNumber).toBe(1);
+  });
 });

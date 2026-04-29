@@ -156,7 +156,9 @@ export const activePlanService = {
         const progressEntries = slot.userProgram.progress || [];
         const totalDays = prog ? prog.durationWeeks * 7 : 0;
         const position = prog
-          ? resolveCurrentProgramDay(prog.weeks, progressEntries)
+          ? resolveCurrentProgramDay(prog.weeks, progressEntries, {
+              startDate: slot.userProgram.startDate,
+            })
           : null;
 
         return {
@@ -354,7 +356,9 @@ export const activePlanService = {
     }
 
     const progressEntries = activeSlot.userProgram.progress || [];
-    const position = resolveCurrentProgramDay(program.weeks, progressEntries);
+    const position = resolveCurrentProgramDay(program.weeks, progressEntries, {
+      startDate: activeSlot.userProgram.startDate,
+    });
     const targetWeek = position.targetWeekNumber;
     const targetDay = position.targetDayNumber;
     const week = position.targetWeek as (typeof program.weeks)[number] | undefined;

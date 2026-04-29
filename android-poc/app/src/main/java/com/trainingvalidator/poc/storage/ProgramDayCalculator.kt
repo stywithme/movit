@@ -83,6 +83,22 @@ object ProgramDayCalculator {
     }
 
     /**
+     * Resolve the real calendar date for a program day.
+     * Day 1 is always the enrollment start date, not the calendar week's first day.
+     */
+    fun getDateForProgramDay(
+        userProgram: UserProgramExport,
+        weekNumber: Int,
+        dayNumber: Int
+    ): Date? {
+        val startDate = parseStartDate(userProgram.startDate) ?: return null
+        val offset = ((weekNumber - 1).coerceAtLeast(0) * 7) + (dayNumber - 1).coerceAtLeast(0)
+        return normalizeToDay(startDate).apply {
+            add(Calendar.DAY_OF_YEAR, offset)
+        }.time
+    }
+
+    /**
      * Calculate the overall progress percentage.
      */
     fun calculateProgress(
