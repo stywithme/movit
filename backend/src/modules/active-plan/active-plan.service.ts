@@ -207,15 +207,22 @@ export const activePlanService = {
         update: {},
       });
 
-      const userProgram = await tx.userProgram.create({
-        data: {
-          userId,
-          programId,
-          name: (options?.name as object) || undefined,
-          assignmentReason: (options?.assignmentReason as object) || undefined,
-          isActive: true,
-        },
+      let userProgram = await tx.userProgram.findFirst({
+        where: { userId, programId, isActive: true },
+        orderBy: { updatedAt: 'desc' },
       });
+
+      if (!userProgram) {
+        userProgram = await tx.userProgram.create({
+          data: {
+            userId,
+            programId,
+            name: (options?.name as object) || undefined,
+            assignmentReason: (options?.assignmentReason as object) || undefined,
+            isActive: true,
+          },
+        });
+      }
 
       await tx.userProgram.updateMany({
         where: {
@@ -226,26 +233,40 @@ export const activePlanService = {
         data: { isActive: false },
       });
 
-      const maxSlot = await tx.activePlanProgram.findFirst({
-        where: { activePlanId: plan.id },
-        orderBy: { sortOrder: 'desc' },
-      });
-      const nextOrder = (maxSlot?.sortOrder ?? -1) + 1;
-
       await tx.activePlanProgram.updateMany({
-        where: { activePlanId: plan.id, status: 'active' },
+        where: {
+          activePlanId: plan.id,
+          status: 'active',
+          userProgramId: { not: userProgram.id },
+        },
         data: { status: 'completed', completedAt: new Date() },
       });
 
-      await tx.activePlanProgram.create({
-        data: {
+      const existingActiveSlot = await tx.activePlanProgram.findFirst({
+        where: {
           activePlanId: plan.id,
           userProgramId: userProgram.id,
-          sortOrder: nextOrder,
           status: 'active',
-          actualStartDate: new Date(),
         },
       });
+
+      if (!existingActiveSlot) {
+        const maxSlot = await tx.activePlanProgram.findFirst({
+          where: { activePlanId: plan.id },
+          orderBy: { sortOrder: 'desc' },
+        });
+        const nextOrder = (maxSlot?.sortOrder ?? -1) + 1;
+
+        await tx.activePlanProgram.create({
+          data: {
+            activePlanId: plan.id,
+            userProgramId: userProgram.id,
+            sortOrder: nextOrder,
+            status: 'active',
+            actualStartDate: new Date(),
+          },
+        });
+      }
 
       await tx.activePlan.update({
         where: { id: plan.id },

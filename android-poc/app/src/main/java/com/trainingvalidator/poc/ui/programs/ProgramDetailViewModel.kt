@@ -91,8 +91,12 @@ class ProgramDetailViewModel(app: Application) : AndroidViewModel(app) {
                             ExerciseRepository.getInstance(getApplication()).checkForUpdates()
                         } catch (_: Exception) { }
                     }
-                    _enrollState.value = EnrollState.Success
+                    // Update enrollment before Success so collectors see correct isEnrolled (StateFlow emits synchronously).
                     refreshEnrollment()
+                    if ((_uiState.value as? ProgramDetailUiState.Success)?.isEnrolled != true) {
+                        markProgramEnrolled(programId)
+                    }
+                    _enrollState.value = EnrollState.Success
                 } else {
                     _enrollState.value = EnrollState.Error("enroll_failed")
                 }
@@ -103,7 +107,14 @@ class ProgramDetailViewModel(app: Application) : AndroidViewModel(app) {
     }
 
     fun resolveCurrentWeek(programId: String): Int {
-        val activePlan = homeRepository.getCachedData()?.activePlan
+        val cachedHome = homeRepository.getCachedData()
+        cachedHome?.trainMode?.activeProgram
+            ?.takeIf { it.id == programId }
+            ?.weekNumber
+            ?.takeIf { it > 0 }
+            ?.let { return it }
+
+        val activePlan = cachedHome?.activePlan
         val enrollment = activePlan?.programs?.firstOrNull {
             it.program?.id == programId && it.status == "active"
         }
@@ -114,8 +125,25 @@ class ProgramDetailViewModel(app: Application) : AndroidViewModel(app) {
         _enrollState.value = EnrollState.Idle
     }
 
+    private fun markProgramEnrolled(programId: String) {
+        val current = _uiState.value as? ProgramDetailUiState.Success ?: return
+        if (current.program.id == programId) {
+            _uiState.value = current.copy(isEnrolled = true)
+        }
+    }
+
     private fun checkEnrollment(program: ProgramConfig): Boolean {
-        val cachedPlan = homeRepository.getCachedData()?.activePlan
+        val activeUserProgram = programRepository.getActiveUserProgramExport()
+        if (activeUserProgram?.isActive == true && activeUserProgram.programId == program.id) {
+            return true
+        }
+
+        val cachedHome = homeRepository.getCachedData()
+        if (cachedHome?.trainMode?.activeProgram?.id == program.id) {
+            return true
+        }
+
+        val cachedPlan = cachedHome?.activePlan
         return cachedPlan?.programs?.any { it.program?.id == program.id && it.status == "active" } == true
     }
 }
