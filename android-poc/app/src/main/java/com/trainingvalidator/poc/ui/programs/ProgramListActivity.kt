@@ -208,7 +208,7 @@ class ProgramListActivity : AppCompatActivity() {
                 desc.get(language).ifBlank { desc.en }
             } ?: ""
 
-            val totalSessions = program.weeks.sumOf { week ->
+            val totalSessions = program.weeks.orEmpty().sumOf { week ->
                 week.days.sumOf { day -> day.sessions.size }
             }
             val weeklyTarget = program.weeklySessionTarget?.takeIf { it > 0 }
@@ -230,7 +230,7 @@ class ProgramListActivity : AppCompatActivity() {
             val metaParts = buildList {
                 program.trainingGoal?.let { add(it.replace('_', ' ')) }
                 program.estimatedSessionMinutes?.takeIf { it > 0 }?.let { add("${it} min") }
-                program.targetEquipment.firstOrNull()?.let { add(it) }
+                program.targetEquipment.orEmpty().firstOrNull()?.let { add(it) }
             }
             if (metaParts.isNotEmpty()) {
                 val extra = metaParts.joinToString(" · ")

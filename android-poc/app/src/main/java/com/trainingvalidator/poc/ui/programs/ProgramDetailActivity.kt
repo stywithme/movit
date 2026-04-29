@@ -141,8 +141,9 @@ class ProgramDetailActivity : AppCompatActivity() {
             desc.get(language).ifBlank { desc.en }
         } ?: ""
 
-        val totalDays = program.weeks.sumOf { it.days.size }
-        val totalSessions = program.weeks.sumOf { week -> week.days.sumOf { day -> day.sessions.size } }
+        val weeks = program.weeks.orEmpty()
+        val totalDays = weeks.sumOf { it.days.size }
+        val totalSessions = weeks.sumOf { week -> week.days.sumOf { day -> day.sessions.size } }
 
         binding.tvProgramWeeks.text = getString(R.string.weeks_count_format, program.durationWeeks)
         binding.tvProgramDays.text = getString(R.string.days_count_format, totalDays)
@@ -156,7 +157,7 @@ class ProgramDetailActivity : AppCompatActivity() {
             })
         }
 
-        binding.rvWeeks.adapter = WeekAdapter(program.weeks, program.id, program.slug)
+        binding.rvWeeks.adapter = WeekAdapter(weeks, program.id, program.slug)
         bindDiscoveryMetadata(program)
         updateCTAButton(isEnrolled)
     }
@@ -175,11 +176,12 @@ class ProgramDetailActivity : AppCompatActivity() {
             program.estimatedSessionMinutes?.takeIf { it > 0 }?.let {
                 add(getString(R.string.program_detail_meta_session_length, it))
             }
-            if (program.targetEquipment.isNotEmpty()) {
+            val equipment = program.targetEquipment.orEmpty()
+            if (equipment.isNotEmpty()) {
                 add(
                     getString(
                         R.string.program_detail_meta_equipment,
-                        program.targetEquipment.take(4).joinToString(", ")
+                        equipment.take(4).joinToString(", ")
                     )
                 )
             }
@@ -193,7 +195,7 @@ class ProgramDetailActivity : AppCompatActivity() {
             binding.tvWhyProgram.text = lines.joinToString("\n")
         }
 
-        val week1 = program.weeks.firstOrNull { it.weekNumber == 1 }
+        val week1 = program.weeks.orEmpty().firstOrNull { it.weekNumber == 1 }
         if (week1 != null && week1.days.isNotEmpty()) {
             binding.tvWeek1Title.visibility = View.VISIBLE
             binding.scrollWeek1Preview.visibility = View.VISIBLE
