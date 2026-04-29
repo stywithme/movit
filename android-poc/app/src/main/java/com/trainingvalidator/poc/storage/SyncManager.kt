@@ -354,7 +354,7 @@ class SyncManager(
             userPrograms.forEach { up ->
                 val pid = up.programId
                 if (pid != null && !up.customizations.isNullOrEmpty()) {
-                    customizationStore.hydrateFromBackend(pid, up.customizations)
+                    customizationStore.hydrateFromBackend(pid, up.customizations, up.customizationsUpdatedAt)
                 }
             }
         }

@@ -56,7 +56,10 @@ data class TrainModeData(
     val activeProgram: TrainActiveProgramData?,
     val todaySession: TrainTodaySessionData?,
     val dayType: String?,
-    val nextReassessment: NextReassessmentData?
+    val nextReassessment: NextReassessmentData?,
+    /** True when the active user program calendar is paused */
+    val isPaused: Boolean? = null,
+    val catchUpSuggestion: CatchUpSuggestionData? = null
 )
 
 data class TrainActiveProgramData(

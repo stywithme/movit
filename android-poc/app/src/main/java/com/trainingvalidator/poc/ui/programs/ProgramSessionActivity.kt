@@ -33,6 +33,7 @@ import com.trainingvalidator.poc.network.ApiClient
 import com.trainingvalidator.poc.network.EffectivePlanPayload
 import com.trainingvalidator.poc.storage.AuthManager
 import com.trainingvalidator.poc.storage.DayCustomizationStore
+import com.trainingvalidator.poc.storage.HomeRepository
 import com.trainingvalidator.poc.storage.ExerciseRepository
 import com.trainingvalidator.poc.storage.ProgramRepository
 import com.trainingvalidator.poc.storage.ProgramSessionReportStore
@@ -49,6 +50,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.util.Locale
+import kotlin.math.max
 
 /**
  * ProgramSessionActivity — Full Day View
@@ -122,6 +124,9 @@ class ProgramSessionActivity : AppCompatActivity() {
     /** The session ID that was just launched for training */
     private var launchedSessionId: String? = null
 
+    /** One catch-up hint per activity instance when this day is in missedSlots. */
+    private var catchUpDayPromptShown = false
+
     // ═══════════════════════════════════════════════════════════
     // Lifecycle
     // ═══════════════════════════════════════════════════════════
@@ -141,6 +146,7 @@ class ProgramSessionActivity : AppCompatActivity() {
 
     private fun setupUI() {
         binding.btnBack.setOnClickListener { finish() }
+        binding.btnSkipWarmup.setOnClickListener { skipWarmupScrollToMainWork() }
         binding.btnEditMode.setOnClickListener { toggleEditMode() }
         binding.btnStartSession.setOnClickListener { startNextSession() }
         binding.btnAddExercise.setOnClickListener { showAddExerciseSheet() }
@@ -277,6 +283,7 @@ class ProgramSessionActivity : AppCompatActivity() {
             renderHeader()
             renderAllSessions()
             updateBottomBar()
+            maybeShowCatchUpForThisDay()
         }
     }
 
@@ -327,6 +334,7 @@ class ProgramSessionActivity : AppCompatActivity() {
                 gravity = android.view.Gravity.CENTER
             }
             binding.layoutSessions.addView(emptyView)
+            updateSkipWarmupButtonVisibility()
             return
         }
 
@@ -345,6 +353,7 @@ class ProgramSessionActivity : AppCompatActivity() {
             val view = renderSessionCard(session, index, isCompleted, isCurrentSession, isExpanded)
             binding.layoutSessions.addView(view)
         }
+        updateSkipWarmupButtonVisibility()
     }
 
     private fun renderSessionCard(
@@ -356,6 +365,7 @@ class ProgramSessionActivity : AppCompatActivity() {
     ): View {
         val inflater = LayoutInflater.from(this)
         val view = inflater.inflate(R.layout.item_day_session_card, binding.layoutSessions, false)
+        view.tag = session.id
 
         val card = view.findViewById<MaterialCardView>(R.id.cardSession)
         val statusDot = view.findViewById<View>(R.id.viewStatusDot)
@@ -377,8 +387,14 @@ class ProgramSessionActivity : AppCompatActivity() {
 
         // --- Meta info ---
         val exerciseCount = session.items.count { it.type == "exercise" }
-        val estimatedMinutes = estimateSessionDuration(session.items)
-        tvMeta.text = getString(R.string.ds_exercises_meta_format, exerciseCount, estimatedMinutes)
+        val backendMin = session.estimatedDurationMin
+        val estimatedMinutes = backendMin ?: estimateSessionDuration(session.items)
+        val baseMeta = getString(R.string.ds_exercises_meta_format, exerciseCount, estimatedMinutes)
+        tvMeta.text = if (backendMin != null) {
+            "$baseMeta · " + getString(R.string.session_duration_badge, backendMin)
+        } else {
+            baseMeta
+        }
 
         // --- Status dot & badge ---
         val dotColor: Int
@@ -529,6 +545,7 @@ class ProgramSessionActivity : AppCompatActivity() {
         override fun onBindViewHolder(holder: VH, position: Int) {
             val item = items[position]
             val isRest = item.type == "rest"
+            val unavailable = !isRest && (item.deletedExercise == true || item.exerciseSlug.isNullOrBlank())
 
             // --- Timeline connector lines ---
             val lineTopParams = holder.viewLineTop.layoutParams as FrameLayout.LayoutParams
@@ -562,21 +579,35 @@ class ProgramSessionActivity : AppCompatActivity() {
                 holder.ivIcon.setColorFilter(ContextCompat.getColor(this@ProgramSessionActivity, R.color.text_hint))
             } else {
                 val slug = item.exerciseSlug ?: ""
-                val config = exerciseConfigMap[slug]
-                val imageUrl = config?.imageUrl
-                if (!imageUrl.isNullOrBlank()) {
-                    holder.ivItemImage.visibility = View.VISIBLE
-                    holder.ivIcon.visibility = View.GONE
-                    holder.ivItemImage.load(imageUrl) {
-                        placeholder(R.drawable.ic_exercise)
-                        error(R.drawable.ic_exercise)
-                        crossfade(true)
-                    }
-                } else {
+                if (unavailable) {
                     holder.ivItemImage.visibility = View.GONE
                     holder.ivIcon.visibility = View.VISIBLE
                     holder.ivIcon.setImageResource(R.drawable.ic_exercise)
-                    holder.ivIcon.setColorFilter(ContextCompat.getColor(this@ProgramSessionActivity, R.color.primary))
+                    holder.ivIcon.setColorFilter(ContextCompat.getColor(this@ProgramSessionActivity, R.color.warning))
+                    holder.cardItem.strokeWidth = dpToPx(2)
+                    holder.cardItem.setStrokeColor(
+                        ContextCompat.getColorStateList(this@ProgramSessionActivity, R.color.warning)
+                    )
+                } else {
+                    holder.cardItem.strokeWidth = 0
+                    val config = exerciseConfigMap[slug]
+                    val imageUrl = config?.imageUrl
+                    if (!imageUrl.isNullOrBlank()) {
+                        holder.ivItemImage.visibility = View.VISIBLE
+                        holder.ivIcon.visibility = View.GONE
+                        holder.ivItemImage.load(imageUrl) {
+                            placeholder(R.drawable.ic_exercise)
+                            error(R.drawable.ic_exercise)
+                            crossfade(false)
+                        }
+                    } else {
+                        holder.ivItemImage.visibility = View.GONE
+                        holder.ivIcon.visibility = View.VISIBLE
+                        holder.ivIcon.setImageResource(R.drawable.ic_exercise)
+                        holder.ivIcon.setColorFilter(
+                            ContextCompat.getColor(this@ProgramSessionActivity, R.color.primary)
+                        )
+                    }
                 }
             }
 
@@ -587,12 +618,34 @@ class ProgramSessionActivity : AppCompatActivity() {
                 holder.tvDetail.text = getString(R.string.ds_rest_format, sec)
             } else {
                 val slug = item.exerciseSlug ?: ""
-                holder.tvName.text = exerciseNameMap[slug] ?: slug
-                holder.tvDetail.text = buildExerciseDetailText(item)
+                if (unavailable) {
+                    holder.tvName.text = getString(R.string.exercise_unavailable_substitute)
+                } else {
+                    holder.tvName.text = exerciseNameMap[slug] ?: slug
+                }
+                val prev = items.getOrNull(position - 1)
+                val sectionPrefix = if (item.type == "exercise") {
+                    val curKey = normalizeRoleKey(item.role)
+                    val prevKey = prev?.takeIf { it.type == "exercise" }?.let { normalizeRoleKey(it.role) }
+                    if (position == 0 || prevKey != curKey) {
+                        formatRoleTitle(curKey) + "\n"
+                    } else ""
+                } else ""
+                holder.tvDetail.text = sectionPrefix + buildExerciseDetailText(item)
+                if (unavailable) {
+                    holder.cardItem.setOnClickListener {
+                        val pos = holder.bindingAdapterPosition
+                        if (pos != RecyclerView.NO_POSITION) {
+                            showReplaceExerciseSheet(sessionId, pos, items[pos])
+                        }
+                    }
+                } else {
+                    holder.cardItem.setOnClickListener(null)
+                }
             }
 
-            // --- Swap icon (always visible for exercises, not in edit mode) ---
-            if (!isRest && !isEditMode) {
+            // --- Swap (exercises only; stays visible in edit mode) ---
+            if (!isRest) {
                 holder.layoutAlwaysActions.visibility = View.VISIBLE
                 holder.btnSwapExercise.setOnClickListener {
                     val pos = holder.bindingAdapterPosition
@@ -608,7 +661,6 @@ class ProgramSessionActivity : AppCompatActivity() {
             if (isEditMode) {
                 holder.layoutEditControls.visibility = View.VISIBLE
                 holder.btnDragHandle.visibility = View.VISIBLE
-                holder.layoutAlwaysActions.visibility = View.GONE
 
                 holder.btnEditItem.setOnClickListener {
                     val pos = holder.bindingAdapterPosition
@@ -643,6 +695,21 @@ class ProgramSessionActivity : AppCompatActivity() {
             items.add(to, moved)
             notifyItemMoved(from, to)
         }
+    }
+
+    private fun normalizeRoleKey(role: String?): String =
+        when (role?.uppercase(Locale.US)) {
+            "WARMUP", "ACTIVATION" -> "WARMUP"
+            "MAIN", "ACCESSORY", "CORRECTIVE" -> "MAIN"
+            "COOLDOWN" -> "COOLDOWN"
+            else -> "OTHER"
+        }
+
+    private fun formatRoleTitle(key: String): String = when (key) {
+        "WARMUP" -> getString(R.string.section_warmup)
+        "MAIN" -> getString(R.string.section_main)
+        "COOLDOWN" -> getString(R.string.section_cooldown)
+        else -> getString(R.string.section_other)
     }
 
     private fun buildExerciseDetailText(item: ProgramSessionItem): String {
@@ -704,11 +771,16 @@ class ProgramSessionActivity : AppCompatActivity() {
             return
         }
 
-        val hasInvalid = session.items.any {
-            it.type == "exercise" && it.exerciseSlug.isNullOrBlank()
+        val firstBadIdx = session.items.indexOfFirst {
+            it.type == "exercise" && (it.deletedExercise == true || it.exerciseSlug.isNullOrBlank())
         }
-        if (hasInvalid) {
-            Toast.makeText(this, getString(R.string.session_invalid_payload), Toast.LENGTH_LONG).show()
+        if (firstBadIdx >= 0) {
+            expandedSessionIds.add(session.id)
+            renderAllSessions()
+            Toast.makeText(this, getString(R.string.exercise_unavailable_substitute), Toast.LENGTH_LONG).show()
+            binding.scrollContent.post {
+                showReplaceExerciseSheet(session.id, firstBadIdx, session.items[firstBadIdx])
+            }
             return
         }
 
@@ -746,32 +818,38 @@ class ProgramSessionActivity : AppCompatActivity() {
 
             // Save local report (with form score)
             saveLocalSessionReport(sessionId, durationMs, totalSets, completedSets, totalReps, avgAccuracy, avgFormScore, reportJson)
-
-            // Send to backend (single call, with offline queue)
-            sendSessionComplete(
-                sessionId ?: "",
-                durationMs,
-                sessions.firstOrNull { it.id == sessionId }?.items?.size ?: 0,
-                totalSets,
-                completedSets,
-                totalReps,
-                avgAccuracy,
-                avgFormScore,
-                reportJson
-            )
-
-            // Refresh: re-determine expanded sessions and re-render
             determineExpandedSessions()
             renderAllSessions()
             updateBottomBar()
 
-            // Navigate to unified session report
-            val reportIntent = com.trainingvalidator.poc.ui.report.SessionReportActivity.createSessionIntent(
-                context = this,
-                reportIds = reportIds ?: emptyList(),
-                sessionReportJson = reportJson
-            )
-            startActivity(reportIntent)
+            showPostSessionRpeDialog { rpe ->
+                // Send to backend (single call, with offline queue)
+                sendSessionComplete(
+                    sessionId ?: "",
+                    durationMs,
+                    sessions.firstOrNull { it.id == sessionId }?.items?.size ?: 0,
+                    totalSets,
+                    completedSets,
+                    totalReps,
+                    avgAccuracy,
+                    avgFormScore,
+                    reportJson,
+                    rpe
+                )
+
+                // Refresh UI (already updated after save; repeat is harmless)
+                determineExpandedSessions()
+                renderAllSessions()
+                updateBottomBar()
+
+                // Navigate to unified session report
+                val reportIntent = com.trainingvalidator.poc.ui.report.SessionReportActivity.createSessionIntent(
+                    context = this,
+                    reportIds = reportIds ?: emptyList(),
+                    sessionReportJson = reportJson
+                )
+                startActivity(reportIntent)
+            }
         }
     }
 
@@ -900,6 +978,99 @@ class ProgramSessionActivity : AppCompatActivity() {
         renderAllSessions()
     }
 
+    private data class SessionExerciseRef(
+        val sessionId: String,
+        val itemIndex: Int,
+        val item: ProgramSessionItem
+    )
+
+    private fun isWarmupActivationRole(role: String?): Boolean {
+        return when (role?.trim()?.uppercase(Locale.US)) {
+            "WARMUP", "ACTIVATION" -> true
+            else -> false
+        }
+    }
+
+    private fun orderedSessionExerciseRefs(): List<SessionExerciseRef> {
+        val out = mutableListOf<SessionExerciseRef>()
+        sessions.forEach { session ->
+            session.items.forEachIndexed { idx, item ->
+                if (item.type == "exercise" && item.exerciseSlug != null) {
+                    out.add(SessionExerciseRef(session.id, idx, item))
+                }
+            }
+        }
+        return out
+    }
+
+    private fun hasWarmupBeforeFirstMainWork(): Boolean {
+        val seq = orderedSessionExerciseRefs()
+        val firstMainIdx = seq.indexOfFirst { !isWarmupActivationRole(it.item.role) }
+        if (firstMainIdx <= 0) return false
+        return seq.take(firstMainIdx).any { isWarmupActivationRole(it.item.role) }
+    }
+
+    private fun firstMainWorkExerciseRef(): SessionExerciseRef? {
+        return orderedSessionExerciseRefs().firstOrNull { !isWarmupActivationRole(it.item.role) }
+    }
+
+    private fun updateSkipWarmupButtonVisibility() {
+        binding.btnSkipWarmup.visibility =
+            if (hasWarmupBeforeFirstMainWork()) View.VISIBLE else View.GONE
+    }
+
+    private fun skipWarmupScrollToMainWork() {
+        val target = firstMainWorkExerciseRef() ?: run {
+            Toast.makeText(this, getString(R.string.skip_warmup_none), Toast.LENGTH_SHORT).show()
+            return
+        }
+        expandedSessionIds.clear()
+        expandedSessionIds.add(target.sessionId)
+        renderAllSessions()
+        binding.scrollContent.post {
+            scrollSessionCardAndTimelineTo(target.sessionId, target.itemIndex)
+        }
+    }
+
+    private fun scrollSessionCardAndTimelineTo(sessionId: String, itemIndex: Int) {
+        for (i in 0 until binding.layoutSessions.childCount) {
+            val card = binding.layoutSessions.getChildAt(i)
+            if (card.tag != sessionId) continue
+            var top = 0
+            var v: View? = card
+            while (v != null && v != binding.scrollContent) {
+                top += v.top
+                v = v.parent as? View
+            }
+            binding.scrollContent.smoothScrollTo(0, max(0, top - dpToPx(96)))
+            val rv = card.findViewById<RecyclerView>(R.id.rvTimelineItems)
+            rv.post {
+                (rv.layoutManager as? LinearLayoutManager)
+                    ?.scrollToPositionWithOffset(itemIndex, dpToPx(8))
+            }
+            break
+        }
+    }
+
+    private fun maybeShowCatchUpForThisDay() {
+        if (catchUpDayPromptShown) return
+        val upId = currentUserProgramId ?: return
+        val home = HomeRepository.getInstance(this).getCachedData() ?: return
+        val train = home.trainMode ?: return
+        val active = train.activeProgram ?: return
+        if (active.id != upId) return
+        val catch = train.catchUpSuggestion ?: return
+        if (catch.missedSlots.isEmpty()) return
+        val onThisDay = catch.missedSlots.any { it.weekNumber == weekNumber && it.dayNumber == dayNumber }
+        if (!onThisDay) return
+        catchUpDayPromptShown = true
+        MaterialAlertDialogBuilder(this)
+            .setTitle(getString(R.string.catch_up_day_dialog_title))
+            .setMessage(catch.message)
+            .setPositiveButton(android.R.string.ok, null)
+            .show()
+    }
+
     // ═══════════════════════════════════════════════════════════
     // Replace Exercise (swap icon — always visible)
     // ═══════════════════════════════════════════════════════════
@@ -924,6 +1095,35 @@ class ProgramSessionActivity : AppCompatActivity() {
             baseList.filter { it.category.code == code }
         } ?: baseList
 
+        val apiRecommendedSlugs = mutableListOf<String>()
+
+        fun effectiveRecommendedSlugs(): List<String> {
+            val order = LinkedHashSet<String>()
+            item.allowedSubstitutions.forEach { s ->
+                if (s.isNotBlank() && s != currentSlug) order.add(s)
+            }
+            apiRecommendedSlugs.forEach { s ->
+                if (s.isNotBlank() && s != currentSlug) order.add(s)
+            }
+            return order.toList()
+        }
+
+        fun addExerciseRow(ex: ExerciseConfig, container: LinearLayout) {
+            val row = layoutInflater.inflate(R.layout.item_simple_exercise_row, null)
+            row.findViewById<TextView>(R.id.tvSimpleExerciseName).text =
+                ex.name.get(language).ifBlank { ex.name.en }
+            row.findViewById<TextView>(R.id.tvSimpleExerciseMeta).text =
+                if (ex.supportsWeight) getString(R.string.replace_hint_weighted)
+                else getString(R.string.replace_hint_bodyweight)
+            row.setOnClickListener {
+                val updated = item.copy(exerciseSlug = ex.fileName, deletedExercise = false)
+                exerciseNameMap[ex.fileName] = ex.name.get(language).ifBlank { ex.name.en }
+                updateItemInSession(sessionId, itemIndex, updated, OverrideSyncKind.REPLACE)
+                dialog.dismiss()
+            }
+            container.addView(row)
+        }
+
         fun buildLists(query: String) {
             val filtered = if (query.isBlank()) sameCategory else {
                 val q = query.trim().lowercase()
@@ -934,20 +1134,28 @@ class ProgramSessionActivity : AppCompatActivity() {
             layoutSimilar.removeAllViews()
             layoutHarder.removeAllViews()
 
-            filtered.forEach { ex ->
-                val row = layoutInflater.inflate(R.layout.item_simple_exercise_row, null)
-                row.findViewById<TextView>(R.id.tvSimpleExerciseName).text =
-                    ex.name.get(language).ifBlank { ex.name.en }
-                row.findViewById<TextView>(R.id.tvSimpleExerciseMeta).text =
-                    if (ex.supportsWeight) getString(R.string.replace_hint_weighted)
-                    else getString(R.string.replace_hint_bodyweight)
-                row.setOnClickListener {
-                    val updated = item.copy(exerciseSlug = ex.fileName)
-                    exerciseNameMap[ex.fileName] = ex.name.get(language).ifBlank { ex.name.en }
-                    updateItemInSession(sessionId, itemIndex, updated, OverrideSyncKind.REPLACE)
-                    dialog.dismiss()
+            val recommended = effectiveRecommendedSlugs()
+            if (query.isBlank() && recommended.isNotEmpty()) {
+                val header = TextView(this).apply {
+                    text = getString(R.string.replace_recommended)
+                    setTextColor(ContextCompat.getColor(this@ProgramSessionActivity, R.color.text_secondary))
+                    textSize = 13f
                 }
-                layoutSimilar.addView(row)
+                layoutEasier.addView(header)
+                recommended.forEach { slug ->
+                    val ex = allExercises.find { it.fileName == slug } ?: return@forEach
+                    addExerciseRow(ex, layoutEasier)
+                }
+                val altHeader = TextView(this).apply {
+                    text = getString(R.string.replace_alternatives)
+                    setTextColor(ContextCompat.getColor(this@ProgramSessionActivity, R.color.text_secondary))
+                    textSize = 13f
+                }
+                layoutSimilar.addView(altHeader)
+                val recSet = recommended.toSet()
+                filtered.filter { it.fileName !in recSet }.forEach { ex -> addExerciseRow(ex, layoutSimilar) }
+            } else {
+                filtered.forEach { ex -> addExerciseRow(ex, layoutSimilar) }
             }
         }
 
@@ -960,6 +1168,36 @@ class ProgramSessionActivity : AppCompatActivity() {
         })
         buildLists("")
         dialog.show()
+
+        if (item.allowedSubstitutions.isEmpty() && !currentSlug.isNullOrBlank()) {
+            val token = AuthManager.getAccessToken(this)
+            if (!token.isNullOrBlank()) {
+                lifecycleScope.launch {
+                    val slugs = withContext(Dispatchers.IO) {
+                        try {
+                            val r = ApiClient.mobileSyncApi.getSubstitutionExercises(
+                                "Bearer $token",
+                                currentSlug,
+                                24
+                            )
+                            if (r.isSuccessful && r.body()?.success == true) {
+                                r.body()?.data?.mapNotNull { row ->
+                                    row.slug.takeIf { it.isNotBlank() }
+                                } ?: emptyList()
+                            } else {
+                                emptyList()
+                            }
+                        } catch (_: Exception) {
+                            emptyList()
+                        }
+                    }
+                    if (!dialog.isShowing) return@launch
+                    apiRecommendedSlugs.clear()
+                    apiRecommendedSlugs.addAll(slugs)
+                    buildLists(inputSearch.text?.toString().orEmpty())
+                }
+            }
+        }
     }
 
     // ═══════════════════════════════════════════════════════════
@@ -1338,6 +1576,17 @@ class ProgramSessionActivity : AppCompatActivity() {
         }
     }
 
+    private fun showPostSessionRpeDialog(onPicked: (Int?) -> Unit) {
+        val labels = (1..10).map { it.toString() }.toTypedArray()
+        MaterialAlertDialogBuilder(this)
+            .setTitle(R.string.rpe_label)
+            .setItems(labels) { _, which ->
+                onPicked(which + 1)
+            }
+            .setNegativeButton(R.string.rpe_skip) { _, _ -> onPicked(null) }
+            .show()
+    }
+
     private fun sendSessionComplete(
         sessionId: String,
         durationMs: Long,
@@ -1347,7 +1596,8 @@ class ProgramSessionActivity : AppCompatActivity() {
         totalReps: Int,
         avgAccuracy: Float,
         avgFormScore: Float,
-        reportJson: String?
+        reportJson: String?,
+        rpe: Int? = null
     ) {
         val token = AuthManager.getAccessToken(this)
         val payloadMap = mutableMapOf<String, Any>(
@@ -1360,6 +1610,9 @@ class ProgramSessionActivity : AppCompatActivity() {
             "avgAccuracy" to avgAccuracy,
             "avgFormScore" to avgFormScore
         )
+        if (rpe != null) {
+            payloadMap["rpe"] = rpe
+        }
         if (!reportJson.isNullOrBlank()) {
             val gson = com.google.gson.Gson()
             payloadMap["report"] = gson.fromJson(reportJson, com.google.gson.JsonElement::class.java)
@@ -1499,6 +1752,7 @@ class ProgramSessionActivity : AppCompatActivity() {
                     id = serverSession.id,
                     name = name,
                     sortOrder = serverSession.sortOrder,
+                    estimatedDurationMin = serverSession.estimatedDurationMin,
                     items = items
                 )
             )

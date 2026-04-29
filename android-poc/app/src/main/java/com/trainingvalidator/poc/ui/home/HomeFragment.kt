@@ -332,8 +332,10 @@ class HomeFragment : Fragment() {
             } else {
                 binding.tvSessionProgress.visibility = View.GONE
             }
+            bindCatchUpUi(trainMode, program)
         } else {
             binding.cardTodayPlan.visibility = View.GONE
+            clearCatchUpUi()
         }
     }
 
@@ -369,6 +371,7 @@ class HomeFragment : Fragment() {
         )
         binding.btnStartTodayPlan.visibility = View.GONE
         binding.tvSessionProgress.visibility = View.GONE
+        bindCatchUpUi(trainMode, program)
     }
 
     private fun renderProgramCompleteState(trainMode: TrainModeData, language: String) {
@@ -563,6 +566,61 @@ class HomeFragment : Fragment() {
     private fun hideAllTrainCards() {
         binding.cardActiveProgram.visibility = View.GONE
         binding.cardTodayPlan.visibility = View.GONE
+        clearCatchUpUi()
+    }
+
+    private fun clearCatchUpUi() {
+        binding.tvCalendarPaused.visibility = View.GONE
+        binding.tvCatchUpHint.visibility = View.GONE
+        binding.btnCatchUpOpen.visibility = View.GONE
+    }
+
+    private fun bindCatchUpUi(
+        trainMode: TrainModeData,
+        program: com.trainingvalidator.poc.network.TrainActiveProgramData?
+    ) {
+        binding.tvCalendarPaused.visibility =
+            if (trainMode.isPaused == true) View.VISIBLE else View.GONE
+        binding.tvCalendarPaused.text = getString(R.string.plan_paused_hint)
+        val catch = trainMode.catchUpSuggestion
+        if (catch != null && catch.missedSlots.isNotEmpty() && program != null) {
+            binding.tvCatchUpHint.visibility = View.VISIBLE
+            binding.tvCatchUpHint.text = catch.message
+            binding.btnCatchUpOpen.visibility = View.VISIBLE
+            binding.btnCatchUpOpen.setOnClickListener {
+                val slot = catch.missedSlots.first()
+                navigateToProgramDay(program, slot.weekNumber, slot.dayNumber, sessionId = null)
+            }
+        } else {
+            binding.tvCatchUpHint.visibility = View.GONE
+            binding.btnCatchUpOpen.visibility = View.GONE
+        }
+    }
+
+    private fun navigateToProgramDay(
+        @Suppress("UNUSED_PARAMETER") program: com.trainingvalidator.poc.network.TrainActiveProgramData,
+        weekNumber: Int,
+        dayNumber: Int,
+        sessionId: String?
+    ) {
+        val cachedData = homeRepository.getCachedData()
+        val activePlanProgram = cachedData?.activePlan?.programs?.firstOrNull { it.status == "active" }
+        val programInfo = activePlanProgram?.program
+        if (programInfo != null) {
+            startActivity(
+                Intent(requireContext(), ProgramSessionActivity::class.java).apply {
+                    putExtra(ProgramSessionActivity.EXTRA_PROGRAM_SLUG, programInfo.slug)
+                    putExtra(ProgramSessionActivity.EXTRA_PROGRAM_ID, programInfo.id)
+                    putExtra(ProgramSessionActivity.EXTRA_WEEK_NUMBER, weekNumber)
+                    putExtra(ProgramSessionActivity.EXTRA_DAY_NUMBER, dayNumber)
+                    if (sessionId != null) {
+                        putExtra(ProgramSessionActivity.EXTRA_TARGET_SESSION_ID, sessionId)
+                    }
+                }
+            )
+        } else {
+            startActivity(PlanOverviewActivity.createIntent(requireContext()))
+        }
     }
 
     override fun onDestroyView() {

@@ -175,10 +175,12 @@ class ProgramDayActivity : AppCompatActivity() {
                 val btnSessionRestart = sessionView.findViewById<ImageView>(R.id.btnSessionRestart)
 
                 tvSessionName.text = session.name.get(language).ifBlank { session.name.en }
-                
-                // Details (e.g., 6 exercises • 25 min)
-                val duration = "${session.items.size * 5} min" // Rough estimate
-                tvSessionDetails.text = "${session.items.size} exercises • $duration"
+
+                // Details (e.g., 6 exercises • ~25 min)
+                val durationText = session.estimatedDurationMin?.let { em ->
+                    getString(R.string.session_duration_badge, em)
+                } ?: "${session.items.size * 5} min"
+                tvSessionDetails.text = "${session.items.size} exercises • $durationText"
 
                 val report = reportStore.getBySession(session.id)
                 val isCompleted = report != null

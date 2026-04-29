@@ -25,6 +25,10 @@ import {
   effectivePlanService,
 } from '@/modules/effective-plan/effective-plan.service';
 import { resolveCurrentProgramDay } from '@/modules/active-plan/plan-position';
+import {
+  computeCatchUpSuggestion,
+  type CatchUpSuggestion,
+} from '@/modules/programs/program-catchup';
 
 // ── Types ──────────────────────────────────────────────────────────────────
 
@@ -58,6 +62,9 @@ interface TrainModeData {
   } | null;
   dayType: string | null;
   nextReassessment: { scheduledDate: string; reason: string } | null;
+  /** Calendar pause — training days do not advance while paused */
+  isPaused: boolean;
+  catchUpSuggestion: CatchUpSuggestion | null;
 }
 
 interface AlertData {
@@ -270,18 +277,42 @@ async function buildTrainMode(
 
   // State 1: No assessment ever done
   if (!latestAssessment) {
-    return { status: 'no_assessment', activeProgram: null, todaySession: null, dayType: null, nextReassessment: null };
+    return {
+      status: 'no_assessment',
+      activeProgram: null,
+      todaySession: null,
+      dayType: null,
+      nextReassessment: null,
+      isPaused: false,
+      catchUpSuggestion: null,
+    };
   }
 
   // State 2: Reassessment overdue — show before anything else
   if (pendingReassessment && new Date() >= pendingReassessment.scheduledDate) {
-    return { status: 'reassessment_due', activeProgram: null, todaySession: null, dayType: null, nextReassessment: reassessmentData };
+    return {
+      status: 'reassessment_due',
+      activeProgram: null,
+      todaySession: null,
+      dayType: null,
+      nextReassessment: reassessmentData,
+      isPaused: false,
+      catchUpSuggestion: null,
+    };
   }
 
   // State 3: No active program in plan
   const activeSlot = activePlan?.programs?.[0];
   if (!activeSlot || !activeSlot.userProgram?.program) {
-    return { status: 'no_plan', activeProgram: null, todaySession: null, dayType: null, nextReassessment: reassessmentData };
+    return {
+      status: 'no_plan',
+      activeProgram: null,
+      todaySession: null,
+      dayType: null,
+      nextReassessment: reassessmentData,
+      isPaused: false,
+      catchUpSuggestion: null,
+    };
   }
 
   const program = activeSlot.userProgram.program;
@@ -289,9 +320,24 @@ async function buildTrainMode(
   const position = resolveCurrentProgramDay(program.weeks as any[], progressEntries, {
     startDate: activeSlot.userProgram.startDate,
     durationWeeks: program.durationWeeks,
+    totalPausedDays: activeSlot.userProgram.totalPausedDays,
+    pausedAt: activeSlot.userProgram.pausedAt,
   });
   const targetWeek = position.targetWeekNumber;
   const targetDay = position.targetDayNumber;
+
+  const isPaused = Boolean(activeSlot.userProgram.pausedAt);
+  let catchUpSuggestion: CatchUpSuggestion | null = null;
+  if (!position.isProgramComplete) {
+    catchUpSuggestion = await computeCatchUpSuggestion(
+      userId,
+      program.id,
+      program.weeks,
+      program.durationWeeks,
+      targetWeek,
+      targetDay,
+    );
+  }
 
   // State 4: Program complete (exceeded all weeks)
   if (position.isProgramComplete) {
@@ -311,6 +357,8 @@ async function buildTrainMode(
       todaySession: null,
       dayType: 'completed',
       nextReassessment: reassessmentData,
+      isPaused,
+      catchUpSuggestion: null,
     };
   }
 
@@ -337,6 +385,8 @@ async function buildTrainMode(
       todaySession: null,
       dayType: day?.dayType ?? 'rest',
       nextReassessment: reassessmentData,
+      isPaused,
+      catchUpSuggestion,
     };
   }
 
@@ -355,6 +405,8 @@ async function buildTrainMode(
       todaySession: null,
       dayType: 'day_complete',
       nextReassessment: reassessmentData,
+      isPaused,
+      catchUpSuggestion,
     };
   }
 
@@ -389,6 +441,8 @@ async function buildTrainMode(
     },
     dayType: 'training',
     nextReassessment: reassessmentData,
+    isPaused,
+    catchUpSuggestion,
   };
 }
 

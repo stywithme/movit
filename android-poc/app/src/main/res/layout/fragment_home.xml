@@ -347,6 +347,35 @@
                         android:layout_marginTop="@dimen/spacing_xs"
                         tools:text="Morning Session • 5 items" />
 
+                    <TextView
+                        android:id="@+id/tvCalendarPaused"
+                        style="@style/TextAppearance.WayToFix.Caption"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="@dimen/spacing_sm"
+                        android:textColor="@color/warning"
+                        android:visibility="gone"
+                        tools:text="Plan paused — calendar frozen" />
+
+                    <TextView
+                        android:id="@+id/tvCatchUpHint"
+                        style="@style/TextAppearance.WayToFix.Caption"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="@dimen/spacing_xs"
+                        android:textColor="@color/text_secondary"
+                        android:visibility="gone"
+                        tools:text="Catch-up: you missed several training days" />
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btnCatchUpOpen"
+                        style="@style/Widget.WayToFix.Button.Secondary"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="@dimen/spacing_sm"
+                        android:text="@string/catch_up_open_missed"
+                        android:visibility="gone" />
+
                     <com.google.android.material.button.MaterialButton
                         android:id="@+id/btnStartTodayPlan"
                         style="@style/Widget.WayToFix.Button.Primary"

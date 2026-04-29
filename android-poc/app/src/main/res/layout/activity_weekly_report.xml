@@ -61,6 +61,16 @@
             android:textSize="12sp"
             tools:text="Weekly progress summary" />
 
+        <TextView
+            android:id="@+id/tvProgressMetrics"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="@dimen/spacing_md"
+            android:textColor="@color/text_secondary"
+            android:textSize="12sp"
+            android:visibility="gone"
+            tools:text="Program load trend" />
+
     </LinearLayout>
 
     <androidx.recyclerview.widget.RecyclerView

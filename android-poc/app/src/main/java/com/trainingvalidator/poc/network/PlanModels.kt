@@ -97,7 +97,20 @@ data class TodayPlanResponse(
 data class TodayPlanData(
     val activePlanStatus: String,
     val currentProgram: TodayProgramData? = null,
-    val nextReassessment: NextReassessmentData? = null
+    val nextReassessment: NextReassessmentData? = null,
+    val isPaused: Boolean? = null,
+    val catchUpSuggestion: CatchUpSuggestionData? = null
+)
+
+data class CatchUpSuggestionData(
+    val missedTrainingDays: Int,
+    val message: String,
+    val missedSlots: List<MissedSlotData>
+)
+
+data class MissedSlotData(
+    val weekNumber: Int,
+    val dayNumber: Int
 )
 
 data class TodayProgramData(
@@ -202,6 +215,7 @@ data class EffectivePlanSessionData(
     val id: String,
     val name: Map<String, String>?,
     val sortOrder: Int,
+    val estimatedDurationMin: Int? = null,
     val items: List<EffectivePlanItemData>
 )
 
@@ -222,7 +236,8 @@ data class EffectivePlanItemData(
     val intent: String? = null,
     val coachingNotes: Map<String, @JvmSuppressWildcards Any>? = null,
     val skipped: Boolean? = null,
-    val suggestion: EffectivePlanSuggestion? = null
+    val suggestion: EffectivePlanSuggestion? = null,
+    val allowedSubstitutions: List<String>? = null
 )
 
 data class EffectivePlanSuggestion(
@@ -279,4 +294,79 @@ data class TrainingProfileApiResponse(
 data class TrainingProfilePayload(
     val trainingGoal: String? = null,
     val profile: Map<String, @JvmSuppressWildcards Any?>? = null
+)
+
+// ── Enrollment / preview / substitutions / progress metrics ──
+
+data class EnrollmentCheckApiResponse(
+    val success: Boolean,
+    val data: EnrollmentCheckData? = null,
+    val error: String? = null
+)
+
+data class EnrollmentCheckData(
+    val hasActiveProgram: Boolean,
+    val willReplace: Boolean,
+    val activeProgram: ActiveEnrollmentSummary? = null
+)
+
+data class ActiveEnrollmentSummary(
+    val id: String,
+    val name: Map<String, String>,
+    val programId: String?,
+    val progress: EnrollmentProgressSummary
+)
+
+data class EnrollmentProgressSummary(
+    val completedDays: Int,
+    val totalDays: Int,
+    val percentage: Int
+)
+
+data class ProgramPreviewApiResponse(
+    val success: Boolean,
+    val data: com.trainingvalidator.poc.training.models.ProgramConfig? = null,
+    val error: String? = null
+)
+
+data class SubstitutionExercisesApiResponse(
+    val success: Boolean,
+    val data: List<SubstitutionExerciseRow>? = null,
+    val error: String? = null
+)
+
+data class SubstitutionExerciseRow(
+    val id: String,
+    val slug: String,
+    val name: Map<String, String>? = null
+)
+
+data class ProgramProgressMetricsApiResponse(
+    val success: Boolean,
+    val data: ProgramProgressMetricsPayload? = null,
+    val error: String? = null
+)
+
+data class ProgramProgressMetricsPayload(
+    val userProgramId: String,
+    val programId: String?,
+    val weeks: List<WeekProgressPoint>,
+    val exerciseOverload: List<ExerciseOverloadRow>
+)
+
+data class WeekProgressPoint(
+    val weekNumber: Int,
+    val totalVolumeLoad: Double,
+    val avgFormScore: Double?,
+    val sessionCount: Int,
+    val avgRpe: Double?,
+    val volumeChangePercent: Double?
+)
+
+data class ExerciseOverloadRow(
+    val exerciseId: String,
+    val exerciseSlug: String?,
+    val currentWeightKg: Double?,
+    val initialWeightKg: Double?,
+    val overloadPercent: Double?
 )

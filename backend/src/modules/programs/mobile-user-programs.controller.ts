@@ -5,6 +5,7 @@ import { getPrisma } from '@/lib/prisma/client';
 import type { Prisma } from '@prisma/client';
 import { effectivePlanService } from '@/modules/effective-plan/effective-plan.service';
 import { programService } from './programs.service';
+import { programProgressService } from './program-progress.service';
 import { programCompletionService } from './program-completion.service';
 
 @Controller('mobile/user-programs')
@@ -33,6 +34,31 @@ export class MobileUserProgramsController {
       console.error('Error updating user program:', error);
       res.status(500);
       return { success: false, error: 'Failed to update user program' };
+    }
+  }
+
+  @Get(':id/progress-metrics')
+  async getProgressMetrics(
+    @Req() req: Request,
+    @Param('id') id: string,
+    @Res({ passthrough: true }) res: Response,
+  ) {
+    try {
+      const authResult = await verifyMobileToken(req);
+      if (!authResult.success || !authResult.userId) {
+        res.status(401);
+        return { success: false, error: authResult.error || 'Unauthorized' };
+      }
+      const data = await programProgressService.getProgressMetrics(authResult.userId, id);
+      if (!data) {
+        res.status(404);
+        return { success: false, error: 'User program not found' };
+      }
+      return { success: true, data };
+    } catch (error) {
+      console.error('Error fetching program progress metrics:', error);
+      res.status(500);
+      return { success: false, error: 'Failed to fetch progress metrics' };
     }
   }
 

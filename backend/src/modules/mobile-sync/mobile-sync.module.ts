@@ -2,8 +2,14 @@ import { Module } from '@nestjs/common';
 import { MobileSyncController } from './mobile-sync.controller';
 import { MobileExploreController } from './mobile-explore.controller';
 import { MobileHomeController } from './mobile-home.controller';
+import { MobileExercisesController } from './mobile-exercises.controller';
 
 @Module({
-  controllers: [MobileSyncController, MobileExploreController, MobileHomeController],
+  controllers: [
+    MobileSyncController,
+    MobileExploreController,
+    MobileHomeController,
+    MobileExercisesController,
+  ],
 })
 export class MobileSyncModule {}

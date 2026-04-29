@@ -498,6 +498,12 @@ model UserProgram {
   startDate       DateTime              @default(now())
   isActive        Boolean               @default(true)
   customizations  Json?
+  /// When set, calendar day index is frozen (pause duration subtracted until resume adds to totalPausedDays).
+  pausedAt        DateTime?
+  /// Cumulative calendar days excluded from program timeline (from completed pauses).
+  totalPausedDays Int                   @default(0)
+  /// Last time server-side customizations were changed (coach/admin); used for mobile sync conflict resolution.
+  customizationsUpdatedAt DateTime?
   templateVersion Int                   @default(1)
   assignmentReason Json?
   createdAt       DateTime              @default(now())
@@ -567,6 +573,8 @@ model ProgramSessionReport {
   totalReps        Int?
   avgAccuracy      Float?
   avgFormScore     Float?
+  /// User-reported perceived exertion (1–10) after session completion.
+  rpe              Int?
   report           Json?
   createdAt        DateTime       @default(now())
   updatedAt        DateTime       @updatedAt

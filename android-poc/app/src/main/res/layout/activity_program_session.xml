@@ -59,6 +59,16 @@
                     tools:text="Week 2 · 3 sessions" />
             </LinearLayout>
 
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnSkipWarmup"
+                style="@style/Widget.MaterialComponents.Button.TextButton"
+                android:layout_width="wrap_content"
+                android:layout_height="36dp"
+                android:visibility="gone"
+                android:text="@string/skip_warmup"
+                android:textColor="@color/text_secondary"
+                android:textSize="12sp" />
+
             <!-- Edit mode toggle -->
             <com.google.android.material.button.MaterialButton
                 android:id="@+id/btnEditMode"

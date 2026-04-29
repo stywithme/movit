@@ -4,6 +4,7 @@ import android.util.Log
 import android.view.View
 import android.widget.LinearLayout
 import android.widget.TextView
+import androidx.appcompat.widget.SwitchCompat
 import androidx.lifecycle.lifecycleScope
 import com.google.android.material.button.MaterialButton
 import com.google.android.material.textfield.TextInputEditText
@@ -331,5 +332,136 @@ class TrainingPreferenceDialogs(
                 Log.w(TrainingActivity.TAG, "pushUserExercisePreferenceDelete failed", e)
             }
         }
+    }
+
+    /**
+     * Multi-set weighted exercise: collect per-set weights (or same for all) before starting the first set.
+     */
+    fun showSessionPerSetWeightDialogIfNeeded(
+        totalSets: Int,
+        suggestedWeight: Float?,
+        minWeight: Float?,
+        maxWeight: Float?,
+        onApply: (List<Float>) -> Unit,
+        onCancel: () -> Unit
+    ) {
+        if (totalSets <= 1) return
+
+        val pad = (16 * host.resources.displayMetrics.density).toInt()
+        val scroll = android.widget.ScrollView(host)
+        val root = android.widget.LinearLayout(host).apply {
+            orientation = android.widget.LinearLayout.VERTICAL
+            setPadding(pad, pad, pad, pad)
+        }
+        scroll.addView(root)
+
+        val sameSwitch = SwitchCompat(host).apply {
+            text = host.getString(R.string.weight_same_for_all_sets)
+            isChecked = true
+        }
+        root.addView(sameSwitch)
+
+        val singleLayout = com.google.android.material.textfield.TextInputLayout(host).apply {
+            hint = host.getString(R.string.weight_input_hint)
+            layoutParams = android.widget.LinearLayout.LayoutParams(
+                android.widget.LinearLayout.LayoutParams.MATCH_PARENT,
+                android.widget.LinearLayout.LayoutParams.WRAP_CONTENT
+            ).apply { topMargin = pad / 2 }
+        }
+        val singleInput = com.google.android.material.textfield.TextInputEditText(host).apply {
+            if (suggestedWeight != null && suggestedWeight > 0f) {
+                setText(suggestedWeight.toString())
+            }
+            inputType = android.text.InputType.TYPE_CLASS_NUMBER or android.text.InputType.TYPE_NUMBER_FLAG_DECIMAL
+        }
+        singleLayout.addView(singleInput)
+        root.addView(singleLayout)
+
+        val perContainer = android.widget.LinearLayout(host).apply {
+            orientation = android.widget.LinearLayout.VERTICAL
+            visibility = android.view.View.GONE
+        }
+        repeat(totalSets) { idx ->
+            val til = com.google.android.material.textfield.TextInputLayout(host).apply {
+                hint = host.getString(R.string.weight_set_number_hint, idx + 1)
+                layoutParams = android.widget.LinearLayout.LayoutParams(
+                    android.widget.LinearLayout.LayoutParams.MATCH_PARENT,
+                    android.widget.LinearLayout.LayoutParams.WRAP_CONTENT
+                ).apply { topMargin = pad / 4 }
+            }
+            val et = com.google.android.material.textfield.TextInputEditText(host).apply {
+                setText(singleInput.text?.toString().orEmpty())
+                inputType = android.text.InputType.TYPE_CLASS_NUMBER or android.text.InputType.TYPE_NUMBER_FLAG_DECIMAL
+            }
+            til.addView(et)
+            perContainer.addView(til)
+        }
+        root.addView(perContainer)
+
+        fun syncVisibility() {
+            val same = sameSwitch.isChecked
+            singleLayout.visibility = if (same) android.view.View.VISIBLE else android.view.View.GONE
+            perContainer.visibility = if (same) android.view.View.GONE else android.view.View.VISIBLE
+        }
+        sameSwitch.setOnCheckedChangeListener { _, _ -> syncVisibility() }
+        syncVisibility()
+
+        fun validateOne(w: Float): String? {
+            if (w <= 0f) return host.getString(R.string.weight_invalid)
+            if (minWeight != null && w < minWeight) return host.getString(R.string.weight_min_error, minWeight)
+            if (maxWeight != null && w > maxWeight) return host.getString(R.string.weight_max_error, maxWeight)
+            return null
+        }
+
+        val dialog = android.app.AlertDialog.Builder(host, R.style.Theme_WayToFix_Dialog)
+            .setTitle(host.getString(R.string.weight_per_set_dialog_title))
+            .setView(scroll)
+            .setCancelable(true)
+            .setNegativeButton(android.R.string.cancel) { _, _ -> onCancel() }
+            .setPositiveButton(R.string.weight_start, null)
+            .create()
+
+        dialog.setOnShowListener {
+            val btn = dialog.getButton(android.app.AlertDialog.BUTTON_POSITIVE)
+            btn.setOnClickListener {
+                if (sameSwitch.isChecked) {
+                    val w = singleInput.text?.toString()?.trim()?.toFloatOrNull()
+                    if (w == null) {
+                        singleLayout.error = host.getString(R.string.weight_invalid)
+                        return@setOnClickListener
+                    }
+                    val err = validateOne(w)
+                    if (err != null) {
+                        singleLayout.error = err
+                        return@setOnClickListener
+                    }
+                    singleLayout.error = null
+                    onApply(List(totalSets) { w })
+                    dialog.dismiss()
+                } else {
+                    val weights = mutableListOf<Float>()
+                    for (i in 0 until totalSets) {
+                        val til = perContainer.getChildAt(i) as com.google.android.material.textfield.TextInputLayout
+                        val et = til.editText ?: return@setOnClickListener
+                        val w = et.text?.toString()?.trim()?.toFloatOrNull()
+                        if (w == null) {
+                            til.error = host.getString(R.string.weight_invalid)
+                            return@setOnClickListener
+                        }
+                        val err = validateOne(w)
+                        if (err != null) {
+                            til.error = err
+                            return@setOnClickListener
+                        }
+                        til.error = null
+                        weights.add(w)
+                    }
+                    onApply(weights)
+                    dialog.dismiss()
+                }
+            }
+        }
+        dialog.setOnCancelListener { onCancel() }
+        dialog.show()
     }
 }

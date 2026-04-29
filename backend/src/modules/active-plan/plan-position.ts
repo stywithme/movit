@@ -42,6 +42,10 @@ export interface ResolveCurrentProgramDayOptions {
    * Should match Program.durationWeeks from the database.
    */
   durationWeeks?: number;
+  /** Cumulative paused days already applied (from past resumes). */
+  totalPausedDays?: number | null;
+  /** When set, days since this timestamp are excluded from the program timeline until resume. */
+  pausedAt?: Date | string | null;
 }
 
 function toDayKey(weekNumber: number, dayNumber: number): string {
@@ -64,6 +68,22 @@ export function getProgramCalendarDayIndex(startDate: Date, now: Date): number {
   const today = normalizeDate(now);
   const diffMs = Math.max(0, today.getTime() - start.getTime());
   return Math.floor(diffMs / (24 * 60 * 60 * 1000));
+}
+
+/**
+ * Calendar day index adjusted for pause: raw elapsed minus completed pause days
+ * minus ongoing pause (days since pausedAt).
+ */
+export function getEffectiveProgramCalendarDayIndex(
+  startDate: Date,
+  now: Date,
+  opts: { totalPausedDays?: number | null; pausedAt?: Date | string | null } = {},
+): number {
+  const raw = getProgramCalendarDayIndex(startDate, now);
+  const totalPaused = Math.max(0, opts.totalPausedDays ?? 0);
+  const pauseStart = toValidDate(opts.pausedAt ?? null);
+  const ongoingPauseDays = pauseStart ? getProgramCalendarDayIndex(pauseStart, now) : 0;
+  return Math.max(0, raw - totalPaused - ongoingPauseDays);
 }
 
 function findDayRef<TWeek, TDay>(
@@ -139,7 +159,10 @@ export function resolveCurrentProgramDay<
   // ── Calendar-based: anchor to enrollment date and durationWeeks * 7 ─────────
   if (startDate && options.durationWeeks != null && options.durationWeeks > 0) {
     const totalCalendarDays = options.durationWeeks * 7;
-    const dayIndex = getProgramCalendarDayIndex(startDate, now);
+    const dayIndex = getEffectiveProgramCalendarDayIndex(startDate, now, {
+      totalPausedDays: options.totalPausedDays,
+      pausedAt: options.pausedAt,
+    });
     let isProgramComplete = dayIndex >= totalCalendarDays;
     let weekNumber: number;
     let dayNumber: number;
@@ -186,7 +209,10 @@ export function resolveCurrentProgramDay<
   const dateBasedTarget =
     startDate && totalDaysLegacy > 0
       ? (() => {
-          const dayIndex = getProgramCalendarDayIndex(startDate, now);
+          const dayIndex = getEffectiveProgramCalendarDayIndex(startDate, now, {
+            totalPausedDays: options.totalPausedDays,
+            pausedAt: options.pausedAt,
+          });
           return {
             targetIndex: Math.min(dayIndex, totalDaysLegacy - 1),
             isProgramComplete: dayIndex >= totalDaysLegacy,

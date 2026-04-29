@@ -40,6 +40,7 @@ data class ProgramSession(
     val id: String,
     val name: LocalizedText,
     val sortOrder: Int = 0,
+    val estimatedDurationMin: Int? = null,
     val items: List<ProgramSessionItem> = emptyList()
 )
 
@@ -47,6 +48,10 @@ data class ProgramSessionItem(
     val type: String,
     val serverItemId: String? = null,
     val exerciseSlug: String? = null,
+    val deletedExercise: Boolean? = null,
+    val role: String? = null,
+    val intent: String? = null,
+    val allowedSubstitutions: List<String> = emptyList(),
     val sets: Int? = null,
     val targetReps: Int? = null,
     val targetDuration: Int? = null,

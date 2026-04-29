@@ -1,6 +1,7 @@
 package com.trainingvalidator.poc.training.session
 
 import android.util.Log
+import java.util.Locale
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -32,6 +33,13 @@ class SessionTrainingEngine(
         private const val DEFAULT_REST_BETWEEN_SETS_MS = 30000L
         private const val DEFAULT_REST_BETWEEN_EXERCISES_MS = 60000L
         private const val MIN_EXERCISE_PREVIEW_MS = 5000L
+    }
+
+    /** Warm-up / activation / cooldown blocks are excluded from session-level progress totals. */
+    private fun countsTowardSessionProgress(item: ProgramSessionItem): Boolean {
+        val r = item.role?.trim()?.uppercase(Locale.US).orEmpty()
+        if (r.isEmpty()) return true
+        return r !in setOf("WARMUP", "ACTIVATION", "COOLDOWN")
     }
 
     // ==================== State Sealed Class ====================
@@ -163,7 +171,7 @@ class SessionTrainingEngine(
     )
 
     /** Exercise items only (rest-type items become restAfterMs on the preceding exercise). */
-    private val exerciseItems: List<IndexedItem>
+    private val exerciseItems = mutableListOf<IndexedItem>()
 
     /** Current position */
     private var currentExerciseIdx = 0
@@ -205,7 +213,8 @@ class SessionTrainingEngine(
             }
             i++
         }
-        exerciseItems = items
+        exerciseItems.clear()
+        exerciseItems.addAll(items)
         Log.d(TAG, "Session engine created with ${exerciseItems.size} exercise items")
     }
 
@@ -229,9 +238,10 @@ class SessionTrainingEngine(
     /** Total exercise count (not including rest items). */
     fun getExerciseCount(): Int = exerciseItems.size
 
-    /** Total sets planned across all exercises. */
-    fun getTotalSetsPlanned(): Int = exerciseItems.sumOf {
-        it.item.sets?.coerceAtLeast(1) ?: 1
+    /** Total sets planned across exercises that count toward session progress (excludes warm-up ladder roles). */
+    fun getTotalSetsPlanned(): Int = exerciseItems.sumOf { indexed ->
+        if (!countsTowardSessionProgress(indexed.item)) 0
+        else indexed.item.sets?.coerceAtLeast(1) ?: 1
     }
 
     /** Current exercise's ProgramSessionItem (or null if out of range). */
@@ -255,6 +265,18 @@ class SessionTrainingEngine(
             return perSet[currentSetNumber - 1]
         }
         return item.weightKg
+    }
+
+    /** Update planned weights for the current exercise (session mode, before training). */
+    fun setWeightPerSetForCurrentExercise(weights: List<Float>?) {
+        val idx = currentExerciseIdx
+        val cur = exerciseItems.getOrNull(idx) ?: return
+        val first = weights?.firstOrNull { it > 0f }
+        val newItem = cur.item.copy(
+            weightPerSet = weights,
+            weightKg = first ?: cur.item.weightKg
+        )
+        exerciseItems[idx] = cur.copy(item = newItem)
     }
 
     /** Start the session. */
@@ -399,18 +421,24 @@ class SessionTrainingEngine(
             )
         }.filterNotNull()
 
-        val allFormScores = allSetMetrics.map { it.formScore }
+        val progressMetrics = allSetMetrics.filter { m ->
+            val indexed = exerciseItems.getOrNull(m.exerciseIndex) ?: return@filter false
+            countsTowardSessionProgress(indexed.item)
+        }
+        val progressFormScores = progressMetrics.map { it.formScore }
+
+        val progressExerciseCount = exerciseItems.count { countsTowardSessionProgress(it.item) }
 
         return SessionReport(
-            totalExercises = exerciseItems.size,
-            totalSetsCompleted = allSetMetrics.size,
+            totalExercises = progressExerciseCount,
+            totalSetsCompleted = progressMetrics.size,
             totalSetsPlanned = getTotalSetsPlanned(),
-            totalReps = allSetMetrics.sumOf { it.repsCompleted },
+            totalReps = progressMetrics.sumOf { it.repsCompleted },
             totalDurationMs = totalDuration,
-            averageAccuracy = if (allSetMetrics.isNotEmpty())
-                allSetMetrics.map { it.accuracy }.average().toFloat() else 0f,
-            averageFormScore = if (allFormScores.isNotEmpty())
-                allFormScores.average().toFloat() else 0f,
+            averageAccuracy = if (progressMetrics.isNotEmpty())
+                progressMetrics.map { it.accuracy }.average().toFloat() else 0f,
+            averageFormScore = if (progressFormScores.isNotEmpty())
+                progressFormScores.average().toFloat() else 0f,
             exerciseReports = exerciseReports,
             reportIds = exerciseReports.mapNotNull { it.reportId },
             sessionIds = exerciseReports.mapNotNull { it.sessionId }
