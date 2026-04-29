@@ -183,6 +183,22 @@ interface MobileSyncApi {
         @Header("Authorization") authorization: String
     ): Response<ActivePlanResponse>
 
+    @GET("api/mobile/plan/enrollment-check")
+    suspend fun enrollmentCheck(
+        @Header("Authorization") authorization: String,
+        @Query("programId") programId: String
+    ): Response<EnrollmentCheckApiResponse>
+
+    @POST("api/mobile/plan/pause")
+    suspend fun pausePlan(
+        @Header("Authorization") authorization: String
+    ): Response<Map<String, @JvmSuppressWildcards Any?>>
+
+    @POST("api/mobile/plan/resume")
+    suspend fun resumePlan(
+        @Header("Authorization") authorization: String
+    ): Response<Map<String, @JvmSuppressWildcards Any?>>
+
     // ─── Progression Endpoints ──────────────────────────────────
 
     /**
@@ -363,6 +379,22 @@ interface MobileSyncApi {
         @Path("id") userProgramId: String,
         @Header("Authorization") authorization: String
     ): Response<ProgramCompleteApiResponse>
+
+    @GET("api/mobile/user-programs/{id}/progress-metrics")
+    suspend fun getProgramProgressMetrics(
+        @Path("id") userProgramId: String,
+        @Header("Authorization") authorization: String
+    ): Response<ProgramProgressMetricsApiResponse>
+
+    @GET("api/mobile/programs/{id}/preview")
+    suspend fun getProgramPreview(@Path("id") programId: String): Response<ProgramPreviewApiResponse>
+
+    @GET("api/mobile/exercises/substitutions")
+    suspend fun getSubstitutionExercises(
+        @Header("Authorization") authorization: String,
+        @Query("slug") slug: String,
+        @Query("limit") limit: Int? = null
+    ): Response<SubstitutionExercisesApiResponse>
 
     @GET("api/mobile/training-profile")
     suspend fun getTrainingProfile(

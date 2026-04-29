@@ -346,6 +346,33 @@ class TrainingSessionModeController(
         val engine = sessionEngine ?: return
         val item = state.item
         val slug = item.exerciseSlug ?: return
+        val cfg = sessionExerciseConfigMap[slug]
+        val totalSets = item.sets?.coerceAtLeast(1) ?: 1
+        val supportsWeight = cfg?.supportsWeight == true
+
+        if (state.setNumber == 1 && supportsWeight && totalSets > 1) {
+            preferences.showSessionPerSetWeightDialogIfNeeded(
+                totalSets = totalSets,
+                suggestedWeight = engine.getCurrentSetWeight() ?: cfg?.defaultWeight,
+                minWeight = cfg?.minWeight,
+                maxWeight = cfg?.maxWeight,
+                onApply = { weights ->
+                    engine.setWeightPerSetForCurrentExercise(weights)
+                    proceedSessionStartFromPreExercise(state, slug)
+                },
+                onCancel = { /* stay on pre-exercise */ }
+            )
+            return
+        }
+        proceedSessionStartFromPreExercise(state, slug)
+    }
+
+    private fun proceedSessionStartFromPreExercise(
+        state: SessionTrainingEngine.State.PreExercise,
+        slug: String
+    ) {
+        val engine = sessionEngine ?: return
+        val item = state.item
         hideSessionPanels()
         val b = host.binding
         b.bottomStatsBar.visibility = View.VISIBLE

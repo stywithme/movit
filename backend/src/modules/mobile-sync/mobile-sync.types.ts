@@ -189,6 +189,9 @@ export interface UserProgramExport {
   isActive: boolean;
   customizations?: Record<string, unknown> | null;
   updatedAt: string;
+  pausedAt?: string | null;
+  totalPausedDays?: number;
+  customizationsUpdatedAt?: string | null;
 }
 
 /** User overrides for a single exercise (mobile standalone training) */
@@ -217,6 +220,7 @@ export interface SessionReportExport {
   totalReps: number;
   avgAccuracy: number;
   avgFormScore?: number;
+  rpe?: number | null;
   report?: unknown;        // Full JSON report (ExerciseReports, SetMetrics, RepDetails)
 }
 

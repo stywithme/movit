@@ -137,6 +137,24 @@
                         android:paddingBottom="4dp" />
                 </HorizontalScrollView>
 
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnLoadServerPreview"
+                    style="@style/Widget.WayToFix.Button.Secondary"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="12dp"
+                    android:text="@string/program_preview_expand"
+                    android:visibility="gone" />
+
+                <TextView
+                    android:id="@+id/tvServerPreviewSummary"
+                    style="@style/TextAppearance.WayToFix.Body2"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="8dp"
+                    android:textColor="@color/text_secondary"
+                    android:visibility="gone" />
+
                 <TextView
                     android:id="@+id/tvProgramPolicies"
                     style="@style/TextAppearance.WayToFix.Body2"
@@ -291,20 +309,31 @@
     </androidx.core.widget.NestedScrollView>
 
     <!-- Floating Start/Resume CTA -->
-    <FrameLayout
+    <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_gravity="bottom"
+        android:orientation="vertical"
         android:background="@drawable/gradient_bottom"
         android:padding="24dp">
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnPauseResumePlan"
+            style="@style/Widget.WayToFix.Button.Secondary"
+            android:layout_width="match_parent"
+            android:layout_height="48dp"
+            android:layout_marginBottom="8dp"
+            android:text="@string/plan_pause_calendar"
+            android:textSize="14sp"
+            android:visibility="gone" />
 
         <com.google.android.material.button.MaterialButton
             android:id="@+id/btnStartProgram"
             style="@style/Widget.WayToFix.Button.Primary"
             android:layout_width="match_parent"
             android:layout_height="56dp"
-                android:text="@string/start_program"
+            android:text="@string/start_program"
             android:textSize="16sp" />
-    </FrameLayout>
+    </LinearLayout>
 
 </androidx.coordinatorlayout.widget.CoordinatorLayout>

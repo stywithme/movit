@@ -13,9 +13,10 @@ import {
   type EffectivePlanSession,
 } from '@/modules/effective-plan/effective-plan.service';
 import type { ProgramAssignmentReason } from '@/modules/programs/program-assignment';
-import { resolveCurrentProgramDay } from './plan-position';
+import { resolveCurrentProgramDay, getProgramCalendarDayIndex } from './plan-position';
 import { programCompletionService } from '@/modules/programs/program-completion.service';
 import type { ProgramCompletionDecision } from '@/modules/programs/program-completion.service';
+import { computeCatchUpSuggestion } from '@/modules/programs/program-catchup';
 
 interface EnrollProgramOptions {
   assignmentReason?: ProgramAssignmentReason | null;
@@ -77,6 +78,25 @@ export interface TodayPlanData {
   nextReassessment: {
     scheduledDate: string;
     reason: string;
+  } | null;
+  /** True when the active enrollment is paused (calendar frozen). */
+  isPaused?: boolean;
+  /** When the user has fallen behind completed sessions vs calendar position. */
+  catchUpSuggestion?: {
+    missedTrainingDays: number;
+    message: string;
+    missedSlots: { weekNumber: number; dayNumber: number }[];
+  } | null;
+}
+
+export interface EnrollmentCheckData {
+  hasActiveProgram: boolean;
+  willReplace: boolean;
+  activeProgram: {
+    id: string;
+    name: Record<string, string>;
+    programId: string | null;
+    progress: { completedDays: number; totalDays: number; percentage: number };
   } | null;
 }
 
@@ -161,6 +181,8 @@ export const activePlanService = {
           ? resolveCurrentProgramDay(prog.weeks, progressEntries, {
               startDate: slot.userProgram.startDate,
               durationWeeks: prog.durationWeeks,
+              totalPausedDays: slot.userProgram.totalPausedDays,
+              pausedAt: slot.userProgram.pausedAt,
             })
           : null;
 
@@ -340,6 +362,8 @@ export const activePlanService = {
               reason: nextReassessment.reason,
             }
           : null,
+        isPaused: false,
+        catchUpSuggestion: null,
       };
     }
 
@@ -355,6 +379,8 @@ export const activePlanService = {
               reason: nextReassessment.reason,
             }
           : null,
+        isPaused: false,
+        catchUpSuggestion: null,
       };
     }
 
@@ -362,6 +388,8 @@ export const activePlanService = {
     const position = resolveCurrentProgramDay(program.weeks, progressEntries, {
       startDate: activeSlot.userProgram.startDate,
       durationWeeks: program.durationWeeks,
+      totalPausedDays: activeSlot.userProgram.totalPausedDays,
+      pausedAt: activeSlot.userProgram.pausedAt,
     });
     const targetWeek = position.targetWeekNumber;
     const targetDay = position.targetDayNumber;
@@ -385,6 +413,8 @@ export const activePlanService = {
               reason: nextReassessment.reason,
             }
           : null,
+        isPaused: false,
+        catchUpSuggestion: null,
       };
     }
 
@@ -405,6 +435,8 @@ export const activePlanService = {
               reason: nextReassessment.reason,
             }
           : null,
+        isPaused: Boolean(activeSlot.userProgram.pausedAt),
+        catchUpSuggestion: null,
       };
     }
 
@@ -421,6 +453,15 @@ export const activePlanService = {
     } catch (error) {
       console.warn('[ActivePlan] effective plan for today:', error);
     }
+
+    const catchUpSuggestion = await computeCatchUpSuggestion(
+      userId,
+      program.id,
+      program.weeks,
+      program.durationWeeks,
+      targetWeek,
+      targetDay,
+    );
 
     return {
       activePlanStatus: plan.status,
@@ -451,6 +492,100 @@ export const activePlanService = {
             reason: nextReassessment.reason,
           }
         : null,
+      isPaused: Boolean(activeSlot.userProgram.pausedAt),
+      catchUpSuggestion,
+    };
+  },
+
+  async pauseActiveProgram(userId: string): Promise<{ success: boolean; error?: string }> {
+    const prisma = await getPrisma();
+    const plan = await prisma.activePlan.findUnique({
+      where: { userId },
+      include: {
+        programs: { where: { status: 'active' }, select: { userProgramId: true } },
+      },
+    });
+    const slot = plan?.programs[0];
+    if (!slot) return { success: false, error: 'no_active_program' };
+    const up = await prisma.userProgram.findFirst({
+      where: { id: slot.userProgramId, userId },
+    });
+    if (!up) return { success: false, error: 'user_program_not_found' };
+    if (up.pausedAt) return { success: false, error: 'already_paused' };
+    await prisma.userProgram.update({
+      where: { id: up.id },
+      data: { pausedAt: new Date() },
+    });
+    return { success: true };
+  },
+
+  async resumeActiveProgram(userId: string): Promise<{ success: boolean; error?: string }> {
+    const prisma = await getPrisma();
+    const up = await prisma.userProgram.findFirst({
+      where: { userId, isActive: true, pausedAt: { not: null } },
+    });
+    if (!up?.pausedAt) return { success: false, error: 'not_paused' };
+    const pauseDays = getProgramCalendarDayIndex(up.pausedAt, new Date());
+    await prisma.userProgram.update({
+      where: { id: up.id },
+      data: {
+        totalPausedDays: up.totalPausedDays + pauseDays,
+        pausedAt: null,
+      },
+    });
+    return { success: true };
+  },
+
+  async getEnrollmentCheck(userId: string, programId: string): Promise<EnrollmentCheckData> {
+    const prisma = await getPrisma();
+    const active = await prisma.userProgram.findFirst({
+      where: { userId, isActive: true },
+      include: {
+        program: {
+          include: {
+            weeks: {
+              orderBy: [{ sortOrder: 'asc' }, { weekNumber: 'asc' }],
+              include: {
+                days: {
+                  orderBy: { dayNumber: 'asc' },
+                  include: { sessions: { select: { id: true } } },
+                },
+              },
+            },
+          },
+        },
+        progress: true,
+      },
+    });
+
+    if (!active?.program) {
+      return { hasActiveProgram: false, willReplace: false, activeProgram: null };
+    }
+
+    const willReplace = active.programId !== programId;
+    const position = resolveCurrentProgramDay(active.program.weeks, active.progress ?? [], {
+      startDate: active.startDate,
+      durationWeeks: active.program.durationWeeks,
+      totalPausedDays: active.totalPausedDays,
+      pausedAt: active.pausedAt,
+    });
+    const totalDays = active.program.durationWeeks * 7;
+    const percentage =
+      totalDays > 0 ? Math.round((position.completedDayCount / totalDays) * 100) : 0;
+
+    return {
+      hasActiveProgram: true,
+      willReplace,
+      activeProgram: {
+        id: active.id,
+        name: active.program.name as Record<string, string>,
+        programId: active.programId,
+        progress: {
+          completedDays: position.completedDayCount,
+          totalDays,
+          percentage: Math.min(100, Math.max(0, percentage)),
+        },
+      },
     };
   },
 

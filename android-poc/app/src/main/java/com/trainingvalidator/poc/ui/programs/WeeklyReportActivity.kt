@@ -10,8 +10,10 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.trainingvalidator.poc.R
 import com.trainingvalidator.poc.databinding.ActivityWeeklyReportBinding
+import com.trainingvalidator.poc.network.ApiClient
 import com.trainingvalidator.poc.network.MetricsResponse
 import com.trainingvalidator.poc.network.WeekMetrics
+import com.trainingvalidator.poc.storage.AuthManager
 import com.trainingvalidator.poc.storage.ProgramRepository
 import com.trainingvalidator.poc.storage.ProgramSessionReportStore
 import com.trainingvalidator.poc.storage.ReportRepository
@@ -70,6 +72,7 @@ class WeeklyReportActivity : AppCompatActivity() {
 
             // First: show local data immediately
             bindProgram(program, programId)
+            fetchProgramProgressMetrics(programId)
 
             // Then: fetch unified metrics from backend for enhanced display
             fetchUnifiedMetrics(program, programId)
@@ -81,6 +84,37 @@ class WeeklyReportActivity : AppCompatActivity() {
         binding.tvProgramName.text = program.name.get(language).ifBlank { program.name.en }
         binding.tvProgramSubtitle.text = getString(R.string.weekly_report_subtitle)
         binding.rvWeeklyReports.adapter = WeeklyAdapter(program.weeks, programId, null)
+    }
+
+    private fun fetchProgramProgressMetrics(programId: String) {
+        lifecycleScope.launch {
+            try {
+                val up = ProgramRepository.getInstance(this@WeeklyReportActivity).getActiveUserProgramExport()
+                if (up?.programId != programId || !up.isActive) return@launch
+                val token = AuthManager.getAuthHeader(this@WeeklyReportActivity) ?: return@launch
+                val resp = withContext(Dispatchers.IO) {
+                    ApiClient.mobileSyncApi.getProgramProgressMetrics(up.id, token)
+                }
+                val body = resp.body()
+                if (!resp.isSuccessful || body?.success != true) return@launch
+                val weeks = body.data?.weeks.orEmpty()
+                if (weeks.isEmpty()) return@launch
+                val lines = weeks.joinToString("\n") { w ->
+                    getString(
+                        R.string.progress_metrics_week_format,
+                        w.weekNumber,
+                        w.totalVolumeLoad,
+                        w.avgFormScore ?: 0.0,
+                        w.avgRpe?.let { String.format("%.1f", it) } ?: "—"
+                    )
+                }
+                binding.tvProgressMetrics.text =
+                    getString(R.string.progress_metrics_title) + "\n" + lines
+                binding.tvProgressMetrics.visibility = View.VISIBLE
+            } catch (e: Exception) {
+                Log.w(TAG, "progress metrics", e)
+            }
+        }
     }
 
     private fun fetchUnifiedMetrics(program: ProgramConfig, programId: String) {

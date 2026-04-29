@@ -539,6 +539,9 @@ export const mobileSyncService = {
         isActive: row.isActive,
         customizations: (row.customizations as Record<string, unknown>) || null,
         updatedAt: row.updatedAt.toISOString(),
+        pausedAt: row.pausedAt?.toISOString() ?? null,
+        totalPausedDays: row.totalPausedDays ?? 0,
+        customizationsUpdatedAt: row.customizationsUpdatedAt?.toISOString() ?? null,
       }));
 
       // Fetch completed session reports for this user
@@ -565,6 +568,7 @@ export const mobileSyncService = {
         totalReps: r.totalReps ?? 0,
         avgAccuracy: r.avgAccuracy ?? 0,
         avgFormScore: r.avgFormScore ?? undefined,
+        rpe: r.rpe ?? undefined,
         report: r.report ?? undefined,
       }));
     }

@@ -782,4 +782,39 @@ export const exerciseService = {
       data: {},
     });
   },
+
+  /**
+   * Published exercises similar by category or movement pattern (substitution picker).
+   */
+  async listSubstitutionCandidates(slug: string, limit: number = 12) {
+    const prisma = await getPrisma();
+    const base = await prisma.exercise.findFirst({
+      where: { slug, deletedAt: null },
+      select: { id: true, categoryId: true, movementPattern: true },
+    });
+    if (!base) return [];
+
+    const orClause: Record<string, unknown>[] = [{ categoryId: base.categoryId }];
+    if (base.movementPattern) {
+      orClause.push({ movementPattern: base.movementPattern });
+    }
+
+    return prisma.exercise.findMany({
+      where: {
+        deletedAt: null,
+        status: 'published',
+        id: { not: base.id },
+        OR: orClause,
+      },
+      take: limit,
+      orderBy: { slug: 'asc' },
+      select: {
+        id: true,
+        slug: true,
+        name: true,
+        movementPattern: true,
+        categoryId: true,
+      },
+    });
+  },
 };

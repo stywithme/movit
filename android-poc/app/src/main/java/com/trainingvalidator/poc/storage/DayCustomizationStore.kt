@@ -39,7 +39,9 @@ class DayCustomizationStore(context: Context) {
         val weekNumber: Int = 0,
         val dayNumber: Int = 0,
         val sessions: List<CustomizedSession> = emptyList(),
-        val lastModifiedAt: Long = System.currentTimeMillis()
+        val lastModifiedAt: Long = System.currentTimeMillis(),
+        /** True when the user edited this day locally (vs server-only import). */
+        val isUserModified: Boolean = false
     )
 
     /**
@@ -50,6 +52,7 @@ class DayCustomizationStore(context: Context) {
         val id: String = "",
         val name: LocalizedText = LocalizedText(),
         val sortOrder: Int = 0,
+        val estimatedDurationMin: Int? = null,
         val items: List<ProgramSessionItem> = emptyList(),
         val isDeleted: Boolean = false
     )
@@ -76,7 +79,7 @@ class DayCustomizationStore(context: Context) {
         return try {
             val result = gson.fromJson(json, DayCustomization::class.java)
             Log.d(TAG, "get: FOUND key=$key, sessions=${result?.sessions?.size ?: 0}, json_length=${json.length}")
-            result
+            result?.let { sanitizeDayCustomization(it) }
         } catch (e: Exception) {
             Log.e(TAG, "get: PARSE FAILED for key=$key, json_length=${json.length}", e)
             null
@@ -118,6 +121,7 @@ class DayCustomizationStore(context: Context) {
                 id = session.id,
                 name = session.name,
                 sortOrder = session.sortOrder,
+                estimatedDurationMin = session.estimatedDurationMin,
                 items = session.items.sortedBy { it.sortOrder }
             )
         }.sortedBy { it.sortOrder }
@@ -156,7 +160,8 @@ class DayCustomizationStore(context: Context) {
             programId = programId,
             weekNumber = weekNumber,
             dayNumber = dayNumber,
-            sessions = sessions
+            sessions = sessions,
+            isUserModified = true
         ))
     }
 
@@ -178,7 +183,7 @@ class DayCustomizationStore(context: Context) {
                 session
             }
         }
-        save(current.copy(sessions = updatedSessions, lastModifiedAt = System.currentTimeMillis()))
+        save(current.copy(sessions = updatedSessions, lastModifiedAt = System.currentTimeMillis(), isUserModified = true))
     }
 
     /**
@@ -195,7 +200,7 @@ class DayCustomizationStore(context: Context) {
         val updatedSessions = current.sessions.map { session ->
             if (session.id == sessionId) session.copy(name = newName) else session
         }
-        save(current.copy(sessions = updatedSessions, lastModifiedAt = System.currentTimeMillis()))
+        save(current.copy(sessions = updatedSessions, lastModifiedAt = System.currentTimeMillis(), isUserModified = true))
     }
 
     /**
@@ -211,7 +216,7 @@ class DayCustomizationStore(context: Context) {
         val updatedSessions = current.sessions.map { session ->
             if (session.id == sessionId) session.copy(isDeleted = true) else session
         }
-        save(current.copy(sessions = updatedSessions, lastModifiedAt = System.currentTimeMillis()))
+        save(current.copy(sessions = updatedSessions, lastModifiedAt = System.currentTimeMillis(), isUserModified = true))
     }
 
     /**
@@ -232,7 +237,8 @@ class DayCustomizationStore(context: Context) {
         val remaining = current.sessions.filter { it.id !in sessionIds }
         save(current.copy(
             sessions = reordered + remaining,
-            lastModifiedAt = System.currentTimeMillis()
+            lastModifiedAt = System.currentTimeMillis(),
+            isUserModified = true
         ))
     }
 
@@ -283,11 +289,17 @@ class DayCustomizationStore(context: Context) {
      *   { "day_1_1": [ { id, name, sortOrder, isDeleted, items: [...] }, ... ], ... }
      */
     @Suppress("UNCHECKED_CAST")
-    fun hydrateFromBackend(programId: String, customizations: Map<String, Any>?) {
+    fun hydrateFromBackend(
+        programId: String,
+        customizations: Map<String, Any>?,
+        serverCustomizationsUpdatedAt: String? = null
+    ) {
         if (customizations.isNullOrEmpty()) {
             Log.d(TAG, "hydrateFromBackend: no customizations for programId=$programId")
             return
         }
+
+        val serverMs = serverCustomizationsUpdatedAt?.let { iso -> parseIsoToEpochMs(iso) }
 
         var imported = 0
         for ((dayKey, value) in customizations) {
@@ -297,10 +309,20 @@ class DayCustomizationStore(context: Context) {
             val weekNumber = parts[0].toIntOrNull() ?: continue
             val dayNumber = parts[1].toIntOrNull() ?: continue
 
-            // Skip if local customization already exists (local takes priority)
             if (hasCustomization(programId, weekNumber, dayNumber)) {
-                Log.d(TAG, "hydrateFromBackend: SKIP $dayKey — local customization exists")
-                continue
+                val existing = get(programId, weekNumber, dayNumber) ?: continue
+                if (existing.isUserModified) {
+                    if (serverMs != null && serverMs > existing.lastModifiedAt) {
+                        Log.w(TAG, "hydrateFromBackend: CONFLICT $dayKey — local user edits kept; server is newer")
+                    } else {
+                        Log.d(TAG, "hydrateFromBackend: SKIP $dayKey — local user customization exists")
+                    }
+                    continue
+                }
+                if (serverMs != null && serverMs <= existing.lastModifiedAt) {
+                    Log.d(TAG, "hydrateFromBackend: SKIP $dayKey — local copy same or newer than server marker")
+                    continue
+                }
             }
 
             // Parse sessions from backend format
@@ -308,10 +330,20 @@ class DayCustomizationStore(context: Context) {
                 val sessionsJson = gson.toJson(value)
                 val sessionsType = object : TypeToken<List<CustomizedSession>>() {}.type
                 val sessions: List<CustomizedSession> = gson.fromJson(sessionsJson, sessionsType)
+                val sanitizedSessions = sanitizeSessions(sessions)
 
-                saveSessions(programId, weekNumber, dayNumber, sessions)
+                save(
+                    DayCustomization(
+                        programId = programId,
+                        weekNumber = weekNumber,
+                        dayNumber = dayNumber,
+                        sessions = sanitizedSessions,
+                        lastModifiedAt = serverMs ?: System.currentTimeMillis(),
+                        isUserModified = false
+                    )
+                )
                 imported++
-                Log.d(TAG, "hydrateFromBackend: IMPORTED $dayKey (${sessions.size} sessions)")
+                Log.d(TAG, "hydrateFromBackend: IMPORTED $dayKey (${sanitizedSessions.size} sessions)")
             } catch (e: Exception) {
                 Log.w(TAG, "hydrateFromBackend: FAILED to parse $dayKey", e)
             }
@@ -323,7 +355,40 @@ class DayCustomizationStore(context: Context) {
     // Helpers
     // ═══════════════════════════════════════════════════════════
 
+    /**
+     * Gson can set [ProgramSessionItem.allowedSubstitutions] to null when the key is absent
+     * or JSON null, which violates Kotlin non-null and crashes on [ProgramSessionItem.copy].
+     */
+    private fun ProgramSessionItem.sanitizeGsonLists(): ProgramSessionItem =
+        copy(allowedSubstitutions = allowedSubstitutions ?: emptyList())
+
+    private fun sanitizeSessions(sessions: List<CustomizedSession>): List<CustomizedSession> =
+        sessions.map { session ->
+            session.copy(items = session.items.map { it.sanitizeGsonLists() })
+        }
+
+    private fun sanitizeDayCustomization(d: DayCustomization): DayCustomization =
+        d.copy(sessions = sanitizeSessions(d.sessions))
+
     private fun buildKey(programId: String, weekNumber: Int, dayNumber: Int): String {
         return "${KEY_PREFIX}${programId}_${weekNumber}_${dayNumber}"
+    }
+
+    private fun parseIsoToEpochMs(iso: String): Long? {
+        val formats = listOf(
+            "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'",
+            "yyyy-MM-dd'T'HH:mm:ss'Z'",
+            "yyyy-MM-dd'T'HH:mm:ss.SSSZ",
+            "yyyy-MM-dd"
+        )
+        for (format in formats) {
+            try {
+                val sdf = java.text.SimpleDateFormat(format, java.util.Locale.US)
+                sdf.timeZone = java.util.TimeZone.getTimeZone("UTC")
+                return sdf.parse(iso)?.time
+            } catch (_: Exception) {
+            }
+        }
+        return null
     }
 }

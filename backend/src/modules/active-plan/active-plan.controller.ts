@@ -8,7 +8,7 @@
  *   POST /mobile/plan/complete  — Complete the active program (transition to next)
  */
 
-import { Controller, Get, Post, Req, Res, Body } from '@nestjs/common';
+import { Controller, Get, Post, Req, Res, Body, Query } from '@nestjs/common';
 import type { Request, Response } from 'express';
 import { verifyMobileToken } from '@/modules/auth/auth.service';
 import { activePlanService } from './active-plan.service';
@@ -49,6 +49,73 @@ export class ActivePlanController {
       console.error('[ActivePlan] Today Error:', error);
       res.status(500);
       return { success: false, error: 'Failed to fetch today plan' };
+    }
+  }
+
+  @Get('enrollment-check')
+  async enrollmentCheck(
+    @Req() req: Request,
+    @Res({ passthrough: true }) res: Response,
+    @Query('programId') programId: string,
+  ) {
+    try {
+      const authResult = await verifyMobileToken(req);
+      if (!authResult.success || !authResult.userId) {
+        res.status(401);
+        return { success: false, error: authResult.error || 'Unauthorized' };
+      }
+      if (!programId) {
+        res.status(400);
+        return { success: false, error: 'programId query param is required' };
+      }
+      const data = await activePlanService.getEnrollmentCheck(authResult.userId, programId);
+      return { success: true, data };
+    } catch (error) {
+      console.error('[ActivePlan] enrollment-check Error:', error);
+      res.status(500);
+      return { success: false, error: 'Failed to check enrollment' };
+    }
+  }
+
+  @Post('pause')
+  async pause(@Req() req: Request, @Res({ passthrough: true }) res: Response) {
+    try {
+      const authResult = await verifyMobileToken(req);
+      if (!authResult.success || !authResult.userId) {
+        res.status(401);
+        return { success: false, error: authResult.error || 'Unauthorized' };
+      }
+      const result = await activePlanService.pauseActiveProgram(authResult.userId);
+      if (!result.success) {
+        res.status(400);
+        return { success: false, error: result.error || 'pause_failed' };
+      }
+      return { success: true, data: result };
+    } catch (error) {
+      console.error('[ActivePlan] Pause Error:', error);
+      res.status(500);
+      return { success: false, error: 'Failed to pause program' };
+    }
+  }
+
+  @Post('resume')
+  async resume(@Req() req: Request, @Res({ passthrough: true }) res: Response) {
+    try {
+      const authResult = await verifyMobileToken(req);
+      if (!authResult.success || !authResult.userId) {
+        res.status(401);
+        return { success: false, error: authResult.error || 'Unauthorized' };
+      }
+      const result = await activePlanService.resumeActiveProgram(authResult.userId);
+      if (!result.success) {
+        res.status(400);
+        return { success: false, error: result.error || 'resume_failed' };
+      }
+      return { success: true, data: result };
+    } catch (error) {
+      console.error('[ActivePlan] Resume Error:', error);
+      res.status(500);
+      return { success: false, error: 'Failed to resume program' };
     }
   }
 

@@ -869,6 +869,7 @@ function normalizeProgramSessionReportPayload(
   totalReps?: number;
   avgAccuracy?: number;
   avgFormScore?: number;
+  rpe?: number;
 } {
   const source = isRecord(payload.report) ? payload.report : null;
 
@@ -896,6 +897,10 @@ function normalizeProgramSessionReportPayload(
     normalizePercent(normalizedReportResult?.snapshot.countedRatio) ?? normalizePercent(payload.avgAccuracy) ?? undefined;
   const avgFormScore =
     toFiniteNumber(normalizedReportResult?.averageFormScore) ?? toFiniteNumber(payload.avgFormScore) ?? undefined;
+  const rpe =
+    typeof payload.rpe === 'number' && Number.isFinite(payload.rpe)
+      ? Math.min(10, Math.max(1, Math.round(payload.rpe)))
+      : undefined;
 
   return {
     report: normalizedReportResult
@@ -908,6 +913,7 @@ function normalizeProgramSessionReportPayload(
     totalReps,
     avgAccuracy,
     avgFormScore,
+    rpe,
   };
 }
 export async function startProgramSessionReport(
@@ -1000,6 +1006,7 @@ export async function completeProgramSessionReport(
       totalReps: normalizedPayload.totalReps ?? report.totalReps ?? undefined,
       avgAccuracy: normalizedPayload.avgAccuracy ?? report.avgAccuracy ?? undefined,
       avgFormScore: normalizedPayload.avgFormScore ?? report.avgFormScore ?? undefined,
+      rpe: normalizedPayload.rpe ?? undefined,
       report: normalizedPayload.report ?? (report.report as Prisma.InputJsonValue | undefined),
     },
   });
@@ -1159,6 +1166,7 @@ export async function updateProgramSessionReport(
       totalReps: normalizedPayload.totalReps ?? report.totalReps ?? undefined,
       avgAccuracy: normalizedPayload.avgAccuracy ?? report.avgAccuracy ?? undefined,
       avgFormScore: normalizedPayload.avgFormScore ?? report.avgFormScore ?? undefined,
+      rpe: normalizedPayload.rpe ?? undefined,
       report: normalizedPayload.report ?? (report.report as Prisma.InputJsonValue | undefined),
     },
   });

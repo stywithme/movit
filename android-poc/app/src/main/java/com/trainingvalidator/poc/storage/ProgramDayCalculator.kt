@@ -44,16 +44,20 @@ object ProgramDayCalculator {
      */
     fun getCurrentDay(program: ProgramConfig, userProgram: UserProgramExport): CurrentDayRef? {
         val startDate = parseStartDate(userProgram.startDate) ?: return null
-        return getCurrentDayFromDate(program, startDate)
+        return getCurrentDayFromDate(program, startDate, userProgram)
     }
 
     /**
      * Calculate current day from a specific start date.
      */
-    fun getCurrentDayFromDate(program: ProgramConfig, startDate: Date): CurrentDayRef? {
+    fun getCurrentDayFromDate(
+        program: ProgramConfig,
+        startDate: Date,
+        userProgram: UserProgramExport? = null
+    ): CurrentDayRef? {
         if (program.weeks.isEmpty()) return null
 
-        val dayIndex = getDayIndex(startDate, Date())
+        val dayIndex = getDayIndex(startDate, Date(), userProgram)
         val totalDays = program.durationWeeks * 7
         val isProgramComplete = dayIndex >= totalDays
 
@@ -151,11 +155,19 @@ object ProgramDayCalculator {
     // Private helpers
     // ═══════════════════════════════════════════════════════════
 
-    private fun getDayIndex(startDate: Date, now: Date): Int {
+    private fun getDayIndex(startDate: Date, now: Date, userProgram: UserProgramExport?): Int {
         val startCal = normalizeToDay(startDate)
         val todayCal = normalizeToDay(now)
         val diffMs = (todayCal.timeInMillis - startCal.timeInMillis).coerceAtLeast(0)
-        return (diffMs / (24L * 60L * 60L * 1000L)).toInt()
+        var raw = (diffMs / (24L * 60L * 60L * 1000L)).toInt()
+        if (userProgram != null) {
+            val totalPaused = userProgram.totalPausedDays.coerceAtLeast(0)
+            val ongoingPause = userProgram.pausedAt?.let { parseStartDate(it) }?.let { pausedSince ->
+                getDayIndex(pausedSince, now, null)
+            } ?: 0
+            raw = (raw - totalPaused - ongoingPause).coerceAtLeast(0)
+        }
+        return raw
     }
 
     private fun normalizeToDay(date: Date): Calendar {

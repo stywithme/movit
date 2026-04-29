@@ -94,6 +94,7 @@ data class SessionReportExport(
     val totalReps: Int = 0,
     val avgAccuracy: Double = 0.0,
     val avgFormScore: Double? = null,
+    val rpe: Int? = null,
     val report: Any? = null
 )
 
@@ -104,7 +105,10 @@ data class UserProgramExport(
     val startDate: String,
     val isActive: Boolean,
     val customizations: Map<String, Any>? = null,
-    val updatedAt: String
+    val updatedAt: String,
+    val pausedAt: String? = null,
+    val totalPausedDays: Int = 0,
+    val customizationsUpdatedAt: String? = null
 )
 
 /**

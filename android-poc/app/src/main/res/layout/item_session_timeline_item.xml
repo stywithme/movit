@@ -117,7 +117,7 @@
                     tools:text="3 Sets • 10 Reps • 20 kg" />
             </LinearLayout>
 
-            <!-- Always-visible action icons (swap exercise, reorder) -->
+            <!-- Swap exercise (timeline editor — no per-row "done" icon; session badge shows completion) -->
             <LinearLayout
                 android:id="@+id/layoutAlwaysActions"
                 android:layout_width="wrap_content"

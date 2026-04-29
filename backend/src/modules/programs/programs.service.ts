@@ -10,9 +10,11 @@ import { Prisma } from '@prisma/client';
 import { resolveCurrentProgramDay } from '@/modules/active-plan/plan-position';
 import { getAutoAssignmentReadiness } from './program-assignment';
 import { validateCalendarProgramStructure } from './calendar-program-structure';
+import { computeCatchUpSuggestion } from './program-catchup';
 import type {
   CreateProgramInput,
   ProgramExport,
+  ProgramPreviewExport,
   ProgramDayInput,
   ProgramSessionItemInput,
   ProgramSessionInput,
@@ -934,6 +936,9 @@ export const programService = {
         name: data.name ? (data.name as object) : undefined,
         customizations: mergedCustomizations,
         isActive: data.isActive ?? undefined,
+        ...(mergedCustomizations !== undefined
+          ? { customizationsUpdatedAt: new Date() }
+          : {}),
       },
     });
   },
@@ -953,6 +958,8 @@ export const programService = {
     const position = resolveCurrentProgramDay(program.weeks, userProgram.progress ?? [], {
       startDate: userProgram.startDate,
       durationWeeks: program.durationWeeks,
+      totalPausedDays: userProgram.totalPausedDays,
+      pausedAt: userProgram.pausedAt,
     });
 
     const weekNumber = position.targetWeekNumber;
@@ -971,6 +978,18 @@ export const programService = {
       }
     }
 
+    const catchUpSuggestion =
+      !isProgramComplete && program.id && day
+        ? await computeCatchUpSuggestion(
+            userId,
+            program.id,
+            program.weeks,
+            program.durationWeeks,
+            weekNumber,
+            dayNumber,
+          )
+        : null;
+
     return {
       userProgramId: userProgram.id,
       programId: userProgram.programId ?? undefined,
@@ -979,15 +998,26 @@ export const programService = {
       date: new Date().toISOString(),
       isProgramComplete,
       progress: progressMap,
+      isPaused: Boolean(userProgram.pausedAt),
+      catchUpSuggestion,
       sessions: day
         ? day.sessions.map((session) => ({
             id: session.id,
             name: parseLocalizedText(session.name) || { ar: '', en: '' },
             sortOrder: session.sortOrder,
+            estimatedDurationMin: session.estimatedDurationMin ?? undefined,
             items: session.items.map((item) => ({
               type: item.type as 'exercise' | 'rest',
               serverItemId: item.id,
               exerciseSlug: item.exercise?.slug ?? undefined,
+              deletedExercise:
+                item.type === 'exercise' && !item.exercise ? true : undefined,
+              role: item.role ?? undefined,
+              intent: item.intent ?? undefined,
+              allowedSubstitutions:
+                Array.isArray(item.allowedSubstitutions) && item.allowedSubstitutions.length > 0
+                  ? (item.allowedSubstitutions as string[])
+                  : undefined,
               sets: item.sets ?? undefined,
               targetReps: item.targetReps ?? undefined,
               targetDuration: item.targetDuration ?? undefined,
@@ -1037,10 +1067,19 @@ export const programService = {
             id: session.id,
             name: parseLocalizedText(session.name) || { ar: '', en: '' },
             sortOrder: session.sortOrder,
+            estimatedDurationMin: session.estimatedDurationMin ?? undefined,
             items: session.items.map((item) => ({
               type: item.type as 'exercise' | 'rest',
               serverItemId: item.id,
               exerciseSlug: item.exercise?.slug ?? undefined,
+              deletedExercise:
+                item.type === 'exercise' && !item.exercise ? true : undefined,
+              role: item.role ?? undefined,
+              intent: item.intent ?? undefined,
+              allowedSubstitutions:
+                Array.isArray(item.allowedSubstitutions) && item.allowedSubstitutions.length > 0
+                  ? (item.allowedSubstitutions as string[])
+                  : undefined,
               sets: item.sets ?? undefined,
               targetReps: item.targetReps ?? undefined,
               targetDuration: item.targetDuration ?? undefined,
@@ -1055,6 +1094,35 @@ export const programService = {
         })),
       })),
       updatedAt: program.updatedAt.toISOString(),
+    };
+  },
+
+  buildProgramPreview(program: Awaited<ReturnType<typeof this.getById>>): ProgramPreviewExport | null {
+    const full = this.buildProgramExport(program);
+    if (!full) return null;
+    const firstWeeks = full.weeks.filter((w) => w.weekNumber === 1);
+    let exerciseCount = 0;
+    for (const w of firstWeeks) {
+      for (const d of w.days) {
+        for (const s of d.sessions) {
+          for (const it of s.items) {
+            if (it.type === 'exercise' && !it.deletedExercise) exerciseCount++;
+          }
+        }
+      }
+    }
+    return {
+      id: full.id,
+      slug: full.slug,
+      name: full.name,
+      description: full.description,
+      coverImageUrl: full.coverImageUrl,
+      durationWeeks: full.durationWeeks,
+      difficulty: full.difficulty,
+      totalExercisesInFirstWeek: exerciseCount,
+      muscleGroups: [],
+      weeks: firstWeeks,
+      updatedAt: full.updatedAt,
     };
   },
 

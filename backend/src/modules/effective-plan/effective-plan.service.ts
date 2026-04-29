@@ -26,6 +26,7 @@ export interface EffectivePlanItem {
   role: string | null;
   intent: string | null;
   coachingNotes: Prisma.JsonValue | null;
+  allowedSubstitutions?: string[] | null;
   skipped?: boolean;
   suggestion?: {
     suggestedWeightKg: number | null;
@@ -67,6 +68,7 @@ type SessionItemRow = {
   role: string | null;
   intent: string | null;
   coachingNotes: Prisma.JsonValue | null;
+  allowedSubstitutions?: string[];
 };
 
 type ProgressionStateRow = {
@@ -137,6 +139,10 @@ function mergeProgression(
     role: item.role,
     intent: item.intent,
     coachingNotes: item.coachingNotes,
+    allowedSubstitutions:
+      Array.isArray(item.allowedSubstitutions) && item.allowedSubstitutions.length > 0
+        ? item.allowedSubstitutions
+        : null,
   };
 
   if (item.exerciseId && state) {

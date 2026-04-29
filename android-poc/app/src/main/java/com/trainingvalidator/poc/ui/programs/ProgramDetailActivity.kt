@@ -11,6 +11,7 @@ import android.widget.ProgressBar
 import android.widget.TextView
 import android.widget.Toast
 import androidx.activity.viewModels
+import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.Lifecycle
@@ -20,10 +21,16 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.trainingvalidator.poc.R
 import com.trainingvalidator.poc.databinding.ActivityProgramDetailBinding
+import com.trainingvalidator.poc.network.ApiClient
+import com.trainingvalidator.poc.storage.ExerciseRepository
+import com.trainingvalidator.poc.storage.HomeRepository
+import com.trainingvalidator.poc.storage.ProgramRepository
 import com.trainingvalidator.poc.training.models.ProgramConfig
 import com.trainingvalidator.poc.training.models.ProgramWeek
 import com.trainingvalidator.poc.ui.utils.currentLanguage
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 /**
  * ProgramDetailActivity - Shows program overview and week list.
@@ -92,26 +99,51 @@ class ProgramDetailActivity : AppCompatActivity() {
                 launch {
                     viewModel.enrollState.collect { state ->
                         when (state) {
-                            is EnrollState.Idle -> Unit
+                            is EnrollState.Idle -> {
+                                val s = viewModel.uiState.value as? ProgramDetailUiState.Success
+                                if (s != null) updatePlanActions(s.program, s.isEnrolled)
+                            }
                             is EnrollState.Loading -> {
                                 binding.btnStartProgram.text = getString(R.string.loading)
                                 binding.btnStartProgram.isEnabled = false
                             }
+                            is EnrollState.ConfirmReplace -> {
+                                binding.btnStartProgram.isEnabled = true
+                                binding.btnStartProgram.text = getString(R.string.start_program)
+                                AlertDialog.Builder(this@ProgramDetailActivity)
+                                    .setTitle(R.string.enroll_replace_title)
+                                    .setMessage(
+                                        getString(
+                                            R.string.enroll_replace_message,
+                                            state.currentProgramName,
+                                            state.progressPercent
+                                        )
+                                    )
+                                    .setPositiveButton(R.string.enroll_replace_continue) { _, _ ->
+                                        viewModel.confirmEnrollReplace(state.programIdToEnroll)
+                                    }
+                                    .setNegativeButton(R.string.enroll_replace_cancel) { _, _ ->
+                                        viewModel.resetEnrollState()
+                                    }
+                                    .setOnCancelListener { viewModel.resetEnrollState() }
+                                    .show()
+                            }
                             is EnrollState.Success -> {
                                 Toast.makeText(this@ProgramDetailActivity, getString(R.string.enrolled_success), Toast.LENGTH_SHORT).show()
-                                val enrolled =
-                                    (viewModel.uiState.value as? ProgramDetailUiState.Success)?.isEnrolled ?: true
-                                updateCTAButton(isEnrolled = enrolled)
+                                val s = viewModel.uiState.value as? ProgramDetailUiState.Success
+                                s?.let { updatePlanActions(it.program, it.isEnrolled) }
                                 viewModel.resetEnrollState()
                             }
                             is EnrollState.Error -> {
                                 val msg = when (state.message) {
                                     "no_auth" -> getString(R.string.error_login_required)
                                     "enroll_failed" -> getString(R.string.error_enroll_failed)
+                                    "enroll_check_failed" -> getString(R.string.error_enroll_check_failed)
                                     else -> getString(R.string.error_generic, state.message)
                                 }
                                 Toast.makeText(this@ProgramDetailActivity, msg, Toast.LENGTH_SHORT).show()
-                                updateCTAButton(isEnrolled = (viewModel.uiState.value as? ProgramDetailUiState.Success)?.isEnrolled ?: false)
+                                val s = viewModel.uiState.value as? ProgramDetailUiState.Success
+                                if (s != null) updatePlanActions(s.program, s.isEnrolled)
                                 viewModel.resetEnrollState()
                             }
                         }
@@ -158,11 +190,11 @@ class ProgramDetailActivity : AppCompatActivity() {
         }
 
         binding.rvWeeks.adapter = WeekAdapter(weeks, program.id, program.slug)
-        bindDiscoveryMetadata(program)
-        updateCTAButton(isEnrolled)
+        bindDiscoveryMetadata(program, isEnrolled)
+        updatePlanActions(program, isEnrolled)
     }
 
-    private fun bindDiscoveryMetadata(program: ProgramConfig) {
+    private fun bindDiscoveryMetadata(program: ProgramConfig, isEnrolled: Boolean) {
         val lines = buildList {
             program.trainingGoal?.let {
                 add(getString(R.string.program_detail_meta_goal, it.replace('_', ' ')))
@@ -224,15 +256,105 @@ class ProgramDetailActivity : AppCompatActivity() {
             binding.scrollWeek1Preview.visibility = View.GONE
         }
 
+        binding.btnLoadServerPreview.visibility = if (!isEnrolled) View.VISIBLE else View.GONE
+        binding.tvServerPreviewSummary.visibility = View.GONE
+        binding.btnLoadServerPreview.setOnClickListener {
+            loadServerProgramPreview(program)
+        }
+
         binding.tvProgramPolicies.visibility = View.VISIBLE
     }
 
-    private fun updateCTAButton(isEnrolled: Boolean) {
+    private fun loadServerProgramPreview(program: ProgramConfig) {
+        binding.btnLoadServerPreview.text = getString(R.string.program_preview_loading)
+        lifecycleScope.launch {
+            val resp = withContext(Dispatchers.IO) {
+                ApiClient.mobileSyncApi.getProgramPreview(program.id)
+            }
+            binding.btnLoadServerPreview.text = getString(R.string.program_preview_expand)
+            val body = resp.body()
+            if (!resp.isSuccessful || body?.success != true || body.data == null) {
+                Toast.makeText(this@ProgramDetailActivity, getString(R.string.program_preview_error), Toast.LENGTH_SHORT).show()
+                return@launch
+            }
+            val preview = body.data!!
+            val week1 = preview.weeks.orEmpty().firstOrNull { it.weekNumber == 1 }
+            val days = week1?.days.orEmpty().sortedBy { it.dayNumber }
+            val lang = currentLanguage
+            val summary = buildString {
+                days.forEach { day ->
+                    append(getString(R.string.day_number_format, day.dayNumber))
+                    append(": ")
+                    if (day.isRestDay) {
+                        append(getString(R.string.rest_day_label))
+                    } else {
+                        append(
+                            day.sessions.joinToString { ses ->
+                                val n = ses.name.get(lang).ifBlank { ses.name.en }
+                                val c = ses.items.size
+                                "$n ($c)"
+                            }
+                        )
+                    }
+                    append("\n")
+                }
+            }
+            binding.tvServerPreviewSummary.text = summary.ifBlank { getString(R.string.program_preview_error) }
+            binding.tvServerPreviewSummary.visibility = View.VISIBLE
+        }
+    }
+
+    private fun updatePlanActions(program: ProgramConfig, isEnrolled: Boolean) {
         binding.btnStartProgram.isEnabled = true
         binding.btnStartProgram.text = if (isEnrolled) {
             getString(R.string.resume_program)
         } else {
             getString(R.string.start_program)
+        }
+        if (isEnrolled) {
+            binding.btnPauseResumePlan.visibility = View.VISIBLE
+            val up = ProgramRepository.getInstance(this).getActiveUserProgramExport()
+            val paused = up?.programId == program.id && up.isActive && !up.pausedAt.isNullOrBlank()
+            binding.btnPauseResumePlan.text = if (paused) {
+                getString(R.string.plan_resume_calendar)
+            } else {
+                getString(R.string.plan_pause_calendar)
+            }
+            binding.btnPauseResumePlan.setOnClickListener {
+                lifecycleScope.launch {
+                    val currentUp = ProgramRepository.getInstance(this@ProgramDetailActivity).getActiveUserProgramExport()
+                    val isPausedNow = currentUp?.programId == program.id && currentUp.isActive &&
+                        !currentUp.pausedAt.isNullOrBlank()
+                    val ok = if (isPausedNow) {
+                        viewModel.callResumeCalendar()
+                    } else {
+                        viewModel.callPauseCalendar()
+                    }
+                    if (ok) {
+                        withContext(Dispatchers.IO) {
+                            try {
+                                ExerciseRepository.getInstance(this@ProgramDetailActivity).checkForUpdates()
+                            } catch (_: Exception) {
+                            }
+                            HomeRepository.getInstance(this@ProgramDetailActivity).syncFromServer()
+                        }
+                        Toast.makeText(
+                            this@ProgramDetailActivity,
+                            getString(R.string.results_saved),
+                            Toast.LENGTH_SHORT
+                        ).show()
+                        updatePlanActions(program, isEnrolled)
+                    } else {
+                        Toast.makeText(
+                            this@ProgramDetailActivity,
+                            getString(R.string.error_save_failed),
+                            Toast.LENGTH_SHORT
+                        ).show()
+                    }
+                }
+            }
+        } else {
+            binding.btnPauseResumePlan.visibility = View.GONE
         }
     }
 

@@ -236,5 +236,7 @@ export interface ProgramSessionCompletePayload {
   totalReps?: number;
   avgAccuracy?: number;  // Completion rate (reps done / planned * 100)
   avgFormScore?: number; // Form quality (0-100, from rep-level scoring)
+  /** User perceived exertion 1–10 after session */
+  rpe?: number;
   report?: Record<string, unknown>;
 }

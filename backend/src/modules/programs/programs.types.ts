@@ -126,6 +126,12 @@ export interface TodayPlanResponse {
   isProgramComplete: boolean;
   progress: Record<string, string>; // "weekNum_dayNum_sessionId" → status
   sessions: ProgramExportSession[];
+  isPaused?: boolean;
+  catchUpSuggestion?: {
+    missedTrainingDays: number;
+    message: string;
+    missedSlots: { weekNumber: number; dayNumber: number }[];
+  } | null;
 }
 
 export interface ProgramExportItem {
@@ -133,6 +139,11 @@ export interface ProgramExportItem {
   /** Stable server id for overrides / progression targeting */
   serverItemId?: string;
   exerciseSlug?: string;
+  /** True when the linked exercise was removed from the catalog */
+  deletedExercise?: boolean;
+  role?: string;
+  intent?: string;
+  allowedSubstitutions?: string[];
   sets?: number;
   targetReps?: number;
   targetDuration?: number;
@@ -148,6 +159,7 @@ export interface ProgramExportSession {
   id: string;
   name: LocalizedText;
   sortOrder: number;
+  estimatedDurationMin?: number | null;
   items: ProgramExportItem[];
 }
 
@@ -181,6 +193,21 @@ export interface ProgramExport {
   targetDomain?: string | null;
   targetEquipment?: string[] | null;
   isFeatured?: boolean;
+  weeks: ProgramExportWeek[];
+  updatedAt: string;
+}
+
+/** Lightweight catalog preview (first calendar week only). */
+export interface ProgramPreviewExport {
+  id: string;
+  slug: string;
+  name: LocalizedText;
+  description?: LocalizedText;
+  coverImageUrl?: string;
+  durationWeeks: number;
+  difficulty: ProgramDifficulty;
+  totalExercisesInFirstWeek: number;
+  muscleGroups: string[];
   weeks: ProgramExportWeek[];
   updatedAt: string;
 }
