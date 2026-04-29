@@ -849,7 +849,7 @@ class TrainFragment : Fragment() {
                         }
                         completion?.nextAction == "next_program" && !completion.nextProgramId.isNullOrBlank() -> {
                             val next = withContext(Dispatchers.IO) {
-                                programRepo.getOrFetchProgramById(completion.nextProgramId!!)
+                                programRepo.getOrFetchProgramById(completion.nextProgramId)
                             }
                             if (next != null) {
                                 startActivity(
