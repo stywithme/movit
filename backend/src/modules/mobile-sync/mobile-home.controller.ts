@@ -286,7 +286,9 @@ async function buildTrainMode(
 
   const program = activeSlot.userProgram.program;
   const progressEntries: any[] = activeSlot.userProgram.progress ?? [];
-  const position = resolveCurrentProgramDay(program.weeks as any[], progressEntries);
+  const position = resolveCurrentProgramDay(program.weeks as any[], progressEntries, {
+    startDate: activeSlot.userProgram.startDate,
+  });
   const targetWeek = position.targetWeekNumber;
   const targetDay = position.targetDayNumber;
 

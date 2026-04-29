@@ -32,8 +32,42 @@ export interface ResolvedProgramPosition<TWeek, TDay> {
   lastDay: { weekNumber: number; dayNumber: number } | null;
 }
 
+export interface ResolveCurrentProgramDayOptions {
+  startDate?: Date | string | null;
+  now?: Date;
+}
+
 function toDayKey(weekNumber: number, dayNumber: number): string {
   return `${weekNumber}:${dayNumber}`;
+}
+
+function toValidDate(value: Date | string | null | undefined): Date | null {
+  if (!value) return null;
+  const date = value instanceof Date ? value : new Date(value);
+  return Number.isNaN(date.getTime()) ? null : date;
+}
+
+function normalizeDate(date: Date): Date {
+  return new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate()));
+}
+
+function resolveDateBasedTargetIndex(
+  totalDays: number,
+  options: ResolveCurrentProgramDayOptions,
+): { targetIndex: number; isProgramComplete: boolean } | null {
+  const startDate = toValidDate(options.startDate);
+  if (!startDate || totalDays <= 0) return null;
+
+  const now = options.now ?? new Date();
+  const start = normalizeDate(startDate);
+  const today = normalizeDate(now);
+  const diffMs = Math.max(0, today.getTime() - start.getTime());
+  const dayIndex = Math.floor(diffMs / (24 * 60 * 60 * 1000));
+
+  return {
+    targetIndex: Math.min(dayIndex, totalDays - 1),
+    isProgramComplete: dayIndex >= totalDays,
+  };
 }
 
 export function resolveCurrentProgramDay<
@@ -42,6 +76,7 @@ export function resolveCurrentProgramDay<
 >(
   weeks: TWeek[],
   progressEntries: ProgressEntryLike[],
+  options: ResolveCurrentProgramDayOptions = {},
 ): ResolvedProgramPosition<TWeek, TDay> {
   const orderedDays: Array<OrderedDayRef<TWeek, TDay>> = [...weeks]
     .sort((a, b) => a.weekNumber - b.weekNumber)
@@ -96,7 +131,13 @@ export function resolveCurrentProgramDay<
   let targetIndex = 0;
   let isProgramComplete = false;
 
-  if (latestCompletedSessionIndex > latestCompletedDayIndex) {
+  const dateBasedTarget = resolveDateBasedTargetIndex(orderedDays.length, options);
+
+  if (dateBasedTarget) {
+    targetIndex = dateBasedTarget.targetIndex;
+    isProgramComplete =
+      dateBasedTarget.isProgramComplete || latestCompletedDayIndex >= orderedDays.length - 1;
+  } else if (latestCompletedSessionIndex > latestCompletedDayIndex) {
     targetIndex = latestCompletedSessionIndex;
   } else if (latestCompletedDayIndex >= 0) {
     if (latestCompletedDayIndex >= orderedDays.length - 1) {

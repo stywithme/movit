@@ -21,6 +21,7 @@ import com.trainingvalidator.poc.ui.utils.bindUserAvatar
 import com.trainingvalidator.poc.ui.utils.currentLanguage
 import com.trainingvalidator.poc.R
 import com.trainingvalidator.poc.databinding.FragmentTrainBinding
+import com.trainingvalidator.poc.network.UserProgramExport
 import com.trainingvalidator.poc.storage.DayCustomizationStore
 import com.trainingvalidator.poc.storage.ExerciseRepository
 import com.trainingvalidator.poc.storage.ProgramDayCalculator
@@ -315,7 +316,7 @@ class TrainFragment : Fragment() {
         val day = currentRef.day
 
         renderIdentityCard(program, week, day)
-        renderWeekCalendar(program, week, day)
+        renderWeekCalendar(program, week, day, userProgram)
         renderTodaySection(program, week, day, language)
         renderReportSummary(program)
 
@@ -361,7 +362,12 @@ class TrainFragment : Fragment() {
     // Section 2: Week Calendar
     // -----------------------------------------------------
 
-    private fun renderWeekCalendar(program: ProgramConfig, week: ProgramWeek, currentDay: ProgramDay) {
+    private fun renderWeekCalendar(
+        program: ProgramConfig,
+        week: ProgramWeek,
+        currentDay: ProgramDay,
+        userProgram: UserProgramExport? = null
+    ) {
         binding.tvWeekTitle.text = getString(R.string.pg_week_format, week.weekNumber)
         binding.layoutWeekCalendar.removeAllViews()
         binding.layoutWeekLabels.removeAllViews()
@@ -371,7 +377,7 @@ class TrainFragment : Fragment() {
         val dayMap = week.days.associateBy { it.dayNumber }
 
         val today = Calendar.getInstance()
-        val weekStartSaturday = getWeekStartSaturday(today)
+        val fallbackWeekStartSaturday = getWeekStartSaturday(today)
 
         for (dayNumber in 1..7) {
             val day = dayMap[dayNumber]
@@ -383,7 +389,10 @@ class TrainFragment : Fragment() {
             val ivCheck = dayView.findViewById<ImageView>(R.id.ivDayCheck)
             val tvLabel = dayView.findViewById<TextView>(R.id.tvDayLabel)
 
-            val realDate = calculateDateFromSaturdayStart(weekStartSaturday, dayNumber)
+            val realDate = userProgram
+                ?.let { ProgramDayCalculator.getDateForProgramDay(it, week.weekNumber, dayNumber) }
+                ?.let { date -> Calendar.getInstance().apply { time = date } }
+                ?: calculateDateFromSaturdayStart(fallbackWeekStartSaturday, dayNumber)
             val calendarDate = realDate.get(Calendar.DAY_OF_MONTH)
             val isToday = isSameDay(realDate, today)
             val isPast = realDate.before(today) && !isToday
@@ -777,10 +786,11 @@ class TrainFragment : Fragment() {
         val lastWeek = program.weeks.maxByOrNull { it.weekNumber }
         val lastDay = lastWeek?.days?.maxByOrNull { it.dayNumber }
         if (lastWeek != null && lastDay != null) {
+            val userProgram = programRepo.getActiveUserProgramExport()
             renderIdentityCard(program, lastWeek, lastDay)
             binding.progressProgram.progress = 100
             binding.tvProgressPercent.text = "100%"
-            renderWeekCalendar(program, lastWeek, lastDay)
+            renderWeekCalendar(program, lastWeek, lastDay, userProgram)
         }
 
         binding.tvTodayHeader.text = getString(R.string.pg_complete_title)
