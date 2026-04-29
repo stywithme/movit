@@ -57,19 +57,16 @@ object ProgramDayCalculator {
         val totalDays = program.durationWeeks * 7
         val isProgramComplete = dayIndex >= totalDays
 
-        // If complete, point to the last day
-        val effectiveDayIndex = if (isProgramComplete) totalDays - 1 else dayIndex
+        val slotDayIndex = if (isProgramComplete) totalDays - 1 else dayIndex
 
-        val weekNumber = (effectiveDayIndex / 7) + 1
-        val dayNumber = (effectiveDayIndex % 7) + 1
+        val weekNumber = kotlin.math.min(slotDayIndex / 7 + 1, program.durationWeeks)
+        val dayNumber = (slotDayIndex % 7) + 1
 
         val week = program.weeks.firstOrNull { it.weekNumber == weekNumber }
         val day = week?.days?.firstOrNull { it.dayNumber == dayNumber }
 
         if (week == null || day == null) {
-            // Fallback: if the program's week/day structure doesn't match,
-            // find the closest available day
-            return findClosestDay(program, weekNumber, dayNumber, dayIndex, isProgramComplete)
+            return null
         }
 
         return CurrentDayRef(
@@ -188,46 +185,5 @@ object ProgramDayCalculator {
             }
         }
         return null
-    }
-
-    private fun findClosestDay(
-        program: ProgramConfig,
-        targetWeek: Int,
-        targetDay: Int,
-        dayIndex: Int,
-        isProgramComplete: Boolean
-    ): CurrentDayRef? {
-        // 1. Try to find the target week
-        val week = program.weeks.firstOrNull { it.weekNumber == targetWeek }
-        if (week != null) {
-            // Try exact day match
-            val exactDay = week.days.firstOrNull { it.dayNumber == targetDay }
-            if (exactDay != null) {
-                return CurrentDayRef(week, exactDay, targetWeek, targetDay, dayIndex, isProgramComplete)
-            }
-
-            // Find the closest day in this week (prefer the nearest day number)
-            val closestDay = week.days.minByOrNull { kotlin.math.abs(it.dayNumber - targetDay) }
-            if (closestDay != null) {
-                return CurrentDayRef(week, closestDay, targetWeek, closestDay.dayNumber, dayIndex, isProgramComplete)
-            }
-        }
-
-        // 2. Week not found — find the closest available week
-        val closestWeek = program.weeks.minByOrNull { kotlin.math.abs(it.weekNumber - targetWeek) }
-        if (closestWeek != null) {
-            val day = closestWeek.days.firstOrNull { it.dayNumber == targetDay }
-                ?: closestWeek.days.minByOrNull { kotlin.math.abs(it.dayNumber - targetDay) }
-
-            if (day != null) {
-                return CurrentDayRef(closestWeek, day, closestWeek.weekNumber, day.dayNumber, dayIndex, isProgramComplete)
-            }
-        }
-
-        // 3. Last resort: return the last day of the last week
-        // ONLY mark as complete if dayIndex actually exceeded the program duration
-        val lastWeek = program.weeks.maxByOrNull { it.weekNumber } ?: return null
-        val lastDay = lastWeek.days.maxByOrNull { it.dayNumber } ?: return null
-        return CurrentDayRef(lastWeek, lastDay, lastWeek.weekNumber, lastDay.dayNumber, dayIndex, isProgramComplete)
     }
 }

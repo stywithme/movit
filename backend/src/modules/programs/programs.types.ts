@@ -130,6 +130,8 @@ export interface TodayPlanResponse {
 
 export interface ProgramExportItem {
   type: ProgramSessionItemType;
+  /** Stable server id for overrides / progression targeting */
+  serverItemId?: string;
   exerciseSlug?: string;
   sets?: number;
   targetReps?: number;
@@ -172,6 +174,13 @@ export interface ProgramExport {
   durationWeeks: number;
   difficulty: ProgramDifficulty;
   tags?: string[];
+  /** UX / discovery — optional metadata from admin program record */
+  trainingGoal?: string | null;
+  weeklySessionTarget?: number | null;
+  estimatedSessionMinutes?: number | null;
+  targetDomain?: string | null;
+  targetEquipment?: string[] | null;
+  isFeatured?: boolean;
   weeks: ProgramExportWeek[];
   updatedAt: string;
 }

@@ -30,11 +30,18 @@ export interface ResolvedProgramPosition<TWeek, TDay> {
   targetWeekCompletedDays: number;
   isProgramComplete: boolean;
   lastDay: { weekNumber: number; dayNumber: number } | null;
+  /** True when week/day exist in template but calendar slot could not be resolved */
+  calendarSlotMissing?: boolean;
 }
 
 export interface ResolveCurrentProgramDayOptions {
   startDate?: Date | string | null;
   now?: Date;
+  /**
+   * With startDate, the program advances by calendar days: total length = durationWeeks * 7.
+   * Should match Program.durationWeeks from the database.
+   */
+  durationWeeks?: number;
 }
 
 function toDayKey(weekNumber: number, dayNumber: number): string {
@@ -51,23 +58,20 @@ function normalizeDate(date: Date): Date {
   return new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate()));
 }
 
-function resolveDateBasedTargetIndex(
-  totalDays: number,
-  options: ResolveCurrentProgramDayOptions,
-): { targetIndex: number; isProgramComplete: boolean } | null {
-  const startDate = toValidDate(options.startDate);
-  if (!startDate || totalDays <= 0) return null;
-
-  const now = options.now ?? new Date();
+/** 0-based day offset from enrollment start (UTC midnight). */
+export function getProgramCalendarDayIndex(startDate: Date, now: Date): number {
   const start = normalizeDate(startDate);
   const today = normalizeDate(now);
   const diffMs = Math.max(0, today.getTime() - start.getTime());
-  const dayIndex = Math.floor(diffMs / (24 * 60 * 60 * 1000));
+  return Math.floor(diffMs / (24 * 60 * 60 * 1000));
+}
 
-  return {
-    targetIndex: Math.min(dayIndex, totalDays - 1),
-    isProgramComplete: dayIndex >= totalDays,
-  };
+function findDayRef<TWeek, TDay>(
+  orderedDays: Array<OrderedDayRef<TWeek, TDay>>,
+  weekNumber: number,
+  dayNumber: number,
+): OrderedDayRef<TWeek, TDay> | undefined {
+  return orderedDays.find((r) => r.weekNumber === weekNumber && r.dayNumber === dayNumber);
 }
 
 export function resolveCurrentProgramDay<
@@ -128,12 +132,69 @@ export function resolveCurrentProgramDay<
     ? getDayIndex(latestCompletedSession)
     : -1;
 
+  const lastRef = orderedDays.at(-1) ?? null;
+  const startDate = toValidDate(options.startDate);
+  const now = options.now ?? new Date();
+
+  // ── Calendar-based: anchor to enrollment date and durationWeeks * 7 ─────────
+  if (startDate && options.durationWeeks != null && options.durationWeeks > 0) {
+    const totalCalendarDays = options.durationWeeks * 7;
+    const dayIndex = getProgramCalendarDayIndex(startDate, now);
+    let isProgramComplete = dayIndex >= totalCalendarDays;
+    let weekNumber: number;
+    let dayNumber: number;
+
+    if (isProgramComplete) {
+      weekNumber = options.durationWeeks;
+      dayNumber = 7;
+    } else {
+      weekNumber = Math.min(Math.floor(dayIndex / 7) + 1, options.durationWeeks);
+      dayNumber = (dayIndex % 7) + 1;
+    }
+
+    const targetRef =
+      findDayRef(orderedDays, weekNumber, dayNumber) ??
+      (isProgramComplete && lastRef
+        ? lastRef
+        : undefined);
+
+    const calendarSlotMissing = !findDayRef(orderedDays, weekNumber, dayNumber);
+
+    const targetWeek = targetRef?.week;
+    const targetDay = targetRef?.day;
+
+    return {
+      targetWeekNumber: weekNumber,
+      targetDayNumber: dayNumber,
+      targetWeek,
+      targetDay,
+      completedDayCount: completedDays.length,
+      targetWeekCompletedDays: completedDays.filter((e) => e.weekNumber === weekNumber).length,
+      isProgramComplete,
+      lastDay: lastRef
+        ? { weekNumber: lastRef.weekNumber, dayNumber: lastRef.dayNumber }
+        : null,
+      calendarSlotMissing: calendarSlotMissing || undefined,
+    };
+  }
+
+  // ── Legacy: progress-only when no calendar anchor ───────────────────────────
   let targetIndex = 0;
   let isProgramComplete = false;
 
-  const dateBasedTarget = resolveDateBasedTargetIndex(orderedDays.length, options);
+  const totalDaysLegacy = orderedDays.length;
+  const dateBasedTarget =
+    startDate && totalDaysLegacy > 0
+      ? (() => {
+          const dayIndex = getProgramCalendarDayIndex(startDate, now);
+          return {
+            targetIndex: Math.min(dayIndex, totalDaysLegacy - 1),
+            isProgramComplete: dayIndex >= totalDaysLegacy,
+          };
+        })()
+      : null;
 
-  if (dateBasedTarget) {
+  if (dateBasedTarget && !options.durationWeeks) {
     targetIndex = dateBasedTarget.targetIndex;
     isProgramComplete =
       dateBasedTarget.isProgramComplete || latestCompletedDayIndex >= orderedDays.length - 1;
@@ -149,7 +210,6 @@ export function resolveCurrentProgramDay<
   }
 
   const targetRef = orderedDays[targetIndex] ?? orderedDays[0];
-  const lastRef = orderedDays.at(-1) ?? null;
 
   return {
     targetWeekNumber: targetRef.weekNumber,

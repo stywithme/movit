@@ -51,6 +51,10 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.util.Calendar
+import android.widget.Toast
+import com.trainingvalidator.poc.assessment.ui.PreScreeningActivity
+import com.trainingvalidator.poc.network.ApiClient
+import com.trainingvalidator.poc.storage.HomeRepository
 
 /**
  * TrainFragment ? Redesigned program page.
@@ -381,7 +385,7 @@ class TrainFragment : Fragment() {
 
         for (dayNumber in 1..7) {
             val day = dayMap[dayNumber]
-            val isImplicitRestDay = day == null || day.isRestDay
+            val isImplicitRestDay = day != null && day.isRestDay
 
             val dayView = inflater.inflate(R.layout.item_week_day_circle, binding.layoutWeekCalendar, false)
             val card = dayView.findViewById<MaterialCardView>(R.id.cardDay)
@@ -409,6 +413,16 @@ class TrainFragment : Fragment() {
             tvLabel.text = getWeekdayShortLabel(realDate)
 
             when {
+                day == null -> {
+                    tvNumber.visibility = View.VISIBLE
+                    tvNumber.text = getString(R.string.pg_calendar_day_missing)
+                    tvNumber.setTextColor(requireContext().getColor(R.color.error))
+                    ivCheck.visibility = View.GONE
+                    card.setCardBackgroundColor(requireContext().getColor(R.color.error_bg))
+                    card.strokeWidth = resources.getDimensionPixelSize(R.dimen.border_thick)
+                    card.setStrokeColor(requireContext().getColorStateList(R.color.error))
+                    tvLabel.setTextColor(requireContext().getColor(R.color.error))
+                }
                 isImplicitRestDay -> {
                     tvNumber.visibility = View.GONE
                     ivCheck.visibility = View.VISIBLE
@@ -797,7 +811,67 @@ class TrainFragment : Fragment() {
         renderReportSummary(program)
 
         binding.btnViewJourney.setOnClickListener { openWeeklyReport(program) }
-        binding.btnStartNext.setOnClickListener { openProgramList() }
+        binding.btnStartNext.setOnClickListener { finalizeCompletedProgramAndNavigate(program) }
+    }
+
+    /**
+     * Calls POST /api/mobile/plan/complete so server finalizes the plan, then navigates from [completion].
+     */
+    private fun finalizeCompletedProgramAndNavigate(program: ProgramConfig) {
+        viewLifecycleOwner.lifecycleScope.launch {
+            val ctx = requireContext()
+            val token = AuthManager.getAuthHeader(ctx)
+            if (token == null) {
+                Toast.makeText(ctx, getString(R.string.error_login_required), Toast.LENGTH_SHORT).show()
+                openProgramList()
+                return@launch
+            }
+            binding.btnStartNext.isEnabled = false
+            Toast.makeText(ctx, getString(R.string.pg_complete_finishing), Toast.LENGTH_SHORT).show()
+            try {
+                val resp = withContext(Dispatchers.IO) {
+                    ApiClient.mobileSyncApi.completeActiveProgram(token)
+                }
+                binding.btnStartNext.isEnabled = true
+                val body = resp.body()
+                if (resp.isSuccessful && body?.success == true) {
+                    withContext(Dispatchers.IO) {
+                        HomeRepository.getInstance(ctx).syncFromServer()
+                        try {
+                            ExerciseRepository.getInstance(ctx).checkForUpdates()
+                        } catch (_: Exception) {
+                        }
+                    }
+                    val completion = body.completion
+                    when {
+                        completion?.nextAction == "reassess" -> {
+                            startActivity(Intent(ctx, PreScreeningActivity::class.java))
+                        }
+                        completion?.nextAction == "next_program" && !completion.nextProgramId.isNullOrBlank() -> {
+                            val next = withContext(Dispatchers.IO) {
+                                programRepo.getOrFetchProgramById(completion.nextProgramId!!)
+                            }
+                            if (next != null) {
+                                startActivity(
+                                    Intent(ctx, ProgramDetailActivity::class.java).apply {
+                                        putExtra(ProgramDetailActivity.EXTRA_PROGRAM_SLUG, next.slug)
+                                    }
+                                )
+                            } else {
+                                openProgramList()
+                            }
+                        }
+                        completion?.nextAction == "journey_summary" -> openWeeklyReport(program)
+                        else -> openProgramList()
+                    }
+                } else {
+                    openProgramList()
+                }
+            } catch (_: Exception) {
+                binding.btnStartNext.isEnabled = true
+                openProgramList()
+            }
+        }
     }
 
     // -----------------------------------------------------------

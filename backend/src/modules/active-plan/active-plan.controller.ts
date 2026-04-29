@@ -98,13 +98,17 @@ export class ActivePlanController {
         return { success: false, error: authResult.error || 'Unauthorized' };
       }
 
-      const plan = await activePlanService.completeActiveProgram(authResult.userId);
-      if (!plan) {
+      const result = await activePlanService.completeActiveProgram(authResult.userId);
+      if (!result) {
         res.status(404);
         return { success: false, error: 'No active plan found' };
       }
 
-      return { success: true, data: plan };
+      return {
+        success: true,
+        data: result.plan,
+        completion: result.completion,
+      };
     } catch (error) {
       console.error('[ActivePlan] Complete Error:', error);
       res.status(500);

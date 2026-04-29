@@ -12,6 +12,7 @@ import android.widget.TextView
 import android.widget.Toast
 import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.content.ContextCompat
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
@@ -156,7 +157,72 @@ class ProgramDetailActivity : AppCompatActivity() {
         }
 
         binding.rvWeeks.adapter = WeekAdapter(program.weeks, program.id, program.slug)
+        bindDiscoveryMetadata(program)
         updateCTAButton(isEnrolled)
+    }
+
+    private fun bindDiscoveryMetadata(program: ProgramConfig) {
+        val lines = buildList {
+            program.trainingGoal?.let {
+                add(getString(R.string.program_detail_meta_goal, it.replace('_', ' ')))
+            }
+            program.targetDomain?.takeIf { it.isNotBlank() }?.let {
+                add(getString(R.string.program_detail_meta_domain, it.replace('_', ' ')))
+            }
+            program.weeklySessionTarget?.takeIf { it > 0 }?.let {
+                add(getString(R.string.program_detail_meta_weekly_sessions, it))
+            }
+            program.estimatedSessionMinutes?.takeIf { it > 0 }?.let {
+                add(getString(R.string.program_detail_meta_session_length, it))
+            }
+            if (program.targetEquipment.isNotEmpty()) {
+                add(
+                    getString(
+                        R.string.program_detail_meta_equipment,
+                        program.targetEquipment.take(4).joinToString(", ")
+                    )
+                )
+            }
+        }
+        if (lines.isEmpty()) {
+            binding.tvWhyTitle.visibility = View.GONE
+            binding.tvWhyProgram.visibility = View.GONE
+        } else {
+            binding.tvWhyTitle.visibility = View.VISIBLE
+            binding.tvWhyProgram.visibility = View.VISIBLE
+            binding.tvWhyProgram.text = lines.joinToString("\n")
+        }
+
+        val week1 = program.weeks.firstOrNull { it.weekNumber == 1 }
+        if (week1 != null && week1.days.isNotEmpty()) {
+            binding.tvWeek1Title.visibility = View.VISIBLE
+            binding.scrollWeek1Preview.visibility = View.VISIBLE
+            binding.layoutWeek1Preview.removeAllViews()
+            val gap = resources.getDimensionPixelSize(R.dimen.spacing_sm)
+            week1.days.sortedBy { it.dayNumber }.forEach { day ->
+                val pill = TextView(this).apply {
+                    text = when {
+                        day.isRestDay -> getString(R.string.program_week1_pill_rest)
+                        day.sessions.isEmpty() -> getString(R.string.program_week1_pill_light)
+                        else -> day.dayNumber.toString()
+                    }
+                    setPadding(gap, gap / 2, gap, gap / 2)
+                    setTextColor(ContextCompat.getColor(this@ProgramDetailActivity, R.color.text_primary))
+                    textSize = 12f
+                    setBackgroundResource(R.drawable.bg_glass_card_subtle)
+                }
+                val lp = LinearLayout.LayoutParams(
+                    LinearLayout.LayoutParams.WRAP_CONTENT,
+                    LinearLayout.LayoutParams.WRAP_CONTENT
+                ).apply { marginEnd = gap }
+                binding.layoutWeek1Preview.addView(pill, lp)
+            }
+        } else {
+            binding.tvWeek1Title.visibility = View.GONE
+            binding.scrollWeek1Preview.visibility = View.GONE
+        }
+
+        binding.tvProgramPolicies.visibility = View.VISIBLE
     }
 
     private fun updateCTAButton(isEnrolled: Boolean) {

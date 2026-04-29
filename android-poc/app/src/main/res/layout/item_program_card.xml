@@ -34,6 +34,23 @@
                 android:layout_height="match_parent"
                 android:background="@drawable/gradient_bottom" />
 
+            <!-- Featured -->
+            <TextView
+                android:id="@+id/tvFeaturedBadge"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="top|end"
+                android:layout_margin="@dimen/spacing_sm"
+                android:background="@drawable/glass_pill_background"
+                android:paddingHorizontal="@dimen/spacing_sm"
+                android:paddingVertical="2dp"
+                android:text="@string/program_badge_featured"
+                android:textColor="@color/primary"
+                android:textSize="11sp"
+                android:textStyle="bold"
+                android:visibility="gone"
+                tools:visibility="visible" />
+
             <!-- Weeks Badge -->
             <LinearLayout
                 android:layout_width="wrap_content"

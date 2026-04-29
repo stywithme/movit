@@ -7,7 +7,7 @@ type ThresholdRule = {
 };
 
 export interface ProgramCompletionDecision {
-  nextAction: 'next_program' | 'reassess';
+  nextAction: 'next_program' | 'reassess' | 'journey_summary';
   nextProgramId: string | null;
   reassessmentTemplateId: string | null;
 }
@@ -71,6 +71,50 @@ function collectExitReviewFindings(
   return findings;
 }
 
+function isWeekTrainingComplete(
+  week: {
+    weekNumber: number;
+    days: { dayNumber: number; isRestDay: boolean; sessions: { id: string }[] }[];
+  },
+  weekNumber: number,
+  completedDayKeys: Set<string>,
+): boolean {
+  const trainingDays = week.days.filter(
+    (d) => !d.isRestDay && d.sessions.length > 0,
+  );
+  if (trainingDays.length === 0) {
+    return true;
+  }
+  return trainingDays.every((d) => completedDayKeys.has(`${weekNumber}:${d.dayNumber}`));
+}
+
+function countCompletedCalendarWeeks(
+  program: {
+    durationWeeks: number;
+    weeks: {
+      weekNumber: number;
+      days: { dayNumber: number; isRestDay: boolean; sessions: { id: string }[] }[];
+    }[];
+  },
+  progress: { weekNumber: number; dayNumber: number; sessionId: string; status: string }[],
+): number {
+  const completedDayKeys = new Set(
+    progress
+      .filter((p) => p.status === 'completed' && p.sessionId === '__day__')
+      .map((p) => `${p.weekNumber}:${p.dayNumber}`),
+  );
+
+  let count = 0;
+  for (let wn = 1; wn <= program.durationWeeks; wn++) {
+    const week = program.weeks.find((w) => w.weekNumber === wn);
+    if (!week) continue;
+    if (isWeekTrainingComplete(week, wn, completedDayKeys)) {
+      count++;
+    }
+  }
+  return count;
+}
+
 export const programCompletionService = {
   async evaluate(userId: string, userProgramId: string): Promise<ProgramCompletionDecision | null> {
     const prisma = await getPrisma();
@@ -78,7 +122,22 @@ export const programCompletionService = {
     const [userProgram, latestAssessment, latestLevelProfile, pendingReassessment] = await Promise.all([
       prisma.userProgram.findFirst({
         where: { id: userProgramId, userId },
-        include: { program: true, progress: true },
+        include: {
+          program: {
+            include: {
+              weeks: {
+                orderBy: { weekNumber: 'asc' },
+                include: {
+                  days: {
+                    orderBy: { dayNumber: 'asc' },
+                    include: { sessions: { select: { id: true } } },
+                  },
+                },
+              },
+            },
+          },
+          progress: true,
+        },
       }),
       prisma.bodyScanResult.findFirst({
         where: { userId },
@@ -95,11 +154,15 @@ export const programCompletionService = {
     ]);
 
     if (!userProgram?.program) return null;
-    const completedWeeks = new Set(
-      userProgram.progress
-        .filter((entry) => entry.status === 'completed')
-        .map((entry) => entry.weekNumber),
-    ).size;
+
+    const program = userProgram.program;
+    const completedWeeks = countCompletedCalendarWeeks(
+      {
+        durationWeeks: program.durationWeeks,
+        weeks: program.weeks ?? [],
+      },
+      userProgram.progress,
+    );
 
     const unmetRequirements = collectExitReviewFindings(
       userProgram.program.exitRecommendations,
@@ -114,8 +177,7 @@ export const programCompletionService = {
       },
     );
 
-    const needsReassessment =
-      unmetRequirements.length > 0 || !userProgram.program.nextProgramId;
+    const needsReassessment = unmetRequirements.length > 0;
 
     if (needsReassessment) {
       if (!pendingReassessment) {
@@ -141,9 +203,17 @@ export const programCompletionService = {
       };
     }
 
+    if (userProgram.program.nextProgramId) {
+      return {
+        nextAction: 'next_program',
+        nextProgramId: userProgram.program.nextProgramId,
+        reassessmentTemplateId: null,
+      };
+    }
+
     return {
-      nextAction: 'next_program',
-      nextProgramId: userProgram.program.nextProgramId,
+      nextAction: 'journey_summary',
+      nextProgramId: null,
       reassessmentTemplateId: null,
     };
   },

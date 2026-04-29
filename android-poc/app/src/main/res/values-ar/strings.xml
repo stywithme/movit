@@ -725,6 +725,7 @@
     <string name="pg_days_trained_format">📅 %1$d أيام تدريب</string>
     <string name="pg_streak_format">🔥 استمرارية %1$d أيام</string>
     <string name="pg_week_format">الأسبوع %1$d</string>
+    <string name="pg_calendar_day_missing">!</string>
     <string name="pg_today_format">اليوم — اليوم %1$d</string>
     <string name="pg_today_rest">اليوم — يوم راحة</string>
     <string name="pg_session_exercises_format">%1$d تمارين · ~%2$d د</string>
@@ -760,6 +761,10 @@
     <string name="pg_complete_subtitle">أكملت البرنامج. انظر إلى أين وصلت!</string>
     <string name="pg_view_journey">شاهد رحلتك</string>
     <string name="pg_start_next">ابدأ التحدي التالي</string>
+    <string name="pg_complete_whats_next">ماذا بعد؟</string>
+    <string name="pg_complete_finishing">جاري تحديث خطتك…</string>
+    <string name="pg_cta_reassess">بدء إعادة التقييم</string>
+    <string name="pg_cta_next_program">المتابعة إلى البرنامج التالي</string>
 
     <!-- Reports Hub -->
     <string name="reports_title">التقارير</string>
@@ -900,6 +905,22 @@
     <!-- List Screen Headers -->
     <string name="program_list_title">برامج التدريب</string>
     <string name="program_list_subtitle">اختر برنامجاً لتخطيط تدريبك</string>
+    <string name="program_filter_all">كل المستويات</string>
+    <string name="program_filter_goal_any">كل الأهداف</string>
+    <string name="program_badge_featured">مميز</string>
+    <string name="program_card_sessions_weekly_format">%1$d جلسة · ~%2$d / أسبوع</string>
+    <string name="program_detail_why_title">لماذا هذا البرنامج</string>
+    <string name="program_detail_week1_title">نظرة على الأسبوع الأول</string>
+    <string name="program_detail_policies">أيام الراحة مدمجة. إذا فاتك يوم تدريب، تابع في اليوم التالي المجدول—تتبع التقدم يتبع التقويم.</string>
+    <string name="program_detail_meta_goal">الهدف: %1$s</string>
+    <string name="program_detail_meta_domain">التركيز: %1$s</string>
+    <string name="program_detail_meta_weekly_sessions">~%1$d جلسة / أسبوع (هدف)</string>
+    <string name="program_detail_meta_session_length">~%1$d دقيقة / جلسة (تقريبي)</string>
+    <string name="program_detail_meta_equipment">المعدات: %1$s</string>
+    <string name="program_week1_pill_rest">راحة</string>
+    <string name="program_week1_pill_light">استشفاء</string>
+    <string name="session_customization_synced">تم حفظ التغييرات في خطتك</string>
+    <string name="session_customization_pending">حُفظت على الجهاز — ستُزامن عند عودة الاتصال</string>
     <string name="workout_list_title">التمارين المجمعة</string>
     <string name="workout_list_subtitle">اختر تمريناً للبدء</string>
     <string name="exercise_list_subtitle">استكشف مكتبة التمارين الكاملة</string>

@@ -62,6 +62,36 @@
             android:textSize="14sp"
             android:layout_marginTop="4dp" />
 
+        <HorizontalScrollView
+            android:id="@+id/scrollDifficultyFilters"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="12dp"
+            android:scrollbars="none"
+            android:visibility="gone">
+
+            <com.google.android.material.chip.ChipGroup
+                android:id="@+id/chipGroupDifficulty"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                app:singleSelection="true" />
+        </HorizontalScrollView>
+
+        <HorizontalScrollView
+            android:id="@+id/scrollGoalFilters"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="4dp"
+            android:scrollbars="none"
+            android:visibility="gone">
+
+            <com.google.android.material.chip.ChipGroup
+                android:id="@+id/chipGroupGoal"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                app:singleSelection="true" />
+        </HorizontalScrollView>
+
     </LinearLayout>
 
     <!-- Program List -->
