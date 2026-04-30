@@ -2,6 +2,7 @@ import { Body, Controller, Get, Param, Post, Req, Res } from '@nestjs/common';
 import type { Request, Response } from 'express';
 import { verifyMobileToken } from '@/modules/auth/auth.service';
 import { activePlanService } from '@/modules/active-plan/active-plan.service';
+import { buildAssignmentReason } from './program-assignment';
 import { programService } from './programs.service';
 
 @Controller('mobile/programs')
@@ -84,6 +85,7 @@ export class MobileProgramsController {
 
       const plan = await activePlanService.enrollProgram(authResult.userId, id, {
         name: body?.name as Record<string, string> | undefined,
+        assignmentReason: buildAssignmentReason('manual_selection', ['user_choice'], null),
       });
       return { success: true, data: plan };
     } catch (error) {

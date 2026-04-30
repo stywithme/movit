@@ -526,6 +526,7 @@ class ProgramSessionActivity : AppCompatActivity() {
             val ivIcon: ImageView = view.findViewById(R.id.ivItemIcon)
             val tvName: TextView = view.findViewById(R.id.tvItemName)
             val tvDetail: TextView = view.findViewById(R.id.tvItemDetail)
+            val layoutActionRow: LinearLayout = view.findViewById(R.id.layoutItemActionRow)
             val layoutAlwaysActions: LinearLayout = view.findViewById(R.id.layoutAlwaysActions)
             val btnSwapExercise: ImageButton = view.findViewById(R.id.btnSwapExercise)
             val layoutEditControls: LinearLayout = view.findViewById(R.id.layoutItemEditControls)
@@ -644,8 +645,9 @@ class ProgramSessionActivity : AppCompatActivity() {
                 }
             }
 
-            // --- Swap (exercises only; stays visible in edit mode) ---
-            if (!isRest) {
+            // --- Customization actions (edit mode only, below text so title/image keep priority) ---
+            holder.layoutActionRow.visibility = if (isEditMode) View.VISIBLE else View.GONE
+            if (!isRest && isEditMode) {
                 holder.layoutAlwaysActions.visibility = View.VISIBLE
                 holder.btnSwapExercise.setOnClickListener {
                     val pos = holder.bindingAdapterPosition

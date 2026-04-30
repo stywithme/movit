@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { toast } from 'react-hot-toast';
 import { useRouter, useSearchParams } from 'next/navigation';
@@ -9,23 +9,14 @@ import type { LocalizedText } from '@/lib/types/localized';
 import { CollapsibleBuilderSection } from '../_components/CollapsibleBuilderSection';
 import { RecommendationEditor } from '../_components/RecommendationEditor';
 import { getAutoAssignmentReadiness } from '../_lib/auto-assignment';
+import { ProgramAttributesSection, useAttributesCatalog } from '../_components/ProgramAttributesSection';
+import { buildValueIdMeta, type ProgramAttributeFormRow } from '../_lib/program-prescription-attributes';
+import { exerciseProgramAttributeStatus } from '../_lib/exercise-program-attribute-status';
 
 interface ProgramSummary {
   id: string;
   name: LocalizedText;
 }
-
-const TARGET_REGION_OPTIONS = ['shoulder', 'hip', 'spine', 'knee', 'core', 'balance'] as const;
-
-const TARGET_EQUIPMENT_OPTIONS = [
-  'barbell',
-  'dumbbell',
-  'cable',
-  'machine',
-  'bodyweight',
-  'kettlebell',
-  'bands',
-] as const;
 
 const SESSION_ITEM_ROLE_OPTIONS = [
   { value: '', label: '—' },
@@ -52,6 +43,10 @@ interface ExerciseSummary {
   countingMethod?: {
     code: string;
   };
+  attributes?: Array<{
+    attributeValueId: string;
+    attributeValue?: { id: string; code: string; attribute?: { code: string } };
+  }>;
 }
 
 interface WorkoutSummary {
@@ -234,20 +229,17 @@ export default function NewProgramPage() {
   const [weeks, setWeeks] = useState<WeekForm[]>([createEmptyWeek(1)]);
 
   const [programOwnership, setProgramOwnership] = useState<'SYSTEM' | 'COACH' | 'CUSTOM'>('SYSTEM');
-  const [programDomainEnum, setProgramDomainEnum] = useState<'TRAINING' | 'MOBILITY' | 'THERAPEUTIC'>('TRAINING');
-  const [trainingGoal, setTrainingGoal] = useState('');
+  const { catalog: attributeCatalog, loading: loadingAttributeCatalog, error: attributeCatalogError } =
+    useAttributesCatalog();
+  const [programAttributeRows, setProgramAttributeRows] = useState<ProgramAttributeFormRow[]>([]);
   const [autoAssignable, setAutoAssignable] = useState(false);
-  const [targetEquipment, setTargetEquipment] = useState<string[]>([]);
   const [coachingNotesProgram, setCoachingNotesProgram] = useState('');
   const [weeklySessionTarget, setWeeklySessionTarget] = useState<number | ''>('');
   const [estimatedSessionMinutes, setEstimatedSessionMinutes] = useState<number | ''>('');
-  const [targetDomain, setTargetDomain] = useState('none');
-  const [targetRegions, setTargetRegions] = useState<string[]>([]);
   const [levelRangeMin, setLevelRangeMin] = useState(1);
   const [levelRangeMax, setLevelRangeMax] = useState(10);
   const [entryRecommendations, setEntryRecommendations] = useState('');
   const [exitRecommendations, setExitRecommendations] = useState('');
-  const [contraindications, setContraindications] = useState<string[]>([]);
   const [prescriptionPriority, setPrescriptionPriority] = useState(50);
   const [prerequisiteProgramId, setPrerequisiteProgramId] = useState('');
   const [nextProgramId, setNextProgramId] = useState('');
@@ -259,7 +251,7 @@ export default function NewProgramPage() {
   useEffect(() => {
     const fetchExercises = async () => {
       try {
-        const res = await fetch('/api/exercises?status=published&limit=200');
+        const res = await fetch('/api/exercises?status=published&limit=200&includeAttributes=true');
         const data = await res.json();
         if (data.success) {
           setExercises(data.data);
@@ -342,34 +334,44 @@ export default function NewProgramPage() {
     [exercises]
   );
 
+  const valueIdMeta = useMemo(() => buildValueIdMeta(attributeCatalog), [attributeCatalog]);
+
+  const programAttributesForReadiness = useMemo(
+    () =>
+      programAttributeRows.map((row) => {
+        const m = valueIdMeta.get(row.attributeValueId);
+        return {
+          mode: row.mode,
+          attributeValue: {
+            code: m?.valueCode ?? '',
+            attribute: { code: m?.attributeCode ?? '' },
+          },
+        };
+      }),
+    [programAttributeRows, valueIdMeta],
+  );
+
   const autoAssignmentReadiness = useMemo(
     () =>
       getAutoAssignmentReadiness({
         programType: programOwnership,
-        programDomain: programDomainEnum,
-        trainingGoal: programDomainEnum === 'TRAINING' ? trainingGoal || null : null,
         autoAssignable,
         levelRangeMin,
         levelRangeMax,
-        contraindications,
-        targetEquipment,
-        targetDomain: targetDomain !== 'none' ? targetDomain : null,
-        targetRegions,
         prescriptionPriority,
+        programAttributes: programAttributesForReadiness,
       }),
-    [
-      autoAssignable,
-      contraindications,
-      levelRangeMax,
-      levelRangeMin,
-      prescriptionPriority,
-      programDomainEnum,
-      programOwnership,
-      targetDomain,
-      targetEquipment,
-      targetRegions,
-      trainingGoal,
-    ]
+    [programOwnership, autoAssignable, levelRangeMax, levelRangeMin, prescriptionPriority, programAttributesForReadiness],
+  );
+
+  const exerciseAttributeCheck = useCallback(
+    (exerciseId: string | undefined) => {
+      if (!exerciseId || programAttributeRows.length === 0) return null;
+      const ex = exercises.find((e) => e.id === exerciseId);
+      const ids = ex?.attributes?.map((a) => a.attributeValueId) ?? [];
+      return exerciseProgramAttributeStatus(ids, programAttributeRows, valueIdMeta);
+    },
+    [exercises, programAttributeRows, valueIdMeta],
   );
 
   const prefillSummary = useMemo(() => {
@@ -405,6 +407,27 @@ export default function NewProgramPage() {
 
     return { weeks: weeks.length, days, sessions, items };
   }, [weeks]);
+
+  const calendarStructureWarnings = useMemo(() => {
+    const messages: string[] = [];
+    if (durationWeeks !== weeks.length) {
+      messages.push(
+        `Duration is set to ${durationWeeks} week(s), but the builder currently contains ${weeks.length} week block(s).`
+      );
+    }
+    weeks.forEach((week, wi) => {
+      if (week.days.length !== 7) {
+        messages.push(
+          `Week ${wi + 1}: publish-ready programs use 7 days per week; this week has ${week.days.length} day(s).`
+        );
+      }
+      const badDayNumber = week.days.some((d) => d.dayNumber < 1 || d.dayNumber > 7);
+      if (badDayNumber) {
+        messages.push(`Week ${wi + 1}: day numbers should be between 1 and 7 for calendar alignment.`);
+      }
+    });
+    return messages;
+  }, [durationWeeks, weeks]);
 
   const getWeekSummary = (week: WeekForm) => {
     const sessions = week.days.reduce((acc, day) => acc + day.sessions.length, 0);
@@ -442,20 +465,43 @@ export default function NewProgramPage() {
   };
 
   useEffect(() => {
-    const programDomain = searchParams.get('programDomain');
-    if (programDomain === 'TRAINING' || programDomain === 'MOBILITY' || programDomain === 'THERAPEUTIC') {
-      setProgramDomainEnum(programDomain);
-    }
-
     const min = Number.parseInt(searchParams.get('levelRangeMin') || '', 10);
     if (Number.isFinite(min) && min > 0) setLevelRangeMin(min);
 
     const max = Number.parseInt(searchParams.get('levelRangeMax') || '', 10);
     if (Number.isFinite(max) && max > 0) setLevelRangeMax(max);
-
-    const goal = searchParams.get('trainingGoal');
-    if (goal) setTrainingGoal(goal);
   }, [searchParams]);
+
+  useEffect(() => {
+    if (!attributeCatalog.length) return;
+    if (programAttributeRows.length > 0) return;
+    const programDomain = searchParams.get('programDomain');
+    if (programDomain !== 'TRAINING' && programDomain !== 'MOBILITY' && programDomain !== 'THERAPEUTIC') {
+      return;
+    }
+    const domainCode =
+      programDomain === 'MOBILITY' ? 'pd_mobility' : programDomain === 'THERAPEUTIC' ? 'pd_therapeutic' : 'pd_training';
+    const domainAttr = attributeCatalog.find((a) => a.code === 'domain');
+    const dv = domainAttr?.values.find((v) => v.code === domainCode);
+    const rows: ProgramAttributeFormRow[] = [];
+    if (dv) rows.push({ attributeValueId: dv.id, mode: 'REQUIRED' });
+    const goalParam = searchParams.get('trainingGoal');
+    if (goalParam && programDomain === 'TRAINING') {
+      const goalCodeMap: Record<string, string> = {
+        STRENGTH: 'pg_strength',
+        HYPERTROPHY: 'pg_hypertrophy',
+        POWER: 'pg_power',
+        GENERAL_HEALTH: 'pg_general_health',
+      };
+      const gc = goalCodeMap[goalParam];
+      if (gc) {
+        const goalAttr = attributeCatalog.find((a) => a.code === 'goal');
+        const gv = goalAttr?.values.find((v) => v.code === gc);
+        if (gv) rows.push({ attributeValueId: gv.id, mode: 'REQUIRED' });
+      }
+    }
+    if (rows.length > 0) setProgramAttributeRows(rows);
+  }, [attributeCatalog, searchParams, programAttributeRows.length]);
 
   const updateWeek = (weekIndex: number, updates: Partial<WeekForm>) => {
     setWeeks((prev) => prev.map((week, index) => (index === weekIndex ? { ...week, ...updates } : week)));
@@ -732,24 +778,19 @@ export default function NewProgramPage() {
       .map((tag) => tag.trim())
       .filter(Boolean),
     programType: programOwnership,
-    programDomain: programDomainEnum,
-    trainingGoal: programDomainEnum === 'TRAINING' ? trainingGoal || undefined : undefined,
     autoAssignable,
     version,
     coachingNotes: parseJsonField(coachingNotesProgram),
     weeklySessionTarget: weeklySessionTarget === '' ? undefined : weeklySessionTarget,
     estimatedSessionMinutes: estimatedSessionMinutes === '' ? undefined : estimatedSessionMinutes,
-    targetEquipment,
-    targetDomain: targetDomain !== 'none' ? targetDomain : undefined,
-    targetRegions,
     levelRangeMin,
     levelRangeMax,
     entryRecommendations: parseJsonField(entryRecommendations),
     exitRecommendations: parseJsonField(exitRecommendations),
-    contraindications,
     prescriptionPriority,
     prerequisiteProgramId: prerequisiteProgramId || undefined,
     nextProgramId: nextProgramId || undefined,
+    programAttributes: programAttributeRows,
     weeks: weeks.map((week, weekIndex) => ({
       weekNumber: week.weekNumber || weekIndex + 1,
       weekType: week.weekType,
@@ -978,7 +1019,17 @@ export default function NewProgramPage() {
         </Card>
 
         <Card id="prescription-settings" className="p-6 scroll-mt-24">
-          <h2 className="text-lg font-semibold mb-4">Prescription Settings</h2>
+          <h2 className="text-lg font-semibold mb-4">Prescription &amp; matching</h2>
+          <p className="text-sm text-gray-600 mb-4">
+            Program attributes drive auto-assignment and the prescription engine. Legacy scalar fields are synced on save.
+          </p>
+
+          {attributeCatalogError ? (
+            <p className="text-sm text-red-600 mb-4">{attributeCatalogError}</p>
+          ) : null}
+          {loadingAttributeCatalog ? (
+            <p className="text-sm text-gray-500 mb-4">Loading attribute catalog…</p>
+          ) : null}
 
           <div className="grid grid-cols-3 gap-4">
             <div>
@@ -990,51 +1041,6 @@ export default function NewProgramPage() {
                   { value: 'SYSTEM', label: 'System' },
                   { value: 'COACH', label: 'Coach' },
                   { value: 'CUSTOM', label: 'Custom' },
-                ]}
-              />
-            </div>
-            <div>
-              <Label>Program domain</Label>
-              <Select
-                value={programDomainEnum}
-                onChange={(e) =>
-                  setProgramDomainEnum(e.target.value as 'TRAINING' | 'MOBILITY' | 'THERAPEUTIC')
-                }
-                options={[
-                  { value: 'TRAINING', label: 'Training' },
-                  { value: 'MOBILITY', label: 'Mobility' },
-                  { value: 'THERAPEUTIC', label: 'Therapeutic' },
-                ]}
-              />
-            </div>
-            <div>
-              <Label>Training goal</Label>
-              <Select
-                value={trainingGoal}
-                onChange={(e) => setTrainingGoal(e.target.value)}
-                options={[
-                  { value: '', label: '—' },
-                  { value: 'STRENGTH', label: 'Strength' },
-                  { value: 'HYPERTROPHY', label: 'Hypertrophy' },
-                  { value: 'POWER', label: 'Power' },
-                  { value: 'GENERAL_HEALTH', label: 'General health' },
-                ]}
-              />
-            </div>
-          </div>
-
-          <div className="grid grid-cols-3 gap-4 mt-4">
-            <div>
-              <Label>Target Domain</Label>
-              <Select
-                value={targetDomain}
-                onChange={(e) => setTargetDomain(e.target.value)}
-                options={[
-                  { value: 'none', label: 'None' },
-                  { value: 'mobility', label: 'Mobility' },
-                  { value: 'strength', label: 'Strength' },
-                  { value: 'control', label: 'Control' },
-                  { value: 'symmetry', label: 'Symmetry' },
                 ]}
               />
             </div>
@@ -1093,6 +1099,36 @@ export default function NewProgramPage() {
 
           <div className="grid grid-cols-2 gap-4 mt-4">
             <div>
+              <Label>Level Range Min</Label>
+              <Input
+                type="number"
+                min={1}
+                value={levelRangeMin}
+                onChange={(e) => setLevelRangeMin(Number.parseInt(e.target.value, 10) || 1)}
+              />
+            </div>
+            <div>
+              <Label>Level Range Max</Label>
+              <Input
+                type="number"
+                min={1}
+                value={levelRangeMax}
+                onChange={(e) => setLevelRangeMax(Number.parseInt(e.target.value, 10) || 1)}
+              />
+            </div>
+          </div>
+
+          <div className="mt-6 border-t border-gray-200 pt-6">
+            <h3 className="text-md font-semibold text-gray-900 mb-2">Program attributes</h3>
+            <ProgramAttributesSection
+              catalog={attributeCatalog}
+              value={programAttributeRows}
+              onChange={setProgramAttributeRows}
+            />
+          </div>
+
+          <div className="grid grid-cols-2 gap-4 mt-4">
+            <div>
               <Label>Weekly session target</Label>
               <Input
                 type="number"
@@ -1117,29 +1153,6 @@ export default function NewProgramPage() {
           </div>
 
           <div className="mt-4">
-            <Label>Target equipment</Label>
-            <div className="flex flex-wrap gap-3 mt-1">
-              {TARGET_EQUIPMENT_OPTIONS.map((eq) => (
-                <label key={eq} className="flex items-center gap-2 cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={targetEquipment.includes(eq)}
-                    onChange={(e) => {
-                      if (e.target.checked) {
-                        setTargetEquipment((prev) => [...prev, eq]);
-                      } else {
-                        setTargetEquipment((prev) => prev.filter((x) => x !== eq));
-                      }
-                    }}
-                    className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                  />
-                  <span className="text-sm text-gray-700">{eq}</span>
-                </label>
-              ))}
-            </div>
-          </div>
-
-          <div className="mt-4">
             <Label>Coaching notes (JSON)</Label>
             <Textarea
               value={coachingNotesProgram}
@@ -1147,50 +1160,6 @@ export default function NewProgramPage() {
               rows={2}
               placeholder="{}"
             />
-          </div>
-
-          <div className="mt-4">
-            <Label>Target Regions</Label>
-            <div className="flex flex-wrap gap-3 mt-1">
-              {TARGET_REGION_OPTIONS.map((region) => (
-                <label key={region} className="flex items-center gap-2 cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={targetRegions.includes(region)}
-                    onChange={(e) => {
-                      if (e.target.checked) {
-                        setTargetRegions((prev) => [...prev, region]);
-                      } else {
-                        setTargetRegions((prev) => prev.filter((r) => r !== region));
-                      }
-                    }}
-                    className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                  />
-                  <span className="text-sm text-gray-700 capitalize">{region}</span>
-                </label>
-              ))}
-            </div>
-          </div>
-
-          <div className="grid grid-cols-2 gap-4 mt-4">
-            <div>
-              <Label>Level Range Min</Label>
-              <Input
-                type="number"
-                min={1}
-                value={levelRangeMin}
-                onChange={(e) => setLevelRangeMin(Number.parseInt(e.target.value, 10) || 1)}
-              />
-            </div>
-            <div>
-              <Label>Level Range Max</Label>
-              <Input
-                type="number"
-                min={1}
-                value={levelRangeMax}
-                onChange={(e) => setLevelRangeMax(Number.parseInt(e.target.value, 10) || 1)}
-              />
-            </div>
           </div>
 
           <div className="grid grid-cols-2 gap-4 mt-4">
@@ -1208,29 +1177,6 @@ export default function NewProgramPage() {
               onChange={setExitRecommendations}
               mode="exit"
             />
-          </div>
-
-          <div className="mt-4">
-            <Label>Contraindications</Label>
-            <div className="flex flex-wrap gap-3 mt-1">
-              {TARGET_REGION_OPTIONS.map((region) => (
-                <label key={region} className="flex items-center gap-2 cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={contraindications.includes(region)}
-                    onChange={(e) => {
-                      if (e.target.checked) {
-                        setContraindications((prev) => [...prev, region]);
-                      } else {
-                        setContraindications((prev) => prev.filter((r) => r !== region));
-                      }
-                    }}
-                    className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                  />
-                  <span className="text-sm text-gray-700 capitalize">{region}</span>
-                </label>
-              ))}
-            </div>
           </div>
 
           <div className="grid grid-cols-2 gap-4 mt-4">
@@ -1300,6 +1246,17 @@ export default function NewProgramPage() {
               </ul>
             </div>
           </Card>
+
+          {calendarStructureWarnings.length > 0 ? (
+            <div className="space-y-2 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-900">
+              <p className="font-medium">Calendar structure (hints — save is not blocked)</p>
+              <ul className="list-disc space-y-1 pl-5">
+                {calendarStructureWarnings.map((msg) => (
+                  <li key={msg}>{msg}</li>
+                ))}
+              </ul>
+            </div>
+          ) : null}
 
           {weeks.map((week, weekIndex) => (
             <CollapsibleBuilderSection
@@ -1617,7 +1574,7 @@ export default function NewProgramPage() {
                               />
                             </div>
                             {item.type === 'exercise' ? (
-                              <div>
+                              <div className="space-y-2">
                                 <Label>Exercise</Label>
                                 <SearchableSelect
                                   value={item.exerciseId || ''}
@@ -1630,6 +1587,21 @@ export default function NewProgramPage() {
                                   placeholder="Select exercise"
                                   searchPlaceholder="Search exercises..."
                                 />
+                                {(() => {
+                                  const check = exerciseAttributeCheck(item.exerciseId);
+                                  if (!check || check.status === 'ok') return null;
+                                  return (
+                                    <div
+                                      className={`text-xs rounded px-2 py-1.5 ${
+                                        check.status === 'red'
+                                          ? 'bg-red-50 text-red-900 border border-red-200'
+                                          : 'bg-amber-50 text-amber-950 border border-amber-200'
+                                      }`}
+                                    >
+                                      {check.messages.join(' · ')}
+                                    </div>
+                                  );
+                                })()}
                               </div>
                             ) : (
                               <div>

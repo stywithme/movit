@@ -1,26 +1,28 @@
 /**
  * Prescription Engine V1 — Rule-based program recommendation.
  *
- * Flow: Classify user → Filter programs → Return one recommended program.
- *
- * Classification priorities (Section 6.2 of architecture plan):
- *   1. SAFETY_BLOCK  — safetyGates/painFlags/parqFailed
- *   2. CORRECTION_NEED — any region score < 25
- *   3. IMBALANCE     — symmetry < 60% or symmetryLevel gap >= 2
- *   4. WEAKNESS      — any domain level gap >= 2
- *   5. NORMAL        — balanced, standard training
+ * Flow: Classify user → Filter programs (ProgramAttribute–based) → Return one recommended program.
  */
 
+import { ProgramAttributeMode, type ProgramDomain } from '@prisma/client';
 import { getPrisma } from '@/lib/prisma/client';
 import { scoreToLevel } from '@/lib/metrics';
-import { legacyTypeToProgramDomain, programDomainToLegacyString } from '@/lib/program-domain';
+import {
+  bodyRegionValueCodeFromLabel,
+  equipmentValueCodeFromProfileString,
+  focusValueCodeFromTargetHint,
+  genderValueCodeFromProfile,
+  placeValueCodeFromProfile,
+  requiredTypeToDomainValueCode,
+  trainingGoalToValueCode,
+} from '@/lib/program-attribute-codes';
+import { typeStringFromProgramDomain } from '@/lib/program-domain';
 import {
   buildAssignmentReason,
+  getEffectiveProgramDomain,
   isProgramEligibleForAutoAssignment,
   type ProgramAssignmentReason,
 } from '@/modules/programs/program-assignment';
-
-// ── Types ──
 
 export type ClassificationCategory =
   | 'SAFETY_BLOCK'
@@ -32,7 +34,7 @@ export type ClassificationCategory =
 export interface Classification {
   category: ClassificationCategory;
   priority: number;
-  requiredType: string; // training | mobility | therapeutic
+  requiredType: string;
   targetDomain: string | null;
   targetRegions: string[];
   safetyGateCodes: string[];
@@ -58,10 +60,50 @@ export interface RecommendedProgram {
   matchReason: string;
 }
 
-// ── Helpers ──
+type ProgramForPrescription = {
+  id: string;
+  name: unknown;
+  slug: string;
+  programDomain: import('@prisma/client').ProgramDomain;
+  trainingGoal: import('@prisma/client').TrainingGoal | null;
+  targetEquipment: unknown;
+  targetDomain: string | null;
+  targetRegions: string[];
+  contraindications: string[];
+  difficulty: string;
+  coverImageUrl: string | null;
+  durationWeeks: number;
+  prescriptionPriority: number;
+  programType: import('@prisma/client').ProgramType;
+  autoAssignable: boolean;
+  isPublished: boolean;
+  deletedAt: Date | null;
+  programAttributes: Array<{
+    mode: ProgramAttributeMode;
+    attributeValue: {
+      code: string;
+      attribute: { code: string };
+    };
+  }>;
+};
 
-interface DomainLevel { domain: string; level: number; score: number }
-interface RegionLevel { region: string; level: number; score: number; isLimiting: boolean }
+const programPrescriptionInclude = {
+  programAttributes: {
+    include: { attributeValue: { include: { attribute: true } } },
+  },
+} as const;
+
+interface DomainLevel {
+  domain: string;
+  level: number;
+  score: number;
+}
+interface RegionLevel {
+  region: string;
+  level: number;
+  score: number;
+  isLimiting: boolean;
+}
 
 function parseDomainLevels(raw: unknown): DomainLevel[] {
   if (!Array.isArray(raw)) return [];
@@ -86,72 +128,193 @@ function determineLimitingFactor(
   const domainLevels = parseDomainLevels(domainLevelsRaw);
   if (domainLevels.length === 0) return null;
 
-  return [...domainLevels]
-    .sort((a, b) => a.level - b.level || a.score - b.score || a.domain.localeCompare(b.domain))[0]
-    ?.domain ?? null;
+  return (
+    [...domainLevels].sort(
+      (a, b) => a.level - b.level || a.score - b.score || a.domain.localeCompare(b.domain),
+    )[0]?.domain ?? null
+  );
+}
+
+function buildUserAttributeCodes(
+  classification: Classification,
+  userTrainingGoal: import('@prisma/client').TrainingGoal | null | undefined,
+  availableEquipment: string[],
+  profile: { biologicalSex?: string | null; trainingLocation?: string | null },
+): Set<string> {
+  const codes = new Set<string>();
+  codes.add(requiredTypeToDomainValueCode(classification.requiredType));
+  const goalCode = trainingGoalToValueCode(userTrainingGoal ?? undefined);
+  if (goalCode) codes.add(goalCode);
+  for (const eq of availableEquipment) {
+    const c = equipmentValueCodeFromProfileString(eq);
+    if (c) codes.add(c);
+  }
+  const focusCode = focusValueCodeFromTargetHint(classification.targetDomain);
+  if (focusCode) codes.add(focusCode);
+  for (const r of classification.targetRegions) {
+    const br = bodyRegionValueCodeFromLabel(r);
+    if (br) codes.add(br);
+  }
+  for (const r of classification.safetyGateCodes) {
+    const br = bodyRegionValueCodeFromLabel(r);
+    if (br) codes.add(br);
+  }
+  const gender = genderValueCodeFromProfile(profile.biologicalSex);
+  if (gender) codes.add(gender);
+  const place = placeValueCodeFromProfile(profile.trainingLocation);
+  if (place) codes.add(place);
+  return codes;
+}
+
+function passesProgramAttributes(p: ProgramForPrescription, userCodes: Set<string>): boolean {
+  for (const row of p.programAttributes) {
+    const code = row.attributeValue.code;
+    if (row.mode === ProgramAttributeMode.REQUIRED && !userCodes.has(code)) {
+      return false;
+    }
+    if (row.mode === ProgramAttributeMode.EXCLUDED && userCodes.has(code)) {
+      return false;
+    }
+  }
+  return true;
+}
+
+function countOptionalAttributeMatches(p: ProgramForPrescription, userCodes: Set<string>): number {
+  let n = 0;
+  for (const row of p.programAttributes) {
+    if (row.mode === ProgramAttributeMode.OPTIONAL && userCodes.has(row.attributeValue.code)) {
+      n += 1;
+    }
+  }
+  return n;
+}
+
+function narrowByFocusAndRegions(
+  matches: ProgramForPrescription[],
+  classification: Classification,
+): ProgramForPrescription[] {
+  let out = matches;
+  if (classification.targetDomain) {
+    const fc = focusValueCodeFromTargetHint(classification.targetDomain);
+    if (fc) {
+      const narrowed = out.filter((p) =>
+        p.programAttributes.some(
+          (row) =>
+            row.attributeValue.attribute.code === 'focus' &&
+            row.attributeValue.code === fc &&
+            row.mode !== ProgramAttributeMode.EXCLUDED,
+        ),
+      );
+      if (narrowed.length > 0) out = narrowed;
+    }
+  }
+  if (classification.targetRegions.length > 0) {
+    const wanted = new Set(
+      classification.targetRegions
+        .map((r) => bodyRegionValueCodeFromLabel(r))
+        .filter(Boolean) as string[],
+    );
+    if (wanted.size > 0) {
+      const narrowed = out.filter((p) =>
+        p.programAttributes.some(
+          (row) =>
+            row.attributeValue.attribute.code === 'body_region' &&
+            wanted.has(row.attributeValue.code) &&
+            row.mode !== ProgramAttributeMode.EXCLUDED,
+        ),
+      );
+      if (narrowed.length > 0) out = narrowed;
+    }
+  }
+  return out;
 }
 
 function scoreProgramForLimitingFactor(
-  program: { targetDomain: string | null; targetRegions: string[] },
+  program: ProgramForPrescription,
   limitingFactor: string | null,
 ): number {
   if (!limitingFactor || limitingFactor === 'safety') return 0;
-  if (program.targetDomain === limitingFactor) return 3;
-  if (program.targetRegions.includes(limitingFactor)) return 1;
+  const fc = focusValueCodeFromTargetHint(limitingFactor);
+  if (
+    fc &&
+    program.programAttributes.some(
+      (r) => r.attributeValue.code === fc && r.mode !== ProgramAttributeMode.EXCLUDED,
+    )
+  ) {
+    return 3;
+  }
+  const br = bodyRegionValueCodeFromLabel(limitingFactor);
+  if (
+    br &&
+    program.programAttributes.some(
+      (r) =>
+        r.attributeValue.code === br &&
+        (r.mode === ProgramAttributeMode.REQUIRED || r.mode === ProgramAttributeMode.OPTIONAL),
+    )
+  ) {
+    return 1;
+  }
   return 0;
 }
 
 function collectMatchedFactors(
-  program: {
-    trainingGoal: string | null;
-    targetEquipment: unknown;
-    targetDomain: string | null;
-    targetRegions: string[];
-  },
-  userTrainingGoal: string | null | undefined,
+  program: ProgramForPrescription,
+  userTrainingGoal: import('@prisma/client').TrainingGoal | null | undefined,
   availableEquipment: string[],
   classification: Classification,
   limitingFactor: string | null,
+  userCodes: Set<string>,
 ): string[] {
   const factors = ['levelRange'];
-  if (userTrainingGoal && program.trainingGoal === userTrainingGoal) {
-    factors.push('trainingGoal');
-  }
 
-  const requiredEquipment = Array.isArray(program.targetEquipment)
-    ? (program.targetEquipment as string[])
-    : [];
+  if (userTrainingGoal) {
+    const gc = trainingGoalToValueCode(userTrainingGoal);
+    if (gc && program.programAttributes.some((r) => r.attributeValue.code === gc)) {
+      factors.push('trainingGoal');
+    }
+  }
+  const reqEquip = program.programAttributes.filter(
+    (r) => r.attributeValue.attribute.code === 'equipment' && r.mode === ProgramAttributeMode.REQUIRED,
+  );
   if (
     availableEquipment.length > 0 &&
-    requiredEquipment.length > 0 &&
-    requiredEquipment.some((code) => availableEquipment.includes(code))
+    reqEquip.length > 0 &&
+    reqEquip.some((r) => userCodes.has(r.attributeValue.code))
   ) {
     factors.push('equipment');
   }
-
-  if (classification.targetDomain && program.targetDomain === classification.targetDomain) {
+  const fc = focusValueCodeFromTargetHint(classification.targetDomain);
+  if (
+    fc &&
+    program.programAttributes.some((r) => r.attributeValue.code === fc && r.mode !== ProgramAttributeMode.EXCLUDED)
+  ) {
     factors.push('targetDomain');
   }
-
-  if (
-    classification.targetRegions.length > 0 &&
-    program.targetRegions.some((region) => classification.targetRegions.includes(region))
-  ) {
-    factors.push('targetRegions');
+  if (classification.targetRegions.length > 0) {
+    const hit = classification.targetRegions.some((reg) => {
+      const br = bodyRegionValueCodeFromLabel(reg);
+      return (
+        br &&
+        program.programAttributes.some((r) => r.attributeValue.code === br && r.mode !== ProgramAttributeMode.EXCLUDED)
+      );
+    });
+    if (hit) factors.push('targetRegions');
   }
-
   if (classification.safetyGateCodes.length > 0) {
     factors.push('contraindications');
   }
-
-  if (limitingFactor && program.targetDomain === limitingFactor) {
+  if (limitingFactor && scoreProgramForLimitingFactor(program, limitingFactor) >= 3) {
     factors.push('limitingFactor');
   }
 
   return factors;
 }
 
-// ── Classification Logic ──
+function recommendedProgramTypeString(p: ProgramForPrescription): string {
+  const eff = getEffectiveProgramDomain({ programAttributes: p.programAttributes });
+  const domain: ProgramDomain = eff ?? 'TRAINING';
+  return typeStringFromProgramDomain(domain);
+}
 
 function classifyUser(
   assessment: {
@@ -167,7 +330,6 @@ function classifyUser(
     regionLevels: unknown;
   },
 ): Classification {
-  // Priority 1: SAFETY_BLOCK
   const gates = Array.isArray(assessment.safetyGates) ? assessment.safetyGates : [];
   const pains = Array.isArray(assessment.painFlags) ? assessment.painFlags : [];
   const safetyGateCodes = gates
@@ -183,15 +345,15 @@ function classifyUser(
       targetDomain: null,
       targetRegions: [...new Set([...safetyGateCodes, ...painRegions])],
       safetyGateCodes,
-      reason: gates.length > 0
-        ? `Safety gates active for: ${safetyGateCodes.join(', ')}`
-        : pains.length > 0
-          ? `Pain reported in: ${painRegions.join(', ')}`
-          : 'PAR-Q+ screening failed',
+      reason:
+        gates.length > 0
+          ? `Safety gates active for: ${safetyGateCodes.join(', ')}`
+          : pains.length > 0
+            ? `Pain reported in: ${painRegions.join(', ')}`
+            : 'PAR-Q+ screening failed',
     };
   }
 
-  // Priority 2: CORRECTION_NEED — any region score < 25
   const regionLevels = parseRegionLevels(profile.regionLevels);
   const weakRegions = regionLevels.filter((r) => r.score < 25);
   if (weakRegions.length > 0) {
@@ -206,7 +368,6 @@ function classifyUser(
     };
   }
 
-  // Priority 3: IMBALANCE — symmetry < 60 or symmetryLevel gap >= 2
   const domainLevels = parseDomainLevels(profile.domainLevels);
   const symmetryDomain = domainLevels.find((d) => d.domain === 'symmetry');
   const symmetryScore = assessment.symmetryScore ?? symmetryDomain?.score ?? 100;
@@ -225,10 +386,7 @@ function classifyUser(
     };
   }
 
-  // Priority 4: WEAKNESS — any domain level gap >= 2
-  const weakDomains = domainLevels.filter(
-    (d) => profile.overallLevel - d.level >= 2,
-  );
+  const weakDomains = domainLevels.filter((d) => profile.overallLevel - d.level >= 2);
   if (weakDomains.length > 0) {
     const worstDomain = weakDomains.sort((a, b) => a.level - b.level)[0];
     return {
@@ -242,7 +400,6 @@ function classifyUser(
     };
   }
 
-  // Priority 5: NORMAL — balanced training
   return {
     category: 'NORMAL',
     priority: 5,
@@ -254,16 +411,34 @@ function classifyUser(
   };
 }
 
-// ── Service ──
+function rankAndPick(
+  candidates: ProgramForPrescription[],
+  classification: Classification,
+  limitingFactor: string | null,
+  userCodes: Set<string>,
+): ProgramForPrescription | null {
+  let matches = candidates.filter(
+    (p) =>
+      p.programAttributes.length > 0 &&
+      isProgramEligibleForAutoAssignment(p) &&
+      passesProgramAttributes(p, userCodes),
+  );
+  matches = narrowByFocusAndRegions(matches, classification);
+  matches = [...matches].sort((a, b) => {
+    const scoreDiff =
+      scoreProgramForLimitingFactor(b, limitingFactor) - scoreProgramForLimitingFactor(a, limitingFactor);
+    if (scoreDiff !== 0) return scoreDiff;
+    const optDiff = countOptionalAttributeMatches(b, userCodes) - countOptionalAttributeMatches(a, userCodes);
+    if (optDiff !== 0) return optDiff;
+    return a.prescriptionPriority - b.prescriptionPriority;
+  });
+  return matches[0] ?? null;
+}
 
 export const prescriptionService = {
-  /**
-   * Generate a program recommendation for a user based on their latest assessment.
-   */
   async recommend(userId: string): Promise<PrescriptionResult> {
     const prisma = await getPrisma();
 
-    // 1. Get latest assessment
     const assessment = await prisma.bodyScanResult.findFirst({
       where: { userId },
       orderBy: { completedAt: 'desc' },
@@ -286,7 +461,6 @@ export const prescriptionService = {
       };
     }
 
-    // 2. Get latest level profile
     const profile = await prisma.userLevelProfile.findFirst({
       where: { userId },
       orderBy: { classifiedAt: 'desc' },
@@ -300,7 +474,6 @@ export const prescriptionService = {
       regionLevels: profile?.regionLevels ?? [],
     };
 
-    // 3. Classify user
     const classification = classifyUser(
       {
         safetyGates: assessment.safetyGates,
@@ -320,97 +493,58 @@ export const prescriptionService = {
       where: { id: userId },
       select: {
         trainingGoal: true,
-        trainingProfile: { select: { availableEquipment: true } },
+        trainingProfile: {
+          select: {
+            availableEquipment: true,
+            biologicalSex: true,
+            trainingLocation: true,
+          },
+        },
       },
     });
 
-    // 4. Filter matching programs
+    const availRaw = userPrefs?.trainingProfile?.availableEquipment;
+    const availList = Array.isArray(availRaw) ? (availRaw as string[]) : [];
+    const userCodes = buildUserAttributeCodes(
+      classification,
+      userPrefs?.trainingGoal,
+      availList,
+      {
+        biologicalSex: userPrefs?.trainingProfile?.biologicalSex,
+        trainingLocation: userPrefs?.trainingProfile?.trainingLocation,
+      },
+    );
+
+    const domainValueCode = requiredTypeToDomainValueCode(classification.requiredType);
+
     const programs = await prisma.program.findMany({
       where: {
         isPublished: true,
         deletedAt: null,
-        programDomain: legacyTypeToProgramDomain(classification.requiredType),
         levelRangeMin: { lte: overallLevel },
         levelRangeMax: { gte: overallLevel },
+        programAttributes: {
+          some: {
+            mode: { in: [ProgramAttributeMode.REQUIRED, ProgramAttributeMode.OPTIONAL] },
+            attributeValue: { code: domainValueCode },
+          },
+        },
       },
+      include: programPrescriptionInclude,
       orderBy: { prescriptionPriority: 'asc' },
     });
 
-    // Apply additional filtering
-    let matches = programs.filter(isProgramEligibleForAutoAssignment);
+    const typed = programs as ProgramForPrescription[];
+    const best = rankAndPick(typed, classification, limitingFactor, userCodes);
 
-    if (userPrefs?.trainingGoal) {
-      matches = matches.filter(
-        (p) => !p.trainingGoal || p.trainingGoal === userPrefs.trainingGoal,
-      );
-    }
-
-    const availRaw = userPrefs?.trainingProfile?.availableEquipment;
-    const availList = Array.isArray(availRaw) ? (availRaw as string[]) : [];
-    if (availList.length > 0) {
-      matches = matches.filter((p) => {
-        const te = p.targetEquipment;
-        if (te == null) return true;
-        const req = Array.isArray(te) ? (te as string[]) : [];
-        if (req.length === 0) return true;
-        return req.some((code) => availList.includes(code));
-      });
-    }
-
-    // Filter by contraindications (exclude programs blocked by safety gates)
-    if (classification.safetyGateCodes.length > 0) {
-      matches = matches.filter((p) => {
-        const contra = p.contraindications || [];
-        return !contra.some((c) => classification.safetyGateCodes.includes(c));
-      });
-    }
-
-    // Filter by target domain if applicable
-    if (classification.targetDomain) {
-      const domainMatches = matches.filter(
-        (p) => p.targetDomain === classification.targetDomain,
-      );
-      if (domainMatches.length > 0) {
-        matches = domainMatches;
-      }
-    }
-
-    // Filter by target regions if applicable
-    if (classification.targetRegions.length > 0) {
-      const regionMatches = matches.filter((p) => {
-        const regions = p.targetRegions || [];
-        return regions.some((r) => classification.targetRegions.includes(r));
-      });
-      if (regionMatches.length > 0) {
-        matches = regionMatches;
-      }
-    }
-
-    matches = [...matches].sort((a, b) => {
-      const scoreDiff =
-        scoreProgramForLimitingFactor(
-          { targetDomain: b.targetDomain, targetRegions: b.targetRegions || [] },
-          limitingFactor,
-        ) -
-        scoreProgramForLimitingFactor(
-          { targetDomain: a.targetDomain, targetRegions: a.targetRegions || [] },
-          limitingFactor,
-        );
-
-      if (scoreDiff !== 0) return scoreDiff;
-      return a.prescriptionPriority - b.prescriptionPriority;
-    });
-
-    // 5. Return best match
-    if (matches.length > 0) {
-      const best = matches[0];
+    if (best) {
       return {
         classification,
         recommendedProgram: {
           id: best.id,
           name: best.name as Record<string, string>,
           slug: best.slug,
-          type: programDomainToLegacyString(best.programDomain),
+          type: recommendedProgramTypeString(best),
           targetDomain: best.targetDomain,
           durationWeeks: best.durationWeeks,
           difficulty: best.difficulty,
@@ -420,16 +554,12 @@ export const prescriptionService = {
         assignmentReason: buildAssignmentReason(
           'selection_algorithm',
           collectMatchedFactors(
-            {
-              trainingGoal: best.trainingGoal,
-              targetEquipment: best.targetEquipment,
-              targetDomain: best.targetDomain,
-              targetRegions: best.targetRegions || [],
-            },
+            best,
             userPrefs?.trainingGoal,
             availList,
             classification,
             limitingFactor,
+            userCodes,
           ),
           limitingFactor,
         ),
@@ -437,7 +567,6 @@ export const prescriptionService = {
       };
     }
 
-    // 6. Fallback — any program for this level
     const fallbackPrograms = await prisma.program.findMany({
       where: {
         isPublished: true,
@@ -445,9 +574,12 @@ export const prescriptionService = {
         levelRangeMin: { lte: overallLevel },
         levelRangeMax: { gte: overallLevel },
       },
+      include: programPrescriptionInclude,
       orderBy: { prescriptionPriority: 'asc' },
     });
-    const fallback = fallbackPrograms.find(isProgramEligibleForAutoAssignment);
+
+    const fallbackTyped = fallbackPrograms as ProgramForPrescription[];
+    const fallback = rankAndPick(fallbackTyped, classification, limitingFactor, userCodes);
 
     if (fallback) {
       return {
@@ -456,7 +588,7 @@ export const prescriptionService = {
           id: fallback.id,
           name: fallback.name as Record<string, string>,
           slug: fallback.slug,
-          type: programDomainToLegacyString(fallback.programDomain),
+          type: recommendedProgramTypeString(fallback),
           targetDomain: fallback.targetDomain,
           durationWeeks: fallback.durationWeeks,
           difficulty: fallback.difficulty,
@@ -465,14 +597,20 @@ export const prescriptionService = {
         },
         assignmentReason: buildAssignmentReason(
           'fallback_selection',
-          ['levelRange'],
+          collectMatchedFactors(
+            fallback,
+            userPrefs?.trainingGoal,
+            availList,
+            classification,
+            limitingFactor,
+            userCodes,
+          ),
           limitingFactor,
         ),
         fallbackUsed: true,
       };
     }
 
-    // 7. No programs found at all
     return {
       classification,
       recommendedProgram: null,

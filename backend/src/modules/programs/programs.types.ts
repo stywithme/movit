@@ -6,6 +6,7 @@
 
 import type { LocalizedText } from '@/lib/types/localized';
 import type {
+  ProgramAttributeMode,
   ProgramDomain,
   ProgramType,
   SessionItemIntent,
@@ -15,6 +16,11 @@ import type {
 } from '@prisma/client';
 
 export type ProgramDifficulty = 'beginner' | 'intermediate' | 'advanced';
+
+export interface ProgramAttributeInput {
+  attributeValueId: string;
+  mode?: ProgramAttributeMode;
+}
 
 export type ProgramSessionItemType = 'exercise' | 'rest';
 
@@ -77,9 +83,6 @@ export interface CreateProgramInput {
   tags?: string[];
   isDefault?: boolean;
   weeks?: ProgramWeekInput[];
-  // Prescription metadata
-  /** @deprecated use programDomain */
-  type?: string;
   programType?: ProgramType;
   programDomain?: ProgramDomain;
   trainingGoal?: TrainingGoal | null;
@@ -105,6 +108,8 @@ export interface CreateProgramInput {
   prescriptionPriority?: number;
   prerequisiteProgramId?: string;
   nextProgramId?: string;
+  /** Program matching dimensions (domain, goal, equipment, …). Replaces legacy scalar fields when set. */
+  programAttributes?: ProgramAttributeInput[];
 }
 
 export interface UpdateProgramInput extends Partial<CreateProgramInput> {

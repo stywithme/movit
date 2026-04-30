@@ -28,12 +28,21 @@ interface Program {
   targetDomain?: string | null;
   targetRegions?: unknown;
   prescriptionPriority?: number | null;
+  /** Present on list/detail from API; used by client readiness when `autoAssignmentReadiness` is absent. */
+  programAttributes?: Array<{
+    mode: string;
+    attributeValue?: {
+      code: string;
+      attribute?: { code: string | null } | null;
+    } | null;
+  }>;
   autoAssignmentReadiness?: {
     ready: boolean;
     entersAutoAssignment: boolean;
     missingFields: string[];
     status: 'ready' | 'incomplete' | 'manual_only';
   };
+  activeEnrollmentCount?: number;
   isPublished: boolean;
   createdAt: string;
   updatedAt: string;
@@ -287,6 +296,9 @@ export default function ProgramsListPage() {
                   Readiness
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                  Enrollments
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
                   Status
                 </th>
                 <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">
@@ -340,6 +352,16 @@ export default function ProgramsListPage() {
                         </p>
                       ) : null}
                     </div>
+                  </td>
+                  <td className="px-6 py-4 text-sm text-gray-600">
+                    {typeof program.activeEnrollmentCount === 'number' &&
+                    program.activeEnrollmentCount > 0 ? (
+                      <span className="inline-flex px-2 py-1 text-xs font-medium rounded-full bg-blue-100 text-blue-800">
+                        {program.activeEnrollmentCount} active
+                      </span>
+                    ) : (
+                      <span className="text-xs text-gray-400">0</span>
+                    )}
                   </td>
                   <td className="px-6 py-4">
                     <span

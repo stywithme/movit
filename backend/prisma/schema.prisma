@@ -39,6 +39,7 @@ model AttributeValue {
   exercisesAsCategory       Exercise[]          @relation("ExerciseCategory")
   exercisesAsCountingMethod Exercise[]          @relation("ExerciseCountingMethod")
   posePositionJoints        PosePositionJoint[] @relation("PosePositionJoint")
+  programAttributes         ProgramAttribute[]
 
   @@index([attributeId])
   @@map("attribute_values")
@@ -346,6 +347,7 @@ model Program {
   slug                  String                 @unique
   coverImageUrl         String?
   durationWeeks         Int
+  /// @deprecated Derive from levelRangeMin/Max or remove; matching uses ProgramAttribute + level range.
   difficulty            Difficulty             @default(beginner)
   isDefault             Boolean                @default(false)
   isPublished           Boolean                @default(false)
@@ -355,6 +357,7 @@ model Program {
   createdAt             DateTime               @default(now())
   updatedAt             DateTime               @updatedAt
   deletedAt             DateTime?
+  /// @deprecated Use ProgramAttribute with attribute `body_region` and mode EXCLUDED.
   contraindications       String[]               @default([])
   entryRecommendations    Json?
   exitRecommendations     Json?
@@ -363,11 +366,16 @@ model Program {
   nextProgramId         String?
   prerequisiteProgramId String?
   prescriptionPriority  Int                    @default(100)
+  /// @deprecated Use ProgramAttribute with attribute `focus`.
   targetDomain          String?
+  /// @deprecated Use ProgramAttribute with attribute `body_region`.
   targetRegions         String[]               @default([])
+  /// @deprecated Use ProgramAttribute with attribute `equipment`.
   targetEquipment       Json?
   programType           ProgramType            @default(SYSTEM)
+  /// @deprecated Use ProgramAttribute with attribute `domain`.
   programDomain         ProgramDomain          @default(TRAINING)
+  /// @deprecated Use ProgramAttribute with attribute `goal`.
   trainingGoal          TrainingGoal?
   autoAssignable        Boolean                @default(false)
   version               Int                    @default(1)
@@ -378,6 +386,7 @@ model Program {
   estimatedSessionMinutes Int?
   isFeatured            Boolean                @default(false)
   programSessionReports ProgramSessionReport[]
+  programAttributes     ProgramAttribute[]
   weeks                 ProgramWeek[]
   nextProgram           Program?               @relation("ProgramNext", fields: [nextProgramId], references: [id])
   previousPrograms      Program[]              @relation("ProgramNext")
@@ -394,6 +403,22 @@ model Program {
   @@index([programDomain])
   @@index([levelRangeMin, levelRangeMax])
   @@map("programs")
+}
+
+/// Program matching dimensions (domain, goal, equipment, etc.) — reuses AttributeValue catalog with Exercise.
+model ProgramAttribute {
+  id               String                @id @default(uuid())
+  programId        String
+  attributeValueId String
+  mode             ProgramAttributeMode  @default(REQUIRED)
+  createdAt        DateTime              @default(now())
+  program          Program               @relation(fields: [programId], references: [id], onDelete: Cascade)
+  attributeValue   AttributeValue        @relation(fields: [attributeValueId], references: [id], onDelete: Cascade)
+
+  @@unique([programId, attributeValueId])
+  @@index([programId])
+  @@index([attributeValueId])
+  @@map("program_attributes")
 }
 
 model ProgramWeek {
@@ -1200,6 +1225,12 @@ enum TrainingGoal {
 enum WeekType {
   NORMAL
   DELOAD
+}
+
+enum ProgramAttributeMode {
+  REQUIRED
+  OPTIONAL
+  EXCLUDED
 }
 
 enum SessionItemRole {

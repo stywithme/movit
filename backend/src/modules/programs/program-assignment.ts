@@ -7,6 +7,14 @@ export type AssignmentSource =
 type ProgramTypeValue = 'SYSTEM' | 'COACH' | 'CUSTOM';
 type ProgramDomainValue = 'TRAINING' | 'MOBILITY' | 'THERAPEUTIC';
 
+export type ProgramAttributeRowForReadiness = {
+  mode: string;
+  attributeValue?: {
+    code: string;
+    attribute?: { code: string | null } | null;
+  } | null;
+};
+
 export interface ProgramAssignmentReason {
   source: AssignmentSource;
   matchedFactors: string[];
@@ -17,15 +25,10 @@ export interface AutoAssignmentProgramShape {
   isPublished?: boolean | null;
   programType?: ProgramTypeValue | null;
   autoAssignable?: boolean | null;
-  programDomain?: ProgramDomainValue | null;
-  trainingGoal?: string | null;
   levelRangeMin?: number | null;
   levelRangeMax?: number | null;
-  contraindications?: unknown;
-  targetEquipment?: unknown;
-  targetDomain?: string | null;
-  targetRegions?: unknown;
   prescriptionPriority?: number | null;
+  programAttributes?: ProgramAttributeRowForReadiness[];
 }
 
 export interface AutoAssignmentReadiness {
@@ -37,48 +40,59 @@ function hasNumber(value: unknown): value is number {
   return typeof value === 'number' && Number.isFinite(value);
 }
 
-function hasStructuredValue(value: unknown): boolean {
-  return value !== null && value !== undefined;
+function programAttrRows(program: AutoAssignmentProgramShape): ProgramAttributeRowForReadiness[] {
+  const pa = program.programAttributes;
+  return Array.isArray(pa) ? pa : [];
 }
 
-function hasNonBlankString(value: unknown): value is string {
-  return typeof value === 'string' && value.trim().length > 0;
+function hasDomainRequired(program: AutoAssignmentProgramShape): boolean {
+  return programAttrRows(program).some(
+    (r) => r.mode === 'REQUIRED' && r.attributeValue?.attribute?.code === 'domain',
+  );
 }
 
-export function getAutoAssignmentMissingFields(
-  program: AutoAssignmentProgramShape,
-): string[] {
+function hasGoalRequired(program: AutoAssignmentProgramShape): boolean {
+  return programAttrRows(program).some(
+    (r) => r.mode === 'REQUIRED' && r.attributeValue?.attribute?.code === 'goal',
+  );
+}
+
+/** Effective domain from `domain` attribute rows (non-EXCLUDED). */
+export function getEffectiveProgramDomain(program: AutoAssignmentProgramShape): ProgramDomainValue | null {
+  for (const r of programAttrRows(program)) {
+    if (r.mode === 'EXCLUDED') continue;
+    const c = r.attributeValue?.code;
+    if (c === 'pd_training') return 'TRAINING';
+    if (c === 'pd_mobility') return 'MOBILITY';
+    if (c === 'pd_therapeutic') return 'THERAPEUTIC';
+  }
+  return null;
+}
+
+export function getAutoAssignmentMissingFields(program: AutoAssignmentProgramShape): string[] {
   const missing: string[] = [];
 
   if (!program.programType) missing.push('programType');
-  if (!program.programDomain) missing.push('programDomain');
-  if (program.programDomain === 'TRAINING' && !program.trainingGoal) {
-    missing.push('trainingGoal');
-  }
   if (!hasNumber(program.levelRangeMin)) missing.push('levelRangeMin');
   if (!hasNumber(program.levelRangeMax)) missing.push('levelRangeMax');
-  if (!hasStructuredValue(program.contraindications)) {
-    missing.push('contraindications');
+  if (!hasNumber(program.prescriptionPriority)) missing.push('prescriptionPriority');
+
+  const rows = programAttrRows(program);
+  if (rows.length === 0) {
+    missing.push('programAttributes');
+    return missing;
   }
-  if (!hasStructuredValue(program.targetEquipment)) {
-    missing.push('targetEquipment');
-  }
-  if (!hasNonBlankString(program.targetDomain)) {
-    missing.push('targetDomain');
-  }
-  if (!hasStructuredValue(program.targetRegions)) {
-    missing.push('targetRegions');
-  }
-  if (!hasNumber(program.prescriptionPriority)) {
-    missing.push('prescriptionPriority');
+
+  if (!hasDomainRequired(program)) missing.push('domainAttribute');
+  const eff = getEffectiveProgramDomain(program);
+  if (eff === 'TRAINING' && !hasGoalRequired(program)) {
+    missing.push('goalAttribute');
   }
 
   return missing;
 }
 
-export function getAutoAssignmentReadiness(
-  program: AutoAssignmentProgramShape,
-): AutoAssignmentReadiness {
+export function getAutoAssignmentReadiness(program: AutoAssignmentProgramShape): AutoAssignmentReadiness {
   const missingFields = getAutoAssignmentMissingFields(program);
   return {
     ready: missingFields.length === 0,
@@ -86,9 +100,7 @@ export function getAutoAssignmentReadiness(
   };
 }
 
-export function isProgramEligibleForAutoAssignment(
-  program: AutoAssignmentProgramShape,
-): boolean {
+export function isProgramEligibleForAutoAssignment(program: AutoAssignmentProgramShape): boolean {
   if (!program.isPublished) return false;
 
   const typeEligible =

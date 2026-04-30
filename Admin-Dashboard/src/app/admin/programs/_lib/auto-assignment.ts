@@ -1,19 +1,27 @@
+/**
+ * Client-side approximation of auto-assignment readiness for the admin form.
+ *
+ * Source of truth: backend `program-assignment.ts` — mirror rule changes there.
+ */
 export type ProgramOwnership = 'SYSTEM' | 'COACH' | 'CUSTOM';
 export type ProgramDomainEnum = 'TRAINING' | 'MOBILITY' | 'THERAPEUTIC';
 export type AutoAssignmentStatus = 'ready' | 'incomplete' | 'manual_only';
 
+export type ProgramAttributeRowInput = {
+  mode: string;
+  attributeValue?: {
+    code: string;
+    attribute?: { code: string | null } | null;
+  } | null;
+};
+
 export interface AutoAssignmentReadinessInput {
   programType?: string | null;
-  programDomain?: string | null;
-  trainingGoal?: string | null;
   autoAssignable?: boolean | null;
   levelRangeMin?: number | null;
   levelRangeMax?: number | null;
-  contraindications?: unknown;
-  targetEquipment?: unknown;
-  targetDomain?: string | null;
-  targetRegions?: unknown;
   prescriptionPriority?: number | null;
+  programAttributes?: ProgramAttributeRowInput[];
 }
 
 export interface AutoAssignmentReadiness {
@@ -27,31 +35,52 @@ function hasNumber(value: unknown): value is number {
   return typeof value === 'number' && Number.isFinite(value);
 }
 
-function hasStructuredValue(value: unknown): boolean {
-  return value !== null && value !== undefined;
+function programAttrRows(input: AutoAssignmentReadinessInput): ProgramAttributeRowInput[] {
+  const pa = input.programAttributes;
+  return Array.isArray(pa) ? pa : [];
 }
 
-function hasNonBlankString(value: unknown): value is string {
-  return typeof value === 'string' && value.trim().length > 0;
+function hasDomainRequired(input: AutoAssignmentReadinessInput): boolean {
+  return programAttrRows(input).some(
+    (r) => r.mode === 'REQUIRED' && r.attributeValue?.attribute?.code === 'domain',
+  );
 }
 
-export function getAutoAssignmentReadiness(
-  input: AutoAssignmentReadinessInput,
-): AutoAssignmentReadiness {
+function hasGoalRequired(input: AutoAssignmentReadinessInput): boolean {
+  return programAttrRows(input).some(
+    (r) => r.mode === 'REQUIRED' && r.attributeValue?.attribute?.code === 'goal',
+  );
+}
+
+function getEffectiveProgramDomain(input: AutoAssignmentReadinessInput): ProgramDomainEnum | null {
+  for (const r of programAttrRows(input)) {
+    if (r.mode === 'EXCLUDED') continue;
+    const c = r.attributeValue?.code;
+    if (c === 'pd_training') return 'TRAINING';
+    if (c === 'pd_mobility') return 'MOBILITY';
+    if (c === 'pd_therapeutic') return 'THERAPEUTIC';
+  }
+  return null;
+}
+
+export function getAutoAssignmentReadiness(input: AutoAssignmentReadinessInput): AutoAssignmentReadiness {
   const missingFields: string[] = [];
 
   if (!input.programType) missingFields.push('programType');
-  if (!input.programDomain) missingFields.push('programDomain');
-  if (input.programDomain === 'TRAINING' && !input.trainingGoal) {
-    missingFields.push('trainingGoal');
-  }
   if (!hasNumber(input.levelRangeMin)) missingFields.push('levelRangeMin');
   if (!hasNumber(input.levelRangeMax)) missingFields.push('levelRangeMax');
-  if (!hasStructuredValue(input.contraindications)) missingFields.push('contraindications');
-  if (!hasStructuredValue(input.targetEquipment)) missingFields.push('targetEquipment');
-  if (!hasNonBlankString(input.targetDomain)) missingFields.push('targetDomain');
-  if (!hasStructuredValue(input.targetRegions)) missingFields.push('targetRegions');
   if (!hasNumber(input.prescriptionPriority)) missingFields.push('prescriptionPriority');
+
+  const rows = programAttrRows(input);
+  if (rows.length === 0) {
+    missingFields.push('programAttributes');
+  } else {
+    if (!hasDomainRequired(input)) missingFields.push('domainAttribute');
+    const eff = getEffectiveProgramDomain(input);
+    if (eff === 'TRAINING' && !hasGoalRequired(input)) {
+      missingFields.push('goalAttribute');
+    }
+  }
 
   const entersAutoAssignment =
     input.programType === 'SYSTEM' ||
