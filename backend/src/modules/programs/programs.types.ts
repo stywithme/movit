@@ -131,11 +131,17 @@ export interface TodayPlanResponse {
   isProgramComplete: boolean;
   progress: Record<string, string>; // "weekNum_dayNum_sessionId" → status
   sessions: ProgramExportSession[];
-  isPaused?: boolean;
+  /** False when today (UTC) is not one of the user's training weekdays. */
+  isTrainingDay?: boolean;
+  /** 0=Sun … 6=Sat — copy of profile.trainingWeekdays for mobile. */
+  trainingWeekdays: number[];
   catchUpSuggestion?: {
-    missedTrainingDays: number;
-    message: string;
-    missedSlots: { weekNumber: number; dayNumber: number }[];
+    resetType: 'none' | 'week_restart' | 'program_restart';
+    resetToWeek: number;
+    resetToDay: number;
+    calendarDaysSinceLastSession: number;
+    messageAr: string;
+    messageEn: string;
   } | null;
 }
 

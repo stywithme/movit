@@ -79,6 +79,7 @@ type ProgramForPrescription = {
   coverImageUrl: string | null;
   durationWeeks: number;
   prescriptionPriority: number;
+  weeklySessionTarget: number | null;
   programType: import('@prisma/client').ProgramType;
   autoAssignable: boolean;
   isPublished: boolean;
@@ -312,6 +313,7 @@ function rankAndPick(
   limitingFactor: string | null,
   userCodes: Set<string>,
   hints: UserAttributeHints,
+  userTrainingDaysPerWeek: number | null,
 ): ProgramForPrescription | null {
   let matches = candidates.filter(
     (p) =>
@@ -321,6 +323,12 @@ function rankAndPick(
   );
   matches = narrowByFocusAndRegions(matches, hints);
   matches = [...matches].sort((a, b) => {
+    const trainMatch =
+      userTrainingDaysPerWeek != null
+        ? (b.weeklySessionTarget === userTrainingDaysPerWeek ? 1 : 0) -
+          (a.weeklySessionTarget === userTrainingDaysPerWeek ? 1 : 0)
+        : 0;
+    if (trainMatch !== 0) return trainMatch;
     const scoreDiff =
       scoreProgramForLimitingFactor(b, limitingFactor) - scoreProgramForLimitingFactor(a, limitingFactor);
     if (scoreDiff !== 0) return scoreDiff;
@@ -351,12 +359,20 @@ export const prescriptionService = {
             biologicalSex: true,
             trainingLocation: true,
             healthDisclaimerAccepted: true,
+            trainingWeekdays: true,
+            availableDaysPerWeek: true,
           },
         },
       },
     });
 
     const tp = userPrefs?.trainingProfile;
+    const userTrainingDaysPerWeek =
+      tp?.trainingWeekdays && tp.trainingWeekdays.length > 0
+        ? tp.trainingWeekdays.length
+        : typeof tp?.availableDaysPerWeek === 'number'
+          ? tp.availableDaysPerWeek
+          : null;
     if (tp && tp.healthDisclaimerAccepted === false) {
       return {
         classification: {
@@ -407,7 +423,7 @@ export const prescriptionService = {
 
       const typed = programs as ProgramForPrescription[];
       const limitingFactor = determineLimitingFactor(classification.safetyGateCodes, []);
-      const best = rankAndPick(typed, classification, limitingFactor, userCodes, hints);
+      const best = rankAndPick(typed, classification, limitingFactor, userCodes, hints, userTrainingDaysPerWeek);
       const availList = Array.isArray(profileForCodes.availableEquipment)
         ? (profileForCodes.availableEquipment as string[])
         : [];
@@ -498,7 +514,7 @@ export const prescriptionService = {
     });
 
     const typed = programs as ProgramForPrescription[];
-    const best = rankAndPick(typed, classification, limitingFactor, userCodes, hints);
+    const best = rankAndPick(typed, classification, limitingFactor, userCodes, hints, userTrainingDaysPerWeek);
 
     if (best) {
       return {
@@ -542,7 +558,7 @@ export const prescriptionService = {
     });
 
     const fallbackTyped = fallbackPrograms as ProgramForPrescription[];
-    const fallback = rankAndPick(fallbackTyped, classification, limitingFactor, userCodes, hints);
+    const fallback = rankAndPick(fallbackTyped, classification, limitingFactor, userCodes, hints, userTrainingDaysPerWeek);
 
     if (fallback) {
       return {

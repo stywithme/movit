@@ -15,10 +15,13 @@ import {
   TrainingGoal,
   type PrismaClient,
 } from '@prisma/client';
-import { resolveCurrentProgramDay } from '@/modules/active-plan/plan-position';
+import { resolveTrainingPositionMeta, countTrainingDaySlots } from '@/modules/active-plan/plan-position';
 import { getAutoAssignmentReadiness } from './program-assignment';
-import { validateCalendarProgramStructure } from './calendar-program-structure';
-import { computeCatchUpSuggestion } from './program-catchup';
+import { validateCalendarProgramStructure, inferWeeklySessionTargetFromWeeks } from './calendar-program-structure';
+import {
+  buildCatchUpSuggestionFromMeta,
+  getLastProgramSessionCompletedAt,
+} from './program-catchup';
 import type {
   CreateProgramInput,
   ProgramExport,
@@ -154,7 +157,7 @@ async function syncProgramMatchingColumns(
   });
 }
 
-export { validateCalendarProgramStructure } from './calendar-program-structure';
+export { validateCalendarProgramStructure, inferWeeklySessionTargetFromWeeks } from './calendar-program-structure';
 
 function buildSessionItems(items?: ProgramSessionItemInput[]) {
   if (!items || items.length === 0) return undefined;
@@ -712,7 +715,12 @@ export const programService = {
           ownerId: data.ownerId ?? undefined,
           forkedFromId: data.forkedFromId ?? undefined,
           coachingNotes: data.coachingNotes as object ?? undefined,
-          weeklySessionTarget: data.weeklySessionTarget ?? undefined,
+          weeklySessionTarget:
+            data.weeklySessionTarget ??
+            inferWeeklySessionTargetFromWeeks(
+              data.weeks as { weekNumber: number; days: { isRestDay?: boolean; dayType?: string | null }[] }[],
+            ) ??
+            undefined,
           estimatedSessionMinutes: data.estimatedSessionMinutes ?? undefined,
           targetEquipment: data.targetEquipment as object ?? undefined,
           targetDomain: data.targetDomain ?? undefined,
@@ -836,6 +844,7 @@ export const programService = {
     }
 
     validateCalendarProgramStructure(program.durationWeeks, program.weeks);
+    const inferred = inferWeeklySessionTargetFromWeeks(program.weeks);
 
     const entersAutoAssignment =
       program.programType === 'SYSTEM' ||
@@ -852,7 +861,11 @@ export const programService = {
 
     return prisma.program.update({
       where: { id },
-      data: { isPublished: true, updatedBy },
+      data: {
+        isPublished: true,
+        updatedBy,
+        ...(inferred != null ? { weeklySessionTarget: inferred } : {}),
+      },
     });
   },
 
@@ -1399,12 +1412,25 @@ export const programService = {
     if (!userProgram || !userProgram.program) return null;
 
     const program = userProgram.program;
-    const position = resolveCurrentProgramDay(program.weeks, userProgram.progress ?? [], {
-      startDate: userProgram.startDate,
+    const [profile, lastAt] = await Promise.all([
+      prisma.trainingProfile.findUnique({
+        where: { userId },
+        select: { trainingWeekdays: true },
+      }),
+      program.id ? getLastProgramSessionCompletedAt(userId, program.id) : Promise.resolve(null),
+    ]);
+    const trainingWeekdays =
+      profile?.trainingWeekdays && profile.trainingWeekdays.length > 0
+        ? profile.trainingWeekdays
+        : null;
+
+    const meta = resolveTrainingPositionMeta(program.weeks, userProgram.progress ?? [], {
+      lastSessionCompletedAt: lastAt,
+      trainingWeekdays,
       durationWeeks: program.durationWeeks,
-      totalPausedDays: userProgram.totalPausedDays,
-      pausedAt: userProgram.pausedAt,
     });
+    const position = meta.position;
+    const catchUpSuggestion = buildCatchUpSuggestionFromMeta(meta);
 
     const weekNumber = position.targetWeekNumber;
     const dayNumber = position.targetDayNumber;
@@ -1422,17 +1448,11 @@ export const programService = {
       }
     }
 
-    const catchUpSuggestion =
-      !isProgramComplete && program.id && day
-        ? await computeCatchUpSuggestion(
-            userId,
-            program.id,
-            program.weeks,
-            program.durationWeeks,
-            weekNumber,
-            dayNumber,
-          )
-        : null;
+    const isUserOffDay = !position.isTrainingDay;
+    const isTemplateRest =
+      day &&
+      (day.isRestDay || day.dayType === 'rest' || day.dayType === 'active_recovery');
+    const showSessions = Boolean(day) && !isTemplateRest && !isUserOffDay && !isProgramComplete;
 
     return {
       userProgramId: userProgram.id,
@@ -1442,38 +1462,40 @@ export const programService = {
       date: new Date().toISOString(),
       isProgramComplete,
       progress: progressMap,
-      isPaused: Boolean(userProgram.pausedAt),
+      isTrainingDay: position.isTrainingDay ?? true,
+      trainingWeekdays: trainingWeekdays ?? [],
       catchUpSuggestion,
-      sessions: day
-        ? day.sessions.map((session) => ({
-            id: session.id,
-            name: parseLocalizedText(session.name) || { ar: '', en: '' },
-            sortOrder: session.sortOrder,
-            estimatedDurationMin: session.estimatedDurationMin ?? undefined,
-            items: session.items.map((item) => ({
-              type: item.type as 'exercise' | 'rest',
-              serverItemId: item.id,
-              exerciseSlug: item.exercise?.slug ?? undefined,
-              deletedExercise:
-                item.type === 'exercise' && !item.exercise ? true : undefined,
-              role: item.role ?? undefined,
-              intent: item.intent ?? undefined,
-              allowedSubstitutions:
-                Array.isArray(item.allowedSubstitutions) && item.allowedSubstitutions.length > 0
-                  ? (item.allowedSubstitutions as string[])
-                  : undefined,
-              sets: item.sets ?? undefined,
-              targetReps: item.targetReps ?? undefined,
-              targetDuration: item.targetDuration ?? undefined,
-              restBetweenSetsMs: item.restBetweenSetsMs ?? undefined,
-              weightKg: item.weightKg ?? undefined,
-              weightPerSet: (item.weightPerSet as number[]) || undefined,
-              notes: parseLocalizedText(item.notes),
-              restDurationMs: item.restDurationMs ?? undefined,
-              sortOrder: item.sortOrder,
-            })),
-          }))
-        : [],
+      sessions:
+        showSessions && day
+          ? day.sessions.map((session) => ({
+              id: session.id,
+              name: parseLocalizedText(session.name) || { ar: '', en: '' },
+              sortOrder: session.sortOrder,
+              estimatedDurationMin: session.estimatedDurationMin ?? undefined,
+              items: session.items.map((item) => ({
+                type: item.type as 'exercise' | 'rest',
+                serverItemId: item.id,
+                exerciseSlug: item.exercise?.slug ?? undefined,
+                deletedExercise:
+                  item.type === 'exercise' && !item.exercise ? true : undefined,
+                role: item.role ?? undefined,
+                intent: item.intent ?? undefined,
+                allowedSubstitutions:
+                  Array.isArray(item.allowedSubstitutions) && item.allowedSubstitutions.length > 0
+                    ? (item.allowedSubstitutions as string[])
+                    : undefined,
+                sets: item.sets ?? undefined,
+                targetReps: item.targetReps ?? undefined,
+                targetDuration: item.targetDuration ?? undefined,
+                restBetweenSetsMs: item.restBetweenSetsMs ?? undefined,
+                weightKg: item.weightKg ?? undefined,
+                weightPerSet: (item.weightPerSet as number[]) || undefined,
+                notes: parseLocalizedText(item.notes),
+                restDurationMs: item.restDurationMs ?? undefined,
+                sortOrder: item.sortOrder,
+              })),
+            }))
+          : [],
     };
   },
 

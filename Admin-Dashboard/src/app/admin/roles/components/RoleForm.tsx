@@ -23,7 +23,7 @@ const SUBJECT_GROUP_MAP: Record<string, { name: string; group: string }> = {
     Exercise: { name: 'Exercises', group: 'Content' },
     Workout: { name: 'Workouts', group: 'Content' },
     Program: { name: 'Programs', group: 'Content' },
-    ProgramMap: { name: 'Programs Map', group: 'Content' },
+    ProgramMap: { name: 'Programs & map', group: 'Content' },
     Attribute: { name: 'Attributes', group: 'Content' },
     FeedbackMessage: { name: 'Feedback Messages', group: 'Content' },
     PosePosition: { name: 'Camera Positions', group: 'Content' },

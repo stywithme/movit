@@ -189,9 +189,9 @@ export interface UserProgramExport {
   isActive: boolean;
   customizations?: Record<string, unknown> | null;
   updatedAt: string;
-  pausedAt?: string | null;
-  totalPausedDays?: number;
   customizationsUpdatedAt?: string | null;
+  /** Copy of user's onboarding training weekdays (0=Sun … 6=Sat). */
+  trainingWeekdays?: number[];
 }
 
 /** User overrides for a single exercise (mobile standalone training) */

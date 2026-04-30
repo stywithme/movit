@@ -82,8 +82,8 @@ function validateDay(day: ProgramDayInput, index: number): string[] {
   const errors: string[] = [];
   const prefix = `Day ${index + 1}`;
 
-  if (!day.dayNumber || day.dayNumber < 1 || day.dayNumber > 7) {
-    errors.push(`${prefix}: dayNumber must be between 1 and 7`);
+  if (!day.dayNumber || day.dayNumber < 1 || day.dayNumber > 14) {
+    errors.push(`${prefix}: dayNumber must be between 1 and 14`);
   }
 
   if (day.sessions && day.sessions.length > 0) {

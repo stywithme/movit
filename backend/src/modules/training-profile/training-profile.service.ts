@@ -17,6 +17,10 @@ function parseDate(value: string | null | undefined): Date | null | undefined {
 function buildProfileScalars(
   payload: TrainingProfilePayload
 ): Omit<Prisma.TrainingProfileUncheckedCreateInput, 'id' | 'userId' | 'createdAt' | 'updatedAt'> {
+  const impliedDaysPerWeek =
+    payload.trainingWeekdays && payload.trainingWeekdays.length > 0
+      ? payload.trainingWeekdays.length
+      : undefined;
   return {
     heightCm: payload.heightCm ?? undefined,
     weightKg: payload.weightKg ?? undefined,
@@ -25,7 +29,8 @@ function buildProfileScalars(
     currentActivityLevel: payload.currentActivityLevel ?? undefined,
     trainingExperienceMonths: payload.trainingExperienceMonths ?? undefined,
     resistanceExperience: payload.resistanceExperience ?? undefined,
-    availableDaysPerWeek: payload.availableDaysPerWeek ?? undefined,
+    availableDaysPerWeek: impliedDaysPerWeek ?? payload.availableDaysPerWeek ?? undefined,
+    trainingWeekdays: payload.trainingWeekdays ?? undefined,
     maxSessionMinutes: payload.maxSessionMinutes ?? undefined,
     availableEquipment: payload.availableEquipment as Prisma.InputJsonValue | undefined,
     trainingLocation: payload.trainingLocation ?? undefined,

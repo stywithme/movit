@@ -13,6 +13,8 @@ export interface TrainingProfilePayload {
   trainingExperienceMonths?: number | null;
   resistanceExperience?: string | null;
   availableDaysPerWeek?: number | null;
+  /** 0=Sun … 6=Sat — preferred training weekdays (length should match program weeklySessionTarget). */
+  trainingWeekdays?: number[] | null;
   maxSessionMinutes?: number | null;
   availableEquipment?: unknown;
   trainingLocation?: string | null;

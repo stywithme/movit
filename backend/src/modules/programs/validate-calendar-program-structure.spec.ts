@@ -3,12 +3,15 @@ import { validateCalendarProgramStructure } from './calendar-program-structure';
 function buildWeek(weekNumber: number) {
   return {
     weekNumber,
-    days: Array.from({ length: 7 }, (_, i) => ({ dayNumber: i + 1 })),
+    days: Array.from({ length: 7 }, (_, i) => ({
+      dayNumber: i + 1,
+      isRestDay: false,
+    })),
   };
 }
 
 describe('validateCalendarProgramStructure', () => {
-  it('accepts a full calendar grid for all weeks', () => {
+  it('accepts a full week of training days numbered 1..7', () => {
     expect(() => validateCalendarProgramStructure(2, [buildWeek(1), buildWeek(2)])).not.toThrow();
   });
 
@@ -28,16 +31,36 @@ describe('validateCalendarProgramStructure', () => {
     );
   });
 
-  it('throws when a week does not have 7 days', () => {
-    const bad = { weekNumber: 1, days: buildWeek(1).days.slice(0, 5) };
-    expect(() => validateCalendarProgramStructure(1, [bad])).toThrow(/exactly 7 days/);
-  });
-
-  it('throws when a day number is missing in a week', () => {
+  it('throws when a week has no training days', () => {
     const bad = {
       weekNumber: 1,
-      days: [1, 2, 3, 4, 5, 6, 6].map((d) => ({ dayNumber: d })),
+      days: Array.from({ length: 7 }, (_, i) => ({
+        dayNumber: i + 1,
+        isRestDay: true,
+      })),
     };
-    expect(() => validateCalendarProgramStructure(1, [bad])).toThrow(/include day 7/);
+    expect(() => validateCalendarProgramStructure(1, [bad])).toThrow(/at least one training day/);
+  });
+
+  it('throws when training dayNumbers are not sequential from 1', () => {
+    const bad = {
+      weekNumber: 1,
+      days: [
+        { dayNumber: 1, isRestDay: false },
+        { dayNumber: 3, isRestDay: false },
+      ],
+    };
+    expect(() => validateCalendarProgramStructure(1, [bad])).toThrow(/sequentially/);
+  });
+
+  it('accepts fewer than 7 days when training slots are 1..N', () => {
+    const ok = {
+      weekNumber: 1,
+      days: [
+        { dayNumber: 1, isRestDay: false },
+        { dayNumber: 2, isRestDay: false },
+      ],
+    };
+    expect(() => validateCalendarProgramStructure(1, [ok])).not.toThrow();
   });
 });

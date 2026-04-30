@@ -5,8 +5,11 @@ interface ProgressEntryLike {
   status: string;
 }
 
-interface DayLike {
+export interface DayLike {
   dayNumber: number;
+  isRestDay?: boolean;
+  dayType?: string | null;
+  sessions?: Array<{ id: string; sortOrder?: number }>;
 }
 
 interface WeekLike<TDay extends DayLike = DayLike> {
@@ -30,22 +33,25 @@ export interface ResolvedProgramPosition<TWeek, TDay> {
   targetWeekCompletedDays: number;
   isProgramComplete: boolean;
   lastDay: { weekNumber: number; dayNumber: number } | null;
-  /** True when week/day exist in template but calendar slot could not be resolved */
+  /** True when week/day exist in template but slot could not be resolved */
   calendarSlotMissing?: boolean;
+  /** When user's trainingWeekdays is set, false on off days (still shows next program slot). */
+  isTrainingDay?: boolean;
 }
 
 export interface ResolveCurrentProgramDayOptions {
-  startDate?: Date | string | null;
   now?: Date;
   /**
-   * With startDate, the program advances by calendar days: total length = durationWeeks * 7.
-   * Should match Program.durationWeeks from the database.
+   * Last completed program session time (for auto catch-up gaps).
+   * When null/undefined, catch-up snap is not applied (treated as 0 days since last session).
    */
+  lastSessionCompletedAt?: Date | string | null;
+  /**
+   * 0=Sun … 6=Sat. Empty or undefined = train any day (backward compatible).
+   */
+  trainingWeekdays?: number[] | null;
+  /** Program length in weeks (for completion boundary). */
   durationWeeks?: number;
-  /** Cumulative paused days already applied (from past resumes). */
-  totalPausedDays?: number | null;
-  /** When set, days since this timestamp are excluded from the program timeline until resume. */
-  pausedAt?: Date | string | null;
 }
 
 function toDayKey(weekNumber: number, dayNumber: number): string {
@@ -62,7 +68,7 @@ function normalizeDate(date: Date): Date {
   return new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate()));
 }
 
-/** 0-based day offset from enrollment start (UTC midnight). */
+/** 0-based day offset from anchor to now (UTC calendar days). */
 export function getProgramCalendarDayIndex(startDate: Date, now: Date): number {
   const start = normalizeDate(startDate);
   const today = normalizeDate(now);
@@ -70,20 +76,37 @@ export function getProgramCalendarDayIndex(startDate: Date, now: Date): number {
   return Math.floor(diffMs / (24 * 60 * 60 * 1000));
 }
 
-/**
- * Calendar day index adjusted for pause: raw elapsed minus completed pause days
- * minus ongoing pause (days since pausedAt).
- */
-export function getEffectiveProgramCalendarDayIndex(
-  startDate: Date,
-  now: Date,
-  opts: { totalPausedDays?: number | null; pausedAt?: Date | string | null } = {},
-): number {
-  const raw = getProgramCalendarDayIndex(startDate, now);
-  const totalPaused = Math.max(0, opts.totalPausedDays ?? 0);
-  const pauseStart = toValidDate(opts.pausedAt ?? null);
-  const ongoingPauseDays = pauseStart ? getProgramCalendarDayIndex(pauseStart, now) : 0;
-  return Math.max(0, raw - totalPaused - ongoingPauseDays);
+/** True if this template day is a training day (has work to show). */
+export function isProgramTrainingDaySlot(day: {
+  isRestDay?: boolean;
+  dayType?: string | null;
+}): boolean {
+  if (day.isRestDay) return false;
+  if (day.dayType === 'rest' || day.dayType === 'active_recovery') return false;
+  return true;
+}
+
+function sortSessions<T extends { sortOrder?: number }>(sessions: T[] | undefined): T[] {
+  if (!sessions?.length) return [];
+  return [...sessions].sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0));
+}
+
+function flattenTrainingDays<TDay extends DayLike, TWeek extends WeekLike<TDay>>(
+  weeks: TWeek[],
+): Array<OrderedDayRef<TWeek, TDay>> {
+  return [...weeks]
+    .sort((a, b) => a.weekNumber - b.weekNumber)
+    .flatMap((week) =>
+      [...week.days]
+        .sort((a, b) => a.dayNumber - b.dayNumber)
+        .filter((d) => isProgramTrainingDaySlot(d))
+        .map((day) => ({
+          week,
+          day,
+          weekNumber: week.weekNumber,
+          dayNumber: day.dayNumber,
+        })),
+    );
 }
 
 function findDayRef<TWeek, TDay>(
@@ -94,29 +117,114 @@ function findDayRef<TWeek, TDay>(
   return orderedDays.find((r) => r.weekNumber === weekNumber && r.dayNumber === dayNumber);
 }
 
-export function resolveCurrentProgramDay<
+function firstTrainingDayIndexInWeek<TWeek, TDay>(
+  orderedDays: Array<OrderedDayRef<TWeek, TDay>>,
+  weekNumber: number,
+): number {
+  const idx = orderedDays.findIndex((r) => r.weekNumber === weekNumber);
+  return idx >= 0 ? idx : 0;
+}
+
+/** Calendar days since last completed session (UTC); 0 if no anchor. */
+export function calendarDaysSinceLastSession(
+  lastSessionCompletedAt: Date | string | null | undefined,
+  now: Date,
+): number {
+  const d = toValidDate(lastSessionCompletedAt);
+  if (!d) return 0;
+  return getProgramCalendarDayIndex(d, now);
+}
+
+function isUserTrainingWeekday(now: Date, trainingWeekdays: number[] | null | undefined): boolean {
+  if (!trainingWeekdays || trainingWeekdays.length === 0) return true;
+  const dow = now.getUTCDay(); // 0=Sun … 6=Sat — matches schema comment
+  return trainingWeekdays.includes(dow);
+}
+
+function sessionCompleted(
+  progressEntries: ProgressEntryLike[],
+  weekNumber: number,
+  dayNumber: number,
+  sessionId: string,
+): boolean {
+  return progressEntries.some(
+    (e) =>
+      e.weekNumber === weekNumber &&
+      e.dayNumber === dayNumber &&
+      e.sessionId === sessionId &&
+      e.status === 'completed',
+  );
+}
+
+/**
+ * First training-day index in template order where not all sessions are completed.
+ * If all complete, returns orderedDays.length (past end).
+ */
+function findNaturalTrainingDayIndex<TDay extends DayLike, TWeek extends WeekLike<TDay>>(
+  orderedDays: Array<OrderedDayRef<TWeek, TDay>>,
+  progressEntries: ProgressEntryLike[],
+): number {
+  for (let i = 0; i < orderedDays.length; i++) {
+    const ref = orderedDays[i]!;
+    const sessions = sortSessions(ref.day.sessions);
+    if (sessions.length === 0) {
+      const dayDone = progressEntries.some(
+        (e) =>
+          e.weekNumber === ref.weekNumber &&
+          e.dayNumber === ref.dayNumber &&
+          e.sessionId === '__day__' &&
+          e.status === 'completed',
+      );
+      if (!dayDone) return i;
+      continue;
+    }
+    const allSessionsDone = sessions.every((s) =>
+      sessionCompleted(progressEntries, ref.weekNumber, ref.dayNumber, s.id),
+    );
+    if (!allSessionsDone) return i;
+  }
+  return orderedDays.length;
+}
+
+function applyCatchUpSnapIndex(
+  naturalIndex: number,
+  orderedDays: Array<OrderedDayRef<unknown, unknown>>,
+  daysSinceLastSession: number,
+): number {
+  if (daysSinceLastSession <= 2) return naturalIndex;
+  if (naturalIndex >= orderedDays.length) return naturalIndex;
+  if (daysSinceLastSession >= 30) return 0;
+  // 3–29 days: start of current program week (week of natural position)
+  const wn = orderedDays[naturalIndex]!.weekNumber;
+  return firstTrainingDayIndexInWeek(orderedDays as any, wn);
+}
+
+export interface TrainingPositionMeta<TWeek, TDay> {
+  position: ResolvedProgramPosition<TWeek, TDay>;
+  naturalIndex: number;
+  snappedIndex: number;
+  calendarDaysSinceLastSession: number;
+  orderedTrainingDays: Array<OrderedDayRef<TWeek, TDay>>;
+}
+
+/**
+ * Same as {@link resolveCurrentProgramDay} but exposes natural vs snapped index for catch-up UX.
+ */
+export function resolveTrainingPositionMeta<
   TDay extends DayLike,
   TWeek extends WeekLike<TDay>,
 >(
   weeks: TWeek[],
   progressEntries: ProgressEntryLike[],
   options: ResolveCurrentProgramDayOptions = {},
-): ResolvedProgramPosition<TWeek, TDay> {
-  const orderedDays: Array<OrderedDayRef<TWeek, TDay>> = [...weeks]
-    .sort((a, b) => a.weekNumber - b.weekNumber)
-    .flatMap((week) =>
-      [...week.days]
-        .sort((a, b) => a.dayNumber - b.dayNumber)
-        .map((day) => ({
-          week,
-          day,
-          weekNumber: week.weekNumber,
-          dayNumber: day.dayNumber,
-        })),
-    );
+): TrainingPositionMeta<TWeek, TDay> {
+  const orderedDays = flattenTrainingDays(weeks);
+  const now = options.now ?? new Date();
+  const daysSince = calendarDaysSinceLastSession(options.lastSessionCompletedAt ?? null, now);
 
   if (orderedDays.length === 0) {
-    return {
+  return {
+    position: {
       targetWeekNumber: 1,
       targetDayNumber: 1,
       targetWeek: undefined,
@@ -125,130 +233,83 @@ export function resolveCurrentProgramDay<
       targetWeekCompletedDays: 0,
       isProgramComplete: false,
       lastDay: null,
-    };
+      isTrainingDay: isUserTrainingWeekday(now, options.trainingWeekdays ?? null),
+    } as ResolvedProgramPosition<TWeek, TDay>,
+    naturalIndex: 0,
+    snappedIndex: 0,
+    calendarDaysSinceLastSession: daysSince,
+    orderedTrainingDays: orderedDays as Array<OrderedDayRef<TWeek, TDay>>,
+  };
   }
 
-  const indexByDay = new Map(
-    orderedDays.map((ref, index) => [toDayKey(ref.weekNumber, ref.dayNumber), index]),
-  );
-  const getDayIndex = (entry: { weekNumber: number; dayNumber: number }) =>
-    indexByDay.get(toDayKey(entry.weekNumber, entry.dayNumber)) ?? -1;
-
+  const lastRef = orderedDays.at(-1)!;
   const completedDays = progressEntries
     .filter((entry) => entry.status === 'completed' && entry.sessionId === '__day__')
-    .filter((entry) => getDayIndex(entry) >= 0)
-    .sort((a, b) => getDayIndex(a) - getDayIndex(b));
+    .filter((entry) => !!findDayRef(orderedDays, entry.weekNumber, entry.dayNumber))
+    .sort(
+      (a, b) =>
+        orderedDays.findIndex((r) => r.weekNumber === a.weekNumber && r.dayNumber === a.dayNumber) -
+        orderedDays.findIndex((r) => r.weekNumber === b.weekNumber && r.dayNumber === b.dayNumber),
+    );
 
-  const completedSessions = progressEntries
-    .filter((entry) => entry.status === 'completed' && entry.sessionId !== '__day__')
-    .filter((entry) => getDayIndex(entry) >= 0)
-    .sort((a, b) => getDayIndex(a) - getDayIndex(b));
+  const naturalIndex = findNaturalTrainingDayIndex(orderedDays, progressEntries);
+  const isComplete = naturalIndex >= orderedDays.length;
 
-  const latestCompletedDay = completedDays.at(-1) ?? null;
-  const latestCompletedSession = completedSessions.at(-1) ?? null;
-
-  const latestCompletedDayIndex = latestCompletedDay ? getDayIndex(latestCompletedDay) : -1;
-  const latestCompletedSessionIndex = latestCompletedSession
-    ? getDayIndex(latestCompletedSession)
-    : -1;
-
-  const lastRef = orderedDays.at(-1) ?? null;
-  const startDate = toValidDate(options.startDate);
-  const now = options.now ?? new Date();
-
-  // ── Calendar-based: anchor to enrollment date and durationWeeks * 7 ─────────
-  if (startDate && options.durationWeeks != null && options.durationWeeks > 0) {
-    const totalCalendarDays = options.durationWeeks * 7;
-    const dayIndex = getEffectiveProgramCalendarDayIndex(startDate, now, {
-      totalPausedDays: options.totalPausedDays,
-      pausedAt: options.pausedAt,
-    });
-    let isProgramComplete = dayIndex >= totalCalendarDays;
-    let weekNumber: number;
-    let dayNumber: number;
-
-    if (isProgramComplete) {
-      weekNumber = options.durationWeeks;
-      dayNumber = 7;
-    } else {
-      weekNumber = Math.min(Math.floor(dayIndex / 7) + 1, options.durationWeeks);
-      dayNumber = (dayIndex % 7) + 1;
-    }
-
-    const targetRef =
-      findDayRef(orderedDays, weekNumber, dayNumber) ??
-      (isProgramComplete && lastRef
-        ? lastRef
-        : undefined);
-
-    const calendarSlotMissing = !findDayRef(orderedDays, weekNumber, dayNumber);
-
-    const targetWeek = targetRef?.week;
-    const targetDay = targetRef?.day;
-
-    return {
-      targetWeekNumber: weekNumber,
-      targetDayNumber: dayNumber,
-      targetWeek,
-      targetDay,
-      completedDayCount: completedDays.length,
-      targetWeekCompletedDays: completedDays.filter((e) => e.weekNumber === weekNumber).length,
-      isProgramComplete,
-      lastDay: lastRef
-        ? { weekNumber: lastRef.weekNumber, dayNumber: lastRef.dayNumber }
-        : null,
-      calendarSlotMissing: calendarSlotMissing || undefined,
-    };
+  let snappedIndex: number;
+  if (isComplete) {
+    snappedIndex = orderedDays.length - 1;
+  } else {
+    snappedIndex = applyCatchUpSnapIndex(naturalIndex, orderedDays, daysSince);
+    snappedIndex = Math.min(Math.max(0, snappedIndex), orderedDays.length - 1);
   }
 
-  // ── Legacy: progress-only when no calendar anchor ───────────────────────────
-  let targetIndex = 0;
-  let isProgramComplete = false;
+  const targetRef = isComplete ? lastRef : orderedDays[snappedIndex]!;
+  const weekNumber = targetRef.weekNumber;
+  const dayNumber = targetRef.dayNumber;
 
-  const totalDaysLegacy = orderedDays.length;
-  const dateBasedTarget =
-    startDate && totalDaysLegacy > 0
-      ? (() => {
-          const dayIndex = getEffectiveProgramCalendarDayIndex(startDate, now, {
-            totalPausedDays: options.totalPausedDays,
-            pausedAt: options.pausedAt,
-          });
-          return {
-            targetIndex: Math.min(dayIndex, totalDaysLegacy - 1),
-            isProgramComplete: dayIndex >= totalDaysLegacy,
-          };
-        })()
-      : null;
-
-  if (dateBasedTarget && !options.durationWeeks) {
-    targetIndex = dateBasedTarget.targetIndex;
-    isProgramComplete =
-      dateBasedTarget.isProgramComplete || latestCompletedDayIndex >= orderedDays.length - 1;
-  } else if (latestCompletedSessionIndex > latestCompletedDayIndex) {
-    targetIndex = latestCompletedSessionIndex;
-  } else if (latestCompletedDayIndex >= 0) {
-    if (latestCompletedDayIndex >= orderedDays.length - 1) {
-      targetIndex = latestCompletedDayIndex;
-      isProgramComplete = true;
-    } else {
-      targetIndex = latestCompletedDayIndex + 1;
-    }
-  }
-
-  const targetRef = orderedDays[targetIndex] ?? orderedDays[0];
-
-  return {
-    targetWeekNumber: targetRef.weekNumber,
-    targetDayNumber: targetRef.dayNumber,
+  const position = {
+    targetWeekNumber: weekNumber,
+    targetDayNumber: dayNumber,
     targetWeek: targetRef.week,
     targetDay: targetRef.day,
     completedDayCount: completedDays.length,
-    targetWeekCompletedDays: completedDays.filter(
-      (entry) => entry.weekNumber === targetRef.weekNumber,
-    ).length,
-    isProgramComplete,
-    lastDay: lastRef
-      ? { weekNumber: lastRef.weekNumber, dayNumber: lastRef.dayNumber }
-      : null,
+    targetWeekCompletedDays: completedDays.filter((e) => e.weekNumber === weekNumber).length,
+    isProgramComplete: isComplete,
+    lastDay: { weekNumber: lastRef.weekNumber, dayNumber: lastRef.dayNumber },
+    calendarSlotMissing: !findDayRef(orderedDays, weekNumber, dayNumber) || undefined,
+    isTrainingDay: isUserTrainingWeekday(now, options.trainingWeekdays ?? null),
+  } as ResolvedProgramPosition<TWeek, TDay>;
+
+  return {
+    position,
+    naturalIndex,
+    snappedIndex,
+    calendarDaysSinceLastSession: daysSince,
+    orderedTrainingDays: orderedDays as Array<OrderedDayRef<TWeek, TDay>>,
   };
+}
+
+/**
+ * Completion-based program position + auto catch-up (calendar gap since last session).
+ * Training template days may include legacy rest rows; only non-rest slots participate.
+ */
+export function resolveCurrentProgramDay<
+  TDay extends DayLike,
+  TWeek extends WeekLike<TDay>,
+>(
+  weeks: TWeek[],
+  progressEntries: ProgressEntryLike[],
+  options: ResolveCurrentProgramDayOptions = {},
+): ResolvedProgramPosition<TWeek, TDay> {
+  return resolveTrainingPositionMeta(weeks, progressEntries, options).position as ResolvedProgramPosition<
+    TWeek,
+    TDay
+  >;
+}
+
+/** Total training-day slots across all weeks (for progress %). */
+export function countTrainingDaySlots<TDay extends DayLike, TWeek extends WeekLike<TDay>>(
+  weeks: TWeek[],
+): number {
+  return flattenTrainingDays(weeks).length;
 }
