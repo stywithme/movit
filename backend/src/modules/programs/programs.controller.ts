@@ -1,5 +1,6 @@
 import { Body, Controller, Delete, Get, Param, Post, Put, Query, Res, UseGuards } from '@nestjs/common';
 import type { Response } from 'express';
+import { isCalendarProgramStructureErrorMessage } from './calendar-program-structure';
 import { programService } from './programs.service';
 import {
   validateCreateProgram,
@@ -131,6 +132,10 @@ export class ProgramsController {
           return { success: false, error: error.message };
         }
         if (error.message.includes('auto-assignment ready')) {
+          res.status(400);
+          return { success: false, error: error.message };
+        }
+        if (isCalendarProgramStructureErrorMessage(error.message)) {
           res.status(400);
           return { success: false, error: error.message };
         }

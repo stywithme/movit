@@ -17,10 +17,14 @@
  *   removeExercise(templateId, entryId)    — Delete exercise entry
  *   reorderExercises(templateId, orderedIds) — Reorder exercise entries
  *
- *   resolveForUser(userId)      — Find the right template for a user's level
+ *   resolveForUser(userId, mode) — Attribute matching (initial | progression) + legacy fallback
  */
 
+import type { PrismaClient } from '@prisma/client';
+import { ProgramAttributeMode } from '@prisma/client';
 import { getPrisma } from '@/lib/prisma/client';
+import { assessmentMatchingService } from '@/modules/assessments/assessment-matching.service';
+import type { ProgramAttributeInput } from '@/modules/programs/programs.types';
 
 // ── Includes ──
 
@@ -32,7 +36,31 @@ const templateFullInclude = {
     },
   },
   targetLevel: { select: { id: true, number: true, code: true, name: true, color: true } },
-};
+  assessmentAttributes: {
+    orderBy: { createdAt: 'asc' as const },
+    include: {
+      attributeValue: { include: { attribute: true } },
+    },
+  },
+} as const;
+
+async function replaceAssessmentAttributes(
+  db: Pick<PrismaClient, 'assessmentAttribute'>,
+  templateId: string,
+  attrs: ProgramAttributeInput[] | undefined,
+) {
+  if (attrs === undefined) return;
+  const unique = Array.from(new Map(attrs.map((a) => [a.attributeValueId, a])).values());
+  await db.assessmentAttribute.deleteMany({ where: { templateId } });
+  if (unique.length === 0) return;
+  await db.assessmentAttribute.createMany({
+    data: unique.map((a) => ({
+      templateId,
+      attributeValueId: a.attributeValueId,
+      mode: a.mode ?? ProgramAttributeMode.REQUIRED,
+    })),
+  });
+}
 
 // ── Types ──
 
@@ -46,6 +74,8 @@ export interface TemplateCreateData {
   domainWeights?: Record<string, number>;
   isDefault?: boolean;
   sortOrder?: number;
+  /** Prescription-style attribute rows (domain, goal, equipment, …). */
+  assessmentAttributes?: ProgramAttributeInput[];
 }
 
 export type TemplateUpdateData = Partial<TemplateCreateData>;
@@ -84,6 +114,100 @@ function validateDomainWeights(weights: Record<string, number>): void {
   }
 }
 
+type PrismaClientInstance = Awaited<ReturnType<typeof getPrisma>>;
+type ResolveMode = 'initial' | 'progression';
+
+async function legacyResolveAssessmentTemplate(
+  prisma: PrismaClientInstance,
+  userId: string,
+  mode: ResolveMode,
+) {
+  if (mode === 'initial') {
+    return prisma.assessmentTemplate.findFirst({
+      where: { deletedAt: null, isPublished: true, type: 'initial' },
+      orderBy: { sortOrder: 'asc' },
+      include: templateFullInclude,
+    });
+  }
+
+  const levelProfile = await prisma.userLevelProfile.findFirst({
+    where: { userId },
+    orderBy: { classifiedAt: 'desc' },
+  });
+  const userLevel = levelProfile?.overallLevel ?? 1;
+
+  let template = await prisma.assessmentTemplate.findFirst({
+    where: {
+      deletedAt: null,
+      isPublished: true,
+      type: 'level_specific',
+      targetLevel: { number: userLevel },
+    },
+    include: templateFullInclude,
+  });
+
+  if (!template) {
+    template = await prisma.assessmentTemplate.findFirst({
+      where: {
+        deletedAt: null,
+        isPublished: true,
+        levelRangeMin: { lte: userLevel },
+        levelRangeMax: { gte: userLevel },
+      },
+      orderBy: { sortOrder: 'asc' },
+      include: templateFullInclude,
+    });
+  }
+
+  if (!template) {
+    template = await prisma.assessmentTemplate.findFirst({
+      where: { deletedAt: null, isPublished: true, isDefault: true },
+      include: templateFullInclude,
+    });
+  }
+
+  if (!template) {
+    template = await prisma.assessmentTemplate.findFirst({
+      where: { deletedAt: null, isPublished: true },
+      orderBy: { sortOrder: 'asc' },
+      include: templateFullInclude,
+    });
+  }
+
+  return template;
+}
+
+function mapTemplateToResolvePayload(
+  template: NonNullable<Awaited<ReturnType<typeof legacyResolveAssessmentTemplate>>>,
+) {
+  const exercises = template.exercises
+    .sort((a, b) => {
+      if (a.entryType === 'core' && b.entryType !== 'core') return -1;
+      if (a.entryType !== 'core' && b.entryType === 'core') return 1;
+      return a.sortOrder - b.sortOrder;
+    })
+    .map((e) => ({
+      exerciseId: e.exerciseId,
+      exerciseSlug: e.exercise.slug,
+      exerciseName: e.exercise.name,
+      sortOrder: e.sortOrder,
+      targetRegion: e.targetRegion,
+      side: e.side,
+      entryType: e.entryType,
+      activationCondition: e.activationCondition,
+      referenceNormDegrees: e.referenceNormDegrees,
+      thresholds: e.thresholds,
+    }));
+
+  return {
+    templateId: template.id,
+    name: template.name,
+    type: template.type,
+    domainWeights: template.domainWeights,
+    exercises,
+  };
+}
+
 // ── Service ──
 
 export const assessmentTemplateService = {
@@ -112,7 +236,7 @@ export const assessmentTemplateService = {
       orderBy: [{ sortOrder: 'asc' }, { createdAt: 'desc' }],
       include: {
         targetLevel: { select: { id: true, number: true, code: true, name: true, color: true } },
-        _count: { select: { exercises: true } },
+        _count: { select: { exercises: true, assessmentAttributes: true } },
       },
     });
 
@@ -152,23 +276,29 @@ export const assessmentTemplateService = {
       validateDomainWeights(data.domainWeights);
     }
 
-    const template = await prisma.assessmentTemplate.create({
-      data: {
-        name: data.name,
-        description: data.description ?? undefined,
-        type: data.type ?? 'initial',
-        targetLevelId: data.targetLevelId ?? undefined,
-        levelRangeMin: data.levelRangeMin ?? 1,
-        levelRangeMax: data.levelRangeMax ?? 5,
-        domainWeights: data.domainWeights ?? undefined,
-        isDefault: data.isDefault ?? false,
-        sortOrder: data.sortOrder ?? 0,
-        createdBy: createdBy ?? undefined,
-      },
-      include: templateFullInclude,
+    return prisma.$transaction(async (tx) => {
+      const template = await tx.assessmentTemplate.create({
+        data: {
+          name: data.name,
+          description: data.description ?? undefined,
+          type: data.type ?? 'initial',
+          targetLevelId: data.targetLevelId ?? undefined,
+          levelRangeMin: data.levelRangeMin ?? 1,
+          levelRangeMax: data.levelRangeMax ?? 5,
+          domainWeights: data.domainWeights ?? undefined,
+          isDefault: data.isDefault ?? false,
+          sortOrder: data.sortOrder ?? 0,
+          createdBy: createdBy ?? undefined,
+        },
+      });
+      if (data.assessmentAttributes !== undefined) {
+        await replaceAssessmentAttributes(tx, template.id, data.assessmentAttributes);
+      }
+      return tx.assessmentTemplate.findFirstOrThrow({
+        where: { id: template.id },
+        include: templateFullInclude,
+      });
     });
-
-    return template;
   },
 
   /**
@@ -202,13 +332,21 @@ export const assessmentTemplateService = {
     if (data.sortOrder !== undefined) updateData.sortOrder = data.sortOrder;
     if (updatedBy) updateData.updatedBy = updatedBy;
 
-    const template = await prisma.assessmentTemplate.update({
-      where: { id },
-      data: updateData,
-      include: templateFullInclude,
+    return prisma.$transaction(async (tx) => {
+      if (Object.keys(updateData).length > 0) {
+        await tx.assessmentTemplate.update({
+          where: { id },
+          data: updateData,
+        });
+      }
+      if (data.assessmentAttributes !== undefined) {
+        await replaceAssessmentAttributes(tx, id, data.assessmentAttributes);
+      }
+      return tx.assessmentTemplate.findFirstOrThrow({
+        where: { id },
+        include: templateFullInclude,
+      });
     });
-
-    return template;
   },
 
   /**
@@ -442,104 +580,35 @@ export const assessmentTemplateService = {
   // ── Mobile resolve ──
 
   /**
-   * Resolve the right assessment template for a user based on their current level.
+   * Resolve the right assessment template for a user using attribute matching.
+   * Falls back to legacy level-based selection when no template matches attributes.
    *
-   * Priority:
-   *   1. level_specific template matching the user's exact level
-   *   2. Template where user's level falls within levelRangeMin–levelRangeMax
-   *   3. isDefault template
-   *   4. Any published template (fallback)
+   * @param mode `initial` (default) — first/onboarding assessment; `progression` — exit exam for current level.
    */
-  async resolveForUser(userId: string) {
+  async resolveForUser(userId: string, mode: ResolveMode = 'initial') {
     const prisma = await getPrisma();
 
-    // 1. Get user's current level profile (latest)
-    const levelProfile = await prisma.userLevelProfile.findFirst({
-      where: { userId },
-      orderBy: { classifiedAt: 'desc' },
-    });
+    let template: Awaited<ReturnType<typeof assessmentMatchingService.matchInitial>> = null;
 
-    const userLevel = levelProfile?.overallLevel ?? 1;
-
-    // 2. Look for level_specific template matching the exact level
-    let template = await prisma.assessmentTemplate.findFirst({
-      where: {
-        deletedAt: null,
-        isPublished: true,
-        type: 'level_specific',
-        targetLevel: { number: userLevel },
-      },
-      include: templateFullInclude,
-    });
-
-    // 3. Fall back to template where level is in range
-    if (!template) {
-      template = await prisma.assessmentTemplate.findFirst({
-        where: {
-          deletedAt: null,
-          isPublished: true,
-          levelRangeMin: { lte: userLevel },
-          levelRangeMax: { gte: userLevel },
-        },
-        orderBy: { sortOrder: 'asc' },
-        include: templateFullInclude,
+    if (mode === 'progression') {
+      const levelProfile = await prisma.userLevelProfile.findFirst({
+        where: { userId },
+        orderBy: { classifiedAt: 'desc' },
       });
-    }
-
-    // 4. Fall back to isDefault template
-    if (!template) {
-      template = await prisma.assessmentTemplate.findFirst({
-        where: {
-          deletedAt: null,
-          isPublished: true,
-          isDefault: true,
-        },
-        include: templateFullInclude,
-      });
-    }
-
-    // 5. Final fallback: any published template
-    if (!template) {
-      template = await prisma.assessmentTemplate.findFirst({
-        where: {
-          deletedAt: null,
-          isPublished: true,
-        },
-        orderBy: { sortOrder: 'asc' },
-        include: templateFullInclude,
-      });
+      const userLevel = levelProfile?.overallLevel ?? 1;
+      template = await assessmentMatchingService.matchProgression(userId, userLevel);
+    } else {
+      template = await assessmentMatchingService.matchInitial(userId);
     }
 
     if (!template) {
-      return null;
+      const legacy = await legacyResolveAssessmentTemplate(prisma, userId, mode);
+      if (!legacy) return null;
+      return mapTemplateToResolvePayload(legacy);
     }
 
-    // Map exercises: core first, then adaptive, sorted by sortOrder within each group
-    const exercises = template.exercises
-      .sort((a, b) => {
-        if (a.entryType === 'core' && b.entryType !== 'core') return -1;
-        if (a.entryType !== 'core' && b.entryType === 'core') return 1;
-        return a.sortOrder - b.sortOrder;
-      })
-      .map((e) => ({
-        exerciseId: e.exerciseId,
-        exerciseSlug: e.exercise.slug,
-        exerciseName: e.exercise.name,
-        sortOrder: e.sortOrder,
-        targetRegion: e.targetRegion,
-        side: e.side,
-        entryType: e.entryType,
-        activationCondition: e.activationCondition,
-        referenceNormDegrees: e.referenceNormDegrees,
-        thresholds: e.thresholds,
-      }));
-
-    return {
-      templateId: template.id,
-      name: template.name,
-      type: template.type,
-      domainWeights: template.domainWeights,
-      exercises,
-    };
+    return mapTemplateToResolvePayload(
+      template as NonNullable<Awaited<ReturnType<typeof legacyResolveAssessmentTemplate>>>,
+    );
   },
 };

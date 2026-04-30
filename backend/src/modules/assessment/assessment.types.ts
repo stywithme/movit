@@ -9,7 +9,7 @@
 // ENUMS / UNION TYPES
 // ============================================
 
-export type AssessmentType = 'initial' | 'periodic' | 'post_program';
+export type AssessmentType = 'initial' | 'periodic' | 'post_program' | 'progression' | 'level_specific';
 
 export type FitnessLevel = 'excellent' | 'good' | 'average' | 'limited' | 'needs_rehab';
 
@@ -95,11 +95,7 @@ export interface BodyScanResultCreate {
   regions: AssessmentRegion[];
   symmetryData?: Record<string, number>;
   hypotheses?: HypothesisCard[];
-  safetyGates?: SafetyGate[];
-  painFlags?: Array<{ movement: string; region: string }>;
   recommendations?: Array<{ priority: number; type: string; exercises: string[] }>;
-  parqPassed: boolean;
-  parqFlags?: string[];
   rawReportIds?: string[];
   previousId?: string;
   durationMs?: number;

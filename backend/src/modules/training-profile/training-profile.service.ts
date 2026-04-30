@@ -30,10 +30,7 @@ function buildProfileScalars(
     availableEquipment: payload.availableEquipment as Prisma.InputJsonValue | undefined,
     trainingLocation: payload.trainingLocation ?? undefined,
     knownInjuries: payload.knownInjuries as Prisma.InputJsonValue | undefined,
-    painFlags: payload.painFlags as Prisma.InputJsonValue | undefined,
-    parqPassed: payload.parqPassed ?? undefined,
-    parqFlags: payload.parqFlags as Prisma.InputJsonValue | undefined,
-    parqCompletedAt: parseDate(payload.parqCompletedAt),
+    healthDisclaimerAccepted: payload.healthDisclaimerAccepted ?? undefined,
   };
 }
 

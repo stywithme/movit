@@ -7,7 +7,7 @@
  * Protected by mobile Bearer token auth.
  */
 
-import { Controller, Get, Req, Res } from '@nestjs/common';
+import { Controller, Get, Query, Req, Res } from '@nestjs/common';
 import type { Request, Response } from 'express';
 import { verifyMobileToken } from '@/modules/auth/auth.service';
 import { assessmentTemplateService } from './assessment-templates-admin.service';
@@ -17,11 +17,16 @@ export class AssessmentTemplatesMobileController {
   /**
    * GET /mobile/assessment-templates/resolve — Resolve template for the current user.
    *
-   * Returns the best-matching published assessment template based on the user's
-   * current level profile. Exercises are sorted: core first, then adaptive.
+   * Returns the best-matching published assessment template using attribute matching.
+   * Query: `mode=initial` (default) or `mode=progression` (exit exam for current level).
+   * Exercises are sorted: core first, then adaptive.
    */
   @Get('resolve')
-  async resolve(@Req() req: Request, @Res({ passthrough: true }) res: Response) {
+  async resolve(
+    @Req() req: Request,
+    @Query('mode') mode: string | undefined,
+    @Res({ passthrough: true }) res: Response,
+  ) {
     try {
       const authResult = await verifyMobileToken(req);
       if (!authResult.success || !authResult.userId) {
@@ -29,7 +34,8 @@ export class AssessmentTemplatesMobileController {
         return { success: false, error: authResult.error || 'Unauthorized' };
       }
 
-      const data = await assessmentTemplateService.resolveForUser(authResult.userId);
+      const resolveMode = mode === 'progression' ? 'progression' : 'initial';
+      const data = await assessmentTemplateService.resolveForUser(authResult.userId, resolveMode);
 
       if (!data) {
         res.status(404);

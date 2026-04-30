@@ -7,6 +7,11 @@ import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogBody, DialogFooter,
 } from '@/components/ui';
 import type { LocalizedText } from '@/lib/types/localized';
+import {
+  ProgramAttributesSection,
+  useAttributesCatalog,
+} from '../../programs/_components/ProgramAttributesSection';
+import type { ProgramAttributeFormRow } from '../../programs/_lib/program-prescription-attributes';
 
 interface ExerciseSummary {
   id: string;
@@ -35,6 +40,7 @@ interface ExerciseFormItem {
 
 const TEMPLATE_TYPE_OPTIONS = [
   { value: 'initial', label: 'Initial Assessment' },
+  { value: 'progression', label: 'Progression (exit exam)' },
   { value: 'periodic', label: 'Periodic Assessment' },
   { value: 'post_program', label: 'Post Program Assessment' },
   { value: 'level_specific', label: 'Level Specific Assessment' },
@@ -114,7 +120,9 @@ export default function NewAssessmentTemplatePage() {
   });
 
   const [exercises, setExercises] = useState<ExerciseFormItem[]>([]);
+  const [attributeRows, setAttributeRows] = useState<ProgramAttributeFormRow[]>([]);
 
+  const { catalog: attributesCatalog, loading: loadingAttributes } = useAttributesCatalog();
   const [levels, setLevels] = useState<Level[]>([]);
   const [allExercises, setAllExercises] = useState<ExerciseSummary[]>([]);
   const [loadingExercises, setLoadingExercises] = useState(true);
@@ -227,11 +235,18 @@ export default function NewAssessmentTemplatePage() {
         name,
         description: description.en || description.ar ? description : undefined,
         type: templateType,
-        targetLevelId: templateType === 'level_specific' && targetLevelId ? targetLevelId : undefined,
+        targetLevelId:
+          (templateType === 'level_specific' ||
+            templateType === 'progression' ||
+            templateType === 'post_program') &&
+          targetLevelId
+            ? targetLevelId
+            : undefined,
         levelRangeMin: levelRangeMin ? Number(levelRangeMin) : undefined,
         levelRangeMax: levelRangeMax ? Number(levelRangeMax) : undefined,
         isDefault,
         domainWeights: weights,
+        assessmentAttributes: attributeRows,
       };
 
       const res = await fetch('/api/admin/assessment-templates', {
@@ -345,7 +360,7 @@ export default function NewAssessmentTemplatePage() {
                 options={TEMPLATE_TYPE_OPTIONS}
               />
             </div>
-            {templateType === 'level_specific' && (
+            {['level_specific', 'progression', 'post_program'].includes(templateType) && (
               <div>
                 <Label>Target Level</Label>
                 <Select
@@ -388,6 +403,22 @@ export default function NewAssessmentTemplatePage() {
               </div>
             </div>
           </div>
+        </Card>
+
+        <Card className="p-6">
+          <h2 className="text-lg font-semibold mb-2">Matching attributes</h2>
+          <p className="text-sm text-gray-500 mb-4">
+            Same rules as programs: required values must match the user profile; optional values improve ranking.
+          </p>
+          {loadingAttributes ? (
+            <p className="text-sm text-gray-500">Loading attribute catalog…</p>
+          ) : (
+            <ProgramAttributesSection
+              catalog={attributesCatalog}
+              value={attributeRows}
+              onChange={setAttributeRows}
+            />
+          )}
         </Card>
 
         {/* Domain Weights Card */}

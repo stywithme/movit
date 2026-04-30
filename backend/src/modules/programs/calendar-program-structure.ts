@@ -3,6 +3,14 @@
  * Used at publish time and in unit tests without loading programs.service.
  */
 
+/** True if `message` came from {@link validateCalendarProgramStructure} (HTTP 400, not 500). */
+export function isCalendarProgramStructureErrorMessage(message: string): boolean {
+  return (
+    message.startsWith('Calendar-based program:') ||
+    message.startsWith('durationWeeks must')
+  );
+}
+
 /** Each published program week must have days 1–7 (calendar-based). */
 export function validateCalendarProgramStructure(
   durationWeeks: number,
