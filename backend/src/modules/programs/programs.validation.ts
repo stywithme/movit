@@ -112,6 +112,35 @@ function validateWeek(week: ProgramWeekInput, index: number): string[] {
   return errors;
 }
 
+const VALID_PROGRAM_ATTRIBUTE_MODES = ['REQUIRED', 'OPTIONAL', 'EXCLUDED'] as const;
+
+function validateProgramAttributes(attrs: unknown): string[] {
+  if (attrs === undefined) return [];
+  if (!Array.isArray(attrs)) {
+    return ['programAttributes must be an array'];
+  }
+  const errors: string[] = [];
+  attrs.forEach((row, i) => {
+    if (!row || typeof row !== 'object') {
+      errors.push(`programAttributes[${i}]: must be an object`);
+      return;
+    }
+    const r = row as Record<string, unknown>;
+    if (typeof r.attributeValueId !== 'string' || !r.attributeValueId.trim()) {
+      errors.push(`programAttributes[${i}]: attributeValueId is required`);
+    }
+    if (r.mode !== undefined && r.mode !== null) {
+      const m = String(r.mode);
+      if (!VALID_PROGRAM_ATTRIBUTE_MODES.includes(m as (typeof VALID_PROGRAM_ATTRIBUTE_MODES)[number])) {
+        errors.push(
+          `programAttributes[${i}]: mode must be one of ${VALID_PROGRAM_ATTRIBUTE_MODES.join(', ')}`,
+        );
+      }
+    }
+  });
+  return errors;
+}
+
 export function validateCreateProgram(input: CreateProgramInput): string[] {
   const errors: string[] = [];
 
@@ -133,6 +162,8 @@ export function validateCreateProgram(input: CreateProgramInput): string[] {
     });
   }
 
+  errors.push(...validateProgramAttributes(input.programAttributes));
+
   return errors;
 }
 
@@ -152,6 +183,8 @@ export function validateUpdateProgram(input: UpdateProgramInput): string[] {
       errors.push(...validateWeek(week, weekIndex));
     });
   }
+
+  errors.push(...validateProgramAttributes(input.programAttributes));
 
   return errors;
 }

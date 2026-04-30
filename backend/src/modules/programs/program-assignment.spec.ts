@@ -6,57 +6,76 @@ import {
 } from './program-assignment';
 
 describe('program-assignment', () => {
-  it('marks a complete SYSTEM training program as ready', () => {
+  const domainTraining = {
+    mode: 'REQUIRED',
+    attributeValue: { code: 'pd_training', attribute: { code: 'domain' } },
+  };
+  const goalStrength = {
+    mode: 'REQUIRED',
+    attributeValue: { code: 'pg_strength', attribute: { code: 'goal' } },
+  };
+
+  it('requires programAttributes for auto-assignment readiness', () => {
+    const missing = getAutoAssignmentMissingFields({
+      programType: 'SYSTEM',
+      levelRangeMin: 1,
+      levelRangeMax: 3,
+      prescriptionPriority: 50,
+      programAttributes: [],
+    });
+    expect(missing).toContain('programAttributes');
+  });
+
+  it('marks attribute-backed SYSTEM program as ready when domain + goal + levels set', () => {
     const readiness = getAutoAssignmentReadiness({
       isPublished: true,
       programType: 'SYSTEM',
-      programDomain: 'TRAINING',
-      trainingGoal: 'STRENGTH',
       levelRangeMin: 1,
       levelRangeMax: 3,
-      contraindications: [],
-      targetEquipment: ['bodyweight'],
-      targetDomain: 'strength',
-      targetRegions: [],
       prescriptionPriority: 50,
+      programAttributes: [domainTraining, goalStrength],
     });
-
     expect(readiness.ready).toBe(true);
     expect(readiness.missingFields).toEqual([]);
   });
 
-  it('requires trainingGoal for TRAINING auto-assignment programs', () => {
+  it('requires domain in REQUIRED mode', () => {
     const missing = getAutoAssignmentMissingFields({
-      isPublished: true,
       programType: 'SYSTEM',
-      programDomain: 'TRAINING',
       levelRangeMin: 1,
       levelRangeMax: 3,
-      contraindications: [],
-      targetEquipment: ['bodyweight'],
-      targetDomain: 'strength',
-      targetRegions: [],
       prescriptionPriority: 50,
+      programAttributes: [
+        { mode: 'OPTIONAL', attributeValue: { code: 'pd_training', attribute: { code: 'domain' } } },
+        goalStrength,
+      ],
     });
+    expect(missing).toContain('domainAttribute');
+  });
 
-    expect(missing).toContain('trainingGoal');
+  it('requires goal REQUIRED for TRAINING domain', () => {
+    const missing = getAutoAssignmentMissingFields({
+      programType: 'SYSTEM',
+      levelRangeMin: 1,
+      levelRangeMax: 3,
+      prescriptionPriority: 50,
+      programAttributes: [
+        domainTraining,
+        { mode: 'OPTIONAL', attributeValue: { code: 'pg_strength', attribute: { code: 'goal' } } },
+      ],
+    });
+    expect(missing).toContain('goalAttribute');
   });
 
   it('allows manual-only programs to stay ineligible', () => {
     const eligible = isProgramEligibleForAutoAssignment({
       isPublished: true,
       programType: 'CUSTOM',
-      programDomain: 'TRAINING',
-      trainingGoal: 'GENERAL_HEALTH',
       levelRangeMin: 1,
       levelRangeMax: 2,
-      contraindications: [],
-      targetEquipment: [],
-      targetDomain: 'strength',
-      targetRegions: [],
       prescriptionPriority: 50,
+      programAttributes: [domainTraining, goalStrength],
     });
-
     expect(eligible).toBe(false);
   });
 
@@ -66,7 +85,6 @@ describe('program-assignment', () => {
       ['levelRange', 'equipment', 'levelRange'],
       'mobility',
     );
-
     expect(reason).toEqual({
       source: 'selection_algorithm',
       matchedFactors: ['levelRange', 'equipment'],

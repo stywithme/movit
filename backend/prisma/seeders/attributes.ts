@@ -14,6 +14,12 @@ export async function seedAttributes(prisma: PrismaClient) {
     { code: 'joint', name: { ar: 'المفصل', en: 'Joint' }, description: 'Body joints', isSystem: true, sortOrder: 8 },
     { code: 'priority', name: { ar: 'الأولوية', en: 'Priority' }, description: 'Error priorities', isSystem: true, sortOrder: 9 },
     { code: 'feedback_type', name: { ar: 'نوع الرسالة', en: 'Feedback Type' }, description: 'Feedback message types', isSystem: true, sortOrder: 10 },
+    { code: 'domain', name: { ar: 'مجال البرنامج', en: 'Program Domain' }, description: 'Training / mobility / therapeutic path for prescription', isSystem: true, sortOrder: 11 },
+    { code: 'goal', name: { ar: 'هدف البرنامج', en: 'Program Goal' }, description: 'User-facing training goal', isSystem: true, sortOrder: 12 },
+    { code: 'gender', name: { ar: 'الجنس', en: 'Gender' }, description: 'Program audience gender', isSystem: true, sortOrder: 13 },
+    { code: 'place', name: { ar: 'مكان التمرين', en: 'Training Place' }, description: 'Gym / home / outdoor', isSystem: true, sortOrder: 14 },
+    { code: 'body_region', name: { ar: 'منطقة الجسم', en: 'Body Region' }, description: 'Target or excluded body regions for programs', isSystem: true, sortOrder: 15 },
+    { code: 'focus', name: { ar: 'تركيز البرنامج', en: 'Program Focus' }, description: 'Prescription focus (symmetry, weakness domain, etc.)', isSystem: true, sortOrder: 16 },
   ];
 
   for (const attr of attributes) {
@@ -93,6 +99,9 @@ export async function seedAttributes(prisma: PrismaClient) {
     { code: 'pull_up_bar', name: { ar: 'بار علوي', en: 'Pull-up Bar' }, sortOrder: 6 },
     { code: 'bench', name: { ar: 'مقعد', en: 'Bench' }, sortOrder: 7 },
     { code: 'mat', name: { ar: 'سجادة', en: 'Mat' }, sortOrder: 8 },
+    { code: 'cable', name: { ar: 'كابل', en: 'Cable' }, sortOrder: 9 },
+    { code: 'machine', name: { ar: 'جهاز', en: 'Machine' }, sortOrder: 10 },
+    { code: 'bands', name: { ar: 'أحزمة مقاومة', en: 'Resistance Bands' }, sortOrder: 11 },
   ];
 
   for (const eq of equipment) {
@@ -266,6 +275,102 @@ export async function seedAttributes(prisma: PrismaClient) {
       where: { code: ft.code },
       update: {},
       create: { ...ft, attributeId: feedbackTypeAttr!.id },
+    });
+  }
+
+  // ── Program prescription attributes (shared catalog with exercises where applicable) ──
+  const domainAttr = await prisma.attribute.findUnique({ where: { code: 'domain' } });
+  const goalAttr = await prisma.attribute.findUnique({ where: { code: 'goal' } });
+  const genderAttr = await prisma.attribute.findUnique({ where: { code: 'gender' } });
+  const placeAttr = await prisma.attribute.findUnique({ where: { code: 'place' } });
+  const bodyRegionAttr = await prisma.attribute.findUnique({ where: { code: 'body_region' } });
+  const focusAttr = await prisma.attribute.findUnique({ where: { code: 'focus' } });
+
+  const domainValues = [
+    { code: 'pd_training', name: { ar: 'تدريب', en: 'Training' }, sortOrder: 1 },
+    { code: 'pd_mobility', name: { ar: 'مرونة', en: 'Mobility' }, sortOrder: 2 },
+    { code: 'pd_therapeutic', name: { ar: 'علاجي', en: 'Therapeutic' }, sortOrder: 3 },
+  ];
+  for (const v of domainValues) {
+    await prisma.attributeValue.upsert({
+      where: { code: v.code },
+      update: {},
+      create: { ...v, attributeId: domainAttr!.id },
+    });
+  }
+
+  const goalValues = [
+    { code: 'pg_strength', name: { ar: 'قوة', en: 'Strength' }, sortOrder: 1 },
+    { code: 'pg_hypertrophy', name: { ar: 'تضخيم', en: 'Hypertrophy' }, sortOrder: 2 },
+    { code: 'pg_power', name: { ar: 'قوة انفجارية', en: 'Power' }, sortOrder: 3 },
+    { code: 'pg_general_health', name: { ar: 'صحة عامة', en: 'General Health' }, sortOrder: 4 },
+    { code: 'pg_weight_loss', name: { ar: 'خسارة وزن', en: 'Weight Loss' }, sortOrder: 5 },
+    { code: 'pg_endurance', name: { ar: 'تحمل', en: 'Endurance' }, sortOrder: 6 },
+  ];
+  for (const v of goalValues) {
+    await prisma.attributeValue.upsert({
+      where: { code: v.code },
+      update: {},
+      create: { ...v, attributeId: goalAttr!.id },
+    });
+  }
+
+  const genderValues = [
+    { code: 'pgen_male', name: { ar: 'ذكور', en: 'Male' }, sortOrder: 1 },
+    { code: 'pgen_female', name: { ar: 'إناث', en: 'Female' }, sortOrder: 2 },
+    { code: 'pgen_unisex', name: { ar: 'للجميع', en: 'Unisex' }, sortOrder: 3 },
+  ];
+  for (const v of genderValues) {
+    await prisma.attributeValue.upsert({
+      where: { code: v.code },
+      update: {},
+      create: { ...v, attributeId: genderAttr!.id },
+    });
+  }
+
+  const placeValues = [
+    { code: 'pl_gym', name: { ar: 'صالة', en: 'Gym' }, sortOrder: 1 },
+    { code: 'pl_home', name: { ar: 'منزل', en: 'Home' }, sortOrder: 2 },
+    { code: 'pl_outdoor', name: { ar: 'خارجي', en: 'Outdoor' }, sortOrder: 3 },
+  ];
+  for (const v of placeValues) {
+    await prisma.attributeValue.upsert({
+      where: { code: v.code },
+      update: {},
+      create: { ...v, attributeId: placeAttr!.id },
+    });
+  }
+
+  const bodyRegionValues = [
+    { code: 'pbr_shoulder', name: { ar: 'كتف', en: 'Shoulder' }, sortOrder: 1 },
+    { code: 'pbr_hip', name: { ar: 'ورك', en: 'Hip' }, sortOrder: 2 },
+    { code: 'pbr_spine', name: { ar: 'عمود فقري', en: 'Spine' }, sortOrder: 3 },
+    { code: 'pbr_knee', name: { ar: 'ركبة', en: 'Knee' }, sortOrder: 4 },
+    { code: 'pbr_core', name: { ar: 'جذع', en: 'Core' }, sortOrder: 5 },
+    { code: 'pbr_balance', name: { ar: 'توازن', en: 'Balance' }, sortOrder: 6 },
+  ];
+  for (const v of bodyRegionValues) {
+    await prisma.attributeValue.upsert({
+      where: { code: v.code },
+      update: {},
+      create: { ...v, attributeId: bodyRegionAttr!.id },
+    });
+  }
+
+  const focusValues = [
+    { code: 'pf_symmetry', name: { ar: 'تماثل', en: 'Symmetry' }, sortOrder: 1 },
+    { code: 'pf_mobility', name: { ar: 'مرونة', en: 'Mobility' }, sortOrder: 2 },
+    { code: 'pf_strength', name: { ar: 'قوة', en: 'Strength' }, sortOrder: 3 },
+    { code: 'pf_control', name: { ar: 'تحكم', en: 'Control' }, sortOrder: 4 },
+    { code: 'pf_upper_body', name: { ar: 'جزء علوي', en: 'Upper Body' }, sortOrder: 5 },
+    { code: 'pf_lower_body', name: { ar: 'جزء سفلي', en: 'Lower Body' }, sortOrder: 6 },
+    { code: 'pf_full_body', name: { ar: 'جسم كامل', en: 'Full Body' }, sortOrder: 7 },
+  ];
+  for (const v of focusValues) {
+    await prisma.attributeValue.upsert({
+      where: { code: v.code },
+      update: {},
+      create: { ...v, attributeId: focusAttr!.id },
     });
   }
 

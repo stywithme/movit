@@ -1,21 +1,9 @@
 import type { ProgramDomain } from '@prisma/client';
 
-/** Legacy program "type" string (domain) from API / mobile. */
-export type LegacyProgramTypeString = 'training' | 'mobility' | 'therapeutic';
+/** Lowercase domain string on program payloads (`type`). */
+export type ProgramTypeApiString = 'training' | 'mobility' | 'therapeutic';
 
-/**
- * Map legacy lowercase domain string to Prisma ProgramDomain enum.
- */
-export function legacyTypeToProgramDomain(legacy?: string | null): ProgramDomain {
-  if (legacy === 'mobility') return 'MOBILITY';
-  if (legacy === 'therapeutic') return 'THERAPEUTIC';
-  return 'TRAINING';
-}
-
-/**
- * Map Prisma ProgramDomain to legacy string for APIs that still expose `type`.
- */
-export function programDomainToLegacyString(domain: ProgramDomain): LegacyProgramTypeString {
+export function typeStringFromProgramDomain(domain: ProgramDomain): ProgramTypeApiString {
   switch (domain) {
     case 'MOBILITY':
       return 'mobility';

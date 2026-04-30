@@ -5,6 +5,7 @@ import { seedAttributes } from './seeders/attributes';
 import { createMessageTemplateHelper, seedBaseMessageTemplates } from './seeders/messages';
 import { seedPosePositions } from './seeders/pose-positions';
 import { seedExercisesAndWorkouts } from './seeders/exercises-workouts';
+import { migrateProgramAttributesFromLegacy } from './seeders/migrate-program-attributes';
 import { seedPrograms } from './seeders/programs';
 import { seedUsers } from './seeders/users';
 import { seedUserPrograms } from './seeders/user-programs';
@@ -64,6 +65,11 @@ async function main() {
     await runSeedValidatorsAndReport(prisma);
   } else {
     console.warn('⚠️ Skipping programs & user programs (not enough exercises).');
+  }
+
+  const mig = await migrateProgramAttributesFromLegacy(prisma);
+  if (mig.programsUpdated > 0) {
+    console.log(`✅ Migrated legacy program fields → ProgramAttribute for ${mig.programsUpdated} program(s)`);
   }
 
   await seedSystemConfig(prisma);

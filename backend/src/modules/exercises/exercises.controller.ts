@@ -43,7 +43,8 @@ export class ExercisesController {
     @Query('categoryId') categoryId?: string,
     @Query('search') search?: string,
     @Query('page') page?: string,
-    @Query('limit') limit?: string
+    @Query('limit') limit?: string,
+    @Query('includeAttributes') includeAttributes?: string
   ) {
     try {
       const result = await exerciseService.list({
@@ -52,6 +53,7 @@ export class ExercisesController {
         search: search || undefined,
         page: Number.parseInt(page || '1', 10),
         limit: Number.parseInt(limit || '20', 10),
+        includeAttributes: includeAttributes === 'true',
       });
 
       return {

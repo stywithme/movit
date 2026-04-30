@@ -28,6 +28,14 @@ interface Program {
   targetDomain?: string | null;
   targetRegions?: unknown;
   prescriptionPriority?: number | null;
+  /** Present on list/detail from API; used by client readiness when `autoAssignmentReadiness` is absent. */
+  programAttributes?: Array<{
+    mode: string;
+    attributeValue?: {
+      code: string;
+      attribute?: { code: string | null } | null;
+    } | null;
+  }>;
   autoAssignmentReadiness?: {
     ready: boolean;
     entersAutoAssignment: boolean;

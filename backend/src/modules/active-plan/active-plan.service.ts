@@ -6,7 +6,7 @@
  */
 
 import { getPrisma } from '@/lib/prisma/client';
-import { programDomainToLegacyString } from '@/lib/program-domain';
+import { typeStringFromProgramDomain } from '@/lib/program-domain';
 import {
   countEffectiveExerciseItems,
   effectivePlanService,
@@ -198,7 +198,7 @@ export const activePlanService = {
                 id: prog.id,
                 name: prog.name as Record<string, string>,
                 slug: prog.slug,
-                type: programDomainToLegacyString(prog.programDomain),
+                type: typeStringFromProgramDomain(prog.programDomain),
                 durationWeeks: prog.durationWeeks,
                 difficulty: prog.difficulty,
                 coverImageUrl: prog.coverImageUrl,

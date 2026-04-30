@@ -5,8 +5,16 @@
  */
 
 import { getPrisma } from '@/lib/prisma/client';
-import { legacyTypeToProgramDomain } from '@/lib/program-domain';
-import { Prisma, type Program } from '@prisma/client';
+import { PROGRAM_DOMAIN_VALUE_CODE, TRAINING_GOAL_VALUE_CODE } from '@/lib/program-attribute-codes';
+import { matchingColumnsFromProgramAttributeRows } from '@/lib/program-attribute-column-sync';
+import {
+  Prisma,
+  type Program,
+  ProgramAttributeMode,
+  ProgramDomain,
+  TrainingGoal,
+  type PrismaClient,
+} from '@prisma/client';
 import { resolveCurrentProgramDay } from '@/modules/active-plan/plan-position';
 import { getAutoAssignmentReadiness } from './program-assignment';
 import { validateCalendarProgramStructure } from './calendar-program-structure';
@@ -22,6 +30,7 @@ import type {
   UpdateUserProgramInput,
   TodayPlanResponse,
   UpdateProgramInput,
+  ProgramAttributeInput,
 } from './programs.types';
 
 interface LocalizedText {
@@ -56,6 +65,14 @@ function generateSlug(name: { en?: string; ar?: string }): string {
 }
 
 const programFullInclude = {
+  programAttributes: {
+    orderBy: { createdAt: 'asc' as const },
+    include: {
+      attributeValue: {
+        include: { attribute: true },
+      },
+    },
+  },
   weeks: {
     orderBy: [
       { sortOrder: 'asc' as const },
@@ -87,6 +104,55 @@ const programFullInclude = {
     },
   },
 };
+
+async function replaceProgramAttributes(
+  db: Pick<PrismaClient, 'programAttribute'>,
+  programId: string,
+  attrs: ProgramAttributeInput[] | undefined,
+) {
+  if (attrs === undefined) return;
+  const unique = Array.from(new Map(attrs.map((a) => [a.attributeValueId, a])).values());
+  await db.programAttribute.deleteMany({ where: { programId } });
+  if (unique.length === 0) return;
+  await db.programAttribute.createMany({
+    data: unique.map((a) => ({
+      programId,
+      attributeValueId: a.attributeValueId,
+      mode: a.mode ?? ProgramAttributeMode.REQUIRED,
+    })),
+  });
+}
+
+async function syncProgramMatchingColumns(
+  db: Pick<PrismaClient, 'programAttribute' | 'program'>,
+  programId: string,
+) {
+  const rows = await db.programAttribute.findMany({
+    where: { programId },
+    include: { attributeValue: { include: { attribute: true } } },
+    orderBy: { createdAt: 'asc' },
+  });
+  const cols = matchingColumnsFromProgramAttributeRows(
+    rows.map((r) => ({
+      mode: r.mode,
+      attributeValue: {
+        code: r.attributeValue.code,
+        attribute: { code: r.attributeValue.attribute.code },
+      },
+    })),
+  );
+  await db.program.update({
+    where: { id: programId },
+    data: {
+      programDomain: cols.programDomain,
+      trainingGoal: cols.trainingGoal,
+      targetEquipment: cols.targetEquipment,
+      targetDomain: cols.targetDomain,
+      targetRegions: cols.targetRegions,
+      contraindications: cols.contraindications,
+    },
+  });
+}
 
 export { validateCalendarProgramStructure } from './calendar-program-structure';
 
@@ -471,7 +537,7 @@ export const programService = {
     const limit = filters?.limit || 20;
     const skip = (page - 1) * limit;
 
-    const where: Record<string, unknown> = {
+    const where: Prisma.ProgramWhereInput = {
       deletedAt: null,
     };
     if (filters?.status === 'published') {
@@ -480,17 +546,46 @@ export const programService = {
     if (filters?.status === 'draft') {
       where.isPublished = false;
     }
+
+    const andFilters: Prisma.ProgramWhereInput[] = [];
     if (filters?.search) {
-      where.OR = [
-        { name: { path: ['en'], string_contains: filters.search } },
-        { name: { path: ['ar'], string_contains: filters.search } },
-      ];
+      andFilters.push({
+        OR: [
+          { name: { path: ['en'], string_contains: filters.search } },
+          { name: { path: ['ar'], string_contains: filters.search } },
+        ],
+      });
     }
     if (filters?.programDomain) {
-      where.programDomain = filters.programDomain;
+      const enumVal = filters.programDomain as ProgramDomain;
+      const code = PROGRAM_DOMAIN_VALUE_CODE[enumVal];
+      if (code) {
+        andFilters.push({
+          programAttributes: {
+            some: {
+              mode: { in: [ProgramAttributeMode.REQUIRED, ProgramAttributeMode.OPTIONAL] },
+              attributeValue: { code },
+            },
+          },
+        });
+      }
     }
     if (filters?.trainingGoal) {
-      where.trainingGoal = filters.trainingGoal;
+      const tg = filters.trainingGoal as TrainingGoal;
+      const gc = TRAINING_GOAL_VALUE_CODE[tg];
+      if (gc) {
+        andFilters.push({
+          programAttributes: {
+            some: {
+              mode: { in: [ProgramAttributeMode.REQUIRED, ProgramAttributeMode.OPTIONAL] },
+              attributeValue: { code: gc },
+            },
+          },
+        });
+      }
+    }
+    if (andFilters.length > 0) {
+      where.AND = andFilters;
     }
 
     if (!filters?.readiness) {
@@ -500,6 +595,14 @@ export const programService = {
           orderBy: { createdAt: 'desc' },
           skip,
           take: limit,
+          include: {
+            programAttributes: {
+              orderBy: { createdAt: 'asc' },
+              include: {
+                attributeValue: { include: { attribute: true } },
+              },
+            },
+          },
         }),
         prisma.program.count({ where }),
       ]);
@@ -522,6 +625,14 @@ export const programService = {
     const rows = await prisma.program.findMany({
       where,
       orderBy: { createdAt: 'desc' },
+      include: {
+        programAttributes: {
+          orderBy: { createdAt: 'asc' },
+          include: {
+            attributeValue: { include: { attribute: true } },
+          },
+        },
+      },
     });
     if (rows.length > 500) {
       console.warn(
@@ -579,49 +690,57 @@ export const programService = {
     const prisma = await getPrisma();
     const slug = data.slug || generateSlug(data.name);
 
-    const program = await prisma.program.create({
-      data: {
-        name: data.name as object,
-        description: (data.description as object) || undefined,
-        slug,
-        coverImageUrl: data.coverImageUrl ?? undefined,
-        durationWeeks: data.durationWeeks,
-        difficulty: data.difficulty ?? 'beginner',
-        tags: data.tags ?? undefined,
-        isDefault: data.isDefault ?? false,
-        isPublished: false,
-        createdBy,
-        updatedBy: createdBy,
-        // Prescription metadata
-        programType: data.programType ?? 'SYSTEM',
-        programDomain: data.programDomain ?? legacyTypeToProgramDomain(data.type),
-        trainingGoal: data.trainingGoal ?? undefined,
-        autoAssignable: data.autoAssignable ?? false,
-        version: data.version ?? 1,
-        ownerId: data.ownerId ?? undefined,
-        forkedFromId: data.forkedFromId ?? undefined,
-        coachingNotes: data.coachingNotes as object ?? undefined,
-        weeklySessionTarget: data.weeklySessionTarget ?? undefined,
-        estimatedSessionMinutes: data.estimatedSessionMinutes ?? undefined,
-        targetEquipment: data.targetEquipment as object ?? undefined,
-        targetDomain: data.targetDomain ?? undefined,
-        targetRegions: data.targetRegions ?? [],
-        levelRangeMin: data.levelRangeMin ?? 1,
-        levelRangeMax: data.levelRangeMax ?? 5,
-        entryRecommendations:
-          (data.entryRecommendations ?? data.entryCriteria) as object ?? undefined,
-        exitRecommendations:
-          (data.exitRecommendations ?? data.exitCriteria) as object ?? undefined,
-        contraindications: data.contraindications ?? [],
-        prescriptionPriority: data.prescriptionPriority ?? 100,
-        prerequisiteProgramId: data.prerequisiteProgramId ?? undefined,
-        nextProgramId: data.nextProgramId ?? undefined,
-        weeks: buildWeeksCreate(data.weeks),
-      },
-      include: programFullInclude,
+    const programId = await prisma.$transaction(async (tx) => {
+      const program = await tx.program.create({
+        data: {
+          name: data.name as object,
+          description: (data.description as object) || undefined,
+          slug,
+          coverImageUrl: data.coverImageUrl ?? undefined,
+          durationWeeks: data.durationWeeks,
+          difficulty: data.difficulty ?? 'beginner',
+          tags: data.tags ?? undefined,
+          isDefault: data.isDefault ?? false,
+          isPublished: false,
+          createdBy,
+          updatedBy: createdBy,
+          programType: data.programType ?? 'SYSTEM',
+          programDomain: data.programDomain ?? 'TRAINING',
+          trainingGoal: data.trainingGoal ?? undefined,
+          autoAssignable: data.autoAssignable ?? false,
+          version: data.version ?? 1,
+          ownerId: data.ownerId ?? undefined,
+          forkedFromId: data.forkedFromId ?? undefined,
+          coachingNotes: data.coachingNotes as object ?? undefined,
+          weeklySessionTarget: data.weeklySessionTarget ?? undefined,
+          estimatedSessionMinutes: data.estimatedSessionMinutes ?? undefined,
+          targetEquipment: data.targetEquipment as object ?? undefined,
+          targetDomain: data.targetDomain ?? undefined,
+          targetRegions: data.targetRegions ?? [],
+          levelRangeMin: data.levelRangeMin ?? 1,
+          levelRangeMax: data.levelRangeMax ?? 5,
+          entryRecommendations:
+            (data.entryRecommendations ?? data.entryCriteria) as object ?? undefined,
+          exitRecommendations:
+            (data.exitRecommendations ?? data.exitCriteria) as object ?? undefined,
+          contraindications: data.contraindications ?? [],
+          prescriptionPriority: data.prescriptionPriority ?? 100,
+          prerequisiteProgramId: data.prerequisiteProgramId ?? undefined,
+          nextProgramId: data.nextProgramId ?? undefined,
+          weeks: buildWeeksCreate(data.weeks),
+        },
+      });
+
+      if (data.programAttributes !== undefined) {
+        await replaceProgramAttributes(tx, program.id, data.programAttributes);
+        await syncProgramMatchingColumns(tx, program.id);
+      }
+      return program.id;
     });
 
-    return program;
+    const refreshed = await this.getById(programId);
+    if (!refreshed) throw new Error('Program not found after create');
+    return refreshed;
   },
 
   async update(id: string, data: UpdateProgramInput, updatedBy?: string) {
@@ -641,9 +760,6 @@ export const programService = {
     // Prescription metadata
     if (data.programType !== undefined) updateData.programType = data.programType;
     if (data.programDomain !== undefined) updateData.programDomain = data.programDomain;
-    if (data.type !== undefined && data.programDomain === undefined) {
-      updateData.programDomain = legacyTypeToProgramDomain(data.type);
-    }
     if (data.trainingGoal !== undefined) updateData.trainingGoal = data.trainingGoal;
     if (data.autoAssignable !== undefined) updateData.autoAssignable = data.autoAssignable;
     if (data.version !== undefined) updateData.version = data.version;
@@ -685,6 +801,11 @@ export const programService = {
       if (data.weeks !== undefined) {
         await syncProgramWeeksStructure(tx, id, data.weeks);
       }
+
+      if (data.programAttributes !== undefined) {
+        await replaceProgramAttributes(tx, id, data.programAttributes);
+        await syncProgramMatchingColumns(tx, id);
+      }
     });
 
     return this.getById(id);
@@ -708,14 +829,7 @@ export const programService = {
     const prisma = await getPrisma();
     const program = await prisma.program.findFirst({
       where: { id, deletedAt: null },
-      include: {
-        weeks: {
-          orderBy: [{ sortOrder: 'asc' }, { weekNumber: 'asc' }],
-          include: {
-            days: { orderBy: { dayNumber: 'asc' } },
-          },
-        },
-      },
+      include: programFullInclude,
     });
     if (!program) {
       throw new Error('Program not found');
@@ -826,6 +940,10 @@ export const programService = {
         prescriptionPriority: original.prescriptionPriority,
         prerequisiteProgramId: original.prerequisiteProgramId ?? undefined,
         nextProgramId: original.nextProgramId ?? undefined,
+        programAttributes: original.programAttributes?.map((pa) => ({
+          attributeValueId: pa.attributeValueId,
+          mode: pa.mode,
+        })),
         weeks,
       },
       createdBy

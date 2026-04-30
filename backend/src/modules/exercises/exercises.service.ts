@@ -105,6 +105,8 @@ export const exerciseService = {
     search?: string;
     page?: number;
     limit?: number;
+    /** When true, include attribute links for program builder / admin tooling. */
+    includeAttributes?: boolean;
   }) {
     const prisma = await getPrisma();
     const page = filters?.page || 1;
@@ -130,6 +132,8 @@ export const exerciseService = {
       ];
     }
 
+    const includeAttributes = filters?.includeAttributes === true;
+
     const [exercises, total] = await Promise.all([
       prisma.exercise.findMany({
         where,
@@ -146,6 +150,17 @@ export const exerciseService = {
           _count: {
             select: { poseVariants: true },
           },
+          ...(includeAttributes
+            ? {
+                attributes: {
+                  include: {
+                    attributeValue: {
+                      include: { attribute: true },
+                    },
+                  },
+                },
+              }
+            : {}),
         },
       }),
       prisma.exercise.count({ where }),
