@@ -83,6 +83,7 @@ interface WorkoutDetails {
 }
 
 interface SessionItemForm {
+  id?: string;
   type: 'exercise' | 'rest';
   exerciseId?: string;
   sets: number;
@@ -99,12 +100,14 @@ interface SessionItemForm {
 }
 
 interface SessionForm {
+  id?: string;
   name: LocalizedText;
   sortOrder: number;
   items: SessionItemForm[];
 }
 
 interface DayForm {
+  id?: string;
   dayNumber: number;
   isRestDay: boolean;
   name: LocalizedText;
@@ -113,6 +116,7 @@ interface DayForm {
 }
 
 interface WeekForm {
+  id?: string;
   weekNumber: number;
   name: LocalizedText;
   description: LocalizedText;
@@ -151,21 +155,27 @@ interface ProgramResponse {
   prescriptionPriority?: number;
   prerequisiteProgramId?: string | null;
   nextProgramId?: string | null;
+  isPublished?: boolean;
+  activeEnrollmentCount?: number;
   weeks: Array<{
+    id?: string;
     weekNumber: number;
     weekType?: string;
     name?: LocalizedText;
     description?: LocalizedText;
     sortOrder: number;
     days: Array<{
+      id?: string;
       dayNumber: number;
       isRestDay: boolean;
       dayFocus?: string | null;
       name?: LocalizedText;
       sessions: Array<{
+        id?: string;
         name: LocalizedText;
         sortOrder: number;
         items: Array<{
+          id?: string;
           type: 'exercise' | 'rest';
           exerciseId?: string;
           sets?: number;
@@ -307,7 +317,8 @@ export default function EditProgramPage() {
   const [tags, setTags] = useState('');
   const [weeks, setWeeks] = useState<WeekForm[]>([createEmptyWeek(1)]);
 
-  const [programOwnership, setProgramOwnership] = useState<'SYSTEM' | 'COACH' | 'CUSTOM'>('SYSTEM');
+  const [isPublished, setIsPublished] = useState(false);
+  const [activeEnrollmentCount, setActiveEnrollmentCount] = useState(0);
   const [programDomainEnum, setProgramDomainEnum] = useState<'TRAINING' | 'MOBILITY' | 'THERAPEUTIC'>('TRAINING');
   const [trainingGoal, setTrainingGoal] = useState('');
   const [autoAssignable, setAutoAssignable] = useState(false);
@@ -391,6 +402,8 @@ export default function EditProgramPage() {
         }
 
         const program: ProgramResponse = data.data;
+        setIsPublished(program.isPublished ?? false);
+        setActiveEnrollmentCount(program.activeEnrollmentCount ?? 0);
         setName(program.name);
         setDescription(program.description || { ar: '', en: '' });
         setCoverImageUrl(program.coverImageUrl || '');
@@ -433,6 +446,7 @@ export default function EditProgramPage() {
 
         const mappedWeeks: WeekForm[] =
           program.weeks?.map((week, weekIndex) => ({
+            id: week.id,
             weekNumber: week.weekNumber || weekIndex + 1,
             weekType: (week.weekType as 'NORMAL' | 'DELOAD' | undefined) || 'NORMAL',
             name: week.name || { ar: '', en: '' },
@@ -440,16 +454,19 @@ export default function EditProgramPage() {
             sortOrder: week.sortOrder ?? weekIndex,
             days:
               week.days?.map((day, dayIndex) => ({
+                id: day.id,
                 dayNumber: day.dayNumber || dayIndex + 1,
                 isRestDay: day.isRestDay || false,
                 name: day.name || { ar: '', en: '' },
                 dayFocus: day.dayFocus ?? '',
                 sessions:
                   day.sessions?.map((session, sessionIndex) => ({
+                    id: session.id,
                     name: session.name || { ar: '', en: '' },
                     sortOrder: session.sortOrder ?? sessionIndex,
                     items:
                       session.items?.map((item) => ({
+                        id: item.id,
                         type: item.type,
                         exerciseId: item.exerciseId,
                         sets: item.sets || 1,
@@ -482,6 +499,27 @@ export default function EditProgramPage() {
 
     fetchProgram();
   }, [programId, router]);
+
+  const calendarStructureWarnings = useMemo(() => {
+    const messages: string[] = [];
+    if (durationWeeks !== weeks.length) {
+      messages.push(
+        `Duration is set to ${durationWeeks} week(s), but the builder currently contains ${weeks.length} week block(s).`
+      );
+    }
+    weeks.forEach((week, wi) => {
+      if (week.days.length !== 7) {
+        messages.push(
+          `Week ${wi + 1}: publish-ready programs use 7 days per week; this week has ${week.days.length} day(s).`
+        );
+      }
+      const badDayNumber = week.days.some((d) => d.dayNumber < 1 || d.dayNumber > 7);
+      if (badDayNumber) {
+        messages.push(`Week ${wi + 1}: day numbers should be between 1 and 7 for calendar alignment.`);
+      }
+    });
+    return messages;
+  }, [durationWeeks, weeks]);
 
   const exerciseOptions = useMemo(
     () =>
@@ -899,20 +937,24 @@ export default function EditProgramPage() {
     prerequisiteProgramId: prerequisiteProgramId || undefined,
     nextProgramId: nextProgramId || undefined,
     weeks: weeks.map((week, weekIndex) => ({
+      ...(week.id ? { id: week.id } : {}),
       weekNumber: week.weekNumber || weekIndex + 1,
       weekType: week.weekType,
       name: week.name.en || week.name.ar ? week.name : undefined,
       description: week.description.en || week.description.ar ? week.description : undefined,
       sortOrder: week.sortOrder ?? weekIndex,
       days: week.days.map((day, dayIndex) => ({
+        ...(day.id ? { id: day.id } : {}),
         dayNumber: day.dayNumber || dayIndex + 1,
         isRestDay: day.isRestDay,
         name: day.name.en || day.name.ar ? day.name : undefined,
         dayFocus: day.dayFocus?.trim() ? day.dayFocus : undefined,
         sessions: day.sessions.map((session, sessionIndex) => ({
+          ...(session.id ? { id: session.id } : {}),
           name: session.name,
           sortOrder: session.sortOrder ?? sessionIndex,
           items: session.items.map((item, itemIndex) => ({
+            ...(item.id ? { id: item.id } : {}),
             type: item.type,
             exerciseId: item.type === 'exercise' ? item.exerciseId : undefined,
             sets: item.type === 'exercise' ? item.sets : undefined,
@@ -943,6 +985,14 @@ export default function EditProgramPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    if (isPublished && activeEnrollmentCount > 0) {
+      const ok = window.confirm(
+        `This program is published and has ${activeEnrollmentCount} active enrollment(s). Saving may change the template for users in progress. Continue?`
+      );
+      if (!ok) return;
+    }
+
     setLoading(true);
 
     try {
@@ -991,6 +1041,16 @@ export default function EditProgramPage() {
           </Link>
         </div>
       </div>
+
+      {activeEnrollmentCount > 0 ? (
+        <div
+          className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900"
+          role="status"
+        >
+          This program has <strong>{activeEnrollmentCount}</strong> active enrollment
+          {activeEnrollmentCount === 1 ? '' : 's'}. Structural changes may affect users in progress.
+        </div>
+      ) : null}
 
       <form onSubmit={handleSubmit} className="space-y-6">
         <Card className="sticky top-4 z-10 border-blue-100 bg-white/95 backdrop-blur p-4">
@@ -1446,9 +1506,20 @@ export default function EditProgramPage() {
             </div>
           </Card>
 
+          {calendarStructureWarnings.length > 0 ? (
+            <div className="space-y-2 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-900">
+              <p className="font-medium">Calendar structure (hints — save is not blocked)</p>
+              <ul className="list-disc space-y-1 pl-5">
+                {calendarStructureWarnings.map((msg) => (
+                  <li key={msg}>{msg}</li>
+                ))}
+              </ul>
+            </div>
+          ) : null}
+
           {weeks.map((week, weekIndex) => (
             <CollapsibleBuilderSection
-              key={`week-${weekIndex}`}
+              key={week.id ?? `week-${weekIndex}`}
               title={`Week ${weekIndex + 1}`}
               subtitle={getWeekSummary(week)}
               defaultOpen={weekIndex === 0}

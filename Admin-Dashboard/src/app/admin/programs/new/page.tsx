@@ -406,6 +406,27 @@ export default function NewProgramPage() {
     return { weeks: weeks.length, days, sessions, items };
   }, [weeks]);
 
+  const calendarStructureWarnings = useMemo(() => {
+    const messages: string[] = [];
+    if (durationWeeks !== weeks.length) {
+      messages.push(
+        `Duration is set to ${durationWeeks} week(s), but the builder currently contains ${weeks.length} week block(s).`
+      );
+    }
+    weeks.forEach((week, wi) => {
+      if (week.days.length !== 7) {
+        messages.push(
+          `Week ${wi + 1}: publish-ready programs use 7 days per week; this week has ${week.days.length} day(s).`
+        );
+      }
+      const badDayNumber = week.days.some((d) => d.dayNumber < 1 || d.dayNumber > 7);
+      if (badDayNumber) {
+        messages.push(`Week ${wi + 1}: day numbers should be between 1 and 7 for calendar alignment.`);
+      }
+    });
+    return messages;
+  }, [durationWeeks, weeks]);
+
   const getWeekSummary = (week: WeekForm) => {
     const sessions = week.days.reduce((acc, day) => acc + day.sessions.length, 0);
     const items = week.days.reduce(
@@ -1300,6 +1321,17 @@ export default function NewProgramPage() {
               </ul>
             </div>
           </Card>
+
+          {calendarStructureWarnings.length > 0 ? (
+            <div className="space-y-2 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-900">
+              <p className="font-medium">Calendar structure (hints — save is not blocked)</p>
+              <ul className="list-disc space-y-1 pl-5">
+                {calendarStructureWarnings.map((msg) => (
+                  <li key={msg}>{msg}</li>
+                ))}
+              </ul>
+            </div>
+          ) : null}
 
           {weeks.map((week, weekIndex) => (
             <CollapsibleBuilderSection

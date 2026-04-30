@@ -6,7 +6,7 @@
 
 import { getPrisma } from '@/lib/prisma/client';
 import { legacyTypeToProgramDomain } from '@/lib/program-domain';
-import { Prisma } from '@prisma/client';
+import { Prisma, type Program } from '@prisma/client';
 import { resolveCurrentProgramDay } from '@/modules/active-plan/plan-position';
 import { getAutoAssignmentReadiness } from './program-assignment';
 import { validateCalendarProgramStructure } from './calendar-program-structure';
@@ -146,6 +146,316 @@ function buildWeeksCreate(weeks?: ProgramWeekInput[]) {
   };
 }
 
+const WEEK_NUMBER_TEMP_OFFSET = 100_000;
+
+function sessionItemScalarFromInput(item: ProgramSessionItemInput, sortOrder: number) {
+  return {
+    type: item.type,
+    exerciseId: item.exerciseId ?? undefined,
+    sets: item.sets ?? undefined,
+    targetReps: item.targetReps ?? undefined,
+    targetDuration: item.targetDuration ?? undefined,
+    restBetweenSetsMs: item.restBetweenSetsMs ?? undefined,
+    weightKg: item.weightKg ?? undefined,
+    weightPerSet: item.weightPerSet ?? undefined,
+    notes: (item.notes as object) || undefined,
+    restDurationMs: item.restDurationMs ?? undefined,
+    sourceWorkoutId: item.sourceWorkoutId ?? undefined,
+    sortOrder,
+    allowedSubstitutions: item.allowedSubstitutions ?? item.alternatives ?? [],
+    role: item.role ?? undefined,
+    intent: item.intent ?? undefined,
+    coachingNotes: (item.coachingNotes as object) || undefined,
+  };
+}
+
+async function syncSessionItems(
+  tx: Prisma.TransactionClient,
+  sessionId: string,
+  itemsInput: ProgramSessionItemInput[] | undefined,
+) {
+  const items = itemsInput ?? [];
+  const existing = await tx.programSessionItem.findMany({
+    where: { sessionId },
+    select: { id: true },
+  });
+  const existingIds = new Set(existing.map((e) => e.id));
+  const payloadIds = new Set(items.map((i) => i.id).filter(Boolean) as string[]);
+
+  const toRemove = existing.filter((e) => !payloadIds.has(e.id)).map((e) => e.id);
+  if (toRemove.length > 0) {
+    await tx.programSessionItem.deleteMany({ where: { id: { in: toRemove } } });
+  }
+
+  for (let index = 0; index < items.length; index++) {
+    const item = items[index]!;
+    const sortOrder = item.sortOrder ?? index;
+    const data = sessionItemScalarFromInput(item, sortOrder);
+    if (item.id) {
+      if (!existingIds.has(item.id)) {
+        throw new Error(`Invalid program session item id for session ${sessionId}: ${item.id}`);
+      }
+      await tx.programSessionItem.update({
+        where: { id: item.id },
+        data,
+      });
+    } else {
+      await tx.programSessionItem.create({
+        data: {
+          ...data,
+          sessionId,
+        },
+      });
+    }
+  }
+}
+
+async function syncSessions(
+  tx: Prisma.TransactionClient,
+  dayId: string,
+  sessionsInput: ProgramSessionInput[] | undefined,
+) {
+  const sessions = sessionsInput ?? [];
+  const existing = await tx.programSession.findMany({
+    where: { dayId },
+    select: { id: true },
+  });
+  const existingIds = new Set(existing.map((e) => e.id));
+  const payloadIds = new Set(sessions.map((s) => s.id).filter(Boolean) as string[]);
+
+  const toRemove = existing.filter((e) => !payloadIds.has(e.id)).map((e) => e.id);
+  if (toRemove.length > 0) {
+    await tx.programSession.deleteMany({ where: { id: { in: toRemove } } });
+  }
+
+  for (let index = 0; index < sessions.length; index++) {
+    const session = sessions[index]!;
+    const sortOrder = session.sortOrder ?? index;
+    if (session.id) {
+      if (!existingIds.has(session.id)) {
+        throw new Error(`Invalid program session id for day ${dayId}: ${session.id}`);
+      }
+      await tx.programSession.update({
+        where: { id: session.id },
+        data: {
+          name: session.name as object,
+          sortOrder,
+        },
+      });
+      await syncSessionItems(tx, session.id, session.items);
+    } else {
+      await tx.programSession.create({
+        data: {
+          dayId,
+          name: session.name as object,
+          sortOrder,
+          items: {
+            create: (session.items ?? []).map((item, ii) =>
+              sessionItemScalarFromInput(item, item.sortOrder ?? ii),
+            ),
+          },
+        },
+      });
+    }
+  }
+}
+
+async function syncDays(
+  tx: Prisma.TransactionClient,
+  weekId: string,
+  daysInput: ProgramDayInput[] | undefined,
+) {
+  const days = daysInput ?? [];
+  const existing = await tx.programDay.findMany({
+    where: { weekId },
+    select: { id: true },
+  });
+  const existingIds = new Set(existing.map((e) => e.id));
+  const payloadIds = new Set(days.map((d) => d.id).filter(Boolean) as string[]);
+
+  const toRemove = existing.filter((e) => !payloadIds.has(e.id)).map((e) => e.id);
+  if (toRemove.length > 0) {
+    await tx.programDay.deleteMany({ where: { id: { in: toRemove } } });
+  }
+
+  for (let index = 0; index < days.length; index++) {
+    const day = days[index]!;
+    if (day.id) {
+      if (!existingIds.has(day.id)) {
+        throw new Error(`Invalid program day id for week ${weekId}: ${day.id}`);
+      }
+      await tx.programDay.update({
+        where: { id: day.id },
+        data: {
+          dayNumber: day.dayNumber,
+          isRestDay: day.isRestDay ?? false,
+          name: (day.name as object) || undefined,
+          dayFocus: day.dayFocus ?? undefined,
+        },
+      });
+      await syncSessions(tx, day.id, day.sessions);
+    } else {
+      await tx.programDay.create({
+        data: {
+          weekId,
+          dayNumber: day.dayNumber,
+          isRestDay: day.isRestDay ?? false,
+          name: (day.name as object) || undefined,
+          dayFocus: day.dayFocus ?? undefined,
+          sessions: {
+            create: (day.sessions ?? []).map((session, si) => ({
+              name: session.name as object,
+              sortOrder: session.sortOrder ?? si,
+              items: {
+                create: (session.items ?? []).map((item, ii) =>
+                  sessionItemScalarFromInput(item, item.sortOrder ?? ii),
+                ),
+              },
+            })),
+          },
+        },
+      });
+    }
+  }
+}
+
+/**
+ * Upsert program calendar: preserve row ids where `id` is supplied and valid;
+ * create missing rows; delete DB rows omitted from the payload (per level).
+ */
+async function syncProgramWeeksStructure(
+  tx: Prisma.TransactionClient,
+  programId: string,
+  weeksIn: ProgramWeekInput[],
+) {
+  const existingRows = await tx.programWeek.findMany({
+    where: { programId },
+    select: { id: true },
+  });
+  const validWeekIds = new Set(existingRows.map((w) => w.id));
+
+  for (const week of weeksIn) {
+    if (week.id && !validWeekIds.has(week.id)) {
+      throw new Error(`Invalid program week id for this program: ${week.id}`);
+    }
+  }
+
+  const payloadWeekIds = new Set(weeksIn.map((w) => w.id).filter(Boolean) as string[]);
+  const weekIdsToDelete = existingRows.map((w) => w.id).filter((wid) => !payloadWeekIds.has(wid));
+  if (weekIdsToDelete.length > 0) {
+    await tx.programWeek.deleteMany({
+      where: { programId, id: { in: weekIdsToDelete } },
+    });
+  }
+
+  const refreshed = await tx.programWeek.findMany({
+    where: { programId },
+    select: { id: true },
+  });
+  const validAfterDelete = new Set(refreshed.map((w) => w.id));
+
+  const existingWeeksInPayload = weeksIn.filter((w) => w.id && validAfterDelete.has(w.id));
+  for (const week of existingWeeksInPayload) {
+    await tx.programWeek.update({
+      where: { id: week.id! },
+      data: {
+        weekNumber: week.weekNumber + WEEK_NUMBER_TEMP_OFFSET,
+        sortOrder: week.sortOrder ?? 0,
+      },
+    });
+  }
+
+  for (const week of weeksIn) {
+    const sortOrder = week.sortOrder ?? 0;
+    if (week.id && validAfterDelete.has(week.id)) {
+      await tx.programWeek.update({
+        where: { id: week.id },
+        data: {
+          weekNumber: week.weekNumber,
+          name: (week.name as object) || undefined,
+          description: (week.description as object) || undefined,
+          sortOrder,
+          weekType: week.weekType ?? 'NORMAL',
+        },
+      });
+      await syncDays(tx, week.id, week.days);
+    } else {
+      await tx.programWeek.create({
+        data: {
+          programId,
+          weekNumber: week.weekNumber,
+          name: (week.name as object) || undefined,
+          description: (week.description as object) || undefined,
+          sortOrder,
+          weekType: week.weekType ?? 'NORMAL',
+          days: {
+            create: (week.days ?? []).map((day, di) => ({
+              dayNumber: day.dayNumber,
+              isRestDay: day.isRestDay ?? false,
+              name: (day.name as object) || undefined,
+              dayFocus: day.dayFocus ?? undefined,
+              sessions: {
+                create: (day.sessions ?? []).map((session, si) => ({
+                  name: session.name as object,
+                  sortOrder: session.sortOrder ?? si,
+                  items: {
+                    create: (session.items ?? []).map((item, ii) =>
+                      sessionItemScalarFromInput(item, item.sortOrder ?? ii),
+                    ),
+                  },
+                })),
+              },
+            })),
+          },
+        },
+      });
+    }
+  }
+}
+
+/** Readiness badge for admin list (same shape as previous inline logic). */
+function enrichProgramListRow(program: Program, activeEnrollmentCount: number) {
+  const readiness = getAutoAssignmentReadiness(program);
+  const entersAutoAssignment =
+    program.programType === 'SYSTEM' ||
+    (program.programType === 'COACH' && program.autoAssignable);
+  const status = !entersAutoAssignment
+    ? 'manual_only'
+    : readiness.ready
+      ? 'ready'
+      : 'incomplete';
+
+  return {
+    ...program,
+    activeEnrollmentCount,
+    autoAssignmentReadiness: {
+      ...readiness,
+      entersAutoAssignment,
+      status,
+    },
+  };
+}
+
+async function batchActiveEnrollmentCounts(
+  prisma: Awaited<ReturnType<typeof getPrisma>>,
+  programIds: string[],
+): Promise<Map<string, number>> {
+  if (programIds.length === 0) return new Map();
+  const agg = await prisma.userProgram.groupBy({
+    by: ['programId'],
+    where: {
+      programId: { in: programIds },
+      isActive: true,
+    },
+    _count: { id: true },
+  });
+  return new Map(
+    agg
+      .filter((a): a is typeof a & { programId: string } => a.programId != null)
+      .map((a) => [a.programId, a._count.id]),
+  );
+}
+
 export const programService = {
   async list(filters?: {
     status?: 'draft' | 'published';
@@ -159,6 +469,7 @@ export const programService = {
     const prisma = await getPrisma();
     const page = filters?.page || 1;
     const limit = filters?.limit || 20;
+    const skip = (page - 1) * limit;
 
     const where: Record<string, unknown> = {
       deletedAt: null,
@@ -182,38 +493,53 @@ export const programService = {
       where.trainingGoal = filters.trainingGoal;
     }
 
+    if (!filters?.readiness) {
+      const [rows, total] = await Promise.all([
+        prisma.program.findMany({
+          where,
+          orderBy: { createdAt: 'desc' },
+          skip,
+          take: limit,
+        }),
+        prisma.program.count({ where }),
+      ]);
+      const ids = rows.map((r) => r.id);
+      const counts = await batchActiveEnrollmentCounts(prisma, ids);
+      const programs = rows.map((program) =>
+        enrichProgramListRow(program, counts.get(program.id) ?? 0),
+      );
+      return {
+        programs,
+        pagination: {
+          page,
+          limit,
+          total,
+          totalPages: Math.ceil(total / limit),
+        },
+      };
+    }
+
     const rows = await prisma.program.findMany({
       where,
       orderBy: { createdAt: 'desc' },
     });
+    if (rows.length > 500) {
+      console.warn(
+        '[ProgramsService] list with readiness filter loaded',
+        rows.length,
+        'rows — consider narrowing filters',
+      );
+    }
 
-    const enriched = rows.map((program) => {
-      const readiness = getAutoAssignmentReadiness(program);
-      const entersAutoAssignment =
-        program.programType === 'SYSTEM' ||
-        (program.programType === 'COACH' && program.autoAssignable);
-      const status = !entersAutoAssignment
-        ? 'manual_only'
-        : readiness.ready
-          ? 'ready'
-          : 'incomplete';
-
-      return {
-        ...program,
-        autoAssignmentReadiness: {
-          ...readiness,
-          entersAutoAssignment,
-          status,
-        },
-      };
-    });
-
-    const filtered = filters?.readiness
-      ? enriched.filter((program) => program.autoAssignmentReadiness.status === filters.readiness)
-      : enriched;
-
+    const allIds = rows.map((r) => r.id);
+    const allCounts = await batchActiveEnrollmentCounts(prisma, allIds);
+    const enriched = rows.map((program) =>
+      enrichProgramListRow(program, allCounts.get(program.id) ?? 0),
+    );
+    const filtered = enriched.filter(
+      (program) => program.autoAssignmentReadiness.status === filters.readiness,
+    );
     const total = filtered.length;
-    const skip = (page - 1) * limit;
     const programs = filtered.slice(skip, skip + limit);
 
     return {
@@ -229,10 +555,16 @@ export const programService = {
 
   async getById(id: string) {
     const prisma = await getPrisma();
-    return prisma.program.findFirst({
+    const program = await prisma.program.findFirst({
       where: { id, deletedAt: null },
       include: programFullInclude,
     });
+    if (!program) return null;
+    const counts = await batchActiveEnrollmentCounts(prisma, [program.id]);
+    return {
+      ...program,
+      activeEnrollmentCount: counts.get(program.id) ?? 0,
+    };
   },
 
   async getBySlug(slug: string) {
@@ -344,22 +676,16 @@ export const programService = {
     if (data.prerequisiteProgramId !== undefined) updateData.prerequisiteProgramId = data.prerequisiteProgramId;
     if (data.nextProgramId !== undefined) updateData.nextProgramId = data.nextProgramId;
 
-    await prisma.program.update({
-      where: { id },
-      data: updateData,
-    });
+    await prisma.$transaction(async (tx) => {
+      await tx.program.update({
+        where: { id },
+        data: updateData as Prisma.ProgramUpdateInput,
+      });
 
-    if (data.weeks !== undefined) {
-      await prisma.programWeek.deleteMany({ where: { programId: id } });
-      if (data.weeks.length > 0) {
-        await prisma.program.update({
-          where: { id },
-          data: {
-            weeks: buildWeeksCreate(data.weeks),
-          },
-        });
+      if (data.weeks !== undefined) {
+        await syncProgramWeeksStructure(tx, id, data.weeks);
       }
-    }
+    });
 
     return this.getById(id);
   },
@@ -1143,28 +1469,5 @@ export const programService = {
     return programs
       .map((program) => this.buildProgramExport(program))
       .filter((program): program is ProgramExport => program !== null);
-  },
-
-  async enrollUser(userId: string, programId: string, name?: LocalizedText) {
-    const prisma = await getPrisma();
-
-    // Use a transaction to guarantee atomicity:
-    // deactivate all existing programs, then create the new one.
-    // Prevents race conditions that could leave multiple active programs.
-    return prisma.$transaction(async (tx) => {
-      await tx.userProgram.updateMany({
-        where: { userId, isActive: true },
-        data: { isActive: false },
-      });
-
-      return tx.userProgram.create({
-        data: {
-          userId,
-          programId,
-          name: (name as object) || undefined,
-          isActive: true,
-        },
-      });
-    });
   },
 };

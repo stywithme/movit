@@ -1,3 +1,9 @@
+/**
+ * Client-side approximation of auto-assignment readiness for the admin form.
+ *
+ * Source of truth: backend `program-assignment.ts` (`getAutoAssignmentReadiness`)
+ * — used at publish and returned on `GET /api/programs`. Mirror rule changes there.
+ */
 export type ProgramOwnership = 'SYSTEM' | 'COACH' | 'CUSTOM';
 export type ProgramDomainEnum = 'TRAINING' | 'MOBILITY' | 'THERAPEUTIC';
 export type AutoAssignmentStatus = 'ready' | 'incomplete' | 'manual_only';
