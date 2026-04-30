@@ -17,10 +17,8 @@ export interface TrainingProfilePayload {
   availableEquipment?: unknown;
   trainingLocation?: string | null;
   knownInjuries?: unknown;
-  painFlags?: unknown;
-  parqPassed?: boolean | null;
-  parqFlags?: unknown;
-  parqCompletedAt?: string | null;
+  /** User accepted in-app health disclaimer (replaces PAR-Q on profile). */
+  healthDisclaimerAccepted?: boolean | null;
   /** Updates `User.trainingGoal` when set */
   trainingGoal?: TrainingGoal;
 }

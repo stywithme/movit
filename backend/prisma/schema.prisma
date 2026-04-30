@@ -40,6 +40,7 @@ model AttributeValue {
   exercisesAsCountingMethod Exercise[]          @relation("ExerciseCountingMethod")
   posePositionJoints        PosePositionJoint[] @relation("PosePositionJoint")
   programAttributes         ProgramAttribute[]
+  assessmentAttributes     AssessmentAttribute[]
 
   @@index([attributeId])
   @@map("attribute_values")
@@ -761,10 +762,7 @@ model TrainingProfile {
   availableEquipment       Json?
   trainingLocation         String?
   knownInjuries            Json?
-  painFlags                Json?
-  parqPassed               Boolean?
-  parqFlags                Json?
-  parqCompletedAt          DateTime?
+  healthDisclaimerAccepted Boolean   @default(false)
   createdAt                DateTime  @default(now())
   updatedAt                DateTime  @updatedAt
   user                     User      @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -1016,14 +1014,31 @@ model AssessmentTemplate {
   createdAt     DateTime                     @default(now())
   updatedAt     DateTime                     @updatedAt
   deletedAt     DateTime?
-  exercises     AssessmentTemplateExercise[]
-  targetLevel   Level?                       @relation(fields: [targetLevelId], references: [id])
-  assessments   BodyScanResult[]
+  exercises              AssessmentTemplateExercise[]
+  assessmentAttributes   AssessmentAttribute[]
+  targetLevel            Level?                       @relation(fields: [targetLevelId], references: [id])
+  assessments            BodyScanResult[]
 
   @@index([type])
   @@index([targetLevelId])
   @@index([isPublished])
   @@map("assessment_templates")
+}
+
+/// Assessment template matching dimensions (same pattern as ProgramAttribute).
+model AssessmentAttribute {
+  id               String                @id @default(uuid())
+  templateId       String
+  attributeValueId String
+  mode             ProgramAttributeMode  @default(REQUIRED)
+  createdAt        DateTime              @default(now())
+  template         AssessmentTemplate    @relation(fields: [templateId], references: [id], onDelete: Cascade)
+  attributeValue   AttributeValue        @relation(fields: [attributeValueId], references: [id], onDelete: Cascade)
+
+  @@unique([templateId, attributeValueId])
+  @@index([templateId])
+  @@index([attributeValueId])
+  @@map("assessment_attributes")
 }
 
 model AssessmentTemplateExercise {
@@ -1062,11 +1077,7 @@ model BodyScanResult {
   regions               Json
   symmetryData          Json?
   hypotheses            Json?
-  safetyGates           Json?
-  painFlags             Json?
   recommendations       Json?
-  parqPassed            Boolean                @default(true)
-  parqFlags             Json?
   rawReportIds          Json?
   previousId            String?
   durationMs            Int?
