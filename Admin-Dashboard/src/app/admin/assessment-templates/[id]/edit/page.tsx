@@ -12,6 +12,8 @@ import {
 } from '../../../programs/_components/ProgramAttributesSection';
 import type { ProgramAttributeFormRow } from '../../../programs/_lib/program-prescription-attributes';
 import type { LocalizedText } from '@/lib/types/localized';
+
+interface ExerciseSummary {
   id: string;
   name: LocalizedText;
 }
