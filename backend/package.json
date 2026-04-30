@@ -22,6 +22,7 @@
     "seed:permissions": "tsx --env-file=.env prisma/run-permissions-seed.ts",
     "seed:system-messages": "tsx --env-file=.env prisma/run-system-messages-seed.ts",
     "seed:pose-positions": "tsx --env-file=.env prisma/run-pose-positions-seed.ts",
+    "migrate:remove-rest-days": "tsx --env-file=.env scripts/migrate-remove-program-rest-days.ts",
     "test": "jest",
     "test:watch": "jest --watch",
     "test:cov": "jest --coverage",

@@ -13,10 +13,18 @@ import {
   type EffectivePlanSession,
 } from '@/modules/effective-plan/effective-plan.service';
 import type { ProgramAssignmentReason } from '@/modules/programs/program-assignment';
-import { resolveCurrentProgramDay, getProgramCalendarDayIndex } from './plan-position';
+import {
+  resolveCurrentProgramDay,
+  resolveTrainingPositionMeta,
+  countTrainingDaySlots,
+} from './plan-position';
 import { programCompletionService } from '@/modules/programs/program-completion.service';
 import type { ProgramCompletionDecision } from '@/modules/programs/program-completion.service';
-import { computeCatchUpSuggestion } from '@/modules/programs/program-catchup';
+import {
+  buildCatchUpSuggestionFromMeta,
+  getLastProgramSessionCompletedAt,
+  type CatchUpSuggestion,
+} from '@/modules/programs/program-catchup';
 
 interface EnrollProgramOptions {
   assignmentReason?: ProgramAssignmentReason | null;
@@ -79,14 +87,10 @@ export interface TodayPlanData {
     scheduledDate: string;
     reason: string;
   } | null;
-  /** True when the active enrollment is paused (calendar frozen). */
-  isPaused?: boolean;
-  /** When the user has fallen behind completed sessions vs calendar position. */
-  catchUpSuggestion?: {
-    missedTrainingDays: number;
-    message: string;
-    missedSlots: { weekNumber: number; dayNumber: number }[];
-  } | null;
+  /** User's scheduled training day (UTC weekday); false on off days — show rest UX. */
+  isTrainingDay?: boolean;
+  /** When catch-up snap changed position vs natural completion-based slot. */
+  catchUpSuggestion?: CatchUpSuggestion | null;
 }
 
 export interface EnrollmentCheckData {
@@ -123,7 +127,12 @@ export const activePlanService = {
                       select: {
                         weekNumber: true,
                         days: {
-                          select: { dayNumber: true },
+                          select: {
+                            dayNumber: true,
+                            isRestDay: true,
+                            dayType: true,
+                            sessions: { select: { id: true, sortOrder: true } },
+                          },
                         },
                       },
                     },
@@ -154,7 +163,12 @@ export const activePlanService = {
                         select: {
                           weekNumber: true,
                           days: {
-                            select: { dayNumber: true },
+                            select: {
+                              dayNumber: true,
+                              isRestDay: true,
+                              dayType: true,
+                              sessions: { select: { id: true, sortOrder: true } },
+                            },
                           },
                         },
                       },
@@ -169,6 +183,29 @@ export const activePlanService = {
       });
     }
 
+    const profile = await prisma.trainingProfile.findUnique({
+      where: { userId },
+      select: { trainingWeekdays: true },
+    });
+    const trainingWeekdays =
+      profile?.trainingWeekdays && profile.trainingWeekdays.length > 0
+        ? profile.trainingWeekdays
+        : null;
+
+    const programIds = [
+      ...new Set(
+        plan.programs
+          .map((s) => s.userProgram.program?.id)
+          .filter((id): id is string => typeof id === 'string' && id.length > 0),
+      ),
+    ];
+    const lastSessionByProgram = new Map<string, Date | null>();
+    await Promise.all(
+      programIds.map(async (pid) => {
+        lastSessionByProgram.set(pid, await getLastProgramSessionCompletedAt(userId, pid));
+      }),
+    );
+
     return {
       id: plan.id,
       userId: plan.userId,
@@ -176,13 +213,13 @@ export const activePlanService = {
       programs: plan.programs.map((slot) => {
         const prog = slot.userProgram.program;
         const progressEntries = slot.userProgram.progress || [];
-        const totalDays = prog ? prog.durationWeeks * 7 : 0;
+        const totalDays = prog ? countTrainingDaySlots(prog.weeks) : 0;
+        const lastAt = prog?.id ? (lastSessionByProgram.get(prog.id) ?? null) : null;
         const position = prog
           ? resolveCurrentProgramDay(prog.weeks, progressEntries, {
-              startDate: slot.userProgram.startDate,
+              lastSessionCompletedAt: lastAt,
+              trainingWeekdays,
               durationWeeks: prog.durationWeeks,
-              totalPausedDays: slot.userProgram.totalPausedDays,
-              pausedAt: slot.userProgram.pausedAt,
             })
           : null;
 
@@ -310,25 +347,27 @@ export const activePlanService = {
   async getTodayPlan(userId: string): Promise<TodayPlanData> {
     const prisma = await getPrisma();
 
-    const plan = await prisma.activePlan.findUnique({
-      where: { userId },
-      include: {
-        programs: {
-          where: { status: 'active' },
-          include: {
-            userProgram: {
-              include: {
-                program: {
-                  include: {
-                    weeks: {
-                      include: {
-                        days: {
-                          include: {
-                            sessions: {
-                              include: {
-                                items: true,
-                                reports: {
-                                  where: { userId, status: 'completed' },
+    const [plan, profile] = await Promise.all([
+      prisma.activePlan.findUnique({
+        where: { userId },
+        include: {
+          programs: {
+            where: { status: 'active' },
+            include: {
+              userProgram: {
+                include: {
+                  program: {
+                    include: {
+                      weeks: {
+                        include: {
+                          days: {
+                            include: {
+                              sessions: {
+                                include: {
+                                  items: true,
+                                  reports: {
+                                    where: { userId, status: 'completed' },
+                                  },
                                 },
                               },
                             },
@@ -337,20 +376,29 @@ export const activePlanService = {
                       },
                     },
                   },
+                  progress: true,
                 },
-                progress: true,
               },
             },
           },
         },
-      },
-    });
+      }),
+      prisma.trainingProfile.findUnique({
+        where: { userId },
+        select: { trainingWeekdays: true },
+      }),
+    ]);
 
     // Get next reassessment
     const nextReassessment = await prisma.reassessmentSchedule.findFirst({
       where: { userId, status: 'pending' },
       orderBy: { scheduledDate: 'asc' },
     });
+
+    const trainingWeekdays =
+      profile?.trainingWeekdays && profile.trainingWeekdays.length > 0
+        ? profile.trainingWeekdays
+        : null;
 
     if (!plan || plan.programs.length === 0) {
       return {
@@ -362,7 +410,7 @@ export const activePlanService = {
               reason: nextReassessment.reason,
             }
           : null,
-        isPaused: false,
+        isTrainingDay: true,
         catchUpSuggestion: null,
       };
     }
@@ -379,18 +427,21 @@ export const activePlanService = {
               reason: nextReassessment.reason,
             }
           : null,
-        isPaused: false,
+        isTrainingDay: true,
         catchUpSuggestion: null,
       };
     }
 
     const progressEntries = activeSlot.userProgram.progress || [];
-    const position = resolveCurrentProgramDay(program.weeks, progressEntries, {
-      startDate: activeSlot.userProgram.startDate,
+    const lastAt = await getLastProgramSessionCompletedAt(userId, program.id);
+    const meta = resolveTrainingPositionMeta(program.weeks, progressEntries, {
+      lastSessionCompletedAt: lastAt,
+      trainingWeekdays,
       durationWeeks: program.durationWeeks,
-      totalPausedDays: activeSlot.userProgram.totalPausedDays,
-      pausedAt: activeSlot.userProgram.pausedAt,
     });
+    const position = meta.position;
+    const catchUpSuggestion = buildCatchUpSuggestionFromMeta(meta);
+
     const targetWeek = position.targetWeekNumber;
     const targetDay = position.targetDayNumber;
     const week = position.targetWeek as (typeof program.weeks)[number] | undefined;
@@ -413,7 +464,7 @@ export const activePlanService = {
               reason: nextReassessment.reason,
             }
           : null,
-        isPaused: false,
+        isTrainingDay: position.isTrainingDay ?? true,
         catchUpSuggestion: null,
       };
     }
@@ -435,43 +486,34 @@ export const activePlanService = {
               reason: nextReassessment.reason,
             }
           : null,
-        isPaused: Boolean(activeSlot.userProgram.pausedAt),
+        isTrainingDay: position.isTrainingDay ?? true,
         catchUpSuggestion: null,
       };
     }
 
     const userProgramId = activeSlot.userProgram.id;
+    const isTemplateRest =
+      day.isRestDay || day.dayType === 'rest' || day.dayType === 'active_recovery';
+    const isUserOffDay = !position.isTrainingDay;
+    const showSessions = !isTemplateRest && !isUserOffDay;
+
     let effSessionById = new Map<string, EffectivePlanSession>();
-    try {
-      const eff = await effectivePlanService.getEffectivePlan(
-        userId,
-        userProgramId,
-        targetWeek,
-        targetDay,
-      );
-      effSessionById = new Map((eff?.sessions ?? []).map((s) => [s.id, s]));
-    } catch (error) {
-      console.warn('[ActivePlan] effective plan for today:', error);
+    if (showSessions) {
+      try {
+        const eff = await effectivePlanService.getEffectivePlan(
+          userId,
+          userProgramId,
+          targetWeek,
+          targetDay,
+        );
+        effSessionById = new Map((eff?.sessions ?? []).map((s) => [s.id, s]));
+      } catch (error) {
+        console.warn('[ActivePlan] effective plan for today:', error);
+      }
     }
 
-    const catchUpSuggestion = await computeCatchUpSuggestion(
-      userId,
-      program.id,
-      program.weeks,
-      program.durationWeeks,
-      targetWeek,
-      targetDay,
-    );
-
-    return {
-      activePlanStatus: plan.status,
-      currentProgram: {
-        name: program.name as Record<string, string>,
-        weekNumber: targetWeek,
-        dayNumber: targetDay,
-        dayType: day.dayType,
-        isRestDay: day.isRestDay,
-        sessions: day.sessions.map((s) => {
+    const sessionsPayload = showSessions
+      ? day.sessions.map((s) => {
           const effS = effSessionById.get(s.id);
           const itemCount = effS
             ? countEffectiveExerciseItems(effS)
@@ -484,7 +526,18 @@ export const activePlanService = {
             itemCount,
             isCompleted: s.reports.length > 0,
           };
-        }),
+        })
+      : [];
+
+    return {
+      activePlanStatus: plan.status,
+      currentProgram: {
+        name: program.name as Record<string, string>,
+        weekNumber: targetWeek,
+        dayNumber: targetDay,
+        dayType: isUserOffDay ? 'off_schedule' : day.dayType,
+        isRestDay: isTemplateRest || isUserOffDay,
+        sessions: sessionsPayload,
       },
       nextReassessment: nextReassessment
         ? {
@@ -492,48 +545,9 @@ export const activePlanService = {
             reason: nextReassessment.reason,
           }
         : null,
-      isPaused: Boolean(activeSlot.userProgram.pausedAt),
+      isTrainingDay: position.isTrainingDay ?? true,
       catchUpSuggestion,
     };
-  },
-
-  async pauseActiveProgram(userId: string): Promise<{ success: boolean; error?: string }> {
-    const prisma = await getPrisma();
-    const plan = await prisma.activePlan.findUnique({
-      where: { userId },
-      include: {
-        programs: { where: { status: 'active' }, select: { userProgramId: true } },
-      },
-    });
-    const slot = plan?.programs[0];
-    if (!slot) return { success: false, error: 'no_active_program' };
-    const up = await prisma.userProgram.findFirst({
-      where: { id: slot.userProgramId, userId },
-    });
-    if (!up) return { success: false, error: 'user_program_not_found' };
-    if (up.pausedAt) return { success: false, error: 'already_paused' };
-    await prisma.userProgram.update({
-      where: { id: up.id },
-      data: { pausedAt: new Date() },
-    });
-    return { success: true };
-  },
-
-  async resumeActiveProgram(userId: string): Promise<{ success: boolean; error?: string }> {
-    const prisma = await getPrisma();
-    const up = await prisma.userProgram.findFirst({
-      where: { userId, isActive: true, pausedAt: { not: null } },
-    });
-    if (!up?.pausedAt) return { success: false, error: 'not_paused' };
-    const pauseDays = getProgramCalendarDayIndex(up.pausedAt, new Date());
-    await prisma.userProgram.update({
-      where: { id: up.id },
-      data: {
-        totalPausedDays: up.totalPausedDays + pauseDays,
-        pausedAt: null,
-      },
-    });
-    return { success: true };
   },
 
   async getEnrollmentCheck(userId: string, programId: string): Promise<EnrollmentCheckData> {
@@ -563,13 +577,23 @@ export const activePlanService = {
     }
 
     const willReplace = active.programId !== programId;
-    const position = resolveCurrentProgramDay(active.program.weeks, active.progress ?? [], {
-      startDate: active.startDate,
-      durationWeeks: active.program.durationWeeks,
-      totalPausedDays: active.totalPausedDays,
-      pausedAt: active.pausedAt,
+    const profile = await prisma.trainingProfile.findUnique({
+      where: { userId },
+      select: { trainingWeekdays: true },
     });
-    const totalDays = active.program.durationWeeks * 7;
+    const trainingWeekdays =
+      profile?.trainingWeekdays && profile.trainingWeekdays.length > 0
+        ? profile.trainingWeekdays
+        : null;
+    const lastAt = active.programId
+      ? await getLastProgramSessionCompletedAt(userId, active.programId)
+      : null;
+    const position = resolveCurrentProgramDay(active.program.weeks, active.progress ?? [], {
+      lastSessionCompletedAt: lastAt,
+      trainingWeekdays,
+      durationWeeks: active.program.durationWeeks,
+    });
+    const totalDays = countTrainingDaySlots(active.program.weeks);
     const percentage =
       totalDays > 0 ? Math.round((position.completedDayCount / totalDays) * 100) : 0;
 

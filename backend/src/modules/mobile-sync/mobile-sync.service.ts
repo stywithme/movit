@@ -527,10 +527,17 @@ export const mobileSyncService = {
     if (userId) {
       userExercisePreferences = await listUserExercisePreferences(userId);
 
-      const userProgramRows = await prisma.userProgram.findMany({
-        where: { userId },
-        orderBy: { updatedAt: 'desc' },
-      });
+      const [userProgramRows, trainingProfile] = await Promise.all([
+        prisma.userProgram.findMany({
+          where: { userId },
+          orderBy: { updatedAt: 'desc' },
+        }),
+        prisma.trainingProfile.findUnique({
+          where: { userId },
+          select: { trainingWeekdays: true },
+        }),
+      ]);
+      const trainingWeekdays = trainingProfile?.trainingWeekdays ?? [];
       userPrograms = userProgramRows.map((row) => ({
         id: row.id,
         programId: row.programId,
@@ -539,9 +546,8 @@ export const mobileSyncService = {
         isActive: row.isActive,
         customizations: (row.customizations as Record<string, unknown>) || null,
         updatedAt: row.updatedAt.toISOString(),
-        pausedAt: row.pausedAt?.toISOString() ?? null,
-        totalPausedDays: row.totalPausedDays ?? 0,
         customizationsUpdatedAt: row.customizationsUpdatedAt?.toISOString() ?? null,
+        trainingWeekdays,
       }));
 
       // Fetch completed session reports for this user

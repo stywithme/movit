@@ -36,6 +36,25 @@ interface Program {
   programAttributes?: ProgramAttributeRow[];
 }
 
+interface AssessmentMapItem {
+  id: string;
+  name: LocalizedText;
+  type: string;
+  isPublished?: boolean;
+  status?: string;
+  isDefault?: boolean;
+  levelRangeMin?: number | null;
+  levelRangeMax?: number | null;
+  targetLevel?: {
+    id: string;
+    number?: number;
+    levelNumber?: number;
+    name?: LocalizedText;
+    color?: string | null;
+  } | null;
+  _count?: { exercises: number; assessmentAttributes?: number };
+}
+
 const FILTER_ATTR_CODES = ['domain', 'goal', 'equipment', 'gender', 'place'] as const;
 
 const TYPE_COLORS: Record<string, { bg: string; text: string; border: string }> = {
@@ -88,6 +107,38 @@ function programPassesFilters(
   return true;
 }
 
+function targetLevelOrder(t: AssessmentMapItem): number | null {
+  const tl = t.targetLevel;
+  if (!tl) return null;
+  if (typeof tl.number === 'number') return tl.number;
+  if (typeof tl.levelNumber === 'number') return tl.levelNumber;
+  return null;
+}
+
+function templateIsPublished(t: AssessmentMapItem): boolean {
+  return t.isPublished === true || t.status === 'published';
+}
+
+/** Initial onboarding templates — shown once above the level grid. */
+function isInitialAssessment(t: AssessmentMapItem): boolean {
+  return t.type === 'initial';
+}
+
+function assessmentMatchesLevelColumn(
+  t: AssessmentMapItem,
+  levelOrder: number,
+  levels: Level[],
+): boolean {
+  if (isInitialAssessment(t)) return false;
+  const tl = targetLevelOrder(t);
+  if (tl != null) return tl === levelOrder;
+  const minOrder = levels[0]?.order ?? 1;
+  const maxOrder = levels[levels.length - 1]?.order ?? levelOrder;
+  const min = t.levelRangeMin ?? minOrder;
+  const max = t.levelRangeMax ?? maxOrder;
+  return levelOrder >= min && levelOrder <= max;
+}
+
 const DIFFICULTY_VARIANT: Record<string, 'default' | 'primary' | 'success' | 'warning' | 'error' | 'purple' | 'orange' | 'teal'> = {
   beginner: 'success',
   intermediate: 'warning',
@@ -98,6 +149,7 @@ export default function ProgramsMapPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [programs, setPrograms] = useState<Program[]>([]);
+  const [assessments, setAssessments] = useState<AssessmentMapItem[]>([]);
   const [levels, setLevels] = useState<Level[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
@@ -113,9 +165,10 @@ export default function ProgramsMapPage() {
   const fetchData = async () => {
     setLoading(true);
     try {
-      const [programsRes, levelsRes] = await Promise.allSettled([
+      const [programsRes, levelsRes, assessRes] = await Promise.allSettled([
         fetch('/api/programs?limit=500').then((r) => r.json()),
         fetch('/api/admin/levels').then((r) => r.json()),
+        fetch('/api/admin/assessment-templates').then((r) => r.json()),
       ]);
 
       if (programsRes.status === 'fulfilled' && programsRes.value?.data) {
@@ -127,6 +180,12 @@ export default function ProgramsMapPage() {
             (a: Level, b: Level) => a.order - b.order,
           ),
         );
+      }
+      if (assessRes.status === 'fulfilled') {
+        const raw = assessRes.value as { success?: boolean; data?: unknown };
+        if (raw?.success !== false && Array.isArray(raw?.data)) {
+          setAssessments(raw.data as AssessmentMapItem[]);
+        }
       }
     } catch (error) {
       console.error('Error fetching programs map data:', error);
@@ -156,6 +215,43 @@ export default function ProgramsMapPage() {
       );
     });
   }, [programs, searchQuery, showPublishedOnly, filters]);
+
+  const filteredAssessments = useMemo(() => {
+    const query = searchQuery.trim().toLowerCase();
+    return assessments.filter((t) => {
+      if (showPublishedOnly && !templateIsPublished(t)) return false;
+      if (!query) return true;
+      return (
+        (t.name?.en ?? '').toLowerCase().includes(query) ||
+        (t.name?.ar ?? '').toLowerCase().includes(query)
+      );
+    });
+  }, [assessments, searchQuery, showPublishedOnly]);
+
+  const initialAssessments = useMemo(
+    () => filteredAssessments.filter((t) => isInitialAssessment(t)),
+    [filteredAssessments],
+  );
+
+  const leveledAssessments = useMemo(
+    () => filteredAssessments.filter((t) => !isInitialAssessment(t)),
+    [filteredAssessments],
+  );
+
+  const assessmentsByLevelColumn = useMemo(() => {
+    const col: Record<string, AssessmentMapItem[]> = {};
+    for (const level of levels) {
+      col[level.id] = [];
+    }
+    leveledAssessments.forEach((t) => {
+      levels.forEach((level) => {
+        if (!assessmentMatchesLevelColumn(t, level.order, levels)) return;
+        const list = col[level.id];
+        if (list && !list.some((x) => x.id === t.id)) list.push(t);
+      });
+    });
+    return col;
+  }, [leveledAssessments, levels]);
 
   const programsByLevelColumn = useMemo(() => {
     const map: Record<string, Program[]> = {};
@@ -236,11 +332,16 @@ export default function ProgramsMapPage() {
             <ArrowLeft className="h-5 w-5" />
           </Link>
           <div>
-            <h1 className="text-2xl font-bold text-gray-900">Programs Map</h1>
-            <p className="text-gray-600 mt-1">Programs by level (columns); filter by attributes from program data</p>
+            <h1 className="text-2xl font-bold text-gray-900">Programs &amp; assessments map</h1>
+            <p className="text-gray-600 mt-1">
+              Programs and assessment templates by training level (columns). Initial assessments are listed above the grid.
+            </p>
           </div>
         </div>
         <div className="flex items-center gap-3">
+          <Link href="/admin/assessment-templates/new">
+            <Button variant="secondary">New assessment</Button>
+          </Link>
           <Link href="/admin/programs/new">
             <Button variant="secondary">New program</Button>
           </Link>
@@ -327,6 +428,28 @@ export default function ProgramsMapPage() {
       ) : (
         <Card>
           <CardContent className="p-0">
+            {initialAssessments.length > 0 ? (
+              <div className="border-b border-amber-100 bg-amber-50/50 px-3 py-3">
+                <p className="text-xs font-semibold text-amber-900 mb-2">Initial assessments (onboarding)</p>
+                <div className="flex flex-wrap gap-2">
+                  {initialAssessments.map((t) => (
+                    <Link
+                      key={t.id}
+                      href={`/admin/assessment-templates/${t.id}/edit`}
+                      className="inline-flex flex-col rounded-lg border border-amber-200 bg-white px-2.5 py-2 text-left hover:border-amber-400 hover:shadow-sm min-w-[140px]"
+                    >
+                      <span className="text-xs font-medium text-gray-900 line-clamp-2">
+                        {t.name?.en || t.type}
+                      </span>
+                      <span className="text-[10px] text-gray-500 mt-0.5">
+                        {t._count?.exercises ?? 0} exercises
+                        {!templateIsPublished(t) ? ' · draft' : ''}
+                      </span>
+                    </Link>
+                  ))}
+                </div>
+              </div>
+            ) : null}
             <div className="overflow-x-auto">
               <div className="min-w-[720px]">
                 <div className="flex border-b border-gray-200 bg-gray-50">
@@ -442,6 +565,34 @@ export default function ProgramsMapPage() {
                               <span className="text-[10px] text-gray-300">—</span>
                             </div>
                           )}
+                          {(assessmentsByLevelColumn[level.id] ?? []).length > 0 ? (
+                            <div className="pt-3 mt-2 border-t border-gray-100">
+                              <p className="text-[10px] font-semibold text-gray-500 uppercase tracking-wide mb-1.5">
+                                Assessments
+                              </p>
+                              <div className="space-y-1.5">
+                                {(assessmentsByLevelColumn[level.id] ?? []).map((t) => (
+                                  <Link
+                                    key={t.id}
+                                    href={`/admin/assessment-templates/${t.id}/edit`}
+                                    className="block rounded-md border border-teal-100 bg-teal-50/60 px-2 py-1.5 hover:border-teal-300 hover:bg-teal-50"
+                                  >
+                                    <span className="text-[11px] font-medium text-gray-900 line-clamp-2">
+                                      {t.name?.en || t.type}
+                                    </span>
+                                    <div className="flex items-center gap-1 mt-0.5">
+                                      <span className="text-[9px] text-teal-800 bg-white/80 px-1 rounded border border-teal-100">
+                                        {t.type}
+                                      </span>
+                                      {!templateIsPublished(t) ? (
+                                        <span className="text-[9px] text-amber-700">draft</span>
+                                      ) : null}
+                                    </div>
+                                  </Link>
+                                ))}
+                              </div>
+                            </div>
+                          ) : null}
                         </div>
                       </div>
                     );
@@ -453,8 +604,8 @@ export default function ProgramsMapPage() {
         </Card>
       )}
 
-      {!loading && programs.length > 0 && (
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+      {!loading && (programs.length > 0 || assessments.length > 0) && (
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4">
           <Card>
             <CardContent className="pt-6 text-center">
               <p className="text-sm text-gray-500">Visible Programs</p>
@@ -479,6 +630,18 @@ export default function ProgramsMapPage() {
             <CardContent className="pt-6 text-center">
               <p className="text-sm text-gray-500">With Sequences</p>
               <p className="text-2xl font-bold text-purple-600 mt-1">{connectionsMap.size}</p>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardContent className="pt-6 text-center">
+              <p className="text-sm text-gray-500">Visible assessments</p>
+              <p className="text-2xl font-bold text-teal-700 mt-1">{filteredAssessments.length}</p>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardContent className="pt-6 text-center">
+              <p className="text-sm text-gray-500">Initial (onboarding)</p>
+              <p className="text-2xl font-bold text-amber-700 mt-1">{initialAssessments.length}</p>
             </CardContent>
           </Card>
         </div>

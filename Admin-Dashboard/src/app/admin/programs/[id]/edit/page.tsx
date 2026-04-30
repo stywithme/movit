@@ -279,6 +279,7 @@ function normalizeDay(day: DayForm, dayIndex: number): DayForm {
   return {
     ...day,
     dayNumber: dayIndex + 1,
+    isRestDay: false,
     sessions: day.sessions.map(normalizeSession),
   };
 }
@@ -321,8 +322,8 @@ export default function EditProgramPage() {
   const [coachingNotesProgram, setCoachingNotesProgram] = useState('');
   const [weeklySessionTarget, setWeeklySessionTarget] = useState<number | ''>('');
   const [estimatedSessionMinutes, setEstimatedSessionMinutes] = useState<number | ''>('');
-  const [levelRangeMin, setLevelRangeMin] = useState(1);
-  const [levelRangeMax, setLevelRangeMax] = useState(10);
+  /** Single training level (stored as levelRangeMin === levelRangeMax on the API). */
+  const [trainingLevel, setTrainingLevel] = useState(1);
   const [entryRecommendations, setEntryRecommendations] = useState('');
   const [exitRecommendations, setExitRecommendations] = useState('');
   const [prescriptionPriority, setPrescriptionPriority] = useState(50);
@@ -419,8 +420,11 @@ export default function EditProgramPage() {
         );
         setWeeklySessionTarget(program.weeklySessionTarget ?? '');
         setEstimatedSessionMinutes(program.estimatedSessionMinutes ?? '');
-        setLevelRangeMin(program.levelRangeMin ?? 1);
-        setLevelRangeMax(program.levelRangeMax ?? 10);
+        {
+          const mn = program.levelRangeMin ?? 1;
+          const mx = program.levelRangeMax ?? mn;
+          setTrainingLevel(mn === mx ? mn : Math.round((mn + mx) / 2));
+        }
         const entryRec = program.entryRecommendations ?? program.entryCriteria;
         const exitRec = program.exitRecommendations ?? program.exitCriteria;
         setEntryRecommendations(entryRec ? JSON.stringify(entryRec, null, 2) : '');
@@ -441,7 +445,7 @@ export default function EditProgramPage() {
               week.days?.map((day, dayIndex) => ({
                 id: day.id,
                 dayNumber: day.dayNumber || dayIndex + 1,
-                isRestDay: day.isRestDay || false,
+                isRestDay: false,
                 name: day.name || { ar: '', en: '' },
                 dayFocus: day.dayFocus ?? '',
                 sessions:
@@ -493,14 +497,12 @@ export default function EditProgramPage() {
       );
     }
     weeks.forEach((week, wi) => {
-      if (week.days.length !== 7) {
-        messages.push(
-          `Week ${wi + 1}: publish-ready programs use 7 days per week; this week has ${week.days.length} day(s).`
-        );
+      if (week.days.length < 1) {
+        messages.push(`Week ${wi + 1}: add at least one training day before publishing.`);
       }
-      const badDayNumber = week.days.some((d) => d.dayNumber < 1 || d.dayNumber > 7);
+      const badDayNumber = week.days.some((d) => d.dayNumber < 1 || d.dayNumber > 14);
       if (badDayNumber) {
-        messages.push(`Week ${wi + 1}: day numbers should be between 1 and 7 for calendar alignment.`);
+        messages.push(`Week ${wi + 1}: day numbers should be between 1 and 14.`);
       }
     });
     return messages;
@@ -565,12 +567,12 @@ export default function EditProgramPage() {
       getAutoAssignmentReadiness({
         programType: programOwnership,
         autoAssignable,
-        levelRangeMin,
-        levelRangeMax,
+        levelRangeMin: trainingLevel,
+        levelRangeMax: trainingLevel,
         prescriptionPriority,
         programAttributes: programAttributesForReadiness,
       }),
-    [programOwnership, autoAssignable, levelRangeMax, levelRangeMin, prescriptionPriority, programAttributesForReadiness],
+    [programOwnership, autoAssignable, trainingLevel, prescriptionPriority, programAttributesForReadiness],
   );
 
   const exerciseAttributeCheck = useCallback(
@@ -614,7 +616,7 @@ export default function EditProgramPage() {
 
   const getDaySummary = (day: DayForm) => {
     const items = day.sessions.reduce((acc, session) => acc + session.items.length, 0);
-    return `${day.isRestDay ? 'Rest day' : 'Training day'} • ${day.sessions.length} session(s) • ${items} item(s)`;
+    return `Training day • ${day.sessions.length} session(s) • ${items} item(s)`;
   };
 
   const getSessionSummary = (session: SessionForm) => {
@@ -918,8 +920,8 @@ export default function EditProgramPage() {
     coachingNotes: parseJsonField(coachingNotesProgram),
     weeklySessionTarget: weeklySessionTarget === '' ? undefined : weeklySessionTarget,
     estimatedSessionMinutes: estimatedSessionMinutes === '' ? undefined : estimatedSessionMinutes,
-    levelRangeMin,
-    levelRangeMax,
+    levelRangeMin: trainingLevel,
+    levelRangeMax: trainingLevel,
     entryRecommendations: parseJsonField(entryRecommendations),
     exitRecommendations: parseJsonField(exitRecommendations),
     prescriptionPriority,
@@ -936,7 +938,7 @@ export default function EditProgramPage() {
       days: week.days.map((day, dayIndex) => ({
         ...(day.id ? { id: day.id } : {}),
         dayNumber: day.dayNumber || dayIndex + 1,
-        isRestDay: day.isRestDay,
+        isRestDay: false,
         name: day.name.en || day.name.ar ? day.name : undefined,
         dayFocus: day.dayFocus?.trim() ? day.dayFocus : undefined,
         sessions: day.sessions.map((session, sessionIndex) => ({
@@ -1251,25 +1253,17 @@ export default function EditProgramPage() {
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-4 mt-4">
-            <div>
-              <Label>Level Range Min</Label>
-              <Input
-                type="number"
-                min={1}
-                value={levelRangeMin}
-                onChange={(e) => setLevelRangeMin(Number.parseInt(e.target.value, 10) || 1)}
-              />
-            </div>
-            <div>
-              <Label>Level Range Max</Label>
-              <Input
-                type="number"
-                min={1}
-                value={levelRangeMax}
-                onChange={(e) => setLevelRangeMax(Number.parseInt(e.target.value, 10) || 1)}
-              />
-            </div>
+          <div className="mt-4 max-w-xs">
+            <Label>Training level</Label>
+            <Input
+              type="number"
+              min={1}
+              value={trainingLevel}
+              onChange={(e) => setTrainingLevel(Number.parseInt(e.target.value, 10) || 1)}
+            />
+            <p className="text-xs text-gray-500 mt-1">
+              البرنامج يُربط بمستوى واحد فقط (يُحفظ كـ min = max في الـ API).
+            </p>
           </div>
 
           <div className="mt-6 border-t border-gray-200 pt-6">
@@ -1504,7 +1498,12 @@ export default function EditProgramPage() {
               </div>
 
               <div className="flex items-center justify-between">
-                <h4 className="text-sm font-semibold text-gray-700">Days</h4>
+                <h4 className="text-sm font-semibold text-gray-700">
+                  Training days
+                  <span className="ml-2 rounded-full bg-primary/10 px-2 py-0.5 text-xs text-primary">
+                    {week.days.length}/week
+                  </span>
+                </h4>
                 <Button type="button" variant="outline" onClick={() => addDay(weekIndex)}>
                   Add Day
                 </Button>
@@ -1513,11 +1512,11 @@ export default function EditProgramPage() {
               {week.days.map((day, dayIndex) => (
                 <CollapsibleBuilderSection
                   key={`day-${dayIndex}`}
-                  title={`Day ${dayIndex + 1}`}
+                  title={`Training day ${dayIndex + 1}`}
                   subtitle={getDaySummary(day)}
                   defaultOpen={weekIndex === 0 && dayIndex === 0}
                   meta={[
-                    { label: day.isRestDay ? 'Rest' : 'Training', variant: day.isRestDay ? 'warning' : 'primary' },
+                    { label: 'Training', variant: 'primary' },
                     { label: `${day.sessions.length} session(s)` },
                   ]}
                   actions={
@@ -1542,26 +1541,18 @@ export default function EditProgramPage() {
                   className="border-gray-100"
                 >
                   <div className="space-y-4">
-                  <div className="grid grid-cols-5 gap-4">
+                  <div className="grid grid-cols-4 gap-4">
                     <div>
                       <Label>Day Number</Label>
                       <Input
                         type="number"
                         min={1}
-                        max={7}
+                        max={14}
                         value={day.dayNumber}
                         onChange={(e) =>
                           updateDay(weekIndex, dayIndex, { dayNumber: Number.parseInt(e.target.value, 10) || 1 })
                         }
                       />
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <input
-                        type="checkbox"
-                        checked={day.isRestDay}
-                        onChange={(e) => updateDay(weekIndex, dayIndex, { isRestDay: e.target.checked })}
-                      />
-                      <Label>Rest Day</Label>
                     </div>
                     <div>
                       <Label>Day focus</Label>

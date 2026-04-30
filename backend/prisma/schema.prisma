@@ -524,10 +524,6 @@ model UserProgram {
   startDate       DateTime              @default(now())
   isActive        Boolean               @default(true)
   customizations  Json?
-  /// When set, calendar day index is frozen (pause duration subtracted until resume adds to totalPausedDays).
-  pausedAt        DateTime?
-  /// Cumulative calendar days excluded from program timeline (from completed pauses).
-  totalPausedDays Int                   @default(0)
   /// Last time server-side customizations were changed (coach/admin); used for mobile sync conflict resolution.
   customizationsUpdatedAt DateTime?
   templateVersion Int                   @default(1)
@@ -758,6 +754,8 @@ model TrainingProfile {
   trainingExperienceMonths Int?
   resistanceExperience     String?
   availableDaysPerWeek     Int?
+  /// 0=Sun … 6=Sat — which weekdays the user trains; length should match program weeklySessionTarget when enrolling.
+  trainingWeekdays         Int[]                 @default([])
   maxSessionMinutes        Int?
   availableEquipment       Json?
   trainingLocation         String?

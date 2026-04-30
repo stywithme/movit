@@ -24,9 +24,10 @@ import {
   countEffectiveExerciseItems,
   effectivePlanService,
 } from '@/modules/effective-plan/effective-plan.service';
-import { resolveCurrentProgramDay } from '@/modules/active-plan/plan-position';
+import { resolveTrainingPositionMeta, countTrainingDaySlots, isProgramTrainingDaySlot } from '@/modules/active-plan/plan-position';
 import {
-  computeCatchUpSuggestion,
+  buildCatchUpSuggestionFromMeta,
+  getLastProgramSessionCompletedAt,
   type CatchUpSuggestion,
 } from '@/modules/programs/program-catchup';
 
@@ -62,8 +63,7 @@ interface TrainModeData {
   } | null;
   dayType: string | null;
   nextReassessment: { scheduledDate: string; reason: string } | null;
-  /** Calendar pause — training days do not advance while paused */
-  isPaused: boolean;
+  isTrainingDay: boolean;
   catchUpSuggestion: CatchUpSuggestion | null;
 }
 
@@ -139,7 +139,7 @@ async function buildHomeData(userId: string): Promise<HomeResponse> {
   const prisma = await getPrisma();
 
   // Fetch all needed data in parallel
-  const [user, levelProfile, latestAssessment, activePlan, pendingReassessment, unseenProgression, recentSessionsRaw] =
+  const [user, levelProfile, latestAssessment, activePlan, pendingReassessment, unseenProgression, recentSessionsRaw, trainingProfile] =
     await Promise.all([
       prisma.user.findUnique({
         where: { id: userId },
@@ -205,6 +205,10 @@ async function buildHomeData(userId: string): Promise<HomeResponse> {
           sessionMetrics: { select: { avgFormScore: true } },
         },
       }),
+      prisma.trainingProfile.findUnique({
+        where: { userId },
+        select: { trainingWeekdays: true },
+      }),
     ]);
 
   // ── User header ──────────────────────────────────────────────────────────
@@ -224,6 +228,7 @@ async function buildHomeData(userId: string): Promise<HomeResponse> {
     latestAssessment,
     activePlan,
     pendingReassessment,
+    trainingProfile,
   );
 
   // ── Recent sessions ──────────────────────────────────────────────────────
@@ -270,10 +275,16 @@ async function buildTrainMode(
   latestAssessment: { bodyScore: number; fitnessLevel: string; completedAt: Date } | null,
   activePlan: any,
   pendingReassessment: { scheduledDate: Date; reason: string } | null,
+  trainingProfile: { trainingWeekdays: number[] } | null,
 ): Promise<TrainModeData> {
   const reassessmentData = pendingReassessment
     ? { scheduledDate: pendingReassessment.scheduledDate.toISOString(), reason: pendingReassessment.reason }
     : null;
+
+  const trainingWeekdays =
+    trainingProfile?.trainingWeekdays && trainingProfile.trainingWeekdays.length > 0
+      ? trainingProfile.trainingWeekdays
+      : null;
 
   // State 1: No assessment ever done
   if (!latestAssessment) {
@@ -283,7 +294,7 @@ async function buildTrainMode(
       todaySession: null,
       dayType: null,
       nextReassessment: null,
-      isPaused: false,
+      isTrainingDay: true,
       catchUpSuggestion: null,
     };
   }
@@ -296,7 +307,7 @@ async function buildTrainMode(
       todaySession: null,
       dayType: null,
       nextReassessment: reassessmentData,
-      isPaused: false,
+      isTrainingDay: true,
       catchUpSuggestion: null,
     };
   }
@@ -310,34 +321,26 @@ async function buildTrainMode(
       todaySession: null,
       dayType: null,
       nextReassessment: reassessmentData,
-      isPaused: false,
+      isTrainingDay: true,
       catchUpSuggestion: null,
     };
   }
 
   const program = activeSlot.userProgram.program;
   const progressEntries: any[] = activeSlot.userProgram.progress ?? [];
-  const position = resolveCurrentProgramDay(program.weeks as any[], progressEntries, {
-    startDate: activeSlot.userProgram.startDate,
+  const lastAt = await getLastProgramSessionCompletedAt(userId, program.id);
+  const meta = resolveTrainingPositionMeta(program.weeks as any[], progressEntries, {
+    lastSessionCompletedAt: lastAt,
+    trainingWeekdays,
     durationWeeks: program.durationWeeks,
-    totalPausedDays: activeSlot.userProgram.totalPausedDays,
-    pausedAt: activeSlot.userProgram.pausedAt,
   });
+  const position = meta.position;
+  const catchUpSuggestion = buildCatchUpSuggestionFromMeta(meta);
+
   const targetWeek = position.targetWeekNumber;
   const targetDay = position.targetDayNumber;
 
-  const isPaused = Boolean(activeSlot.userProgram.pausedAt);
-  let catchUpSuggestion: CatchUpSuggestion | null = null;
-  if (!position.isProgramComplete) {
-    catchUpSuggestion = await computeCatchUpSuggestion(
-      userId,
-      program.id,
-      program.weeks,
-      program.durationWeeks,
-      targetWeek,
-      targetDay,
-    );
-  }
+  const totalProgramTrainingDays = countTrainingDaySlots(program.weeks as any[]);
 
   // State 4: Program complete (exceeded all weeks)
   if (position.isProgramComplete) {
@@ -351,19 +354,21 @@ async function buildTrainMode(
         totalWeeks: program.durationWeeks,
         weekProgress: {
           completed: position.completedDayCount,
-          total: program.durationWeeks * 7,
+          total: totalProgramTrainingDays,
         },
       },
       todaySession: null,
       dayType: 'completed',
       nextReassessment: reassessmentData,
-      isPaused,
+      isTrainingDay: position.isTrainingDay ?? true,
       catchUpSuggestion: null,
     };
   }
 
   const week = position.targetWeek as any;
   const day = position.targetDay as any;
+
+  const daysInTargetWeek = week?.days?.filter((d: any) => isProgramTrainingDaySlot(d)).length ?? 0;
 
   const activeProgram = {
     id: program.id,
@@ -373,19 +378,23 @@ async function buildTrainMode(
     totalWeeks: program.durationWeeks,
     weekProgress: {
       completed: position.targetWeekCompletedDays,
-      total: week?.days?.length ?? 7,
+      total: daysInTargetWeek > 0 ? daysInTargetWeek : 1,
     },
   };
 
-  // State 5: Rest day
-  if (!day || day.isRestDay || day.dayType === 'rest' || day.dayType === 'active_recovery') {
+  const isUserOffDay = !position.isTrainingDay;
+  const isTemplateRest =
+    !day || day.isRestDay || day.dayType === 'rest' || day.dayType === 'active_recovery';
+
+  // State 5: Rest day (template or user's off day)
+  if (isTemplateRest || isUserOffDay) {
     return {
       status: 'rest_day',
       activeProgram,
       todaySession: null,
-      dayType: day?.dayType ?? 'rest',
+      dayType: isUserOffDay ? 'off_schedule' : day?.dayType ?? 'rest',
       nextReassessment: reassessmentData,
-      isPaused,
+      isTrainingDay: position.isTrainingDay ?? true,
       catchUpSuggestion,
     };
   }
@@ -393,7 +402,7 @@ async function buildTrainMode(
   // State 6: Active training day — find first incomplete session
   const sessions: any[] = [...day.sessions].sort((a: any, b: any) => a.sortOrder - b.sortOrder);
   const completedSessionIds = new Set(
-    sessions.flatMap((s: any) => s.reports.map((r: any) => r.programSessionId))
+    sessions.flatMap((s: any) => s.reports.map((r: any) => r.programSessionId)),
   );
 
   // All sessions completed for today — treat as rest (day done)
@@ -405,7 +414,7 @@ async function buildTrainMode(
       todaySession: null,
       dayType: 'day_complete',
       nextReassessment: reassessmentData,
-      isPaused,
+      isTrainingDay: position.isTrainingDay ?? true,
       catchUpSuggestion,
     };
   }
@@ -441,7 +450,7 @@ async function buildTrainMode(
     },
     dayType: 'training',
     nextReassessment: reassessmentData,
-    isPaused,
+    isTrainingDay: position.isTrainingDay ?? true,
     catchUpSuggestion,
   };
 }

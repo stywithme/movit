@@ -77,48 +77,6 @@ export class ActivePlanController {
     }
   }
 
-  @Post('pause')
-  async pause(@Req() req: Request, @Res({ passthrough: true }) res: Response) {
-    try {
-      const authResult = await verifyMobileToken(req);
-      if (!authResult.success || !authResult.userId) {
-        res.status(401);
-        return { success: false, error: authResult.error || 'Unauthorized' };
-      }
-      const result = await activePlanService.pauseActiveProgram(authResult.userId);
-      if (!result.success) {
-        res.status(400);
-        return { success: false, error: result.error || 'pause_failed' };
-      }
-      return { success: true, data: result };
-    } catch (error) {
-      console.error('[ActivePlan] Pause Error:', error);
-      res.status(500);
-      return { success: false, error: 'Failed to pause program' };
-    }
-  }
-
-  @Post('resume')
-  async resume(@Req() req: Request, @Res({ passthrough: true }) res: Response) {
-    try {
-      const authResult = await verifyMobileToken(req);
-      if (!authResult.success || !authResult.userId) {
-        res.status(401);
-        return { success: false, error: authResult.error || 'Unauthorized' };
-      }
-      const result = await activePlanService.resumeActiveProgram(authResult.userId);
-      if (!result.success) {
-        res.status(400);
-        return { success: false, error: result.error || 'resume_failed' };
-      }
-      return { success: true, data: result };
-    } catch (error) {
-      console.error('[ActivePlan] Resume Error:', error);
-      res.status(500);
-      return { success: false, error: 'Failed to resume program' };
-    }
-  }
-
   @Post('enroll')
   async enroll(
     @Req() req: Request,
