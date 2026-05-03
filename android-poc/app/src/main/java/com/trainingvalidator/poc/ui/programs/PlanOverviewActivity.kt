@@ -16,8 +16,10 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
 import com.trainingvalidator.poc.R
+import com.trainingvalidator.poc.assessment.models.AssessmentType
 import com.trainingvalidator.poc.assessment.ui.PreScreeningActivity
 import com.trainingvalidator.poc.network.*
+import com.trainingvalidator.poc.ui.utils.formatProgramLevelRange
 import kotlinx.coroutines.launch
 
 /**
@@ -242,7 +244,9 @@ class PlanOverviewActivity : AppCompatActivity() {
             val info = slot.program
             if (info != null) {
                 addView(TextView(context).apply {
-                    text = "${info.type} • ${info.durationWeeks} weeks • ${info.difficulty}"
+                    text = "${info.type} • ${info.durationWeeks} weeks • ${
+                        formatProgramLevelRange(info.levelRangeMin, info.levelRangeMax)
+                    }"
                     setTextColor(Color.parseColor("#757575"))
                     textSize = 11f
                     setPadding(dp(24), dp(8), 0, 0)
@@ -286,7 +290,7 @@ class PlanOverviewActivity : AppCompatActivity() {
                         LinearLayout.LayoutParams.WRAP_CONTENT
                     ).apply { topMargin = dp(8) }
                     setOnClickListener {
-                        startActivity(Intent(this@PlanOverviewActivity, PreScreeningActivity::class.java))
+                        startActivity(PreScreeningActivity.createIntent(this@PlanOverviewActivity, AssessmentType.PROGRESSION))
                     }
                 })
             }
@@ -364,7 +368,7 @@ class PlanOverviewActivity : AppCompatActivity() {
                 setBackgroundColor(Color.parseColor("#4CAF50"))
                 textSize = 16f
                 setOnClickListener {
-                    startActivity(Intent(this@PlanOverviewActivity, PreScreeningActivity::class.java))
+                    startActivity(PreScreeningActivity.createIntent(this@PlanOverviewActivity))
                 }
             })
         }

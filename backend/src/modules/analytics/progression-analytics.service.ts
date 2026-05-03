@@ -12,6 +12,7 @@
 
 import { getPrisma } from '@/lib/prisma/client';
 import { typeStringFromProgramDomain } from '@/lib/program-domain';
+import { getEffectiveProgramDomain } from '@/modules/programs/program-assignment';
 
 export const progressionAnalyticsService = {
   /**
@@ -59,6 +60,9 @@ export const progressionAnalyticsService = {
     const programs = await prisma.program.findMany({
       where: { isPublished: true, deletedAt: null },
       include: {
+        programAttributes: {
+          include: { attributeValue: { include: { attribute: true } } },
+        },
         _count: { select: { userPrograms: true } },
         userPrograms: {
           include: {
@@ -92,7 +96,9 @@ export const progressionAnalyticsService = {
         id: program.id,
         name: program.name,
         slug: program.slug,
-        type: typeStringFromProgramDomain(program.programDomain),
+        type: typeStringFromProgramDomain(
+          getEffectiveProgramDomain({ programAttributes: program.programAttributes ?? [] }) ?? 'TRAINING',
+        ),
         durationWeeks: program.durationWeeks,
         totalEnrollments: enrollments,
         activeUsers,

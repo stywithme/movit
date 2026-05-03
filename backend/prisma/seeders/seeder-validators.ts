@@ -2,7 +2,6 @@ import type { PrismaClient } from '@prisma/client';
 import {
   ASSESSMENT_EXERCISE_SLUGS,
   MIN_CURATED_EXERCISE_COUNT,
-  PROGRAM_DOMAINS,
   REQUIRED_USER_FIXTURE_PROGRAM_SLUGS,
   TRAINING_GOALS,
 } from './coverage-matrix';
@@ -105,24 +104,19 @@ export async function runSeedValidatorsAndReport(prisma: PrismaClient): Promise<
 
   const programs = await prisma.program.findMany({
     where: { programType: 'SYSTEM', autoAssignable: true },
-    select: {
-      slug: true,
-      programDomain: true,
-      trainingGoal: true,
-      weeklySessionTarget: true,
-      estimatedSessionMinutes: true,
-      targetEquipment: true,
-      version: true,
-      entryRecommendations: true,
+    include: {
+      programAttributes: { include: { attributeValue: { include: { attribute: true } } } },
     },
   });
 
   for (const p of programs) {
     assert(p.version != null, `program ${p.slug} missing version`);
-    assert(p.targetEquipment != null, `program ${p.slug} missing targetEquipment`);
+    const hasEquip = p.programAttributes.some(
+      (r) => r.attributeValue.attribute.code === 'equipment' && r.mode !== 'EXCLUDED',
+    );
+    assert(hasEquip, `program ${p.slug} missing equipment ProgramAttribute`);
     assert(p.weeklySessionTarget != null && p.weeklySessionTarget >= 2, `program ${p.slug} weeklySessionTarget < 2`);
     assert(p.estimatedSessionMinutes != null && p.estimatedSessionMinutes > 0, `program ${p.slug} invalid estimatedSessionMinutes`);
-    assert(p.entryRecommendations != null, `program ${p.slug} missing entryRecommendations`);
   }
 
   const byMovementPattern: Record<string, number> = {};
@@ -138,18 +132,19 @@ export async function runSeedValidatorsAndReport(prisma: PrismaClient): Promise<
   }
 
   const allPrograms = await prisma.program.count();
-  const grouped = await prisma.program.groupBy({
-    by: ['programDomain', 'trainingGoal'],
-    _count: { _all: true },
-  });
-  const lines = grouped.map((g) => `${g.programDomain}/${g.trainingGoal ?? 'null'}:${g._count._all}`);
+  const catalogDomainCounts = ['TRAINING', 'MOBILITY', 'THERAPEUTIC']
+    .map((d) => {
+      const n = PROGRAM_CATALOG.filter((c) => c.programDomain === d).length;
+      return `${d}:${n}`;
+    })
+    .join(' | ');
 
   const report: CoverageReport = {
     exerciseTotal: exercises.length,
     byMovementPattern,
     byFamilyKey,
     programTotal: allPrograms,
-    programsByDomainGoal: lines.join(' | '),
+    programsByDomainGoal: catalogDomainCounts,
     fillerSlugs,
   };
 

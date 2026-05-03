@@ -7,15 +7,11 @@
 import type { LocalizedText } from '@/lib/types/localized';
 import type {
   ProgramAttributeMode,
-  ProgramDomain,
   ProgramType,
   SessionItemIntent,
   SessionItemRole,
-  TrainingGoal,
   WeekType,
 } from '@prisma/client';
-
-export type ProgramDifficulty = 'beginner' | 'intermediate' | 'advanced';
 
 export interface ProgramAttributeInput {
   attributeValueId: string;
@@ -79,13 +75,10 @@ export interface CreateProgramInput {
   slug?: string;
   coverImageUrl?: string;
   durationWeeks: number;
-  difficulty?: ProgramDifficulty;
   tags?: string[];
   isDefault?: boolean;
   weeks?: ProgramWeekInput[];
   programType?: ProgramType;
-  programDomain?: ProgramDomain;
-  trainingGoal?: TrainingGoal | null;
   autoAssignable?: boolean;
   version?: number;
   ownerId?: string | null;
@@ -93,22 +86,12 @@ export interface CreateProgramInput {
   coachingNotes?: Record<string, unknown>;
   weeklySessionTarget?: number | null;
   estimatedSessionMinutes?: number | null;
-  targetEquipment?: Record<string, unknown> | unknown[] | null;
-  targetDomain?: string;
-  targetRegions?: string[];
   levelRangeMin?: number;
   levelRangeMax?: number;
-  entryRecommendations?: Record<string, unknown>;
-  exitRecommendations?: Record<string, unknown>;
-  /** @deprecated use entryRecommendations */
-  entryCriteria?: Record<string, unknown>;
-  /** @deprecated use exitRecommendations */
-  exitCriteria?: Record<string, unknown>;
-  contraindications?: string[];
   prescriptionPriority?: number;
   prerequisiteProgramId?: string;
   nextProgramId?: string;
-  /** Program matching dimensions (domain, goal, equipment, …). Replaces legacy scalar fields when set. */
+  /** Program matching dimensions (domain, goal, equipment, …). */
   programAttributes?: ProgramAttributeInput[];
 }
 
@@ -195,14 +178,11 @@ export interface ProgramExport {
   description?: LocalizedText;
   coverImageUrl?: string;
   durationWeeks: number;
-  difficulty: ProgramDifficulty;
+  levelRangeMin: number;
+  levelRangeMax: number;
   tags?: string[];
-  /** UX / discovery — optional metadata from admin program record */
-  trainingGoal?: string | null;
   weeklySessionTarget?: number | null;
   estimatedSessionMinutes?: number | null;
-  targetDomain?: string | null;
-  targetEquipment?: string[] | null;
   isFeatured?: boolean;
   weeks: ProgramExportWeek[];
   updatedAt: string;
@@ -216,7 +196,8 @@ export interface ProgramPreviewExport {
   description?: LocalizedText;
   coverImageUrl?: string;
   durationWeeks: number;
-  difficulty: ProgramDifficulty;
+  levelRangeMin: number;
+  levelRangeMax: number;
   totalExercisesInFirstWeek: number;
   muscleGroups: string[];
   weeks: ProgramExportWeek[];

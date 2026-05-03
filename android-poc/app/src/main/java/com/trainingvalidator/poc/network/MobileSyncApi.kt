@@ -99,7 +99,8 @@ interface MobileSyncApi {
      */
     @GET("api/mobile/assessment-templates/resolve")
     suspend fun resolveAssessmentTemplate(
-        @Header("Authorization") authorization: String
+        @Header("Authorization") authorization: String,
+        @Query("mode") mode: String? = null
     ): Response<AssessmentTemplateResponse>
 
     // ─── Level Profile Endpoints ──────────────────────────────

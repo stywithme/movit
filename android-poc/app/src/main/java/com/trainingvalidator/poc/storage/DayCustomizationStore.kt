@@ -356,11 +356,10 @@ class DayCustomizationStore(context: Context) {
     // ═══════════════════════════════════════════════════════════
 
     /**
-     * Gson can set [ProgramSessionItem.allowedSubstitutions] to null when the key is absent
-     * or JSON null, which violates Kotlin non-null and crashes on [ProgramSessionItem.copy].
+     * Gson can deserialize items with missing keys; [ProgramSessionItem] uses non-null lists with defaults.
+     * Kept as a single place to normalize items if we add more list fields later.
      */
-    private fun ProgramSessionItem.sanitizeGsonLists(): ProgramSessionItem =
-        copy(allowedSubstitutions = allowedSubstitutions ?: emptyList())
+    private fun ProgramSessionItem.sanitizeGsonLists(): ProgramSessionItem = this
 
     private fun sanitizeSessions(sessions: List<CustomizedSession>): List<CustomizedSession> =
         sessions.map { session ->

@@ -15,6 +15,7 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
+import com.trainingvalidator.poc.assessment.ui.PreScreeningActivity
 import com.trainingvalidator.poc.R
 import com.trainingvalidator.poc.network.ApiClient
 import com.trainingvalidator.poc.network.DomainLevelData
@@ -750,10 +751,7 @@ class LevelProfileActivity : AppCompatActivity() {
             )
             setOnClickListener {
                 try {
-                    startActivity(Intent(
-                        this@LevelProfileActivity,
-                        com.trainingvalidator.poc.assessment.ui.PreScreeningActivity::class.java
-                    ))
+                    startActivity(PreScreeningActivity.createIntent(this@LevelProfileActivity))
                 } catch (e: Exception) {
                     Log.w(TAG, "PreScreeningActivity not available", e)
                 }

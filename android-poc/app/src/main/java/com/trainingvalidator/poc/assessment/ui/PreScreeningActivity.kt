@@ -16,6 +16,7 @@ import androidx.appcompat.app.AppCompatActivity
 import com.trainingvalidator.poc.ui.utils.feedbackLanguageCode
 import com.trainingvalidator.poc.assessment.models.ParqQuestion
 import com.trainingvalidator.poc.assessment.models.ParqQuestions
+import com.trainingvalidator.poc.assessment.models.AssessmentType
 import com.trainingvalidator.poc.training.models.LocalizedText
 
 /**
@@ -29,6 +30,7 @@ class PreScreeningActivity : AppCompatActivity() {
     private val questions = ParqQuestions.getQuestions().toMutableList()
     private val switchMap = mutableMapOf<String, Switch>()
     private lateinit var continueButton: Button
+    private var assessmentType: AssessmentType = AssessmentType.INITIAL
     
     /** Matches Profile / app locale (same as training feedback). */
     private val language: String get() = feedbackLanguageCode()
@@ -37,6 +39,10 @@ class PreScreeningActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         window.statusBarColor = Color.parseColor("#121212")
+
+        assessmentType = AssessmentType.valueOf(
+            intent.getStringExtra(EXTRA_ASSESSMENT_TYPE) ?: AssessmentType.INITIAL.name
+        )
         
         val root = ScrollView(this).apply {
             setBackgroundColor(Color.parseColor("#121212"))
@@ -201,7 +207,8 @@ class PreScreeningActivity : AppCompatActivity() {
         val intent = AssessmentSessionActivity.createIntent(
             this,
             parqPassed = !ParqQuestions.hasFlags(questions),
-            parqFlags = ParqQuestions.getFlaggedIds(questions)
+            parqFlags = ParqQuestions.getFlaggedIds(questions),
+            assessmentType = assessmentType,
         )
         startActivity(intent)
         finish()
@@ -211,7 +218,14 @@ class PreScreeningActivity : AppCompatActivity() {
         TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, value.toFloat(), resources.displayMetrics).toInt()
     
     companion object {
-        fun createIntent(context: Context): Intent =
-            Intent(context, PreScreeningActivity::class.java)
+        private const val EXTRA_ASSESSMENT_TYPE = "assessment_type"
+
+        fun createIntent(
+            context: Context,
+            assessmentType: AssessmentType = AssessmentType.INITIAL,
+        ): Intent =
+            Intent(context, PreScreeningActivity::class.java).apply {
+                putExtra(EXTRA_ASSESSMENT_TYPE, assessmentType.name)
+            }
     }
 }

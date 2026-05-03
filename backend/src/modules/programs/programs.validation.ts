@@ -13,7 +13,7 @@ import type {
   UpdateProgramInput,
 } from './programs.types';
 
-const VALID_DIFFICULTIES = ['beginner', 'intermediate', 'advanced'];
+const VALID_PROGRAM_ATTRIBUTE_MODES = ['REQUIRED', 'OPTIONAL', 'EXCLUDED'] as const;
 
 function validateSessionItem(item: ProgramSessionItemInput, index: number): string[] {
   const errors: string[] = [];
@@ -112,8 +112,6 @@ function validateWeek(week: ProgramWeekInput, index: number): string[] {
   return errors;
 }
 
-const VALID_PROGRAM_ATTRIBUTE_MODES = ['REQUIRED', 'OPTIONAL', 'EXCLUDED'] as const;
-
 function validateProgramAttributes(attrs: unknown): string[] {
   if (attrs === undefined) return [];
   if (!Array.isArray(attrs)) {
@@ -152,10 +150,6 @@ export function validateCreateProgram(input: CreateProgramInput): string[] {
     errors.push('durationWeeks must be positive');
   }
 
-  if (input.difficulty && !VALID_DIFFICULTIES.includes(input.difficulty)) {
-    errors.push('Invalid difficulty. Must be beginner, intermediate, or advanced');
-  }
-
   if (input.weeks && input.weeks.length > 0) {
     input.weeks.forEach((week, weekIndex) => {
       errors.push(...validateWeek(week, weekIndex));
@@ -169,10 +163,6 @@ export function validateCreateProgram(input: CreateProgramInput): string[] {
 
 export function validateUpdateProgram(input: UpdateProgramInput): string[] {
   const errors: string[] = [];
-
-  if (input.difficulty && !VALID_DIFFICULTIES.includes(input.difficulty)) {
-    errors.push('Invalid difficulty. Must be beginner, intermediate, or advanced');
-  }
 
   if (input.durationWeeks !== undefined && input.durationWeeks <= 0) {
     errors.push('durationWeeks must be positive');

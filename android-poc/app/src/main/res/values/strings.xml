@@ -963,6 +963,9 @@
     <string name="program_list_title">Training Programs</string>
     <string name="program_list_subtitle">Select a program to plan your training</string>
     <string name="program_filter_all">All levels</string>
+    <string name="program_level_single_format">Level %1$d</string>
+    <string name="program_level_range_format">Levels %1$d–%2$d</string>
+    <string name="program_level_unknown">Levels —</string>
     <string name="program_filter_goal_any">All goals</string>
     <string name="program_badge_featured">Featured</string>
     <string name="program_card_sessions_weekly_format">%1$d sessions · ~%2$d / week</string>

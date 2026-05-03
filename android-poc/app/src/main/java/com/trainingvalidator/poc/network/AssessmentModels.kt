@@ -8,6 +8,21 @@ package com.trainingvalidator.poc.network
 
 // ── Upload response ──
 
+/** Prescription snippet returned with POST /assessment (auto-enroll or suggestion only). */
+data class AssessmentPrescriptionFromUpload(
+    val programId: String,
+    val programName: Map<String, String>? = null,
+    val levelNumber: Int,
+    val enrolled: Boolean,
+)
+
+/** Parsed outcome after upload; passed to AssessmentResultActivity. */
+data class AssessmentUploadOutcome(
+    val serverId: String?,
+    val autoPrescription: AssessmentPrescriptionFromUpload?,
+    val recommendation: AssessmentPrescriptionFromUpload?,
+)
+
 data class AssessmentUploadResponse(
     val success: Boolean,
     val data: AssessmentData? = null,
@@ -25,7 +40,9 @@ data class AssessmentData(
     val safetyScore: Double,
     val fitnessLevel: String,
     val completedAt: String,
-    val createdAt: String
+    val createdAt: String,
+    val autoPrescription: AssessmentPrescriptionFromUpload? = null,
+    val recommendation: AssessmentPrescriptionFromUpload? = null,
 )
 
 // ── Latest assessment response ──

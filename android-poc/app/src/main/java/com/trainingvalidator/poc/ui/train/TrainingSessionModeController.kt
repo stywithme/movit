@@ -351,11 +351,12 @@ class TrainingSessionModeController(
         val supportsWeight = cfg?.supportsWeight == true
 
         if (state.setNumber == 1 && supportsWeight && totalSets > 1) {
+            val exerciseCfg = cfg
             preferences.showSessionPerSetWeightDialogIfNeeded(
                 totalSets = totalSets,
-                suggestedWeight = engine.getCurrentSetWeight() ?: cfg?.defaultWeight,
-                minWeight = cfg?.minWeight,
-                maxWeight = cfg?.maxWeight,
+                suggestedWeight = engine.getCurrentSetWeight() ?: exerciseCfg.defaultWeight,
+                minWeight = exerciseCfg.minWeight,
+                maxWeight = exerciseCfg.maxWeight,
                 onApply = { weights ->
                     engine.setWeightPerSetForCurrentExercise(weights)
                     proceedSessionStartFromPreExercise(state, slug)

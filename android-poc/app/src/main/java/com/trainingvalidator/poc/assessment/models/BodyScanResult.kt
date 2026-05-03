@@ -33,7 +33,9 @@ data class BodyScanResult(
 enum class AssessmentType {
     INITIAL,
     PERIODIC,
-    POST_PROGRAM
+    POST_PROGRAM,
+    /** Level / program exit gate — maps to API `progression`. */
+    PROGRESSION,
 }
 
 data class DomainScores(

@@ -10,15 +10,12 @@ data class ProgramConfig(
     val description: LocalizedText? = null,
     val coverImageUrl: String? = null,
     val durationWeeks: Int,
-    val difficulty: String = "beginner",
+    val levelRangeMin: Int = 0,
+    val levelRangeMax: Int = 0,
     val tags: List<String> = emptyList(),
     val weeks: List<ProgramWeek> = emptyList(),
-    /** Optional discovery metadata from mobile sync export */
-    val trainingGoal: String? = null,
     val weeklySessionTarget: Int? = null,
     val estimatedSessionMinutes: Int? = null,
-    val targetDomain: String? = null,
-    val targetEquipment: List<String> = emptyList(),
     val isFeatured: Boolean = false
 )
 

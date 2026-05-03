@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { toast } from 'react-hot-toast';
-import { Card, CardContent, Badge, Button, Input } from '@/components/ui';
+import { Card, CardContent, Button, Input } from '@/components/ui';
 import { ArrowLeft, RefreshCw, ArrowRight } from 'lucide-react';
 import { LocalizedText } from '@/lib/types/localized';
 
@@ -25,8 +25,6 @@ interface Program {
   name: LocalizedText;
   slug: string;
   type?: string;
-  programDomain?: string;
-  difficulty: 'beginner' | 'intermediate' | 'advanced';
   durationWeeks: number;
   isPublished: boolean;
   levelRangeMin?: number;
@@ -139,11 +137,16 @@ function assessmentMatchesLevelColumn(
   return levelOrder >= min && levelOrder <= max;
 }
 
-const DIFFICULTY_VARIANT: Record<string, 'default' | 'primary' | 'success' | 'warning' | 'error' | 'purple' | 'orange' | 'teal'> = {
-  beginner: 'success',
-  intermediate: 'warning',
-  advanced: 'error',
-};
+function formatProgramLevelRangeLabel(program: Program): string {
+  const min = program.levelRangeMin;
+  const max = program.levelRangeMax;
+  if (min != null && max != null) {
+    return min === max ? `L${min}` : `L${min}–L${max}`;
+  }
+  if (min != null) return `L${min}`;
+  if (max != null) return `L${max}`;
+  return '—';
+}
 
 export default function ProgramsMapPage() {
   const router = useRouter();
@@ -522,12 +525,9 @@ export default function ProgramsMapPage() {
                                       ))}
                                     </div>
                                     <div className="flex items-center gap-1.5 mt-1.5">
-                                      <Badge
-                                        variant={DIFFICULTY_VARIANT[program.difficulty] || 'default'}
-                                        size="sm"
-                                      >
-                                        {program.difficulty}
-                                      </Badge>
+                                      <span className="text-[10px] font-medium text-gray-700 bg-white/80 px-1 py-0.5 rounded border border-gray-200">
+                                        {formatProgramLevelRangeLabel(program)}
+                                      </span>
                                       <span className="text-[10px] text-gray-500">{program.durationWeeks}w</span>
                                       {!program.isPublished ? (
                                         <span className="text-[10px] text-amber-700">draft</span>

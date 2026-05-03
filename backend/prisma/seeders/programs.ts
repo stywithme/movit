@@ -1,5 +1,13 @@
 import type { Prisma, PrismaClient } from '@prisma/client';
-import { PROGRAM_CATALOG } from './program-catalog';
+import { ProgramAttributeMode } from '@prisma/client';
+import {
+  PROGRAM_DOMAIN_VALUE_CODE,
+  TRAINING_GOAL_VALUE_CODE,
+  bodyRegionValueCodeFromLabel,
+  equipmentValueCodeFromProfileString,
+  focusValueCodeFromTargetHint,
+} from '../../src/lib/program-attribute-codes';
+import { PROGRAM_CATALOG, type ProgramCatalogEntry } from './program-catalog';
 
 type ExerciseRow = {
   id: string;
@@ -125,6 +133,74 @@ export async function seedPrograms(prisma: PrismaClient) {
 
   const programIdBySlug = new Map<string, string>();
 
+  async function replaceProgramAttributesFromCatalogEntry(programId: string, def: ProgramCatalogEntry) {
+    const rows: { attributeValueId: string; mode: ProgramAttributeMode }[] = [];
+
+    const domainCode = PROGRAM_DOMAIN_VALUE_CODE[def.programDomain];
+    const domainVal = await prisma.attributeValue.findUnique({ where: { code: domainCode } });
+    if (domainVal) rows.push({ attributeValueId: domainVal.id, mode: ProgramAttributeMode.REQUIRED });
+
+    if (def.trainingGoal) {
+      const goalCode = TRAINING_GOAL_VALUE_CODE[def.trainingGoal];
+      const goalVal = goalCode ? await prisma.attributeValue.findUnique({ where: { code: goalCode } }) : null;
+      if (goalVal) rows.push({ attributeValueId: goalVal.id, mode: ProgramAttributeMode.REQUIRED });
+    }
+
+    const te = def.targetEquipment;
+    if (Array.isArray(te)) {
+      for (const raw of te) {
+        const code = typeof raw === 'string' ? equipmentValueCodeFromProfileString(raw) : null;
+        if (!code) continue;
+        const ev = await prisma.attributeValue.findUnique({
+          where: { code },
+          include: { attribute: true },
+        });
+        if (ev?.attribute?.code === 'equipment') {
+          rows.push({ attributeValueId: ev.id, mode: ProgramAttributeMode.REQUIRED });
+        }
+      }
+    }
+
+    for (const region of def.targetRegions || []) {
+      const br = bodyRegionValueCodeFromLabel(region);
+      if (!br) continue;
+      const v = await prisma.attributeValue.findUnique({ where: { code: br } });
+      if (v) rows.push({ attributeValueId: v.id, mode: ProgramAttributeMode.REQUIRED });
+    }
+
+    for (const region of def.contraindications || []) {
+      const br = bodyRegionValueCodeFromLabel(region);
+      if (!br) continue;
+      const v = await prisma.attributeValue.findUnique({ where: { code: br } });
+      if (v) rows.push({ attributeValueId: v.id, mode: ProgramAttributeMode.EXCLUDED });
+    }
+
+    if (def.targetDomain) {
+      const fc = focusValueCodeFromTargetHint(def.targetDomain);
+      if (fc) {
+        const v = await prisma.attributeValue.findUnique({ where: { code: fc } });
+        if (v) rows.push({ attributeValueId: v.id, mode: ProgramAttributeMode.REQUIRED });
+      }
+    }
+
+    await prisma.programAttribute.deleteMany({ where: { programId } });
+    const seen = new Set<string>();
+    const uniqueRows = rows.filter((r) => {
+      if (seen.has(r.attributeValueId)) return false;
+      seen.add(r.attributeValueId);
+      return true;
+    });
+    if (uniqueRows.length > 0) {
+      await prisma.programAttribute.createMany({
+        data: uniqueRows.map((r) => ({
+          programId,
+          attributeValueId: r.attributeValueId,
+          mode: r.mode,
+        })),
+      });
+    }
+  }
+
   for (const def of PROGRAM_CATALOG) {
     const prerequisiteId = def.prerequisiteProgramSlug
       ? programIdBySlug.get(def.prerequisiteProgramSlug) ?? null
@@ -137,22 +213,13 @@ export async function seedPrograms(prisma: PrismaClient) {
         name: def.name,
         description: def.description,
         durationWeeks: def.durationWeeks,
-        difficulty: def.difficulty,
         isDefault: def.isDefault ?? false,
         isPublished: def.isPublished,
         tags: def.tags,
         programType: def.programType,
-        programDomain: def.programDomain,
-        trainingGoal: def.trainingGoal ?? undefined,
-        targetDomain: def.targetDomain ?? undefined,
-        targetRegions: def.targetRegions,
-        targetEquipment: def.targetEquipment,
         levelRangeMin: def.levelRangeMin,
         levelRangeMax: def.levelRangeMax,
         prescriptionPriority: def.prescriptionPriority,
-        entryRecommendations: def.entryRecommendations ?? undefined,
-        exitRecommendations: def.exitRecommendations ?? undefined,
-        contraindications: def.contraindications,
         autoAssignable: def.autoAssignable,
         version: def.version,
         weeklySessionTarget: def.weeklySessionTarget ?? undefined,
@@ -166,22 +233,13 @@ export async function seedPrograms(prisma: PrismaClient) {
         name: def.name,
         description: def.description,
         durationWeeks: def.durationWeeks,
-        difficulty: def.difficulty,
         isDefault: def.isDefault ?? false,
         isPublished: def.isPublished,
         tags: def.tags,
         programType: def.programType,
-        programDomain: def.programDomain,
-        trainingGoal: def.trainingGoal ?? undefined,
-        targetDomain: def.targetDomain ?? undefined,
-        targetRegions: def.targetRegions,
-        targetEquipment: def.targetEquipment,
         levelRangeMin: def.levelRangeMin,
         levelRangeMax: def.levelRangeMax,
         prescriptionPriority: def.prescriptionPriority,
-        entryRecommendations: def.entryRecommendations ?? undefined,
-        exitRecommendations: def.exitRecommendations ?? undefined,
-        contraindications: def.contraindications,
         autoAssignable: def.autoAssignable,
         version: def.version,
         weeklySessionTarget: def.weeklySessionTarget ?? undefined,
@@ -193,6 +251,8 @@ export async function seedPrograms(prisma: PrismaClient) {
     });
 
     programIdBySlug.set(def.slug, program.id);
+
+    await replaceProgramAttributesFromCatalogEntry(program.id, def);
 
     await prisma.programWeek.deleteMany({ where: { programId: program.id } });
 

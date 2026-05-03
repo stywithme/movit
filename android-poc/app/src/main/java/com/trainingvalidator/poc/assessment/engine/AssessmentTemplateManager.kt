@@ -38,12 +38,11 @@ object AssessmentTemplateManager {
     )
 
     /**
-     * Resolve the assessment template from the server.
-     * Falls back to cached or default template if server is unavailable.
+     * @param mode API query: `initial` (default) or `progression` (exit / level gate).
      */
-    suspend fun resolve(context: Context, authToken: String): AssessmentTemplateData? {
+    suspend fun resolve(context: Context, authToken: String, mode: String = "initial"): AssessmentTemplateData? {
         try {
-            val response = ApiClient.mobileSyncApi.resolveAssessmentTemplate("Bearer $authToken")
+            val response = ApiClient.mobileSyncApi.resolveAssessmentTemplate("Bearer $authToken", mode)
             if (response.isSuccessful && response.body()?.success == true) {
                 val template = response.body()!!.data
                 if (template != null) {

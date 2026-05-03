@@ -192,7 +192,7 @@ async function buildHomeData(userId: string): Promise<HomeResponse> {
         },
       }),
       prisma.reassessmentSchedule.findFirst({
-        where: { userId, status: 'pending' },
+        where: { userId, status: { in: ['pending', 'overdue'] } },
         orderBy: { scheduledDate: 'asc' },
       }),
       prisma.progressionHistory.count({ where: { userId, seen: false } }),

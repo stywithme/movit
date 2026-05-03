@@ -12,6 +12,7 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.google.android.material.chip.Chip
 import com.trainingvalidator.poc.ui.utils.currentLanguage
+import com.trainingvalidator.poc.ui.utils.formatProgramLevelRange
 import com.trainingvalidator.poc.R
 import com.trainingvalidator.poc.databinding.ActivityProgramListBinding
 import com.trainingvalidator.poc.storage.ProgramRepository
@@ -30,10 +31,9 @@ class ProgramListActivity : AppCompatActivity() {
     private val allPrograms = mutableListOf<ProgramConfig>()
     private val displayedPrograms = mutableListOf<ProgramConfig>()
 
-    /** Difficulty filter; null = all */
-    private var selectedDifficulty: String? = null
-    /** Training goal filter; null = any */
-    private var selectedGoal: String? = null
+
+    /** Level-range filter; null = all. Tag is "min,max". */
+    private var selectedLevelKey: String? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -82,8 +82,7 @@ class ProgramListActivity : AppCompatActivity() {
             } else {
                 allPrograms.clear()
                 allPrograms.addAll(loaded)
-                selectedDifficulty = null
-                selectedGoal = null
+                selectedLevelKey = null
                 rebuildFilterChips()
                 applyFilters()
 
@@ -96,6 +95,7 @@ class ProgramListActivity : AppCompatActivity() {
     private fun rebuildFilterChips() {
         binding.chipGroupDifficulty.removeAllViews()
         binding.chipGroupGoal.removeAllViews()
+        binding.scrollGoalFilters.visibility = View.GONE
 
         fun makeChip(label: String, tag: String): Chip {
             return Chip(this).apply {
@@ -105,59 +105,44 @@ class ProgramListActivity : AppCompatActivity() {
             }
         }
 
-        val allDiff = makeChip(getString(R.string.program_filter_all), "")
-        allDiff.isChecked = true
-        binding.chipGroupDifficulty.addView(allDiff)
+        val allRanges = makeChip(getString(R.string.program_filter_all), "")
+        allRanges.isChecked = true
+        binding.chipGroupDifficulty.addView(allRanges)
 
-        listOf("beginner", "intermediate", "advanced")
-            .filter { d -> allPrograms.any { it.difficulty.equals(d, ignoreCase = true) } }
-            .forEach { d ->
-                binding.chipGroupDifficulty.addView(makeChip(formatDifficulty(d), d))
-            }
+        val distinctRanges = allPrograms
+            .map { it.levelRangeMin to it.levelRangeMax }
+            .distinct()
+            .sortedWith(compareBy({ it.first }, { it.second }))
 
-        val goals = allPrograms.mapNotNull { it.trainingGoal }.distinct().sorted()
-        if (goals.size <= 1) {
-            binding.scrollGoalFilters.visibility = View.GONE
-        } else {
-            binding.scrollGoalFilters.visibility = View.VISIBLE
-            val anyGoal = makeChip(getString(R.string.program_filter_goal_any), "")
-            anyGoal.isChecked = true
-            binding.chipGroupGoal.addView(anyGoal)
-            goals.forEach { g ->
-                val label = g.replace('_', ' ').lowercase()
-                    .replaceFirstChar { if (it.isLowerCase()) it.titlecase() else it.toString() }
-                binding.chipGroupGoal.addView(makeChip(label, g))
-            }
+        distinctRanges.forEach { (min, max) ->
+            val key = "$min,$max"
+            binding.chipGroupDifficulty.addView(
+                makeChip(formatProgramLevelRange(min, max), key)
+            )
         }
 
         binding.chipGroupDifficulty.setOnCheckedStateChangeListener { group, checkedIds ->
             if (checkedIds.isEmpty()) return@setOnCheckedStateChangeListener
             val chip = group.findViewById<Chip>(checkedIds.first())
             val tag = chip.tag as? String ?: ""
-            selectedDifficulty = tag.ifBlank { null }
-            applyFilters()
-        }
-        binding.chipGroupGoal.setOnCheckedStateChangeListener { group, checkedIds ->
-            if (checkedIds.isEmpty()) return@setOnCheckedStateChangeListener
-            val chip = group.findViewById<Chip>(checkedIds.first())
-            val tag = chip.tag as? String ?: ""
-            selectedGoal = tag.ifBlank { null }
+            selectedLevelKey = tag.ifBlank { null }
             applyFilters()
         }
 
+        val showRangeFilter = allPrograms.size > 1 && distinctRanges.size > 1
         binding.scrollDifficultyFilters.visibility =
-            if (allPrograms.size > 1) View.VISIBLE else View.GONE
+            if (showRangeFilter) View.VISIBLE else View.GONE
     }
 
     private fun applyFilters() {
         displayedPrograms.clear()
         displayedPrograms.addAll(
             allPrograms.filter { p ->
-                val dOk = selectedDifficulty == null ||
-                    p.difficulty.equals(selectedDifficulty, ignoreCase = true)
-                val gOk = selectedGoal == null ||
-                    p.trainingGoal?.equals(selectedGoal, ignoreCase = true) == true
-                dOk && gOk
+                selectedLevelKey == null || run {
+                    val parts = selectedLevelKey!!.split(',')
+                    if (parts.size != 2) return@run true
+                    p.levelRangeMin == parts[0].toInt() && p.levelRangeMax == parts[1].toInt()
+                }
             }
         )
         if (displayedPrograms.isEmpty() && allPrograms.isNotEmpty()) {
@@ -224,13 +209,11 @@ class ProgramListActivity : AppCompatActivity() {
 
             holder.tvWeeks.text = getString(R.string.weeks_count_format, program.durationWeeks)
             holder.tvSessions.text = sessionLabel
-            holder.tvDifficulty.text = formatDifficulty(program.difficulty)
+            holder.tvDifficulty.text = formatProgramLevelRange(program.levelRangeMin, program.levelRangeMax)
             holder.tvFeaturedBadge.visibility = if (program.isFeatured) View.VISIBLE else View.GONE
 
             val metaParts = buildList {
-                program.trainingGoal?.let { add(it.replace('_', ' ')) }
                 program.estimatedSessionMinutes?.takeIf { it > 0 }?.let { add("${it} min") }
-                program.targetEquipment.orEmpty().firstOrNull()?.let { add(it) }
             }
             if (metaParts.isNotEmpty()) {
                 val extra = metaParts.joinToString(" · ")
@@ -246,11 +229,5 @@ class ProgramListActivity : AppCompatActivity() {
         }
 
         override fun getItemCount() = items.size
-    }
-
-    private fun formatDifficulty(difficulty: String): String {
-        if (difficulty.isBlank()) return getString(R.string.workout_detail_default_difficulty)
-        val normalized = difficulty.replace('_', ' ').lowercase()
-        return normalized.replaceFirstChar { if (it.isLowerCase()) it.titlecase() else it.toString() }
     }
 }

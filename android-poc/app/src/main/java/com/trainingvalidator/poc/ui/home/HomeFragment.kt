@@ -9,6 +9,7 @@ import android.view.ViewGroup
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
 import com.trainingvalidator.poc.R
+import com.trainingvalidator.poc.assessment.models.AssessmentType
 import com.trainingvalidator.poc.assessment.ui.PreScreeningActivity
 import com.trainingvalidator.poc.databinding.FragmentHomeBinding
 import com.trainingvalidator.poc.network.HomeAlertData
@@ -257,7 +258,7 @@ class HomeFragment : Fragment() {
         binding.btnStartTodayPlan.visibility = View.VISIBLE
         binding.btnStartTodayPlan.text = getString(R.string.start_body_scan)
         binding.btnStartTodayPlan.setOnClickListener {
-            startActivity(Intent(requireContext(), com.trainingvalidator.poc.assessment.ui.PreScreeningActivity::class.java))
+            startActivity(PreScreeningActivity.createIntent(requireContext()))
         }
         binding.tvSessionProgress.visibility = View.GONE
     }
@@ -392,7 +393,7 @@ class HomeFragment : Fragment() {
         binding.btnStartTodayPlan.visibility = View.VISIBLE
         binding.btnStartTodayPlan.text = getString(R.string.start_reassessment)
         binding.btnStartTodayPlan.setOnClickListener {
-            startActivity(Intent(requireContext(), PreScreeningActivity::class.java))
+            startActivity(PreScreeningActivity.createIntent(requireContext(), AssessmentType.PROGRESSION))
         }
         binding.tvSessionProgress.visibility = View.GONE
     }
@@ -406,7 +407,7 @@ class HomeFragment : Fragment() {
         binding.btnStartTodayPlan.visibility = View.VISIBLE
         binding.btnStartTodayPlan.text = getString(R.string.start_reassessment)
         binding.btnStartTodayPlan.setOnClickListener {
-            startActivity(Intent(requireContext(), PreScreeningActivity::class.java))
+            startActivity(PreScreeningActivity.createIntent(requireContext(), AssessmentType.PROGRESSION))
         }
         binding.tvSessionProgress.visibility = View.GONE
     }
@@ -493,7 +494,7 @@ class HomeFragment : Fragment() {
     private fun handleAlertAction(alert: HomeAlertData) {
         when (alert.type) {
             "reassessment_due" ->
-                startActivity(Intent(requireContext(), PreScreeningActivity::class.java))
+                startActivity(PreScreeningActivity.createIntent(requireContext(), AssessmentType.PROGRESSION))
             "progression_applied" ->
                 (activity as? MainContainerActivity)?.navigateToTab(R.id.nav_train)
             else -> Unit
@@ -535,7 +536,7 @@ class HomeFragment : Fragment() {
 
     private fun setupStaticListeners() {
         binding.cardBodyScan.setOnClickListener {
-            startActivity(Intent(requireContext(), PreScreeningActivity::class.java))
+            startActivity(PreScreeningActivity.createIntent(requireContext()))
         }
 
         binding.cardStartCamera.setOnClickListener {

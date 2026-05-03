@@ -339,13 +339,18 @@ class AssessmentSessionActivity : AppCompatActivity() {
                 durationMs = System.currentTimeMillis() - startTimeMs
             )
 
-            // Upload to backend (fire-and-forget — don't block the user)
-            uploadAssessment(result)
+            val outcome = AssessmentUploadService.upload(this@AssessmentSessionActivity, result)
+            if (outcome?.serverId != null) {
+                Log.d(TAG, "Assessment uploaded to server: ${outcome.serverId}")
+            } else {
+                Log.w(TAG, "Assessment upload failed — will retry on next sync")
+            }
 
-            // Navigate to results screen
+            // Navigate to results screen (include prescription from upload when present)
             val intent = AssessmentResultActivity.createIntent(
                 this@AssessmentSessionActivity,
-                result
+                result,
+                outcome
             )
             startActivity(intent)
             finish()
@@ -365,21 +370,6 @@ class AssessmentSessionActivity : AppCompatActivity() {
         }
     }
 
-    /**
-     * Upload the assessment result to the backend.
-     * Runs in background — does not block the UI flow.
-     */
-    private fun uploadAssessment(result: BodyScanResult) {
-        lifecycleScope.launch {
-            val serverId = AssessmentUploadService.upload(this@AssessmentSessionActivity, result)
-            if (serverId != null) {
-                Log.d(TAG, "Assessment uploaded to server: $serverId")
-            } else {
-                Log.w(TAG, "Assessment upload failed — will retry on next sync")
-            }
-        }
-    }
-
     private fun getUserId(): String {
         val prefs = getSharedPreferences("app_prefs", Context.MODE_PRIVATE)
         return prefs.getString("user_id", "unknown") ?: "unknown"
@@ -390,7 +380,11 @@ class AssessmentSessionActivity : AppCompatActivity() {
             val prefs = getSharedPreferences("app_prefs", Context.MODE_PRIVATE)
             val token = prefs.getString("auth_token", null) ?: return
             
-            val template = AssessmentTemplateManager.resolve(this, token)
+            val resolveMode = when (assessmentType) {
+                AssessmentType.POST_PROGRAM, AssessmentType.PROGRESSION -> "progression"
+                else -> "initial"
+            }
+            val template = AssessmentTemplateManager.resolve(this, token, resolveMode)
             if (template != null) {
                 val coreSlugs = template.exercises
                     .filter { it.entryType == "core" }

@@ -13,15 +13,16 @@ import android.widget.*
 import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.lifecycleScope
 import com.google.gson.Gson
-import com.trainingvalidator.poc.assessment.AssessmentUploadService
 import com.trainingvalidator.poc.assessment.models.*
 import com.trainingvalidator.poc.network.ApiClient
+import com.trainingvalidator.poc.network.AssessmentUploadOutcome
 import com.trainingvalidator.poc.network.RecommendedProgramData
 import com.trainingvalidator.poc.storage.AuthManager
 import com.trainingvalidator.poc.training.models.LocalizedText
 import com.trainingvalidator.poc.ui.programs.ProgramListActivity
 import com.trainingvalidator.poc.ui.main.MainContainerActivity
 import com.trainingvalidator.poc.ui.utils.feedbackLanguageCode
+import com.trainingvalidator.poc.ui.utils.formatProgramLevelRange
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -40,6 +41,7 @@ import kotlinx.coroutines.withContext
 class AssessmentResultActivity : AppCompatActivity() {
     
     private var result: BodyScanResult? = null
+    private var uploadOutcome: AssessmentUploadOutcome? = null
     /** Matches Profile / app locale (same as training feedback). */
     private val language: String get() = feedbackLanguageCode()
     
@@ -54,6 +56,18 @@ class AssessmentResultActivity : AppCompatActivity() {
                 Gson().fromJson(resultJson, BodyScanResult::class.java)
             } catch (e: Exception) {
                 Log.e(TAG, "Failed to deserialize assessment result", e)
+                null
+            }
+        } else {
+            null
+        }
+
+        val uploadJson = intent.getStringExtra(EXTRA_UPLOAD_OUTCOME_JSON)
+        uploadOutcome = if (!uploadJson.isNullOrBlank()) {
+            try {
+                Gson().fromJson(uploadJson, AssessmentUploadOutcome::class.java)
+            } catch (e: Exception) {
+                Log.e(TAG, "Failed to deserialize upload outcome", e)
                 null
             }
         } else {
@@ -162,6 +176,43 @@ class AssessmentResultActivity : AppCompatActivity() {
     private fun loadRecommendation(container: LinearLayout) {
         lifecycleScope.launch {
             try {
+                val auto = uploadOutcome?.autoPrescription
+                val rec = uploadOutcome?.recommendation
+
+                if (auto != null) {
+                    val reason = if (language == "ar")
+                        "تم تسجيلك تلقائياً في هذا البرنامج بناءً على تقييمك."
+                    else
+                        "You have been enrolled in this program based on your assessment."
+                    container.addView(
+                        createRecommendationSectionFromUpload(
+                            programId = auto.programId,
+                            programName = auto.programName,
+                            levelNumber = auto.levelNumber,
+                            reason = reason,
+                            showEnrollButton = false,
+                        )
+                    )
+                    return@launch
+                }
+
+                if (rec != null) {
+                    val reason = if (language == "ar")
+                        "اقتراح برنامج بناءً على تقييمك — يمكنك البدء عندما تكون جاهزاً."
+                    else
+                        "A program suggestion from your assessment — start when you are ready."
+                    container.addView(
+                        createRecommendationSectionFromUpload(
+                            programId = rec.programId,
+                            programName = rec.programName,
+                            levelNumber = rec.levelNumber,
+                            reason = reason,
+                            showEnrollButton = true,
+                        )
+                    )
+                    return@launch
+                }
+
                 val authHeader = AuthManager.getAuthHeader(this@AssessmentResultActivity) ?: return@launch
                 val response = withContext(Dispatchers.IO) {
                     ApiClient.mobileSyncApi.getRecommendation(authHeader)
@@ -173,6 +224,74 @@ class AssessmentResultActivity : AppCompatActivity() {
                 }
             } catch (e: Exception) {
                 Log.w(TAG, "Failed to load recommendation", e)
+            }
+        }
+    }
+
+    /**
+     * Recommended program from POST /assessment response (autoPrescription or recommendation).
+     */
+    private fun createRecommendationSectionFromUpload(
+        programId: String,
+        programName: Map<String, String>?,
+        levelNumber: Int,
+        reason: String,
+        showEnrollButton: Boolean,
+    ): LinearLayout {
+        val name = programName?.get("en") ?: programName?.values?.firstOrNull() ?: programId
+        return LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            setBackgroundColor(Color.parseColor("#1B3A1B"))
+            setPadding(dp(20), dp(20), dp(20), dp(20))
+            val lp = LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT
+            )
+            lp.topMargin = dp(8)
+            lp.bottomMargin = dp(16)
+            layoutParams = lp
+
+            addView(TextView(context).apply {
+                text = if (language == "ar") "البرنامج المقترح لك" else "Recommended for You"
+                setTextColor(Color.parseColor("#4CAF50"))
+                textSize = 16f
+                setTypeface(null, Typeface.BOLD)
+            })
+
+            addView(TextView(context).apply {
+                text = reason
+                setTextColor(Color.parseColor("#81C784"))
+                textSize = 12f
+                setPadding(0, dp(4), 0, dp(12))
+            })
+
+            addView(TextView(context).apply {
+                text = name
+                setTextColor(Color.WHITE)
+                textSize = 20f
+                setTypeface(null, Typeface.BOLD)
+            })
+
+            addView(TextView(context).apply {
+                text = if (language == "ar") "المستوى: $levelNumber" else "Level: $levelNumber"
+                setTextColor(Color.parseColor("#B0B0B0"))
+                textSize = 13f
+                setPadding(0, dp(4), 0, dp(16))
+            })
+
+            if (showEnrollButton) {
+                addView(Button(context).apply {
+                    text = if (language == "ar") "ابدأ هذا البرنامج" else "Start This Program"
+                    setTextColor(Color.WHITE)
+                    setBackgroundColor(Color.parseColor("#4CAF50"))
+                    textSize = 16f
+                    setTypeface(null, Typeface.BOLD)
+                    layoutParams = LinearLayout.LayoutParams(
+                        LinearLayout.LayoutParams.MATCH_PARENT,
+                        LinearLayout.LayoutParams.WRAP_CONTENT
+                    )
+                    setOnClickListener { enrollInProgram(programId) }
+                })
             }
         }
     }
@@ -220,7 +339,8 @@ class AssessmentResultActivity : AppCompatActivity() {
 
             // Program info row
             addView(TextView(context).apply {
-                text = "${program.durationWeeks} weeks • ${program.difficulty} • ${program.type}"
+                val levelLabel = formatProgramLevelRange(program.levelRangeMin, program.levelRangeMax)
+                text = "${program.durationWeeks} weeks • $levelLabel • ${program.type}"
                 setTextColor(Color.parseColor("#B0B0B0"))
                 textSize = 13f
                 setPadding(0, dp(4), 0, dp(16))
@@ -722,10 +842,18 @@ class AssessmentResultActivity : AppCompatActivity() {
     companion object {
         private const val TAG = "AssessmentResult"
         private const val EXTRA_RESULT_JSON = "assessment_result_json"
-        
-        fun createIntent(context: Context, result: BodyScanResult): Intent {
+        private const val EXTRA_UPLOAD_OUTCOME_JSON = "assessment_upload_outcome_json"
+
+        fun createIntent(
+            context: Context,
+            result: BodyScanResult,
+            uploadOutcome: AssessmentUploadOutcome? = null,
+        ): Intent {
             return Intent(context, AssessmentResultActivity::class.java).apply {
                 putExtra(EXTRA_RESULT_JSON, Gson().toJson(result))
+                if (uploadOutcome != null) {
+                    putExtra(EXTRA_UPLOAD_OUTCOME_JSON, Gson().toJson(uploadOutcome))
+                }
             }
         }
     }
