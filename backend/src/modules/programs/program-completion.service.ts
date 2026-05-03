@@ -195,7 +195,7 @@ export const programCompletionService = {
         });
       }
 
-      const resolvedTemplate = await assessmentTemplateService.resolveForUser(userId);
+      const resolvedTemplate = await assessmentTemplateService.resolveForUser(userId, 'progression');
       return {
         nextAction: 'reassess',
         nextProgramId: null,
