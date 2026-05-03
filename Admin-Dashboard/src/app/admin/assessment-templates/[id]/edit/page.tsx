@@ -12,6 +12,7 @@ import {
 } from '../../../programs/_components/ProgramAttributesSection';
 import type { ProgramAttributeFormRow } from '../../../programs/_lib/program-prescription-attributes';
 import type { LocalizedText } from '@/lib/types/localized';
+import { ASSESSMENT_TEMPLATE_TYPE_OPTIONS } from '../../assessment-template-types';
 
 interface ExerciseSummary {
   id: string;
@@ -44,8 +45,6 @@ interface TemplateResponse {
   description: LocalizedText | null;
   type: string;
   targetLevelId: string | null;
-  levelRangeMin: number | null;
-  levelRangeMax: number | null;
   isDefault: boolean;
   domainWeights: {
     mobility: number;
@@ -75,14 +74,6 @@ interface TemplateResponse {
     attributeValue: { id: string; code: string };
   }>;
 }
-
-const TEMPLATE_TYPE_OPTIONS = [
-  { value: 'initial', label: 'Initial Assessment' },
-  { value: 'progression', label: 'Progression (exit exam)' },
-  { value: 'periodic', label: 'Periodic Assessment' },
-  { value: 'post_program', label: 'Post Program Assessment' },
-  { value: 'level_specific', label: 'Level Specific Assessment' },
-];
 
 const TARGET_REGION_OPTIONS = [
   { value: 'hip', label: 'Hip' },
@@ -150,8 +141,6 @@ export default function EditAssessmentTemplatePage() {
   const [description, setDescription] = useState<LocalizedText>({ en: '', ar: '' });
   const [templateType, setTemplateType] = useState('initial');
   const [targetLevelId, setTargetLevelId] = useState('');
-  const [levelRangeMin, setLevelRangeMin] = useState('');
-  const [levelRangeMax, setLevelRangeMax] = useState('');
   const [isDefault, setIsDefault] = useState(false);
 
   const [weights, setWeights] = useState({
@@ -217,8 +206,6 @@ export default function EditAssessmentTemplatePage() {
         setDescription(template.description || { en: '', ar: '' });
         setTemplateType(template.type);
         setTargetLevelId(template.targetLevelId || '');
-        setLevelRangeMin(template.levelRangeMin?.toString() || '');
-        setLevelRangeMax(template.levelRangeMax?.toString() || '');
         setIsDefault(template.isDefault);
 
         if (template.domainWeights) {
@@ -342,8 +329,6 @@ export default function EditAssessmentTemplatePage() {
           targetLevelId
             ? targetLevelId
             : undefined,
-        levelRangeMin: levelRangeMin ? Number(levelRangeMin) : undefined,
-        levelRangeMax: levelRangeMax ? Number(levelRangeMax) : undefined,
         isDefault,
         domainWeights: weights,
         assessmentAttributes: attributeRows,
@@ -455,7 +440,7 @@ export default function EditAssessmentTemplatePage() {
               <Select
                 value={templateType}
                 onChange={(e) => setTemplateType(e.target.value)}
-                options={TEMPLATE_TYPE_OPTIONS}
+                options={ASSESSMENT_TEMPLATE_TYPE_OPTIONS}
               />
             </div>
             {['level_specific', 'progression', 'post_program'].includes(templateType) && (
@@ -470,36 +455,12 @@ export default function EditAssessmentTemplatePage() {
             )}
           </div>
 
-          <div className="grid grid-cols-3 gap-4 mt-4">
-            <div>
-              <Label>Level Range Min</Label>
-              <Input
-                type="number"
-                min={0}
-                value={levelRangeMin}
-                onChange={(e) => setLevelRangeMin(e.target.value)}
-                placeholder="e.g. 1"
-              />
-            </div>
-            <div>
-              <Label>Level Range Max</Label>
-              <Input
-                type="number"
-                min={0}
-                value={levelRangeMax}
-                onChange={(e) => setLevelRangeMax(e.target.value)}
-                placeholder="e.g. 10"
-              />
-            </div>
-            <div className="flex items-end pb-1">
-              <div className="flex items-center gap-2">
-                <Checkbox
-                  checked={isDefault}
-                  onCheckedChange={(checked) => setIsDefault(checked === true)}
-                />
-                <Label className="mb-0">Is Default Template</Label>
-              </div>
-            </div>
+          <div className="flex items-center gap-2 mt-4">
+            <Checkbox
+              checked={isDefault}
+              onCheckedChange={(checked) => setIsDefault(checked === true)}
+            />
+            <Label className="mb-0">Is Default Template</Label>
           </div>
         </Card>
 

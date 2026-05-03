@@ -4,11 +4,16 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import type { LocalizedText } from '@/lib/types/localized';
 import { Select, Badge } from '@/components/ui';
+import {
+  ASSESSMENT_TEMPLATE_TYPE_FILTER_OPTIONS,
+  ASSESSMENT_TEMPLATE_TYPE_BADGE_VARIANT,
+  ASSESSMENT_TEMPLATE_TYPE_SHORT_LABEL,
+} from './assessment-template-types';
 
 interface AssessmentTemplate {
   id: string;
   name: LocalizedText;
-  type: 'initial' | 'periodic' | 'post_program' | 'level_specific';
+  type: string;
   targetLevel?: { id: string; name: LocalizedText; levelNumber: number } | null;
   isDefault: boolean;
   domainWeights: {
@@ -22,33 +27,11 @@ interface AssessmentTemplate {
   createdAt: string;
 }
 
-const TYPE_OPTIONS = [
-  { value: '', label: 'All Types' },
-  { value: 'initial', label: 'Initial' },
-  { value: 'periodic', label: 'Periodic' },
-  { value: 'post_program', label: 'Post Program' },
-  { value: 'level_specific', label: 'Level Specific' },
-];
-
 const STATUS_OPTIONS = [
   { value: '', label: 'All' },
   { value: 'draft', label: 'Draft' },
   { value: 'published', label: 'Published' },
 ];
-
-const TYPE_BADGE_VARIANT: Record<string, 'primary' | 'purple' | 'orange' | 'teal'> = {
-  initial: 'primary',
-  periodic: 'purple',
-  post_program: 'orange',
-  level_specific: 'teal',
-};
-
-const TYPE_LABEL: Record<string, string> = {
-  initial: 'Initial',
-  periodic: 'Periodic',
-  post_program: 'Post Program',
-  level_specific: 'Level Specific',
-};
 
 function DomainWeightsBar({ weights }: { weights: { mobility: number; control: number; symmetry: number; safety: number } }) {
   const total = weights.mobility + weights.control + weights.symmetry + weights.safety;
@@ -169,7 +152,7 @@ export default function AssessmentTemplatesPage() {
             <Select
               value={typeFilter}
               onChange={(e) => setTypeFilter(e.target.value)}
-              options={TYPE_OPTIONS}
+              options={ASSESSMENT_TEMPLATE_TYPE_FILTER_OPTIONS}
             />
           </div>
           <div className="w-40">
@@ -223,8 +206,8 @@ export default function AssessmentTemplatesPage() {
                         </div>
                       </td>
                       <td className="px-6 py-4">
-                        <Badge variant={TYPE_BADGE_VARIANT[template.type] || 'default'}>
-                          {TYPE_LABEL[template.type] || template.type}
+                        <Badge variant={ASSESSMENT_TEMPLATE_TYPE_BADGE_VARIANT[template.type] || 'default'}>
+                          {ASSESSMENT_TEMPLATE_TYPE_SHORT_LABEL[template.type] || template.type}
                         </Badge>
                       </td>
                       <td className="px-6 py-4 text-sm text-gray-600">
