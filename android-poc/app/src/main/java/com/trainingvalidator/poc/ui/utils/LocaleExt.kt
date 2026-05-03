@@ -2,6 +2,7 @@ package com.trainingvalidator.poc.ui.utils
 
 import android.content.Context
 import androidx.appcompat.app.AppCompatDelegate
+import com.trainingvalidator.poc.R
 
 /**
  * Returns the active app language code (e.g. "en", "ar").
@@ -27,4 +28,24 @@ val Context.currentLanguage: String
 fun Context.feedbackLanguageCode(): String {
     val raw = currentLanguage.lowercase()
     return if (raw.startsWith("ar")) "ar" else "en"
+}
+
+/**
+ * User-visible label for a program's allowed trainee level span from the API.
+ */
+fun Context.formatProgramLevelRange(min: Int, max: Int): String {
+    val a = min.coerceAtLeast(0)
+    val b = max.coerceAtLeast(0)
+    if (a <= 0 && b <= 0) {
+        return getString(R.string.program_level_unknown)
+    }
+    if (a > 0 && b > 0) {
+        return if (a == b) {
+            getString(R.string.program_level_single_format, a)
+        } else {
+            getString(R.string.program_level_range_format, a, b)
+        }
+    }
+    val single = if (a > 0) a else b
+    return getString(R.string.program_level_single_format, single)
 }

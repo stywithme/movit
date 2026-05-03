@@ -250,8 +250,8 @@ class PoseSetupGuide(
             val treatAsLenientPair = explicitAnySidePair ||
                 (isAnySideExercise && partnerInPrimaries)
             if (treatAsLenientPair) {
-                // `treatAsLenientPair` implies a paired primary; if `pairedWith` is missing, fail closed.
-                val partner = partnerCode ?: return false
+                // `treatAsLenientPair` implies a paired primary (partnerCode non-null when branch is taken).
+                val partner = partnerCode
                 visited.add(joint.joint)
                 visited.add(partner)
                 val ok = guidanceByJoint.containsKey(joint.joint) ||

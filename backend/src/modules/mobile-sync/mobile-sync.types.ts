@@ -71,7 +71,8 @@ export interface ExploreProgramItem {
   id: string;
   slug: string;
   name: LocalizedText;
-  difficulty: string;
+  levelRangeMin: number;
+  levelRangeMax: number;
   durationWeeks: number;
   coverImageUrl?: string | null;
   updatedAt: string;

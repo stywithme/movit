@@ -943,6 +943,9 @@
     <string name="program_list_title">برامج التدريب</string>
     <string name="program_list_subtitle">اختر برنامجاً لتخطيط تدريبك</string>
     <string name="program_filter_all">كل المستويات</string>
+    <string name="program_level_single_format">المستوى %1$d</string>
+    <string name="program_level_range_format">المستويات %1$d–%2$d</string>
+    <string name="program_level_unknown">المستويات —</string>
     <string name="program_filter_goal_any">كل الأهداف</string>
     <string name="program_badge_featured">مميز</string>
     <string name="program_card_sessions_weekly_format">%1$d جلسة · ~%2$d / أسبوع</string>

@@ -12,12 +12,17 @@ import {
   effectivePlanService,
   type EffectivePlanSession,
 } from '@/modules/effective-plan/effective-plan.service';
-import type { ProgramAssignmentReason } from '@/modules/programs/program-assignment';
+import {
+  buildAssignmentReason,
+  getEffectiveProgramDomain,
+  type ProgramAssignmentReason,
+} from '@/modules/programs/program-assignment';
 import {
   resolveCurrentProgramDay,
   resolveTrainingPositionMeta,
   countTrainingDaySlots,
 } from './plan-position';
+import { prescriptionService } from '@/modules/prescription/prescription.service';
 import { programCompletionService } from '@/modules/programs/program-completion.service';
 import type { ProgramCompletionDecision } from '@/modules/programs/program-completion.service';
 import {
@@ -55,7 +60,8 @@ export interface ActivePlanProgramData {
     slug: string;
     type: string;
     durationWeeks: number;
-    difficulty: string;
+    levelRangeMin: number;
+    levelRangeMax: number;
     coverImageUrl: string | null;
   } | null;
   progress: {
@@ -123,6 +129,11 @@ export const activePlanService = {
               include: {
                 program: {
                   include: {
+                    programAttributes: {
+                      include: {
+                        attributeValue: { include: { attribute: true } },
+                      },
+                    },
                     weeks: {
                       select: {
                         weekNumber: true,
@@ -159,6 +170,11 @@ export const activePlanService = {
                 include: {
                   program: {
                     include: {
+                      programAttributes: {
+                        include: {
+                          attributeValue: { include: { attribute: true } },
+                        },
+                      },
                       weeks: {
                         select: {
                           weekNumber: true,
@@ -235,9 +251,12 @@ export const activePlanService = {
                 id: prog.id,
                 name: prog.name as Record<string, string>,
                 slug: prog.slug,
-                type: typeStringFromProgramDomain(prog.programDomain),
+                type: typeStringFromProgramDomain(
+                  getEffectiveProgramDomain({ programAttributes: prog.programAttributes ?? [] }) ?? 'TRAINING',
+                ),
                 durationWeeks: prog.durationWeeks,
-                difficulty: prog.difficulty,
+                levelRangeMin: prog.levelRangeMin,
+                levelRangeMax: prog.levelRangeMax,
                 coverImageUrl: prog.coverImageUrl,
               }
             : null,
@@ -651,23 +670,60 @@ export const activePlanService = {
       data: { isActive: false },
     });
 
-    // Activate next upcoming program
     const nextSlot = plan.programs.find((p) => p.status === 'upcoming');
-    if (nextSlot) {
-      await prisma.activePlanProgram.update({
-        where: { id: nextSlot.id },
-        data: { status: 'active', actualStartDate: new Date() },
+
+    if (completion?.nextAction === 'reassess') {
+      // User must complete progression assessment before continuing the queue.
+    } else if (completion?.nextAction === 'next_program' && completion.nextProgramId) {
+      await prisma.activePlanProgram.deleteMany({
+        where: { activePlanId: plan.id, status: 'upcoming' },
       });
-      await prisma.userProgram.update({
-        where: { id: nextSlot.userProgramId },
-        data: { isActive: true },
+      await this.enrollProgram(userId, completion.nextProgramId, {
+        assignmentReason: buildAssignmentReason('selection_algorithm', ['program_chain', 'next_program'], null),
       });
+    } else if (completion?.nextAction === 'level_up_auto') {
+      const prescription = await prescriptionService.recommend(userId);
+      if (prescription.recommendedProgram) {
+        await prisma.activePlanProgram.deleteMany({
+          where: { activePlanId: plan.id, status: 'upcoming' },
+        });
+        await this.enrollProgram(userId, prescription.recommendedProgram.id, {
+          assignmentReason:
+            prescription.assignmentReason ??
+            buildAssignmentReason('selection_algorithm', ['level_completion_auto'], null),
+        });
+      } else if (nextSlot) {
+        await prisma.activePlanProgram.update({
+          where: { id: nextSlot.id },
+          data: { status: 'active', actualStartDate: new Date() },
+        });
+        await prisma.userProgram.update({
+          where: { id: nextSlot.userProgramId },
+          data: { isActive: true },
+        });
+      } else {
+        await prisma.activePlan.update({
+          where: { id: plan.id },
+          data: { status: 'completed' },
+        });
+      }
     } else {
-      // No more programs — mark plan as completed
-      await prisma.activePlan.update({
-        where: { id: plan.id },
-        data: { status: 'completed' },
-      });
+      // journey_summary (manual path) or null — activate next queued slot if any
+      if (nextSlot) {
+        await prisma.activePlanProgram.update({
+          where: { id: nextSlot.id },
+          data: { status: 'active', actualStartDate: new Date() },
+        });
+        await prisma.userProgram.update({
+          where: { id: nextSlot.userProgramId },
+          data: { isActive: true },
+        });
+      } else {
+        await prisma.activePlan.update({
+          where: { id: plan.id },
+          data: { status: 'completed' },
+        });
+      }
     }
 
     const updated = await this.getOrCreate(userId);

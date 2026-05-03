@@ -19,6 +19,7 @@ import com.google.android.material.button.MaterialButton
 import com.google.android.material.card.MaterialCardView
 import com.trainingvalidator.poc.ui.utils.bindUserAvatar
 import com.trainingvalidator.poc.ui.utils.currentLanguage
+import com.trainingvalidator.poc.ui.utils.formatProgramLevelRange
 import com.trainingvalidator.poc.R
 import com.trainingvalidator.poc.databinding.FragmentTrainBinding
 import com.trainingvalidator.poc.network.UserProgramExport
@@ -33,6 +34,7 @@ import com.trainingvalidator.poc.training.models.ProgramDay
 import com.trainingvalidator.poc.training.models.ProgramSession
 import com.trainingvalidator.poc.training.models.ProgramWeek
 import com.trainingvalidator.poc.storage.AuthManager
+import com.trainingvalidator.poc.ui.main.MainContainerActivity
 import com.trainingvalidator.poc.ui.profile.ProfileActivity
 import com.trainingvalidator.poc.ui.programs.ProgramDetailActivity
 import com.trainingvalidator.poc.ui.programs.ProgramListActivity
@@ -52,6 +54,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.util.Calendar
 import android.widget.Toast
+import com.trainingvalidator.poc.assessment.models.AssessmentType
 import com.trainingvalidator.poc.assessment.ui.PreScreeningActivity
 import com.trainingvalidator.poc.network.ApiClient
 import com.trainingvalidator.poc.storage.HomeRepository
@@ -336,7 +339,8 @@ class TrainFragment : Fragment() {
         val programName = program.name.get(language).ifBlank { program.name.en }
         binding.tvProgramName.text = programName
 
-        binding.tvProgramDifficulty.text = program.difficulty.replaceFirstChar { it.uppercase() }
+        binding.tvProgramDifficulty.text =
+            requireContext().formatProgramLevelRange(program.levelRangeMin, program.levelRangeMax)
 
         binding.tvProgramPosition.text = getString(
             R.string.pg_position_format,
@@ -845,21 +849,11 @@ class TrainFragment : Fragment() {
                     val completion = body.completion
                     when {
                         completion?.nextAction == "reassess" -> {
-                            startActivity(Intent(ctx, PreScreeningActivity::class.java))
+                            startActivity(PreScreeningActivity.createIntent(ctx, AssessmentType.PROGRESSION))
                         }
-                        completion?.nextAction == "next_program" && !completion.nextProgramId.isNullOrBlank() -> {
-                            val next = withContext(Dispatchers.IO) {
-                                programRepo.getOrFetchProgramById(completion.nextProgramId)
-                            }
-                            if (next != null) {
-                                startActivity(
-                                    Intent(ctx, ProgramDetailActivity::class.java).apply {
-                                        putExtra(ProgramDetailActivity.EXTRA_PROGRAM_SLUG, next.slug)
-                                    }
-                                )
-                            } else {
-                                openProgramList()
-                            }
+                        completion?.nextAction == "next_program" || completion?.nextAction == "level_up_auto" -> {
+                            (activity as? MainContainerActivity)?.navigateToTab(R.id.nav_home)
+                            refreshContent()
                         }
                         completion?.nextAction == "journey_summary" -> openWeeklyReport(program)
                         else -> openProgramList()
@@ -1174,12 +1168,8 @@ class TrainFragment : Fragment() {
             } ?: ""
             holder.tvDuration.text = getString(R.string.weeks_count_format, program.durationWeeks)
 
-            val diffIcon = when (program.difficulty) {
-                "intermediate" -> "??"
-                "advanced" -> "???"
-                else -> "?"
-            }
-            holder.tvDifficulty.text = "$diffIcon ${program.difficulty.replaceFirstChar { it.uppercase() }}"
+            holder.tvDifficulty.text =
+                requireContext().formatProgramLevelRange(program.levelRangeMin, program.levelRangeMax)
 
             val totalSessions = program.weeks.sumOf { w -> w.days.sumOf { d -> d.sessions.size } }
             holder.tvStats.text = getString(R.string.pg_stats_format, program.durationWeeks, totalSessions)

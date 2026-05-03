@@ -28,6 +28,7 @@ import com.trainingvalidator.poc.storage.ProgramRepository
 import com.trainingvalidator.poc.training.models.ProgramConfig
 import com.trainingvalidator.poc.training.models.ProgramWeek
 import com.trainingvalidator.poc.ui.utils.currentLanguage
+import com.trainingvalidator.poc.ui.utils.formatProgramLevelRange
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -180,7 +181,7 @@ class ProgramDetailActivity : AppCompatActivity() {
         binding.tvProgramWeeks.text = getString(R.string.weeks_count_format, program.durationWeeks)
         binding.tvProgramDays.text = getString(R.string.days_count_format, totalDays)
         binding.tvProgramSessions.text = getString(R.string.sessions_count_format, totalSessions)
-        binding.tvProgramDifficulty.text = formatDifficulty(program.difficulty)
+        binding.tvProgramDifficulty.text = formatProgramLevelRange(program.levelRangeMin, program.levelRangeMax)
 
         binding.btnWeeklyReport.setOnClickListener {
             startActivity(Intent(this, WeeklyReportActivity::class.java).apply {
@@ -196,26 +197,11 @@ class ProgramDetailActivity : AppCompatActivity() {
 
     private fun bindDiscoveryMetadata(program: ProgramConfig, isEnrolled: Boolean) {
         val lines = buildList {
-            program.trainingGoal?.let {
-                add(getString(R.string.program_detail_meta_goal, it.replace('_', ' ')))
-            }
-            program.targetDomain?.takeIf { it.isNotBlank() }?.let {
-                add(getString(R.string.program_detail_meta_domain, it.replace('_', ' ')))
-            }
             program.weeklySessionTarget?.takeIf { it > 0 }?.let {
                 add(getString(R.string.program_detail_meta_weekly_sessions, it))
             }
             program.estimatedSessionMinutes?.takeIf { it > 0 }?.let {
                 add(getString(R.string.program_detail_meta_session_length, it))
-            }
-            val equipment = program.targetEquipment.orEmpty()
-            if (equipment.isNotEmpty()) {
-                add(
-                    getString(
-                        R.string.program_detail_meta_equipment,
-                        equipment.take(4).joinToString(", ")
-                    )
-                )
             }
         }
         if (lines.isEmpty()) {
@@ -277,7 +263,7 @@ class ProgramDetailActivity : AppCompatActivity() {
                 Toast.makeText(this@ProgramDetailActivity, getString(R.string.program_preview_error), Toast.LENGTH_SHORT).show()
                 return@launch
             }
-            val preview = body.data!!
+            val preview = body.data
             val week1 = preview.weeks.orEmpty().firstOrNull { it.weekNumber == 1 }
             val days = week1?.days.orEmpty().sortedBy { it.dayNumber }
             val lang = currentLanguage
@@ -363,12 +349,6 @@ class ProgramDetailActivity : AppCompatActivity() {
             putExtra(ProgramDayActivity.EXTRA_PROGRAM_SLUG, slug)
             putExtra(ProgramDayActivity.EXTRA_WEEK_NUMBER, weekNumber)
         })
-    }
-
-    private fun formatDifficulty(difficulty: String): String {
-        if (difficulty.isBlank()) return getString(R.string.workout_detail_default_difficulty)
-        return difficulty.replace('_', ' ').lowercase()
-            .replaceFirstChar { if (it.isLowerCase()) it.titlecase() else it.toString() }
     }
 
     // ── Adapter ──────────────────────────────────────────────────────────────

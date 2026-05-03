@@ -2,9 +2,11 @@ package com.trainingvalidator.poc.assessment
 
 import android.content.Context
 import android.util.Log
+import com.trainingvalidator.poc.assessment.engine.AssessmentTemplateManager
 import com.trainingvalidator.poc.assessment.models.*
 import com.trainingvalidator.poc.network.ApiClient
 import com.trainingvalidator.poc.network.AssessmentFullData
+import com.trainingvalidator.poc.network.AssessmentUploadOutcome
 import com.trainingvalidator.poc.storage.AuthManager
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -23,9 +25,9 @@ object AssessmentUploadService {
     /**
      * Upload a BodyScanResult to the backend.
      *
-     * @return The server-assigned ID on success, null on failure.
+     * @return Upload outcome (server id + prescription fields from response), or null on auth/network failure.
      */
-    suspend fun upload(context: Context, result: BodyScanResult): String? =
+    suspend fun upload(context: Context, result: BodyScanResult): AssessmentUploadOutcome? =
         withContext(Dispatchers.IO) {
             val authHeader = AuthManager.getAuthHeader(context)
             if (authHeader == null) {
@@ -40,9 +42,15 @@ object AssessmentUploadService {
                 val response = ApiClient.mobileSyncApi.uploadAssessment(authHeader, payload)
 
                 if (response.isSuccessful && response.body()?.success == true) {
-                    val serverId = response.body()?.data?.id
+                    val data = response.body()?.data
+                    val serverId = data?.id
+                    val outcome = AssessmentUploadOutcome(
+                        serverId = serverId,
+                        autoPrescription = data?.autoPrescription,
+                        recommendation = data?.recommendation,
+                    )
                     Log.d(TAG, "Assessment uploaded successfully: id=$serverId")
-                    return@withContext serverId
+                    return@withContext outcome
                 } else {
                     val error = response.body()?.error ?: "HTTP ${response.code()}"
                     Log.e(TAG, "Assessment upload failed: $error")
@@ -103,6 +111,7 @@ object AssessmentUploadService {
         val assessmentType = when (type.lowercase()) {
             "periodic" -> AssessmentType.PERIODIC
             "post_program" -> AssessmentType.POST_PROGRAM
+            "progression", "level_specific" -> AssessmentType.PROGRESSION
             else -> AssessmentType.INITIAL
         }
         val level = when (fitnessLevel.lowercase()) {
@@ -169,6 +178,7 @@ object AssessmentUploadService {
             "previousId" to result.previousId,
             "durationMs" to result.durationMs?.toInt(),
             "movementCount" to result.movementCount,
+            "templateId" to AssessmentTemplateManager.getTemplateId(),
         )
     }
 

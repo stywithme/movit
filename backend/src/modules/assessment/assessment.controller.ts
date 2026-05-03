@@ -11,6 +11,8 @@ import { verifyMobileToken } from '@/modules/auth/auth.service';
 import { assessmentService } from './assessment.service';
 import type { BodyScanResultCreate } from './assessment.types';
 
+const VALID_ASSESSMENT_TYPES = ['initial', 'periodic', 'post_program', 'progression', 'level_specific'] as const;
+
 @Controller('assessment')
 export class AssessmentController {
   /**
@@ -34,8 +36,18 @@ export class AssessmentController {
         return { success: false, error: 'bodyScore is required' };
       }
 
+      const typeRaw = body.type ?? 'initial';
+      if (!VALID_ASSESSMENT_TYPES.includes(typeRaw as (typeof VALID_ASSESSMENT_TYPES)[number])) {
+        res.status(400);
+        return {
+          success: false,
+          error: `Invalid type. Must be one of: ${VALID_ASSESSMENT_TYPES.join(', ')}`,
+        };
+      }
+
       const result = await assessmentService.create({
         ...body,
+        type: typeRaw as BodyScanResultCreate['type'],
         userId: authResult.userId,
       });
 

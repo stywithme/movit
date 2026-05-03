@@ -43,7 +43,8 @@ data class ExploreProgramItem(
     val id: String,
     val slug: String,
     val name: LocalizedName,
-    val difficulty: String,
+    val levelRangeMin: Int = 0,
+    val levelRangeMax: Int = 0,
     val durationWeeks: Int,
     val coverImageUrl: String? = null,
     val updatedAt: String

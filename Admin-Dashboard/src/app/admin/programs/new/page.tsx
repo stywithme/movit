@@ -7,7 +7,6 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { Input, Select, Label, Button, Card, Textarea, SearchableSelect } from '@/components/ui';
 import type { LocalizedText } from '@/lib/types/localized';
 import { CollapsibleBuilderSection } from '../_components/CollapsibleBuilderSection';
-import { RecommendationEditor } from '../_components/RecommendationEditor';
 import { getAutoAssignmentReadiness } from '../_lib/auto-assignment';
 import { ProgramAttributesSection, useAttributesCatalog } from '../_components/ProgramAttributesSection';
 import { buildValueIdMeta, type ProgramAttributeFormRow } from '../_lib/program-prescription-attributes';
@@ -225,7 +224,6 @@ export default function NewProgramPage() {
   const [coverImageUrl, setCoverImageUrl] = useState('');
   const [durationWeeks, setDurationWeeks] = useState(4);
   const [version, setVersion] = useState(1);
-  const [difficulty, setDifficulty] = useState<'beginner' | 'intermediate' | 'advanced'>('beginner');
   const [tags, setTags] = useState('');
   const [weeks, setWeeks] = useState<WeekForm[]>([createEmptyWeek(1)]);
 
@@ -239,8 +237,6 @@ export default function NewProgramPage() {
   const [estimatedSessionMinutes, setEstimatedSessionMinutes] = useState<number | ''>('');
   /** Single training level (stored as levelRangeMin === levelRangeMax on the API). */
   const [trainingLevel, setTrainingLevel] = useState(1);
-  const [entryRecommendations, setEntryRecommendations] = useState('');
-  const [exitRecommendations, setExitRecommendations] = useState('');
   const [prescriptionPriority, setPrescriptionPriority] = useState(50);
   const [prerequisiteProgramId, setPrerequisiteProgramId] = useState('');
   const [nextProgramId, setNextProgramId] = useState('');
@@ -775,7 +771,6 @@ export default function NewProgramPage() {
     description: description.en || description.ar ? description : undefined,
     coverImageUrl: coverImageUrl || undefined,
     durationWeeks,
-    difficulty,
     tags: tags
       .split(',')
       .map((tag) => tag.trim())
@@ -788,8 +783,6 @@ export default function NewProgramPage() {
     estimatedSessionMinutes: estimatedSessionMinutes === '' ? undefined : estimatedSessionMinutes,
     levelRangeMin: trainingLevel,
     levelRangeMax: trainingLevel,
-    entryRecommendations: parseJsonField(entryRecommendations),
-    exitRecommendations: parseJsonField(exitRecommendations),
     prescriptionPriority,
     prerequisiteProgramId: prerequisiteProgramId || undefined,
     nextProgramId: nextProgramId || undefined,
@@ -962,25 +955,13 @@ export default function NewProgramPage() {
         <Card id="program-configuration" className="p-6 scroll-mt-24">
           <h2 className="text-lg font-semibold mb-4">Program Configuration</h2>
 
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 gap-4">
             <div>
               <Label>Cover Image URL</Label>
               <Input
                 value={coverImageUrl}
                 onChange={(e) => setCoverImageUrl(e.target.value)}
                 placeholder="https://..."
-              />
-            </div>
-            <div>
-              <Label>Difficulty</Label>
-              <Select
-                value={difficulty}
-                onChange={(e) => setDifficulty(e.target.value as 'beginner' | 'intermediate' | 'advanced')}
-                options={[
-                  { value: 'beginner', label: 'Beginner' },
-                  { value: 'intermediate', label: 'Intermediate' },
-                  { value: 'advanced', label: 'Advanced' },
-                ]}
               />
             </div>
           </div>
@@ -1024,7 +1005,7 @@ export default function NewProgramPage() {
         <Card id="prescription-settings" className="p-6 scroll-mt-24">
           <h2 className="text-lg font-semibold mb-4">Prescription &amp; matching</h2>
           <p className="text-sm text-gray-600 mb-4">
-            Program attributes drive auto-assignment and the prescription engine. Legacy scalar fields are synced on save.
+            Program attributes drive auto-assignment and the prescription engine.
           </p>
 
           {attributeCatalogError ? (
@@ -1154,23 +1135,6 @@ export default function NewProgramPage() {
               onChange={(e) => setCoachingNotesProgram(e.target.value)}
               rows={2}
               placeholder="{}"
-            />
-          </div>
-
-          <div className="grid grid-cols-2 gap-4 mt-4">
-            <RecommendationEditor
-              title="Entry recommendations"
-              description="Guidance for when this program should start. Use structured thresholds instead of raw JSON where possible."
-              value={entryRecommendations}
-              onChange={setEntryRecommendations}
-              mode="entry"
-            />
-            <RecommendationEditor
-              title="Exit recommendations"
-              description="Used during exit review to decide whether the athlete should reassess or move to the next program."
-              value={exitRecommendations}
-              onChange={setExitRecommendations}
-              mode="exit"
             />
           </div>
 

@@ -8,6 +8,17 @@ import { LocalizedText } from '@/lib/types/localized';
 import { Button, Input, Select } from '@/components/ui';
 import { getAutoAssignmentReadiness } from './_lib/auto-assignment';
 
+function formatProgramLevelRange(program: Program): string {
+  const min = program.levelRangeMin;
+  const max = program.levelRangeMax;
+  if (min != null && max != null) {
+    return min === max ? `${min}` : `${min}–${max}`;
+  }
+  if (min != null) return `${min}`;
+  if (max != null) return `${max}`;
+  return '—';
+}
+
 interface Program {
   id: string;
   name: LocalizedText;
@@ -15,18 +26,11 @@ interface Program {
   slug: string;
   coverImageUrl: string | null;
   durationWeeks: number;
-  difficulty: 'beginner' | 'intermediate' | 'advanced';
   programType?: string;
-  programDomain?: string;
-  trainingGoal?: string | null;
   autoAssignable?: boolean;
   version?: number;
   levelRangeMin?: number | null;
   levelRangeMax?: number | null;
-  contraindications?: unknown;
-  targetEquipment?: unknown;
-  targetDomain?: string | null;
-  targetRegions?: unknown;
   prescriptionPriority?: number | null;
   /** Present on list/detail from API; used by client readiness when `autoAssignmentReadiness` is absent. */
   programAttributes?: Array<{
@@ -60,10 +64,9 @@ export default function ProgramsListPage() {
   const [pagination, setPagination] = useState<Pagination | null>(null);
   const [loading, setLoading] = useState(true);
   const [statusFilter, setStatusFilter] = useState<string>('');
-  const [programDomainFilter, setProgramDomainFilter] = useState<string>('');
   const [readinessFilter, setReadinessFilter] = useState<string>('');
   const [searchQuery, setSearchQuery] = useState('');
-  const hasActiveFilters = !!(statusFilter || programDomainFilter || readinessFilter || searchQuery);
+  const hasActiveFilters = !!(statusFilter || readinessFilter || searchQuery);
 
   const fetchPrograms = async (page = 1) => {
     setLoading(true);
@@ -71,7 +74,6 @@ export default function ProgramsListPage() {
       const params = new URLSearchParams();
       params.set('page', page.toString());
       if (statusFilter) params.set('status', statusFilter);
-      if (programDomainFilter) params.set('programDomain', programDomainFilter);
       if (readinessFilter) params.set('readiness', readinessFilter);
       if (searchQuery) params.set('search', searchQuery);
 
@@ -95,7 +97,7 @@ export default function ProgramsListPage() {
     }, searchQuery ? 250 : 0);
 
     return () => window.clearTimeout(timer);
-  }, [statusFilter, programDomainFilter, readinessFilter, searchQuery]);
+  }, [statusFilter, readinessFilter, searchQuery]);
 
   const handlePublish = async (id: string) => {
     try {
@@ -164,7 +166,6 @@ export default function ProgramsListPage() {
 
   const resetFilters = () => {
     setStatusFilter('');
-    setProgramDomainFilter('');
     setReadinessFilter('');
     setSearchQuery('');
   };
@@ -233,20 +234,6 @@ export default function ProgramsListPage() {
           </div>
 
           <div className="w-44">
-            <label className="block text-sm font-medium text-gray-700 mb-1">Domain</label>
-            <Select
-              value={programDomainFilter}
-              onChange={(e) => setProgramDomainFilter(e.target.value)}
-              options={[
-                { value: '', label: 'All' },
-                { value: 'TRAINING', label: 'Training' },
-                { value: 'MOBILITY', label: 'Mobility' },
-                { value: 'THERAPEUTIC', label: 'Therapeutic' },
-              ]}
-            />
-          </div>
-
-          <div className="w-44">
             <label className="block text-sm font-medium text-gray-700 mb-1">Readiness</label>
             <Select
               value={readinessFilter}
@@ -287,7 +274,7 @@ export default function ProgramsListPage() {
                   Program
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                  Domain
+                  Level range
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
                   Version
@@ -317,14 +304,10 @@ export default function ProgramsListPage() {
                     <div>
                       <p className="font-medium text-gray-900">{program.name.en}</p>
                       <p className="text-sm text-gray-500">{program.name.ar}</p>
-                      <p className="text-xs text-gray-400 mt-1">{program.difficulty}</p>
                     </div>
                   </td>
                   <td className="px-6 py-4 text-sm text-gray-600">
-                    <div>
-                      <p>{program.programDomain || '—'}</p>
-                      <p className="text-xs text-gray-400">{program.trainingGoal || '—'}</p>
-                    </div>
+                    <p>{formatProgramLevelRange(program)}</p>
                   </td>
                   <td className="px-6 py-4 text-sm text-gray-600">
                     v{program.version ?? 1}

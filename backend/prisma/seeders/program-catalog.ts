@@ -58,8 +58,6 @@ export type ProgramCatalogEntry = {
   levelRangeMin: number;
   levelRangeMax: number;
   prescriptionPriority: number;
-  entryRecommendations: Prisma.InputJsonValue | null;
-  exitRecommendations: Prisma.InputJsonValue | null;
   contraindications: string[];
   autoAssignable: boolean;
   version: number;
@@ -270,8 +268,6 @@ function buildSystemTrainingMeta(goal: GoalKey, bandIdx: number): Omit<ProgramCa
     levelRangeMin: band.min,
     levelRangeMax: band.max,
     prescriptionPriority: 70 - bandIdx * 3,
-    entryRecommendations: { bodyScore: { min: 20 + bandIdx * 5 } },
-    exitRecommendations: { bodyScore: { min: 45 + bandIdx * 5 } },
     contraindications: [],
     autoAssignable: true,
     version: 1,
@@ -333,8 +329,6 @@ function starterProgram(): ProgramCatalogEntry {
     levelRangeMin: 1,
     levelRangeMax: 2,
     prescriptionPriority: 50,
-    entryRecommendations: { bodyScore: { max: 55 } },
-    exitRecommendations: { bodyScore: { min: 40 } },
     contraindications: [],
     autoAssignable: true,
     version: 1,
@@ -795,8 +789,6 @@ function mobilityProgram(): ProgramCatalogEntry {
     levelRangeMin: 1,
     levelRangeMax: 3,
     prescriptionPriority: 30,
-    entryRecommendations: { mobilityScore: { max: 50 } },
-    exitRecommendations: { mobilityScore: { min: 65 } },
     contraindications: [],
     autoAssignable: true,
     version: 1,
@@ -925,8 +917,6 @@ function intermediateStrengthProgram(): ProgramCatalogEntry {
     levelRangeMin: 2,
     levelRangeMax: 4,
     prescriptionPriority: 60,
-    entryRecommendations: { bodyScore: { min: 40 } },
-    exitRecommendations: { bodyScore: { min: 65 } },
     contraindications: [],
     autoAssignable: true,
     version: 1,
@@ -972,8 +962,6 @@ function therapeuticLowBack(): ProgramCatalogEntry {
     levelRangeMin: 1,
     levelRangeMax: 3,
     prescriptionPriority: 20,
-    entryRecommendations: { painFlag: { max: 1 } },
-    exitRecommendations: { mobilityScore: { min: 50 } },
     contraindications: ['acute_radicular_pain'],
     autoAssignable: false,
     version: 1,
@@ -1111,8 +1099,6 @@ function therapeuticShoulder(): ProgramCatalogEntry {
     levelRangeMin: 1,
     levelRangeMax: 2,
     prescriptionPriority: 18,
-    entryRecommendations: { painFlag: { max: 1 } },
-    exitRecommendations: { mobilityScore: { min: 55 } },
     contraindications: ['acute_shoulder_dislocation'],
     autoAssignable: false,
     version: 1,
@@ -1221,8 +1207,6 @@ function coachFixture(): ProgramCatalogEntry {
     levelRangeMin: 2,
     levelRangeMax: 4,
     prescriptionPriority: 40,
-    entryRecommendations: null,
-    exitRecommendations: null,
     contraindications: [],
     autoAssignable: false,
     version: 1,
@@ -1253,8 +1237,6 @@ function customFixture(): ProgramCatalogEntry {
     levelRangeMin: 1,
     levelRangeMax: 2,
     prescriptionPriority: 10,
-    entryRecommendations: null,
-    exitRecommendations: null,
     contraindications: [],
     autoAssignable: false,
     version: 1,

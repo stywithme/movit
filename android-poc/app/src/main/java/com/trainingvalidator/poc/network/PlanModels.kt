@@ -32,9 +32,9 @@ data class RecommendedProgramData(
     val name: Map<String, String>,
     val slug: String,
     val type: String,
-    val targetDomain: String? = null,
     val durationWeeks: Int,
-    val difficulty: String,
+    val levelRangeMin: Int = 0,
+    val levelRangeMax: Int = 0,
     val coverImageUrl: String? = null,
     val matchReason: String
 )
@@ -75,7 +75,8 @@ data class PlanProgramInfo(
     val slug: String,
     val type: String,
     val durationWeeks: Int,
-    val difficulty: String,
+    val levelRangeMin: Int = 0,
+    val levelRangeMax: Int = 0,
     val coverImageUrl: String? = null
 )
 

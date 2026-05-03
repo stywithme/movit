@@ -300,14 +300,12 @@ data class ProgramConfigWithMeta(
     val description: LocalizedText? = null,
     val coverImageUrl: String? = null,
     val durationWeeks: Int,
-    val difficulty: String = "beginner",
+    val levelRangeMin: Int = 0,
+    val levelRangeMax: Int = 0,
     val tags: List<String>? = emptyList(),
     val weeks: List<ProgramWeek>? = emptyList(),
-    val trainingGoal: String? = null,
     val weeklySessionTarget: Int? = null,
     val estimatedSessionMinutes: Int? = null,
-    val targetDomain: String? = null,
-    val targetEquipment: List<String>? = emptyList(),
     val isFeatured: Boolean = false
 ) {
     fun toProgramConfig(): ProgramConfig {
@@ -318,14 +316,12 @@ data class ProgramConfigWithMeta(
             description = description,
             coverImageUrl = coverImageUrl,
             durationWeeks = durationWeeks,
-            difficulty = difficulty,
+            levelRangeMin = levelRangeMin,
+            levelRangeMax = levelRangeMax,
             tags = tags ?: emptyList(),
             weeks = weeks ?: emptyList(),
-            trainingGoal = trainingGoal,
             weeklySessionTarget = weeklySessionTarget,
             estimatedSessionMinutes = estimatedSessionMinutes,
-            targetDomain = targetDomain,
-            targetEquipment = targetEquipment ?: emptyList(),
             isFeatured = isFeatured
         )
     }

@@ -44,6 +44,7 @@ export const assessmentService = {
         previousId: data.previousId ?? null,
         durationMs: data.durationMs ?? null,
         movementCount: data.movementCount,
+        templateId: data.templateId ?? null,
       },
     });
 
@@ -62,25 +63,35 @@ export const assessmentService = {
       console.warn('[Assessment] Failed to mark reassessment:', error);
     }
 
-    // Phase 4: Auto-prescription — if user has no active program, recommend and auto-enroll
-    let autoPrescription: { programId: string; programName: Record<string, string>; enrolled: boolean } | null = null;
+    // Phase 4: Prescription — always recommend after level profile; enroll only if no active program
+    let autoPrescription: {
+      programId: string;
+      programName: Record<string, string>;
+      levelNumber: number;
+      enrolled: boolean;
+    } | null = null;
+    let recommendation: {
+      programId: string;
+      programName: Record<string, string>;
+      levelNumber: number;
+      enrolled: boolean;
+    } | null = null;
+
     try {
-      const prisma = await getPrisma();
+      const prescription = await prescriptionService.recommend(data.userId);
+      const levelProfile = await levelProfileService.getLatest(data.userId);
+      const levelNumber = levelProfile?.overallLevel ?? 1;
 
-      // Check if user already has an active plan with a program
-      const existingPlan = await prisma.activePlan.findUnique({
-        where: { userId: data.userId },
-        include: {
-          programs: { where: { status: 'active' } },
-        },
-      });
+      if (prescription.recommendedProgram) {
+        const existingPlan = await prisma.activePlan.findUnique({
+          where: { userId: data.userId },
+          include: {
+            programs: { where: { status: 'active' } },
+          },
+        });
+        const hasActiveProgram = Boolean(existingPlan?.programs?.length);
 
-      const hasActiveProgram = existingPlan?.programs.length ? existingPlan.programs.length > 0 : false;
-
-      if (!hasActiveProgram) {
-        const prescription = await prescriptionService.recommend(data.userId);
-
-        if (prescription.recommendedProgram) {
+        if (!hasActiveProgram) {
           await activePlanService.enrollProgram(
             data.userId,
             prescription.recommendedProgram.id,
@@ -89,16 +100,24 @@ export const assessmentService = {
           autoPrescription = {
             programId: prescription.recommendedProgram.id,
             programName: prescription.recommendedProgram.name,
+            levelNumber,
             enrolled: true,
           };
           console.log(`[Assessment] Auto-enrolled user ${data.userId} in program ${prescription.recommendedProgram.id}`);
+        } else {
+          recommendation = {
+            programId: prescription.recommendedProgram.id,
+            programName: prescription.recommendedProgram.name,
+            levelNumber,
+            enrolled: false,
+          };
         }
       }
     } catch (error) {
-      console.warn('[Assessment] Auto-prescription failed (non-fatal):', error);
+      console.warn('[Assessment] Prescription after assessment failed (non-fatal):', error);
     }
 
-    return { ...result, autoPrescription };
+    return { ...result, autoPrescription, recommendation };
   },
 
   /**

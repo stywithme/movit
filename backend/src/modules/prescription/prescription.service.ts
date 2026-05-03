@@ -58,9 +58,9 @@ export interface RecommendedProgram {
   name: Record<string, string>;
   slug: string;
   type: string;
-  targetDomain: string | null;
+  levelRangeMin: number;
+  levelRangeMax: number;
   durationWeeks: number;
-  difficulty: string;
   coverImageUrl: string | null;
   matchReason: string;
 }
@@ -69,13 +69,8 @@ type ProgramForPrescription = {
   id: string;
   name: unknown;
   slug: string;
-  programDomain: import('@prisma/client').ProgramDomain;
-  trainingGoal: import('@prisma/client').TrainingGoal | null;
-  targetEquipment: unknown;
-  targetDomain: string | null;
-  targetRegions: string[];
-  contraindications: string[];
-  difficulty: string;
+  levelRangeMin: number;
+  levelRangeMax: number;
   coverImageUrl: string | null;
   durationWeeks: number;
   prescriptionPriority: number;
@@ -436,9 +431,9 @@ export const prescriptionService = {
             name: best.name as Record<string, string>,
             slug: best.slug,
             type: recommendedProgramTypeString(best),
-            targetDomain: best.targetDomain,
+            levelRangeMin: best.levelRangeMin,
+            levelRangeMax: best.levelRangeMax,
             durationWeeks: best.durationWeeks,
-            difficulty: best.difficulty,
             coverImageUrl: best.coverImageUrl,
             matchReason: classification.reason,
           },
@@ -524,9 +519,9 @@ export const prescriptionService = {
           name: best.name as Record<string, string>,
           slug: best.slug,
           type: recommendedProgramTypeString(best),
-          targetDomain: best.targetDomain,
+          levelRangeMin: best.levelRangeMin,
+          levelRangeMax: best.levelRangeMax,
           durationWeeks: best.durationWeeks,
-          difficulty: best.difficulty,
           coverImageUrl: best.coverImageUrl,
           matchReason: classification.reason,
         },
@@ -568,9 +563,9 @@ export const prescriptionService = {
           name: fallback.name as Record<string, string>,
           slug: fallback.slug,
           type: recommendedProgramTypeString(fallback),
-          targetDomain: fallback.targetDomain,
+          levelRangeMin: fallback.levelRangeMin,
+          levelRangeMax: fallback.levelRangeMax,
           durationWeeks: fallback.durationWeeks,
-          difficulty: fallback.difficulty,
           coverImageUrl: fallback.coverImageUrl,
           matchReason: `Fallback: best available program for level ${overallLevel}`,
         },

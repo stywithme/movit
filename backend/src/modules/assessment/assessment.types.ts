@@ -100,6 +100,8 @@ export interface BodyScanResultCreate {
   previousId?: string;
   durationMs?: number;
   movementCount: number;
+  /** Optional — links result to the assessment template used on the client. */
+  templateId?: string | null;
 }
 
 // ============================================

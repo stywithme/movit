@@ -348,8 +348,6 @@ model Program {
   slug                  String                 @unique
   coverImageUrl         String?
   durationWeeks         Int
-  /// @deprecated Derive from levelRangeMin/Max or remove; matching uses ProgramAttribute + level range.
-  difficulty            Difficulty             @default(beginner)
   isDefault             Boolean                @default(false)
   isPublished           Boolean                @default(false)
   tags                  Json?
@@ -358,26 +356,12 @@ model Program {
   createdAt             DateTime               @default(now())
   updatedAt             DateTime               @updatedAt
   deletedAt             DateTime?
-  /// @deprecated Use ProgramAttribute with attribute `body_region` and mode EXCLUDED.
-  contraindications       String[]               @default([])
-  entryRecommendations    Json?
-  exitRecommendations     Json?
   levelRangeMax         Int                    @default(5)
   levelRangeMin         Int                    @default(1)
   nextProgramId         String?
   prerequisiteProgramId String?
   prescriptionPriority  Int                    @default(100)
-  /// @deprecated Use ProgramAttribute with attribute `focus`.
-  targetDomain          String?
-  /// @deprecated Use ProgramAttribute with attribute `body_region`.
-  targetRegions         String[]               @default([])
-  /// @deprecated Use ProgramAttribute with attribute `equipment`.
-  targetEquipment       Json?
   programType           ProgramType            @default(SYSTEM)
-  /// @deprecated Use ProgramAttribute with attribute `domain`.
-  programDomain         ProgramDomain          @default(TRAINING)
-  /// @deprecated Use ProgramAttribute with attribute `goal`.
-  trainingGoal          TrainingGoal?
   autoAssignable        Boolean                @default(false)
   version               Int                    @default(1)
   ownerId               String?
@@ -401,7 +385,6 @@ model Program {
   @@index([deletedAt])
   @@index([isPublished])
   @@index([programType])
-  @@index([programDomain])
   @@index([levelRangeMin, levelRangeMax])
   @@map("programs")
 }

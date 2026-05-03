@@ -5,14 +5,10 @@
  */
 
 import { getPrisma } from '@/lib/prisma/client';
-import { PROGRAM_DOMAIN_VALUE_CODE, TRAINING_GOAL_VALUE_CODE } from '@/lib/program-attribute-codes';
-import { matchingColumnsFromProgramAttributeRows } from '@/lib/program-attribute-column-sync';
 import {
   Prisma,
   type Program,
   ProgramAttributeMode,
-  ProgramDomain,
-  TrainingGoal,
   type PrismaClient,
 } from '@prisma/client';
 import { resolveTrainingPositionMeta, countTrainingDaySlots } from '@/modules/active-plan/plan-position';
@@ -123,37 +119,6 @@ async function replaceProgramAttributes(
       attributeValueId: a.attributeValueId,
       mode: a.mode ?? ProgramAttributeMode.REQUIRED,
     })),
-  });
-}
-
-async function syncProgramMatchingColumns(
-  db: Pick<PrismaClient, 'programAttribute' | 'program'>,
-  programId: string,
-) {
-  const rows = await db.programAttribute.findMany({
-    where: { programId },
-    include: { attributeValue: { include: { attribute: true } } },
-    orderBy: { createdAt: 'asc' },
-  });
-  const cols = matchingColumnsFromProgramAttributeRows(
-    rows.map((r) => ({
-      mode: r.mode,
-      attributeValue: {
-        code: r.attributeValue.code,
-        attribute: { code: r.attributeValue.attribute.code },
-      },
-    })),
-  );
-  await db.program.update({
-    where: { id: programId },
-    data: {
-      programDomain: cols.programDomain,
-      trainingGoal: cols.trainingGoal,
-      targetEquipment: cols.targetEquipment,
-      targetDomain: cols.targetDomain,
-      targetRegions: cols.targetRegions,
-      contraindications: cols.contraindications,
-    },
   });
 }
 
@@ -531,8 +496,6 @@ export const programService = {
     search?: string;
     page?: number;
     limit?: number;
-    programDomain?: string;
-    trainingGoal?: string;
     readiness?: 'ready' | 'incomplete' | 'manual_only';
   }) {
     const prisma = await getPrisma();
@@ -558,34 +521,6 @@ export const programService = {
           { name: { path: ['ar'], string_contains: filters.search } },
         ],
       });
-    }
-    if (filters?.programDomain) {
-      const enumVal = filters.programDomain as ProgramDomain;
-      const code = PROGRAM_DOMAIN_VALUE_CODE[enumVal];
-      if (code) {
-        andFilters.push({
-          programAttributes: {
-            some: {
-              mode: { in: [ProgramAttributeMode.REQUIRED, ProgramAttributeMode.OPTIONAL] },
-              attributeValue: { code },
-            },
-          },
-        });
-      }
-    }
-    if (filters?.trainingGoal) {
-      const tg = filters.trainingGoal as TrainingGoal;
-      const gc = TRAINING_GOAL_VALUE_CODE[tg];
-      if (gc) {
-        andFilters.push({
-          programAttributes: {
-            some: {
-              mode: { in: [ProgramAttributeMode.REQUIRED, ProgramAttributeMode.OPTIONAL] },
-              attributeValue: { code: gc },
-            },
-          },
-        });
-      }
     }
     if (andFilters.length > 0) {
       where.AND = andFilters;
@@ -701,15 +636,12 @@ export const programService = {
           slug,
           coverImageUrl: data.coverImageUrl ?? undefined,
           durationWeeks: data.durationWeeks,
-          difficulty: data.difficulty ?? 'beginner',
           tags: data.tags ?? undefined,
           isDefault: data.isDefault ?? false,
           isPublished: false,
           createdBy,
           updatedBy: createdBy,
           programType: data.programType ?? 'SYSTEM',
-          programDomain: data.programDomain ?? 'TRAINING',
-          trainingGoal: data.trainingGoal ?? undefined,
           autoAssignable: data.autoAssignable ?? false,
           version: data.version ?? 1,
           ownerId: data.ownerId ?? undefined,
@@ -722,16 +654,8 @@ export const programService = {
             ) ??
             undefined,
           estimatedSessionMinutes: data.estimatedSessionMinutes ?? undefined,
-          targetEquipment: data.targetEquipment as object ?? undefined,
-          targetDomain: data.targetDomain ?? undefined,
-          targetRegions: data.targetRegions ?? [],
           levelRangeMin: data.levelRangeMin ?? 1,
           levelRangeMax: data.levelRangeMax ?? 5,
-          entryRecommendations:
-            (data.entryRecommendations ?? data.entryCriteria) as object ?? undefined,
-          exitRecommendations:
-            (data.exitRecommendations ?? data.exitCriteria) as object ?? undefined,
-          contraindications: data.contraindications ?? [],
           prescriptionPriority: data.prescriptionPriority ?? 100,
           prerequisiteProgramId: data.prerequisiteProgramId ?? undefined,
           nextProgramId: data.nextProgramId ?? undefined,
@@ -741,7 +665,6 @@ export const programService = {
 
       if (data.programAttributes !== undefined) {
         await replaceProgramAttributes(tx, program.id, data.programAttributes);
-        await syncProgramMatchingColumns(tx, program.id);
       }
       return program.id;
     });
@@ -761,14 +684,11 @@ export const programService = {
     if (data.description !== undefined) updateData.description = data.description;
     if (data.coverImageUrl !== undefined) updateData.coverImageUrl = data.coverImageUrl;
     if (data.durationWeeks !== undefined) updateData.durationWeeks = data.durationWeeks;
-    if (data.difficulty !== undefined) updateData.difficulty = data.difficulty;
     if (data.tags !== undefined) updateData.tags = data.tags;
     if (data.isDefault !== undefined) updateData.isDefault = data.isDefault;
     if (data.isPublished !== undefined) updateData.isPublished = data.isPublished;
     // Prescription metadata
     if (data.programType !== undefined) updateData.programType = data.programType;
-    if (data.programDomain !== undefined) updateData.programDomain = data.programDomain;
-    if (data.trainingGoal !== undefined) updateData.trainingGoal = data.trainingGoal;
     if (data.autoAssignable !== undefined) updateData.autoAssignable = data.autoAssignable;
     if (data.version !== undefined) updateData.version = data.version;
     if (data.ownerId !== undefined) updateData.ownerId = data.ownerId;
@@ -780,22 +700,8 @@ export const programService = {
     if (data.estimatedSessionMinutes !== undefined) {
       updateData.estimatedSessionMinutes = data.estimatedSessionMinutes;
     }
-    if (data.targetEquipment !== undefined) updateData.targetEquipment = data.targetEquipment;
-    if (data.targetDomain !== undefined) updateData.targetDomain = data.targetDomain;
-    if (data.targetRegions !== undefined) updateData.targetRegions = data.targetRegions;
     if (data.levelRangeMin !== undefined) updateData.levelRangeMin = data.levelRangeMin;
     if (data.levelRangeMax !== undefined) updateData.levelRangeMax = data.levelRangeMax;
-    if (data.entryRecommendations !== undefined) {
-      updateData.entryRecommendations = data.entryRecommendations;
-    } else if (data.entryCriteria !== undefined) {
-      updateData.entryRecommendations = data.entryCriteria;
-    }
-    if (data.exitRecommendations !== undefined) {
-      updateData.exitRecommendations = data.exitRecommendations;
-    } else if (data.exitCriteria !== undefined) {
-      updateData.exitRecommendations = data.exitCriteria;
-    }
-    if (data.contraindications !== undefined) updateData.contraindications = data.contraindications;
     if (data.prescriptionPriority !== undefined) updateData.prescriptionPriority = data.prescriptionPriority;
     if (data.prerequisiteProgramId !== undefined) updateData.prerequisiteProgramId = data.prerequisiteProgramId;
     if (data.nextProgramId !== undefined) updateData.nextProgramId = data.nextProgramId;
@@ -812,7 +718,6 @@ export const programService = {
 
       if (data.programAttributes !== undefined) {
         await replaceProgramAttributes(tx, id, data.programAttributes);
-        await syncProgramMatchingColumns(tx, id);
       }
     });
 
@@ -929,12 +834,9 @@ export const programService = {
         description: parseLocalizedText(original.description),
         coverImageUrl: original.coverImageUrl ?? undefined,
         durationWeeks: original.durationWeeks,
-        difficulty: original.difficulty as 'beginner' | 'intermediate' | 'advanced',
         tags: (original.tags as string[]) || undefined,
         isDefault: false,
         programType: original.programType,
-        programDomain: original.programDomain,
-        trainingGoal: original.trainingGoal ?? undefined,
         autoAssignable: original.autoAssignable,
         version: original.version,
         ownerId: original.ownerId ?? undefined,
@@ -942,14 +844,8 @@ export const programService = {
         coachingNotes: (original.coachingNotes as Record<string, unknown>) || undefined,
         weeklySessionTarget: original.weeklySessionTarget ?? undefined,
         estimatedSessionMinutes: original.estimatedSessionMinutes ?? undefined,
-        targetEquipment: (original.targetEquipment as Record<string, unknown>) ?? undefined,
-        targetDomain: original.targetDomain ?? undefined,
-        targetRegions: original.targetRegions ?? [],
         levelRangeMin: original.levelRangeMin,
         levelRangeMax: original.levelRangeMax,
-        entryRecommendations: (original.entryRecommendations as Record<string, unknown>) ?? undefined,
-        exitRecommendations: (original.exitRecommendations as Record<string, unknown>) ?? undefined,
-        contraindications: original.contraindications ?? [],
         prescriptionPriority: original.prescriptionPriority,
         prerequisiteProgramId: original.prerequisiteProgramId ?? undefined,
         nextProgramId: original.nextProgramId ?? undefined,
@@ -1501,10 +1397,6 @@ export const programService = {
 
   buildProgramExport(program: Awaited<ReturnType<typeof this.getById>>): ProgramExport | null {
     if (!program) return null;
-    const equipmentRaw = program.targetEquipment as unknown;
-    const targetEquipment = Array.isArray(equipmentRaw)
-      ? equipmentRaw.filter((x): x is string => typeof x === 'string')
-      : undefined;
 
     return {
       id: program.id,
@@ -1513,13 +1405,11 @@ export const programService = {
       description: parseLocalizedText(program.description),
       coverImageUrl: program.coverImageUrl ?? undefined,
       durationWeeks: program.durationWeeks,
-      difficulty: program.difficulty as 'beginner' | 'intermediate' | 'advanced',
+      levelRangeMin: program.levelRangeMin,
+      levelRangeMax: program.levelRangeMax,
       tags: (program.tags as string[]) || undefined,
-      trainingGoal: program.trainingGoal ?? undefined,
       weeklySessionTarget: program.weeklySessionTarget ?? undefined,
       estimatedSessionMinutes: program.estimatedSessionMinutes ?? undefined,
-      targetDomain: program.targetDomain ?? undefined,
-      targetEquipment: targetEquipment?.length ? targetEquipment : undefined,
       isFeatured: program.isFeatured ?? undefined,
       weeks: program.weeks.map((week) => ({
         weekNumber: week.weekNumber,
@@ -1584,7 +1474,8 @@ export const programService = {
       description: full.description,
       coverImageUrl: full.coverImageUrl,
       durationWeeks: full.durationWeeks,
-      difficulty: full.difficulty,
+      levelRangeMin: full.levelRangeMin,
+      levelRangeMax: full.levelRangeMax,
       totalExercisesInFirstWeek: exerciseCount,
       muscleGroups: [],
       weeks: firstWeeks,

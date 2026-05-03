@@ -5,15 +5,19 @@ import android.content.Intent
 import android.graphics.Color
 import android.graphics.Typeface
 import android.os.Bundle
+import android.text.SpannableStringBuilder
+import android.text.style.ForegroundColorSpan
 import android.util.TypedValue
 import android.view.Gravity
+import android.view.View
 import android.widget.*
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
-import com.trainingvalidator.poc.R
+import com.trainingvalidator.poc.ui.utils.feedbackLanguageCode
 import com.trainingvalidator.poc.assessment.models.ParqQuestion
 import com.trainingvalidator.poc.assessment.models.ParqQuestions
-import com.trainingvalidator.poc.ui.utils.feedbackLanguageCode
+import com.trainingvalidator.poc.assessment.models.AssessmentType
+import com.trainingvalidator.poc.training.models.LocalizedText
 
 /**
  * PreScreeningActivity - PAR-Q+ physical activity readiness questionnaire.
@@ -26,6 +30,7 @@ class PreScreeningActivity : AppCompatActivity() {
     private val questions = ParqQuestions.getQuestions().toMutableList()
     private val switchMap = mutableMapOf<String, Switch>()
     private lateinit var continueButton: Button
+    private var assessmentType: AssessmentType = AssessmentType.INITIAL
     
     /** Matches Profile / app locale (same as training feedback). */
     private val language: String get() = feedbackLanguageCode()
@@ -34,6 +39,10 @@ class PreScreeningActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         window.statusBarColor = Color.parseColor("#121212")
+
+        assessmentType = AssessmentType.valueOf(
+            intent.getStringExtra(EXTRA_ASSESSMENT_TYPE) ?: AssessmentType.INITIAL.name
+        )
         
         val root = ScrollView(this).apply {
             setBackgroundColor(Color.parseColor("#121212"))
@@ -45,15 +54,19 @@ class PreScreeningActivity : AppCompatActivity() {
             setPadding(dp(24), dp(48), dp(24), dp(32))
         }
         
+        // Header
         content.addView(TextView(this).apply {
-            text = getString(R.string.screening_title)
+            text = if (language == "ar") "فحص ما قبل الاختبار" else "Pre-Assessment Screening"
             setTextColor(Color.WHITE)
             textSize = 24f
             setTypeface(null, Typeface.BOLD)
         })
-
+        
         content.addView(TextView(this).apply {
-            text = getString(R.string.screening_subtitle)
+            text = if (language == "ar") 
+                "للتأكد من سلامتك، يرجى الإجابة على الأسئلة التالية."
+            else 
+                "To ensure your safety, please answer the following questions."
             setTextColor(Color.parseColor("#B0B0B0"))
             textSize = 14f
             setPadding(0, dp(8), 0, dp(24))
@@ -69,7 +82,7 @@ class PreScreeningActivity : AppCompatActivity() {
         
         // Continue button
         continueButton = Button(this).apply {
-            text = getString(R.string.screening_start)
+            text = if (language == "ar") "ابدأ الاختبار" else "Start Assessment"
             setTextColor(Color.WHITE)
             setBackgroundColor(Color.parseColor("#4CAF50"))
             textSize = 16f
@@ -88,7 +101,7 @@ class PreScreeningActivity : AppCompatActivity() {
         
         // Back button
         content.addView(TextView(this).apply {
-            text = getString(R.string.go_back)
+            text = if (language == "ar") "رجوع" else "Go Back"
             setTextColor(Color.parseColor("#B0B0B0"))
             textSize = 14f
             gravity = Gravity.CENTER
@@ -113,7 +126,10 @@ class PreScreeningActivity : AppCompatActivity() {
             layoutParams = lp
             
             addView(TextView(context).apply {
-                text = getString(R.string.screening_disclaimer)
+                text = if (language == "ar") 
+                    "⚕️ تنبيه: هذا ليس فحص طبي. هو أداة wellness لتقييم الحركة فقط."
+                else 
+                    "⚕️ Note: This is not a medical exam. It's a wellness tool for movement assessment only."
                 setTextColor(Color.parseColor("#B3C5FF"))
                 textSize = 12f
             })
@@ -158,10 +174,10 @@ class PreScreeningActivity : AppCompatActivity() {
         val hasFlags = ParqQuestions.hasFlags(questions)
         if (hasFlags) {
             continueButton.setBackgroundColor(Color.parseColor("#FF9800"))
-            continueButton.text = getString(R.string.screening_continue_warning)
+            continueButton.text = if (language == "ar") "متابعة مع تحذير" else "Continue with Warning"
         } else {
             continueButton.setBackgroundColor(Color.parseColor("#4CAF50"))
-            continueButton.text = getString(R.string.screening_start)
+            continueButton.text = if (language == "ar") "ابدأ الاختبار" else "Start Assessment"
         }
     }
     
@@ -170,12 +186,17 @@ class PreScreeningActivity : AppCompatActivity() {
         
         if (hasFlags) {
             AlertDialog.Builder(this)
-                .setTitle(getString(R.string.screening_warning_title))
-                .setMessage(getString(R.string.screening_warning_message))
-                .setPositiveButton(getString(R.string.screening_continue)) { _, _ ->
+                .setTitle(if (language == "ar") "تحذير" else "Warning")
+                .setMessage(
+                    if (language == "ar") 
+                        "بناءً على إجاباتك، ننصحك باستشارة طبيبك قبل البدء في أي نشاط بدني. هل تريد المتابعة على مسؤوليتك؟"
+                    else 
+                        "Based on your answers, we recommend consulting your doctor before starting physical activity. Do you wish to continue at your own responsibility?"
+                )
+                .setPositiveButton(if (language == "ar") "متابعة" else "Continue") { _, _ ->
                     launchAssessment()
                 }
-                .setNegativeButton(getString(R.string.go_back), null)
+                .setNegativeButton(if (language == "ar") "رجوع" else "Go Back", null)
                 .show()
         } else {
             launchAssessment()
@@ -186,7 +207,8 @@ class PreScreeningActivity : AppCompatActivity() {
         val intent = AssessmentSessionActivity.createIntent(
             this,
             parqPassed = !ParqQuestions.hasFlags(questions),
-            parqFlags = ParqQuestions.getFlaggedIds(questions)
+            parqFlags = ParqQuestions.getFlaggedIds(questions),
+            assessmentType = assessmentType,
         )
         startActivity(intent)
         finish()
@@ -196,7 +218,14 @@ class PreScreeningActivity : AppCompatActivity() {
         TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, value.toFloat(), resources.displayMetrics).toInt()
     
     companion object {
-        fun createIntent(context: Context): Intent =
-            Intent(context, PreScreeningActivity::class.java)
+        private const val EXTRA_ASSESSMENT_TYPE = "assessment_type"
+
+        fun createIntent(
+            context: Context,
+            assessmentType: AssessmentType = AssessmentType.INITIAL,
+        ): Intent =
+            Intent(context, PreScreeningActivity::class.java).apply {
+                putExtra(EXTRA_ASSESSMENT_TYPE, assessmentType.name)
+            }
     }
 }

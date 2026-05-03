@@ -21,8 +21,6 @@ export class ProgramsController {
   async list(
     @Query('status') status?: string,
     @Query('search') search?: string,
-    @Query('programDomain') programDomain?: string,
-    @Query('trainingGoal') trainingGoal?: string,
     @Query('readiness') readiness?: string,
     @Query('page') page?: string,
     @Query('limit') limit?: string
@@ -31,8 +29,6 @@ export class ProgramsController {
       const result = await programService.list({
         status: (status as 'draft' | 'published') || undefined,
         search: search || undefined,
-        programDomain: programDomain || undefined,
-        trainingGoal: trainingGoal || undefined,
         readiness: (readiness as 'ready' | 'incomplete' | 'manual_only') || undefined,
         page: Number.parseInt(page || '1', 10),
         limit: Number.parseInt(limit || '20', 10),

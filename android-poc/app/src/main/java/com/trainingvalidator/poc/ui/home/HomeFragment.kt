@@ -1,30 +1,19 @@
 package com.trainingvalidator.poc.ui.home
 
-import android.animation.ObjectAnimator
-import android.animation.ValueAnimator
 import android.content.Intent
-import android.graphics.Typeface
-import android.graphics.drawable.GradientDrawable
 import android.os.Bundle
 import android.util.Log
-import android.view.Gravity
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import android.widget.LinearLayout
-import android.widget.TextView
-import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
 import com.trainingvalidator.poc.R
+import com.trainingvalidator.poc.assessment.models.AssessmentType
 import com.trainingvalidator.poc.assessment.ui.PreScreeningActivity
 import com.trainingvalidator.poc.databinding.FragmentHomeBinding
-import com.trainingvalidator.poc.network.ApiClient
 import com.trainingvalidator.poc.network.HomeAlertData
 import com.trainingvalidator.poc.network.HomeData
-import com.trainingvalidator.poc.network.ProgressionEntryData
-import com.trainingvalidator.poc.network.ProgressionMarkSeenRequest
-import com.trainingvalidator.poc.network.RecentSessionData
 import com.trainingvalidator.poc.network.TrainModeData
 import com.trainingvalidator.poc.storage.AuthManager
 import com.trainingvalidator.poc.storage.HomeRepository
@@ -35,12 +24,8 @@ import com.trainingvalidator.poc.ui.programs.ProgramDetailActivity
 import com.trainingvalidator.poc.ui.programs.ProgramSessionActivity
 import com.trainingvalidator.poc.ui.utils.bindUserAvatar
 import com.trainingvalidator.poc.ui.utils.currentLanguage
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
-import java.time.Instant
-import java.time.temporal.ChronoUnit
 import java.util.Calendar
+import kotlinx.coroutines.launch
 
 /**
  * HomeFragment — Command Center
@@ -66,8 +51,6 @@ class HomeFragment : Fragment() {
     private val binding get() = _binding!!
 
     private lateinit var homeRepository: HomeRepository
-    private var initialLoadDone = false
-    private var skeletonAnimator: ObjectAnimator? = null
 
     override fun onCreateView(
         inflater: LayoutInflater,
@@ -90,24 +73,23 @@ class HomeFragment : Fragment() {
         loadData()
     }
 
-    override fun onResume() {
-        super.onResume()
-        if (_binding == null) return
-
-        setupGreeting()
-
-        if (!initialLoadDone) {
-            initialLoadDone = true
-            return
+    private fun setupSwipeRefresh() {
+        binding.swipeRefresh.setColorSchemeResources(R.color.primary)
+        binding.swipeRefresh.setOnRefreshListener {
+            refreshContent()
         }
+    }
 
+    private fun refreshContent() {
+        setupGreeting()
+        loadUserName()
         viewLifecycleOwner.lifecycleScope.launch {
             try {
                 homeRepository.syncFromServer()?.let {
                     if (_binding != null) renderData(it)
                 }
             } catch (e: Exception) {
-                Log.w(TAG, "Resume home sync failed", e)
+                Log.w(TAG, "Pull-to-refresh failed", e)
                 homeRepository.getCachedData()?.let { renderData(it) }
             } finally {
                 if (_binding != null) binding.swipeRefresh.isRefreshing = false
@@ -115,29 +97,26 @@ class HomeFragment : Fragment() {
         }
     }
 
-    // ── Initialization ────────────────────────────────────────────────────────
-
-    private fun setupSwipeRefresh() {
-        binding.swipeRefresh.setColorSchemeColors(
-            ContextCompat.getColor(requireContext(), R.color.primary)
-        )
-        binding.swipeRefresh.setProgressBackgroundColorSchemeColor(
-            ContextCompat.getColor(requireContext(), R.color.surface)
-        )
-        binding.swipeRefresh.setOnRefreshListener {
+    override fun onResume() {
+        super.onResume()
+        if (_binding != null) {
+            setupGreeting()
+            // Always sync from server on resume to reflect latest state
+            // (e.g. after Body Scan, after a training session, after plan enrollment)
             viewLifecycleOwner.lifecycleScope.launch {
                 try {
                     homeRepository.syncFromServer()?.let {
                         if (_binding != null) renderData(it)
                     }
                 } catch (e: Exception) {
-                    Log.w(TAG, "Pull-to-refresh sync failed", e)
-                } finally {
-                    if (_binding != null) binding.swipeRefresh.isRefreshing = false
+                    Log.w(TAG, "Resume home sync failed", e)
+                    homeRepository.getCachedData()?.let { renderData(it) }
                 }
             }
         }
     }
+
+    // ── Initialization ────────────────────────────────────────────────────────
 
     private fun setupGreeting() {
         val hour = Calendar.getInstance().get(Calendar.HOUR_OF_DAY)
@@ -156,24 +135,15 @@ class HomeFragment : Fragment() {
     }
 
     private fun loadData() {
-        val cached = homeRepository.getCachedData()
-        if (cached != null) {
-            renderData(cached)
-        } else {
-            showLoadingSkeleton()
-        }
+        homeRepository.getCachedData()?.let { renderData(it) }
 
         viewLifecycleOwner.lifecycleScope.launch {
             try {
                 homeRepository.syncFromServer()?.let {
-                    if (_binding != null) {
-                        hideLoadingSkeleton()
-                        renderData(it)
-                    }
+                    if (_binding != null) renderData(it)
                 }
             } catch (e: Exception) {
                 Log.w(TAG, "Background home sync failed", e)
-                if (_binding != null) hideLoadingSkeleton()
             }
         }
     }
@@ -185,9 +155,6 @@ class HomeFragment : Fragment() {
         renderStats(data)
         renderTrainMode(data)
         renderAlerts(data)
-        checkProgressionChanges()
-        renderReportSummary(data)
-        renderRecentSessions(data)
     }
 
     private fun renderUserHeader(data: HomeData) {
@@ -256,7 +223,7 @@ class HomeFragment : Fragment() {
 
         binding.tvWeeklyWorkouts.text = "$sessions"
         binding.tvFormScore.text = if (formScore > 0) "$formScore%" else "--"
-        binding.tvStreak.text = "$streak"
+        binding.tvStreak.text = if (streak > 0) "$streak\uD83D\uDD25" else "0"
     }
 
     private fun renderTrainMode(data: HomeData) {
@@ -269,16 +236,13 @@ class HomeFragment : Fragment() {
         }
 
         when (trainMode.status) {
-            "no_assessment"    -> renderNoAssessmentState()
-            "no_plan"          -> renderNoPlanState()
-            "active"           -> renderActiveState(trainMode, language)
-            "rest_day"         -> renderRestDayState(trainMode)
+            "no_assessment" -> renderNoAssessmentState()
+            "no_plan"       -> renderNoPlanState()
+            "active"        -> renderActiveState(trainMode, language)
+            "rest_day"      -> renderRestDayState(trainMode)
             "program_complete" -> renderProgramCompleteState(trainMode, language)
             "reassessment_due" -> renderReassessmentDueState()
-            else -> {
-                Log.w(TAG, "Unknown trainMode status: ${trainMode.status}")
-                hideAllTrainCards()
-            }
+            else            -> renderNoAssessmentState()
         }
     }
 
@@ -294,7 +258,7 @@ class HomeFragment : Fragment() {
         binding.btnStartTodayPlan.visibility = View.VISIBLE
         binding.btnStartTodayPlan.text = getString(R.string.start_body_scan)
         binding.btnStartTodayPlan.setOnClickListener {
-            startActivity(Intent(requireContext(), PreScreeningActivity::class.java))
+            startActivity(PreScreeningActivity.createIntent(requireContext()))
         }
         binding.tvSessionProgress.visibility = View.GONE
     }
@@ -309,10 +273,10 @@ class HomeFragment : Fragment() {
     }
 
     private fun renderActiveState(trainMode: TrainModeData, language: String) {
-        hideAllTrainCards()
         val program = trainMode.activeProgram
         val session = trainMode.todaySession
 
+        // Active program card
         if (program != null) {
             val programName = program.name[language] ?: program.name["en"] ?: ""
             binding.cardActiveProgram.visibility = View.VISIBLE
@@ -377,7 +341,6 @@ class HomeFragment : Fragment() {
     }
 
     private fun renderRestDayState(trainMode: TrainModeData) {
-        hideAllTrainCards()
         val program = trainMode.activeProgram
         val language = requireContext().currentLanguage
 
@@ -413,7 +376,6 @@ class HomeFragment : Fragment() {
     }
 
     private fun renderProgramCompleteState(trainMode: TrainModeData, language: String) {
-        hideAllTrainCards()
         val program = trainMode.activeProgram
 
         if (program != null) {
@@ -431,7 +393,7 @@ class HomeFragment : Fragment() {
         binding.btnStartTodayPlan.visibility = View.VISIBLE
         binding.btnStartTodayPlan.text = getString(R.string.start_reassessment)
         binding.btnStartTodayPlan.setOnClickListener {
-            startActivity(Intent(requireContext(), PreScreeningActivity::class.java))
+            startActivity(PreScreeningActivity.createIntent(requireContext(), AssessmentType.PROGRESSION))
         }
         binding.tvSessionProgress.visibility = View.GONE
     }
@@ -445,7 +407,7 @@ class HomeFragment : Fragment() {
         binding.btnStartTodayPlan.visibility = View.VISIBLE
         binding.btnStartTodayPlan.text = getString(R.string.start_reassessment)
         binding.btnStartTodayPlan.setOnClickListener {
-            startActivity(Intent(requireContext(), PreScreeningActivity::class.java))
+            startActivity(PreScreeningActivity.createIntent(requireContext(), AssessmentType.PROGRESSION))
         }
         binding.tvSessionProgress.visibility = View.GONE
     }
@@ -509,22 +471,6 @@ class HomeFragment : Fragment() {
         }
     }
 
-    // ── Report Summary ──────────────────────────────────────────────────────
-
-    private fun renderReportSummary(data: HomeData) {
-        val stats = data.stats
-        val legacyStats = data.userStats
-        val sessions = stats?.thisWeekSessions ?: legacyStats?.weeklyWorkouts ?: 0
-        val formScore = stats?.avgFormScore ?: legacyStats?.avgFormScore?.toInt() ?: 0
-        val streak = stats?.streak ?: legacyStats?.streak ?: 0
-
-        binding.tvHomeReportSummary.text = if (formScore > 0) {
-            getString(R.string.home_report_summary_format, sessions, "$formScore%", streak)
-        } else {
-            getString(R.string.home_report_summary_empty, sessions)
-        }
-    }
-
     // ── Alerts ────────────────────────────────────────────────────────────────
 
     private fun renderAlerts(data: HomeData) {
@@ -548,123 +494,10 @@ class HomeFragment : Fragment() {
     private fun handleAlertAction(alert: HomeAlertData) {
         when (alert.type) {
             "reassessment_due" ->
-                startActivity(Intent(requireContext(), PreScreeningActivity::class.java))
+                startActivity(PreScreeningActivity.createIntent(requireContext(), AssessmentType.PROGRESSION))
             "progression_applied" ->
                 (activity as? MainContainerActivity)?.navigateToTab(R.id.nav_train)
             else -> Unit
-        }
-    }
-
-    // ── Progression Card ──────────────────────────────────────────────────────
-
-    private fun checkProgressionChanges() {
-        val ctx = context ?: return
-        val authHeader = AuthManager.getAuthHeader(ctx) ?: return
-
-        viewLifecycleOwner.lifecycleScope.launch {
-            try {
-                val response = withContext(Dispatchers.IO) {
-                    ApiClient.mobileSyncApi.getRecentProgression(authHeader)
-                }
-                if (!isAdded || _binding == null) return@launch
-
-                val changes = response.body()?.data
-                if (changes.isNullOrEmpty()) {
-                    binding.cardProgression.visibility = View.GONE
-                    return@launch
-                }
-
-                renderProgressionCard(changes)
-            } catch (e: Exception) {
-                Log.w(TAG, "Failed to check progression", e)
-                if (_binding != null) binding.cardProgression.visibility = View.GONE
-            }
-        }
-    }
-
-    private fun renderProgressionCard(changes: List<ProgressionEntryData>) {
-        if (_binding == null) return
-        val ctx = requireContext()
-        val language = ctx.currentLanguage
-        val isArabic = language == "ar"
-
-        binding.cardProgression.visibility = View.VISIBLE
-
-        val hasIncrease = changes.any { it.newValue > it.previousValue }
-        binding.tvProgressionHomeTitle.text = if (hasIncrease)
-            getString(R.string.progression_level_up) else getString(R.string.progression_home_title)
-
-        val container = binding.llProgressionHomeChanges
-        container.removeAllViews()
-
-        val dp = { v: Int -> (v * resources.displayMetrics.density).toInt() }
-
-        for (change in changes.take(3)) {
-            val isInc = change.newValue > change.previousValue
-            val accentColor = if (isInc) ContextCompat.getColor(ctx, R.color.success)
-                else ContextCompat.getColor(ctx, R.color.warning)
-
-            val row = LinearLayout(ctx).apply {
-                orientation = LinearLayout.HORIZONTAL
-                gravity = Gravity.CENTER_VERTICAL
-                layoutParams = LinearLayout.LayoutParams(
-                    LinearLayout.LayoutParams.MATCH_PARENT,
-                    LinearLayout.LayoutParams.WRAP_CONTENT
-                ).apply { topMargin = dp(4) }
-            }
-
-            row.addView(TextView(ctx).apply {
-                text = if (isInc) "\u2191" else "\u2193"
-                setTextColor(accentColor)
-                textSize = 16f
-                setTypeface(null, Typeface.BOLD)
-                layoutParams = LinearLayout.LayoutParams(
-                    LinearLayout.LayoutParams.WRAP_CONTENT,
-                    LinearLayout.LayoutParams.WRAP_CONTENT
-                ).apply { marginEnd = dp(8) }
-            })
-
-            val fieldLabel = when (change.field) {
-                "weightKg" -> getString(R.string.progression_field_weight)
-                "targetReps" -> getString(R.string.progression_field_reps)
-                "sets" -> getString(R.string.progression_field_sets)
-                else -> change.field
-            }
-            val from = formatFieldVal(change.field, change.previousValue)
-            val to = formatFieldVal(change.field, change.newValue)
-            row.addView(TextView(ctx).apply {
-                text = "$fieldLabel: $from → $to"
-                setTextColor(ContextCompat.getColor(ctx, R.color.text_primary))
-                textSize = 13f
-                layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f)
-            })
-
-            container.addView(row)
-        }
-
-        binding.btnProgressionHomeView.setOnClickListener {
-            startActivity(PlanOverviewActivity.createIntent(ctx))
-
-            val authHeader = AuthManager.getAuthHeader(ctx) ?: return@setOnClickListener
-            viewLifecycleOwner.lifecycleScope.launch {
-                withContext(Dispatchers.IO) {
-                    runCatching {
-                        ApiClient.mobileSyncApi.markProgressionSeen(
-                            authHeader,
-                            ProgressionMarkSeenRequest(changes.map { it.id })
-                        )
-                    }
-                }
-                if (_binding != null) binding.cardProgression.visibility = View.GONE
-            }
-        }
-    }
-
-    private fun formatFieldVal(field: String, value: Double): String {
-        return when (field) {
-            "weightKg" -> "${String.format("%.1f", value)}kg"
-            "targetReps", "sets" -> "${value.toInt()}"
-            else -> String.format("%.1f", value)
         }
     }
 
@@ -677,24 +510,24 @@ class HomeFragment : Fragment() {
     ) {
         val weekNumber = trainMode.activeProgram?.weekNumber ?: 1
         val dayNumber = trainMode.activeProgram?.dayNumber ?: 1
-        val programId = trainMode.activeProgram?.id
 
+        // Use cached active plan for program slug/id
         val cachedData = homeRepository.getCachedData()
-        val legacyProgram = cachedData?.activePlan?.programs?.firstOrNull { it.status == "active" }?.program
-        val slug = legacyProgram?.slug
-        val effectiveId = programId ?: legacyProgram?.id
+        val activePlanProgram = cachedData?.activePlan?.programs?.firstOrNull { it.status == "active" }
+        val programInfo = activePlanProgram?.program
 
-        if (effectiveId != null) {
+        if (programInfo != null) {
             startActivity(
                 Intent(requireContext(), ProgramSessionActivity::class.java).apply {
-                    putExtra(ProgramSessionActivity.EXTRA_PROGRAM_SLUG, slug ?: "")
-                    putExtra(ProgramSessionActivity.EXTRA_PROGRAM_ID, effectiveId)
+                    putExtra(ProgramSessionActivity.EXTRA_PROGRAM_SLUG, programInfo.slug)
+                    putExtra(ProgramSessionActivity.EXTRA_PROGRAM_ID, programInfo.id)
                     putExtra(ProgramSessionActivity.EXTRA_WEEK_NUMBER, weekNumber)
                     putExtra(ProgramSessionActivity.EXTRA_DAY_NUMBER, dayNumber)
                     putExtra(ProgramSessionActivity.EXTRA_TARGET_SESSION_ID, sessionId)
                 }
             )
         } else {
+            // Fallback to plan overview
             startActivity(PlanOverviewActivity.createIntent(requireContext()))
         }
     }
@@ -703,7 +536,7 @@ class HomeFragment : Fragment() {
 
     private fun setupStaticListeners() {
         binding.cardBodyScan.setOnClickListener {
-            startActivity(Intent(requireContext(), PreScreeningActivity::class.java))
+            startActivity(PreScreeningActivity.createIntent(requireContext()))
         }
 
         binding.cardStartCamera.setOnClickListener {
@@ -715,131 +548,25 @@ class HomeFragment : Fragment() {
         }
 
         binding.ivAvatar.setOnClickListener {
-            startActivity(Intent(requireContext(), com.trainingvalidator.poc.ui.profile.ProfileActivity::class.java))
+            startActivity(
+                Intent(requireContext(), com.trainingvalidator.poc.ui.profile.ProfileActivity::class.java)
+            )
         }
 
         binding.btnOpenReports.setOnClickListener {
             (activity as? MainContainerActivity)?.navigateToTab(R.id.nav_reports)
         }
-    }
 
-    // ── Recent Sessions ─────────────────────────────────────────────────────
-
-    private fun renderRecentSessions(data: HomeData) {
-        val sessions = data.recentSessions
-        if (sessions.isNullOrEmpty()) {
-            binding.layoutRecentSessions.visibility = View.GONE
-            return
-        }
-
-        binding.layoutRecentSessions.visibility = View.VISIBLE
-        binding.recentSessionsList.removeAllViews()
-
-        val language = requireContext().currentLanguage
-        val limit = sessions.take(5)
-
-        for (session in limit) {
-            binding.recentSessionsList.addView(createRecentSessionRow(session, language))
-        }
-    }
-
-    private fun createRecentSessionRow(session: RecentSessionData, language: String): View {
-        val ctx = requireContext()
-        val name = session.exerciseName[language] ?: session.exerciseName["en"] ?: session.exerciseId
-        val ago = timeAgo(session.date)
-
-        val row = LinearLayout(ctx).apply {
-            orientation = LinearLayout.HORIZONTAL
-            gravity = android.view.Gravity.CENTER_VERTICAL
-            setPadding(0, dpToPx(10), 0, dpToPx(10))
-        }
-
-        val infoColumn = LinearLayout(ctx).apply {
-            orientation = LinearLayout.VERTICAL
-            layoutParams = LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f)
-        }
-
-        val tvTitle = TextView(ctx).apply {
-            text = name
-            setTextColor(ContextCompat.getColor(ctx, R.color.text_primary))
-            textSize = 14f
-            setTypeface(null, Typeface.BOLD)
-        }
-
-        val tvMeta = TextView(ctx).apply {
-            text = getString(R.string.recent_session_item, ago, session.context)
-            setTextColor(ContextCompat.getColor(ctx, R.color.text_tertiary))
-            textSize = 12f
-        }
-
-        infoColumn.addView(tvTitle)
-        infoColumn.addView(tvMeta)
-
-        val tvScore = TextView(ctx).apply {
-            text = getString(R.string.recent_session_score, session.formScore)
-            setTextColor(
-                when {
-                    session.formScore >= 80 -> ContextCompat.getColor(ctx, R.color.success)
-                    session.formScore >= 60 -> ContextCompat.getColor(ctx, R.color.warning)
-                    else -> ContextCompat.getColor(ctx, R.color.error)
-                }
-            )
-            textSize = 13f
-            setTypeface(null, Typeface.BOLD)
-        }
-
-        row.addView(infoColumn)
-        row.addView(tvScore)
-
-        return row
-    }
-
-    // ── Loading Skeleton ─────────────────────────────────────────────────────
-
-    private fun showLoadingSkeleton() {
-        binding.layoutLoading.visibility = View.VISIBLE
-        binding.layoutContent.visibility = View.GONE
-
-        skeletonAnimator = ObjectAnimator.ofFloat(binding.layoutLoading, "alpha", 1f, 0.3f).apply {
-            duration = 800
-            repeatMode = ValueAnimator.REVERSE
-            repeatCount = ValueAnimator.INFINITE
-            start()
-        }
-    }
-
-    private fun hideLoadingSkeleton() {
-        skeletonAnimator?.cancel()
-        skeletonAnimator = null
-        binding.layoutLoading.visibility = View.GONE
-        binding.layoutContent.visibility = View.VISIBLE
+        // Hidden legacy buttons — kept to avoid crash if old layout is cached
+        binding.cardContinue.setOnClickListener { /* no-op */ }
+        binding.btnContinue.setOnClickListener { /* no-op */ }
     }
 
     // ── Helpers ───────────────────────────────────────────────────────────────
 
-    private fun timeAgo(isoDate: String): String {
-        return try {
-            val then = Instant.parse(isoDate)
-            val now = Instant.now()
-            val minutes = ChronoUnit.MINUTES.between(then, now)
-            when {
-                minutes < 1   -> getString(R.string.time_just_now)
-                minutes < 60  -> getString(R.string.time_minutes_ago, minutes.toInt())
-                minutes < 1440 -> getString(R.string.time_hours_ago, (minutes / 60).toInt())
-                minutes < 10080 -> getString(R.string.time_days_ago, (minutes / 1440).toInt())
-                minutes < 43800 -> getString(R.string.time_weeks_ago, (minutes / 10080).toInt())
-                minutes < 525600 -> getString(R.string.time_months_ago, (minutes / 43800).toInt())
-                else -> getString(R.string.time_years_ago, (minutes / 525600).toInt())
-            }
-        } catch (_: Exception) {
-            isoDate
-        }
-    }
-
     private fun hideAllTrainCards() {
         binding.cardActiveProgram.visibility = View.GONE
         binding.cardTodayPlan.visibility = View.GONE
-        binding.tvSessionProgress.visibility = View.GONE
         clearCatchUpUi()
     }
 
@@ -897,12 +624,7 @@ class HomeFragment : Fragment() {
         }
     }
 
-    private fun dpToPx(dp: Int): Int =
-        (dp * resources.displayMetrics.density).toInt()
-
     override fun onDestroyView() {
-        skeletonAnimator?.cancel()
-        skeletonAnimator = null
         super.onDestroyView()
         _binding = null
     }
