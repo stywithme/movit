@@ -11,6 +11,8 @@ import { getAutoAssignmentReadiness } from '../_lib/auto-assignment';
 import { ProgramAttributesSection, useAttributesCatalog } from '../_components/ProgramAttributesSection';
 import { buildValueIdMeta, type ProgramAttributeFormRow } from '../_lib/program-prescription-attributes';
 import { exerciseProgramAttributeStatus } from '../_lib/exercise-program-attribute-status';
+import { PROGRAM_EDITOR_TABS, type ProgramEditorTabId } from '../_components/program-editor-tabs';
+import { ProgramEditorTabBar } from '../_components/ProgramEditorTabBar';
 
 interface ProgramSummary {
   id: string;
@@ -148,13 +150,6 @@ const createEmptyWeek = (weekNumber: number): WeekForm => ({
   days: [createEmptyDay(1)],
 });
 
-const PROGRAM_EDITOR_SECTIONS = [
-  { id: 'basic-information', label: 'Basic Info' },
-  { id: 'program-configuration', label: 'Configuration' },
-  { id: 'prescription-settings', label: 'Prescription' },
-  { id: 'program-builder', label: 'Builder' },
-] as const;
-
 function cloneItem(item: SessionItemForm): SessionItemForm {
   return {
     ...item,
@@ -240,6 +235,8 @@ export default function NewProgramPage() {
   const [prescriptionPriority, setPrescriptionPriority] = useState(50);
   const [prerequisiteProgramId, setPrerequisiteProgramId] = useState('');
   const [nextProgramId, setNextProgramId] = useState('');
+
+  const [editorTab, setEditorTab] = useState<ProgramEditorTabId>('basics');
 
   const [exercises, setExercises] = useState<ExerciseSummary[]>([]);
   const [workouts, setWorkouts] = useState<WorkoutSummary[]>([]);
@@ -886,127 +883,120 @@ export default function NewProgramPage() {
 
       <form onSubmit={handleSubmit} className="space-y-6">
         <Card className="sticky top-4 z-10 border-blue-100 bg-white/95 backdrop-blur p-4">
-          <div className="flex flex-wrap items-center justify-between gap-4">
-            <div className="flex flex-wrap gap-2">
-              {PROGRAM_EDITOR_SECTIONS.map((section) => (
-                <a
-                  key={section.id}
-                  href={`#${section.id}`}
-                  className="rounded-lg border border-gray-200 px-3 py-1.5 text-sm font-medium text-gray-700 hover:border-blue-300 hover:text-blue-700"
-                >
-                  {section.label}
-                </a>
-              ))}
-            </div>
-            <div className="text-sm text-gray-500">
-              {builderSummary.weeks} weeks • {builderSummary.days} days • {builderSummary.sessions} sessions • {builderSummary.items} items
-            </div>
-          </div>
+          <ProgramEditorTabBar
+            active={editorTab}
+            onChange={setEditorTab}
+            tabs={PROGRAM_EDITOR_TABS}
+            right={
+              <span>
+                {builderSummary.weeks}w · {builderSummary.days}d · {builderSummary.sessions} sess · {builderSummary.items}{' '}
+                items
+              </span>
+            }
+          />
         </Card>
 
-        <Card id="basic-information" className="p-6 scroll-mt-24">
-          <h2 className="text-lg font-semibold mb-4">Basic Information</h2>
-
-          <div className="grid grid-cols-2 gap-4">
+        {editorTab === 'basics' && (
+          <Card className="p-6 space-y-6">
             <div>
-              <Label>Name (English) *</Label>
-              <Input
-                value={name.en}
-                onChange={(e) => setName({ ...name, en: e.target.value })}
-                placeholder="Enter program name"
-                required
-              />
+              <h2 className="text-lg font-semibold text-gray-900">Identity &amp; schedule</h2>
+              <p className="mt-1 text-sm text-gray-500">
+                Program names are required. Duration should match the number of week blocks in the Calendar tab.
+              </p>
             </div>
-            <div>
-              <Label>Name (Arabic) *</Label>
-              <Input
-                value={name.ar}
-                onChange={(e) => setName({ ...name, ar: e.target.value })}
-                placeholder="أدخل اسم البرنامج"
-                dir="rtl"
-                required
-              />
-            </div>
-          </div>
 
-          <div className="grid grid-cols-2 gap-4 mt-4">
-            <div>
-              <Label>Description (English)</Label>
-              <Textarea
-                value={description.en}
-                onChange={(e) => setDescription({ ...description, en: e.target.value })}
-                placeholder="Enter description"
-                rows={2}
-              />
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label>Name (English) *</Label>
+                <Input
+                  value={name.en}
+                  onChange={(e) => setName({ ...name, en: e.target.value })}
+                  placeholder="Enter program name"
+                  required
+                />
+              </div>
+              <div>
+                <Label>Name (Arabic) *</Label>
+                <Input
+                  value={name.ar}
+                  onChange={(e) => setName({ ...name, ar: e.target.value })}
+                  placeholder="أدخل اسم البرنامج"
+                  dir="rtl"
+                  required
+                />
+              </div>
             </div>
-            <div>
-              <Label>Description (Arabic)</Label>
-              <Textarea
-                value={description.ar}
-                onChange={(e) => setDescription({ ...description, ar: e.target.value })}
-                placeholder="أدخل الوصف"
-                dir="rtl"
-                rows={2}
-              />
+
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label>Description (English)</Label>
+                <Textarea
+                  value={description.en}
+                  onChange={(e) => setDescription({ ...description, en: e.target.value })}
+                  placeholder="Enter description"
+                  rows={2}
+                />
+              </div>
+              <div>
+                <Label>Description (Arabic)</Label>
+                <Textarea
+                  value={description.ar}
+                  onChange={(e) => setDescription({ ...description, ar: e.target.value })}
+                  placeholder="أدخل الوصف"
+                  dir="rtl"
+                  rows={2}
+                />
+              </div>
             </div>
-          </div>
-        </Card>
 
-        <Card id="program-configuration" className="p-6 scroll-mt-24">
-          <h2 className="text-lg font-semibold mb-4">Program Configuration</h2>
-
-          <div className="grid grid-cols-1 gap-4">
             <div>
-              <Label>Cover Image URL</Label>
+              <Label>Cover image URL</Label>
               <Input
                 value={coverImageUrl}
                 onChange={(e) => setCoverImageUrl(e.target.value)}
                 placeholder="https://..."
               />
+              <p className="mt-1 text-xs text-gray-500">Shown in catalog and mobile explore.</p>
             </div>
-          </div>
 
-          <div className="grid grid-cols-3 gap-4 mt-4">
-            <div>
-              <Label>Duration (weeks)</Label>
-              <Input
-                type="number"
-                min={1}
-                value={durationWeeks}
-                onChange={(e) => setDurationWeeks(Number.parseInt(e.target.value, 10) || 1)}
-              />
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+              <div>
+                <Label>Duration (weeks)</Label>
+                <Input
+                  type="number"
+                  min={1}
+                  value={durationWeeks}
+                  onChange={(e) => setDurationWeeks(Number.parseInt(e.target.value, 10) || 1)}
+                />
+              </div>
+              <div>
+                <Label>Tags (comma separated)</Label>
+                <Input
+                  value={tags}
+                  onChange={(e) => setTags(e.target.value)}
+                  placeholder="strength, mobility"
+                />
+                <p className="mt-1 text-xs text-gray-500">Optional — internal search and filtering only.</p>
+              </div>
             </div>
-            <div>
-              <Label>Version</Label>
-              <Input
-                type="number"
-                min={1}
-                value={version}
-                onChange={(e) => setVersion(Number.parseInt(e.target.value, 10) || 1)}
-              />
-            </div>
-            <div>
-              <Label>Tags (comma separated)</Label>
-              <Input
-                value={tags}
-                onChange={(e) => setTags(e.target.value)}
-                placeholder="weight-loss, beginner"
-              />
-            </div>
-          </div>
 
-          {durationWeeks !== weeks.length ? (
-            <p className="mt-3 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-800">
-              Duration is set to {durationWeeks} week(s), but the builder currently contains {weeks.length} week block(s).
-            </p>
-          ) : null}
-        </Card>
+            {durationWeeks !== weeks.length ? (
+              <p className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-800">
+                Duration is set to {durationWeeks} week(s), but the calendar builder currently has {weeks.length}{' '}
+                week block(s). Align them before publishing.
+              </p>
+            ) : null}
+          </Card>
+        )}
 
-        <Card id="prescription-settings" className="p-6 scroll-mt-24">
-          <h2 className="text-lg font-semibold mb-4">Prescription &amp; matching</h2>
-          <p className="text-sm text-gray-600 mb-4">
-            Program attributes drive auto-assignment and the prescription engine.
+        {editorTab === 'prescription' && (
+          <Card className="p-6 space-y-4">
+          <div>
+          <h2 className="text-lg font-semibold text-gray-900">Prescription &amp; matching</h2>
+          <p className="text-sm text-gray-600 mt-1">
+            Program attributes drive auto-assignment and the prescription engine. Use the Advanced tab for schema version and structured coaching notes.
           </p>
+          </div>
 
           {attributeCatalogError ? (
             <p className="text-sm text-red-600 mb-4">{attributeCatalogError}</p>
@@ -1090,7 +1080,7 @@ export default function NewProgramPage() {
               onChange={(e) => setTrainingLevel(Number.parseInt(e.target.value, 10) || 1)}
             />
             <p className="text-xs text-gray-500 mt-1">
-              البرنامج يُربط بمستوى واحد فقط (يُحفظ كـ min = max في الـ API).
+              Single user level for matching (stored as min = max in the API).
             </p>
           </div>
 
@@ -1128,16 +1118,6 @@ export default function NewProgramPage() {
             </div>
           </div>
 
-          <div className="mt-4">
-            <Label>Coaching notes (JSON)</Label>
-            <Textarea
-              value={coachingNotesProgram}
-              onChange={(e) => setCoachingNotesProgram(e.target.value)}
-              rows={2}
-              placeholder="{}"
-            />
-          </div>
-
           <div className="grid grid-cols-2 gap-4 mt-4">
             <div>
               <Label>Prerequisite Program</Label>
@@ -1161,29 +1141,41 @@ export default function NewProgramPage() {
             </div>
           </div>
         </Card>
+        )}
 
-        <Card className="p-6 border-dashed border-gray-300">
-          <div className="grid grid-cols-4 gap-4">
+        {editorTab === 'advanced' && (
+          <Card className="p-6 space-y-4">
             <div>
-              <p className="text-sm text-gray-500">Weeks</p>
-              <p className="text-2xl font-semibold text-gray-900">{builderSummary.weeks}</p>
+              <h2 className="text-lg font-semibold text-gray-900">Advanced</h2>
+              <p className="text-sm text-gray-600 mt-1">
+                Optional metadata. Bump version when you make meaningful template changes to a published program.
+              </p>
+            </div>
+            <div className="max-w-xs">
+              <Label>Schema / content version</Label>
+              <Input
+                type="number"
+                min={1}
+                value={version}
+                onChange={(e) => setVersion(Number.parseInt(e.target.value, 10) || 1)}
+              />
             </div>
             <div>
-              <p className="text-sm text-gray-500">Days</p>
-              <p className="text-2xl font-semibold text-gray-900">{builderSummary.days}</p>
+              <Label>Coaching notes (JSON)</Label>
+              <Textarea
+                value={coachingNotesProgram}
+                onChange={(e) => setCoachingNotesProgram(e.target.value)}
+                rows={4}
+                placeholder='{}'
+                className="font-mono text-sm"
+              />
+              <p className="mt-1 text-xs text-gray-500">Structured notes for coaches — omit if unused.</p>
             </div>
-            <div>
-              <p className="text-sm text-gray-500">Sessions</p>
-              <p className="text-2xl font-semibold text-gray-900">{builderSummary.sessions}</p>
-            </div>
-            <div>
-              <p className="text-sm text-gray-500">Items</p>
-              <p className="text-2xl font-semibold text-gray-900">{builderSummary.items}</p>
-            </div>
-          </div>
-        </Card>
+          </Card>
+        )}
 
-        <Card id="program-builder" className="p-6 space-y-4 scroll-mt-24">
+        {editorTab === 'builder' && (
+        <>
           <div className="flex items-center justify-between">
             <div>
               <h2 className="text-lg font-semibold">Program Builder</h2>
@@ -1194,17 +1186,14 @@ export default function NewProgramPage() {
             </Button>
           </div>
 
-          <Card className="border-blue-100 bg-blue-50/70 shadow-none">
-            <div className="p-4">
-              <p className="text-sm font-semibold text-blue-950">Recommended workflow</p>
-              <ul className="mt-2 space-y-1 text-sm text-blue-900">
-                <li>1. Create the week structure first.</li>
-                <li>2. Add days and mark rest days early.</li>
-                <li>3. Build sessions before filling advanced item details.</li>
-                <li>4. Use duplicate actions to speed up repeated structures.</li>
-              </ul>
-            </div>
-          </Card>
+          <details className="rounded-lg border border-blue-100 bg-blue-50/70 text-sm text-blue-900">
+            <summary className="cursor-pointer px-4 py-3 font-semibold text-blue-950">Calendar builder tips</summary>
+            <ul className="list-disc space-y-1 px-4 pb-3 pl-8">
+              <li>Create week structure first, then days and sessions.</li>
+              <li>Use duplicate week/day/session for repeated patterns.</li>
+              <li>Expand an exercise row for sets, rest, role, and JSON coaching notes.</li>
+            </ul>
+          </details>
 
           {calendarStructureWarnings.length > 0 ? (
             <div className="space-y-2 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-900">
@@ -1747,7 +1736,8 @@ export default function NewProgramPage() {
               </div>
             </CollapsibleBuilderSection>
           ))}
-        </Card>
+        </>
+        )}
 
         <div className="sticky bottom-4 z-10 flex justify-end gap-4 rounded-2xl border border-gray-200 bg-white/95 p-4 shadow-sm backdrop-blur">
           <Button type="button" variant="outline" onClick={() => router.push('/admin/programs')}>
