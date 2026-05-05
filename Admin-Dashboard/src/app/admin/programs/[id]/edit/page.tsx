@@ -512,35 +512,6 @@ export default function EditProgramPage() {
     }
   }, [durationWeeks]);
 
-  const calendarStructureWarnings = useMemo(() => {
-    const messages: string[] = [];
-    if (durationWeeks !== weeks.length) {
-      messages.push(
-        `Duration is set to ${durationWeeks} week(s), but the builder currently contains ${weeks.length} week block(s).`
-      );
-    }
-    weeks.forEach((week, wi) => {
-      if (week.days.length < 1) {
-        messages.push(`Week ${wi + 1}: add at least one training day before publishing.`);
-      }
-      const badDayNumber = week.days.some((d) => d.dayNumber < 1 || d.dayNumber > 14);
-      if (badDayNumber) {
-        messages.push(`Week ${wi + 1}: day numbers should be between 1 and 14.`);
-      }
-    });
-    if (phasesOverlap(phases)) {
-      messages.push('Phases have overlapping week ranges.');
-    }
-    const covered = new Set<number>();
-    phases.forEach((p) => {
-      for (let i = p.startWeek; i <= p.endWeek; i++) covered.add(i);
-    });
-    if (covered.size !== durationWeeks) {
-      messages.push('Phases do not fully cover weeks 1 to duration.');
-    }
-    return messages;
-  }, [durationWeeks, weeks, phases]);
-
   // --- Phase helpers (minimal Phase Builder) - duplicated from new/page for parity ---
   const getPhaseStats = (phase: PhaseForm) => {
     const phaseWeeks = weeks.slice(Math.max(0, phase.startWeek - 1), phase.endWeek);
@@ -665,6 +636,35 @@ export default function EditProgramPage() {
       })
     );
   };
+
+  const calendarStructureWarnings = useMemo(() => {
+    const messages: string[] = [];
+    if (durationWeeks !== weeks.length) {
+      messages.push(
+        `Duration is set to ${durationWeeks} week(s), but the builder currently contains ${weeks.length} week block(s).`
+      );
+    }
+    weeks.forEach((week, wi) => {
+      if (week.days.length < 1) {
+        messages.push(`Week ${wi + 1}: add at least one training day before publishing.`);
+      }
+      const badDayNumber = week.days.some((d) => d.dayNumber < 1 || d.dayNumber > 14);
+      if (badDayNumber) {
+        messages.push(`Week ${wi + 1}: day numbers should be between 1 and 14.`);
+      }
+    });
+    if (phasesOverlap(phases)) {
+      messages.push('Phases have overlapping week ranges.');
+    }
+    const covered = new Set<number>();
+    phases.forEach((p) => {
+      for (let i = p.startWeek; i <= p.endWeek; i++) covered.add(i);
+    });
+    if (covered.size !== durationWeeks) {
+      messages.push('Phases do not fully cover weeks 1 to duration.');
+    }
+    return messages;
+  }, [durationWeeks, weeks, phases]);
 
   const exerciseOptions = useMemo(
     () =>
