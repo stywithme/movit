@@ -52,6 +52,7 @@ class DayCustomizationStore(context: Context) {
         val id: String = "",
         val name: LocalizedText = LocalizedText(),
         val sortOrder: Int = 0,
+        val role: String = "MAIN",
         val estimatedDurationMin: Int? = null,
         val items: List<ProgramSessionItem> = emptyList(),
         val isDeleted: Boolean = false
@@ -121,6 +122,7 @@ class DayCustomizationStore(context: Context) {
                 id = session.id,
                 name = session.name,
                 sortOrder = session.sortOrder,
+                role = session.role.ifBlank { "MAIN" },
                 estimatedDurationMin = session.estimatedDurationMin,
                 items = session.items.sortedBy { it.sortOrder }
             )

@@ -56,7 +56,7 @@ interface TrainModeData {
     name: Record<string, string>;
     exerciseCount: number;
     estimatedMinutes: number | null;
-    sessionCategory: string | null;
+    role: string | null;
     isCompleted: boolean;
     allSessionsCount: number;
     completedSessionsCount: number;
@@ -443,7 +443,7 @@ async function buildTrainMode(
       name: nextSession.name as Record<string, string>,
       exerciseCount,
       estimatedMinutes: nextSession.estimatedDurationMin,
-      sessionCategory: nextSession.sessionCategory,
+      role: nextSession.role != null ? String(nextSession.role) : null,
       isCompleted: false,
       allSessionsCount: sessions.length,
       completedSessionsCount: completedSessionIds.size,

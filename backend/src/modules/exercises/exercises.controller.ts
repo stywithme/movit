@@ -1,6 +1,7 @@
 import { BadRequestException, Body, Controller, Delete, Get, Param, Post, Put, Query, Res, UseGuards } from '@nestjs/common';
 import type { Response } from 'express';
 import { exerciseService } from './exercises.service';
+import { exerciseSubstitutionsService } from './exercise-substitutions.service';
 import { CaslGuard } from '@/lib/casl/casl.guard';
 import { CheckPermission } from '@/lib/casl/check-permission.decorator';
 import { PositionCheckSchema, TrackedJointSchema } from './exercises.validation';
@@ -192,6 +193,19 @@ export class ExercisesController {
       console.error('Error generating android config:', error);
       res.status(500);
       return { success: false, error: 'Failed to generate config' };
+    }
+  }
+
+  @Get(':id/substitutions')
+  @CheckPermission('read', 'Exercise')
+  async getSubstitutions(@Param('id') id: string, @Res({ passthrough: true }) res: Response) {
+    try {
+      const subs = await exerciseSubstitutionsService.getSubstitutions(id);
+      return { success: true, data: subs };
+    } catch (error) {
+      console.error('Error fetching substitutions:', error);
+      res.status(500);
+      return { success: false, error: 'Failed to fetch substitutions' };
     }
   }
 }

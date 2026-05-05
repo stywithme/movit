@@ -4,6 +4,8 @@
 
 import { getPrisma } from '@/lib/prisma/client';
 import { programService } from '@/modules/programs/programs.service';
+import type { ExerciseSubstitution } from '@/modules/exercises/exercise-substitutions.service';
+import { exerciseSubstitutionsService } from '@/modules/exercises/exercise-substitutions.service';
 import type { Prisma, TrainingGoal } from '@prisma/client';
 import type { OverrideType } from '@prisma/client';
 import { getGoalDefaults } from '@/constants/goal-defaults';
@@ -23,11 +25,12 @@ export interface EffectivePlanItem {
   notes: Prisma.JsonValue | null;
   restDurationMs: number | null;
   sortOrder: number;
-  role: string | null;
-  intent: string | null;
-  coachingNotes: Prisma.JsonValue | null;
-  allowedSubstitutions?: string[] | null;
   skipped?: boolean;
+  /** Populated from Exercise catalog at runtime (not stored on session item). */
+  intent?: string | null;
+  coachingNotes?: Prisma.JsonValue | null;
+  /** Same-source substitutions as mobile substitution picker (family / movement pattern). */
+  substitutionCandidates?: ExerciseSubstitution[];
   suggestion?: {
     suggestedWeightKg: number | null;
     suggestedReps: number | null;
@@ -41,6 +44,7 @@ export interface EffectivePlanSession {
   id: string;
   name: Prisma.JsonValue;
   sortOrder: number;
+  role: string | null;
   items: EffectivePlanItem[];
 }
 
@@ -65,10 +69,10 @@ type SessionItemRow = {
   notes: Prisma.JsonValue | null;
   restDurationMs: number | null;
   sortOrder: number;
-  role: string | null;
-  intent: string | null;
-  coachingNotes: Prisma.JsonValue | null;
-  allowedSubstitutions?: string[];
+  exercise?: {
+    intent: string | null;
+    coachingNotes: Prisma.JsonValue | null;
+  } | null;
 };
 
 type ProgressionStateRow = {
@@ -121,7 +125,8 @@ function buildSuggestion(
 function mergeProgression(
   item: SessionItemRow,
   state: ProgressionStateRow | undefined,
-  trainingGoal: TrainingGoal
+  trainingGoal: TrainingGoal,
+  substitutionCandidates?: ExerciseSubstitution[],
 ): EffectivePlanItem {
   const base: Omit<EffectivePlanItem, 'suggestion' | 'skipped'> = {
     id: item.id,
@@ -136,13 +141,12 @@ function mergeProgression(
     notes: item.notes,
     restDurationMs: item.restDurationMs,
     sortOrder: item.sortOrder,
-    role: item.role,
-    intent: item.intent,
-    coachingNotes: item.coachingNotes,
-    allowedSubstitutions:
-      Array.isArray(item.allowedSubstitutions) && item.allowedSubstitutions.length > 0
-        ? item.allowedSubstitutions
-        : null,
+    intent: item.exercise?.intent ?? null,
+    coachingNotes: item.exercise?.coachingNotes ?? null,
+    substitutionCandidates:
+      item.type === 'exercise' && item.exerciseId && substitutionCandidates?.length
+        ? substitutionCandidates
+        : undefined,
   };
 
   if (item.exerciseId && state) {
@@ -231,12 +235,6 @@ function buildAddedItem(
         : null,
     restDurationMs: typeof patch.restDurationMs === 'number' ? patch.restDurationMs : null,
     sortOrder: anchor.sortOrder + 1,
-    role: typeof patch.role === 'string' ? patch.role : null,
-    intent: typeof patch.intent === 'string' ? patch.intent : null,
-    coachingNotes:
-      patch.coachingNotes && typeof patch.coachingNotes === 'object' && !Array.isArray(patch.coachingNotes)
-        ? (patch.coachingNotes as Prisma.JsonValue)
-        : null,
   };
 
   return {
@@ -299,12 +297,34 @@ export const effectivePlanService = {
 
     const trainingGoal = up.user.trainingGoal;
 
+    const exerciseIdsForSubs = new Set<string>();
+    for (const s of day.sessions) {
+      for (const raw of s.items) {
+        if (raw.type === 'exercise' && raw.exerciseId) {
+          exerciseIdsForSubs.add(raw.exerciseId);
+        }
+      }
+    }
+    const substitutionByExercise = new Map<string, ExerciseSubstitution[]>();
+    await Promise.all(
+      [...exerciseIdsForSubs].map(async (exerciseId) => {
+        const subs = await exerciseSubstitutionsService.getSubstitutions(exerciseId);
+        substitutionByExercise.set(exerciseId, subs);
+      }),
+    );
+
     const sessions: EffectivePlanSession[] = day.sessions.map((session) => {
       const items: EffectivePlanItem[] = [];
 
       for (const raw of session.items) {
         const st = raw.exerciseId ? stateByExercise.get(raw.exerciseId) : undefined;
-        let merged = mergeProgression(raw, st, trainingGoal);
+        const subs = raw.exerciseId ? substitutionByExercise.get(raw.exerciseId) : undefined;
+        let merged = mergeProgression(
+          raw as SessionItemRow,
+          st,
+          trainingGoal,
+          subs,
+        );
         const itemOverrides = overridesByItem.get(raw.id) ?? [];
 
         for (const ov of itemOverrides) {
@@ -326,6 +346,7 @@ export const effectivePlanService = {
         id: session.id,
         name: session.name as Prisma.JsonValue,
         sortOrder: session.sortOrder,
+        role: session.role != null ? String(session.role) : null,
         items: items.map((item, index) => ({ ...item, sortOrder: index })),
       };
     });

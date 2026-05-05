@@ -8,8 +8,6 @@ import type { LocalizedText } from '@/lib/types/localized';
 import type {
   ProgramAttributeMode,
   ProgramType,
-  SessionItemIntent,
-  SessionItemRole,
   WeekType,
 } from '@prisma/client';
 
@@ -34,19 +32,14 @@ export interface ProgramSessionItemInput {
   restDurationMs?: number;
   sourceWorkoutId?: string;
   sortOrder?: number;
-  /** Preferred name; `alternatives` accepted for backward compatibility */
-  allowedSubstitutions?: string[];
-  /** @deprecated use allowedSubstitutions */
-  alternatives?: string[];
-  role?: SessionItemRole;
-  intent?: SessionItemIntent;
-  coachingNotes?: LocalizedText;
 }
 
 export interface ProgramSessionInput {
   id?: string;
   name: LocalizedText;
   sortOrder?: number;
+  estimatedDurationMin?: number | null;
+  role?: 'WARMUP' | 'ACTIVATION' | 'MAIN' | 'ACCESSORY' | 'CORRECTIVE' | 'COOLDOWN' | 'TEST';
   items?: ProgramSessionItemInput[];
 }
 
@@ -69,6 +62,27 @@ export interface ProgramWeekInput {
   days?: ProgramDayInput[];
 }
 
+/** Day pattern inside a weekly template for a Phase. Fixed 7-day structure. */
+export interface DayPatternInput {
+  dayNumber: number;
+  isRestDay?: boolean;
+  name?: LocalizedText;
+  dayFocus?: string;
+  sessions?: ProgramSessionInput[];
+}
+
+/** Phase input for phase-based program editor. */
+export interface ProgramPhaseInput {
+  id?: string;
+  name: LocalizedText;
+  description?: LocalizedText;
+  weekType?: WeekType;
+  startWeek: number;
+  endWeek: number;
+  sortOrder?: number;
+  weeklyPattern?: { days: DayPatternInput[] };
+}
+
 export interface CreateProgramInput {
   name: LocalizedText;
   description?: LocalizedText;
@@ -77,7 +91,6 @@ export interface CreateProgramInput {
   durationWeeks: number;
   tags?: string[];
   isDefault?: boolean;
-  weeks?: ProgramWeekInput[];
   programType?: ProgramType;
   autoAssignable?: boolean;
   version?: number;
@@ -93,6 +106,10 @@ export interface CreateProgramInput {
   nextProgramId?: string;
   /** Program matching dimensions (domain, goal, equipment, …). */
   programAttributes?: ProgramAttributeInput[];
+  /** Phase-based structure (preferred for new editor). Backend expands to weeks at save. */
+  phases?: ProgramPhaseInput[];
+  /** Legacy flat weeks (still accepted for backward compat). */
+  weeks?: ProgramWeekInput[];
 }
 
 export interface UpdateProgramInput extends Partial<CreateProgramInput> {
@@ -135,9 +152,9 @@ export interface ProgramExportItem {
   exerciseSlug?: string;
   /** True when the linked exercise was removed from the catalog */
   deletedExercise?: boolean;
-  role?: string;
-  intent?: string;
-  allowedSubstitutions?: string[];
+  /** From Exercise (catalog), not from session item */
+  intent?: string | null;
+  coachingNotes?: unknown;
   sets?: number;
   targetReps?: number;
   targetDuration?: number;
@@ -153,6 +170,7 @@ export interface ProgramExportSession {
   id: string;
   name: LocalizedText;
   sortOrder: number;
+  role: string;
   estimatedDurationMin?: number | null;
   items: ProgramExportItem[];
 }
@@ -202,4 +220,47 @@ export interface ProgramPreviewExport {
   muscleGroups: string[];
   weeks: ProgramExportWeek[];
   updatedAt: string;
+}
+
+/**
+ * Validates phase structure for strict sequential contiguous phases.
+ * Returns errors if gaps, overlaps, out of range, or invalid patterns.
+ */
+export function validatePhaseStructure(
+  phases: ProgramPhaseInput[] | undefined,
+  durationWeeks: number,
+): { valid: boolean; errors: string[] } {
+  const errors: string[] = [];
+  if (!phases || phases.length === 0) {
+    return { valid: true, errors: [] }; // allow empty for legacy
+  }
+
+  // Sort by sortOrder or startWeek
+  const sorted = [...phases].sort((a, b) => (a.sortOrder ?? a.startWeek) - (b.sortOrder ?? b.startWeek));
+
+  let expectedWeek = 1;
+  for (let i = 0; i < sorted.length; i++) {
+    const p = sorted[i];
+    if (p.startWeek !== expectedWeek) {
+      errors.push(`Phase ${i + 1} must start at week ${expectedWeek}, got ${p.startWeek}`);
+    }
+    if (p.endWeek < p.startWeek) {
+      errors.push(`Phase ${i + 1} endWeek < startWeek`);
+    }
+    expectedWeek = p.endWeek + 1;
+
+    // Check pattern has 7 days if provided
+    if (p.weeklyPattern?.days) {
+      const days = p.weeklyPattern.days;
+      if (days.length !== 7) {
+        errors.push(`Phase ${i + 1} weeklyPattern must have exactly 7 days`);
+      }
+    }
+  }
+
+  if (expectedWeek - 1 !== durationWeeks) {
+    errors.push(`Phases cover up to week ${expectedWeek - 1}, but program durationWeeks=${durationWeeks}`);
+  }
+
+  return { valid: errors.length === 0, errors };
 }

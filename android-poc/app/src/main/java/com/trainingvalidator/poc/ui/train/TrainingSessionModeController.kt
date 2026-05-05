@@ -85,6 +85,7 @@ class TrainingSessionModeController(
             host.finish()
             return
         }
+        val sessionRole = host.intent.getStringExtra(TrainingActivity.EXTRA_SESSION_ROLE) ?: "MAIN"
         val invalidExerciseItem = items.firstOrNull { it.type == "exercise" && it.exerciseSlug.isNullOrBlank() }
         if (invalidExerciseItem != null) {
             Log.e(tag, "Invalid session payload: exercise item without exerciseSlug")
@@ -97,7 +98,7 @@ class TrainingSessionModeController(
             host.finish()
             return
         }
-        val engine = SessionTrainingEngine(items)
+        val engine = SessionTrainingEngine(items, sessionRole)
         val exerciseRepo = ExerciseRepository.getInstance(host)
         val language = host.currentLanguage
         sessionExerciseConfigMap.clear()

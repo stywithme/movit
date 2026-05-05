@@ -297,7 +297,7 @@ export const progressionService = {
         currentTargetReps: existingItem?.targetReps ?? repAxis?.default ?? null,
         currentTargetDuration: existingItem?.targetDuration ?? durationAxis?.default ?? null,
         currentTargetSets: existingItem?.sets ?? setAxis?.default ?? null,
-        currentDifficultyCode: existingItem?.difficultyCode ?? (ladder ? ladder[0] : null),
+        currentDifficultyCode: (ladder ? ladder[0] : null),
         successStreak: 0,
         regressionStreak: 0,
       },

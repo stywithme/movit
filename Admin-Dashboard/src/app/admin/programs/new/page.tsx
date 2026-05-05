@@ -13,14 +13,19 @@ import { buildValueIdMeta, type ProgramAttributeFormRow } from '../_lib/program-
 import { exerciseProgramAttributeStatus } from '../_lib/exercise-program-attribute-status';
 import { PROGRAM_EDITOR_TABS, type ProgramEditorTabId } from '../_components/program-editor-tabs';
 import { ProgramEditorTabBar } from '../_components/ProgramEditorTabBar';
+import { padProgramWeeksToSevenDays } from '../_lib/week-seven-days';
+import {
+  allPhasesHomogeneous,
+  buildProgramPhasesPayload,
+} from '../_lib/build-program-phases-payload';
 
 interface ProgramSummary {
   id: string;
   name: LocalizedText;
 }
 
-const SESSION_ITEM_ROLE_OPTIONS = [
-  { value: '', label: '—' },
+/** Session-level roles (matches backend SessionRole). */
+const SESSION_ROLE_OPTIONS = [
   { value: 'WARMUP', label: 'WARMUP' },
   { value: 'ACTIVATION', label: 'ACTIVATION' },
   { value: 'MAIN', label: 'MAIN' },
@@ -28,14 +33,6 @@ const SESSION_ITEM_ROLE_OPTIONS = [
   { value: 'CORRECTIVE', label: 'CORRECTIVE' },
   { value: 'COOLDOWN', label: 'COOLDOWN' },
   { value: 'TEST', label: 'TEST' },
-];
-
-const SESSION_ITEM_INTENT_OPTIONS = [
-  { value: '', label: '—' },
-  { value: 'STANDARD', label: 'STANDARD' },
-  { value: 'POWER', label: 'POWER' },
-  { value: 'ECCENTRIC', label: 'ECCENTRIC' },
-  { value: 'VELOCITY_BASED', label: 'VELOCITY_BASED' },
 ];
 
 interface ExerciseSummary {
@@ -83,14 +80,14 @@ interface SessionItemForm {
   weightPerSetText: string;
   notes: LocalizedText;
   restDurationMs?: number;
-  role?: string;
-  intent?: string;
-  coachingNotesJson?: string;
 }
 
 interface SessionForm {
   name: LocalizedText;
   sortOrder: number;
+  /** Maps to ProgramSession.role */
+  role?: string;
+  estimatedDurationMin?: number | null;
   items: SessionItemForm[];
 }
 
@@ -129,14 +126,13 @@ const createEmptyItem = (type: 'exercise' | 'rest', exerciseId?: string): Sessio
   weightPerSetText: '',
   notes: { ar: '', en: '' },
   restDurationMs: type === 'rest' ? 60000 : undefined,
-  role: '',
-  intent: '',
-  coachingNotesJson: '',
 });
 
 const createEmptySession = (sortOrder: number): SessionForm => ({
   name: { ar: 'صباحا', en: 'Morning' },
   sortOrder,
+  role: 'MAIN',
+  estimatedDurationMin: undefined,
   items: [],
 });
 
@@ -154,7 +150,7 @@ const createEmptyWeek = (weekNumber: number): WeekForm => ({
   description: { ar: '', en: '' },
   sortOrder: weekNumber - 1,
   weekType: 'NORMAL',
-  days: [createEmptyDay(1)],
+  days: Array.from({ length: 7 }, (_, i) => createEmptyDay(i + 1)),
 });
 
 const createEmptyPhase = (start: number, end: number): PhaseForm => ({
@@ -259,6 +255,9 @@ export default function NewProgramPage() {
   const [nextProgramId, setNextProgramId] = useState('');
 
   const [editorTab, setEditorTab] = useState<ProgramEditorTabId>('basics');
+
+  /** Selected training day index (0–6) per week row in the Calendar builder */
+  const [weekDayTab, setWeekDayTab] = useState<Record<number, number>>({});
 
   const [exercises, setExercises] = useState<ExerciseSummary[]>([]);
   const [workouts, setWorkouts] = useState<WorkoutSummary[]>([]);
@@ -899,9 +898,6 @@ export default function NewProgramPage() {
           weightPerSetText: exercise.weightPerSet ? exercise.weightPerSet.join(', ') : '',
           notes: exercise.notes || { ar: '', en: '' },
           restDurationMs: undefined,
-          role: '',
-          intent: '',
-          coachingNotesJson: '',
         });
 
         if (exercise.restAfterExerciseMs > 0) {
@@ -912,9 +908,6 @@ export default function NewProgramPage() {
             weightPerSetText: '',
             notes: { ar: '', en: '' },
             restDurationMs: exercise.restAfterExerciseMs,
-            role: '',
-            intent: '',
-            coachingNotesJson: '',
           });
         }
       });
@@ -950,7 +943,12 @@ export default function NewProgramPage() {
     }
   };
 
-  const buildPayload = () => ({
+  const buildPayload = () => {
+    const phasesPayload = allPhasesHomogeneous(phases, weeks)
+      ? buildProgramPhasesPayload(phases, weeks)
+      : null;
+
+    return {
     name,
     description: description.en || description.ar ? description : undefined,
     coverImageUrl: coverImageUrl || undefined,
@@ -971,6 +969,7 @@ export default function NewProgramPage() {
     prerequisiteProgramId: prerequisiteProgramId || undefined,
     nextProgramId: nextProgramId || undefined,
     programAttributes: programAttributeRows,
+    ...(phasesPayload ? { phases: phasesPayload } : {}),
     weeks: weeks.map((week, weekIndex) => ({
       weekNumber: week.weekNumber || weekIndex + 1,
       weekType: week.weekType,
@@ -985,6 +984,11 @@ export default function NewProgramPage() {
         sessions: day.sessions.map((session, sessionIndex) => ({
           name: session.name,
           sortOrder: session.sortOrder ?? sessionIndex,
+          role: session.role || 'MAIN',
+          estimatedDurationMin:
+            session.estimatedDurationMin === undefined || session.estimatedDurationMin === null
+              ? undefined
+              : session.estimatedDurationMin,
           items: session.items.map((item, itemIndex) => ({
             type: item.type,
             exerciseId: item.type === 'exercise' ? item.exerciseId : undefined,
@@ -1003,22 +1007,25 @@ export default function NewProgramPage() {
             notes: item.type === 'exercise' && (item.notes.en || item.notes.ar) ? item.notes : undefined,
             restDurationMs: item.type === 'rest' ? item.restDurationMs : undefined,
             sortOrder: itemIndex,
-            role: item.role || undefined,
-            intent: item.intent || undefined,
-            coachingNotes: item.coachingNotesJson?.trim()
-              ? parseJsonField(item.coachingNotesJson)
-              : undefined,
           })),
         })),
       })),
     })),
-  });
+    };
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
 
     try {
+      if (phases.length > 0 && !allPhasesHomogeneous(phases, weeks)) {
+        toast(
+          'Weeks differ within at least one phase — saving as flat weeks only. Use "Apply Pattern" in each phase to align weeks before save if you need `program_phases` synced.',
+          { duration: 6500 }
+        );
+      }
+
       const res = await fetch('/api/programs', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -1577,15 +1584,38 @@ export default function NewProgramPage() {
                 <h4 className="text-sm font-semibold text-gray-700">
                   Training days
                   <span className="ml-2 rounded-full bg-primary/10 px-2 py-0.5 text-xs text-primary">
-                    {week.days.length}/week
+                    Day {(weekDayTab[weekIndex] ?? 0) + 1} / 7
                   </span>
                 </h4>
-                <Button type="button" variant="outline" onClick={() => addDay(weekIndex)}>
-                  Add Day
-                </Button>
               </div>
 
-              {week.days.map((day, dayIndex) => (
+              <div className="flex flex-wrap gap-2 border-b border-gray-200 pb-3">
+                {week.days.map((_, di) => (
+                  <button
+                    key={`day-tab-${weekIndex}-${di}`}
+                    type="button"
+                    className={`rounded-lg px-3 py-1.5 text-sm font-medium transition-colors ${
+                      (weekDayTab[weekIndex] ?? 0) === di
+                        ? 'bg-blue-600 text-white'
+                        : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                    }`}
+                    onClick={() =>
+                      setWeekDayTab((prev) => ({
+                        ...prev,
+                        [weekIndex]: di,
+                      }))
+                    }
+                  >
+                    Day {di + 1}
+                  </button>
+                ))}
+              </div>
+
+              {(() => {
+                const dayIndex = weekDayTab[weekIndex] ?? 0;
+                const day = week.days[dayIndex];
+                if (!day) return null;
+                return (
                 <CollapsibleBuilderSection
                   key={`day-${dayIndex}`}
                   title={`Training day ${dayIndex + 1}`}
@@ -1595,25 +1625,7 @@ export default function NewProgramPage() {
                     { label: 'Training', variant: 'primary' },
                     { label: `${day.sessions.length} session(s)` },
                   ]}
-                  actions={
-                    <div className="flex items-center gap-2">
-                      <Button
-                        type="button"
-                        variant="outline"
-                        onClick={() => removeDay(weekIndex, dayIndex)}
-                        disabled={week.days.length === 1}
-                      >
-                        Remove Day
-                      </Button>
-                      <Button
-                        type="button"
-                        variant="secondary"
-                        onClick={() => duplicateDay(weekIndex, dayIndex)}
-                      >
-                        Duplicate Day
-                      </Button>
-                    </div>
-                  }
+                  actions={null}
                   className="border-gray-100"
                 >
                   <div className="space-y-4">
@@ -1713,6 +1725,37 @@ export default function NewProgramPage() {
                             onChange={(e) =>
                               updateSession(weekIndex, dayIndex, sessionIndex, {
                                 name: { ...session.name, ar: e.target.value },
+                              })
+                            }
+                          />
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <Label>Session role</Label>
+                          <Select
+                            value={session.role ?? 'MAIN'}
+                            onChange={(e) =>
+                              updateSession(weekIndex, dayIndex, sessionIndex, {
+                                role: e.target.value,
+                              })
+                            }
+                            options={SESSION_ROLE_OPTIONS}
+                          />
+                        </div>
+                        <div>
+                          <Label>Estimated duration (min)</Label>
+                          <Input
+                            type="number"
+                            min={1}
+                            value={session.estimatedDurationMin ?? ''}
+                            onChange={(e) =>
+                              updateSession(weekIndex, dayIndex, sessionIndex, {
+                                estimatedDurationMin:
+                                  e.target.value === ''
+                                    ? undefined
+                                    : Number.parseInt(e.target.value, 10) || undefined,
                               })
                             }
                           />
@@ -1926,78 +1969,31 @@ export default function NewProgramPage() {
                                 </div>
                               </div>
 
-                              <details className="rounded-lg border border-gray-200 bg-gray-50">
-                                <summary className="cursor-pointer px-3 py-2 text-sm font-medium text-gray-700">
-                                  Advanced item settings
-                                </summary>
-                                <div className="space-y-4 border-t border-gray-200 p-3">
-                                  <div className="grid grid-cols-2 gap-4">
-                                    <div>
-                                      <Label>Notes (EN)</Label>
-                                      <Input
-                                        value={item.notes.en}
-                                        onChange={(e) =>
-                                          updateItem(weekIndex, dayIndex, sessionIndex, itemIndex, {
-                                            notes: { ...item.notes, en: e.target.value },
-                                          })
-                                        }
-                                      />
-                                    </div>
-                                    <div>
-                                      <Label>Notes (AR)</Label>
-                                      <Input
-                                        dir="rtl"
-                                        value={item.notes.ar}
-                                        onChange={(e) =>
-                                          updateItem(weekIndex, dayIndex, sessionIndex, itemIndex, {
-                                            notes: { ...item.notes, ar: e.target.value },
-                                          })
-                                        }
-                                      />
-                                    </div>
-                                  </div>
-
-                                  <div className="grid grid-cols-3 gap-4">
-                                    <div>
-                                      <Label>Role</Label>
-                                      <Select
-                                        value={item.role ?? ''}
-                                        onChange={(e) =>
-                                          updateItem(weekIndex, dayIndex, sessionIndex, itemIndex, {
-                                            role: e.target.value,
-                                          })
-                                        }
-                                        options={SESSION_ITEM_ROLE_OPTIONS}
-                                      />
-                                    </div>
-                                    <div>
-                                      <Label>Intent</Label>
-                                      <Select
-                                        value={item.intent ?? ''}
-                                        onChange={(e) =>
-                                          updateItem(weekIndex, dayIndex, sessionIndex, itemIndex, {
-                                            intent: e.target.value,
-                                          })
-                                        }
-                                        options={SESSION_ITEM_INTENT_OPTIONS}
-                                      />
-                                    </div>
-                                    <div>
-                                      <Label>Coaching notes (JSON)</Label>
-                                      <Textarea
-                                        rows={2}
-                                        value={item.coachingNotesJson ?? ''}
-                                        onChange={(e) =>
-                                          updateItem(weekIndex, dayIndex, sessionIndex, itemIndex, {
-                                            coachingNotesJson: e.target.value,
-                                          })
-                                        }
-                                        placeholder="{}"
-                                      />
-                                    </div>
-                                  </div>
+                              <div className="grid grid-cols-2 gap-4 mt-2">
+                                <div>
+                                  <Label>Notes (EN)</Label>
+                                  <Input
+                                    value={item.notes.en}
+                                    onChange={(e) =>
+                                      updateItem(weekIndex, dayIndex, sessionIndex, itemIndex, {
+                                        notes: { ...item.notes, en: e.target.value },
+                                      })
+                                    }
+                                  />
                                 </div>
-                              </details>
+                                <div>
+                                  <Label>Notes (AR)</Label>
+                                  <Input
+                                    dir="rtl"
+                                    value={item.notes.ar}
+                                    onChange={(e) =>
+                                      updateItem(weekIndex, dayIndex, sessionIndex, itemIndex, {
+                                        notes: { ...item.notes, ar: e.target.value },
+                                      })
+                                    }
+                                  />
+                                </div>
+                              </div>
                             </>
                           )}
                           </div>
@@ -2008,7 +2004,9 @@ export default function NewProgramPage() {
                   ))}
                   </div>
                 </CollapsibleBuilderSection>
-              ))}
+                );
+              })()}
+
               </div>
             </CollapsibleBuilderSection>
           ))}

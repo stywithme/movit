@@ -459,6 +459,7 @@ class ProgramSessionActivity : AppCompatActivity() {
         val adapter = TimelineItemAdapter(
             items = session.items.toMutableList(),
             sessionId = session.id,
+            sessionRole = session.role.ifBlank { "MAIN" },
             isSessionCompleted = isSessionCompleted,
             totalCount = session.items.size
         )
@@ -511,6 +512,7 @@ class ProgramSessionActivity : AppCompatActivity() {
     private inner class TimelineItemAdapter(
         val items: MutableList<ProgramSessionItem>,
         private val sessionId: String,
+        private val sessionRole: String,
         private val isSessionCompleted: Boolean,
         private val totalCount: Int
     ) : RecyclerView.Adapter<TimelineItemAdapter.VH>() {
@@ -624,13 +626,8 @@ class ProgramSessionActivity : AppCompatActivity() {
                 } else {
                     holder.tvName.text = exerciseNameMap[slug] ?: slug
                 }
-                val prev = items.getOrNull(position - 1)
-                val sectionPrefix = if (item.type == "exercise") {
-                    val curKey = normalizeRoleKey(item.role)
-                    val prevKey = prev?.takeIf { it.type == "exercise" }?.let { normalizeRoleKey(it.role) }
-                    if (position == 0 || prevKey != curKey) {
-                        formatRoleTitle(curKey) + "\n"
-                    } else ""
+                val sectionPrefix = if (item.type == "exercise" && position == 0) {
+                    formatRoleTitle(normalizeRoleKey(sessionRole)) + "\n"
                 } else ""
                 holder.tvDetail.text = sectionPrefix + buildExerciseDetailText(item)
                 if (unavailable) {
@@ -798,6 +795,7 @@ class ProgramSessionActivity : AppCompatActivity() {
         val intent = Intent(this, TrainingActivity::class.java).apply {
             putExtra(TrainingActivity.EXTRA_IS_SESSION_MODE, true)
             putExtra(TrainingActivity.EXTRA_SESSION_ITEMS_JSON, itemsJson)
+            putExtra(TrainingActivity.EXTRA_SESSION_ROLE, session.role.ifBlank { "MAIN" })
             putExtra(TrainingActivity.EXTRA_TRAINING_MODE, TrainingActivity.MODE_CAMERA)
         }
 
@@ -986,34 +984,28 @@ class ProgramSessionActivity : AppCompatActivity() {
         val item: ProgramSessionItem
     )
 
-    private fun isWarmupActivationRole(role: String?): Boolean {
-        return when (role?.trim()?.uppercase(Locale.US)) {
-            "WARMUP", "ACTIVATION" -> true
-            else -> false
-        }
-    }
-
-    private fun orderedSessionExerciseRefs(): List<SessionExerciseRef> {
-        val out = mutableListOf<SessionExerciseRef>()
-        sessions.forEach { session ->
-            session.items.forEachIndexed { idx, item ->
-                if (item.type == "exercise" && item.exerciseSlug != null) {
-                    out.add(SessionExerciseRef(session.id, idx, item))
-                }
-            }
-        }
-        return out
-    }
-
     private fun hasWarmupBeforeFirstMainWork(): Boolean {
-        val seq = orderedSessionExerciseRefs()
-        val firstMainIdx = seq.indexOfFirst { !isWarmupActivationRole(it.item.role) }
+        val ordered = sessions.filter { !it.isDeleted }.sortedBy { it.sortOrder }
+        val firstMainIdx = ordered.indexOfFirst {
+            val r = it.role.trim().uppercase(Locale.US)
+            r == "MAIN" || r == "ACCESSORY" || r == "CORRECTIVE" || r == "TEST"
+        }
         if (firstMainIdx <= 0) return false
-        return seq.take(firstMainIdx).any { isWarmupActivationRole(it.item.role) }
+        return ordered.take(firstMainIdx).any {
+            val r = it.role.trim().uppercase(Locale.US)
+            r == "WARMUP" || r == "ACTIVATION"
+        }
     }
 
     private fun firstMainWorkExerciseRef(): SessionExerciseRef? {
-        return orderedSessionExerciseRefs().firstOrNull { !isWarmupActivationRole(it.item.role) }
+        for (session in sessions.filter { !it.isDeleted }.sortedBy { it.sortOrder }) {
+            val r = session.role.trim().uppercase(Locale.US)
+            if (r == "MAIN" || r == "ACCESSORY" || r == "CORRECTIVE" || r == "TEST") {
+                val idx = session.items.indexOfFirst { it.type == "exercise" && it.exerciseSlug != null }
+                if (idx >= 0) return SessionExerciseRef(session.id, idx, session.items[idx])
+            }
+        }
+        return null
     }
 
     private fun updateSkipWarmupButtonVisibility() {
@@ -1101,9 +1093,6 @@ class ProgramSessionActivity : AppCompatActivity() {
 
         fun effectiveRecommendedSlugs(): List<String> {
             val order = LinkedHashSet<String>()
-            item.allowedSubstitutions.forEach { s ->
-                if (s.isNotBlank() && s != currentSlug) order.add(s)
-            }
             apiRecommendedSlugs.forEach { s ->
                 if (s.isNotBlank() && s != currentSlug) order.add(s)
             }
@@ -1171,7 +1160,7 @@ class ProgramSessionActivity : AppCompatActivity() {
         buildLists("")
         dialog.show()
 
-        if (item.allowedSubstitutions.isEmpty() && !currentSlug.isNullOrBlank()) {
+        if (!currentSlug.isNullOrBlank()) {
             val token = AuthManager.getAccessToken(this)
             if (!token.isNullOrBlank()) {
                 lifecycleScope.launch {
@@ -1754,6 +1743,9 @@ class ProgramSessionActivity : AppCompatActivity() {
                     id = serverSession.id,
                     name = name,
                     sortOrder = serverSession.sortOrder,
+                    role = serverSession.role?.trim()?.takeIf { it.isNotEmpty() }
+                        ?: orig?.role?.trim()?.takeIf { it.isNotEmpty() }
+                        ?: "MAIN",
                     estimatedDurationMin = serverSession.estimatedDurationMin,
                     items = items
                 )

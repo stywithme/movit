@@ -126,7 +126,8 @@ data class TodayProgramData(
 data class TodaySessionData(
     val id: String,
     val name: Map<String, String>,
-    val sessionCategory: String? = null,
+    /** Session block role (warmup / main / cooldown / …); replaces legacy sessionCategory. */
+    val role: String? = null,
     val estimatedDurationMin: Int? = null,
     val itemCount: Int,
     val isCompleted: Boolean
@@ -216,6 +217,7 @@ data class EffectivePlanSessionData(
     val id: String,
     val name: Map<String, String>?,
     val sortOrder: Int,
+    val role: String? = null,
     val estimatedDurationMin: Int? = null,
     val items: List<EffectivePlanItemData>
 )
@@ -233,12 +235,13 @@ data class EffectivePlanItemData(
     val notes: Map<String, String>? = null,
     val restDurationMs: Int? = null,
     val sortOrder: Int,
-    val role: String? = null,
+    /** From Exercise catalog (effective plan), not from template item row. */
     val intent: String? = null,
     val coachingNotes: Map<String, @JvmSuppressWildcards Any>? = null,
     val skipped: Boolean? = null,
     val suggestion: EffectivePlanSuggestion? = null,
-    val allowedSubstitutions: List<String>? = null
+    /** Runtime substitution candidates (family / pattern), same shape as substitution picker. */
+    val substitutionCandidates: List<SubstitutionExerciseRow>? = null
 )
 
 data class EffectivePlanSuggestion(
@@ -339,7 +342,8 @@ data class SubstitutionExercisesApiResponse(
 data class SubstitutionExerciseRow(
     val id: String,
     val slug: String,
-    val name: Map<String, String>? = null
+    val name: Map<String, String>? = null,
+    val archetype: String? = null
 )
 
 data class ProgramProgressMetricsApiResponse(

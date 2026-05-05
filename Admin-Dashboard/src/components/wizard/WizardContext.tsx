@@ -53,6 +53,10 @@ export interface BlueprintExerciseMeta {
   loadCapability: string;
   familyKey: string;
   familyOrder: string;
+  /** Maps to Exercise.intent (SessionItemIntent); empty string = unset */
+  intent: string;
+  /** Raw JSON for Exercise.coachingNotes */
+  coachingNotesJson: string;
 }
 
 // ============================================
@@ -216,6 +220,8 @@ const initialState: WizardState = {
     loadCapability: '',
     familyKey: '',
     familyOrder: '',
+    intent: '',
+    coachingNotesJson: '',
   },
 };
 

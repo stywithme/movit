@@ -138,6 +138,7 @@ class WorkoutSessionActivity : AppCompatActivity() {
         val intent = Intent(this, TrainingActivity::class.java).apply {
             putExtra(TrainingActivity.EXTRA_IS_SESSION_MODE, true)
             putExtra(TrainingActivity.EXTRA_SESSION_ITEMS_JSON, itemsJson)
+            putExtra(TrainingActivity.EXTRA_SESSION_ROLE, "MAIN")
             putExtra(TrainingActivity.EXTRA_TRAINING_MODE, TrainingActivity.MODE_CAMERA)
         }
 

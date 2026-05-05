@@ -83,7 +83,7 @@ export interface TodayPlanData {
     sessions: {
       id: string;
       name: Record<string, string>;
-      sessionCategory: string | null;
+      role: string;
       estimatedDurationMin: number | null;
       itemCount: number;
       isCompleted: boolean;
@@ -540,7 +540,7 @@ export const activePlanService = {
           return {
             id: s.id,
             name: s.name as Record<string, string>,
-            sessionCategory: s.sessionCategory,
+            role: String(s.role),
             estimatedDurationMin: s.estimatedDurationMin,
             itemCount,
             isCompleted: s.reports.length > 0,
