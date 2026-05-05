@@ -179,7 +179,7 @@ export default function ExerciseFamiliesPage() {
                   <div className="mt-1 flex flex-wrap gap-2">
                     <Badge variant="outline">{row.exerciseCount} exercises</Badge>
                     {row.dominantArchetype ? (
-                      <Badge variant="secondary">{row.dominantArchetype}</Badge>
+                      <Badge variant="default">{row.dominantArchetype}</Badge>
                     ) : null}
                   </div>
                 </div>
