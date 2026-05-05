@@ -198,6 +198,8 @@ export async function seedCuratedCatalogExtensions(
         familyKey: row.familyKey,
         familyOrder: row.familyOrder,
         reportMetrics: reportMetricsForCounting(row.countingMethodCode),
+        ...(row.intent !== undefined ? { intent: row.intent } : {}),
+        ...(row.coachingNotes !== undefined ? { coachingNotes: row.coachingNotes } : {}),
       },
       create: {
         slug: row.slug,
@@ -218,6 +220,8 @@ export async function seedCuratedCatalogExtensions(
         familyKey: row.familyKey,
         familyOrder: row.familyOrder,
         reportMetrics: reportMetricsForCounting(row.countingMethodCode),
+        ...(row.intent !== undefined ? { intent: row.intent } : {}),
+        ...(row.coachingNotes !== undefined ? { coachingNotes: row.coachingNotes } : {}),
       },
     });
 

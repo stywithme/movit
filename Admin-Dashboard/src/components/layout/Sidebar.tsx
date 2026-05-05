@@ -95,6 +95,7 @@ export function Sidebar() {
       { title: 'Levels', href: '/admin/levels', icon: Signal, requiredSubject: 'Level' },
       { title: 'Assessment Templates', href: '/admin/assessment-templates', icon: FileCheck, requiredSubject: 'AssessmentTemplate' },
       { title: 'Exercise Progression', href: '/admin/exercise-progression', icon: TrendingUp, requiredSubject: 'ProgressionRule' },
+      { title: 'Families', href: '/admin/exercise-progression/families', icon: Layers, requiredSubject: 'ProgressionRule' },
       { title: 'Progression Rules (Archive)', href: '/admin/progression-rules', icon: TrendingUp, requiredSubject: 'ProgressionRule' },
     ],
   };

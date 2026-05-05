@@ -7,7 +7,7 @@
  */
 
 import type { LocalizedText, CountingMethodCode, JointStateName } from '@/lib/types/localized';
-import type { LoadCapability, MovementPattern } from '@prisma/client';
+import type { LoadCapability, MovementPattern, SessionItemIntent } from '@prisma/client';
 
 // ============================================
 // ANGLE RANGE TYPES
@@ -619,6 +619,10 @@ export interface CreateExerciseInput {
   loadCapability?: LoadCapability | null;
   familyKey?: string | null;
   familyOrder?: number | null;
+
+  /** Coaching taxonomy — defaults into effective plan when session items omit overrides */
+  intent?: SessionItemIntent | null;
+  coachingNotes?: Record<string, unknown> | null;
 }
 
 /**

@@ -1,4 +1,4 @@
-import type { LoadCapability, MovementPattern } from '@prisma/client';
+import type { LoadCapability, MovementPattern, Prisma } from '@prisma/client';
 import { CURATED_EXTENSION_ROWS } from './curated-extension-rows';
 
 /**
@@ -25,6 +25,9 @@ export type CuratedExtensionExercise = {
   minWeight?: number | null;
   maxWeight?: number | null;
   defaultWeight?: number | null;
+  /** Optional; passed through to Exercise when set. */
+  intent?: string | null;
+  coachingNotes?: Prisma.InputJsonValue | null;
 };
 
 function rowToExercise(

@@ -8,7 +8,7 @@
 
 import { getPrisma } from '@/lib/prisma/client';
 import { deleteByUrl } from '@/lib/storage';
-import type { LoadCapability, MovementPattern } from '@prisma/client';
+import type { LoadCapability, MovementPattern, SessionItemIntent } from '@prisma/client';
 import type { CountingMethodCode, PhaseName } from '@/lib/types/localized';
 import type {
   TrackedJoint,
@@ -72,6 +72,8 @@ interface CreateExerciseInput {
   loadCapability?: LoadCapability | null;
   familyKey?: string | null;
   familyOrder?: number | null;
+  intent?: SessionItemIntent | null;
+  coachingNotes?: Record<string, unknown> | null;
 }
 
 interface UpdateExerciseInput extends Partial<CreateExerciseInput> {
@@ -259,6 +261,8 @@ export const exerciseService = {
         loadCapability: data.loadCapability ?? undefined,
         familyKey: data.familyKey ?? undefined,
         familyOrder: data.familyOrder ?? undefined,
+        intent: data.intent ?? undefined,
+        coachingNotes: data.coachingNotes ? (data.coachingNotes as object) : undefined,
         media: data.imageUrl
           ? {
             create: {
@@ -430,6 +434,8 @@ export const exerciseService = {
     if (data.loadCapability !== undefined) updateData.loadCapability = data.loadCapability;
     if (data.familyKey !== undefined) updateData.familyKey = data.familyKey;
     if (data.familyOrder !== undefined) updateData.familyOrder = data.familyOrder;
+    if (data.intent !== undefined) updateData.intent = data.intent;
+    if (data.coachingNotes !== undefined) updateData.coachingNotes = data.coachingNotes as object | null;
 
     await prisma.exercise.update({
       where: { id },

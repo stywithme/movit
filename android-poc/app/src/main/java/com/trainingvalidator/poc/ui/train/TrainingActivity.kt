@@ -87,6 +87,8 @@ class TrainingActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetection
         // Session mode extras
         const val EXTRA_IS_SESSION_MODE = "is_session_mode"
         const val EXTRA_SESSION_ITEMS_JSON = "session_items_json"
+        /** When set, used for session-level progress rules (warmup/cooldown vs main). */
+        const val EXTRA_SESSION_ROLE = "session_role"
 
         // Assessment mode: skip report page, return report ID via result
         const val EXTRA_ASSESSMENT_MODE = "assessment_mode"

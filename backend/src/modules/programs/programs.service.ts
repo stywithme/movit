@@ -10,6 +10,7 @@ import {
   type Program,
   ProgramAttributeMode,
   type PrismaClient,
+  type SessionRole,
 } from '@prisma/client';
 import { resolveTrainingPositionMeta, countTrainingDaySlots } from '@/modules/active-plan/plan-position';
 import { getAutoAssignmentReadiness } from './program-assignment';
@@ -30,6 +31,8 @@ import type {
   TodayPlanResponse,
   UpdateProgramInput,
   ProgramAttributeInput,
+  ProgramPhaseInput,
+  validatePhaseStructure,
 } from './programs.types';
 
 interface LocalizedText {
@@ -64,6 +67,9 @@ function generateSlug(name: { en?: string; ar?: string }): string {
 }
 
 const programFullInclude = {
+  phases: {
+    orderBy: { sortOrder: 'asc' as const },
+  },
   programAttributes: {
     orderBy: { createdAt: 'asc' as const },
     include: {
@@ -92,6 +98,8 @@ const programFullInclude = {
                       id: true,
                       slug: true,
                       name: true,
+                      intent: true,
+                      coachingNotes: true,
                     },
                   },
                 },
@@ -140,10 +148,6 @@ function buildSessionItems(items?: ProgramSessionItemInput[]) {
       restDurationMs: item.restDurationMs ?? undefined,
       sourceWorkoutId: item.sourceWorkoutId ?? undefined,
       sortOrder: item.sortOrder ?? index,
-      allowedSubstitutions: item.allowedSubstitutions ?? item.alternatives ?? [],
-      role: item.role ?? undefined,
-      intent: item.intent ?? undefined,
-      coachingNotes: (item.coachingNotes as object) || undefined,
     })),
   };
 }
@@ -167,9 +171,12 @@ function buildWeeksCreate(weeks?: ProgramWeekInput[]) {
               sessions: day.sessions
                 ? {
                     create: day.sessions.map((session, sessionIndex) => ({
-                      name: session.name as object,
-                      sortOrder: session.sortOrder ?? sessionIndex,
-                      items: buildSessionItems(session.items),
+                      ...prismaSessionScalars(session, sessionIndex),
+                      items: {
+                        create: (session.items ?? []).map((item, ii) =>
+                          sessionItemScalarFromInput(item, item.sortOrder ?? ii),
+                        ),
+                      },
                     })),
                   }
                 : undefined,
@@ -196,11 +203,68 @@ function sessionItemScalarFromInput(item: ProgramSessionItemInput, sortOrder: nu
     restDurationMs: item.restDurationMs ?? undefined,
     sourceWorkoutId: item.sourceWorkoutId ?? undefined,
     sortOrder,
-    allowedSubstitutions: item.allowedSubstitutions ?? item.alternatives ?? [],
-    role: item.role ?? undefined,
-    intent: item.intent ?? undefined,
-    coachingNotes: (item.coachingNotes as object) || undefined,
   };
+}
+
+const DEFAULT_SESSION_ROLE = 'MAIN' as SessionRole;
+
+function prismaSessionScalars(session: ProgramSessionInput, sessionIndex: number) {
+  return {
+    name: session.name as object,
+    sortOrder: session.sortOrder ?? sessionIndex,
+    estimatedDurationMin: session.estimatedDurationMin ?? undefined,
+    role: (session.role ?? DEFAULT_SESSION_ROLE) as SessionRole,
+  };
+}
+
+function expandPhasesToWeeks(phases: ProgramPhaseInput[]): ProgramWeekInput[] {
+  const sorted = [...phases].sort(
+    (a, b) => (a.sortOrder ?? a.startWeek) - (b.sortOrder ?? b.startWeek),
+  );
+  const weeks: ProgramWeekInput[] = [];
+  for (const phase of sorted) {
+    const patternDays = phase.weeklyPattern?.days ?? [];
+    for (let w = phase.startWeek; w <= phase.endWeek; w++) {
+      weeks.push({
+        weekNumber: w,
+        name: phase.name,
+        description: phase.description,
+        weekType: phase.weekType ?? 'NORMAL',
+        sortOrder: w - 1,
+        days: patternDays.map((d) => ({
+          dayNumber: d.dayNumber,
+          isRestDay: d.isRestDay ?? false,
+          name: d.name,
+          dayFocus: d.dayFocus,
+          sessions: d.sessions,
+        })),
+      });
+    }
+  }
+  return weeks;
+}
+
+async function syncProgramPhasesStructure(
+  tx: Prisma.TransactionClient,
+  programId: string,
+  phases: ProgramPhaseInput[],
+) {
+  await tx.programPhase.deleteMany({ where: { programId } });
+  for (let i = 0; i < phases.length; i++) {
+    const p = phases[i]!;
+    await tx.programPhase.create({
+      data: {
+        programId,
+        name: p.name as object,
+        description: (p.description as object) || undefined,
+        weekType: p.weekType ?? 'NORMAL',
+        startWeek: p.startWeek,
+        endWeek: p.endWeek,
+        sortOrder: p.sortOrder ?? i,
+        weeklyPattern: p.weeklyPattern ? (p.weeklyPattern as Prisma.InputJsonValue) : undefined,
+      },
+    });
+  }
 }
 
 async function syncSessionItems(
@@ -272,8 +336,7 @@ async function syncSessions(
       await tx.programSession.update({
         where: { id: session.id },
         data: {
-          name: session.name as object,
-          sortOrder,
+          ...prismaSessionScalars(session, sortOrder),
         },
       });
       await syncSessionItems(tx, session.id, session.items);
@@ -281,8 +344,7 @@ async function syncSessions(
       await tx.programSession.create({
         data: {
           dayId,
-          name: session.name as object,
-          sortOrder,
+          ...prismaSessionScalars(session, sortOrder),
           items: {
             create: (session.items ?? []).map((item, ii) =>
               sessionItemScalarFromInput(item, item.sortOrder ?? ii),
@@ -338,8 +400,7 @@ async function syncDays(
           dayFocus: day.dayFocus ?? undefined,
           sessions: {
             create: (day.sessions ?? []).map((session, si) => ({
-              name: session.name as object,
-              sortOrder: session.sortOrder ?? si,
+              ...prismaSessionScalars(session, si),
               items: {
                 create: (session.items ?? []).map((item, ii) =>
                   sessionItemScalarFromInput(item, item.sortOrder ?? ii),
@@ -430,8 +491,7 @@ async function syncProgramWeeksStructure(
               dayFocus: day.dayFocus ?? undefined,
               sessions: {
                 create: (day.sessions ?? []).map((session, si) => ({
-                  name: session.name as object,
-                  sortOrder: session.sortOrder ?? si,
+                  ...prismaSessionScalars(session, si),
                   items: {
                     create: (session.items ?? []).map((item, ii) =>
                       sessionItemScalarFromInput(item, item.sortOrder ?? ii),
@@ -628,6 +688,15 @@ export const programService = {
     const prisma = await getPrisma();
     const slug = data.slug || generateSlug(data.name);
 
+    let effectiveWeeks = data.weeks;
+    if (data.phases && data.phases.length > 0) {
+      const phaseValidation = validatePhaseStructure(data.phases, data.durationWeeks);
+      if (!phaseValidation.valid) {
+        throw new Error(`Invalid phases: ${phaseValidation.errors.join('; ')}`);
+      }
+      effectiveWeeks = expandPhasesToWeeks(data.phases);
+    }
+
     const programId = await prisma.$transaction(async (tx) => {
       const program = await tx.program.create({
         data: {
@@ -650,7 +719,10 @@ export const programService = {
           weeklySessionTarget:
             data.weeklySessionTarget ??
             inferWeeklySessionTargetFromWeeks(
-              data.weeks as { weekNumber: number; days: { isRestDay?: boolean; dayType?: string | null }[] }[],
+              effectiveWeeks as {
+                weekNumber: number;
+                days: { isRestDay?: boolean; dayType?: string | null }[];
+              }[],
             ) ??
             undefined,
           estimatedSessionMinutes: data.estimatedSessionMinutes ?? undefined,
@@ -659,9 +731,13 @@ export const programService = {
           prescriptionPriority: data.prescriptionPriority ?? 100,
           prerequisiteProgramId: data.prerequisiteProgramId ?? undefined,
           nextProgramId: data.nextProgramId ?? undefined,
-          weeks: buildWeeksCreate(data.weeks),
+          weeks: buildWeeksCreate(effectiveWeeks),
         },
       });
+
+      if (data.phases && data.phases.length > 0) {
+        await syncProgramPhasesStructure(tx, program.id, data.phases);
+      }
 
       if (data.programAttributes !== undefined) {
         await replaceProgramAttributes(tx, program.id, data.programAttributes);
@@ -712,7 +788,23 @@ export const programService = {
         data: updateData as Prisma.ProgramUpdateInput,
       });
 
-      if (data.weeks !== undefined) {
+      if (data.phases !== undefined && data.phases.length > 0) {
+        const prog = await tx.program.findUnique({
+          where: { id },
+          select: { durationWeeks: true },
+        });
+        const durationWeeks = data.durationWeeks ?? prog?.durationWeeks;
+        if (!durationWeeks) {
+          throw new Error('durationWeeks required to validate program phases');
+        }
+        const phaseValidation = validatePhaseStructure(data.phases, durationWeeks);
+        if (!phaseValidation.valid) {
+          throw new Error(`Invalid phases: ${phaseValidation.errors.join('; ')}`);
+        }
+        const expandedWeeks = expandPhasesToWeeks(data.phases);
+        await syncProgramPhasesStructure(tx, id, data.phases);
+        await syncProgramWeeksStructure(tx, id, expandedWeeks);
+      } else if (data.weeks !== undefined) {
         await syncProgramWeeksStructure(tx, id, data.weeks);
       }
 
@@ -806,6 +898,8 @@ export const programService = {
         sessions: day.sessions.map((session, sessionIndex) => ({
           name: parseLocalizedText(session.name) || { ar: '', en: '' },
           sortOrder: session.sortOrder ?? sessionIndex,
+          role: session.role ? String(session.role) : 'MAIN',
+          estimatedDurationMin: session.estimatedDurationMin ?? undefined,
           items: session.items.map((item, itemIndex) => ({
             type: item.type as 'exercise' | 'rest',
             exerciseId: item.exerciseId ?? undefined,
@@ -819,10 +913,6 @@ export const programService = {
             restDurationMs: item.restDurationMs ?? undefined,
             sourceWorkoutId: item.sourceWorkoutId ?? undefined,
             sortOrder: item.sortOrder ?? itemIndex,
-            allowedSubstitutions: item.allowedSubstitutions ?? [],
-            role: item.role ?? undefined,
-            intent: item.intent ?? undefined,
-            coachingNotes: parseLocalizedText(item.coachingNotes),
           })),
         })),
       })),
@@ -905,9 +995,12 @@ export const programService = {
                 sessions: day.sessions
                   ? {
                       create: day.sessions.map((session, sessionIndex) => ({
-                        name: session.name as object,
-                        sortOrder: session.sortOrder ?? sessionIndex,
-                        items: buildSessionItems(session.items),
+                        ...prismaSessionScalars(session, sessionIndex),
+                        items: {
+                          create: (session.items ?? []).map((item, ii) =>
+                            sessionItemScalarFromInput(item, item.sortOrder ?? ii),
+                          ),
+                        },
                       })),
                     }
                   : undefined,
@@ -955,28 +1048,31 @@ export const programService = {
             name: toInputJsonOrNull(day.name),
             dayFocus: day.dayFocus ?? undefined,
             sessions: {
-              create: day.sessions.map((session) => ({
+              create: day.sessions.map((session, si) => ({
                 name: toInputJsonOrNull(session.name),
                 sortOrder: session.sortOrder,
+                estimatedDurationMin: session.estimatedDurationMin ?? undefined,
+                role: session.role ?? DEFAULT_SESSION_ROLE,
                 items: {
-                  create: session.items.map((item) => ({
-                    type: item.type,
-                    exerciseId: item.exerciseId ?? undefined,
-                    sets: item.sets ?? undefined,
-                    targetReps: item.targetReps ?? undefined,
-                    targetDuration: item.targetDuration ?? undefined,
-                    restBetweenSetsMs: item.restBetweenSetsMs ?? undefined,
-                    weightKg: item.weightKg ?? undefined,
-                    weightPerSet: item.weightPerSet ?? undefined,
-                    notes: toInputJsonOrNull(item.notes),
-                    restDurationMs: item.restDurationMs ?? undefined,
-                    sourceWorkoutId: item.sourceWorkoutId ?? undefined,
-                    sortOrder: item.sortOrder,
-                    allowedSubstitutions: item.allowedSubstitutions ?? [],
-                    role: item.role ?? undefined,
-                    intent: item.intent ?? undefined,
-                    coachingNotes: toInputJsonOrNull(item.coachingNotes),
-                  })),
+                  create: session.items.map((item, ii) =>
+                    sessionItemScalarFromInput(
+                      {
+                        type: item.type as 'exercise' | 'rest',
+                        exerciseId: item.exerciseId ?? undefined,
+                        sets: item.sets ?? undefined,
+                        targetReps: item.targetReps ?? undefined,
+                        targetDuration: item.targetDuration ?? undefined,
+                        restBetweenSetsMs: item.restBetweenSetsMs ?? undefined,
+                        weightKg: item.weightKg ?? undefined,
+                        weightPerSet: (item.weightPerSet as number[]) ?? undefined,
+                        notes: (item.notes as object) || undefined,
+                        restDurationMs: item.restDurationMs ?? undefined,
+                        sourceWorkoutId: item.sourceWorkoutId ?? undefined,
+                        sortOrder: item.sortOrder ?? ii,
+                      },
+                      item.sortOrder ?? ii,
+                    ),
+                  ),
                 },
               })),
             },
@@ -1001,8 +1097,7 @@ export const programService = {
         sessions: day.sessions
           ? {
               create: day.sessions.map((session, sessionIndex) => ({
-                name: session.name as object,
-                sortOrder: session.sortOrder ?? sessionIndex,
+                ...prismaSessionScalars(session, sessionIndex),
                 items: buildSessionItems(session.items),
               })),
             }
@@ -1037,8 +1132,7 @@ export const programService = {
           data: {
             sessions: {
               create: day.sessions.map((session, sessionIndex) => ({
-                name: session.name as object,
-                sortOrder: session.sortOrder ?? sessionIndex,
+                ...prismaSessionScalars(session, sessionIndex),
                 items: buildSessionItems(session.items),
               })),
             },
@@ -1070,8 +1164,7 @@ export const programService = {
     return prisma.programSession.create({
       data: {
         dayId,
-        name: session.name as object,
-        sortOrder: session.sortOrder ?? 0,
+        ...prismaSessionScalars(session, session.sortOrder ?? 0),
         items: buildSessionItems(session.items),
       },
       include: { items: true },
@@ -1088,8 +1181,12 @@ export const programService = {
     await prisma.programSession.update({
       where: { id: sessionId },
       data: {
-        name: session.name ? (session.name as object) : undefined,
-        sortOrder: session.sortOrder ?? existing.sortOrder,
+        name: session.name !== undefined ? (session.name as object) : undefined,
+        sortOrder: session.sortOrder !== undefined ? session.sortOrder : undefined,
+        estimatedDurationMin:
+          session.estimatedDurationMin !== undefined ? session.estimatedDurationMin : undefined,
+        role:
+          session.role !== undefined ? (session.role as SessionRole) : undefined,
       },
     });
 
@@ -1143,10 +1240,6 @@ export const programService = {
         sourceWorkoutId: item.sourceWorkoutId ?? undefined,
         sortOrder: item.sortOrder ?? 0,
         isModified: false,
-        allowedSubstitutions: item.allowedSubstitutions ?? item.alternatives ?? [],
-        role: item.role ?? undefined,
-        intent: item.intent ?? undefined,
-        coachingNotes: (item.coachingNotes as object) || undefined,
       },
     });
   },
@@ -1174,10 +1267,6 @@ export const programService = {
         sourceWorkoutId: item.sourceWorkoutId ?? undefined,
         sortOrder: item.sortOrder ?? existing.sortOrder,
         isModified: true,
-        allowedSubstitutions: item.allowedSubstitutions ?? item.alternatives ?? undefined,
-        role: item.role ?? undefined,
-        intent: item.intent ?? undefined,
-        coachingNotes: item.coachingNotes ? (item.coachingNotes as object) : undefined,
       },
     });
   },
@@ -1367,6 +1456,7 @@ export const programService = {
               id: session.id,
               name: parseLocalizedText(session.name) || { ar: '', en: '' },
               sortOrder: session.sortOrder,
+              role: String(session.role),
               estimatedDurationMin: session.estimatedDurationMin ?? undefined,
               items: session.items.map((item) => ({
                 type: item.type as 'exercise' | 'rest',
@@ -1374,12 +1464,8 @@ export const programService = {
                 exerciseSlug: item.exercise?.slug ?? undefined,
                 deletedExercise:
                   item.type === 'exercise' && !item.exercise ? true : undefined,
-                role: item.role ?? undefined,
-                intent: item.intent ?? undefined,
-                allowedSubstitutions:
-                  Array.isArray(item.allowedSubstitutions) && item.allowedSubstitutions.length > 0
-                    ? (item.allowedSubstitutions as string[])
-                    : undefined,
+                intent: item.exercise?.intent ?? undefined,
+                coachingNotes: item.exercise?.coachingNotes ?? undefined,
                 sets: item.sets ?? undefined,
                 targetReps: item.targetReps ?? undefined,
                 targetDuration: item.targetDuration ?? undefined,
@@ -1423,6 +1509,7 @@ export const programService = {
             id: session.id,
             name: parseLocalizedText(session.name) || { ar: '', en: '' },
             sortOrder: session.sortOrder,
+            role: String(session.role),
             estimatedDurationMin: session.estimatedDurationMin ?? undefined,
             items: session.items.map((item) => ({
               type: item.type as 'exercise' | 'rest',
@@ -1430,12 +1517,8 @@ export const programService = {
               exerciseSlug: item.exercise?.slug ?? undefined,
               deletedExercise:
                 item.type === 'exercise' && !item.exercise ? true : undefined,
-              role: item.role ?? undefined,
-              intent: item.intent ?? undefined,
-              allowedSubstitutions:
-                Array.isArray(item.allowedSubstitutions) && item.allowedSubstitutions.length > 0
-                  ? (item.allowedSubstitutions as string[])
-                  : undefined,
+              intent: item.exercise?.intent ?? undefined,
+              coachingNotes: item.exercise?.coachingNotes ?? undefined,
               sets: item.sets ?? undefined,
               targetReps: item.targetReps ?? undefined,
               targetDuration: item.targetDuration ?? undefined,

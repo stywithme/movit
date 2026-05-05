@@ -122,9 +122,26 @@ export function buildExercisePayload() {
     loadCapability: '',
     familyKey: '',
     familyOrder: '',
+    intent: '',
+    coachingNotesJson: '',
   };
   const familyOrderNum =
     b.familyOrder.trim() === '' ? undefined : Number.parseInt(b.familyOrder, 10);
+
+  const parseCoachingNotesField = (): Record<string, unknown> | null | undefined => {
+    const raw = b.coachingNotesJson?.trim() ?? '';
+    if (!raw) return null;
+    try {
+      const parsed = JSON.parse(raw) as unknown;
+      if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
+        return parsed as Record<string, unknown>;
+      }
+      return undefined;
+    } catch {
+      return undefined;
+    }
+  };
+  const coachingNotesPayload = parseCoachingNotesField();
 
   return {
     name: store.basicInfo.name,
@@ -167,5 +184,7 @@ export function buildExercisePayload() {
     ...(familyOrderNum !== undefined && Number.isFinite(familyOrderNum)
       ? { familyOrder: familyOrderNum }
       : {}),
+    ...(b.intent?.trim() ? { intent: b.intent.trim() } : {}),
+    ...(coachingNotesPayload !== undefined ? { coachingNotes: coachingNotesPayload } : {}),
   };
 }

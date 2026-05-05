@@ -176,7 +176,6 @@ export async function backfillProgressionState(prisma: PrismaClient) {
                           weightKg: true,
                           targetDuration: true,
                           sets: true,
-                          difficultyCode: true,
                         },
                       },
                     },
@@ -219,6 +218,8 @@ export async function backfillProgressionState(prisma: PrismaClient) {
       if (existing) continue;
 
       const priorityOrder = profile.priorityOrder as string[];
+      const ladder = profile.difficultyLadder as string[] | null;
+      const initialDifficultyCode = ladder?.[0] ?? null;
 
       await prisma.userProgramExerciseProgressionState.create({
         data: {
@@ -229,7 +230,7 @@ export async function backfillProgressionState(prisma: PrismaClient) {
           currentTargetReps: item.targetReps ?? null,
           currentTargetDuration: item.targetDuration ?? null,
           currentTargetSets: item.sets ?? null,
-          currentDifficultyCode: item.difficultyCode ?? null,
+          currentDifficultyCode: initialDifficultyCode,
           successStreak: 0,
           regressionStreak: 0,
         },

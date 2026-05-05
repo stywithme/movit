@@ -26,7 +26,8 @@ import com.trainingvalidator.poc.training.models.ProgramSessionItem
  *  - Build session report on completion
  */
 class SessionTrainingEngine(
-    private val sessionItems: List<ProgramSessionItem>
+    private val sessionItems: List<ProgramSessionItem>,
+    private val sessionRole: String = "MAIN",
 ) {
     companion object {
         private const val TAG = "SessionTrainingEngine"
@@ -35,9 +36,9 @@ class SessionTrainingEngine(
         private const val MIN_EXERCISE_PREVIEW_MS = 5000L
     }
 
-    /** Warm-up / activation / cooldown blocks are excluded from session-level progress totals. */
-    private fun countsTowardSessionProgress(item: ProgramSessionItem): Boolean {
-        val r = item.role?.trim()?.uppercase(Locale.US).orEmpty()
+    /** Warm-up / activation / cooldown sessions are excluded from session-level progress totals. */
+    private fun countsTowardSessionProgress(@Suppress("UNUSED_PARAMETER") item: ProgramSessionItem): Boolean {
+        val r = sessionRole.trim().uppercase(Locale.US)
         if (r.isEmpty()) return true
         return r !in setOf("WARMUP", "ACTIVATION", "COOLDOWN")
     }

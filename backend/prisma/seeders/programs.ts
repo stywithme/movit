@@ -1,4 +1,4 @@
-import type { Prisma, PrismaClient } from '@prisma/client';
+import type { Prisma, PrismaClient, SessionRole } from '@prisma/client';
 import { ProgramAttributeMode } from '@prisma/client';
 import {
   PROGRAM_DOMAIN_VALUE_CODE,
@@ -57,8 +57,6 @@ export async function seedPrograms(prisma: PrismaClient) {
       weight?: number;
       weightPerSet?: number[];
       sortOrder: number;
-      role?: 'WARMUP' | 'ACTIVATION' | 'MAIN' | 'ACCESSORY' | 'CORRECTIVE' | 'COOLDOWN' | 'TEST';
-      intent?: 'STANDARD' | 'POWER' | 'ECCENTRIC' | 'VELOCITY_BASED';
     },
   ) => ({
     type: 'exercise' as const,
@@ -69,15 +67,6 @@ export async function seedPrograms(prisma: PrismaClient) {
     weightKg: opts.weight,
     weightPerSet: opts.weightPerSet,
     sortOrder: opts.sortOrder,
-    role: opts.role ?? 'MAIN',
-    intent: opts.intent ?? 'STANDARD',
-    isPersonalized: false,
-  });
-
-  const restItem = (durationMs: number, sortOrder: number) => ({
-    type: 'rest' as const,
-    restDurationMs: durationMs,
-    sortOrder,
   });
 
   const buildSession = (
@@ -85,13 +74,19 @@ export async function seedPrograms(prisma: PrismaClient) {
     items: Record<string, unknown>[],
     sortOrder = 1,
     estimatedDurationMin = 35,
-    sessionCategory: 'strength' | 'mobility' | 'conditioning' | 'recovery' | 'mixed' = 'mixed',
+    sessionRole: SessionRole = 'MAIN',
   ) => ({
     name,
     sortOrder,
     estimatedDurationMin,
-    sessionCategory,
+    role: sessionRole,
     items: { create: items as Prisma.ProgramSessionItemCreateWithoutSessionInput[] },
+  });
+
+  const restItem = (durationMs: number, sortOrder: number) => ({
+    type: 'rest' as const,
+    restDurationMs: durationMs,
+    sortOrder,
   });
 
   type DayDef = {
@@ -286,8 +281,6 @@ export async function seedPrograms(prisma: PrismaClient) {
                 weight: slot.weight,
                 weightPerSet: slot.weightPerSet,
                 sortOrder,
-                role: slot.role,
-                intent: slot.intent,
               }),
             );
             sortOrder++;
@@ -297,7 +290,7 @@ export async function seedPrograms(prisma: PrismaClient) {
             prismaItems,
             sess.sortOrder ?? 1,
             sess.estimatedDurationMin ?? 35,
-            sess.sessionCategory ?? 'mixed',
+            (sess.role as SessionRole) ?? 'MAIN',
           );
         });
         return {

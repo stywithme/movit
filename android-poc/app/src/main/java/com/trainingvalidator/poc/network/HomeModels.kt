@@ -81,7 +81,7 @@ data class TrainTodaySessionData(
     val name: Map<String, String>,
     val exerciseCount: Int,
     val estimatedMinutes: Int?,
-    val sessionCategory: String?,
+    val role: String?,
     val isCompleted: Boolean,
     val allSessionsCount: Int,
     val completedSessionsCount: Int

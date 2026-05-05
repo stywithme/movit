@@ -397,6 +397,13 @@ interface MobileSyncApi {
         @Query("limit") limit: Int? = null
     ): Response<SubstitutionExercisesApiResponse>
 
+    /** Same substitution logic as admin/mobile slug endpoint, keyed by exercise id. */
+    @GET("api/exercises/{id}/substitutions")
+    suspend fun getSubstitutionsByExerciseId(
+        @Path("id") exerciseId: String,
+        @Header("Authorization") authorization: String,
+    ): Response<SubstitutionExercisesApiResponse>
+
     @GET("api/mobile/training-profile")
     suspend fun getTrainingProfile(
         @Header("Authorization") authorization: String

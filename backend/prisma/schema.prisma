@@ -82,6 +82,8 @@ model Exercise {
   loadCapability            LoadCapability?
   familyKey                 String?
   familyOrder               Int?
+  intent                    SessionItemIntent?
+  coachingNotes             Json?
   programSessionItems       ProgramSessionItem[]
   trainingSessions          TrainingSession[]
   workoutExercises          WorkoutExercise[]
@@ -381,12 +383,35 @@ model Program {
   forkedPrograms        Program[]              @relation("ProgramFork")
   progressionRules      ProgressionRule[]
   userPrograms          UserProgram[]
+  phases                ProgramPhase[]
 
   @@index([deletedAt])
   @@index([isPublished])
   @@index([programType])
   @@index([levelRangeMin, levelRangeMax])
   @@map("programs")
+}
+
+/// ProgramPhase — Phase-based structure for program editor.
+/// Each phase has a name, week range, weekType, and a weeklyPattern template.
+/// Backend expands pattern to concrete ProgramWeek rows at save time for mobile compatibility.
+model ProgramPhase {
+  id            String   @id @default(uuid())
+  programId     String
+  name          Json                       // LocalizedText {en, ar}
+  description   Json?                      // LocalizedText
+  weekType      WeekType @default(NORMAL)  // NORMAL or DELOAD -- applies to all weeks in phase
+  startWeek     Int
+  endWeek       Int
+  sortOrder     Int      @default(0)
+  weeklyPattern Json?                      // Serialized pattern: { days: DayPatternInput[] }
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  program       Program  @relation(fields: [programId], references: [id], onDelete: Cascade)
+
+  @@unique([programId, sortOrder])
+  @@index([programId])
+  @@map("program_phases")
 }
 
 /// Program matching dimensions (domain, goal, equipment, etc.) — reuses AttributeValue catalog with Exercise.
@@ -449,7 +474,7 @@ model ProgramSession {
   createdAt            DateTime               @default(now())
   updatedAt            DateTime               @updatedAt
   estimatedDurationMin Int?
-  sessionCategory      String?
+  role                 SessionRole            @default(MAIN)
   items                ProgramSessionItem[]
   reports              ProgramSessionReport[]
   day                  ProgramDay             @relation(fields: [dayId], references: [id], onDelete: Cascade)
@@ -476,18 +501,7 @@ model ProgramSessionItem {
   isModified        Boolean          @default(false)
   createdAt         DateTime         @default(now())
   updatedAt         DateTime         @updatedAt
-  allowedSubstitutions String[]       @default([])
-  role              SessionItemRole?
-  intent            SessionItemIntent?
-  coachingNotes     Json?
-  difficultyCode    String?
-  isPersonalized    Boolean          @default(false)
-  levelOverride     Int?
-  progressionRuleId String?
-  targetFormScore   Float?
-  targetROM         Float?
   exercise          Exercise?        @relation(fields: [exerciseId], references: [id])
-  progressionRule   ProgressionRule? @relation(fields: [progressionRuleId], references: [id])
   session           ProgramSession   @relation(fields: [sessionId], references: [id], onDelete: Cascade)
   sourceWorkout     Workout?         @relation(fields: [sourceWorkoutId], references: [id])
   userProgramOverrides UserProgramOverride[]
@@ -495,7 +509,6 @@ model ProgramSessionItem {
   @@index([sessionId])
   @@index([exerciseId])
   @@index([sourceWorkoutId])
-  @@index([progressionRuleId])
   @@map("program_session_items")
 }
 
@@ -1225,7 +1238,7 @@ enum ProgramAttributeMode {
   EXCLUDED
 }
 
-enum SessionItemRole {
+enum SessionRole {
   WARMUP
   ACTIVATION
   MAIN

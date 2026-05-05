@@ -13,14 +13,18 @@ import { buildValueIdMeta, type ProgramAttributeFormRow } from '../../_lib/progr
 import { exerciseProgramAttributeStatus } from '../../_lib/exercise-program-attribute-status';
 import { PROGRAM_EDITOR_TABS, type ProgramEditorTabId } from '../../_components/program-editor-tabs';
 import { ProgramEditorTabBar } from '../../_components/ProgramEditorTabBar';
+import { padProgramWeeksToSevenDays } from '../../_lib/week-seven-days';
+import {
+  allPhasesHomogeneous,
+  buildProgramPhasesPayload,
+} from '../../_lib/build-program-phases-payload';
 
 interface ProgramSummaryRef {
   id: string;
   name: LocalizedText;
 }
 
-const SESSION_ITEM_ROLE_OPTIONS = [
-  { value: '', label: '—' },
+const SESSION_ROLE_OPTIONS = [
   { value: 'WARMUP', label: 'WARMUP' },
   { value: 'ACTIVATION', label: 'ACTIVATION' },
   { value: 'MAIN', label: 'MAIN' },
@@ -28,14 +32,6 @@ const SESSION_ITEM_ROLE_OPTIONS = [
   { value: 'CORRECTIVE', label: 'CORRECTIVE' },
   { value: 'COOLDOWN', label: 'COOLDOWN' },
   { value: 'TEST', label: 'TEST' },
-];
-
-const SESSION_ITEM_INTENT_OPTIONS = [
-  { value: '', label: '—' },
-  { value: 'STANDARD', label: 'STANDARD' },
-  { value: 'POWER', label: 'POWER' },
-  { value: 'ECCENTRIC', label: 'ECCENTRIC' },
-  { value: 'VELOCITY_BASED', label: 'VELOCITY_BASED' },
 ];
 
 interface ExerciseSummary {
@@ -84,15 +80,14 @@ interface SessionItemForm {
   weightPerSetText: string;
   notes: LocalizedText;
   restDurationMs?: number;
-  role?: string;
-  intent?: string;
-  coachingNotesJson?: string;
 }
 
 interface SessionForm {
   id?: string;
   name: LocalizedText;
   sortOrder: number;
+  role?: string;
+  estimatedDurationMin?: number | null;
   items: SessionItemForm[];
 }
 
@@ -148,6 +143,15 @@ interface ProgramResponse {
     mode: 'REQUIRED' | 'OPTIONAL' | 'EXCLUDED';
     attributeValue?: { code: string; attribute?: { code: string } };
   }>;
+  phases?: Array<{
+    id: string;
+    name: LocalizedText;
+    description?: LocalizedText | null;
+    startWeek: number;
+    endWeek: number;
+    sortOrder: number;
+    weekType?: string;
+  }>;
   weeks: Array<{
     id?: string;
     weekNumber: number;
@@ -165,6 +169,8 @@ interface ProgramResponse {
         id?: string;
         name: LocalizedText;
         sortOrder: number;
+        role?: string | null;
+        estimatedDurationMin?: number | null;
         items: Array<{
           id?: string;
           type: 'exercise' | 'rest';
@@ -178,9 +184,6 @@ interface ProgramResponse {
           notes?: LocalizedText;
           restDurationMs?: number;
           sortOrder: number;
-          role?: string | null;
-          intent?: string | null;
-          coachingNotes?: unknown;
         }>;
       }>;
     }>;
@@ -198,14 +201,13 @@ const createEmptyItem = (type: 'exercise' | 'rest', exerciseId?: string): Sessio
   weightPerSetText: '',
   notes: { ar: '', en: '' },
   restDurationMs: type === 'rest' ? 60000 : undefined,
-  role: '',
-  intent: '',
-  coachingNotesJson: '',
 });
 
 const createEmptySession = (sortOrder: number): SessionForm => ({
   name: { ar: 'صباحا', en: 'Morning' },
   sortOrder,
+  role: 'MAIN',
+  estimatedDurationMin: undefined,
   items: [],
 });
 
@@ -223,7 +225,7 @@ const createEmptyWeek = (weekNumber: number): WeekForm => ({
   description: { ar: '', en: '' },
   sortOrder: weekNumber - 1,
   weekType: 'NORMAL',
-  days: [createEmptyDay(1)],
+  days: Array.from({ length: 7 }, (_, i) => createEmptyDay(i + 1)),
 });
 
 const createEmptyPhase = (start: number, end: number): PhaseForm => ({
@@ -333,6 +335,9 @@ export default function EditProgramPage() {
   const [nextProgramId, setNextProgramId] = useState('');
 
   const [editorTab, setEditorTab] = useState<ProgramEditorTabId>('basics');
+
+  /** Selected training day index (0–6) per week in Calendar builder */
+  const [weekDayTab, setWeekDayTab] = useState<Record<number, number>>({});
 
   const [exercises, setExercises] = useState<ExerciseSummary[]>([]);
   const [workouts, setWorkouts] = useState<WorkoutSummary[]>([]);
@@ -452,6 +457,8 @@ export default function EditProgramPage() {
                     id: session.id,
                     name: session.name || { ar: '', en: '' },
                     sortOrder: session.sortOrder ?? sessionIndex,
+                    role: session.role ?? 'MAIN',
+                    estimatedDurationMin: session.estimatedDurationMin ?? undefined,
                     items:
                       session.items?.map((item) => ({
                         id: item.id,
@@ -465,20 +472,28 @@ export default function EditProgramPage() {
                         weightPerSetText: item.weightPerSet ? item.weightPerSet.join(', ') : '',
                         notes: item.notes || { ar: '', en: '' },
                         restDurationMs: item.restDurationMs ?? undefined,
-                        role: item.role ?? '',
-                        intent: item.intent ?? '',
-                        coachingNotesJson: item.coachingNotes
-                          ? JSON.stringify(item.coachingNotes, null, 2)
-                          : '',
                       })) || [],
                   })) || [],
               })) || [],
           })) || [];
 
-        setWeeks(mappedWeeks.length > 0 ? mappedWeeks : [createEmptyWeek(1)]);
-        // init default phase covering the loaded duration
+        setWeeks(
+          padProgramWeeksToSevenDays(mappedWeeks.length > 0 ? mappedWeeks : [createEmptyWeek(1)])
+        );
         const loadedDuration = program.durationWeeks || mappedWeeks.length || 1;
-        setPhases([createEmptyPhase(1, loadedDuration)]);
+        if (program.phases && program.phases.length > 0) {
+          const sorted = [...program.phases].sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0));
+          setPhases(
+            sorted.map((p) => ({
+              id: p.id,
+              name: p.name || { ar: '', en: '' },
+              startWeek: p.startWeek,
+              endWeek: p.endWeek,
+            }))
+          );
+        } else {
+          setPhases([createEmptyPhase(1, loadedDuration)]);
+        }
       } catch (error) {
         console.error('Error fetching program:', error);
         alert('Error loading program');
@@ -1011,9 +1026,6 @@ export default function EditProgramPage() {
           weightPerSetText: exercise.weightPerSet ? exercise.weightPerSet.join(', ') : '',
           notes: exercise.notes || { ar: '', en: '' },
           restDurationMs: undefined,
-          role: '',
-          intent: '',
-          coachingNotesJson: '',
         });
 
         if (exercise.restAfterExerciseMs > 0) {
@@ -1024,9 +1036,6 @@ export default function EditProgramPage() {
             weightPerSetText: '',
             notes: { ar: '', en: '' },
             restDurationMs: exercise.restAfterExerciseMs,
-            role: '',
-            intent: '',
-            coachingNotesJson: '',
           });
         }
       });
@@ -1062,7 +1071,12 @@ export default function EditProgramPage() {
     }
   };
 
-  const buildPayload = () => ({
+  const buildPayload = () => {
+    const phasesPayload = allPhasesHomogeneous(phases, weeks)
+      ? buildProgramPhasesPayload(phases, weeks)
+      : null;
+
+    return {
     name,
     description: description.en || description.ar ? description : undefined,
     coverImageUrl: coverImageUrl || undefined,
@@ -1083,6 +1097,7 @@ export default function EditProgramPage() {
     prerequisiteProgramId: prerequisiteProgramId || undefined,
     nextProgramId: nextProgramId || undefined,
     programAttributes: programAttributeRows,
+    ...(phasesPayload ? { phases: phasesPayload } : {}),
     weeks: weeks.map((week, weekIndex) => ({
       ...(week.id ? { id: week.id } : {}),
       weekNumber: week.weekNumber || weekIndex + 1,
@@ -1100,6 +1115,11 @@ export default function EditProgramPage() {
           ...(session.id ? { id: session.id } : {}),
           name: session.name,
           sortOrder: session.sortOrder ?? sessionIndex,
+          role: session.role || 'MAIN',
+          estimatedDurationMin:
+            session.estimatedDurationMin === undefined || session.estimatedDurationMin === null
+              ? undefined
+              : session.estimatedDurationMin,
           items: session.items.map((item, itemIndex) => ({
             ...(item.id ? { id: item.id } : {}),
             type: item.type,
@@ -1119,16 +1139,12 @@ export default function EditProgramPage() {
             notes: item.type === 'exercise' && (item.notes.en || item.notes.ar) ? item.notes : undefined,
             restDurationMs: item.type === 'rest' ? item.restDurationMs : undefined,
             sortOrder: itemIndex,
-            role: item.role || undefined,
-            intent: item.intent || undefined,
-            coachingNotes: item.coachingNotesJson?.trim()
-              ? parseJsonField(item.coachingNotesJson)
-              : undefined,
           })),
         })),
       })),
     })),
-  });
+    };
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -1143,6 +1159,13 @@ export default function EditProgramPage() {
     setLoading(true);
 
     try {
+      if (phases.length > 0 && !allPhasesHomogeneous(phases, weeks)) {
+        toast(
+          'Weeks differ within at least one phase — saving as flat weeks only. Use "Apply Pattern" in each phase to align weeks before save if you need phase rows synced.',
+          { duration: 6500 }
+        );
+      }
+
       const res = await fetch(`/api/programs/${programId}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
@@ -1708,15 +1731,38 @@ export default function EditProgramPage() {
                 <h4 className="text-sm font-semibold text-gray-700">
                   Training days
                   <span className="ml-2 rounded-full bg-primary/10 px-2 py-0.5 text-xs text-primary">
-                    {week.days.length}/week
+                    Day {(weekDayTab[weekIndex] ?? 0) + 1} / 7
                   </span>
                 </h4>
-                <Button type="button" variant="outline" onClick={() => addDay(weekIndex)}>
-                  Add Day
-                </Button>
               </div>
 
-              {week.days.map((day, dayIndex) => (
+              <div className="flex flex-wrap gap-2 border-b border-gray-200 pb-3">
+                {week.days.map((_, di) => (
+                  <button
+                    key={`day-tab-${weekIndex}-${di}`}
+                    type="button"
+                    className={`rounded-lg px-3 py-1.5 text-sm font-medium transition-colors ${
+                      (weekDayTab[weekIndex] ?? 0) === di
+                        ? 'bg-blue-600 text-white'
+                        : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                    }`}
+                    onClick={() =>
+                      setWeekDayTab((prev) => ({
+                        ...prev,
+                        [weekIndex]: di,
+                      }))
+                    }
+                  >
+                    Day {di + 1}
+                  </button>
+                ))}
+              </div>
+
+              {(() => {
+                const dayIndex = weekDayTab[weekIndex] ?? 0;
+                const day = week.days[dayIndex];
+                if (!day) return null;
+                return (
                 <CollapsibleBuilderSection
                   key={`day-${dayIndex}`}
                   title={`Training day ${dayIndex + 1}`}
@@ -1726,25 +1772,7 @@ export default function EditProgramPage() {
                     { label: 'Training', variant: 'primary' },
                     { label: `${day.sessions.length} session(s)` },
                   ]}
-                  actions={
-                    <div className="flex items-center gap-2">
-                      <Button
-                        type="button"
-                        variant="outline"
-                        onClick={() => removeDay(weekIndex, dayIndex)}
-                        disabled={week.days.length === 1}
-                      >
-                        Remove Day
-                      </Button>
-                      <Button
-                        type="button"
-                        variant="secondary"
-                        onClick={() => duplicateDay(weekIndex, dayIndex)}
-                      >
-                        Duplicate Day
-                      </Button>
-                    </div>
-                  }
+                  actions={null}
                   className="border-gray-100"
                 >
                   <div className="space-y-4">
@@ -1844,6 +1872,37 @@ export default function EditProgramPage() {
                             onChange={(e) =>
                               updateSession(weekIndex, dayIndex, sessionIndex, {
                                 name: { ...session.name, ar: e.target.value },
+                              })
+                            }
+                          />
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <Label>Session role</Label>
+                          <Select
+                            value={session.role ?? 'MAIN'}
+                            onChange={(e) =>
+                              updateSession(weekIndex, dayIndex, sessionIndex, {
+                                role: e.target.value,
+                              })
+                            }
+                            options={SESSION_ROLE_OPTIONS}
+                          />
+                        </div>
+                        <div>
+                          <Label>Estimated duration (min)</Label>
+                          <Input
+                            type="number"
+                            min={1}
+                            value={session.estimatedDurationMin ?? ''}
+                            onChange={(e) =>
+                              updateSession(weekIndex, dayIndex, sessionIndex, {
+                                estimatedDurationMin:
+                                  e.target.value === ''
+                                    ? undefined
+                                    : Number.parseInt(e.target.value, 10) || undefined,
                               })
                             }
                           />
@@ -2057,78 +2116,31 @@ export default function EditProgramPage() {
                                 </div>
                               </div>
 
-                              <details className="rounded-lg border border-gray-200 bg-gray-50">
-                                <summary className="cursor-pointer px-3 py-2 text-sm font-medium text-gray-700">
-                                  Advanced item settings
-                                </summary>
-                                <div className="space-y-4 border-t border-gray-200 p-3">
-                                  <div className="grid grid-cols-2 gap-4">
-                                    <div>
-                                      <Label>Notes (EN)</Label>
-                                      <Input
-                                        value={item.notes.en}
-                                        onChange={(e) =>
-                                          updateItem(weekIndex, dayIndex, sessionIndex, itemIndex, {
-                                            notes: { ...item.notes, en: e.target.value },
-                                          })
-                                        }
-                                      />
-                                    </div>
-                                    <div>
-                                      <Label>Notes (AR)</Label>
-                                      <Input
-                                        dir="rtl"
-                                        value={item.notes.ar}
-                                        onChange={(e) =>
-                                          updateItem(weekIndex, dayIndex, sessionIndex, itemIndex, {
-                                            notes: { ...item.notes, ar: e.target.value },
-                                          })
-                                        }
-                                      />
-                                    </div>
-                                  </div>
-
-                                  <div className="grid grid-cols-3 gap-4">
-                                    <div>
-                                      <Label>Role</Label>
-                                      <Select
-                                        value={item.role ?? ''}
-                                        onChange={(e) =>
-                                          updateItem(weekIndex, dayIndex, sessionIndex, itemIndex, {
-                                            role: e.target.value,
-                                          })
-                                        }
-                                        options={SESSION_ITEM_ROLE_OPTIONS}
-                                      />
-                                    </div>
-                                    <div>
-                                      <Label>Intent</Label>
-                                      <Select
-                                        value={item.intent ?? ''}
-                                        onChange={(e) =>
-                                          updateItem(weekIndex, dayIndex, sessionIndex, itemIndex, {
-                                            intent: e.target.value,
-                                          })
-                                        }
-                                        options={SESSION_ITEM_INTENT_OPTIONS}
-                                      />
-                                    </div>
-                                    <div>
-                                      <Label>Coaching notes (JSON)</Label>
-                                      <Textarea
-                                        rows={2}
-                                        value={item.coachingNotesJson ?? ''}
-                                        onChange={(e) =>
-                                          updateItem(weekIndex, dayIndex, sessionIndex, itemIndex, {
-                                            coachingNotesJson: e.target.value,
-                                          })
-                                        }
-                                        placeholder="{}"
-                                      />
-                                    </div>
-                                  </div>
+                              <div className="mt-2 grid grid-cols-2 gap-4">
+                                <div>
+                                  <Label>Notes (EN)</Label>
+                                  <Input
+                                    value={item.notes.en}
+                                    onChange={(e) =>
+                                      updateItem(weekIndex, dayIndex, sessionIndex, itemIndex, {
+                                        notes: { ...item.notes, en: e.target.value },
+                                      })
+                                    }
+                                  />
                                 </div>
-                              </details>
+                                <div>
+                                  <Label>Notes (AR)</Label>
+                                  <Input
+                                    dir="rtl"
+                                    value={item.notes.ar}
+                                    onChange={(e) =>
+                                      updateItem(weekIndex, dayIndex, sessionIndex, itemIndex, {
+                                        notes: { ...item.notes, ar: e.target.value },
+                                      })
+                                    }
+                                  />
+                                </div>
+                              </div>
                             </>
                           )}
                           </div>
@@ -2139,7 +2151,9 @@ export default function EditProgramPage() {
                   ))}
                   </div>
                 </CollapsibleBuilderSection>
-              ))}
+                );
+              })()}
+
               </div>
             </CollapsibleBuilderSection>
           ))}

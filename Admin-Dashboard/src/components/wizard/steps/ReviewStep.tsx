@@ -9,7 +9,7 @@
 
 import { useMemo } from 'react';
 import { useWizardStore } from '../WizardContext';
-import { Card, CardHeader, CardTitle, CardContent, Badge, Label, Select, Input } from '@/components/ui';
+import { Card, CardHeader, CardTitle, CardContent, Badge, Label, Select, Input, Textarea } from '@/components/ui';
 
 const MOVEMENT_PATTERN_OPTIONS = [
   { value: '', label: '—' },
@@ -35,6 +35,14 @@ const LOAD_CAPABILITY_OPTIONS = [
   { value: 'EXTERNAL_LOAD_OPTIONAL', label: 'EXTERNAL_LOAD_OPTIONAL' },
   { value: 'EXTERNAL_LOAD_REQUIRED', label: 'EXTERNAL_LOAD_REQUIRED' },
 ];
+
+const EXERCISE_INTENT_OPTIONS = [
+  { value: '', label: '—' },
+  { value: 'STANDARD', label: 'STANDARD' },
+  { value: 'POWER', label: 'POWER' },
+  { value: 'ECCENTRIC', label: 'ECCENTRIC' },
+  { value: 'VELOCITY_BASED', label: 'VELOCITY_BASED' },
+];
 import { JsonPreview } from '@/components/JsonPreview';
 import { canPublish } from '@/modules/exercises/exercises.validation';
 import { STATE_CONFIG, JOINT_STATE_NAMES } from '@/lib/types/localized';
@@ -47,6 +55,8 @@ export function ReviewStep() {
     loadCapability: '',
     familyKey: '',
     familyOrder: '',
+    intent: '',
+    coachingNotesJson: '',
   };
   const setBlueprint = store.setBlueprintExerciseMeta;
   
@@ -348,6 +358,24 @@ export function ReviewStep() {
               value={blueprint.familyOrder}
               onChange={(e) => setBlueprint({ familyOrder: e.target.value })}
               placeholder="1"
+            />
+          </div>
+          <div>
+            <Label>Intent</Label>
+            <Select
+              value={blueprint.intent ?? ''}
+              onChange={(e) => setBlueprint({ intent: e.target.value })}
+              options={EXERCISE_INTENT_OPTIONS}
+            />
+          </div>
+          <div className="md:col-span-2">
+            <Label>Coaching notes (JSON)</Label>
+            <Textarea
+              rows={4}
+              value={blueprint.coachingNotesJson ?? ''}
+              onChange={(e) => setBlueprint({ coachingNotesJson: e.target.value })}
+              placeholder="{}"
+              className="font-mono text-sm"
             />
           </div>
         </CardContent>

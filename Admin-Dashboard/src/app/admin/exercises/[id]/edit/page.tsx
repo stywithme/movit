@@ -229,6 +229,10 @@ export default function EditExercisePage() {
               (exercise as { familyOrder?: number | null }).familyOrder != null
                 ? String((exercise as { familyOrder?: number | null }).familyOrder)
                 : '',
+            intent: (exercise as { intent?: string }).intent ?? '',
+            coachingNotesJson: (exercise as { coachingNotes?: unknown }).coachingNotes
+              ? JSON.stringify((exercise as { coachingNotes?: unknown }).coachingNotes, null, 2)
+              : '',
           },
         });
         
