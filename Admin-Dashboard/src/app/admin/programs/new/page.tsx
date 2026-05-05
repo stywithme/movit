@@ -111,6 +111,13 @@ interface WeekForm {
   days: DayForm[];
 }
 
+interface PhaseForm {
+  id: string;
+  name: LocalizedText;
+  startWeek: number;
+  endWeek: number;
+}
+
 const createEmptyItem = (type: 'exercise' | 'rest', exerciseId?: string): SessionItemForm => ({
   type,
   exerciseId,
@@ -150,6 +157,13 @@ const createEmptyWeek = (weekNumber: number): WeekForm => ({
   days: [createEmptyDay(1)],
 });
 
+const createEmptyPhase = (start: number, end: number): PhaseForm => ({
+  id: `phase-${Date.now()}`,
+  name: { ar: '', en: `Phase ${start}-${end}` },
+  startWeek: start,
+  endWeek: end,
+});
+
 function cloneItem(item: SessionItemForm): SessionItemForm {
   return {
     ...item,
@@ -179,6 +193,13 @@ function cloneWeek(week: WeekForm): WeekForm {
     name: { ...week.name },
     description: { ...week.description },
     days: week.days.map(cloneDay),
+  };
+}
+
+function clonePhase(phase: PhaseForm): PhaseForm {
+  return {
+    ...phase,
+    name: { ...phase.name },
   };
 }
 
@@ -221,6 +242,7 @@ export default function NewProgramPage() {
   const [version, setVersion] = useState(1);
   const [tags, setTags] = useState('');
   const [weeks, setWeeks] = useState<WeekForm[]>([createEmptyWeek(1)]);
+  const [phases, setPhases] = useState<PhaseForm[]>([createEmptyPhase(1, 4)]);
 
   const [programOwnership, setProgramOwnership] = useState<'SYSTEM' | 'COACH' | 'CUSTOM'>('SYSTEM');
   const { catalog: attributeCatalog, loading: loadingAttributeCatalog, error: attributeCatalogError } =
@@ -404,6 +426,132 @@ export default function NewProgramPage() {
     return { weeks: weeks.length, days, sessions, items };
   }, [weeks]);
 
+  // --- Phase helpers (minimal Phase Builder) ---
+  const getPhaseStats = (phase: PhaseForm) => {
+    const phaseWeeks = weeks.slice(Math.max(0, phase.startWeek - 1), phase.endWeek);
+    if (!phaseWeeks.length) return { weeks: 0, days: 0, sessions: 0, items: 0 };
+    const days = phaseWeeks.reduce((acc, w) => acc + w.days.length, 0);
+    const sessions = phaseWeeks.reduce(
+      (acc, w) => acc + w.days.reduce((dAcc, d) => dAcc + d.sessions.length, 0),
+      0
+    );
+    const items = phaseWeeks.reduce(
+      (acc, w) =>
+        acc +
+        w.days.reduce(
+          (dAcc, d) =>
+            dAcc + d.sessions.reduce((sAcc, s) => sAcc + s.items.length, 0),
+          0
+        ),
+      0
+    );
+    return { weeks: phaseWeeks.length, days, sessions, items };
+  };
+
+  const phasesOverlap = (list: PhaseForm[]): boolean => {
+    const sorted = [...list].sort((a, b) => a.startWeek - b.startWeek);
+    for (let i = 1; i < sorted.length; i++) {
+      if (sorted[i].startWeek <= sorted[i - 1].endWeek) return true;
+    }
+    return false;
+  };
+
+  const syncPhasesToWeeks = (newPhases: PhaseForm[]) => {
+    if (!newPhases.length) {
+      setDurationWeeks(1);
+      setWeeks([createEmptyWeek(1)].map(normalizeWeek));
+      return;
+    }
+    const maxEnd = Math.max(...newPhases.map((p) => p.endWeek));
+    const target = Math.max(1, maxEnd);
+    setDurationWeeks(target);
+    setWeeks((prev) => {
+      const next: WeekForm[] = [];
+      for (let wn = 1; wn <= target; wn++) {
+        const existing = prev.find((w) => w.weekNumber === wn);
+        if (existing) {
+          next.push({ ...existing, weekNumber: wn, sortOrder: wn - 1 });
+        } else {
+          next.push(createEmptyWeek(wn));
+        }
+      }
+      return next.map(normalizeWeek);
+    });
+  };
+
+  const addPhase = () => {
+    const lastEnd = phases.length > 0 ? Math.max(...phases.map((p) => p.endWeek)) : 0;
+    const start = lastEnd + 1;
+    const end = start + 3; // default length 4 weeks
+    const newPhase = createEmptyPhase(start, end);
+    const nextPhases = [...phases, newPhase];
+    setPhases(nextPhases);
+    syncPhasesToWeeks(nextPhases);
+  };
+
+  const updatePhase = (phaseId: string, updates: Partial<PhaseForm>) => {
+    setPhases((prev) => {
+      const next = prev.map((p) => (p.id === phaseId ? { ...p, ...updates } : p));
+      // simple overlap check
+      if (phasesOverlap(next)) {
+        toast.error('Phase ranges must not overlap');
+        return prev; // revert
+      }
+      syncPhasesToWeeks(next);
+      return next;
+    });
+  };
+
+  const removePhase = (phaseId: string) => {
+    if (phases.length === 1) {
+      toast.error('At least one phase is required');
+      return;
+    }
+    const next = phases.filter((p) => p.id !== phaseId);
+    setPhases(next);
+    syncPhasesToWeeks(next);
+  };
+
+  const applyPatternToPhase = (phaseId: string) => {
+    const phase = phases.find((p) => p.id === phaseId);
+    if (!phase) return;
+    const phaseLen = phase.endWeek - phase.startWeek + 1;
+    if (phaseLen < 2) {
+      toast('Phase needs at least 2 weeks to apply pattern');
+      return;
+    }
+    const sourceIdx = phase.startWeek - 1;
+    const source = weeks[sourceIdx];
+    if (!source) return;
+    setWeeks((prev) =>
+      prev.map((week, idx) => {
+        const wn = idx + 1;
+        if (wn > phase.startWeek && wn <= phase.endWeek) {
+          return {
+            ...cloneWeek(source),
+            weekNumber: wn,
+            sortOrder: wn - 1,
+          };
+        }
+        return week;
+      }).map(normalizeWeek)
+    );
+  };
+
+  const applyBulkWeekTypeToPhase = (phaseId: string, weekType: 'NORMAL' | 'DELOAD') => {
+    const phase = phases.find((p) => p.id === phaseId);
+    if (!phase) return;
+    setWeeks((prev) =>
+      prev.map((week, idx) => {
+        const wn = idx + 1;
+        if (wn >= phase.startWeek && wn <= phase.endWeek) {
+          return { ...week, weekType };
+        }
+        return week;
+      })
+    );
+  };
+
   const calendarStructureWarnings = useMemo(() => {
     const messages: string[] = [];
     if (durationWeeks !== weeks.length) {
@@ -420,8 +568,18 @@ export default function NewProgramPage() {
         messages.push(`Week ${wi + 1}: day numbers should be between 1 and 14.`);
       }
     });
+    if (phasesOverlap(phases)) {
+      messages.push('Phases have overlapping week ranges.');
+    }
+    const covered = new Set<number>();
+    phases.forEach((p) => {
+      for (let i = p.startWeek; i <= p.endWeek; i++) covered.add(i);
+    });
+    if (covered.size !== durationWeeks) {
+      messages.push('Phases do not fully cover weeks 1 to duration.');
+    }
     return messages;
-  }, [durationWeeks, weeks]);
+  }, [durationWeeks, weeks, phases]);
 
   const getWeekSummary = (week: WeekForm) => {
     const sessions = week.days.reduce((acc, day) => acc + day.sessions.length, 0);
@@ -498,6 +656,35 @@ export default function NewProgramPage() {
     }
     if (rows.length > 0) setProgramAttributeRows(rows);
   }, [attributeCatalog, searchParams, programAttributeRows.length]);
+
+  // Auto-align Duration with phases (phases drive duration)
+  useEffect(() => {
+    if (!phases.length) return;
+    const maxEnd = Math.max(...phases.map((p) => p.endWeek));
+    if (maxEnd !== durationWeeks && maxEnd > 0) {
+      setDurationWeeks(maxEnd);
+    }
+  }, [phases]);
+
+  // When duration changed manually, extend/truncate last phase (simple, no confirm for basic)
+  useEffect(() => {
+    if (!phases.length || durationWeeks < 1) return;
+    const maxEnd = Math.max(...phases.map((p) => p.endWeek));
+    if (maxEnd !== durationWeeks) {
+      const lastPhase = phases[phases.length - 1];
+      if (durationWeeks > maxEnd) {
+        // extend last phase
+        setPhases((prev) =>
+          prev.map((p, idx) => (idx === prev.length - 1 ? { ...p, endWeek: durationWeeks } : p))
+        );
+      } else {
+        // truncate
+        setPhases((prev) =>
+          prev.map((p, idx) => (idx === prev.length - 1 ? { ...p, endWeek: durationWeeks } : p))
+        );
+      }
+    }
+  }, [durationWeeks]);
 
   const updateWeek = (weekIndex: number, updates: Partial<WeekForm>) => {
     setWeeks((prev) => prev.map((week, index) => (index === weekIndex ? { ...week, ...updates } : week)));
@@ -1176,10 +1363,96 @@ export default function NewProgramPage() {
 
         {editorTab === 'builder' && (
         <>
-          <div className="flex items-center justify-between">
+          {/* Training Phases Section - Phase Builder (basic) */}
+          <div className="space-y-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <h2 className="text-lg font-semibold">Training Phases</h2>
+                <p className="text-sm text-gray-500">Group weeks into named phases for easier pattern reuse and bulk edits. Phases auto-align program duration.</p>
+              </div>
+              <Button type="button" variant="outline" onClick={addPhase}>
+                Add Phase
+              </Button>
+            </div>
+
+            <div className="grid gap-4 md:grid-cols-2">
+              {phases.map((phase, phaseIndex) => {
+                const stats = getPhaseStats(phase);
+                return (
+                  <Card key={phase.id} className="p-4 space-y-4 border-blue-100">
+                    <div className="flex items-center justify-between">
+                      <div className="text-sm font-semibold text-gray-900">
+                        Phase {phaseIndex + 1}
+                      </div>
+                      <div className="flex gap-2">
+                        <Button type="button" variant="secondary" size="sm" onClick={() => applyPatternToPhase(phase.id)}>
+                          Apply Pattern
+                        </Button>
+                        <Button type="button" variant="outline" size="sm" onClick={() => applyBulkWeekTypeToPhase(phase.id, 'DELOAD')}>
+                          Set Deload
+                        </Button>
+                        <Button type="button" variant="outline" size="sm" onClick={() => applyBulkWeekTypeToPhase(phase.id, 'NORMAL')}>
+                          Set Normal
+                        </Button>
+                        <Button type="button" variant="outline" size="sm" onClick={() => removePhase(phase.id)} disabled={phases.length === 1}>
+                          Remove
+                        </Button>
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <div>
+                        <Label>Name (English)</Label>
+                        <Input
+                          value={phase.name.en}
+                          onChange={(e) => updatePhase(phase.id, { name: { ...phase.name, en: e.target.value } })}
+                        />
+                      </div>
+                      <div>
+                        <Label>Name (Arabic)</Label>
+                        <Input
+                          value={phase.name.ar}
+                          onChange={(e) => updatePhase(phase.id, { name: { ...phase.name, ar: e.target.value } })}
+                          dir="rtl"
+                        />
+                      </div>
+                      <div>
+                        <Label>Start Week</Label>
+                        <Input
+                          type="number"
+                          min={1}
+                          value={phase.startWeek}
+                          onChange={(e) => updatePhase(phase.id, { startWeek: Number.parseInt(e.target.value, 10) || 1 })}
+                        />
+                      </div>
+                      <div>
+                        <Label>End Week</Label>
+                        <Input
+                          type="number"
+                          min={phase.startWeek}
+                          value={phase.endWeek}
+                          onChange={(e) => updatePhase(phase.id, { endWeek: Number.parseInt(e.target.value, 10) || phase.startWeek })}
+                        />
+                      </div>
+                    </div>
+
+                    <div className="rounded bg-gray-50 px-3 py-2 text-xs text-gray-600 flex gap-4">
+                      <span>{stats.weeks} weeks</span>
+                      <span>{stats.days} training days</span>
+                      <span>{stats.sessions} sessions</span>
+                      <span>{stats.items} items</span>
+                    </div>
+                  </Card>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Existing Program Builder header */}
+          <div className="flex items-center justify-between pt-4 border-t">
             <div>
               <h2 className="text-lg font-semibold">Program Builder</h2>
-              <p className="text-sm text-gray-500">Build weeks, days, sessions, and items</p>
+              <p className="text-sm text-gray-500">Build weeks, days, sessions, and items. Weeks inherit phase grouping above.</p>
             </div>
             <Button type="button" variant="outline" onClick={addWeek}>
               Add Week
@@ -1189,9 +1462,9 @@ export default function NewProgramPage() {
           <details className="rounded-lg border border-blue-100 bg-blue-50/70 text-sm text-blue-900">
             <summary className="cursor-pointer px-4 py-3 font-semibold text-blue-950">Calendar builder tips</summary>
             <ul className="list-disc space-y-1 px-4 pb-3 pl-8">
-              <li>Create week structure first, then days and sessions.</li>
-              <li>Use duplicate week/day/session for repeated patterns.</li>
-              <li>Expand an exercise row for sets, rest, role, and JSON coaching notes.</li>
+              <li>Define phases first (auto-aligns Duration). Use Apply Pattern to repeat the first week of a phase across its weeks.</li>
+              <li>Use Bulk (Deload/Normal) buttons per phase for quick changes. Fine-tune individual weeks below.</li>
+              <li>Phases must not overlap and must cover 1..durationWeeks.</li>
             </ul>
           </details>
 
@@ -1215,6 +1488,9 @@ export default function NewProgramPage() {
               meta={[
                 { label: week.weekType === 'DELOAD' ? 'Deload' : 'Normal', variant: week.weekType === 'DELOAD' ? 'warning' : 'default' },
                 { label: `${week.days.length} day(s)` },
+                ...(phases.find((p) => week.weekNumber >= p.startWeek && week.weekNumber <= p.endWeek)
+                  ? [{ label: phases.find((p) => week.weekNumber >= p.startWeek && week.weekNumber <= p.endWeek)!.name.en || 'Phase', variant: 'primary' as const }]
+                  : []),
               ]}
               actions={
                 <div className="flex items-center gap-2">
