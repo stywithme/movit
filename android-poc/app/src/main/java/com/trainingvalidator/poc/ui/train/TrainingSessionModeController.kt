@@ -22,6 +22,7 @@ import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
 import com.trainingvalidator.poc.training.models.ProgramSessionItem
 import com.trainingvalidator.poc.training.report.ReportGenerator
+import com.trainingvalidator.poc.training.session.SessionRestContext
 import com.trainingvalidator.poc.training.session.SessionTrainingEngine
 import com.trainingvalidator.poc.training.session.SessionTrainingEngine.SetMetrics
 import com.trainingvalidator.poc.training.session.SessionTrainingEngine.RepDetail
@@ -44,6 +45,9 @@ class TrainingSessionModeController(
     var sessionEngine: SessionTrainingEngine? = null
     private var sessionRestTimer: android.os.CountDownTimer? = null
     private var sessionRestRemainingMs: Long = 0L
+    /** While prep rest is shown, identifies the set so timer completion can auto-start safely. */
+    private var pendingPrepRestKey: Pair<Int, Int>? = null
+    private var sessionPrepRestPaused: Boolean = false
     private var sessionSetStartTimeMs: Long = 0L
     private val pendingReportJobs = mutableListOf<Job>()
 
@@ -55,10 +59,14 @@ class TrainingSessionModeController(
 
     fun onDestroy() {
         sessionRestTimer?.cancel()
+        pendingPrepRestKey = null
+        sessionPrepRestPaused = false
     }
 
     fun cancelSessionRestOnClose() {
         sessionRestTimer?.cancel()
+        pendingPrepRestKey = null
+        sessionPrepRestPaused = false
     }
 
     /**
@@ -181,28 +189,6 @@ class TrainingSessionModeController(
                         showSessionPreExercise(sessionState)
                     }
                     is SessionTrainingEngine.State.Training -> { }
-                    is SessionTrainingEngine.State.SetRest -> {
-                        showCelebrationMessage(host.getString(R.string.session_celebrate_set))
-                        val setsTitle = host.getString(R.string.session_rest_between_sets)
-                        showSessionRest(
-                            durationMs = sessionState.durationMs,
-                            title = setsTitle,
-                            headline = sessionState.exerciseName,
-                            detailLine = host.getString(
-                                R.string.session_rest_next_set_format,
-                                sessionState.exerciseName,
-                                sessionState.nextSetNumber,
-                                sessionState.totalSets
-                            ),
-                            previewSlug = sessionState.exerciseSlug,
-                            instructionText = null,
-                            tipTitleKey = setsTitle
-                        )
-                    }
-                    is SessionTrainingEngine.State.ExerciseRest -> {
-                        showCelebrationMessage(host.getString(R.string.session_celebrate_exercise))
-                        showSessionExerciseRest(sessionState)
-                    }
                     is SessionTrainingEngine.State.SessionComplete -> {
                         showCelebrationMessage(host.getString(R.string.session_celebrate_session))
                         showSessionComplete(sessionState.report)
@@ -225,35 +211,65 @@ class TrainingSessionModeController(
         b.completedPanel.visibility = View.GONE
         b.bottomStatsBar.visibility = View.GONE
         b.progressContainer.visibility = View.GONE
-        b.tvSessionPrepCountdown.visibility = View.GONE
-        b.layoutSessionPrepRestControls.visibility = View.GONE
-        b.btnSessionStartSet.visibility = View.VISIBLE
+        b.vignetteOverlay.clear()
+        b.skeletonOverlay.setTrainingMode(false)
+
         val engine = sessionEngine ?: return
         val item = state.item
-        b.tvSessionExerciseLabel.text = host.getString(
-            R.string.session_exercise_label,
-            state.exerciseIndex + 1,
-            engine.getExerciseCount()
-        )
+        val inRest = state.pendingRestMs > 0L
+
+        if (inRest) {
+            when (state.restContext) {
+                SessionRestContext.BETWEEN_SETS ->
+                    showCelebrationMessage(host.getString(R.string.session_celebrate_set))
+                SessionRestContext.BETWEEN_EXERCISES ->
+                    showCelebrationMessage(host.getString(R.string.session_celebrate_exercise))
+                else -> { }
+            }
+            b.tvSessionExerciseLabel.visibility = View.GONE
+            b.layoutSessionPrepTimerRow.visibility = View.VISIBLE
+        } else {
+            b.tvSessionExerciseLabel.visibility = View.VISIBLE
+            b.layoutSessionPrepTimerRow.visibility = View.GONE
+            b.tvSessionExerciseLabel.text = host.getString(
+                R.string.session_exercise_label,
+                state.exerciseIndex + 1,
+                engine.getExerciseCount()
+            )
+        }
+
         b.tvSessionExerciseName.text = state.exerciseName
         hideAlternatingLabels()
         updateSessionSetIndicator(state.setNumber, state.totalSets)
-        val targetReps = item.targetReps
-        val targetDuration = item.targetDuration
-        b.tvSessionSetInfo.text = when {
-            targetReps != null && targetReps > 0 -> host.getString(
-                R.string.session_set_reps_format,
-                state.setNumber, state.totalSets, targetReps
+
+        if (inRest && state.restContext == SessionRestContext.BETWEEN_SETS) {
+            b.tvSessionSetInfo.text = host.getString(
+                R.string.session_rest_next_set_format,
+                state.exerciseName,
+                state.setNumber,
+                state.totalSets
             )
-            targetDuration != null && targetDuration > 0 -> host.getString(
-                R.string.session_set_duration_format,
-                state.setNumber, state.totalSets, targetDuration
-            )
-            else -> host.getString(
-                R.string.session_set_only_format,
-                state.setNumber, state.totalSets
-            )
+        } else if (inRest && state.restContext == SessionRestContext.BETWEEN_EXERCISES) {
+            b.tvSessionSetInfo.text = buildSessionTargetSummaryLine(item)
+        } else {
+            val targetReps = item.targetReps
+            val targetDuration = item.targetDuration
+            b.tvSessionSetInfo.text = when {
+                targetReps != null && targetReps > 0 -> host.getString(
+                    R.string.session_set_reps_format,
+                    state.setNumber, state.totalSets, targetReps
+                )
+                targetDuration != null && targetDuration > 0 -> host.getString(
+                    R.string.session_set_duration_format,
+                    state.setNumber, state.totalSets, targetDuration
+                )
+                else -> host.getString(
+                    R.string.session_set_only_format,
+                    state.setNumber, state.totalSets
+                )
+            }
         }
+
         val weight = engine.getCurrentSetWeight()
         if (weight != null && weight > 0f) {
             b.tvSessionWeightInfo.text = host.getString(R.string.session_weight_format, weight)
@@ -266,107 +282,364 @@ class TrainingSessionModeController(
         bindExercisePreviewImage(slug, b.ivSessionPreExercisePreview, b.ivSessionPreExerciseFallbackIcon)
         val cfg = slug?.let { sessionExerciseConfigMap[it] }
         val instruction = localizedInstruction(cfg, lang)
-        if (!instruction.isNullOrBlank()) {
-            b.tvSessionInstruction.text = instruction
-            b.tvSessionInstruction.visibility = View.VISIBLE
+        val tip = if (inRest) getRestTip(state.restContext) else null
+        when {
+            inRest && !instruction.isNullOrBlank() && !tip.isNullOrBlank() -> {
+                b.tvSessionInstruction.text = "$instruction\n\n$tip"
+                b.tvSessionInstruction.visibility = View.VISIBLE
+            }
+            inRest && !tip.isNullOrBlank() -> {
+                b.tvSessionInstruction.text = tip
+                b.tvSessionInstruction.visibility = View.VISIBLE
+            }
+            !instruction.isNullOrBlank() -> {
+                b.tvSessionInstruction.text = instruction
+                b.tvSessionInstruction.visibility = View.VISIBLE
+            }
+            else -> {
+                b.tvSessionInstruction.visibility = View.GONE
+            }
+        }
+
+        // Settings card (reps/duration/weight) - visible for both rest and pre-start
+        bindSessionSettings(state, engine, cfg)
+
+        if (inRest) {
+            pendingPrepRestKey = state.exerciseIndex to state.setNumber
+            sessionPrepRestPaused = false
+            b.tvSessionPrepCountdown.visibility = View.VISIBLE
+            b.layoutSessionPrepRestControls.visibility = View.GONE
+            b.btnSessionStartSet.visibility = View.GONE
+            b.btnSessionPrepPauseRestIcon.setImageResource(R.drawable.ic_pause)
+            b.btnSessionPrepPauseRestIcon.contentDescription = host.getString(R.string.pause)
+            b.btnSessionPrepPauseRestIcon.visibility = View.VISIBLE
+            b.btnSessionPrepSkipRestIcon.visibility = View.VISIBLE
+            b.btnSessionPrepSkipRestIcon.setOnClickListener {
+                sessionRestTimer?.cancel()
+                sessionPrepRestPaused = false
+                b.btnSessionPrepPauseRestIcon.setImageResource(R.drawable.ic_pause)
+                b.btnSessionPrepPauseRestIcon.contentDescription = host.getString(R.string.pause)
+                val cur = sessionEngine?.state?.value as? SessionTrainingEngine.State.PreExercise
+                    ?: return@setOnClickListener
+                if (cur.pendingRestMs > 0L) {
+                    requestSessionStartFromPreExercise(cur)
+                }
+            }
+
+            val prepCountdown = b.tvSessionPrepCountdown
+            startSessionPrepRestCountdown(state.pendingRestMs, prepCountdown)
+            b.btnSessionPrepPauseRestIcon.setOnClickListener {
+                if (sessionPrepRestPaused) {
+                    sessionPrepRestPaused = false
+                    b.btnSessionPrepPauseRestIcon.setImageResource(R.drawable.ic_pause)
+                    b.btnSessionPrepPauseRestIcon.contentDescription = host.getString(R.string.pause)
+                    startSessionPrepRestCountdown(
+                        sessionRestRemainingMs.coerceAtLeast(1000L),
+                        prepCountdown
+                    )
+                } else {
+                    sessionRestTimer?.cancel()
+                    sessionPrepRestPaused = true
+                    b.btnSessionPrepPauseRestIcon.setImageResource(R.drawable.ic_play)
+                    b.btnSessionPrepPauseRestIcon.contentDescription = host.getString(R.string.resume)
+                }
+            }
         } else {
-            b.tvSessionInstruction.visibility = View.GONE
-        }
-        b.btnSessionStartSet.text = when {
-            state.exerciseIndex == 0 && state.setNumber == 1 ->
-                host.getString(R.string.session_start_first_exercise)
-            else ->
-                host.getString(R.string.session_start_set_numbered, state.setNumber)
-        }
-        b.btnSessionStartSet.setOnClickListener {
-            onSessionStartSetClicked(state)
+            pendingPrepRestKey = null
+            sessionPrepRestPaused = false
+            b.tvSessionPrepCountdown.visibility = View.GONE
+            b.layoutSessionPrepRestControls.visibility = View.GONE
+            b.btnSessionStartSet.visibility = View.VISIBLE
+            b.btnSessionPrepPauseRestIcon.visibility = View.GONE
+            b.btnSessionPrepSkipRestIcon.visibility = View.GONE
+            b.btnSessionStartSet.text = when {
+                state.exerciseIndex == 0 && state.setNumber == 1 ->
+                    host.getString(R.string.session_start_first_exercise)
+                else ->
+                    host.getString(R.string.session_start_set_numbered, state.setNumber)
+            }
+            b.btnSessionStartSet.setOnClickListener {
+                requestSessionStartFromPreExercise(state)
+            }
         }
     }
 
-    private fun showSessionExerciseRest(
-        state: SessionTrainingEngine.State.ExerciseRest
+    private fun bindSessionSettings(
+        state: SessionTrainingEngine.State.PreExercise,
+        engine: SessionTrainingEngine,
+        cfg: ExerciseConfig?
     ) {
-        hideSessionPanels()
         val b = host.binding
-        b.sessionPreExercisePanel.visibility = View.VISIBLE
-        b.setupPosePanel.visibility = View.GONE
-        b.setupIndicatorBar.visibility = View.GONE
-        b.countdownPanel.visibility = View.GONE
-        b.heroCounterContainer.visibility = View.GONE
-        b.completedPanel.visibility = View.GONE
-        b.bottomStatsBar.visibility = View.GONE
-        b.progressContainer.visibility = View.GONE
-        b.vignetteOverlay.clear()
-        b.skeletonOverlay.setTrainingMode(false)
+        val item = engine.getCurrentExerciseItem() ?: state.item
 
-        b.tvSessionExerciseLabel.text = host.getString(
-            R.string.session_exercise_label,
-            state.nextExerciseIndex + 1,
-            sessionEngine?.getExerciseCount() ?: 0
-        )
-        b.tvSessionExerciseName.text = state.nextExerciseName
-        hideAlternatingLabels()
-        updateSessionSetIndicator(1, state.nextExerciseItem.sets?.coerceAtLeast(1) ?: 1)
-        b.tvSessionSetInfo.text = buildSessionTargetSummaryLine(state.nextExerciseItem)
-        b.tvSessionWeightInfo.visibility = View.GONE
-        val lang = host.currentLanguage
-        val nextCfg = sessionExerciseConfigMap[state.nextExerciseSlug]
-        bindExercisePreviewImage(
-            state.nextExerciseSlug,
-            b.ivSessionPreExercisePreview,
-            b.ivSessionPreExerciseFallbackIcon
-        )
-        val instruction = localizedInstruction(nextCfg, lang)
-        if (!instruction.isNullOrBlank()) {
-            b.tvSessionInstruction.text = instruction
-            b.tvSessionInstruction.visibility = View.VISIBLE
-        } else {
-            b.tvSessionInstruction.visibility = View.GONE
+        val hasReps = (item.targetReps ?: 0) > 0
+        val hasDuration = (item.targetDuration ?: 0) > 0
+        val supportsWeight = cfg?.supportsWeight == true
+
+        val showCard = hasReps || hasDuration || supportsWeight
+        b.cardSessionSettings.visibility = if (showCard) View.VISIBLE else View.GONE
+
+        // Reps row
+        b.layoutSessionSettingReps.visibility = if (hasReps) View.VISIBLE else View.GONE
+        if (hasReps) {
+            val currentReps = item.targetReps ?: 10
+            val maxReps = maxOf(100, currentReps)
+            b.tvSessionRepsValue.text = currentReps.toString()
+            b.sliderSessionReps.clearOnChangeListeners()
+            b.sliderSessionReps.valueFrom = 1f
+            b.sliderSessionReps.valueTo = maxReps.toFloat()
+            b.sliderSessionReps.stepSize = 1f
+            b.sliderSessionReps.value = currentReps.toFloat().coerceIn(1f, maxReps.toFloat())
+            b.sliderSessionReps.addOnChangeListener { _, value, fromUser ->
+                if (!fromUser) return@addOnChangeListener
+                val reps = value.toInt().coerceAtLeast(1)
+                engine.updateCurrentTargetReps(reps)
+                b.tvSessionRepsValue.text = reps.toString()
+                updateSessionSummaryFromEngine(state, engine)
+            }
         }
 
-        b.tvSessionPrepCountdown.visibility = View.VISIBLE
-        b.layoutSessionPrepRestControls.visibility = View.VISIBLE
-        b.btnSessionStartSet.visibility = View.GONE
-        val prepCountdown = b.tvSessionPrepCountdown
-        startSessionCountdownTimer(state.durationMs, prepCountdown)
-        b.btnSessionPrepAddTime.setOnClickListener {
-            startSessionCountdownTimer(sessionRestRemainingMs + 20000L, prepCountdown)
+        // Duration row
+        b.layoutSessionSettingDuration.visibility = if (hasDuration) View.VISIBLE else View.GONE
+        if (hasDuration) {
+            val currentSec = item.targetDuration ?: 30
+            b.tvSessionDurationValue.text = formatDurationClock(currentSec)
+            b.btnSessionDurationPicker.setOnClickListener {
+                showSessionDurationPicker(state, engine)
+            }
         }
-        b.btnSessionPrepEditRest.setOnClickListener {
-            showEditSessionCountdownDialog(prepCountdown)
-        }
-        b.btnSessionPrepSkipRest.setOnClickListener {
-            sessionRestTimer?.cancel()
-            sessionEngine?.onRestCompleted()
+
+        // Weight row
+        b.layoutSessionSettingWeight.visibility = if (supportsWeight) View.VISIBLE else View.GONE
+        if (supportsWeight && cfg != null) {
+            val (minWeight, maxWeight) = resolveWeightRange(cfg)
+            val currentWeight = engine.getCurrentSetWeight() ?: cfg.defaultWeight ?: minWeight
+            val clampedWeight = currentWeight.coerceIn(minWeight, maxWeight)
+            b.tvSessionWeightValue.text = formatWeightDisplay(clampedWeight)
+            b.tvSessionWeightRange.text = when {
+                cfg.minWeight != null && cfg.maxWeight != null ->
+                    host.getString(R.string.weight_min_max_format, minWeight, maxWeight)
+                cfg.minWeight != null ->
+                    host.getString(R.string.weight_min_only_format, minWeight)
+                cfg.maxWeight != null ->
+                    host.getString(R.string.weight_max_only_format, maxWeight)
+                else ->
+                    host.getString(R.string.weight_min_max_format, minWeight, maxWeight)
+            }
+            b.sliderSessionWeight.clearOnChangeListeners()
+            b.sliderSessionWeight.valueFrom = minWeight
+            b.sliderSessionWeight.valueTo = maxWeight
+            b.sliderSessionWeight.value = clampedWeight
+            b.sliderSessionWeight.addOnChangeListener { _, value, fromUser ->
+                if (!fromUser) return@addOnChangeListener
+                val weight = value.coerceIn(minWeight, maxWeight)
+                engine.updateCurrentSetWeight(weight)
+                b.tvSessionWeightValue.text = formatWeightDisplay(weight)
+                updateSessionSummaryFromEngine(state, engine)
+            }
         }
     }
 
-    private fun onSessionStartSetClicked(
+    private fun tryAutoStartAfterPrepRest() {
+        val (exIdx, setNum) = pendingPrepRestKey ?: return
+        val latest = sessionEngine?.state?.value as? SessionTrainingEngine.State.PreExercise ?: return
+        if (latest.pendingRestMs <= 0L) return
+        if (latest.exerciseIndex != exIdx || latest.setNumber != setNum) return
+        requestSessionStartFromPreExercise(latest)
+    }
+
+    private fun startSessionPrepRestCountdown(durationMs: Long, countdownView: TextView) {
+        sessionRestTimer?.cancel()
+        sessionPrepRestPaused = false
+        host.binding.btnSessionPrepPauseRestIcon.setImageResource(R.drawable.ic_pause)
+        host.binding.btnSessionPrepPauseRestIcon.contentDescription = host.getString(R.string.pause)
+        val duration = durationMs.coerceAtLeast(1000L)
+        sessionRestRemainingMs = duration
+        val initialSecs = (duration / 1000).toInt()
+        countdownView.text = String.format(
+            "%02d:%02d",
+            initialSecs / 60,
+            initialSecs % 60
+        )
+        sessionRestTimer = object : android.os.CountDownTimer(duration, 1000L) {
+            override fun onTick(millisUntilFinished: Long) {
+                val secs = (millisUntilFinished / 1000).toInt()
+                val m = secs / 60
+                val s = secs % 60
+                countdownView.text = String.format("%02d:%02d", m, s)
+                sessionRestRemainingMs = millisUntilFinished
+            }
+
+            override fun onFinish() {
+                countdownView.text = "00:00"
+                sessionRestRemainingMs = 0L
+                sessionPrepRestPaused = false
+                playRestEndAlert()
+                tryAutoStartAfterPrepRest()
+            }
+        }.start()
+    }
+
+    private fun requestSessionStartFromPreExercise(
         state: SessionTrainingEngine.State.PreExercise
     ) {
         val engine = sessionEngine ?: return
         val item = state.item
         val slug = item.exerciseSlug ?: return
         val cfg = sessionExerciseConfigMap[slug]
-        val totalSets = item.sets?.coerceAtLeast(1) ?: 1
-        val supportsWeight = cfg?.supportsWeight == true
-
-        if (state.setNumber == 1 && supportsWeight && totalSets > 1) {
-            val exerciseCfg = cfg
-            preferences.showSessionPerSetWeightDialogIfNeeded(
-                totalSets = totalSets,
-                suggestedWeight = engine.getCurrentSetWeight() ?: exerciseCfg.defaultWeight,
-                minWeight = exerciseCfg.minWeight,
-                maxWeight = exerciseCfg.maxWeight,
-                onApply = { weights ->
-                    engine.setWeightPerSetForCurrentExercise(weights)
-                    proceedSessionStartFromPreExercise(state, slug)
-                },
-                onCancel = { /* stay on pre-exercise */ }
-            )
-            return
-        }
+        applySessionInputOverrides(state, engine, cfg)
         proceedSessionStartFromPreExercise(state, slug)
+    }
+
+    private fun applySessionInputOverrides(
+        state: SessionTrainingEngine.State.PreExercise,
+        engine: SessionTrainingEngine,
+        cfg: ExerciseConfig?
+    ) {
+        val b = host.binding
+        val currentItem = engine.getCurrentExerciseItem() ?: state.item
+
+        val hasReps = (currentItem.targetReps ?: 0) > 0
+        if (hasReps) {
+            val reps = b.sliderSessionReps.value.toInt().coerceAtLeast(1)
+            engine.updateCurrentTargetReps(reps)
+            b.tvSessionRepsValue.text = reps.toString()
+        }
+
+        if (cfg?.supportsWeight == true) {
+            val (minWeight, maxWeight) = resolveWeightRange(cfg)
+            val weight = b.sliderSessionWeight.value.coerceIn(minWeight, maxWeight)
+            engine.updateCurrentSetWeight(weight)
+            b.tvSessionWeightValue.text = formatWeightDisplay(weight)
+        }
+
+        updateSessionSummaryFromEngine(state, engine)
+    }
+
+    private fun resolveWeightRange(cfg: ExerciseConfig): Pair<Float, Float> {
+        val minWeight = cfg.minWeight ?: 0f
+        val configuredMax = cfg.maxWeight
+        val maxWeight = when {
+            configuredMax != null && configuredMax > minWeight -> configuredMax
+            cfg.minWeight == null && configuredMax == null -> 100f
+            minWeight < 100f -> 100f
+            else -> minWeight + 100f
+        }
+        return minWeight to maxWeight
+    }
+
+    private fun showSessionDurationPicker(
+        state: SessionTrainingEngine.State.PreExercise,
+        engine: SessionTrainingEngine
+    ) {
+        val currentSeconds = (engine.getCurrentExerciseItem() ?: state.item)
+            .targetDuration
+            ?.coerceAtLeast(1)
+            ?: 30
+        val minutePicker = android.widget.NumberPicker(host).apply {
+            minValue = 0
+            maxValue = 59
+            value = (currentSeconds / 60).coerceIn(0, 59)
+            displayedValues = Array(60) { String.format("%02d", it) }
+            wrapSelectorWheel = false
+        }
+        val secondPicker = android.widget.NumberPicker(host).apply {
+            minValue = 0
+            maxValue = 59
+            value = (currentSeconds % 60).coerceIn(0, 59)
+            displayedValues = Array(60) { String.format("%02d", it) }
+            wrapSelectorWheel = false
+        }
+        fun pickerColumn(label: String, picker: android.widget.NumberPicker): android.widget.LinearLayout {
+            return android.widget.LinearLayout(host).apply {
+                orientation = android.widget.LinearLayout.VERTICAL
+                gravity = android.view.Gravity.CENTER
+                addView(picker)
+                addView(TextView(host).apply {
+                    text = label
+                    textSize = 12f
+                    setTextColor(android.graphics.Color.GRAY)
+                })
+            }
+        }
+        val pickerLayout = android.widget.LinearLayout(host).apply {
+            orientation = android.widget.LinearLayout.HORIZONTAL
+            gravity = android.view.Gravity.CENTER
+            setPadding(24, 8, 24, 8)
+            addView(pickerColumn("min", minutePicker))
+            addView(pickerColumn("sec", secondPicker))
+        }
+
+        android.app.AlertDialog.Builder(host)
+            .setTitle(host.getString(R.string.session_duration_label))
+            .setView(pickerLayout)
+            .setPositiveButton(host.getString(R.string.save)) { dialog, _ ->
+                val seconds = (minutePicker.value * 60 + secondPicker.value).coerceAtLeast(1)
+                engine.updateCurrentTargetDuration(seconds)
+                host.binding.tvSessionDurationValue.text = formatDurationClock(seconds)
+                updateSessionSummaryFromEngine(state, engine)
+                dialog.dismiss()
+            }
+            .setNegativeButton(host.getString(R.string.cancel)) { dialog, _ -> dialog.dismiss() }
+            .show()
+    }
+
+    private fun updateSessionSummaryFromEngine(
+        state: SessionTrainingEngine.State.PreExercise,
+        engine: SessionTrainingEngine
+    ) {
+        val b = host.binding
+        val item = engine.getCurrentExerciseItem() ?: state.item
+        val inRest = state.pendingRestMs > 0L
+        b.tvSessionSetInfo.text = when {
+            inRest && state.restContext == SessionRestContext.BETWEEN_SETS -> host.getString(
+                R.string.session_rest_next_set_format,
+                state.exerciseName,
+                state.setNumber,
+                state.totalSets
+            )
+            inRest && state.restContext == SessionRestContext.BETWEEN_EXERCISES ->
+                buildSessionTargetSummaryLine(item)
+            item.targetReps != null && item.targetReps > 0 -> host.getString(
+                R.string.session_set_reps_format,
+                state.setNumber,
+                state.totalSets,
+                item.targetReps
+            )
+            item.targetDuration != null && item.targetDuration > 0 -> host.getString(
+                R.string.session_set_duration_format,
+                state.setNumber,
+                state.totalSets,
+                item.targetDuration
+            )
+            else -> host.getString(
+                R.string.session_set_only_format,
+                state.setNumber,
+                state.totalSets
+            )
+        }
+
+        val weight = engine.getCurrentSetWeight()
+        if (weight != null && weight > 0f) {
+            b.tvSessionWeightInfo.text = host.getString(R.string.session_weight_format, weight)
+            b.tvSessionWeightInfo.visibility = View.VISIBLE
+        } else {
+            b.tvSessionWeightInfo.visibility = View.GONE
+        }
+    }
+
+    private fun formatWeightDisplay(weight: Float): String {
+        val value = if (weight % 1f == 0f) {
+            weight.toInt().toString()
+        } else {
+            String.format("%.1f", weight)
+        }
+        return "$value ${host.getString(R.string.session_kg_unit)}"
+    }
+
+    private fun formatDurationClock(seconds: Int): String {
+        val safeSeconds = seconds.coerceAtLeast(1)
+        return String.format("%02d:%02d", safeSeconds / 60, safeSeconds % 60)
     }
 
     private fun proceedSessionStartFromPreExercise(
@@ -374,7 +647,7 @@ class TrainingSessionModeController(
         slug: String
     ) {
         val engine = sessionEngine ?: return
-        val item = state.item
+        val item = engine.getCurrentExerciseItem() ?: state.item
         hideSessionPanels()
         val b = host.binding
         b.bottomStatsBar.visibility = View.VISIBLE
@@ -408,7 +681,6 @@ class TrainingSessionModeController(
         engine.startTraining()
         currentSessionSetRunId += 1L
         sessionSetStartTimeMs = System.currentTimeMillis()
-        preferences.maybeShowSessionWeightDialog()
         if (host.viewModel.feedbackManager == null) {
             host.viewModel.initializeFeedback(host, host.isVideoMode)
         }
@@ -428,96 +700,6 @@ class TrainingSessionModeController(
             setNumber, totalSets
         )
         b.tvSessionSetIndicator.visibility = View.VISIBLE
-    }
-
-    private fun showSessionRest(
-        durationMs: Long,
-        title: String,
-        headline: String,
-        detailLine: String,
-        previewSlug: String,
-        instructionText: String?,
-        tipTitleKey: String
-    ) {
-        hideSessionPanels()
-        val b = host.binding
-        b.sessionRestPanel.visibility = View.VISIBLE
-        b.setupPosePanel.visibility = View.GONE
-        b.setupIndicatorBar.visibility = View.GONE
-        b.countdownPanel.visibility = View.GONE
-        b.heroCounterContainer.visibility = View.GONE
-        b.completedPanel.visibility = View.GONE
-        b.bottomStatsBar.visibility = View.GONE
-        b.progressContainer.visibility = View.GONE
-        b.vignetteOverlay.clear()
-        b.skeletonOverlay.setTrainingMode(false)
-        b.tvSessionRestTitle.text = title
-        b.tvSessionRestHeadline.text = headline
-        b.tvSessionRestNext.text = detailLine
-        bindExercisePreviewImage(
-            previewSlug.takeIf { it.isNotBlank() },
-            b.ivSessionRestPreview,
-            b.ivSessionRestFallbackIcon
-        )
-        if (!instructionText.isNullOrBlank()) {
-            b.tvSessionRestInstruction.text = instructionText
-            b.tvSessionRestInstruction.visibility = View.VISIBLE
-        } else {
-            b.tvSessionRestInstruction.visibility = View.GONE
-        }
-        b.tvSessionRestTip.text = getRestTip(tipTitleKey)
-        val countdown = b.tvSessionRestCountdown
-        startSessionCountdownTimer(durationMs, countdown)
-        b.btnSessionAddTime.setOnClickListener {
-            startSessionCountdownTimer(sessionRestRemainingMs + 20000L, countdown)
-        }
-        b.btnSessionEditRest.setOnClickListener {
-            showEditSessionCountdownDialog(countdown)
-        }
-        b.btnSessionSkipRest.setOnClickListener {
-            sessionRestTimer?.cancel()
-            sessionEngine?.onRestCompleted()
-        }
-    }
-
-    private fun startSessionCountdownTimer(durationMs: Long, countdownView: TextView) {
-        sessionRestTimer?.cancel()
-        sessionRestRemainingMs = durationMs
-        sessionRestTimer = object : android.os.CountDownTimer(durationMs, 1000L) {
-            override fun onTick(millisUntilFinished: Long) {
-                val secs = (millisUntilFinished / 1000).toInt()
-                val m = secs / 60
-                val s = secs % 60
-                countdownView.text = String.format("%02d:%02d", m, s)
-                sessionRestRemainingMs = millisUntilFinished
-            }
-            override fun onFinish() {
-                countdownView.text = "00:00"
-                sessionRestRemainingMs = 0L
-                playRestEndAlert()
-                sessionEngine?.onRestCompleted()
-            }
-        }.start()
-    }
-
-    private fun showEditSessionCountdownDialog(countdownView: TextView) {
-        val input = android.widget.EditText(host).apply {
-            hint = host.getString(R.string.rest_seconds_hint)
-            inputType = android.text.InputType.TYPE_CLASS_NUMBER
-            setText((sessionRestRemainingMs / 1000L).toString())
-        }
-        android.app.AlertDialog.Builder(host)
-            .setTitle(host.getString(R.string.edit_rest))
-            .setView(input)
-            .setPositiveButton(host.getString(R.string.save)) { dialog, _ ->
-                val seconds = input.text.toString().toLongOrNull()
-                if (seconds != null && seconds > 0) {
-                    startSessionCountdownTimer(seconds * 1000L, countdownView)
-                }
-                dialog.dismiss()
-            }
-            .setNegativeButton(host.getString(R.string.cancel)) { dialog, _ -> dialog.dismiss() }
-            .show()
     }
 
     private fun showCelebrationMessage(message: String) {
@@ -545,8 +727,8 @@ class TrainingSessionModeController(
         }
     }
 
-    private fun getRestTip(title: String): String {
-        val tips = if (title.contains(host.getString(R.string.session_rest_between_sets), true)) {
+    private fun getRestTip(restContext: SessionRestContext): String {
+        val tips = if (restContext == SessionRestContext.BETWEEN_SETS) {
             listOf(
                 host.getString(R.string.rest_tip_breathe),
                 host.getString(R.string.rest_tip_quality),
@@ -768,6 +950,8 @@ class TrainingSessionModeController(
         b.tvSessionPrepCountdown.visibility = View.GONE
         b.layoutSessionPrepRestControls.visibility = View.GONE
         sessionRestTimer?.cancel()
+        pendingPrepRestKey = null
+        sessionPrepRestPaused = false
     }
 
     fun showExitSessionDialog() {
