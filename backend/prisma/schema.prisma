@@ -877,7 +877,6 @@ model ProgressionRule {
   isActive     Boolean              @default(true)
   createdAt    DateTime             @default(now())
   updatedAt    DateTime             @updatedAt
-  items        ProgramSessionItem[]
   history      ProgressionHistory[]
   program      Program?             @relation(fields: [programId], references: [id])
 
