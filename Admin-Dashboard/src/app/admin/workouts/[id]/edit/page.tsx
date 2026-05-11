@@ -3,7 +3,8 @@
 import { useEffect, useState } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import { LocalizedText } from '@/lib/types/localized';
-import { Input, Select, Label, Button, Card, Textarea } from '@/components/ui';
+import { Input, Select, Label, Button, Card, Textarea, Checkbox, Badge } from '@/components/ui';
+import { ChevronDown, ChevronUp } from 'lucide-react';
 import { FileUpload } from '@/components/forms/FileUpload';
 
 interface Exercise {
@@ -48,6 +49,7 @@ interface Workout {
   estimatedDurationMin: number | null;
   tags: string[] | null;
   status: string;
+  isFeatured?: boolean;
   exercises: {
     id: string;
     exerciseId: string;
@@ -83,6 +85,7 @@ export default function EditWorkoutPage() {
   const [difficulty, setDifficulty] = useState<'beginner' | 'intermediate' | 'advanced'>('beginner');
   const [estimatedDurationMin, setEstimatedDurationMin] = useState<number | ''>('');
   const [tags, setTags] = useState('');
+  const [isFeatured, setIsFeatured] = useState(false);
   const [workoutExercises, setWorkoutExercises] = useState<WorkoutExercise[]>([]);
   const [status, setStatus] = useState<'draft' | 'published'>('draft');
 
@@ -102,6 +105,7 @@ export default function EditWorkoutPage() {
           setEstimatedDurationMin(workout.estimatedDurationMin ?? '');
           setTags((workout.tags || []).join(', '));
           setStatus(workout.status as 'draft' | 'published');
+          setIsFeatured(workout.isFeatured ?? false);
 
           // Map exercises
           setWorkoutExercises(
@@ -231,6 +235,7 @@ export default function EditWorkoutPage() {
         description: description.en || description.ar ? description : undefined,
         coverImageUrl: coverImageUrl || undefined,
         difficulty,
+        isFeatured,
         estimatedDurationMin: typeof estimatedDurationMin === 'number' ? estimatedDurationMin : undefined,
         tags: tags
           .split(',')
@@ -282,30 +287,21 @@ export default function EditWorkoutPage() {
   }
 
   return (
-    <div className="max-w-4xl mx-auto space-y-6">
-      {/* Header */}
-      <div className="flex justify-between items-center">
+    <div className="mx-auto max-w-5xl space-y-8 pb-12">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Edit Workout</h1>
-          <p className="text-gray-600 mt-1">Update workout template configuration</p>
+          <h1 className="text-2xl font-semibold tracking-tight text-zinc-900">Edit workout</h1>
+          <p className="mt-1 text-sm text-zinc-500">Update template, Explore visibility, and exercise sequence.</p>
         </div>
-        <span
-          className={`inline-flex px-3 py-1 text-sm font-medium rounded-full ${
-            status === 'published'
-              ? 'bg-green-100 text-green-800'
-              : 'bg-yellow-100 text-yellow-800'
-          }`}
-        >
+        <Badge variant={status === 'published' ? 'success' : 'warning'} className="w-fit shrink-0 capitalize">
           {status}
-        </span>
+        </Badge>
       </div>
 
-      <form onSubmit={handleSubmit} className="space-y-6">
-        {/* Basic Info */}
-        <Card className="p-6">
-          <h2 className="text-lg font-semibold mb-4">Basic Information</h2>
-
-          <div className="grid grid-cols-2 gap-4">
+      <form onSubmit={handleSubmit} className="space-y-8">
+        <Card className="border-zinc-200/90 p-6 shadow-sm">
+          <p className="text-xs font-semibold uppercase tracking-wider text-zinc-500">Basic information</p>
+          <div className="mt-4 grid gap-4 sm:grid-cols-2">
             <div>
               <Label>Name (English) *</Label>
               <Input
@@ -327,7 +323,7 @@ export default function EditWorkoutPage() {
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-4 mt-4">
+          <div className="mt-4 grid gap-4 sm:grid-cols-2">
             <div>
               <Label>Description (English)</Label>
               <Textarea
@@ -350,123 +346,141 @@ export default function EditWorkoutPage() {
           </div>
         </Card>
 
-        {/* Workout Template Configuration */}
-        <Card className="p-6">
-          <h2 className="text-lg font-semibold mb-4">Workout Template Configuration</h2>
+        <Card className="border-zinc-200/90 p-6 shadow-sm">
+          <p className="text-xs font-semibold uppercase tracking-wider text-zinc-500">Template & Explore</p>
+          <p className="mt-1 text-sm text-zinc-500">Cover, difficulty, duration, tags, and featured flag.</p>
 
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-3">
+          <div className="mt-6 grid gap-6 lg:grid-cols-2">
+            <div className="space-y-4">
               <FileUpload
-                label="Workout Cover"
+                label="Workout cover"
                 value={coverImageUrl}
                 onChange={(imageUrl) => setCoverImageUrl(imageUrl)}
                 uploadType="workout-image"
                 accept="image/*"
-                helperText="Upload JPG, PNG, WEBP, or GIF cover image"
+                helperText="JPG, PNG, WEBP, or GIF"
               />
               <div>
-                <Label>Cover Image URL</Label>
+                <Label>Cover image URL</Label>
                 <Input
                   value={coverImageUrl}
                   onChange={(e) => setCoverImageUrl(e.target.value)}
                   placeholder="https://..."
+                  className="font-mono text-sm"
                 />
               </div>
             </div>
-            <div>
-              <Label>Difficulty</Label>
-              <Select
-                value={difficulty}
-                onChange={(e) =>
-                  setDifficulty(e.target.value as 'beginner' | 'intermediate' | 'advanced')
-                }
-                options={[
-                  { value: 'beginner', label: 'Beginner' },
-                  { value: 'intermediate', label: 'Intermediate' },
-                  { value: 'advanced', label: 'Advanced' },
-                ]}
-              />
-            </div>
-          </div>
 
-          <div className="grid grid-cols-2 gap-4 mt-4">
-            <div>
-              <Label>Estimated Duration (min)</Label>
-              <Input
-                type="number"
-                min={0}
-                value={estimatedDurationMin}
-                onChange={(e) =>
-                  setEstimatedDurationMin(e.target.value ? parseInt(e.target.value) : '')
-                }
-              />
-            </div>
-            <div>
-              <Label>Tags (comma separated)</Label>
-              <Input
-                value={tags}
-                onChange={(e) => setTags(e.target.value)}
-                placeholder="upper-body, no-equipment"
-              />
+            <div className="flex flex-col gap-4">
+              <div>
+                <Label>Difficulty</Label>
+                <Select
+                  value={difficulty}
+                  onChange={(e) =>
+                    setDifficulty(e.target.value as 'beginner' | 'intermediate' | 'advanced')
+                  }
+                  options={[
+                    { value: 'beginner', label: 'Beginner' },
+                    { value: 'intermediate', label: 'Intermediate' },
+                    { value: 'advanced', label: 'Advanced' },
+                  ]}
+                />
+              </div>
+              <div>
+                <Label>Estimated duration (minutes)</Label>
+                <Input
+                  type="number"
+                  min={0}
+                  value={estimatedDurationMin}
+                  onChange={(e) =>
+                    setEstimatedDurationMin(e.target.value ? parseInt(e.target.value) : '')
+                  }
+                  placeholder="Optional"
+                />
+              </div>
+              <div>
+                <Label>Tags</Label>
+                <Input
+                  value={tags}
+                  onChange={(e) => setTags(e.target.value)}
+                  placeholder="Comma-separated, e.g. upper-body, no-equipment"
+                />
+                <p className="mt-1 text-xs text-zinc-500">Used for filtering and discovery.</p>
+              </div>
+              <label className="flex cursor-pointer items-start gap-3 rounded-xl border border-zinc-200 bg-zinc-50/50 p-4">
+                <Checkbox
+                  checked={isFeatured}
+                  onCheckedChange={(v) => setIsFeatured(v === true)}
+                  className="mt-0.5"
+                  id="workout-featured-edit"
+                />
+                <span>
+                  <span className="text-sm font-medium text-zinc-900">Featured workout</span>
+                  <span className="mt-0.5 block text-xs text-zinc-500">
+                    Shown first in Explore and sync lists when published.
+                  </span>
+                </span>
+              </label>
             </div>
           </div>
         </Card>
 
-        {/* Exercises */}
-        <Card className="p-6">
-          <div className="flex justify-between items-center mb-4">
-            <h2 className="text-lg font-semibold">Exercises</h2>
+        <Card className="border-zinc-200/90 p-6 shadow-sm">
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-wider text-zinc-500">Exercises</p>
+              <p className="mt-1 text-sm text-zinc-500">Order, sets, rest, and targets per exercise.</p>
+            </div>
             <Button
               type="button"
+              variant="secondary"
               onClick={addExercise}
               disabled={loadingExercises || exercises.length === 0}
             >
-              + Add Exercise
+              Add exercise
             </Button>
           </div>
 
           {loadingExercises ? (
-            <div className="text-center py-8 text-gray-500">Loading exercises...</div>
+            <div className="py-12 text-center text-sm text-zinc-500">Loading exercises…</div>
           ) : exercises.length === 0 ? (
-            <div className="text-center py-8 text-gray-500">
-              No published exercises available. Please publish some exercises first.
+            <div className="py-12 text-center text-sm text-zinc-500">
+              No published exercises available. Publish exercises first.
             </div>
           ) : workoutExercises.length === 0 ? (
-            <div className="text-center py-8 text-gray-500 border-2 border-dashed rounded-lg">
-              No exercises added yet. Click "Add Exercise" to start.
+            <div className="rounded-xl border border-dashed border-zinc-200 bg-zinc-50/50 py-12 text-center text-sm text-zinc-500">
+              Add at least one exercise to save this workout.
             </div>
           ) : (
-            <div className="space-y-4">
+            <div className="mt-6 space-y-4">
               {workoutExercises.map((we, index) => (
-                <div key={we.id || index} className="border rounded-lg p-4 bg-gray-50">
-                  <div className="flex items-start gap-4">
-                    {/* Order controls */}
-                    <div className="flex flex-col gap-1">
+                <div key={we.id || index} className="rounded-xl border border-zinc-200 bg-white p-4 shadow-sm sm:p-5">
+                  <div className="flex items-start gap-3 sm:gap-4">
+                    <div className="flex flex-col items-center gap-0.5 rounded-lg border border-zinc-200 bg-zinc-50 p-1">
                       <button
                         type="button"
                         onClick={() => moveExercise(index, 'up')}
                         disabled={index === 0}
-                        className="p-1 text-gray-500 hover:text-gray-700 disabled:opacity-30"
+                        className="rounded p-1 text-zinc-500 hover:bg-white hover:text-zinc-800 disabled:opacity-25"
+                        aria-label="Move up"
                       >
-                        ▲
+                        <ChevronUp className="h-4 w-4" />
                       </button>
-                      <span className="text-center text-sm font-medium text-gray-600">
-                        {index + 1}
-                      </span>
+                      <span className="text-xs font-semibold tabular-nums text-zinc-600">{index + 1}</span>
                       <button
                         type="button"
                         onClick={() => moveExercise(index, 'down')}
                         disabled={index === workoutExercises.length - 1}
-                        className="p-1 text-gray-500 hover:text-gray-700 disabled:opacity-30"
+                        className="rounded p-1 text-zinc-500 hover:bg-white hover:text-zinc-800 disabled:opacity-25"
+                        aria-label="Move down"
                       >
-                        ▼
+                        <ChevronDown className="h-4 w-4" />
                       </button>
                     </div>
 
-                    {/* Exercise details */}
-                    <div className="flex-1">
-                      <div className="grid grid-cols-4 gap-4">
-                        <div className="col-span-2">
+                    <div className="min-w-0 flex-1 space-y-4">
+                      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+                        <div className="sm:col-span-2">
                           <Label>Exercise</Label>
                           <Select
                             value={we.exerciseId}
@@ -528,7 +542,7 @@ export default function EditWorkoutPage() {
                         </div>
                       </div>
 
-                      <div className="mt-3 grid grid-cols-5 gap-4">
+                      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
                         <div>
                           <Label>Sets</Label>
                           <Input
@@ -599,18 +613,16 @@ export default function EditWorkoutPage() {
                       </div>
                     </div>
 
-                    {/* Remove button */}
                     <button
                       type="button"
                       onClick={() => removeExercise(index)}
-                      className="p-2 text-red-500 hover:text-red-700"
+                      className="shrink-0 rounded-lg px-2 py-1 text-xs font-medium text-red-600 hover:bg-red-50"
                     >
-                      ✕
+                      Remove
                     </button>
                   </div>
 
-                  {/* Notes */}
-                  <div className="mt-3 grid grid-cols-2 gap-4">
+                  <div className="mt-4 grid gap-4 border-t border-zinc-100 pt-4 sm:grid-cols-2">
                     <div>
                       <Label className="text-xs">Note (English)</Label>
                       <Input
@@ -645,13 +657,12 @@ export default function EditWorkoutPage() {
           )}
         </Card>
 
-        {/* Actions */}
-        <div className="flex justify-end gap-4">
+        <div className="flex flex-col-reverse gap-3 border-t border-zinc-100 pt-6 sm:flex-row sm:justify-end">
           <Button type="button" variant="outline" onClick={() => router.push('/admin/workouts')}>
             Cancel
           </Button>
           <Button type="submit" disabled={loading || workoutExercises.length < 1}>
-            {loading ? 'Saving...' : 'Save Changes'}
+            {loading ? 'Saving…' : 'Save changes'}
           </Button>
         </div>
       </form>

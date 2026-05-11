@@ -93,6 +93,10 @@ export function validateCreateWorkout(input: CreateWorkoutInput): string[] {
     errors.push('estimatedDurationMin must be non-negative');
   }
 
+  if (input.isFeatured !== undefined && typeof input.isFeatured !== 'boolean') {
+    errors.push('isFeatured must be a boolean');
+  }
+
   // Exercises validation
   if (input.exercises && input.exercises.length > 0) {
     for (let i = 0; i < input.exercises.length; i++) {
@@ -111,6 +115,10 @@ export function validateUpdateWorkout(input: UpdateWorkoutInput): string[] {
 
   if (input.estimatedDurationMin !== undefined && input.estimatedDurationMin < 0) {
     errors.push('estimatedDurationMin must be non-negative');
+  }
+
+  if (input.isFeatured !== undefined && typeof input.isFeatured !== 'boolean') {
+    errors.push('isFeatured must be a boolean');
   }
 
   // Validate status if provided

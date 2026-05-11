@@ -13,13 +13,22 @@ export class WorkoutsController {
   async list(
     @Query('status') status?: string,
     @Query('search') search?: string,
+    @Query('featured') featured?: string,
     @Query('page') page?: string,
     @Query('limit') limit?: string
   ) {
     try {
+      const isFeatured =
+        featured === 'true' || featured === '1'
+          ? true
+          : featured === 'false' || featured === '0'
+            ? false
+            : undefined;
+
       const result = await workoutService.list({
         status: (status as 'draft' | 'published') || undefined,
         search: search || undefined,
+        isFeatured,
         page: Number.parseInt(page || '1', 10),
         limit: Number.parseInt(limit || '20', 10),
       });
