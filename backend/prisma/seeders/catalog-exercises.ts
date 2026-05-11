@@ -1,4 +1,5 @@
-import type { LoadCapability, MovementPattern, Prisma, PrismaClient } from '@prisma/client';
+import { Prisma } from '@prisma/client';
+import type { LoadCapability, MovementPattern, PrismaClient, SessionItemIntent } from '@prisma/client';
 import type { EnsureMessageTemplate } from './messages';
 import { CURATED_EXTENSION_EXERCISES } from './curated-catalog-extension';
 import { buildCuratedPoseVariants } from './curated-pose-blueprints';
@@ -198,8 +199,13 @@ export async function seedCuratedCatalogExtensions(
         familyKey: row.familyKey,
         familyOrder: row.familyOrder,
         reportMetrics: reportMetricsForCounting(row.countingMethodCode),
-        ...(row.intent !== undefined ? { intent: row.intent } : {}),
-        ...(row.coachingNotes !== undefined ? { coachingNotes: row.coachingNotes } : {}),
+        ...(row.intent !== undefined ? { intent: row.intent as SessionItemIntent } : {}),
+        ...(row.coachingNotes !== undefined
+          ? {
+              coachingNotes:
+                row.coachingNotes === null ? Prisma.JsonNull : (row.coachingNotes as Prisma.InputJsonValue),
+            }
+          : {}),
       },
       create: {
         slug: row.slug,
@@ -220,8 +226,13 @@ export async function seedCuratedCatalogExtensions(
         familyKey: row.familyKey,
         familyOrder: row.familyOrder,
         reportMetrics: reportMetricsForCounting(row.countingMethodCode),
-        ...(row.intent !== undefined ? { intent: row.intent } : {}),
-        ...(row.coachingNotes !== undefined ? { coachingNotes: row.coachingNotes } : {}),
+        ...(row.intent !== undefined ? { intent: row.intent as SessionItemIntent } : {}),
+        ...(row.coachingNotes !== undefined
+          ? {
+              coachingNotes:
+                row.coachingNotes === null ? Prisma.JsonNull : (row.coachingNotes as Prisma.InputJsonValue),
+            }
+          : {}),
       },
     });
 

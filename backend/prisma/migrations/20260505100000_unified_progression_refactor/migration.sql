@@ -21,7 +21,7 @@ ALTER TABLE "exercises" ADD COLUMN IF NOT EXISTS "coachingNotes" JSONB;
 -- (or first non-null role)
 UPDATE "program_sessions" ps
 SET "role" = (
-  SELECT "role"
+  SELECT psi."role"::text::"SessionRole"
   FROM "program_session_items" psi
   WHERE psi."sessionId" = ps."id" AND psi."role" IS NOT NULL
   ORDER BY psi."sortOrder" ASC
