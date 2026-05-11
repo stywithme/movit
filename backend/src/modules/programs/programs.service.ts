@@ -32,8 +32,8 @@ import type {
   UpdateProgramInput,
   ProgramAttributeInput,
   ProgramPhaseInput,
-  validatePhaseStructure,
 } from './programs.types';
+import { validatePhaseStructure } from './programs.types';
 
 interface LocalizedText {
   ar: string;
@@ -144,7 +144,7 @@ function buildSessionItems(items?: ProgramSessionItemInput[]) {
       restBetweenSetsMs: item.restBetweenSetsMs ?? undefined,
       weightKg: item.weightKg ?? undefined,
       weightPerSet: item.weightPerSet ?? undefined,
-      notes: (item.notes as object) || undefined,
+      notes: toInputJson(parseLocalizedText(item.notes)),
       restDurationMs: item.restDurationMs ?? undefined,
       sourceWorkoutId: item.sourceWorkoutId ?? undefined,
       sortOrder: item.sortOrder ?? index,
@@ -199,7 +199,7 @@ function sessionItemScalarFromInput(item: ProgramSessionItemInput, sortOrder: nu
     restBetweenSetsMs: item.restBetweenSetsMs ?? undefined,
     weightKg: item.weightKg ?? undefined,
     weightPerSet: item.weightPerSet ?? undefined,
-    notes: (item.notes as object) || undefined,
+    notes: toInputJson(parseLocalizedText(item.notes)),
     restDurationMs: item.restDurationMs ?? undefined,
     sourceWorkoutId: item.sourceWorkoutId ?? undefined,
     sortOrder,
@@ -261,7 +261,9 @@ async function syncProgramPhasesStructure(
         startWeek: p.startWeek,
         endWeek: p.endWeek,
         sortOrder: p.sortOrder ?? i,
-        weeklyPattern: p.weeklyPattern ? (p.weeklyPattern as Prisma.InputJsonValue) : undefined,
+        weeklyPattern: p.weeklyPattern
+          ? (p.weeklyPattern as unknown as Prisma.InputJsonValue)
+          : undefined,
       },
     });
   }
@@ -909,7 +911,7 @@ export const programService = {
             restBetweenSetsMs: item.restBetweenSetsMs ?? undefined,
             weightKg: item.weightKg ?? undefined,
             weightPerSet: (item.weightPerSet as number[]) || undefined,
-            notes: parseLocalizedText(item.notes),
+            notes: toInputJson(parseLocalizedText(item.notes)),
             restDurationMs: item.restDurationMs ?? undefined,
             sourceWorkoutId: item.sourceWorkoutId ?? undefined,
             sortOrder: item.sortOrder ?? itemIndex,
@@ -1065,7 +1067,7 @@ export const programService = {
                         restBetweenSetsMs: item.restBetweenSetsMs ?? undefined,
                         weightKg: item.weightKg ?? undefined,
                         weightPerSet: (item.weightPerSet as number[]) ?? undefined,
-                        notes: (item.notes as object) || undefined,
+                        notes: parseLocalizedText(item.notes),
                         restDurationMs: item.restDurationMs ?? undefined,
                         sourceWorkoutId: item.sourceWorkoutId ?? undefined,
                         sortOrder: item.sortOrder ?? ii,
@@ -1235,7 +1237,7 @@ export const programService = {
         restBetweenSetsMs: item.restBetweenSetsMs ?? undefined,
         weightKg: item.weightKg ?? undefined,
         weightPerSet: item.weightPerSet ?? undefined,
-        notes: (item.notes as object) || undefined,
+        notes: toInputJson(parseLocalizedText(item.notes)),
         restDurationMs: item.restDurationMs ?? undefined,
         sourceWorkoutId: item.sourceWorkoutId ?? undefined,
         sortOrder: item.sortOrder ?? 0,
@@ -1262,7 +1264,7 @@ export const programService = {
         restBetweenSetsMs: item.restBetweenSetsMs ?? undefined,
         weightKg: item.weightKg ?? undefined,
         weightPerSet: item.weightPerSet ?? undefined,
-        notes: item.notes ? (item.notes as object) : undefined,
+        notes: toInputJson(parseLocalizedText(item.notes)),
         restDurationMs: item.restDurationMs ?? undefined,
         sourceWorkoutId: item.sourceWorkoutId ?? undefined,
         sortOrder: item.sortOrder ?? existing.sortOrder,
