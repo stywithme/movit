@@ -122,12 +122,18 @@ export const workoutService = {
       ];
     }
 
+    if (filters?.isFeatured === true) {
+      where.isFeatured = true;
+    } else if (filters?.isFeatured === false) {
+      where.isFeatured = false;
+    }
+
     const [workouts, total] = await Promise.all([
       prisma.workout.findMany({
         where,
         skip,
         take: limit,
-        orderBy: { createdAt: 'desc' },
+        orderBy: [{ isFeatured: 'desc' }, { createdAt: 'desc' }],
         include: {
           _count: {
             select: { exercises: true },
@@ -186,6 +192,7 @@ export const workoutService = {
         difficulty: data.difficulty ?? 'beginner',
         estimatedDurationMin: data.estimatedDurationMin ?? undefined,
         tags: data.tags ?? undefined,
+        isFeatured: data.isFeatured ?? false,
         status: 'draft',
         createdBy,
         updatedBy: createdBy,
@@ -243,6 +250,7 @@ export const workoutService = {
     if (data.difficulty !== undefined) updateData.difficulty = data.difficulty;
     if (data.estimatedDurationMin !== undefined) updateData.estimatedDurationMin = data.estimatedDurationMin;
     if (data.tags !== undefined) updateData.tags = data.tags;
+    if (data.isFeatured !== undefined) updateData.isFeatured = data.isFeatured;
     if (data.status !== undefined) updateData.status = data.status;
 
     await prisma.workout.update({
@@ -347,6 +355,7 @@ export const workoutService = {
         difficulty: original.difficulty as 'beginner' | 'intermediate' | 'advanced',
         estimatedDurationMin: original.estimatedDurationMin ?? undefined,
         tags: (original.tags as string[]) || undefined,
+        isFeatured: false,
         exercises,
       },
       createdBy
@@ -363,7 +372,7 @@ export const workoutService = {
         status: 'published',
         deletedAt: null,
       },
-      orderBy: { updatedAt: 'desc' },
+      orderBy: [{ isFeatured: 'desc' }, { updatedAt: 'desc' }],
       include: workoutFullInclude,
     });
   },
@@ -399,6 +408,7 @@ export const workoutService = {
       difficulty: workout.difficulty as 'beginner' | 'intermediate' | 'advanced',
       estimatedDurationMin: workout.estimatedDurationMin ?? undefined,
       tags: (workout.tags as string[]) || undefined,
+      isFeatured: workout.isFeatured ?? false,
       exercises,
       updatedAt: workout.updatedAt.toISOString(),
     };

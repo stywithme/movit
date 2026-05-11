@@ -3,7 +3,10 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { LocalizedText } from '@/lib/types/localized';
-import { Input, Select } from '@/components/ui';
+import { Input, Select, Button, Badge } from '@/components/ui';
+import { buttonVariants } from '@/components/ui/Button';
+import { cn } from '@/lib/utils';
+import { Plus, Search, Star } from 'lucide-react';
 
 interface Workout {
   id: string;
@@ -12,6 +15,7 @@ interface Workout {
   slug: string;
   difficulty: 'beginner' | 'intermediate' | 'advanced';
   status: string;
+  isFeatured: boolean;
   createdAt: string;
   updatedAt: string;
   _count: {
@@ -31,6 +35,7 @@ export default function WorkoutsListPage() {
   const [pagination, setPagination] = useState<Pagination | null>(null);
   const [loading, setLoading] = useState(true);
   const [statusFilter, setStatusFilter] = useState<string>('');
+  const [featuredFilter, setFeaturedFilter] = useState<string>('');
   const [searchQuery, setSearchQuery] = useState('');
 
   const fetchWorkouts = async (page = 1) => {
@@ -39,7 +44,9 @@ export default function WorkoutsListPage() {
       const params = new URLSearchParams();
       params.set('page', page.toString());
       if (statusFilter) params.set('status', statusFilter);
-      if (searchQuery) params.set('search', searchQuery);
+      if (featuredFilter === 'true') params.set('featured', 'true');
+      if (featuredFilter === 'false') params.set('featured', 'false');
+      if (searchQuery.trim()) params.set('search', searchQuery.trim());
 
       const res = await fetch(`/api/workouts?${params}`);
       const data = await res.json();
@@ -57,11 +64,11 @@ export default function WorkoutsListPage() {
 
   useEffect(() => {
     fetchWorkouts();
-  }, [statusFilter]);
+  }, [statusFilter, featuredFilter]);
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
-    fetchWorkouts();
+    fetchWorkouts(1);
   };
 
   const handlePublish = async (id: string) => {
@@ -106,193 +113,193 @@ export default function WorkoutsListPage() {
     }
   };
 
+  const difficultyLabel = (d: string) =>
+    d === 'beginner' ? 'Beginner' : d === 'intermediate' ? 'Intermediate' : 'Advanced';
+
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="flex justify-between items-center">
+    <div className="mx-auto max-w-6xl space-y-8 pb-12">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Workouts</h1>
-          <p className="text-gray-600 mt-1">Manage workout templates</p>
+          <h1 className="text-2xl font-semibold tracking-tight text-zinc-900">Workouts</h1>
+          <p className="mt-1 text-sm text-zinc-500">Create and manage workout templates for programs and Explore.</p>
         </div>
         <Link
           href="/admin/workouts/new"
-          className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center gap-2"
+          className={cn(buttonVariants({ variant: 'primary', size: 'md' }), 'inline-flex items-center gap-2')}
         >
-          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-          </svg>
-          New Workout
+          <Plus className="h-4 w-4" aria-hidden />
+          New workout
         </Link>
       </div>
 
-      {/* Filters */}
-      <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-200">
-        <div className="flex flex-wrap gap-4 items-end">
-          {/* Search */}
-          <form onSubmit={handleSearch} className="flex-1 min-w-[200px]">
-            <label className="block text-sm font-medium text-gray-700 mb-1">Search</label>
+      <section className="rounded-2xl border border-zinc-200/90 bg-white p-5 shadow-sm">
+        <form onSubmit={handleSearch} className="flex flex-col gap-4 lg:flex-row lg:items-end">
+          <div className="min-w-0 flex-1 space-y-1.5">
+            <label htmlFor="workout-search" className="text-xs font-medium uppercase tracking-wide text-zinc-500">
+              Search
+            </label>
             <div className="flex gap-2">
-              <Input
-                type="text"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Search workouts..."
-                className="flex-1"
-              />
-              <button
-                type="submit"
-                className="px-4 py-2 bg-gray-100 text-gray-700 rounded-md hover:bg-gray-200"
-              >
-                Search
-              </button>
+              <div className="relative min-w-0 flex-1">
+                <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-400" />
+                <Input
+                  id="workout-search"
+                  type="text"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  placeholder="Name (EN or AR)…"
+                  className="pl-9"
+                />
+              </div>
+              <Button type="submit" variant="secondary" size="md">
+                Apply
+              </Button>
             </div>
-          </form>
-
-          {/* Status Filter */}
-          <div className="w-40">
-            <label className="block text-sm font-medium text-gray-700 mb-1">Status</label>
-            <Select
-              value={statusFilter}
-              onChange={(e) => setStatusFilter(e.target.value)}
-              options={[
-                { value: '', label: 'All' },
-                { value: 'draft', label: 'Draft' },
-                { value: 'published', label: 'Published' },
-              ]}
-            />
           </div>
-        </div>
-      </div>
+          <div className="grid w-full gap-4 sm:grid-cols-2 lg:w-auto lg:min-w-[280px] lg:grid-cols-2">
+            <div className="space-y-1.5">
+              <span className="text-xs font-medium uppercase tracking-wide text-zinc-500">Status</span>
+              <Select
+                value={statusFilter}
+                onChange={(e) => setStatusFilter(e.target.value)}
+                options={[
+                  { value: '', label: 'All statuses' },
+                  { value: 'draft', label: 'Draft' },
+                  { value: 'published', label: 'Published' },
+                ]}
+              />
+            </div>
+            <div className="space-y-1.5">
+              <span className="text-xs font-medium uppercase tracking-wide text-zinc-500">Featured</span>
+              <Select
+                value={featuredFilter}
+                onChange={(e) => setFeaturedFilter(e.target.value)}
+                options={[
+                  { value: '', label: 'All' },
+                  { value: 'true', label: 'Featured only' },
+                  { value: 'false', label: 'Not featured' },
+                ]}
+              />
+            </div>
+          </div>
+        </form>
+      </section>
 
-      {/* Workouts Table */}
-      <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
+      <section className="overflow-hidden rounded-2xl border border-zinc-200/90 bg-white shadow-sm">
         {loading ? (
-          <div className="p-8 text-center text-gray-500">Loading...</div>
+          <div className="py-20 text-center text-sm text-zinc-500">Loading workouts…</div>
         ) : workouts.length === 0 ? (
-          <div className="p-8 text-center text-gray-500">
-            <p>No workouts found.</p>
-            <Link href="/admin/workouts/new" className="text-blue-600 hover:underline mt-2 inline-block">
-              Create your first workout
+          <div className="py-16 text-center">
+            <p className="text-sm text-zinc-600">No workouts match your filters.</p>
+            <Link href="/admin/workouts/new" className="mt-3 inline-block text-sm font-medium text-blue-600 hover:text-blue-700">
+              Create a workout
             </Link>
           </div>
         ) : (
-          <table className="w-full">
-            <thead className="bg-gray-50 border-b border-gray-200">
-              <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                  Workout
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                  Difficulty
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                  Exercises
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                  Status
-                </th>
-                <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">
-                  Actions
-                </th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-200">
-              {workouts.map((workout) => (
-                <tr key={workout.id} className="hover:bg-gray-50">
-                  <td className="px-6 py-4">
-                    <div>
-                      <p className="font-medium text-gray-900">{workout.name.en}</p>
-                      <p className="text-sm text-gray-500">{workout.name.ar}</p>
-                    </div>
-                  </td>
-                  <td className="px-6 py-4">
-                    <span className="inline-flex px-2 py-1 text-xs font-medium rounded-full bg-gray-100 text-gray-700">
-                      {workout.difficulty}
-                    </span>
-                  </td>
-                  <td className="px-6 py-4 text-sm text-gray-600">
-                    {workout._count.exercises}
-                  </td>
-                  <td className="px-6 py-4">
-                    <span
-                      className={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${
-                        workout.status === 'published'
-                          ? 'bg-green-100 text-green-800'
-                          : 'bg-yellow-100 text-yellow-800'
-                      }`}
-                    >
-                      {workout.status}
-                    </span>
-                  </td>
-                  <td className="px-6 py-4 text-right">
-                    <div className="flex justify-end gap-2">
-                      <Link
-                        href={`/admin/workouts/${workout.id}/edit`}
-                        className="text-blue-600 hover:text-blue-800 text-sm"
-                      >
-                        Edit
-                      </Link>
-                      <button
-                        onClick={() => handleDuplicate(workout.id)}
-                        className="text-gray-600 hover:text-gray-800 text-sm"
-                      >
-                        Duplicate
-                      </button>
-                      {workout.status === 'draft' ? (
-                        <button
-                          onClick={() => handlePublish(workout.id)}
-                          className="text-green-600 hover:text-green-800 text-sm"
-                        >
-                          Publish
-                        </button>
-                      ) : (
-                        <button
-                          onClick={() => handleUnpublish(workout.id)}
-                          className="text-yellow-600 hover:text-yellow-800 text-sm"
-                        >
-                          Unpublish
-                        </button>
-                      )}
-                      <button
-                        onClick={() => handleDelete(workout.id)}
-                        className="text-red-600 hover:text-red-800 text-sm"
-                      >
-                        Delete
-                      </button>
-                    </div>
-                  </td>
+          <div className="overflow-x-auto">
+            <table className="w-full min-w-[720px] text-left text-sm">
+              <thead>
+                <tr className="border-b border-zinc-100 bg-zinc-50/80">
+                  <th className="px-5 py-3 font-medium text-zinc-600">Workout</th>
+                  <th className="px-5 py-3 font-medium text-zinc-600">Difficulty</th>
+                  <th className="hidden px-5 py-3 font-medium text-zinc-600 sm:table-cell">Exercises</th>
+                  <th className="px-5 py-3 font-medium text-zinc-600">Featured</th>
+                  <th className="px-5 py-3 font-medium text-zinc-600">Status</th>
+                  <th className="px-5 py-3 text-right font-medium text-zinc-600">Actions</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
-        )}
-
-        {/* Pagination */}
-        {pagination && pagination.totalPages > 1 && (
-          <div className="px-6 py-4 border-t border-gray-200 flex justify-between items-center">
-            <p className="text-sm text-gray-600">
-              Showing {(pagination.page - 1) * pagination.limit + 1} to{' '}
-              {Math.min(pagination.page * pagination.limit, pagination.total)} of {pagination.total}
-            </p>
-            <div className="flex gap-2">
-              <button
-                onClick={() => fetchWorkouts(pagination.page - 1)}
-                disabled={pagination.page === 1}
-                className="px-3 py-1.5 border border-gray-300 bg-white text-gray-800 rounded text-sm hover:bg-gray-50 disabled:bg-gray-100 disabled:text-gray-400 disabled:border-gray-200 disabled:cursor-not-allowed"
-              >
-                Previous
-              </button>
-              <button
-                onClick={() => fetchWorkouts(pagination.page + 1)}
-                disabled={pagination.page === pagination.totalPages}
-                className="px-3 py-1.5 border border-gray-300 bg-white text-gray-800 rounded text-sm hover:bg-gray-50 disabled:bg-gray-100 disabled:text-gray-400 disabled:border-gray-200 disabled:cursor-not-allowed"
-              >
-                Next
-              </button>
-            </div>
+              </thead>
+              <tbody className="divide-y divide-zinc-100">
+                {workouts.map((workout) => (
+                  <tr key={workout.id} className="transition-colors hover:bg-zinc-50/60">
+                    <td className="max-w-[240px] px-5 py-4 align-top">
+                      <p className="truncate font-medium text-zinc-900">{workout.name.en}</p>
+                      <p className="truncate text-zinc-500" dir="rtl">
+                        {workout.name.ar}
+                      </p>
+                    </td>
+                    <td className="whitespace-nowrap px-5 py-4 align-middle">
+                      <Badge variant="outline" className="font-normal capitalize">
+                        {difficultyLabel(workout.difficulty)}
+                      </Badge>
+                    </td>
+                    <td className="hidden whitespace-nowrap px-5 py-4 align-middle text-zinc-600 sm:table-cell">
+                      {workout._count.exercises}
+                    </td>
+                    <td className="whitespace-nowrap px-5 py-4 align-middle">
+                      {workout.isFeatured ? (
+                        <span className="inline-flex items-center gap-1 rounded-full bg-amber-50 px-2 py-0.5 text-xs font-medium text-amber-800 ring-1 ring-inset ring-amber-200/80">
+                          <Star className="h-3.5 w-3.5 fill-amber-400 text-amber-500" strokeWidth={0} />
+                          Featured
+                        </span>
+                      ) : (
+                        <span className="text-xs text-zinc-400">—</span>
+                      )}
+                    </td>
+                    <td className="whitespace-nowrap px-5 py-4 align-middle">
+                      <Badge variant={workout.status === 'published' ? 'success' : 'warning'} className="capitalize">
+                        {workout.status}
+                      </Badge>
+                    </td>
+                    <td className="px-5 py-4 align-middle">
+                      <div className="flex flex-wrap items-center justify-end gap-x-1 gap-y-1 text-xs">
+                        <Link href={`/admin/workouts/${workout.id}/edit`} className="rounded-md px-2 py-1 font-medium text-blue-600 hover:bg-blue-50">
+                          Edit
+                        </Link>
+                        <span className="text-zinc-200">|</span>
+                        <button type="button" onClick={() => handleDuplicate(workout.id)} className="rounded-md px-2 py-1 font-medium text-zinc-600 hover:bg-zinc-100">
+                          Duplicate
+                        </button>
+                        <span className="text-zinc-200">|</span>
+                        {workout.status === 'draft' ? (
+                          <button type="button" onClick={() => handlePublish(workout.id)} className="rounded-md px-2 py-1 font-medium text-emerald-600 hover:bg-emerald-50">
+                            Publish
+                          </button>
+                        ) : (
+                          <button type="button" onClick={() => handleUnpublish(workout.id)} className="rounded-md px-2 py-1 font-medium text-amber-700 hover:bg-amber-50">
+                            Unpublish
+                          </button>
+                        )}
+                        <span className="text-zinc-200">|</span>
+                        <button type="button" onClick={() => handleDelete(workout.id)} className="rounded-md px-2 py-1 font-medium text-red-600 hover:bg-red-50">
+                          Delete
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
         )}
-      </div>
+
+        {pagination && pagination.totalPages > 1 && (
+          <footer className="flex flex-col gap-3 border-t border-zinc-100 px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
+            <p className="text-xs text-zinc-500">
+              {(pagination.page - 1) * pagination.limit + 1}–{Math.min(pagination.page * pagination.limit, pagination.total)} of{' '}
+              {pagination.total}
+            </p>
+            <div className="flex gap-2">
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                disabled={pagination.page === 1}
+                onClick={() => fetchWorkouts(pagination.page - 1)}
+              >
+                Previous
+              </Button>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                disabled={pagination.page === pagination.totalPages}
+                onClick={() => fetchWorkouts(pagination.page + 1)}
+              >
+                Next
+              </Button>
+            </div>
+          </footer>
+        )}
+      </section>
     </div>
   );
 }

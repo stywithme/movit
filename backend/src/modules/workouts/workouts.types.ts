@@ -71,6 +71,8 @@ export interface CreateWorkoutInput {
   difficulty?: 'beginner' | 'intermediate' | 'advanced';
   estimatedDurationMin?: number;
   tags?: string[];
+  /** Highlight in Explore / ordering; defaults false in DB */
+  isFeatured?: boolean;
   exercises?: WorkoutExerciseInput[];
 }
 
@@ -93,6 +95,7 @@ export interface WorkoutExport {
   difficulty: 'beginner' | 'intermediate' | 'advanced';
   estimatedDurationMin?: number;
   tags?: string[];
+  isFeatured: boolean;
   exercises: WorkoutExerciseExport[];
   updatedAt: string;
 }
@@ -107,6 +110,8 @@ export interface WorkoutExport {
 export interface WorkoutListFilters {
   status?: 'draft' | 'published';
   search?: string;
+  /** When true: only featured; when false: only non-featured; omit: all */
+  isFeatured?: boolean;
   page?: number;
   limit?: number;
 }
