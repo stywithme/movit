@@ -750,6 +750,8 @@
     <string name="rest_tip_recovery">Rest helps your muscles recover.</string>
     <string name="rest_tip_consistency">Consistency builds real progress.</string>
     <string name="rest_seconds_hint">Rest seconds</string>
+    <string name="pause">Pause</string>
+    <string name="resume">Resume</string>
     <string name="alternating_label_format">Alternating: %1$s</string>
     <string name="session_set_indicator_format">Set %1$d of %2$d</string>
     <string name="session_rest_next_set_format">Next: %1$s · Set %2$d/%3$d</string>
@@ -767,6 +769,12 @@
     <string name="session_target_sets_only_format">%1$d sets</string>
     <string name="session_complete_subtitle">Your results are saved. Open the report for the full breakdown.</string>
     <string name="session_view_report">View report</string>
+    <string name="session_set_settings">SET SETTINGS</string>
+    <string name="session_reps_label">Reps</string>
+    <string name="session_duration_label">Hold time</string>
+    <string name="session_weight_label">Weight</string>
+    <string name="session_seconds_unit">s</string>
+    <string name="session_kg_unit">kg</string>
 
     <!-- ═══════════════════════════════════════════════════ -->
     <!-- Program Page (Redesigned)                          -->

@@ -10,6 +10,8 @@
     <string name="edit_rest">تعديل</string>
     <string name="next">التالي</string>
     <string name="skip">تخطي</string>
+    <string name="pause">إيقاف مؤقت</string>
+    <string name="resume">متابعة</string>
     <string name="back">رجوع</string>
     <string name="done">تم</string>
     <string name="cancel">إلغاء</string>
@@ -397,6 +399,12 @@
     <string name="session_target_sets_only_format">%1$d مجموعات</string>
     <string name="session_complete_subtitle">تم حفظ نتائجك. افتح التقرير للتفاصيل الكاملة.</string>
     <string name="session_view_report">عرض التقرير</string>
+    <string name="session_set_settings">إعدادات المجموعة</string>
+    <string name="session_reps_label">العدات</string>
+    <string name="session_duration_label">مدة الثبات</string>
+    <string name="session_weight_label">الوزن</string>
+    <string name="session_seconds_unit">ث</string>
+    <string name="session_kg_unit">كجم</string>
 
     <!-- History -->
     <string name="no_workouts_yet">لا توجد تمارين بعد</string>

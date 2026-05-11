@@ -1086,19 +1086,49 @@
                     android:textSize="14sp"
                     android:textAllCaps="true"
                     android:letterSpacing="0.08"
-                    tools:text="NEXT EXERCISE · 2/5" />
+                    tools:text="EXERCISE 2/5" />
 
-                <TextView
-                    android:id="@+id/tvSessionPrepCountdown"
+                <LinearLayout
+                    android:id="@+id/layoutSessionPrepTimerRow"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="@dimen/spacing_sm"
-                    android:fontFamily="sans-serif-thin"
-                    android:textColor="@color/primary"
-                    android:textSize="56sp"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal"
                     android:visibility="gone"
-                    tools:text="00:05"
-                    tools:visibility="visible" />
+                    tools:visibility="visible">
+
+                    <TextView
+                        android:id="@+id/tvSessionPrepCountdown"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:fontFamily="sans-serif-thin"
+                        android:textColor="@color/primary"
+                        android:textSize="56sp"
+                        tools:text="00:23" />
+
+                    <ImageButton
+                        android:id="@+id/btnSessionPrepPauseRestIcon"
+                        android:layout_width="40dp"
+                        android:layout_height="40dp"
+                        android:layout_marginStart="@dimen/spacing_sm"
+                        android:background="?attr/selectableItemBackgroundBorderless"
+                        android:contentDescription="@string/pause"
+                        android:padding="8dp"
+                        android:src="@drawable/ic_pause"
+                        app:tint="@color/primary" />
+
+                    <ImageButton
+                        android:id="@+id/btnSessionPrepSkipRestIcon"
+                        android:layout_width="40dp"
+                        android:layout_height="40dp"
+                        android:layout_marginStart="@dimen/spacing_xs"
+                        android:background="?attr/selectableItemBackgroundBorderless"
+                        android:contentDescription="@string/skip"
+                        android:padding="8dp"
+                        android:src="@drawable/ic_skip"
+                        app:tint="@android:color/white" />
+                </LinearLayout>
 
                 <TextView
                     android:id="@+id/tvSessionExerciseName"
@@ -1155,43 +1185,200 @@
                     tools:text="Keep your core tight and move with control."
                     tools:visibility="visible" />
 
-                <LinearLayout
-                    android:id="@+id/layoutSessionPrepRestControls"
+                <!-- Settings card (reps / duration / weight) - always shown in pre-exercise -->
+                <com.google.android.material.card.MaterialCardView
+                    android:id="@+id/cardSessionSettings"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="@dimen/spacing_lg"
-                    android:orientation="horizontal"
+                    app:cardBackgroundColor="#1AFFFFFF"
+                    app:cardCornerRadius="16dp"
+                    app:cardElevation="0dp"
+                    app:strokeColor="#33FFFFFF"
+                    app:strokeWidth="1dp"
                     android:visibility="gone"
                     tools:visibility="visible">
 
-                    <com.google.android.material.button.MaterialButton
-                        android:id="@+id/btnSessionPrepAddTime"
-                        style="@style/Widget.WayToFix.Button.Secondary"
-                        android:layout_width="0dp"
-                        android:layout_height="48dp"
-                        android:layout_weight="1"
-                        android:text="@string/add_20s"
-                        android:textSize="14sp" />
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="vertical"
+                        android:paddingHorizontal="@dimen/spacing_lg"
+                        android:paddingVertical="@dimen/spacing_md">
 
-                    <com.google.android.material.button.MaterialButton
-                        android:id="@+id/btnSessionPrepSkipRest"
-                        style="@style/Widget.WayToFix.Button.Secondary"
-                        android:layout_width="0dp"
-                        android:layout_height="48dp"
-                        android:layout_marginStart="@dimen/spacing_sm"
-                        android:layout_weight="1"
-                        android:text="@string/skip"
-                        android:textSize="16sp" />
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="@string/session_set_settings"
+                            android:textColor="#99FFFFFF"
+                            android:textSize="12sp"
+                            android:letterSpacing="0.08"
+                            android:textAllCaps="true" />
 
-                    <com.google.android.material.button.MaterialButton
-                        android:id="@+id/btnSessionPrepEditRest"
-                        style="@style/Widget.WayToFix.Button.Secondary"
-                        android:layout_width="0dp"
-                        android:layout_height="48dp"
-                        android:layout_marginStart="@dimen/spacing_sm"
-                        android:layout_weight="1"
-                        android:text="@string/edit_rest"
-                        android:textSize="12sp" />
+                        <!-- Reps row -->
+                        <LinearLayout
+                            android:id="@+id/layoutSessionSettingReps"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="@dimen/spacing_md"
+                            android:orientation="vertical"
+                            android:visibility="gone"
+                            tools:visibility="visible">
+
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="@string/session_reps_label"
+                                android:textColor="@android:color/white"
+                                android:textSize="16sp"
+                                android:textStyle="bold" />
+
+                            <LinearLayout
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:layout_marginTop="@dimen/spacing_sm"
+                                android:gravity="center_vertical"
+                                android:orientation="horizontal">
+
+                                <TextView
+                                    android:id="@+id/tvSessionRepsValue"
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:minWidth="52dp"
+                                    android:gravity="center"
+                                    android:textColor="@android:color/white"
+                                    android:textSize="22sp"
+                                    android:textStyle="bold"
+                                    tools:text="12" />
+
+                                <com.google.android.material.slider.Slider
+                                    android:id="@+id/sliderSessionReps"
+                                    android:layout_width="0dp"
+                                    android:layout_height="wrap_content"
+                                    android:layout_marginStart="@dimen/spacing_md"
+                                    android:layout_weight="1"
+                                    android:stepSize="1"
+                                    android:valueFrom="1"
+                                    android:valueTo="100" />
+                            </LinearLayout>
+                        </LinearLayout>
+
+                        <!-- Duration row -->
+                        <LinearLayout
+                            android:id="@+id/layoutSessionSettingDuration"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="@dimen/spacing_md"
+                            android:orientation="vertical"
+                            android:visibility="gone"
+                            tools:visibility="visible">
+
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="@string/session_duration_label"
+                                android:textColor="@android:color/white"
+                                android:textSize="16sp"
+                                android:textStyle="bold" />
+
+                            <LinearLayout
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:layout_marginTop="@dimen/spacing_sm"
+                                android:gravity="center_vertical"
+                                android:orientation="horizontal">
+
+                                <ImageView
+                                    android:layout_width="22dp"
+                                    android:layout_height="22dp"
+                                    android:src="@drawable/ic_timer"
+                                    app:tint="@color/primary" />
+
+                                <TextView
+                                    android:id="@+id/tvSessionDurationValue"
+                                    android:layout_width="0dp"
+                                    android:layout_height="wrap_content"
+                                    android:layout_marginStart="@dimen/spacing_md"
+                                    android:layout_weight="1"
+                                    android:textColor="@android:color/white"
+                                    android:textSize="22sp"
+                                    android:textStyle="bold"
+                                    tools:text="00:30" />
+
+                                <com.google.android.material.button.MaterialButton
+                                    android:id="@+id/btnSessionDurationPicker"
+                                    style="@style/Widget.WayToFix.Button.Secondary"
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="40dp"
+                                    android:text="@string/edit"
+                                    android:textSize="12sp" />
+                            </LinearLayout>
+                        </LinearLayout>
+
+                        <!-- Weight row -->
+                        <LinearLayout
+                            android:id="@+id/layoutSessionSettingWeight"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="@dimen/spacing_md"
+                            android:orientation="vertical"
+                            android:visibility="gone"
+                            tools:visibility="visible">
+
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="@string/session_weight_label"
+                                android:textColor="@android:color/white"
+                                android:textSize="16sp"
+                                android:textStyle="bold" />
+
+                            <LinearLayout
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:layout_marginTop="@dimen/spacing_sm"
+                                android:gravity="center_vertical"
+                                android:orientation="horizontal">
+
+                                <TextView
+                                    android:id="@+id/tvSessionWeightValue"
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:minWidth="72dp"
+                                    android:gravity="center"
+                                    android:textColor="@color/pro_gold"
+                                    android:textSize="22sp"
+                                    android:textStyle="bold"
+                                    tools:text="10 kg" />
+
+                                <com.google.android.material.slider.Slider
+                                    android:id="@+id/sliderSessionWeight"
+                                    android:layout_width="0dp"
+                                    android:layout_height="wrap_content"
+                                    android:layout_marginStart="@dimen/spacing_md"
+                                    android:layout_weight="1"
+                                    android:valueFrom="0"
+                                    android:valueTo="100" />
+                            </LinearLayout>
+
+                            <TextView
+                                android:id="@+id/tvSessionWeightRange"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:layout_marginTop="@dimen/spacing_xs"
+                                android:textColor="#99FFFFFF"
+                                android:textSize="12sp"
+                                tools:text="Allowed range: 0.0 - 100.0 kg" />
+                        </LinearLayout>
+                    </LinearLayout>
+                </com.google.android.material.card.MaterialCardView>
+
+                <LinearLayout
+                    android:id="@+id/layoutSessionPrepRestControls"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:visibility="gone"
+                    tools:visibility="visible">
                 </LinearLayout>
 
                 <com.google.android.material.button.MaterialButton

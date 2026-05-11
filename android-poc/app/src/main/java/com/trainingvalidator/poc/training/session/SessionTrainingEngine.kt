@@ -7,13 +7,22 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import com.trainingvalidator.poc.training.models.ProgramSessionItem
 
+/** Where optional in-flow rest applies (merged into pre-exercise UI). */
+enum class SessionRestContext {
+    NONE,
+    BETWEEN_SETS,
+    BETWEEN_EXERCISES,
+}
+
 /**
  * SessionTrainingEngine - Orchestrates an entire training session within a single Activity.
  *
  * State Machine:
- *   IDLE → PRE_EXERCISE → TRAINING → SET_REST → PRE_EXERCISE (next set) → ...
- *         → EXERCISE_REST → PRE_EXERCISE (next exercise) → ...
- *         → SESSION_COMPLETE
+ *   IDLE → PRE_EXERCISE (optional [State.PreExercise.pendingRestMs]) → TRAINING → …
+ *   → SESSION_COMPLETE
+ *
+ * Pre-exercise may include a rest countdown on the same screen as exercise details; when
+ * rest ends, the host starts training without a separate rest-only state.
  *
  * This replaces the old pattern of launching separate TrainingActivity instances
  * for each exercise. The camera pipeline stays alive and TrainingEngine is recycled
@@ -53,29 +62,13 @@ class SessionTrainingEngine(
             val setNumber: Int,
             val totalSets: Int,
             val item: ProgramSessionItem,
-            val exerciseName: String = ""
+            val exerciseName: String = "",
+            /** When &gt; 0, UI shows this countdown on the same screen before training auto-starts. */
+            val pendingRestMs: Long = 0L,
+            val restContext: SessionRestContext = SessionRestContext.NONE,
         ) : State()
 
         object Training : State()
-
-        data class SetRest(
-            val durationMs: Long,
-            val exerciseIndex: Int,
-            val nextSetNumber: Int,
-            val totalSets: Int,
-            val exerciseName: String,
-            /** Slug for loading preview image (same exercise during set rest). */
-            val exerciseSlug: String
-        ) : State()
-
-        data class ExerciseRest(
-            val durationMs: Long,
-            val nextExerciseIndex: Int,
-            val nextExerciseName: String = "",
-            val nextExerciseSlug: String = "",
-            /** Next exercise line item for UI (sets, targets, variant, etc.). */
-            val nextExerciseItem: ProgramSessionItem
-        ) : State()
 
         data class SessionComplete(
             val report: SessionReport
@@ -280,6 +273,40 @@ class SessionTrainingEngine(
         exerciseItems[idx] = cur.copy(item = newItem)
     }
 
+    /** Update target reps for the current exercise (affects remaining sets). */
+    fun updateCurrentTargetReps(reps: Int?) {
+        val idx = currentExerciseIdx
+        val cur = exerciseItems.getOrNull(idx) ?: return
+        val newItem = cur.item.copy(targetReps = reps?.coerceAtLeast(1))
+        exerciseItems[idx] = cur.copy(item = newItem)
+    }
+
+    /** Update target hold duration (seconds) for the current exercise. */
+    fun updateCurrentTargetDuration(seconds: Int?) {
+        val idx = currentExerciseIdx
+        val cur = exerciseItems.getOrNull(idx) ?: return
+        val newItem = cur.item.copy(targetDuration = seconds?.coerceAtLeast(1))
+        exerciseItems[idx] = cur.copy(item = newItem)
+    }
+
+    /** Update weight for the *current set only* (preserves other sets if per-set list exists). */
+    fun updateCurrentSetWeight(kg: Float) {
+        val idx = currentExerciseIdx
+        val cur = exerciseItems.getOrNull(idx) ?: return
+        val totalSets = cur.item.sets?.coerceAtLeast(1) ?: 1
+        val currentSetIdx = (currentSetNumber - 1).coerceIn(0, totalSets - 1)
+        val baseList = cur.item.weightPerSet?.toMutableList()
+            ?: MutableList(totalSets) { cur.item.weightKg ?: 0f }
+        if (currentSetIdx < baseList.size) {
+            baseList[currentSetIdx] = kg
+        }
+        val newItem = cur.item.copy(
+            weightPerSet = baseList,
+            weightKg = kg
+        )
+        exerciseItems[idx] = cur.copy(item = newItem)
+    }
+
     /** Start the session. */
     fun start() {
         if (exerciseItems.isEmpty()) {
@@ -300,15 +327,27 @@ class SessionTrainingEngine(
     }
 
     /**
+     * If the UI is still on pre-exercise with an in-flow rest countdown, clears rest so the
+     * user can start manually (e.g. weight dialog cancelled after auto-start from rest).
+     */
+    fun clearPrepRestFlagsIfPreExercise() {
+        val cur = _state.value as? State.PreExercise ?: return
+        if (cur.pendingRestMs <= 0L) return
+        _state.value = cur.copy(
+            pendingRestMs = 0L,
+            restContext = SessionRestContext.NONE,
+        )
+    }
+
+    /**
      * Called when a set completes (TrainingEngine fires completion).
-     * Decides: SetRest / ExerciseRest / PreExercise / SessionComplete.
+     * Decides: PreExercise (with optional rest) / SessionComplete.
      */
     fun onSetCompleted(metrics: SetMetrics) {
         allSetMetrics.add(metrics)
 
         val currentItem = exerciseItems[currentExerciseIdx]
         val totalSets = currentItem.item.sets?.coerceAtLeast(1) ?: 1
-        val exerciseName = getExerciseName(currentItem)
 
         Log.d(TAG, "Set completed: ${metrics.exerciseSlug} set ${metrics.setNumber}/$totalSets")
 
@@ -317,13 +356,9 @@ class SessionTrainingEngine(
             currentSetNumber++
             val restMs = currentItem.item.restBetweenSetsMs ?: DEFAULT_REST_BETWEEN_SETS_MS
             if (restMs > 0) {
-                _state.value = State.SetRest(
-                    durationMs = restMs,
-                    exerciseIndex = currentExerciseIdx,
-                    nextSetNumber = currentSetNumber,
-                    totalSets = totalSets,
-                    exerciseName = exerciseName,
-                    exerciseSlug = currentItem.item.exerciseSlug ?: ""
+                showPreExercise(
+                    pendingRestMs = restMs,
+                    restContext = SessionRestContext.BETWEEN_SETS,
                 )
             } else {
                 showPreExercise()
@@ -343,17 +378,15 @@ class SessionTrainingEngine(
         }
     }
 
-    /** Called when rest timer expires or user skips rest. */
-    fun onRestCompleted() {
-        showPreExercise()
-    }
-
     /** Re-build the session report with the latest data (including any report IDs set after initial build). */
     fun getCurrentReport(): SessionReport = buildReport()
 
     // ==================== Private ====================
 
-    private fun showPreExercise() {
+    private fun showPreExercise(
+        pendingRestMs: Long = 0L,
+        restContext: SessionRestContext = SessionRestContext.NONE,
+    ) {
         val current = exerciseItems.getOrNull(currentExerciseIdx)
         if (current == null) {
             _state.value = State.SessionComplete(buildReport())
@@ -365,7 +398,9 @@ class SessionTrainingEngine(
             setNumber = currentSetNumber,
             totalSets = totalSets,
             item = current.item,
-            exerciseName = getExerciseName(current)
+            exerciseName = getExerciseName(current),
+            pendingRestMs = pendingRestMs,
+            restContext = restContext,
         )
     }
 
@@ -381,13 +416,9 @@ class SessionTrainingEngine(
 
         val restMs = finishedItem.restAfterMs.coerceAtLeast(MIN_EXERCISE_PREVIEW_MS)
         if (restMs > 0) {
-            val nextItem = exerciseItems[currentExerciseIdx]
-            _state.value = State.ExerciseRest(
-                durationMs = restMs,
-                nextExerciseIndex = currentExerciseIdx,
-                nextExerciseName = getExerciseName(nextItem),
-                nextExerciseSlug = nextItem.item.exerciseSlug ?: "",
-                nextExerciseItem = nextItem.item
+            showPreExercise(
+                pendingRestMs = restMs,
+                restContext = SessionRestContext.BETWEEN_EXERCISES,
             )
         } else {
             showPreExercise()

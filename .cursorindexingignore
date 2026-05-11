@@ -1,0 +1,42 @@
+# Dependencies
+node_modules/
+**/node_modules/
+
+# Next / React / Node builds
+.next/
+**/.next/
+.turbo/
+**/.turbo/
+dist/
+**/dist/
+out/
+**/out/
+coverage/
+**/coverage/
+.cache/
+**/.cache/
+
+# Android / Gradle
+.gradle/
+**/.gradle/
+build/
+**/build/
+.kotlin/
+**/.kotlin/
+.idea/
+**/.idea/
+
+# Flutter / Dart
+.dart_tool/
+**/.dart_tool/
+.flutter-plugins
+.flutter-plugins-dependencies
+
+# Logs
+*.log
+logs/
+**/logs/
+
+# Env
+.env
+.env.*

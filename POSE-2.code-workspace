@@ -1,0 +1,46 @@
+{
+  "folders": [
+    {
+      "name": "Admin Dashboard",
+      "path": "D:/laragon/www/POSE-2/Admin-Dashboard"
+    },
+    {
+      "name": "Backend",
+      "path": "D:/laragon/www/POSE-2/backend"
+    },
+    {
+      "name": "Android POC",
+      "path": "D:/laragon/www/POSE-2/android-poc"
+    }
+  ],
+  "settings": {
+    "window.restoreWindows": "none",
+    "npm.autoDetect": "off",
+    "js/ts.tsc.autoDetect": "off",
+    "git.autorefresh": false,
+
+    "files.watcherExclude": {
+      "**/node_modules/**": true,
+      "**/.next/**": true,
+      "**/.turbo/**": true,
+      "**/dist/**": true,
+      "**/out/**": true,
+      "**/.gradle/**": true,
+      "**/build/**": true,
+      "**/.dart_tool/**": true,
+      "**/.cache/**": true
+    },
+
+    "search.exclude": {
+      "**/node_modules": true,
+      "**/.next": true,
+      "**/.turbo": true,
+      "**/dist": true,
+      "**/out": true,
+      "**/.gradle": true,
+      "**/build": true,
+      "**/.dart_tool": true,
+      "**/.cache": true
+    }
+  }
+}
