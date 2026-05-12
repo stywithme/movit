@@ -291,6 +291,8 @@ export interface SyncMeta {
     totalMessages: number;
     totalWithAudio: number;
     totalAssignments: number;
+    /** Stable-ish signal for message/audio/assignment changes beyond raw counts */
+    fingerprint: string;
   };
 }
 

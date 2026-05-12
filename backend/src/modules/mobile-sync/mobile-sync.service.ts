@@ -19,17 +19,18 @@ import type {
   MobileExploreResponse,
   SyncData,
   ExerciseConfigWithMeta,
-  AudioManifest,
   AudioFileInfo,
-  MessageTemplate,
-  SystemMessageTemplate,
   UserProgramExport,
   SessionReportExport,
   ExploreData,
 } from './mobile-sync.types';
 import * as fs from 'fs/promises';
 import * as path from 'path';
-import { getGcsBucket, parseObjectNameFromUrl } from '@/lib/storage';
+import {
+  buildAudioManifest,
+  buildMessageLibrary,
+  loadSystemMessages,
+} from './mobile-audio-manifest.service';
 
 // Server version for API compatibility
 const SERVER_VERSION = '1.0.0';
@@ -38,69 +39,6 @@ function toSyncLocalizedText(value: Record<string, unknown> | null | undefined) 
   const ar = typeof value?.ar === 'string' ? value.ar : '';
   const en = typeof value?.en === 'string' ? value.en : '';
   return { ar, en };
-}
-
-function toLocalizedTextWithAudioFromDb(value: unknown) {
-  if (!value || typeof value !== 'object' || Array.isArray(value)) {
-    return { ar: '', en: '' };
-  }
-  const v = value as Record<string, unknown>;
-  const ar = typeof v.ar === 'string' ? v.ar : '';
-  const en = typeof v.en === 'string' ? v.en : '';
-  const audioAr = typeof v.audioAr === 'string' ? v.audioAr : undefined;
-  const audioEn = typeof v.audioEn === 'string' ? v.audioEn : undefined;
-  const legacyAr = typeof v.audio_ar === 'string' ? v.audio_ar : undefined;
-  const legacyEn = typeof v.audio_en === 'string' ? v.audio_en : undefined;
-  return {
-    ar,
-    en,
-    ...(audioAr || legacyAr ? { audioAr: audioAr || legacyAr } : {}),
-    ...(audioEn || legacyEn ? { audioEn: audioEn || legacyEn } : {}),
-  };
-}
-
-/** Collect audioAr/audioEn from a LocalizedText-like object (inline JSON). */
-async function addUrlsFromLocalizedLike(
-  value: unknown,
-  addUrl: (url: string) => Promise<void>
-): Promise<void> {
-  if (!value || typeof value !== 'object') return;
-  const o = value as Record<string, unknown>;
-  if (typeof o.audioAr === 'string') await addUrl(o.audioAr);
-  if (typeof o.audioEn === 'string') await addUrl(o.audioEn);
-}
-
-/** Walk stateMessages (simple or zone up/down) for audio URLs. */
-async function scanStateMessagesForAudio(
-  stateMessages: unknown,
-  addUrl: (url: string) => Promise<void>
-): Promise<void> {
-  if (!stateMessages || typeof stateMessages !== 'object') return;
-  const sm = stateMessages as Record<string, unknown>;
-  const keys = ['perfect', 'normal', 'pad', 'warning', 'danger'] as const;
-  for (const k of keys) {
-    const val = sm[k];
-    if (!val || typeof val !== 'object') continue;
-    const obj = val as Record<string, unknown>;
-    if ('up' in obj || 'down' in obj) {
-      await addUrlsFromLocalizedLike(obj.up, addUrl);
-      await addUrlsFromLocalizedLike(obj.down, addUrl);
-    } else {
-      await addUrlsFromLocalizedLike(obj, addUrl);
-    }
-  }
-}
-
-async function scanTrackedJointsForAudio(
-  trackedJoints: unknown,
-  addUrl: (url: string) => Promise<void>
-): Promise<void> {
-  if (!Array.isArray(trackedJoints)) return;
-  for (const j of trackedJoints) {
-    if (!j || typeof j !== 'object') continue;
-    const joint = j as Record<string, unknown>;
-    await scanStateMessagesForAudio(joint.stateMessages, addUrl);
-  }
 }
 
 export const mobileSyncService = {
@@ -382,17 +320,9 @@ export const mobileSyncService = {
     }
     
     // Build message library (deduplicated) from exercises in this sync batch
-    const messageLibrary = this.buildMessageLibrary(exercises as Parameters<typeof this.buildMessageLibrary>[0]);
+    const messageLibrary = buildMessageLibrary(exercises as Parameters<typeof buildExerciseConfig>[0][]);
 
-    const systemMessageRows = await prisma.feedbackMessageTemplate.findMany({
-      where: { isSystem: true, isActive: true, category: 'system' },
-      orderBy: { code: 'asc' },
-    });
-    const systemMessages: SystemMessageTemplate[] = systemMessageRows.map((m) => ({
-      code: m.code,
-      content: toLocalizedTextWithAudioFromDb(m.content),
-      updatedAt: m.updatedAt.toISOString(),
-    }));
+    const systemMessages = await loadSystemMessages();
 
     // Always compute global message stats (across ALL published exercises)
     // so mobile can detect stale caches even during incremental syncs
@@ -515,7 +445,7 @@ export const mobileSyncService = {
     }
 
     // Build audio manifest from message library + system messages + inline exercise audio URLs
-    const audioManifest = await this.buildAudioManifest(
+    const audioManifest = await buildAudioManifest(
       messageLibrary,
       systemMessages,
       exercisesWithMeta,
@@ -615,74 +545,67 @@ export const mobileSyncService = {
   },
 
   /**
-   * Build message library from exercise assignments (deduplicated)
-   */
-  buildMessageLibrary(
-    exercises: Array<Parameters<typeof buildExerciseConfig>[0]>
-  ): MessageTemplate[] {
-    const library = new Map<string, MessageTemplate>();
-    
-    const toLocalizedText = (value: Record<string, unknown> | null | undefined) => {
-      const ar = typeof value?.ar === 'string' ? value.ar : '';
-      const en = typeof value?.en === 'string' ? value.en : '';
-      const audioAr = typeof value?.audioAr === 'string' ? value.audioAr : undefined;
-      const audioEn = typeof value?.audioEn === 'string' ? value.audioEn : undefined;
-      return {
-        ar,
-        en,
-        ...(audioAr ? { audioAr } : {}),
-        ...(audioEn ? { audioEn } : {}),
-      };
-    };
-    
-    for (const exercise of exercises) {
-      for (const variant of exercise.poseVariants || []) {
-        for (const assignment of variant.messageAssignments || []) {
-          const message = assignment?.message;
-          if (!message?.id || library.has(message.id)) continue;
-          library.set(message.id, {
-            id: message.id,
-            code: message.code,
-            category: message.category,
-            context: message.context ?? null,
-            content: toLocalizedText(message.content),
-          });
-        }
-      }
-    }
-    
-    const entries = Array.from(library.values());
-    const withAudio = entries.filter(m => m.content.audioAr || m.content.audioEn).length;
-    console.log(
-      `[MobileSync] messageLibrary: total=${entries.length}, withAudio=${withAudio}, withoutAudio=${entries.length - withAudio}`
-    );
-    return entries;
-  },
-  
-  /**
    * Get global message stats across ALL published exercises.
    * Used by mobile to detect stale message caches.
    */
   async getGlobalMessageStats(
     prisma: Awaited<ReturnType<typeof getPrisma>>
-  ): Promise<{ totalMessages: number; totalWithAudio: number; totalAssignments: number }> {
-    const totalAssignments = await prisma.feedbackMessageAssignment.count({
-      where: {
-        poseVariant: {
-          exercise: { status: 'published', deletedAt: null },
-        },
-      },
-    });
+  ): Promise<{
+    totalMessages: number;
+    totalWithAudio: number;
+    totalAssignments: number;
+    fingerprint: string;
+  }> {
+    const pubEx = { status: 'published' as const, deletedAt: null };
 
-    const distinctMessages = await prisma.feedbackMessageAssignment.findMany({
-      where: {
-        poseVariant: {
-          exercise: { status: 'published', deletedAt: null },
+    const [
+      totalAssignments,
+      distinctMessages,
+      linkedTplMax,
+      assignCreatedMax,
+      systemTplMax,
+    ] = await Promise.all([
+      prisma.feedbackMessageAssignment.count({
+        where: {
+          poseVariant: {
+            exercise: pubEx,
+          },
         },
-      },
-      select: { messageId: true },
-      distinct: ['messageId'],
-    });
+      }),
+      prisma.feedbackMessageAssignment.findMany({
+        where: {
+          poseVariant: {
+            exercise: pubEx,
+          },
+        },
+        select: { messageId: true },
+        distinct: ['messageId'],
+      }),
+      prisma.feedbackMessageTemplate.aggregate({
+        _max: { updatedAt: true },
+        where: {
+          assignments: {
+            some: {
+              poseVariant: {
+                exercise: pubEx,
+              },
+            },
+          },
+        },
+      }),
+      prisma.feedbackMessageAssignment.aggregate({
+        _max: { createdAt: true },
+        where: {
+          poseVariant: {
+            exercise: pubEx,
+          },
+        },
+      }),
+      prisma.feedbackMessageTemplate.aggregate({
+        _max: { updatedAt: true },
+        where: { isSystem: true, isActive: true, category: 'system' },
+      }),
+    ]);
 
     const messageIds = distinctMessages.map(m => m.messageId);
     let totalWithAudio = 0;
@@ -697,90 +620,23 @@ export const mobileSyncService = {
       }).length;
     }
 
+    const fingerprint = [
+      linkedTplMax._max.updatedAt?.getTime() ?? 0,
+      systemTplMax._max.updatedAt?.getTime() ?? 0,
+      assignCreatedMax._max.createdAt?.getTime() ?? 0,
+      totalAssignments,
+      messageIds.length,
+      totalWithAudio,
+    ].join(':');
+
     return {
       totalMessages: messageIds.length,
       totalWithAudio,
       totalAssignments,
+      fingerprint,
     };
   },
 
-  /**
-   * Build audio manifest from message library and inline exercise content
-   * (positionChecks.errorMessage, trackedJoints.stateMessages).
-   */
-  async buildAudioManifest(
-    messageLibrary: MessageTemplate[],
-    systemMessages: SystemMessageTemplate[],
-    exercises: ExerciseConfigWithMeta[],
-    baseUrl: string
-  ): Promise<AudioManifest> {
-    const audioFiles: AudioFileInfo[] = [];
-    const seenUrls = new Set<string>();
-
-    const addUrl = async (url: string) => {
-      if (!url || seenUrls.has(url)) return;
-      seenUrls.add(url);
-      const filename = path.basename(url);
-      const language = filename.includes('_ar_') ? 'ar' : 'en';
-      const fileSize = await this.getAudioFileSize(url);
-      audioFiles.push({
-        filename,
-        url,
-        size: fileSize,
-        language: language as 'ar' | 'en',
-      });
-    };
-
-    for (const message of messageLibrary) {
-      const { audioAr, audioEn } = message.content;
-      if (audioAr) await addUrl(audioAr);
-      if (audioEn) await addUrl(audioEn);
-    }
-
-    for (const sm of systemMessages) {
-      const { audioAr, audioEn } = sm.content;
-      if (audioAr) await addUrl(audioAr);
-      if (audioEn) await addUrl(audioEn);
-    }
-
-    for (const exercise of exercises) {
-      for (const variant of exercise.poseVariants || []) {
-        for (const pc of variant.positionChecks || []) {
-          await addUrlsFromLocalizedLike(pc.errorMessage, addUrl);
-        }
-        await scanTrackedJointsForAudio(variant.trackedJoints, addUrl);
-      }
-    }
-
-    return {
-      baseUrl,
-      files: audioFiles,
-    };
-  },
-  
-  /**
-   * Get audio file size from disk
-   */
-  async getAudioFileSize(audioPath: string): Promise<number | undefined> {
-    try {
-      const objectName = parseObjectNameFromUrl(audioPath);
-      if (objectName) {
-        const bucket = getGcsBucket();
-        const [metadata] = await bucket.file(objectName).getMetadata();
-        const size = metadata.size ? Number(metadata.size) : undefined;
-        return Number.isFinite(size) ? size : undefined;
-      }
-
-      // Fallback for local files (legacy)
-      const relativePath = audioPath.startsWith('/') ? audioPath.slice(1) : audioPath;
-      const fullPath = path.join(process.cwd(), 'public', relativePath);
-      const stats = await fs.stat(fullPath);
-      return stats.size;
-    } catch {
-      return undefined;
-    }
-  },
-  
   /**
    * Get list of all audio files in the TTS directory
    */

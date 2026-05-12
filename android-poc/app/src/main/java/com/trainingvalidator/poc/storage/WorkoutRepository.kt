@@ -51,6 +51,12 @@ class WorkoutRepository private constructor(private val context: Context) {
                 }
             }
         }
+
+        fun resetInstance() {
+            synchronized(this) {
+                instance = null
+            }
+        }
     }
     
     // Cache manager

@@ -251,7 +251,26 @@ data class SyncMeta(
 data class MessageLibraryStats(
     val totalMessages: Int = 0,
     val totalWithAudio: Int = 0,
-    val totalAssignments: Int = 0
+    val totalAssignments: Int = 0,
+    /** Server fingerprint for message/audio/assignment changes (beyond raw counts). */
+    val fingerprint: String = ""
+)
+
+/**
+ * Response wrapper for GET .../audio-manifest (exercise or workout).
+ */
+data class EntityAudioManifestApiResponse(
+    val success: Boolean,
+    val data: EntityAudioManifestPayload? = null,
+    val error: String? = null
+)
+
+data class EntityAudioManifestPayload(
+    val entityType: String,
+    val slug: String,
+    val timestamp: String,
+    val filesInManifest: Int,
+    val audioManifest: AudioManifest
 )
 
 /**

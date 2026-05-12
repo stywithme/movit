@@ -197,6 +197,16 @@ class ExerciseCacheManager(private val context: Context) {
 
         for (exerciseMeta in exercises) {
             try {
+                if (!isFullSync) {
+                    exerciseCache.values.find { it.id == exerciseMeta.id }?.let { old ->
+                        if (old.slug != exerciseMeta.slug) {
+                            val oldFile = File(exercisesDir, "${old.slug}.json")
+                            if (oldFile.exists()) oldFile.delete()
+                            exerciseCache.remove(old.slug)
+                        }
+                    }
+                }
+
                 val cached = CachedEntity(
                     id = exerciseMeta.id,
                     slug = exerciseMeta.slug,
