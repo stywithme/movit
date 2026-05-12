@@ -22,6 +22,11 @@ object SystemMessageRegistry {
     }
 
     /**
+     * All server-provided templates currently in memory (for prefetch / diagnostics).
+     */
+    fun getAllSyncedContents(): Collection<LocalizedText> = byCode.values
+
+    /**
      * Resolved [LocalizedText] for [key], merging server text/audio with app defaults.
      */
     fun get(key: String, defaultAr: String, defaultEn: String): LocalizedText {

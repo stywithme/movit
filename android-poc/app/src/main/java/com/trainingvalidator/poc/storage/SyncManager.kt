@@ -66,6 +66,7 @@ class SyncManager(
         private const val KEY_CACHED_MSG_COUNT = "cached_message_count"
         private const val KEY_CACHED_MSG_AUDIO = "cached_message_audio_count"
         private const val KEY_CACHED_MSG_ASSIGNMENTS = "cached_message_assignments"
+        private const val KEY_CACHED_MSG_FINGERPRINT = "cached_message_fingerprint"
     }
     
     private val lastSyncAttemptMs = AtomicLong(0L)
@@ -402,11 +403,18 @@ class SyncManager(
         if (systemMessages.isNotEmpty()) {
             SystemMessageStore(context).save(systemMessages)
         }
-        if (audioManifest.files.isNotEmpty()) {
-            lastAudioManifest = audioManifest
+        if (isFullSync || audioManifest.files.isNotEmpty()) {
             lastAudioBaseUrl = resolveEffectiveAudioBase(audioManifest)
-            audioCache.persistAudioManifest(lastAudioBaseUrl!!, audioManifest)
-            Log.d(TAG, "Audio manifest stored: ${audioManifest.files.size} files (baseUrl: $lastAudioBaseUrl)")
+            if (isFullSync) {
+                audioCache.replaceFullPersistedManifest(lastAudioBaseUrl!!, audioManifest)
+                audioCache.cleanupOrphanedFiles(audioManifest.files.map { it.filename }.toSet())
+            } else {
+                audioCache.mergePartialPersistedManifest(lastAudioBaseUrl!!, audioManifest)
+            }
+            val state = audioCache.getPersistedManifestState()
+            lastAudioManifest = state.second
+            lastAudioBaseUrl = state.first
+            Log.d(TAG, "Audio manifest stored: ${audioManifest.files.size} files (baseUrl: $lastAudioBaseUrl, fullSync=$isFullSync)")
         }
 
         // Check if there are content changes (exercises, workouts, programs)
@@ -592,7 +600,8 @@ class SyncManager(
         val cachedMessages = syncPrefs.getInt(KEY_CACHED_MSG_COUNT, -1)
         val cachedAudio = syncPrefs.getInt(KEY_CACHED_MSG_AUDIO, -1)
         val cachedAssignments = syncPrefs.getInt(KEY_CACHED_MSG_ASSIGNMENTS, -1)
-        
+        val cachedFingerprint = syncPrefs.getString(KEY_CACHED_MSG_FINGERPRINT, "") ?: ""
+
         // Never synced message stats before — if server has messages, we need a full sync
         if (cachedMessages == -1) {
             val serverHasMessages = serverStats.totalMessages > 0 || serverStats.totalAssignments > 0
@@ -608,13 +617,16 @@ class SyncManager(
         val mismatch = cachedMessages != serverStats.totalMessages
                 || cachedAudio != serverStats.totalWithAudio
                 || cachedAssignments != serverStats.totalAssignments
-        
-        if (mismatch) {
+
+        val fpServer = serverStats.fingerprint
+        val fpMismatch = fpServer.isNotBlank() && cachedFingerprint.isNotBlank() && fpServer != cachedFingerprint
+
+        if (mismatch || fpMismatch) {
             Log.w(TAG, "Message stats mismatch: " +
-                "cached(msgs=$cachedMessages, audio=$cachedAudio, assigns=$cachedAssignments) vs " +
-                "server(msgs=${serverStats.totalMessages}, audio=${serverStats.totalWithAudio}, assigns=${serverStats.totalAssignments})")
+                "cached(msgs=$cachedMessages, audio=$cachedAudio, assigns=$cachedAssignments, fp=$cachedFingerprint) vs " +
+                "server(msgs=${serverStats.totalMessages}, audio=${serverStats.totalWithAudio}, assigns=${serverStats.totalAssignments}, fp=$fpServer)")
         }
-        return mismatch
+        return mismatch || fpMismatch
     }
     
     /**
@@ -626,6 +638,7 @@ class SyncManager(
             .putInt(KEY_CACHED_MSG_COUNT, stats.totalMessages)
             .putInt(KEY_CACHED_MSG_AUDIO, stats.totalWithAudio)
             .putInt(KEY_CACHED_MSG_ASSIGNMENTS, stats.totalAssignments)
+            .putString(KEY_CACHED_MSG_FINGERPRINT, stats.fingerprint)
             .apply()
     }
 

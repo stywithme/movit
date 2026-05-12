@@ -35,6 +35,24 @@ interface MobileSyncApi {
     ): Response<MobileSyncResponse>
 
     /**
+     * Per-exercise audio manifest (URLs that already exist on server; no generation).
+     */
+    @GET("api/mobile/exercises/{slug}/audio-manifest")
+    suspend fun getExerciseAudioManifest(
+        @Path("slug") slug: String,
+        @Header("Authorization") authorization: String?
+    ): Response<EntityAudioManifestApiResponse>
+
+    /**
+     * Per-workout audio manifest (union of referenced exercises + system messages).
+     */
+    @GET("api/mobile/workouts/{slug}/audio-manifest")
+    suspend fun getWorkoutAudioManifest(
+        @Path("slug") slug: String,
+        @Header("Authorization") authorization: String?
+    ): Response<EntityAudioManifestApiResponse>
+
+    /**
      * Unified explore endpoint for Home/Explore previews.
      * Supports incremental sync by `updatedAfter`.
      */

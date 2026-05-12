@@ -16,6 +16,8 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.app.AppCompatDelegate
 import androidx.core.content.ContextCompat
+import androidx.lifecycle.lifecycleScope
+import com.trainingvalidator.poc.storage.EntityAudioPrefetchManager
 import com.trainingvalidator.poc.ui.utils.LocalizationHelper
 import com.trainingvalidator.poc.ui.utils.currentLanguage
 import com.trainingvalidator.poc.R
@@ -24,6 +26,7 @@ import com.trainingvalidator.poc.training.models.CountingMethod
 import com.trainingvalidator.poc.training.models.ExerciseConfig
 import com.trainingvalidator.poc.storage.UserExercisePreferenceStore
 import com.trainingvalidator.poc.ui.train.TrainingActivity
+import kotlinx.coroutines.launch
 
 /**
  * ExerciseDetailActivity - Shows exercise details and instructions
@@ -132,6 +135,10 @@ class ExerciseDetailActivity : AppCompatActivity() {
             Toast.makeText(this, getString(R.string.failed_to_load_exercise), Toast.LENGTH_SHORT).show()
             finish()
             return
+        }
+
+        lifecycleScope.launch {
+            EntityAudioPrefetchManager(this@ExerciseDetailActivity).prefetchExerciseIfNeeded(exerciseName)
         }
     }
 

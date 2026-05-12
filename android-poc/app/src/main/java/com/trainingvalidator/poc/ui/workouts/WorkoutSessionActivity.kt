@@ -7,6 +7,8 @@ import android.util.Log
 import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
+import androidx.lifecycle.lifecycleScope
+import com.trainingvalidator.poc.storage.EntityAudioPrefetchManager
 import com.google.gson.Gson
 import com.trainingvalidator.poc.PoseApp
 import com.trainingvalidator.poc.R
@@ -44,6 +46,8 @@ class WorkoutSessionActivity : AppCompatActivity() {
         const val EXTRA_WORKOUT_ID = "workout_id"
         const val EXTRA_CONTEXT = "session_context"   // explore_workout | quick_start
 
+        const val EXTRA_WORKOUT_SLUG = "workout_slug"
+
         fun createIntent(
             context: Context,
             workoutConfig: WorkoutConfig,
@@ -53,6 +57,7 @@ class WorkoutSessionActivity : AppCompatActivity() {
             putExtra(EXTRA_WORKOUT_CONFIG_JSON, Gson().toJson(workoutConfig))
             putExtra(EXTRA_WORKOUT_ID, workoutId)
             putExtra(EXTRA_CONTEXT, sessionContext)
+            putExtra(EXTRA_WORKOUT_SLUG, workoutConfig.fileName)
         }
     }
 
@@ -106,7 +111,18 @@ class WorkoutSessionActivity : AppCompatActivity() {
             return
         }
 
+        val slugExtra = intent.getStringExtra(EXTRA_WORKOUT_SLUG)?.trim().orEmpty()
+        if (slugExtra.isNotBlank()) {
+            workoutConfig.fileName = slugExtra
+        }
+
         setupUI()
+        lifecycleScope.launch {
+            val slug = workoutConfig.fileName.ifBlank { slugExtra }
+            if (slug.isNotBlank()) {
+                EntityAudioPrefetchManager(this@WorkoutSessionActivity).prefetchWorkoutIfNeeded(slug, workoutConfig)
+            }
+        }
         launchTrainingSession()
     }
 

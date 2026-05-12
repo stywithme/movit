@@ -11,6 +11,9 @@ import android.widget.ImageView
 import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
+import androidx.lifecycle.lifecycleScope
+import com.trainingvalidator.poc.storage.EntityAudioPrefetchManager
+import kotlinx.coroutines.launch
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import coil.load
@@ -62,7 +65,15 @@ class WorkoutDetailActivity : AppCompatActivity() {
         }
 
         loadWorkout(workoutName)
+        if (workoutConfig == null) return
+
         setupUI()
+
+        lifecycleScope.launch {
+            val cfg = workoutConfig ?: return@launch
+            if (cfg.fileName.isBlank()) return@launch
+            EntityAudioPrefetchManager(this@WorkoutDetailActivity).prefetchWorkoutIfNeeded(cfg.fileName, cfg)
+        }
     }
 
     private fun loadWorkout(name: String) {

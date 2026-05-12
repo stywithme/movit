@@ -109,28 +109,57 @@ class AudioCacheManager(private val context: Context) {
             if (wrapper.baseUrl.isBlank() || wrapper.files.isEmpty()) return
             persistedEffectiveBaseUrl = wrapper.baseUrl
             persistedAudioManifest = AudioManifest(wrapper.baseUrl, wrapper.files)
-            Log.d(TAG, "Loaded persisted audio manifest: ${wrapper.files.size} entries (baseUrl set)")
+            Log.d(TAG, "Loaded persisted audio manifest: ${wrapper.files.size} entries (scope=${wrapper.scope ?: "legacy"})")
         } catch (e: Exception) {
             Log.w(TAG, "Failed to load persisted audio manifest", e)
         }
     }
     
     /**
-     * Persist manifest for download resume across app restarts.
-     * [effectiveBaseUrl] should match the URL used for downloads (e.g. ApiConfig effective base).
+     * Replace persisted manifest and in-memory list (full sync). Caller may run [cleanupOrphanedFiles] after.
      */
-    fun persistAudioManifest(effectiveBaseUrl: String, manifest: AudioManifest) {
+    fun replaceFullPersistedManifest(effectiveBaseUrl: String, manifest: AudioManifest) {
         persistedEffectiveBaseUrl = effectiveBaseUrl.trimEnd('/')
         persistedAudioManifest = AudioManifest(effectiveBaseUrl.trimEnd('/'), manifest.files)
+        writeManifestDisk(scope = "full")
+        Log.d(TAG, "Full audio manifest persisted (${manifest.files.size} files)")
+    }
+
+    /**
+     * Merge new manifest entries into persisted state (incremental sync / entity prefetch).
+     */
+    fun mergePartialPersistedManifest(effectiveBaseUrl: String, manifest: AudioManifest) {
+        val base = effectiveBaseUrl.trimEnd('/')
+        val existing = persistedAudioManifest?.files ?: emptyList()
+        val merged = LinkedHashMap<String, AudioFileInfo>()
+        for (f in existing) merged[f.filename] = f
+        for (f in manifest.files) merged[f.filename] = f
+        val list = merged.values.toList()
+        persistedEffectiveBaseUrl = base
+        persistedAudioManifest = AudioManifest(base, list)
+        writeManifestDisk(scope = "partial")
+        Log.d(TAG, "Merged audio manifest (now ${list.size} files)")
+    }
+
+    /**
+     * @deprecated Use [replaceFullPersistedManifest] or [mergePartialPersistedManifest].
+     */
+    fun persistAudioManifest(effectiveBaseUrl: String, manifest: AudioManifest) {
+        replaceFullPersistedManifest(effectiveBaseUrl, manifest)
+    }
+
+    private fun writeManifestDisk(scope: String) {
+        val man = persistedAudioManifest ?: return
+        val base = persistedEffectiveBaseUrl ?: return
         try {
             val json = gson.toJson(
                 PersistedAudioManifestJson(
-                    baseUrl = persistedEffectiveBaseUrl!!,
-                    files = manifest.files
+                    baseUrl = base,
+                    files = man.files,
+                    scope = scope
                 )
             )
             manifestFile.writeText(json)
-            Log.d(TAG, "Saved audio manifest to disk (${manifest.files.size} files)")
         } catch (e: Exception) {
             Log.e(TAG, "Failed to persist audio manifest", e)
         }
@@ -153,7 +182,9 @@ class AudioCacheManager(private val context: Context) {
     
     private data class PersistedAudioManifestJson(
         val baseUrl: String,
-        val files: List<AudioFileInfo>
+        val files: List<AudioFileInfo>,
+        /** "full" after full sync manifest; "partial" for merges / entity prefetch */
+        val scope: String? = null
     )
     
     /**
@@ -171,7 +202,8 @@ class AudioCacheManager(private val context: Context) {
      * @param filename The audio filename (e.g., "tts_ar_123.wav")
      */
     fun hasAudio(filename: String): Boolean {
-        return downloadedFiles.contains(filename)
+        val f = getAudioPath(filename)
+        return f != null && f.length() > 0L
     }
     
     /**
@@ -283,7 +315,8 @@ class AudioCacheManager(private val context: Context) {
         if (downloaded > 0) {
             scanExistingFiles()
         }
-        
+        enforceCacheLimit()
+
         downloaded
     }
     
@@ -318,8 +351,10 @@ class AudioCacheManager(private val context: Context) {
         try {
             val url = if (audioFile.url.startsWith("http", ignoreCase = true)) {
                 audioFile.url
-            } else {
+            } else if (audioFile.url.startsWith("/")) {
                 baseUrl.trimEnd('/') + audioFile.url
+            } else {
+                baseUrl.trimEnd('/') + "/" + audioFile.url
             }
 
             val request = Request.Builder()
@@ -340,20 +375,38 @@ class AudioCacheManager(private val context: Context) {
                 }
 
                 val dir = if (audioFile.language == "ar") arDir else enDir
-                val file = File(dir, filename)
+                val finalFile = File(dir, filename)
+                val tmp = File(dir, "${filename}.part")
 
-                FileOutputStream(file).use { output ->
+                FileOutputStream(tmp).use { output ->
                     body.byteStream().use { input ->
                         input.copyTo(output)
                     }
                 }
 
+                val expected = audioFile.size
+                if (tmp.length() <= 0L) {
+                    tmp.delete()
+                    Log.e(TAG, "DOWNLOAD_FAIL: $filename zero bytes url=$url")
+                    return@use false
+                }
+                if (expected != null && expected > 0 && tmp.length() != expected) {
+                    Log.w(TAG, "DOWNLOAD_WARN: $filename size ${tmp.length()} expected $expected url=$url")
+                }
+
+                if (finalFile.exists()) finalFile.delete()
+                if (!tmp.renameTo(finalFile)) {
+                    tmp.copyTo(finalFile, overwrite = true)
+                    tmp.delete()
+                }
+
                 downloadedFiles.add(filename)
-                Log.d(TAG, "DOWNLOAD_OK: $filename (${file.length()} bytes)")
+                Log.d(TAG, "DOWNLOAD_OK: $filename (${finalFile.length()} bytes)")
                 true
             }
         } catch (e: Exception) {
             Log.e(TAG, "DOWNLOAD_ERROR: $filename ${e.javaClass.simpleName}: ${e.message}")
+            listOf(arDir, enDir).forEach { File(it, "${filename}.part").delete() }
             return false
         } finally {
             pendingDownloads.remove(filename)
@@ -385,7 +438,11 @@ class AudioCacheManager(private val context: Context) {
      */
     fun clearCache() {
         listOf(arDir, enDir).forEach { dir ->
-            dir.listFiles()?.forEach { it.delete() }
+            dir.listFiles()?.forEach { file ->
+                if (file.extension == "wav" || file.name.endsWith(".part")) {
+                    file.delete()
+                }
+            }
         }
         downloadedFiles.clear()
         persistedAudioManifest = null

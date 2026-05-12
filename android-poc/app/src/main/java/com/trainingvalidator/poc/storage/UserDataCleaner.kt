@@ -20,6 +20,7 @@ import android.util.Log
  *   - UserExercisePreferenceStore (user_exercise_preferences)
  *   - HomeRepository singleton  (in-memory)
  *   - ExploreRepository singleton (in-memory)
+ *   - Exercise/Workout/Program repository singletons (in-memory only)
  *
  * What is NOT cleared:
  *   - AuthManager (app_prefs) — managed separately by the caller
@@ -56,6 +57,9 @@ object UserDataCleaner {
         // Reset in-memory singletons so stale data is not served from memory
         HomeRepository.resetInstance()
         ExploreRepository.resetInstance()
+        ExerciseRepository.resetInstance()
+        WorkoutRepository.resetInstance()
+        ProgramRepository.resetInstance()
 
         Log.i(TAG, "All user caches cleared.")
     }

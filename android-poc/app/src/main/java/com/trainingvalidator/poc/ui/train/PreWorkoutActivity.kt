@@ -14,14 +14,17 @@ import android.view.View
 import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
+import androidx.lifecycle.lifecycleScope
 import androidx.core.content.ContextCompat
 import coil.load
+import com.google.android.material.chip.Chip
 import com.trainingvalidator.poc.ui.utils.currentLanguage
 import com.trainingvalidator.poc.R
 import com.trainingvalidator.poc.databinding.ActivityPreWorkoutBinding
 import com.trainingvalidator.poc.training.models.ExerciseConfig
 import com.trainingvalidator.poc.ui.utils.LocalizationHelper
-import com.google.android.material.chip.Chip
+import com.trainingvalidator.poc.storage.EntityAudioPrefetchManager
+import kotlinx.coroutines.launch
 
 /**
  * PreWorkoutActivity - Exercise detail screen before starting workout
@@ -110,6 +113,10 @@ class PreWorkoutActivity : AppCompatActivity() {
             Toast.makeText(this, getString(R.string.failed_to_load_exercise), Toast.LENGTH_SHORT).show()
             finish()
             return
+        }
+
+        lifecycleScope.launch {
+            EntityAudioPrefetchManager(this@PreWorkoutActivity).prefetchExerciseIfNeeded(exerciseName)
         }
     }
 

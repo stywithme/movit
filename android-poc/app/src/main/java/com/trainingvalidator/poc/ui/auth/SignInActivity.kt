@@ -13,6 +13,7 @@ import com.trainingvalidator.poc.network.GoogleAuthRequest
 import com.trainingvalidator.poc.network.GoogleSignInHelper
 import com.trainingvalidator.poc.network.LoginRequest
 import com.trainingvalidator.poc.storage.AuthManager
+import com.trainingvalidator.poc.storage.UserDataCleaner
 import com.trainingvalidator.poc.ui.main.MainContainerActivity
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -111,6 +112,7 @@ class SignInActivity : AppCompatActivity() {
                 val body = response.body()
                 val authData = body?.data
                 if (body?.success == true && authData != null) {
+                    UserDataCleaner.clearAll(this@SignInActivity)
                     AuthManager.saveAuthData(this@SignInActivity, authData)
                     startActivity(Intent(this@SignInActivity, MainContainerActivity::class.java).apply {
                         flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
@@ -172,6 +174,7 @@ class SignInActivity : AppCompatActivity() {
                 val body = response.body()
                 val authData = body?.data
                 if (response.isSuccessful && body?.success == true && authData != null) {
+                    UserDataCleaner.clearAll(this@SignInActivity)
                     AuthManager.saveAuthData(this@SignInActivity, authData)
                     startActivity(Intent(this@SignInActivity, MainContainerActivity::class.java).apply {
                         flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
