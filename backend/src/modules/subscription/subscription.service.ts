@@ -26,6 +26,7 @@ import {
 import { Prisma } from '@prisma/client';
 
 const ACTIVE_ENTITLEMENT_STATUSES = ['active', 'cancelled'];
+const DEFAULT_PAYMENT_CURRENCY = 'SAR';
 
 export type MyFatoorahReconcileOutcome = {
     outcome: 'paid' | 'pending' | 'failed';
@@ -87,12 +88,11 @@ export class SubscriptionService {
     }
 
     private async paymentCurrency(plan: any): Promise<string> {
-        const systemCurrency = await this.prisma.system.findUnique({
-            where: { key: 'currency' },
-        });
-        // Existing booking payments use system.currency. Prefer it for gateway calls so
-        // subscriptions follow the already-working MyFatoorah account configuration.
-        return systemCurrency?.value || plan.currency || 'EGP';
+        const [systemCurrency, bookingCurrency] = await Promise.all([
+            this.prisma.system.findUnique({ where: { key: 'currency' } }),
+            this.prisma.system.findUnique({ where: { key: 'booking_currency' } }),
+        ]);
+        return systemCurrency?.value || bookingCurrency?.value || plan.currency || DEFAULT_PAYMENT_CURRENCY;
     }
 
     private addPeriod(start: Date, billingPeriod: BillingPeriod): Date {
@@ -518,7 +518,7 @@ export class SubscriptionService {
                     gateway: 'google_play',
                     billingPeriod: dto.billingPeriod,
                     status: 'failed',
-                    currency: plan.currency || 'EGP',
+                    currency: plan.currency || DEFAULT_PAYMENT_CURRENCY,
                     amount: this.planAmount(plan, dto.billingPeriod),
                     googlePlayProductId: dto.productId,
                     googlePlayPurchaseToken: dto.purchaseToken,
@@ -721,7 +721,7 @@ export class SubscriptionService {
                 gateway: 'google_play',
                 billingPeriod: dto.billingPeriod,
                 status: 'paid',
-                currency: plan.currency || 'EGP',
+                currency: plan.currency || DEFAULT_PAYMENT_CURRENCY,
                 amount,
                 googlePlayProductId: dto.productId,
                 googlePlayPurchaseToken: dto.purchaseToken,

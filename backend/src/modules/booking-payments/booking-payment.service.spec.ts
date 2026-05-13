@@ -82,7 +82,7 @@ describe('BookingPaymentService', () => {
     gateway: 'myfatoorah',
     revision: 1,
     status: 'pending',
-    currency: 'EGP',
+    currency: 'SAR',
     totalAmount: 50,
     myFatoorahInvoiceId: 'inv-1',
     myFatoorahPaymentId: 'pay-1',
@@ -104,7 +104,7 @@ describe('BookingPaymentService', () => {
 
   beforeEach(async () => {
     jest.clearAllMocks();
-    mockPrisma.system.findUnique.mockResolvedValue({ value: 'EGP' });
+    mockPrisma.system.findUnique.mockResolvedValue({ value: 'SAR' });
     mockPrisma.bookingPayment.updateMany.mockResolvedValue({ count: 0 });
     mockPrisma.booking.updateMany.mockResolvedValue({ count: 0 });
     mockPrisma.$transaction.mockImplementation(async (fn) => fn(mockPrisma));

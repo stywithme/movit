@@ -80,6 +80,14 @@ function itemsMatchSelection(
   return selectionKey(items.map((i) => i.bookingId)) === selectionKey(bookingIds);
 }
 
+async function paymentCurrency(prisma: PrismaLike): Promise<string> {
+  const [currencyRow, bookingCurrencyRow] = await Promise.all([
+    prisma.system.findUnique({ where: { key: 'currency' } }),
+    prisma.system.findUnique({ where: { key: 'booking_currency' } }),
+  ]);
+  return currencyRow?.value || bookingCurrencyRow?.value || 'SAR';
+}
+
 @Injectable()
 export class BookingPaymentService {
   async createCheckout(
@@ -117,10 +125,7 @@ export class BookingPaymentService {
       throw new BadRequestException('Total amount must be greater than zero');
     }
 
-    const currencyRow = await prisma.system.findUnique({
-      where: { key: 'currency' },
-    });
-    const currency = currencyRow?.value ?? 'EGP';
+    const currency = await paymentCurrency(prisma);
 
     const openCheckouts = await prisma.bookingPayment.findMany({
       where: {

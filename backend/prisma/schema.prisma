@@ -1417,7 +1417,7 @@ model Plan {
   description               Json?
   monthlyPrice              Decimal        @db.Decimal(10, 2)
   yearlyPrice               Decimal        @db.Decimal(10, 2)
-  currency                  String         @default("EGP")
+  currency                  String         @default("SAR")
   discount                  Decimal?       @default(0) @db.Decimal(10, 2)
   maxExercisesLimit         Int            @default(0)
   maxWorkoutsLimit          Int            @default(0)
@@ -1485,7 +1485,7 @@ model SubscriptionCheckout {
   gateway               String        @default("myfatoorah")
   billingPeriod         String
   status                String        @default("pending")
-  currency              String        @default("EGP")
+  currency              String        @default("SAR")
   amount                Decimal       @db.Decimal(10, 2)
   paymentUrl            String?
   myFatoorahInvoiceId   String?
