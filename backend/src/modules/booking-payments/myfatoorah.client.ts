@@ -37,6 +37,54 @@ function apiToken(): string {
   return token;
 }
 
+/**
+ * MyFatoorah expects ExpiryDate as `Y-m-dTH:i:s` in a Gulf time zone.
+ * ISO-8601 strings with `Z` are parsed incorrectly server-side and trigger "Expire Date should be in Future!".
+ */
+function formatExpiryDateForMyFatoorah(date: Date): string {
+  const timeZone = process.env.MYFATOORAH_EXPIRY_TIMEZONE?.trim() || 'Asia/Riyadh';
+  const parts = new Intl.DateTimeFormat('en-GB', {
+    timeZone,
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
+    hour12: false,
+  }).formatToParts(date);
+
+  const pick = (type: Intl.DateTimeFormatPart['type']) =>
+    parts.find((p) => p.type === type)?.value ?? '';
+
+  const year = pick('year');
+  const month = pick('month').padStart(2, '0');
+  const day = pick('day').padStart(2, '0');
+  const hour = pick('hour').padStart(2, '0');
+  const minute = pick('minute').padStart(2, '0');
+  const second = (pick('second') || '0').padStart(2, '0');
+
+  return `${year}-${month}-${day}T${hour}:${minute}:${second}`;
+}
+
+function normalizeExpiryDateForApi(paymentExpiry: unknown): string | undefined {
+  if (paymentExpiry === undefined || paymentExpiry === null || paymentExpiry === '') {
+    return undefined;
+  }
+  const date =
+    paymentExpiry instanceof Date
+      ? paymentExpiry
+      : new Date(
+          typeof paymentExpiry === 'string' || typeof paymentExpiry === 'number'
+            ? paymentExpiry
+            : NaN,
+        );
+  if (Number.isNaN(date.getTime())) {
+    return undefined;
+  }
+  return formatExpiryDateForMyFatoorah(date);
+}
+
 async function postToMyFatoorah(path: string, body: Record<string, unknown>) {
   const response = await fetch(`${baseUrl()}${path}`, {
     method: 'POST',
@@ -81,6 +129,7 @@ function normalizePaymentResponse(payload: any): any {
 
 export async function createPayment(input: Record<string, unknown>): Promise<unknown> {
   const paymentExpiry = input.PaymentExpiry || input.ExpiryDate;
+  const expiryDate = normalizeExpiryDateForApi(paymentExpiry);
   const invoiceValue = input.InvoiceValue ?? input.totalAmount;
   const currency = input.DisplayCurrencyIso ?? input.CurrencyIso ?? input.Currency;
   const processingDetails = input.OperationType
@@ -98,7 +147,7 @@ export async function createPayment(input: Record<string, unknown>): Promise<unk
     Language: input.Language || 'en',
     CustomerReference: input.CustomerReference || input.ExternalIdentifier,
     UserDefinedField: input.UserDefinedField || input.ExternalIdentifier,
-    ExpiryDate: paymentExpiry,
+    ExpiryDate: expiryDate,
     InvoiceItems: input.InvoiceItems,
     ProcessingDetails: processingDetails,
   };
