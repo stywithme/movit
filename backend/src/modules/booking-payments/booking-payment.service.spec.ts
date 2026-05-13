@@ -191,8 +191,8 @@ describe('BookingPaymentService', () => {
       (createPayment as jest.Mock).mockResolvedValue({
         IsSuccess: true,
         Data: {
-          InvoiceId: 'inv-2',
-          PaymentId: 'pay-2',
+          InvoiceId: 6762796,
+          PaymentId: 987654,
           PaymentURL: 'https://pay.example.com/new',
         },
       });
@@ -214,6 +214,14 @@ describe('BookingPaymentService', () => {
           ([args]: any[]) => args?.data?.status === 'superseded',
         ),
       ).toBe(true);
+      expect(mockPrisma.bookingPayment.update).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: expect.objectContaining({
+            myFatoorahInvoiceId: '6762796',
+            myFatoorahPaymentId: '987654',
+          }),
+        }),
+      );
       expect(result.checkoutId).toBe('cp-2');
       expect(result.totalAmount).toBe(80);
       expect(result.bookingCount).toBe(2);
