@@ -37,6 +37,7 @@ import { BookingReportModule } from './modules/booking-report/booking-report.mod
 import { SystemModule } from './modules/system/system.module';
 import { PlanModule } from './modules/plan/plan.module';
 import { SubscriptionModule } from './modules/subscription/subscription.module';
+import { BookingPaymentsModule } from './modules/booking-payments/booking-payments.module';
 import { UserExercisePreferencesModule } from './modules/user-exercise-preferences/user-exercise-preferences.module';
 import { TrainingProfileModule } from './modules/training-profile/training-profile.module';
 
@@ -86,6 +87,7 @@ import { TrainingProfileModule } from './modules/training-profile/training-profi
     SystemModule,
     PlanModule,
     SubscriptionModule,
+    BookingPaymentsModule,
     UserExercisePreferencesModule,
     TrainingProfileModule,
   ],

@@ -175,11 +175,37 @@ export async function updatePayment(
   input: Record<string, unknown>,
 ): Promise<unknown> {
   const endpoint = process.env.MYFATOORAH_UPDATE_PAYMENT_STATUS_PATH || '/v2/UpdatePaymentStatus';
-  return postToMyFatoorah(endpoint, {
+  /**
+   * v2 UpdatePaymentStatus requires `Operation`: "Capture" | "Release" (see MyFatoorah docs).
+   * Callers may still pass `OperationType`: "CAPTURE" | "RELEASE" from Nest code — map here.
+   */
+  const raw = String(input.Operation ?? input.OperationType ?? '').trim();
+  const upper = raw.toUpperCase();
+  let operation: string | undefined;
+  if (upper === 'CAPTURE') operation = 'Capture';
+  else if (upper === 'RELEASE') operation = 'Release';
+  else if (raw === 'Capture' || raw === 'Release') operation = raw;
+
+  if (!operation) {
+    throw new Error('updatePayment requires Operation or OperationType CAPTURE|RELEASE');
+  }
+
+  const body: Record<string, unknown> = {
     Key: paymentId,
     KeyType: 'PaymentId',
-    ...input,
+    Operation: operation,
+  };
+  if (input.Amount !== undefined && input.Amount !== null && input.Amount !== '') {
+    body.Amount = input.Amount;
+  }
+
+  Object.keys(body).forEach((key) => {
+    if (body[key] === undefined || body[key] === null || body[key] === '') {
+      delete body[key];
+    }
   });
+
+  return postToMyFatoorah(endpoint, body);
 }
 
 function flattenSignatureFields(value: unknown, prefix = ''): Array<[string, string]> {

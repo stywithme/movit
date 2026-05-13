@@ -7,6 +7,7 @@ import { getPrisma } from '@/lib/prisma/client';
 import {
   createPayment,
   getPaymentDetails,
+  getWebhookSecret,
   updatePayment,
   verifyWebhookSignature,
 } from './myfatoorah.client';
@@ -104,6 +105,24 @@ function publicApiUrl(): string | null {
   return raw ? raw.replace(/\/$/, '') : null;
 }
 
+async function recordPaymentEvent(
+  prisma: PrismaLike,
+  input: {
+    id: string;
+    bookingPaymentId: string;
+    eventReference: string;
+    rawPayload: unknown;
+  },
+): Promise<void> {
+  try {
+    await prisma.bookingPaymentEvent.create({ data: input });
+  } catch (error) {
+    if ((error as { code?: string })?.code !== 'P2002') {
+      throw error;
+    }
+  }
+}
+
 @Injectable()
 export class BookingPaymentService {
   async createCheckout(
@@ -111,7 +130,7 @@ export class BookingPaymentService {
     dto: { bookingIds: string[] },
   ): Promise<{
     checkoutId: string;
-    paymentUrl: string | null;
+    paymentUrl: string;
     expiresAt: string;
     totalAmount: number;
     currency: string;
@@ -255,12 +274,16 @@ export class BookingPaymentService {
       if (!apiResult?.IsSuccess || !apiResult.Data) {
         throw new BadRequestException('Payment gateway error');
       }
+      const paymentUrl = apiResult.Data.PaymentURL;
+      if (!paymentUrl) {
+        throw new BadRequestException('Payment gateway did not return a payment URL');
+      }
 
       const finalCheckout = (await tx.bookingPayment.update({
         where: { id: reserved.id },
         data: {
           status: 'pending',
-          paymentUrl: apiResult.Data.PaymentURL ?? null,
+          paymentUrl,
           myFatoorahInvoiceId: gatewayId(apiResult.Data.InvoiceId),
           myFatoorahPaymentId: gatewayId(apiResult.Data.PaymentId),
           expiresAt,
@@ -269,7 +292,7 @@ export class BookingPaymentService {
 
       return {
         checkoutId: finalCheckout.id,
-        paymentUrl: finalCheckout.paymentUrl,
+        paymentUrl: finalCheckout.paymentUrl ?? paymentUrl,
         expiresAt: finalCheckout.expiresAt?.toISOString() ?? expiresAt.toISOString(),
         totalAmount: finalCheckout.totalAmount,
         currency: finalCheckout.currency,
@@ -279,9 +302,21 @@ export class BookingPaymentService {
   }
 
   async handleWebhook(payload: unknown, signature: string): Promise<void> {
-    if (!verifyWebhookSignature(payload, signature)) {
+    const sig = signature.trim();
+    const env = (process.env.MYFATOORAH_ENV || '').toLowerCase();
+    const sandboxLike = env === 'sandbox' || env === 'test' || env === 'development';
+    const allowUnsigned =
+      process.env.MYFATOORAH_WEBHOOK_ALLOW_UNSIGNED === 'true' ||
+      (sandboxLike && !getWebhookSecret().trim());
+
+    if (!sig) {
+      if (!allowUnsigned) {
+        throw new BadRequestException('Missing myfatoorah-signature header');
+      }
+    } else if (!verifyWebhookSignature(payload, sig)) {
       throw new BadRequestException('Invalid webhook signature');
     }
+
     await this.resolveGatewayPayment(payload, 'webhook');
   }
 
@@ -342,6 +377,7 @@ export class BookingPaymentService {
     _gatewayTransactionStatus: string,
     webhookEventId: string,
     rawPayload: unknown = {},
+    detailsAlreadyVerified = false,
   ): Promise<void> {
     const prisma = await getDelegates();
 
@@ -362,20 +398,14 @@ export class BookingPaymentService {
     const existing = await prisma.bookingPaymentEvent.findUnique({
       where: { id: dedupeId },
     });
-    if (existing) {
+    if (existing && ['paid', 'released'].includes(payment.status)) {
       return;
     }
+    const shouldRecordEvent = !existing;
 
-    await prisma.bookingPaymentEvent.create({
-      data: {
-        id: dedupeId,
-        bookingPaymentId: payment.id,
-        eventReference: webhookEventId,
-        rawPayload,
-      },
-    });
-
-    await getPaymentDetails(invoiceId);
+    if (!detailsAlreadyVerified) {
+      await getPaymentDetails(invoiceId);
+    }
 
     if (payment.status === 'superseded') {
       await updatePayment(paymentId, { OperationType: 'RELEASE' });
@@ -383,6 +413,14 @@ export class BookingPaymentService {
         where: { id: payment.id },
         data: { status: 'released', releasedAt: new Date() },
       });
+      if (shouldRecordEvent) {
+        await recordPaymentEvent(prisma, {
+          id: dedupeId,
+          bookingPaymentId: payment.id,
+          eventReference: webhookEventId,
+          rawPayload,
+        });
+      }
       return;
     }
 
@@ -411,6 +449,15 @@ export class BookingPaymentService {
         myFatoorahPaymentId: paymentId,
       },
     });
+
+    if (shouldRecordEvent) {
+      await recordPaymentEvent(prisma, {
+        id: dedupeId,
+        bookingPaymentId: payment.id,
+        eventReference: webhookEventId,
+        rawPayload,
+      });
+    }
   }
 
   private async resolveGatewayPayment(
@@ -473,6 +520,7 @@ export class BookingPaymentService {
         this.collectStatuses(details).join(','),
         `${source}:${finalPaymentId || finalInvoiceId}`,
         details,
+        true,
       );
       return { status: payment.status === 'superseded' ? 'released' : 'paid', checkoutId: payment.id };
     }
@@ -546,11 +594,16 @@ export class BookingPaymentService {
   }
 
   private extractPaymentId(payload: any): string | null {
+    const tx = Array.isArray(payload?.Data?.InvoiceTransactions)
+      ? payload.Data.InvoiceTransactions.find((item: any) => item?.PaymentId || item?.PaymentID)
+      : null;
     const value =
       payload?.Data?.PaymentId ||
       payload?.Data?.PaymentID ||
       payload?.Data?.Transaction?.PaymentId ||
       payload?.Data?.Transaction?.PaymentID ||
+      tx?.PaymentId ||
+      tx?.PaymentID ||
       payload?.PaymentId ||
       payload?.PaymentID ||
       payload?.paymentId;
@@ -572,7 +625,7 @@ export class BookingPaymentService {
 
   private isMyFatoorahAccepted(payload: any): boolean {
     return this.collectStatuses(payload).some((status) =>
-      ['AUTHORIZE', 'AUTHORIZED', 'PAID', 'SUCCESS', 'CAPTURED'].includes(status),
+      ['AUTHORIZE', 'AUTHORIZED', 'PAID', 'SUCCESS', 'SUCCSS', 'CAPTURED'].includes(status),
     );
   }
 
