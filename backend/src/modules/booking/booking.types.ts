@@ -1,16 +1,30 @@
 import { z } from 'zod';
 
-// ─── Create Booking ──────────────────────────────────────────────────────────
+// ─── Create Booking (Admin/Doctor) ────────────────────────────────────────────
 export const createBookingSchema = z.object({
     userId: z.string().uuid(),
     adminId: z.string().uuid(),
     startAt: z.string().datetime({ offset: true }),
     endAt: z.string().datetime({ offset: true }),
-    amount: z.number().min(0).optional().default(0),
+    amount: z.number().min(0).optional(),
     paymentStatus: z.enum(['paid', 'unpaid', 'refunded']).optional(),
     paymentId: z.string().optional(),
     paymentGateway: z.string().optional(),
     sessionUrl: z.string().url().optional(),
+    notes: z.string().optional(),
+}).refine((d) => new Date(d.endAt) > new Date(d.startAt), {
+    message: 'endAt must be after startAt',
+    path: ['endAt'],
+});
+
+// ─── Create Booking (User/Mobile) ─────────────────────────────────────────────
+// Mobile cannot send amount, paymentStatus, paymentId, paymentGateway, sessionUrl.
+// Amount is always derived from booking_price on the server.
+export const userCreateBookingSchema = z.object({
+    userId: z.string().uuid(),
+    adminId: z.string().uuid(),
+    startAt: z.string().datetime({ offset: true }),
+    endAt: z.string().datetime({ offset: true }),
     notes: z.string().optional(),
 }).refine((d) => new Date(d.endAt) > new Date(d.startAt), {
     message: 'endAt must be after startAt',
@@ -24,7 +38,7 @@ export const updateBookingSchema = z.object({
     paymentStatus: z.enum(['paid', 'unpaid', 'refunded']).optional(),
     paymentId: z.string().optional(),
     paymentGateway: z.string().optional(),
-    sessionUrl: z.string().url().optional(),
+    sessionUrl: z.string().url().nullish(),
     sessionMeetingId: z.string().optional(),
     sessionPlatform: z.enum(['zoom', 'google_meet']).optional(),
     notes: z.string().optional(),
@@ -33,7 +47,7 @@ export const updateBookingSchema = z.object({
 
 // ─── Doctor: Update Status ────────────────────────────────────────────────────
 export const updateBookingStatusSchema = z.object({
-    status: z.enum(['confirmed', 'completed', 'canceled']),
+    status: z.enum(['pending', 'confirmed', 'completed', 'canceled']),
 });
 
 // ─── Doctor: Update Notes ─────────────────────────────────────────────────────
@@ -71,12 +85,14 @@ export const bookingFiltersSchema = z.object({
     status: z.enum(['payment_pending', 'pending', 'confirmed', 'completed', 'canceled']).optional(),
     adminId: z.string().uuid().optional(),
     userId: z.string().uuid().optional(),
+    date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
     dateFrom: z.string().datetime({ offset: true }).optional(),
     dateTo: z.string().datetime({ offset: true }).optional(),
 });
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 export type CreateBookingInput = z.infer<typeof createBookingSchema>;
+export type UserCreateBookingInput = z.infer<typeof userCreateBookingSchema>;
 export type UpdateBookingInput = z.infer<typeof updateBookingSchema>;
 export type UpdateBookingStatusInput = z.infer<typeof updateBookingStatusSchema>;
 export type UpdateBookingNotesInput = z.infer<typeof updateBookingNotesSchema>;

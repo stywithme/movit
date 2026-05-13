@@ -19,6 +19,41 @@ export function BookingDetailsModal({ booking, onClose, onUpdate, isDoctorView }
     // States for editing
     const [status, setStatus] = useState(booking.status);
     const [notes, setNotes] = useState(booking.notes || '');
+    const [sessionUrl, setSessionUrl] = useState(booking.sessionUrl || '');
+
+    useEffect(() => {
+        setStatus(booking.status);
+        setNotes(booking.notes || '');
+        setSessionUrl(booking.sessionUrl || '');
+        setError(null);
+    }, [booking.id, booking.status, booking.notes, booking.sessionUrl]);
+
+    const VALID_TRANSITIONS: Record<string, { value: string; label: string }[]> = {
+        payment_pending: [
+            { value: 'pending', label: 'Pending (Payment Received)' },
+            { value: 'canceled', label: 'Cancelled' },
+        ],
+        pending: [
+            { value: 'confirmed', label: 'Confirmed' },
+            { value: 'canceled', label: 'Cancelled' },
+        ],
+        confirmed: [
+            { value: 'completed', label: 'Completed' },
+            { value: 'canceled', label: 'Cancelled' },
+        ],
+        completed: [],
+        canceled: [],
+    };
+
+    const getStatusOptions = () => {
+        const currentLabel = booking.status.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+        return [
+            { value: booking.status, label: `${currentLabel} (Current)` },
+            ...(VALID_TRANSITIONS[booking.status] || []),
+        ];
+    };
+
+    const isTerminalStatus = booking.status === 'completed' || booking.status === 'canceled';
 
     // States for Follow Up
     const [showFollowUp, setShowFollowUp] = useState(false);
@@ -30,7 +65,7 @@ export function BookingDetailsModal({ booking, onClose, onUpdate, isDoctorView }
         notes: string;
         repeatWeekly: boolean;
         repeatUntil: string;
-        availableSlots: { start: string; end: string }[];
+        availableSlots: { startAt: string; endAt: string; durationMinutes?: number }[];
         loadingSlots: boolean;
     }
 
@@ -92,6 +127,27 @@ export function BookingDetailsModal({ booking, onClose, onUpdate, isDoctorView }
 
     const removeForm = (formId: string) => {
         setFollowUpForms(prev => prev.filter(f => f.id !== formId));
+    };
+
+    const handleUpdateSessionUrl = async () => {
+        setLoading(true);
+        setError(null);
+        try {
+            const payload: Record<string, unknown> = {};
+            if (sessionUrl.trim()) payload.sessionUrl = sessionUrl.trim();
+            const res = await fetch(`/api/admin/bookings/${booking.id}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload),
+            });
+            const data = await res.json();
+            if (!res.ok || !data.success) throw new Error(data.error || data.message || 'Failed to update session URL');
+            onUpdate({ sessionUrl: sessionUrl.trim() || null } as any);
+        } catch (err: any) {
+            setError(err.message);
+        } finally {
+            setLoading(false);
+        }
     };
 
     const handleUpdateStatus = async () => {
@@ -165,18 +221,18 @@ export function BookingDetailsModal({ booking, onClose, onUpdate, isDoctorView }
                 // Generate basic payload
                 payloads.push({
                     userId: booking.user.id,
-                    startAt: slot.start,
-                    endAt: slot.end,
+                    startAt: slot.startAt,
+                    endAt: slot.endAt,
                     notes: form.notes
                 });
 
-                if (form.repeatWeekly && form.repeatUntil) {
+                    if (form.repeatWeekly && form.repeatUntil) {
                     const untilDate = new Date(form.repeatUntil);
                     let iteration = 1;
                     while (true) {
-                        const nextStart = new Date(slot.start);
+                        const nextStart = new Date(slot.startAt);
                         nextStart.setDate(nextStart.getDate() + (iteration * 7));
-                        const nextEnd = new Date(slot.end);
+                        const nextEnd = new Date(slot.endAt);
                         nextEnd.setDate(nextEnd.getDate() + (iteration * 7));
 
                         if (nextStart > untilDate) break;
@@ -274,36 +330,135 @@ export function BookingDetailsModal({ booking, onClose, onUpdate, isDoctorView }
                                 {booking.madeByType || 'System'}
                             </p>
                         </div>
+                        {booking.isRescheduled && (
+                            <div>
+                                <span className="inline-flex px-2 py-1 text-xs font-medium rounded-full bg-purple-100 text-purple-800">
+                                    Rescheduled
+                                </span>
+                            </div>
+                        )}
                     </div>
+
+                    {/* Payment summary block (for payment_pending / visibility) */}
+                    {booking.status === 'payment_pending' && booking.paymentInfo && (
+                        <div className="bg-amber-50 border border-amber-100 rounded-lg p-4 space-y-2">
+                            <h3 className="font-semibold text-amber-900 text-sm">Payment Checkout</h3>
+                            <div className="grid grid-cols-2 gap-2 text-sm">
+                                <p><span className="text-gray-500">Checkout ID:</span> <code className="text-xs bg-white px-1 rounded">{booking.paymentInfo.checkoutId.slice(0, 8)}…</code></p>
+                                <p><span className="text-gray-500">Status:</span> <span className="font-medium">{booking.paymentInfo.status}</span></p>
+                                <p><span className="text-gray-500">Total:</span> {booking.paymentInfo.totalAmount} {booking.paymentInfo.currency}</p>
+                                <p><span className="text-gray-500">Payment URL:</span> {booking.paymentInfo.paymentUrlPresent ? 'Yes' : 'No'}</p>
+                                {booking.paymentInfo.lastError && (
+                                    <p className="col-span-2 text-red-600">Last error: {booking.paymentInfo.lastError}</p>
+                                )}
+                                <p className="col-span-2 text-gray-500 text-xs">Last updated: {new Date(booking.paymentInfo.lastUpdated).toLocaleString()}</p>
+                            </div>
+                        </div>
+                    )}
+                    {booking.status === 'payment_pending' && !booking.paymentInfo && (
+                        <div className="bg-gray-50 border border-gray-100 rounded-lg p-3 text-sm text-gray-600">
+                            No active checkout. Customer can pay via the mobile app.
+                        </div>
+                    )}
+
+                    {/* ── Quick Actions ── */}
+                    {(() => {
+                        const latestReport = [...(booking.reports || [])].sort(
+                            (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+                        )[0];
+                        const canJoin = Boolean(booking.allowedActions?.canJoin && booking.sessionUrl);
+                        const canWriteReport = isDoctorView && booking.status === 'completed' && !latestReport;
+                        const canViewReport = Boolean(latestReport);
+
+                        if (!canJoin && !canWriteReport && !canViewReport) return null;
+
+                        return (
+                            <div className="flex flex-wrap gap-2 pt-1">
+                                {canJoin && booking.sessionUrl && (
+                                    <a
+                                        href={booking.sessionUrl}
+                                        target="_blank"
+                                        rel="noreferrer"
+                                        className="inline-flex items-center gap-1.5 px-4 py-2 bg-green-600 text-white text-sm font-semibold rounded-lg hover:bg-green-700 transition-colors"
+                                    >
+                                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 10l4.553-2.276A1 1 0 0121 8.723v6.554a1 1 0 01-1.447.894L15 14M3 8a2 2 0 012-2h8a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2V8z" />
+                                        </svg>
+                                        Join Session
+                                    </a>
+                                )}
+                                {canWriteReport && (
+                                    <Link
+                                        href={`/admin/booking-reports/new?bookingId=${booking.id}`}
+                                        className="inline-flex items-center gap-1.5 px-4 py-2 bg-blue-600 text-white text-sm font-semibold rounded-lg hover:bg-blue-700 transition-colors"
+                                    >
+                                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                                        </svg>
+                                        Write Report
+                                    </Link>
+                                )}
+                                {canViewReport && latestReport && (
+                                    <Link
+                                        href={`/admin/booking-reports/${latestReport.id}`}
+                                        className="inline-flex items-center gap-1.5 px-4 py-2 border border-purple-300 text-purple-700 bg-purple-50 text-sm font-semibold rounded-lg hover:bg-purple-100 transition-colors"
+                                    >
+                                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                                        </svg>
+                                        View Report
+                                    </Link>
+                                )}
+                            </div>
+                        );
+                    })()}
 
                     <div className="space-y-4">
                         <h3 className="font-semibold text-gray-900 border-b pb-2">Actions & Updates</h3>
 
-                        <div className="flex items-end gap-3">
-                            <div className="flex-1">
-                                <label className="block text-sm font-medium text-gray-700 mb-1">Status</label>
-                                <Select
-                                    value={status}
-                                    onChange={(e) => setStatus(e.target.value)}
-                                    options={[
-                                        ...(!isDoctorView ? [
-                                            { value: 'payment_pending', label: 'Payment Pending' },
-                                            { value: 'pending', label: 'Pending' }
-                                        ] : []),
-                                        { value: 'confirmed', label: 'Confirmed' },
-                                        { value: 'completed', label: 'Completed' },
-                                        { value: 'canceled', label: 'Cancelled' },
-                                    ]}
-                                />
+                        {!isTerminalStatus && (
+                            <div className="flex items-end gap-3">
+                                <div className="flex-1">
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">Status</label>
+                                    <Select
+                                        value={status}
+                                        onChange={(e) => setStatus(e.target.value)}
+                                        options={getStatusOptions()}
+                                    />
+                                </div>
+                                <Button
+                                    onClick={handleUpdateStatus}
+                                    disabled={loading || status === booking.status}
+                                    variant="outline"
+                                >
+                                    Update Status
+                                </Button>
                             </div>
-                            <Button
-                                onClick={handleUpdateStatus}
-                                disabled={loading || status === booking.status}
-                                variant="outline"
-                            >
-                                Update Status
-                            </Button>
-                        </div>
+                        )}
+
+                        {!isDoctorView && !isTerminalStatus && (
+                            <div className="flex items-end gap-3">
+                                <div className="flex-1">
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                                        Session URL (Zoom / Google Meet)
+                                        {booking.sessionUrl && <span className="text-green-600 ml-1 text-xs">(Auto-generated)</span>}
+                                    </label>
+                                    <Input
+                                        type="url"
+                                        value={sessionUrl}
+                                        onChange={(e: React.ChangeEvent<HTMLInputElement>) => setSessionUrl(e.target.value)}
+                                        placeholder="https://meet.google.com/... or https://zoom.us/j/..."
+                                    />
+                                </div>
+                                <Button
+                                    onClick={handleUpdateSessionUrl}
+                                    disabled={loading || sessionUrl === (booking.sessionUrl || '')}
+                                    variant="outline"
+                                >
+                                    Save URL
+                                </Button>
+                            </div>
+                        )}
 
                         <div className="pt-2">
                             <label className="block text-sm font-medium text-gray-700 mb-1">Medical/Admin Notes</label>
@@ -388,7 +543,7 @@ export function BookingDetailsModal({ booking, onClose, onUpdate, isDoctorView }
                                                                     { value: '', label: !form.date ? 'Select a date first...' : form.loadingSlots ? 'Loading slots...' : form.availableSlots.length === 0 ? 'No slots available' : 'Choose a time...' },
                                                                     ...form.availableSlots.map((slot, i) => ({
                                                                         value: i.toString(),
-                                                                        label: `${new Date(slot.start).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true })} - ${new Date(slot.end).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true })}`
+                                                                        label: `${new Date(slot.startAt).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true })} - ${new Date(slot.endAt).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true })}`
                                                                     }))
                                                                 ]}
                                                             />

@@ -9,7 +9,7 @@ import { UserPermissionGuard } from '@/lib/guards/user-permission.guard';
 import {
     cancelBookingSchema,
     rescheduleBookingSchema,
-    createBookingSchema,
+    userCreateBookingSchema,
 } from './booking.types';
 import type { Request } from 'express';
 
@@ -32,21 +32,21 @@ export class UserBookingController {
         return { success: true, data: await this.service.getAvailableDoctors(date) };
     }
 
-    /** GET /bookings/available-slots/:adminId?date=YYYY-MM-DD */
+    /** GET /bookings/available-slots/:adminId?date=YYYY-MM-DD (returns startAt/endAt) */
     @Get('available-slots/:adminId')
     async getAvailableSlots(@Param('adminId') adminId: string, @Query('date') date: string) {
         if (!date) throw new BadRequestException('date query parameter is required (YYYY-MM-DD)');
         return { success: true, data: await this.service.getAvailableSlots(adminId, date) };
     }
 
-    /** GET /bookings/my — current & upcoming */
+    /** GET /bookings/my — current & upcoming, includes allowedActions */
     @Get('my')
     async getMyBookings(@Req() req: Request) {
         const userId = (req as any).userId;
         return { success: true, data: await this.service.getUserBookings(userId) };
     }
 
-    /** GET /bookings/history */
+    /** GET /bookings/history — includes allowedActions */
     @Get('history')
     async getHistory(@Req() req: Request) {
         const userId = (req as any).userId;
@@ -64,7 +64,7 @@ export class UserBookingController {
             throw new BadRequestException('Cannot create booking on behalf of another user');
         }
 
-        const parseResult = createBookingSchema.safeParse({ ...payload, userId });
+        const parseResult = userCreateBookingSchema.safeParse({ ...payload, userId });
         if (!parseResult.success) {
             throw new BadRequestException({ message: 'Validation failed', errors: parseResult.error.flatten().fieldErrors });
         }
