@@ -666,8 +666,8 @@ class SkeletonOverlayView @JvmOverloads constructor(
     }
 
     /**
-     * Toggle scene-check mode: draws ONLY 4 torso landmarks (shoulders + hips)
-     * as semi-transparent dots with connecting lines. No face, no hands.
+     * Toggle scene-check mode. Scene validation still runs in the setup flow,
+     * but this mode intentionally draws no overlay on top of the camera preview.
      */
     fun setSceneCheckMode(enabled: Boolean) {
         isSceneCheckMode = enabled
@@ -783,7 +783,7 @@ class SkeletonOverlayView @JvmOverloads constructor(
                 return
             }
             isSceneCheckMode -> {
-                drawSceneCheckOverlay(canvas, currentLandmarks)
+                drawSceneCheckOverlay()
             }
             isSetupMode -> {
                 drawSetupGuidance(canvas, currentLandmarks)
@@ -817,41 +817,8 @@ class SkeletonOverlayView @JvmOverloads constructor(
     // Scene Check Mode Drawing (torso-only: shoulders + hips)
     // ──────────────────────────────────────────────────────────────────────
 
-    private fun drawSceneCheckOverlay(canvas: Canvas, landmarks: List<SmoothedLandmark>) {
-        val torsoIndices = intArrayOf(11, 12, 23, 24) // left/right shoulder, left/right hip
-        val connections = arrayOf(11 to 12, 11 to 23, 12 to 24, 23 to 24)
-
-        val scaleX = width.toFloat()
-        val scaleY = height.toFloat()
-
-        fun effectiveIdx(raw: Int) = if (isFrontCamera) BodyLandmarks.getMirroredIndex(raw) else raw
-        fun screenPos(rawIdx: Int): Pair<Float, Float>? {
-            val eff = effectiveIdx(rawIdx)
-            if (eff >= landmarks.size) return null
-            val lm = landmarks[eff]
-            if (lm.visibility < 0.2f) return null
-            return Pair(lm.x * scaleX, lm.y * scaleY)
-        }
-
-        val linePaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-            color = Color.argb(128, 255, 255, 255) // #80FFFFFF
-            strokeWidth = 3f
-            style = Paint.Style.STROKE
-        }
-        val dotPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-            color = Color.argb(160, 255, 255, 255) // #A0FFFFFF
-            style = Paint.Style.FILL
-        }
-
-        for ((a, b) in connections) {
-            val posA = screenPos(a) ?: continue
-            val posB = screenPos(b) ?: continue
-            canvas.drawLine(posA.first, posA.second, posB.first, posB.second, linePaint)
-        }
-        for (idx in torsoIndices) {
-            val pos = screenPos(idx) ?: continue
-            canvas.drawCircle(pos.first, pos.second, 10f, dotPaint)
-        }
+    private fun drawSceneCheckOverlay() {
+        // Intentionally blank: setup checklist/audio guide the camera scene checks.
     }
 
     // ──────────────────────────────────────────────────────────────────────

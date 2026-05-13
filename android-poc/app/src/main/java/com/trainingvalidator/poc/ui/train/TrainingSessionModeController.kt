@@ -374,7 +374,8 @@ class TrainingSessionModeController(
 
         val hasReps = (item.targetReps ?: 0) > 0
         val hasDuration = (item.targetDuration ?: 0) > 0
-        val supportsWeight = cfg?.supportsWeight == true
+        val weightCfg = cfg?.takeIf { it.supportsWeight }
+        val supportsWeight = weightCfg != null
 
         val showCard = hasReps || hasDuration || supportsWeight
         b.cardSessionSettings.visibility = if (showCard) View.VISIBLE else View.GONE
@@ -411,17 +412,17 @@ class TrainingSessionModeController(
 
         // Weight row
         b.layoutSessionSettingWeight.visibility = if (supportsWeight) View.VISIBLE else View.GONE
-        if (supportsWeight && cfg != null) {
-            val (minWeight, maxWeight) = resolveWeightRange(cfg)
-            val currentWeight = engine.getCurrentSetWeight() ?: cfg.defaultWeight ?: minWeight
+        if (weightCfg != null) {
+            val (minWeight, maxWeight) = resolveWeightRange(weightCfg)
+            val currentWeight = engine.getCurrentSetWeight() ?: weightCfg.defaultWeight ?: minWeight
             val clampedWeight = currentWeight.coerceIn(minWeight, maxWeight)
             b.tvSessionWeightValue.text = formatWeightDisplay(clampedWeight)
             b.tvSessionWeightRange.text = when {
-                cfg.minWeight != null && cfg.maxWeight != null ->
+                weightCfg.minWeight != null && weightCfg.maxWeight != null ->
                     host.getString(R.string.weight_min_max_format, minWeight, maxWeight)
-                cfg.minWeight != null ->
+                weightCfg.minWeight != null ->
                     host.getString(R.string.weight_min_only_format, minWeight)
-                cfg.maxWeight != null ->
+                weightCfg.maxWeight != null ->
                     host.getString(R.string.weight_max_only_format, maxWeight)
                 else ->
                     host.getString(R.string.weight_min_max_format, minWeight, maxWeight)
