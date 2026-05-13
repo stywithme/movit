@@ -685,13 +685,40 @@ model Admin {
   isSuperAdmin     Boolean   @default(false)
   isDoctor         Boolean   @default(false)
 
-  bookingsAsDoctor Booking[]        @relation("DoctorBookings")
-  workTimes        DoctorWorkTime[]
-  closeTimes       CloseTime[]
-  bookingReports   BookingReport[]
+  bookingsAsDoctor    Booking[]                 @relation("DoctorBookings")
+  workTimes           DoctorWorkTime[]
+  closeTimes          CloseTime[]
+  bookingReports      BookingReport[]
+  googleMeetConnection AdminGoogleMeetConnection?
 
   @@index([isSuperAdmin])
   @@map("admins")
+}
+
+/// Per-doctor Google Meet OAuth connection
+model AdminGoogleMeetConnection {
+  id                   String    @id @default(uuid())
+  adminId              String    @unique
+  googleSub            String
+  googleEmail          String
+  /// AES-256-GCM encrypted refresh token — never expose raw
+  encryptedRefreshToken String
+  /// Cached short-lived access token (plain, expires quickly)
+  accessToken          String?
+  accessTokenExpiresAt DateTime?
+  scope                String?
+  /// null = healthy, non-null = last error message requiring reconnect
+  lastError            String?
+  connectedAt          DateTime  @default(now())
+  disconnectedAt       DateTime?
+  createdAt            DateTime  @default(now())
+  updatedAt            DateTime  @updatedAt
+
+  admin Admin @relation(fields: [adminId], references: [id], onDelete: Cascade)
+
+  @@index([adminId])
+  @@index([googleSub])
+  @@map("admin_google_meet_connections")
 }
 
 /// Mobile app users
@@ -730,6 +757,7 @@ model User {
   bookings              Booking[]
   subscriptions         Subscription[]
   subscriptionCheckouts SubscriptionCheckout[]
+  bookingPayments       BookingPayment[]
   trainingGoal          TrainingGoal           @default(GENERAL_HEALTH)
   trainingProfile       TrainingProfile?
 
@@ -1347,6 +1375,7 @@ model Booking {
   user    User            @relation(fields: [userId], references: [id], onDelete: Cascade)
   admin   Admin           @relation("DoctorBookings", fields: [adminId], references: [id])
   reports BookingReport[]
+  paymentItems BookingPaymentItem[]
 
   @@index([userId])
   @@index([adminId])
@@ -1355,6 +1384,76 @@ model Booking {
   @@index([madeByType])
   @@index([adminId, startAt, endAt])
   @@map("bookings")
+}
+
+/// Grouped checkout covering one or many payment_pending bookings
+model BookingPayment {
+  id                   String    @id @default(uuid())
+  userId               String
+  gateway              String    @default("myfatoorah")
+  revision             Int       @default(1)
+  status               String    @default("pending")
+  currency             String
+  totalAmount          Float
+  myFatoorahInvoiceId  String?
+  myFatoorahPaymentId  String?
+  paymentUrl           String?
+  expiresAt            DateTime?
+  idempotencyKey       String?   @unique
+  operationType        String    @default("AUTHORIZE")
+  authorizedAt         DateTime?
+  releasedAt           DateTime?
+  supersededAt         DateTime?
+  supersededById       String?
+  lastError            String?
+  paidAt               DateTime?
+  createdAt            DateTime  @default(now())
+  updatedAt            DateTime  @updatedAt
+
+  user   User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
+  items  BookingPaymentItem[]
+  events BookingPaymentEvent[]
+
+  @@index([userId])
+  @@index([status])
+  @@index([myFatoorahInvoiceId])
+  @@index([myFatoorahPaymentId])
+  @@index([userId, supersededAt])
+  @@unique([userId, revision])
+  @@map("booking_payments")
+}
+
+/// Join: payment aggregate to booking with immutable amount snapshot
+model BookingPaymentItem {
+  id              String   @id @default(uuid())
+  bookingPaymentId String
+  bookingId       String
+  amountSnapshot  Float
+
+  bookingPayment BookingPayment @relation(fields: [bookingPaymentId], references: [id], onDelete: Cascade)
+  booking        Booking        @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+
+  @@unique([bookingPaymentId, bookingId])
+  @@index([bookingPaymentId])
+  @@index([bookingId])
+  @@map("booking_payment_items")
+}
+
+/// Audit/dedupe store for webhook/callback reconciliation
+model BookingPaymentEvent {
+  id               String   @id @default(uuid())
+  bookingPaymentId String
+  eventReference   String
+  eventCode        Int?
+  rawPayload       Json?
+  processedAt      DateTime @default(now())
+
+  bookingPayment BookingPayment @relation(fields: [bookingPaymentId], references: [id], onDelete: Cascade)
+
+  @@unique([bookingPaymentId, eventReference])
+  @@index([bookingPaymentId])
+  @@index([eventReference])
+  @@map("booking_payment_events")
 }
 
 model DoctorWorkTime {

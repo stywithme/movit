@@ -18,6 +18,8 @@ const SETTINGS_METADATA: Record<string, { label: string; type: 'number' | 'text'
     max_advance_booking_days: { label: 'Max Advance Booking (Days)', type: 'number', group: 'Time' },
     min_booking_hours: { label: 'Min Advance Booking (Hours)', type: 'number', group: 'Time' },
     reschedule_allowed_time: { label: 'Reschedule Allowed Before (Hours)', type: 'number', group: 'Time' },
+    meeting_join_before_minutes: { label: 'Join Button Opens (Minutes Before Meeting)', type: 'number', group: 'Time' },
+    meeting_join_after_minutes: { label: 'Join Button Closes (Minutes After Meeting)', type: 'number', group: 'Time' },
     booking_price: { label: 'Booking Price', type: 'number', group: 'Payment' },
     follow_up_price: { label: 'Follow-up Price', type: 'number', group: 'Payment' },
     booking_currency: { label: 'Booking Currency', type: 'text', group: 'Payment' },

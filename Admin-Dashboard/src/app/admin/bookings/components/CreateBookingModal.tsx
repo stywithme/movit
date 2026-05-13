@@ -23,8 +23,9 @@ interface Doctor {
 }
 
 interface Slot {
-    start: string;
-    end: string;
+    startAt: string;
+    endAt: string;
+    durationMinutes?: number;
 }
 
 interface CreateBookingModalProps {
@@ -135,8 +136,8 @@ export function CreateBookingModal({ onClose, onSuccess, initialDoctorId, initia
                 body: JSON.stringify({
                     userId: selectedUserId,
                     adminId: selectedDoctorId,
-                    startAt: slot.start,
-                    endAt: slot.end,
+                    startAt: slot.startAt,
+                    endAt: slot.endAt,
                     notes,
                 }),
             });
@@ -222,7 +223,7 @@ export function CreateBookingModal({ onClose, onSuccess, initialDoctorId, initia
                                     { value: '', label: loadingSlots ? 'Loading slots...' : (slots.length > 0 ? 'Select a slot...' : (selectedDoctorId ? 'No slots available' : 'Select a doctor first')) },
                                     ...slots.map(s => ({
                                         value: JSON.stringify(s),
-                                        label: `${format(new Date(s.start), 'HH:mm')} - ${format(new Date(s.end), 'HH:mm')}`
+                                        label: `${format(new Date(s.startAt), 'HH:mm')} - ${format(new Date(s.endAt), 'HH:mm')}`
                                     }))
                                 ]}
                                 disabled={loadingSlots || !selectedDoctorId}

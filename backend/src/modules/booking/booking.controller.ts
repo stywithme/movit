@@ -24,7 +24,7 @@ export class BookingController {
 
     // ── Doctor Routes (must be BEFORE :id param routes) ───────────────────────
 
-    /** GET /admin/bookings/mine — Doctor: own bookings */
+    /** GET /admin/bookings/mine — Doctor: own bookings, includes allowedActions */
     @Get('mine')
     @UseGuards(DoctorGuard)
     @DoctorOnly()
@@ -96,7 +96,7 @@ export class BookingController {
         return { success: true, data: await this.service.getAvailableDoctors(date) };
     }
 
-    /** GET /admin/bookings/available-slots/:adminId */
+    /** GET /admin/bookings/available-slots/:adminId (returns startAt/endAt) */
     @Get('available-slots/:adminId')
     @UseGuards(CaslGuard, AdminGuard)
     @AdminOnly({ blockDoctors: false })
