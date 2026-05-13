@@ -287,6 +287,40 @@ describe('BookingPaymentService', () => {
       );
     });
 
+    it('marks an already settled checkout as paid without capturing again', async () => {
+      const payment = makePayment();
+      mockPrisma.bookingPayment.findFirst.mockResolvedValue(payment);
+      mockPrisma.bookingPaymentEvent.findUnique.mockResolvedValue(null);
+      mockPrisma.bookingPaymentEvent.create.mockResolvedValue({});
+      mockPrisma.bookingPayment.update.mockResolvedValue({});
+
+      await service.reconcilePayment(
+        'inv-1',
+        'pay-1',
+        'cp-1',
+        'PAID',
+        'result:pay-1',
+        {
+          IsSuccess: true,
+          Data: {
+            InvoiceStatus: 'Paid',
+            InvoiceTransactions: [{ TransactionStatus: 'Succss', PaymentId: 'pay-1' }],
+          },
+        },
+        true,
+      );
+
+      expect(updatePayment).not.toHaveBeenCalled();
+      expect(mockPrisma.booking.updateMany).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: expect.objectContaining({
+            paymentStatus: 'paid',
+            paymentGateway: 'myfatoorah',
+          }),
+        }),
+      );
+    });
+
     it('releases a superseded authorized checkout instead of capturing it', async () => {
       const payment = makePayment({
         status: 'superseded',

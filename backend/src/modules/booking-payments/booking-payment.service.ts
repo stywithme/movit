@@ -105,6 +105,14 @@ function publicApiUrl(): string | null {
   return raw ? raw.replace(/\/$/, '') : null;
 }
 
+function isGatewayAlreadyFinalizedError(error: unknown): boolean {
+  const message = String((error as { message?: unknown })?.message ?? error).toLowerCase();
+  return (
+    message.includes('transaction cannot be found') ||
+    message.includes('status has been updated')
+  );
+}
+
 async function recordPaymentEvent(
   prisma: PrismaLike,
   input: {
@@ -403,8 +411,9 @@ export class BookingPaymentService {
     }
     const shouldRecordEvent = !existing;
 
+    let verifiedDetails = rawPayload;
     if (!detailsAlreadyVerified) {
-      await getPaymentDetails(invoiceId);
+      verifiedDetails = await getPaymentDetails(invoiceId);
     }
 
     if (payment.status === 'superseded') {
@@ -424,10 +433,24 @@ export class BookingPaymentService {
       return;
     }
 
-    await updatePayment(paymentId, {
-      OperationType: 'CAPTURE',
-      Amount: payment.totalAmount,
-    });
+    if (!this.isMyFatoorahSettled(verifiedDetails)) {
+      try {
+        await updatePayment(paymentId, {
+          OperationType: 'CAPTURE',
+          Amount: payment.totalAmount,
+        });
+      } catch (error) {
+        if (!isGatewayAlreadyFinalizedError(error)) {
+          throw error;
+        }
+
+        const latestDetails = await getPaymentDetails(paymentId, 'PaymentId');
+        if (!this.isMyFatoorahSettled(latestDetails)) {
+          throw error;
+        }
+        verifiedDetails = latestDetails;
+      }
+    }
 
     const bookingIds = payment.items.map((i) => i.bookingId);
     await prisma.booking.updateMany({
@@ -626,6 +649,12 @@ export class BookingPaymentService {
   private isMyFatoorahAccepted(payload: any): boolean {
     return this.collectStatuses(payload).some((status) =>
       ['AUTHORIZE', 'AUTHORIZED', 'PAID', 'SUCCESS', 'SUCCSS', 'CAPTURED'].includes(status),
+    );
+  }
+
+  private isMyFatoorahSettled(payload: any): boolean {
+    return this.collectStatuses(payload).some((status) =>
+      ['PAID', 'SUCCESS', 'SUCCSS', 'CAPTURED'].includes(status),
     );
   }
 
