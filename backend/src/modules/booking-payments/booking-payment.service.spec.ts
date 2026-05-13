@@ -328,5 +328,29 @@ describe('BookingPaymentService', () => {
       });
       expect(mockPrisma.booking.updateMany).not.toHaveBeenCalled();
     });
+
+    it('continues reconciliation if a previous attempt recorded the event before failing', async () => {
+      const payment = makePayment({ status: 'pending' });
+      mockPrisma.bookingPayment.findFirst.mockResolvedValue(payment);
+      mockPrisma.bookingPaymentEvent.findUnique.mockResolvedValue({ id: 'wh-3:inv-1' });
+      (getPaymentDetails as jest.Mock).mockResolvedValue({
+        IsSuccess: true,
+        Data: {
+          Invoice: { Id: 'inv-1', Status: 'PENDING', ExternalIdentifier: 'cp-1' },
+          Transaction: { Status: 'AUTHORIZE', PaymentId: 'pay-1' },
+        },
+      });
+      (updatePayment as jest.Mock).mockResolvedValue({ IsSuccess: true });
+      mockPrisma.bookingPayment.update.mockResolvedValue({});
+
+      await service.reconcilePayment('inv-1', 'pay-1', 'cp-1', 'AUTHORIZE', 'wh-3');
+
+      expect(updatePayment).toHaveBeenCalledWith('pay-1', {
+        OperationType: 'CAPTURE',
+        Amount: 50,
+      });
+      expect(mockPrisma.booking.updateMany).toHaveBeenCalled();
+      expect(mockPrisma.bookingPaymentEvent.create).not.toHaveBeenCalled();
+    });
   });
 });

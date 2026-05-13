@@ -262,7 +262,7 @@ export function BookingDetailsModal({ booking, onClose, onUpdate, isDoctorView }
                         </div>
                         <div>
                             <p className="text-sm text-gray-500 mb-1">Payment</p>
-                            <p className="font-medium text-gray-900">{booking.amount} EGP</p>
+                            <p className="font-medium text-gray-900">{booking.amount} SAR</p>
                             <span className={`inline-flex px-2 py-0.5 text-xs font-medium rounded-full mt-1 ${booking.paymentStatus === 'paid' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
                                 }`}>
                                 {booking.paymentStatus?.toUpperCase() || 'UNPAID'}
