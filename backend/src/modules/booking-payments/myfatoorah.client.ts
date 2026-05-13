@@ -150,6 +150,7 @@ export async function createPayment(input: Record<string, unknown>): Promise<unk
     ExpiryDate: expiryDate,
     InvoiceItems: input.InvoiceItems,
     ProcessingDetails: processingDetails,
+    WebhookUrl: input.WebhookUrl,
   };
 
   Object.keys(body).forEach((key) => {

@@ -66,6 +66,8 @@ type BookingPaymentRow = {
   expiresAt: Date | null;
   items: CheckoutItem[];
   supersededAt?: Date | null;
+  paidAt?: Date | null;
+  lastError?: string | null;
 };
 
 function selectionKey(ids: string[]): string {
@@ -92,6 +94,16 @@ function gatewayId(value: unknown): string | null {
   return value === undefined || value === null || value === '' ? null : String(value);
 }
 
+function publicApiUrl(): string | null {
+  const raw =
+    process.env.BACKEND_PUBLIC_URL ||
+    process.env.PUBLIC_API_URL ||
+    process.env.API_PUBLIC_URL ||
+    process.env.API_BASE_URL ||
+    process.env.APP_URL;
+  return raw ? raw.replace(/\/$/, '') : null;
+}
+
 @Injectable()
 export class BookingPaymentService {
   async createCheckout(
@@ -100,7 +112,9 @@ export class BookingPaymentService {
   ): Promise<{
     checkoutId: string;
     paymentUrl: string | null;
+    expiresAt: string;
     totalAmount: number;
+    currency: string;
     bookingCount: number;
   }> {
     const prisma = await getDelegates();
@@ -147,7 +161,9 @@ export class BookingPaymentService {
         return {
           checkoutId: cp.id,
           paymentUrl: cp.paymentUrl,
+          expiresAt: cp.expiresAt?.toISOString() ?? new Date(Date.now() + 60 * 60 * 1000).toISOString(),
           totalAmount: cp.totalAmount,
+          currency: cp.currency,
           bookingCount: bookingIds.length,
         };
       }
@@ -211,6 +227,7 @@ export class BookingPaymentService {
       })) as BookingPaymentRow;
 
       const expiresAt = new Date(Date.now() + 60 * 60 * 1000);
+      const apiBase = publicApiUrl();
       const apiResult = (await createPayment({
         OperationType: 'AUTHORIZE',
         PaymentExpiry: expiresAt.toISOString(),
@@ -219,6 +236,13 @@ export class BookingPaymentService {
         CustomerName: bookings[0]?.user?.name ?? 'Customer',
         CustomerEmail: bookings[0]?.user?.email ?? '',
         ExternalIdentifier: reserved.id,
+        CallBackUrl: apiBase
+          ? `${apiBase}/api/payments/myfatoorah/result?checkoutId=${reserved.id}`
+          : undefined,
+        ErrorUrl: apiBase
+          ? `${apiBase}/api/payments/myfatoorah/result?checkoutId=${reserved.id}&failed=true`
+          : undefined,
+        WebhookUrl: apiBase ? `${apiBase}/api/payments/myfatoorah/webhook` : undefined,
       })) as {
         IsSuccess: boolean;
         Data?: {
@@ -246,7 +270,9 @@ export class BookingPaymentService {
       return {
         checkoutId: finalCheckout.id,
         paymentUrl: finalCheckout.paymentUrl,
+        expiresAt: finalCheckout.expiresAt?.toISOString() ?? expiresAt.toISOString(),
         totalAmount: finalCheckout.totalAmount,
+        currency: finalCheckout.currency,
         bookingCount: bookingIds.length,
       };
     });
@@ -256,6 +282,57 @@ export class BookingPaymentService {
     if (!verifyWebhookSignature(payload, signature)) {
       throw new BadRequestException('Invalid webhook signature');
     }
+    await this.resolveGatewayPayment(payload, 'webhook');
+  }
+
+  async getResultStatus(
+    paymentId: string,
+    checkoutId?: string,
+  ): Promise<{ status: string; checkoutId: string | null }> {
+    return this.resolveGatewayPayment({ PaymentId: paymentId }, 'result', checkoutId, paymentId);
+  }
+
+  async getCheckoutStatus(checkoutId: string, userId: string) {
+    const prisma = await getDelegates();
+    let checkout = (await prisma.bookingPayment.findFirst({
+      where: { id: checkoutId, userId },
+      include: { items: true },
+    })) as BookingPaymentRow | null;
+
+    if (!checkout) {
+      throw new BadRequestException('Checkout not found');
+    }
+
+    if (['pending', 'creating', 'authorized', 'capture_pending'].includes(checkout.status)) {
+      await this.resolveGatewayPayment(
+        {
+          InvoiceId: checkout.myFatoorahInvoiceId,
+          PaymentId: checkout.myFatoorahPaymentId,
+          UserDefinedField: checkout.id,
+        },
+        'status',
+        checkout.id,
+        checkout.myFatoorahPaymentId ?? undefined,
+      );
+      checkout = (await prisma.bookingPayment.findFirst({
+        where: { id: checkoutId, userId },
+        include: { items: true },
+      })) as BookingPaymentRow | null;
+    }
+
+    if (!checkout) {
+      throw new BadRequestException('Checkout not found');
+    }
+
+    return {
+      checkoutId: checkout.id,
+      status: checkout.status,
+      totalAmount: checkout.totalAmount,
+      currency: checkout.currency,
+      bookingIds: checkout.items.map((i) => i.bookingId),
+      paidAt: checkout.paidAt?.toISOString(),
+      lastError: checkout.lastError,
+    };
   }
 
   async reconcilePayment(
@@ -264,15 +341,21 @@ export class BookingPaymentService {
     checkoutId: string,
     _gatewayTransactionStatus: string,
     webhookEventId: string,
+    rawPayload: unknown = {},
   ): Promise<void> {
     const prisma = await getDelegates();
 
     const payment = (await prisma.bookingPayment.findFirst({
       where: { id: checkoutId },
+      include: { items: true },
     })) as BookingPaymentRow | null;
 
     if (!payment) {
       throw new BadRequestException('Checkout not found');
+    }
+
+    if (payment.status === 'paid') {
+      return;
     }
 
     const dedupeId = `${webhookEventId}:${invoiceId}`;
@@ -287,8 +370,8 @@ export class BookingPaymentService {
       data: {
         id: dedupeId,
         bookingPaymentId: payment.id,
-        kind: 'webhook',
-        payload: {},
+        eventReference: webhookEventId,
+        rawPayload,
       },
     });
 
@@ -298,7 +381,7 @@ export class BookingPaymentService {
       await updatePayment(paymentId, { OperationType: 'RELEASE' });
       await prisma.bookingPayment.update({
         where: { id: payment.id },
-        data: { releasedAt: new Date() },
+        data: { status: 'released', releasedAt: new Date() },
       });
       return;
     }
@@ -328,5 +411,174 @@ export class BookingPaymentService {
         myFatoorahPaymentId: paymentId,
       },
     });
+  }
+
+  private async resolveGatewayPayment(
+    payload: unknown,
+    source: string,
+    checkoutId?: string,
+    paymentIdOverride?: string,
+  ): Promise<{ status: string; checkoutId: string | null }> {
+    let details: any = payload;
+    let paymentId = gatewayId(paymentIdOverride) || this.extractPaymentId(payload);
+    let invoiceId = this.extractInvoiceId(payload);
+
+    if (paymentId) {
+      details = await getPaymentDetails(paymentId, 'PaymentId');
+    } else if (invoiceId) {
+      details = await getPaymentDetails(invoiceId, 'InvoiceId');
+    }
+
+    paymentId = this.extractPaymentId(details) || paymentId;
+    invoiceId = this.extractInvoiceId(details) || invoiceId;
+    const resolvedCheckoutId =
+      checkoutId || this.extractCheckoutId(details) || this.extractCheckoutId(payload);
+
+    const payment = await this.findCheckoutForGatewayRef({
+      checkoutId: resolvedCheckoutId,
+      invoiceId,
+      paymentId,
+    });
+
+    if (!payment) {
+      return {
+        status: this.isMyFatoorahFailed(details) ? 'failed' : 'pending',
+        checkoutId: resolvedCheckoutId ?? null,
+      };
+    }
+
+    if (this.isMyFatoorahFailed(details)) {
+      const prisma = await getDelegates();
+      await prisma.bookingPayment.update({
+        where: { id: payment.id },
+        data: {
+          status: 'failed',
+          lastError: this.collectStatuses(details).join(',') || 'Payment failed',
+        },
+      });
+      return { status: 'failed', checkoutId: payment.id };
+    }
+
+    if (this.isMyFatoorahAccepted(details)) {
+      const finalInvoiceId = invoiceId || payment.myFatoorahInvoiceId;
+      const finalPaymentId = paymentId || payment.myFatoorahPaymentId;
+      if (!finalInvoiceId || !finalPaymentId) {
+        return { status: payment.status, checkoutId: payment.id };
+      }
+
+      await this.reconcilePayment(
+        finalInvoiceId,
+        finalPaymentId,
+        payment.id,
+        this.collectStatuses(details).join(','),
+        `${source}:${finalPaymentId || finalInvoiceId}`,
+        details,
+      );
+      return { status: payment.status === 'superseded' ? 'released' : 'paid', checkoutId: payment.id };
+    }
+
+    return { status: payment.status, checkoutId: payment.id };
+  }
+
+  private async findCheckoutForGatewayRef(input: {
+    checkoutId?: string | null;
+    invoiceId?: string | null;
+    paymentId?: string | null;
+  }): Promise<BookingPaymentRow | null> {
+    const prisma = await getDelegates();
+    if (input.checkoutId) {
+      const byId = (await prisma.bookingPayment.findFirst({
+        where: { id: input.checkoutId },
+        include: { items: true },
+      })) as BookingPaymentRow | null;
+      if (byId) {
+        if (
+          input.invoiceId &&
+          byId.myFatoorahInvoiceId &&
+          byId.myFatoorahInvoiceId !== input.invoiceId
+        ) {
+          return null;
+        }
+        if (
+          input.paymentId &&
+          byId.myFatoorahPaymentId &&
+          byId.myFatoorahPaymentId !== input.paymentId
+        ) {
+          return null;
+        }
+        return byId;
+      }
+    }
+
+    const OR = [
+      input.invoiceId ? { myFatoorahInvoiceId: input.invoiceId } : null,
+      input.paymentId ? { myFatoorahPaymentId: input.paymentId } : null,
+    ].filter(Boolean);
+    if (!OR.length) return null;
+
+    return (await prisma.bookingPayment.findFirst({
+      where: { OR },
+      include: { items: true },
+    })) as BookingPaymentRow | null;
+  }
+
+  private extractCheckoutId(payload: any): string | null {
+    const value =
+      payload?.Data?.CustomerReference ||
+      payload?.Data?.UserDefinedField ||
+      payload?.CustomerReference ||
+      payload?.UserDefinedField ||
+      payload?.Data?.customerReference ||
+      payload?.userDefinedField;
+    return gatewayId(value);
+  }
+
+  private extractInvoiceId(payload: any): string | null {
+    const value =
+      payload?.Data?.InvoiceId ||
+      payload?.Data?.InvoiceID ||
+      payload?.Data?.Invoice?.Id ||
+      payload?.Data?.Invoice?.InvoiceId ||
+      payload?.InvoiceId ||
+      payload?.InvoiceID ||
+      payload?.invoiceId;
+    return gatewayId(value);
+  }
+
+  private extractPaymentId(payload: any): string | null {
+    const value =
+      payload?.Data?.PaymentId ||
+      payload?.Data?.PaymentID ||
+      payload?.Data?.Transaction?.PaymentId ||
+      payload?.Data?.Transaction?.PaymentID ||
+      payload?.PaymentId ||
+      payload?.PaymentID ||
+      payload?.paymentId;
+    return gatewayId(value);
+  }
+
+  private collectStatuses(payload: any): string[] {
+    const statuses = [
+      payload?.Data?.InvoiceStatus,
+      payload?.Data?.TransactionStatus,
+      payload?.Data?.Invoice?.Status,
+      payload?.Data?.Transaction?.Status,
+      payload?.InvoiceStatus,
+      payload?.TransactionStatus,
+      ...(payload?.Data?.InvoiceTransactions || []).map((tx: any) => tx.TransactionStatus),
+    ];
+    return statuses.filter(Boolean).map((status) => String(status).toUpperCase());
+  }
+
+  private isMyFatoorahAccepted(payload: any): boolean {
+    return this.collectStatuses(payload).some((status) =>
+      ['AUTHORIZE', 'AUTHORIZED', 'PAID', 'SUCCESS', 'CAPTURED'].includes(status),
+    );
+  }
+
+  private isMyFatoorahFailed(payload: any): boolean {
+    return this.collectStatuses(payload).some((status) =>
+      ['FAILED', 'CANCELED', 'CANCELLED', 'EXPIRED'].includes(status),
+    );
   }
 }
