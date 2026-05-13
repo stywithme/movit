@@ -88,6 +88,10 @@ async function paymentCurrency(prisma: PrismaLike): Promise<string> {
   return currencyRow?.value || bookingCurrencyRow?.value || 'SAR';
 }
 
+function gatewayId(value: unknown): string | null {
+  return value === undefined || value === null || value === '' ? null : String(value);
+}
+
 @Injectable()
 export class BookingPaymentService {
   async createCheckout(
@@ -218,8 +222,8 @@ export class BookingPaymentService {
       })) as {
         IsSuccess: boolean;
         Data?: {
-          InvoiceId?: string;
-          PaymentId?: string;
+          InvoiceId?: unknown;
+          PaymentId?: unknown;
           PaymentURL?: string;
         };
       };
@@ -233,8 +237,8 @@ export class BookingPaymentService {
         data: {
           status: 'pending',
           paymentUrl: apiResult.Data.PaymentURL ?? null,
-          myFatoorahInvoiceId: apiResult.Data.InvoiceId ?? null,
-          myFatoorahPaymentId: apiResult.Data.PaymentId ?? null,
+          myFatoorahInvoiceId: gatewayId(apiResult.Data.InvoiceId),
+          myFatoorahPaymentId: gatewayId(apiResult.Data.PaymentId),
           expiresAt,
         },
       })) as BookingPaymentRow;
