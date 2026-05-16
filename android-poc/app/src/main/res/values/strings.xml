@@ -589,11 +589,8 @@
     <string name="coach_calm">Calm</string>
     <string name="coach_standard">Standard</string>
     <string name="coach_strict">Strict</string>
-    <string name="camera_cue_mode">Camera Audio Cues</string>
-    <string name="camera_cue_mode_desc">Voice uses exercise messages. Tones use short sounds. Basic keeps only correct/wrong cues.</string>
-    <string name="cue_voice">Voice</string>
-    <string name="cue_tones">Tones</string>
-    <string name="cue_basic">Basic</string>
+    <string name="camera_cue_mode">Feedback Channels</string>
+    <string name="camera_cue_mode_desc">Camera training uses spoken feedback only. Video review uses text feedback only.</string>
     <string name="detection_model">Detection Model</string>
     <string name="detection_model_desc">Heavy model is more accurate but slower</string>
     <string name="model_full">Full (Fast)</string>

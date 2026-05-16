@@ -32,7 +32,8 @@ object JointErrorCollection {
     fun collectJointErrors(
         trackedJointsByCode: Map<String, TrackedJoint>,
         stateInfos: Map<String, JointStateInfo>
-    ): List<JointError> = buildList {
+    ): List<JointError> {
+        val errors = ArrayList<JointError>()
         for ((jointCode, stateInfo) in stateInfos) {
             val joint = trackedJointsByCode[jointCode] ?: continue
             if (stateInfo.state in acceptableStates) continue
@@ -45,7 +46,7 @@ object JointErrorCollection {
             val errorMessage = stateInfo.messages.firstOrNull()
                 ?: joint.stateMessages?.getMessage(stateInfo.state, stateInfo.currentZone)
                 ?: joint.getStartPoseMessage(errorType)
-            add(
+            errors.add(
                 JointError(
                     jointCode = jointCode,
                     errorType = errorType,
@@ -58,6 +59,7 @@ object JointErrorCollection {
                 )
             )
         }
+        return errors
     }
 }
 

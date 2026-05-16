@@ -2,10 +2,15 @@ package com.trainingvalidator.poc.training.feedback
 
 /**
  * Single owner of feedback timing, priority, repetition, and mode routing.
+ *
+ * Channel policy:
+ * - Camera mode is voice-only while the trainee is away from the phone.
+ * - Video mode is text-only while the trainee reviews the completed exercise.
  */
 class FeedbackScheduler(
     private var coachIntensity: CoachIntensity = CoachIntensity.STANDARD,
-    private var cameraCueMode: CameraCueMode = CameraCueMode.VOICE,
+    @Suppress("UNUSED_PARAMETER")
+    cameraCueMode: CameraCueMode = CameraCueMode.VOICE,
     private val nowProvider: () -> Long = { System.currentTimeMillis() }
 ) {
     private data class SignalState(
@@ -28,10 +33,10 @@ class FeedbackScheduler(
 
     fun updateSettings(
         coachIntensity: CoachIntensity,
+        @Suppress("UNUSED_PARAMETER")
         cameraCueMode: CameraCueMode
     ) {
         this.coachIntensity = coachIntensity
-        this.cameraCueMode = cameraCueMode
     }
 
     fun schedule(
@@ -57,12 +62,15 @@ class FeedbackScheduler(
         } else if (active != null &&
             (active.activeKey != signal.activeKey || active.dedupeKey != signal.dedupeKey)
         ) {
-            val forceReplace = signal.forceAudible &&
-                signal.interruptPolicy == FeedbackInterruptPolicy.REPLACE_LOWER &&
-                active.severity != FeedbackSeverity.CRITICAL
-            val canReplace = signal.severity.priority > active.severity.priority &&
-                signal.interruptPolicy != FeedbackInterruptPolicy.SKIP_IF_BUSY
-            if (!canReplace && !forceReplace) {
+            val canReplace = when (signal.interruptPolicy) {
+                FeedbackInterruptPolicy.INTERRUPT ->
+                    signal.severity.priority >= active.severity.priority
+                FeedbackInterruptPolicy.REPLACE_LOWER ->
+                    signal.severity.priority > active.severity.priority
+                FeedbackInterruptPolicy.WAIT_FOR_SLOT,
+                FeedbackInterruptPolicy.SKIP_IF_BUSY -> false
+            }
+            if (!canReplace) {
                 return FeedbackDeliveryPlan.silent(state.repeatCount, "active:${active.activeKey}")
             }
         }
@@ -86,15 +94,11 @@ class FeedbackScheduler(
 
         val repeatBeforeDelivery = state.repeatCount
         val audible = audibleFor(signal, mode, repeatBeforeDelivery, now)
-        val tone = if (audible == FeedbackAudible.TONE) {
-            toneFor(signal.severity)
-        } else {
-            FeedbackTone.NONE
-        }
+        val tone = FeedbackTone.NONE
         val showVisual = mode == FeedbackRuntimeMode.VIDEO &&
             signal.allowVisual &&
             signal.text.isNotBlank()
-        val vibrate = shouldVibrate(signal, mode)
+        val vibrate = false
 
         if (audible == FeedbackAudible.NONE && !showVisual && !vibrate) {
             return FeedbackDeliveryPlan.silent(state.repeatCount, "no_channel")
@@ -161,11 +165,11 @@ class FeedbackScheduler(
         val wantsAudible = signal.forceAudible || when (signal.severity) {
             FeedbackSeverity.CRITICAL -> repeatCount <= 1
             FeedbackSeverity.ERROR -> repeatCount == 0
-            FeedbackSeverity.WARNING -> repeatCount == 0 && coachIntensity != CoachIntensity.CALM
-            FeedbackSeverity.TIP -> repeatCount == 0 && coachIntensity == CoachIntensity.STRICT
-            FeedbackSeverity.MOTIVATION -> repeatCount == 0 && coachIntensity != CoachIntensity.CALM
-            FeedbackSeverity.INFO -> signal.forceAudible
-            FeedbackSeverity.SUCCESS -> false
+            FeedbackSeverity.WARNING -> repeatCount == 0
+            FeedbackSeverity.TIP -> repeatCount == 0
+            FeedbackSeverity.MOTIVATION -> repeatCount == 0
+            FeedbackSeverity.INFO -> repeatCount == 0
+            FeedbackSeverity.SUCCESS -> repeatCount == 0
         }
         if (!wantsAudible) return FeedbackAudible.NONE
 
@@ -176,31 +180,10 @@ class FeedbackScheduler(
             return FeedbackAudible.NONE
         }
 
-        return when (cameraCueMode) {
-            CameraCueMode.VOICE -> {
-                if (signal.allowVoice && signal.text.isNotBlank()) FeedbackAudible.VOICE
-                else FeedbackAudible.NONE
-            }
-            CameraCueMode.TONES -> {
-                if (signal.allowTone) FeedbackAudible.TONE else FeedbackAudible.NONE
-            }
-            CameraCueMode.TONES_BASIC -> {
-                if (signal.allowTone && isBasicToneSeverity(signal.severity)) FeedbackAudible.TONE
-                else FeedbackAudible.NONE
-            }
-        }
-    }
-
-    private fun shouldVibrate(signal: FeedbackSignal, mode: FeedbackRuntimeMode): Boolean {
-        if (mode != FeedbackRuntimeMode.VIDEO || !signal.allowHaptic) return false
-        return when (signal.severity) {
-            FeedbackSeverity.CRITICAL,
-            FeedbackSeverity.ERROR,
-            FeedbackSeverity.WARNING,
-            FeedbackSeverity.SUCCESS,
-            FeedbackSeverity.MOTIVATION -> true
-            FeedbackSeverity.TIP,
-            FeedbackSeverity.INFO -> false
+        return if (signal.allowVoice && signal.text.isNotBlank()) {
+            FeedbackAudible.VOICE
+        } else {
+            FeedbackAudible.NONE
         }
     }
 
@@ -211,34 +194,6 @@ class FeedbackScheduler(
         signal.severity == FeedbackSeverity.TIP ||
             signal.severity == FeedbackSeverity.MOTIVATION -> FeedbackSpeechPriority.LOW
         else -> FeedbackSpeechPriority.NORMAL
-    }
-
-    private fun toneFor(severity: FeedbackSeverity): FeedbackTone = when (severity) {
-        FeedbackSeverity.CRITICAL,
-        FeedbackSeverity.ERROR,
-        FeedbackSeverity.WARNING,
-        FeedbackSeverity.TIP -> if (cameraCueMode == CameraCueMode.TONES_BASIC) {
-            FeedbackTone.ERROR
-        } else {
-            when (severity) {
-                FeedbackSeverity.CRITICAL -> FeedbackTone.CRITICAL
-                FeedbackSeverity.ERROR -> FeedbackTone.ERROR
-                else -> FeedbackTone.WARNING
-            }
-        }
-        FeedbackSeverity.SUCCESS,
-        FeedbackSeverity.MOTIVATION -> FeedbackTone.SUCCESS
-        FeedbackSeverity.INFO -> FeedbackTone.INFO
-    }
-
-    private fun isBasicToneSeverity(severity: FeedbackSeverity): Boolean = when (severity) {
-        FeedbackSeverity.CRITICAL,
-        FeedbackSeverity.ERROR,
-        FeedbackSeverity.WARNING,
-        FeedbackSeverity.SUCCESS,
-        FeedbackSeverity.MOTIVATION -> true
-        FeedbackSeverity.TIP,
-        FeedbackSeverity.INFO -> false
     }
 
     private fun cooldownFor(severity: FeedbackSeverity, repeatCount: Int): Long {

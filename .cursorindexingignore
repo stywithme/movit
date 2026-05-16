@@ -40,3 +40,10 @@ logs/
 # Env
 .env
 .env.*
+
+
+# Tools and Script
+tools
+**/tools/
+script
+**/script/

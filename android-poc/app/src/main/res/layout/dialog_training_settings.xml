@@ -230,35 +230,8 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="horizontal"
+        android:visibility="gone"
         android:layout_marginBottom="@dimen/spacing_lg">
-
-        <com.google.android.material.button.MaterialButton
-            android:id="@+id/btnCueVoice"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:layout_marginEnd="@dimen/spacing_xs"
-            android:text="@string/cue_voice"
-            style="@style/Widget.WayToFix.Button.Secondary" />
-
-        <com.google.android.material.button.MaterialButton
-            android:id="@+id/btnCueTones"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:layout_marginHorizontal="@dimen/spacing_xs"
-            android:text="@string/cue_tones"
-            style="@style/Widget.WayToFix.Button.Secondary" />
-
-        <com.google.android.material.button.MaterialButton
-            android:id="@+id/btnCueBasic"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:layout_marginStart="@dimen/spacing_xs"
-            android:text="@string/cue_basic"
-            style="@style/Widget.WayToFix.Button.Secondary" />
-
     </LinearLayout>
 
     <!-- Divider -->

@@ -47,7 +47,39 @@ class FeedbackSchedulerTest {
     }
 
     @Test
-    fun cameraToneModeUsesToneInsteadOfVoice() {
+    fun interruptCanReplaceActiveCriticalWithSameSeverity() {
+        val scheduler = scheduler()
+
+        assertTrue(
+            scheduler.schedule(
+                signal(
+                    key = "countdown:3",
+                    severity = FeedbackSeverity.CRITICAL,
+                    activeKey = "countdown",
+                    forceAudible = true,
+                    interruptPolicy = FeedbackInterruptPolicy.INTERRUPT
+                ),
+                FeedbackRuntimeMode.CAMERA
+            ).shouldDeliver
+        )
+
+        val next = scheduler.schedule(
+            signal(
+                key = "countdown:2",
+                severity = FeedbackSeverity.CRITICAL,
+                activeKey = "countdown",
+                forceAudible = true,
+                interruptPolicy = FeedbackInterruptPolicy.INTERRUPT
+            ),
+            FeedbackRuntimeMode.CAMERA
+        )
+
+        assertTrue(next.shouldDeliver)
+        assertEquals(FeedbackAudible.VOICE, next.audible)
+    }
+
+    @Test
+    fun cameraModeUsesVoiceEvenWhenToneSettingExists() {
         val scheduler = scheduler(cameraCueMode = CameraCueMode.TONES_BASIC)
 
         val plan = scheduler.schedule(
@@ -56,12 +88,12 @@ class FeedbackSchedulerTest {
         )
 
         assertTrue(plan.shouldDeliver)
-        assertEquals(FeedbackAudible.TONE, plan.audible)
-        assertEquals(FeedbackTone.ERROR, plan.tone)
+        assertEquals(FeedbackAudible.VOICE, plan.audible)
+        assertEquals(FeedbackTone.NONE, plan.tone)
     }
 
     @Test
-    fun videoModeUsesVisualAndHapticForWarnings() {
+    fun videoModeUsesTextOnlyForWarnings() {
         val scheduler = scheduler()
 
         val plan = scheduler.schedule(
@@ -72,7 +104,67 @@ class FeedbackSchedulerTest {
         assertTrue(plan.shouldDeliver)
         assertEquals(FeedbackAudible.NONE, plan.audible)
         assertTrue(plan.showVisual)
-        assertTrue(plan.vibrate)
+        assertFalse(plan.vibrate)
+    }
+
+    @Test
+    fun normalAndPadUseVoiceWhenNoHigherPriorityIsActive() {
+        val scheduler = scheduler()
+
+        val normal = scheduler.schedule(
+            signal("normal", FeedbackSeverity.INFO, activeKey = "state:normal"),
+            FeedbackRuntimeMode.CAMERA
+        )
+        nowMs += 2_500L
+        val pad = scheduler.schedule(
+            signal("pad", FeedbackSeverity.TIP, activeKey = "state:pad"),
+            FeedbackRuntimeMode.CAMERA
+        )
+
+        assertTrue(normal.shouldDeliver)
+        assertEquals(FeedbackAudible.VOICE, normal.audible)
+        assertTrue(pad.shouldDeliver)
+        assertEquals(FeedbackAudible.VOICE, pad.audible)
+    }
+
+    @Test
+    fun normalAndPadWaitBehindActiveCorrection() {
+        val scheduler = scheduler()
+
+        assertTrue(scheduler.schedule(signal("knee", FeedbackSeverity.WARNING), FeedbackRuntimeMode.CAMERA).shouldDeliver)
+        val normal = scheduler.schedule(
+            signal("normal", FeedbackSeverity.INFO, activeKey = "state:normal"),
+            FeedbackRuntimeMode.CAMERA
+        )
+        val pad = scheduler.schedule(
+            signal("pad", FeedbackSeverity.TIP, activeKey = "state:pad"),
+            FeedbackRuntimeMode.CAMERA
+        )
+
+        assertFalse(normal.shouldDeliver)
+        assertEquals("active:correction", normal.reason)
+        assertFalse(pad.shouldDeliver)
+        assertEquals("active:correction", pad.reason)
+    }
+
+    @Test
+    fun forceAudibleReplaceLowerDoesNotReplaceHigherSeverity() {
+        val scheduler = scheduler()
+
+        assertTrue(scheduler.schedule(signal("knee", FeedbackSeverity.ERROR), FeedbackRuntimeMode.CAMERA).shouldDeliver)
+        val motivation = scheduler.schedule(
+            signal(
+                key = "target",
+                severity = FeedbackSeverity.MOTIVATION,
+                activeKey = "session_complete",
+                forceAudible = true,
+                interruptPolicy = FeedbackInterruptPolicy.REPLACE_LOWER
+            ),
+            FeedbackRuntimeMode.CAMERA
+        )
+
+        assertFalse(motivation.shouldDeliver)
+        assertEquals("active:correction", motivation.reason)
     }
 
     @Test
@@ -100,7 +192,8 @@ class FeedbackSchedulerTest {
         key: String,
         severity: FeedbackSeverity,
         activeKey: String = "correction",
-        forceAudible: Boolean = false
+        forceAudible: Boolean = false,
+        interruptPolicy: FeedbackInterruptPolicy = FeedbackInterruptPolicy.defaultFor(severity)
     ) = FeedbackSignal(
         kind = FeedbackKind.POSITION_CHECK,
         severity = severity,
@@ -108,6 +201,7 @@ class FeedbackSchedulerTest {
         dedupeKey = key,
         activeKey = activeKey,
         cooldownGroup = key,
-        forceAudible = forceAudible
+        forceAudible = forceAudible,
+        interruptPolicy = interruptPolicy
     )
 }

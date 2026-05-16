@@ -212,7 +212,6 @@ class ProfileActivity : AppCompatActivity() {
         var selectedIndicator = SettingsManager.getIndicatorType()
         var selectedModel = SettingsManager.getModelType()
         var selectedCoachIntensity = SettingsManager.getCoachIntensity()
-        var selectedCameraCueMode = SettingsManager.getCameraCueMode()
 
         fun setChoiceButtonSelected(button: MaterialButton, isSelected: Boolean) {
             if (isSelected) {
@@ -266,30 +265,6 @@ class ProfileActivity : AppCompatActivity() {
             updateCoachButtons()
         }
 
-        val btnCueVoice = dialogView.findViewById<MaterialButton>(R.id.btnCueVoice)
-        val btnCueTones = dialogView.findViewById<MaterialButton>(R.id.btnCueTones)
-        val btnCueBasic = dialogView.findViewById<MaterialButton>(R.id.btnCueBasic)
-
-        fun updateCameraCueButtons() {
-            setChoiceButtonSelected(btnCueVoice, selectedCameraCueMode == "voice")
-            setChoiceButtonSelected(btnCueTones, selectedCameraCueMode == "tones")
-            setChoiceButtonSelected(btnCueBasic, selectedCameraCueMode == "tones_basic")
-        }
-        updateCameraCueButtons()
-
-        btnCueVoice.setOnClickListener {
-            selectedCameraCueMode = "voice"
-            updateCameraCueButtons()
-        }
-        btnCueTones.setOnClickListener {
-            selectedCameraCueMode = "tones"
-            updateCameraCueButtons()
-        }
-        btnCueBasic.setOnClickListener {
-            selectedCameraCueMode = "tones_basic"
-            updateCameraCueButtons()
-        }
-
         val btnModelFull = dialogView.findViewById<MaterialButton>(R.id.btnModelFull)
         val btnModelHeavy = dialogView.findViewById<MaterialButton>(R.id.btnModelHeavy)
 
@@ -323,6 +298,7 @@ class ProfileActivity : AppCompatActivity() {
 
         dialogView.findViewById<View>(R.id.cameraSectionContainer).visibility = View.GONE
         dialogView.findViewById<View>(R.id.dividerCamera).visibility = View.GONE
+        dialogView.findViewById<View>(R.id.cameraCueSection).visibility = View.GONE
 
         val headerLayout = root.getChildAt(0) as? ViewGroup
         if (headerLayout != null && headerLayout.childCount >= 2) {
@@ -340,7 +316,7 @@ class ProfileActivity : AppCompatActivity() {
             SettingsManager.setIndicatorType(selectedIndicator)
             SettingsManager.setModelType(selectedModel)
             SettingsManager.setCoachIntensity(selectedCoachIntensity)
-            SettingsManager.setCameraCueMode(selectedCameraCueMode)
+            SettingsManager.setCameraCueMode("voice")
             dialog.dismiss()
             Toast.makeText(
                 this,
