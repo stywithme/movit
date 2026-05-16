@@ -1066,11 +1066,8 @@
     <string name="coach_calm">هادئ</string>
     <string name="coach_standard">متوازن</string>
     <string name="coach_strict">صارم</string>
-    <string name="camera_cue_mode">إشارات الكاميرا الصوتية</string>
-    <string name="camera_cue_mode_desc">الصوت يستخدم رسائل التمرين. النغمات تستخدم أصواتًا قصيرة. الأساسي يبقي إشارات صحيح/خاطئ فقط.</string>
-    <string name="cue_voice">صوت</string>
-    <string name="cue_tones">نغمات</string>
-    <string name="cue_basic">أساسي</string>
+    <string name="camera_cue_mode">قنوات رسائل التدريب</string>
+    <string name="camera_cue_mode_desc">تدريب الكاميرا يستخدم رسائل صوتية فقط. مراجعة الفيديو تستخدم رسائل نصية فقط.</string>
 
     <!-- Assessment / Body Scan -->
     <string name="screening_title">فحص ما قبل الاختبار</string>

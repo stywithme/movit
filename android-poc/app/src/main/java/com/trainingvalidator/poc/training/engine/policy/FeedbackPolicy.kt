@@ -3,12 +3,12 @@ package com.trainingvalidator.poc.training.engine.policy
 import com.trainingvalidator.poc.training.models.JointState
 
 /**
- * Throttling for training feedback emitted from [com.trainingvalidator.poc.training.TrainingEngine].
- * Next step: merge with [com.trainingvalidator.poc.training.feedback.FeedbackManager] throttles
- * and voice [com.trainingvalidator.poc.training.feedback.MessageOrchestrator] behind one policy.
+ * Candidate-rate limiting for training feedback emitted from [com.trainingvalidator.poc.training.TrainingEngine].
+ * User-facing cooldowns and delivery decisions live in [com.trainingvalidator.poc.training.feedback.FeedbackScheduler].
  */
 class FeedbackPolicy(
-    private val stateMessageCooldownMs: Long
+    private val stateMessageCooldownMs: Long,
+    private val maxCandidateIntervalMs: Long = 250L
 ) {
     private val lastStateMessageTimes = mutableMapOf<String, Long>()
     private val lastEmittedStates = mutableMapOf<String, JointState>()
@@ -28,7 +28,8 @@ class FeedbackPolicy(
     ): Boolean {
         val lastState = lastEmittedStates[jointCode]
         val lastTime = lastStateMessageTimes[jointCode] ?: 0L
-        return (lastState != state) || (nowMs - lastTime >= stateMessageCooldownMs)
+        val candidateInterval = stateMessageCooldownMs.coerceAtMost(maxCandidateIntervalMs)
+        return (lastState != state) || (nowMs - lastTime >= candidateInterval)
     }
 
     fun recordStateMessage(jointCode: String, state: JointState, nowMs: Long) {

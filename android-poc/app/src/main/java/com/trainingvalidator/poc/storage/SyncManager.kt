@@ -20,6 +20,15 @@ import java.net.UnknownHostException
 import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.atomic.AtomicLong
 
+internal fun normalizeStateMessageKey(raw: String): String? = when (raw.trim().lowercase()) {
+    "perfect" -> "perfect"
+    "normal", "good" -> "normal"
+    "pad", "accept", "acceptable" -> "pad"
+    "warning" -> "warning"
+    "danger" -> "danger"
+    else -> null
+}
+
 /**
  * SyncManager
  * 
@@ -793,8 +802,12 @@ class SyncManager(
         message: LocalizedText
     ): StateMessages {
         val existing = current ?: StateMessages()
-        val normalizedState = stateKey.lowercase()
-        val normalizedZone = zone?.lowercase()
+        val normalizedState = normalizeStateMessageKey(stateKey)
+            ?: run {
+                Log.w(TAG, "Ignoring unknown joint state message key: $stateKey")
+                return existing
+            }
+        val normalizedZone = zone?.trim()?.lowercase()
         val updatedValue = mergeStateMessageValue(
             when (normalizedState) {
                 "perfect" -> existing.perfect

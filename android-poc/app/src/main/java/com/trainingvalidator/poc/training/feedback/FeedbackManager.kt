@@ -26,8 +26,8 @@ import java.util.*
  * FeedbackManager - Professional mode-aware feedback delivery system
  * 
  * MODE-AWARE BEHAVIOR:
- * - Camera Mode: Audio/tone-first, minimal visual messages
- * - Video Mode:  Visual-first, scheduler-controlled haptic for important cues
+ * - Camera Mode: Voice-only feedback while the trainee is away from the phone
+ * - Video Mode:  Text-only feedback while the trainee reviews performance
  * 
  * SMART MESSAGING (via FeedbackScheduler):
  * - First is loud, repeat is quiet
@@ -37,7 +37,6 @@ import java.util.*
  * 
  * Features:
  * - Text-to-speech for audio feedback (Camera mode)
- * - Vibration patterns for haptic feedback (scheduler-controlled)
  * - Smart throttling via FeedbackScheduler
  * - Priority-based feedback queuing
  * - Streak tracking for motivation
@@ -84,7 +83,7 @@ class FeedbackManager(
     private val isTtsEnabled: Boolean
         get() = !isVideoMode && isVoiceEnabled()
     
-    // Haptic is scheduler-controlled per mode.
+    // Haptic helpers remain for legacy call sites; feedback delivery is voice/text-only.
     private val isHapticEnabled: Boolean
         get() = config.enableHaptic
     
@@ -257,13 +256,19 @@ class FeedbackManager(
     // ==================== Joint Error Handling ====================
     
     private suspend fun handleJointQualityError(error: JointError) {
-        val isWarning = error.state == JointState.WARNING
         val messageKey = "joint:${error.jointCode}:${error.errorType}"
         val localizedText = error.message
         val displayText = localizedText.get(config.language)
 
-        val severity = if (isWarning) FeedbackSeverity.WARNING else FeedbackSeverity.ERROR
-        val messageType = if (isWarning) MessageType.WARNING else MessageType.ERROR
+        val severity = when (error.state) {
+            JointState.DANGER -> FeedbackSeverity.CRITICAL
+            JointState.WARNING -> FeedbackSeverity.WARNING
+            else -> FeedbackSeverity.ERROR
+        }
+        val messageType = when (severity) {
+            FeedbackSeverity.WARNING -> MessageType.WARNING
+            else -> MessageType.ERROR
+        }
 
         val delivered = scheduleAndDeliver(
             kind = FeedbackKind.JOINT_QUALITY,
@@ -347,7 +352,7 @@ class FeedbackManager(
                 cooldownGroup = cooldownGroup,
                 interruptPolicy = interruptPolicy,
                 forceAudible = forceAudible,
-                allowVoice = allowVoice,
+                allowVoice = allowVoice && isTtsEnabled,
                 allowTone = allowTone,
                 allowVisual = allowVisual,
                 allowHaptic = allowHaptic
@@ -392,6 +397,7 @@ class FeedbackManager(
         forceAudible: Boolean = false,
         allowVoice: Boolean = true,
         allowTone: Boolean = true,
+        allowVisual: Boolean = true,
         allowHaptic: Boolean = true,
         interruptPolicy: FeedbackInterruptPolicy = FeedbackInterruptPolicy.defaultFor(severity)
     ): Boolean {
@@ -406,14 +412,18 @@ class FeedbackManager(
                 cooldownGroup = cooldownGroup,
                 interruptPolicy = interruptPolicy,
                 forceAudible = forceAudible,
-                allowVoice = allowVoice,
+                allowVoice = allowVoice && isTtsEnabled,
                 allowTone = allowTone,
-                allowVisual = false,
+                allowVisual = allowVisual,
                 allowHaptic = allowHaptic
             ),
             currentFeedbackMode()
         )
         if (!plan.shouldDeliver) return false
+
+        if (plan.showVisual) {
+            _visualMessages.tryEmit(VisualMessage(displayText, messageType, plan.displayDurationMs))
+        }
 
         when (plan.audible) {
             FeedbackAudible.VOICE -> speakLocalized(localizedText, plan.speechPriority.toSpeakPriority())
@@ -481,9 +491,7 @@ class FeedbackManager(
         }
     }
     
-    /**
-     * Light haptic feedback (subtle reminder)
-     */
+    /** Legacy vibration helper; scheduler delivery is currently voice/text-only. */
     private fun vibrateLight() {
         if (!isHapticEnabled) return
         
@@ -518,28 +526,8 @@ class FeedbackManager(
         }
         
         if (isVideoMode) {
-            // Video mode: No audio, just visual pulse (handled by UI)
+            // Video mode is text-only; rep pulses are handled by the review UI.
         } else {
-            // Camera voice mode keeps the existing tactile pulse; tone modes use scheduler tones.
-            if (isHapticEnabled && CameraCueMode.from(SettingsManager.getCameraCueMode()) == CameraCueMode.VOICE) {
-                if (event.isCorrect) vibrateSuccess() else vibrateWarning()
-            }
-
-            scheduleAndDeliver(
-                kind = FeedbackKind.REP,
-                severity = if (event.isCorrect) FeedbackSeverity.SUCCESS else FeedbackSeverity.WARNING,
-                localizedText = LocalizedText(),
-                displayText = "",
-                dedupeKey = "rep:${event.repNumber}:${event.isCorrect}",
-                activeKey = "rep_feedback",
-                cooldownGroup = "rep_feedback",
-                messageType = if (event.isCorrect) MessageType.MOTIVATION else MessageType.WARNING,
-                forceAudible = true,
-                allowVoice = false,
-                allowVisual = false,
-                allowHaptic = true
-            )
-            
             // Announce rep count every N reps (NORMAL priority - shouldn't interrupt errors)
             if (event.repNumber - lastAnnouncedRep >= REP_AUDIO_INTERVAL) {
                 val repLt = MobileMessageResolver.resolveTrainingNumeral(event.repNumber)
@@ -586,7 +574,6 @@ class FeedbackManager(
             forceAudible = true,
             interruptPolicy = FeedbackInterruptPolicy.REPLACE_LOWER
         )
-        if (!isVideoMode && isHapticEnabled) vibrateComplete()
     }
     
     // ==================== Motivation ====================
@@ -625,9 +612,6 @@ class FeedbackManager(
     // ==================== Hold Event Handlers ====================
     
     private fun handleHoldStarted() {
-        if (!isVideoMode && isHapticEnabled) {
-            vibrateSuccess()
-        }
         Log.d(TAG, "Hold started - feedback sent")
     }
     
@@ -687,7 +671,6 @@ class FeedbackManager(
             forceAudible = true,
             interruptPolicy = FeedbackInterruptPolicy.REPLACE_LOWER
         )
-        if (!isVideoMode && isHapticEnabled) vibrateComplete()
     }
     
     private suspend fun handleHoldFailed(event: FeedbackEvent.HoldFailed) {
@@ -833,10 +816,6 @@ class FeedbackManager(
     private fun handleVisibilityResumed(event: FeedbackEvent.VisibilityResumed) {
         // Only provide feedback in camera mode
         if (!isVideoMode) {
-            // Short positive feedback when visibility restored
-            if (isHapticEnabled) {
-                vibrateSuccess()
-            }
             // Reset visibility message state so next warning is treated as new
             feedbackScheduler.reset("visibility:warning")
             feedbackScheduler.reset("visibility:paused")
@@ -947,17 +926,21 @@ class FeedbackManager(
      * Uses HIGH priority - countdown should interrupt other messages
      */
     fun speakCountdown(number: Int) {
-        if (!isTtsEnabled) return
-        
-        if (useAudioPlayer && audioPlayer != null) {
-            audioPlayer?.playCountdown(number)
-            return
-        }
-        
-        if (!isTtsReady) return
         val lt = MobileMessageResolver.resolveTrainingNumeral(number)
         val text = lt.get(config.language)
-        tts?.speak(text, TextToSpeech.QUEUE_FLUSH, null, "countdown_$number")
+        val cueKey = "countdown:$number:${System.nanoTime()}"
+        scheduleAndDeliverImmediate(
+            kind = FeedbackKind.COUNTDOWN,
+            severity = FeedbackSeverity.CRITICAL,
+            localizedText = lt,
+            displayText = text,
+            dedupeKey = cueKey,
+            activeKey = "countdown",
+            cooldownGroup = cueKey,
+            messageType = MessageType.INFO,
+            forceAudible = true,
+            interruptPolicy = FeedbackInterruptPolicy.INTERRUPT
+        )
     }
     
     /**
@@ -965,16 +948,21 @@ class FeedbackManager(
      * Uses HIGH priority - start signal is critical
      */
     fun speakGo() {
-        if (!isTtsEnabled) return
-        
-        if (useAudioPlayer && audioPlayer != null) {
-            audioPlayer?.playGo()
-            return
-        }
-        
-        if (!isTtsReady) return
         val goLt = SystemMessageRegistry.get("training_countdown_go", "ابدأ!", "Go!")
-        tts?.speak(goLt.get(config.language), TextToSpeech.QUEUE_FLUSH, null, "go")
+        val text = goLt.get(config.language)
+        val cueKey = "countdown:go:${System.nanoTime()}"
+        scheduleAndDeliverImmediate(
+            kind = FeedbackKind.COUNTDOWN,
+            severity = FeedbackSeverity.CRITICAL,
+            localizedText = goLt,
+            displayText = text,
+            dedupeKey = cueKey,
+            activeKey = "countdown",
+            cooldownGroup = cueKey,
+            messageType = MessageType.MOTIVATION,
+            forceAudible = true,
+            interruptPolicy = FeedbackInterruptPolicy.INTERRUPT
+        )
     }
     
     // ==================== Setup Pose Guidance ====================
@@ -983,7 +971,6 @@ class FeedbackManager(
      * Speak directional guidance for the worst joint during SETUP_POSE (ANGLES phase).
      */
     fun speakSetupGuidance(joint: com.trainingvalidator.poc.ui.training.JointGuidance) {
-        if (!isTtsEnabled) return
         val localizedText = joint.message
         val message = localizedText.get(config.language)
         if (message.isBlank()) return
@@ -1007,7 +994,6 @@ class FeedbackManager(
      * Routed through the scheduler so setup cues do not stack or cut each other.
      */
     fun speakSetupPhaseGuidance(message: com.trainingvalidator.poc.training.models.LocalizedText) {
-        if (!isTtsEnabled) return
         val text = message.get(config.language)
         if (text.isBlank()) return
         scheduleAndDeliverImmediate(
@@ -1030,13 +1016,21 @@ class FeedbackManager(
      * and the countdown is about to start.
      */
     fun speakPoseConfirmed() {
-        if (!isTtsEnabled) return
         val lt = SystemMessageRegistry.get("training_pose_confirmed", "ممتاز، استعد!", "Great, get ready!")
-        if (useAudioPlayer && audioPlayer != null) {
-            audioPlayer?.play(lt, AudioFeedbackPlayer.Priority.HIGH)
-            return
-        }
-        speakLocalized(lt, SpeakPriority.HIGH)
+        val text = lt.get(config.language)
+        val cueKey = "setup:pose_confirmed:${System.nanoTime()}"
+        scheduleAndDeliverImmediate(
+            kind = FeedbackKind.SETUP,
+            severity = FeedbackSeverity.SUCCESS,
+            localizedText = lt,
+            displayText = text,
+            dedupeKey = cueKey,
+            activeKey = "setup",
+            cooldownGroup = cueKey,
+            messageType = MessageType.MOTIVATION,
+            forceAudible = true,
+            interruptPolicy = FeedbackInterruptPolicy.WAIT_FOR_SLOT
+        )
     }
 
     /**
@@ -1044,14 +1038,6 @@ class FeedbackManager(
      * Used by [com.trainingvalidator.poc.ui.training.CountdownController] so countdown does not overlap cues.
      */
     suspend fun speakPoseConfirmedAndAwait() {
-        if (!isTtsEnabled) {
-            delay(NO_AUDIO_POSE_MS)
-            return
-        }
-        if (useAudioPlayer && audioPlayer != null) {
-            audioPlayer!!.playPoseConfirmedAndAwait()
-            return
-        }
         speakPoseConfirmed()
         delay(NO_AUDIO_POSE_MS)
     }
@@ -1060,14 +1046,6 @@ class FeedbackManager(
      * Await end of countdown digit audio (sequential; no overlap with next cue).
      */
     suspend fun speakCountdownAndAwait(number: Int) {
-        if (!isTtsEnabled) {
-            delay(NO_AUDIO_COUNTDOWN_MS)
-            return
-        }
-        if (useAudioPlayer && audioPlayer != null) {
-            audioPlayer!!.playCountdownAndAwait(number)
-            return
-        }
         speakCountdown(number)
         delay(NO_AUDIO_COUNTDOWN_MS)
     }
@@ -1082,7 +1060,6 @@ class FeedbackManager(
         localizedText: LocalizedText,
         severity: FeedbackSeverity = FeedbackSeverity.CRITICAL
     ) {
-        if (!isTtsEnabled) return
         val message = localizedText.get(config.language)
         if (message.isBlank()) return
         scheduleAndDeliverImmediate(

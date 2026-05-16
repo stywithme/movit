@@ -45,6 +45,7 @@ import com.trainingvalidator.poc.storage.AuthManager
 import com.trainingvalidator.poc.storage.UserExercisePreferenceStore
 import com.trainingvalidator.poc.network.SessionSyncService
 import com.trainingvalidator.poc.network.ApiConfig
+import com.trainingvalidator.poc.training.models.CheckSeverity
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
@@ -425,7 +426,6 @@ class TrainingActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetection
         var voiceFeedbackEnabled = SettingsManager.isVoiceFeedbackEnabled()
         var selectedModel = currentModelType
         var selectedCoachIntensity = SettingsManager.getCoachIntensity()
-        var selectedCameraCueMode = SettingsManager.getCameraCueMode()
 
         fun setChoiceButtonSelected(button: MaterialButton, isSelected: Boolean) {
             if (isSelected) {
@@ -488,31 +488,6 @@ class TrainingActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetection
             updateCoachButtons()
         }
 
-        // Setup camera cue mode buttons
-        val btnCueVoice = dialogView.findViewById<MaterialButton>(R.id.btnCueVoice)
-        val btnCueTones = dialogView.findViewById<MaterialButton>(R.id.btnCueTones)
-        val btnCueBasic = dialogView.findViewById<MaterialButton>(R.id.btnCueBasic)
-
-        fun updateCameraCueButtons() {
-            setChoiceButtonSelected(btnCueVoice, selectedCameraCueMode == "voice")
-            setChoiceButtonSelected(btnCueTones, selectedCameraCueMode == "tones")
-            setChoiceButtonSelected(btnCueBasic, selectedCameraCueMode == "tones_basic")
-        }
-        updateCameraCueButtons()
-
-        btnCueVoice.setOnClickListener {
-            selectedCameraCueMode = "voice"
-            updateCameraCueButtons()
-        }
-        btnCueTones.setOnClickListener {
-            selectedCameraCueMode = "tones"
-            updateCameraCueButtons()
-        }
-        btnCueBasic.setOnClickListener {
-            selectedCameraCueMode = "tones_basic"
-            updateCameraCueButtons()
-        }
-        
         // Setup model buttons
         val btnModelFull = dialogView.findViewById<MaterialButton>(R.id.btnModelFull)
         val btnModelHeavy = dialogView.findViewById<MaterialButton>(R.id.btnModelHeavy)
@@ -542,23 +517,22 @@ class TrainingActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetection
         val dividerCamera = dialogView.findViewById<View>(R.id.dividerCamera)
         val tvCurrentCamera = dialogView.findViewById<android.widget.TextView>(R.id.tvCurrentCamera)
         val btnSwitchCameraDialog = dialogView.findViewById<MaterialButton>(R.id.btnSwitchCameraDialog)
-        val cameraCueViews = listOf(
+        val feedbackChannelInfoViews = listOf(
             dialogView.findViewById<View>(R.id.dividerCameraCue),
             dialogView.findViewById<View>(R.id.cameraCueSectionTitle),
-            dialogView.findViewById<View>(R.id.tvCameraCueDesc),
-            dialogView.findViewById<View>(R.id.cameraCueSection)
+            dialogView.findViewById<View>(R.id.tvCameraCueDesc)
         )
+        dialogView.findViewById<View>(R.id.cameraCueSection).visibility = View.GONE
+        feedbackChannelInfoViews.forEach { it.visibility = View.VISIBLE }
         
         if (isVideoMode) {
             // Hide camera section in video mode
             cameraSectionContainer.visibility = View.GONE
             dividerCamera.visibility = View.GONE
-            cameraCueViews.forEach { it.visibility = View.GONE }
         } else {
             // Show camera section and update current camera text
             cameraSectionContainer.visibility = View.VISIBLE
             dividerCamera.visibility = View.VISIBLE
-            cameraCueViews.forEach { it.visibility = View.VISIBLE }
             tvCurrentCamera.text = if (useFrontCamera) getString(R.string.front_camera) else getString(R.string.back_camera)
             
             btnSwitchCameraDialog.setOnClickListener {
@@ -579,7 +553,7 @@ class TrainingActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetection
             SettingsManager.setIndicatorType(selectedIndicator)
             SettingsManager.setVoiceFeedbackEnabled(voiceFeedbackEnabled)
             SettingsManager.setCoachIntensity(selectedCoachIntensity)
-            SettingsManager.setCameraCueMode(selectedCameraCueMode)
+            SettingsManager.setCameraCueMode("voice")
             SettingsManager.setModelType(selectedModel)
             
             // Apply indicator change immediately
@@ -781,9 +755,11 @@ class TrainingActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetection
                     }?.state ?: JointState.PERFECT
                     updateFormStatus(worstState)
 
-                    val positionErrors = engine.positionErrors.value
+                    val hasBlockingPositionIssue = engine.positionErrors.value.any {
+                        it.severity == CheckSeverity.ERROR || it.severity == CheckSeverity.WARNING
+                    }
                     viewModel.feedbackManager?.checkAndDeliverRandomMessage(
-                        hasActiveErrors = hasErrors || positionErrors.isNotEmpty()
+                        hasActiveErrors = hasErrors || hasBlockingPositionIssue
                     )
                 }
             }

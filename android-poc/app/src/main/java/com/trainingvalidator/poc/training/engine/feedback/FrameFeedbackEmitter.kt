@@ -10,21 +10,24 @@ import com.trainingvalidator.poc.training.engine.PositionError
 import com.trainingvalidator.poc.training.models.PositionCheck
 
 /**
- * Throttled [FeedbackEvent]s for per-joint state messages and per-position-check cooldowns.
+ * Emits [FeedbackEvent] candidates for per-joint state messages and position checks.
+ * Final user-facing cooldowns live in FeedbackScheduler; this class only applies
+ * a small candidate rate limit to avoid sending the same frame-level issue every frame.
  * Extracted from [com.trainingvalidator.poc.training.TrainingEngine].
  */
 class FrameFeedbackEmitter(
     private val feedbackPolicy: FeedbackPolicy,
     private val positionChecksById: Map<String, PositionCheck>,
     private val timeProvider: () -> Long,
-    private val jointErrorCooldownMs: Long = 1000L
+    private val jointErrorCooldownMs: Long = 1000L,
+    private val maxCandidateIntervalMs: Long = 250L
 ) {
-    private val lastPositionEventTimes = mutableMapOf<String, Long>()
-    private val lastJointErrorTimes = mutableMapOf<String, Long>()
+    private val lastPositionCandidateTimes = mutableMapOf<String, Long>()
+    private val lastJointErrorCandidateTimes = mutableMapOf<String, Long>()
 
     fun clearPositionCooldowns() {
-        lastPositionEventTimes.clear()
-        lastJointErrorTimes.clear()
+        lastPositionCandidateTimes.clear()
+        lastJointErrorCandidateTimes.clear()
     }
 
     /**
@@ -55,23 +58,25 @@ class FrameFeedbackEmitter(
     }
 
     /**
-     * @return true if a new feedback event for this [PositionError] / [PositionError.checkId] may be emitted.
+     * @return true if a new feedback candidate for this [PositionError] / [PositionError.checkId] may be emitted.
      */
     fun shouldEmitPositionEvent(checkId: String): Boolean {
         val now = timeProvider()
-        val cooldown = positionChecksById[checkId]?.cooldownMs ?: 1500L
-        val lastTime = lastPositionEventTimes[checkId] ?: 0L
-        if (now - lastTime < cooldown) return false
-        lastPositionEventTimes[checkId] = now
+        val candidateInterval = (positionChecksById[checkId]?.cooldownMs ?: maxCandidateIntervalMs)
+            .coerceAtMost(maxCandidateIntervalMs)
+        val lastTime = lastPositionCandidateTimes[checkId] ?: 0L
+        if (now - lastTime < candidateInterval) return false
+        lastPositionCandidateTimes[checkId] = now
         return true
     }
 
     fun shouldEmitJointError(error: JointError): Boolean {
         val now = timeProvider()
         val key = "${error.jointCode}:${error.errorType}:${error.state}"
-        val lastTime = lastJointErrorTimes[key] ?: 0L
-        if (now - lastTime < jointErrorCooldownMs) return false
-        lastJointErrorTimes[key] = now
+        val candidateInterval = jointErrorCooldownMs.coerceAtMost(maxCandidateIntervalMs)
+        val lastTime = lastJointErrorCandidateTimes[key] ?: 0L
+        if (now - lastTime < candidateInterval) return false
+        lastJointErrorCandidateTimes[key] = now
         return true
     }
 }

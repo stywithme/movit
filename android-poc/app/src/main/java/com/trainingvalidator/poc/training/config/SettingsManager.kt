@@ -367,7 +367,7 @@ object SettingsManager {
     }
 
     /**
-     * User preference for camera-mode audible cue style: voice, tones, or tones_basic.
+     * Camera feedback is voice-only. Legacy tone values are normalized to voice.
      */
     fun getCameraCueMode(): String {
         return normalizeCameraCueMode(
@@ -428,7 +428,8 @@ object SettingsManager {
     }
 
     /**
-     * Set camera-mode audible cue style ("voice", "tones", or "tones_basic").
+     * Persist camera feedback channel. The current product policy is voice-only;
+     * legacy tone values are accepted but normalized to voice.
      */
     fun setCameraCueMode(mode: String) {
         runtimePrefs?.edit()
@@ -473,9 +474,6 @@ object SettingsManager {
         else -> "standard"
     }
 
-    private fun normalizeCameraCueMode(raw: String?): String = when (raw?.trim()?.lowercase()) {
-        "tones", "tone" -> "tones"
-        "tones_basic", "tone_basic", "basic_tones", "basic" -> "tones_basic"
-        else -> "voice"
-    }
+    @Suppress("UNUSED_PARAMETER")
+    private fun normalizeCameraCueMode(raw: String?): String = "voice"
 }

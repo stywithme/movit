@@ -2,7 +2,8 @@ package com.trainingvalidator.poc.training.feedback
 
 /**
  * A mode-neutral request for feedback. The scheduler is the only place that
- * turns this into voice, tone, haptic, or visual output.
+ * turns this into the user-facing output:
+ * camera mode uses voice only, video mode uses text only.
  */
 data class FeedbackSignal(
     val kind: FeedbackKind,

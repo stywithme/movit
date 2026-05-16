@@ -10,7 +10,7 @@ import android.graphics.Color
  * - Rep counting
  * - Scoring
  * - Visual feedback (colors)
- * - Audio/haptic feedback
+ * - Mode-specific feedback messages
  * - Report generation
  *
  * Priority order (from highest to lowest):
@@ -883,11 +883,13 @@ object AngleColorResolver {
  * ```
  *
  * Message Delivery:
- * - DANGER: CRITICAL priority - always delivered, strong haptic
- * - WARNING: WARNING priority - first = audio+visual, repeat = visual only
- * - PAD: TIP priority - visual only
- * - NORMAL: INFO priority - one-time, visual only
+ * - DANGER: CRITICAL priority - wins over lower-priority messages
+ * - WARNING: WARNING priority - correction message
+ * - PAD: TIP priority - delivered when no higher-priority message is active
+ * - NORMAL: INFO priority - delivered when no higher-priority message is active
  * - PERFECT: MOTIVATION priority - encouragement when reaching perfect form
+ *
+ * Output channel is mode-specific: camera uses voice only, video uses text only.
  *
  * All messages are OPTIONAL - can have up only, down only, both, or none.
  */
