@@ -31,7 +31,6 @@ class PositionValidator(
     
     companion object {
         private const val TAG = "PositionValidator"
-        private const val HYSTERESIS_BUFFER = 0.02f
         private const val DEFAULT_MIN_ERROR_FRAMES = 3
     }
     
@@ -63,7 +62,23 @@ class PositionValidator(
         isFrontCamera: Boolean = false
     ): PositionValidationResult {
         if (landmarks.size < 33) {
-            return PositionValidationResult.empty()
+            return PositionValidationResult.empty().copy(
+                debugChecks = positionChecks.map { check ->
+                    val requiredFrames = check.minErrorFrames.takeIf { it > 0 } ?: DEFAULT_MIN_ERROR_FRAMES
+                    PositionCheckDebug(
+                        checkId = check.id,
+                        type = check.type,
+                        status = PositionCheckDebugStatus.SKIPPED,
+                        actualValue = null,
+                        threshold = check.condition.threshold,
+                        skipReason = "Insufficient landmarks (${landmarks.size})",
+                        frameCount = 0,
+                        requiredFrames = requiredFrames,
+                        landmark1 = check.landmarks.primary,
+                        landmark2 = check.landmarks.secondary
+                    )
+                }
+            )
         }
         
         // 1. Live scene detection (always runs — feeds rolling window & warnings)
@@ -88,12 +103,29 @@ class PositionValidator(
         val errors = mutableListOf<PositionError>()
         val warnings = mutableListOf<PositionError>()
         val tips = mutableListOf<PositionError>()
+        val debugChecks = mutableListOf<PositionCheckDebug>()
         
         for (check in positionChecks) {
+            val requiredFrames = check.minErrorFrames.takeIf { it > 0 } ?: DEFAULT_MIN_ERROR_FRAMES
+
             // Skip if not active in current phase
             if (!isActiveInPhase(check, currentPhase)) {
                 // Reset frame count when not active
                 errorFrameCounts.remove(check.id)
+                debugChecks.add(
+                    PositionCheckDebug(
+                        checkId = check.id,
+                        type = check.type,
+                        status = PositionCheckDebugStatus.SKIPPED,
+                        actualValue = null,
+                        threshold = check.condition.threshold,
+                        skipReason = "Inactive in phase ${currentPhase.name}",
+                        frameCount = 0,
+                        requiredFrames = requiredFrames,
+                        landmark1 = check.landmarks.primary,
+                        landmark2 = check.landmarks.secondary
+                    )
+                )
                 continue
             }
             
@@ -107,22 +139,62 @@ class PositionValidator(
             
             if (!result.passed && !result.skipped) {
                 // Increment frame count for stability (cap at requiredFrames)
-                val requiredFrames = check.minErrorFrames.takeIf { it > 0 } ?: DEFAULT_MIN_ERROR_FRAMES
                 val frameCount = ((errorFrameCounts[check.id] ?: 0) + 1).coerceAtMost(requiredFrames)
                 errorFrameCounts[check.id] = frameCount
                 
                 // After confirmation, keep returning the issue every frame (visual overlay stays visible)
                 if (frameCount >= requiredFrames) {
                     val error = result.error ?: continue  // Skip if error is unexpectedly null
+                    debugChecks.add(
+                        PositionCheckDebug(
+                            checkId = check.id,
+                            type = check.type,
+                            status = PositionCheckDebugStatus.FAIL,
+                            actualValue = result.actualValue,
+                            threshold = result.threshold ?: check.condition.threshold,
+                            frameCount = frameCount,
+                            requiredFrames = requiredFrames,
+                            landmark1 = effectiveCheck.landmarks.primary,
+                            landmark2 = effectiveCheck.landmarks.secondary
+                        )
+                    )
                     when (check.severity) {
                         CheckSeverity.ERROR -> errors.add(error)
                         CheckSeverity.WARNING -> warnings.add(error)
                         CheckSeverity.TIP -> tips.add(error)
                     }
+                } else {
+                    debugChecks.add(
+                        PositionCheckDebug(
+                            checkId = check.id,
+                            type = check.type,
+                            status = PositionCheckDebugStatus.FAIL_PENDING,
+                            actualValue = result.actualValue,
+                            threshold = result.threshold ?: check.condition.threshold,
+                            frameCount = frameCount,
+                            requiredFrames = requiredFrames,
+                            landmark1 = effectiveCheck.landmarks.primary,
+                            landmark2 = effectiveCheck.landmarks.secondary
+                        )
+                    )
                 }
             } else {
                 // Reset frame count on success or skip
                 errorFrameCounts.remove(check.id)
+                debugChecks.add(
+                    PositionCheckDebug(
+                        checkId = check.id,
+                        type = check.type,
+                        status = if (result.skipped) PositionCheckDebugStatus.SKIPPED else PositionCheckDebugStatus.PASS,
+                        actualValue = result.actualValue,
+                        threshold = result.threshold ?: check.condition.threshold,
+                        skipReason = result.skipReason,
+                        frameCount = 0,
+                        requiredFrames = requiredFrames,
+                        landmark1 = effectiveCheck.landmarks.primary,
+                        landmark2 = effectiveCheck.landmarks.secondary
+                    )
+                )
             }
         }
         
@@ -133,7 +205,8 @@ class PositionValidator(
             tips = tips,
             sceneWarnings = sceneWarnings,
             detectedCameraPosition = cameraResult.position,
-            detectedFacing = cameraResult.facingDirection
+            detectedFacing = cameraResult.facingDirection,
+            debugChecks = debugChecks
         )
     }
     
@@ -264,14 +337,14 @@ class PositionValidator(
         val diff = primaryValue - secondaryValue
         
         val passed = when (check.condition.operator) {
-            PositionOperator.SHOULD_NOT_EXCEED -> diff <= threshold + HYSTERESIS_BUFFER
-            PositionOperator.SHOULD_EXCEED -> diff >= -threshold - HYSTERESIS_BUFFER
-            PositionOperator.APPROXIMATELY_EQUAL -> abs(diff) <= threshold + HYSTERESIS_BUFFER
+            PositionOperator.SHOULD_NOT_EXCEED -> diff <= threshold
+            PositionOperator.SHOULD_EXCEED -> diff >= threshold
+            PositionOperator.APPROXIMATELY_EQUAL -> abs(diff) <= threshold
             else -> true
         }
         
         return if (passed) {
-            CheckResult.passed()
+            CheckResult.passed(diff.toDouble(), threshold)
         } else {
             CheckResult.failed(createError(check, diff.toDouble(), threshold))
         }
@@ -350,13 +423,13 @@ class PositionValidator(
         }
 
         val passed = when (check.condition.operator) {
-            PositionOperator.SHOULD_NOT_EXCEED -> diff <= threshold + HYSTERESIS_BUFFER
-            PositionOperator.SHOULD_EXCEED -> diff >= -threshold - HYSTERESIS_BUFFER
-            PositionOperator.APPROXIMATELY_EQUAL -> abs(diff) <= threshold + HYSTERESIS_BUFFER
+            PositionOperator.SHOULD_NOT_EXCEED -> diff <= threshold
+            PositionOperator.SHOULD_EXCEED -> diff >= threshold
+            PositionOperator.APPROXIMATELY_EQUAL -> abs(diff) <= threshold
             else -> true
         }
 
-        return if (passed) CheckResult.passed()
+        return if (passed) CheckResult.passed(diff.toDouble(), threshold)
         else CheckResult.failed(createError(check, diff.toDouble(), threshold))
     }
 
@@ -387,13 +460,13 @@ class PositionValidator(
         val diff = pv - sv
 
         val passed = when (check.condition.operator) {
-            PositionOperator.APPROXIMATELY_EQUAL -> abs(diff) <= threshold + HYSTERESIS_BUFFER
-            PositionOperator.SHOULD_NOT_EXCEED -> diff <= threshold + HYSTERESIS_BUFFER
-            PositionOperator.SHOULD_EXCEED -> diff >= -threshold - HYSTERESIS_BUFFER
+            PositionOperator.APPROXIMATELY_EQUAL -> abs(diff) <= threshold
+            PositionOperator.SHOULD_NOT_EXCEED -> diff <= threshold
+            PositionOperator.SHOULD_EXCEED -> diff >= threshold
             else -> true
         }
 
-        return if (passed) CheckResult.passed()
+        return if (passed) CheckResult.passed(diff.toDouble(), threshold)
         else CheckResult.failed(createError(check, diff.toDouble(), threshold))
     }
     
@@ -405,35 +478,35 @@ class PositionValidator(
         landmarks: List<SmoothedLandmark>,
         threshold: Double
     ): CheckResult {
-        val l1 = getLandmark(check.landmarks.primary, landmarks) ?: return CheckResult.skipped()
-        val l2 = getLandmark(check.landmarks.secondary, landmarks) ?: return CheckResult.skipped()
+        val l1 = getLandmark(check.landmarks.primary, landmarks) ?: return CheckResult.skipped("Primary landmark not found")
+        val l2 = getLandmark(check.landmarks.secondary, landmarks) ?: return CheckResult.skipped("Secondary landmark not found")
         val l3 = check.landmarks.tertiary?.let { getLandmark(it, landmarks) } 
-            ?: return CheckResult.skipped()
+            ?: return CheckResult.skipped("Tertiary landmark not configured or not found")
         val l4 = check.landmarks.quaternary?.let { getLandmark(it, landmarks) } 
-            ?: return CheckResult.skipped()
+            ?: return CheckResult.skipped("Quaternary landmark not configured or not found")
         
         // Check visibility
         if (!l1.isVisible(visibilityThreshold) || !l2.isVisible(visibilityThreshold) ||
             !l3.isVisible(visibilityThreshold) || !l4.isVisible(visibilityThreshold)) {
-            return CheckResult.skipped()
+            return CheckResult.skipped("Landmarks not visible")
         }
         
         // Calculate distances
         val distance1 = calculate3DDistance(l1, l2)
         val distance2 = calculate3DDistance(l3, l4)
         
-        if (distance2 < 0.001f) return CheckResult.skipped()  // Avoid division by zero
+        if (distance2 < 0.001f) return CheckResult.skipped("Reference distance too small")  // Avoid division by zero
         
         val ratio = distance1 / distance2
         
         val passed = when (check.condition.operator) {
-            PositionOperator.GREATER_THAN_RATIO -> ratio >= threshold - HYSTERESIS_BUFFER
-            PositionOperator.LESS_THAN_RATIO -> ratio <= threshold + HYSTERESIS_BUFFER
+            PositionOperator.GREATER_THAN_RATIO -> ratio >= threshold
+            PositionOperator.LESS_THAN_RATIO -> ratio <= threshold
             else -> true
         }
         
         return if (passed) {
-            CheckResult.passed()
+            CheckResult.passed(ratio.toDouble(), threshold)
         } else {
             CheckResult.failed(createError(check, ratio.toDouble(), threshold))
         }
@@ -447,12 +520,12 @@ class PositionValidator(
         landmarks: List<SmoothedLandmark>,
         threshold: Double
     ): CheckResult {
-        val l1 = getLandmark(check.landmarks.primary, landmarks) ?: return CheckResult.skipped()
-        val l2 = getLandmark(check.landmarks.secondary, landmarks) ?: return CheckResult.skipped()
+        val l1 = getLandmark(check.landmarks.primary, landmarks) ?: return CheckResult.skipped("Primary landmark not found")
+        val l2 = getLandmark(check.landmarks.secondary, landmarks) ?: return CheckResult.skipped("Secondary landmark not found")
         val l3 = check.landmarks.tertiary?.let { getLandmark(it, landmarks) }
         
         if (!l1.isVisible(visibilityThreshold) || !l2.isVisible(visibilityThreshold)) {
-            return CheckResult.skipped()
+            return CheckResult.skipped("Landmarks not visible")
         }
         
         // Check if all Y values are within threshold
@@ -461,14 +534,14 @@ class PositionValidator(
             yValues.add(l3.y)
         }
         
-        val maxY = yValues.maxOrNull() ?: return CheckResult.skipped()
-        val minY = yValues.minOrNull() ?: return CheckResult.skipped()
+        val maxY = yValues.maxOrNull() ?: return CheckResult.skipped("No Y values")
+        val minY = yValues.minOrNull() ?: return CheckResult.skipped("No Y values")
         val range = maxY - minY
         
-        val passed = range <= threshold + HYSTERESIS_BUFFER
+        val passed = range <= threshold
         
         return if (passed) {
-            CheckResult.passed()
+            CheckResult.passed(range.toDouble(), threshold)
         } else {
             CheckResult.failed(createError(check, range.toDouble(), threshold))
         }
@@ -482,12 +555,12 @@ class PositionValidator(
         landmarks: List<SmoothedLandmark>,
         threshold: Double
     ): CheckResult {
-        val l1 = getLandmark(check.landmarks.primary, landmarks) ?: return CheckResult.skipped()
-        val l2 = getLandmark(check.landmarks.secondary, landmarks) ?: return CheckResult.skipped()
+        val l1 = getLandmark(check.landmarks.primary, landmarks) ?: return CheckResult.skipped("Primary landmark not found")
+        val l2 = getLandmark(check.landmarks.secondary, landmarks) ?: return CheckResult.skipped("Secondary landmark not found")
         val l3 = check.landmarks.tertiary?.let { getLandmark(it, landmarks) }
         
         if (!l1.isVisible(visibilityThreshold) || !l2.isVisible(visibilityThreshold)) {
-            return CheckResult.skipped()
+            return CheckResult.skipped("Landmarks not visible")
         }
         
         val xValues = mutableListOf(l1.x, l2.x)
@@ -495,14 +568,14 @@ class PositionValidator(
             xValues.add(l3.x)
         }
         
-        val maxX = xValues.maxOrNull() ?: return CheckResult.skipped()
-        val minX = xValues.minOrNull() ?: return CheckResult.skipped()
+        val maxX = xValues.maxOrNull() ?: return CheckResult.skipped("No X values")
+        val minX = xValues.minOrNull() ?: return CheckResult.skipped("No X values")
         val range = maxX - minX
         
-        val passed = range <= threshold + HYSTERESIS_BUFFER
+        val passed = range <= threshold
         
         return if (passed) {
-            CheckResult.passed()
+            CheckResult.passed(range.toDouble(), threshold)
         } else {
             CheckResult.failed(createError(check, range.toDouble(), threshold))
         }
@@ -518,10 +591,10 @@ class PositionValidator(
         threshold: Double
     ): CheckResult {
         val zDiff = abs(primary.z - secondary.z)
-        val passed = zDiff <= threshold + HYSTERESIS_BUFFER
+        val passed = zDiff <= threshold
         
         return if (passed) {
-            CheckResult.passed()
+            CheckResult.passed(zDiff.toDouble(), threshold)
         } else {
             CheckResult.failed(createError(check, zDiff.toDouble(), threshold))
         }
@@ -614,7 +687,8 @@ data class PositionValidationResult(
     val tips: List<PositionError>,
     val sceneWarnings: List<SceneAxisWarning>,
     val detectedCameraPosition: CameraPositionDetector.DetectedCameraPosition,
-    val detectedFacing: CameraPositionDetector.DetectedFacing
+    val detectedFacing: CameraPositionDetector.DetectedFacing,
+    val debugChecks: List<PositionCheckDebug> = emptyList()
 ) {
     companion object {
         fun empty() = PositionValidationResult(
@@ -654,17 +728,51 @@ data class SceneAxisWarning(
 )
 
 /**
+ * Per-check diagnostics emitted from the same validator path as production checks.
+ */
+data class PositionCheckDebug(
+    val checkId: String,
+    val type: PositionCheckType,
+    val status: PositionCheckDebugStatus,
+    val actualValue: Double?,
+    val threshold: Double,
+    val skipReason: String? = null,
+    val frameCount: Int = 0,
+    val requiredFrames: Int = 0,
+    val landmark1: String,
+    val landmark2: String
+)
+
+enum class PositionCheckDebugStatus {
+    PASS,
+    FAIL,
+    FAIL_PENDING,
+    SKIPPED
+}
+
+/**
  * Internal check result
  */
 internal data class CheckResult(
     val passed: Boolean,
     val skipped: Boolean = false,
     val error: PositionError? = null,
-    val skipReason: String? = null
+    val skipReason: String? = null,
+    val actualValue: Double? = null,
+    val threshold: Double? = null
 ) {
     companion object {
-        fun passed() = CheckResult(passed = true)
-        fun failed(error: PositionError) = CheckResult(passed = false, error = error)
+        fun passed(actualValue: Double, threshold: Double) =
+            CheckResult(passed = true, actualValue = actualValue, threshold = threshold)
+
+        fun failed(error: PositionError) =
+            CheckResult(
+                passed = false,
+                error = error,
+                actualValue = error.actualValue,
+                threshold = error.threshold
+            )
+
         fun skipped(reason: String = "") = CheckResult(passed = true, skipped = true, skipReason = reason)
     }
 }

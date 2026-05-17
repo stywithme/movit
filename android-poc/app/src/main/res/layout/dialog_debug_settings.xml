@@ -214,14 +214,14 @@
                 <Spinner android:id="@+id/spinnerSecondary" android:layout_width="0dp" android:layout_height="36dp" android:layout_weight="1" android:backgroundTint="@android:color/white" android:popupBackground="#333333" />
             </LinearLayout>
 
-            <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="horizontal" android:gravity="center_vertical" android:layout_marginTop="4dp">
+            <LinearLayout android:id="@+id/operatorRow" android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="horizontal" android:gravity="center_vertical" android:layout_marginTop="4dp">
                 <TextView android:layout_width="70dp" android:layout_height="wrap_content" android:text="Operator:" android:textColor="@android:color/white" android:textSize="12sp" />
                 <Spinner android:id="@+id/spinnerOperator" android:layout_width="0dp" android:layout_height="36dp" android:layout_weight="1" android:backgroundTint="@android:color/white" android:popupBackground="#333333" />
             </LinearLayout>
 
             <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="horizontal" android:gravity="center_vertical" android:layout_marginTop="4dp">
                 <TextView android:layout_width="70dp" android:layout_height="wrap_content" android:text="Threshold:" android:textColor="@android:color/white" android:textSize="12sp" />
-                <EditText android:id="@+id/etThreshold" android:layout_width="0dp" android:layout_height="36dp" android:layout_weight="1" android:text="0.05" android:textColor="@android:color/white" android:textSize="13sp" android:fontFamily="monospace" android:inputType="numberDecimal|numberSigned" android:background="@android:color/transparent" android:paddingStart="8dp" android:hint="0.05" android:textColorHint="#66FFFFFF" />
+                <EditText android:id="@+id/etThreshold" android:layout_width="0dp" android:layout_height="36dp" android:layout_weight="1" android:text="0.05" android:textColor="@android:color/white" android:textSize="13sp" android:fontFamily="monospace" android:inputType="numberDecimal|numberSigned" android:background="@android:color/transparent" android:paddingStart="8dp" android:hint="e.g. 0.05 or -0.05" android:textColorHint="#66FFFFFF" />
             </LinearLayout>
         </LinearLayout>
 
