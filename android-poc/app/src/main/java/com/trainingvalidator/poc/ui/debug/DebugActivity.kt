@@ -10,6 +10,8 @@ import android.graphics.Color
 import android.graphics.Matrix
 import android.net.Uri
 import android.os.Bundle
+import android.text.Editable
+import android.text.TextWatcher
 import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
@@ -55,6 +57,7 @@ import com.trainingvalidator.poc.training.engine.PoseSceneExpectation
 import com.trainingvalidator.poc.training.engine.PoseSceneResult
 import com.trainingvalidator.poc.training.engine.VisibleRegion
 import com.trainingvalidator.poc.training.engine.PositionError
+import com.trainingvalidator.poc.training.engine.PositionCheckDebugStatus
 import com.trainingvalidator.poc.training.engine.PositionValidationResult
 import com.trainingvalidator.poc.training.engine.PositionValidator
 import com.trainingvalidator.poc.training.engine.ElbowCorrectionMlpClassifier
@@ -388,12 +391,18 @@ class DebugActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetectionLis
             }
             view.findViewById<android.widget.Spinner>(R.id.spinnerJoint).setSelection(jointCodes.indexOf(selectedJointCode).coerceAtLeast(0))
 
+            val operatorRow = view.findViewById<View>(R.id.operatorRow)
+            fun syncOperatorRowVisibility() {
+                operatorRow.visibility = if (isAlignmentCheck(selectedCheckType)) View.GONE else View.VISIBLE
+            }
             setupSpinner(view.findViewById(R.id.spinnerCheckType), checkTypeNames) { pos ->
                 selectedCheckType = PositionCheckType.values()[pos]
+                syncOperatorRowVisibility()
                 rebuildPositionValidator()
                 if (currentInputMode == InputMode.IMAGE) reanalyzeCurrentImage()
             }
             view.findViewById<android.widget.Spinner>(R.id.spinnerCheckType).setSelection(selectedCheckType.ordinal)
+            syncOperatorRowVisibility()
 
             setupSpinner(view.findViewById(R.id.spinnerPrimary), landmarkNames) { pos ->
                 selectedPrimaryLandmark = landmarkNames[pos]
@@ -418,28 +427,35 @@ class DebugActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetectionLis
 
             val etThreshold = view.findViewById<android.widget.EditText>(R.id.etThreshold)
             etThreshold.setText(selectedThreshold.toString())
-            etThreshold.setOnFocusChangeListener { _, hasFocus ->
-                if (!hasFocus) {
-                    selectedThreshold = etThreshold.text.toString().toDoubleOrNull() ?: 0.05
+            etThreshold.addTextChangedListener(object : TextWatcher {
+                override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) = Unit
+                override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) = Unit
+                override fun afterTextChanged(s: Editable?) {
+                    val newThreshold = s?.toString()?.toDoubleOrNull() ?: return
+                    if (newThreshold == selectedThreshold) return
+                    selectedThreshold = newThreshold
                     rebuildPositionValidator()
                     if (currentInputMode == InputMode.IMAGE) reanalyzeCurrentImage()
                 }
-            }
+            })
 
             setupSpinner(view.findViewById(R.id.spinnerExpectedCamPos), allPostures.map { it.name }) { pos ->
                 selectedPostures = listOf(allPostures[pos])
+                rebuildPositionValidator()
                 if (currentInputMode == InputMode.IMAGE) reanalyzeCurrentImage()
             }
             view.findViewById<android.widget.Spinner>(R.id.spinnerExpectedCamPos).setSelection(allPostures.indexOf(selectedPostures.first()).coerceAtLeast(0))
 
             setupSpinner(view.findViewById(R.id.spinnerExpectedDirection), allDirections.map { it.code }) { pos ->
                 selectedDirections = listOf(allDirections[pos])
+                rebuildPositionValidator()
                 if (currentInputMode == InputMode.IMAGE) reanalyzeCurrentImage()
             }
             view.findViewById<android.widget.Spinner>(R.id.spinnerExpectedDirection).setSelection(allDirections.indexOf(selectedDirections.first()).coerceAtLeast(0))
 
             setupSpinner(view.findViewById(R.id.spinnerExpectedRegion), allRegions.map { it.name }) { pos ->
                 selectedRegions = listOf(allRegions[pos])
+                rebuildPositionValidator()
                 if (currentInputMode == InputMode.IMAGE) reanalyzeCurrentImage()
             }
             view.findViewById<android.widget.Spinner>(R.id.spinnerExpectedRegion).setSelection(allRegions.indexOf(selectedRegions.first()).coerceAtLeast(0))
@@ -1693,25 +1709,48 @@ class DebugActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetectionLis
 
         val result = validator.validate(
             landmarks = landmarks,
-            currentPhase = Phase.IDLE,
+            currentPhase = Phase.START,
             isBilateralFlipped = false,
             isFrontCamera = isFrontCamera
         )
 
         val allIssues = result.getAllIssues()
-        if (allIssues.isEmpty()) {
-            binding.tvLiveValue.text = "PASS"
-            binding.tvLiveValue.setTextColor(Color.GREEN)
-            binding.tvStatus.text = "PASS"
-            binding.tvStatus.setTextColor(Color.GREEN)
-            binding.tvStatus.visibility = View.VISIBLE
-        } else {
-            val issue = allIssues.first()
-            binding.tvLiveValue.text = "FAIL"
-            binding.tvLiveValue.setTextColor(Color.RED)
-            binding.tvStatus.text = "FAIL | actual: %.4f | threshold: %.4f".format(issue.actualValue, issue.threshold)
-            binding.tvStatus.setTextColor(Color.RED)
-            binding.tvStatus.visibility = View.VISIBLE
+        val debugCheck = result.debugChecks.firstOrNull()
+        val statusText = when (debugCheck?.status) {
+            PositionCheckDebugStatus.PASS -> "PASS"
+            PositionCheckDebugStatus.FAIL -> "FAIL"
+            PositionCheckDebugStatus.FAIL_PENDING -> "FAIL*"
+            PositionCheckDebugStatus.SKIPPED -> "SKIPPED"
+            null -> if (allIssues.isEmpty()) "PASS" else "FAIL"
+        }
+        val statusColor = when (debugCheck?.status) {
+            PositionCheckDebugStatus.PASS -> Color.GREEN
+            PositionCheckDebugStatus.FAIL -> Color.RED
+            PositionCheckDebugStatus.FAIL_PENDING -> Color.rgb(255, 152, 0)
+            PositionCheckDebugStatus.SKIPPED -> Color.YELLOW
+            null -> if (allIssues.isEmpty()) Color.GREEN else Color.RED
+        }
+        val debugActual = debugCheck?.actualValue
+        val debugThreshold = debugCheck?.threshold ?: selectedThreshold
+
+        binding.tvLiveValue.text = statusText
+        binding.tvLiveValue.setTextColor(statusColor)
+        binding.tvStatus.setTextColor(statusColor)
+        binding.tvStatus.visibility = View.VISIBLE
+        binding.tvStatus.text = when {
+            debugCheck?.status == PositionCheckDebugStatus.SKIPPED ->
+                "SKIPPED | ${debugCheck.skipReason ?: "not evaluated"}"
+            debugActual != null ->
+                "%s | actual: %.4f | threshold: %.4f".format(
+                    statusText,
+                    debugActual,
+                    debugThreshold
+                )
+            allIssues.isNotEmpty() -> {
+                val issue = allIssues.first()
+                "FAIL | actual: %.4f | threshold: %.4f".format(issue.actualValue, issue.threshold)
+            }
+            else -> statusText
         }
 
         if (inferenceFrameCount % 2 == 0 || currentInputMode == InputMode.IMAGE) {
@@ -1726,7 +1765,14 @@ class DebugActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetectionLis
     ) {
         val sb = StringBuilder()
 
-        val statusStr = if (issues.isEmpty()) "PASS" else "FAIL"
+        val debugCheck = result.debugChecks.firstOrNull()
+        val statusStr = when (debugCheck?.status) {
+            PositionCheckDebugStatus.PASS -> "PASS"
+            PositionCheckDebugStatus.FAIL -> "FAIL"
+            PositionCheckDebugStatus.FAIL_PENDING -> "FAIL_PENDING"
+            PositionCheckDebugStatus.SKIPPED -> "SKIPPED"
+            null -> if (issues.isEmpty()) "PASS" else "FAIL"
+        }
         sb.appendLine("=== RESULT: $statusStr ===")
         sb.appendLine()
 
@@ -1739,12 +1785,20 @@ class DebugActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetectionLis
         sb.appendLine("Type: ${selectedCheckType.name}")
         sb.appendLine("Operator: ${selectedOperator.name}")
         sb.appendLine("Threshold: %.4f".format(selectedThreshold))
+        sb.appendLine("Runtime phase: ${Phase.START.name} (debug non-IDLE)")
 
-        if (issues.isNotEmpty()) {
-            val issue = issues.first()
-            sb.appendLine("Actual: %.4f".format(issue.actualValue))
-            val delta = issue.actualValue - issue.threshold
+        val debugActual = debugCheck?.actualValue
+        val debugThreshold = debugCheck?.threshold ?: selectedThreshold
+        if (debugActual != null) {
+            sb.appendLine("Actual: %.4f".format(debugActual))
+            val delta = debugActual - debugThreshold
             sb.appendLine("Delta: %.4f".format(delta))
+            sb.appendLine("Effective landmarks: ${debugCheck.landmark1} -> ${debugCheck.landmark2}")
+            if (debugCheck.requiredFrames > 1 || debugCheck.status == PositionCheckDebugStatus.FAIL_PENDING) {
+                sb.appendLine("Confirm frames: ${debugCheck.frameCount}/${debugCheck.requiredFrames}")
+            }
+        } else if (debugCheck?.status == PositionCheckDebugStatus.SKIPPED) {
+            sb.appendLine("Skip reason: ${debugCheck.skipReason ?: "not evaluated"}")
         } else {
             val rawDiff = computeRawDiff(landmarks)
             if (rawDiff != null) {
@@ -1763,7 +1817,7 @@ class DebugActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetectionLis
             sb.appendLine("Posture:   ${sceneResult.posture} (%.1f°)".format(sceneResult.bodyAxisAngleDeg))
             sb.appendLine("Region:    ${sceneResult.region}")
             sb.appendLine("Facing:    ${sceneResult.facing}")
-            sb.appendLine("Active axis: ${getActiveAxis(selectedCheckType, sceneResult.direction)}")
+            sb.appendLine("Active axis: ${getActiveAxis(selectedCheckType, sceneResult)}")
         } else if (camResult != null) {
             sb.appendLine("Direction: ${camResult.position}")
             sb.appendLine("Facing:    ${camResult.facingDirection}")
@@ -1813,29 +1867,51 @@ class DebugActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetectionLis
         }
     }
 
+    /**
+     * Alignment checks ignore the operator: they only test whether the points
+     * are within `threshold` of each other (range <= threshold). We hide the
+     * operator dropdown to avoid implying it has any effect.
+     */
+    private fun isAlignmentCheck(checkType: PositionCheckType): Boolean = when (checkType) {
+        PositionCheckType.HORIZONTAL_ALIGNMENT,
+        PositionCheckType.VERTICAL_ALIGNMENT,
+        PositionCheckType.DEPTH_ALIGNMENT -> true
+        else -> false
+    }
+
     private fun getActiveAxis(
         checkType: PositionCheckType,
-        cameraPosition: CameraPositionDetector.DetectedCameraPosition
+        scene: PoseSceneResult?
     ): String {
+        val cameraPosition = scene?.direction ?: CameraPositionDetector.DetectedCameraPosition.UNKNOWN
+        val posture = scene?.posture ?: BodyPosture.STANDING
+        val isLying = posture == BodyPosture.LYING_PRONE ||
+            posture == BodyPosture.LYING_SUPINE ||
+            posture == BodyPosture.LYING_SIDE
+        val isSideCamera = cameraPosition == CameraPositionDetector.DetectedCameraPosition.SIDE_VIEW_LEFT ||
+            cameraPosition == CameraPositionDetector.DetectedCameraPosition.SIDE_VIEW_RIGHT
+
         return when (checkType) {
-            PositionCheckType.VERTICAL_COMPARISON -> "Y"
+            PositionCheckType.VERTICAL_COMPARISON ->
+                if (isLying && isSideCamera) "X (lying side vertical)" else "Y"
             PositionCheckType.HORIZONTAL_ALIGNMENT -> "Y (range)"
             PositionCheckType.VERTICAL_ALIGNMENT -> "X (range)"
             PositionCheckType.DEPTH_ALIGNMENT -> "Z (abs diff)"
             PositionCheckType.DISTANCE_RATIO -> "3D distance ratio"
             PositionCheckType.FORWARD_COMPARISON -> {
-                when (cameraPosition) {
-                    CameraPositionDetector.DetectedCameraPosition.SIDE_VIEW_LEFT,
-                    CameraPositionDetector.DetectedCameraPosition.SIDE_VIEW_RIGHT -> "X (forward/side)"
-                    CameraPositionDetector.DetectedCameraPosition.FRONT_VIEW,
-                    CameraPositionDetector.DetectedCameraPosition.BACK_VIEW -> "Z (forward/front)"
+                when {
+                    isLying && isSideCamera -> "Y (lying side forward)"
+                    isLying -> "X (lying front/back forward)"
+                    isSideCamera -> "X (forward/side, facing-aware)"
+                    cameraPosition == CameraPositionDetector.DetectedCameraPosition.FRONT_VIEW ||
+                        cameraPosition == CameraPositionDetector.DetectedCameraPosition.BACK_VIEW -> "-Z (forward/front)"
                     else -> "X (default)"
                 }
             }
             PositionCheckType.SIDEWAYS_COMPARISON -> {
-                when (cameraPosition) {
-                    CameraPositionDetector.DetectedCameraPosition.SIDE_VIEW_LEFT,
-                    CameraPositionDetector.DetectedCameraPosition.SIDE_VIEW_RIGHT -> "Z (sideways/side)"
+                when {
+                    isSideCamera -> "Z (sideways/side)"
+                    isLying -> "Y (lying front/back sideways)"
                     else -> "X (sideways/front)"
                 }
             }
@@ -2121,7 +2197,7 @@ class DebugActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetectionLis
                 operator = selectedOperator,
                 threshold = selectedThreshold
             ),
-            activePhases = listOf("idle", "start", "down", "bottom", "up"),
+            activePhases = listOf("all"),
             errorMessage = LocalizedText(en = "Debug check failed"),
             severity = CheckSeverity.ERROR,
             cooldownMs = 0,
@@ -2131,7 +2207,7 @@ class DebugActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetectionLis
         positionValidator = PositionValidator(
             positionChecks = listOf(check),
             posePositionCode = "standing_side",
-            sceneExpectation = PoseSceneExpectation.fromLegacyCode("standing_side")
+            sceneExpectation = buildExpectation()
         )
     }
 

@@ -346,7 +346,7 @@ export const PositionCheckConditionSchema = z.object({
     'greater_than_ratio',
     'less_than_ratio',
   ]),
-  threshold: z.number().min(0, 'Threshold must be >= 0'),
+  threshold: z.number().finite('Threshold must be a finite number'),
 });
 
 export const PositionCheckSchema = z.object({

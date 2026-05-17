@@ -258,13 +258,11 @@ function PositionCheckCard({ check, index, onUpdate, onRemove, isHoldExercise }:
               <Input
                 type="number"
                 step={0.01}
-                min={0}
-                max={1}
                 value={check.condition.threshold}
                 onChange={(e) => updateField('condition', { ...check.condition, threshold: Number(e.target.value) })}
                 className="w-32"
               />
-              <span className="text-sm text-gray-500">(0-1 normalized value)</span>
+              <span className="text-sm text-gray-500">(signed; normalized / ratio per check type)</span>
             </div>
           </div>
 
