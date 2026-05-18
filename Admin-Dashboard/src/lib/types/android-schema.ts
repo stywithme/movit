@@ -397,8 +397,13 @@ export interface ExerciseConfig {
 // BILATERAL EXERCISE CONFIGURATION
 // ============================================
 
+export type BilateralSwitchMode = 'every_rep' | 'after_all_reps';
+
 export interface BilateralConfig {
-  switchEvery: number;           // Switch side every N reps (default: 1)
+  /** New mobile contract. `after_all_reps` resolves against the runtime target reps. */
+  switchMode?: BilateralSwitchMode;
+  /** Legacy fallback for older configs/clients. */
+  switchEvery?: number;
   startSide: string;             // 'left' or 'right'
 }
 

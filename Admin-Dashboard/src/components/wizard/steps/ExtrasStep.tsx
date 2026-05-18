@@ -37,6 +37,7 @@ export function ExtrasStep({ muscles, equipment, tags }: ExtrasStepProps) {
     reportMetrics,
     setReportMetrics,
     countingMethod,
+    repConfig,
     jointConfig,
     positionChecks,
     bilateralConfig,
@@ -269,16 +270,25 @@ export function ExtrasStep({ muscles, equipment, tags }: ExtrasStepProps) {
               <div className="space-y-4 border-t pt-4">
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <Label>Switch Every (reps)</Label>
-                    <Input
-                      type="number"
-                      min={1}
-                      value={bilateralConfig.switchEvery}
-                      onChange={(e) =>
-                        setBilateralConfig({ switchEvery: Number.parseInt(e.target.value, 10) || 1 })
-                      }
-                    />
-                    <p className="text-xs text-gray-400 mt-1">How many reps before switching sides</p>
+                    <Label>Switch Side</Label>
+                    <select
+                      value={bilateralConfig.switchMode || 'every_rep'}
+                      onChange={(e) => {
+                        const switchMode = e.target.value as 'every_rep' | 'after_all_reps';
+                        setBilateralConfig({
+                          switchMode,
+                          // Keep a deterministic legacy value for older JSON consumers.
+                          switchEvery: switchMode === 'every_rep' ? 1 : (repConfig.reps || 1),
+                        });
+                      }}
+                      className="w-full px-3 py-2 border border-gray-200 rounded-lg bg-white text-gray-900"
+                    >
+                      <option value="every_rep">After every rep</option>
+                      <option value="after_all_reps">After all reps</option>
+                    </select>
+                    <p className="text-xs text-gray-400 mt-1">
+                      "All reps" uses the trainee's final rep count from the mobile pre-workout dialog.
+                    </p>
                   </div>
                   <div>
                     <Label>Start Side</Label>

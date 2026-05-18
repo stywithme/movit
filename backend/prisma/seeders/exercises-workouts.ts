@@ -125,7 +125,7 @@ export async function seedExercisesAndWorkouts(
       tags?: string[];
       repCountingConfig?: Record<string, unknown>;
       isBilateral?: boolean;
-      bilateralConfig?: { switchEvery?: number; startSide?: string };
+      bilateralConfig?: { switchMode?: 'every_rep' | 'after_all_reps'; switchEvery?: number; startSide?: string };
       supportsWeight?: boolean;
       poseVariants?: Array<{
         name: { ar: string; en: string };

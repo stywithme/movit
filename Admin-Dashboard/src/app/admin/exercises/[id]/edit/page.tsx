@@ -163,6 +163,12 @@ export default function EditExercisePage() {
           ?.filter((a: { attributeValue?: { attribute?: { code: string } } }) => 
             a.attributeValue?.attribute?.code === 'tag')
           .map((a: { attributeValueId: string }) => a.attributeValueId) || [];
+
+        const bilateral = exercise.bilateralConfig as {
+          switchMode?: 'every_rep' | 'after_all_reps';
+          switchEvery?: number;
+          startSide?: string;
+        } | null;
         
         loadExercise({
           exerciseId: exercise.id,
@@ -223,8 +229,9 @@ export default function EditExercisePage() {
           },
           bilateralConfig: {
             enabled: Boolean(exercise.isBilateral),
-            switchEvery: (exercise.bilateralConfig as { switchEvery?: number } | null)?.switchEvery || 1,
-            startSide: ((exercise.bilateralConfig as { startSide?: string } | null)?.startSide || 'right') as 'left' | 'right',
+            switchMode: bilateral?.switchMode || ((bilateral?.switchEvery || 1) > 1 ? 'after_all_reps' : 'every_rep'),
+            switchEvery: bilateral?.switchEvery || 1,
+            startSide: (bilateral?.startSide || 'right') as 'left' | 'right',
           },
           blueprintExerciseMeta: {
             movementPattern: (exercise as { movementPattern?: string }).movementPattern ?? '',

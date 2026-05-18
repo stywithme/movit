@@ -61,16 +61,19 @@ class TrainingEngine(
     
     val pipelineTrace: PipelineTrace = PipelineTrace()
     
-    private val bilateral = BilateralController(
-        isBilateral = exerciseConfig.isBilateral,
-        config = exerciseConfig.bilateralConfig
-    )
-    val bilateralSide: StateFlow<BilateralSide> = bilateral.side
-    
     // Milestone: config and active variant.
     
     private val poseVariant: PoseVariant = exerciseConfig.poseVariants[poseVariantIndex]
     private val repCountingConfig: RepCountingConfig = exerciseConfig.repCountingConfig
+    private val targetReps: Int = targetRepsOverride
+        ?: repCountingConfig.reps
+
+    private val bilateral = BilateralController(
+        isBilateral = exerciseConfig.isBilateral,
+        config = exerciseConfig.bilateralConfig,
+        targetReps = targetReps
+    )
+    val bilateralSide: StateFlow<BilateralSide> = bilateral.side
 
     private val minRepIntervalMs: Long = timingPolicy.minRepIntervalFor(repCountingConfig)
     
@@ -81,9 +84,6 @@ class TrainingEngine(
     private val primaryJointCodes: Set<String> = primaryJoints.map { it.joint }.toSet()
     
     val isBilateralFlipped: Boolean get() = bilateral.isFlipped
-    
-    private val targetReps: Int = targetRepsOverride 
-        ?: repCountingConfig.reps
     
     val feedbackMessages: FeedbackMessages
         get() = poseVariant.feedbackMessages

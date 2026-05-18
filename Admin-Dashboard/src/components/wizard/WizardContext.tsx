@@ -41,8 +41,12 @@ export interface ReportMetricsData {
   excluded: MetricCode[];
 }
 
+export type BilateralSwitchMode = 'every_rep' | 'after_all_reps';
+
 export interface BilateralConfigData {
   enabled: boolean;
+  switchMode: BilateralSwitchMode;
+  /** Legacy fallback for older mobile JSON consumers. */
   switchEvery: number;
   startSide: 'left' | 'right';
 }
@@ -211,6 +215,7 @@ const initialState: WizardState = {
   },
   bilateralConfig: {
     enabled: false,
+    switchMode: 'every_rep',
     switchEvery: 1,
     startSide: 'right',
   },
