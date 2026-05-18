@@ -49,6 +49,9 @@ function sanitizeStateMessages(
 export function buildExercisePayload() {
   const store = useWizardStore.getState();
   const isHold = store.countingMethod.countingMethodCode === 'hold';
+  const bilateralSwitchMode =
+    store.bilateralConfig.switchMode ||
+    ((store.bilateralConfig.switchEvery || 1) > 1 ? 'after_all_reps' : 'every_rep');
 
   const allJoints = store.jointConfig.trackedJoints || [];
 
@@ -176,7 +179,15 @@ export function buildExercisePayload() {
     },
     // null (not undefined) so JSON.stringify keeps the key and the backend clears isBilateral
     bilateralConfig: store.bilateralConfig.enabled
-      ? { switchEvery: store.bilateralConfig.switchEvery, startSide: store.bilateralConfig.startSide }
+      ? {
+          switchMode: bilateralSwitchMode,
+          // Legacy fallback only. New mobile uses switchMode and resolves "all reps" at runtime.
+          switchEvery:
+            bilateralSwitchMode === 'every_rep'
+              ? 1
+              : (store.repConfig.reps || store.bilateralConfig.switchEvery || 1),
+          startSide: store.bilateralConfig.startSide,
+        }
       : null,
     ...(b.movementPattern ? { movementPattern: b.movementPattern } : {}),
     ...(b.loadCapability ? { loadCapability: b.loadCapability } : {}),

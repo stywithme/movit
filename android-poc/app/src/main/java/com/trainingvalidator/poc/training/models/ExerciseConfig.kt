@@ -176,7 +176,7 @@ data class ExerciseConfig(
         if (isBilateral) {
             val c = bilateralConfig
             if (c != null) {
-                if (c.switchEvery < 1) {
+                if ((c.switchEvery ?: 1) < 1) {
                     out.add("bilateralConfig.switchEvery must be >= 1")
                 }
             }
@@ -200,12 +200,21 @@ data class ExerciseConfig(
 
 /**
  * Bilateral configuration for an exercise.
- * Controls per-rep left/right side alternation.
+ * Controls left/right side alternation.
  */
 data class BilateralConfig(
-    val switchEvery: Int = 1,       // Switch side every N reps (default: 1)
-    val startSide: String = "right" // "left" or "right"
+    val switchMode: BilateralSwitchMode? = null, // New contract; null means legacy switchEvery
+    val switchEvery: Int? = 1,                   // Legacy fallback: switch side every N reps
+    val startSide: String = "right"              // "left" or "right"
 )
+
+enum class BilateralSwitchMode {
+    @SerializedName("every_rep")
+    EVERY_REP,
+
+    @SerializedName("after_all_reps")
+    AFTER_ALL_REPS
+}
 
 /**
  * Localized text (Arabic + English)

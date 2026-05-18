@@ -12,9 +12,16 @@ const PoseVariantSchema = z.object({
   positionChecks: z.array(PositionCheckSchema).optional(),
 }).passthrough();
 
+const BilateralConfigPayloadSchema = z.object({
+  switchMode: z.enum(['every_rep', 'after_all_reps']).optional(),
+  switchEvery: z.number().int().min(1).optional(),
+  startSide: z.enum(['left', 'right']).optional(),
+}).passthrough();
+
 const ExercisePayloadSchema = z.object({
   trackedJointsConfig: z.array(TrackedJointSchema).optional(),
   poseVariants: z.array(PoseVariantSchema).optional(),
+  bilateralConfig: BilateralConfigPayloadSchema.nullable().optional(),
 }).passthrough();
 
 function validateExercisePayload(body: unknown) {

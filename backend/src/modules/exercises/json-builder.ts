@@ -658,13 +658,17 @@ function parseRepCountingConfig(
 function parseBilateralConfig(config: unknown): BilateralConfig | undefined {
   if (!config || typeof config !== 'object') return undefined;
   const record = config as Record<string, unknown>;
+  const switchMode =
+    record.switchMode === 'after_all_reps' || record.switchMode === 'every_rep'
+      ? record.switchMode
+      : undefined;
   const switchEvery = typeof record.switchEvery === 'number' ? record.switchEvery : 1;
   const startSide = typeof record.startSide === 'string' ? record.startSide : 'right';
 
   if (switchEvery <= 0) return undefined;
   if (startSide !== 'left' && startSide !== 'right') return undefined;
 
-  return { switchEvery, startSide };
+  return { switchMode, switchEvery, startSide };
 }
 
 // ============================================

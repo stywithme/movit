@@ -2,6 +2,7 @@ package com.trainingvalidator.poc.training.engine.bilateral
 
 import android.util.Log
 import com.trainingvalidator.poc.training.models.BilateralConfig
+import com.trainingvalidator.poc.training.models.BilateralSwitchMode
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -12,6 +13,7 @@ import kotlinx.coroutines.flow.asStateFlow
 class BilateralController(
     val isBilateral: Boolean,
     private val config: BilateralConfig?,
+    private val targetReps: Int,
 ) {
     val startSide: BilateralSide = when (config?.startSide) {
         "left" -> BilateralSide.LEFT
@@ -36,7 +38,11 @@ class BilateralController(
      */
     fun onRepCounted(newCount: Int) {
         if (!isBilateral) return
-        val every = (config?.switchEvery ?: 1).coerceAtLeast(1)
+        val every = when (config?.switchMode) {
+            BilateralSwitchMode.EVERY_REP -> 1
+            BilateralSwitchMode.AFTER_ALL_REPS -> targetReps.coerceAtLeast(1)
+            null -> (config?.switchEvery ?: 1).coerceAtLeast(1)
+        }
         if (newCount > 0 && newCount % every == 0) {
             current = current.flip()
             _side.value = current
