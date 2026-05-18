@@ -12,6 +12,7 @@ import coil.ImageLoaderFactory
 import coil.decode.GifDecoder
 import coil.decode.ImageDecoderDecoder
 import com.trainingvalidator.poc.network.ApiClient
+import com.trainingvalidator.poc.sensors.DeviceTiltProvider
 import com.trainingvalidator.poc.storage.SystemMessageStore
 import com.trainingvalidator.poc.training.engine.PostureMlpClassifier
 import com.trainingvalidator.poc.ui.main.MainContainerActivity
@@ -34,6 +35,10 @@ class PoseApp : Application(), ImageLoaderFactory {
      * Uses [SupervisorJob] so one failed child does not cancel siblings.
      */
     val applicationScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+
+    val tiltProvider: DeviceTiltProvider by lazy {
+        DeviceTiltProvider(applicationContext)
+    }
 
     companion object {
         private lateinit var _instance: PoseApp

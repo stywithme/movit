@@ -29,6 +29,12 @@ sealed class SupervisorSignal {
     
     /** User pressed stop/close button */
     object StopRequested : SupervisorSignal()
+
+    /** Activity moved to background; pause engine resources without changing session state. */
+    object ActivityPaused : SupervisorSignal()
+
+    /** Activity returned to foreground; resume engine resources if lifecycle-paused. */
+    object ActivityResumed : SupervisorSignal()
     
     // ==================== Pose Data ====================
     

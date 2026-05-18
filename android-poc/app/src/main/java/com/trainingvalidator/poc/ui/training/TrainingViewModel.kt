@@ -7,6 +7,7 @@ import android.os.SystemClock
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
+import com.trainingvalidator.poc.PoseApp
 import com.trainingvalidator.poc.analysis.JointAngles
 import com.trainingvalidator.poc.analysis.SmoothedLandmark
 import com.trainingvalidator.poc.training.TrainingEngine
@@ -215,7 +216,10 @@ class TrainingViewModel(
             exerciseConfig = config,
             poseVariantIndex = poseVariantIndex,
             targetRepsOverride = targetRepsOverride,
-            targetDurationMsOverride = targetDurationMsOverride
+            targetDurationMsOverride = targetDurationMsOverride,
+            tiltSource = PoseApp.instance.tiltProvider.takeIf {
+                config.hasAnyPositionChecks(poseVariantIndex)
+            }
         )
         
         // Create motion recorder for analytics
@@ -360,6 +364,14 @@ class TrainingViewModel(
      */
     fun requestResume() {
         supervisor.processSignal(SupervisorSignal.ResumeRequested)
+    }
+
+    fun handleActivityPause() {
+        supervisor.processSignal(SupervisorSignal.ActivityPaused)
+    }
+
+    fun handleActivityResume() {
+        supervisor.processSignal(SupervisorSignal.ActivityResumed)
     }
     
     /**
@@ -931,7 +943,10 @@ class TrainingViewModel(
             exerciseConfig = config,
             poseVariantIndex = poseVariantIndex,
             targetRepsOverride = targetRepsOverride,
-            targetDurationMsOverride = targetDurationMsOverride
+            targetDurationMsOverride = targetDurationMsOverride,
+            tiltSource = PoseApp.instance.tiltProvider.takeIf {
+                config.hasAnyPositionChecks(poseVariantIndex)
+            }
         )
         val exerciseId = config.fileName.ifEmpty { config.name.en }
         val trackedJoints = config.getTrackedJoints(poseVariantIndex).map { it.joint }
@@ -954,6 +969,7 @@ class TrainingViewModel(
         supervisorObserverJob?.cancel()
         countdownController.release()
         feedbackManager?.release()
+        trainingEngine?.stop()
         supervisor.reset()
     }
     

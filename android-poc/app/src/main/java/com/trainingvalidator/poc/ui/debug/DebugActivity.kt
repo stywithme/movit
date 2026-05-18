@@ -33,6 +33,7 @@ import com.google.mediapipe.tasks.components.containers.Landmark
 import com.google.mediapipe.tasks.components.containers.NormalizedLandmark
 import com.google.android.material.tabs.TabLayout
 import com.trainingvalidator.poc.R
+import com.trainingvalidator.poc.PoseApp
 import com.trainingvalidator.poc.analysis.AngleCalculator
 import com.trainingvalidator.poc.analysis.ElbowAngleEstimator
 import com.trainingvalidator.poc.analysis.ElbowDiagnostics
@@ -52,6 +53,7 @@ import com.trainingvalidator.poc.training.engine.Phase
 import com.trainingvalidator.poc.training.engine.BodyPosture
 import com.trainingvalidator.poc.training.engine.BodyPostureDetector
 import com.trainingvalidator.poc.training.engine.ExpectedDirection
+import com.trainingvalidator.poc.training.engine.LandmarkTiltCorrector
 import com.trainingvalidator.poc.training.engine.PoseSceneDetector
 import com.trainingvalidator.poc.training.engine.PoseSceneExpectation
 import com.trainingvalidator.poc.training.engine.PoseSceneResult
@@ -110,6 +112,9 @@ class DebugActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetectionLis
     private var selectedOperator = PositionOperator.SHOULD_NOT_EXCEED
     private var selectedThreshold = 0.05
     private var positionValidator: PositionValidator? = null
+    private var isPositionTiltCorrectionEnabled = false
+
+    private val debugTiltOwner = "debug-position"
 
     // FPS tracking
     private var inferenceFrameCount = 0
@@ -264,8 +269,19 @@ class DebugActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetectionLis
         checkCameraPermission()
     }
 
+    override fun onResume() {
+        super.onResume()
+        updateTiltProviderState()
+    }
+
+    override fun onPause() {
+        PoseApp.instance.tiltProvider.release(debugTiltOwner)
+        super.onPause()
+    }
+
     override fun onDestroy() {
         super.onDestroy()
+        PoseApp.instance.tiltProvider.release(debugTiltOwner)
         cameraManager?.stopCamera()
         videoManager?.release()
         poseLandmarkerHelper?.close()
@@ -384,6 +400,14 @@ class DebugActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetectionLis
                 override fun onTabReselected(tab: TabLayout.Tab?) {}
             })
 
+            val switchTiltCorrection = view.findViewById<SwitchMaterial>(R.id.switchTiltCorrection)
+            switchTiltCorrection.isChecked = isPositionTiltCorrectionEnabled
+            switchTiltCorrection.setOnCheckedChangeListener { _, isChecked ->
+                isPositionTiltCorrectionEnabled = isChecked
+                rebuildPositionValidator()
+                updateTiltProviderState()
+            }
+
             // Spinners
             setupSpinner(view.findViewById(R.id.spinnerJoint), jointCodes) { pos ->
                 selectedJointCode = jointCodes[pos]
@@ -500,6 +524,8 @@ class DebugActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetectionLis
             }
         }
 
+        updateTiltProviderState()
+
         if (currentInputMode == InputMode.IMAGE) {
             reanalyzeCurrentImage()
         }
@@ -579,6 +605,10 @@ class DebugActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetectionLis
         binding.staticImageView.visibility = if (newMode == InputMode.IMAGE) View.VISIBLE else View.GONE
         binding.btnSwitchCamera.visibility = if (newMode == InputMode.CAMERA) View.VISIBLE else View.GONE
         binding.videoControls.visibility = if (newMode == InputMode.VIDEO) View.VISIBLE else View.GONE
+        if (currentTab == TAB_POSITION) {
+            rebuildPositionValidator()
+        }
+        updateTiltProviderState()
 
         // Start new mode
         when (newMode) {
@@ -1701,6 +1731,35 @@ class DebugActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetectionLis
         return "$gateStatus (min vis ${formatRatio(minVisibility.toDouble())})"
     }
 
+    private fun shouldRunTiltProvider(): Boolean {
+        return isPositionTiltCorrectionEnabled &&
+            currentTab == TAB_POSITION &&
+            currentInputMode == InputMode.CAMERA
+    }
+
+    private fun updateTiltProviderState() {
+        if (shouldRunTiltProvider()) {
+            PoseApp.instance.tiltProvider.acquire(debugTiltOwner)
+        } else {
+            PoseApp.instance.tiltProvider.release(debugTiltOwner)
+        }
+    }
+
+    private fun buildPositionTiltStatusSuffix(): String {
+        if (!isPositionTiltCorrectionEnabled) return ""
+        if (currentInputMode != InputMode.CAMERA) return " | tilt: camera only"
+        val provider = PoseApp.instance.tiltProvider
+        if (!provider.isAvailable) return " | tilt: unavailable"
+        return " | tilt: %.1f°".format(provider.rollDegrees)
+    }
+
+    private fun buildDebugEffectiveLandmarks(landmarks: List<SmoothedLandmark>): List<SmoothedLandmark>? {
+        if (!isPositionTiltCorrectionEnabled || currentInputMode != InputMode.CAMERA) return null
+        val provider = PoseApp.instance.tiltProvider
+        if (!provider.isAvailable || provider.correctionRadians == 0f) return null
+        return LandmarkTiltCorrector.correct(landmarks, provider.correctionRadians)
+    }
+
     private fun updatePositionCheckDisplay(landmarks: List<SmoothedLandmark>, isFrontCamera: Boolean) {
         val validator = positionValidator ?: run {
             rebuildPositionValidator()
@@ -1737,7 +1796,7 @@ class DebugActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetectionLis
         binding.tvLiveValue.setTextColor(statusColor)
         binding.tvStatus.setTextColor(statusColor)
         binding.tvStatus.visibility = View.VISIBLE
-        binding.tvStatus.text = when {
+        val baseStatusText = when {
             debugCheck?.status == PositionCheckDebugStatus.SKIPPED ->
                 "SKIPPED | ${debugCheck.skipReason ?: "not evaluated"}"
             debugActual != null ->
@@ -1752,9 +1811,14 @@ class DebugActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetectionLis
             }
             else -> statusText
         }
+        binding.tvStatus.text = baseStatusText + buildPositionTiltStatusSuffix()
 
         if (inferenceFrameCount % 2 == 0 || currentInputMode == InputMode.IMAGE) {
-            updateDebugInfoPanel(landmarks, result, allIssues)
+            updateDebugInfoPanel(
+                landmarks = landmarks,
+                result = result,
+                issues = allIssues
+            )
         }
     }
 
@@ -1776,9 +1840,33 @@ class DebugActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetectionLis
         sb.appendLine("=== RESULT: $statusStr ===")
         sb.appendLine()
 
-        sb.appendLine("--- LANDMARKS ---")
+        sb.appendLine("--- TILT CORRECTION ---")
+        sb.appendLine("Enabled: ${if (isPositionTiltCorrectionEnabled) "YES" else "no"}")
+        sb.appendLine("Scope:   Position debug / camera input only")
+        val tiltProvider = PoseApp.instance.tiltProvider
+        sb.appendLine("Sensor:  ${when {
+            !isPositionTiltCorrectionEnabled -> "idle"
+            currentInputMode != InputMode.CAMERA -> "idle (not camera input)"
+            !tiltProvider.isAvailable -> "unavailable"
+            tiltProvider.isRunning -> "running"
+            else -> "idle"
+        }}")
+        if (tiltProvider.isAvailable && currentInputMode == InputMode.CAMERA) {
+            sb.appendLine("Roll:    %.1f deg".format(tiltProvider.rollDegrees))
+            sb.appendLine("Applied: %.1f deg".format(Math.toDegrees(tiltProvider.correctionRadians.toDouble())))
+        }
+        val effectiveLandmarks = buildDebugEffectiveLandmarks(landmarks)
+        sb.appendLine()
+
+        sb.appendLine("--- LANDMARKS (RAW) ---")
         appendLandmarkInfo(sb, "Primary", selectedPrimaryLandmark, landmarks)
         appendLandmarkInfo(sb, "Secondary", selectedSecondaryLandmark, landmarks)
+        if (effectiveLandmarks != null) {
+            sb.appendLine()
+            sb.appendLine("--- EFFECTIVE LANDMARKS (CORRECTED) ---")
+            appendLandmarkInfo(sb, "Primary", selectedPrimaryLandmark, effectiveLandmarks)
+            appendLandmarkInfo(sb, "Secondary", selectedSecondaryLandmark, effectiveLandmarks)
+        }
         sb.appendLine()
 
         sb.appendLine("--- COMPARISON ---")
@@ -1800,10 +1888,10 @@ class DebugActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetectionLis
         } else if (debugCheck?.status == PositionCheckDebugStatus.SKIPPED) {
             sb.appendLine("Skip reason: ${debugCheck.skipReason ?: "not evaluated"}")
         } else {
-            val rawDiff = computeRawDiff(landmarks)
-            if (rawDiff != null) {
-                sb.appendLine("Actual: %.4f".format(rawDiff))
-                val delta = rawDiff - selectedThreshold
+            val fallbackDiff = computeRawDiff(effectiveLandmarks ?: landmarks)
+            if (fallbackDiff != null) {
+                sb.appendLine("Actual: %.4f".format(fallbackDiff))
+                val delta = fallbackDiff - selectedThreshold
                 sb.appendLine("Delta: %.4f".format(delta))
             }
         }
@@ -2207,7 +2295,10 @@ class DebugActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetectionLis
         positionValidator = PositionValidator(
             positionChecks = listOf(check),
             posePositionCode = "standing_side",
-            sceneExpectation = buildExpectation()
+            sceneExpectation = buildExpectation(),
+            tiltSource = PoseApp.instance.tiltProvider.takeIf {
+                isPositionTiltCorrectionEnabled && currentInputMode == InputMode.CAMERA
+            }
         )
     }
 

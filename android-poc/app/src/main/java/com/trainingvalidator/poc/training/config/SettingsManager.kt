@@ -264,6 +264,12 @@ object SettingsManager {
      * Get line indicator settings object
      */
     fun getLineIndicatorSettings(): LineIndicatorSettings = settings.lineIndicator
+
+    // ==================== Device Tilt Correction Settings ====================
+
+    fun getDeviceTiltSettings(): DeviceTiltSettings = settings.deviceTilt
+
+    fun isDeviceTiltCorrectionEnabled(): Boolean = settings.deviceTilt.enabled
     
     /**
      * Get center angle (typically 90°)

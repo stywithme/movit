@@ -113,6 +113,18 @@
     "_type_options": ["line", "arc"]
   },
 
+  "deviceTilt": {
+    "_comment": "Production tilt correction for position/posture validation only",
+    "enabled": true,
+    "_enabled_comment": "Kill switch for automatic tilt correction",
+    "sensorRateMicros": 200000,
+    "_sensorRateMicros_comment": "Requested sensor sampling period in microseconds",
+    "smoothingTauMs": 120,
+    "_smoothingTauMs_comment": "EMA time constant for correction angle smoothing",
+    "deadZoneDegrees": 1.0,
+    "_deadZoneDegrees_comment": "Treat smaller screen roll values as zero"
+  },
+
   "lineIndicator": {
     "_comment": "مؤشر الخط — Track + Indicator",
     "centerAngle": 90.0,

@@ -19,6 +19,7 @@ data class AppSettings(
     val setupValidation: SetupValidationSettings = SetupValidationSettings(),
     val overlayOpacity: OverlayOpacitySettings = OverlayOpacitySettings(),
     val rangeIndicator: RangeIndicatorSettings = RangeIndicatorSettings(),
+    val deviceTilt: DeviceTiltSettings = DeviceTiltSettings(),
     val lineIndicator: LineIndicatorSettings = LineIndicatorSettings()
 )
 
@@ -49,6 +50,21 @@ data class RangeIndicatorSettings(
      */
     fun isLine(): Boolean = type.equals("line", ignoreCase = true)
 }
+
+/**
+ * Device tilt correction settings for position/posture validation.
+ *
+ * @param enabled Kill switch for automatic tilt correction.
+ * @param sensorRateMicros Requested sensor sampling period in microseconds.
+ * @param smoothingTauMs EMA time constant applied to the correction angle.
+ * @param deadZoneDegrees Tiny screen roll values below this are treated as zero.
+ */
+data class DeviceTiltSettings(
+    val enabled: Boolean = true,
+    val sensorRateMicros: Int = 200_000,
+    val smoothingTauMs: Long = 120L,
+    val deadZoneDegrees: Float = 1.0f
+)
 
 /**
  * Angle detection settings - used by [JointAngleTracker], [PhaseStateMachine], and overlays
