@@ -8,9 +8,14 @@
 import { getPrisma } from '@/lib/prisma/client';
 import { DEFAULT_REST_TIMES } from './workouts.types';
 
-const PHASE_MIGRATION: Record<string, string> = { start: 'top', hold: 'all', count: 'all', idle: 'all' };
+const PHASE_MIGRATION: Record<string, string> = {
+  start: 'top',
+  hold: 'count',
+  count: 'count',
+  idle: 'all',
+};
 function migrateActivePhases(phases: string[]): string[] {
-  return [...new Set(phases.map(p => PHASE_MIGRATION[p] || p))];
+  return [...new Set(phases.map((p) => PHASE_MIGRATION[p] ?? PHASE_MIGRATION[p.toLowerCase()] ?? p))];
 }
 import type {
   CreateWorkoutInput,

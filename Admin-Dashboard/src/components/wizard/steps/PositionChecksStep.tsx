@@ -7,7 +7,7 @@
  * Position-based validation with single threshold (no difficulty levels).
  */
 
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useWizardStore } from '../WizardContext';
 import { Card, CardHeader, CardTitle, CardContent, Button, Badge, Input, Label } from '@/components/ui';
 import { SmartLocalizedInput } from '@/components/forms';
@@ -151,7 +151,11 @@ function tryParseFiniteThreshold(raw: string): number | undefined {
   return Number.isFinite(n) ? n : undefined;
 }
 
-const PHASE_OPTIONS: PhaseName[] = ['all', 'top', 'down', 'bottom', 'up'];
+/** Rep-based (up & down): no legacy idle/start/hold; no `count` (hold-timer phase does not exist in this mode). */
+const REP_PHASE_OPTIONS: PhaseName[] = ['all', 'top', 'down', 'bottom', 'up'];
+
+/** Hold / isometric: checks apply during the hold timer only (`count` phase on mobile). */
+const HOLD_PHASE_OPTIONS: PhaseName[] = ['count'];
 
 const AVAILABLE_LANDMARKS = [
   'left_knee', 'right_knee', 'left_hip', 'right_hip',
@@ -173,6 +177,7 @@ interface PositionCheckCardProps {
 }
 
 function PositionCheckCard({ check, index, onUpdate, onRemove, isHoldExercise }: PositionCheckCardProps) {
+  const phaseOptions = isHoldExercise ? HOLD_PHASE_OPTIONS : REP_PHASE_OPTIONS;
   const [expanded, setExpanded] = useState(false);
   const [messagePickerOpen, setMessagePickerOpen] = useState(false);
   const [thresholdInput, setThresholdInput] = useState(() => String(check.condition.threshold));
@@ -422,42 +427,39 @@ function PositionCheckCard({ check, index, onUpdate, onRemove, isHoldExercise }:
             )}
           </div>
 
-          {/* Active Phases (hidden for hold exercises - always "all") */}
-          {isHoldExercise ? (
-            <div>
-              <Label>Active Phases</Label>
+          {/* Active Phases */}
+          <div>
+            <Label>Active Phases</Label>
+            {isHoldExercise && (
               <p className="text-sm text-gray-500 mt-1">
-                Hold exercises apply checks in all phases automatically.
+                Hold exercises run this check during the hold timer only (<span className="font-mono">count</span> phase).
               </p>
+            )}
+            <div className="flex flex-wrap gap-2 mt-2">
+              {phaseOptions.map((phase) => {
+                const isActive = check.activePhases.includes(phase);
+                return (
+                  <button
+                    key={phase}
+                    type="button"
+                    onClick={() => {
+                      const newPhases = isActive
+                        ? check.activePhases.filter(p => p !== phase)
+                        : [...check.activePhases, phase];
+                      if (newPhases.length === 0) return;
+                      updateField('activePhases', newPhases);
+                    }}
+                    className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${isActive
+                      ? 'bg-blue-500 text-white'
+                      : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                      }`}
+                  >
+                    {phase}
+                  </button>
+                );
+              })}
             </div>
-          ) : (
-            <div>
-              <Label>Active Phases</Label>
-              <div className="flex flex-wrap gap-2 mt-2">
-                {PHASE_OPTIONS.map((phase) => {
-                  const isActive = check.activePhases.includes(phase);
-                  return (
-                    <button
-                      key={phase}
-                      type="button"
-                      onClick={() => {
-                        const newPhases = isActive
-                          ? check.activePhases.filter(p => p !== phase)
-                          : [...check.activePhases, phase];
-                        updateField('activePhases', newPhases);
-                      }}
-                      className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${isActive
-                        ? 'bg-blue-500 text-white'
-                        : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                        }`}
-                    >
-                      {phase}
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-          )}
+          </div>
 
           {/* Error Messages */}
           <div className="space-y-2">
@@ -685,11 +687,64 @@ export function PositionChecksStep() {
     setPositionChecks({ positionChecks: [...newSourceChecks, ...mirrors] });
   };
 
+  const activePhasesSanitySignature = useMemo(
+    () =>
+      JSON.stringify(
+        (positionChecks.positionChecks || [])
+          .filter((c) => !isMirroredCheck(c.checkId))
+          .map((c) => [c.checkId, [...(c.activePhases || [])].sort()]),
+      ),
+    [positionChecks.positionChecks],
+  );
+
+  /**
+   * Strip legacy phase tokens (idle/start/hold) and align with exercise type:
+   * hold → always `count`; reps → only rep-phase names (default down+bottom if empty).
+   */
+  useEffect(() => {
+    const all = positionChecks.positionChecks || [];
+    const source = all.filter((c) => !isMirroredCheck(c.checkId));
+    if (source.length === 0) return;
+
+    let nextSource: PositionCheckData[];
+    if (isHoldExercise) {
+      nextSource = source.map((c) => ({ ...c, activePhases: ['count'] }));
+    } else {
+      const allowed = new Set<PhaseName>(REP_PHASE_OPTIONS);
+      nextSource = source.map((c) => {
+        const phases = c.activePhases.filter((p) => allowed.has(p));
+        return {
+          ...c,
+          activePhases: phases.length > 0 ? phases : (['down', 'bottom'] as PhaseName[]),
+        };
+      });
+    }
+
+    const unchanged =
+      source.length === nextSource.length &&
+      source.every(
+        (c, i) =>
+          c.checkId === nextSource[i].checkId &&
+          JSON.stringify(c.activePhases) === JSON.stringify(nextSource[i].activePhases),
+      );
+    if (unchanged) return;
+
+    if (!isBilateralEnabled) {
+      setPositionChecks({ positionChecks: nextSource });
+      return;
+    }
+    const mirrors: PositionCheckData[] = [];
+    for (const check of nextSource) {
+      if (hasSidedLandmarks(check)) mirrors.push(mirrorPositionCheck(check));
+    }
+    setPositionChecks({ positionChecks: [...nextSource, ...mirrors] });
+  }, [activePhasesSanitySignature, isBilateralEnabled, isHoldExercise, setPositionChecks]);
+
   const addFromTemplate = (template: typeof TEMPLATES[number]) => {
     const check: PositionCheckData = {
       ...template.data,
       checkId: `${template.id}_${Date.now()}`,
-      activePhases: isHoldExercise ? ['all'] : template.data.activePhases,
+      activePhases: isHoldExercise ? ['count'] : template.data.activePhases,
     };
     rebuildChecks([...sourceChecks, check]);
   };
@@ -700,7 +755,7 @@ export function PositionChecksStep() {
       type: 'vertical_alignment',
       landmarks: { primary: 'left_shoulder', secondary: 'left_hip' },
       condition: { operator: 'approximately_equal', threshold: 0.1 },
-      activePhases: isHoldExercise ? ['all'] : ['down', 'bottom'],
+      activePhases: isHoldExercise ? ['count'] : ['down', 'bottom'],
       errorMessage: { ar: 'تحقق من وضعك', en: 'Check your position', audioAr: undefined, audioEn: undefined },
       severity: 'warning',
       cooldownMs: 2000,

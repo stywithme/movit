@@ -123,13 +123,18 @@ export default function EditExercisePage() {
           {}
         );
         
-        const PHASE_MIGRATION: Record<string, string> = { start: 'top', hold: 'all', count: 'all', idle: 'all' };
+        const PHASE_MIGRATION: Record<string, string> = {
+          start: 'top',
+          hold: 'count',
+          count: 'count',
+          idle: 'all',
+        };
         const positionChecks = (firstVariant?.positionChecks || []).map((pc: Record<string, unknown>) => ({
           checkId: pc.checkId as string,
           type: pc.type as string,
           landmarks: pc.landmarks as { primary: string; secondary: string; tertiary?: string; quaternary?: string },
           condition: pc.condition as { operator: string; threshold: number },
-          activePhases: [...new Set((pc.activePhases as string[]).map(p => PHASE_MIGRATION[p] || p))],
+          activePhases: [...new Set((pc.activePhases as string[]).map((p) => PHASE_MIGRATION[p] ?? PHASE_MIGRATION[p.toLowerCase()] ?? p))],
           errorMessage: pc.errorMessage as { ar: string; en: string },
           severity: pc.severity as string || 'warning',
           cooldownMs: (pc.cooldownMs as number) || 2000,

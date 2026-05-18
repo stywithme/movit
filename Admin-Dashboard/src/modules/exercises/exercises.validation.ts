@@ -368,7 +368,7 @@ export const PositionCheckSchema = z.object({
   landmarks: PositionCheckLandmarksSchema,
   condition: PositionCheckConditionSchema,
   activePhases: z.array(z.enum([
-    'all', 'top', 'down', 'bottom', 'up',
+    'all', 'top', 'down', 'bottom', 'up', 'count',
   ])).min(1, 'Please select at least one phase'),
   errorMessage: LocalizedTextOptionalSchema, // Will be filled from library if messageId is present
   messageId: z.string().optional(),
