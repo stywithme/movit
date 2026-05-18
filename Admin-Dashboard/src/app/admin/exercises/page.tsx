@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
 import { LocalizedText } from '@/lib/types/localized';
 import { Input, Select } from '@/components/ui';
@@ -39,36 +39,45 @@ export default function ExercisesListPage() {
   const [loading, setLoading] = useState(true);
   const [statusFilter, setStatusFilter] = useState<string>('');
   const [searchQuery, setSearchQuery] = useState('');
+  const [debouncedSearch, setDebouncedSearch] = useState('');
 
-  const fetchExercises = async (page = 1) => {
-    setLoading(true);
-    try {
-      const params = new URLSearchParams();
-      params.set('page', page.toString());
-      if (statusFilter) params.set('status', statusFilter);
-      if (searchQuery) params.set('search', searchQuery);
+  useEffect(() => {
+    const t = window.setTimeout(() => setDebouncedSearch(searchQuery), 400);
+    return () => window.clearTimeout(t);
+  }, [searchQuery]);
 
-      const res = await fetch(`/api/exercises?${params}`);
-      const data = await res.json();
+  const fetchExercises = useCallback(
+    async (page = 1) => {
+      setLoading(true);
+      try {
+        const params = new URLSearchParams();
+        params.set('page', page.toString());
+        if (statusFilter) params.set('status', statusFilter);
+        if (debouncedSearch.trim()) params.set('search', debouncedSearch.trim());
 
-      if (data.success) {
-        setExercises(data.data);
-        setPagination(data.pagination);
+        const res = await fetch(`/api/exercises?${params}`);
+        const data = await res.json();
+
+        if (data.success) {
+          setExercises(data.data);
+          setPagination(data.pagination);
+        }
+      } catch (error) {
+        console.error('Error fetching exercises:', error);
+      } finally {
+        setLoading(false);
       }
-    } catch (error) {
-      console.error('Error fetching exercises:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
+    },
+    [statusFilter, debouncedSearch],
+  );
 
   useEffect(() => {
     fetchExercises();
-  }, [statusFilter]);
+  }, [fetchExercises]);
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
-    fetchExercises();
+    setDebouncedSearch(searchQuery.trim());
   };
 
   const handlePublish = async (id: string) => {
@@ -129,7 +138,7 @@ export default function ExercisesListPage() {
                 type="text"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Search exercises..."
+                placeholder="Name, slug, category, muscles..."
                 className="flex-1"
               />
               <button

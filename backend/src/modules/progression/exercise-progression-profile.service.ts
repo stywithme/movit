@@ -1,4 +1,5 @@
 import { getPrisma } from '@/lib/prisma/client';
+import { buildExerciseSearchWhere } from '@/modules/exercises/exercise-search.util';
 import { buildDefaultProfile, ARCHETYPE_DEFAULTS } from './archetype-defaults';
 
 export const exerciseProgressionProfileService = {
@@ -21,13 +22,12 @@ export const exerciseProgressionProfileService = {
 
   async listExercisesWithProfileStatus(search?: string) {
     const prisma = await getPrisma();
+    const searchWhere = buildExerciseSearchWhere(search);
     const exercises = await prisma.exercise.findMany({
       where: {
         status: 'published',
         deletedAt: null,
-        ...(search
-          ? { OR: [{ slug: { contains: search, mode: 'insensitive' as any } }] }
-          : {}),
+        ...(searchWhere ? { AND: [searchWhere] } : {}),
       },
       select: {
         id: true,
