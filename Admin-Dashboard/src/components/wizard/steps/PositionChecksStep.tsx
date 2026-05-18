@@ -7,7 +7,7 @@
  * Position-based validation with single threshold (no difficulty levels).
  */
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useWizardStore } from '../WizardContext';
 import { Card, CardHeader, CardTitle, CardContent, Button, Badge, Input, Label } from '@/components/ui';
 import { SmartLocalizedInput } from '@/components/forms';
@@ -106,6 +106,51 @@ const OPERATORS: Array<{ value: ConditionOperator; label: string; description: s
   { value: 'less_than_ratio', label: 'Less Than Ratio', description: 'Distance ratio must be less than threshold (for Distance Ratio type)' },
 ];
 
+/** Alignment checks ignore operator in the engine; we still persist a valid enum for API/schema. */
+const ALIGNMENT_PLACEHOLDER_OPERATOR: ConditionOperator = 'approximately_equal';
+
+function isAlignmentCheckType(type: PositionCheckType): boolean {
+  return (
+    type === 'horizontal_alignment' ||
+    type === 'vertical_alignment' ||
+    type === 'depth_alignment'
+  );
+}
+
+function operatorsForCheckType(type: PositionCheckType): typeof OPERATORS {
+  if (type === 'distance_ratio') {
+    return OPERATORS.filter((o) => o.value === 'greater_than_ratio' || o.value === 'less_than_ratio');
+  }
+  return OPERATORS.filter(
+    (o) =>
+      o.value === 'should_not_exceed' ||
+      o.value === 'should_exceed' ||
+      o.value === 'approximately_equal',
+  );
+}
+
+function normalizeOperatorForType(type: PositionCheckType, current: ConditionOperator): ConditionOperator {
+  if (isAlignmentCheckType(type)) return ALIGNMENT_PLACEHOLDER_OPERATOR;
+  if (type === 'distance_ratio') {
+    return current === 'greater_than_ratio' || current === 'less_than_ratio'
+      ? current
+      : 'greater_than_ratio';
+  }
+  return current === 'greater_than_ratio' || current === 'less_than_ratio'
+    ? 'should_not_exceed'
+    : current;
+}
+
+/** Loose allow typing "-", "-.", etc.; commit only when parses to a finite number. */
+const THRESHOLD_INPUT_RE = /^-?\d*\.?\d*$/;
+
+function tryParseFiniteThreshold(raw: string): number | undefined {
+  if (!THRESHOLD_INPUT_RE.test(raw)) return undefined;
+  if (raw === '' || raw === '-' || raw === '.' || raw === '-.') return undefined;
+  const n = Number(raw);
+  return Number.isFinite(n) ? n : undefined;
+}
+
 const PHASE_OPTIONS: PhaseName[] = ['all', 'top', 'down', 'bottom', 'up'];
 
 const AVAILABLE_LANDMARKS = [
@@ -130,6 +175,19 @@ interface PositionCheckCardProps {
 function PositionCheckCard({ check, index, onUpdate, onRemove, isHoldExercise }: PositionCheckCardProps) {
   const [expanded, setExpanded] = useState(false);
   const [messagePickerOpen, setMessagePickerOpen] = useState(false);
+  const [thresholdInput, setThresholdInput] = useState(() => String(check.condition.threshold));
+
+  useEffect(() => {
+    setThresholdInput(String(check.condition.threshold));
+  }, [check.condition.threshold]);
+
+  useEffect(() => {
+    const nextOp = normalizeOperatorForType(check.type, check.condition.operator);
+    if (nextOp !== check.condition.operator) {
+      onUpdate(index, { ...check, condition: { ...check.condition, operator: nextOp } });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- normalize when type/operator identity changes; use `check` from that render
+  }, [check.type, check.condition.operator, check.checkId, index, onUpdate]);
 
   const severityColors = {
     error: 'bg-red-100 border-red-400 text-red-700',
@@ -229,7 +287,15 @@ function PositionCheckCard({ check, index, onUpdate, onRemove, isHoldExercise }:
               <Label>Check Type</Label>
               <select
                 value={check.type}
-                onChange={(e) => updateField('type', e.target.value as PositionCheckType)}
+                onChange={(e) => {
+                  const newType = e.target.value as PositionCheckType;
+                  const nextOp = normalizeOperatorForType(newType, check.condition.operator);
+                  onUpdate(index, {
+                    ...check,
+                    type: newType,
+                    condition: { ...check.condition, operator: nextOp },
+                  });
+                }}
                 className="w-full mt-1 px-3 py-2 text-gray-900 border rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
               >
                 {POSITION_CHECK_TYPES.map((t) => (
@@ -237,30 +303,61 @@ function PositionCheckCard({ check, index, onUpdate, onRemove, isHoldExercise }:
                 ))}
               </select>
             </div>
-            <div>
-              <Label>Operator</Label>
-              <select
-                value={check.condition.operator}
-                onChange={(e) => updateField('condition', { ...check.condition, operator: e.target.value as ConditionOperator })}
-                className="w-full mt-1 px-3 py-2 text-gray-900 border rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-              >
-                {OPERATORS.map((o) => (
-                  <option key={o.value} value={o.value}>{o.label}</option>
-                ))}
-              </select>
-            </div>
+            {!isAlignmentCheckType(check.type) && (
+              <div>
+                <Label>Operator</Label>
+                <select
+                  value={check.condition.operator}
+                  onChange={(e) =>
+                    updateField('condition', {
+                      ...check.condition,
+                      operator: e.target.value as ConditionOperator,
+                    })
+                  }
+                  className="w-full mt-1 px-3 py-2 text-gray-900 border rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                >
+                  {operatorsForCheckType(check.type).map((o) => (
+                    <option key={o.value} value={o.value}>{o.label}</option>
+                  ))}
+                </select>
+              </div>
+            )}
           </div>
+          {isAlignmentCheckType(check.type) && (
+            <p className="text-xs text-gray-500">
+              Operator is not used for horizontal / vertical / depth alignment (same behavior as mobile Debug).
+              A placeholder value is kept for the API only.
+            </p>
+          )}
 
           {/* Threshold */}
           <div>
             <Label>Threshold</Label>
             <div className="flex items-center gap-2 mt-1">
               <Input
-                type="number"
-                step={0.01}
-                value={check.condition.threshold}
-                onChange={(e) => updateField('condition', { ...check.condition, threshold: Number(e.target.value) })}
-                className="w-32"
+                type="text"
+                inputMode="decimal"
+                autoComplete="off"
+                value={thresholdInput}
+                onChange={(e) => {
+                  const s = e.target.value;
+                  if (!THRESHOLD_INPUT_RE.test(s)) return;
+                  setThresholdInput(s);
+                  const n = tryParseFiniteThreshold(s);
+                  if (n !== undefined) {
+                    updateField('condition', { ...check.condition, threshold: n });
+                  }
+                }}
+                onBlur={() => {
+                  const n = tryParseFiniteThreshold(thresholdInput);
+                  if (n !== undefined) {
+                    updateField('condition', { ...check.condition, threshold: n });
+                    setThresholdInput(String(n));
+                  } else {
+                    setThresholdInput(String(check.condition.threshold));
+                  }
+                }}
+                className="w-32 font-mono"
               />
               <span className="text-sm text-gray-500">(signed; normalized / ratio per check type)</span>
             </div>
