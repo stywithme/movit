@@ -58,7 +58,7 @@ export class ExercisesController {
       const result = await exerciseService.list({
         status: (status as 'draft' | 'published') || undefined,
         categoryId: categoryId || undefined,
-        search: search || undefined,
+        search: search?.trim() || undefined,
         page: Number.parseInt(page || '1', 10),
         limit: Number.parseInt(limit || '20', 10),
         includeAttributes: includeAttributes === 'true',

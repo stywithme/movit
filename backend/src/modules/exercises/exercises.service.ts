@@ -17,6 +17,7 @@ import type {
   RepCountingConfig,
   BilateralConfigInput,
 } from './exercises.types';
+import { buildExerciseSearchWhere } from './exercise-search.util';
 
 // ============================================
 // TYPES
@@ -127,11 +128,9 @@ export const exerciseService = {
       where.categoryId = filters.categoryId;
     }
 
-    if (filters?.search) {
-      where.OR = [
-        { name: { path: ['en'], string_contains: filters.search } },
-        { name: { path: ['ar'], string_contains: filters.search } },
-      ];
+    const searchWhere = buildExerciseSearchWhere(filters?.search);
+    if (searchWhere) {
+      where.AND = [...((where.AND as unknown[]) || []), searchWhere];
     }
 
     const includeAttributes = filters?.includeAttributes === true;
