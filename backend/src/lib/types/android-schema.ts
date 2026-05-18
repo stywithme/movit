@@ -95,7 +95,8 @@ export type PhaseName =
   | 'top'
   | 'down'
   | 'bottom'
-  | 'up';
+  | 'up'
+  | 'count';
 
 /**
  * Joint state types (new state-based system)
@@ -465,11 +466,11 @@ export interface ReportMetricsConfig {
 export function getPhasesForCountingMethod(method: CountingMethod): PhaseName[] {
   switch (method) {
     case 'up_down':
-      return ['top', 'down', 'bottom', 'up'];
+      return ['all', 'top', 'down', 'bottom', 'up'];
     case 'hold':
-      return ['all'];
+      return ['count'];
     default:
-      return ['top', 'down', 'bottom', 'up'];
+      return ['all', 'top', 'down', 'bottom', 'up'];
   }
 }
 

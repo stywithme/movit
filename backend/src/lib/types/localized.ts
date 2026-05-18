@@ -104,7 +104,8 @@ export type PhaseName =
   | 'top'
   | 'down'
   | 'bottom'
-  | 'up';
+  | 'up'
+  | 'count';
 
 /**
  * Joint state names (new state-based system)

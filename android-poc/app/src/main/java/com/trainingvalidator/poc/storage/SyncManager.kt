@@ -782,13 +782,14 @@ class SyncManager(
         )
     }
 
-    /** Aligns with backend `json-builder` phase keys for secondary `phaseStateMessages`. */
+    /** Aligns with backend `json-builder` PHASE_MIGRATION for secondary `phaseStateMessages`. */
     private fun normalizeSecondaryPhaseKey(raw: String): String? {
-        val lower = raw.lowercase()
+        val lower = raw.trim().lowercase()
         val migrated = when (lower) {
             "start" -> "top"
-            "hold", "count", "idle" -> "all"
-            else -> raw
+            "hold", "count" -> "count"
+            "idle" -> "all"
+            else -> lower
         }
         if (migrated == "all") return null
         if (migrated in listOf("top", "down", "bottom", "up")) return migrated

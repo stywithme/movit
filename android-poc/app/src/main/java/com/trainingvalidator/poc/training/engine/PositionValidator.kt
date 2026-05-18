@@ -255,14 +255,21 @@ class PositionValidator(
      * Maps Phase enum to API phase names: START->"top", others use lowercase enum name.
      * "all" in activePhases means active in every non-IDLE phase.
      */
+    /** Legacy alias: some payloads used `hold` for the hold-timer phase; engine phase is [Phase.COUNT] → `"count"`. */
+    private fun normalizeActivePhaseToken(raw: String): String =
+        when (raw.lowercase()) {
+            "hold" -> "count"
+            else -> raw.lowercase()
+        }
+
     private fun isActiveInPhase(check: PositionCheck, phase: Phase): Boolean {
         if (phase == Phase.IDLE) return false
-        if (check.activePhases.any { it.lowercase() == "all" }) return true
+        if (check.activePhases.any { normalizeActivePhaseToken(it) == "all" }) return true
         val phaseName = when (phase) {
             Phase.START -> "top"
             else -> phase.name.lowercase()
         }
-        return check.activePhases.any { it.lowercase() == phaseName }
+        return check.activePhases.any { normalizeActivePhaseToken(it) == phaseName }
     }
     
     /**

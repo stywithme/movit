@@ -32,7 +32,7 @@ export const phaseTemplates: Record<CountingMethodCode, PhaseTemplate[]> = {
   ],
   
   hold: [
-    { code: 'all', name: { ar: 'جميع المراحل', en: 'All Phases' }, sortOrder: 1 },
+    { code: 'count', name: { ar: 'مرحلة العدّ (الثبات)', en: 'Hold timer (count phase)' }, sortOrder: 1 },
   ],
 };
 

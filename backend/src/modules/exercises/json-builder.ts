@@ -44,13 +44,16 @@ import type {
 
 const PHASE_MIGRATION: Record<string, PhaseName> = {
   start: 'top',
-  hold: 'all',
-  count: 'all',
+  // Legacy API name for the hold timer phase; engine uses `count`.
+  hold: 'count',
+  count: 'count',
   idle: 'all',
 };
 
 function migratePhaseNames(phases: string[]): PhaseName[] {
-  const migrated = phases.map(p => PHASE_MIGRATION[p] || p) as PhaseName[];
+  const migrated = phases.map(
+    (p) => (PHASE_MIGRATION[p] ?? PHASE_MIGRATION[p.toLowerCase()] ?? p) as PhaseName,
+  );
   return [...new Set(migrated)];
 }
 
