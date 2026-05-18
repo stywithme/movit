@@ -27,7 +27,8 @@ import com.trainingvalidator.poc.training.models.TrackingMode
  */
 class PoseSetupGuide(
     /** Synced with app locale in [com.trainingvalidator.poc.ui.training.TrainingViewModel.initializeFeedback]. */
-    var language: String = "en"
+    var language: String = "en",
+    private val tiltSource: TiltCorrectionSource? = null
 ) {
 
     companion object {
@@ -107,8 +108,9 @@ class PoseSetupGuide(
 
         // ── Detect scene (3-axis) ────────────────────────────────────────
         val validLandmarks = landmarks?.takeIf { it.size >= 33 }
+        val sceneLandmarks = validLandmarks?.let { getTiltCorrectedLandmarks(it) }
 
-        val scene = validLandmarks?.let { sceneDetector.detect(it, isFrontCamera) }
+        val scene = sceneLandmarks?.let { sceneDetector.detect(it, isFrontCamera) }
         val axisMatch = if (scene != null) expectation.matchesScene(scene) else null
 
         // ── Compute ALL 3 axis statuses (UI shows them simultaneously) ────
@@ -222,6 +224,14 @@ class PoseSetupGuide(
     // ──────────────────────────────────────────────────────────────────────
     // Private helpers
     // ──────────────────────────────────────────────────────────────────────
+
+    private fun getTiltCorrectedLandmarks(landmarks: List<SmoothedLandmark>): List<SmoothedLandmark> {
+        val source = tiltSource ?: return landmarks
+        if (!source.isAvailable) return landmarks
+        val correctionRadians = source.correctionRadians
+        if (correctionRadians == 0f || !correctionRadians.isFinite()) return landmarks
+        return LandmarkTiltCorrector.correct(landmarks, correctionRadians)
+    }
 
     /**
      * Does the setup consider all required primary joints "present"?

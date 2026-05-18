@@ -65,7 +65,9 @@ class TrainingViewModel(
     val supervisor = SessionSupervisor()
     
     /** New rolling-window guided pose validation for SETUP_POSE. */
-    val poseSetupGuide = PoseSetupGuide()
+    val poseSetupGuide = PoseSetupGuide(
+        tiltSource = PoseApp.instance.tiltProvider
+    )
     val countdownController = CountdownController()
     
     // ==================== Training Configuration ====================
@@ -142,6 +144,8 @@ class TrainingViewModel(
     
     private var engineObserverJob: Job? = null
     private var supervisorObserverJob: Job? = null
+
+    private val setupTiltOwner = "setup-pose"
 
     // Countdown pose issue message throttling (prevents per-frame UI spam)
     private var lastCountdownIssueTimeMs: Long = 0L
@@ -368,10 +372,14 @@ class TrainingViewModel(
 
     fun handleActivityPause() {
         supervisor.processSignal(SupervisorSignal.ActivityPaused)
+        releaseSetupTiltCorrection()
     }
 
     fun handleActivityResume() {
         supervisor.processSignal(SupervisorSignal.ActivityResumed)
+        if (supervisor.state.value.shouldValidatePose()) {
+            acquireSetupTiltCorrection()
+        }
     }
     
     /**
@@ -411,6 +419,7 @@ class TrainingViewModel(
         when (action) {
             // Engine Commands
             is SupervisorAction.StartEngine -> {
+                releaseSetupTiltCorrection()
                 sessionStartTime = System.currentTimeMillis()
                 feedbackManager?.resetMessageStates()
                 isEngineProcessingFrame = false  // Reset frame processing flag
@@ -428,10 +437,12 @@ class TrainingViewModel(
             }
             
             is SupervisorAction.ResumeEngine -> {
+                releaseSetupTiltCorrection()
                 trainingEngine?.resume()
             }
             
             is SupervisorAction.StopEngine -> {
+                releaseSetupTiltCorrection()
                 val summary = trainingEngine?.stop()
                 viewModelScope.launch {
                     _events.emit(TrainingUIEvent.TrainingCompleted(summary))
@@ -439,10 +450,12 @@ class TrainingViewModel(
             }
             
             is SupervisorAction.ResumeFromVisibilityPause -> {
+                releaseSetupTiltCorrection()
                 trainingEngine?.resume()
             }
             
             is SupervisorAction.ResetEngine -> {
+                releaseSetupTiltCorrection()
                 trainingEngine?.stop()
                 trainingEngine?.start()
             }
@@ -524,6 +537,7 @@ class TrainingViewModel(
             
             // UI Commands
             is SupervisorAction.ShowSetupPose -> {
+                acquireSetupTiltCorrection()
                 resetCountdownPoseIssueThrottle()
                 poseSetupGuide.reset()
                 viewModelScope.launch {
@@ -532,6 +546,7 @@ class TrainingViewModel(
             }
 
             is SupervisorAction.StartCountdown -> {
+                acquireSetupTiltCorrection()
                 resetCountdownPoseIssueThrottle()
                 countdownController.start(viewModelScope)
                 viewModelScope.launch {
@@ -540,6 +555,7 @@ class TrainingViewModel(
             }
 
             is SupervisorAction.CancelCountdown -> {
+                acquireSetupTiltCorrection()
                 resetCountdownPoseIssueThrottle()
                 feedbackManager?.abortCountdownAudio()
                 countdownController.cancel()
@@ -960,6 +976,15 @@ class TrainingViewModel(
         updateRandomMessagesFromEngine()
         Log.d(TAG, "Rebuilt engine: reps=$targetRepsOverride durationMs=$targetDurationMsOverride weight=$weightKg")
     }
+
+    private fun acquireSetupTiltCorrection() {
+        if (_isVideoMode.value) return
+        PoseApp.instance.tiltProvider.acquire(setupTiltOwner)
+    }
+
+    private fun releaseSetupTiltCorrection() {
+        PoseApp.instance.tiltProvider.release(setupTiltOwner)
+    }
     
     // ==================== Lifecycle ====================
     
@@ -969,6 +994,7 @@ class TrainingViewModel(
         supervisorObserverJob?.cancel()
         countdownController.release()
         feedbackManager?.release()
+        releaseSetupTiltCorrection()
         trainingEngine?.stop()
         supervisor.reset()
     }
