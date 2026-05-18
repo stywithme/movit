@@ -47,7 +47,8 @@ class TrainingEngine(
     private val targetRepsOverride: Int? = null,
     private val targetDurationMsOverride: Long? = null,
     private val stabilityPolicy: StabilityPolicy = StabilityPolicy.default(),
-    private val timingPolicy: TimingPolicy = TimingPolicy.default()
+    private val timingPolicy: TimingPolicy = TimingPolicy.default(),
+    private val tiltSource: AcquirableTiltSource? = null
 ) {
     
     companion object {
@@ -121,7 +122,13 @@ class TrainingEngine(
 
     private val configuredPositionChecks: List<PositionCheck> = poseVariant.positionChecks
 
-    private val hasPositionChecksConfigured: Boolean = configuredPositionChecks.isNotEmpty()
+    private val hasPositionChecksConfigured: Boolean = exerciseConfig.hasAnyPositionChecks(poseVariantIndex)
+
+    private val activeTiltSource: AcquirableTiltSource? =
+        tiltSource?.takeIf { hasPositionChecksConfigured }
+
+    private val tiltOwnerKey: String =
+        "engine:${exerciseConfig.fileName.ifBlank { exerciseConfig.name.en }}:$poseVariantIndex:${System.identityHashCode(this)}"
 
     private val positionChecksById: Map<String, PositionCheck> =
         configuredPositionChecks.associateBy { it.id }
@@ -148,7 +155,8 @@ class TrainingEngine(
     private val positionValidator: PositionValidator = PositionValidator(
         positionChecks = configuredPositionChecks,
         posePositionCode = resolvedPosePositionCode,
-        sceneExpectation = resolvedExpectation
+        sceneExpectation = resolvedExpectation,
+        tiltSource = activeTiltSource
     )
 
     private val framePipelineExecutor: FramePipelineExecutor = FramePipelineExecutor(
@@ -476,6 +484,7 @@ class TrainingEngine(
             // start(0L) made (nowMs - 0) exceed Int.MAX_VALUE when cast to Int → negative durations in DB/UI.
             motionRecorder?.start(System.currentTimeMillis())
         }
+        acquireTiltCorrection()
         
         Log.d(TAG, "Training started (${if (isHoldExercise) "HOLD" else "REPS"} mode)")
         if (hasPositionChecksConfigured) {
@@ -490,6 +499,7 @@ class TrainingEngine(
                 pauseStartTimeMs = pauseClockNowMs()
             }
         }
+        releaseTiltCorrection()
         Log.d(TAG, "Training paused at rep ${repCounter.count}")
     }
     
@@ -502,6 +512,7 @@ class TrainingEngine(
                 _visibilityState.value = VisibilityState.VISIBLE
             }
         }
+        acquireTiltCorrection()
         Log.d(TAG, "Training resumed")
     }
     
@@ -543,6 +554,7 @@ class TrainingEngine(
             pauseController.resetSession()
             _anySideDimmedJointCodes.value = emptySet()
         }
+        releaseTiltCorrection()
         
         val summary = SessionSummaryBuilder.build(
             config = exerciseConfig,
@@ -773,6 +785,14 @@ class TrainingEngine(
     fun getPrimaryJointCodes(): Set<String> = jointTracker.primaryJointCodes
     fun getLandmarkIndex(jointCode: String): Int? = jointTracker.getLandmarkIndex(jointCode)
     fun getTrackedLandmarkIndices(): List<Int> = jointTracker.getTrackedLandmarkIndices()
+
+    private fun acquireTiltCorrection() {
+        activeTiltSource?.acquire(tiltOwnerKey)
+    }
+
+    private fun releaseTiltCorrection() {
+        activeTiltSource?.release(tiltOwnerKey)
+    }
 
     fun canHotSwapTo(newConfig: ExerciseConfig): Boolean {
         return newConfig.countingMethod == exerciseConfig.countingMethod

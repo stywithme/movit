@@ -1114,6 +1114,16 @@ class TrainingActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetection
 
     // ==================== Lifecycle ====================
 
+    override fun onResume() {
+        super.onResume()
+        viewModel.handleActivityResume()
+    }
+
+    override fun onPause() {
+        viewModel.handleActivityPause()
+        super.onPause()
+    }
+
     override fun onDestroy() {
         super.onDestroy()
         frameCaptureController.onDestroy()

@@ -26,7 +26,8 @@ class PositionValidator(
     private val positionChecks: List<PositionCheck>,
     private val posePositionCode: String,
     val sceneExpectation: PoseSceneExpectation,
-    private val visibilityThreshold: Float = 0.5f
+    private val visibilityThreshold: Float = 0.5f,
+    private val tiltSource: TiltCorrectionSource? = null
 ) {
     
     companion object {
@@ -80,9 +81,11 @@ class PositionValidator(
                 }
             )
         }
+
+        val effectiveLandmarks = getTiltCorrectedLandmarks(landmarks)
         
         // 1. Live scene detection (always runs — feeds rolling window & warnings)
-        val liveScene = sceneDetector.detect(landmarks, isFrontCamera)
+        val liveScene = sceneDetector.detect(effectiveLandmarks, isFrontCamera)
 
         // 2. For axis selection in position checks, prefer locked scene (stable)
         val effectiveScene = lockedSceneResult ?: liveScene
@@ -135,7 +138,7 @@ class PositionValidator(
             // XOR: if both active, they cancel out (double mirror = no mirror)
             val shouldMirrorLandmarks = isBilateralFlipped xor isFrontCamera
             val effectiveCheck = if (shouldMirrorLandmarks) mirrorCheckLandmarks(check) else check
-            val result = validateCheck(effectiveCheck, landmarks, cameraResult, effectiveFacing)
+            val result = validateCheck(effectiveCheck, effectiveLandmarks, cameraResult, effectiveFacing)
             
             if (!result.passed && !result.skipped) {
                 // Increment frame count for stability (cap at requiredFrames)
@@ -208,6 +211,14 @@ class PositionValidator(
             detectedFacing = cameraResult.facingDirection,
             debugChecks = debugChecks
         )
+    }
+
+    private fun getTiltCorrectedLandmarks(landmarks: List<SmoothedLandmark>): List<SmoothedLandmark> {
+        val source = tiltSource ?: return landmarks
+        if (!source.isAvailable) return landmarks
+        val correctionRadians = source.correctionRadians
+        if (correctionRadians == 0f || !correctionRadians.isFinite()) return landmarks
+        return LandmarkTiltCorrector.correct(landmarks, correctionRadians)
     }
     
     /**

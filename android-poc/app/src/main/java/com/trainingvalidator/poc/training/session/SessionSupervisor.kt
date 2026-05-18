@@ -67,6 +67,9 @@ class SessionSupervisor {
     /** Whether current countdown is for resume (preserves rep count) vs fresh start */
     private var isResumeCountdown: Boolean = false
 
+    /** Engine was paused because the Activity left the foreground. */
+    private var activityPausedEngine: Boolean = false
+
     /** Timestamp (ms) when consecutive invalid pose started during countdown, 0 = none. */
     private var countdownInvalidStartMs: Long = 0L
 
@@ -132,6 +135,7 @@ class SessionSupervisor {
         pauseReason = null
         noPoseStartTime = 0L
         isResumeCountdown = false
+        activityPausedEngine = false
         isVideoMode = false
         countdownInvalidStartMs = 0L
         countdownFrozen = false
@@ -161,6 +165,24 @@ class SessionSupervisor {
                 if (currentState == SessionState.TRAINING) {
                     emit(SupervisorAction.ResetEngine)
                     Log.d(TAG, "Video seeked - resetting engine")
+                    return true
+                }
+            }
+
+            is SupervisorSignal.ActivityPaused -> {
+                if (currentState == SessionState.TRAINING && !activityPausedEngine) {
+                    activityPausedEngine = true
+                    emit(SupervisorAction.PauseEngine)
+                    Log.d(TAG, "Activity paused - engine resources paused")
+                    return true
+                }
+            }
+
+            is SupervisorSignal.ActivityResumed -> {
+                if (currentState == SessionState.TRAINING && activityPausedEngine) {
+                    activityPausedEngine = false
+                    emit(SupervisorAction.ResumeEngine)
+                    Log.d(TAG, "Activity resumed - engine resources resumed")
                     return true
                 }
             }
