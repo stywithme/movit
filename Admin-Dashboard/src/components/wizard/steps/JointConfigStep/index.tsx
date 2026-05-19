@@ -173,15 +173,15 @@ function buildUITabs(trackedJoints: TrackedJointData[]): UITab[] {
     const bilateralCode = getBilateralCode(joint.joint);
 
     if (bilateralCode && joint.pairedWith) {
-      // This is part of a bilateral pair
-      if (!processedBilaterals.has(bilateralCode)) {
-        processedBilaterals.add(bilateralCode);
+      const mapping = BILATERAL_MAPPING[bilateralCode];
+      const leftIndex = trackedJoints.findIndex(j => j.joint === mapping.leftJoint);
+      const rightIndex = trackedJoints.findIndex(j => j.joint === mapping.rightJoint);
+      const hasCompletePair = leftIndex >= 0 && rightIndex >= 0;
 
-        const mapping = BILATERAL_MAPPING[bilateralCode];
-        const leftIndex = trackedJoints.findIndex(j => j.joint === mapping.leftJoint);
-        const rightIndex = trackedJoints.findIndex(j => j.joint === mapping.rightJoint);
-
-        if (leftIndex >= 0 && rightIndex >= 0) {
+      if (hasCompletePair) {
+        // This is part of a complete bilateral pair
+        if (!processedBilaterals.has(bilateralCode)) {
+          processedBilaterals.add(bilateralCode);
           tabs.push({
             id: bilateralCode,
             label: mapping.label,
@@ -190,17 +190,18 @@ function buildUITabs(trackedJoints: TrackedJointData[]): UITab[] {
             rightJointIndex: rightIndex,
           });
         }
+        return;
       }
-    } else {
-      // Single joint
-      const singleOption = JOINT_OPTIONS.find(o => o.code === joint.joint);
-      tabs.push({
-        id: joint.joint,
-        label: singleOption?.label || { ar: joint.joint, en: joint.joint },
-        type: 'single',
-        singleJointIndex: index,
-      });
     }
+
+    // Single joint
+    const singleOption = JOINT_OPTIONS.find(o => o.code === joint.joint);
+    tabs.push({
+      id: joint.joint,
+      label: singleOption?.label || { ar: joint.joint, en: joint.joint },
+      type: 'single',
+      singleJointIndex: index,
+    });
   });
 
   return tabs;
