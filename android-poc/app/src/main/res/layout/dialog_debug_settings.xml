@@ -140,11 +140,6 @@
         <com.google.android.material.tabs.TabItem
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Joints" />
-
-        <com.google.android.material.tabs.TabItem
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
             android:text="Angle Lab" />
 
         <com.google.android.material.tabs.TabItem
@@ -165,30 +160,46 @@
         android:layout_height="wrap_content"
         android:layout_marginTop="12dp">
 
-        <!-- Joint Angles Config -->
+        <!-- Angle Lab: multi-joint selection -->
         <LinearLayout
             android:id="@+id/jointAngleConfig"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:orientation="horizontal"
-            android:gravity="center_vertical"
+            android:orientation="vertical"
             android:visibility="visible">
 
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="Joint:"
+                android:text="Joints"
                 android:textColor="@android:color/white"
-                android:textSize="14sp" />
+                android:textSize="14sp"
+                android:textStyle="bold" />
 
-            <Spinner
-                android:id="@+id/spinnerJoint"
-                android:layout_width="0dp"
+            <TextView
+                android:id="@+id/tvSelectedJointsSummary"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="4dp"
+                android:textColor="#AAAAAA"
+                android:textSize="11sp"
+                android:fontFamily="monospace"
+                android:maxLines="3"
+                android:ellipsize="end" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnSelectJoints"
+                style="?attr/materialButtonOutlinedStyle"
+                android:layout_width="match_parent"
                 android:layout_height="40dp"
-                android:layout_weight="1"
-                android:layout_marginStart="8dp"
-                android:backgroundTint="@android:color/white"
-                android:popupBackground="#333333" />
+                android:layout_marginTop="8dp"
+                android:text="Select joints"
+                android:textColor="@android:color/white"
+                android:textSize="13sp"
+                android:insetTop="0dp"
+                android:insetBottom="0dp"
+                app:strokeColor="#88FFFFFF"
+                app:cornerRadius="4dp" />
         </LinearLayout>
 
         <!-- Position Check Config -->

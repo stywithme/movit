@@ -23,6 +23,7 @@ import android.widget.ArrayAdapter
 import android.widget.SeekBar
 import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
 import androidx.core.view.WindowCompat
@@ -41,6 +42,7 @@ import com.trainingvalidator.poc.analysis.LandmarkSmoother
 import com.trainingvalidator.poc.analysis.SmoothedLandmark
 import com.trainingvalidator.poc.camera.CameraManager
 import com.trainingvalidator.poc.databinding.ActivityDebugBinding
+import com.trainingvalidator.poc.overlay.SkeletonOverlayView
 import com.trainingvalidator.poc.pose.BodyLandmarks
 import com.trainingvalidator.poc.pose.JointLandmarkMapping
 import com.trainingvalidator.poc.pose.ModelType
@@ -73,10 +75,9 @@ class DebugActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetectionLis
 
     companion object {
         private const val TAG = "DebugActivity"
-        private const val TAB_JOINTS = 0
-        private const val TAB_ANGLE_DIAGNOSTICS = 1
-        private const val TAB_POSITION = 2
-        private const val TAB_CAMERA = 3
+        private const val TAB_ANGLE_DIAGNOSTICS = 0
+        private const val TAB_POSITION = 1
+        private const val TAB_CAMERA = 2
     }
 
     enum class InputMode { CAMERA, VIDEO, IMAGE }
@@ -90,11 +91,11 @@ class DebugActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetectionLis
     private val mainScope = CoroutineScope(Dispatchers.Main + SupervisorJob())
 
     private var useFrontCamera = true
-    private var currentTab = TAB_JOINTS
+    private var currentTab = TAB_ANGLE_DIAGNOSTICS
     private var currentInputMode = InputMode.CAMERA
 
-    // Joint angle mode
-    private var selectedJointCode: String = "left_knee"
+    // Angle Lab: one or more joints at once
+    private val selectedJointCodes = linkedSetOf("left_knee")
 
     // Position check mode
     private var selectedCheckType = PositionCheckType.VERTICAL_COMPARISON
@@ -366,7 +367,7 @@ class DebugActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetectionLis
             tabLayout.getTabAt(currentTab)?.select()
             
             fun updateConfigVisibility(tab: Int) {
-                jointConfig.visibility = if (tab == TAB_JOINTS || tab == TAB_ANGLE_DIAGNOSTICS) View.VISIBLE else View.GONE
+                jointConfig.visibility = if (tab == TAB_ANGLE_DIAGNOSTICS) View.VISIBLE else View.GONE
                 posConfig.visibility = if (tab == TAB_POSITION) View.VISIBLE else View.GONE
                 camConfig.visibility = if (tab == TAB_CAMERA) View.VISIBLE else View.GONE
             }
@@ -374,7 +375,7 @@ class DebugActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetectionLis
 
             tabLayout.addOnTabSelectedListener(object : TabLayout.OnTabSelectedListener {
                 override fun onTabSelected(tab: TabLayout.Tab?) {
-                    val pos = tab?.position ?: TAB_JOINTS
+                    val pos = tab?.position ?: TAB_ANGLE_DIAGNOSTICS
                     updateConfigVisibility(pos)
                     handleTabChange(pos)
                 }
@@ -390,12 +391,20 @@ class DebugActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetectionLis
                 updateTiltProviderState()
             }
 
-            // Spinners
-            setupSpinner(view.findViewById(R.id.spinnerJoint), jointCodes) { pos ->
-                selectedJointCode = jointCodes[pos]
-                if (currentInputMode == InputMode.IMAGE) reanalyzeCurrentImage()
+            val tvSelectedJointsSummary = view.findViewById<android.widget.TextView>(R.id.tvSelectedJointsSummary)
+            val btnSelectJoints = view.findViewById<com.google.android.material.button.MaterialButton>(R.id.btnSelectJoints)
+            fun refreshJointSelectionUi() {
+                val sorted = selectedJointCodes.sorted()
+                tvSelectedJointsSummary.text = sorted.joinToString("\n")
+                btnSelectJoints.text = "Select joints (${sorted.size})"
             }
-            view.findViewById<android.widget.Spinner>(R.id.spinnerJoint).setSelection(jointCodes.indexOf(selectedJointCode).coerceAtLeast(0))
+            refreshJointSelectionUi()
+            btnSelectJoints.setOnClickListener {
+                showJointMultiSelectDialog {
+                    refreshJointSelectionUi()
+                    if (currentInputMode == InputMode.IMAGE) reanalyzeCurrentImage()
+                }
+            }
 
             val operatorRow = view.findViewById<View>(R.id.operatorRow)
             fun syncOperatorRowVisibility() {
@@ -481,11 +490,9 @@ class DebugActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetectionLis
 
         binding.tvStatus.visibility = View.GONE
         binding.tvLiveValue.visibility = View.VISIBLE
+        binding.tvLiveValue.textSize = 56f
 
         when (currentTab) {
-            TAB_JOINTS -> {
-                updateInfoPanelVisibility()
-            }
             TAB_ANGLE_DIAGNOSTICS -> {
                 updateInfoPanelVisibility()
                 binding.tvStatus.visibility = View.VISIBLE
@@ -513,7 +520,25 @@ class DebugActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetectionLis
             binding.debugInfoPanel.visibility = View.GONE
             return
         }
-        binding.debugInfoPanel.visibility = if (currentTab == TAB_JOINTS) View.GONE else View.VISIBLE
+        binding.debugInfoPanel.visibility = View.VISIBLE
+    }
+
+    private fun showJointMultiSelectDialog(onApplied: () -> Unit) {
+        val checked = BooleanArray(jointCodes.size) { jointCodes[it] in selectedJointCodes }
+        AlertDialog.Builder(this)
+            .setTitle("Select joints")
+            .setMultiChoiceItems(jointCodes.toTypedArray(), checked) { _, which, isChecked ->
+                val code = jointCodes[which]
+                if (isChecked) selectedJointCodes.add(code) else selectedJointCodes.remove(code)
+            }
+            .setPositiveButton("OK") { _, _ ->
+                if (selectedJointCodes.isEmpty()) {
+                    selectedJointCodes.add("left_knee")
+                }
+                onApplied()
+            }
+            .setNegativeButton(android.R.string.cancel, null)
+            .show()
     }
 
     private fun setupSpinner(spinner: android.widget.Spinner, items: List<String>, onSelected: (Int) -> Unit) {
@@ -881,12 +906,8 @@ class DebugActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetectionLis
         latestLandmarks = smoothedLandmarks
 
         when (currentTab) {
-            TAB_JOINTS -> {
-                updateSelectedJointOverlay(angles, smoothedLandmarks, result.imageWidth, result.imageHeight, result.isFrontCamera)
-                updateJointAngleDisplay(angles)
-            }
             TAB_ANGLE_DIAGNOSTICS -> {
-                updateSelectedJointOverlay(angles, smoothedLandmarks, result.imageWidth, result.imageHeight, result.isFrontCamera)
+                updateSelectedJointsOverlay(angles, smoothedLandmarks, result.imageWidth, result.imageHeight, result.isFrontCamera)
                 updateAngleDiagnosticsDisplay(
                     poseResult = result,
                     angles = angles,
@@ -964,33 +985,26 @@ class DebugActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetectionLis
 
     // ==================== Display Updates ====================
 
-    private fun updateJointAngleDisplay(angles: JointAngles) {
-        val value = angles.getAngle(selectedJointCode)
-        if (value != null) {
-            binding.tvLiveValue.text = "%.1f°".format(value)
-            binding.tvLiveValue.setTextColor(Color.WHITE)
-        } else {
-            binding.tvLiveValue.text = "N/A"
-            binding.tvLiveValue.setTextColor(Color.GRAY)
-        }
-    }
-
-    private fun updateSelectedJointOverlay(
+    private fun updateSelectedJointsOverlay(
         angles: JointAngles,
         smoothedLandmarks: List<SmoothedLandmark>,
         imageW: Int,
         imageH: Int,
         isFrontCamera: Boolean
     ) {
-        val angleLandmarks = JointLandmarkMapping.getLandmarksForAngle(selectedJointCode)
-        if (angleLandmarks.size != 3) return
-
-        binding.skeletonOverlay.updateDebugJoint(
-            jointCode = selectedJointCode,
-            angle = angles.getAngle(selectedJointCode),
-            endpointA = angleLandmarks[0],
-            endpointC = angleLandmarks[2],
-            vertexIdx = angleLandmarks[1],
+        val highlights = selectedJointCodes.mapNotNull { jointCode ->
+            val angleLandmarks = JointLandmarkMapping.getLandmarksForAngle(jointCode)
+            if (angleLandmarks.size != 3) return@mapNotNull null
+            SkeletonOverlayView.DebugJointHighlight(
+                jointCode = jointCode,
+                angle = angles.getAngle(jointCode),
+                endpointA = angleLandmarks[0],
+                endpointC = angleLandmarks[2],
+                vertexIdx = angleLandmarks[1]
+            )
+        }
+        binding.skeletonOverlay.updateDebugJoints(
+            joints = highlights,
             smoothedLandmarks = smoothedLandmarks,
             imageW = imageW,
             imageH = imageH,
@@ -998,54 +1012,63 @@ class DebugActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetectionLis
         )
     }
 
+    private fun formatJointCodeShort(jointCode: String): String =
+        jointCode.replace('_', ' ')
+
     private fun updateAngleDiagnosticsDisplay(
         poseResult: PoseResult,
         angles: JointAngles,
         smoothedLandmarks: List<SmoothedLandmark>,
         smoothedWorldLandmarks: List<SmoothedLandmark>?
     ) {
-        val diagnostics = buildAngleDiagnosticsData(
-            poseResult = poseResult,
-            angles = angles,
-            smoothedLandmarks = smoothedLandmarks,
-            smoothedWorldLandmarks = smoothedWorldLandmarks
-        )
+        val diagnosticsList = selectedJointCodes.mapNotNull { jointCode ->
+            buildAngleDiagnosticsData(
+                jointCode = jointCode,
+                poseResult = poseResult,
+                angles = angles,
+                smoothedLandmarks = smoothedLandmarks,
+                smoothedWorldLandmarks = smoothedWorldLandmarks
+            )
+        }
 
-        if (diagnostics == null) {
+        if (diagnosticsList.isEmpty()) {
             binding.tvLiveValue.text = "N/A"
             binding.tvLiveValue.setTextColor(Color.GRAY)
             binding.tvStatus.visibility = View.VISIBLE
-            binding.tvStatus.text = "Angle mapping unavailable"
+            binding.tvStatus.text = "No valid joint mapping"
             binding.tvStatus.setTextColor(Color.GRAY)
-            binding.tvDebugInfo.text = "Selected joint does not have a 3-point angle mapping."
+            binding.tvDebugInfo.text = "Selected joints do not have a 3-point angle mapping."
             return
         }
 
-        val displayedAngle = diagnostics.displayedAngle
-        if (displayedAngle != null) {
-            binding.tvLiveValue.text = "%.1f°".format(displayedAngle)
-            binding.tvLiveValue.setTextColor(Color.WHITE)
-        } else {
-            binding.tvLiveValue.text = "N/A"
-            binding.tvLiveValue.setTextColor(Color.GRAY)
+        binding.tvLiveValue.text = diagnosticsList.joinToString("\n") { data ->
+            val angle = data.displayedAngle
+            if (angle != null) {
+                "${formatJointCodeShort(data.displayJointCode)}  %.1f°".format(angle)
+            } else {
+                "${formatJointCodeShort(data.displayJointCode)}  N/A"
+            }
         }
+        binding.tvLiveValue.setTextColor(Color.WHITE)
+        binding.tvLiveValue.textSize = if (diagnosticsList.size > 1) 28f else 56f
 
         binding.tvStatus.visibility = View.VISIBLE
-        binding.tvStatus.text = buildAngleDiagnosticsSummary(diagnostics)
+        binding.tvStatus.text = diagnosticsList.joinToString(" | ") { buildAngleDiagnosticsSummary(it) }
         binding.tvStatus.setTextColor(Color.WHITE)
 
         if (inferenceFrameCount % 2 == 0 || currentInputMode == InputMode.IMAGE) {
-            binding.tvDebugInfo.text = buildAngleDiagnosticsPanelText(diagnostics)
+            binding.tvDebugInfo.text = buildAngleDiagnosticsPanelText(diagnosticsList)
         }
     }
 
     private fun buildAngleDiagnosticsData(
+        jointCode: String,
         poseResult: PoseResult,
         angles: JointAngles,
         smoothedLandmarks: List<SmoothedLandmark>,
         smoothedWorldLandmarks: List<SmoothedLandmark>?
     ): AngleDiagnosticsData? {
-        val mappedIndices = JointLandmarkMapping.getLandmarksForAngle(selectedJointCode)
+        val mappedIndices = JointLandmarkMapping.getLandmarksForAngle(jointCode)
         if (mappedIndices.size != 3) return null
 
         val effectiveIndices = if (poseResult.isFrontCamera) {
@@ -1055,9 +1078,9 @@ class DebugActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetectionLis
         }
 
         val sourceJointCode = if (poseResult.isFrontCamera) {
-            getMirroredJointCode(selectedJointCode)
+            getMirroredJointCode(jointCode)
         } else {
-            selectedJointCode
+            jointCode
         }
 
         val normalizedRaw = buildAngleDebugFrame(effectiveIndices) { index ->
@@ -1078,10 +1101,10 @@ class DebugActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetectionLis
         }
 
         return AngleDiagnosticsData(
-            displayJointCode = selectedJointCode,
+            displayJointCode = jointCode,
             sourceJointCode = sourceJointCode,
             effectiveIndices = effectiveIndices,
-            displayedAngle = angles.getAngle(selectedJointCode),
+            displayedAngle = angles.getAngle(jointCode),
             pipelineSourceLabel = if (worldSmoothed != null) "World XYZ" else "Screen XY fallback",
             normalizedRaw = normalizedRaw,
             normalizedSmoothed = normalizedSmoothed,
@@ -1130,11 +1153,15 @@ class DebugActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetectionLis
         }
     }
 
-    private fun buildAngleDiagnosticsPanelText(data: AngleDiagnosticsData): String {
+    private fun buildAngleDiagnosticsPanelText(diagnosticsList: List<AngleDiagnosticsData>): String {
+        return diagnosticsList.joinToString("\n\n") { buildSingleJointDiagnosticsPanelText(it) }
+    }
+
+    private fun buildSingleJointDiagnosticsPanelText(data: AngleDiagnosticsData): String {
         val sb = StringBuilder()
         val visibilityReference = data.worldSmoothed ?: data.normalizedSmoothed
 
-        sb.appendLine("=== ANGLE DIAGNOSTICS ===")
+        sb.appendLine("=== ANGLE DIAGNOSTICS: ${data.displayJointCode} ===")
         sb.appendLine()
         sb.appendLine("Display joint: ${data.displayJointCode}")
         if (data.displayJointCode == data.sourceJointCode) {
@@ -1947,7 +1974,6 @@ class DebugActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetectionLis
         val sections = mutableListOf<String>()
 
         val modeLabel = when (currentTab) {
-            TAB_JOINTS -> "Joints"
             TAB_ANGLE_DIAGNOSTICS -> "Angle Lab"
             TAB_POSITION -> "Positions"
             TAB_CAMERA -> "Scene"
