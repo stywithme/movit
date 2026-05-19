@@ -284,11 +284,16 @@ class SkeletonOverlayView @JvmOverloads constructor(
     // Minimal overlay: circle on vertex joint, angle label, small dots on
     // the two endpoint landmarks. No full skeleton, no bone lines.
 
+    data class DebugJointHighlight(
+        val jointCode: String,
+        val angle: Double?,
+        val endpointA: Int,
+        val endpointC: Int,
+        val vertexIdx: Int
+    )
+
     private var isDebugMode: Boolean = false
-    private var debugJointCode: String? = null
-    private var debugAngleValue: Double? = null
-    private var debugEndpointIndices: List<Int> = emptyList()  // [pointA, pointC]
-    private var debugVertexIndex: Int = -1
+    private var debugJoints: List<DebugJointHighlight> = emptyList()
 
     private val debugDotPaint = Paint().apply {
         isAntiAlias = true
@@ -346,13 +351,28 @@ class SkeletonOverlayView @JvmOverloads constructor(
         imageH: Int = imageHeight,
         useFrontCamera: Boolean = false
     ) {
-        isDebugMode = true
+        updateDebugJoints(
+            joints = listOf(
+                DebugJointHighlight(jointCode, angle, endpointA, endpointC, vertexIdx)
+            ),
+            smoothedLandmarks = smoothedLandmarks,
+            imageW = imageW,
+            imageH = imageH,
+            useFrontCamera = useFrontCamera
+        )
+    }
+
+    fun updateDebugJoints(
+        joints: List<DebugJointHighlight>,
+        smoothedLandmarks: List<SmoothedLandmark>?,
+        imageW: Int = imageWidth,
+        imageH: Int = imageHeight,
+        useFrontCamera: Boolean = false
+    ) {
+        isDebugMode = joints.isNotEmpty()
         isSetupMode = false
         isTrainingMode = false
-        debugJointCode = jointCode
-        debugAngleValue = angle
-        debugEndpointIndices = listOf(endpointA, endpointC)
-        debugVertexIndex = vertexIdx
+        debugJoints = joints
         isFrontCamera = useFrontCamera
         landmarks = smoothedLandmarks
         val dimChanged = imageWidth != imageW || imageHeight != imageH
@@ -365,10 +385,7 @@ class SkeletonOverlayView @JvmOverloads constructor(
     /** Disable debug mode. */
     fun clearDebugMode() {
         isDebugMode = false
-        debugJointCode = null
-        debugAngleValue = null
-        debugEndpointIndices = emptyList()
-        debugVertexIndex = -1
+        debugJoints = emptyList()
         smoothedDebugRadius = 0f
     }
 
@@ -1011,9 +1028,19 @@ class SkeletonOverlayView @JvmOverloads constructor(
      * - Small dots at the two endpoints
      * - Large angle label above the vertex
      */
+    private val debugJointAccentColors = intArrayOf(
+        Color.parseColor("#64B5F6"),
+        Color.parseColor("#81C784"),
+        Color.parseColor("#FFB74D"),
+        Color.parseColor("#E57373"),
+        Color.parseColor("#BA68C8"),
+        Color.parseColor("#4DD0E1"),
+        Color.parseColor("#FFD54F"),
+        Color.parseColor("#A1887F")
+    )
+
     private fun drawDebugJoint(canvas: Canvas, landmarks: List<SmoothedLandmark>) {
-        val vertexRaw = debugVertexIndex
-        if (vertexRaw < 0) return
+        if (debugJoints.isEmpty()) return
 
         fun effectiveIdx(raw: Int): Int =
             if (isFrontCamera) BodyLandmarks.getMirroredIndex(raw) else raw
@@ -1026,63 +1053,70 @@ class SkeletonOverlayView @JvmOverloads constructor(
             return Pair(toScreenX(lm.x), toScreenY(lm.y))
         }
 
-        val vertexPos = screenPos(vertexRaw) ?: return
         val density = cachedDensity
-        val accentColor = Color.parseColor("#64B5F6")
-        val endpointPositions = debugEndpointIndices.mapNotNull { screenPos(it) }
+        debugJoints.forEachIndexed { index, joint ->
+            val vertexRaw = joint.vertexIdx
+            if (vertexRaw < 0) return@forEachIndexed
 
-        // ── Adaptive radius from longest edge ────────────────────────────
-        val longestEdgePx = endpointPositions
-            .maxOfOrNull { p -> hypot((p.first - vertexPos.first).toDouble(), (p.second - vertexPos.second).toDouble()).toFloat() }
-            ?: 0f
-        val rawRadius = (longestEdgePx * 0.05f).coerceIn(6f, 200f)
-        smoothedDebugRadius = if (smoothedDebugRadius <= 0f) rawRadius
-            else smoothedDebugRadius + (rawRadius - smoothedDebugRadius) * 0.25f
-        val circleRadius = smoothedDebugRadius
-        val dotRadius = circleRadius * 0.25f
+            val vertexPos = screenPos(vertexRaw) ?: return@forEachIndexed
+            val accentColor = debugJointAccentColors[index % debugJointAccentColors.size]
+            val endpointPositions = listOf(joint.endpointA, joint.endpointC).mapNotNull { screenPos(it) }
 
-        // ── 1. Thin lines from vertex to endpoints ──────────────────────
-        for (epPos in endpointPositions) {
-            debugLinePaint.color = Color.argb(96, 100, 181, 246)
-            canvas.drawLine(vertexPos.first, vertexPos.second, epPos.first, epPos.second, debugLinePaint)
-        }
+            val longestEdgePx = endpointPositions
+                .maxOfOrNull { p ->
+                    hypot(
+                        (p.first - vertexPos.first).toDouble(),
+                        (p.second - vertexPos.second).toDouble()
+                    ).toFloat()
+                } ?: 0f
+            val circleRadius = (longestEdgePx * 0.05f).coerceIn(6f, 200f)
+            val dotRadius = circleRadius * 0.25f
 
-        // ── 2. Small dots at endpoints ──────────────────────────────────
-        for (epPos in endpointPositions) {
-            debugDotPaint.color = Color.parseColor("#B0FFFFFF")
-            canvas.drawCircle(epPos.first, epPos.second, dotRadius, debugDotPaint)
-        }
+            val accentR = Color.red(accentColor)
+            val accentG = Color.green(accentColor)
+            val accentB = Color.blue(accentColor)
 
-        // ── 3. Circle on vertex joint ───────────────────────────────────
-        debugCircleFillPaint.color = accentColor
-        debugCircleFillPaint.alpha = 80
-        canvas.drawCircle(vertexPos.first, vertexPos.second, circleRadius, debugCircleFillPaint)
+            for (epPos in endpointPositions) {
+                debugLinePaint.color = Color.argb(96, accentR, accentG, accentB)
+                canvas.drawLine(vertexPos.first, vertexPos.second, epPos.first, epPos.second, debugLinePaint)
+            }
 
-        debugCircleStrokePaint.color = accentColor
-        debugCircleStrokePaint.alpha = 220
-        canvas.drawCircle(vertexPos.first, vertexPos.second, circleRadius, debugCircleStrokePaint)
+            for (epPos in endpointPositions) {
+                debugDotPaint.color = Color.parseColor("#B0FFFFFF")
+                canvas.drawCircle(epPos.first, epPos.second, dotRadius, debugDotPaint)
+            }
 
-        // ── 4. Angle label above vertex ─────────────────────────────────
-        val angleVal = debugAngleValue
-        if (angleVal != null) {
-            val labelText = "%.1f°".format(angleVal)
-            val textWidth = debugAngleTextPaint.measureText(labelText)
-            val textHeight = debugAngleTextPaint.textSize
-            val padH = 10f * density
-            val padV = 6f * density
+            debugCircleFillPaint.color = accentColor
+            debugCircleFillPaint.alpha = 80
+            canvas.drawCircle(vertexPos.first, vertexPos.second, circleRadius, debugCircleFillPaint)
 
-            val labelX = vertexPos.first
-            val labelY = vertexPos.second - circleRadius - textHeight * 0.3f
+            debugCircleStrokePaint.color = accentColor
+            debugCircleStrokePaint.alpha = 220
+            canvas.drawCircle(vertexPos.first, vertexPos.second, circleRadius, debugCircleStrokePaint)
 
-            val bgLeft   = labelX - textWidth / 2f - padH
-            val bgRight  = labelX + textWidth / 2f + padH
-            val bgTop    = labelY - textHeight - padV
-            val bgBottom = labelY + padV
-            val bgRadius = 12f * density
-            canvas.drawRoundRect(bgLeft, bgTop, bgRight, bgBottom, bgRadius, bgRadius, debugAngleBgPaint)
+            val angleVal = joint.angle
+            if (angleVal != null) {
+                val shortCode = joint.jointCode.replace('_', ' ').take(12)
+                val labelText = "$shortCode %.0f°".format(angleVal)
+                val textWidth = debugAngleTextPaint.measureText(labelText)
+                val textHeight = debugAngleTextPaint.textSize
+                val padH = 8f * density
+                val padV = 5f * density
+                val verticalOffset = index * (textHeight + padV * 2f)
 
-            debugAngleTextPaint.color = Color.WHITE
-            canvas.drawText(labelText, labelX, labelY, debugAngleTextPaint)
+                val labelX = vertexPos.first
+                val labelY = vertexPos.second - circleRadius - textHeight * 0.3f - verticalOffset
+
+                val bgLeft = labelX - textWidth / 2f - padH
+                val bgRight = labelX + textWidth / 2f + padH
+                val bgTop = labelY - textHeight - padV
+                val bgBottom = labelY + padV
+                val bgRadius = 10f * density
+                canvas.drawRoundRect(bgLeft, bgTop, bgRight, bgBottom, bgRadius, bgRadius, debugAngleBgPaint)
+
+                debugAngleTextPaint.color = accentColor
+                canvas.drawText(labelText, labelX, labelY, debugAngleTextPaint)
+            }
         }
     }
 

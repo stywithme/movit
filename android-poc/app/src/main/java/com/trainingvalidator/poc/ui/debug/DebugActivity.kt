@@ -23,6 +23,7 @@ import android.widget.ArrayAdapter
 import android.widget.SeekBar
 import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
 import androidx.core.view.WindowCompat
@@ -36,12 +37,12 @@ import com.trainingvalidator.poc.R
 import com.trainingvalidator.poc.PoseApp
 import com.trainingvalidator.poc.analysis.AngleCalculator
 import com.trainingvalidator.poc.analysis.ElbowAngleEstimator
-import com.trainingvalidator.poc.analysis.ElbowDiagnostics
 import com.trainingvalidator.poc.analysis.JointAngles
 import com.trainingvalidator.poc.analysis.LandmarkSmoother
 import com.trainingvalidator.poc.analysis.SmoothedLandmark
 import com.trainingvalidator.poc.camera.CameraManager
 import com.trainingvalidator.poc.databinding.ActivityDebugBinding
+import com.trainingvalidator.poc.overlay.SkeletonOverlayView
 import com.trainingvalidator.poc.pose.BodyLandmarks
 import com.trainingvalidator.poc.pose.JointLandmarkMapping
 import com.trainingvalidator.poc.pose.ModelType
@@ -51,7 +52,6 @@ import com.trainingvalidator.poc.training.config.SettingsManager
 import com.trainingvalidator.poc.training.engine.CameraPositionDetector
 import com.trainingvalidator.poc.training.engine.Phase
 import com.trainingvalidator.poc.training.engine.BodyPosture
-import com.trainingvalidator.poc.training.engine.BodyPostureDetector
 import com.trainingvalidator.poc.training.engine.ExpectedDirection
 import com.trainingvalidator.poc.training.engine.LandmarkTiltCorrector
 import com.trainingvalidator.poc.training.engine.PoseSceneDetector
@@ -62,12 +62,6 @@ import com.trainingvalidator.poc.training.engine.PositionError
 import com.trainingvalidator.poc.training.engine.PositionCheckDebugStatus
 import com.trainingvalidator.poc.training.engine.PositionValidationResult
 import com.trainingvalidator.poc.training.engine.PositionValidator
-import com.trainingvalidator.poc.training.engine.ElbowCorrectionMlpClassifier
-import com.trainingvalidator.poc.training.engine.ElbowFit3dV2Classifier
-import com.trainingvalidator.poc.training.engine.ElbowFit3dV2FeatureExtractor
-import com.trainingvalidator.poc.training.engine.ElbowMlpFeatureExtractor
-import com.trainingvalidator.poc.training.engine.PostureMlpClassifier
-import com.trainingvalidator.poc.training.engine.PostureMlpFeatureExtractor
 import com.trainingvalidator.poc.training.models.*
 import com.trainingvalidator.poc.video.VideoManager
 import kotlinx.coroutines.CoroutineScope
@@ -81,11 +75,9 @@ class DebugActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetectionLis
 
     companion object {
         private const val TAG = "DebugActivity"
-        private const val TAB_ELBOWS = 0
-        private const val TAB_ANGLE_DIAGNOSTICS = 1
-        private const val TAB_POSITION = 2
-        private const val TAB_CAMERA = 3
-        private const val TAB_POSTURE_MLP = 4
+        private const val TAB_ANGLE_DIAGNOSTICS = 0
+        private const val TAB_POSITION = 1
+        private const val TAB_CAMERA = 2
     }
 
     enum class InputMode { CAMERA, VIDEO, IMAGE }
@@ -99,11 +91,11 @@ class DebugActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetectionLis
     private val mainScope = CoroutineScope(Dispatchers.Main + SupervisorJob())
 
     private var useFrontCamera = true
-    private var currentTab = TAB_ELBOWS
+    private var currentTab = TAB_ANGLE_DIAGNOSTICS
     private var currentInputMode = InputMode.CAMERA
 
-    // Joint angle mode
-    private var selectedJointCode: String = "left_knee"
+    // Angle Lab: one or more joints at once
+    private val selectedJointCodes = linkedSetOf("left_knee")
 
     // Position check mode
     private var selectedCheckType = PositionCheckType.VERTICAL_COMPARISON
@@ -136,15 +128,6 @@ class DebugActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetectionLis
 
     // Latest landmarks for debug panel
     private var latestLandmarks: List<SmoothedLandmark>? = null
-
-    // Elbow MLP debug
-    private var elbowMlpRetryRequested = false
-    private val elbowMlpLatencyRing = ArrayDeque<Long>(32)
-    private val elbowMlpLatencyRingMax = 30
-
-    // FIT3D v2 MLP debug
-    private val fit3dLatencyRing = ArrayDeque<Long>(32)
-    private val fit3dLatencyRingMax = 30
 
     private data class AngleDebugPoint(
         val index: Int,
@@ -392,7 +375,7 @@ class DebugActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetectionLis
 
             tabLayout.addOnTabSelectedListener(object : TabLayout.OnTabSelectedListener {
                 override fun onTabSelected(tab: TabLayout.Tab?) {
-                    val pos = tab?.position ?: TAB_ELBOWS
+                    val pos = tab?.position ?: TAB_ANGLE_DIAGNOSTICS
                     updateConfigVisibility(pos)
                     handleTabChange(pos)
                 }
@@ -408,12 +391,20 @@ class DebugActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetectionLis
                 updateTiltProviderState()
             }
 
-            // Spinners
-            setupSpinner(view.findViewById(R.id.spinnerJoint), jointCodes) { pos ->
-                selectedJointCode = jointCodes[pos]
-                if (currentInputMode == InputMode.IMAGE) reanalyzeCurrentImage()
+            val tvSelectedJointsSummary = view.findViewById<android.widget.TextView>(R.id.tvSelectedJointsSummary)
+            val btnSelectJoints = view.findViewById<com.google.android.material.button.MaterialButton>(R.id.btnSelectJoints)
+            fun refreshJointSelectionUi() {
+                val sorted = selectedJointCodes.sorted()
+                tvSelectedJointsSummary.text = sorted.joinToString("\n")
+                btnSelectJoints.text = "Select joints (${sorted.size})"
             }
-            view.findViewById<android.widget.Spinner>(R.id.spinnerJoint).setSelection(jointCodes.indexOf(selectedJointCode).coerceAtLeast(0))
+            refreshJointSelectionUi()
+            btnSelectJoints.setOnClickListener {
+                showJointMultiSelectDialog {
+                    refreshJointSelectionUi()
+                    if (currentInputMode == InputMode.IMAGE) reanalyzeCurrentImage()
+                }
+            }
 
             val operatorRow = view.findViewById<View>(R.id.operatorRow)
             fun syncOperatorRowVisibility() {
@@ -499,12 +490,9 @@ class DebugActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetectionLis
 
         binding.tvStatus.visibility = View.GONE
         binding.tvLiveValue.visibility = View.VISIBLE
+        binding.tvLiveValue.textSize = 56f
 
         when (currentTab) {
-            TAB_ELBOWS -> {
-                updateInfoPanelVisibility()
-                binding.tvStatus.visibility = View.VISIBLE
-            }
             TAB_ANGLE_DIAGNOSTICS -> {
                 updateInfoPanelVisibility()
                 binding.tvStatus.visibility = View.VISIBLE
@@ -517,10 +505,6 @@ class DebugActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetectionLis
             TAB_CAMERA -> {
                 updateInfoPanelVisibility()
                 binding.tvLiveValue.visibility = View.GONE
-            }
-            TAB_POSTURE_MLP -> {
-                updateInfoPanelVisibility()
-                binding.tvStatus.visibility = View.VISIBLE
             }
         }
 
@@ -537,6 +521,24 @@ class DebugActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetectionLis
             return
         }
         binding.debugInfoPanel.visibility = View.VISIBLE
+    }
+
+    private fun showJointMultiSelectDialog(onApplied: () -> Unit) {
+        val checked = BooleanArray(jointCodes.size) { jointCodes[it] in selectedJointCodes }
+        AlertDialog.Builder(this)
+            .setTitle("Select joints")
+            .setMultiChoiceItems(jointCodes.toTypedArray(), checked) { _, which, isChecked ->
+                val code = jointCodes[which]
+                if (isChecked) selectedJointCodes.add(code) else selectedJointCodes.remove(code)
+            }
+            .setPositiveButton("OK") { _, _ ->
+                if (selectedJointCodes.isEmpty()) {
+                    selectedJointCodes.add("left_knee")
+                }
+                onApplied()
+            }
+            .setNegativeButton(android.R.string.cancel, null)
+            .show()
     }
 
     private fun setupSpinner(spinner: android.widget.Spinner, items: List<String>, onSelected: (Int) -> Unit) {
@@ -904,18 +906,8 @@ class DebugActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetectionLis
         latestLandmarks = smoothedLandmarks
 
         when (currentTab) {
-            TAB_ELBOWS -> {
-                updateElbowDebugDisplay(
-                    angles = angles,
-                    smoothedLandmarks = smoothedLandmarks,
-                    worldLandmarks = worldLandmarks,
-                    imageW = result.imageWidth,
-                    imageH = result.imageHeight,
-                    isFrontCamera = result.isFrontCamera
-                )
-            }
             TAB_ANGLE_DIAGNOSTICS -> {
-                updateSelectedJointOverlay(angles, smoothedLandmarks, result.imageWidth, result.imageHeight, result.isFrontCamera)
+                updateSelectedJointsOverlay(angles, smoothedLandmarks, result.imageWidth, result.imageHeight, result.isFrontCamera)
                 updateAngleDiagnosticsDisplay(
                     poseResult = result,
                     angles = angles,
@@ -944,9 +936,6 @@ class DebugActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetectionLis
             TAB_CAMERA -> {
                 updateCameraDetectionDisplay(smoothedLandmarks, result.imageWidth, result.imageHeight, result.isFrontCamera)
             }
-            TAB_POSTURE_MLP -> {
-                updatePostureMlpDisplay(smoothedLandmarks)
-            }
         }
     }
 
@@ -954,12 +943,6 @@ class DebugActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetectionLis
         clearOverlay()
         binding.tvLiveValue.text = "--"
         binding.tvLiveValue.setTextColor(Color.WHITE)
-        if (currentTab == TAB_ELBOWS) {
-            binding.tvStatus.text = "NO POSE"
-            binding.tvStatus.setTextColor(Color.GRAY)
-            binding.tvStatus.visibility = View.VISIBLE
-            binding.tvDebugInfo.text = "No pose detected"
-        }
         if (currentTab == TAB_ANGLE_DIAGNOSTICS) {
             binding.tvStatus.text = "NO POSE"
             binding.tvStatus.setTextColor(Color.GRAY)
@@ -973,11 +956,6 @@ class DebugActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetectionLis
         }
         if (currentTab == TAB_CAMERA) {
             binding.tvDebugInfo.text = "No pose detected"
-        }
-        if (currentTab == TAB_POSTURE_MLP) {
-            binding.tvStatus.text = "NO POSE"
-            binding.tvStatus.setTextColor(Color.GRAY)
-            binding.tvDebugInfo.text = "No pose detected - MLP needs landmarks"
         }
     }
 
@@ -1007,251 +985,35 @@ class DebugActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetectionLis
 
     // ==================== Display Updates ====================
 
-    private fun updateJointAngleDisplay(angles: JointAngles) {
-        val value = angles.getAngle(selectedJointCode)
-        if (value != null) {
-            binding.tvLiveValue.text = "%.1f°".format(value)
-            binding.tvLiveValue.setTextColor(Color.WHITE)
-        } else {
-            binding.tvLiveValue.text = "N/A"
-            binding.tvLiveValue.setTextColor(Color.GRAY)
-        }
-    }
-
-    private fun updateSelectedJointOverlay(
+    private fun updateSelectedJointsOverlay(
         angles: JointAngles,
         smoothedLandmarks: List<SmoothedLandmark>,
         imageW: Int,
         imageH: Int,
         isFrontCamera: Boolean
     ) {
-        val angleLandmarks = JointLandmarkMapping.getLandmarksForAngle(selectedJointCode)
-        if (angleLandmarks.size != 3) return
-
-        binding.skeletonOverlay.updateDebugJoint(
-            jointCode = selectedJointCode,
-            angle = angles.getAngle(selectedJointCode),
-            endpointA = angleLandmarks[0],
-            endpointC = angleLandmarks[2],
-            vertexIdx = angleLandmarks[1],
-            smoothedLandmarks = smoothedLandmarks,
-            imageW = imageW,
-            imageH = imageH,
-            useFrontCamera = isFrontCamera
-        )
-    }
-
-    // ==================== Elbow Debug Display ====================
-
-    private fun updateElbowDebugDisplay(
-        angles: JointAngles,
-        smoothedLandmarks: List<SmoothedLandmark>,
-        worldLandmarks: List<SmoothedLandmark>?,
-        imageW: Int,
-        imageH: Int,
-        isFrontCamera: Boolean
-    ) {
-        // Legacy MLP (26 features)
-        if (elbowMlpRetryRequested) {
-            elbowMlpRetryRequested = false
-            ElbowCorrectionMlpClassifier.reload(this)
-            ElbowFit3dV2Classifier.reload(this)
-        }
-        val legacyMlp = ElbowCorrectionMlpClassifier.getOrNull(this)
-        var legacyResult: ElbowCorrectionMlpClassifier.TimedElbowResult? = null
-
-        if (legacyMlp != null && worldLandmarks != null) {
-            legacyResult = legacyMlp.predictBothElbows(smoothedLandmarks, worldLandmarks)
-            elbowMlpLatencyRing.addLast(legacyResult.latencyMicros)
-            while (elbowMlpLatencyRing.size > elbowMlpLatencyRingMax) elbowMlpLatencyRing.removeFirst()
-        }
-
-        // FIT3D v2 MLP (38 features, residual mode)
-        val fit3dMlp = ElbowFit3dV2Classifier.getOrNull(this)
-        var fit3dResult: ElbowFit3dV2Classifier.TimedElbowResult? = null
-
-        if (fit3dMlp != null && worldLandmarks != null) {
-            fit3dResult = fit3dMlp.predictBothElbows(smoothedLandmarks, worldLandmarks)
-            fit3dLatencyRing.addLast(fit3dResult.latencyMicros)
-            while (fit3dLatencyRing.size > fit3dLatencyRingMax) fit3dLatencyRing.removeFirst()
-        }
-
-        // Mirror for front camera
-        val legacyScreenLeft = if (isFrontCamera) legacyResult?.rightAngle else legacyResult?.leftAngle
-        val legacyScreenRight = if (isFrontCamera) legacyResult?.leftAngle else legacyResult?.rightAngle
-        val fit3dScreenLeft = if (isFrontCamera) fit3dResult?.rightAngle else fit3dResult?.leftAngle
-        val fit3dScreenRight = if (isFrontCamera) fit3dResult?.leftAngle else fit3dResult?.rightAngle
-        val fit3dFeatLeft = if (isFrontCamera) fit3dResult?.rightFeatures else fit3dResult?.leftFeatures
-        val fit3dFeatRight = if (isFrontCamera) fit3dResult?.leftFeatures else fit3dResult?.rightFeatures
-
-        val diagScreenLeft = elbowAngleEstimator.lastDiagnostics.getOrNull(if (isFrontCamera) 1 else 0)
-        val diagScreenRight = elbowAngleEstimator.lastDiagnostics.getOrNull(if (isFrontCamera) 0 else 1)
-
-        // Live value: FIT3D v2 → Legacy MLP → Heuristic
-        val displayLeft: Double?
-        val displayRight: Double?
-        val sourceLabel: String
-
-        if (fit3dResult != null && (fit3dScreenLeft != null || fit3dScreenRight != null)) {
-            displayLeft = fit3dScreenLeft?.toDouble()
-            displayRight = fit3dScreenRight?.toDouble()
-            sourceLabel = "FIT3D"
-        } else if (legacyResult != null && (legacyScreenLeft != null || legacyScreenRight != null)) {
-            displayLeft = legacyScreenLeft?.toDouble()
-            displayRight = legacyScreenRight?.toDouble()
-            sourceLabel = "MLP"
-        } else {
-            displayLeft = angles.leftElbow
-            displayRight = angles.rightElbow
-            sourceLabel = "Heuristic"
-        }
-
-        val leftStr = displayLeft?.let { "%.1f".format(it) } ?: "--"
-        val rightStr = displayRight?.let { "%.1f".format(it) } ?: "--"
-        binding.tvLiveValue.text = "L:${leftStr}° | R:${rightStr}°"
-        binding.tvLiveValue.setTextColor(Color.WHITE)
-
-        val overlayShIdx = if (isFrontCamera) BodyLandmarks.RIGHT_SHOULDER else BodyLandmarks.LEFT_SHOULDER
-        val overlayElIdx = if (isFrontCamera) BodyLandmarks.RIGHT_ELBOW else BodyLandmarks.LEFT_ELBOW
-        val overlayWrIdx = if (isFrontCamera) BodyLandmarks.RIGHT_WRIST else BodyLandmarks.LEFT_WRIST
-
-        binding.skeletonOverlay.updateDebugJoint(
-            jointCode = if (isFrontCamera) "right_elbow" else "left_elbow",
-            angle = displayLeft,
-            endpointA = overlayShIdx,
-            endpointC = overlayWrIdx,
-            vertexIdx = overlayElIdx,
-            smoothedLandmarks = smoothedLandmarks,
-            imageW = imageW,
-            imageH = imageH,
-            useFrontCamera = isFrontCamera
-        )
-
-        // Status bar
-        val heuL = angles.leftElbow?.let { "%.0f".format(it) } ?: "-"
-        val heuR = angles.rightElbow?.let { "%.0f".format(it) } ?: "-"
-        val statusParts = mutableListOf("[$sourceLabel]")
-        statusParts.add("Heur L:$heuL R:$heuR")
-        if (diagScreenLeft != null) statusParts.add("L:${diagScreenLeft.strategy}")
-        if (diagScreenRight != null) statusParts.add("R:${diagScreenRight.strategy}")
-        binding.tvStatus.text = statusParts.joinToString(" | ")
-        binding.tvStatus.setTextColor(Color.WHITE)
-        binding.tvStatus.visibility = View.VISIBLE
-
-        if (inferenceFrameCount % 2 == 0 || currentInputMode == InputMode.IMAGE) {
-            binding.tvDebugInfo.text = buildElbowDebugPanel(
-                angles, legacyMlp, legacyResult,
-                legacyScreenLeft, legacyScreenRight,
-                fit3dMlp, fit3dResult,
-                fit3dScreenLeft, fit3dScreenRight,
-                fit3dFeatLeft, fit3dFeatRight,
-                diagScreenLeft, diagScreenRight,
+        val highlights = selectedJointCodes.mapNotNull { jointCode ->
+            val angleLandmarks = JointLandmarkMapping.getLandmarksForAngle(jointCode)
+            if (angleLandmarks.size != 3) return@mapNotNull null
+            SkeletonOverlayView.DebugJointHighlight(
+                jointCode = jointCode,
+                angle = angles.getAngle(jointCode),
+                endpointA = angleLandmarks[0],
+                endpointC = angleLandmarks[2],
+                vertexIdx = angleLandmarks[1]
             )
         }
+        binding.skeletonOverlay.updateDebugJoints(
+            joints = highlights,
+            smoothedLandmarks = smoothedLandmarks,
+            imageW = imageW,
+            imageH = imageH,
+            useFrontCamera = isFrontCamera
+        )
     }
 
-    private fun buildElbowDebugPanel(
-        angles: JointAngles,
-        legacyMlp: ElbowCorrectionMlpClassifier?,
-        legacyResult: ElbowCorrectionMlpClassifier.TimedElbowResult?,
-        legacyScreenLeft: Float?,
-        legacyScreenRight: Float?,
-        fit3dMlp: ElbowFit3dV2Classifier?,
-        fit3dResult: ElbowFit3dV2Classifier.TimedElbowResult?,
-        fit3dScreenLeft: Float?,
-        fit3dScreenRight: Float?,
-        fit3dFeatLeft: FloatArray?,
-        fit3dFeatRight: FloatArray?,
-        diagScreenLeft: ElbowDiagnostics?,
-        diagScreenRight: ElbowDiagnostics?,
-    ): String {
-        val sb = StringBuilder()
-        sb.appendLine("=== ELBOW DEBUG ===")
-        sb.appendLine()
-
-        // --- Comparison table per side ---
-        for ((label, idx) in arrayOf("LEFT" to 0, "RIGHT" to 1)) {
-            val heuristic = if (idx == 0) angles.leftElbow else angles.rightElbow
-            val diag = if (idx == 0) diagScreenLeft else diagScreenRight
-            val legacy = if (idx == 0) legacyScreenLeft else legacyScreenRight
-            val fit3d = if (idx == 0) fit3dScreenLeft else fit3dScreenRight
-
-            sb.appendLine("--- $label ELBOW ---")
-            sb.appendLine("  FIT3D v2:    ${fit3d?.let { "%.1f°".format(it) } ?: "N/A"}")
-            sb.appendLine("  Legacy MLP:  ${legacy?.let { "%.1f°".format(it) } ?: "N/A"}")
-            sb.appendLine("  Heuristic:   ${formatAngleLong(heuristic)}")
-
-            if (diag != null) {
-                sb.appendLine("  Screen 2D:   ${formatAngleLong(diag.screenAngle)}")
-                sb.appendLine("  World 3D:    ${formatAngleLong(diag.worldAngle)}")
-                sb.appendLine("  Strategy:    ${diag.strategy}")
-                sb.appendLine("  dzShare:     UA=%.3f FA=%.3f".format(diag.uaDzShare, diag.faDzShare))
-                sb.appendLine("  Facing:      %.3f".format(diag.facingRatio))
-            }
-
-            if (fit3d != null && legacy != null) {
-                sb.appendLine("  FIT3D-Legacy: %+.1f°".format(fit3d - legacy))
-            }
-            if (fit3d != null && heuristic != null) {
-                sb.appendLine("  FIT3D-Heur:   %+.1f°".format(fit3d - heuristic))
-            }
-            sb.appendLine()
-        }
-
-        // --- FIT3D v2 Status ---
-        sb.appendLine("--- FIT3D v2 STATUS ---")
-        if (fit3dMlp == null) {
-            sb.appendLine("Model:  NOT LOADED")
-            val err = ElbowFit3dV2Classifier.lastError
-            if (err != null) sb.appendLine("Error:  $err")
-            sb.appendLine("Tap Live Value to retry")
-            binding.tvLiveValue.setOnClickListener {
-                elbowMlpRetryRequested = true
-                Toast.makeText(this, "Retrying model load...", Toast.LENGTH_SHORT).show()
-            }
-        } else {
-            binding.tvLiveValue.setOnClickListener(null)
-            sb.appendLine("Model:  LOADED (38-D, residual)")
-            if (fit3dResult != null) {
-                val lastMs = fit3dResult.latencyMicros / 1000.0
-                val avgMicros = if (fit3dLatencyRing.isNotEmpty())
-                    fit3dLatencyRing.sumOf { it } / fit3dLatencyRing.size.toDouble() else 0.0
-                sb.appendLine("Latency: %.3f ms (avg %.3f ms)".format(lastMs, avgMicros / 1000.0))
-            }
-        }
-        sb.appendLine()
-
-        // --- Legacy MLP Status ---
-        sb.appendLine("--- Legacy MLP STATUS ---")
-        if (legacyMlp == null) {
-            sb.appendLine("Model:  NOT LOADED")
-            val err = ElbowCorrectionMlpClassifier.lastError
-            if (err != null) sb.appendLine("Error:  $err")
-        } else {
-            sb.appendLine("Model:  LOADED (26-D, sigmoid)")
-            if (legacyResult != null) {
-                val lastMs = legacyResult.latencyMicros / 1000.0
-                val avgMicros = if (elbowMlpLatencyRing.isNotEmpty())
-                    elbowMlpLatencyRing.sumOf { it } / elbowMlpLatencyRing.size.toDouble() else 0.0
-                sb.appendLine("Latency: %.3f ms (avg %.3f ms)".format(lastMs, avgMicros / 1000.0))
-            }
-        }
-        sb.appendLine()
-
-        // --- FIT3D Feature Table ---
-        for ((sideName, feats) in arrayOf("LEFT" to fit3dFeatLeft, "RIGHT" to fit3dFeatRight)) {
-            if (feats != null) {
-                sb.appendLine("--- $sideName FEATURES (38-D) ---")
-                for (i in feats.indices) {
-                    val name = ElbowFit3dV2FeatureExtractor.FEATURE_NAMES.getOrElse(i) { "f$i" }
-                    sb.appendLine("  [%2d] %-20s %8.4f".format(i, name, feats[i]))
-                }
-                sb.appendLine()
-            }
-        }
-
-        return sb.toString()
-    }
+    private fun formatJointCodeShort(jointCode: String): String =
+        jointCode.replace('_', ' ')
 
     private fun updateAngleDiagnosticsDisplay(
         poseResult: PoseResult,
@@ -1259,48 +1021,54 @@ class DebugActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetectionLis
         smoothedLandmarks: List<SmoothedLandmark>,
         smoothedWorldLandmarks: List<SmoothedLandmark>?
     ) {
-        val diagnostics = buildAngleDiagnosticsData(
-            poseResult = poseResult,
-            angles = angles,
-            smoothedLandmarks = smoothedLandmarks,
-            smoothedWorldLandmarks = smoothedWorldLandmarks
-        )
+        val diagnosticsList = selectedJointCodes.mapNotNull { jointCode ->
+            buildAngleDiagnosticsData(
+                jointCode = jointCode,
+                poseResult = poseResult,
+                angles = angles,
+                smoothedLandmarks = smoothedLandmarks,
+                smoothedWorldLandmarks = smoothedWorldLandmarks
+            )
+        }
 
-        if (diagnostics == null) {
+        if (diagnosticsList.isEmpty()) {
             binding.tvLiveValue.text = "N/A"
             binding.tvLiveValue.setTextColor(Color.GRAY)
             binding.tvStatus.visibility = View.VISIBLE
-            binding.tvStatus.text = "Angle mapping unavailable"
+            binding.tvStatus.text = "No valid joint mapping"
             binding.tvStatus.setTextColor(Color.GRAY)
-            binding.tvDebugInfo.text = "Selected joint does not have a 3-point angle mapping."
+            binding.tvDebugInfo.text = "Selected joints do not have a 3-point angle mapping."
             return
         }
 
-        val displayedAngle = diagnostics.displayedAngle
-        if (displayedAngle != null) {
-            binding.tvLiveValue.text = "%.1f°".format(displayedAngle)
-            binding.tvLiveValue.setTextColor(Color.WHITE)
-        } else {
-            binding.tvLiveValue.text = "N/A"
-            binding.tvLiveValue.setTextColor(Color.GRAY)
+        binding.tvLiveValue.text = diagnosticsList.joinToString("\n") { data ->
+            val angle = data.displayedAngle
+            if (angle != null) {
+                "${formatJointCodeShort(data.displayJointCode)}  %.1f°".format(angle)
+            } else {
+                "${formatJointCodeShort(data.displayJointCode)}  N/A"
+            }
         }
+        binding.tvLiveValue.setTextColor(Color.WHITE)
+        binding.tvLiveValue.textSize = if (diagnosticsList.size > 1) 28f else 56f
 
         binding.tvStatus.visibility = View.VISIBLE
-        binding.tvStatus.text = buildAngleDiagnosticsSummary(diagnostics)
+        binding.tvStatus.text = diagnosticsList.joinToString(" | ") { buildAngleDiagnosticsSummary(it) }
         binding.tvStatus.setTextColor(Color.WHITE)
 
         if (inferenceFrameCount % 2 == 0 || currentInputMode == InputMode.IMAGE) {
-            binding.tvDebugInfo.text = buildAngleDiagnosticsPanelText(diagnostics)
+            binding.tvDebugInfo.text = buildAngleDiagnosticsPanelText(diagnosticsList)
         }
     }
 
     private fun buildAngleDiagnosticsData(
+        jointCode: String,
         poseResult: PoseResult,
         angles: JointAngles,
         smoothedLandmarks: List<SmoothedLandmark>,
         smoothedWorldLandmarks: List<SmoothedLandmark>?
     ): AngleDiagnosticsData? {
-        val mappedIndices = JointLandmarkMapping.getLandmarksForAngle(selectedJointCode)
+        val mappedIndices = JointLandmarkMapping.getLandmarksForAngle(jointCode)
         if (mappedIndices.size != 3) return null
 
         val effectiveIndices = if (poseResult.isFrontCamera) {
@@ -1310,9 +1078,9 @@ class DebugActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetectionLis
         }
 
         val sourceJointCode = if (poseResult.isFrontCamera) {
-            getMirroredJointCode(selectedJointCode)
+            getMirroredJointCode(jointCode)
         } else {
-            selectedJointCode
+            jointCode
         }
 
         val normalizedRaw = buildAngleDebugFrame(effectiveIndices) { index ->
@@ -1333,10 +1101,10 @@ class DebugActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetectionLis
         }
 
         return AngleDiagnosticsData(
-            displayJointCode = selectedJointCode,
+            displayJointCode = jointCode,
             sourceJointCode = sourceJointCode,
             effectiveIndices = effectiveIndices,
-            displayedAngle = angles.getAngle(selectedJointCode),
+            displayedAngle = angles.getAngle(jointCode),
             pipelineSourceLabel = if (worldSmoothed != null) "World XYZ" else "Screen XY fallback",
             normalizedRaw = normalizedRaw,
             normalizedSmoothed = normalizedSmoothed,
@@ -1385,11 +1153,15 @@ class DebugActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetectionLis
         }
     }
 
-    private fun buildAngleDiagnosticsPanelText(data: AngleDiagnosticsData): String {
+    private fun buildAngleDiagnosticsPanelText(diagnosticsList: List<AngleDiagnosticsData>): String {
+        return diagnosticsList.joinToString("\n\n") { buildSingleJointDiagnosticsPanelText(it) }
+    }
+
+    private fun buildSingleJointDiagnosticsPanelText(data: AngleDiagnosticsData): String {
         val sb = StringBuilder()
         val visibilityReference = data.worldSmoothed ?: data.normalizedSmoothed
 
-        sb.appendLine("=== ANGLE DIAGNOSTICS ===")
+        sb.appendLine("=== ANGLE DIAGNOSTICS: ${data.displayJointCode} ===")
         sb.appendLine()
         sb.appendLine("Display joint: ${data.displayJointCode}")
         if (data.displayJointCode == data.sourceJointCode) {
@@ -2102,175 +1874,6 @@ class DebugActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetectionLis
         binding.tvDebugInfo.text = sb.toString()
     }
 
-    // ==================== Posture MLP Debug ====================
-
-    private val mlpClassLabels = arrayOf("Standing", "Sitting", "Lying")
-
-    private val mlpFeatureNames = arrayOf(
-        "spine_angle", "torso_len", "cos_torso_thigh",
-        "knee_ang_L", "knee_ang_R",
-        "shoulder_w", "hip_w",
-        "knee_drop", "ankle_drop", "nose_off",
-        "sh_v_sep", "hip_v_sep",
-        "vis_knee", "vis_hip", "vis_sh",
-        "z_torso"
-    )
-
-    private var mlpRetryRequested = false
-
-    /** Rolling window of total MLP stack latency (µs) for Debug MLP tab. */
-    private val mlpLatencyMicrosRing = ArrayDeque<Long>(32)
-    private val mlpLatencyRingMax = 30
-
-    private fun recordMlpLatencyMicros(totalMicros: Long): Double {
-        mlpLatencyMicrosRing.addLast(totalMicros)
-        while (mlpLatencyMicrosRing.size > mlpLatencyRingMax) {
-            mlpLatencyMicrosRing.removeFirst()
-        }
-        return mlpLatencyMicrosRing.sumOf { it } / mlpLatencyMicrosRing.size.toDouble()
-    }
-
-    private fun updatePostureMlpDisplay(landmarks: List<SmoothedLandmark>) {
-        if (mlpRetryRequested) {
-            mlpRetryRequested = false
-            PostureMlpClassifier.reload(this)
-        }
-        val classifier = PostureMlpClassifier.getOrNull(this)
-        val ruleResult = BodyPostureDetector.detect(landmarks)
-
-        if (classifier == null) {
-            val rawFeatures = PostureMlpFeatureExtractor.computeFeatures(landmarks)
-            binding.tvLiveValue.text = "NO MODEL"
-            binding.tvLiveValue.setTextColor(Color.parseColor("#FF9800"))
-            binding.tvStatus.text = "Model not loaded — tap Live Value to retry"
-            binding.tvStatus.setTextColor(Color.parseColor("#FF9800"))
-            binding.tvStatus.visibility = View.VISIBLE
-            binding.tvLiveValue.setOnClickListener {
-                mlpRetryRequested = true
-                Toast.makeText(this, "Retrying model load…", Toast.LENGTH_SHORT).show()
-            }
-
-            val sb = StringBuilder()
-            sb.appendLine("=== POSTURE MLP ===")
-            sb.appendLine()
-            sb.appendLine("Model:  NOT LOADED")
-            val err = PostureMlpClassifier.lastError
-            if (err != null) {
-                sb.appendLine("Error:  $err")
-            } else {
-                sb.appendLine("Place posture_mlp.tflite & posture_mlp_norm.json")
-                sb.appendLine("in app/src/main/assets/")
-            }
-            sb.appendLine()
-            sb.appendLine("--- RULE-BASED FALLBACK ---")
-            sb.appendLine("Posture:    ${ruleResult.posture}")
-            sb.appendLine("Confidence: %.2f".format(ruleResult.confidence))
-            sb.appendLine("Body axis:  %.1f°".format(ruleResult.bodyAxisAngleDeg))
-            if (rawFeatures != null) {
-                sb.appendLine()
-                sb.appendLine("--- RAW FEATURES (16-D) ---")
-                appendFeatureTable(sb, rawFeatures)
-            }
-            binding.tvDebugInfo.text = sb.toString()
-            return
-        }
-
-        binding.tvLiveValue.setOnClickListener(null)
-
-        val timed = classifier.predictFromLandmarksTimed(landmarks)
-        if (timed == null) {
-            binding.tvLiveValue.text = "--"
-            binding.tvLiveValue.setTextColor(Color.GRAY)
-            binding.tvStatus.text = "Features unavailable (torso too short?)"
-            binding.tvStatus.setTextColor(Color.GRAY)
-            binding.tvStatus.visibility = View.VISIBLE
-            binding.tvDebugInfo.text = "Cannot compute feature vector."
-            return
-        }
-
-        val prediction = timed.prediction
-        val timings = timed.timings
-        val rawFeatures = timed.rawFeatures
-        val avgMicros = recordMlpLatencyMicros(timings.totalMicros)
-        val lastMs = timings.totalMicros / 1000.0
-        val avgMs = avgMicros / 1000.0
-        val infPerSec = if (lastMs > 1e-6) (1000.0 / lastMs).toInt() else 0
-
-        val label = mlpClassLabels.getOrElse(prediction.classIndex) { "?" }
-        val conf = prediction.confidence
-        val confColor = when {
-            conf >= 0.8f -> Color.GREEN
-            conf >= 0.5f -> Color.YELLOW
-            else -> Color.RED
-        }
-
-        binding.tvLiveValue.text = "$label (${prediction.classIndex})"
-        binding.tvLiveValue.setTextColor(confColor)
-
-        val ruleCoarse = when (ruleResult.posture) {
-            BodyPosture.STANDING -> "Standing"
-            BodyPosture.SITTING -> "Sitting"
-            BodyPosture.LYING_PRONE, BodyPosture.LYING_SUPINE, BodyPosture.LYING_SIDE -> "Lying"
-            else -> "Unknown"
-        }
-        val agree = (ruleCoarse == label)
-        val matchSymbol = if (agree) "AGREE" else "DISAGREE"
-        val matchColor = if (agree) Color.GREEN else Color.parseColor("#FF9800")
-
-        binding.tvStatus.text =
-            "MLP=$label (%.0f%%) | Rule=$ruleCoarse | $matchSymbol | %.3fms (~%d/s)".format(
-                conf * 100f,
-                lastMs,
-                infPerSec,
-            )
-        binding.tvStatus.setTextColor(matchColor)
-        binding.tvStatus.visibility = View.VISIBLE
-
-        if (inferenceFrameCount % 2 == 0 || currentInputMode == InputMode.IMAGE) {
-            val sb = StringBuilder()
-            sb.appendLine("=== POSTURE MLP ===")
-            sb.appendLine()
-            sb.appendLine("--- LATENCY ---")
-            sb.appendLine("Total (last):   %.3f ms".format(lastMs))
-            sb.appendLine("Rolling avg:    %.3f ms  (last %d frames)".format(avgMs, mlpLatencyMicrosRing.size))
-            sb.appendLine("Features:       %.3f ms  (PostureMlpFeatureExtractor)".format(timings.featuresMicros / 1000.0))
-            sb.appendLine("Classifier:     %.3f ms  (norm + TFLite Interpreter.run)".format(timings.classifierMicros / 1000.0))
-            sb.appendLine("Equiv. rate:    ~%d inf/s (from last total)".format(infPerSec))
-            sb.appendLine()
-            sb.appendLine("--- PREDICTION ---")
-            sb.appendLine("Class:       $label (${prediction.classIndex})")
-            sb.appendLine("Confidence:  %.1f%%".format(conf * 100f))
-            sb.appendLine()
-            sb.appendLine("Probabilities:")
-            for (i in prediction.probabilities.indices) {
-                val pLabel = mlpClassLabels.getOrElse(i) { "?" }
-                val pct = prediction.probabilities[i] * 100f
-                val bar = "█".repeat((pct / 5f).toInt().coerceAtMost(20))
-                sb.appendLine("  [$i] %-9s %5.1f%%  %s".format(pLabel, pct, bar))
-            }
-            sb.appendLine()
-
-            sb.appendLine("--- RULE-BASED COMPARISON ---")
-            sb.appendLine("Rule posture:  ${ruleResult.posture}")
-            sb.appendLine("Rule conf:     %.2f".format(ruleResult.confidence))
-            sb.appendLine("Body axis:     %.1f°".format(ruleResult.bodyAxisAngleDeg))
-            sb.appendLine("Agreement:     $matchSymbol")
-            sb.appendLine()
-
-            sb.appendLine("--- RAW FEATURES (16-D) ---")
-            appendFeatureTable(sb, rawFeatures)
-
-            binding.tvDebugInfo.text = sb.toString()
-        }
-    }
-
-    private fun appendFeatureTable(sb: StringBuilder, features: FloatArray) {
-        for (i in features.indices) {
-            val name = mlpFeatureNames.getOrElse(i) { "f$i" }
-            sb.appendLine("  [%2d] %-16s %8.4f".format(i, name, features[i]))
-        }
-    }
-
     // ==================== Position Validator ====================
 
     private fun rebuildPositionValidator() {
@@ -2371,11 +1974,9 @@ class DebugActivity : AppCompatActivity(), PoseLandmarkerHelper.PoseDetectionLis
         val sections = mutableListOf<String>()
 
         val modeLabel = when (currentTab) {
-            TAB_ELBOWS -> "Elbows"
             TAB_ANGLE_DIAGNOSTICS -> "Angle Lab"
             TAB_POSITION -> "Positions"
             TAB_CAMERA -> "Scene"
-            TAB_POSTURE_MLP -> "Posture MLP"
             else -> "Unknown"
         }
         sections.add("Mode: $modeLabel")
