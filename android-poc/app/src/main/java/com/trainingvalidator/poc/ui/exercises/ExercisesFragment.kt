@@ -2,6 +2,8 @@ package com.trainingvalidator.poc.ui.exercises
 
 import android.content.Intent
 import android.os.Bundle
+import android.text.Editable
+import android.text.TextWatcher
 import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
@@ -25,6 +27,7 @@ import com.trainingvalidator.poc.storage.SyncManager
 import com.trainingvalidator.poc.training.models.ExerciseConfig
 import com.trainingvalidator.poc.training.models.WorkoutConfig
 import com.trainingvalidator.poc.ui.train.PreWorkoutActivity
+import com.trainingvalidator.poc.ui.utils.ExerciseSearchMatcher
 import com.trainingvalidator.poc.ui.workouts.WorkoutListActivity
 import com.trainingvalidator.poc.ui.programs.ProgramListActivity
 import com.trainingvalidator.poc.ui.workouts.WorkoutDetailActivity
@@ -105,7 +108,12 @@ class ExercisesFragment : Fragment() {
             filterExercises()
         }
 
-        // Search
+        // Search (live filter while typing)
+        binding.etSearch.addTextChangedListener(object : TextWatcher {
+            override fun afterTextChanged(s: Editable?) = filterExercises()
+            override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
+            override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {}
+        })
         binding.etSearch.setOnEditorActionListener { _, _, _ ->
             filterExercises()
             true
@@ -205,20 +213,20 @@ class ExercisesFragment : Fragment() {
     }
 
     private fun filterExercises() {
-        val searchQuery = binding.etSearch.text?.toString()?.lowercase() ?: ""
-        
+        val searchQuery = binding.etSearch.text?.toString().orEmpty()
+        val language = requireContext().currentLanguage
+
         filteredExercises.clear()
         filteredExercises.addAll(exercises.filter { exercise ->
             val matchesCategory = currentCategory?.let { cat ->
-                exercise.category.name.en.lowercase().contains(cat) ||
-                exercise.category.name.ar.lowercase().contains(cat) ||
-                exercise.muscles.any { it.lowercase().contains(cat) }
+                exercise.category.code.equals(cat, ignoreCase = true) ||
+                    exercise.category.name.en.contains(cat, ignoreCase = true) ||
+                    exercise.category.name.ar.contains(cat, ignoreCase = true) ||
+                    exercise.muscles.any { it.contains(cat, ignoreCase = true) }
             } ?: true
-            
-            val matchesSearch = searchQuery.isEmpty() ||
-                exercise.name.en.lowercase().contains(searchQuery) ||
-                exercise.name.ar.contains(searchQuery)
-            
+
+            val matchesSearch = ExerciseSearchMatcher.matches(exercise, searchQuery, language)
+
             matchesCategory && matchesSearch
         })
         

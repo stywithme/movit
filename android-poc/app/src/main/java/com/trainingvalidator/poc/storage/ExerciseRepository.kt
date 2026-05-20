@@ -3,6 +3,7 @@ package com.trainingvalidator.poc.storage
 import android.content.Context
 import android.util.Log
 import com.trainingvalidator.poc.training.models.ExerciseConfig
+import com.trainingvalidator.poc.ui.utils.ExerciseSearchMatcher
 import kotlinx.coroutines.DelicateCoroutinesApi
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -260,13 +261,11 @@ class ExerciseRepository private constructor(private val context: Context) {
     }
     
     /**
-     * Search exercises by name
+     * Search exercises across name, slug, category, muscles, tags, and more.
      */
-    fun searchExercises(query: String): List<ExerciseConfig> {
-        val lowerQuery = query.lowercase()
+    fun searchExercises(query: String, preferredLanguage: String = "en"): List<ExerciseConfig> {
         return _exercises.value.filter { exercise ->
-            exercise.name.en.lowercase().contains(lowerQuery) ||
-            exercise.name.ar.contains(query)
+            ExerciseSearchMatcher.matches(exercise, query, preferredLanguage)
         }
     }
     

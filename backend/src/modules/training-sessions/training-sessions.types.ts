@@ -24,6 +24,7 @@ export interface RepMetricsData {
   worstState: number;       // 0=PERFECT, 1=NORMAL, 2=PAD, 3=WARNING, 4=DANGER
   score: number;            // Score × 10
   weightKg: number | null;
+  side?: 'left' | 'right' | null;
   metrics: RepMetrics;
 }
 

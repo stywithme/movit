@@ -26,6 +26,7 @@ import com.trainingvalidator.poc.training.models.ExerciseConfig
 import com.trainingvalidator.poc.training.models.WorkoutConfig
 import com.trainingvalidator.poc.ui.profile.ProfileActivity
 import com.trainingvalidator.poc.ui.train.PreWorkoutActivity
+import com.trainingvalidator.poc.ui.utils.ExerciseSearchMatcher
 import com.trainingvalidator.poc.ui.utils.bindUserAvatar
 import com.trainingvalidator.poc.ui.utils.currentLanguage
 import com.trainingvalidator.poc.ui.workouts.WorkoutDetailActivity
@@ -405,16 +406,7 @@ class ExploreFragment : Fragment() {
 
     private fun matchesExerciseSearch(exercise: ExerciseConfig, query: String): Boolean {
         val language = requireContext().currentLanguage
-        return matchesQuery(
-            query,
-            localizedExerciseName(exercise, language),
-            exercise.name.en,
-            exercise.name.ar,
-            categoryLabel(exercise, language),
-            exercise.fileName,
-            exercise.tags.joinToString(" "),
-            exercise.muscles.joinToString(" ")
-        )
+        return ExerciseSearchMatcher.matches(exercise, query, language)
     }
 
     private fun updateFilteredState() {
