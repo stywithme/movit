@@ -21,6 +21,7 @@ import com.trainingvalidator.poc.training.models.ExerciseConfig
 import com.trainingvalidator.poc.training.models.LocalizedText
 import com.trainingvalidator.poc.training.models.WorkoutConfig
 import com.trainingvalidator.poc.training.models.WorkoutExercise
+import com.trainingvalidator.poc.ui.utils.ExerciseSearchMatcher
 import com.trainingvalidator.poc.ui.utils.currentLanguage
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -135,13 +136,11 @@ class QuickStartActivity : AppCompatActivity() {
     }
 
     private fun filterExercises(query: String) {
-        val language = currentLanguage
         filteredExercises = if (query.isBlank()) {
             allExercises
         } else {
             allExercises.filter { ex ->
-                val name = ex.name.get(language).ifBlank { ex.name.en }
-                name.contains(query, ignoreCase = true) || ex.fileName.contains(query, ignoreCase = true)
+                ExerciseSearchMatcher.matches(ex, query, currentLanguage)
             }
         }
         adapter.notifyDataSetChanged()

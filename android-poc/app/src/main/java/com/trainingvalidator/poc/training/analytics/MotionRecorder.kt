@@ -190,13 +190,15 @@ class MotionRecorder(
      * @param worstState Worst joint state reached during rep
      * @param score Form score (0-100)
      * @param weightKg Weight used for this rep (null for bodyweight)
+     * @param side Active anatomical side for bilateral alternating exercises.
      */
     fun finalizeRep(
         repNumber: Int,
         phaseTimings: Map<String, Long>,
         worstState: JointState,
         score: Float,
-        weightKg: Float? = null
+        weightKg: Float? = null,
+        side: String? = null
     ) {
         if (!isRecording) return
         
@@ -250,9 +252,10 @@ class MotionRecorder(
             hipIndices?.let { MetricsCalculator.calculateStability(currentRepBuffer, it) } ?: 1000
         }
         
+        val repSide = normalizeSide(side)
         val repMetrics = RepMetrics(
             rom = MetricsCalculator.calculateROM(currentRepBuffer, primaryJointIndex),
-            symmetry = if (leftJointIndex != null && rightJointIndex != null) {
+            symmetry = if (repSide == null && leftJointIndex != null && rightJointIndex != null) {
                 MetricsCalculator.calculateSymmetry(currentRepBuffer, leftJointIndex!!, rightJointIndex!!)
             } else null,
             stability = stability,
@@ -270,6 +273,7 @@ class MotionRecorder(
             worstState = StateCode.fromJointState(worstState),
             score = (score * 10).toInt().toShort(),
             weightKg = weightKg ?: defaultWeightKg,
+            side = repSide,
             metrics = repMetrics
         )
         
@@ -335,8 +339,9 @@ class MotionRecorder(
         
         // Aggregate averages
         val avgRom = repMetricsList.map { it.rom }.average().toInt().toShort()
-        val avgSymmetry = repMetricsList.mapNotNull { it.symmetry }.takeIf { it.isNotEmpty() }
-            ?.average()?.toInt()?.toShort()
+        val avgSymmetry = calculateBilateralSymmetryFromSides()
+            ?: repMetricsList.mapNotNull { it.symmetry }.takeIf { it.isNotEmpty() }
+                ?.average()?.toInt()?.toShort()
         val avgStability = repMetricsList.map { it.stability }.average().toInt().toShort()
         val avgVelocity = repMetricsList.mapNotNull { it.velocity }.takeIf { it.isNotEmpty() }
             ?.average()?.toInt()?.toShort()
@@ -419,6 +424,24 @@ class MotionRecorder(
         // Convert scores from ×10 format to regular float
         val scores = completedRepMetrics.map { it.score / 10f }
         return MetricsCalculator.calculateFatigueIndexFromScores(scores)
+    }
+
+    private fun calculateBilateralSymmetryFromSides(): Short? {
+        val leftRom = completedRepMetrics
+            .filter { it.side == "left" }
+            .map { it.metrics.rom }
+        val rightRom = completedRepMetrics
+            .filter { it.side == "right" }
+            .map { it.metrics.rom }
+        return MetricsCalculator.calculateBilateralRomSymmetry(leftRom, rightRom)
+    }
+
+    private fun normalizeSide(side: String?): String? {
+        return when (side?.lowercase()) {
+            "left" -> "left"
+            "right" -> "right"
+            else -> null
+        }
     }
     
     private fun createEmptySessionMetrics(): SessionMetrics {
@@ -519,6 +542,7 @@ data class RepMetricsData(
     val worstState: Byte,
     val score: Short,
     val weightKg: Float?,
+    val side: String? = null,
     val metrics: RepMetrics
 )
 

@@ -126,6 +126,7 @@ export async function saveSession(
           worstState: rep.worstState,
           score: rep.score,
           weightKg: rep.weightKg,
+          side: rep.side ?? null,
           rom: rep.metrics.rom,
           symmetry: rep.metrics.symmetry,
           stability: rep.metrics.stability,
@@ -1313,6 +1314,7 @@ function mapSessionToResponse(session: any): TrainingSessionResponse {
       worstState: rep.worstState,
       score: rep.score,
       weightKg: rep.weightKg,
+      side: rep.side,
       metrics: {
         rom: rep.rom,
         symmetry: rep.symmetry,

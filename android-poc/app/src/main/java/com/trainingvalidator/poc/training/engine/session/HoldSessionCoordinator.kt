@@ -97,7 +97,8 @@ class HoldSessionCoordinator(
                     repNumber = repCounter.count,
                     phaseTimings = finalResult.phaseTimings,
                     worstState = finalResult.worstState,
-                    score = score
+                    score = score,
+                    side = bilateral.currentSideCode.takeIf { bilateral.isBilateral }
                 )
                 bilateral.onRepCounted(repCounter.count)
             }

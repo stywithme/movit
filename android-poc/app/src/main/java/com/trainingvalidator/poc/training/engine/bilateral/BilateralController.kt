@@ -27,6 +27,9 @@ class BilateralController(
     val isFlipped: Boolean
         get() = isBilateral && current != startSide
 
+    val currentSideCode: String
+        get() = current.name.lowercase()
+
     fun resetToConfigStart() {
         if (!isBilateral) return
         current = startSide

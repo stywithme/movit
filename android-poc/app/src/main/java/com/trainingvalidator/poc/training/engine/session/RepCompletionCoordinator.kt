@@ -57,7 +57,8 @@ class RepCompletionCoordinator(
             repNumber = repCounter.count,
             phaseTimings = phaseTimings.mapKeys { it.key.name.lowercase() },
             worstState = worstState,
-            score = score
+            score = score,
+            side = bilateral.currentSideCode.takeIf { bilateral.isBilateral }
         )
         bilateral.onRepCounted(repCounter.count)
         Log.d(tag, "Rep ${repCounter.count} completed. Correct: ${repCounter.correctCount}/${repCounter.count}")

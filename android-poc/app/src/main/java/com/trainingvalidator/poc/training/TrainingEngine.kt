@@ -68,6 +68,14 @@ class TrainingEngine(
     private val repCountingConfig: RepCountingConfig = exerciseConfig.repCountingConfig
     private val targetReps: Int = targetRepsOverride
         ?: repCountingConfig.reps
+    private val isAfterAllRepsBilateral: Boolean =
+        exerciseConfig.isBilateral && exerciseConfig.bilateralConfig?.let { config ->
+            config.switchMode == BilateralSwitchMode.AFTER_ALL_REPS ||
+                (config.switchMode == null && config.switchEvery == targetReps)
+        } == true
+    // "After all reps" means completing the configured target on both sides.
+    private val completionTargetReps: Int =
+        if (isAfterAllRepsBilateral) targetReps * 2 else targetReps
 
     private val bilateral = BilateralController(
         isBilateral = exerciseConfig.isBilateral,
@@ -114,7 +122,7 @@ class TrainingEngine(
     
     private val repCounter = RepCounter(
         minRepIntervalMs = minRepIntervalMs,
-        targetReps = targetReps,
+        targetReps = completionTargetReps,
         isHoldExercise = exerciseConfig.countingMethod == CountingMethod.HOLD,
         primaryJoints = primaryJointCodes,
         timeProvider = { nowMs() }
@@ -222,7 +230,7 @@ class TrainingEngine(
     private val sessionSafety = SessionSafetyGuards(
         timingPolicy = timingPolicy,
         isHoldExercise = isHoldExercise,
-        targetReps = targetReps,
+        targetReps = completionTargetReps,
         targetDurationMs = targetDurationMs,
         minRepIntervalMs = minRepIntervalMs
     )
@@ -416,7 +424,7 @@ class TrainingEngine(
             Log.d(TAG, "Target Duration: ${targetDurationMs}ms")
             Log.d(TAG, "Grace Period: ${holdTimer?.getGracePeriodMs()}ms")
         } else {
-            Log.d(TAG, "Target Reps: $targetReps")
+            Log.d(TAG, "Target Reps: $completionTargetReps")
         }
         Log.d(TAG, "Tracked Joints: ${trackedJoints.map { it.joint }}")
         Log.d(TAG, "Primary Joints: ${primaryJoints.map { it.joint }}")
@@ -769,7 +777,7 @@ class TrainingEngine(
     // Milestone: compatibility getters used by UI/reporting while the internals keep moving out.
     
     fun getExerciseConfig(): ExerciseConfig = exerciseConfig
-    fun getTargetReps(): Int = targetReps
+    fun getTargetReps(): Int = completionTargetReps
     fun getCurrentRep(): Int = repCounter.count
     fun getCountedReps(): Int = repCounter.countedCount
     fun getAverageScore(): Float = repCounter.getAverageScore()

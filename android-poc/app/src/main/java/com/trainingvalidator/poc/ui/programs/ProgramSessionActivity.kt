@@ -26,6 +26,7 @@ import com.google.android.material.button.MaterialButton
 import com.google.android.material.card.MaterialCardView
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.google.android.material.snackbar.Snackbar
+import com.trainingvalidator.poc.ui.utils.ExerciseSearchMatcher
 import com.trainingvalidator.poc.ui.utils.currentLanguage
 import com.trainingvalidator.poc.R
 import com.trainingvalidator.poc.databinding.ActivityProgramSessionBinding
@@ -1116,9 +1117,10 @@ class ProgramSessionActivity : AppCompatActivity() {
         }
 
         fun buildLists(query: String) {
-            val filtered = if (query.isBlank()) sameCategory else {
-                val q = query.trim().lowercase()
-                sameCategory.filter { it.name.get(language).ifBlank { it.name.en }.lowercase().contains(q) }
+            val filtered = if (query.isBlank()) {
+                sameCategory
+            } else {
+                sameCategory.filter { ExerciseSearchMatcher.matches(it, query, language) }
             }
 
             layoutEasier.removeAllViews()
@@ -1335,11 +1337,10 @@ class ProgramSessionActivity : AppCompatActivity() {
 
         fun renderList(query: String) {
             listContainer.removeAllViews()
-            val filtered = if (query.isBlank()) allExercises else {
-                val q = query.trim().lowercase()
-                allExercises.filter { ex ->
-                    ex.name.get(language).ifBlank { ex.name.en }.lowercase().contains(q)
-                }
+            val filtered = if (query.isBlank()) {
+                allExercises
+            } else {
+                allExercises.filter { ex -> ExerciseSearchMatcher.matches(ex, query, language) }
             }
             filtered.forEach { ex ->
                 val row = layoutInflater.inflate(R.layout.item_simple_exercise_row, listContainer, false)
