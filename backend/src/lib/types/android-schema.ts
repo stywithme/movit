@@ -6,7 +6,8 @@
  * This is the SINGLE SOURCE OF TRUTH for the mobile contract.
  * 
  * Updated: State-based system (no difficulty levels)
- * Reference: /Docs/State-Machine-Unified-Plan.md
+ * Reference: /Docs/00-Active-Reference/Contracts/Exercise-JSON-Schema.md
+ * State machine (roadmap): /Docs/02-Roadmaps-And-Plans/Engine-Future/State-Machine-Unified-Plan.md
  * 
  * IMPORTANT RULES:
  * 1. Never send `null` for any field - omit the key instead

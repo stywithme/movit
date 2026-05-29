@@ -115,21 +115,21 @@ data class HoldDefaults(
  * - Fast movements → responsive tracking (low smoothing)
  * - Slow/stationary → stable tracking (high smoothing, no jitter)
  * 
- * Presets:
- * - "responsive" → Fast tracking (minCutoff=2.5, beta=0.02)
- * - "balanced"   → Default (minCutoff=1.5, beta=0.01)
- * - "smooth"     → Slow exercises (minCutoff=0.8, beta=0.005)
+ * Presets (tuned for normalized MediaPipe coordinates 0–1):
+ * - "responsive" → Fast tracking (minCutoff=1.3, beta=2.0)
+ * - "balanced"   → Default (minCutoff=1.0, beta=1.5)
+ * - "smooth"     → Slow exercises (minCutoff=0.7, beta=1.0)
  * 
  * @param preset Quick configuration ("responsive", "balanced", "smooth", "custom")
- * @param minCutoff Base smoothness. Lower = smoother but more lag. Range: 0.5-3.0
- * @param beta Speed adaptation. Higher = more responsive to fast movements. Range: 0.0-0.5
+ * @param minCutoff Base smoothness. Lower = smoother but more lag. Range: 0.7–1.3
+ * @param beta Speed adaptation. Higher = more responsive to fast movements. Range: 1.0–2.5
  * @param useLegacyEMA Use simple EMA instead of One Euro (for comparison only)
  * @param legacyAlpha EMA alpha if useLegacyEMA is true
  */
 data class SmoothingSettings(
     val preset: String = "balanced",
-    val minCutoff: Float = 1.5f,
-    val beta: Float = 0.01f,
+    val minCutoff: Float = 1.0f,
+    val beta: Float = 1.5f,
     val useLegacyEMA: Boolean = false,
     val legacyAlpha: Float = 0.6f
 )

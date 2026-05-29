@@ -47,10 +47,10 @@
     "_comment": "تسوية معالم MediaPipe (One Euro / Legacy EMA)",
     "_preset_info": "القيم: responsive | balanced | smooth | custom",
     "preset": "custom",
-    "minCutoff": 3.0,
-    "_minCutoff_comment": "السلاسة الأساسية — أقل = أكثر سلاسة لكن تأخير أكثر (0.5–3.0)",
-    "beta": 0.05,
-    "_beta_comment": "تكيف السرعة — أعلى = أكثر استجابة (0.0–0.5)",
+    "minCutoff": 1.0,
+    "_minCutoff_comment": "السلاسة الأساسية — أقل = أكثر سلاسة لكن تأخير أكثر (0.7 : 1.3 للإحداثيات normalized)",
+    "beta": 1.5,
+    "_beta_comment": "تكيف السرعة — أعلى = أكثر استجابة وقت الحركة (1.0 : 2.5 للإحداثيات normalized)",
     "useLegacyEMA": false,
     "_useLegacyEMA_comment": "EMA بدلاً من One Euro (للمقارنة)",
     "legacyAlpha": 1.0,
@@ -58,7 +58,7 @@
   },
 
   "visibility": {
-    "_comment": "عتبات رؤية المعالم (0–1) — ليس تفضيل مستخدم",
+    "_comment": "عتبات رؤية المعالم (1 : 0) — ليس تفضيل مستخدم",
     "overlay": 0.5,
     "_overlay_comment": "عتبة رسم overlay الهيكل",
     "poseValidation": 0.6,
@@ -148,9 +148,9 @@
     "lengthRatio": {
       "_comment": "أقصى طول للخط UP/DOWN",
       "upper": 0.50,
-      "_upper_comment": "اتجاه UP (0–1)",
+      "_upper_comment": "اتجاه UP (1 : 0)",
       "lower": 0.75,
-      "_lower_comment": "اتجاه DOWN (0–1)"
+      "_lower_comment": "اتجاه DOWN (1 : 0)"
     },
     "strokeWidth": {
       "_comment": "عرض الخط (dp)",

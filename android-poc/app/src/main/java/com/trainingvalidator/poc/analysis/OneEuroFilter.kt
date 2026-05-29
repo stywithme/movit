@@ -18,21 +18,21 @@ import kotlin.math.abs
  * 
  * Parameters:
  * @param minCutoff Minimum cutoff frequency (Hz). Lower = smoother but more lag.
- *                  Typical range: 0.5 - 2.0. Default: 1.0
+ *                  Normalized landmarks: 0.7–1.3. Default: 1.0
  * @param beta Speed coefficient. Higher = more responsive to fast movements.
- *             Typical range: 0.0 - 1.0. Default: 0.007
+ *             Normalized landmarks: 1.0–2.5. Default: 1.5
  * @param dCutoff Derivative cutoff frequency. Usually keep at 1.0.
  * 
- * Tuning Guide:
+ * Tuning Guide (normalized MediaPipe coordinates 0–1):
  * - Reduce minCutoff to reduce jitter (but adds lag for slow movements)
  * - Increase beta to reduce lag during fast movements
- * - Start with minCutoff=1.0, beta=0.007, then adjust
+ * - Start with minCutoff=1.0, beta=1.5, then adjust
  * 
  * Reference: http://cristal.univ-lille.fr/~casiez/1euro/
  */
 class OneEuroFilter(
     private val minCutoff: Float = 1.0f,
-    private val beta: Float = 0.007f,
+    private val beta: Float = 1.5f,
     private val dCutoff: Float = 1.0f
 ) {
     companion object {
@@ -148,7 +148,7 @@ class FilterResult3D {
  */
 class OneEuroFilter3D(
     minCutoff: Float = 1.0f,
-    beta: Float = 0.007f,
+    beta: Float = 1.5f,
     dCutoff: Float = 1.0f
 ) {
     private val xFilter = OneEuroFilter(minCutoff, beta, dCutoff)

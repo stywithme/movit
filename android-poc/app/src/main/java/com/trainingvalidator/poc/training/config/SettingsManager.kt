@@ -156,9 +156,9 @@ object SettingsManager {
      */
     fun getSmoothingMinCutoff(): Float {
         return when (settings.smoothing.preset) {
-            "responsive" -> 2.5f
-            "balanced" -> 1.5f
-            "smooth" -> 0.8f
+            "responsive" -> 1.3f
+            "balanced" -> 1.0f
+            "smooth" -> 0.7f
             else -> settings.smoothing.minCutoff
         }
     }
@@ -169,9 +169,9 @@ object SettingsManager {
      */
     fun getSmoothingBeta(): Float {
         return when (settings.smoothing.preset) {
-            "responsive" -> 0.02f
-            "balanced" -> 0.01f
-            "smooth" -> 0.005f
+            "responsive" -> 2.0f
+            "balanced" -> 1.5f
+            "smooth" -> 1.0f
             else -> settings.smoothing.beta
         }
     }

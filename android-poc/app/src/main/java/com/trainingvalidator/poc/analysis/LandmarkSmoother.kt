@@ -16,15 +16,15 @@ import com.trainingvalidator.poc.training.config.SettingsManager
  * - When movement is FAST → less smoothing → responsive tracking
  * - When movement is SLOW → more smoothing → no jitter
  * 
- * Parameters (configurable):
- * @param minCutoff Lower = smoother but more lag. Range: 0.5-3.0, Default: 1.5
- * @param beta Higher = more responsive to fast movements. Range: 0.0-0.5, Default: 0.01
+ * Parameters (configurable, tuned for normalized MediaPipe coordinates 0–1):
+ * @param minCutoff Lower = smoother but more lag. Range: 0.7–1.3, Default: 1.0
+ * @param beta Higher = more responsive to fast movements. Range: 1.0–2.5, Default: 1.5
  * @param useLegacyEMA If true, uses simple EMA instead of One Euro (for comparison)
  * @param legacyAlpha EMA alpha value (only used if useLegacyEMA = true)
  */
 class LandmarkSmoother(
-    private val minCutoff: Float = 1.5f,   // Slightly higher for responsiveness
-    private val beta: Float = 0.01f,        // Adaptive speed coefficient
+    private val minCutoff: Float = 1.0f,
+    private val beta: Float = 1.5f,
     private val useLegacyEMA: Boolean = false,
     private val legacyAlpha: Float = 0.6f
 ) {
@@ -287,22 +287,22 @@ class LandmarkSmoother(
          * Preset configurations for different use cases
          */
         
-        /** Fast tracking with minimal smoothing - good for fast exercises */
+        /** Fast tracking — higher cutoff and beta for quick movements */
         fun createResponsive() = LandmarkSmoother(
-            minCutoff = 2.5f,
-            beta = 0.02f
+            minCutoff = 1.3f,
+            beta = 2.0f
         )
         
-        /** Balanced - good for most exercises */
+        /** Balanced — recommended default for most exercises */
         fun createBalanced() = LandmarkSmoother(
-            minCutoff = 1.5f,
-            beta = 0.01f
+            minCutoff = 1.0f,
+            beta = 1.5f
         )
         
-        /** Smooth - good for slow exercises like yoga/stretching */
+        /** Smooth — strongest smoothing at rest, for slow exercises like yoga */
         fun createSmooth() = LandmarkSmoother(
-            minCutoff = 0.8f,
-            beta = 0.005f
+            minCutoff = 0.7f,
+            beta = 1.0f
         )
         
         /** Legacy EMA mode for comparison */
