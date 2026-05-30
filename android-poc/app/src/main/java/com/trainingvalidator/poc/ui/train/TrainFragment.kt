@@ -6,22 +6,25 @@ import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import android.widget.ImageView
 import android.widget.LinearLayout
-import android.widget.TextView
 import androidx.appcompat.app.AppCompatDelegate
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.google.android.material.bottomsheet.BottomSheetDialog
-import com.google.android.material.button.MaterialButton
-import com.google.android.material.card.MaterialCardView
 import com.trainingvalidator.poc.ui.utils.bindUserAvatar
 import com.trainingvalidator.poc.ui.utils.currentLanguage
 import com.trainingvalidator.poc.ui.utils.formatProgramLevelRange
 import com.trainingvalidator.poc.R
+import com.trainingvalidator.poc.databinding.BottomSheetDayDetailBinding
 import com.trainingvalidator.poc.databinding.FragmentTrainBinding
+import com.trainingvalidator.poc.databinding.ItemDaySessionRowBinding
+import com.trainingvalidator.poc.databinding.ItemProgramBrowseCardBinding
+import com.trainingvalidator.poc.databinding.ItemTodayPlanRowBinding
+import com.trainingvalidator.poc.databinding.ItemTodaySessionCardBinding
+import com.trainingvalidator.poc.databinding.ItemWeekDayCircleBinding
+import com.trainingvalidator.poc.ui.programs.estimateSessionDuration
 import com.trainingvalidator.poc.network.UserProgramExport
 import com.trainingvalidator.poc.storage.DayCustomizationStore
 import com.trainingvalidator.poc.storage.ExerciseRepository
@@ -391,11 +394,11 @@ class TrainFragment : Fragment() {
             val day = dayMap[dayNumber]
             val isImplicitRestDay = day != null && day.isRestDay
 
-            val dayView = inflater.inflate(R.layout.item_week_day_circle, binding.layoutWeekCalendar, false)
-            val card = dayView.findViewById<MaterialCardView>(R.id.cardDay)
-            val tvNumber = dayView.findViewById<TextView>(R.id.tvDayNumber)
-            val ivCheck = dayView.findViewById<ImageView>(R.id.ivDayCheck)
-            val tvLabel = dayView.findViewById<TextView>(R.id.tvDayLabel)
+            val dayBinding = ItemWeekDayCircleBinding.inflate(inflater, binding.layoutWeekCalendar, false)
+            val card = dayBinding.cardDay
+            val tvNumber = dayBinding.tvDayNumber
+            val ivCheck = dayBinding.ivDayCheck
+            val tvLabel = dayBinding.tvDayLabel
 
             val realDate = userProgram
                 ?.let { ProgramDayCalculator.getDateForProgramDay(it, week.weekNumber, dayNumber) }
@@ -475,13 +478,13 @@ class TrainFragment : Fragment() {
                 }
             }
 
-            dayView.setOnClickListener {
+            dayBinding.root.setOnClickListener {
                 if (day != null) {
                     showDayDetailSheet(program, week, day)
                 }
             }
 
-            binding.layoutWeekCalendar.addView(dayView)
+            binding.layoutWeekCalendar.addView(dayBinding.root)
         }
     }
 
@@ -600,21 +603,19 @@ class TrainFragment : Fragment() {
         val inflater = LayoutInflater.from(requireContext())
 
         sessions.forEachIndexed { index, session ->
-            val sessionView = inflater.inflate(
-                R.layout.item_today_session_card, binding.layoutTodaySessions, false
+            val sessionBinding = ItemTodaySessionCardBinding.inflate(
+                inflater, binding.layoutTodaySessions, false
             )
-
-            val cardSession = sessionView.findViewById<MaterialCardView>(R.id.cardSession)
-            val layoutHeader = sessionView.findViewById<LinearLayout>(R.id.layoutSessionHeader)
-            val viewStatusDot = sessionView.findViewById<View>(R.id.viewStatusDot)
-            val tvSessionName = sessionView.findViewById<TextView>(R.id.tvSessionName)
-            val tvSessionMeta = sessionView.findViewById<TextView>(R.id.tvSessionMeta)
-            val tvSessionStatus = sessionView.findViewById<TextView>(R.id.tvSessionStatus)
-            val ivExpandIcon = sessionView.findViewById<ImageView>(R.id.ivExpandIcon)
-            val layoutContent = sessionView.findViewById<LinearLayout>(R.id.layoutSessionContent)
-            val layoutItems = sessionView.findViewById<LinearLayout>(R.id.layoutSessionItems)
-            val tvMoreItems = sessionView.findViewById<TextView>(R.id.tvMoreItems)
-            val btnAction = sessionView.findViewById<MaterialButton>(R.id.btnSessionAction)
+            val layoutHeader = sessionBinding.layoutSessionHeader
+            val viewStatusDot = sessionBinding.viewStatusDot
+            val tvSessionName = sessionBinding.tvSessionName
+            val tvSessionMeta = sessionBinding.tvSessionMeta
+            val tvSessionStatus = sessionBinding.tvSessionStatus
+            val ivExpandIcon = sessionBinding.ivExpandIcon
+            val layoutContent = sessionBinding.layoutSessionContent
+            val layoutItems = sessionBinding.layoutSessionItems
+            val tvMoreItems = sessionBinding.tvMoreItems
+            val btnAction = sessionBinding.btnSessionAction
 
             val sessionName = session.name.get(language).ifBlank { session.name.en }
             tvSessionName.text = sessionName
@@ -679,7 +680,7 @@ class TrainFragment : Fragment() {
                 }
             }
 
-            binding.layoutTodaySessions.addView(sessionView)
+            binding.layoutTodaySessions.addView(sessionBinding.root)
         }
     }
 
@@ -694,11 +695,11 @@ class TrainFragment : Fragment() {
         val inflater = LayoutInflater.from(requireContext())
 
         previewItems.forEach { item ->
-            val row = inflater.inflate(R.layout.item_today_plan_row, container, false)
-            val tvBullet = row.findViewById<TextView>(R.id.tvPlanBullet)
-            val tvTitle = row.findViewById<TextView>(R.id.tvPlanTitle)
-            val tvSubtitle = row.findViewById<TextView>(R.id.tvPlanSubtitle)
-            val tvStatus = row.findViewById<TextView>(R.id.tvPlanStatus)
+            val rowBinding = ItemTodayPlanRowBinding.inflate(inflater, container, false)
+            val tvBullet = rowBinding.tvPlanBullet
+            val tvTitle = rowBinding.tvPlanTitle
+            val tvSubtitle = rowBinding.tvPlanSubtitle
+            val tvStatus = rowBinding.tvPlanStatus
             tvStatus.visibility = View.GONE
 
             if (item.type == "rest") {
@@ -726,7 +727,7 @@ class TrainFragment : Fragment() {
                 }
             }
 
-            container.addView(row)
+            container.addView(rowBinding.root)
         }
     }
 
@@ -874,13 +875,13 @@ class TrainFragment : Fragment() {
 
     private fun showDayDetailSheet(program: ProgramConfig, week: ProgramWeek, day: ProgramDay) {
         val dialog = BottomSheetDialog(requireContext())
-        val sheet = layoutInflater.inflate(R.layout.bottom_sheet_day_detail, null)
-        dialog.setContentView(sheet)
+        val sheetBinding = BottomSheetDayDetailBinding.inflate(layoutInflater)
+        dialog.setContentView(sheetBinding.root)
 
-        val tvTitle = sheet.findViewById<TextView>(R.id.tvDayDetailTitle)
-        val tvSubtitle = sheet.findViewById<TextView>(R.id.tvDayDetailSubtitle)
-        val layoutSessions = sheet.findViewById<LinearLayout>(R.id.layoutDaySessions)
-        val tvRestHint = sheet.findViewById<TextView>(R.id.tvDayRestHint)
+        val tvTitle = sheetBinding.tvDayDetailTitle
+        val tvSubtitle = sheetBinding.tvDayDetailSubtitle
+        val layoutSessions = sheetBinding.layoutDaySessions
+        val tvRestHint = sheetBinding.tvDayRestHint
 
         val language = requireContext().currentLanguage
         val dayTitle = day.name?.get(language)?.ifBlank { day.name.en }
@@ -903,11 +904,11 @@ class TrainFragment : Fragment() {
 
         val inflater = LayoutInflater.from(requireContext())
         sessions.forEach { session ->
-            val row = inflater.inflate(R.layout.item_day_session_row, layoutSessions, false)
-            val tvSessionTitle = row.findViewById<TextView>(R.id.tvSessionTitle)
-            val tvSessionMeta = row.findViewById<TextView>(R.id.tvSessionMeta)
-            val tvSessionStatus = row.findViewById<TextView>(R.id.tvSessionStatus)
-            val btnAction = row.findViewById<MaterialButton>(R.id.btnSessionAction)
+            val rowBinding = ItemDaySessionRowBinding.inflate(inflater, layoutSessions, false)
+            val tvSessionTitle = rowBinding.tvSessionTitle
+            val tvSessionMeta = rowBinding.tvSessionMeta
+            val tvSessionStatus = rowBinding.tvSessionStatus
+            val btnAction = rowBinding.btnSessionAction
 
             val sessionName = session.name.get(language).ifBlank { session.name.en }
             val exerciseCount = session.items.count { it.type == "exercise" }
@@ -934,7 +935,7 @@ class TrainFragment : Fragment() {
                 }
             }
 
-            layoutSessions.addView(row)
+            layoutSessions.addView(rowBinding.root)
         }
 
         dialog.show()
@@ -1121,61 +1122,40 @@ class TrainFragment : Fragment() {
         )
     }
 
-    private fun estimateSessionDuration(session: ProgramSession): Int {
-        var totalSeconds = 0
-        session.items.forEach { item ->
-            if (item.type == "rest") {
-                totalSeconds += ((item.restDurationMs ?: 0L) / 1000).toInt()
-            } else {
-                val sets = item.sets ?: 1
-                val repsTime = (item.targetReps ?: 0) * 4
-                val holdTime = item.targetDuration ?: 0
-                val exerciseTime = sets * (repsTime + holdTime)
-                val restBetweenSets = sets.coerceAtLeast(1) - 1
-                totalSeconds += exerciseTime + restBetweenSets * ((item.restBetweenSetsMs ?: 30000L) / 1000).toInt()
-            }
-        }
-        return (totalSeconds / 60).coerceAtLeast(1)
-    }
-
     private inner class ProgramBrowseAdapter(
         private val programs: List<ProgramConfig>
     ) : RecyclerView.Adapter<ProgramBrowseAdapter.ViewHolder>() {
 
-        inner class ViewHolder(view: View) : RecyclerView.ViewHolder(view) {
-            val tvName: TextView = view.findViewById(R.id.tvProgramName)
-            val tvDescription: TextView = view.findViewById(R.id.tvDescription)
-            val tvDuration: TextView = view.findViewById(R.id.tvDuration)
-            val tvDifficulty: TextView = view.findViewById(R.id.tvDifficulty)
-            val tvStats: TextView = view.findViewById(R.id.tvStats)
-            val btnViewDetails: MaterialButton = view.findViewById(R.id.btnViewDetails)
-            val btnSubscribe: MaterialButton = view.findViewById(R.id.btnSubscribe)
-        }
+        inner class ViewHolder(
+            val itemBinding: ItemProgramBrowseCardBinding
+        ) : RecyclerView.ViewHolder(itemBinding.root)
 
         override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
-            val view = LayoutInflater.from(parent.context)
-                .inflate(R.layout.item_program_browse_card, parent, false)
-            return ViewHolder(view)
+            val itemBinding = ItemProgramBrowseCardBinding.inflate(
+                LayoutInflater.from(parent.context), parent, false
+            )
+            return ViewHolder(itemBinding)
         }
 
         override fun onBindViewHolder(holder: ViewHolder, position: Int) {
             val program = programs[position]
             val language = requireContext().currentLanguage
+            val b = holder.itemBinding
 
-            holder.tvName.text = program.name.get(language).ifBlank { program.name.en }
-            holder.tvDescription.text = program.description?.get(language)?.ifBlank {
+            b.tvProgramName.text = program.name.get(language).ifBlank { program.name.en }
+            b.tvDescription.text = program.description?.get(language)?.ifBlank {
                 program.description.en
             } ?: ""
-            holder.tvDuration.text = getString(R.string.weeks_count_format, program.durationWeeks)
+            b.tvDuration.text = getString(R.string.weeks_count_format, program.durationWeeks)
 
-            holder.tvDifficulty.text =
+            b.tvDifficulty.text =
                 requireContext().formatProgramLevelRange(program.levelRangeMin, program.levelRangeMax)
 
             val totalSessions = program.weeks.sumOf { w -> w.days.sumOf { d -> d.sessions.size } }
-            holder.tvStats.text = getString(R.string.pg_stats_format, program.durationWeeks, totalSessions)
+            b.tvStats.text = getString(R.string.pg_stats_format, program.durationWeeks, totalSessions)
 
-            holder.btnViewDetails.setOnClickListener { openProgramDetail(program) }
-            holder.btnSubscribe.setOnClickListener {
+            b.btnViewDetails.setOnClickListener { openProgramDetail(program) }
+            b.btnSubscribe.setOnClickListener {
                 openProgramDetail(program)
             }
         }

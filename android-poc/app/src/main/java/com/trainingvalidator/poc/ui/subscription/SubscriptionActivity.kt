@@ -61,7 +61,6 @@ class SubscriptionActivity : AppCompatActivity(), PurchasesUpdatedListener {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        ApiClient.init(applicationContext)
         binding = ActivitySubscriptionBinding.inflate(layoutInflater)
         setContentView(binding.root)
 

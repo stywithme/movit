@@ -152,13 +152,6 @@
             android:screenOrientation="portrait"
             android:theme="@style/Theme.WayToFix.Training" />
         
-        <!-- Main Activity (Camera Demo) -->
-        <activity
-            android:name=".ui.MainActivity"
-            android:exported="false"
-            android:screenOrientation="portrait"
-            android:theme="@style/Theme.WayToFix.Training" />
-        
         <!-- Debug Activity (Measurement Testing) -->
         <activity
             android:name=".ui.debug.DebugActivity"

@@ -697,14 +697,6 @@ class ProgramSessionActivity : AppCompatActivity() {
         }
     }
 
-    private fun normalizeRoleKey(role: String?): String =
-        when (role?.uppercase(Locale.US)) {
-            "WARMUP", "ACTIVATION" -> "WARMUP"
-            "MAIN", "ACCESSORY", "CORRECTIVE" -> "MAIN"
-            "COOLDOWN" -> "COOLDOWN"
-            else -> "OTHER"
-        }
-
     private fun formatRoleTitle(key: String): String = when (key) {
         "WARMUP" -> getString(R.string.section_warmup)
         "MAIN" -> getString(R.string.section_main)
@@ -1755,21 +1747,6 @@ class ProgramSessionActivity : AppCompatActivity() {
         return out
     }
 
-    private fun localizedFromEffectiveName(
-        api: Map<String, String>?,
-        fallback: LocalizedText?
-    ): LocalizedText {
-        if (api != null && (api["en"]?.isNotBlank() == true || api["ar"]?.isNotBlank() == true)) {
-            return LocalizedText(ar = api["ar"] ?: "", en = api["en"] ?: "")
-        }
-        return fallback ?: LocalizedText()
-    }
-
-    private fun notesFromApi(notes: Map<String, String>?): LocalizedText? {
-        if (notes == null || notes.isEmpty()) return null
-        return LocalizedText(ar = notes["ar"] ?: "", en = notes["en"] ?: "")
-    }
-
     private fun formatSuggestionSource(source: String?): String? {
         return when (source) {
             "progression_state" -> getString(R.string.training_suggestion_progression)
@@ -1899,20 +1876,6 @@ class ProgramSessionActivity : AppCompatActivity() {
         }
     }
 
-
-    private fun estimateSessionDuration(items: List<ProgramSessionItem>): Int {
-        var totalSeconds = 0
-        items.forEach { item ->
-            if (item.type == "exercise") {
-                val sets = item.sets ?: 1
-                val perSet = (item.targetDuration ?: 30) + ((item.restBetweenSetsMs ?: 30000L) / 1000).toInt()
-                totalSeconds += sets * perSet
-            } else if (item.type == "rest") {
-                totalSeconds += ((item.restDurationMs ?: 0L) / 1000).toInt()
-            }
-        }
-        return (totalSeconds / 60).coerceAtLeast(1)
-    }
 
     private fun dpToPx(dp: Int): Int {
         return (dp * resources.displayMetrics.density).toInt()

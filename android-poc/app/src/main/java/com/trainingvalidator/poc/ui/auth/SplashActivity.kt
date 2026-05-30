@@ -21,7 +21,7 @@ import kotlinx.coroutines.launch
  * Shows the app logo with a loading animation, then navigates to:
  * - OnboardingActivity (if first launch)
  * - SignInActivity (if not logged in)
- * - MainActivity (if logged in)
+ * - MainContainerActivity (if logged in)
  */
 @SuppressLint("CustomSplashScreen")
 class SplashActivity : AppCompatActivity() {
