@@ -8,6 +8,7 @@ import { Badge } from '@/components/ui';
 import { analyticsService, type RevenueAnalytics } from '@/modules/analytics/analytics.service';
 import { formatCurrency, formatNumber } from '@/modules/analytics/format';
 import { useAnalyticsPeriod } from '@/modules/analytics/period-store';
+import { analyticsTerms } from '@/modules/analytics/terms';
 
 type PlanRow = RevenueAnalytics['plans'][number];
 
@@ -42,17 +43,17 @@ export default function RevenueAnalyticsPage() {
       <PeriodFilter onRefresh={fetchData} />
 
       <div className="grid grid-cols-1 gap-4 md:grid-cols-4">
-        <StatCard title="Total Revenue" value={formatCurrency(data?.summary.totalRevenue)} />
-        <StatCard title="Subscription Revenue" value={formatCurrency(data?.summary.subscriptionRevenue)} />
-        <StatCard title="Booking Revenue" value={formatCurrency(data?.summary.bookingRevenue)} />
-        <StatCard title="ARPU" value={formatCurrency(data?.summary.arpu)} />
+        <StatCard title="Total Revenue" value={formatCurrency(data?.summary.totalRevenue)} help={analyticsTerms.revenue} />
+        <StatCard title="Subscription Revenue" value={formatCurrency(data?.summary.subscriptionRevenue)} help="Revenue collected from subscription records in the selected period." />
+        <StatCard title="Booking Revenue" value={formatCurrency(data?.summary.bookingRevenue)} help="Paid booking payment revenue in the selected period." />
+        <StatCard title="ARPU" value={formatCurrency(data?.summary.arpu)} help={analyticsTerms.arpu} />
       </div>
 
       <div className="grid grid-cols-1 gap-6 xl:grid-cols-2">
-        <ChartCard title="Revenue Trend" loading={loading} empty={!data?.revenueTrend?.length}>
+        <ChartCard title="Revenue Trend" loading={loading} empty={!data?.revenueTrend?.length} help={analyticsTerms.revenue}>
           <AreaTrend data={data?.revenueTrend ?? []} />
         </ChartCard>
-        <ChartCard title="Checkout Funnel" loading={loading} empty={!data?.checkoutFunnel?.length}>
+        <ChartCard title="Checkout Funnel" loading={loading} empty={!data?.checkoutFunnel?.length} help={analyticsTerms.checkoutFunnel}>
           <FunnelChart data={data?.checkoutFunnel ?? []} />
         </ChartCard>
         <ChartCard title="Subscriptions by Status" loading={loading} empty={!data?.subscriptionsByStatus?.length}>

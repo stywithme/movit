@@ -7,6 +7,7 @@ import { PeriodFilter } from '@/components/charts/PeriodFilter';
 import { analyticsService, type BookingAnalytics } from '@/modules/analytics/analytics.service';
 import { formatCurrency, formatNumber, formatPercent } from '@/modules/analytics/format';
 import { useAnalyticsPeriod } from '@/modules/analytics/period-store';
+import { analyticsTerms } from '@/modules/analytics/terms';
 
 type DoctorRow = BookingAnalytics['doctors'][number];
 
@@ -40,20 +41,20 @@ export default function BookingsAnalyticsPage() {
       <PeriodFilter onRefresh={fetchData} />
 
       <div className="grid grid-cols-1 gap-4 md:grid-cols-4">
-        <StatCard title="Bookings" value={formatNumber(data?.summary.totalBookings)} />
-        <StatCard title="Paid Revenue" value={formatCurrency(data?.summary.paidRevenue)} />
-        <StatCard title="Reports Completed" value={formatNumber(data?.summary.reportsCompleted)} />
-        <StatCard title="Cancellation Rate" value={formatPercent(data?.summary.cancellationRate)} />
+        <StatCard title="Bookings" value={formatNumber(data?.summary.totalBookings)} help="All bookings created during the selected period." />
+        <StatCard title="Paid Revenue" value={formatCurrency(data?.summary.paidRevenue)} help="Revenue from paid or authorized booking payments." />
+        <StatCard title="Reports Completed" value={formatNumber(data?.summary.reportsCompleted)} help="Booking reports completed by doctors/admins." />
+        <StatCard title="Cancellation Rate" value={formatPercent(data?.summary.cancellationRate)} help="Cancelled bookings divided by total bookings." />
       </div>
 
       <div className="grid grid-cols-1 gap-6 xl:grid-cols-2">
-        <ChartCard title="Bookings Trend" loading={loading} empty={!data?.trend?.length}>
+        <ChartCard title="Bookings Trend" loading={loading} empty={!data?.trend?.length} help="Daily or weekly booking volume in the selected period.">
           <LineTrend data={data?.trend ?? []} />
         </ChartCard>
         <ChartCard title="Booking Statuses" loading={loading} empty={!data?.statuses?.length}>
           <DonutChart data={data?.statuses ?? []} />
         </ChartCard>
-        <ChartCard title="Payment Statuses" loading={loading} empty={!data?.paymentStatuses?.length}>
+        <ChartCard title="Payment Statuses" loading={loading} empty={!data?.paymentStatuses?.length} help={analyticsTerms.checkoutFunnel}>
           <BarsChart data={data?.paymentStatuses ?? []} />
         </ChartCard>
       </div>

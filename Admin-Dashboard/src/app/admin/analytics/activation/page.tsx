@@ -7,6 +7,7 @@ import { PeriodFilter } from '@/components/charts/PeriodFilter';
 import { analyticsService, type ActivationAnalytics } from '@/modules/analytics/analytics.service';
 import { formatNumber, formatPercent } from '@/modules/analytics/format';
 import { useAnalyticsPeriod } from '@/modules/analytics/period-store';
+import { analyticsTerms } from '@/modules/analytics/terms';
 
 export default function ActivationAnalyticsPage() {
   const params = useAnalyticsPeriod((state) => state.params);
@@ -32,16 +33,16 @@ export default function ActivationAnalyticsPage() {
       <PeriodFilter onRefresh={fetchData} />
 
       <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
-        <StatCard title="North Star Rate" value={formatPercent(data?.northStar.rate)} />
-        <StatCard title="North Star Users" value={formatNumber(data?.northStar.completed)} />
-        <StatCard title="Avg Time to First Session" value={`${(data?.timeToFirstSession.avgHours ?? 0).toFixed(1)}h`} />
+        <StatCard title="North Star Rate" value={formatPercent(data?.northStar.rate)} help={analyticsTerms.northStar} />
+        <StatCard title="North Star Users" value={formatNumber(data?.northStar.completed)} help={analyticsTerms.northStar} />
+        <StatCard title="Avg Time to First Session" value={`${(data?.timeToFirstSession.avgHours ?? 0).toFixed(1)}h`} help="Average time between signup and the user's first recorded training session." />
       </div>
 
       <div className="grid grid-cols-1 gap-6 xl:grid-cols-2">
-        <ChartCard title="Activation Steps" loading={loading} empty={!data?.funnel?.length}>
+        <ChartCard title="Activation Steps" loading={loading} empty={!data?.funnel?.length} help={analyticsTerms.activation}>
           <FunnelChart data={data?.funnel ?? []} />
         </ChartCard>
-        <ChartCard title="Time to First Session" loading={loading} empty={!data?.timeToFirstSession.buckets?.length}>
+        <ChartCard title="Time to First Session" loading={loading} empty={!data?.timeToFirstSession.buckets?.length} help="Buckets users by how quickly they reach their first session after signup.">
           <BarsChart data={data?.timeToFirstSession.buckets ?? []} />
         </ChartCard>
       </div>

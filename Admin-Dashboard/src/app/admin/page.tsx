@@ -10,6 +10,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui';
 import { analyticsService, type OverviewAnalytics } from '@/modules/analytics/analytics.service';
 import { formatCurrency, formatNumber, formatPercent, metricDelta, metricValue } from '@/modules/analytics/format';
 import { useAnalyticsPeriod } from '@/modules/analytics/period-store';
+import { analyticsTerms } from '@/modules/analytics/terms';
 
 const quickReports = [
   { href: '/admin/analytics/activation', title: 'Activation Funnel', description: 'Signup to first value' },
@@ -42,10 +43,10 @@ export default function AdminDashboard() {
       <PeriodFilter onRefresh={fetchData} />
 
       <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
-        <StatCard title="Total Users" value={formatNumber(metricValue(data?.kpis.totalUsers))} icon={<Users className="size-5" />} />
-        <StatCard title="New Users" value={formatNumber(metricValue(data?.kpis.newUsers))} delta={metricDelta(data?.kpis.newUsers)} />
-        <StatCard title="Revenue" value={formatCurrency(metricValue(data?.kpis.revenue))} delta={metricDelta(data?.kpis.revenue)} icon={<DollarSign className="size-5" />} />
-        <StatCard title="Avg Form Score" value={metricValue(data?.kpis.avgFormScore).toFixed(1)} delta={metricDelta(data?.kpis.avgFormScore)} icon={<Activity className="size-5" />} />
+        <StatCard title="Total Users" value={formatNumber(metricValue(data?.kpis.totalUsers))} icon={<Users className="size-5" />} help={analyticsTerms.totalUsers} />
+        <StatCard title="New Users" value={formatNumber(metricValue(data?.kpis.newUsers))} delta={metricDelta(data?.kpis.newUsers)} help={analyticsTerms.newUsers} />
+        <StatCard title="Revenue" value={formatCurrency(metricValue(data?.kpis.revenue))} delta={metricDelta(data?.kpis.revenue)} icon={<DollarSign className="size-5" />} help={analyticsTerms.revenue} />
+        <StatCard title="Avg Form Score" value={metricValue(data?.kpis.avgFormScore).toFixed(1)} delta={metricDelta(data?.kpis.avgFormScore)} icon={<Activity className="size-5" />} help={analyticsTerms.avgFormScore} />
       </div>
 
       <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
@@ -87,13 +88,13 @@ export default function AdminDashboard() {
       </div>
 
       <div className="grid grid-cols-1 gap-6 xl:grid-cols-2">
-        <ChartCard title="Activation Funnel" loading={loading} empty={!data?.activationFunnel?.length}>
+        <ChartCard title="Activation Funnel" loading={loading} empty={!data?.activationFunnel?.length} help={analyticsTerms.activation}>
           <FunnelChart data={data?.activationFunnel ?? []} />
         </ChartCard>
-        <ChartCard title="Sessions Trend" loading={loading} empty={!data?.trends.sessions?.length}>
+        <ChartCard title="Sessions Trend" loading={loading} empty={!data?.trends.sessions?.length} help={analyticsTerms.sessions}>
           <LineTrend data={data?.trends.sessions ?? []} />
         </ChartCard>
-        <ChartCard title="Revenue Trend" loading={loading} empty={!data?.trends.revenue?.length}>
+        <ChartCard title="Revenue Trend" loading={loading} empty={!data?.trends.revenue?.length} help={analyticsTerms.revenue}>
           <AreaTrend data={data?.trends.revenue ?? []} />
         </ChartCard>
         <ChartCard title="Level Distribution" loading={loading} empty={!data?.distributions.levels?.length}>

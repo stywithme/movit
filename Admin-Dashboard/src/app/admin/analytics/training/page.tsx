@@ -7,6 +7,7 @@ import { PeriodFilter } from '@/components/charts/PeriodFilter';
 import { analyticsService, type TrainingAnalytics } from '@/modules/analytics/analytics.service';
 import { formatNumber, formatPercent } from '@/modules/analytics/format';
 import { useAnalyticsPeriod } from '@/modules/analytics/period-store';
+import { analyticsTerms } from '@/modules/analytics/terms';
 
 interface ExerciseRow {
   exerciseId: string;
@@ -45,23 +46,23 @@ export default function TrainingAnalyticsPage() {
       <PeriodFilter onRefresh={fetchData} />
 
       <div className="grid grid-cols-1 gap-4 md:grid-cols-4">
-        <StatCard title="Sessions" value={formatNumber(data?.volume.sessions)} />
-        <StatCard title="Total Reps" value={formatNumber(data?.volume.totalReps)} />
-        <StatCard title="Invalid Reps" value={formatNumber(data?.volume.invalidReps)} />
-        <StatCard title="Total Minutes" value={formatNumber(data?.volume.totalMinutes)} />
+        <StatCard title="Sessions" value={formatNumber(data?.volume.sessions)} help={analyticsTerms.sessions} />
+        <StatCard title="Total Reps" value={formatNumber(data?.volume.totalReps)} help={analyticsTerms.totalReps} />
+        <StatCard title="Invalid Reps" value={formatNumber(data?.volume.invalidReps)} help={analyticsTerms.invalidReps} />
+        <StatCard title="Total Minutes" value={formatNumber(data?.volume.totalMinutes)} help="Total training time from uploaded sessions, converted to minutes." />
       </div>
 
       <div className="grid grid-cols-1 gap-6 xl:grid-cols-2">
-        <ChartCard title="Sessions Trend" loading={loading} empty={!data?.trends.sessions?.length}>
+        <ChartCard title="Sessions Trend" loading={loading} empty={!data?.trends.sessions?.length} help={analyticsTerms.sessions}>
           <LineTrend data={data?.trends.sessions ?? []} />
         </ChartCard>
-        <ChartCard title="Form Score Trend" loading={loading} empty={!data?.trends.formScore?.length}>
+        <ChartCard title="Form Score Trend" loading={loading} empty={!data?.trends.formScore?.length} help={analyticsTerms.formScore}>
           <LineTrend data={data?.trends.formScore ?? []} />
         </ChartCard>
-        <ChartCard title="Session Contexts" loading={loading} empty={!data?.contexts?.length}>
+        <ChartCard title="Session Contexts" loading={loading} empty={!data?.contexts?.length} help={analyticsTerms.sessionContexts}>
           <DonutChart data={data?.contexts ?? []} />
         </ChartCard>
-        <ChartCard title="Average Metrics" loading={loading} empty={!data?.averages}>
+        <ChartCard title="Average Metrics" loading={loading} empty={!data?.averages} help={analyticsTerms.averageMetrics}>
           <BarsChart
             data={Object.entries(data?.averages ?? {}).map(([name, value]) => ({ name, value }))}
           />

@@ -7,6 +7,7 @@ import { PeriodFilter } from '@/components/charts/PeriodFilter';
 import { analyticsService, type RetentionAnalytics } from '@/modules/analytics/analytics.service';
 import { formatNumber } from '@/modules/analytics/format';
 import { useAnalyticsPeriod } from '@/modules/analytics/period-store';
+import { analyticsTerms } from '@/modules/analytics/terms';
 
 export default function RetentionAnalyticsPage() {
   const params = useAnalyticsPeriod((state) => state.params);
@@ -40,17 +41,17 @@ export default function RetentionAnalyticsPage() {
       <PeriodFilter onRefresh={fetchData} />
 
       <div className="grid grid-cols-1 gap-4 md:grid-cols-4">
-        <StatCard title="Active Users" value={formatNumber(data?.activeUsers)} />
-        <StatCard title="DAU" value={formatNumber(data?.stickiness.dau)} />
-        <StatCard title="WAU" value={formatNumber(data?.stickiness.wau)} />
-        <StatCard title="Sessions / Active User" value={(data?.sessionsPerActiveUser ?? 0).toFixed(2)} />
+        <StatCard title="Active Users" value={formatNumber(data?.activeUsers)} help={analyticsTerms.activeUsers} />
+        <StatCard title="DAU" value={formatNumber(data?.stickiness.dau)} help={analyticsTerms.dau} />
+        <StatCard title="WAU" value={formatNumber(data?.stickiness.wau)} help={analyticsTerms.wau} />
+        <StatCard title="Sessions / Active User" value={(data?.sessionsPerActiveUser ?? 0).toFixed(2)} help="Average number of sessions per active user in the selected period." />
       </div>
 
       <div className="grid grid-cols-1 gap-6 xl:grid-cols-2">
-        <ChartCard title="Retention Cohorts" className="xl:col-span-2" loading={loading} empty={!data?.cohorts?.length}>
+        <ChartCard title="Retention Cohorts" className="xl:col-span-2" loading={loading} empty={!data?.cohorts?.length} help={analyticsTerms.cohort}>
           <CohortHeatmap data={data?.cohorts ?? []} />
         </ChartCard>
-        <ChartCard title="Churn Signals" loading={loading} empty={!churnData.length}>
+        <ChartCard title="Churn Signals" loading={loading} empty={!churnData.length} help={analyticsTerms.churnSignals}>
           <BarsChart data={churnData} />
         </ChartCard>
       </div>
