@@ -8,6 +8,7 @@ import com.trainingvalidator.poc.training.models.RepCountingConfig
  */
 data class TimingPolicy(
     val defaultMinRepIntervalMs: Long = SettingsManager.getDefaultMinRepInterval(),
+    val defaultMaxRepIntervalMs: Long = SettingsManager.getDefaultMaxRepInterval(),
     val defaultMinPhaseDurationMs: Long = SettingsManager.getDefaultMinPhaseDuration(),
     val defaultHoldDurationSeconds: Int = SettingsManager.getDefaultHoldDuration(),
     val defaultGracePeriodMs: Long = SettingsManager.getDefaultGracePeriod(),
@@ -30,6 +31,9 @@ data class TimingPolicy(
 ) {
     fun minRepIntervalFor(rep: RepCountingConfig?): Long =
         rep?.getMinRepInterval(defaultMinRepIntervalMs) ?: defaultMinRepIntervalMs
+
+    fun maxRepIntervalFor(rep: RepCountingConfig?): Long =
+        rep?.getMaxRepInterval(defaultMaxRepIntervalMs) ?: defaultMaxRepIntervalMs
 
     fun minPhaseDurationFor(rep: RepCountingConfig?, numberOfPhases: Int, default: Long = defaultMinPhaseDurationMs): Long =
         rep?.calculateMinPhaseDuration(numberOfPhases, default) ?: default

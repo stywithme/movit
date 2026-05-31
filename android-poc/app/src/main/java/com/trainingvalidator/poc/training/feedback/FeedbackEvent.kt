@@ -1,5 +1,6 @@
 package com.trainingvalidator.poc.training.feedback
 
+import com.trainingvalidator.poc.training.engine.RepIncompleteReason
 import com.trainingvalidator.poc.training.engine.SceneAxisWarning
 import com.trainingvalidator.poc.training.engine.Phase
 import com.trainingvalidator.poc.training.engine.PositionError
@@ -35,6 +36,16 @@ sealed class FeedbackEvent {
         val worstState: JointState? = null,
         override val timestamp: Long = System.currentTimeMillis(),
         override val priority: FeedbackPriority = FeedbackPriority.MEDIUM
+    ) : FeedbackEvent()
+
+    /**
+     * Rep attempt did not complete (partial path or outside min/max timing window).
+     */
+    data class RepIncomplete(
+        val reason: RepIncompleteReason,
+        val attemptNumber: Int,
+        override val timestamp: Long = System.currentTimeMillis(),
+        override val priority: FeedbackPriority = FeedbackPriority.HIGH
     ) : FeedbackEvent()
     
     /**

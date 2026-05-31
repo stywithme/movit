@@ -90,10 +90,12 @@ data class MovementDetectionSettings(
  * Default timing settings - Fallback values when not specified per-exercise
  *
  * @param minRepIntervalMs Minimum time between reps (prevents double counting)
+ * @param maxRepIntervalMs Maximum time for a single rep before it is incomplete (too slow)
  * @param minPhaseDurationMs Minimum time in a phase before transitioning
  */
 data class DefaultTimingSettings(
     val minRepIntervalMs: Long = 400,
+    val maxRepIntervalMs: Long = 5000,
     val minPhaseDurationMs: Long = 100
 )
 

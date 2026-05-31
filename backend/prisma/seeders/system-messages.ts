@@ -85,6 +85,38 @@ const CORE_SYSTEM_MESSAGES: SysMsg[] = [
     content: { ar: 'فقدت الوضعية. حاول مجدداً', en: 'Position lost. Try again' },
   },
   {
+    code: 'training_rep_incomplete_depth',
+    description: 'Rep incomplete — did not reach target depth (returned up early)',
+    content: {
+      ar: 'لم تصل إلى الوضع المطلوب، أكمل المدى كاملاً',
+      en: "You didn't reach the target. Complete the full range.",
+    },
+  },
+  {
+    code: 'training_rep_incomplete_return',
+    description: 'Rep incomplete — did not return fully to start position',
+    content: {
+      ar: 'أكمل الرجوع إلى وضع البداية',
+      en: 'Return fully to the start position.',
+    },
+  },
+  {
+    code: 'training_rep_too_fast',
+    description: 'Rep incomplete — movement faster than min rep interval',
+    content: {
+      ar: 'حركة سريعة جداً، تمهّل قليلاً',
+      en: 'Too fast — slow down.',
+    },
+  },
+  {
+    code: 'training_rep_too_slow',
+    description: 'Rep incomplete — movement exceeded max rep interval',
+    content: {
+      ar: 'تجاوزت الوقت المحدد، حافظ على الإيقاع',
+      en: 'Too slow — keep a steady pace.',
+    },
+  },
+  {
     code: 'visibility_joints_not_visible',
     description: 'Warning when joints invisible; use {joints} for list',
     content: { ar: '⚠️ {joints} غير مرئية', en: '⚠️ {joints} not visible' },

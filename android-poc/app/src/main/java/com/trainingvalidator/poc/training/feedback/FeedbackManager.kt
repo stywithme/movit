@@ -15,6 +15,7 @@ import com.trainingvalidator.poc.training.config.SettingsManager
 import com.trainingvalidator.poc.training.models.CheckSeverity
 import com.trainingvalidator.poc.training.models.FeedbackMessages
 import com.trainingvalidator.poc.training.models.JointError
+import com.trainingvalidator.poc.training.engine.RepIncompleteReason
 import com.trainingvalidator.poc.training.models.JointState
 import com.trainingvalidator.poc.training.models.LocalizedText
 import kotlinx.coroutines.delay
@@ -233,6 +234,7 @@ class FeedbackManager(
                 is JointQualityContent.StateMessage -> handleJointStateMessage(c)
             }
             is FeedbackEvent.RepCompleted -> handleRepCompleted(event)
+            is FeedbackEvent.RepIncomplete -> handleRepIncomplete(event)
             is FeedbackEvent.TargetReached -> handleTargetReached(event)
             
             // Hold events
@@ -510,6 +512,48 @@ class FeedbackManager(
     }
     
     // ==================== Rep Handling ====================
+
+    private suspend fun handleRepIncomplete(event: FeedbackEvent.RepIncomplete) {
+        correctRepStreak = 0
+
+        val localizedText = messageForRepIncomplete(event.reason)
+        val displayText = localizedText.get(config.language)
+
+        scheduleAndDeliver(
+            kind = FeedbackKind.REP,
+            severity = FeedbackSeverity.WARNING,
+            localizedText = localizedText,
+            displayText = displayText,
+            dedupeKey = "rep_incomplete:${event.reason}",
+            activeKey = "correction",
+            cooldownGroup = "rep_incomplete:${event.reason}",
+            messageType = MessageType.WARNING,
+            interruptPolicy = FeedbackInterruptPolicy.WAIT_FOR_SLOT
+        )
+    }
+
+    private fun messageForRepIncomplete(reason: RepIncompleteReason): LocalizedText = when (reason) {
+        RepIncompleteReason.NO_TARGET_DEPTH -> SystemMessageRegistry.get(
+            "training_rep_incomplete_depth",
+            "لم تصل إلى الوضع المطلوب، أكمل المدى كاملاً",
+            "You didn't reach the target. Complete the full range."
+        )
+        RepIncompleteReason.NO_FULL_RETURN -> SystemMessageRegistry.get(
+            "training_rep_incomplete_return",
+            "أكمل الرجوع إلى وضع البداية",
+            "Return fully to the start position."
+        )
+        RepIncompleteReason.TOO_FAST -> SystemMessageRegistry.get(
+            "training_rep_too_fast",
+            "حركة سريعة جداً، تمهّل قليلاً",
+            "Too fast — slow down."
+        )
+        RepIncompleteReason.TOO_SLOW -> SystemMessageRegistry.get(
+            "training_rep_too_slow",
+            "تجاوزت الوقت المحدد، حافظ على الإيقاع",
+            "Too slow — keep a steady pace."
+        )
+    }
     
     private suspend fun handleRepCompleted(event: FeedbackEvent.RepCompleted) {
         if (event.isCorrect) {

@@ -384,6 +384,15 @@ class TrainingEngine(
         stateMachine.onRepCompleted = {
             repCompletion.onPhaseMachineWantsComplete()
         }
+
+        stateMachine.onRepIncomplete = { reason ->
+            emitEvent(
+                FeedbackEvent.RepIncomplete(
+                    reason = reason,
+                    attemptNumber = repCounter.count + 1
+                )
+            )
+        }
         
         repCounter.onRepCountChanged = { count, score, isCounted ->
             _repCount.value = count
