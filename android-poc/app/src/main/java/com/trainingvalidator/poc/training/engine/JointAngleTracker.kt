@@ -42,6 +42,8 @@ class JointAngleTracker(
             // Torso
             "left_hip" to { angles: JointAngles -> angles.leftHip },
             "right_hip" to { angles: JointAngles -> angles.rightHip },
+            "left_hip_cross" to { angles: JointAngles -> angles.leftHipCross },
+            "right_hip_cross" to { angles: JointAngles -> angles.rightHipCross },
             "neck" to { angles: JointAngles -> angles.neckLeft },          // Alias for neck_left
             "neck_left" to { angles: JointAngles -> angles.neckLeft },
             "neck_right" to { angles: JointAngles -> angles.neckRight },
@@ -69,6 +71,7 @@ class JointAngleTracker(
             "left_wrist" to "right_wrist", "right_wrist" to "left_wrist",
             // Torso
             "left_hip" to "right_hip", "right_hip" to "left_hip",
+            "left_hip_cross" to "right_hip_cross", "right_hip_cross" to "left_hip_cross",
             // Legs
             "left_knee" to "right_knee", "right_knee" to "left_knee",
             "left_ankle" to "right_ankle", "right_ankle" to "left_ankle"

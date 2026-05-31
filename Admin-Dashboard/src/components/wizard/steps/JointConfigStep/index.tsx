@@ -75,6 +75,7 @@ const JOINT_OPTIONS: JointOption[] = [
   { code: 'wrists', label: { ar: 'الرسغين', en: 'Wrists (Both)' }, type: 'bilateral', leftJoint: 'left_wrist', rightJoint: 'right_wrist' },
   { code: 'knees', label: { ar: 'الركبتين', en: 'Knees (Both)' }, type: 'bilateral', leftJoint: 'left_knee', rightJoint: 'right_knee' },
   { code: 'hips', label: { ar: 'الوركين', en: 'Hips (Both)' }, type: 'bilateral', leftJoint: 'left_hip', rightJoint: 'right_hip' },
+  { code: 'hips_cross', label: { ar: 'الوركين (تقاطع)', en: 'Hips Cross (Both)' }, type: 'bilateral', leftJoint: 'left_hip_cross', rightJoint: 'right_hip_cross' },
   { code: 'ankles', label: { ar: 'الكاحلين', en: 'Ankles (Both)' }, type: 'bilateral', leftJoint: 'left_ankle', rightJoint: 'right_ankle' },
   { code: 'heels', label: { ar: 'الكعبين', en: 'Heels (Both)' }, type: 'bilateral', leftJoint: 'left_heel', rightJoint: 'right_heel' },
   { code: 'foot_indexes', label: { ar: 'أصابع القدمين', en: 'Foot Indexes (Both)' }, type: 'bilateral', leftJoint: 'left_foot_index', rightJoint: 'right_foot_index' },
@@ -105,6 +106,8 @@ const JOINT_OPTIONS: JointOption[] = [
   { code: 'spine', label: { ar: 'العمود الفقري', en: 'Spine' }, type: 'single' },
   { code: 'left_hip', label: { ar: 'الورك الأيسر', en: 'Left Hip' }, type: 'single' },
   { code: 'right_hip', label: { ar: 'الورك الأيمن', en: 'Right Hip' }, type: 'single' },
+  { code: 'left_hip_cross', label: { ar: 'الورك الأيسر (تقاطع)', en: 'Left Hip Cross' }, type: 'single' },
+  { code: 'right_hip_cross', label: { ar: 'الورك الأيمن (تقاطع)', en: 'Right Hip Cross' }, type: 'single' },
 
   // ============================================
   // SINGLE JOINTS - Lower Body
@@ -148,6 +151,7 @@ const BILATERAL_MAPPING: Record<string, { label: { ar: string; en: string }, lef
   elbows: { label: { ar: 'الكوعين', en: 'Elbows' }, leftJoint: 'left_elbow', rightJoint: 'right_elbow' },
   wrists: { label: { ar: 'الرسغين', en: 'Wrists' }, leftJoint: 'left_wrist', rightJoint: 'right_wrist' },
   hips: { label: { ar: 'الوركين', en: 'Hips' }, leftJoint: 'left_hip', rightJoint: 'right_hip' },
+  hips_cross: { label: { ar: 'الوركين (تقاطع)', en: 'Hips Cross' }, leftJoint: 'left_hip_cross', rightJoint: 'right_hip_cross' },
   knees: { label: { ar: 'الركبتين', en: 'Knees' }, leftJoint: 'left_knee', rightJoint: 'right_knee' },
   ankles: { label: { ar: 'الكاحلين', en: 'Ankles' }, leftJoint: 'left_ankle', rightJoint: 'right_ankle' },
   heels: { label: { ar: 'الكعبين', en: 'Heels' }, leftJoint: 'left_heel', rightJoint: 'right_heel' },

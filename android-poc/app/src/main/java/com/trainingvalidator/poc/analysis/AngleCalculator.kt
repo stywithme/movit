@@ -226,6 +226,26 @@ object AngleCalculator {
                 use3D
             ),
             
+            // Cross Hips - leg angle relative to hip line
+            // Left: Left Knee(25) -> Left Hip(23) -> Right Hip(24)
+            leftHipCross = calculateAngleSmoothed(
+                landmarks,
+                BodyLandmarks.LEFT_KNEE,
+                BodyLandmarks.LEFT_HIP,
+                BodyLandmarks.RIGHT_HIP,
+                visibilityThreshold,
+                use3D
+            ),
+            // Right: Right Knee(26) -> Right Hip(24) -> Left Hip(23)
+            rightHipCross = calculateAngleSmoothed(
+                landmarks,
+                BodyLandmarks.RIGHT_KNEE,
+                BodyLandmarks.RIGHT_HIP,
+                BodyLandmarks.LEFT_HIP,
+                visibilityThreshold,
+                use3D
+            ),
+            
             // Knees
             leftKnee = calculateAngleSmoothed(
                 landmarks,
@@ -424,6 +444,8 @@ data class JointAngles(
     // Torso
     val leftHip: Double?,
     val rightHip: Double?,
+    val leftHipCross: Double?,   // Left Knee -> Left Hip -> Right Hip
+    val rightHipCross: Double?,  // Right Knee -> Right Hip -> Left Hip
     val neckLeft: Double?,     // Left Shoulder -> Neck -> Nose
     val neckRight: Double?,    // Right Shoulder -> Neck -> Nose
     val neckSpine: Double?,    // Spine -> Neck -> Nose
@@ -450,6 +472,8 @@ data class JointAngles(
             "right_wrist" -> rightWrist
             "left_hip" -> leftHip
             "right_hip" -> rightHip
+            "left_hip_cross" -> leftHipCross
+            "right_hip_cross" -> rightHipCross
             "left_knee" -> leftKnee
             "right_knee" -> rightKnee
             "left_ankle" -> leftAnkle
@@ -478,6 +502,8 @@ data class JointAngles(
             rightWrist?.let { put("right_wrist", it) }
             leftHip?.let { put("left_hip", it) }
             rightHip?.let { put("right_hip", it) }
+            leftHipCross?.let { put("left_hip_cross", it) }
+            rightHipCross?.let { put("right_hip_cross", it) }
             leftKnee?.let { put("left_knee", it) }
             rightKnee?.let { put("right_knee", it) }
             leftAnkle?.let { put("left_ankle", it) }
@@ -502,6 +528,8 @@ data class JointAngles(
             appendLine("Right Wrist: ${rightWrist?.let { "%.1f°".format(it) } ?: "N/A"}")
             appendLine("Left Hip: ${leftHip?.let { "%.1f°".format(it) } ?: "N/A"}")
             appendLine("Right Hip: ${rightHip?.let { "%.1f°".format(it) } ?: "N/A"}")
+            appendLine("Left Hip Cross: ${leftHipCross?.let { "%.1f°".format(it) } ?: "N/A"}")
+            appendLine("Right Hip Cross: ${rightHipCross?.let { "%.1f°".format(it) } ?: "N/A"}")
             appendLine("Left Knee: ${leftKnee?.let { "%.1f°".format(it) } ?: "N/A"}")
             appendLine("Right Knee: ${rightKnee?.let { "%.1f°".format(it) } ?: "N/A"}")
             appendLine("Neck (Left):  ${neckLeft?.let { "%.1f°".format(it) } ?: "N/A"}")
@@ -537,6 +565,9 @@ data class JointAngles(
             // Swap hips
             leftHip = rightHip,
             rightHip = leftHip,
+            // Swap cross hips
+            leftHipCross = rightHipCross,
+            rightHipCross = leftHipCross,
             // Swap neck left/right, keep spine variant as-is
             neckLeft = neckRight,
             neckRight = neckLeft,

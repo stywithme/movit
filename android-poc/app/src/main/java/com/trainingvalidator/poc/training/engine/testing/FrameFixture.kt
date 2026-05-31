@@ -10,6 +10,7 @@ fun defaultJointAngles(): JointAngles = JointAngles(
     leftShoulderCross = 90.0, rightShoulderCross = 90.0,
     leftWrist = 180.0, rightWrist = 180.0,
     leftHip = 180.0, rightHip = 180.0,
+    leftHipCross = 90.0, rightHipCross = 90.0,
     neckLeft = 160.0, neckRight = 160.0, neckSpine = 160.0,
     spine = 0.0,
     leftKnee = 180.0, rightKnee = 180.0,
