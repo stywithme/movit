@@ -65,6 +65,8 @@ class PhaseStateMachine(
     
     private val minRepIntervalMs: Long = timingPolicy.minRepIntervalFor(repCountingConfig)
 
+    private val maxRepIntervalMs: Long = timingPolicy.maxRepIntervalFor(repCountingConfig)
+
     private val minPhaseDurationMs: Long =
         timingPolicy.minPhaseDurationFor(repCountingConfig, numberOfPhases)
     
@@ -100,6 +102,11 @@ class PhaseStateMachine(
      * Listener for rep completion
      */
     var onRepCompleted: (() -> Unit)? = null
+
+    /**
+     * Listener when a rep attempt did not complete (partial path or timing out of range).
+     */
+    var onRepIncomplete: ((RepIncompleteReason) -> Unit)? = null
     
     /** Primary joints with up/down ranges (rep counting uses these for UP_DOWN strict mode). */
     private val upDownPrimaryJoints: List<TrackedJoint> =
@@ -120,12 +127,9 @@ class PhaseStateMachine(
      * Reset when starting a new descent (leaving UP range)
      */
     private var repCountedThisCycle = false
-    
-    /**
-     * Timestamp of last rep completion for cooldown
-     */
-    private var lastRepCompletedTime: Long = 0L
-    
+
+    /** Wall-clock when the trainee left START toward DOWN (full-rep movement timer). */
+    private var repMovementStartTime: Long = 0L
     
     init {
         // Aggregate thresholds for logging and legacy fallback when no per-joint ranges exist.
@@ -158,6 +162,7 @@ class PhaseStateMachine(
         Log.d(TAG, "  Settings (configurable):")
         Log.d(TAG, "    Hysteresis: $hysteresis°")
         Log.d(TAG, "    Min Rep Interval: ${minRepIntervalMs}ms")
+        Log.d(TAG, "    Max Rep Interval: ${maxRepIntervalMs}ms")
         Log.d(TAG, "    Min Phase Duration: ${minPhaseDurationMs}ms")
     }
     
@@ -273,6 +278,7 @@ class PhaseStateMachine(
                 if (visibleJoints.all { jointHasLeftUpRange(it, angleOf(it)) }) {
                     Log.d(TAG, "Left UP range, starting descent (strict per joint)")
                     repCountedThisCycle = false
+                    repMovementStartTime = timeProvider()
                     Phase.DOWN
                 } else {
                     Phase.START
@@ -420,6 +426,7 @@ class PhaseStateMachine(
                 if (hasLeftUpRange(maxAngle)) {
                     Log.d(TAG, "Left UP range, starting descent: min=$minAngle max=$maxAngle")
                     repCountedThisCycle = false
+                    repMovementStartTime = timeProvider()
                     Phase.DOWN
                 } else {
                     Phase.START
@@ -515,19 +522,19 @@ class PhaseStateMachine(
         
         // If phaseEntryTime not yet set, allow transition (first frame scenario)
         val phaseDuration = if (phaseEntryTime > 0L) now - phaseEntryTime else minPhaseDurationMs
+
+        val isRepCompletionTransition = currentPhase == Phase.UP && nextPhase == Phase.START
+        val isPartialDepthAbort = currentPhase == Phase.DOWN && nextPhase == Phase.START
+        val isPartialReturnAbort = currentPhase == Phase.UP && nextPhase == Phase.BOTTOM
         
-        // Only transition if minimum duration has passed
-        if (phaseDuration < minPhaseDurationMs) {
+        // Allow completion transition through so min/max rep window can classify speed
+        if (!isRepCompletionTransition && phaseDuration < minPhaseDurationMs) {
             Log.d(TAG, "Phase transition rejected - too fast (${phaseDuration}ms < ${minPhaseDurationMs}ms)")
             return
         }
         
         // Record timing
         phaseTimings[currentPhase] = phaseDuration
-        
-        // Check if this is a rep completion transition
-        val isRepCompletionTransition = 
-            (currentPhase == Phase.UP && nextPhase == Phase.START)
         
         // Update phases
         previousPhase = currentPhase
@@ -536,29 +543,60 @@ class PhaseStateMachine(
         
         Log.d(TAG, "Phase: $previousPhase → $currentPhase")
         
-        // Handle rep completion if applicable
-        if (isRepCompletionTransition) {
-            // If lastRepCompletedTime is 0, this is the first rep - allow it
-            val timeSinceLastRep = if (lastRepCompletedTime > 0L) now - lastRepCompletedTime else minRepIntervalMs
-            
-            when {
-                repCountedThisCycle -> {
-                    Log.w(TAG, "Rep already counted this cycle - ignoring")
+        when {
+            isPartialDepthAbort -> {
+                if (!repCountedThisCycle) {
+                    Log.d(TAG, "Rep incomplete: returned to START without reaching target depth")
+                    repMovementStartTime = 0L
+                    onRepIncomplete?.invoke(RepIncompleteReason.NO_TARGET_DEPTH)
                 }
-                timeSinceLastRep < minRepIntervalMs -> {
-                    Log.w(TAG, "Rep cooldown not passed (${timeSinceLastRep}ms < ${minRepIntervalMs}ms) - ignoring")
+            }
+            isPartialReturnAbort -> {
+                if (!repCountedThisCycle) {
+                    Log.d(TAG, "Rep incomplete: returned to BOTTOM without full return to START")
+                    onRepIncomplete?.invoke(RepIncompleteReason.NO_FULL_RETURN)
                 }
-                else -> {
-                    repCountedThisCycle = true
-                    lastRepCompletedTime = now
-                    Log.d(TAG, "★ REP COMPLETED! (validated)")
-                    onRepCompleted?.invoke()
+            }
+            isRepCompletionTransition -> {
+                when {
+                    repCountedThisCycle -> {
+                        Log.w(TAG, "Rep already counted this cycle - ignoring")
+                    }
+                    else -> {
+                        val movementMs = if (repMovementStartTime > 0L) {
+                            now - repMovementStartTime
+                        } else {
+                            minRepIntervalMs
+                        }
+                        when {
+                            movementMs < minRepIntervalMs -> {
+                                markRepCycleHandled()
+                                Log.d(TAG, "Rep incomplete: too fast (${movementMs}ms < ${minRepIntervalMs}ms)")
+                                onRepIncomplete?.invoke(RepIncompleteReason.TOO_FAST)
+                            }
+                            movementMs > maxRepIntervalMs -> {
+                                markRepCycleHandled()
+                                Log.d(TAG, "Rep incomplete: too slow (${movementMs}ms > ${maxRepIntervalMs}ms)")
+                                onRepIncomplete?.invoke(RepIncompleteReason.TOO_SLOW)
+                            }
+                            else -> {
+                                markRepCycleHandled()
+                                Log.d(TAG, "★ REP COMPLETED! (validated, ${movementMs}ms)")
+                                onRepCompleted?.invoke()
+                            }
+                        }
+                    }
                 }
             }
         }
         
         // Notify listener
         onPhaseChanged?.invoke(previousPhase, currentPhase)
+    }
+
+    private fun markRepCycleHandled() {
+        repCountedThisCycle = true
+        repMovementStartTime = 0L
     }
     
     /**
@@ -584,7 +622,7 @@ class PhaseStateMachine(
         phaseTimings.clear()
         phaseEntryTime = 0L  // Will be set properly on first update()
         repCountedThisCycle = false
-        lastRepCompletedTime = 0L
+        repMovementStartTime = 0L
     }
     
     /**
@@ -606,6 +644,20 @@ class PhaseStateMachine(
             else -> "Below DOWN Range"
         }
     }
+}
+
+/**
+ * Why a rep attempt did not count as a completed rep (UP_DOWN exercises).
+ */
+enum class RepIncompleteReason {
+    /** DOWN → START without reaching target depth (Up → Transition → Up). */
+    NO_TARGET_DEPTH,
+    /** UP → BOTTOM without returning fully to start (Down → Transition → Down mid-cycle). */
+    NO_FULL_RETURN,
+    /** Full cycle completed faster than [RepCountingConfig.minRepIntervalMs]. */
+    TOO_FAST,
+    /** Full cycle exceeded [RepCountingConfig.maxRepIntervalMs]. */
+    TOO_SLOW
 }
 
 /**

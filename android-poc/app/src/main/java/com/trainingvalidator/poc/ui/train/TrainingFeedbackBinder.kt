@@ -100,6 +100,11 @@ class TrainingFeedbackBinder(
                 }
             }
 
+            is FeedbackEvent.RepIncomplete -> {
+                AnimationUtils.shake(host.binding.tvRepCount)
+                host.binding.vignetteOverlay.showWarning()
+            }
+
             is FeedbackEvent.JointQuality -> {
                 val err = (event.content as? JointQualityContent.Error)?.error ?: return
                 val errorKey = "${err.jointCode}:${err.state.name}"

@@ -31,6 +31,8 @@
     "_comment": "توقيت افتراضي عند عدم تحديده لكل تمرين",
     "minRepIntervalMs": 400,
     "_minRepIntervalMs_comment": "الحد الأدنى للوقت بين التكرارات (يمنع العد المزدوج)",
+    "maxRepIntervalMs": 5000,
+    "_maxRepIntervalMs_comment": "الحد الأقصى لمدة العدة الواحدة قبل اعتبارها غير مكتملة (بطيئة)",
     "minPhaseDurationMs": 100,
     "_minPhaseDurationMs_comment": "الحد الأدنى للوقت في مرحلة قبل الانتقال (بالميلي ثانية)"
   },

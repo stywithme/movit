@@ -119,6 +119,11 @@ object SettingsManager {
      * Get default min rep interval
      */
     fun getDefaultMinRepInterval(): Long = settings.defaults.minRepIntervalMs
+
+    /**
+     * Get default max rep interval (single-rep duration ceiling)
+     */
+    fun getDefaultMaxRepInterval(): Long = settings.defaults.maxRepIntervalMs
     
     /**
      * Get default min phase duration
