@@ -142,10 +142,12 @@ export interface JointPair {
 export const JOINT_PAIRS: JointPair[] = [
   // Upper body
   { left: 'left_shoulder', right: 'right_shoulder', label: 'Shoulders' },
+  { left: 'left_shoulder_cross', right: 'right_shoulder_cross', label: 'Shoulders Cross' },
   { left: 'left_elbow', right: 'right_elbow', label: 'Elbows' },
   { left: 'left_wrist', right: 'right_wrist', label: 'Wrists' },
   // Lower body
   { left: 'left_hip', right: 'right_hip', label: 'Hips' },
+  { left: 'left_hip_cross', right: 'right_hip_cross', label: 'Hips Cross' },
   { left: 'left_knee', right: 'right_knee', label: 'Knees' },
   { left: 'left_ankle', right: 'right_ankle', label: 'Ankles' },
   // Feet
@@ -173,9 +175,11 @@ export interface BilateralJoint {
  */
 export const BILATERAL_JOINTS: BilateralJoint[] = [
   { code: 'shoulders', label: { ar: 'الكتفين', en: 'Shoulders' }, leftJoint: 'left_shoulder', rightJoint: 'right_shoulder' },
+  { code: 'shoulders_cross', label: { ar: 'الكتفين (تقاطع)', en: 'Shoulders Cross' }, leftJoint: 'left_shoulder_cross', rightJoint: 'right_shoulder_cross' },
   { code: 'elbows', label: { ar: 'الكوعين', en: 'Elbows' }, leftJoint: 'left_elbow', rightJoint: 'right_elbow' },
   { code: 'wrists', label: { ar: 'الرسغين', en: 'Wrists' }, leftJoint: 'left_wrist', rightJoint: 'right_wrist' },
   { code: 'hips', label: { ar: 'الوركين', en: 'Hips' }, leftJoint: 'left_hip', rightJoint: 'right_hip' },
+  { code: 'hips_cross', label: { ar: 'الوركين (تقاطع)', en: 'Hips Cross' }, leftJoint: 'left_hip_cross', rightJoint: 'right_hip_cross' },
   { code: 'knees', label: { ar: 'الركبتين', en: 'Knees' }, leftJoint: 'left_knee', rightJoint: 'right_knee' },
   { code: 'ankles', label: { ar: 'الكاحلين', en: 'Ankles' }, leftJoint: 'left_ankle', rightJoint: 'right_ankle' },
 ];

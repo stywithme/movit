@@ -135,6 +135,7 @@ object JointLandmarkMapping {
         "left_elbow", "right_elbow",
         "left_wrist", "right_wrist",
         "left_hip", "right_hip",
+        "left_hip_cross", "right_hip_cross",
         "left_knee", "right_knee",
         "left_ankle", "right_ankle",
         "neck", "neck_left", "neck_right", "neck_spine", "spine"
@@ -209,6 +210,9 @@ object JointLandmarkMapping {
             // Leg angles
             "left_hip" -> listOf(11, 23, 25)  // shoulder, hip, knee
             "right_hip" -> listOf(12, 24, 26)
+            // Cross Hips: knee, hip, opposite_hip
+            "left_hip_cross" -> listOf(25, 23, 24)
+            "right_hip_cross" -> listOf(26, 24, 23)
             "left_knee" -> listOf(23, 25, 27)  // hip, knee, ankle
             "right_knee" -> listOf(24, 26, 28)
             "left_ankle" -> listOf(25, 27, 31)  // knee, ankle, foot

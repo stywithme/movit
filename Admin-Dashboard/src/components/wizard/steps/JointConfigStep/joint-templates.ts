@@ -297,6 +297,42 @@ export const JOINT_DEFAULTS: Record<string, StateRangesDefaults> = {
     },
   },
 
+  // Cross Hips - leg angle relative to hip line (Knee -> Hip -> Opposite Hip)
+  left_hip_cross: {
+    upRange: {
+      perfect: { min: 80, max: 100 },
+      normal: { min: 70, max: 110 },
+      pad: { min: 60, max: 120 },
+    },
+    downRange: {
+      perfect: { min: 20, max: 50 },
+      normal: { min: 10, max: 60 },
+      pad: { min: 0, max: 70 },
+    },
+    range: {
+      perfect: { min: 80, max: 100 },
+      normal: { min: 70, max: 110 },
+      warning: { min: 50, max: 70 },
+    },
+  },
+  right_hip_cross: {
+    upRange: {
+      perfect: { min: 80, max: 100 },
+      normal: { min: 70, max: 110 },
+      pad: { min: 60, max: 120 },
+    },
+    downRange: {
+      perfect: { min: 20, max: 50 },
+      normal: { min: 10, max: 60 },
+      pad: { min: 0, max: 70 },
+    },
+    range: {
+      perfect: { min: 80, max: 100 },
+      normal: { min: 70, max: 110 },
+      warning: { min: 50, max: 70 },
+    },
+  },
+
   // Ankles
   left_ankle: {
     upRange: {
@@ -610,7 +646,7 @@ export function buildTrackedJoint(
   };
 
   // Adjust startPose based on joint type
-  if (jointCode.includes('shoulder_cross')) {
+  if (jointCode.includes('shoulder_cross') || jointCode.includes('hip_cross')) {
     baseJoint.startPose = { min: 80, max: 100 };
   } else if (jointCode.includes('shoulder')) {
     baseJoint.startPose = { min: 0, max: 30 };

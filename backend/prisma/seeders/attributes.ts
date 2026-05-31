@@ -203,6 +203,10 @@ export async function seedAttributes(prisma: PrismaClient) {
     { code: 'right_thumb', name: { ar: 'الإبهام الأيمن', en: 'Right Thumb' }, sortOrder: 22 },
     { code: 'left_hip', name: { ar: 'الورك الأيسر', en: 'Left Hip' }, sortOrder: 23 },
     { code: 'right_hip', name: { ar: 'الورك الأيمن', en: 'Right Hip' }, sortOrder: 24 },
+    { code: 'left_shoulder_cross', name: { ar: 'الكتف الأيسر (تقاطع)', en: 'Left Shoulder Cross' }, sortOrder: 33 },
+    { code: 'right_shoulder_cross', name: { ar: 'الكتف الأيمن (تقاطع)', en: 'Right Shoulder Cross' }, sortOrder: 34 },
+    { code: 'left_hip_cross', name: { ar: 'الورك الأيسر (تقاطع)', en: 'Left Hip Cross' }, sortOrder: 35 },
+    { code: 'right_hip_cross', name: { ar: 'الورك الأيمن (تقاطع)', en: 'Right Hip Cross' }, sortOrder: 36 },
     { code: 'left_knee', name: { ar: 'الركبة اليسرى', en: 'Left Knee' }, sortOrder: 25 },
     { code: 'right_knee', name: { ar: 'الركبة اليمنى', en: 'Right Knee' }, sortOrder: 26 },
     { code: 'left_ankle', name: { ar: 'الكاحل الأيسر', en: 'Left Ankle' }, sortOrder: 27 },
@@ -224,9 +228,11 @@ export async function seedAttributes(prisma: PrismaClient) {
 
   const bilateralJoints = [
     { code: 'shoulders', name: { ar: 'الكتفين', en: 'Shoulders' }, description: { ar: 'الكتف الأيسر والأيمن معاً', en: 'Left and Right Shoulders together' }, leftJoint: 'left_shoulder', rightJoint: 'right_shoulder', sortOrder: 201 },
+    { code: 'shoulders_cross', name: { ar: 'الكتفين (تقاطع)', en: 'Shoulders Cross' }, description: { ar: 'كتف تقاطع أيسر وأيمن معاً', en: 'Left and Right Shoulder Cross together' }, leftJoint: 'left_shoulder_cross', rightJoint: 'right_shoulder_cross', sortOrder: 207 },
     { code: 'elbows', name: { ar: 'الكوعين', en: 'Elbows' }, description: { ar: 'المرفق الأيسر والأيمن معاً', en: 'Left and Right Elbows together' }, leftJoint: 'left_elbow', rightJoint: 'right_elbow', sortOrder: 202 },
     { code: 'wrists', name: { ar: 'الرسغين', en: 'Wrists' }, description: { ar: 'الرسغ الأيسر والأيمن معاً', en: 'Left and Right Wrists together' }, leftJoint: 'left_wrist', rightJoint: 'right_wrist', sortOrder: 203 },
     { code: 'hips', name: { ar: 'الوركين', en: 'Hips' }, description: { ar: 'الورك الأيسر والأيمن معاً', en: 'Left and Right Hips together' }, leftJoint: 'left_hip', rightJoint: 'right_hip', sortOrder: 204 },
+    { code: 'hips_cross', name: { ar: 'الوركين (تقاطع)', en: 'Hips Cross' }, description: { ar: 'ورك تقاطع أيسر وأيمن معاً', en: 'Left and Right Hip Cross together' }, leftJoint: 'left_hip_cross', rightJoint: 'right_hip_cross', sortOrder: 208 },
     { code: 'knees', name: { ar: 'الركبتين', en: 'Knees' }, description: { ar: 'الركبة اليسرى واليمنى معاً', en: 'Left and Right Knees together' }, leftJoint: 'left_knee', rightJoint: 'right_knee', sortOrder: 205 },
     { code: 'ankles', name: { ar: 'الكاحلين', en: 'Ankles' }, description: { ar: 'الكاحل الأيسر والأيمن معاً', en: 'Left and Right Ankles together' }, leftJoint: 'left_ankle', rightJoint: 'right_ankle', sortOrder: 206 },
   ];
