@@ -15,7 +15,7 @@ export const protectedAdminRoutes: { prefix: string; subject: Subject }[] = [
   { prefix: '/admin/camera-positions', subject: 'PosePosition' },
   { prefix: '/admin/levels', subject: 'Level' },
   { prefix: '/admin/assessment-templates', subject: 'AssessmentTemplate' },
-  { prefix: '/admin/exercise-progression', subject: 'ProgressionRule' },
+  { prefix: '/admin/exercise-progression', subject: 'ExerciseProgressionProfile' },
   { prefix: '/admin/progression-rules', subject: 'ProgressionRule' },
   { prefix: '/admin/analytics/programs', subject: 'ProgramAnalytics' },
   { prefix: '/admin/analytics/levels', subject: 'LevelAnalytics' },
