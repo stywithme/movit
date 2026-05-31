@@ -1,7 +1,22 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Button, Select, Input } from '@/components/ui';
+import { toast } from 'sonner';
+import {
+    Badge,
+    Button,
+    Checkbox,
+    Dialog,
+    DialogBody,
+    DialogContent,
+    DialogFooter,
+    DialogHeader,
+    DialogTitle,
+    Input,
+    Select,
+    Textarea,
+} from '@/components/ui';
+import { StatusBadge } from '@/components/common';
 import Link from 'next/link';
 import { Booking } from '../page';
 
@@ -263,7 +278,7 @@ export function BookingDetailsModal({ booking, onClose, onUpdate, isDoctorView }
 
             await Promise.all(promises);
 
-            alert(`Successfully created ${payloads.length} follow-up session(s)!`);
+            toast.success(`Successfully created ${payloads.length} follow-up session(s)!`);
             setShowFollowUp(false);
         } catch (err: any) {
             setError(err.message);
@@ -280,83 +295,71 @@ export function BookingDetailsModal({ booking, onClose, onUpdate, isDoctorView }
     };
 
     return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
-            <div className="bg-white rounded-xl shadow-xl w-full max-w-2xl overflow-hidden max-h-[90vh] flex flex-col">
-                <div className="px-6 py-4 flex justify-between items-center border-b border-gray-100">
-                    <h2 className="text-xl font-bold text-gray-900">Booking Details</h2>
-                    <button onClick={onClose} className="text-gray-600 hover:text-gray-800">
-                        <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                        </svg>
-                    </button>
-                </div>
+        <Dialog open onOpenChange={(open) => !open && onClose()}>
+            <DialogContent size="lg">
+                <DialogHeader>
+                    <DialogTitle>Booking Details</DialogTitle>
+                </DialogHeader>
 
-                <div className="p-6 overflow-y-auto flex-1 space-y-6">
+                <DialogBody className="space-y-6">
                     {error && (
-                        <div className="p-3 text-sm text-red-600 bg-red-50 rounded-lg border border-red-100">
+                        <div className="rounded-lg border bg-destructive/10 p-3 text-sm text-destructive">
                             {error}
                         </div>
                     )}
 
                     {/* Info Grid */}
-                    <div className="grid grid-cols-2 gap-6 bg-gray-50 p-4 rounded-lg">
+                    <div className="grid grid-cols-2 gap-6 rounded-lg bg-muted/50 p-4">
                         <div>
-                            <p className="text-sm text-gray-500 mb-1">Patient</p>
-                            <p className="font-medium text-gray-900">{booking.user.name}</p>
-                            <p className="text-sm text-gray-600">{booking.user.email}</p>
+                            <p className="mb-1 text-sm text-muted-foreground">Patient</p>
+                            <p className="font-medium">{booking.user.name}</p>
+                            <p className="text-sm text-muted-foreground">{booking.user.email}</p>
                         </div>
                         {!isDoctorView && (
                             <div>
-                                <p className="text-sm text-gray-500 mb-1">Doctor</p>
-                                <p className="font-medium text-gray-900">{booking.admin.name}</p>
+                                <p className="mb-1 text-sm text-muted-foreground">Doctor</p>
+                                <p className="font-medium">{booking.admin.name}</p>
                             </div>
                         )}
                         <div>
-                            <p className="text-sm text-gray-500 mb-1">Schedule</p>
-                            <p className="font-medium text-gray-900">{formatDate(booking.startAt)}</p>
-                            <p className="text-sm text-gray-600">To: {formatDate(booking.endAt)}</p>
+                            <p className="mb-1 text-sm text-muted-foreground">Schedule</p>
+                            <p className="font-medium">{formatDate(booking.startAt)}</p>
+                            <p className="text-sm text-muted-foreground">To: {formatDate(booking.endAt)}</p>
                         </div>
                         <div>
-                            <p className="text-sm text-gray-500 mb-1">Payment</p>
-                            <p className="font-medium text-gray-900">{booking.amount} SAR</p>
-                            <span className={`inline-flex px-2 py-0.5 text-xs font-medium rounded-full mt-1 ${booking.paymentStatus === 'paid' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
-                                }`}>
-                                {booking.paymentStatus?.toUpperCase() || 'UNPAID'}
-                            </span>
+                            <p className="mb-1 text-sm text-muted-foreground">Payment</p>
+                            <p className="font-medium">{booking.amount} SAR</p>
+                            <StatusBadge status={booking.paymentStatus === 'paid' ? 'completed' : 'failed'} label={booking.paymentStatus?.toUpperCase() || 'UNPAID'} />
                         </div>
                         <div>
-                            <p className="text-sm text-gray-500 mb-1">Booked By</p>
-                            <p className="font-medium text-gray-900 uppercase text-xs tracking-wider bg-gray-100/50 px-2 py-1 rounded inline-block">
-                                {booking.madeByType || 'System'}
-                            </p>
+                            <p className="mb-1 text-sm text-muted-foreground">Booked By</p>
+                            <Badge variant="outline">{booking.madeByType || 'System'}</Badge>
                         </div>
                         {booking.isRescheduled && (
                             <div>
-                                <span className="inline-flex px-2 py-1 text-xs font-medium rounded-full bg-purple-100 text-purple-800">
-                                    Rescheduled
-                                </span>
+                                <Badge variant="purple">Rescheduled</Badge>
                             </div>
                         )}
                     </div>
 
                     {/* Payment summary block (for payment_pending / visibility) */}
                     {booking.status === 'payment_pending' && booking.paymentInfo && (
-                        <div className="bg-amber-50 border border-amber-100 rounded-lg p-4 space-y-2">
-                            <h3 className="font-semibold text-amber-900 text-sm">Payment Checkout</h3>
+                        <div className="space-y-2 rounded-lg border bg-warning/10 p-4">
+                            <h3 className="text-sm font-semibold">Payment Checkout</h3>
                             <div className="grid grid-cols-2 gap-2 text-sm">
-                                <p><span className="text-gray-500">Checkout ID:</span> <code className="text-xs bg-white px-1 rounded">{booking.paymentInfo.checkoutId.slice(0, 8)}…</code></p>
-                                <p><span className="text-gray-500">Status:</span> <span className="font-medium">{booking.paymentInfo.status}</span></p>
-                                <p><span className="text-gray-500">Total:</span> {booking.paymentInfo.totalAmount} {booking.paymentInfo.currency}</p>
-                                <p><span className="text-gray-500">Payment URL:</span> {booking.paymentInfo.paymentUrlPresent ? 'Yes' : 'No'}</p>
+                                <p><span className="text-muted-foreground">Checkout ID:</span> <code className="rounded bg-background px-1 text-xs">{booking.paymentInfo.checkoutId.slice(0, 8)}...</code></p>
+                                <p><span className="text-muted-foreground">Status:</span> <span className="font-medium">{booking.paymentInfo.status}</span></p>
+                                <p><span className="text-muted-foreground">Total:</span> {booking.paymentInfo.totalAmount} {booking.paymentInfo.currency}</p>
+                                <p><span className="text-muted-foreground">Payment URL:</span> {booking.paymentInfo.paymentUrlPresent ? 'Yes' : 'No'}</p>
                                 {booking.paymentInfo.lastError && (
-                                    <p className="col-span-2 text-red-600">Last error: {booking.paymentInfo.lastError}</p>
+                                    <p className="col-span-2 text-destructive">Last error: {booking.paymentInfo.lastError}</p>
                                 )}
-                                <p className="col-span-2 text-gray-500 text-xs">Last updated: {new Date(booking.paymentInfo.lastUpdated).toLocaleString()}</p>
+                                <p className="col-span-2 text-xs text-muted-foreground">Last updated: {new Date(booking.paymentInfo.lastUpdated).toLocaleString()}</p>
                             </div>
                         </div>
                     )}
                     {booking.status === 'payment_pending' && !booking.paymentInfo && (
-                        <div className="bg-gray-50 border border-gray-100 rounded-lg p-3 text-sm text-gray-600">
+                        <div className="rounded-lg border bg-muted/50 p-3 text-sm text-muted-foreground">
                             No active checkout. Customer can pay via the mobile app.
                         </div>
                     )}
@@ -379,7 +382,7 @@ export function BookingDetailsModal({ booking, onClose, onUpdate, isDoctorView }
                                         href={booking.sessionUrl}
                                         target="_blank"
                                         rel="noreferrer"
-                                        className="inline-flex items-center gap-1.5 px-4 py-2 bg-green-600 text-white text-sm font-semibold rounded-lg hover:bg-green-700 transition-colors"
+                                        className="inline-flex items-center gap-1.5 rounded-lg bg-success px-4 py-2 text-sm font-semibold text-success-foreground transition-colors hover:bg-success/90"
                                     >
                                         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 10l4.553-2.276A1 1 0 0121 8.723v6.554a1 1 0 01-1.447.894L15 14M3 8a2 2 0 012-2h8a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2V8z" />
@@ -390,7 +393,7 @@ export function BookingDetailsModal({ booking, onClose, onUpdate, isDoctorView }
                                 {canWriteReport && (
                                     <Link
                                         href={`/admin/booking-reports/new?bookingId=${booking.id}`}
-                                        className="inline-flex items-center gap-1.5 px-4 py-2 bg-blue-600 text-white text-sm font-semibold rounded-lg hover:bg-blue-700 transition-colors"
+                                        className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground transition-colors hover:bg-primary/90"
                                     >
                                         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
@@ -401,7 +404,7 @@ export function BookingDetailsModal({ booking, onClose, onUpdate, isDoctorView }
                                 {canViewReport && latestReport && (
                                     <Link
                                         href={`/admin/booking-reports/${latestReport.id}`}
-                                        className="inline-flex items-center gap-1.5 px-4 py-2 border border-purple-300 text-purple-700 bg-purple-50 text-sm font-semibold rounded-lg hover:bg-purple-100 transition-colors"
+                                        className="inline-flex items-center gap-1.5 rounded-lg border bg-muted px-4 py-2 text-sm font-semibold transition-colors hover:bg-muted/80"
                                     >
                                         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
@@ -414,12 +417,12 @@ export function BookingDetailsModal({ booking, onClose, onUpdate, isDoctorView }
                     })()}
 
                     <div className="space-y-4">
-                        <h3 className="font-semibold text-gray-900 border-b pb-2">Actions & Updates</h3>
+                        <h3 className="border-b pb-2 font-semibold">Actions & Updates</h3>
 
                         {!isTerminalStatus && (
                             <div className="flex items-end gap-3">
                                 <div className="flex-1">
-                                    <label className="block text-sm font-medium text-gray-700 mb-1">Status</label>
+                                    <label className="mb-1 block text-sm font-medium">Status</label>
                                     <Select
                                         value={status}
                                         onChange={(e) => setStatus(e.target.value)}
@@ -439,9 +442,9 @@ export function BookingDetailsModal({ booking, onClose, onUpdate, isDoctorView }
                         {!isDoctorView && !isTerminalStatus && (
                             <div className="flex items-end gap-3">
                                 <div className="flex-1">
-                                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                                    <label className="mb-1 block text-sm font-medium">
                                         Session URL (Zoom / Google Meet)
-                                        {booking.sessionUrl && <span className="text-green-600 ml-1 text-xs">(Auto-generated)</span>}
+                                        {booking.sessionUrl && <span className="ml-1 text-xs text-success">(Auto-generated)</span>}
                                     </label>
                                     <Input
                                         type="url"
@@ -461,9 +464,9 @@ export function BookingDetailsModal({ booking, onClose, onUpdate, isDoctorView }
                         )}
 
                         <div className="pt-2">
-                            <label className="block text-sm font-medium text-gray-700 mb-1">Medical/Admin Notes</label>
-                            <textarea
-                                className="w-full border-gray-300 rounded-lg shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm p-3 min-h-[100px] border text-gray-900 font-medium"
+                            <label className="mb-1 block text-sm font-medium">Medical/Admin Notes</label>
+                            <Textarea
+                                className="min-h-[100px]"
                                 value={notes}
                                 onChange={(e) => setNotes(e.target.value)}
                                 placeholder="Add session notes or administrative remarks..."
@@ -480,10 +483,10 @@ export function BookingDetailsModal({ booking, onClose, onUpdate, isDoctorView }
                         </div>
 
                         {isDoctorView && booking.status === 'completed' && (
-                            <div className="pt-4 border-t border-gray-100 mt-4 flex flex-col gap-3">
+                            <div className="mt-4 flex flex-col gap-3 border-t pt-4">
                                 <Link
                                     href={`/admin/booking-reports/new?bookingId=${booking.id}`}
-                                    className="flex items-center justify-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-bold text-sm"
+                                    className="flex items-center justify-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground transition-colors hover:bg-primary/90"
                                 >
                                     <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
@@ -500,21 +503,21 @@ export function BookingDetailsModal({ booking, onClose, onUpdate, isDoctorView }
                                         + Schedule Follow-up Appointment
                                     </Button>
                                 ) : (
-                                    <div className="bg-blue-50 p-4 rounded-lg space-y-4 border border-blue-100">
+                                    <div className="space-y-4 rounded-lg border bg-muted/50 p-4">
                                         <div className="flex items-center justify-between">
-                                            <h4 className="font-semibold text-blue-900">New Follow-up Booking</h4>
-                                            <Button type="button" size="sm" onClick={addForm} variant="outline" className="border-blue-200 text-blue-700 bg-white hover:bg-blue-100 h-8 text-xs py-1 px-3">
+                                            <h4 className="font-semibold">New Follow-up Booking</h4>
+                                            <Button type="button" size="sm" onClick={addForm} variant="outline" className="h-8 px-3 py-1 text-xs">
                                                 + Add Another Session
                                             </Button>
                                         </div>
 
                                         <div className="space-y-4">
                                             {followUpForms.map((form, index) => (
-                                                <div key={form.id} className="relative p-4 bg-white rounded-lg border border-blue-100 shadow-sm space-y-4">
+                                                <div key={form.id} className="relative space-y-4 rounded-lg border bg-background p-4 shadow-sm">
                                                     {followUpForms.length > 1 && (
                                                         <button
                                                             onClick={() => removeForm(form.id)}
-                                                            className="absolute top-2 right-2 text-red-500 hover:text-red-700 bg-red-50 hover:bg-red-100 w-6 h-6 flex items-center justify-center rounded-md transition-colors"
+                                                            className="absolute right-2 top-2 flex h-6 w-6 items-center justify-center rounded-md bg-destructive/10 text-destructive transition-colors hover:bg-destructive/20"
                                                             title="Remove this session"
                                                         >
                                                             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -525,7 +528,7 @@ export function BookingDetailsModal({ booking, onClose, onUpdate, isDoctorView }
 
                                                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                                         <div>
-                                                            <label className="block text-sm font-medium text-blue-800 mb-1">Date</label>
+                                                            <label className="mb-1 block text-sm font-medium">Date</label>
                                                             <Input
                                                                 type="date"
                                                                 value={form.date}
@@ -534,7 +537,7 @@ export function BookingDetailsModal({ booking, onClose, onUpdate, isDoctorView }
                                                         </div>
 
                                                         <div>
-                                                            <label className="block text-sm font-medium text-blue-800 mb-1">Available Time Slots</label>
+                                                            <label className="mb-1 block text-sm font-medium">Available Time Slots</label>
                                                             <Select
                                                                 value={form.slotIndex}
                                                                 onChange={(e) => updateForm(form.id, 'slotIndex', e.target.value)}
@@ -551,7 +554,7 @@ export function BookingDetailsModal({ booking, onClose, onUpdate, isDoctorView }
                                                     </div>
 
                                                     <div>
-                                                        <label className="block text-sm font-medium text-blue-800 mb-1">Notes</label>
+                                                        <label className="mb-1 block text-sm font-medium">Notes</label>
                                                         <Input
                                                             type="text"
                                                             placeholder="Reason for follow-up..."
@@ -560,20 +563,18 @@ export function BookingDetailsModal({ booking, onClose, onUpdate, isDoctorView }
                                                         />
                                                     </div>
 
-                                                    <div className="bg-blue-50/50 px-3 py-2 rounded-lg border border-blue-50 flex items-center gap-4">
-                                                        <label className="flex items-center gap-2 cursor-pointer text-sm font-medium text-blue-800 select-none">
-                                                            <input
-                                                                type="checkbox"
-                                                                className="rounded border-blue-300 text-blue-600 focus:ring-blue-500 w-4 h-4 cursor-pointer"
+                                                    <div className="flex items-center gap-4 rounded-lg border bg-muted/40 px-3 py-2">
+                                                        <label className="flex cursor-pointer select-none items-center gap-2 text-sm font-medium">
+                                                            <Checkbox
                                                                 checked={form.repeatWeekly}
-                                                                onChange={(e) => updateForm(form.id, 'repeatWeekly', e.target.checked)}
+                                                                onCheckedChange={(checked) => updateForm(form.id, 'repeatWeekly', Boolean(checked))}
                                                             />
                                                             Repeat Weekly
                                                         </label>
 
                                                         {form.repeatWeekly && (
-                                                            <div className="flex items-center gap-2 border-l border-blue-200 pl-4">
-                                                                <span className="text-sm font-medium text-blue-800">Until</span>
+                                                            <div className="flex items-center gap-2 border-l pl-4">
+                                                                <span className="text-sm font-medium">Until</span>
                                                                 <Input
                                                                     type="date"
                                                                     className="w-40 h-8 text-sm"
@@ -587,7 +588,7 @@ export function BookingDetailsModal({ booking, onClose, onUpdate, isDoctorView }
                                             ))}
                                         </div>
 
-                                        <div className="flex justify-end gap-2 pt-4 border-t border-blue-100">
+                                        <div className="flex justify-end gap-2 border-t pt-4">
                                             <Button
                                                 variant="outline"
                                                 onClick={() => setShowFollowUp(false)}
@@ -607,12 +608,12 @@ export function BookingDetailsModal({ booking, onClose, onUpdate, isDoctorView }
                             </div>
                         )}
                     </div>
-                </div>
+                </DialogBody>
 
-                <div className="px-6 py-4 bg-gray-50 border-t border-gray-100 flex justify-end">
+                <DialogFooter>
                     <Button variant="outline" onClick={onClose}>Close</Button>
-                </div>
-            </div>
-        </div>
+                </DialogFooter>
+            </DialogContent>
+        </Dialog>
     );
 }

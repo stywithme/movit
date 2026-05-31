@@ -5,6 +5,8 @@ import Link from 'next/link';
 import { useAuthStore } from '@/lib/auth/auth-store';
 import { usePermissions } from '@/hooks/usePermissions';
 import { Button } from '@/components/ui';
+import { ConfirmDialog, DataTable, PageHeader, type DataTableColumn } from '@/components/common';
+import { Plus } from 'lucide-react';
 
 interface BookingReport {
     id: string;
@@ -26,6 +28,7 @@ export default function BookingReportsPage() {
 
     const [reports, setReports] = useState<BookingReport[]>([]);
     const [loading, setLoading] = useState(true);
+    const [deleteReportId, setDeleteReportId] = useState<string | null>(null);
 
     const fetchReports = async () => {
         setLoading(true);
@@ -52,13 +55,15 @@ export default function BookingReportsPage() {
         }
     }, [user, isSuperAdmin]);
 
-    const handleDelete = async (id: string) => {
-        if (!confirm('Are you sure you want to delete this medical report?')) return;
+    const handleDelete = async () => {
+        if (!deleteReportId) return;
+
         try {
-            const res = await fetch(`/api/admin/booking-reports/${id}`, { method: 'DELETE' });
+            const res = await fetch(`/api/admin/booking-reports/${deleteReportId}`, { method: 'DELETE' });
             if (res.ok) {
-                setReports(prev => prev.filter(r => r.id !== id));
+                setReports(prev => prev.filter(r => r.id !== deleteReportId));
             }
+            setDeleteReportId(null);
         } catch (error) {
             console.error('Error deleting report:', error);
         }
@@ -73,102 +78,98 @@ export default function BookingReportsPage() {
     };
 
     if (!user || loading) {
-        return <div className="p-8 text-center text-gray-500">Loading reports...</div>;
+        return <div className="p-8 text-center text-muted-foreground">Loading reports...</div>;
     }
+
+    const columns: DataTableColumn<BookingReport>[] = [
+        {
+            key: 'date',
+            header: 'Date',
+            cell: (report) => <span className="text-sm font-medium">{formatDate(report.createdAt)}</span>,
+        },
+        {
+            key: 'patient',
+            header: 'Patient',
+            cell: (report) => (
+                <div>
+                    <div className="font-medium">{report.booking?.user?.name || '---'}</div>
+                    <div className="text-xs text-muted-foreground">{report.booking?.user?.email || '---'}</div>
+                </div>
+            ),
+        },
+        ...((!user?.isDoctor || isSuperAdmin)
+            ? [
+                {
+                    key: 'doctor',
+                    header: 'Doctor',
+                    cell: (report: BookingReport) => <span className="text-sm font-medium">{report.booking?.admin?.name || '---'}</span>,
+                } satisfies DataTableColumn<BookingReport>,
+            ]
+            : []),
+        {
+            key: 'summary',
+            header: 'Summary',
+            cell: (report) => <span className="line-clamp-2 text-sm text-muted-foreground">{report.content.diagnosis}</span>,
+        },
+        {
+            key: 'actions',
+            header: 'Actions',
+            headerClassName: 'text-right',
+            className: 'text-right',
+            cell: (report) => (
+                <div className="flex justify-end gap-2">
+                    <Button asChild variant="ghost" size="sm">
+                        <Link href={`/admin/booking-reports/${report.id}`}>View</Link>
+                    </Button>
+                    {can('update', 'BookingReport') && (
+                        <Button asChild variant="ghost" size="sm">
+                            <Link href={`/admin/booking-reports/${report.id}/edit`}>Edit</Link>
+                        </Button>
+                    )}
+                    {can('delete', 'BookingReport') && (
+                        <Button type="button" variant="ghost" size="sm" onClick={() => setDeleteReportId(report.id)}>
+                            Delete
+                        </Button>
+                    )}
+                </div>
+            ),
+        },
+    ];
 
     return (
         <div className="space-y-6">
-            <div className="flex justify-between items-center">
-                <div>
-                    <h1 className="text-2xl font-bold text-gray-900">Medical Reports</h1>
-                    <p className="text-gray-600 mt-1">Post-session patient diagnoses and prescriptions</p>
-                </div>
-                {can('create', 'BookingReport') && (
-                    <Link
-                        href="/admin/booking-reports/new"
-                        className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center gap-2"
-                    >
-                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-                        </svg>
+            <PageHeader
+                title="Medical Reports"
+                description="Post-session patient diagnoses and prescriptions"
+                actions={
+                    can('create', 'BookingReport') && (
+                    <Button asChild>
+                        <Link href="/admin/booking-reports/new">
+                            <Plus className="size-4" />
                         Write Report
-                    </Link>
-                )}
-            </div>
+                        </Link>
+                    </Button>
+                    )
+                }
+            />
 
-            <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
-                {reports.length === 0 ? (
-                    <div className="p-8 text-center text-gray-500">
-                        <p>No medical reports found.</p>
-                        {can('create', 'BookingReport') && (
-                            <Link href="/admin/booking-reports/new" className="text-blue-600 hover:underline mt-2 inline-block">
-                                Write a new report
-                            </Link>
-                        )}
-                    </div>
-                ) : (
-                    <div className="overflow-x-auto">
-                        <table className="w-full">
-                            <thead className="bg-gray-50 border-b border-gray-200">
-                                <tr>
-                                    <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase">Date</th>
-                                    <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase">Patient</th>
-                                    {(!user?.isDoctor || isSuperAdmin) && (
-                                        <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase">Doctor</th>
-                                    )}
-                                    <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase">Summary</th>
-                                    <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">Actions</th>
-                                </tr>
-                            </thead>
-                            <tbody className="divide-y divide-gray-200">
-                                {reports.map((report) => (
-                                    <tr key={report.id} className="hover:bg-gray-50">
-                                        <td className="px-6 py-4 text-sm text-gray-900 text-center">
-                                            {formatDate(report.createdAt)}
-                                        </td>
-                                        <td className="px-6 py-4 text-center">
-                                            <div className="font-medium text-gray-900">{report.booking?.user?.name || '---'}</div>
-                                            <div className="text-xs text-gray-500">{report.booking?.user?.email || '---'}</div>
-                                        </td>
-                                        {(!user?.isDoctor || isSuperAdmin) && (
-                                            <td className="px-6 py-4 text-sm text-gray-900 text-center">
-                                                {report.booking?.admin?.name || '---'}
-                                            </td>
-                                        )}
-                                        <td className="px-6 py-4 text-sm text-gray-600 max-w-xs truncate text-center">
-                                            {report.content.diagnosis}
-                                        </td>
-                                        <td className="px-6 py-4 text-right space-x-3">
-                                            <Link
-                                                href={`/admin/booking-reports/${report.id}`}
-                                                className="text-blue-600 hover:text-blue-800 text-sm font-medium"
-                                            >
-                                                View
-                                            </Link>
-                                            {can('update', 'BookingReport') && (
-                                                <Link
-                                                    href={`/admin/booking-reports/${report.id}/edit`}
-                                                    className="text-gray-600 hover:text-gray-800 text-sm font-medium"
-                                                >
-                                                    Edit
-                                                </Link>
-                                            )}
-                                            {can('delete', 'BookingReport') && (
-                                                <button
-                                                    onClick={() => handleDelete(report.id)}
-                                                    className="text-red-600 hover:text-red-800 text-sm font-medium ml-3"
-                                                >
-                                                    Delete
-                                                </button>
-                                            )}
-                                        </td>
-                                    </tr>
-                                ))}
-                            </tbody>
-                        </table>
-                    </div>
-                )}
-            </div>
+            <DataTable
+                columns={columns}
+                data={reports}
+                getRowKey={(report) => report.id}
+                emptyTitle="No medical reports found"
+                emptyDescription="Reports written after completed appointments will appear here."
+            />
+
+            <ConfirmDialog
+                open={Boolean(deleteReportId)}
+                onOpenChange={(open) => !open && setDeleteReportId(null)}
+                title="Delete medical report?"
+                description="This medical report will be permanently removed."
+                confirmLabel="Delete"
+                destructive
+                onConfirm={handleDelete}
+            />
         </div>
     );
 }

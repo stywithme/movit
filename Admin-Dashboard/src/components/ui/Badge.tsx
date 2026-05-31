@@ -3,19 +3,21 @@ import { cn } from '@/lib/utils';
 import { cva, type VariantProps } from 'class-variance-authority';
 
 const badgeVariants = cva(
-  'inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium',
+  'inline-flex w-fit shrink-0 items-center justify-center gap-1 overflow-hidden whitespace-nowrap rounded-md border px-2 py-0.5 text-xs font-medium transition-[color,box-shadow] [&>svg]:size-3',
   {
     variants: {
       variant: {
-        default: 'bg-gray-100 text-gray-700',
-        primary: 'bg-blue-100 text-blue-700',
-        success: 'bg-green-100 text-green-700',
-        warning: 'bg-amber-100 text-amber-700',
-        error: 'bg-red-100 text-red-700',
-        outline: 'border border-gray-300 text-gray-700 bg-white',
-        purple: 'bg-purple-100 text-purple-700',
-        orange: 'bg-orange-100 text-orange-700',
-        teal: 'bg-teal-100 text-teal-700',
+        default: 'border-transparent bg-primary text-primary-foreground',
+        primary: 'border-transparent bg-primary text-primary-foreground',
+        secondary: 'border-transparent bg-secondary text-secondary-foreground',
+        success: 'border-transparent bg-success text-success-foreground',
+        warning: 'border-transparent bg-warning text-warning-foreground',
+        error: 'border-transparent bg-destructive text-destructive-foreground',
+        destructive: 'border-transparent bg-destructive text-destructive-foreground',
+        outline: 'text-foreground',
+        purple: 'border-transparent bg-violet-100 text-violet-700 dark:bg-violet-950 dark:text-violet-300',
+        orange: 'border-transparent bg-orange-100 text-orange-700 dark:bg-orange-950 dark:text-orange-300',
+        teal: 'border-transparent bg-teal-100 text-teal-700 dark:bg-teal-950 dark:text-teal-300',
       },
       size: {
         sm: 'px-2 py-0.5 text-xs',

@@ -2,14 +2,17 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { Input, Button, Card } from '@/components/ui';
-import { Shield, Plus, Search, Edit2, Trash2, UsersIcon } from 'lucide-react';
+import { toast } from 'sonner';
+import { Badge, Button } from '@/components/ui';
+import { Edit2, Plus, Trash2, UsersIcon } from 'lucide-react';
+import { ConfirmDialog, DataTable, FilterBar, PageHeader, type DataTableColumn } from '@/components/common';
 import type { Role } from '@/lib/types/roles';
 
 export default function RolesPage() {
     const [roles, setRoles] = useState<Role[]>([]);
     const [loading, setLoading] = useState(true);
     const [searchQuery, setSearchQuery] = useState('');
+    const [deleteRoleId, setDeleteRoleId] = useState<string | null>(null);
 
     const fetchRoles = async () => {
         setLoading(true);
@@ -39,135 +42,120 @@ export default function RolesPage() {
         fetchRoles();
     };
 
-    const handleDelete = async (id: string) => {
-        if (!confirm('Are you sure you want to delete this role?')) return;
+    const handleDelete = async () => {
+        if (!deleteRoleId) return;
+
         try {
-            const res = await fetch(`/api/admin/permissions/roles/${id}`, { method: 'DELETE' });
+            const res = await fetch(`/api/admin/permissions/roles/${deleteRoleId}`, { method: 'DELETE' });
             if (res.ok) fetchRoles();
             else {
                 const data = await res.json();
-                alert('Error: ' + (data.error || 'Failed to delete role'));
+                toast.error(data.error || 'Failed to delete role');
             }
+            setDeleteRoleId(null);
         } catch (error) {
             console.error('Error deleting role:', error);
         }
     };
 
+    const columns: DataTableColumn<Role>[] = [
+        {
+            key: 'role',
+            header: 'Role Name',
+            cell: (role) => (
+                <div className="min-w-[220px]">
+                    <div className="font-medium">{role.name}</div>
+                    <div className="text-xs text-muted-foreground">{role.displayName.en}</div>
+                </div>
+            ),
+        },
+        {
+            key: 'permissions',
+            header: 'Permissions',
+            cell: (role) => <Badge variant="purple">{role._count?.permissions || 0} Actions</Badge>,
+        },
+        {
+            key: 'admins',
+            header: 'Assigned Admins',
+            cell: (role) => <Badge variant="orange">{role._count?.admins || 0} Members</Badge>,
+        },
+        {
+            key: 'actions',
+            header: 'Actions',
+            headerClassName: 'text-right',
+            className: 'text-right',
+            cell: (role) => (
+                <div className="flex justify-end gap-2">
+                    <Button asChild variant="ghost" size="icon" title="Edit Role">
+                        <Link href={`/admin/roles/${role.id}/edit`}>
+                            <Edit2 className="size-4" />
+                        </Link>
+                    </Button>
+                    {!role.isSystem && (
+                        <Button
+                            type="button"
+                            variant="ghost"
+                            size="icon"
+                            title="Delete Role"
+                            onClick={() => setDeleteRoleId(role.id)}
+                        >
+                            <Trash2 className="size-4" />
+                        </Button>
+                    )}
+                    <Button type="button" variant="ghost" size="icon" title="View Members">
+                        <UsersIcon className="size-4" />
+                    </Button>
+                </div>
+            ),
+        },
+    ];
+
     return (
         <div className="space-y-6">
-            {/* Header */}
-            <div className="flex justify-between items-center">
-                <div>
-                    <h1 className="text-2xl font-bold text-gray-900">Roles Management</h1>
-                    <p className="text-gray-600 mt-1">Define and manage roles and their permissions</p>
-                </div>
-                <Link href="/admin/roles/new">
-                    <Button className="flex items-center gap-2">
+            <PageHeader
+                title="Roles Management"
+                description="Define and manage roles and their permissions"
+                actions={
+                    <Button asChild>
+                        <Link href="/admin/roles/new">
                         <Plus className="w-4 h-4" />
                         Add Role
+                        </Link>
                     </Button>
-                </Link>
-            </div>
+                }
+            />
 
-            {/* Filters */}
-            <Card className="p-4">
-                <form onSubmit={handleSearch} className="flex gap-4">
-                    <div className="relative flex-1">
-                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
-                        <Input
-                            type="text"
-                            value={searchQuery}
-                            onChange={(e) => setSearchQuery(e.target.value)}
-                            placeholder="Search roles..."
-                            className="pl-9 w-full"
-                        />
-                    </div>
-                    <Button type="submit" variant="secondary">
+            <form onSubmit={handleSearch}>
+                <FilterBar
+                    searchValue={searchQuery}
+                    searchPlaceholder="Search roles..."
+                    onSearchChange={setSearchQuery}
+                    onReset={() => setSearchQuery('')}
+                >
+                    <Button type="submit" variant="outline">
                         Search
                     </Button>
-                </form>
-            </Card>
+                </FilterBar>
+            </form>
 
-            {/* Roles Table */}
-            <Card className="overflow-hidden border-none shadow-sm">
-                {loading ? (
-                    <div className="p-12 text-center text-gray-500">
-                        <div className="animate-spin h-8 w-8 border-4 border-blue-600 border-t-transparent rounded-full mx-auto mb-4"></div>
-                        Loading roles...
-                    </div>
-                ) : roles.length === 0 ? (
-                    <div className="p-12 text-center text-gray-500">
-                        <Shield className="h-12 w-12 text-gray-300 mx-auto mb-4" />
-                        <p className="text-lg font-medium text-gray-900">No roles found</p>
-                        <p className="mt-1">Get started by creating your first role.</p>
-                        <Link href="/admin/roles/new" className="mt-4 inline-block">
-                            <Button variant="outline">Create Role</Button>
-                        </Link>
-                    </div>
-                ) : (
-                    <div className="overflow-x-auto">
-                        <table className="w-full text-sm text-left">
-                            <thead className="bg-gray-50 text-gray-500 font-medium border-b border-gray-100">
-                                <tr>
-                                    <th className="px-6 py-4 font-semibold uppercase tracking-wider">ID</th>
-                                    <th className="px-6 py-4 font-semibold uppercase tracking-wider">Role Name</th>
-                                    <th className="px-6 py-4 font-semibold uppercase tracking-wider">Permissions</th>
-                                    <th className="px-6 py-4 font-semibold uppercase tracking-wider">Assigned Admins</th>
-                                    <th className="px-6 py-4 font-semibold uppercase tracking-wider text-right">Actions</th>
-                                </tr>
-                            </thead>
-                            <tbody className="divide-y divide-gray-100">
-                                {roles.map((role, index) => (
-                                    <tr key={role.id} className="hover:bg-gray-50/50 transition-colors">
-                                        <td className="px-6 py-4 text-gray-400 font-mono text-xs">
-                                            {index + 1}
-                                        </td>
-                                        <td className="px-6 py-4">
-                                            <div>
-                                                <div className="font-bold text-gray-900">{role.name}</div>
-                                                <div className="text-xs text-gray-500">{role.displayName.en}</div>
-                                            </div>
-                                        </td>
-                                        <td className="px-6 py-4">
-                                            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-purple-50 text-purple-700 border border-purple-100">
-                                                {role._count?.permissions || 0} Actions
-                                            </span>
-                                        </td>
-                                        <td className="px-6 py-4">
-                                            <div className="flex items-center gap-2">
-                                                <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-orange-50 text-orange-700 border border-orange-100">
-                                                    {role._count?.admins || 0} Members
-                                                </span>
-                                            </div>
-                                        </td>
-                                        <td className="px-6 py-4 text-right leading-none">
-                                            <div className="flex justify-end gap-2">
-                                                <Link href={`/admin/roles/${role.id}/edit`}>
-                                                    <button className="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors" title="Edit Role">
-                                                        <Edit2 className="w-4 h-4" />
-                                                    </button>
-                                                </Link>
-                                                {!role.isSystem && (
-                                                    <button
-                                                        onClick={() => handleDelete(role.id)}
-                                                        className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                                                        title="Delete Role"
-                                                    >
-                                                        <Trash2 className="w-4 h-4" />
-                                                    </button>
-                                                )}
-                                                <button className="p-2 text-gray-400 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors" title="View Members">
-                                                    <UsersIcon className="w-4 h-4" />
-                                                </button>
-                                            </div>
-                                        </td>
-                                    </tr>
-                                ))}
-                            </tbody>
-                        </table>
-                    </div>
-                )}
-            </Card>
+            <DataTable
+                columns={columns}
+                data={roles}
+                getRowKey={(role) => role.id}
+                loading={loading}
+                emptyTitle="No roles found"
+                emptyDescription="Get started by creating your first role."
+            />
+
+            <ConfirmDialog
+                open={Boolean(deleteRoleId)}
+                onOpenChange={(open) => !open && setDeleteRoleId(null)}
+                title="Delete role?"
+                description="This role will be removed. Admins assigned to it may lose access."
+                confirmLabel="Delete"
+                destructive
+                onConfirm={handleDelete}
+            />
         </div>
     );
 }

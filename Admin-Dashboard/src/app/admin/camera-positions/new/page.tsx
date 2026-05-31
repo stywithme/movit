@@ -2,6 +2,7 @@
 
 import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import { Card, CardContent } from '@/components/ui';
 
 export default function NewCameraPositionPage() {
   const router = useRouter();
@@ -11,8 +12,10 @@ export default function NewCameraPositionPage() {
   }, [router]);
 
   return (
-    <div className="flex items-center justify-center min-h-[400px]">
-      <p className="text-gray-500">Camera positions are fixed and cannot be created. Redirecting...</p>
-    </div>
+    <Card>
+      <CardContent className="flex min-h-[320px] items-center justify-center text-sm text-muted-foreground">
+        Camera positions are fixed and cannot be created. Redirecting...
+      </CardContent>
+    </Card>
   );
 }

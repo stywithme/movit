@@ -2,7 +2,9 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter, useParams } from 'next/navigation';
-import { Input } from '@/components/ui';
+import { toast } from 'sonner';
+import { Button, Checkbox, Input, Label, Select } from '@/components/ui';
+import { FormShell, PageHeader } from '@/components/common';
 
 interface Admin {
   id: string;
@@ -103,17 +105,18 @@ export default function EditAdminPage() {
           });
           const passwordData = await passwordRes.json();
           if (!passwordData.success) {
-            alert('Error: ' + passwordData.error);
+            toast.error(passwordData.error || 'Error updating password');
             return;
           }
         }
+        toast.success('Admin updated');
         router.push('/admin/admins');
       } else {
-        alert('Error: ' + data.error);
+        toast.error(data.error || 'Error updating admin');
       }
     } catch (error) {
       console.error('Error updating admin:', error);
-      alert('Error updating admin');
+      toast.error('Error updating admin');
     } finally {
       setSaving(false);
     }
@@ -124,32 +127,41 @@ export default function EditAdminPage() {
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-[300px]">
-        <div className="text-gray-500">Loading...</div>
+        <div className="text-muted-foreground">Loading...</div>
       </div>
     );
   }
 
   return (
     <div className="space-y-6">
-      <div className="flex justify-between items-center">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900">Edit Admin</h1>
-          <p className="text-gray-600 mt-1">Update admin details</p>
-        </div>
-        <button
-          type="button"
-          onClick={() => router.push('/admin/admins')}
-          className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200"
-        >
-          Cancel
-        </button>
-      </div>
+      <PageHeader
+        title="Edit Admin"
+        description="Update admin details"
+        breadcrumbs={[
+          { label: 'Admins', href: '/admin/admins' },
+          { label: 'Edit Admin' },
+        ]}
+        actions={
+          <Button type="button" variant="outline" onClick={() => router.push('/admin/admins')}>
+            Cancel
+          </Button>
+        }
+      />
 
-      <form onSubmit={handleSubmit} className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 space-y-6">
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
-            Name <span className="text-red-500">*</span>
-          </label>
+      <form onSubmit={handleSubmit}>
+        <FormShell
+          title="Admin Details"
+          description="Manage profile, role assignment, and doctor access."
+          footer={
+            <Button type="submit" loading={saving} disabled={!canSubmit}>
+              Save Changes
+            </Button>
+          }
+        >
+        <div className="space-y-2">
+          <Label>
+            Name <span className="text-destructive">*</span>
+          </Label>
           <Input
             value={formData.name}
             onChange={(e) => setFormData((prev) => ({ ...prev, name: e.target.value }))}
@@ -158,10 +170,10 @@ export default function EditAdminPage() {
           />
         </div>
 
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
-            Email <span className="text-red-500">*</span>
-          </label>
+        <div className="space-y-2">
+          <Label>
+            Email <span className="text-destructive">*</span>
+          </Label>
           <Input
             type="email"
             value={formData.email}
@@ -171,48 +183,37 @@ export default function EditAdminPage() {
           />
         </div>
 
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Role</label>
-          <select
+        <div className="space-y-2">
+          <Label>Role</Label>
+          <Select
             value={formData.roleId}
             onChange={(e) => setFormData((prev) => ({ ...prev, roleId: e.target.value }))}
-            className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm bg-gray-50/50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white transition-all"
-          >
-            <option value="">— No Role —</option>
-            {roles.map((role) => (
-              <option key={role.id} value={role.id}>
-                {role.name}
-              </option>
-            ))}
-          </select>
+            options={[
+              { value: '', label: '- No Role -' },
+              ...roles.map((role) => ({ value: role.id, label: role.name })),
+            ]}
+          />
           {formData.roleId && (
             <button
               type="button"
               onClick={() => setFormData((prev) => ({ ...prev, roleId: '' }))}
-              className="mt-1.5 text-xs text-red-500 hover:text-red-700 underline"
+              className="text-xs text-destructive underline-offset-4 hover:underline"
             >
               Remove role
             </button>
           )}
         </div>
 
-        <div className="flex items-center gap-2">
-          <input
-            type="checkbox"
-            id="isDoctor"
+        <div className="flex items-center gap-3">
+          <Checkbox
             checked={formData.isDoctor}
-            onChange={(e) => setFormData((prev) => ({ ...prev, isDoctor: e.target.checked }))}
-            className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 focus:ring-2"
+            onCheckedChange={(checked) => setFormData((prev) => ({ ...prev, isDoctor: Boolean(checked) }))}
           />
-          <label htmlFor="isDoctor" className="text-sm font-medium text-gray-700">
-            Is Doctor
-          </label>
+          <Label>Is Doctor</Label>
         </div>
 
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
-            New Password
-          </label>
+        <div className="space-y-2">
+          <Label>New Password</Label>
           <Input
             type="password"
             value={formData.password}
@@ -221,16 +222,7 @@ export default function EditAdminPage() {
             helperText="Minimum 6 characters"
           />
         </div>
-
-        <div className="flex justify-end pt-4 border-t border-gray-200">
-          <button
-            type="submit"
-            disabled={saving || !canSubmit}
-            className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50"
-          >
-            {saving ? 'Saving...' : 'Save Changes'}
-          </button>
-        </div>
+        </FormShell>
       </form>
     </div>
   );

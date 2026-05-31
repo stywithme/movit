@@ -3,9 +3,11 @@
 import React, { useEffect, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
+import { Checkbox } from '@/components/ui/Checkbox';
 import { Input } from '@/components/ui/Input';
 import { Label } from '@/components/ui/Label';
-import { toast } from 'react-hot-toast';
+import { PageHeader } from '@/components/common';
+import { toast } from 'sonner';
 import { Loader2, Save } from 'lucide-react';
 
 interface Setting {
@@ -82,7 +84,7 @@ export default function SettingsPage() {
     if (loading) {
         return (
             <div className="flex h-[400px] items-center justify-center">
-                <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
+                <Loader2 className="h-8 w-8 animate-spin text-primary" />
             </div>
         );
     }
@@ -91,10 +93,10 @@ export default function SettingsPage() {
 
     return (
         <div className="max-w-4xl mx-auto space-y-6">
-            <div>
-                <h1 className="text-2xl font-bold tracking-tight text-black">System Settings</h1>
-                <p className="text-gray-500 text-sm">Manage global configurations for the booking system.</p>
-            </div>
+            <PageHeader
+                title="System Settings"
+                description="Manage global configurations for the booking system."
+            />
 
             <form onSubmit={handleSave} className="space-y-6">
                 {groups.map(group => (
@@ -111,14 +113,11 @@ export default function SettingsPage() {
                                         <Label htmlFor={key}>{meta.label}</Label>
                                         {meta.type === 'boolean' ? (
                                             <div className="flex items-center gap-2">
-                                                <input
-                                                    type="checkbox"
-                                                    id={key}
+                                                <Checkbox
                                                     checked={settings[key] === 'true'}
-                                                    onChange={(e) => updateSetting(key, e.target.checked.toString())}
-                                                    className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-600"
+                                                    onCheckedChange={(checked) => updateSetting(key, Boolean(checked).toString())}
                                                 />
-                                                <span className="text-sm text-gray-600">Enabled</span>
+                                                <span className="text-sm text-muted-foreground">Enabled</span>
                                             </div>
                                         ) : (
                                             <Input

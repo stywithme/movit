@@ -3,6 +3,7 @@
 import { useEffect, useState, use } from 'react';
 import { useRouter } from 'next/navigation';
 import { Card, Button } from '@/components/ui';
+import { PageHeader } from '@/components/common';
 
 export default function ViewBookingReportPage({ params }: { params: Promise<{ id: string }> }) {
     const router = useRouter();
@@ -32,18 +33,15 @@ export default function ViewBookingReportPage({ params }: { params: Promise<{ id
         fetchReport();
     }, [resolvedParams.id]);
 
-    if (loading) return <div className="p-8 text-center text-gray-500">Loading Report...</div>;
+    if (loading) return <div className="p-8 text-center text-muted-foreground">Loading Report...</div>;
 
     if (error || !report) {
         return (
             <div className="p-8 text-center">
-                <p className="text-red-500 mb-4">{error || 'Medical Report not found'}</p>
-                <button
-                    onClick={() => router.back()}
-                    className="text-blue-600 hover:underline"
-                >
+                <p className="mb-4 text-destructive">{error || 'Medical Report not found'}</p>
+                <Button type="button" variant="outline" onClick={() => router.back()}>
                     Go back
-                </button>
+                </Button>
             </div>
         );
     }
@@ -57,60 +55,64 @@ export default function ViewBookingReportPage({ params }: { params: Promise<{ id
 
     return (
         <div className="space-y-6 max-w-4xl mx-auto">
-            <div className="flex justify-between items-center">
-                <div>
-                    <h1 className="text-2xl font-bold text-gray-900">Medical Report Details</h1>
-                    <p className="text-gray-600 mt-1">Diagnosis and prescription overview</p>
-                </div>
-                <Button variant="outline" onClick={() => router.back()}>
-                    Back to Reports
-                </Button>
-            </div>
+            <PageHeader
+                title="Medical Report Details"
+                description="Diagnosis and prescription overview"
+                breadcrumbs={[
+                    { label: 'Medical Reports', href: '/admin/booking-reports' },
+                    { label: 'Report Details' },
+                ]}
+                actions={
+                    <Button variant="outline" onClick={() => router.back()}>
+                        Back to Reports
+                    </Button>
+                }
+            />
 
             {/* Booking Summary */}
-            <Card className="p-6 bg-blue-50 border border-blue-100 shadow-sm">
-                <h3 className="font-bold text-blue-900 mb-4 border-b border-blue-200 pb-2">Session Info</h3>
+            <Card className="border-primary/20 bg-primary/10 p-6 shadow-sm">
+                <h3 className="mb-4 border-b border-primary/20 pb-2 font-semibold">Session Info</h3>
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
                     <div>
-                        <p className="text-blue-700 font-medium mb-1">Patient</p>
-                        <p className="text-blue-900">{report.booking?.user?.name || 'Unknown'}</p>
+                        <p className="mb-1 font-medium text-muted-foreground">Patient</p>
+                        <p>{report.booking?.user?.name || 'Unknown'}</p>
                     </div>
                     <div>
-                        <p className="text-blue-700 font-medium mb-1">Doctor</p>
-                        <p className="text-blue-900">{report.booking?.admin?.name || 'Unknown'}</p>
+                        <p className="mb-1 font-medium text-muted-foreground">Doctor</p>
+                        <p>{report.booking?.admin?.name || 'Unknown'}</p>
                     </div>
                     <div>
-                        <p className="text-blue-700 font-medium mb-1">Date</p>
-                        <p className="text-blue-900">{report.booking?.startAt ? formatDate(report.booking.startAt) : 'N/A'}</p>
+                        <p className="mb-1 font-medium text-muted-foreground">Date</p>
+                        <p>{report.booking?.startAt ? formatDate(report.booking.startAt) : 'N/A'}</p>
                     </div>
                     <div>
-                        <p className="text-blue-700 font-medium mb-1">Report Generated</p>
-                        <p className="text-blue-900">{formatDate(report.createdAt)}</p>
+                        <p className="mb-1 font-medium text-muted-foreground">Report Generated</p>
+                        <p>{formatDate(report.createdAt)}</p>
                     </div>
                 </div>
             </Card>
 
             {/* Medical Content */}
-            <Card className="p-6 shadow-sm border border-gray-100">
+            <Card className="p-6 shadow-sm">
                 <div className="space-y-6">
                     <div>
-                        <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-2">Diagnosis</h3>
-                        <div className="bg-gray-50 p-4 rounded-lg whitespace-pre-wrap text-gray-800">
+                        <h3 className="mb-2 text-sm font-semibold uppercase tracking-wider text-muted-foreground">Diagnosis</h3>
+                        <div className="whitespace-pre-wrap rounded-lg bg-muted/50 p-4">
                             {report.content?.diagnosis || 'No diagnosis recorded.'}
                         </div>
                     </div>
 
                     <div>
-                        <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-2">Prescription</h3>
-                        <div className="bg-gray-50 p-4 rounded-lg whitespace-pre-wrap text-gray-800">
+                        <h3 className="mb-2 text-sm font-semibold uppercase tracking-wider text-muted-foreground">Prescription</h3>
+                        <div className="whitespace-pre-wrap rounded-lg bg-muted/50 p-4">
                             {report.content?.prescription || 'No prescription recorded.'}
                         </div>
                     </div>
 
                     {report.content?.notes && (
                         <div>
-                            <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-2">Additional Notes</h3>
-                            <div className="bg-gray-50 p-4 rounded-lg whitespace-pre-wrap text-gray-800">
+                            <h3 className="mb-2 text-sm font-semibold uppercase tracking-wider text-muted-foreground">Additional Notes</h3>
+                            <div className="whitespace-pre-wrap rounded-lg bg-muted/50 p-4">
                                 {report.content.notes}
                             </div>
                         </div>

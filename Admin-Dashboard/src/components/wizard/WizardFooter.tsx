@@ -1,5 +1,7 @@
 'use client';
 
+import { Button } from '@/components/ui/Button';
+
 interface WizardFooterProps {
   currentStep: number;
   totalSteps: number;
@@ -12,35 +14,28 @@ export function WizardFooter({ currentStep, totalSteps, onPrevious, onNext }: Wi
   const isLast = currentStep === totalSteps;
 
   return (
-    <div className="fixed bottom-0 left-0 right-0 bg-white border-t p-4 z-10">
+    <div className="fixed bottom-0 left-0 right-0 z-10 border-t bg-background/95 p-4 backdrop-blur supports-[backdrop-filter]:bg-background/70">
       <div className="w-full px-4 sm:px-6 lg:px-8 flex justify-between items-center">
-        <button
+        <Button
+          type="button"
+          variant="outline"
           onClick={onPrevious}
           disabled={isFirst}
-          className={`px-6 py-2 rounded-lg transition-colors ${
-            isFirst
-              ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
-              : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-          }`}
         >
-          ← Previous
-        </button>
+          Previous
+        </Button>
 
-        <div className="text-sm text-gray-500">
+        <div className="text-sm text-muted-foreground">
           Step {currentStep} of {totalSteps}
         </div>
 
-        <button
+        <Button
+          type="button"
           onClick={onNext}
           disabled={isLast}
-          className={`px-6 py-2 rounded-lg transition-colors ${
-            isLast
-              ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
-              : 'bg-blue-600 text-white hover:bg-blue-700'
-          }`}
         >
-          Next →
-        </button>
+          Next
+        </Button>
       </div>
     </div>
   );

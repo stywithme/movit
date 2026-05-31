@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { toast } from 'sonner';
 import { LocalizedText } from '@/lib/types/localized';
 import { Input, Select, Label, Button, Card, Textarea, Checkbox } from '@/components/ui';
 import { ChevronDown, ChevronUp } from 'lucide-react';
@@ -179,13 +180,14 @@ export default function NewWorkoutPage() {
       const data = await res.json();
 
       if (data.success) {
+        toast.success('Workout created');
         router.push('/admin/workouts');
       } else {
-        alert(data.errors?.join('\n') || data.error || 'Failed to create workout');
+        toast.error(data.errors?.join('\n') || data.error || 'Failed to create workout');
       }
     } catch (error) {
       console.error('Error creating workout:', error);
-      alert('Failed to create workout');
+      toast.error('Failed to create workout');
     } finally {
       setLoading(false);
     }

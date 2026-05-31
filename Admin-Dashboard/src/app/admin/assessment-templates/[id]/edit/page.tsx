@@ -2,10 +2,12 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
+import { toast } from 'sonner';
 import {
   Input, Select, Label, Button, Card, Textarea, Badge, Checkbox,
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogBody, DialogFooter,
 } from '@/components/ui';
+import { PageHeader } from '@/components/common';
 import {
   ProgramAttributesSection,
   useAttributesCatalog,
@@ -96,11 +98,11 @@ const ENTRY_TYPE_OPTIONS = [
   { value: 'adaptive', label: 'Adaptive' },
 ];
 
-const DOMAIN_COLORS: Record<string, { bg: string; label: string; text: string }> = {
-  mobility: { bg: 'bg-blue-500', label: 'Mobility', text: 'text-blue-700' },
-  control: { bg: 'bg-green-500', label: 'Control', text: 'text-green-700' },
-  symmetry: { bg: 'bg-purple-500', label: 'Symmetry', text: 'text-purple-700' },
-  safety: { bg: 'bg-orange-500', label: 'Safety', text: 'text-orange-700' },
+const DOMAIN_COLORS: Record<string, { bg: string; label: string }> = {
+  mobility: { bg: 'bg-primary', label: 'Mobility' },
+  control: { bg: 'bg-success', label: 'Control' },
+  symmetry: { bg: 'bg-violet-500', label: 'Symmetry' },
+  safety: { bg: 'bg-warning', label: 'Safety' },
 };
 
 const REGION_BADGE_VARIANT: Record<string, 'primary' | 'success' | 'purple' | 'orange' | 'teal' | 'warning'> = {
@@ -196,7 +198,7 @@ export default function EditAssessmentTemplatePage() {
         const res = await fetch(`/api/admin/assessment-templates/${templateId}`);
         const data = await res.json();
         if (!data.success || !data.data) {
-          alert('Template not found');
+          toast.error('Template not found');
           router.push('/admin/assessment-templates');
           return;
         }
@@ -236,7 +238,7 @@ export default function EditAssessmentTemplatePage() {
         );
       } catch (error) {
         console.error('Error fetching template:', error);
-        alert('Error loading template');
+        toast.error('Error loading template');
         router.push('/admin/assessment-templates');
       } finally {
         setLoadingTemplate(false);
@@ -284,7 +286,7 @@ export default function EditAssessmentTemplatePage() {
 
   const saveDialogExercise = () => {
     if (!dialogForm.exerciseId) {
-      alert('Please select an exercise');
+      toast.error('Please select an exercise');
       return;
     }
     if (editingIndex !== null) {
@@ -358,13 +360,14 @@ export default function EditAssessmentTemplatePage() {
 
       const data = await res.json();
       if (data.success) {
+        toast.success('Assessment template updated');
         router.push('/admin/assessment-templates');
       } else {
-        alert(data.errors?.join('\n') || data.error || 'Failed to update template');
+        toast.error(data.errors?.join('\n') || data.error || 'Failed to update template');
       }
     } catch (error) {
       console.error('Error updating template:', error);
-      alert('Failed to update template');
+      toast.error('Failed to update template');
     } finally {
       setLoading(false);
     }
@@ -373,17 +376,21 @@ export default function EditAssessmentTemplatePage() {
   if (loadingTemplate) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
-        <div className="text-gray-500">Loading template...</div>
+        <div className="text-muted-foreground">Loading template...</div>
       </div>
     );
   }
 
   return (
     <div className="max-w-5xl mx-auto space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold text-gray-900">Edit Assessment Template</h1>
-        <p className="text-gray-600 mt-1">Update assessment template configuration</p>
-      </div>
+      <PageHeader
+        title="Edit Assessment Template"
+        description="Update assessment template configuration."
+        breadcrumbs={[
+          { label: 'Assessment Templates', href: '/admin/assessment-templates' },
+          { label: 'Edit Template' },
+        ]}
+      />
 
       <form onSubmit={handleSubmit} className="space-y-6">
         {/* Basic Info Card */}
@@ -466,11 +473,11 @@ export default function EditAssessmentTemplatePage() {
 
         <Card className="p-6">
           <h2 className="text-lg font-semibold mb-2">Matching attributes</h2>
-          <p className="text-sm text-gray-500 mb-4">
+          <p className="mb-4 text-sm text-muted-foreground">
             Same rules as programs: required values must match the user profile; optional values improve ranking.
           </p>
           {loadingAttributes ? (
-            <p className="text-sm text-gray-500">Loading attribute catalog…</p>
+            <p className="text-sm text-muted-foreground">Loading attribute catalog...</p>
           ) : (
             <ProgramAttributesSection
               catalog={attributesCatalog}
@@ -483,7 +490,7 @@ export default function EditAssessmentTemplatePage() {
         {/* Domain Weights Card */}
         <Card className="p-6">
           <h2 className="text-lg font-semibold mb-4">Domain Weights</h2>
-          <p className="text-sm text-gray-500 mb-4">
+          <p className="mb-4 text-sm text-muted-foreground">
             Set the weight for each assessment domain. Weights should sum to 1.00.
           </p>
 
@@ -510,7 +517,7 @@ export default function EditAssessmentTemplatePage() {
 
           {/* Bar Visualization */}
           <div className="mt-6">
-            <div className="flex h-8 rounded-lg overflow-hidden bg-gray-100">
+            <div className="flex h-8 overflow-hidden rounded-lg bg-muted">
               {(['mobility', 'control', 'symmetry', 'safety'] as const).map((key) => {
                 const value = weights[key];
                 const pct = weightsTotal > 0 ? (value / weightsTotal) * 100 : 25;
@@ -526,15 +533,15 @@ export default function EditAssessmentTemplatePage() {
               })}
             </div>
             <div className="mt-2 flex items-center gap-2">
-              <span className={`text-sm font-medium ${isWeightsValid ? 'text-green-600' : 'text-red-600'}`}>
+              <span className={`text-sm font-medium ${isWeightsValid ? 'text-success' : 'text-destructive'}`}>
                 Total: {weightsTotal.toFixed(2)}
               </span>
               {isWeightsValid ? (
-                <svg className="w-4 h-4 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className="h-4 w-4 text-success" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                 </svg>
               ) : (
-                <span className="text-red-600 text-sm">Weights must equal 1.00</span>
+                <span className="text-sm text-destructive">Weights must equal 1.00</span>
               )}
             </div>
           </div>
@@ -545,7 +552,7 @@ export default function EditAssessmentTemplatePage() {
           <div className="flex items-center justify-between">
             <div>
               <h2 className="text-lg font-semibold">Template Exercises</h2>
-              <p className="text-sm text-gray-500">
+              <p className="text-sm text-muted-foreground">
                 {exercises.length} exercise{exercises.length !== 1 ? 's' : ''} configured
               </p>
             </div>
@@ -558,8 +565,8 @@ export default function EditAssessmentTemplatePage() {
           </div>
 
           {exercises.length === 0 ? (
-            <div className="text-center py-8 text-gray-400 border-2 border-dashed border-gray-200 rounded-lg">
-              <svg className="w-12 h-12 mx-auto mb-3 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <div className="rounded-lg border-2 border-dashed py-8 text-center text-muted-foreground">
+              <svg className="mx-auto mb-3 h-12 w-12 text-muted-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
               </svg>
               <p className="text-sm font-medium">No exercises configured</p>
@@ -570,10 +577,10 @@ export default function EditAssessmentTemplatePage() {
               {exercises.map((exercise, index) => (
                 <div
                   key={index}
-                  className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg border border-gray-200 hover:border-gray-300 transition-colors"
+                  className="flex items-center gap-3 rounded-lg border bg-muted/50 p-3 transition-colors hover:border-ring/40"
                 >
                   {/* Drag indicator (visual only) */}
-                  <svg className="w-4 h-4 text-gray-300 cursor-grab flex-shrink-0" viewBox="0 0 16 16" fill="currentColor">
+                  <svg className="h-4 w-4 flex-shrink-0 cursor-grab text-muted-foreground" viewBox="0 0 16 16" fill="currentColor">
                     <circle cx="5" cy="3" r="1.5" />
                     <circle cx="11" cy="3" r="1.5" />
                     <circle cx="5" cy="8" r="1.5" />
@@ -582,12 +589,12 @@ export default function EditAssessmentTemplatePage() {
                     <circle cx="11" cy="13" r="1.5" />
                   </svg>
 
-                  <span className="text-sm font-medium text-gray-400 w-6 text-center flex-shrink-0">
+                  <span className="w-6 flex-shrink-0 text-center text-sm font-medium text-muted-foreground">
                     {index + 1}
                   </span>
 
                   <div className="flex-1 min-w-0">
-                    <span className="text-sm font-medium text-gray-900 truncate block">
+                    <span className="block truncate text-sm font-medium">
                       {exerciseLookup.get(exercise.exerciseId) || 'Unknown Exercise'}
                     </span>
                   </div>
@@ -607,7 +614,7 @@ export default function EditAssessmentTemplatePage() {
                       type="button"
                       onClick={() => moveExercise(index, 'up')}
                       disabled={index === 0}
-                      className="p-1 text-gray-600 hover:text-gray-800 disabled:opacity-30 rounded"
+                      className="rounded p-1 text-muted-foreground hover:text-foreground disabled:opacity-30"
                     >
                       <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" />
@@ -617,7 +624,7 @@ export default function EditAssessmentTemplatePage() {
                       type="button"
                       onClick={() => moveExercise(index, 'down')}
                       disabled={index === exercises.length - 1}
-                      className="p-1 text-gray-600 hover:text-gray-800 disabled:opacity-30 rounded"
+                      className="rounded p-1 text-muted-foreground hover:text-foreground disabled:opacity-30"
                     >
                       <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
@@ -626,7 +633,7 @@ export default function EditAssessmentTemplatePage() {
                     <button
                       type="button"
                       onClick={() => openEditDialog(index)}
-                      className="p-1 text-blue-600 hover:text-blue-800 rounded"
+                      className="rounded p-1 text-primary hover:text-primary/80"
                     >
                       <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
@@ -635,7 +642,7 @@ export default function EditAssessmentTemplatePage() {
                     <button
                       type="button"
                       onClick={() => removeExercise(index)}
-                      className="p-1 text-red-600 hover:text-red-800 rounded"
+                      className="rounded p-1 text-destructive hover:text-destructive/80"
                     >
                       <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
@@ -732,7 +739,7 @@ export default function EditAssessmentTemplatePage() {
                 <Label className="mb-2">Performance Thresholds (degrees)</Label>
                 <div className="grid grid-cols-4 gap-4">
                   <div>
-                    <label className="block text-xs font-medium text-green-700 mb-1">Excellent</label>
+                    <label className="mb-1 block text-xs font-medium text-success">Excellent</label>
                     <Input
                       type="number"
                       min={0}
@@ -742,7 +749,7 @@ export default function EditAssessmentTemplatePage() {
                     />
                   </div>
                   <div>
-                    <label className="block text-xs font-medium text-blue-700 mb-1">Good</label>
+                    <label className="mb-1 block text-xs font-medium text-primary">Good</label>
                     <Input
                       type="number"
                       min={0}
@@ -752,7 +759,7 @@ export default function EditAssessmentTemplatePage() {
                     />
                   </div>
                   <div>
-                    <label className="block text-xs font-medium text-yellow-700 mb-1">Average</label>
+                    <label className="mb-1 block text-xs font-medium text-warning">Average</label>
                     <Input
                       type="number"
                       min={0}
@@ -762,7 +769,7 @@ export default function EditAssessmentTemplatePage() {
                     />
                   </div>
                   <div>
-                    <label className="block text-xs font-medium text-red-700 mb-1">Limited</label>
+                    <label className="mb-1 block text-xs font-medium text-destructive">Limited</label>
                     <Input
                       type="number"
                       min={0}

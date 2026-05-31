@@ -124,15 +124,15 @@ export function BookingReportForm({ initialData, isEditing = false }: BookingRep
     };
 
     return (
-        <Card className="max-w-4xl mx-auto p-12 bg-white shadow-md border border-gray-100">
+        <Card className="mx-auto max-w-4xl p-8 md:p-12">
             <form onSubmit={handleSubmit} className="space-y-10">
-                <div className="border-b border-gray-100 pb-6">
-                    <h2 className="text-2xl font-bold text-black mb-2 tracking-tight">Medical Session Report</h2>
-                    <p className="text-gray-500 text-sm">Document the diagnosis and treatment plan for the completed appointment.</p>
+                <div className="border-b pb-6">
+                    <h2 className="mb-2 text-2xl font-semibold tracking-tight">Medical Session Report</h2>
+                    <p className="text-sm text-muted-foreground">Document the diagnosis and treatment plan for the completed appointment.</p>
                 </div>
 
                 {error && (
-                    <div className="p-4 bg-red-50 text-red-600 rounded-lg text-sm border border-red-100 font-bold">
+                    <div className="rounded-lg border bg-destructive/10 p-4 text-sm font-semibold text-destructive">
                         {error}
                     </div>
                 )}
@@ -140,8 +140,8 @@ export function BookingReportForm({ initialData, isEditing = false }: BookingRep
                 <div className="space-y-8">
                     {/* Booking Selection */}
                     <div className="space-y-3">
-                        <label className="block text-sm font-bold text-black uppercase tracking-wider">
-                            Session / Patient <span className="text-red-500">*</span>
+                        <label className="block text-sm font-semibold uppercase tracking-wider">
+                            Session / Patient <span className="text-destructive">*</span>
                         </label>
                         <Select
                             className="mt-1"
@@ -159,20 +159,20 @@ export function BookingReportForm({ initialData, isEditing = false }: BookingRep
                             ]}
                         />
                         {!isEditing && availableBookings.length === 0 && !fetchingBookings && (
-                            <p className="text-sm text-orange-600 font-medium mt-1">You have no completed appointments without reports.</p>
+                            <p className="mt-1 text-sm font-medium text-warning">You have no completed appointments without reports.</p>
                         )}
                     </div>
 
                     {/* Medical Content */}
-                    <div className="space-y-10 pt-10 border-t border-gray-100">
-                        <h3 className="text-xl font-bold text-black tracking-tight">Clinical Documentation</h3>
+                    <div className="space-y-10 border-t pt-10">
+                        <h3 className="text-xl font-semibold tracking-tight">Clinical Documentation</h3>
 
                         <div className="space-y-3">
-                            <label className="block text-sm font-bold text-black uppercase tracking-wider">
-                                Clinical Diagnosis & Assessment <span className="text-red-500">*</span>
+                            <label className="block text-sm font-semibold uppercase tracking-wider">
+                                Clinical Diagnosis & Assessment <span className="text-destructive">*</span>
                             </label>
                             <Textarea
-                                className="min-h-[160px] text-black text-lg leading-relaxed bg-gray-50/30 border-gray-300"
+                                className="min-h-[160px] text-lg leading-relaxed"
                                 value={formData.content.diagnosis}
                                 onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => handleContentChange('diagnosis', e.target.value)}
                                 placeholder="Clearly state the clinical findings and the patient's assessment..."
@@ -181,11 +181,11 @@ export function BookingReportForm({ initialData, isEditing = false }: BookingRep
                         </div>
 
                         <div className="space-y-3">
-                            <label className="block text-sm font-bold text-black uppercase tracking-wider">
+                            <label className="block text-sm font-semibold uppercase tracking-wider">
                                 Prescription & Treatment Protocol
                             </label>
                             <Textarea
-                                className="min-h-[160px] text-black text-lg leading-relaxed bg-gray-50/30 border-gray-300"
+                                className="min-h-[160px] text-lg leading-relaxed"
                                 value={formData.content.prescription}
                                 onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => handleContentChange('prescription', e.target.value)}
                                 placeholder="List recommended medications, specific exercises, and frequency..."
@@ -193,11 +193,11 @@ export function BookingReportForm({ initialData, isEditing = false }: BookingRep
                         </div>
 
                         <div className="space-y-3">
-                            <label className="block text-sm font-bold text-black uppercase tracking-wider">
+                            <label className="block text-sm font-semibold uppercase tracking-wider">
                                 Follow-up Instructions & Prognosis
                             </label>
                             <Textarea
-                                className="min-h-[120px] text-black text-lg leading-relaxed bg-gray-50/30 border-gray-300"
+                                className="min-h-[120px] text-lg leading-relaxed"
                                 value={formData.content.notes}
                                 onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => handleContentChange('notes', e.target.value)}
                                 placeholder="Add any further observations or specific follow-up appointments..."
@@ -206,13 +206,13 @@ export function BookingReportForm({ initialData, isEditing = false }: BookingRep
                     </div>
                 </div>
 
-                <div className="flex justify-end gap-6 pt-10 border-t border-gray-100">
+                <div className="flex justify-end gap-4 border-t pt-10">
                     <Button
                         type="button"
                         variant="outline"
                         onClick={() => router.back()}
                         disabled={loading}
-                        className="px-10 h-12 font-bold text-gray-600 border-gray-300 hover:bg-gray-50"
+                        className="h-12 px-10 font-semibold"
                     >
                         Back to List
                     </Button>
@@ -220,7 +220,7 @@ export function BookingReportForm({ initialData, isEditing = false }: BookingRep
                         type="submit"
                         disabled={loading || !formData.bookingId}
                         size="lg"
-                        className="px-14 h-12 bg-blue-600 hover:bg-blue-700 text-white font-bold shadow-lg shadow-blue-200 transition-all active:scale-95"
+                        className="h-12 px-14 font-semibold"
                     >
                         {loading && <Loader2 className="mr-2 h-5 w-4 animate-spin" />}
                         {isEditing ? 'Update Medical Record' : 'Submit Final Report'}

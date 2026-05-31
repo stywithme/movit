@@ -199,14 +199,14 @@ export function WorkTimeForm({ initialData = [], adminId: propAdminId, isEditing
         <Card className="max-w-4xl p-6">
             <form onSubmit={handleSubmit} className="space-y-8">
                 {error && (
-                    <div className="p-4 bg-red-50 text-red-600 rounded-lg text-sm sticky top-4 z-10 shadow-sm border border-red-100">
+                    <div className="sticky top-4 z-10 rounded-lg border bg-destructive/10 p-4 text-sm text-destructive shadow-sm">
                         {error}
                     </div>
                 )}
 
                 <div className="space-y-4">
                     <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                        <label className="mb-1 block text-sm font-medium">
                             Doctor
                         </label>
                         <Select
@@ -220,18 +220,18 @@ export function WorkTimeForm({ initialData = [], adminId: propAdminId, isEditing
                             required
                         />
                         {doctors.length === 0 && !isEditing && (
-                            <p className="text-sm text-gray-500 mt-1">Loading doctors...</p>
+                            <p className="mt-1 text-sm text-muted-foreground">Loading doctors...</p>
                         )}
                     </div>
                 </div>
 
                 <div className="space-y-6">
-                    <h3 className="text-lg font-medium text-gray-900 border-b pb-2">Weekly Schedule</h3>
+                    <h3 className="border-b pb-2 text-lg font-medium">Weekly Schedule</h3>
 
                     {DAYS_OF_WEEK.map(day => (
-                        <div key={day} className="bg-gray-50 p-4 rounded-lg border border-gray-200 shadow-sm">
+                        <div key={day} className="rounded-lg border bg-muted/30 p-4 shadow-sm">
                             <div className="flex items-center justify-between mb-4">
-                                <h4 className="font-semibold text-gray-800">{day}</h4>
+                                <h4 className="font-semibold">{day}</h4>
                                 <Button
                                     type="button"
                                     variant="outline"
@@ -244,13 +244,13 @@ export function WorkTimeForm({ initialData = [], adminId: propAdminId, isEditing
                             </div>
 
                             {schedule[day].length === 0 ? (
-                                <p className="text-sm text-gray-500 italic">No shifts scheduled</p>
+                                <p className="text-sm italic text-muted-foreground">No shifts scheduled</p>
                             ) : (
                                 <div className="space-y-3">
                                     {schedule[day].map((slot, index) => (
-                                        <div key={index} className="flex items-center gap-4 bg-white p-3 rounded border border-gray-100 shadow-sm transition-all hover:border-gray-300">
+                                        <div key={index} className="flex items-center gap-4 rounded border bg-background p-3 shadow-sm transition-all hover:border-primary/40">
                                             <div className="flex-1">
-                                                <label className="block text-xs text-gray-500 mb-1">Start Time</label>
+                                                <label className="mb-1 block text-xs text-muted-foreground">Start Time</label>
                                                 <Input
                                                     type="time"
                                                     value={slot.startTime}
@@ -259,7 +259,7 @@ export function WorkTimeForm({ initialData = [], adminId: propAdminId, isEditing
                                                 />
                                             </div>
                                             <div className="flex-1">
-                                                <label className="block text-xs text-gray-500 mb-1">End Time</label>
+                                                <label className="mb-1 block text-xs text-muted-foreground">End Time</label>
                                                 <Input
                                                     type="time"
                                                     value={slot.endTime}
@@ -271,7 +271,7 @@ export function WorkTimeForm({ initialData = [], adminId: propAdminId, isEditing
                                                 <button
                                                     type="button"
                                                     onClick={() => removeTimeSlot(day, index)}
-                                                    className="p-2 text-red-500 hover:text-red-700 hover:bg-red-50 rounded transition-colors"
+                                                    className="rounded p-2 text-destructive transition-colors hover:bg-destructive/10"
                                                     title="Remove Shift"
                                                 >
                                                     <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">

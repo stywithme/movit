@@ -1,9 +1,9 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import Link from 'next/link';
-import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui';
-import { ArrowLeft, RefreshCw } from 'lucide-react';
+import { Button, Card, CardHeader, CardTitle, CardContent } from '@/components/ui';
+import { DataTable, PageHeader, type DataTableColumn } from '@/components/common';
+import { RefreshCw } from 'lucide-react';
 
 interface TemplateScore {
   templateId: string | null;
@@ -27,12 +27,21 @@ function domainAvgToArray(domainAverages: Record<string, number | null>): { doma
     .map(([domain, avg]) => ({ domain, average: avg as number }));
 }
 
-const DOMAIN_CONFIG: Record<string, { label: string; color: string; bgColor: string }> = {
-  mobility: { label: 'Mobility', color: '#3B82F6', bgColor: '#DBEAFE' },
-  control: { label: 'Control', color: '#8B5CF6', bgColor: '#EDE9FE' },
-  symmetry: { label: 'Symmetry', color: '#10B981', bgColor: '#D1FAE5' },
-  safety: { label: 'Safety', color: '#F59E0B', bgColor: '#FEF3C7' },
+const DOMAIN_CONFIG: Record<string, { label: string; dotClass: string; trackClass: string; barClass: string }> = {
+  mobility: { label: 'Mobility', dotClass: 'bg-primary', trackClass: 'bg-primary/10', barClass: 'bg-primary' },
+  control: { label: 'Control', dotClass: 'bg-violet-500', trackClass: 'bg-violet-100', barClass: 'bg-violet-500' },
+  symmetry: { label: 'Symmetry', dotClass: 'bg-success', trackClass: 'bg-success/10', barClass: 'bg-success' },
+  safety: { label: 'Safety', dotClass: 'bg-warning', trackClass: 'bg-warning/10', barClass: 'bg-warning' },
 };
+
+function templateNameToString(templateName: unknown): string {
+  if (!templateName) return 'Unknown Template';
+  if (typeof templateName === 'object') {
+    const localized = templateName as Record<string, string>;
+    return localized.en || localized.ar || 'Template';
+  }
+  return String(templateName);
+}
 
 export default function AssessmentAnalyticsPage() {
   const [data, setData] = useState<AssessmentAnalytics | null>(null);
@@ -62,43 +71,65 @@ export default function AssessmentAnalyticsPage() {
     ? Math.max(...domainArray.map((d) => d.average), 1)
     : 1;
 
+  const templateColumns: DataTableColumn<TemplateScore>[] = [
+    {
+      key: 'template',
+      header: 'Template',
+      cell: (template) => (
+        <div>
+          <p className="font-medium">{templateNameToString(template.templateName)}</p>
+          <p className="text-xs text-muted-foreground">{template.count} assessments</p>
+        </div>
+      ),
+    },
+    {
+      key: 'score',
+      header: 'Average Score',
+      headerClassName: 'text-right',
+      className: 'text-right',
+      cell: (template) => (
+        <div className="ml-auto flex max-w-[180px] items-center justify-end gap-3">
+          <div className="h-2 w-24 overflow-hidden rounded-full bg-muted">
+            <div
+              className="h-full rounded-full bg-primary transition-all duration-500"
+              style={{ width: `${Math.min(template.avgBodyScore, 100)}%` }}
+            />
+          </div>
+          <span className="w-12 text-right text-sm font-bold">{template.avgBodyScore.toFixed(1)}</span>
+        </div>
+      ),
+    },
+  ];
+
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div className="flex justify-between items-center">
-        <div className="flex items-center gap-4">
-          <Link
-            href="/admin/analytics"
-            className="p-2 text-gray-600 hover:text-gray-800 hover:bg-gray-100 rounded-lg transition-colors"
-          >
-            <ArrowLeft className="h-5 w-5" />
-          </Link>
-          <div>
-            <h1 className="text-2xl font-bold text-gray-900">Assessment Analytics</h1>
-            <p className="text-gray-600 mt-1">Scores, templates, and domain performance</p>
-          </div>
-        </div>
-        <button
-          onClick={fetchData}
-          className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
-        >
-          <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
-          Refresh
-        </button>
-      </div>
+      <PageHeader
+        title="Assessment Analytics"
+        description="Scores, templates, and domain performance."
+        breadcrumbs={[
+          { label: 'Analytics', href: '/admin/analytics' },
+          { label: 'Assessments' },
+        ]}
+        actions={
+          <Button type="button" variant="outline" onClick={fetchData}>
+            <RefreshCw className={`size-4 ${loading ? 'animate-spin' : ''}`} />
+            Refresh
+          </Button>
+        }
+      />
 
       {loading ? (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {Array.from({ length: 4 }).map((_, i) => (
             <Card key={i} className="animate-pulse">
-              <CardContent className="pt-6"><div className="h-40 bg-gray-100 rounded" /></CardContent>
+              <CardContent className="pt-6"><div className="h-40 rounded bg-muted" /></CardContent>
             </Card>
           ))}
         </div>
       ) : !data ? (
         <Card>
           <CardContent className="pt-6">
-            <p className="text-gray-500 text-center py-12">No assessment data available</p>
+            <p className="py-12 text-center text-muted-foreground">No assessment data available</p>
           </CardContent>
         </Card>
       ) : (
@@ -107,20 +138,20 @@ export default function AssessmentAnalyticsPage() {
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             <Card>
               <CardContent className="pt-6 text-center">
-                <p className="text-sm text-gray-500">Total Assessments</p>
-                <p className="text-3xl font-bold text-gray-900 mt-1">{data.totalAssessments}</p>
+                <p className="text-sm text-muted-foreground">Total Assessments</p>
+                <p className="mt-1 text-3xl font-bold">{data.totalAssessments}</p>
               </CardContent>
             </Card>
             <Card>
               <CardContent className="pt-6 text-center">
-                <p className="text-sm text-gray-500">This Month</p>
+                <p className="text-sm text-muted-foreground">This Month</p>
                 <p className="text-3xl font-bold text-purple-600 mt-1">{data.assessmentsThisMonth}</p>
               </CardContent>
             </Card>
             <Card>
               <CardContent className="pt-6 text-center">
-                <p className="text-sm text-gray-500">Avg Body Score</p>
-                <p className="text-3xl font-bold text-blue-600 mt-1">
+                <p className="text-sm text-muted-foreground">Avg Body Score</p>
+                <p className="mt-1 text-3xl font-bold text-primary">
                   {data.avgBodyScorePerTemplate.length > 0
                     ? (data.avgBodyScorePerTemplate.reduce((s, t) => s + t.avgBodyScore * t.count, 0) /
                         Math.max(data.avgBodyScorePerTemplate.reduce((s, t) => s + t.count, 0), 1)).toFixed(1)
@@ -135,44 +166,36 @@ export default function AssessmentAnalyticsPage() {
             <Card>
               <CardHeader>
                 <CardTitle>Domain Averages</CardTitle>
-                <p className="text-sm text-gray-500">Performance across assessment domains</p>
+                <p className="text-sm text-muted-foreground">Performance across assessment domains</p>
               </CardHeader>
               <CardContent>
                 {domainArray.length === 0 ? (
-                  <p className="text-gray-500 text-sm text-center py-8">No domain data available</p>
+                  <p className="py-8 text-center text-sm text-muted-foreground">No domain data available</p>
                 ) : (
                   <div className="space-y-5">
                     {domainArray.map((domain) => {
                       const config = DOMAIN_CONFIG[domain.domain.toLowerCase()] || {
                         label: domain.domain,
-                        color: '#6B7280',
-                        bgColor: '#F3F4F6',
+                        dotClass: 'bg-muted-foreground',
+                        trackClass: 'bg-muted',
+                        barClass: 'bg-muted-foreground',
                       };
                       const pctOfMax = (domain.average / maxDomainAvg) * 100;
                       return (
                         <div key={domain.domain}>
                           <div className="flex items-center justify-between mb-2">
                             <div className="flex items-center gap-2">
-                              <div
-                                className="h-3 w-3 rounded-sm"
-                                style={{ backgroundColor: config.color }}
-                              />
-                              <span className="text-sm font-semibold text-gray-800">{config.label}</span>
+                              <div className={`h-3 w-3 rounded-sm ${config.dotClass}`} />
+                              <span className="text-sm font-semibold">{config.label}</span>
                             </div>
-                            <span className="text-sm font-bold text-gray-900">
+                            <span className="text-sm font-bold">
                               {domain.average.toFixed(1)}
                             </span>
                           </div>
-                          <div
-                            className="rounded-full h-4 overflow-hidden"
-                            style={{ backgroundColor: config.bgColor }}
-                          >
+                          <div className={`h-4 overflow-hidden rounded-full ${config.trackClass}`}>
                             <div
-                              className="h-full rounded-full transition-all duration-700 ease-out"
-                              style={{
-                                width: `${Math.max(pctOfMax, 3)}%`,
-                                backgroundColor: config.color,
-                              }}
+                              className={`h-full rounded-full transition-all duration-700 ease-out ${config.barClass}`}
+                              style={{ width: `${Math.max(pctOfMax, 3)}%` }}
                             />
                           </div>
                         </div>
@@ -183,49 +206,13 @@ export default function AssessmentAnalyticsPage() {
               </CardContent>
             </Card>
 
-            {/* Average Body Score by Template */}
-            <Card>
-              <CardHeader>
-                <CardTitle>Average Score by Template</CardTitle>
-                <p className="text-sm text-gray-500">Body score averages per assessment template</p>
-              </CardHeader>
-              <CardContent>
-                {(!data.avgBodyScorePerTemplate || data.avgBodyScorePerTemplate.length === 0) ? (
-                  <p className="text-gray-500 text-sm text-center py-8">No template data available</p>
-                ) : (
-                  <div className="space-y-4">
-                    {data.avgBodyScorePerTemplate.map((template) => (
-                      <div
-                        key={template.templateId ?? 'no-template'}
-                        className="flex items-center justify-between p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors"
-                      >
-                        <div>
-                          <p className="text-sm font-medium text-gray-900">
-                            {template.templateName
-                              ? typeof template.templateName === 'object'
-                                ? (template.templateName as Record<string, string>).en || (template.templateName as Record<string, string>).ar || 'Template'
-                                : String(template.templateName)
-                              : 'Unknown Template'}
-                          </p>
-                          <p className="text-xs text-gray-500">{template.count} assessments</p>
-                        </div>
-                        <div className="flex items-center gap-3">
-                          <div className="w-24 bg-gray-200 rounded-full h-2 overflow-hidden">
-                            <div
-                              className="h-full rounded-full bg-blue-500 transition-all duration-500"
-                              style={{ width: `${Math.min(template.avgBodyScore, 100)}%` }}
-                            />
-                          </div>
-                          <span className="text-sm font-bold text-gray-900 w-12 text-right">
-                            {template.avgBodyScore.toFixed(1)}
-                          </span>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </CardContent>
-            </Card>
+            <DataTable
+              columns={templateColumns}
+              data={data.avgBodyScorePerTemplate || []}
+              getRowKey={(template, index) => template.templateId ?? `no-template-${index}`}
+              emptyTitle="No template data available"
+              emptyDescription="Template averages will appear after assessments are completed."
+            />
           </div>
         </>
       )}

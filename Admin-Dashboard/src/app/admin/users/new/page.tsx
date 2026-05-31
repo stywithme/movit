@@ -2,7 +2,9 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Checkbox, Input } from '@/components/ui';
+import { toast } from 'sonner';
+import { Button, Checkbox, Input, Label } from '@/components/ui';
+import { FormShell, PageHeader } from '@/components/common';
 
 export default function NewUserPage() {
   const router = useRouter();
@@ -38,13 +40,14 @@ export default function NewUserPage() {
 
       const data = await res.json();
       if (data.success) {
+        toast.success('User created');
         router.push('/admin/users');
       } else {
-        alert('Error: ' + data.error);
+        toast.error(data.error || 'Error creating user');
       }
     } catch (error) {
       console.error('Error creating user:', error);
-      alert('Error creating user');
+      toast.error('Error creating user');
     } finally {
       setSaving(false);
     }
@@ -54,25 +57,34 @@ export default function NewUserPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex justify-between items-center">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900">New User</h1>
-          <p className="text-gray-600 mt-1">Create a new mobile app user</p>
-        </div>
-        <button
-          type="button"
-          onClick={() => router.push('/admin/users')}
-          className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200"
-        >
-          Cancel
-        </button>
-      </div>
+      <PageHeader
+        title="New User"
+        description="Create a new mobile app user"
+        breadcrumbs={[
+          { label: 'Users', href: '/admin/users' },
+          { label: 'New User' },
+        ]}
+        actions={
+          <Button type="button" variant="outline" onClick={() => router.push('/admin/users')}>
+            Cancel
+          </Button>
+        }
+      />
 
-      <form onSubmit={handleSubmit} className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 space-y-6">
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
-            Name <span className="text-red-500">*</span>
-          </label>
+      <form onSubmit={handleSubmit}>
+        <FormShell
+          title="User Details"
+          description="Basic account information and optional subscription metadata."
+          footer={
+            <Button type="submit" loading={saving} disabled={!canSubmit}>
+              Create User
+            </Button>
+          }
+        >
+        <div className="space-y-2">
+          <Label>
+            Name <span className="text-destructive">*</span>
+          </Label>
           <Input
             value={formData.name}
             onChange={(e) => setFormData((prev) => ({ ...prev, name: e.target.value }))}
@@ -81,10 +93,10 @@ export default function NewUserPage() {
           />
         </div>
 
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
-            Email <span className="text-red-500">*</span>
-          </label>
+        <div className="space-y-2">
+          <Label>
+            Email <span className="text-destructive">*</span>
+          </Label>
           <Input
             type="email"
             value={formData.email}
@@ -94,10 +106,10 @@ export default function NewUserPage() {
           />
         </div>
 
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
-            Password <span className="text-red-500">*</span>
-          </label>
+        <div className="space-y-2">
+          <Label>
+            Password <span className="text-destructive">*</span>
+          </Label>
           <Input
             type="password"
             value={formData.password}
@@ -107,8 +119,8 @@ export default function NewUserPage() {
           />
         </div>
 
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Avatar URL</label>
+        <div className="space-y-2">
+          <Label>Avatar URL</Label>
           <Input
             value={formData.avatarUrl}
             onChange={(e) => setFormData((prev) => ({ ...prev, avatarUrl: e.target.value }))}
@@ -116,8 +128,8 @@ export default function NewUserPage() {
           />
         </div>
 
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Subscription Expiry</label>
+        <div className="space-y-2">
+          <Label>Subscription Expiry</Label>
           <Input
             type="date"
             value={formData.subscriptionExpiry}
@@ -130,18 +142,9 @@ export default function NewUserPage() {
             checked={formData.isPro}
             onCheckedChange={(checked) => setFormData((prev) => ({ ...prev, isPro: Boolean(checked) }))}
           />
-          <label className="text-sm text-gray-700">Pro Subscription</label>
+          <Label>Pro Subscription</Label>
         </div>
-
-        <div className="flex justify-end pt-4 border-t border-gray-200">
-          <button
-            type="submit"
-            disabled={saving || !canSubmit}
-            className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50"
-          >
-            {saving ? 'Saving...' : 'Create User'}
-          </button>
-        </div>
+        </FormShell>
       </form>
     </div>
   );

@@ -2,11 +2,11 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
+import { toast } from 'sonner';
 import { LocalizedText } from '@/lib/types/localized';
-import { Input, Select, Button, Badge } from '@/components/ui';
-import { buttonVariants } from '@/components/ui/Button';
-import { cn } from '@/lib/utils';
-import { Plus, Search, Star } from 'lucide-react';
+import { Button, Badge } from '@/components/ui';
+import { ConfirmDialog, FilterBar, PageHeader, Pagination, StatusBadge, type PaginationMeta } from '@/components/common';
+import { Plus, Star } from 'lucide-react';
 
 interface Workout {
   id: string;
@@ -23,20 +23,14 @@ interface Workout {
   };
 }
 
-interface Pagination {
-  page: number;
-  limit: number;
-  total: number;
-  totalPages: number;
-}
-
 export default function WorkoutsListPage() {
   const [workouts, setWorkouts] = useState<Workout[]>([]);
-  const [pagination, setPagination] = useState<Pagination | null>(null);
+  const [pagination, setPagination] = useState<PaginationMeta | null>(null);
   const [loading, setLoading] = useState(true);
   const [statusFilter, setStatusFilter] = useState<string>('');
   const [featuredFilter, setFeaturedFilter] = useState<string>('');
   const [searchQuery, setSearchQuery] = useState('');
+  const [deleteWorkoutId, setDeleteWorkoutId] = useState<string | null>(null);
 
   const fetchWorkouts = async (page = 1) => {
     setLoading(true);
@@ -63,22 +57,22 @@ export default function WorkoutsListPage() {
   };
 
   useEffect(() => {
-    fetchWorkouts();
-  }, [statusFilter, featuredFilter]);
+    const timer = window.setTimeout(() => {
+      fetchWorkouts(1);
+    }, 300);
 
-  const handleSearch = (e: React.FormEvent) => {
-    e.preventDefault();
-    fetchWorkouts(1);
-  };
+    return () => window.clearTimeout(timer);
+  }, [statusFilter, featuredFilter, searchQuery]);
 
   const handlePublish = async (id: string) => {
     try {
       const res = await fetch(`/api/workouts/${id}/publish`, { method: 'POST' });
       const data = await res.json();
       if (data.success) {
+        toast.success('Workout published');
         fetchWorkouts(pagination?.page || 1);
       } else {
-        alert(data.errors?.join('\n') || data.error || 'Failed to publish');
+        toast.error(data.errors?.join('\n') || data.error || 'Failed to publish');
       }
     } catch (error) {
       console.error('Error publishing:', error);
@@ -88,17 +82,23 @@ export default function WorkoutsListPage() {
   const handleUnpublish = async (id: string) => {
     try {
       const res = await fetch(`/api/workouts/${id}/publish`, { method: 'DELETE' });
-      if (res.ok) fetchWorkouts(pagination?.page || 1);
+      if (res.ok) {
+        toast.success('Workout unpublished');
+        fetchWorkouts(pagination?.page || 1);
+      }
     } catch (error) {
       console.error('Error unpublishing:', error);
     }
   };
 
   const handleDelete = async (id: string) => {
-    if (!confirm('Are you sure you want to delete this workout?')) return;
     try {
       const res = await fetch(`/api/workouts/${id}`, { method: 'DELETE' });
-      if (res.ok) fetchWorkouts(pagination?.page || 1);
+      if (res.ok) {
+        toast.success('Workout deleted');
+        setDeleteWorkoutId(null);
+        fetchWorkouts(pagination?.page || 1);
+      }
     } catch (error) {
       console.error('Error deleting:', error);
     }
@@ -107,7 +107,10 @@ export default function WorkoutsListPage() {
   const handleDuplicate = async (id: string) => {
     try {
       const res = await fetch(`/api/workouts/${id}/duplicate`, { method: 'POST' });
-      if (res.ok) fetchWorkouts(pagination?.page || 1);
+      if (res.ok) {
+        toast.success('Workout duplicated');
+        fetchWorkouts(pagination?.page || 1);
+      }
     } catch (error) {
       console.error('Error duplicating:', error);
     }
@@ -117,80 +120,60 @@ export default function WorkoutsListPage() {
     d === 'beginner' ? 'Beginner' : d === 'intermediate' ? 'Intermediate' : 'Advanced';
 
   return (
-    <div className="mx-auto max-w-6xl space-y-8 pb-12">
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
-        <div>
-          <h1 className="text-2xl font-semibold tracking-tight text-zinc-900">Workouts</h1>
-          <p className="mt-1 text-sm text-zinc-500">Create and manage workout templates for programs and Explore.</p>
-        </div>
-        <Link
-          href="/admin/workouts/new"
-          className={cn(buttonVariants({ variant: 'primary', size: 'md' }), 'inline-flex items-center gap-2')}
-        >
-          <Plus className="h-4 w-4" aria-hidden />
-          New workout
-        </Link>
-      </div>
+    <div className="space-y-6">
+      <PageHeader
+        title="Workouts"
+        description="Create and manage workout templates for programs and Explore."
+        actions={
+          <Button asChild>
+            <Link href="/admin/workouts/new">
+              <Plus className="size-4" aria-hidden />
+              New workout
+            </Link>
+          </Button>
+        }
+      />
 
-      <section className="rounded-2xl border border-zinc-200/90 bg-white p-5 shadow-sm">
-        <form onSubmit={handleSearch} className="flex flex-col gap-4 lg:flex-row lg:items-end">
-          <div className="min-w-0 flex-1 space-y-1.5">
-            <label htmlFor="workout-search" className="text-xs font-medium uppercase tracking-wide text-zinc-500">
-              Search
-            </label>
-            <div className="flex gap-2">
-              <div className="relative min-w-0 flex-1">
-                <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-400" />
-                <Input
-                  id="workout-search"
-                  type="text"
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  placeholder="Name (EN or AR)…"
-                  className="pl-9"
-                />
-              </div>
-              <Button type="submit" variant="secondary" size="md">
-                Apply
-              </Button>
-            </div>
-          </div>
-          <div className="grid w-full gap-4 sm:grid-cols-2 lg:w-auto lg:min-w-[280px] lg:grid-cols-2">
-            <div className="space-y-1.5">
-              <span className="text-xs font-medium uppercase tracking-wide text-zinc-500">Status</span>
-              <Select
-                value={statusFilter}
-                onChange={(e) => setStatusFilter(e.target.value)}
-                options={[
-                  { value: '', label: 'All statuses' },
-                  { value: 'draft', label: 'Draft' },
-                  { value: 'published', label: 'Published' },
-                ]}
-              />
-            </div>
-            <div className="space-y-1.5">
-              <span className="text-xs font-medium uppercase tracking-wide text-zinc-500">Featured</span>
-              <Select
-                value={featuredFilter}
-                onChange={(e) => setFeaturedFilter(e.target.value)}
-                options={[
-                  { value: '', label: 'All' },
-                  { value: 'true', label: 'Featured only' },
-                  { value: 'false', label: 'Not featured' },
-                ]}
-              />
-            </div>
-          </div>
-        </form>
-      </section>
+      <FilterBar
+        searchValue={searchQuery}
+        searchPlaceholder="Name (EN or AR)..."
+        onSearchChange={setSearchQuery}
+        selects={[
+          {
+            id: 'status',
+            value: statusFilter,
+            onChange: setStatusFilter,
+            options: [
+              { value: '', label: 'All statuses' },
+              { value: 'draft', label: 'Draft' },
+              { value: 'published', label: 'Published' },
+            ],
+          },
+          {
+            id: 'featured',
+            value: featuredFilter,
+            onChange: setFeaturedFilter,
+            options: [
+              { value: '', label: 'All' },
+              { value: 'true', label: 'Featured only' },
+              { value: 'false', label: 'Not featured' },
+            ],
+          },
+        ]}
+        onReset={() => {
+          setSearchQuery('');
+          setStatusFilter('');
+          setFeaturedFilter('');
+        }}
+      />
 
-      <section className="overflow-hidden rounded-2xl border border-zinc-200/90 bg-white shadow-sm">
+      <section className="overflow-hidden rounded-xl border bg-card shadow-sm">
         {loading ? (
-          <div className="py-20 text-center text-sm text-zinc-500">Loading workouts…</div>
+          <div className="py-20 text-center text-sm text-muted-foreground">Loading workouts...</div>
         ) : workouts.length === 0 ? (
           <div className="py-16 text-center">
-            <p className="text-sm text-zinc-600">No workouts match your filters.</p>
-            <Link href="/admin/workouts/new" className="mt-3 inline-block text-sm font-medium text-blue-600 hover:text-blue-700">
+            <p className="text-sm text-muted-foreground">No workouts match your filters.</p>
+            <Link href="/admin/workouts/new" className="mt-3 inline-block text-sm font-medium text-primary hover:underline">
               Create a workout
             </Link>
           </div>
@@ -198,21 +181,21 @@ export default function WorkoutsListPage() {
           <div className="overflow-x-auto">
             <table className="w-full min-w-[720px] text-left text-sm">
               <thead>
-                <tr className="border-b border-zinc-100 bg-zinc-50/80">
-                  <th className="px-5 py-3 font-medium text-zinc-600">Workout</th>
-                  <th className="px-5 py-3 font-medium text-zinc-600">Difficulty</th>
-                  <th className="hidden px-5 py-3 font-medium text-zinc-600 sm:table-cell">Exercises</th>
-                  <th className="px-5 py-3 font-medium text-zinc-600">Featured</th>
-                  <th className="px-5 py-3 font-medium text-zinc-600">Status</th>
-                  <th className="px-5 py-3 text-right font-medium text-zinc-600">Actions</th>
+                <tr className="border-b bg-muted/50">
+                  <th className="px-5 py-3 font-medium text-muted-foreground">Workout</th>
+                  <th className="px-5 py-3 font-medium text-muted-foreground">Difficulty</th>
+                  <th className="hidden px-5 py-3 font-medium text-muted-foreground sm:table-cell">Exercises</th>
+                  <th className="px-5 py-3 font-medium text-muted-foreground">Featured</th>
+                  <th className="px-5 py-3 font-medium text-muted-foreground">Status</th>
+                  <th className="px-5 py-3 text-right font-medium text-muted-foreground">Actions</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-zinc-100">
+              <tbody className="divide-y">
                 {workouts.map((workout) => (
-                  <tr key={workout.id} className="transition-colors hover:bg-zinc-50/60">
+                  <tr key={workout.id} className="transition-colors hover:bg-muted/50">
                     <td className="max-w-[240px] px-5 py-4 align-top">
-                      <p className="truncate font-medium text-zinc-900">{workout.name.en}</p>
-                      <p className="truncate text-zinc-500" dir="rtl">
+                      <p className="truncate font-medium">{workout.name.en}</p>
+                      <p className="truncate text-muted-foreground" dir="rtl">
                         {workout.name.ar}
                       </p>
                     </td>
@@ -221,7 +204,7 @@ export default function WorkoutsListPage() {
                         {difficultyLabel(workout.difficulty)}
                       </Badge>
                     </td>
-                    <td className="hidden whitespace-nowrap px-5 py-4 align-middle text-zinc-600 sm:table-cell">
+                    <td className="hidden whitespace-nowrap px-5 py-4 align-middle text-muted-foreground sm:table-cell">
                       {workout._count.exercises}
                     </td>
                     <td className="whitespace-nowrap px-5 py-4 align-middle">
@@ -231,35 +214,33 @@ export default function WorkoutsListPage() {
                           Featured
                         </span>
                       ) : (
-                        <span className="text-xs text-zinc-400">—</span>
+                        <span className="text-xs text-muted-foreground">-</span>
                       )}
                     </td>
                     <td className="whitespace-nowrap px-5 py-4 align-middle">
-                      <Badge variant={workout.status === 'published' ? 'success' : 'warning'} className="capitalize">
-                        {workout.status}
-                      </Badge>
+                      <StatusBadge status={workout.status} />
                     </td>
                     <td className="px-5 py-4 align-middle">
                       <div className="flex flex-wrap items-center justify-end gap-x-1 gap-y-1 text-xs">
-                        <Link href={`/admin/workouts/${workout.id}/edit`} className="rounded-md px-2 py-1 font-medium text-blue-600 hover:bg-blue-50">
+                        <Link href={`/admin/workouts/${workout.id}/edit`} className="rounded-md px-2 py-1 font-medium text-primary hover:bg-accent">
                           Edit
                         </Link>
-                        <span className="text-zinc-200">|</span>
-                        <button type="button" onClick={() => handleDuplicate(workout.id)} className="rounded-md px-2 py-1 font-medium text-zinc-600 hover:bg-zinc-100">
+                        <span className="text-border">|</span>
+                        <button type="button" onClick={() => handleDuplicate(workout.id)} className="rounded-md px-2 py-1 font-medium text-muted-foreground hover:bg-accent hover:text-foreground">
                           Duplicate
                         </button>
-                        <span className="text-zinc-200">|</span>
+                        <span className="text-border">|</span>
                         {workout.status === 'draft' ? (
-                          <button type="button" onClick={() => handlePublish(workout.id)} className="rounded-md px-2 py-1 font-medium text-emerald-600 hover:bg-emerald-50">
+                          <button type="button" onClick={() => handlePublish(workout.id)} className="rounded-md px-2 py-1 font-medium text-success hover:bg-accent">
                             Publish
                           </button>
                         ) : (
-                          <button type="button" onClick={() => handleUnpublish(workout.id)} className="rounded-md px-2 py-1 font-medium text-amber-700 hover:bg-amber-50">
+                          <button type="button" onClick={() => handleUnpublish(workout.id)} className="rounded-md px-2 py-1 font-medium text-warning hover:bg-accent">
                             Unpublish
                           </button>
                         )}
-                        <span className="text-zinc-200">|</span>
-                        <button type="button" onClick={() => handleDelete(workout.id)} className="rounded-md px-2 py-1 font-medium text-red-600 hover:bg-red-50">
+                        <span className="text-border">|</span>
+                        <button type="button" onClick={() => setDeleteWorkoutId(workout.id)} className="rounded-md px-2 py-1 font-medium text-destructive hover:bg-accent">
                           Delete
                         </button>
                       </div>
@@ -271,35 +252,20 @@ export default function WorkoutsListPage() {
           </div>
         )}
 
-        {pagination && pagination.totalPages > 1 && (
-          <footer className="flex flex-col gap-3 border-t border-zinc-100 px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
-            <p className="text-xs text-zinc-500">
-              {(pagination.page - 1) * pagination.limit + 1}–{Math.min(pagination.page * pagination.limit, pagination.total)} of{' '}
-              {pagination.total}
-            </p>
-            <div className="flex gap-2">
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                disabled={pagination.page === 1}
-                onClick={() => fetchWorkouts(pagination.page - 1)}
-              >
-                Previous
-              </Button>
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                disabled={pagination.page === pagination.totalPages}
-                onClick={() => fetchWorkouts(pagination.page + 1)}
-              >
-                Next
-              </Button>
-            </div>
-          </footer>
-        )}
+        <Pagination pagination={pagination} onPageChange={fetchWorkouts} disabled={loading} />
       </section>
+
+      <ConfirmDialog
+        open={!!deleteWorkoutId}
+        onOpenChange={(open) => !open && setDeleteWorkoutId(null)}
+        title="Delete workout?"
+        description="This action cannot be undone."
+        confirmLabel="Delete"
+        destructive
+        onConfirm={() => {
+          if (deleteWorkoutId) return handleDelete(deleteWorkoutId);
+        }}
+      />
     </div>
   );
 }

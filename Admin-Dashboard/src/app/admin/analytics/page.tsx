@@ -2,7 +2,8 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui';
+import { Button, Card, CardHeader, CardTitle, CardContent } from '@/components/ui';
+import { PageHeader } from '@/components/common';
 import {
   Users,
   BarChart3,
@@ -90,31 +91,27 @@ export default function AnalyticsOverviewPage() {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div className="flex justify-between items-center">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900">Analytics Overview</h1>
-          <p className="text-gray-600 mt-1">Platform-wide statistics and insights</p>
-        </div>
-        <button
-          onClick={fetchAll}
-          className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
-        >
-          <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
+      <PageHeader
+        title="Analytics Overview"
+        description="Platform-wide statistics and insights."
+        actions={
+          <Button type="button" variant="outline" onClick={fetchAll}>
+          <RefreshCw className={`size-4 ${loading ? 'animate-spin' : ''}`} />
           Refresh
-        </button>
-      </div>
+          </Button>
+        }
+      />
 
       {loading ? (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {Array.from({ length: 5 }).map((_, i) => (
             <Card key={i} className="animate-pulse">
               <CardHeader>
-                <div className="h-5 bg-gray-200 rounded w-1/2" />
+                <div className="h-5 w-1/2 rounded bg-muted" />
               </CardHeader>
               <CardContent>
-                <div className="h-8 bg-gray-200 rounded w-1/3 mb-2" />
-                <div className="h-4 bg-gray-100 rounded w-2/3" />
+                <div className="mb-2 h-8 w-1/3 rounded bg-muted" />
+                <div className="h-4 w-2/3 rounded bg-muted/60" />
               </CardContent>
             </Card>
           ))}
@@ -127,16 +124,16 @@ export default function AnalyticsOverviewPage() {
             <Card>
               <CardHeader className="pb-2">
                 <div className="flex items-center justify-between">
-                  <CardTitle className="text-sm font-medium text-gray-500">Total Users</CardTitle>
-                  <div className="h-9 w-9 rounded-lg bg-blue-50 flex items-center justify-center">
-                    <Users className="h-5 w-5 text-blue-600" />
+                  <CardTitle className="text-sm font-medium text-muted-foreground">Total Users</CardTitle>
+                  <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary/10">
+                    <Users className="h-5 w-5 text-primary" />
                   </div>
                 </div>
               </CardHeader>
               <CardContent>
-                <p className="text-3xl font-bold text-gray-900">{platform?.totalUsers ?? '—'}</p>
-                <p className="text-sm text-gray-500 mt-1">
-                  <span className="text-green-600 font-medium">{platform?.activeThisMonth ?? 0}</span>{' '}
+                <p className="text-3xl font-bold">{platform?.totalUsers ?? '-'}</p>
+                <p className="mt-1 text-sm text-muted-foreground">
+                  <span className="font-medium text-success">{platform?.activeThisMonth ?? 0}</span>{' '}
                   active this month
                 </p>
               </CardContent>
@@ -146,23 +143,23 @@ export default function AnalyticsOverviewPage() {
             <Card>
               <CardHeader className="pb-2">
                 <div className="flex items-center justify-between">
-                  <CardTitle className="text-sm font-medium text-gray-500">Assessments</CardTitle>
-                  <div className="h-9 w-9 rounded-lg bg-purple-50 flex items-center justify-center">
+                  <CardTitle className="text-sm font-medium text-muted-foreground">Assessments</CardTitle>
+                  <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-accent">
                     <ClipboardCheck className="h-5 w-5 text-purple-600" />
                   </div>
                 </div>
               </CardHeader>
               <CardContent>
-                <p className="text-3xl font-bold text-gray-900">{assessments?.totalAssessments ?? '—'}</p>
+                <p className="text-3xl font-bold">{assessments?.totalAssessments ?? '-'}</p>
                 <div className="flex items-center justify-between mt-1">
-                  <p className="text-sm text-gray-500">
+                  <p className="text-sm text-muted-foreground">
                     <span className="text-purple-600 font-medium">{assessments?.thisMonth ?? 0}</span>{' '}
                     this month
                   </p>
-                  <p className="text-sm text-gray-500">
+                  <p className="text-sm text-muted-foreground">
                     Avg score:{' '}
-                    <span className="font-medium text-gray-700">
-                      {assessments?.avgBodyScore != null ? assessments.avgBodyScore.toFixed(1) : '—'}
+                    <span className="font-medium text-foreground">
+                      {assessments?.avgBodyScore != null ? assessments.avgBodyScore.toFixed(1) : '-'}
                     </span>
                   </p>
                 </div>
@@ -173,18 +170,18 @@ export default function AnalyticsOverviewPage() {
             <Card>
               <CardHeader className="pb-2">
                 <div className="flex items-center justify-between">
-                  <CardTitle className="text-sm font-medium text-gray-500">Programs</CardTitle>
-                  <div className="h-9 w-9 rounded-lg bg-emerald-50 flex items-center justify-center">
-                    <CalendarDays className="h-5 w-5 text-emerald-600" />
+                  <CardTitle className="text-sm font-medium text-muted-foreground">Programs</CardTitle>
+                  <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-success/10">
+                    <CalendarDays className="h-5 w-5 text-success" />
                   </div>
                 </div>
               </CardHeader>
               <CardContent>
-                <p className="text-3xl font-bold text-gray-900">{programs?.totalPrograms ?? '—'}</p>
-                <p className="text-sm text-gray-500 mt-1">
+                <p className="text-3xl font-bold">{programs?.totalPrograms ?? '-'}</p>
+                <p className="mt-1 text-sm text-muted-foreground">
                   Completion rate:{' '}
-                  <span className="font-medium text-emerald-600">
-                    {programs?.completionRate != null ? `${programs.completionRate.toFixed(1)}%` : '—'}
+                  <span className="font-medium text-success">
+                    {programs?.completionRate != null ? `${programs.completionRate.toFixed(1)}%` : '-'}
                   </span>
                 </p>
               </CardContent>
@@ -194,17 +191,17 @@ export default function AnalyticsOverviewPage() {
             <Card>
               <CardHeader className="pb-2">
                 <div className="flex items-center justify-between">
-                  <CardTitle className="text-sm font-medium text-gray-500">Progression Rules</CardTitle>
-                  <div className="h-9 w-9 rounded-lg bg-amber-50 flex items-center justify-center">
-                    <TrendingUp className="h-5 w-5 text-amber-600" />
+                  <CardTitle className="text-sm font-medium text-muted-foreground">Progression Rules</CardTitle>
+                  <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-warning/10">
+                    <TrendingUp className="h-5 w-5 text-warning" />
                   </div>
                 </div>
               </CardHeader>
               <CardContent>
-                <p className="text-3xl font-bold text-gray-900">{rules?.rulesTriggered ?? '—'}</p>
-                <p className="text-sm text-gray-500 mt-1 truncate" title={rules?.mostEffectiveRule}>
+                <p className="text-3xl font-bold">{rules?.rulesTriggered ?? '-'}</p>
+                <p className="mt-1 truncate text-sm text-muted-foreground" title={rules?.mostEffectiveRule}>
                   Top rule:{' '}
-                  <span className="font-medium text-gray-700">{rules?.mostEffectiveRule ?? '—'}</span>
+                  <span className="font-medium text-foreground">{rules?.mostEffectiveRule ?? '-'}</span>
                 </p>
               </CardContent>
             </Card>
@@ -215,17 +212,17 @@ export default function AnalyticsOverviewPage() {
             <CardHeader>
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
-                  <div className="h-9 w-9 rounded-lg bg-indigo-50 flex items-center justify-center">
+                  <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-accent">
                     <BarChart3 className="h-5 w-5 text-indigo-600" />
                   </div>
                   <div>
                     <CardTitle>Level Distribution</CardTitle>
-                    <p className="text-sm text-gray-500 mt-0.5">Users per training level</p>
+                    <p className="mt-0.5 text-sm text-muted-foreground">Users per training level</p>
                   </div>
                 </div>
                 <Link
                   href="/admin/analytics/levels"
-                  className="text-sm text-blue-600 hover:text-blue-700 flex items-center gap-1"
+                  className="flex items-center gap-1 text-sm text-primary hover:text-primary/80"
                 >
                   View details <ArrowRight className="h-4 w-4" />
                 </Link>
@@ -233,7 +230,7 @@ export default function AnalyticsOverviewPage() {
             </CardHeader>
             <CardContent>
               {levels.length === 0 ? (
-                <p className="text-gray-500 text-sm text-center py-8">No level data available</p>
+                <p className="py-8 text-center text-sm text-muted-foreground">No level data available</p>
               ) : (
                 <div className="space-y-3">
                   {levels.map((level) => (
@@ -241,23 +238,23 @@ export default function AnalyticsOverviewPage() {
                       <div className="w-32 flex items-center gap-2 flex-shrink-0">
                         <div
                           className="h-3 w-3 rounded-full flex-shrink-0"
-                          style={{ backgroundColor: level.color || '#6B7280' }}
+                          style={{ backgroundColor: level.color || 'hsl(var(--muted-foreground))' }}
                         />
-                        <span className="text-sm font-medium text-gray-700 truncate">
+                        <span className="truncate text-sm font-medium">
                           {level.levelName}
                         </span>
                       </div>
-                      <div className="flex-1 bg-gray-100 rounded-full h-6 overflow-hidden">
+                      <div className="h-6 flex-1 overflow-hidden rounded-full bg-muted">
                         <div
                           className="h-full rounded-full transition-all duration-500 ease-out"
                           style={{
                             width: `${Math.max((level.count / maxLevelCount) * 100, 2)}%`,
-                            backgroundColor: level.color || '#6B7280',
+                            backgroundColor: level.color || 'hsl(var(--muted-foreground))',
                             opacity: 0.8,
                           }}
                         />
                       </div>
-                      <span className="text-sm font-semibold text-gray-900 w-10 text-right flex-shrink-0">
+                      <span className="w-10 flex-shrink-0 text-right text-sm font-semibold">
                         {level.count}
                       </span>
                     </div>
@@ -272,14 +269,14 @@ export default function AnalyticsOverviewPage() {
             <Link href="/admin/analytics/programs" className="group">
               <Card interactive className="h-full">
                 <CardContent className="pt-6 flex items-center gap-4">
-                  <div className="h-12 w-12 rounded-xl bg-emerald-50 flex items-center justify-center group-hover:bg-emerald-100 transition-colors">
-                    <CalendarDays className="h-6 w-6 text-emerald-600" />
+                  <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-success/10 transition-colors group-hover:bg-success/20">
+                    <CalendarDays className="h-6 w-6 text-success" />
                   </div>
                   <div>
-                    <h3 className="font-semibold text-gray-900">Program Analytics</h3>
-                    <p className="text-sm text-gray-500">Enrollment & completion rates</p>
+                    <h3 className="font-semibold">Program Analytics</h3>
+                    <p className="text-sm text-muted-foreground">Enrollment & completion rates</p>
                   </div>
-                  <ArrowRight className="h-5 w-5 text-gray-400 ml-auto group-hover:text-gray-600 transition-colors" />
+                  <ArrowRight className="ml-auto h-5 w-5 text-muted-foreground transition-colors group-hover:text-foreground" />
                 </CardContent>
               </Card>
             </Link>
@@ -287,14 +284,14 @@ export default function AnalyticsOverviewPage() {
             <Link href="/admin/analytics/levels" className="group">
               <Card interactive className="h-full">
                 <CardContent className="pt-6 flex items-center gap-4">
-                  <div className="h-12 w-12 rounded-xl bg-indigo-50 flex items-center justify-center group-hover:bg-indigo-100 transition-colors">
+                  <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-accent transition-colors group-hover:bg-accent/80">
                     <BarChart3 className="h-6 w-6 text-indigo-600" />
                   </div>
                   <div>
-                    <h3 className="font-semibold text-gray-900">Level Analytics</h3>
-                    <p className="text-sm text-gray-500">Distribution & transitions</p>
+                    <h3 className="font-semibold">Level Analytics</h3>
+                    <p className="text-sm text-muted-foreground">Distribution & transitions</p>
                   </div>
-                  <ArrowRight className="h-5 w-5 text-gray-400 ml-auto group-hover:text-gray-600 transition-colors" />
+                  <ArrowRight className="ml-auto h-5 w-5 text-muted-foreground transition-colors group-hover:text-foreground" />
                 </CardContent>
               </Card>
             </Link>
@@ -302,14 +299,14 @@ export default function AnalyticsOverviewPage() {
             <Link href="/admin/analytics/assessments" className="group">
               <Card interactive className="h-full">
                 <CardContent className="pt-6 flex items-center gap-4">
-                  <div className="h-12 w-12 rounded-xl bg-purple-50 flex items-center justify-center group-hover:bg-purple-100 transition-colors">
+                  <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-accent transition-colors group-hover:bg-accent/80">
                     <ClipboardCheck className="h-6 w-6 text-purple-600" />
                   </div>
                   <div>
-                    <h3 className="font-semibold text-gray-900">Assessment Analytics</h3>
-                    <p className="text-sm text-gray-500">Scores & domain averages</p>
+                    <h3 className="font-semibold">Assessment Analytics</h3>
+                    <p className="text-sm text-muted-foreground">Scores & domain averages</p>
                   </div>
-                  <ArrowRight className="h-5 w-5 text-gray-400 ml-auto group-hover:text-gray-600 transition-colors" />
+                  <ArrowRight className="ml-auto h-5 w-5 text-muted-foreground transition-colors group-hover:text-foreground" />
                 </CardContent>
               </Card>
             </Link>

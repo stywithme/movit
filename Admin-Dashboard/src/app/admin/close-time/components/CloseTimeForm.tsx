@@ -122,10 +122,10 @@ export function CloseTimeForm({ initialData, isEditing = false }: CloseTimeFormP
     };
 
     return (
-        <Card className="max-w-2xl p-6 bg-white shadow-sm border border-gray-100">
+        <Card className="max-w-2xl p-6">
             <form onSubmit={handleSubmit} className="space-y-6">
                 {error && (
-                    <div className="p-4 bg-red-50 text-red-600 rounded-lg text-sm border border-red-100">
+                    <div className="rounded-lg border bg-destructive/10 p-4 text-sm text-destructive">
                         {error}
                     </div>
                 )}
@@ -133,7 +133,7 @@ export function CloseTimeForm({ initialData, isEditing = false }: CloseTimeFormP
                 <div className="space-y-5">
                     {(!user?.isDoctor || isSuperAdmin) && (
                         <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">
+                            <label className="mb-1 block text-sm font-medium">
                                 Targeted Doctor (Optional)
                             </label>
                             <Select
@@ -145,13 +145,13 @@ export function CloseTimeForm({ initialData, isEditing = false }: CloseTimeFormP
                                     ...doctors.map(d => ({ value: d.id, label: `${d.name} (${d.email})` }))
                                 ]}
                             />
-                            <p className="text-xs text-gray-500 mt-1">Leave as Global to close the clinic entirely for this period.</p>
+                            <p className="mt-1 text-xs text-muted-foreground">Leave as Global to close the clinic entirely for this period.</p>
                         </div>
                     )}
 
                     <div className="grid grid-cols-2 gap-4">
                         <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">
+                            <label className="mb-1 block text-sm font-medium">
                                 From Date
                             </label>
                             <Input
@@ -162,7 +162,7 @@ export function CloseTimeForm({ initialData, isEditing = false }: CloseTimeFormP
                             />
                         </div>
                         <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">
+                            <label className="mb-1 block text-sm font-medium">
                                 To Date
                             </label>
                             <Input
@@ -176,7 +176,7 @@ export function CloseTimeForm({ initialData, isEditing = false }: CloseTimeFormP
 
                     <div className="grid grid-cols-2 gap-4">
                         <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">
+                            <label className="mb-1 block text-sm font-medium">
                                 From Time
                             </label>
                             <Input
@@ -187,7 +187,7 @@ export function CloseTimeForm({ initialData, isEditing = false }: CloseTimeFormP
                             />
                         </div>
                         <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">
+                            <label className="mb-1 block text-sm font-medium">
                                 To Time
                             </label>
                             <Input
@@ -200,7 +200,7 @@ export function CloseTimeForm({ initialData, isEditing = false }: CloseTimeFormP
                     </div>
                 </div>
 
-                <div className="flex justify-end gap-3 pt-6 border-t border-gray-100">
+                <div className="flex justify-end gap-3 border-t pt-6">
                     <Button
                         type="button"
                         variant="outline"

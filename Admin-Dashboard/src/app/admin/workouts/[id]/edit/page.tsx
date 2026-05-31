@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter, useParams } from 'next/navigation';
+import { toast } from 'sonner';
 import { LocalizedText } from '@/lib/types/localized';
 import { Input, Select, Label, Button, Card, Textarea, Checkbox, Badge } from '@/components/ui';
 import { ChevronDown, ChevronUp } from 'lucide-react';
@@ -126,12 +127,12 @@ export default function EditWorkoutPage() {
             }))
           );
         } else {
-          alert('Workout not found');
+          toast.error('Workout not found');
           router.push('/admin/workouts');
         }
       } catch (error) {
         console.error('Error fetching workout:', error);
-        alert('Error loading workout');
+        toast.error('Error loading workout');
         router.push('/admin/workouts');
       } finally {
         setLoadingWorkout(false);
@@ -266,13 +267,14 @@ export default function EditWorkoutPage() {
       const data = await res.json();
 
       if (data.success) {
+        toast.success('Workout updated');
         router.push('/admin/workouts');
       } else {
-        alert(data.errors?.join('\n') || data.error || 'Failed to update workout');
+        toast.error(data.errors?.join('\n') || data.error || 'Failed to update workout');
       }
     } catch (error) {
       console.error('Error updating workout:', error);
-      alert('Failed to update workout');
+      toast.error('Failed to update workout');
     } finally {
       setLoading(false);
     }

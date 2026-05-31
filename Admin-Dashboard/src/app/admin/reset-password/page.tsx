@@ -1,9 +1,12 @@
 'use client';
 
 import { useState } from 'react';
-import { Input } from '@/components/ui';
+import { useRouter } from 'next/navigation';
+import { toast } from 'sonner';
+import { Button, Card, CardContent, CardDescription, CardHeader, CardTitle, Input, Label } from '@/components/ui';
 
 export default function AdminResetPasswordPage() {
+  const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [requestMode, setRequestMode] = useState<'request' | 'reset'>('request');
   const [requestData, setRequestData] = useState({ email: '' });
@@ -20,14 +23,14 @@ export default function AdminResetPasswordPage() {
       });
       const data = await res.json();
       if (data.success) {
-        alert('If the email exists, a reset link will be sent.');
+        toast.success('If the email exists, a reset link will be sent.');
         setRequestMode('reset');
       } else {
-        alert('Error: ' + data.error);
+        toast.error(data.error || 'Unable to request reset');
       }
     } catch (error) {
       console.error('Error requesting reset:', error);
-      alert('Error requesting reset');
+      toast.error('Unable to request reset');
     } finally {
       setLoading(false);
     }
@@ -44,32 +47,34 @@ export default function AdminResetPasswordPage() {
       });
       const data = await res.json();
       if (data.success) {
-        alert('Password reset successfully. You can login now.');
-        window.location.href = '/admin/login';
+        toast.success('Password reset successfully. You can login now.');
+        router.push('/admin/login');
       } else {
-        alert('Error: ' + data.error);
+        toast.error(data.error || 'Unable to reset password');
       }
     } catch (error) {
       console.error('Error resetting password:', error);
-      alert('Error resetting password');
+      toast.error('Unable to reset password');
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="max-w-md mx-auto space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold text-gray-900">Reset Password</h1>
-        <p className="text-gray-600 mt-1">Recover your admin account</p>
-      </div>
+    <div className="flex min-h-screen items-center justify-center px-4 py-10">
+      <Card className="w-full max-w-md">
+        <CardHeader>
+          <CardTitle>Reset Password</CardTitle>
+          <CardDescription>Recover your admin account</CardDescription>
+        </CardHeader>
+        <CardContent>
 
       {requestMode === 'request' ? (
-        <form onSubmit={handleRequest} className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 space-y-6">
+        <form onSubmit={handleRequest} className="space-y-5">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            <Label>
               Email
-            </label>
+            </Label>
             <Input
               type="email"
               value={requestData.email}
@@ -79,20 +84,20 @@ export default function AdminResetPasswordPage() {
             />
           </div>
 
-          <button
+          <Button
             type="submit"
-            disabled={loading}
-            className="w-full px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50"
+            loading={loading}
+            className="w-full"
           >
             {loading ? 'Sending...' : 'Send Reset Link'}
-          </button>
+          </Button>
         </form>
       ) : (
-        <form onSubmit={handleReset} className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 space-y-6">
+        <form onSubmit={handleReset} className="space-y-5">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            <Label>
               Reset Token
-            </label>
+            </Label>
             <Input
               value={resetData.token}
               onChange={(e) => setResetData((prev) => ({ ...prev, token: e.target.value }))}
@@ -102,9 +107,9 @@ export default function AdminResetPasswordPage() {
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            <Label>
               New Password
-            </label>
+            </Label>
             <Input
               type="password"
               value={resetData.password}
@@ -114,15 +119,17 @@ export default function AdminResetPasswordPage() {
             />
           </div>
 
-          <button
+          <Button
             type="submit"
-            disabled={loading}
-            className="w-full px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50"
+            loading={loading}
+            className="w-full"
           >
             {loading ? 'Saving...' : 'Reset Password'}
-          </button>
+          </Button>
         </form>
       )}
+        </CardContent>
+      </Card>
     </div>
   );
 }

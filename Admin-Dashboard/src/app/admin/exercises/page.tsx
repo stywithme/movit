@@ -1,9 +1,26 @@
 'use client';
 
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import Image from 'next/image';
 import Link from 'next/link';
+import { Plus } from 'lucide-react';
+import { toast } from 'sonner';
+import { Checkbox } from '@/components/ui/Checkbox';
+import { Button } from '@/components/ui/Button';
+import { Badge } from '@/components/ui/Badge';
+import {
+  ConfirmDialog,
+  DataTable,
+  FilterBar,
+  PageHeader,
+  Pagination,
+  StatusBadge,
+  type DataTableColumn,
+  type PaginationMeta,
+} from '@/components/common';
 import { LocalizedText } from '@/lib/types/localized';
-import { Button, Input, Select } from '@/components/ui';
+import { ApiError } from '@/lib/api/client';
+import { exercisesService } from '@/modules/exercises/exercises.service';
 
 interface Exercise {
   id: string;
@@ -26,46 +43,46 @@ interface Exercise {
   };
 }
 
-interface Pagination {
-  page: number;
-  limit: number;
-  total: number;
-  totalPages: number;
-}
+type ConfirmAction =
+  | { type: 'delete'; id: string; label: string }
+  | { type: 'bulk-delete' }
+  | { type: 'bulk-unpublish' }
+  | null;
 
 export default function ExercisesListPage() {
   const [exercises, setExercises] = useState<Exercise[]>([]);
-  const [pagination, setPagination] = useState<Pagination | null>(null);
+  const [pagination, setPagination] = useState<PaginationMeta | null>(null);
   const [loading, setLoading] = useState(true);
+  const [pageError, setPageError] = useState<string | null>(null);
   const [statusFilter, setStatusFilter] = useState<string>('');
   const [searchQuery, setSearchQuery] = useState('');
   const [debouncedSearch, setDebouncedSearch] = useState('');
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [bulkLoading, setBulkLoading] = useState(false);
+  const [confirmAction, setConfirmAction] = useState<ConfirmAction>(null);
 
   useEffect(() => {
-    const t = window.setTimeout(() => setDebouncedSearch(searchQuery), 400);
-    return () => window.clearTimeout(t);
+    const timer = window.setTimeout(() => setDebouncedSearch(searchQuery.trim()), 300);
+    return () => window.clearTimeout(timer);
   }, [searchQuery]);
 
   const fetchExercises = useCallback(
     async (page = 1) => {
       setLoading(true);
+      setPageError(null);
       try {
-        const params = new URLSearchParams();
-        params.set('page', page.toString());
-        if (statusFilter) params.set('status', statusFilter);
-        if (debouncedSearch.trim()) params.set('search', debouncedSearch.trim());
+        const result = await exercisesService.list({
+          page,
+          status: statusFilter,
+          search: debouncedSearch,
+        });
 
-        const res = await fetch(`/api/exercises?${params}`);
-        const data = await res.json();
-
-        if (data.success) {
-          setExercises(data.data);
-          setPagination(data.pagination);
-        }
+        setExercises(result.data as Exercise[]);
+        setPagination(result.pagination || null);
       } catch (error) {
-        console.error('Error fetching exercises:', error);
+        const message = error instanceof ApiError ? error.message : 'Unable to load exercises';
+        setPageError(message);
+        toast.error(message);
       } finally {
         setLoading(false);
       }
@@ -77,38 +94,8 @@ export default function ExercisesListPage() {
     fetchExercises();
   }, [fetchExercises]);
 
-  const handleSearch = (e: React.FormEvent) => {
-    e.preventDefault();
-    setDebouncedSearch(searchQuery.trim());
-  };
-
-  const handlePublish = async (id: string) => {
-    try {
-      const res = await fetch(`/api/exercises/${id}/publish`, { method: 'PUT' });
-      if (res.ok) fetchExercises(pagination?.page || 1);
-    } catch (error) {
-      console.error('Error publishing:', error);
-    }
-  };
-
-  const handleUnpublish = async (id: string) => {
-    try {
-      const res = await fetch(`/api/exercises/${id}/publish`, { method: 'DELETE' });
-      if (res.ok) fetchExercises(pagination?.page || 1);
-    } catch (error) {
-      console.error('Error unpublishing:', error);
-    }
-  };
-
-  const handleDelete = async (id: string) => {
-    if (!confirm('Are you sure you want to delete this exercise?')) return;
-    try {
-      const res = await fetch(`/api/exercises/${id}`, { method: 'DELETE' });
-      if (res.ok) fetchExercises(pagination?.page || 1);
-    } catch (error) {
-      console.error('Error deleting:', error);
-    }
-  };
+  const pageIds = useMemo(() => exercises.map((exercise) => exercise.id), [exercises]);
+  const allOnPageSelected = pageIds.length > 0 && pageIds.every((id) => selectedIds.has(id));
 
   const toggleSelect = (id: string) => {
     setSelectedIds((prev) => {
@@ -118,10 +105,6 @@ export default function ExercisesListPage() {
       return next;
     });
   };
-
-  const pageIds = exercises.map((e) => e.id);
-  const allOnPageSelected =
-    pageIds.length > 0 && pageIds.every((id) => selectedIds.has(id));
 
   const toggleSelectAllOnPage = () => {
     setSelectedIds((prev) => {
@@ -135,327 +118,271 @@ export default function ExercisesListPage() {
     });
   };
 
-  const handleBulkUnpublish = async () => {
-    if (selectedIds.size === 0) return;
-    if (
-      !confirm(
-        `Unpublish ${selectedIds.size} exercise(s)? They will return to draft status.`,
-      )
-    ) {
-      return;
+  const refreshCurrentPage = () => fetchExercises(pagination?.page || 1);
+
+  const handlePublish = async (exercise: Exercise) => {
+    try {
+      await exercisesService.publish(exercise.id);
+      toast.success('Exercise published');
+      refreshCurrentPage();
+    } catch (error) {
+      toast.error(error instanceof ApiError ? error.message : 'Unable to publish exercise');
     }
+  };
+
+  const handleUnpublish = async (exercise: Exercise) => {
+    try {
+      await exercisesService.unpublish(exercise.id);
+      toast.success('Exercise unpublished');
+      refreshCurrentPage();
+    } catch (error) {
+      toast.error(error instanceof ApiError ? error.message : 'Unable to unpublish exercise');
+    }
+  };
+
+  const handleConfirm = async () => {
+    if (!confirmAction) return;
 
     setBulkLoading(true);
     try {
-      const res = await fetch('/api/exercises/bulk/unpublish', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ids: Array.from(selectedIds) }),
-      });
-      const data = await res.json();
-      if (data.success) {
-        setSelectedIds(new Set());
-        fetchExercises(pagination?.page || 1);
-      } else {
-        alert(data.error || 'Failed to unpublish selected exercises');
+      if (confirmAction.type === 'delete') {
+        await exercisesService.delete(confirmAction.id);
+        toast.success('Exercise deleted');
       }
+
+      if (confirmAction.type === 'bulk-delete') {
+        await exercisesService.bulkDelete(Array.from(selectedIds));
+        setSelectedIds(new Set());
+        toast.success('Selected exercises deleted');
+      }
+
+      if (confirmAction.type === 'bulk-unpublish') {
+        await exercisesService.bulkUnpublish(Array.from(selectedIds));
+        setSelectedIds(new Set());
+        toast.success('Selected exercises unpublished');
+      }
+
+      setConfirmAction(null);
+      refreshCurrentPage();
     } catch (error) {
-      console.error('Error bulk unpublishing:', error);
-      alert('Failed to unpublish selected exercises');
+      toast.error(error instanceof ApiError ? error.message : 'Action failed');
     } finally {
       setBulkLoading(false);
     }
   };
 
-  const handleBulkDelete = async () => {
-    if (selectedIds.size === 0) return;
-    if (
-      !confirm(
-        `Delete ${selectedIds.size} exercise(s)? This cannot be undone from the list.`,
-      )
-    ) {
-      return;
-    }
+  const columns: DataTableColumn<Exercise>[] = [
+    {
+      key: 'select',
+      header: (
+        <Checkbox
+          checked={allOnPageSelected}
+          onCheckedChange={toggleSelectAllOnPage}
+          aria-label="Select all on this page"
+        />
+      ),
+      cell: (exercise) => (
+        <Checkbox
+          checked={selectedIds.has(exercise.id)}
+          onCheckedChange={() => toggleSelect(exercise.id)}
+          aria-label={`Select ${exercise.name.en}`}
+        />
+      ),
+      className: 'w-10',
+      headerClassName: 'w-10',
+    },
+    {
+      key: 'exercise',
+      header: 'Exercise',
+      cell: (exercise) => (
+        <div className="flex min-w-[260px] items-center gap-3">
+          {exercise.media[0]?.url ? (
+            <Image
+              src={exercise.media[0].url}
+              alt=""
+              width={40}
+              height={40}
+              className="size-10 rounded-md object-cover"
+            />
+          ) : (
+            <div className="flex size-10 items-center justify-center rounded-md bg-muted text-xs text-muted-foreground">
+              IMG
+            </div>
+          )}
+          <div className="min-w-0">
+            <p className="truncate font-medium">{exercise.name.en}</p>
+            <p className="truncate text-sm text-muted-foreground" dir="rtl">
+              {exercise.name.ar}
+            </p>
+          </div>
+        </div>
+      ),
+    },
+    {
+      key: 'category',
+      header: 'Category',
+      cell: (exercise) => <span className="text-muted-foreground">{exercise.category?.name?.en || '-'}</span>,
+    },
+    {
+      key: 'method',
+      header: 'Method',
+      cell: (exercise) => (
+        <Badge variant="outline" className="capitalize">
+          {exercise.countingMethod.code.replace(/_/g, ' ')}
+        </Badge>
+      ),
+    },
+    {
+      key: 'variants',
+      header: 'Variants',
+      cell: (exercise) => <span className="text-muted-foreground">{exercise._count.poseVariants}</span>,
+    },
+    {
+      key: 'status',
+      header: 'Status',
+      cell: (exercise) => <StatusBadge status={exercise.status} />,
+    },
+    {
+      key: 'actions',
+      header: <span className="sr-only">Actions</span>,
+      headerClassName: 'text-right',
+      className: 'text-right',
+      cell: (exercise) => (
+        <div className="flex flex-wrap items-center justify-end gap-1">
+          <Button asChild variant="ghost" size="sm">
+            <Link href={`/admin/exercises/${exercise.id}/edit`}>Edit</Link>
+          </Button>
+          {exercise.status === 'draft' ? (
+            <Button type="button" variant="ghost" size="sm" onClick={() => handlePublish(exercise)}>
+              Publish
+            </Button>
+          ) : (
+            <Button type="button" variant="ghost" size="sm" onClick={() => handleUnpublish(exercise)}>
+              Unpublish
+            </Button>
+          )}
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            className="text-destructive hover:text-destructive"
+            onClick={() => setConfirmAction({ type: 'delete', id: exercise.id, label: exercise.name.en })}
+          >
+            Delete
+          </Button>
+        </div>
+      ),
+    },
+  ];
 
-    setBulkLoading(true);
-    try {
-      const res = await fetch('/api/exercises/bulk/delete', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ids: Array.from(selectedIds) }),
-      });
-      const data = await res.json();
-      if (data.success) {
-        setSelectedIds(new Set());
-        fetchExercises(pagination?.page || 1);
-      } else {
-        alert(data.error || 'Failed to delete selected exercises');
-      }
-    } catch (error) {
-      console.error('Error bulk deleting:', error);
-      alert('Failed to delete selected exercises');
-    } finally {
-      setBulkLoading(false);
-    }
+  const confirmCopy = {
+    title:
+      confirmAction?.type === 'delete'
+        ? 'Delete exercise?'
+        : confirmAction?.type === 'bulk-delete'
+          ? 'Delete selected exercises?'
+          : 'Unpublish selected exercises?',
+    description:
+      confirmAction?.type === 'delete'
+        ? `This will permanently delete "${confirmAction.label}".`
+        : confirmAction?.type === 'bulk-delete'
+          ? `This will delete ${selectedIds.size} selected exercise(s).`
+          : `This will return ${selectedIds.size} selected exercise(s) to draft status.`,
+    confirmLabel: confirmAction?.type?.includes('delete') ? 'Delete' : 'Unpublish',
   };
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div className="flex justify-between items-center">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900">Exercises</h1>
-          <p className="text-gray-600 mt-1">Manage training exercises</p>
-        </div>
-        <Link
-          href="/admin/exercises/new"
-          className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center gap-2"
-        >
-          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-          </svg>
-          New Exercise
-        </Link>
-      </div>
+      <PageHeader
+        title="Exercises"
+        description="Manage training exercises, publishing state, and pose variants."
+        actions={
+          <Button asChild>
+            <Link href="/admin/exercises/new">
+              <Plus className="size-4" />
+              New Exercise
+            </Link>
+          </Button>
+        }
+      />
 
-      {/* Filters */}
-      <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-200">
-        <div className="flex flex-wrap gap-4 items-end">
-          {/* Search */}
-          <form onSubmit={handleSearch} className="flex-1 min-w-[200px]">
-            <label className="block text-sm font-medium text-gray-700 mb-1">Search</label>
-            <div className="flex gap-2">
-              <Input
-                type="text"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Name, slug, category, muscles..."
-                className="flex-1"
-              />
-              <button
-                type="submit"
-                className="px-4 py-2 bg-gray-100 text-gray-700 rounded-md hover:bg-gray-200"
-              >
-                Search
-              </button>
-            </div>
-          </form>
-
-          {/* Status Filter */}
-          <div className="w-40">
-            <label className="block text-sm font-medium text-gray-700 mb-1">Status</label>
-            <Select
-              value={statusFilter}
-              onChange={(e) => setStatusFilter(e.target.value)}
-              options={[
-                { value: '', label: 'All' },
-                { value: 'draft', label: 'Draft' },
-                { value: 'published', label: 'Published' },
-              ]}
-            />
-          </div>
-        </div>
-      </div>
+      <FilterBar
+        searchValue={searchQuery}
+        searchPlaceholder="Name, slug, category, muscles..."
+        onSearchChange={setSearchQuery}
+        selects={[
+          {
+            id: 'status',
+            value: statusFilter,
+            onChange: setStatusFilter,
+            options: [
+              { value: '', label: 'All statuses' },
+              { value: 'draft', label: 'Draft' },
+              { value: 'published', label: 'Published' },
+            ],
+          },
+        ]}
+        onReset={() => {
+          setSearchQuery('');
+          setStatusFilter('');
+        }}
+      />
 
       {selectedIds.size > 0 && (
-        <div className="bg-amber-50 rounded-lg border border-amber-200 p-4 flex flex-wrap items-center gap-3">
-          <span className="text-sm font-medium text-amber-900">
-            {selectedIds.size} exercise(s) selected
-          </span>
+        <div className="flex flex-wrap items-center gap-3 rounded-xl border bg-card p-4 shadow-sm">
+          <span className="text-sm font-medium">{selectedIds.size} exercise(s) selected</span>
           <Button
             type="button"
             variant="outline"
             size="sm"
-            onClick={handleBulkUnpublish}
             disabled={bulkLoading}
+            onClick={() => setConfirmAction({ type: 'bulk-unpublish' })}
           >
             Unpublish
           </Button>
           <Button
             type="button"
-            variant="outline"
+            variant="danger"
             size="sm"
-            onClick={handleBulkDelete}
             disabled={bulkLoading}
-            className="text-red-700 border-red-200 hover:bg-red-50"
+            onClick={() => setConfirmAction({ type: 'bulk-delete' })}
           >
             Delete
           </Button>
-          <button
+          <Button
             type="button"
-            onClick={() => setSelectedIds(new Set())}
-            className="text-sm text-gray-600 hover:text-gray-900 ml-auto"
+            variant="ghost"
+            size="sm"
+            className="ml-auto"
             disabled={bulkLoading}
+            onClick={() => setSelectedIds(new Set())}
           >
             Clear selection
-          </button>
+          </Button>
         </div>
       )}
 
-      {/* Exercises Table */}
-      <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
-        {loading ? (
-          <div className="p-8 text-center text-gray-500">Loading...</div>
-        ) : exercises.length === 0 ? (
-          <div className="p-8 text-center text-gray-500">
-            <p>No exercises found.</p>
-            <Link href="/admin/exercises/new" className="text-blue-600 hover:underline mt-2 inline-block">
-              Create your first exercise
-            </Link>
-          </div>
-        ) : (
-          <table className="w-full">
-            <thead className="bg-gray-50 border-b border-gray-200">
-              <tr>
-                <th className="px-4 py-3 text-left w-10">
-                  <input
-                    type="checkbox"
-                    checked={allOnPageSelected}
-                    onChange={toggleSelectAllOnPage}
-                    className="h-4 w-4 rounded border-gray-300"
-                    aria-label="Select all on this page"
-                  />
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                  Exercise
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                  Category
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                  Method
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                  Variants
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                  Status
-                </th>
-                <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">
-                  Actions
-                </th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-200">
-              {exercises.map((exercise) => (
-                <tr
-                  key={exercise.id}
-                  className={`hover:bg-gray-50 ${selectedIds.has(exercise.id) ? 'bg-blue-50/50' : ''}`}
-                >
-                  <td className="px-4 py-4">
-                    <input
-                      type="checkbox"
-                      checked={selectedIds.has(exercise.id)}
-                      onChange={() => toggleSelect(exercise.id)}
-                      className="h-4 w-4 rounded border-gray-300"
-                      aria-label={`Select ${exercise.name.en}`}
-                    />
-                  </td>
-                  <td className="px-6 py-4">
-                    <div className="flex items-center gap-3">
-                      {exercise.media[0] ? (
-                        <img
-                          src={exercise.media[0].url}
-                          alt=""
-                          className="w-10 h-10 rounded object-cover"
-                        />
-                      ) : (
-                        <div className="w-10 h-10 bg-gray-200 rounded flex items-center justify-center">
-                          <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                          </svg>
-                        </div>
-                      )}
-                      <div>
-                        <p className="font-medium text-gray-900">{exercise.name.en}</p>
-                        <p className="text-sm text-gray-500">{exercise.name.ar}</p>
-                      </div>
-                    </div>
-                  </td>
-                  <td className="px-6 py-4 text-sm text-gray-600">
-                    {(exercise.category.name as LocalizedText).en}
-                  </td>
-                  <td className="px-6 py-4 text-sm text-gray-600">
-                    {exercise.countingMethod.code.replace('_', ' ')}
-                  </td>
-                  <td className="px-6 py-4 text-sm text-gray-600">
-                    {exercise._count.poseVariants}
-                  </td>
-                  <td className="px-6 py-4">
-                    <span
-                      className={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${
-                        exercise.status === 'published'
-                          ? 'bg-green-100 text-green-800'
-                          : 'bg-yellow-100 text-yellow-800'
-                      }`}
-                    >
-                      {exercise.status}
-                    </span>
-                  </td>
-                  <td className="px-6 py-4 text-right">
-                    <div className="flex justify-end gap-2">
-                      <Link
-                        href={`/admin/exercises/${exercise.id}/edit`}
-                        className="text-blue-600 hover:text-blue-800 text-sm"
-                      >
-                        Edit
-                      </Link>
-                      {exercise.status === 'draft' ? (
-                        <button
-                          onClick={() => handlePublish(exercise.id)}
-                          className="text-green-600 hover:text-green-800 text-sm"
-                        >
-                          Publish
-                        </button>
-                      ) : (
-                        <button
-                          onClick={() => handleUnpublish(exercise.id)}
-                          className="text-yellow-600 hover:text-yellow-800 text-sm"
-                        >
-                          Unpublish
-                        </button>
-                      )}
-                      <button
-                        onClick={() => handleDelete(exercise.id)}
-                        className="text-red-600 hover:text-red-800 text-sm"
-                      >
-                        Delete
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        )}
+      <DataTable
+        columns={columns}
+        data={exercises}
+        getRowKey={(exercise) => exercise.id}
+        loading={loading}
+        error={pageError}
+        emptyTitle="No exercises found"
+        emptyDescription="Create your first exercise or adjust the current filters."
+        footer={<Pagination pagination={pagination} onPageChange={fetchExercises} disabled={loading} />}
+      />
 
-        {/* Pagination */}
-        {pagination && pagination.totalPages > 1 && (
-          <div className="px-6 py-4 border-t border-gray-200 flex justify-between items-center">
-            <p className="text-sm text-gray-600">
-              Showing {(pagination.page - 1) * pagination.limit + 1} to{' '}
-              {Math.min(pagination.page * pagination.limit, pagination.total)} of {pagination.total}
-            </p>
-            <div className="flex gap-2">
-              <button
-                onClick={() => fetchExercises(pagination.page - 1)}
-                disabled={pagination.page === 1}
-                className="px-3 py-1.5 border border-gray-300 bg-white text-gray-800 rounded text-sm hover:bg-gray-50 disabled:bg-gray-100 disabled:text-gray-400 disabled:border-gray-200 disabled:cursor-not-allowed"
-              >
-                Previous
-              </button>
-              <button
-                onClick={() => fetchExercises(pagination.page + 1)}
-                disabled={pagination.page === pagination.totalPages}
-                className="px-3 py-1.5 border border-gray-300 bg-white text-gray-800 rounded text-sm hover:bg-gray-50 disabled:bg-gray-100 disabled:text-gray-400 disabled:border-gray-200 disabled:cursor-not-allowed"
-              >
-                Next
-              </button>
-            </div>
-          </div>
-        )}
-      </div>
+      <ConfirmDialog
+        open={!!confirmAction}
+        onOpenChange={(open) => !open && setConfirmAction(null)}
+        title={confirmCopy.title}
+        description={confirmCopy.description}
+        confirmLabel={confirmCopy.confirmLabel}
+        destructive={confirmAction?.type?.includes('delete')}
+        loading={bulkLoading}
+        onConfirm={handleConfirm}
+      />
     </div>
   );
 }
-
