@@ -7,6 +7,7 @@ import { PeriodFilter } from '@/components/charts/PeriodFilter';
 import { analyticsService, type UsersGrowthAnalytics } from '@/modules/analytics/analytics.service';
 import { formatNumber } from '@/modules/analytics/format';
 import { useAnalyticsPeriod } from '@/modules/analytics/period-store';
+import { analyticsTerms } from '@/modules/analytics/terms';
 
 export default function UsersGrowthAnalyticsPage() {
   const params = useAnalyticsPeriod((state) => state.params);
@@ -32,22 +33,22 @@ export default function UsersGrowthAnalyticsPage() {
       <PeriodFilter onRefresh={fetchData} />
 
       <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
-        <StatCard title="Users in Period" value={formatNumber(data?.total)} />
-        <StatCard title="Avg Height" value={`${(data?.demographics.avgHeightCm ?? 0).toFixed(1)} cm`} />
-        <StatCard title="Avg Weight" value={`${(data?.demographics.avgWeightKg ?? 0).toFixed(1)} kg`} />
+        <StatCard title="Users in Period" value={formatNumber(data?.total)} help={analyticsTerms.newUsers} />
+        <StatCard title="Avg Height" value={`${(data?.demographics.avgHeightCm ?? 0).toFixed(1)} cm`} help="Average height from completed training profiles in the selected period." />
+        <StatCard title="Avg Weight" value={`${(data?.demographics.avgWeightKg ?? 0).toFixed(1)} kg`} help="Average weight from completed training profiles in the selected period." />
       </div>
 
       <div className="grid grid-cols-1 gap-6 xl:grid-cols-2">
-        <ChartCard title="New Users" loading={loading} empty={!data?.trend?.length}>
+        <ChartCard title="New Users" loading={loading} empty={!data?.trend?.length} help={analyticsTerms.newUsers}>
           <AreaTrend data={data?.trend ?? []} />
         </ChartCard>
-        <ChartCard title="Cumulative Growth" loading={loading} empty={!data?.cumulative?.length}>
+        <ChartCard title="Cumulative Growth" loading={loading} empty={!data?.cumulative?.length} help="Running total of users created during the selected period.">
           <AreaTrend data={data?.cumulative ?? []} />
         </ChartCard>
         <ChartCard title="User Status" loading={loading} empty={!data?.status?.length}>
           <DonutChart data={data?.status ?? []} />
         </ChartCard>
-        <ChartCard title="Training Goals" loading={loading} empty={!data?.trainingGoals?.length}>
+        <ChartCard title="Training Goals" loading={loading} empty={!data?.trainingGoals?.length} help="Distribution of users by selected training goal.">
           <BarsChart data={data?.trainingGoals ?? []} />
         </ChartCard>
         <ChartCard title="Age Buckets" loading={loading} empty={!data?.demographics.ageBuckets?.length}>

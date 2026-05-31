@@ -7,6 +7,7 @@ import { PeriodFilter } from '@/components/charts/PeriodFilter';
 import { analyticsService, type ContentAnalytics } from '@/modules/analytics/analytics.service';
 import { formatNumber } from '@/modules/analytics/format';
 import { useAnalyticsPeriod } from '@/modules/analytics/period-store';
+import { analyticsTerms } from '@/modules/analytics/terms';
 
 type UsedExercise = ContentAnalytics['mostUsedExercises'][number];
 
@@ -39,15 +40,15 @@ export default function ContentAnalyticsPage() {
       <PeriodFilter onRefresh={fetchData} />
 
       <div className="grid grid-cols-1 gap-4 md:grid-cols-5">
-        <StatCard title="Exercises" value={formatNumber(data?.exercises.total)} />
-        <StatCard title="Workouts" value={formatNumber(data?.workouts.total)} />
-        <StatCard title="Programs" value={formatNumber(data?.programs.total)} />
-        <StatCard title="Messages" value={formatNumber(data?.messages.total)} />
-        <StatCard title="Camera Positions" value={formatNumber(data?.cameraPositions.total)} />
+        <StatCard title="Exercises" value={formatNumber(data?.exercises.total)} help={analyticsTerms.contentCoverage} />
+        <StatCard title="Workouts" value={formatNumber(data?.workouts.total)} help="Workout templates available in the catalog." />
+        <StatCard title="Programs" value={formatNumber(data?.programs.total)} help="Training programs configured in the system." />
+        <StatCard title="Messages" value={formatNumber(data?.messages.total)} help="Feedback message templates available for coaching cues." />
+        <StatCard title="Camera Positions" value={formatNumber(data?.cameraPositions.total)} help="Camera position definitions used by pose variants." />
       </div>
 
       <div className="grid grid-cols-1 gap-6 xl:grid-cols-2">
-        <ChartCard title="Exercise Status" loading={loading} empty={!data?.exercises.byStatus?.length}>
+        <ChartCard title="Exercise Status" loading={loading} empty={!data?.exercises.byStatus?.length} help="Draft versus published exercise content.">
           <DonutChart data={data?.exercises.byStatus ?? []} />
         </ChartCard>
         <ChartCard title="Exercise Categories" loading={loading} empty={!data?.exercises.byCategory?.length}>

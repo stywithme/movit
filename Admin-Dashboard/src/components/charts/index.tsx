@@ -17,8 +17,9 @@ import {
   XAxis,
   YAxis,
 } from 'recharts';
-import { ArrowDownRight, ArrowUpRight, Minus } from 'lucide-react';
+import { ArrowDownRight, ArrowUpRight, Info, Minus } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
+import { Tooltip as HelpTooltip } from '@/components/ui/Tooltip';
 import { cn } from '@/lib/utils';
 
 export interface ChartDatum {
@@ -29,12 +30,32 @@ export interface ChartDatum {
 }
 
 const chartColors = [
-  'hsl(var(--chart-1))',
-  'hsl(var(--chart-2))',
-  'hsl(var(--chart-3))',
-  'hsl(var(--chart-4))',
-  'hsl(var(--chart-5))',
+  '#2563eb',
+  '#16a34a',
+  '#f97316',
+  '#8b5cf6',
+  '#ef4444',
+  '#06b6d4',
+  '#eab308',
 ];
+
+const axisColor = '#64748b';
+const gridColor = '#e2e8f0';
+
+function HelpIcon({ content }: { content?: ReactNode }) {
+  if (!content) return null;
+  return (
+    <HelpTooltip content={content} side="top">
+      <button
+        type="button"
+        className="inline-flex size-5 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+        aria-label="Metric explanation"
+      >
+        <Info className="size-3.5" />
+      </button>
+    </HelpTooltip>
+  );
+}
 
 interface ChartCardProps {
   title: string;
@@ -43,14 +64,20 @@ interface ChartCardProps {
   empty?: boolean;
   children: ReactNode;
   className?: string;
+  help?: ReactNode;
 }
 
-export function ChartCard({ title, description, loading, empty, children, className }: ChartCardProps) {
+export function ChartCard({ title, description, loading, empty, children, className, help }: ChartCardProps) {
   return (
     <Card className={className}>
       <CardHeader>
-        <CardTitle className="text-base">{title}</CardTitle>
-        {description && <p className="text-sm text-muted-foreground">{description}</p>}
+        <div className="flex items-start justify-between gap-3">
+          <div>
+            <CardTitle className="text-base">{title}</CardTitle>
+            {description && <p className="mt-1 text-sm text-muted-foreground">{description}</p>}
+          </div>
+          <HelpIcon content={help} />
+        </div>
       </CardHeader>
       <CardContent>
         {loading ? (
@@ -71,9 +98,10 @@ interface StatCardProps {
   delta?: number;
   description?: string;
   icon?: ReactNode;
+  help?: ReactNode;
 }
 
-export function StatCard({ title, value, delta, description, icon }: StatCardProps) {
+export function StatCard({ title, value, delta, description, icon, help }: StatCardProps) {
   const positive = (delta ?? 0) > 0;
   const negative = (delta ?? 0) < 0;
 
@@ -81,8 +109,11 @@ export function StatCard({ title, value, delta, description, icon }: StatCardPro
     <Card>
       <CardHeader className="pb-2">
         <div className="flex items-center justify-between gap-4">
-          <CardTitle className="text-sm font-medium text-muted-foreground">{title}</CardTitle>
-          {icon && <div className="flex size-9 items-center justify-center rounded-lg bg-primary/10 text-primary">{icon}</div>}
+          <div className="flex items-center gap-1.5">
+            <CardTitle className="text-sm font-medium text-muted-foreground">{title}</CardTitle>
+            <HelpIcon content={help} />
+          </div>
+          {icon && <div className="flex size-9 items-center justify-center rounded-lg bg-blue-50 text-blue-600">{icon}</div>}
         </div>
       </CardHeader>
       <CardContent>
@@ -115,9 +146,9 @@ export function LineTrend({ data, dataKey = 'value' }: { data: ChartDatum[]; dat
     <div className="h-72">
       <ResponsiveContainer width="100%" height="100%">
         <LineChart data={data}>
-          <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-          <XAxis dataKey="date" tickLine={false} axisLine={false} fontSize={12} />
-          <YAxis tickLine={false} axisLine={false} fontSize={12} />
+          <CartesianGrid strokeDasharray="3 3" stroke={gridColor} />
+          <XAxis dataKey="date" tickLine={false} axisLine={false} fontSize={12} stroke={axisColor} />
+          <YAxis tickLine={false} axisLine={false} fontSize={12} stroke={axisColor} />
           <Tooltip />
           <Line type="monotone" dataKey={dataKey} stroke={chartColors[0]} strokeWidth={2} dot={false} />
         </LineChart>
@@ -131,9 +162,9 @@ export function AreaTrend({ data, dataKey = 'value' }: { data: ChartDatum[]; dat
     <div className="h-72">
       <ResponsiveContainer width="100%" height="100%">
         <AreaChart data={data}>
-          <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-          <XAxis dataKey="date" tickLine={false} axisLine={false} fontSize={12} />
-          <YAxis tickLine={false} axisLine={false} fontSize={12} />
+          <CartesianGrid strokeDasharray="3 3" stroke={gridColor} />
+          <XAxis dataKey="date" tickLine={false} axisLine={false} fontSize={12} stroke={axisColor} />
+          <YAxis tickLine={false} axisLine={false} fontSize={12} stroke={axisColor} />
           <Tooltip />
           <Area type="monotone" dataKey={dataKey} stroke={chartColors[1]} fill={chartColors[1]} fillOpacity={0.18} />
         </AreaChart>
@@ -147,9 +178,9 @@ export function BarsChart({ data, dataKey = 'value', nameKey = 'name' }: { data:
     <div className="h-72">
       <ResponsiveContainer width="100%" height="100%">
         <BarChart data={data}>
-          <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-          <XAxis dataKey={nameKey} tickLine={false} axisLine={false} fontSize={12} />
-          <YAxis tickLine={false} axisLine={false} fontSize={12} />
+          <CartesianGrid strokeDasharray="3 3" stroke={gridColor} />
+          <XAxis dataKey={nameKey} tickLine={false} axisLine={false} fontSize={12} stroke={axisColor} />
+          <YAxis tickLine={false} axisLine={false} fontSize={12} stroke={axisColor} />
           <Tooltip />
           <Bar dataKey={dataKey} radius={[6, 6, 0, 0]}>
             {data.map((_, index) => (
@@ -228,7 +259,7 @@ export function CohortHeatmap({ data }: { data: Array<Record<string, string | nu
                   <td key={column} className="py-2 text-right">
                     <span
                       className="inline-flex min-w-16 justify-center rounded-md px-2 py-1 font-medium"
-                      style={{ backgroundColor: `hsl(var(--chart-1) / ${Math.max(value / 100, 0.08)})` }}
+                      style={{ backgroundColor: `rgba(37, 99, 235, ${Math.max(value / 100, 0.1)})` }}
                     >
                       {value.toFixed(1)}%
                     </span>
