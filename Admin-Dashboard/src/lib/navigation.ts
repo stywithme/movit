@@ -1,8 +1,10 @@
 import type { LucideIcon } from 'lucide-react';
 import {
   BarChart3,
+  Activity,
   CalendarDays,
   CalendarX,
+  DollarSign,
   CreditCard,
   Dumbbell,
   FileCheck,
@@ -12,6 +14,7 @@ import {
   Map,
   MessageSquare,
   PieChart,
+  ShieldAlert,
   Repeat,
   Settings,
   Shield,
@@ -76,12 +79,21 @@ export const navGroups: NavGroup[] = [
     ],
   },
   {
-    title: 'Analytics',
+    title: 'Reports',
     items: [
       { title: 'Overview', href: '/admin/analytics', icon: BarChart3, requiredSubject: 'Analytics', exact: true },
+      { title: 'Users & Growth', href: '/admin/analytics/users', icon: Users, requiredSubject: 'UserAnalytics' },
+      { title: 'Activation', href: '/admin/analytics/activation', icon: TrendingUp, requiredSubject: 'Analytics' },
+      { title: 'Retention', href: '/admin/analytics/retention', icon: Activity, requiredSubject: 'EngagementAnalytics' },
+      { title: 'Training', href: '/admin/analytics/training', icon: Dumbbell, requiredSubject: 'TrainingAnalytics' },
       { title: 'Programs', href: '/admin/analytics/programs', icon: PieChart, requiredSubject: 'ProgramAnalytics' },
       { title: 'Levels', href: '/admin/analytics/levels', icon: Layers, requiredSubject: 'LevelAnalytics' },
       { title: 'Assessments', href: '/admin/analytics/assessments', icon: BarChart3, requiredSubject: 'AssessmentAnalytics' },
+      { title: 'Progression', href: '/admin/analytics/progression', icon: TrendingUp, requiredSubject: 'ProgressionRule' },
+      { title: 'Revenue', href: '/admin/analytics/revenue', icon: DollarSign, requiredSubject: 'RevenueAnalytics' },
+      { title: 'Bookings', href: '/admin/analytics/bookings', icon: CalendarDays, requiredSubject: 'BookingAnalytics' },
+      { title: 'Safety', href: '/admin/analytics/safety', icon: ShieldAlert, requiredSubject: 'SafetyAnalytics' },
+      { title: 'Content', href: '/admin/analytics/content', icon: Tags, requiredSubject: 'Analytics' },
     ],
   },
   {

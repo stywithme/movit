@@ -36,9 +36,9 @@ export function FilterBar({
 }: FilterBarProps) {
   return (
     <div className={cn('rounded-xl border bg-card p-4 shadow-sm', className)}>
-      <div className="flex flex-col gap-3 lg:flex-row lg:items-center">
+      <div className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:flex xl:items-center">
         {onSearchChange && (
-          <div className="relative min-w-0 flex-1">
+          <div className="relative min-w-0 md:col-span-2 xl:col-span-1 xl:min-w-80 xl:flex-1">
             <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
             <Input
               value={searchValue || ''}
@@ -50,23 +50,25 @@ export function FilterBar({
         )}
 
         {selects.map((select) => (
-          <Select
-            key={select.id}
-            value={select.value}
-            onChange={(event) => select.onChange(event.target.value)}
-            options={select.options}
-            placeholder={select.placeholder}
-            className={cn('lg:w-48', select.className)}
-          />
+          <div key={select.id} className={cn('min-w-0 xl:w-48 xl:flex-none', select.className)}>
+            <Select
+              value={select.value}
+              onChange={(event) => select.onChange(event.target.value)}
+              options={select.options}
+              placeholder={select.placeholder}
+            />
+          </div>
         ))}
 
         {children}
 
         {onReset && (
-          <Button type="button" variant="ghost" onClick={onReset}>
-            <X className="size-4" />
-            Reset
-          </Button>
+          <div className="md:col-span-2 xl:col-span-1 xl:flex-none">
+            <Button type="button" variant="ghost" onClick={onReset} className="w-full justify-center xl:w-auto">
+              <X className="size-4" />
+              Reset
+            </Button>
+          </div>
         )}
       </div>
     </div>
