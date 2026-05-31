@@ -1,163 +1,100 @@
 'use client';
 
-import { useEffect, useState } from 'react';
-import { Badge, Button, Card, CardHeader, CardTitle, CardContent } from '@/components/ui';
-import { DataTable, PageHeader, type DataTableColumn } from '@/components/common';
-import { RefreshCw } from 'lucide-react';
+import { useCallback, useEffect, useState } from 'react';
+import Link from 'next/link';
+import { PageHeader, DataTable, type DataTableColumn } from '@/components/common';
+import { BarsChart, ChartCard, StatCard } from '@/components/charts';
+import { PeriodFilter } from '@/components/charts/PeriodFilter';
+import { Badge } from '@/components/ui';
+import { analyticsService } from '@/modules/analytics/analytics.service';
+import { formatNumber, formatPercent } from '@/modules/analytics/format';
+import { useAnalyticsPeriod } from '@/modules/analytics/period-store';
 
-interface ProgramAnalytics {
+interface ProgramRow {
   id: string;
-  name: string;
-  enrollments: number;
+  name: Record<string, string> | string;
+  type?: string;
+  totalEnrollments: number;
+  activeUsers: number;
+  completedUsers: number;
   completionRate: number;
-  avgBodyScoreImprovement: number;
-  avgCompletionTimeDays: number;
+  avgFormScore: number;
+  totalReports: number;
 }
 
-export default function ProgramAnalyticsPage() {
-  const [programs, setPrograms] = useState<ProgramAnalytics[]>([]);
+function nameOf(value: ProgramRow['name']) {
+  return typeof value === 'string' ? value : value?.en || value?.ar || 'Program';
+}
+
+export default function ProgramsAnalyticsPage() {
+  const params = useAnalyticsPeriod((state) => state.params);
+  const [programs, setPrograms] = useState<ProgramRow[]>([]);
   const [loading, setLoading] = useState(true);
 
-  const fetchData = async () => {
+  const fetchData = useCallback(async () => {
     setLoading(true);
     try {
-      const res = await fetch('/api/admin/analytics/programs');
-      const data = await res.json();
-      if (data.success && data.data?.programs) {
-        setPrograms(data.data.programs);
-      }
-    } catch (error) {
-      console.error('Error fetching program analytics:', error);
+      const data = await analyticsService.programs(params());
+      setPrograms(Array.isArray(data) ? data : []);
     } finally {
       setLoading(false);
     }
-  };
+  }, [params]);
 
   useEffect(() => {
     fetchData();
-  }, []);
+  }, [fetchData]);
 
-  const maxCompletionRate = Math.max(...programs.map((p) => p.completionRate), 1);
+  const avgCompletion = programs.length
+    ? programs.reduce((sum, program) => sum + program.completionRate, 0) / programs.length
+    : 0;
 
-  const columns: DataTableColumn<ProgramAnalytics>[] = [
+  const columns: DataTableColumn<ProgramRow>[] = [
     {
       key: 'name',
-      header: 'Program Name',
-      cell: (program) => <span className="font-medium">{program.name}</span>,
+      header: 'Program',
+      cell: (row) => (
+        <Link className="font-medium text-primary hover:underline" href={`/admin/analytics/programs/${row.id}`}>
+          {nameOf(row.name)}
+        </Link>
+      ),
     },
-    {
-      key: 'enrollments',
-      header: 'Enrollments',
-      headerClassName: 'text-right',
-      className: 'text-right',
-      cell: (program) => <span className="text-sm font-medium text-muted-foreground">{program.enrollments}</span>,
-    },
+    { key: 'type', header: 'Type', cell: (row) => row.type || '-' },
+    { key: 'enrollments', header: 'Enrollments', cell: (row) => formatNumber(row.totalEnrollments) },
+    { key: 'active', header: 'Active', cell: (row) => formatNumber(row.activeUsers) },
+    { key: 'completed', header: 'Completed', cell: (row) => formatNumber(row.completedUsers) },
     {
       key: 'completion',
-      header: 'Completion Rate',
-      headerClassName: 'text-right',
-      className: 'text-right',
-      cell: (program) => (
-        <Badge
-          variant={
-            program.completionRate >= 70 ? 'success' : program.completionRate >= 40 ? 'warning' : 'destructive'
-          }
-        >
-          {program.completionRate.toFixed(1)}%
-        </Badge>
-      ),
+      header: 'Completion',
+      cell: (row) => <Badge variant={row.completionRate >= 50 ? 'success' : row.completionRate >= 25 ? 'warning' : 'secondary'}>{formatPercent(row.completionRate)}</Badge>,
     },
-    {
-      key: 'score',
-      header: 'Avg Score Improvement',
-      headerClassName: 'text-right',
-      className: 'text-right',
-      cell: (program) => (
-        <span className={`text-sm font-medium ${program.avgBodyScoreImprovement > 0 ? 'text-success' : 'text-muted-foreground'}`}>
-          {program.avgBodyScoreImprovement > 0 ? '+' : ''}
-          {program.avgBodyScoreImprovement.toFixed(1)}
-        </span>
-      ),
-    },
-    {
-      key: 'time',
-      header: 'Avg Completion Time',
-      headerClassName: 'text-right',
-      className: 'text-right',
-      cell: (program) => <span className="text-sm text-muted-foreground">{program.avgCompletionTimeDays} days</span>,
-    },
+    { key: 'score', header: 'Avg Form', cell: (row) => row.avgFormScore?.toFixed(1) ?? '-' },
   ];
 
   return (
     <div className="space-y-6">
-      <PageHeader
-        title="Program Analytics"
-        description="Enrollment, completion, and performance metrics."
-        breadcrumbs={[
-          { label: 'Analytics', href: '/admin/analytics' },
-          { label: 'Programs' },
-        ]}
-        actions={
-          <Button type="button" variant="outline" onClick={fetchData}>
-            <RefreshCw className={`size-4 ${loading ? 'animate-spin' : ''}`} />
-            Refresh
-          </Button>
-        }
+      <PageHeader title="Program Analytics" description="Program enrollment, completion, and training quality." />
+      <PeriodFilter onRefresh={fetchData} />
+
+      <div className="grid grid-cols-1 gap-4 md:grid-cols-4">
+        <StatCard title="Programs" value={formatNumber(programs.length)} />
+        <StatCard title="Enrollments" value={formatNumber(programs.reduce((sum, row) => sum + row.totalEnrollments, 0))} />
+        <StatCard title="Active Users" value={formatNumber(programs.reduce((sum, row) => sum + row.activeUsers, 0))} />
+        <StatCard title="Avg Completion" value={formatPercent(avgCompletion)} />
+      </div>
+
+      <ChartCard title="Completion by Program" loading={loading} empty={!programs.length}>
+        <BarsChart data={programs.map((program) => ({ name: nameOf(program.name), value: program.completionRate }))} />
+      </ChartCard>
+
+      <DataTable
+        columns={columns}
+        data={programs}
+        getRowKey={(row) => row.id}
+        loading={loading}
+        emptyTitle="No program analytics"
+        emptyDescription="No published programs have reportable data yet."
       />
-
-      {loading ? (
-        <Card className="animate-pulse">
-          <CardContent className="pt-6">
-            <div className="h-64 rounded bg-muted" />
-          </CardContent>
-        </Card>
-      ) : programs.length === 0 ? (
-        <Card>
-          <CardContent className="pt-6">
-            <p className="py-12 text-center text-muted-foreground">No program analytics data available</p>
-          </CardContent>
-        </Card>
-      ) : (
-        <>
-          {/* Completion Rate Chart */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Completion Rates by Program</CardTitle>
-              <p className="text-sm text-muted-foreground">Percentage of enrolled users who completed each program</p>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-3">
-                {programs
-                  .sort((a, b) => b.completionRate - a.completionRate)
-                  .map((program) => (
-                    <div key={program.id} className="flex items-center gap-3">
-                      <span className="w-48 flex-shrink-0 truncate text-sm font-medium" title={program.name}>
-                        {program.name}
-                      </span>
-                      <div className="relative h-7 flex-1 overflow-hidden rounded-full bg-muted">
-                        <div
-                          className="flex h-full items-center rounded-full bg-success transition-all duration-500 ease-out"
-                          style={{ width: `${Math.max((program.completionRate / maxCompletionRate) * 100, 3)}%` }}
-                        />
-                        <span className="absolute inset-y-0 left-3 flex items-center text-xs font-semibold text-white mix-blend-difference">
-                          {program.completionRate.toFixed(1)}%
-                        </span>
-                      </div>
-                    </div>
-                  ))}
-              </div>
-            </CardContent>
-          </Card>
-
-          <DataTable
-            columns={columns}
-            data={programs}
-            getRowKey={(program) => program.id}
-            emptyTitle="No program analytics data"
-            emptyDescription="Program analytics will appear after enrollments are recorded."
-          />
-        </>
-      )}
     </div>
   );
 }
